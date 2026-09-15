@@ -90,7 +90,7 @@ async function signIn(page) {
  * in that slot. The draft note stands the kept note down, so the two desktop
  * states below are one fixture read twice rather than two fixtures.
  */
-async function buildFixture(userId) {
+async function buildFixture(userId, onCreated) {
   const { rows: template } = await pool.query(
     `select d.id, d.commander_oracle_id
        from decks d
@@ -107,6 +107,11 @@ async function buildFixture(userId) {
     [userId, template[0].commander_oracle_id],
   );
   const deckId = made[0].id;
+  // BEFORE any further write. A throw in the queries below would otherwise
+  // leave `run`'s `deckId` unassigned and its `finally` with nothing to delete,
+  // stranding a `PROBE deck sort` deck in the database — the failure mode the
+  // repo's fixture rule exists to prevent.
+  onCreated(deckId);
 
   // `auto` rows, so the bulk cluster draws: `Keep all N` + `Clear all auto · N`.
   await pool.query(
@@ -141,6 +146,25 @@ async function buildFixture(userId) {
     [deckId, extra[0].oracle_id],
   );
   return deckId;
+}
+
+/**
+ * Open the panel, and SCROLL FIRST.
+ *
+ * `FilterPanel` dismisses on page scroll (`filter-panel.tsx:308`), and
+ * Playwright's own `click()` scrolls the target into view before pressing it —
+ * so on a toolbar that sits below the fold, the click opened the panel and the
+ * scroll it had just caused closed it again, leaving `aria-expanded="false"`
+ * and no rows to count. `/collection`'s bar is at the top of its page and never
+ * showed it. Scrolling deliberately, settling, and then clicking is the whole
+ * fix, and it is the instrument being wrong rather than the app.
+ */
+async function openSortPanel(page) {
+  const trigger = onPageRole(page, "button", /Sort the deck list/).first();
+  await trigger.scrollIntoViewIfNeeded();
+  await page.waitForTimeout(400);
+  await trigger.click();
+  await onPage(page, "[role=option]").first().waitFor({ timeout: 5_000 });
 }
 
 /** The toolbar's row, its children, and where each of them ends. */
@@ -226,7 +250,7 @@ async function run() {
     const userId = await page.evaluate(() => window.Clerk?.user?.id ?? null);
     if (!userId) throw new Error("signed in but no Clerk user id");
 
-    deckId = await buildFixture(userId);
+    await buildFixture(userId, (id) => { deckId = id; });
 
     for (const width of [1300, 390]) {
       await page.setViewportSize({ width, height: 900 });
@@ -309,8 +333,7 @@ async function run() {
         );
       }
 
-      await onPageRole(page, "button", /Sort the deck list/).first().click();
-      await page.waitForTimeout(900);
+      await openSortPanel(page);
 
       // The sheet's title wears no count badge — single-select has nothing to
       // count. Phone only: the desktop form is a popover and draws no title, so
@@ -341,8 +364,7 @@ async function run() {
       // Shopping offers the third.
       await onPageRole(page, "button", /^Shopping \d+$/).first().click();
       await page.waitForTimeout(1_200);
-      await onPageRole(page, "button", /Sort the deck list/).first().click();
-      await page.waitForTimeout(900);
+      await openSortPanel(page);
       const shoppingRows = await onPage(page, "[role=option]").count();
       failures += !report(
         `the panel offers three orders under Shopping at ${width}`,

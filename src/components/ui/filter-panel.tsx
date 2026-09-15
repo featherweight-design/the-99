@@ -105,6 +105,7 @@ export function FilterPanel({
   compact,
   footerStatus = true,
   selectionMode = "multi",
+  selectionOrnament = true,
   showCounts = true,
   onAnnounce,
 }: {
@@ -120,6 +121,25 @@ export function FilterPanel({
    * empty selection to offer a `Clear` for, so the desktop footer goes with it.
    */
   selectionMode?: "multi" | "single";
+  /**
+   * Whether a chosen row lights the trigger's border and badges the sheet's
+   * title. True everywhere by default — a selection made among many is worth
+   * announcing, and that includes the rarity panel on a set page, which is
+   * single-select WITH an off state (`set-grid-view.tsx:1058-1084`): an active
+   * rarity there is a real filter.
+   *
+   * False on the two Sort mounts, where exactly one row is always chosen. There
+   * `selected.length > 0` is unconditionally true, so the border said nothing
+   * and read as a filter that is on, and the badge counted one out of one. It
+   * also broke the deck toolbar's own rule on arrival — "No accent fill
+   * anywhere on the builder's control bar" (`group-toggle.tsx:105-110`).
+   *
+   * An explicit prop rather than `selectionMode === "single"` for exactly the
+   * rarity panel's sake: the two questions look identical and are not. What
+   * governs the ornament is whether the panel can be OFF, not how many rows it
+   * takes at once.
+   */
+  selectionOrnament?: boolean;
   /**
    * Whether rows carry a trailing count. Sort ▾ has none — a sort order does not
    * narrow anything, so any number next to it would be the same number.
@@ -927,16 +947,9 @@ export function FilterPanel({
             ? "cursor-not-allowed bg-[color:var(--surface-raised)] text-[color:var(--fg-locked)] border-[color:var(--border)]"
             : open
               ? "cursor-pointer text-[color:var(--fg)] bg-[color:var(--border-strong)] border-[color:var(--accent)]"
-              // `selectionMode === "multi"` is load-bearing, not decoration. A
-              // single-select panel always has exactly one row chosen, so
-              // `selected.length > 0` is unconditionally true there and the
-              // border said nothing — it read as a filter that is on, on a
-              // control that is a sort. It also broke the deck toolbar's own
-              // rule outright ("No accent fill anywhere on the builder's
-              // control bar", group-toggle.tsx:105-110) the moment that bar
-              // mounted this panel. The `open` branch above keeps its accent:
-              // that one is transient and it means something.
-              : selectionMode === "multi" && selected.length > 0
+              // See `selectionOrnament`. The `open` branch above keeps its
+              // accent either way: that one is transient and it means something.
+              : selectionOrnament && selected.length > 0
                 ? "cursor-pointer text-[color:var(--fg)] bg-[color:var(--elevated)] border-[color:var(--accent)] md:hover:bg-[color:var(--border-strong)]"
                 : "cursor-pointer text-[color:var(--fg)] bg-[color:var(--elevated)] border-[color:var(--border-strong)] md:hover:bg-[color:var(--border-strong)] md:hover:border-[color:var(--border-dashed)]",
         ].join(" ")}
@@ -1016,11 +1029,10 @@ export function FilterPanel({
               <div className="flex items-center justify-between px-[16px] pt-[4px] pb-[10px]">
                 <h2 className="m-0 font-display text-[18px] font-semibold text-[color:var(--fg)]">
                   {copy.sheetTitle}
-                  {/* A badge counts a selection made AMONG MANY. Under
-                      single-select there is always exactly one row chosen, so
-                      this drew a permanent `1` beside every sort sheet's title
-                      — one out of one, which is not a count anyone needs. */}
-                  {selectionMode === "multi" && selected.length > 0 && (
+                  {/* See `selectionOrnament`: a badge counts a selection made
+                      among many, and a panel that always holds exactly one has
+                      nothing to count. */}
+                  {selectionOrnament && selected.length > 0 && (
                     <span className="ml-[8px] rounded-full px-[8px] py-px align-middle font-mono text-[12px] font-semibold bg-[color:var(--accent)] text-[color:var(--bg)]">
                       {selected.length}
                     </span>

@@ -254,6 +254,9 @@ export function GroupToggle({
           options={buildDeckSortOptions(filter, sort.key, sort.direction)}
           selected={[sort.key]}
           selectionMode="single"
+          // Exactly one order is always chosen, so a lit border would say "on"
+          // about a control that is never off, and a badge would count one of one.
+          selectionOrnament={false}
           showCounts={false}
           searchable={false}
           widthPx={260}

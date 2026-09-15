@@ -252,6 +252,9 @@ export function FilterBar({
           options={buildSortOptions(sort, sortDirection)}
           selected={[sort]}
           selectionMode="single"
+          // Exactly one order is always chosen, so a lit border would say "on"
+          // about a control that is never off, and a badge would count one of one.
+          selectionOrnament={false}
           showCounts={false}
           searchable={false}
           widthPx={260}

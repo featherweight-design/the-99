@@ -231,23 +231,8 @@ export const deckSortCopy: FilterPanelCopy = {
   announceCleared: () => "",
 };
 
-/**
- * Persistence — RECOMMENDED, not ruled. Brief §6 leaves it to whatever the
- * placement implies, and the placement implies this one: the trigger now sits
- * in the same cluster as the list/card well, and that well's own key comment
- * is the argument —
- *
- *   "One key for every deck, not one per deck: 'I read decks as cards' is a
- *    fact about the reader."  (group-toggle.tsx:16)
- *
- * The same is true of an order. So: one key, all decks, holding BOTH lanes'
- * orders, because the state is one sort per filter (§2.6) and a single stored
- * order could not restore `Price · Highest` on returning to Shopping.
- *
- * Shape: { all: {key, direction}, shopping: {key, direction} }.
- * Not the URL. `/collection` mirrors sort to the URL because a filtered
- * collection view is a thing people link to; a deck's own list is reached
- * through the deck, and a shareable deck URL carrying someone else's row order
- * is noise in a link.
- */
-export const DECK_SORT_KEY_STORAGE = "the99:deck-sort";
+// Persistence lives in `lib/decks/sort-memory.ts`, which owns the key and the
+// wire format. The handoff's sample exported a `DECK_SORT_KEY_STORAGE` constant
+// here as well; two constants for one key is how the exported name and the key
+// actually written come to disagree, so this module keeps the copy and the
+// helpers and nothing else.
