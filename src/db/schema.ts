@@ -714,7 +714,30 @@ export const csvUploads = pgTable("csv_uploads", {
   previewPayload: jsonb("preview_payload").notNull(),
   createdAt: timestamp("created_at").notNull().defaultNow(),
   // Set when the preview is confirmed into the collection; null = abandoned preview.
+  //
+  // Also the CONFIRM'S OWN LOCK. `replaceCollection` stamps it with a conditional
+  // update — `where confirmed_at is null returning id` — and aborts when no row comes
+  // back, so a double submit or a retried request cannot replace the collection twice.
+  // A read-then-write check here would not close that: two confirms both read null.
   confirmedAt: timestamp("confirmed_at"),
+  /**
+   * What the confirm did to the decks: what stopped being a purchase, what started,
+   * and which arrived cards more committed decks want than there are copies. Written in
+   * the SAME transaction as `confirmedAt`, so a confirmed upload always has its receipt
+   * — written afterwards, a crash between the two would leave a confirmed row whose
+   * summary is null forever, and the short-circuit would then serve an empty receipt for
+   * an import that moved real cards.
+   *
+   * Shape: `ArrivalsSummary` in `src/lib/collection/arrivals.ts`, carrying its own
+   * version. Frozen on purpose: it is a receipt for one import, and its names are stored
+   * so a later rename or a deleted deck cannot rewrite history. The contested section is
+   * the exception and stores ids only — a reservation can be made or moved after this is
+   * written, so that row's allocation is read live.
+   *
+   * Null for an abandoned preview, and for any upload confirmed before this column
+   * existed.
+   */
+  summaryPayload: jsonb("summary_payload"),
 });
 
 /**

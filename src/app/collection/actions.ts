@@ -1,16 +1,19 @@
 "use server";
 
-import { and, eq, sql } from "drizzle-orm";
+import { and, eq, inArray, sql } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
 import { after } from "next/server";
 import { db } from "../../db";
-import { cardArtPreferences, collectionItems, csvUploads } from "../../db/schema";
+import { cardArtPreferences, cards, collectionItems, csvUploads, decks } from "../../db/schema";
 import { requireUserId } from "../../lib/auth";
 import { revalidateUserLists } from "../../lib/cache/user-lists";
 import { parseCollectionCsv, type CollectionRow, type ParseError } from "../../lib/manabox/parse";
 import { parsePasteList } from "../../lib/manabox/paste";
 import { matchRows } from "../../lib/collection/match";
 import { loadMatchInputs, replaceCollection } from "../../lib/collection/import";
+import { buildArrivalsSummary, type OwnedCounts } from "../../lib/collection/arrivals";
+import { loadAvailability, loadDeckBuyRows } from "../../lib/decks/availability-query";
+
 import { aggregatePendingItems, totalQuantity, type PendingItem } from "../../lib/collection/pending";
 import { recommendCommanders } from "../../lib/recs/recommend";
 import { collectionGeneration, persistScores } from "../../lib/recs/store";
@@ -118,17 +121,138 @@ export async function previewPaste(text: string): Promise<UploadPreview> {
   return buildPreview({ userId, filename: "paste.txt", rows, errors });
 }
 
+/**
+ * The collection as the claim model reads it: copies per oracle id.
+ *
+ * Summed across printings, because every figure in the claim model is oracle-level — a
+ * Brushland from any set is a Brushland. Basics are NOT excluded here even though the claim
+ * model excludes them: this feeds the arrivals count, and a player who imports 40 Forests
+ * has had 40 cards arrive whatever the decks make of them.
+ */
+async function ownedByOracle(userId: string): Promise<OwnedCounts> {
+  const rows = await db
+    .select({
+      oracleId: collectionItems.oracleId,
+      quantity: sql<number>`sum(${collectionItems.quantity})::int`,
+    })
+    .from(collectionItems)
+    .where(eq(collectionItems.userId, userId))
+    .groupBy(collectionItems.oracleId);
+  const out: OwnedCounts = {};
+  for (const r of rows) out[r.oracleId] = r.quantity;
+  return out;
+}
+
+/**
+ * The same shape, predicted from the rows about to be written.
+ *
+ * Exact rather than approximate: these ARE the rows the replace inserts, so reading the
+ * collection back afterwards would return this and cost a second user-wide scan.
+ */
+function pendingItemsToOwnedCounts(items: PendingItem[]): OwnedCounts {
+  const out: OwnedCounts = {};
+  for (const i of items) out[i.oracleId] = (out[i.oracleId] ?? 0) + i.quantity;
+  return out;
+}
+
+/** Printed names for the receipt, frozen into the payload so a later rename cannot rewrite it. */
+async function cardNamesFor(oracleIds: string[]): Promise<Record<string, string>> {
+  if (oracleIds.length === 0) return {};
+  const rows = await db
+    .select({ oracleId: cards.oracleId, name: cards.name })
+    .from(cards)
+    .where(inArray(cards.oracleId, oracleIds));
+  const out: Record<string, string> = {};
+  for (const r of rows) out[r.oracleId] = r.name;
+  return out;
+}
+
+/** Deck names, frozen for the same reason: a deck deleted later still has to render its row. */
+async function deckNamesFor(userId: string): Promise<Record<string, string>> {
+  const rows = await db
+    .select({ id: decks.id, name: decks.name })
+    .from(decks)
+    .where(eq(decks.userId, userId));
+  const out: Record<string, string> = {};
+  for (const r of rows) out[r.id] = r.name;
+  return out;
+}
+
 export async function confirmUpload(uploadId: string): Promise<void> {
   const userId = await requireUserId();
   const [upload] = await db.select().from(csvUploads)
     .where(and(eq(csvUploads.id, uploadId), eq(csvUploads.userId, userId)));
   if (!upload) throw new Error("upload not found");
 
-  const { pendingItems } = upload.previewPayload as { pendingItems: PendingItem[] };
+  // Already confirmed: the receipt is stored and there is nothing to replace. Returning
+  // rather than throwing is what makes a retried request idempotent — and re-running the
+  // diff here would find nothing moved and overwrite a real receipt with an empty one.
+  if (upload.confirmedAt) return;
+
+  const preview = upload.previewPayload as {
+    pendingItems: PendingItem[];
+    unmatched?: { name: string; line: number }[];
+    parseErrors?: { line: number; reason: string }[];
+  };
+  const pendingItems = preview.pendingItems;
   if (pendingItems.length === 0) throw new Error("Upload has no matched cards; refusing to replace collection");
+
+  // THE STATE BEFORE, read now because the replace destroys it. Both reads are
+  // point-in-time and deliberately not serialized against the write: the only race is
+  // the same player editing a deck in another tab during their own import, and its cost
+  // is a mis-stated line on a receipt — never a wrong claim figure, since every claim
+  // figure in the app is recomputed live and the chooser's write re-validates in its own
+  // transaction.
+  const ownedBefore = await ownedByOracle(userId);
+  const buyBefore = await loadDeckBuyRows(userId);
+
   // A preview written before migration 0008 carries no collectorNumber/finish;
   // replaceCollection coerces both rather than spreading undefined into the insert.
-  await replaceCollection(userId, pendingItems, { confirmUploadId: uploadId });
+  //
+  // The upload row is the lock: the stamp inside that transaction is conditional on
+  // `confirmed_at is null`, so a double submit replaces the collection exactly once and
+  // the loser is told so rather than raising.
+  const { alreadyConfirmed } = await replaceCollection(userId, pendingItems, {
+    confirmUploadId: uploadId,
+  });
+  if (alreadyConfirmed) return;
+
+  // THE STATE AFTER, and then the receipt. Stored in a second write rather than inside the
+  // replace, because two of its three inputs cannot be known before the rows are in: the
+  // buy rows and the claims are queries over the new collection.
+  //
+  // The window between the two writes is real and is handled at the READER: a confirmed
+  // upload whose `summary_payload` is null renders the nothing-to-report receipt, which is
+  // the state the design already draws for an import that moved nothing. What must never
+  // happen is a RECOMPUTE on a later confirm — the diff would find nothing moved and
+  // overwrite a real receipt with an empty one — and the short-circuit above is what
+  // prevents that.
+  const ownedAfter = pendingItemsToOwnedCounts(pendingItems);
+  const buyAfter = await loadDeckBuyRows(userId);
+  const touched = new Set([
+    ...Object.keys(ownedBefore),
+    ...Object.keys(ownedAfter),
+    ...buyBefore.map((r) => r.oracleId),
+    ...buyAfter.map((r) => r.oracleId),
+  ]);
+  const availability = await loadAvailability(userId, { oracleIds: [...touched] });
+  const claims: Record<string, { owned: number; hard: number }> = {};
+  for (const [oracleId, a] of availability) claims[oracleId] = { owned: a.owned, hard: a.hard };
+
+  const summary = buildArrivalsSummary({
+    ownedBefore,
+    ownedAfter,
+    buyBefore,
+    buyAfter,
+    claims,
+    unmatched: preview.unmatched ?? [],
+    parseErrorCount: (preview.parseErrors ?? []).length,
+    cardNames: await cardNamesFor([...touched]),
+    deckNames: await deckNamesFor(userId),
+  });
+  await db.update(csvUploads).set({ summaryPayload: summary })
+    .where(and(eq(csvUploads.id, uploadId), eq(csvUploads.userId, userId)));
+
   // Every cached list this reader has is a function of the rows just replaced.
   revalidateUserLists(userId);
   revalidatePath("/collection");
@@ -138,6 +262,15 @@ export async function confirmUpload(uploadId: string): Promise<void> {
   // commander. '[slug]' needs the 'page' type — it is a dynamic segment.
   revalidatePath("/commanders");
   revalidatePath("/commanders/[slug]", "page");
+  // A REPLACE CHANGES EVERY CLAIM FIGURE THERE IS, and these were missing. The
+  // `user-lists` tag above covers the cached payloads behind the deck pages; it does not
+  // cover the paths, so a back navigation to a deck served the pre-import render with its
+  // buy tags still on. Pattern form for the dynamic segments, as `revalidateClaims`
+  // already does for the review page — there is no one deck to name here.
+  revalidatePath("/decks");
+  revalidatePath("/decks/[id]", "page");
+  revalidatePath("/decks/[id]/changes", "page");
+  revalidatePath("/discover");
 
   // Warm the new collection's scores without blocking the upload response. If this
   // is cut short by the route's max duration, the read path recomputes on first

@@ -1,4 +1,4 @@
-import { eq, inArray, isNotNull } from "drizzle-orm";
+import { and, eq, inArray, isNotNull, isNull } from "drizzle-orm";
 import { db } from "../../db";
 import {
   cards, collectionItems, commanderScores, csvUploads, printings, skippedPrintings,
@@ -105,23 +105,55 @@ export async function loadMatchInputs(
  *
  * Shared by confirmUpload and `pnpm db:seed:collection` so the CLI path exercises the server
  * action's write rather than a second implementation of it.
+ *
+ * WITH `confirmUploadId`, THE UPLOAD ROW IS THE LOCK. The stamp is a conditional update —
+ * `where confirmed_at is null returning id` — and the whole transaction is abandoned when it
+ * returns no row, so a double submit or a retried request replaces the collection once. A
+ * read-then-write check in the caller cannot do that: two concurrent confirms both read null,
+ * and both replace. `alreadyConfirmed` says which happened, because the caller has a receipt to
+ * serve in that case rather than an error to raise. Proved by `pnpm probe:arrivals`, whose
+ * third case starts two confirms together.
+ *
+ * The stamp goes FIRST, before the delete, so the loser does no work at all.
  */
 export async function replaceCollection(
   userId: string,
   items: PendingItem[],
   opts: { confirmUploadId?: string } = {},
-): Promise<void> {
+): Promise<{ alreadyConfirmed: boolean }> {
   const values = toCollectionItemValues(userId, items);
-  await db.transaction(async (tx) => {
-    await tx.delete(collectionItems).where(eq(collectionItems.userId, userId));
-    // Every score component derives from the collection, so a replace invalidates all of them.
-    await tx.delete(commanderScores).where(eq(commanderScores.userId, userId));
-    for (let i = 0; i < values.length; i += INSERT_BATCH) {
-      await tx.insert(collectionItems).values(values.slice(i, i + INSERT_BATCH));
-    }
-    if (opts.confirmUploadId) {
-      await tx.update(csvUploads).set({ confirmedAt: new Date() })
-        .where(eq(csvUploads.id, opts.confirmUploadId));
-    }
-  });
+  let alreadyConfirmed = false;
+  try {
+    await db.transaction(async (tx) => {
+      if (opts.confirmUploadId) {
+        const claimed = await tx.update(csvUploads)
+          .set({ confirmedAt: new Date() })
+          .where(and(eq(csvUploads.id, opts.confirmUploadId), isNull(csvUploads.confirmedAt)))
+          .returning({ id: csvUploads.id });
+        if (claimed.length === 0) {
+          // Somebody else confirmed this upload. The throw is what rolls the transaction
+          // back, and the rollback is what makes the guard a lock rather than a hint.
+          alreadyConfirmed = true;
+          throw new AlreadyConfirmed();
+        }
+      }
+      await tx.delete(collectionItems).where(eq(collectionItems.userId, userId));
+      // Every score component derives from the collection, so a replace invalidates all of them.
+      await tx.delete(commanderScores).where(eq(commanderScores.userId, userId));
+      for (let i = 0; i < values.length; i += INSERT_BATCH) {
+        await tx.insert(collectionItems).values(values.slice(i, i + INSERT_BATCH));
+      }
+    });
+  } catch (err) {
+    // Only this module's own sentinel is swallowed; a real failure still reaches the caller.
+    if (!(err instanceof AlreadyConfirmed)) throw err;
+  }
+  return { alreadyConfirmed };
 }
+
+/**
+ * Thrown to roll the transaction back when another request already confirmed this upload.
+ * Never surfaced: it means "somebody else's write stands", which the caller reports by
+ * serving the stored receipt, so `replaceCollection` converts it into `alreadyConfirmed`.
+ */
+class AlreadyConfirmed extends Error {}

@@ -157,6 +157,19 @@ Package manager is **pnpm** (pinned via `packageManager` in package.json) — ne
   computes the same allocation through a second, independently written expression, and a
   reservation that moved one and not the other would leave the deck page and the receipt
   disagreeing about the same card.
+- `pnpm probe:arrivals` proves the collection confirm's own lock and its receipt against a real
+  Postgres by calling the real `replaceCollection`. Two things live there that no unit test here
+  can reach. THE LOCK: `confirmed_at` is stamped by a conditional update inside the replace
+  transaction (`where confirmed_at is null returning id`), and the transaction is abandoned when
+  it returns no row — whether that stops a second confirm is a question about what the database
+  did, and a read-then-write guard passes every unit test while replacing the collection twice.
+  Its third case starts two confirms of one upload together and asserts that exactly one wins,
+  which is the case the lock exists for; with the stamp made unconditional, two of its checks
+  fail. THE RECEIPT: the arrivals diff reads the collection either side of a write, and there is
+  no collection to read either side of anything in jsdom. It writes a fixture under a per-run
+  `user_id` and deletes it in a `finally` — point it at `local-dev` or a scratch branch, **never
+  production**, and note that this one is stricter than the other probes about that:
+  `replaceCollection` DELETES every collection row for the user it is given.
 - `pnpm probe:folders` proves deck folders against a real Postgres by calling the real
   queries — a deck files and unfiles, a cross-user move is refused from either side, and
   deleting a folder unfiles its decks without deleting any of them. That last rule is the
