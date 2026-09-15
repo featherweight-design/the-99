@@ -23,7 +23,7 @@ import { StatusPillBadge } from "./status-pill";
 import { useDeckRename } from "./use-deck-rename";
 import { ProxyTag } from "./proxy-tag";
 import { proxyCopy } from "../../lib/copy/proxies";
-import { shortName } from "../../lib/prose/prompt";
+import { shortName } from "../../lib/cards/short-name";
 
 /** The rename glyph's drawn size. Named because the measurement below has to
     keep the glyph inside the block, and the heading reserves the same figure. */

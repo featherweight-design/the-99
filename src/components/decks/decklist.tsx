@@ -158,28 +158,24 @@ export function Decklist({
   // The marks this view actually contains, which is what the key decodes. Only
   // the current view's rows: a legend naming a mark the reader cannot see on
   // screen teaches the wrong thing, and an empty one is furniture.
+  // The marks this view contains, decoded by a CANONICAL sample of each — not by
+  // the live component at whatever density the rows happen to be drawing.
+  //
+  // That distinction is a scope decision, taken after three consecutive review
+  // rounds on this one line. Sampling the real component per view meant the key
+  // had to track Shopping's full-density tag (which renders the word `buy`, so
+  // the line read `buy to buy`), the card view's tile plate, and the row's
+  // collapsed glyph — three variants of a legend whose whole job is to say what
+  // one character means. The glyph is the thing being decoded on every surface;
+  // the plate around it is not, so the key draws the glyph in the row's box and
+  // stops there.
   const markKey = useMemo((): MarkKeyEntry[] => {
-    // LIST VIEW ONLY. The samples are the row treatments, and the card view
-    // draws neither of them — its tiles carry the tile/band variants — so a key
-    // rendered there would decode glyphs that are not below it.
-    if (view === "card") return [];
-    // `cards` filtered, not `shoppingList` — that one is a name/quantity
-    // projection for the export dialog and carries no flags to read.
     const shown = filter === "shopping" ? cards.filter(isShoppingCard) : cards;
     const entries: MarkKeyEntry[] = [];
     if (shown.some((c) => deckRowTag(c, filter === "shopping" && isSpokenFor(c)) === "buy")) {
       entries.push({
         id: "buy",
-        // The density the rows below it actually draw: Shopping rows carry the
-        // full `not owned` wording, All rows the collapsed glyph. A legend that
-        // sampled the wrong one would explain a mark that is not on screen.
-        sample: (
-          <BuyTag
-            variant="row"
-            density={filter === "shopping" ? "full" : "collapsed"}
-            price={null}
-          />
-        ),
+        sample: <BuyTag variant="row" density="collapsed" price={null} />,
         word: proxyCopy.key.buy,
       });
     }
@@ -187,7 +183,7 @@ export function Decklist({
       entries.push({ id: "proxy", sample: <ProxyTag variant="row" />, word: proxyCopy.key.proxy });
     }
     return entries;
-  }, [cards, filter, view]);
+  }, [cards, filter]);
 
   // The toolbar's right slot while a draft exists. Needs both answers: a deck
   // with no version has no vN to count against, and a set with nothing in it has
