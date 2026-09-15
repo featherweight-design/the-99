@@ -1,7 +1,15 @@
 import { render, screen } from "@testing-library/react";
 import { describe, expect, it } from "vitest";
 
-import { CARD_TILE_CAPTION_H, CardTileCaption, slotOutline } from "./card-tile-caption";
+import { BuyTag } from "../decks/buy-tag";
+import { ProxyTag } from "../decks/proxy-tag";
+import { AvailabilityMarker } from "./availability-marker";
+import {
+  CARD_TILE_CAPTION_H,
+  CARD_TILE_SLOT_BOX,
+  CardTileCaption,
+  slotOutline,
+} from "./card-tile-caption";
 
 describe("CardTileCaption — the shape both card views share", () => {
   it("draws the meta line above the name line", () => {
@@ -86,5 +94,43 @@ describe("slotOutline — the edge that is not layout", () => {
       outlineOffset: "-1px",
     });
     expect(slotOutline("var(--fg-locked)", true).outline).toContain("dashed");
+  });
+});
+
+describe("the one box — all three occupants, forced", () => {
+  // The probe cannot make this comparison on live data: a fixture whose cards
+  // are all owned and none printed draws nothing but chips, and it passed a
+  // mutation that gave the chip its border back. Here all three are rendered
+  // side by side, which is the only place the invariant is actually tested.
+  const OCCUPANTS = () => [
+    render(
+      <AvailabilityMarker
+        availability={{ owned: 2, hard: 2, soft: 0, free: 0, claims: [] } as never}
+        density="chip"
+        plate={false}
+      />,
+    ).container.firstElementChild as HTMLElement,
+    render(<BuyTag variant="tile" plate={false} density="collapsed" label="Not owned" />)
+      .container.firstElementChild as HTMLElement,
+    render(<ProxyTag variant="band" plate={false} />).container
+      .firstElementChild as HTMLElement,
+  ];
+
+  it("gives all three the same box class", () => {
+    const classes = OCCUPANTS().map((el) =>
+      CARD_TILE_SLOT_BOX.split(" ").every((c) => el.className.includes(c)),
+    );
+    expect(classes).toEqual([true, true, true]);
+  });
+
+  it("lets none of them pay for a border", () => {
+    // A border is 1px of layout on every side; an outline and an inset shadow
+    // are not. One occupant with a border is 2px taller than the two beside it,
+    // and "one box" becomes a claim the eye refutes — which jsdom cannot see,
+    // so this asserts the CAUSE rather than the height.
+    for (const el of OCCUPANTS()) {
+      expect(el.className.split(/\s+/)).not.toContain("border");
+      expect(el.style.border).toBe("");
+    }
   });
 });

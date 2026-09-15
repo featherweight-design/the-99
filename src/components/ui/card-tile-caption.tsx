@@ -29,6 +29,21 @@ import type { ReactNode } from "react";
 export const CARD_TILE_CAPTION_H = "min-h-[52px] md:min-h-[46px]";
 
 /**
+ * Both lines carry an EXPLICIT box height, and the caption's padding is chosen
+ * so the two plus the gap add up to `CARD_TILE_CAPTION_H` exactly.
+ *
+ * Without them the lines size to their own text — a 9.5px mono line and a 13px
+ * name at the inherited line-height — and the caption lands wherever that
+ * happens to fall, which measured 49px on some tiles and 50px on others. A
+ * floor that content always exceeds is not a fixed height; it is a minimum that
+ * never binds, and the ragged grid it produces is the one failure this design
+ * cannot survive. Phone: 8 + 13 + 3 + 20 + 8 = 52. Desktop: 6 + 14 + 3 + 17 + 6
+ * = 46.
+ */
+const META_LINE = "h-[13px] md:h-[14px]";
+const NAME_LINE = "h-[20px] md:h-[17px]";
+
+/**
  * The one box the slot's three occupants share — the availability chip, the
  * collapsed buy tag and the proxy mark. Call D's payoff: off the art none of
  * them needs a scrim, and with no scrim they are the same box in three inks.
@@ -97,7 +112,7 @@ export function CardTileCaption({
       style={draftTouched ? { boxShadow: "inset 2px 0 0 0 var(--accent)" } : undefined}
     >
       <div
-        className={`flex-auto min-w-0 flex flex-col justify-center gap-[3px] py-[6px] pl-[9px] md:pl-[10px] ${
+        className={`flex-auto min-w-0 flex flex-col justify-center gap-[3px] py-[8px] md:py-[6px] pl-[9px] md:pl-[10px] ${
           trailing ? "pr-[3px]" : "pr-[9px] md:pr-[10px]"
         }`}
       >
@@ -105,11 +120,13 @@ export function CardTileCaption({
             they sit against it, and the name then closes the tile — which keeps
             six names in a row on one line instead of letting each card's marks
             push its own name around. */}
-        <div className="flex items-center gap-[6px] min-w-0 font-mono text-[9px] md:text-[9.5px]">
+        <div
+          className={`flex items-center gap-[6px] min-w-0 font-mono text-[9px] md:text-[9.5px] leading-none ${META_LINE}`}
+        >
           {meta}
           {metaTrail && <span className="ml-auto flex-none">{metaTrail}</span>}
         </div>
-        <div className="flex items-center gap-[6px] min-w-0">
+        <div className={`flex items-center gap-[6px] min-w-0 leading-none ${NAME_LINE}`}>
           <span
             aria-hidden={nameHidden || undefined}
             className="min-w-0 truncate text-[12px] md:text-[13px] font-semibold"

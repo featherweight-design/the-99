@@ -27,7 +27,10 @@
 import { clerkSetup, setupClerkTestingToken } from "@clerk/testing/playwright";
 import { chromium } from "playwright";
 import { requireEnv } from "./lib/env.mjs";
-import { PAGE } from "./lib/surface.mjs";
+import { onPageRole, PAGE } from "./lib/surface.mjs";
+
+const { deck: DECK_VIEW } = { deck: { card: "Card view" } };
+const viewToggleCopy = { deck: DECK_VIEW };
 
 const { E2E_AUDIT_USER_EMAIL: EMAIL } = requireEnv(["E2E_AUDIT_USER_EMAIL", "CLERK_SECRET_KEY"]);
 const BASE = process.env.PROBE_BASE ?? "http://localhost:3000";
@@ -90,22 +93,44 @@ const ART = (page) =>
       const marks = [...el.querySelectorAll("*")].filter((d) => {
         const s = getComputedStyle(d);
         if (s.position !== "absolute") return false;
+        // The no-art plate's cost pips are the one thing this design leaves
+        // positioned over the art's box, and they are not a mark on an
+        // illustration: that plate prints no cost, so the pips are the only one
+        // anyone can see. Without this a deck holding a single artless card
+        // fails the check for drawing exactly what it was told to draw.
+        if (d.closest("[data-testid='tile-cost-pips']")) return false;
         const r = d.getBoundingClientRect();
         // An `sr-only` span is absolutely positioned and 1px square. It is not a mark; it is
         // the cost this design deliberately kept speaking.
         return r.width > 4 && r.height > 4;
       }).length;
       const shadow = getComputedStyle(el).boxShadow;
-      // The wash is the only shadow with a blur. `inset 0 0 0 1px rgba(...)` has none, and
-      // matching on "inset" alone would condemn the edge the design keeps.
-      const wash = /inset[^,]*\b(?!0px\b)\d+(\.\d+)?px\s+\d/.test(shadow)
-        || /\b\d+(\.\d+)?px\s+-?\d+(\.\d+)?px\s+rgba/.test(shadow);
+      // The wash is the shadow with a BLUR. The 1px inner edge this design keeps
+      // is `0 0 0 1px`, which has none, so blur is what tells them apart.
+      //
+      // Parsed, never matched with one regex. A computed `box-shadow` puts the
+      // COLOUR first — `rgba(0, 0, 0, 0.6) 0px -40px 40px -30px inset` — and the
+      // first version of this check assumed the authored order, so its pattern
+      // never fired: it reported "0 carrying a wash" over a tile whose wash had
+      // been put back. Split on commas that are not inside `rgba(...)`, then read
+      // each shadow's third length.
+      const wash = shadow
+        .split(/,(?![^(]*\))/)
+        .some((part) => {
+          const lengths = part.match(/-?\d+(\.\d+)?px/g) ?? [];
+          return lengths.length >= 3 && parseFloat(lengths[2]) > 0;
+        });
       return { marks, wash, shadow };
     });
 
 /** Every caption's height, and every slot box's height, on the page. */
 const CAPTIONS = (page) => {
-  const caps = [...document.querySelectorAll(`${page} [class*="min-h-[52px]"], ${page} [class*="min-h-[46px]"]`)];
+  // BOTH halves of the pair. `decklist-row`'s meta shell is also `min-h-[52px]`
+  // — with `md:min-h-[34px]` — so matching the phone figure alone measured the
+  // LIST's rows and reported a tidy single height of 34 for them.
+  const caps = [...document.querySelectorAll(
+    `${page} [class*="min-h-[52px]"][class*="min-h-[46px]"]`,
+  )];
   const heights = [...new Set(caps.map((c) => Math.round(c.getBoundingClientRect().height)))];
   // The slot's occupants: the one box, whoever is in it. Found by the geometry they share —
   // a 4px radius on a mono box inside a caption — rather than by three component classes,
@@ -118,17 +143,38 @@ const CAPTIONS = (page) => {
     }),
   );
   const boxHeights = [...new Set(boxes.map((b) => Math.round(b.getBoundingClientRect().height * 2) / 2))];
-  return { captions: caps.length, heights, boxes: boxes.length, boxHeights };
+  // WHICH occupant, not just how many. The three are one box by rule, and a run
+  // whose every box is a chip has not tested that — it has measured one
+  // component against itself. The kinds are named so the report says which.
+  const kinds = [...new Set(boxes.map((b) => {
+    const t = (b.textContent ?? "").trim();
+    if (t.startsWith("P")) return "P";
+    if (t.includes("$")) return "$";
+    return "chip";
+  }))];
+  return { captions: caps.length, heights, boxes: boxes.length, boxHeights, kinds };
 };
 
-/** The grid's column count and its tile width, read off the laid-out tracks. */
-const GRID = (page, tileSelector) => {
-  const tiles = [...document.querySelectorAll(`${page} ${tileSelector}`)]
-    .filter((t) => t.getBoundingClientRect().width > 0);
-  if (!tiles.length) return null;
-  const top = Math.round(tiles[0].getBoundingClientRect().top);
-  const firstRow = tiles.filter((t) => Math.abs(Math.round(t.getBoundingClientRect().top) - top) < 2);
-  return { columns: firstRow.length, tile: Math.round(tiles[0].getBoundingClientRect().width * 10) / 10 };
+/**
+ * The grid's column count and track width, read off `grid-template-columns`.
+ *
+ * Computed, not declared: `auto-fill` resolves to an explicit track list, so this reports
+ * what the browser actually laid out. Counting tile ELEMENTS instead needs a selector for
+ * "a tile", and the first attempt — `button` inside `main` — matched every control on the
+ * page and reported five columns of 22px.
+ */
+const GRID = ({ page }) => {
+  const grids = [...document.querySelectorAll(`${page} *`)].filter((el) => {
+    const s = getComputedStyle(el);
+    if (!s.display.includes("grid")) return false;
+    return el.querySelector('[class*="min-h-[52px]"][class*="min-h-[46px]"]') !== null;
+  });
+  if (!grids.length) return null;
+  const tracks = getComputedStyle(grids[0]).gridTemplateColumns.split(" ").filter(Boolean);
+  return {
+    columns: tracks.length,
+    tile: Math.round(parseFloat(tracks[0]) * 10) / 10,
+  };
 };
 
 async function run() {
@@ -159,12 +205,25 @@ async function run() {
         continue;
       }
 
-      for (const [label, route, tileSel] of [
-        ["/collection", "/collection?view=grid", "button"],
-        ["deck card view", `${deck}?view=card`, "li"],
+      for (const [label, route, toggle] of [
+        ["/collection", "/collection?view=grid", null],
+        // PRESSED, never a URL parameter. The deck's view is client state with
+        // no `?view=`, so a run that navigated to `?view=card` measured the LIST
+        // and said so in the language of the card view.
+        ["deck card view", deck, viewToggleCopy.deck.card],
       ]) {
         await page.goto(`${BASE}${route}`, { waitUntil: "networkidle" });
         await page.waitForTimeout(2_000);
+        if (toggle) {
+          const control = onPageRole(page, "button", toggle);
+          if ((await control.count()) === 0) {
+            checks += 1;
+            failures += !report(`${width}px · ${label} · reach the view`, false, `no "${toggle}" control`);
+            continue;
+          }
+          await control.first().click();
+          await page.waitForTimeout(1_500);
+        }
 
         const arts = await page.evaluate(ART, PAGE);
         checks += 2;
@@ -189,16 +248,23 @@ async function run() {
           caps.captions > 0 && caps.heights.length === 1,
           `${caps.captions} captions, heights ${caps.heights.join(" / ") || "none"}`,
         );
-        // The check the border defeats. Zero boxes is a FAILURE, not a pass: a page with no
-        // card in a marked state has not proved the three agree, it has measured nothing.
+        // Zero boxes is a FAILURE, not a pass: a page with no card in a marked state has
+        // not proved anything, it has measured nothing.
+        //
+        // It reports the KINDS it saw, and that line is the point. On a fixture whose cards
+        // are all owned and none printed, every box is a chip and this check compares one
+        // component against itself — it passed a mutation that put the chip's border back,
+        // which is the exact defect it was written for. The invariant that the three agree
+        // is pinned in `card-tile-caption.test.tsx`, which can force all three; here the
+        // kinds line says how much of it this run actually exercised.
         failures += !report(
           `${width}px · ${label} · one slot box`,
           caps.boxes > 0 && caps.boxHeights.length === 1,
-          `${caps.boxes} boxes, heights ${caps.boxHeights.join(" / ") || "none"}`,
+          `${caps.boxes} boxes, heights ${caps.boxHeights.join(" / ") || "none"}, kinds ${caps.kinds.join("+") || "none"}`,
         );
 
         if (width === 1300) {
-          const grid = await page.evaluate(GRID, PAGE, tileSel);
+          const grid = await page.evaluate(GRID, { page: PAGE });
           const want = label === "/collection" ? 178.3 : 181;
           checks += 1;
           failures += !report(
