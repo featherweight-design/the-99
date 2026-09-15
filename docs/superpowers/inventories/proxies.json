@@ -1,6 +1,6 @@
 {
   "feature": "Deck proxies",
-  "note": "A proxy is made and read on the deck page, so that is where the contact sheet starts. The mark is one glyph and the mark key under the toolbar is what decodes it, so both rows photograph the SAME deck at both widths \u2014 the key is only honest if it lists exactly the marks the rows below it carry, and a shot of the rows without the key would pass over the whole reason the glyph is safe to use. PROXY_DECK comes from the environment rather than being written here, so no account's deck id lives in this file; point it at a deck with at least one printed card and one unowned unprinted card, which is what makes the key draw both entries. The Shopping row exists to photograph an ABSENCE: a printed card is not a Shopping row at all, so the picture is of a list that does not contain it. No `shares` block yet \u2014 `ProxyTag` reaches its third surface in PR 7, and a shares block naming two of three would report the missing one as correct. PR 6 adds the list route and its two entry points: the rack link is photographed on /collection because that is where a reader finds it, and the list itself at both widths. The empty branches are not rows here \u2014 they need a deck-less or proxy-less account, which this fixture is not, and a contact sheet that photographed the wrong one would be evidence about nothing.",
+  "note": "A proxy is made and read on the deck page, so that is where the contact sheet starts. The mark is one glyph and the mark key under the toolbar is what decodes it, so both rows photograph the SAME deck at both widths \u2014 the key is only honest if it lists exactly the marks the rows below it carry, and a shot of the rows without the key would pass over the whole reason the glyph is safe to use. PROXY_DECK comes from the environment rather than being written here, so no account's deck id lives in this file; point it at a deck with at least one printed card and one unowned unprinted card, which is what makes the key draw both entries. The Shopping row exists to photograph an ABSENCE: a printed card is not a Shopping row at all, so the picture is of a list that does not contain it. No `shares` block yet \u2014 `ProxyTag` reaches its third surface in PR 7, and a shares block naming two of three would report the missing one as correct. PR 6 adds the list route and its two entry points: the rack link is photographed on /collection because that is where a reader finds it, and the list itself at both widths. The empty branches are not rows here \u2014 they need a deck-less or proxy-less account, which this fixture is not, and a contact sheet that photographed the wrong one would be evidence about nothing. Two rows are shaped by things that cost a run to learn: the deck head lives in a `<header>` OUTSIDE `<main>`, so a scoped wait on its own marker can never resolve \u2014 it waits on the page's heading instead and the header is in frame anyway; and `clickRole` takes a role STRING with a sibling `name`, not an object. The Shopping pill is matched as `^Shopping \\\\d+$`, copied from `decklist-sort.json`: a bare `Shopping` also matches something that cannot be clicked, and the run reports that as a click timeout rather than as a bad selector. KNOWN GAP as of PR 6: the two `deck-shopping` cells do not reach their surface \u2014 the pill resolves but the click times out on the fixture deck, at both widths. It is left in and failing rather than removed, because a row quietly deleted reads as coverage; the printed card's ABSENCE from Shopping is still asserted by `shopping.test.ts` and by `probe:proxies`, which is why this is a gap in the photograph rather than in the proof.",
   "rows": [
     {
       "id": "deck-all",
@@ -21,8 +21,8 @@
       "steps": [
         {
           "goto": "/decks/${PROXY_DECK}",
-          "wait": "[data-spine-count]",
-          "settle": 3000
+          "wait": "h1",
+          "settle": 3500
         }
       ]
     },
@@ -34,16 +34,12 @@
         {
           "goto": "/decks/${PROXY_DECK}",
           "wait": "main, [role=main], h1",
-          "settle": 2500
+          "settle": 3500
         },
         {
-          "clickRole": {
-            "role": "tab",
-            "name": "Shopping"
-          }
-        },
-        {
-          "settle": 2000
+          "clickRole": "button",
+          "name": "^Shopping \\d+$",
+          "settle": 1500
         }
       ]
     },
