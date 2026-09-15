@@ -171,9 +171,14 @@ export function GroupToggle({
             had measured, and spent a 10px gap the desktop line could not afford
             at 2px of margin. The wrapper is absent entirely when there is
             neither a note nor an auto cluster, rather than collecting a gap. */}
-        {(draftNote || autoControls) && (
+        {(draftNote || autoCount > 0 || keptCount > 0) && (
           <span
-            /* The wrapper takes its CONTENTS' breakpoint, exactly as
+            /* Gated on VISIBLE CONTENT, not on `autoControls` — `BuilderShell`
+               passes that object whether or not there is anything to act on, so
+               testing it kept an empty wrapper (and the row's gap) in the
+               toolbar at every count of zero. The same predicate as the
+               hairline, for the same reason.
+               The wrapper also takes its CONTENTS' breakpoint, exactly as
                `clear-auto.tsx` makes its own take the kept note's. Below `md:`
                both notes are hidden and a zero-count auto cluster renders
                nothing, so an unconditional wrapper would be an empty flex child

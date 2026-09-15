@@ -157,3 +157,43 @@ describe("GroupToggle view well (#349)", () => {
     expect(screen.queryByText("Group")).toBeNull();
   });
 });
+
+// `BuilderShell` passes `autoControls` whether or not there is anything to act
+// on, so testing the object kept an empty wrapper — and its share of the row's
+// gap — in a toolbar whose wrapping this round is otherwise careful about.
+describe("GroupToggle's auto cluster at zero", () => {
+  const row = () =>
+    screen.getByRole("button", { name: "By type" }).parentElement!.parentElement!;
+
+  const emptyChildren = () =>
+    [...row().children].filter(
+      (el) => (el.textContent ?? "").trim() === "" && el.getAttribute("aria-hidden") === null,
+    );
+
+  it("mounts no wrapper when there is no note and nothing to act on", () => {
+    render(
+      <GroupToggle
+        {...props}
+        filter="all"
+        autoCount={0}
+        keptCount={0}
+        autoControls={{ onClear: () => {}, onKeepAll: () => {} }}
+      />,
+    );
+    expect(screen.queryByRole("button", { name: /Keep all/ })).not.toBeInTheDocument();
+    expect(emptyChildren()).toHaveLength(0);
+  });
+
+  it("mounts it when there is something to act on", () => {
+    render(
+      <GroupToggle
+        {...props}
+        filter="all"
+        autoCount={3}
+        keptCount={0}
+        autoControls={{ onClear: () => {}, onKeepAll: () => {} }}
+      />,
+    );
+    expect(screen.getByRole("button", { name: /Keep all 3/ })).toBeInTheDocument();
+  });
+});

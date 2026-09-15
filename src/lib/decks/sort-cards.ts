@@ -7,6 +7,7 @@
 // holds, and `grouping.ts` takes the comparator as an option.
 
 import { priceRank, type PriceFact } from "./price";
+import { printedFaceName } from "../collection/browse";
 import type { DeckSortDirection, DeckSortKey } from "../copy/deck-sort";
 
 /** What ordering a row needs. Structural, so a fixture can satisfy it. */
@@ -15,11 +16,22 @@ export type SortableCard = {
   name: string;
   cmc: number;
   price?: PriceFact | null;
+  /** The name printed on the copy this player owns, when it differs. */
+  printedName?: string | null;
+  /** Scryfall's layout word, so a two-faced printing sorts on its front face. */
+  layout?: string | null;
 };
 
 /**
- * By code point, never `localeCompare`, and the id after the name.
+ * ON THE NAME THE ROW DRAWS, which is not always the oracle name.
  *
+ * `decklist-row.tsx:182` renders `printedFaceName(card)`, so a player whose copy
+ * is a renamed printing — a Secret Lair, an alternate-art face — sees that name
+ * on the row. Sorting the oracle name would put those rows in a position the
+ * visible labels contradict, which is the same mistake as ranking a price a row
+ * does not print. Same resolver, so the two cannot drift.
+ *
+ * By code point, never `localeCompare`, and the id after the name.
  * `localeCompare` reads whichever locale the runtime holds, and this list is
  * rendered on the server and again in the browser — a pair it orders one way in
  * Node can come back the other way for the reader. `sortDecks` spells the same
@@ -27,8 +39,8 @@ export type SortableCard = {
  * `cards.name` carries no uniqueness constraint.
  */
 function byNameThenId(a: SortableCard, b: SortableCard): number {
-  const left = a.name.toLowerCase();
-  const right = b.name.toLowerCase();
+  const left = displayName(a).toLowerCase();
+  const right = displayName(b).toLowerCase();
   if (left !== right) return left < right ? -1 : 1;
   return a.oracleId < b.oracleId ? -1 : a.oracleId > b.oracleId ? 1 : 0;
 }
@@ -91,6 +103,14 @@ export function compareDeckCards(
   }
   const step = byNameThenId(a, b);
   return direction === "asc" ? step : -step;
+}
+
+function displayName(card: SortableCard): string {
+  return printedFaceName({
+    name: card.name,
+    printedName: card.printedName ?? null,
+    layout: card.layout ?? null,
+  });
 }
 
 /** Bound to one key and direction, for `Array.prototype.sort`. */

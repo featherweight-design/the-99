@@ -116,3 +116,43 @@ describe("price", () => {
       .toEqual(["Cheap", "Dear", "Middling"]);
   });
 });
+
+// The row draws `printedFaceName(card)`, so the order has to be the order of
+// the names ON SCREEN. A player whose copy is a renamed printing would
+// otherwise see an A–Z list its own labels contradict.
+describe("the name the row draws", () => {
+  const order = (cards: SortableCard[]) =>
+    cards.slice().sort(deckCardComparator("name", "asc", null))
+      .map((c) => c.name);
+
+  it("sorts a renamed printing where its printed name puts it", () => {
+    const cards: SortableCard[] = [
+      { oracleId: "1", name: "Zealot", cmc: 1 },
+      // Oracle name sorts last; the printed name the row shows sorts first.
+      { oracleId: "2", name: "Zzyzx Ritual", cmc: 1, printedName: "Alpha Strike" },
+    ];
+    expect(order(cards)).toEqual(["Zzyzx Ritual", "Zealot"]);
+  });
+
+  it("takes the front face of a two-faced printed name", () => {
+    const cards: SortableCard[] = [
+      { oracleId: "1", name: "Bandit", cmc: 2 },
+      {
+        oracleId: "2",
+        name: "Wolfbitten Captive",
+        cmc: 1,
+        printedName: "Aardvark Hunter // Zebra Beast",
+        layout: "transform",
+      },
+    ];
+    expect(order(cards)).toEqual(["Wolfbitten Captive", "Bandit"]);
+  });
+
+  it("falls back to the oracle name on a card with no printing of its own", () => {
+    const cards: SortableCard[] = [
+      { oracleId: "1", name: "Bandit", cmc: 2, printedName: null },
+      { oracleId: "2", name: "Acolyte", cmc: 2 },
+    ];
+    expect(order(cards)).toEqual(["Acolyte", "Bandit"]);
+  });
+});
