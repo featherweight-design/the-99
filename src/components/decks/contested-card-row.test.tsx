@@ -20,6 +20,7 @@ function card(over: Partial<ContestedCard> = {}): ContestedCard {
     // word says the deck had the card before the import, and the first-arrival case must not
     // borrow it.
     ownedBefore: 1,
+    fromImport: true,
     owned: 1,
     brewNames: [],
     claimants: [
@@ -40,6 +41,17 @@ describe("ContestedCardRow", () => {
   it("states the supply before the demand, because the shortage is why the row exists", () => {
     render(<ContestedCardRow card={card()} />);
     expect(screen.getByText(copy.contested.supply(1, 2))).toBeTruthy();
+  });
+
+  // `1 new copy` is a fact about an arrival. On a surface with no import behind it — the deck's
+  // own review page — the same line states the supply, or it tells the reader their collection
+  // turned up this morning.
+  it("does not call the player's own copies new when no import is behind the row", () => {
+    render(<ContestedCardRow card={card({ fromImport: false })} />);
+    expect(screen.getByText(copy.contested.supplyOwned(1, 2))).toBeTruthy();
+    expect(screen.getByText(copy.contested.headingOwned(1))).toBeTruthy();
+    expect(screen.queryByText(copy.contested.supply(1, 2))).toBeNull();
+    expect(screen.queryByText(copy.contested.heading(1))).toBeNull();
   });
 
   it("names the verb in the heading and never as a button", () => {
@@ -210,6 +222,7 @@ describe("ContestedCardRow", () => {
       arrived: 2,
       owned: 2,
       ownedBefore: 0,
+    fromImport: true,
       claimants: [
         {
           deckId: "d1", deckName: "Led By It", quantity: 1, commanderCopies: 1, granted: 0,
@@ -236,6 +249,7 @@ describe("ContestedCardRow", () => {
   it("says a commander GETS a copy that has only just arrived", () => {
     render(<ContestedCardRow card={card({
       ownedBefore: 0,
+    fromImport: true,
       claimants: [
         {
           deckId: "d1", deckName: "Led By It", quantity: 1, commanderCopies: 1, granted: 0,
@@ -258,6 +272,7 @@ describe("ContestedCardRow", () => {
   it("says gets it when the old copy went to an earlier deck", () => {
     render(<ContestedCardRow card={card({
       ownedBefore: 1,
+    fromImport: true,
       arrived: 1,
       owned: 2,
       claimants: [
@@ -302,6 +317,7 @@ describe("ContestedCardRow", () => {
       owned: 2,
       arrived: 1,
       ownedBefore: 1,
+    fromImport: true,
       claimants: [
         {
           deckId: "d1", deckName: "Led By It", quantity: 1, commanderCopies: 1, granted: 0,

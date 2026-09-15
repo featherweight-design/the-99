@@ -181,7 +181,12 @@ export function ContestedCardRow({
       // both. Taking its object whole would cost the row its cap, its mark shape and its
       // `keeps it` calculation on the first pick, so only the live half is merged.
       const fresh = result.card
-        ? { ...result.card, arrived: card.arrived, ownedBefore: card.ownedBefore }
+        ? {
+            ...result.card,
+            arrived: card.arrived,
+            ownedBefore: card.ownedBefore,
+            fromImport: card.fromImport,
+          }
         : null;
       // Including when the live read came back null, which the action's own type allows: the
       // `finally` below is what makes that case, and a thrown one, stand down too.
@@ -275,7 +280,11 @@ export function ContestedCardRow({
           {card.cardName}
         </span>
         <span className="font-mono text-[10.5px] md:text-[11px] flex-none" style={{ color: "var(--fg-faint)" }}>
-          {copy.contested.supply(card.arrived, card.claimants.length)}
+          {/* `1 new copy` is a fact about an ARRIVAL. On the review page nothing arrived — the
+              reader is editing a draft — so the same line states the supply instead. */}
+          {card.fromImport
+            ? copy.contested.supply(card.arrived, card.claimants.length)
+            : copy.contested.supplyOwned(card.arrived, card.claimants.length)}
         </span>
       </div>
 
@@ -287,7 +296,9 @@ export function ContestedCardRow({
           ? copy.contested.headingInert
           : folded
             ? copy.contested.headingSpare
-            : copy.contested.heading(card.arrived)}
+            : card.fromImport
+              ? copy.contested.heading(card.arrived)
+              : copy.contested.headingOwned(card.arrived)}
         {/* The cap, stated beside the heading whenever it is above one — seniority has already
             given every copy away before any pick, so the figure is true in both states. */}
         {!nothingToChoose && card.arrived > 1 ? (

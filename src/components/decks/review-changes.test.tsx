@@ -1304,6 +1304,7 @@ describe("ReviewChanges — the second door", () => {
     cardName: "Brushland",
     arrived: 1,
     ownedBefore: 0,
+    fromImport: true,
     owned: 1,
     brewNames: [],
     // In commit order, as the loader returns them: the earlier deck first. The component does not

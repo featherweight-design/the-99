@@ -182,6 +182,20 @@ export const cardAssignmentsCopy = {
     supply: (copies: number, decks: number) =>
       `${copies === 1 ? "1 new copy" : `${copies} new copies`} · ` +
       `${decks === 1 ? "1 deck needs it" : `${decks} decks need it`}`,
+    /**
+     * The same two lines on a surface with NO IMPORT behind it — the deck's own review page,
+     * where the copies in question are simply the ones the player owns.
+     *
+     * `1 new copy` is a fact about an arrival, and on `/decks/[id]/changes` nothing arrived: the
+     * reader is looking at a draft they are editing. Saying it there tells them their own
+     * collection turned up this morning.
+     */
+    supplyOwned: (copies: number, decks: number) =>
+      `${copies === 1 ? "1 copy" : `${copies} copies`} · ` +
+      `${decks === 1 ? "1 deck needs it" : `${decks} decks need it`}`,
+    headingOwned: (copies: number) =>
+      copies === 1 ? "Give the copy to" : `Give the ${copies} copies to`,
+
     /** The cap, stated beside the heading whenever it is above one. */
     cap: (given: number, copies: number) => `${given} of ${copies} given`,
     brewNote: (deck: string) =>
