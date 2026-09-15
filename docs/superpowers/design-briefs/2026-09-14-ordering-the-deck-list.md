@@ -6,11 +6,12 @@ Design handoff prompt points at.
 **Verified against `origin/main` at `6d5aa90c` on 2026-09-14.** Every `file:line` below was read on
 that commit, not recalled.
 
-A deck's own list is the one long list in this app with no way to order it. `/collection`,
-`/decks`, `/commanders` and `/discover` each ship a sort control; the deck page's `Your deck` tab
-groups by type or role and sorts alphabetically inside each group, and that is the whole of it
-(`src/lib/decks/grouping.ts:210`, `:227`). Hugh asked for three orders on it — name, price, mana
-value, each reversible.
+A deck's own list is the one long list in this app a reader cannot order. `/collection`, `/decks`,
+`/commanders` and `/discover` each ship a sort control; the deck page's `Your deck` tab has none.
+Under `All` it groups by type or role and sorts alphabetically inside each group
+(`src/lib/decks/grouping.ts:210`, `:227`). Under `Shopping` it sorts by price, dearest first, as of
+PR #629 (`src/components/decks/decklist.tsx:355-367`) — fixed, with nothing on screen to change it.
+Hugh asked for three orders on both — name, price, mana value, each reversible.
 
 Most of that is settled by grammar this app already ships. **One thing is not, and it is the only
 reason this brief exists: where the control goes.** The toolbar it would join already carries six
@@ -24,14 +25,15 @@ controls at 390px and already wraps.
 `flex-wrap` row, `gap-[7px]` at phone and `gap-[10px]` above `md:` (`:104`), inside a container
 padded `16px/9px` at phone and `26px/14px/10px` on desktop (`:99`).
 
-What that row holds today, in order:
+What that row holds today, in order. The spacer is layout rather than a control; the count that
+matters for placement is the interactive one, and it differs by filter:
 
 | Control | Line | Present when |
 |---|---|---|
 | `All N` filter pill | `:113` | always |
 | `Shopping N` filter pill | `:127` | always |
 | flexible spacer | `:139` | always |
-| the draft's note (`n of these are not in vN yet`) | `:149` | a draft exists; `hidden md:inline` |
+| the draft's note (`n of these differ from vN`, `deck-versioning.ts:104-105`) | `:149` | a draft exists; `hidden md:inline` |
 | `Keep all N` + `Clear all auto · N` | `:156` | the deck has auto cards |
 | `By type` | `:174` | always |
 | `By role` | `:187` | always |
@@ -41,13 +43,15 @@ Under `Shopping` the price strip renders below that row, inside the same contain
 (`group-toggle.tsx:211`): provenance on the left, total and `n of m priced` on the right, with
 `Buy these at Mana Pool ↗` beneath.
 
-The comment at `:100` records why the row wraps at all: at 390px it already carries two filter
-pills, two bulk auto controls and two grouping pills, and without `flex-wrap` the last of them is
-pushed off the edge.
+**Interactive controls, by filter.** Under `All`: two filter pills, two grouping pills, the view
+toggle, and the two bulk auto controls when the deck has auto cards — five or seven. Under
+`Shopping`: the same without the view toggle — four or six. The comment at `:100` records why the
+row wraps at all: at 390px it already carries two filter pills, two bulk auto controls and two
+grouping pills, and without `flex-wrap` the last of them is pushed off the edge.
 
 ## §2 What is decided, and not open
 
-Six rulings from the 2026-09-14 workshop. Design owns the placement question in §4, not these.
+Seven rulings from the 2026-09-14 workshop. Design owns the placement question in §4, not these.
 
 1. **Three keys: Name, Price, Mana value.** "Mana value" is this app's term — `Cheapest to cast`
    on the Consider panel is the only mana-value ordering shipped today
@@ -69,7 +73,14 @@ Six rulings from the 2026-09-14 workshop. Design owns the placement question in 
 5. **Sorting happens inside the grouping, which stays.** `By type` / `By role` continue to decide
    the sections; the sort decides the rows within each. This is where the Shopping list's price
    order already lives (`decklist.tsx:366`), and `All` groups the same way (`:232`).
-6. **The existing Shopping price order becomes the `Price · Dearest` default**, not a second
+6. **Switching to `All` with Price chosen falls back, and remembers.** `All` draws that view in its
+   own default order — `Name · A–Z` — and returning to `Shopping` restores `Price`. The two
+   alternatives were rejected: keeping `Price` selected under `All` leaves the trigger naming an
+   order the list is not in, and discarding it makes the filter pills silently reset a choice the
+   reader made about a different list. The state is one sort per filter, which is also what makes
+   rule 4 cost the reader nothing. Design owns how the trigger reads under `All` while a remembered
+   `Price` is parked behind it, not whether it is remembered.
+7. **The existing Shopping price order becomes the `Price · Dearest` default**, not a second
    mechanism. It shipped 2026-09-14 (PR #629) with its own rules: rank on the figure the row draws,
    rows with no live figure last and equal to each other, name then id as the tiebreak
    (`src/lib/decks/price.ts:168-190`).
@@ -90,8 +101,8 @@ There are already three near-identical ones — `deck-sort-menu.tsx`, `commander
 ## §4 Open for Design to call
 
 **4.1 Where the trigger sits, at both widths.** This is the whole question. The row is described in
-§1; it wraps at 390px with six controls today and a seventh has to land somewhere that does not
-push `By role` onto a line of its own. Candidate hosts, none of them ruled:
+§1; at 390px with a filled deck it already wraps at seven controls under `All` and six under
+`Shopping`, and one more has to land somewhere that does not push `By role` onto a line of its own. Candidate hosts, none of them ruled:
 
 - the trailing edge of the pill row, after `By role`, where the view toggle sits under `All`;
 - the row's leading edge, before `All N`;
@@ -130,9 +141,11 @@ wording is Design's to set; the workshop's straw man, for the shape only:
 | Price | `Cheapest` | `Dearest` |
 | Mana value | `Curve up` | `Curve down` |
 
-`Curve up` / `Curve down` are borrowed from `deckVersioningCopy` (`src/lib/copy/deck-versioning.ts:440-441`),
-where "the curve comes down" already names a deck getting cheaper to cast. Whether that reads on a
-sort row is Design's call.
+`Curve up` / `Curve down` are **shortened proposals, not shipped strings.** The app's nearest
+vocabulary is `deckVersioningCopy.changed`, which ships the full sentences `the curve goes up` and
+`the curve comes down` (`src/lib/copy/deck-versioning.ts:440-441`) — too long for a sort row, which
+is why the straw man shortens them. Whether the short forms read, or whether a sort row wants
+different words entirely, is Design's call.
 
 ## §6 Not in scope
 
