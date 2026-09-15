@@ -39,8 +39,8 @@
 //      all, because a run that measures nothing must not read as a pass.
 //   8. THE HELD ROW IS TWO LINES AT EVERY WIDTH, AND BOTH NAMES KEEP A BOX. It was
 //      one line above 768px, and that line does not fit: a dot, a card name, a deck
-//      name, a price tag, a 44px control and the cost track against the ~276px a
-//      paired type column gets. Whichever item was flexible went to zero — first the
+//      name, a price tag, a 44px control and the cost track against the width a
+//      type column gets. Whichever item was flexible went to zero — first the
 //      card name, which is the reported bug, then the deck name once the name had a
 //      floor. The two names sharing a VERTICAL is what says the row dissolved, and
 //      the BOX is what says a name gave way: a box shrunk to zero still reads back
@@ -156,7 +156,9 @@ const basicFindings = [];
 /** The narrowest desktop: one step above the `md` breakpoint the erased row used
  *  to dissolve at. The bug needs the row to overflow, and a 1300px viewport gives
  *  each column enough width that a short fixture deck name never gets there — a
- *  run at 1300px alone passes on the build that erased the name. */
+ *  run at 1300px alone passes on the build that erased the name. More so since
+ *  type groups stopped sharing a line: a group is its direction column's full
+ *  width now, so 1300px is the most generous this row will ever be given. */
 const SQUEEZE = 820;
 
 const VIEWPORTS = [
@@ -428,7 +430,7 @@ const readReview = (page) =>
       // the tops are what prove it: dissolved into one line, the card name and the
       // deck name share a vertical and whichever of them is flexible goes to zero,
       // because the line asks for a dot, two names, a price tag, a 44px control and
-      // the cost track against roughly 276px in a paired type column.
+      // the cost track against the width a type column gets.
       //
       // The BOX is the reading, not the text. A flex item shrunk to zero still
       // returns its whole string from `textContent`, and `scrollWidth` on a

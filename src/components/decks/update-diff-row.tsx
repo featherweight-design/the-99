@@ -61,14 +61,20 @@ const ROW_BOX_STACKED = "min-h-[44px] p-[8px] md:pl-[9px] md:pr-[6px]";
  *  the holding deck, the price and the control on the second.
  *
  *  It was one line above 768px, with `md:contents` dissolving both groupings into
- *  the flat flex row every other row is, and that row does not fit. A column
- *  pairs two short type groups into sub-columns of about 276px (`pairGroups`), and
- *  even an unpaired column at 1300px leaves about 574px against a line asking for
- *  a dot, a card name, a deck name, a price tag, a 44px control and the cost
- *  track. Whichever item was the flexible one went to zero: first the card name,
- *  which is the reported bug, then the deck name once the row split in two.
- *  Two lines is what the phone already draws and what the row can honour, and
- *  both of those lines wrap for the same reason. */
+ *  the flat flex row every other row is, and that row does not fit. A type group
+ *  takes its direction column's full width — about 574px at 1300px, and under
+ *  400px at the narrowest desktop — against a line asking for a dot, a card
+ *  name, a deck name, a price tag, a 44px control and the cost track. Whichever
+ *  item was the flexible one went to zero: first the card name, which is the
+ *  reported bug, then the deck name once the row split in two. Two lines is what
+ *  the phone already draws and what the row can honour, and both of those lines
+ *  wrap for the same reason.
+ *
+ *  Short groups used to share a line as ~276px sub-columns, which made the same
+ *  row narrower again; that pairing is retired (2026-09-14). The shell does not
+ *  depend on it either way — with it gone the row is measured at 406px/195px for
+ *  the card name at 1300px/820px, still short of the ~561px a single line asks
+ *  for. Every figure in this file is the post-pairing one. */
 const ROW_SHELL_STACKED = `flex flex-col items-stretch gap-[8px] ${ROW_RADIUS}`;
 const STACK_LINE = "flex items-center gap-[9px]";
 
@@ -280,10 +286,11 @@ function useRowOpen(
  *  line. The card name above it is never competing for these pixels, which is the
  *  point of the two lines.
  *
- *  The floor is what makes `flex-1` safe. A basis of 0 shrinks to nothing, and in
- *  a paired type column — about 165px at the narrowest desktop — the tag and the
- *  control alone fill the line, so the name went to zero and the row named a deck
- *  it did not print. With a floor it truncates and the line wraps instead. */
+ *  The floor is what makes `flex-1` safe. A basis of 0 shrinks to nothing, and at
+ *  the narrowest desktop this name is measured at 167px beside a tag and a 44px
+ *  control (`probe:review`, 820px) — without a floor it went to zero and the row
+ *  named a deck it did not print. With one it truncates and the line wraps
+ *  instead. */
 function HeldBy({ deck }: { deck: string }) {
   return (
     <span className="flex-1 min-w-[90px] truncate font-mono text-[10px] text-[color:var(--fg-faint)]">
@@ -405,9 +412,10 @@ export function DiffRowOut({
         ROW_SHELL,
         // Same wrap, and the same reason, as the adds column's first line: a
         // costless card draws the marker box, and the name, that box, the 54px
-        // cost track and a control do not fit a paired type column. `flex-wrap`
-        // sizes items at their hypothetical width rather than their shrunk one,
-        // so the trailing items drop below instead of squeezing the name out.
+        // cost track and a control do not fit the width a type column gets at
+        // the narrowest desktop. `flex-wrap` sizes items at their hypothetical
+        // width rather than their shrunk one, so the trailing items drop below
+        // instead of squeezing the name out.
         review && action ? "flex-wrap" : "",
         review ? (action ? ROW_BOX_ACTION : ROW_BOX) : ROW_BOX_OUT_IMPORT,
         kept ? ROW_PLATE_KEPT : ROW_PLATE,
@@ -594,11 +602,12 @@ export function DiffRowIn({
               raided reads as a fact about the card above it. A `div` because the
               action on it is one: `PullControl` draws a block, and its refusal a
               paragraph under that, neither of which is legal inside a span. */}
-          {/* It WRAPS. A paired type column is about 165px wide at the narrowest
-              desktop, and the deck name, the buy tag and a 44px control do not fit
-              on one line there — the name is the flexible item, so it went to zero
-              and the row named a deck it could not print. Wrapped, the control
-              drops to a line of its own and the name keeps its own floor. */}
+          {/* It WRAPS. At the narrowest desktop this line gives the deck name
+              167px (`probe:review`, 820px), and that name, the buy tag and a 44px
+              control do not fit on one line there — the name is the flexible item,
+              so it went to zero and the row named a deck it could not print.
+              Wrapped, the control drops to a line of its own and the name keeps
+              its own floor. */}
           <div className={`${STACK_LINE} flex-wrap pl-[16px]`}>{metaLine}</div>
         </>
       ) : (

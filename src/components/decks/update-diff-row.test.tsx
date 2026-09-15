@@ -63,9 +63,9 @@ describe("the review page's mounting", () => {
     });
     expect(name.className).toContain("truncate");
     // Two lines at EVERY width. A single desktop line asks for a dot, a card name,
-    // a deck name, a price tag, a 44px control and the cost track against the ~276px
-    // a paired type column gets, so whichever item was flexible went to zero: first
-    // the card name, then the deck name once the name had a floor.
+    // a deck name, a price tag, a 44px control and the cost track against the width
+    // a type column gets, so whichever item was flexible went to zero: first the
+    // card name, then the deck name once the name had a floor.
     expect(row.className).toContain("flex-col");
     expect(row.className).not.toContain("md:flex-row");
     const lines = Array.from(row.children) as HTMLElement[];

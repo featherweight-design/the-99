@@ -742,6 +742,48 @@ describe("ReviewChanges", () => {
     ).toBeNull();
   });
 
+  // Two short type groups used to share a line as ~276px sub-columns, which saved
+  // a heading's height and charged every row on those lines the width its own
+  // contents need — a name, a cost track and a `Put back` do not fit across 276px,
+  // so the control wrapped under the name and the two halves of one column
+  // disagreed about what a row looks like. Every group takes the column's full
+  // width now (Hugh's ruling of 2026-09-14).
+  //
+  // Structure rather than geometry, because jsdom lays nothing out: what the
+  // pairing WAS is a wrapper element between the section and the groups, so its
+  // absence is the whole of the assertion — each group's box is a direct child of
+  // the column, and no `md:flex-row` line survives.
+  it("gives every type group the column's own width", () => {
+    render(
+      <ReviewChanges
+        deckId="d"
+        deckName="Korvold"
+        rows={{
+          in: [],
+          out: [
+            row({ oracleId: "o1", name: "Mox", direction: "out", from: 1, to: 0,
+              typeLine: "Artifact", cardTypeGroup: "Artifacts" }),
+            row({ oracleId: "o2", name: "Heartless Act", direction: "out", from: 1, to: 0,
+              typeLine: "Instant", cardTypeGroup: "Instants" }),
+          ],
+        }}
+        {...SHAPE}
+        state={STATE}
+        cardCount={CARD_COUNT}
+      />,
+    );
+    const groups = ["Artifacts", "Instants"].map((label) => {
+      const heading = screen.getByRole("heading", { name: new RegExp(`^${label}`) });
+      return heading.closest("div.mb-\\[16px\\]") as HTMLElement;
+    });
+    expect(groups.every(Boolean)).toBe(true);
+    // One section between them, and each group sitting directly in it.
+    const section = groups[0].parentElement as HTMLElement;
+    expect(section.tagName).toBe("SECTION");
+    expect(groups[1].parentElement).toBe(section);
+    expect(section.querySelector(".md\\:flex-row")).toBeNull();
+  });
+
   // The heading hides on the phone only because the segmented pair above it is
   // already naming the direction. A lone column has no pair, so hiding it there
   // leaves the phone an unlabelled list of cards with no way to tell which way
