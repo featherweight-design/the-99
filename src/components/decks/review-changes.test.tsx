@@ -1315,6 +1315,9 @@ describe("ReviewChanges — the second door", () => {
     ...over,
   });
 
+  // The door is for INCOMING rows. An outgoing row is a card this draft removes, and committing
+  // that removal prunes any reservation made for it — so a chooser there offers a decision the
+  // next commit discards. The page passes only its in-rows; this pins the component beside it.
   it("hangs the chooser under a contested row, with the caption that separates it from a pull", () => {
     render(
       <ReviewChanges
@@ -1369,8 +1372,16 @@ describe("ReviewChanges — the second door", () => {
       />,
     );
     const group = screen.getByRole("radiogroup");
-    // The panel is a sibling of the row rather than inside it.
-    expect(group.closest("[data-diff-row]")).toBeNull();
+    // The panel is a SIBLING of the row, not a descendant of it — asserted against the row's own
+    // element rather than a selector nothing renders. An earlier version reached for
+    // `closest("[data-diff-row]")`, an attribute no diff row carries, so it returned null however
+    // the markup was nested and proved nothing at all.
+    const rowName = screen.getByText("Sol Ring");
+    const rowEl = rowName.closest("div");
+    expect(rowEl).toBeTruthy();
+    expect(rowEl?.contains(group)).toBe(false);
+    // …and it follows the row in document order, which is what "beneath" means here.
+    expect(rowName.compareDocumentPosition(group) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
   });
 
   // `this deck` is tagged and stays where the queue puts it: the order IS the explanation of the
