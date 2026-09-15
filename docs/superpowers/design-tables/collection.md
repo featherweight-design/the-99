@@ -945,6 +945,30 @@ illustrations, drawn as art and never masked or tinted.
 | align-items | center | center |
 | justify-content | center | center |
 
+### Mana Cost Half Separator
+
+**Added 2026-09-15.** A `split`, `adventure` or `prepare` card prints two real
+castable costs on one piece of card stock (`Repudiate // Replicate` is
+`{G/U}{G/U} // {1}{G}{U}`), and this surface draws both — the only one that
+does. The mark between them is the same `//` the printed name carries, so the
+two separators on the card agree. It is punctuation between two costs, not a
+third cost, which is why it takes the muted ink and no ground.
+
+A cost in a row keeps the front half alone: the 72px track caps at five pips and
+cannot hold two costs and a separator, and that reader is one tap from this
+modal. A `transform` back's cost is drawn nowhere at all — Scryfall keeps it in
+`card_faces` and the catalog stores only the top level.
+
+| Property | Mobile | Desktop |
+|----------|--------|---------|
+| content | `//` | `//` |
+| font-family | 'IBM Plex Mono', monospace | 'IBM Plex Mono', monospace |
+| font-size | 12px | 13px |
+| color | --fg-muted | --fg-muted |
+| padding-inline | 1px | 1px |
+| background | none | none |
+| Spoken as | `second cost` before the second half — never "or", which a hybrid symbol already says | same |
+
 ### Mana Pip (generic {n}) — RETIRED, fallback only
 Drawn only for a symbol with no committed art: Scryfall's symbol list grows with the card pool
 and `public/mana/` moves only when someone runs `pnpm fetch:mana`, so a symbol printed since the

@@ -23,6 +23,13 @@ const BASE = process.env.PROBE_BASE ?? "http://localhost:3000";
 const PASSWORD = process.env.E2E_AUDIT_USER_PASSWORD;
 /** A costed card the fixture account holds. Override with PROBE_CARD. */
 const CARD = process.env.PROBE_CARD ?? "Smothering Tithe";
+/**
+ * A card printing TWO costs on one piece of stock. Override with
+ * PROBE_SPLIT_CARD — any `split`, `adventure` or `prepare` card the account
+ * holds answers, and the default is a split whose halves differ in length, so a
+ * build that drew one half twice would still read wrongly.
+ */
+const SPLIT_CARD = process.env.PROBE_SPLIT_CARD ?? "Repudiate // Replicate";
 if (!EMAIL.includes("+clerk_test") && !PASSWORD) throw new Error("Set E2E_AUDIT_USER_PASSWORD.");
 
 /** The drawn box, per the property table: 22px under `md`, 26px from it up. */
@@ -86,7 +93,7 @@ const READ_COST = () => {
   // the survivors satisfying the URL, text and box assertions, and the check
   // would pass over a cost with a symbol missing from it. Kept in, it fails the
   // box assertion, which is the reading that should catch it.
-  return [...run.children].map((el) => {
+  const children = [...run.children].map((el) => {
     const r = el.getBoundingClientRect();
     return {
       url: getComputedStyle(el).backgroundImage.match(/url\("?([^")]+)"?\)/)?.[1] ?? null,
@@ -97,6 +104,14 @@ const READ_COST = () => {
       h: Math.round(r.height),
     };
   });
+  // Split into pips and the `//` between two costs, because they are held to
+  // opposite standards: a pip must carry art and NO text, the separator must
+  // carry text and no art. Lumped together, a separator reads as a pip that
+  // fell back to a letter and a two-cost card cannot be checked at all.
+  return {
+    pips: children.filter((c) => c.url !== null || c.text === ""),
+    marks: children.filter((c) => c.url === null && c.text !== ""),
+  };
 };
 
 /**
@@ -139,6 +154,42 @@ const READ_TILES = (page) => {
   return { tiles: tiles.length, arted, dots, pipRuns, noArtWithPips };
 };
 
+/**
+ * Open one named card's modal from `/collection`, or return false.
+ *
+ * A NAMED card, never the first row: the cost is the subject here, so the run
+ * has to know which cost it is looking at, and a land would measure nothing
+ * while reporting a clean sweep.
+ */
+async function openCard(page, name) {
+  await page.goto(`${BASE}/collection?view=rows&q=${encodeURIComponent(name)}`, {
+    waitUntil: "networkidle",
+  });
+  await page.waitForTimeout(3_000);
+  // A role locator with an escaped pattern, not an interpolated attribute
+  // selector: a card name carrying a quote or a bracket would make that
+  // selector invalid or change what it means. A split card's name carries `//`,
+  // which is exactly that case.
+  const pattern = new RegExp(`^${name.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")},`);
+  // Pressed up to three times: the row paints before React hydrates it, so a
+  // first click on a cold dev server lands on markup with no handler and
+  // nothing happens. There is no state to wait for, only the absence of a
+  // dialog, so the retry IS the wait.
+  const row = onPageRole(page, "button", pattern).first();
+  for (let attempt = 0; attempt < 3; attempt += 1) {
+    await row.click({ timeout: 10_000 }).catch(() => {});
+    const opened = await page
+      .waitForSelector('[role="dialog"]', { timeout: 10_000 })
+      .then(() => true)
+      .catch(() => false);
+    if (opened) {
+      await page.waitForTimeout(1_500);
+      return true;
+    }
+  }
+  return false;
+}
+
 async function run() {
   await clerkSetup();
   const browser = await chromium.launch();
@@ -163,31 +214,7 @@ async function run() {
       await signIn(page);
 
       // ── The modal's cost ──────────────────────────────────────────────────
-      // A NAMED card, not the first row: the cost is the subject, so the run has
-      // to know what cost it is looking at, and a land or a costless card would
-      // measure nothing while reporting a sweep.
-      await page.goto(`${BASE}/collection?view=rows&q=${encodeURIComponent(CARD)}`, {
-        waitUntil: "networkidle",
-      });
-      await page.waitForTimeout(3_000);
-      // A role locator with an escaped pattern, not an interpolated attribute
-      // selector: a card name carrying a quote or a bracket would make that
-      // selector invalid or change what it means.
-      const pattern = new RegExp(`^${CARD.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")},`);
-      // Pressed up to three times: the row paints before React hydrates it, so a
-      // first click on a cold dev server lands on markup with no handler and
-      // nothing happens. There is no state to wait for, only the absence of a
-      // dialog, so the retry IS the wait.
-      const row = onPageRole(page, "button", pattern).first();
-      let opened = false;
-      for (let attempt = 0; attempt < 3 && !opened; attempt += 1) {
-        await row.click({ timeout: 10_000 }).catch(() => {});
-        opened = await page
-          .waitForSelector('[role="dialog"]', { timeout: 10_000 })
-          .then(() => true)
-          .catch(() => false);
-      }
-      if (!opened) {
+      if (!(await openCard(page, CARD))) {
         failures += !report(
           `${width}px · a card to open`,
           false,
@@ -196,9 +223,9 @@ async function run() {
         await context.close();
         continue;
       }
-      await page.waitForTimeout(1_500);
 
-      const cost = await page.evaluate(READ_COST);
+      const read = await page.evaluate(READ_COST);
+      const cost = read?.pips ?? null;
       // A land has no cost and a run that opened one would measure nothing while
       // reporting a clean sweep, so an empty cost FAILS rather than passing.
       failures += !report(
@@ -206,7 +233,11 @@ async function run() {
         cost !== null
           && cost.length > 0
           && cost.every((p) => p.url?.includes("/mana/"))
-          && cost.every((p) => p.text === ""),
+          && cost.every((p) => p.text === "")
+          // A one-cost card draws no separator. Asserted here because the mark
+          // is drawn from the same list as the pips, so a stray one would
+          // otherwise be invisible to every check on this surface.
+          && (read?.marks.length ?? 0) === 0,
         cost === null || cost.length === 0
           ? "no cost was drawn — a land, or a modal this probe did not reach. NOT a pass:"
             + " open a costed card with PROBE_CARD."
@@ -248,6 +279,49 @@ async function run() {
       );
 
       await page.keyboard.press("Escape");
+
+      // ── A card that prints TWO costs ───────────────────────────────────────
+      // `split`, `adventure` and `prepare` carry two real castable costs on one
+      // piece of stock, and this surface is the only one that draws both. The
+      // reading is the separator: a build drawing the front half alone paints
+      // the right pips for the wrong card and every other check here passes.
+      if (!(await openCard(page, SPLIT_CARD))) {
+        failures += !report(
+          `${width}px · a two-cost card to open`,
+          false,
+          `the modal never opened for ${SPLIT_CARD} — name another with PROBE_SPLIT_CARD`,
+        );
+      } else {
+        const split = await page.evaluate(READ_COST);
+        const pips = split?.pips ?? [];
+        const marks = split?.marks ?? [];
+        // Both halves and one mark between them. The pip count is asserted as
+        // MORE THAN the front half rather than as a literal, because the literal
+        // belongs to one card and this takes an override; what cannot be true of
+        // a front-half-only build is a separator, so that is the load-bearing
+        // clause. A run with no mark FAILS rather than passing: the fixture is a
+        // two-cost card, so no separator means the reading lost its subject.
+        failures += !report(
+          `${width}px · a two-cost card draws both halves`,
+          pips.length > 1 && marks.length === 1 && pips.every((p) => p.url?.includes("/mana/")),
+          `${pips.length} pips, ${marks.length} separator(s)`
+            + (marks.length === 0
+              ? ` — NOT a pass: ${SPLIT_CARD} prints two costs, so a missing separator means`
+                + " the front half was drawn alone, or this is not a two-cost card"
+              : ` drawn as \`${marks.map((m) => m.text).join("")}\``),
+        );
+        // The separator is punctuation, not a third cost: it carries text and no
+        // art, where every pip carries art and no text. Read explicitly because
+        // the two come out of the same list.
+        failures += !report(
+          `${width}px · the separator is a mark rather than a pip`,
+          marks.length === 1 && marks[0].url === null && marks[0].text.length > 0,
+          marks.length === 1
+            ? `text \`${marks[0].text}\`, background ${marks[0].url ?? "none"}`
+            : "no separator to read",
+        );
+        await page.keyboard.press("Escape");
+      }
 
       // ── The deck's card view ──────────────────────────────────────────────
       const deck = process.env.PROBE_DECK

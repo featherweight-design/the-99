@@ -498,10 +498,22 @@ Package manager is **pnpm** (pinned via `packageManager` in package.json) — ne
   all three reads a 57px box and a lettered string belonging to neither pip, which is a probe
   reporting its own markup as a defect. The card-view check counts the ownership DOTS beside
   the pip runs, because a run that never reached the view reports zero pip runs while
-  measuring nothing. Three mutations were run against it and all three fail: the tile's pips
-  restored, the symbol art suppressed, and a typo in the slug — that last one passing every
-  DOM assertion while serving 404s, which is the failure it exists for. It makes no writes.
-  Point it at `local-dev`.
+  measuring nothing.
+
+  Its last two checks are a card printing TWO costs — `split`, `adventure` and `prepare` put two
+  real castable costs on one piece of stock, and this surface is the only one drawing both. The
+  load-bearing clause is the SEPARATOR rather than the pip count: a build drawing the front half
+  alone paints the right pips for the wrong card, and every other check here passes over it. A
+  run with no separator therefore FAILS rather than passing quietly — the fixture is a two-cost
+  card, so a missing mark means the reading lost its subject. The mark is also read for its TYPE,
+  because it comes out of the same list as the pips: a pip carries art and no text, the separator
+  text and no art, and a classifier that lumped them would see a separator as a pip that fell
+  back to a letter.
+
+  Five mutations were run against it and all five fail: the tile's pips restored, the symbol art
+  suppressed, a typo in the slug — that one passing every DOM assertion while serving 404s, which
+  is the failure it exists for — the front half drawn alone, and a background put on the
+  separator. It makes no writes. Point it at `local-dev`.
 
 - `pnpm probe:scroll-lock` presses every overlay the app draws over a scrim — the filter
   sheets on `/collection`, `/commanders`, `/discover`, `/decks` and a set page, the
