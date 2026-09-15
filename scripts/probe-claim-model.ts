@@ -166,11 +166,18 @@ async function reservationSection() {
     check("a reservation beats an earlier since", await free(b), 0);
     check("the displaced senior deck buys instead", await free(a), -1);
 
-    // 3. Capped at the deck's own ask. Three copies asked for against an ask of
-    //    one grants one, so the senior deck is short by exactly one — not by three.
+    // 3. Capped at the deck's own ask — and the SUPPLY has to be generous for this
+    //    case to measure anything. With one copy owned the supply ceiling binds
+    //    first, so a reservation of three grants one whether or not the ask is
+    //    capped, and the check passes over a build with the cap removed (confirmed:
+    //    it did). With three copies owned the ask is the only thing standing between
+    //    a reservation of three and three granted copies, and the senior deck's
+    //    surplus is what reports it: 1 with the cap, -1 without.
+    await own(3);
     await assign(b, 3);
-    check("a reservation is capped at the deck's ask", await free(a), -1);
-    check("and the reserving deck is still just covered", await free(b), 0);
+    check("a reservation is capped at the deck's ask", await free(a), 1);
+    check("and the reserving deck is covered", await free(b), 1);
+    await own(1);
 
     // 4. Capped at the supply left when its turn comes. The senior deck reserves
     //    too, LATER, against a card with nothing left: it grants nothing, and
