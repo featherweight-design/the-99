@@ -48,6 +48,13 @@ item 6's second blocker drops.
 
 The whole ledger is therefore unblocked at once.
 
+**And call C is a relocation, not a gap.** The handoff says `STATES-proxies.md` has no card-view
+state, which was true when it was drawn. `deck-card-tile.tsx:121` now draws
+`<ProxyTag variant="band" />` in the tile's top-left slot, and `deckRowTag` already enforces the
+one-slot rule there — the tile's three occupants are already exclusive. Call C's drawing is
+correct; what it describes as filling a gap is moving an existing mark off the art and into the
+caption, at the normalized size erratum 3 settles.
+
 ## Erratum 2 — ruling 2 has already shipped, with two refinements the handoff forbids
 
 This is the one that would cause a regression if the ledger were implemented as written.
@@ -89,9 +96,30 @@ none of them, and inverts the responsive direction of the only one that has a st
 **Resolution — eng, not Design.** The handoff's component tie-break cannot settle a three-way
 disagreement *between* components, so the handoff's own figure is the ruling: the unified box is
 `9px` desktop / `8.5px` phone, `px-[5px] py-[1px]`, radius 4. Normalizing is the entire point of
-the call. Note the consequence plainly: **this re-sizes `ProxyTag` and the collapsed `BuyTag` on
-this surface only**, via the tile call site, and must not be pushed back onto the row variants,
-where the row's own geometry is settled.
+the call.
+
+**The containment boundary is a variant, not a call site.** None of the three variants involved is
+exclusive to these two routes:
+
+| Primitive | Variant | In scope | Out of scope |
+|---|---|---|---|
+| `AvailabilityMarker` | `density="chip"` | `grid-view.tsx:81`, `deck-card-tile.tsx:128` | `suggestion-tile.tsx:214` |
+| `BuyTag` | `variant="tile"` | `deck-card-tile.tsx:137` | `suggestion-tile.tsx:229`, `top-off-list.tsx:810` |
+| `ProxyTag` | `variant="band"` | `deck-card-tile.tsx:121` | `spine-desktop.tsx:391,417`, `spine-mobile.tsx:137,168,178` |
+
+Editing the shipped variants in place changes the Consider tile, the top-off list and the commander
+spine at both widths — four surfaces this handoff never drew. The caption's box must therefore be
+its own variant, or the size must ride the `plate={false}` prop the ledger already asks for.
+Contained that way, nothing outside `/collection` and `/decks/[id]` moves.
+
+**The magnitude, contained.** Desktop: chip 8.5 → 9px, `$` unchanged, `P` 9.5 → 9px. Phone: chip
+unchanged, `$` and `P` 9 → 8.5px. Half a pixel of type either way; the visible change is the three
+losing their scrims and becoming one box on a solid plate.
+
+**One risk worth measuring first.** The chip goes `py-[2px]` → `py-[1px]`, but it draws diamond
+glyphs and not only text, so the glyph may be setting its box height rather than the padding. If it
+is, normalizing the padding changes nothing and the three boxes still fail to align — which is the
+one thing call D promised a reader would be able to see. Measure before the caption is built.
 
 ## Erratum 4 — the spent tile is a tenth state and is not drawn
 
@@ -140,7 +168,7 @@ pressure will reach for exactly them:
 | 5 | Caption height exported beside `TILE_SHELL`; `UndoTile` reads it (erratum 4) | after 4 |
 | 6 | `decklist-group.tsx` — `minmax()` floor tuned to yield 178px with the panel closed | after 4 |
 | 7 | `usePendingChange` second consumer; caption edge + `1 → 2` / `+N` (erratum 1 — unblocked) | after 4 |
-| 8 | `ProxyTag` call site in the tile's slot (erratum 1 — unblocked) | after 4 |
+| 8 | `ProxyTag` moves from the tile's art to the caption slot — already drawn at `deck-card-tile.tsx:121` (erratum 1) | after 4 |
 | 9 | `MarkKey` above the card grid — drop the `view === "card"` guard at `decklist.tsx:198` | after 8 |
 | 10 | `×1` suppressed on `/collection` — severable, recommended | after 3 |
 
