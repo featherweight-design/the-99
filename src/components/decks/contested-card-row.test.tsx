@@ -498,6 +498,39 @@ describe("ContestedCardRow — the chooser", () => {
     });
   });
 
+  it("discards a superseded tap's answer instead of drawing it", async () => {
+    // Next dispatches Server Actions one at a time per client, so these writes cannot race or
+    // land out of order — see `node_modules/next/dist/docs/01-app/02-guides/server-actions.md`,
+    // "Sequential dispatch on the client". The TAPS are not serialised though, so an earlier
+    // write can still answer after the player has named a different deck, and without a tap
+    // token its answer and its stand-down both landed on the newer pick.
+    const withGrant = (deckId: string) => card({ claimants: [
+      { deckId: "d1", deckName: "HD Avatar Aang", quantity: 1, commanderCopies: 0, granted: deckId === "d1" ? 1 : 0, since: AUG, versionNumber: 7, allocated: deckId === "d1" ? 1 : 0 },
+      { deckId: "d2", deckName: "Elemental Dragons", quantity: 1, commanderCopies: 0, granted: deckId === "d2" ? 1 : 0, since: SEP, versionNumber: 2, allocated: deckId === "d2" ? 1 : 0 },
+    ] });
+    let landFirst: (v: unknown) => void = () => {};
+    assign
+      .mockImplementationOnce(() => new Promise((resolve) => { landFirst = resolve; }))
+      .mockResolvedValue({ ok: true, card: withGrant("d1") });
+
+    render(<ContestedCardRow card={card()} />);
+    fireEvent.click(screen.getByRole("radio", { name: /Elemental Dragons/ }));
+    fireEvent.click(screen.getByRole("radio", { name: /HD Avatar Aang/ }));
+    await waitFor(() => {
+      expect(screen.getByRole("radio", { name: /HD Avatar Aang/ }).getAttribute("aria-checked"))
+        .toBe("true");
+    });
+
+    // The FIRST tap's write answers now, naming the deck the player has since moved off.
+    landFirst({ ok: true, card: withGrant("d2") });
+    await waitFor(() => expect(assign).toHaveBeenCalledTimes(2));
+    // Its answer is discarded: the row still shows the deck the player last named.
+    expect(screen.getByRole("radio", { name: /HD Avatar Aang/ }).getAttribute("aria-checked"))
+      .toBe("true");
+    expect(screen.getByRole("radio", { name: /Elemental Dragons/ }).getAttribute("aria-checked"))
+      .toBe("false");
+  });
+
   it("pressing the chosen deck again clears it", async () => {
     assign.mockResolvedValue({ ok: true, card: card() });
     render(<ContestedCardRow card={card()} />);

@@ -15,7 +15,7 @@
 // THE ORDER IS THE EXPLANATION, so `this deck` is tagged and never promoted: moving a player's
 // own deck to the top would hide why it lost.
 
-import { useState, useTransition } from "react";
+import { useRef, useState, useTransition } from "react";
 import { cardAssignmentsCopy as copy } from "../../lib/copy/card-assignments";
 import { previewAllocation } from "../../lib/decks/preview-allocation";
 import { assignCopy, type AssignRefusal } from "../../app/decks/assignment-actions";
@@ -170,6 +170,13 @@ export function ContestedCardRow({
   // reservation set is not that: after a refusal clears the optimistic pick it holds whoever
   // already had one, which is a different deck and the wrong name to print.
   const [attempted, setAttempted] = useState<{ id: string; name: string } | null>(null);
+  // WHICH TAP IS STILL THE CURRENT ONE. Next dispatches Server Actions one at a time per client
+  // (`node_modules/next/dist/docs/01-app/02-guides/server-actions.md`, "Sequential dispatch on
+  // the client"), so the WRITES cannot race or land out of order. The taps are not serialised
+  // though, and without this the first write's `finally` stood the second tap's preview down
+  // while that write was still queued: the marks fell back to the props for a moment and then
+  // corrected, which is the flicker this component exists to remove, one tap later.
+  const tap = useRef(0);
   const [announce, setAnnounce] = useState("");
   const [, startTransition] = useTransition();
   // A fresh server payload always wins, and is filed on its way past. Adjusted during render
@@ -205,6 +212,7 @@ export function ContestedCardRow({
     // `aria-checked` promises: a pick moves the reservation rather than adding to it, so at most
     // one option is ever checked. Seniority allocates every other copy.
     setPicked(wasChosen ? new Set() : new Set([deckId]));
+    const mine = ++tap.current;
     startTransition(async () => {
       // `finally`, not a trailing statement: a thrown action — a dropped connection, an expired
       // session — exits this callback, and the optimistic accent and undo footer would then stand
@@ -231,6 +239,9 @@ export function ContestedCardRow({
         : null;
       // Including when the live read came back null, which the action's own type allows: the
       // `finally` below is what makes that case, and a thrown one, stand down too.
+      // A superseded tap's answer is DISCARDED rather than drawn: the player has since named a
+      // different deck, and its own write — already queued behind this one — is the truth now.
+      if (mine !== tap.current) return;
       if (fresh) setCard(fresh);
       // ANNOUNCED FROM THE SERVER'S OWN ALLOCATION, once there is one. The trade is the news —
       // "X gets it, Y buys it" — and naming the loser before the server has decided who that is
@@ -269,9 +280,16 @@ export function ContestedCardRow({
         // would tell the player something the server never said. What matters is that the
         // optimistic state does not outlive the attempt, which the `finally` guarantees.
       } finally {
-        // THE OPTIMISTIC SET ALWAYS STANDS DOWN. Authorship is read from data; this state exists
-        // only for the window before there is any, and a throw closes that window too.
-        setPicked(null);
+        // THE OPTIMISTIC SET ALWAYS STANDS DOWN — but only for the LATEST tap. Authorship is read
+        // from data; this state exists only for the window before there is any, and a throw
+        // closes that window too. An earlier tap finishing must leave a newer preview where it
+        // is, or the row falls back to the props while that newer write is still queued.
+        //
+        // UNTESTED, deliberately and not quietly: reaching it needs two Server Action promises
+        // held open across a React transition, and that shape strands the jsdom teardown however
+        // the assertions are written — three spellings of it hung on the harness rather than on
+        // the assertion. The sibling guard above IS covered, by the superseded-answer case.
+        if (mine === tap.current) setPicked(null);
       }
     });
   };

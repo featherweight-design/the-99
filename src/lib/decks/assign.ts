@@ -41,9 +41,14 @@ export type AssignRefusal =
  *
  * ONE TOGGLE, THREE OUTCOMES, distinguishable only by what is already stored: pressing a deck
  * with no reservation writes one; pressing the deck you already reserved for deletes it,
- * returning the card to the seniority default; pressing a third deck when the cap is spent moves
- * the reservation rather than adding to it. With more than one copy in play a pick ADDS up to the
- * cap, because two copies really can go to two decks.
+ * returning the card to the seniority default; pressing a third deck moves the reservation rather
+ * than adding to it.
+ *
+ * ONE AUTHORED RESERVATION PER CARD, WHATEVER THE SUPPLY — see the rule at the `taken >= 1`
+ * branch below, which deletes before every insert so a second can never be written. An earlier
+ * draft of this comment said a pick ADDS up to the cap when more than one copy is in play; that
+ * was never what the code did, and a reader who believed it would write a preview for a state
+ * this table cannot hold.
  *
  * Returns null when the write landed, or the named cause when it did not.
  */
