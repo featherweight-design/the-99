@@ -26,23 +26,31 @@ export function resultSentence(shown: number, total: number, lane: Lane): string
   return shown === total ? copy.rest(total) : copy.filtered(shown, total);
 }
 
-/** The sentence with the `Exactly` aside appended, when there is one.
+/** The sentence with its asides appended, where there are any.
  *
- *  The separator lives HERE rather than at the call site, because the aside is
+ *  The separator lives HERE rather than at the call site, because each aside is
  *  an independent clause (`Exactly excludes 6 that Any would show`) and joining
- *  it with a comma splices two sentences. It was a literal in `filter-rack.tsx`
+ *  one with a comma splices two sentences. It was a literal in `filter-rack.tsx`
  *  and a second literal in the test, which meant the test asserted its own copy
- *  of the rule and stayed green when the component's copy changed. */
+ *  of the rule and stayed green when the component's copy changed.
+ *
+ *  Both asides can be live at once, and each answers for ONE control: `Exactly`
+ *  for what the colour match cost, `Build from` for the commanders free mode
+ *  hid. They are appended in the order the controls sit in the rack, so a reader
+ *  who reads the line against the strip is reading it in the same direction. */
 export function resultLineWithAside(
   shown: number,
   total: number,
   lane: Lane,
   excludedByExactly: number | null,
+  sleevedByFree?: number | null,
 ): string {
-  const sentence = resultSentence(shown, total, lane);
-  return excludedByExactly === null
-    ? sentence
-    : `${sentence}. ${filterCopy.match.excludedAside(excludedByExactly)}`;
+  const asides = [
+    excludedByExactly === null ? null : filterCopy.match.excludedAside(excludedByExactly),
+    sleevedByFree ? commandersCopy.availability.sleevedAside(sleevedByFree) : null,
+  ].filter((a): a is string => a !== null);
+
+  return [resultSentence(shown, total, lane), ...asides].join(". ");
 }
 
 // What survives of the rack's result line: the sentence, which reads lane copy

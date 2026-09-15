@@ -30,7 +30,7 @@ import { FilterRack } from "./rack/filter-rack";
 import { GuidedBanner } from "./guided-banner";
 import { PageHeader } from "./page-header";
 import { DegradedBanner } from "./degraded-banner";
-import { FilteredEmpty, OwnedSearchEmpty } from "./filtered-empty";
+import { FilteredEmpty, FreeEmpty, OwnedSearchEmpty } from "./filtered-empty";
 import {
   REVEAL_STEP, RevealControl, EndOfRanking, revealAnnouncement,
 } from "./reveal-control";
@@ -293,6 +293,26 @@ export function CommandersView({
     return diff > 0 ? diff : null;
   }, [searched, colors, params.match]);
 
+  // What `Build from` cost, and it answers for that one control — the same shape
+  // as `excludedByExactly` above. Null outside free mode and null where it hid
+  // nothing, because a "0 sleeved" aside is noise.
+  //
+  // Counted over the rows the OTHER controls left, never over the two whole
+  // lists. The figure sits in a sentence that has just stated a count, so it has
+  // to explain THAT count: with a query lit, subtracting the raw lengths claims
+  // rows the search had already excluded, and a query matching nothing at all
+  // would still print an aside. So the canonical list is run through the same
+  // search and the same colour filter, and what free mode removed is the
+  // difference between that and what is on screen. Ordering is not applied —
+  // it cannot change a length.
+  const sleevedByFree = useMemo(() => {
+    if (avail !== "free" || !freeItems) return null;
+    const q = params.q.trim().toLowerCase();
+    const searchedAll = q === "" ? results : results.filter((r) => matchesQuery(r.name, q));
+    const hidden = filterByColors(searchedAll, colors, params.match).length - filtered.length;
+    return hidden > 0 ? hidden : null;
+  }, [avail, freeItems, results, params.q, colors, params.match, filtered.length]);
+
   // Two rank maps, each built once over the FULL candidate set in that mode's
   // ordering. Both are pre-filter, so filtering still never renumbers: a hidden
   // rank leaves a gap rather than closing it. The numeral does move when the
@@ -332,7 +352,7 @@ export function CommandersView({
   const [shown, setShown] = useState(REVEAL_STEP);
 
   // Every control on the rack lands here. Both rankings are already on the
-  // client, so even `Score against` is a state change: no push, no transition,
+  // client, so even `Build from` is a state change: no push, no transition,
   // no dimmed list waiting on a server that has nothing left to say.
   const update = useCallback(
     (next: LaneParams) => {
@@ -447,6 +467,17 @@ export function CommandersView({
   useEffect(() => {
     if (prevAvail.current === avail) return;
     prevAvail.current = avail;
+    // This announces the FLIP. The aside that explains what the flip hid is
+    // spoken by the chassis result line, which is the region that owns the
+    // count it explains, and which speaks its visible sentence.
+    //
+    // So a `Build from` flip speaks twice on the wide rack: the mode from here,
+    // the count and its reason from there. That predates this change — the two
+    // regions have both spoken on a flip since the toggle shipped — and every
+    // attempt to route the aside around it during review moved the duplication
+    // rather than removing it. Collapsing the lane to one region is work about
+    // this lane's a11y rather than about free mode, and is in the PR's
+    // follow-up list.
     setAnnouncement(availabilityCopy.ranking.announce(avail, active.length));
   }, [avail, active.length]);
 
@@ -496,17 +527,29 @@ export function CommandersView({
         shown={filtered.length}
         total={active.length}
         excludedByExactly={excludedByExactly}
+        sleevedByFree={sleevedByFree}
       />
 
       {/* ── Main content: list (or filtered-empty) ── */}
       <div className="flex flex-1 flex-col p-[12px_14px] sm:px-[34px] sm:pb-[34px] sm:pt-[14px]">
         {/* Result list, or whichever zero state explains the emptiness. The
-            colour state names a pip to drop and the search state names the
-            other lane, so which one renders follows which control did the
-            narrowing. Zero with neither lit is not a filtered result — the
-            reader owns no commanders — and the list's own emptiness is the
+            colour state names a pip to drop, the search state names the other
+            lane and the free state names the other segment, so which one renders
+            follows which control did the narrowing. Free is tested FIRST, and
+            only yields to the colour state: with a pip lit the colour
+            arithmetic still has an answer and is the more useful one, but with a
+            QUERY lit the search state would tell a reader who owns the commander
+            that they may not own it and send them to Discover. `sleevedByFree`
+            counts over the rows the search left, so it is non-null here only
+            when the query really did match commanders that free mode then hid. Zero with nothing lit at all is not a filtered result —
+            the reader owns no commanders — and the list's own emptiness is the
             honest thing to show. */}
-        {filtered.length === 0 && colors.length > 0 ? (
+        {filtered.length === 0 && colors.length === 0 && sleevedByFree ? (
+          <FreeEmpty
+            query={params.q.trim() || undefined}
+            onShowAll={() => update({ ...params, avail: "all" })}
+          />
+        ) : filtered.length === 0 && colors.length > 0 ? (
           <FilteredEmpty
             nearest={nearest}
             onDrop={handleDropColour}

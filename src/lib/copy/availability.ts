@@ -101,13 +101,18 @@ export const availabilityCopy = {
 
   // ── Surface 1 · commanders list ───────────────────────────────────────
   ranking: {
-    // The label does the anti-collision work against `Owned only`: this names
-    // ranking, not filtering. Do not shorten it to "Availability".
-    label: "Score against",
-    all: "Everything I own",
-    free: "What’s free",
-    allAria: "Rank commanders against everything you own",
-    freeAria: "Rank commanders against cards not already in a finished deck",
+    // The control's own label, segments and aria live in `lanes.ts` under
+    // `commandersCopy.availability`, which is what `availability-control.tsx`
+    // renders. A second set here said "Score against · Everything I own ·
+    // What’s free" and reached no screen, so it read as the shipped name for a
+    // control that has never carried it. Removed with the rename rather than
+    // left to contradict it.
+    //
+    // Only those five. `freeNoteLong`, `subtitleAll` and `subtitleFree` below
+    // are dead too — the two-lane split retired the subtitle they fed — but
+    // they do not NAME this control, so they belong to the dead-key cleanup
+    // this change deliberately leaves alone rather than to the rename.
+    //
     // Shown only in the `free` state, under the control.
     freeNote:
       "Cards sleeved into a finished deck don’t count toward these scores.",
@@ -119,11 +124,16 @@ export const availabilityCopy = {
     subtitleAll: "ranked by fit",
     subtitleFree: "ranked by what’s free",
     // Announced on the list’s existing live region when the toggle flips.
+    //
+    // Names the mode with the words the control itself uses, which it did not:
+    // it said "what’s free" and "everything you own" while the segments on
+    // screen read `Free cards only` and `All my cards`, so a screen-reader user
+    // was given a second name for one control. "Ranked from" rather than
+    // "Re-ranked", because free mode also decides which commanders the list
+    // holds, and the count beside it is what moved.
     announce: (mode: "all" | "free", n: number) =>
       `${
-        mode === "free"
-          ? "Re-ranked by what’s free"
-          : "Re-ranked by everything you own"
+        mode === "free" ? "Ranked from free cards only" : "Ranked from all my cards"
       } · ${n === 1 ? "1 commander" : `${n} commanders`}`,
   },
 
@@ -202,13 +212,13 @@ export const availabilityCopy = {
   // control means.
   degraded: {
     heading: "We can’t see your decks right now",
-    body: "Ranking and Fit are unaffected. We just can’t tell which cards are already in a deck, so What’s free is unavailable until this comes back.",
+    body: "Ranking and Fit are unaffected. We just can’t tell which cards are already in a deck, so Free cards only is unavailable until this comes back.",
     retry: "Retry now",
     segmentDisabledAria:
-      "What’s free is unavailable. We can’t read your decks right now",
+      "Free cards only is unavailable. We can’t read your decks right now",
     // Both reads down: ONE banner, two sentences, one Retry. Never two banners.
     bodyWithSynergy:
-      "Synergy data and deck contents are both unavailable. Ranking continues on pool and role coverage, and What’s free is unavailable until they come back.",
+      "Synergy data and deck contents are both unavailable. Ranking continues on pool and role coverage, and Free cards only is unavailable until they come back.",
     // /collection has no ranking to mislead, so it fails QUIET — markers absent,
     // Availability trigger disabled with this reason. No banner there.
     collectionFilterDisabledAria:

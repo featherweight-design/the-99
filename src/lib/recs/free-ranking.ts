@@ -101,7 +101,8 @@ export function carryCanonicalSlugs<T extends { oracleId: string }>(
 }
 
 /**
- * Ranks the same candidate set against the free pool.
+ * Ranks the candidate set against the free pool, narrowed to the commanders the
+ * player could actually build from today.
  *
  * Reads the EDHREC cache but never the network. The cache is usually warm, since
  * the canonical ranking filled it — but not guaranteed to be: `getRankedList`
@@ -113,15 +114,19 @@ export function carryCanonicalSlugs<T extends { oracleId: string }>(
  * `ok: false` means no trustworthy second ranking could be produced — either the
  * availability read failed, or canonical named a commander the collection no
  * longer holds. The caller must then disable the toggle rather than serve
- * scores identical to the other mode, or a list one row short.
+ * scores identical to the other mode, or a list short by a row nothing on
+ * screen accounts for. A list deliberately narrowed to what is free is a
+ * different thing and returns `ok: true`; the count line and the aside beneath
+ * it are what make that narrowing legible.
  *
  * `canonical` is the "everything I own" list, and it is the source of everything
- * about a row except its score. Membership, so that flipping the toggle can only
- * ever reorder the list the player is already looking at. Slugs, because a
- * commander absent from it has no canonical slug and any invented one would 404.
+ * about a row except its score and its presence. The CANDIDATE SET, so this can
+ * only ever narrow that list and never add to it. Slugs, because a commander
+ * absent from it has no canonical slug and any invented one would 404.
  * `synergyState`, because only canonical can tell an EDHREC outage apart from a
- * commander EDHREC does not index. The score is the one thing this function is
- * entitled to compute, because the score is the only thing the pool changes.
+ * commander EDHREC does not index. The score is this function's to compute
+ * because the pool changes it; the row's presence is this function's to decide
+ * because the pool is what the mode is about.
  *
  * `preloaded` lets a caller that has already made these two reads hand them over
  * instead of paying for them twice. It must be the SAME pair: an availability
@@ -146,25 +151,25 @@ export async function rankFree(
   const collection =
     preloaded?.collection ?? (await loadCollectionPool(userId)).collection;
 
-  // Membership comes from `canonical` and from nothing else, because the toggle
-  // re-ranks a list — it must never add or drop a row. Canonical has already
-  // applied both of the filters this function used to re-apply: commander
-  // candidacy, and "you have already built this one". Re-applying them looks
-  // like a belt-and-braces no-op and is not one. It is a second, later reading
-  // of the decks table, so a canonical list a generation behind the decks would
-  // come back SHORTER here than in the other mode, and the player would watch a
-  // commander vanish on flipping a control that promises only to rescore.
+  // The CANDIDATE SET comes from `canonical` and from nothing else. Canonical has
+  // already applied the two filters this function used to re-apply: commander
+  // candidacy, and "you have already built this one". Re-applying them looks like
+  // a belt-and-braces no-op and is not one. It is a second, later reading of the
+  // decks table, so a canonical list a generation behind the decks would come
+  // back short here for a reason the reader cannot see, and with no way to tell
+  // that apart from the deliberate narrowing below.
   //
-  // Candidacy is a property of the collection, not of the pool: a commander you
-  // own but have sleeved is still a commander you could unsleeve. Only the pool
-  // it is SCORED against shrinks.
+  // Candidacy is a property of the collection: a commander you own but have
+  // sleeved is still a commander you could unsleeve, and `All my cards` is the
+  // mode that says so. What free mode answers is narrower — what could you build
+  // TODAY — and the commander is the one card it used to exempt from that
+  // question. A commander sitting in another deck's 99 therefore ranked here as
+  // though it were on the table.
   //
   // So `canonical` is the list being ITERATED, not a set the collection is
-  // tested against. The two produce the same intersection today; the difference
-  // is which list is in charge, and this one reads the way the rule above is
-  // stated. Each entry is paired with its pool card here because both halves are
-  // needed below, and a lookup that has already succeeded should not be repeated
-  // behind a `!`.
+  // tested against. Each entry is paired with its pool card here because both
+  // halves are needed below, and a lookup that has already succeeded should not
+  // be repeated behind a `!`.
   const poolByOracleId = new Map(collection.map((c) => [c.oracleId, c]));
   const candidates = canonical.flatMap((canon) => {
     const card = poolByOracleId.get(canon.oracleId);
@@ -199,8 +204,23 @@ export async function rankFree(
     pool = loaded;
   }
 
-  const edhrecCache = await readEdhrecCache(candidates.map((c) => c.card.oracleId));
-  const scored = candidates.map(({ card: commander, canon }) => {
+  // Free mode ranks the free pool and LISTS FROM IT. One rule, and it needs no
+  // second read or severity test of its own: every commander candidate is a
+  // member of the collection `freePool` just filtered, so its own claim has
+  // already been answered. A spare copy keeps it, a brew's soft claim keeps it,
+  // and a card with no availability row keeps it.
+  //
+  // Applied HERE rather than beside the guard above, and the order is the whole
+  // of the difference between the two. That guard answers "the collection no
+  // longer holds this commander" — a divergence between two reads, which
+  // disables the toggle. This answers "it is sleeved", which is the feature, and
+  // leaves the toggle live over a shorter list. Folding them together would
+  // disable the control for exactly the case it exists to show.
+  const freeOracleIds = new Set(pool.map((c) => c.oracleId));
+  const buildable = candidates.filter(({ card }) => freeOracleIds.has(card.oracleId));
+
+  const edhrecCache = await readEdhrecCache(buildable.map((c) => c.card.oracleId));
+  const scored = buildable.map(({ card: commander, canon }) => {
     // The row holds unparsed JSON, so it has to go through parseEdhrecPayload
     // before it has topCards. An unexpected shape degrades to an empty list,
     // which scoreCommander reads as a null fitSynergy.

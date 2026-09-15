@@ -113,7 +113,7 @@ describe("availabilityCopy", () => {
       "Show which 1 card is in use",
     );
     expect(availabilityCopy.ranking.announce("free", 1)).toBe(
-      "Re-ranked by what’s free · 1 commander",
+      "Ranked from free cards only · 1 commander",
     );
   });
 

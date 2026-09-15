@@ -1,5 +1,5 @@
 "use client";
-// `Score against` — the owned lane's control, and the owned lane's only (locked
+// `Build from` — the owned lane's control, and the owned lane's only (locked
 // decision 3). Discover does not mount it, greyed or otherwise: it is not in
 // that lane's control list, and a disabled stand-in would invite a reader to go
 // looking for the thing that would enable it.

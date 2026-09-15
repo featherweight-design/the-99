@@ -527,7 +527,7 @@ Module: `discoveryCopy` in `src/lib/copy/commander-discovery.ts`. Enumerated as 
 | Price absent / owned-suppressed | **no key exists, by design** ("so a future edit cannot accidentally give absence a label") | — |
 | Untagged note heading | `untagged.heading` | — |
 | Untagged note body | `untagged.body` | — |
-| Receipt line's other clauses, degraded strings, `Score against` labels | **not in this module** — reused **by reference** from `availability.ts`; `discoveryCopy` edits nothing there | — |
+| Receipt line's other clauses, degraded strings, `Build from` labels | **not in this module** — reused **by reference**; the receipt and degraded strings from `availability.ts`, the control's own labels from `commandersCopy.availability` in `lanes.ts`. `discoveryCopy` edits neither | — |
 
 **Copy-key gaps found (structure, not wording):**
 1. Mobile novelty overflow is drawn as `+2`; `justify.tagList` only emits the long `— and N more` form. No short key exists.
@@ -606,6 +606,8 @@ Trailing clause of the same list, which governs the row's absent states:
 > - **`ScoreDelta` does not apply under discovery.** … It is null under discovery's first release because the free re-rank is not computed over 3,334 candidates.
 
 > - **Copy** lives in `src/lib/copy/` … It adds a `discoveryCopy` block and **edits nothing** in `availability.ts`; the receipt line's clauses, the degraded strings and the `Score against` labels are all reused by reference.
+>
+>   **Superseded 2026-09-14 for the labels only.** The control is `Build from`, and its labels live in `commandersCopy.availability` in `lanes.ts` — `availability.ts` never held the shipped ones, and the five dead keys that named it there were deleted. The receipt strings are untouched. The DEGRADED strings were touched, and only for this rename: `degraded.body`, `bodyWithSynergy` and `segmentDisabledAria` named `What's free`, which is the segment's retired label, and now say `Free cards only`. Reuse-by-reference still holds — `discoveryCopy` adds nothing to that module.
 
 Token contract, from the E2 frame:
 

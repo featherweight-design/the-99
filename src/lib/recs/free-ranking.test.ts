@@ -144,3 +144,80 @@ describe("loadFreePool", () => {
     expect(await loadFreePool("user-rollup-down")).toBeNull();
   });
 });
+
+// The membership rule. Free mode ranks the free pool and LISTS FROM IT: a
+// commander whose own card is sleeved into a finished deck is not a commander
+// you can build today, and the mode that promises "free cards only" was the one
+// surface still exempting it. The exemption is what made a commander sitting in
+// another deck's 99 read as available here.
+describe("rankFree membership", () => {
+  const legend = (oracleId: string): PoolCard => ({
+    ...card(oracleId),
+    typeLine: "Legendary Creature — Human",
+  });
+  const item = (oracleId: string) =>
+    ({ oracleId, slug: oracleId, name: oracleId }) as unknown as CommanderListItem;
+
+  it("drops a commander whose own card a finished deck has sleeved", async () => {
+    const out = await rankFree("user", [item("sleeved"), item("spare")], {
+      collection: [legend("sleeved"), legend("spare")],
+      availability: new Map([["sleeved", avail(1, 1)]]),
+    });
+
+    expect(out.ok).toBe(true);
+    expect(out.items.map((i) => i.oracleId)).toEqual(["spare"]);
+  });
+
+  it("keeps a commander that still has a spare copy", async () => {
+    const out = await rankFree("user", [item("spare")], {
+      collection: [legend("spare")],
+      availability: new Map([["spare", avail(2, 1)]]),
+    });
+    expect(out.items.map((i) => i.oracleId)).toEqual(["spare"]);
+  });
+
+  // The asymmetry the two severities exist for, and the one the control's own
+  // gloss promises: a brew is a list, not a stack of sleeves.
+  it("keeps a commander only an unfinished brew lists", async () => {
+    const out = await rankFree("user", [item("brewed")], {
+      collection: [legend("brewed")],
+      availability: new Map([["brewed", { ...avail(1, 0), soft: 1 }]]),
+    });
+    expect(out.items.map((i) => i.oracleId)).toEqual(["brewed"]);
+  });
+
+  it("keeps a commander with no availability row at all", async () => {
+    const out = await rankFree("user", [item("unclaimed")], {
+      collection: [legend("unclaimed")],
+      availability: new Map(),
+    });
+    expect(out.items.map((i) => i.oracleId)).toEqual(["unclaimed"]);
+  });
+
+  // The guard this rule must not be folded into. "The collection no longer holds
+  // this commander" is a divergence between two reads and still disables the
+  // toggle; "it is sleeved" is the feature, and returns a shorter list with the
+  // toggle live. Collapsing them would disable the control for the exact case it
+  // now exists to show.
+  it("still fails closed when canonical names a commander the collection lost", async () => {
+    const out = await rankFree("user", [item("held"), item("gone")], {
+      collection: [legend("held")],
+      availability: new Map(),
+    });
+
+    expect(out.ok).toBe(false);
+    expect(out.items).toEqual([]);
+  });
+
+  it("drops a sleeved commander on the path that loads its own pool", async () => {
+    loadCollectionPool.mockResolvedValue({
+      collection: [legend("sleeved"), legend("spare")],
+    });
+    loadAvailability.mockResolvedValue(new Map([["sleeved", avail(1, 1)]]));
+
+    const out = await rankFree("user-own-reads", [item("sleeved"), item("spare")]);
+
+    expect(out.ok).toBe(true);
+    expect(out.items.map((i) => i.oracleId)).toEqual(["spare"]);
+  });
+});

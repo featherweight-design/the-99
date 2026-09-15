@@ -1,4 +1,4 @@
-import { notFound } from "next/navigation";
+import { notFound, redirect } from "next/navigation";
 import { requireUserId } from "../../../lib/auth";
 import { scoreOneCommander } from "../../../lib/recs/recommend";
 import { loadFreePool, rankFree } from "../../../lib/recs/free-ranking";
@@ -50,6 +50,20 @@ export default async function CommanderDetailPage({
     const { items } = await getRankedList(userId);
     const free = await rankFree(userId, items);
     const idx = free.ok ? free.items.findIndex((i) => i.oracleId === found!.oracleId) : -1;
+
+    // A commander the free ranking READ CLEANLY and does not hold is not a
+    // failure of this page: it is the mode's own answer, now that free mode
+    // lists from the free pool. Its own card is sleeved, so there is no free
+    // rank to pair a free score with and there never will be until a deck gives
+    // it back. The URL is sent to the mode the page is actually going to draw,
+    // rather than left saying `free` over a canonical score — which is the state
+    // the list can no longer link to, and which a bookmark otherwise reaches.
+    //
+    // `free.ok` is what keeps this off the outage path. There the free read
+    // failed, the fallback is transient, and stripping the parameter would throw
+    // away the reader's stated intent on a condition that clears by itself.
+    if (free.ok && idx === -1) redirect(`/commanders/${slug}`);
+
     // Already loaded and memoised by the ranking above, so this is a map read.
     const freePool = idx === -1 ? null : await loadFreePool(userId);
     if (freePool) {

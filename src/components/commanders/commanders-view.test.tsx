@@ -133,8 +133,8 @@ const cards = () =>
 const resultLine = () =>
   screen.getByText(/commanders (you own and haven't built|match)/);
 
-// The rack mounts ONE treatment, chosen in JS at 1024px — below it the colour
-// pips and `Score against` live in a closed sheet and are not in the document
+// The rack mounts ONE treatment, chosen in JS at `CHASSIS_WIDE_MIN_PX` — below it the colour
+// pips and `Build from` live in a closed sheet and are not in the document
 // at all. Every test here is about the list, so they all stand at the wide
 // breakpoint; the narrow treatment is `filter-rack.test.tsx`'s subject.
 beforeEach(() => {
@@ -180,7 +180,7 @@ describe("CommandersView windowing", () => {
     fireEvent.click(control()!);
     expect(cards()).toHaveLength(30);
     expect(control()).toBeNull();
-    expect(screen.getByText(/End of ranking · 30 of 30/)).toBeInTheDocument();
+    expect(screen.getByText("End of ranking · 30")).toBeInTheDocument();
   });
 
   it("clamps to the list length rather than overshooting on rapid activations", () => {
@@ -526,10 +526,10 @@ describe("CommandersView ranking toggle", () => {
     const live = container.querySelector('[aria-live="polite"]')!;
     expect(live).toHaveTextContent("");
     fireEvent.click(segments(FREE)[0]);
-    expect(live).toHaveTextContent("Re-ranked by what’s free · 2 commanders");
+    expect(live).toHaveTextContent("Ranked from free cards only · 2 commanders");
   });
 
-  // The rack's `Score against` has no struck-out segment — the banner below it
+  // The rack's `Build from` has no struck-out segment — the banner below it
   // is what says the deck read failed. The flip is still refused.
   it("refuses the flip when we cannot read the decks", () => {
     view(results(3), { availOk: false });

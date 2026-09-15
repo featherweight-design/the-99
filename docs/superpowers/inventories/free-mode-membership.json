@@ -1,0 +1,39 @@
+{
+  "feature": "Build from — free mode lists from the free pool",
+  "note": "One lane, and one control inside it. `/discover` is photographed because the control is deliberately ABSENT there (locked decision 3) and because the shared end-of-ranking rule was restated; a shot of that lane is the only way to show an absence stayed an absence. The sheet rows are phone-only: from `CHASSIS_WIDE_MIN_PX` (1000px) up the rack draws `Build from` inline and there is no sheet to open, so photographing one at desktop width would put a hole in the sheet about a form that never exists. Two states are NOT here and cannot be: the free-mode zero state needs a collection whose every commander is sleeved, and the end-of-ranking rule needs a windowed list revealed to its end. Both are pinned by unit tests instead, and both are named in the PR body so the gap is stated rather than implied.",
+  "rows": [
+    {
+      "id": "owned-all",
+      "label": "/commanders — All my cards",
+      "steps": [{ "goto": "/commanders", "settle": 4000, "wait": "main, [role=main], h1" }]
+    },
+    {
+      "id": "owned-free",
+      "label": "/commanders?a=free — the aside counts what it hid",
+      "steps": [{ "goto": "/commanders?a=free", "settle": 4000, "wait": "main, [role=main], h1" }]
+    },
+    {
+      "id": "owned-sheet-all",
+      "label": "/commanders — filter sheet, Build from at All my cards",
+      "widths": ["phone"],
+      "steps": [
+        { "goto": "/commanders", "settle": 4000, "wait": "main, [role=main], h1" },
+        { "clickRole": "button", "name": "^Filters$", "wait": "[role=dialog]", "settle": 900 }
+      ]
+    },
+    {
+      "id": "owned-sheet-free",
+      "label": "/commanders?a=free — filter sheet, the hint under Build from",
+      "widths": ["phone"],
+      "steps": [
+        { "goto": "/commanders?a=free", "settle": 4000, "wait": "main, [role=main], h1" },
+        { "clickRole": "button", "name": "^Filters$", "wait": "[role=dialog]", "settle": 900 }
+      ]
+    },
+    {
+      "id": "discover",
+      "label": "/discover — the control stays absent",
+      "steps": [{ "goto": "/discover", "settle": 6000, "wait": "main, [role=main], h1" }]
+    }
+  ]
+}

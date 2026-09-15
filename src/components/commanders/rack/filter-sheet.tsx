@@ -34,7 +34,6 @@ import { commandersCopy, filterCopy } from "../../../lib/copy/lanes";
 import { PrimaryButton } from "../../ui/button";
 import { AvailabilityControl } from "./availability-control";
 import { ColourControl } from "./colour-control";
-import { resultSentence } from "./result-line";
 
 /** Travel past which the handle drag dismisses rather than snapping back. */
 const DRAG_DISMISS_PX = 80;
@@ -47,20 +46,37 @@ export function FilterSheet({
   lane,
   onChange,
   shown,
-  total,
+  resultLine,
 }: {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   params: LaneParams;
   lane: Lane;
   onChange: (next: LaneParams) => void;
-  /** Rows the current parameters would show. The header and footer both say it,
-      live — nothing here is staged. */
+  /** Rows the current parameters would show. The footer's dismiss label says it,
+      live — nothing here is staged. The header says it too, but through
+      `resultLine`, which is the rack's whole composed sentence. */
   shown: number;
-  total: number;
+  /** The rack's composed sentence, asides and all. Passed in rather than rebuilt
+      here: the header's own promise is that it is the SAME sentence the result
+      line behind the scrim is showing, and a second call to compose it is a
+      second place the two could drift. They did — the sheet recomposed the
+      sentence alone, so both asides went missing the moment the reader opened
+      Filters, which below `CHASSIS_WIDE_MIN_PX` is the only place four of the
+      lane's controls exist. */
+  resultLine: string;
 }) {
   // Live offset of the sheet under a handle drag, in px. 0 when not dragging.
   const [dragY, setDragY] = useState(0);
+  // Plain, and it survives nothing, because THIS COMPONENT survives nothing: the
+  // rack mounts it only while it is open. Three review rounds went into keeping
+  // an announcement honest across a closed sheet — a stale count on reopen, then
+  // an aside naming commanders free mode hid, then the same sentence read out
+  // again on a reopening that had changed nothing — and each fix was a better
+  // answer to "what is this announcement's identity". The scope answer is that
+  // it has no identity to manage. A sheet that unmounts when it closes starts
+  // every opening silent by construction, and the two stamps that were tracking
+  // that by hand are gone with it.
   const [announcement, setAnnouncement] = useState("");
   const dragStartY = useRef<number | null>(null);
   const panelRef = useRef<HTMLDivElement>(null);
@@ -82,6 +98,15 @@ export function FilterSheet({
   // The count is announced debounced 300ms, exactly as the reference panel
   // announces its match count: FILTERING is immediate and only the message
   // waits, so a reader tapping four pips hears one number, not four.
+  //
+  // THIS REGION SPEAKS FOR THE FILTERS, and for nothing else. It briefly
+  // announced the rack's whole composed sentence instead, so that the hidden-row
+  // aside would reach a compact reader — and that put two announcements on one
+  // `Build from` flip, because `silentResult` quiets the chassis result row and
+  // not the lane's own mode announcer, which was already speaking for that
+  // change. The aside now rides on that mode announcement, where the change it
+  // explains is announced, and this region is back to the one job it can hold
+  // without duplicating another.
   useEffect(() => {
     if (!open) {
       lastShown.current = null;
@@ -211,7 +236,7 @@ export function FilterSheet({
               disagree. Silent because that line is the lane's one live region;
               the sheet's debounced announcer is what speaks here. */}
           <span className="ml-auto font-mono text-[11px] tabular-nums text-[color:var(--fg-body)]">
-            {resultSentence(shown, total, lane)}
+            {resultLine}
           </span>
         </div>
 

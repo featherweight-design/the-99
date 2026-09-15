@@ -163,7 +163,7 @@ Lives in the page header. Desktop: right-aligned on the same flex row as title+s
 
 ## Component: Sort trigger (§7.2 tier 2)
 
-Desktop: filter bar, immediately right of `Score against`, in the slot the inert `Order: Fit ↓ · fixed` label holds. Mobile: right-hand child of the count row (row 4 of the stack).
+Desktop: filter bar, immediately right of `Build from` (renamed from `Score against`, 2026-09-14), in the slot the inert `Order: Fit ↓ · fixed` label holds. On discover that control is absent altogether, so the trigger leads the cluster there. Mobile: right-hand child of the count row (row 4 of the stack).
 
 ### Trigger group wrapper
 | Property | Mobile | Desktop |
@@ -394,6 +394,16 @@ Applies to the `Something new` option when the player has built no deck. Three s
 ## Numbered Rules
 
 Verbatim normative statements governing these four surfaces.
+
+> **Rulings 15, 18 and 30 are SUPERSEDED, and were before this table was written.**
+> They govern a `Score against` control under discovery — one that keeps its place,
+> shows a disabled `What's free` segment, and re-ranks on a fetch. Discover mounts
+> no such control: it is the owned lane's alone under locked decision 3, and
+> `availability-control.tsx` says so in its own header. Nothing here reinstates it.
+> The rulings are left as written because they are quotations of what Design said,
+> not a spec anyone should now implement; what changed on 2026-09-14 is only that
+> the control is named `Build from`, and that the row above states the absence
+> plainly instead of leaving it to be inferred.
 
 1. > "**Tier 1 — scope, in the page header, beside the title.** It changes which commanders exist on this page, which is the same class of change as the title. Label `Show`, two segments, the shipped segmented geometry at 32px."
 2. > "The subtitle beneath the title restates the population in words on every flip"

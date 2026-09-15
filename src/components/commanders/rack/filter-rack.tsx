@@ -43,6 +43,7 @@ export function FilterRack({
   shown,
   total,
   excludedByExactly,
+  sleevedByFree,
   orderPending = false,
 }: {
   params: LaneParams;
@@ -53,6 +54,9 @@ export function FilterRack({
   total: number;
   /** Null unless `Exactly` is active AND it costs rows `Any` would have shown. */
   excludedByExactly: number | null;
+  /** Owned lane only. Null unless free mode is on AND it hid commanders whose
+      own card a finished deck has sleeved. */
+  sleevedByFree?: number | null;
   /** Discover only: a ranking order missed the payload cache and the server is
       answering. Every other control, and every other order, narrows or arranges
       a list already in memory. */
@@ -63,6 +67,20 @@ export function FilterRack({
   // 1000-1023 while `/decks` was already wide — a route-specific breakpoint,
   // which is the thing one frame exists to stop.
   const wide = useMinWidth(`(min-width: ${CHASSIS_WIDE_MIN_PX}px)`);
+
+  // Composed ONCE and handed to both forms. The rack draws it on the result line
+  // and the sheet draws it in its header, and the sheet's own comment promises
+  // they are the same sentence; composing it in each place is what let the two
+  // disagree.
+  const resultLine = resultLineWithAside(shown, total, lane, excludedByExactly, sleevedByFree);
+
+  // NOT passed to the chassis as `announce`. That prop is for a message a
+  // surface raises on an event — supplying it as a standing value makes it
+  // `fresh` on mount, and the chassis reads its own count out on arrival, which
+  // is the one thing `ResultLine` keeps a null for. The aside is therefore
+  // spoken, because it is part of the visible sentence and the chassis speaks
+  // its visible sentence. That is the right region for it: the aside explains
+  // the count, and this is the region that owns the count.
   const [sheetOpen, setSheetOpen] = useState(false);
 
   // Same reason as `decks-view.tsx`: unmounting the sheet at the breakpoint
@@ -145,7 +163,7 @@ export function FilterRack({
         // would also fire a fresh request for a ranking nobody asked for.
         onChange({ ...defaultParams(lane), order: params.order })
       }
-      resultLine={resultLineWithAside(shown, total, lane, excludedByExactly)}
+      resultLine={resultLine}
       // Compact's persistent row is `search · sort · Filters` (STATES §156), so
       // the trigger joins the trailing cluster rather than sitting in the
       // controls ahead of it. Wide keeps sort alone past the hairline, where
@@ -201,17 +219,20 @@ export function FilterRack({
       )
       }
       after={
-        /* Closed, this returns null: the sheet is never a hidden duplicate of
-           the controls it replaces. */
-        !wide && (
+        /* Mounted only while open, rather than mounted-and-returning-null. It is
+           still never a hidden duplicate of the controls it replaces, and now it
+           also carries no state across a closing: the announcement inside it
+           belongs to one opening, and unmounting is what makes that true without
+           a stamp tracking it. */
+        !wide && sheetOpen && (
         <FilterSheet
-          open={sheetOpen}
+          open
           onOpenChange={setSheetOpen}
           params={params}
           lane={lane}
           onChange={onChange}
           shown={shown}
-          total={total}
+          resultLine={resultLine}
         />
       )
       }

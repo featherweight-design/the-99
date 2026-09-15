@@ -187,3 +187,42 @@ export function OwnedSearchEmpty({
     />
   );
 }
+
+/**
+ * The owned lane emptied by `Build from`: the commanders that would be here are
+ * sleeved into decks this player has built, so free mode has nothing left to rank.
+ *
+ * Its own state rather than a branch of `FilteredEmpty`, which names a colour pip
+ * to drop and would name nothing here. The single affordance is the other half of
+ * the one control that did the narrowing, and it carries that segment's own label
+ * so the reader can find it on the rack afterwards.
+ *
+ * `query` is the reason this state also has to cover the search box. With a query
+ * lit, the lane's other empty sentence tells the reader the commander may not be
+ * owned and sends them to Discover — false twice over for a card they own and
+ * have sleeved, and the same class of lie this whole change exists to remove. The
+ * count is what makes it safe to say: the aside behind it is computed over the
+ * rows the search left, so a query that matches nothing free BECAUSE it matches
+ * nothing at all never reaches here.
+ */
+export function FreeEmpty({
+  query,
+  onShowAll,
+}: {
+  query?: string;
+  onShowAll: () => void;
+}) {
+  return (
+    <ZeroState
+      heading={commandersCopy.emptyFree.heading}
+      body={
+        query ? commandersCopy.emptyFree.searchBody(query) : commandersCopy.emptyFree.body
+      }
+      primary={
+        <PrimaryButton onClick={onShowAll} className={ZERO_PRIMARY}>
+          {commandersCopy.emptyFree.fix}
+        </PrimaryButton>
+      }
+    />
+  );
+}

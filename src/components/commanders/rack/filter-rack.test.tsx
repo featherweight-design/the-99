@@ -1,4 +1,4 @@
-import { fireEvent, render, screen, within } from "@testing-library/react";
+import { fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { defaultParams, type Lane, type LaneParams } from "@/lib/commanders/lane-params";
 import { FilterRack } from "./filter-rack";
@@ -15,6 +15,29 @@ function stubWidth(wide: boolean) {
   );
 }
 
+function rackEl(
+  lane: Lane,
+  params: LaneParams = defaultParams(lane),
+  shown = 148,
+  total = 148,
+  orderPending = false,
+  excludedByExactly: number | null = null,
+  sleevedByFree: number | null = null,
+) {
+  return (
+    <FilterRack
+      params={params}
+      lane={lane}
+      onChange={() => {}}
+      shown={shown}
+      total={total}
+      excludedByExactly={excludedByExactly}
+      sleevedByFree={sleevedByFree}
+      orderPending={orderPending}
+    />
+  );
+}
+
 function renderRack(
   lane: Lane,
   params: LaneParams = defaultParams(lane),
@@ -23,18 +46,51 @@ function renderRack(
   orderPending = false,
   excludedByExactly: number | null = null,
 ) {
-  return render(
-    <FilterRack
-      params={params}
-      lane={lane}
-      onChange={() => {}}
-      shown={shown}
-      total={total}
-      excludedByExactly={excludedByExactly}
-      orderPending={orderPending}
-    />,
-  );
+  return render(rackEl(lane, params, shown, total, orderPending, excludedByExactly));
 }
+
+// The sheet is MOUNTED only while open, rather than mounted and returning null.
+// Both look identical in the DOM while it is shut, and the difference is the
+// announcement inside it: kept alive across a closing, the status node held the
+// last count and read it out again the instant the sheet came back — on a
+// reopening where nothing had changed. Three review rounds went into managing
+// that lifetime before it was removed instead.
+// The chassis speaks its visible sentence, so the aside goes with it — which is
+// the region that owns the count the aside explains. Pinned because the obvious
+// alternative is to hand the chassis a separate `announce`, and that prop is for
+// a message raised on an event: supplied as a standing value it reads as fresh
+// on mount and the chassis announces its own count on arrival.
+describe("FilterRack spoken sentence", () => {
+  it("speaks the hidden-row aside with the count it explains, and says nothing on arrival", async () => {
+    stubWidth(true);
+    const { rerender } = render(rackEl("owned", defaultParams("owned"), 148, 148, false, null, null));
+    expect(screen.getByRole("status")).toHaveTextContent("");
+
+    rerender(rackEl("owned", defaultParams("owned"), 12, 148, false, null, 3));
+    await waitFor(() =>
+      expect(screen.getByRole("status")).toHaveTextContent(/3 more are sleeved/),
+    );
+  });
+});
+
+describe("FilterRack sheet lifetime", () => {
+  it("starts each opening of the sheet silent", async () => {
+    stubWidth(false);
+    const open = () => fireEvent.click(screen.getByRole("button", { name: /^Filters/ }));
+    const { rerender } = render(rackEl("owned", defaultParams("owned"), 148, 148, false, null, null));
+
+    open();
+    rerender(rackEl("owned", defaultParams("owned"), 12, 148, false, null, 3));
+    await waitFor(() =>
+      expect(within(screen.getByRole("dialog")).getByRole("status")).toHaveTextContent(/12/),
+    );
+
+    fireEvent.keyDown(screen.getByRole("dialog"), { key: "Escape" });
+    await waitFor(() => expect(screen.queryByRole("dialog")).toBeNull());
+    open();
+    expect(within(screen.getByRole("dialog")).getByRole("status")).toHaveTextContent("");
+  });
+});
 
 afterEach(() => vi.unstubAllGlobals());
 
@@ -94,10 +150,10 @@ describe("FilterRack", () => {
   it("gives the owned rack availability, and the discover rack none", () => {
     stubWidth(true);
     const { unmount } = renderRack("owned");
-    expect(screen.getByRole("radiogroup", { name: "Score against" })).toBeInTheDocument();
+    expect(screen.getByRole("radiogroup", { name: "Build from" })).toBeInTheDocument();
     unmount();
     renderRack("discover", defaultParams("discover"), 3301, 3301);
-    expect(screen.queryByRole("radiogroup", { name: "Score against" })).not.toBeInTheDocument();
+    expect(screen.queryByRole("radiogroup", { name: "Build from" })).not.toBeInTheDocument();
   });
 
   it("reads the order options off the lane", () => {

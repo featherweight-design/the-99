@@ -102,7 +102,7 @@ export function EndOfRanking({ total }: { total: number }) {
         className="font-mono uppercase text-[9.5px] sm:text-[10.5px] tracking-[0.16em]"
         style={{ color: "var(--fg-faint)" }}
       >
-        End of ranking · {total.toLocaleString("en-US")} of {total.toLocaleString("en-US")}
+        End of ranking · {total.toLocaleString("en-US")}
       </span>
       <Diamond />
       <Hairline />
