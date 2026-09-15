@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import { act, fireEvent, render, screen, waitFor } from "@testing-library/react";
+import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 
 // The server action, stubbed: what these cases are about is what the ROW does with each answer.
 const assign = vi.hoisted(() => vi.fn());

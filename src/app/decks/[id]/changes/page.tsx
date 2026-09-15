@@ -8,6 +8,7 @@ import {
   changeCount, loadDraftRows, loadDraftShape, loadVersionShape,
 } from "../../../../lib/decks/draft-state";
 import { ReviewChanges } from "../../../../components/decks/review-changes";
+import { loadContestedCards } from "../../../../lib/collection/summary-read";
 import { admitsReview } from "./admits-review";
 import { isUuid } from "../../../../lib/uuid";
 
@@ -85,9 +86,14 @@ export default async function ChangesPage({
   // every write to this deck revalidates the page that drew them. Folding two
   // more round trips into that transaction would hold it open to buy consistency
   // between two readings of a list the reader is about to commit anyway.
-  const [before, after] = await Promise.all([
+  const [before, after, contested] = await Promise.all([
     state.version ? loadVersionShape(state.version.id) : Promise.resolve(null),
     loadDraftShape(id),
+    // The changed cards only — this page's subject — and read UNEXCLUDED, because the chooser's
+    // queue has to include the deck the reader is looking at. `loadContestedCards` filters to the
+    // genuinely contested: demand above supply, and two committed claimants, since a shortage
+    // with one claimant is a purchase rather than a choice.
+    loadContestedCards([...rows.in, ...rows.out].map((r) => r.oracleId), userId),
   ]);
 
   return (
@@ -96,6 +102,7 @@ export default async function ChangesPage({
       deckName={detail.name}
       rows={rows}
       state={state}
+      contested={contested}
       before={before}
       after={after}
       commitOpen={wantsCommit}

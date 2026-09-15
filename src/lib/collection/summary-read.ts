@@ -15,7 +15,7 @@
  * nothing.
  */
 
-import { and, eq } from "drizzle-orm";
+import { and, eq, inArray } from "drizzle-orm";
 import { db } from "../../db";
 import { cards, csvUploads } from "../../db/schema";
 import { loadAvailability } from "../decks/availability-query";
@@ -87,6 +87,48 @@ function allocate(owned: number, claimants: Omit<ContestedClaimant, "allocated">
     left -= fromQueue;
     return { ...c, allocated: c.granted + fromQueue };
   });
+}
+
+/**
+ * Every contested card among `oracleIds`, read live — the `/decks/[id]/changes` door.
+ *
+ * NOT the deck's own vantage. A row on that page is loaded with `excludeDeckId` set, which is
+ * right for its buy tag and its marker but wrong here: the chooser's whole subject is the queue
+ * of committed decks INCLUDING this one, and an excluded read leaves the deck the reader is
+ * looking at out of its own decision.
+ *
+ * Filtered by the same two tests the receipt uses: demand above supply, and at least two
+ * committed claimants — a shortage with one claimant is a purchase, not a choice.
+ */
+export async function loadContestedCards(
+  oracleIds: string[],
+  userId: string,
+): Promise<ContestedCard[]> {
+  if (oracleIds.length === 0) return [];
+  const availability = await loadAvailability(userId, { oracleIds });
+  const contested: ContestedCard[] = [];
+  const names = new Map<string, string>();
+  const ids = [...availability.keys()].filter((oracleId) => {
+    const a = availability.get(oracleId);
+    return a && a.hard > a.owned && a.claims.filter((c) => c.mature).length >= 2;
+  });
+  if (ids.length === 0) return [];
+  for (const row of await db.select({ oracleId: cards.oracleId, name: cards.name })
+    .from(cards).where(inArray(cards.oracleId, ids))) {
+    names.set(row.oracleId, row.name);
+  }
+  for (const oracleId of ids) {
+    const a = availability.get(oracleId);
+    if (!a) continue;
+    // `arrived` and `ownedBefore` are facts about an IMPORT, and this door has none — the row
+    // draws its supply line from what is owned instead, and `keeps it` stays unavailable, which
+    // is the honest reading when nothing is known to have arrived.
+    contested.push(buildContestedCard(oracleId, names.get(oracleId) ?? "", a, {
+      arrived: a.owned,
+      ownedBefore: 0,
+    }));
+  }
+  return contested;
 }
 
 /**

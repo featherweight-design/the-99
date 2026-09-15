@@ -149,9 +149,14 @@ export const deckVersioningCopy = {
   /* ---- §Surfaces 2 · review changes ---- */
   review: {
     heading: (n: number, version: number) => `${plural(n, "change")} since v${version}`,
+    /**
+     * "Except the pulls" was true when a pull was the only decision on this page. It is not:
+     * Put back (#390) restores a cut, and the contested rows give a copy to a deck. Naming them
+     * all would make the sentence a list, so it names none and says what the page IS.
+     */
     lede: (version: number) =>
-      "Nothing here is a decision except the pulls. The deck page already shows this list: " +
-      `this is what it costs to lock in as v${version}.`,
+      "The deck page already shows this list: this is what it costs to lock in as " +
+      `v${version}. Anything you change here is yours to change back.`,
 
     // A versionless deck reaches this page to cut v1, and neither line above can
     // describe it: there is no predecessor to count changes against, so the pair

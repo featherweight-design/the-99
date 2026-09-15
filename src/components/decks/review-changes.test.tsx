@@ -11,6 +11,8 @@ import { deckVersioningCopy } from "../../lib/copy/deck-versioning";
 import { addPanelCopy } from "../../lib/copy/decks-builder";
 import type { BrowseCard } from "../../lib/collection/browse";
 import type { Availability } from "../../lib/decks/availability";
+import type { ContestedCard } from "../../lib/collection/summary-read";
+import { cardAssignmentsCopy } from "../../lib/copy/card-assignments";
 import type { ShapeCard } from "../../lib/decks/draft-state";
 import { cardDetailCopy } from "../cards/card-detail-provider";
 import { BREW, COMMITTED } from "./__fixtures__/draft-state";
@@ -47,7 +49,10 @@ const STATE = COMMITTED;
  *  two columns, and `changed-strip.test.tsx` owns every figure the strip draws
  *  from them. Empty `before` is also what keeps the strip silent about movement,
  *  so nothing it draws can be mistaken for a column's own figure. */
-const SHAPE: { before: ShapeCard[]; after: ShapeCard[] } = { before: [], after: [] };
+// `contested` rides with the shape props because nearly every case here is about a row rather
+// than about the chooser: an empty list draws no panel, which is the state these were written in.
+const SHAPE: { before: ShapeCard[]; after: ShapeCard[]; contested: ContestedCard[] } =
+  { before: [], after: [], contested: [] };
 
 /** The server's count of the list a commit would freeze, handed down to the sheet
  *  at the foot of the page. Nothing here counts rows to get it. */
@@ -1153,6 +1158,7 @@ describe("ReviewChanges", () => {
       const shape = {
         before: [{ role: "ramp" as const, quantity: 1, typeLine: "Artifact", cmc: 1 }],
         after: [] as typeof SHAPE.after,
+        contested: [] as typeof SHAPE.contested,
       };
       render(
         <ReviewChanges
@@ -1289,5 +1295,79 @@ describe("a printed add on the review screen", () => {
     cleanup();
     render(<ReviewChanges deckId="d" deckName="Korvold" rows={{ in: [freeRow], out: [] }} {...SHAPE} state={STATE} cardCount={CARD_COUNT} />);
     expect(screen.queryByText(proxyCopy.review.a11y("Sol Ring"))).not.toBeInTheDocument();
+  });
+});
+
+describe("ReviewChanges — the second door", () => {
+  const contestedCard = (over: Partial<ContestedCard> = {}): ContestedCard => ({
+    oracleId: "o1",
+    cardName: "Brushland",
+    arrived: 1,
+    ownedBefore: 0,
+    owned: 1,
+    brewNames: [],
+    // In commit order, as the loader returns them: the earlier deck first. The component does not
+    // re-sort — that is the loader's job — so this is what "never promoted" is asserted against.
+    claimants: [
+      { deckId: "d2", deckName: "Other deck", quantity: 1, commanderCopies: 0, granted: 0, since: 0, versionNumber: 1, allocated: 1 },
+      { deckId: "d", deckName: "This deck", quantity: 1, commanderCopies: 0, granted: 0, since: 1, versionNumber: 3, allocated: 0 },
+    ],
+    ...over,
+  });
+
+  it("hangs the chooser under a contested row, with the caption that separates it from a pull", () => {
+    render(
+      <ReviewChanges
+        deckId="d" deckName="Korvold" rows={{ in: [row()], out: [] }}
+        {...SHAPE} contested={[contestedCard()]} state={STATE} cardCount={CARD_COUNT}
+      />,
+    );
+    expect(screen.getByRole("radiogroup")).toBeTruthy();
+    // The one place the distinction is spelt out: `Pull it` cuts the other deck a version, and
+    // this edits nobody's list.
+    expect(screen.getByText(cardAssignmentsCopy.contested.seamCaption)).toBeTruthy();
+  });
+
+  it("draws no panel on a row nobody is contesting", () => {
+    render(
+      <ReviewChanges
+        deckId="d" deckName="Korvold" rows={{ in: [row()], out: [] }}
+        {...SHAPE} state={STATE} cardCount={CARD_COUNT}
+      />,
+    );
+    expect(screen.queryByRole("radiogroup")).toBeNull();
+    expect(screen.queryByText(cardAssignmentsCopy.contested.seamCaption)).toBeNull();
+  });
+
+  // The row keeps its own floor — name, availability, `Pull it` — and the panel is a second
+  // geometry below it. Folding the chooser into the row is what the card-row floor refuses.
+  it("leaves the decklist row's own controls where they were", () => {
+    render(
+      <ReviewChanges
+        deckId="d" deckName="Korvold" rows={{ in: [row()], out: [] }}
+        {...SHAPE} contested={[contestedCard()]} state={STATE} cardCount={CARD_COUNT}
+      />,
+    );
+    const group = screen.getByRole("radiogroup");
+    // The panel is a sibling of the row rather than inside it.
+    expect(group.closest("[data-diff-row]")).toBeNull();
+  });
+
+  // `this deck` is tagged and stays where the queue puts it: the order IS the explanation of the
+  // default, and lifting the reader's own deck to the top hides why it lost.
+  it("tags the deck being reviewed among the claimants, without promoting it", () => {
+    render(
+      <ReviewChanges
+        deckId="d" deckName="Korvold" rows={{ in: [row()], out: [] }}
+        {...SHAPE} contested={[contestedCard()]} state={STATE} cardCount={CARD_COUNT}
+      />,
+    );
+    expect(screen.getByText(cardAssignmentsCopy.contested.thisDeck)).toBeTruthy();
+    // Still in commit order: the earlier deck leads, however much this page belongs to `d`.
+    // Read off the OPTIONS rather than by text sweep — the page's live regions quote deck names
+    // too, and a sweep picks one of those up first.
+    const options = screen.getAllByRole("radio").map((o) => o.getAttribute("aria-label") ?? "");
+    expect(options[0]).toContain("Other deck");
+    expect(options[1]).toContain("This deck");
   });
 });

@@ -229,6 +229,16 @@ export const cardAssignmentsCopy = {
     thisDeck: "this deck",
 
     /**
+     * On `/decks/[id]/changes`, the one place the distinction from a pull is spelt out.
+     *
+     * A CAPTION, not a warning — giving is the safe action of the two. The row above it keeps
+     * `Pull it`, which takes the card out of another deck's list and cuts that deck a version;
+     * this panel edits nobody's list, and a reader who confuses them cuts a version they never
+     * meant to.
+     */
+    seamCaption: "no list changes",
+
+    /**
      * A live pick. There is NO `your call` plate: a picked row already carried five signals for
      * one bit of state, and the plate was the weakest of them. This sentence is the word carrier
      * and a better one, because it NAMES THE DECK — the plate said "something here was chosen",
