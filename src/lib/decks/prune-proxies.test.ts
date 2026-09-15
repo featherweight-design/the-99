@@ -48,9 +48,13 @@ function transactionBlocks(source: string): string[] {
 describe("proxy rows are reconciled wherever deck membership shrinks", () => {
   it.each(FILES)("%s prunes in every transaction that deletes deck_cards", (file) => {
     const source = readFileSync(file, "utf8");
+    // AFTER THE LAST DELETE, not merely present. A second `delete(deckCards)`
+    // added below an existing prune would leave an orphan while a
+    // contains-a-prune test stayed green — and that is the likelier edit, since
+    // the prune tends to sit at the end of the block it was written for.
     const offenders = transactionBlocks(source)
       .filter((b) => /\.delete\(deckCards\)/.test(b))
-      .filter((b) => !/pruneOrphanProxies\(/.test(b));
+      .filter((b) => b.lastIndexOf("pruneOrphanProxies(") < b.lastIndexOf(".delete(deckCards)"));
     expect(offenders).toEqual([]);
   });
 

@@ -45,19 +45,27 @@ const pickCards = async () => {
   const { rows } = await fixture.execute<{ oracle_id: string }>(sql`
     select oracle_id from cards
     where type_line ~ 'Legendary Creature' and type_line !~ '\\mBasic\\M'
-    order by oracle_id limit 2
+    order by oracle_id limit 3
   `);
   const { rows: [subject] } = await fixture.execute<{ oracle_id: string }>(sql`
     select oracle_id from cards
     where type_line !~ '\\mBasic\\M' and type_line !~ 'Legendary'
     order by oracle_id limit 1
   `);
-  if (rows.length < 2 || !subject) throw new Error("catalog is empty — seed it first");
-  return { cmdA: rows[0].oracle_id, cmdB: rows[1].oracle_id, card: subject.oracle_id };
+  if (rows.length < 3 || !subject) throw new Error("catalog is empty — seed it first");
+  return {
+    cmdA: rows[0].oracle_id,
+    cmdB: rows[1].oracle_id,
+    // The printer's partner. A pair deck is the only way the partner arms of
+    // `all_claims` and the partner half of the prune's membership test are
+    // reachable at all.
+    partner: rows[2].oracle_id,
+    card: subject.oracle_id,
+  };
 };
 
 async function main() {
-const { cmdA, cmdB, card } = await pickCards();
+const { cmdA, cmdB, partner, card } = await pickCards();
 
 // Who is named as claiming this card, from a vantage. `free` alone cannot
 // answer this: seniority already leaves a JUNIOR claim out of the senior deck's
@@ -101,22 +109,30 @@ try {
     insert into collection_items (user_id, oracle_id, quantity, set_code)
     values (${USER}, ${card}, 1, 'probe'),
            (${USER}, ${cmdA}, 1, 'probe'),
-           (${USER}, ${cmdB}, 1, 'probe')
+           (${USER}, ${cmdB}, 1, 'probe'),
+           (${USER}, ${partner}, 1, 'probe')
   `);
   const { rows: [holder] } = await fixture.execute<{ id: string }>(sql`
     insert into decks (user_id, name, commander_oracle_id)
     values (${USER}, 'Holder', ${cmdA}) returning id
   `);
+  // The printer is a PAIR deck. Both commander columns are their own arm in the
+  // claim model and their own half of the prune's membership test, and a
+  // fixture of single-commander decks reaches neither.
   const { rows: [printer] } = await fixture.execute<{ id: string }>(sql`
-    insert into decks (user_id, name, commander_oracle_id)
-    values (${USER}, 'Printer', ${cmdB}) returning id
+    insert into decks (user_id, name, commander_oracle_id, partner_oracle_id)
+    values (${USER}, 'Printer', ${cmdB}, ${partner}) returning id
   `);
 
-  const commit = async (deckId: string, cmd: string, number: number, holds: string[]) => {
+  const commit = async (
+    deckId: string, cmd: string, number: number, holds: string[], pair?: string,
+  ) => {
     const { rows: [v] } = await fixture.execute<{ id: string; committed_at: string }>(sql`
       insert into deck_versions
-        (deck_id, number, committed_at, commander_oracle_id, commander_since)
-      values (${deckId}, ${number}, now(), ${cmd}, now())
+        (deck_id, number, committed_at, commander_oracle_id, commander_since,
+         partner_oracle_id, partner_since)
+      values (${deckId}, ${number}, now(), ${cmd}, now(),
+              ${pair ?? null}, ${pair ? sql`now()` : null})
       returning id, committed_at
     `);
     for (const oracleId of holds) {
@@ -134,7 +150,7 @@ try {
   await fixture.execute(sql`
     insert into deck_cards (deck_id, oracle_id, quantity) values (${holder.id}, ${card}, 1)
   `);
-  await commit(printer.id, cmdB, 1, [card]);
+  await commit(printer.id, cmdB, 1, [card], partner);
   await fixture.execute(sql`
     insert into deck_cards (deck_id, oracle_id, quantity) values (${printer.id}, ${card}, 1)
   `);
@@ -191,6 +207,21 @@ try {
   //     The brew leaves; every figure below is about the two sleeved decks again.
   await fixture.execute(sql`delete from decks where id = ${brew.id}`);
 
+  // 3b. THE PARTNER ARMS. A pair deck claims its partner through its own union
+  //     arm, and the prune counts `partner_oracle_id` as membership through its
+  //     own clause. Both are invisible to every check above, and removing
+  //     either would leave all of them passing.
+  check("before: the partner's copy is spoken for", await free(partner, holder.id), 0);
+  await proxy(printer.id, partner);
+  check("a proxied partner releases its copy", await free(partner, holder.id), 1);
+  check("a proxied partner is not a claim", await claimants(partner, holder.id), 0);
+  await pruneOrphanProxies(realDb, printer.id);
+  const { rows: partnerRow } = await fixture.execute<{ n: number }>(sql`
+    select count(*)::int as n from deck_proxies
+    where deck_id = ${printer.id} and oracle_id = ${partner}
+  `);
+  check("a partner's proxy survives the prune", partnerRow[0].n, 1);
+
   // 4. THE SLOT GOES, THE STATEMENT GOES. A proxy is one deck's answer about one
   //    slot, so the row dies with the slot — `pruneOrphanProxies`, which every
   //    write that can shrink a deck's list calls.
@@ -204,7 +235,7 @@ try {
     delete from deck_cards where deck_id = ${printer.id} and oracle_id = ${card}
   `);
   await pruneOrphanProxies(realDb, printer.id);
-  await commit(printer.id, cmdB, 2, []);
+  await commit(printer.id, cmdB, 2, [], partner);
   const { rows: orphan } = await fixture.execute<{ n: number }>(sql`
     select count(*)::int as n from deck_proxies
     where deck_id = ${printer.id} and oracle_id = ${card}
