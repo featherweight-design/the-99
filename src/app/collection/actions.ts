@@ -11,7 +11,9 @@ import { parseCollectionCsv, type CollectionRow, type ParseError } from "../../l
 import { parsePasteList } from "../../lib/manabox/paste";
 import { matchRows } from "../../lib/collection/match";
 import { loadMatchInputs, replaceCollection } from "../../lib/collection/import";
-import { buildArrivalsSummary, type OwnedCounts } from "../../lib/collection/arrivals";
+import {
+  buildArrivalsSummary, type ArrivalsSummary, type OwnedCounts,
+} from "../../lib/collection/arrivals";
 import { loadAvailability, loadDeckBuyRows } from "../../lib/decks/availability-query";
 
 import { aggregatePendingItems, totalQuantity, type PendingItem } from "../../lib/collection/pending";
@@ -178,6 +180,69 @@ async function deckNamesFor(userId: string): Promise<Record<string, string>> {
   return out;
 }
 
+/**
+ * Assembles the receipt for one confirmed upload and stores it.
+ *
+ * Extracted from `confirmUpload` so it can be exercised against a real database: the
+ * action around it needs a request and a signed-in reader, and none of that is what the
+ * receipt's correctness turns on. `pnpm probe:arrivals` calls this directly and reads the
+ * stored payload back.
+ *
+ * Takes the BEFORE state as arguments rather than reading it, because by the time this
+ * runs the replace has destroyed it.
+ */
+export async function writeArrivalsReceipt(args: {
+  userId: string;
+  uploadId: string;
+  pendingItems: PendingItem[];
+  ownedBefore: OwnedCounts;
+  buyBefore: { deckId: string; oracleId: string; quantity: number }[];
+  unmatched: { name: string; line: number }[];
+  parseErrorCount: number;
+}): Promise<ArrivalsSummary> {
+  const { userId, uploadId, pendingItems, ownedBefore, buyBefore } = args;
+  const ownedAfter = pendingItemsToOwnedCounts(pendingItems);
+  const buyAfter = await loadDeckBuyRows(userId);
+
+  // Only the cards that GAINED copies. Contention is a question about arrivals, so the
+  // claim read is narrowed to them — passing every oracle in the old and new collection
+  // defeats the point of `oracleIds` and makes every confirm materialise the player's
+  // whole collection as claims.
+  const arrivedIds = Object.keys(ownedAfter).filter(
+    (oracleId) => (ownedAfter[oracleId] ?? 0) > (ownedBefore[oracleId] ?? 0),
+  );
+  const availability = arrivedIds.length
+    ? await loadAvailability(userId, { oracleIds: arrivedIds })
+    : new Map();
+  const claims: Record<string, { owned: number; hard: number }> = {};
+  for (const [oracleId, a] of availability) claims[oracleId] = { owned: a.owned, hard: a.hard };
+
+  // Names for the rows the diff can emit: every card either side of the collection, plus
+  // every card any deck owes. Frozen into the payload, so a later rename or a deleted deck
+  // cannot rewrite a receipt.
+  const named = new Set([
+    ...Object.keys(ownedBefore),
+    ...Object.keys(ownedAfter),
+    ...buyBefore.map((r) => r.oracleId),
+    ...buyAfter.map((r) => r.oracleId),
+  ]);
+
+  const summary = buildArrivalsSummary({
+    ownedBefore,
+    ownedAfter,
+    buyBefore,
+    buyAfter,
+    claims,
+    unmatched: args.unmatched,
+    parseErrorCount: args.parseErrorCount,
+    cardNames: await cardNamesFor([...named]),
+    deckNames: await deckNamesFor(userId),
+  });
+  await db.update(csvUploads).set({ summaryPayload: summary })
+    .where(and(eq(csvUploads.id, uploadId), eq(csvUploads.userId, userId)));
+  return summary;
+}
+
 export async function confirmUpload(uploadId: string): Promise<void> {
   const userId = await requireUserId();
   const [upload] = await db.select().from(csvUploads)
@@ -217,46 +282,21 @@ export async function confirmUpload(uploadId: string): Promise<void> {
   });
   if (alreadyConfirmed) return;
 
-  // THE STATE AFTER, and then the receipt. Stored in a second write rather than inside the
-  // replace, because two of its three inputs cannot be known before the rows are in: the
-  // buy rows and the claims are queries over the new collection.
+  // INVALIDATION FIRST, RECEIPT SECOND. The replace has committed, so every cached
+  // figure behind every one of these paths is already wrong; the receipt is a nicety by
+  // comparison. Ordered the other way, a failure while assembling the receipt would leave
+  // the caches stale too — and the early return above means no retry would ever repair
+  // either.
   //
-  // The window between the two writes is real and is handled at the READER: a confirmed
-  // upload whose `summary_payload` is null renders the nothing-to-report receipt, which is
-  // the state the design already draws for an import that moved nothing. What must never
-  // happen is a RECOMPUTE on a later confirm — the diff would find nothing moved and
-  // overwrite a real receipt with an empty one — and the short-circuit above is what
-  // prevents that.
-  const ownedAfter = pendingItemsToOwnedCounts(pendingItems);
-  const buyAfter = await loadDeckBuyRows(userId);
-  const touched = new Set([
-    ...Object.keys(ownedBefore),
-    ...Object.keys(ownedAfter),
-    ...buyBefore.map((r) => r.oracleId),
-    ...buyAfter.map((r) => r.oracleId),
-  ]);
-  const availability = await loadAvailability(userId, { oracleIds: [...touched] });
-  const claims: Record<string, { owned: number; hard: number }> = {};
-  for (const [oracleId, a] of availability) claims[oracleId] = { owned: a.owned, hard: a.hard };
-
-  const summary = buildArrivalsSummary({
-    ownedBefore,
-    ownedAfter,
-    buyBefore,
-    buyAfter,
-    claims,
-    unmatched: preview.unmatched ?? [],
-    parseErrorCount: (preview.parseErrors ?? []).length,
-    cardNames: await cardNamesFor([...touched]),
-    deckNames: await deckNamesFor(userId),
-  });
-  await db.update(csvUploads).set({ summaryPayload: summary })
-    .where(and(eq(csvUploads.id, uploadId), eq(csvUploads.userId, userId)));
-
   // Every cached list this reader has is a function of the rows just replaced.
   revalidateUserLists(userId);
   revalidatePath("/collection");
   revalidatePath("/");
+  // The set pages read owned counts and completion ratios off the same rows. Pattern form
+  // for the dynamic one, exactly as `setCardArtPreference` does and for the same reason:
+  // the tag refreshes server payloads, not a client route already visited.
+  revalidatePath("/collection/sets");
+  revalidatePath("/collection/sets/[code]", "page");
   // Wiping commander_scores above changes what /commanders renders, and slugs are
   // assigned in rank order so cached detail pages can point at the wrong
   // commander. '[slug]' needs the 'page' type — it is a dynamic segment.
@@ -271,6 +311,18 @@ export async function confirmUpload(uploadId: string): Promise<void> {
   revalidatePath("/decks/[id]", "page");
   revalidatePath("/decks/[id]/changes", "page");
   revalidatePath("/discover");
+
+  // THE RECEIPT. Assembled and stored by a helper the probe can call directly, because
+  // everything above this line needs a request to exist and the receipt does not.
+  await writeArrivalsReceipt({
+    userId,
+    uploadId,
+    pendingItems,
+    ownedBefore,
+    buyBefore,
+    unmatched: preview.unmatched ?? [],
+    parseErrorCount: (preview.parseErrors ?? []).length,
+  });
 
   // Warm the new collection's scores without blocking the upload response. If this
   // is cut short by the route's max duration, the read path recomputes on first

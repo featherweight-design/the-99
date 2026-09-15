@@ -10,8 +10,10 @@
 //   read-then-write guard passes every unit test and still replaces the collection twice.
 //
 //   THE RECEIPT. A confirmed upload must end up with a `summary_payload`, and the diff
-//   that builds it reads the collection either side of a write. There is no collection to
-//   read either side of anything in jsdom.
+//   that builds it reads the collection either side of a write — there is no collection to
+//   read either side of anything in jsdom. It calls `writeArrivalsReceipt`, the helper
+//   `confirmUpload` uses, and reads the stored row back: asserting the lock alone would
+//   leave a regression in the before/after reads, the wiring or the persistence green.
 //
 // It writes a fixture under a per-run user_id and deletes it in a finally. Point it at
 // `local-dev` or a scratch Neon branch — NEVER production: `replaceCollection` DELETES
@@ -24,6 +26,8 @@ import { drizzle } from "drizzle-orm/neon-serverless";
 import { sql } from "drizzle-orm";
 import ws from "ws";
 import { replaceCollection } from "../src/lib/collection/import";
+import { writeArrivalsReceipt } from "../src/app/collection/actions";
+import type { ArrivalsSummary } from "../src/lib/collection/arrivals";
 
 neonConfig.webSocketConstructor = ws;
 
@@ -102,7 +106,68 @@ async function main() {
     //    upload row and must not be gated by one.
     const seeded = await replaceCollection(USER, items);
     check("the seed path is not gated by an upload", seeded.alreadyConfirmed, false);
+
+    // 5. THE RECEIPT, stored and read back. The fixture replaced a collection holding one
+    //    copy of `first` with two copies of `second`, so one card left and two arrived —
+    //    and the helper has to reach that through a real collection read, a real buy-row
+    //    query and a real claim read.
+    // A committed deck that lists the arriving card, so the receipt has a ROW to emit.
+    // Without one the diff is correct and empty, and the frozen-name check below measures
+    // nothing — which is how the first version of this case passed while proving it.
+    const { rows: [legend] } = await fixture.execute<{ oracle_id: string }>(sql`
+      select oracle_id from cards where type_line ~ 'Legendary Creature' order by oracle_id limit 1
+    `);
+    const { rows: [deck] } = await fixture.execute<{ id: string }>(sql`
+      insert into decks (user_id, name, commander_oracle_id)
+      values (${USER}, 'Probe receipt deck', ${legend.oracle_id}) returning id
+    `);
+    const { rows: [version] } = await fixture.execute<{ id: string }>(sql`
+      insert into deck_versions (deck_id, number, commander_oracle_id)
+      values (${deck.id}, 1, ${legend.oracle_id}) returning id
+    `);
+    await fixture.execute(sql`
+      insert into deck_version_cards (version_id, oracle_id, quantity)
+      values (${version.id}, ${second}, 1)
+    `);
+    await fixture.execute(sql`
+      insert into deck_cards (deck_id, oracle_id, quantity) values (${deck.id}, ${second}, 1)
+    `);
+
+    const receiptUpload = await newUpload();
+    await fixture.execute(sql`
+      update csv_uploads set confirmed_at = now() where id = ${receiptUpload}
+    `);
+    const written = await writeArrivalsReceipt({
+      userId: USER,
+      uploadId: receiptUpload,
+      pendingItems: items,
+      // The state before this fixture's own replace: one copy of `first`, none of `second`.
+      ownedBefore: { [first]: 1 },
+      // What the deck owed before the replace: it lists one copy and owned none.
+      buyBefore: [{ deckId: deck.id, oracleId: second, quantity: 1 }],
+      unmatched: [],
+      parseErrorCount: 0,
+    });
+    check("the receipt counts what arrived", written.arrived, 2);
+    check("and what left", written.left, 1);
+    const { rows: [stored] } = await fixture.execute<{ payload: ArrivalsSummary | null }>(sql`
+      select summary_payload as payload from csv_uploads where id = ${receiptUpload}
+    `);
+    // Read back through the column, not from the return value: the persistence is half of
+    // what this case exists to prove, and a helper that computed perfectly and wrote
+    // nowhere would pass on the figures alone.
+    check("the receipt is stored on the upload row", stored.payload?.arrived, 2);
+    check("with its own version stamp", stored.payload?.version, 1);
+    // The frozen name of a card the receipt mentions, proving the name lookup ran rather
+    // than an empty map being stored beside real rows.
+    check("the cleared row names the deck that stopped owing it",
+      stored.payload?.cleared[0]?.deckId, deck.id);
+    check("and a frozen name for the arrived card",
+      typeof stored.payload?.names.cards[second], "string");
+    check("and for the deck",
+      stored.payload?.names.decks[deck.id], "Probe receipt deck");
   } finally {
+    await fixture.execute(sql`delete from decks where user_id = ${USER}`);
     await fixture.execute(sql`delete from csv_uploads where user_id = ${USER}`);
     await fixture.execute(sql`delete from collection_items where user_id = ${USER}`);
     await pool.end();

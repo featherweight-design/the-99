@@ -722,11 +722,19 @@ export const csvUploads = pgTable("csv_uploads", {
   confirmedAt: timestamp("confirmed_at"),
   /**
    * What the confirm did to the decks: what stopped being a purchase, what started,
-   * and which arrived cards more committed decks want than there are copies. Written in
-   * the SAME transaction as `confirmedAt`, so a confirmed upload always has its receipt
-   * — written afterwards, a crash between the two would leave a confirmed row whose
-   * summary is null forever, and the short-circuit would then serve an empty receipt for
-   * an import that moved real cards.
+   * and which arrived cards more committed decks want than there are copies.
+   *
+   * WRITTEN AFTER `confirmedAt`, in its own statement, and that is a limitation rather
+   * than a choice: two of the three inputs to the diff are queries over the collection
+   * the replace has just written, so they cannot run inside the transaction that writes
+   * it. A null on a CONFIRMED row therefore means "the receipt did not survive", and the
+   * route renders the nothing-to-report state — which is the state the design already
+   * draws for an import that moved nothing. The invalidations run BEFORE this write for
+   * the same reason: a failed receipt must not also leave stale caches behind.
+   *
+   * What must never happen is a recompute on a later confirm. It would diff the new
+   * collection against itself, find nothing, and overwrite a real receipt with an empty
+   * one — so `confirmUpload` returns early on any already-stamped row.
    *
    * Shape: `ArrivalsSummary` in `src/lib/collection/arrivals.ts`, carrying its own
    * version. Frozen on purpose: it is a receipt for one import, and its names are stored

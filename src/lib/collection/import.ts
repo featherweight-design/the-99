@@ -1,4 +1,4 @@
-import { and, eq, inArray, isNotNull, isNull } from "drizzle-orm";
+import { and, eq, inArray, isNotNull, isNull, sql } from "drizzle-orm";
 import { db } from "../../db";
 import {
   cards, collectionItems, commanderScores, csvUploads, printings, skippedPrintings,
@@ -125,6 +125,20 @@ export async function replaceCollection(
   let alreadyConfirmed = false;
   try {
     await db.transaction(async (tx) => {
+      // SERIALIZED PER USER, not per upload. The conditional stamp below locks one
+      // upload row, which is not the same thing: two DIFFERENT unconfirmed uploads for
+      // one player would both pass it and then interleave their delete-and-reinsert over
+      // the same collection. `hashtextextended` rather than `hashtext` because the id is
+      // text of arbitrary length and the two-argument form is stable across versions; the
+      // lock is transaction-scoped, so it is released by the commit or the rollback and
+      // never leaks.
+      //
+      // What this does NOT serialize is the caller's before-snapshot, which is read
+      // outside this transaction by design (see the note in `confirmUpload`). Two
+      // confirms fired in the same instant can still produce one receipt that mixes one
+      // upload's owned delta with the other's buy state. The collection itself cannot be
+      // corrupted, which is what this lock is for.
+      await tx.execute(sql`select pg_advisory_xact_lock(hashtextextended(${userId}, 0))`);
       if (opts.confirmUploadId) {
         const claimed = await tx.update(csvUploads)
           .set({ confirmedAt: new Date() })
