@@ -3,10 +3,11 @@
 // The card view's unit (#349) — Matrix 2 of STATES-card-surfaces.md.
 //
 // Built from `collection/grid-view.tsx`'s tile, with four deltas: the ownership
-// dot sits in the art's bottom-left scrim, the set/rarity caption is gone, the quantity badge disappears at one copy, and the `✕` joins
-// the caption. It is not a fork of `suggestion-tile.tsx` — that one carries
-// evidence bars, an Add button and a two-line clamped name it needs to keep a
-// shelf of tiles in alignment, none of which a decklist tile has any use for.
+// dot sits in the art's bottom-left scrim, the set/rarity caption is gone, the
+// quantity badge disappears at one copy, and the `✕` joins the caption. It is
+// not a fork of `suggestion-tile.tsx` — that one carries evidence bars, an Add
+// button and a two-line clamped name it needs to keep a shelf of tiles in
+// alignment, none of which a decklist tile has any use for.
 //
 // Three of the four corners are marked and the fourth is left bare on purpose:
 // four marked corners is a frame, and an empty bottom-right keeps the art
