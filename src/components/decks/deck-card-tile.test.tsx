@@ -244,7 +244,7 @@ describe("DeckCardTile — the cost the art already prints", () => {
       </CardDetailProvider>,
     );
 
-    expect(container.querySelector("[class*='gap-[3px]']")).toBeNull();
+    expect(container.querySelector("[data-testid='tile-cost-pips']")).toBeNull();
   });
 
   // The pips were this tile's only cost for a reader who cannot see the art, so
@@ -268,7 +268,7 @@ describe("DeckCardTile — the cost the art already prints", () => {
       </CardDetailProvider>,
     );
 
-    expect(container.querySelector("[class*='gap-[3px]']")).not.toBeNull();
+    expect(container.querySelector("[data-testid='tile-cost-pips']")).not.toBeNull();
     expect(screen.getByText(spokenManaCost("{3}{W}{W}"))).toBeInTheDocument();
   });
 });
@@ -292,6 +292,6 @@ describe("DeckCardTile — a cost string with nothing in it", () => {
     );
 
     expect(screen.queryByText(manaCopy.costNone)).not.toBeInTheDocument();
-    expect(container.querySelector("[class*='gap-[3px]']")).toBeNull();
+    expect(container.querySelector("[data-testid='tile-cost-pips']")).toBeNull();
   });
 });

@@ -4,6 +4,7 @@
 // Only the plate differs: the row's tag sits on a solid row, the tile's sits on
 // card art, where a flat wash disappears into a bright frame.
 
+import { CARD_TILE_SLOT_BOX } from "../ui/card-tile-caption";
 import { addPanelCopy } from "../../lib/copy/decks-builder";
 import { priceCopy } from "../../lib/copy/price";
 import {
@@ -139,6 +140,7 @@ export function BuyTag({
   provenance = null,
   reserveSlot = false,
   density = "full",
+  plate = true,
   corner = "right",
 }: {
   variant: BuyTagVariant;
@@ -158,6 +160,15 @@ export function BuyTag({
    * full, formatted by the one Tail that formats them everywhere.
    */
   density?: "full" | "collapsed";
+  /**
+   * Tile variant only. `false` drops the scrim, the inset ring and the absolute
+   * positioning, leaving the glyph in the shared caption box.
+   *
+   * The containment boundary for the caption's geometry: `variant="tile"` is
+   * also `suggestion-tile.tsx`'s and `top-off-list.tsx`'s, neither of which this
+   * design drew, so the box must not be pushed into `PLACEMENT.tile`.
+   */
+  plate?: boolean;
   /** Tile variant only — see TILE_CORNER. */
   corner?: keyof typeof TILE_CORNER;
 }) {
@@ -208,12 +219,20 @@ export function BuyTag({
     </>
   );
 
+  // The caption draws its own plate, so the tag drops its scrim and takes the
+  // box the availability chip and the proxy mark also take there.
+  const captionBox = variant === "tile" && !plate;
+
   return (
     <span
-      className={`font-mono rounded-[4px] px-[5px] py-[1px] ${PLACEMENT[variant]} ${
-        variant === "tile" ? TILE_CORNER[corner] : ""
+      className={`${
+        captionBox
+          ? CARD_TILE_SLOT_BOX
+          : `font-mono rounded-[4px] px-[5px] py-[1px] ${PLACEMENT[variant]} ${
+              variant === "tile" ? TILE_CORNER[corner] : ""
+            }`
       }`}
-      style={{ color: "var(--warning)", ...PLATE[variant] }}
+      style={{ color: "var(--warning)", ...(captionBox ? {} : PLATE[variant]) }}
     >
       {density === "collapsed" ? (
         <>
