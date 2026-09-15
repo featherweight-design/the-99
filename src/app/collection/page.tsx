@@ -19,6 +19,7 @@ import {
   EmptyStateTitle,
 } from "../../components/ui/empty-state";
 import { GhostButton, PrimaryButton } from "../../components/ui/button";
+import { proxyCopy } from "../../lib/copy/proxies";
 
 /* The handoff spells this mark as the "↻" glyph, but glyph metrics render it
    noticeably smaller than the label it sits beside and no font stack agrees on
@@ -89,6 +90,16 @@ export default async function CollectionPage() {
           >
             Upload your CSV
           </PrimaryButton>
+        </div>
+        {/* The proxy list, reachable from HERE too. The rack link lives in
+            `FilterBar`, which this early return never mounts — so the one
+            entry point built deliberately ungated was, in the real route,
+            absent for exactly the player it was built for: someone whose cards
+            are all printed and whose collection is therefore empty. */}
+        <div className="mt-[14px]">
+          <GhostButton href="/collection/proxies" className="text-[13px]">
+            {proxyCopy.entryPoint.label}
+          </GhostButton>
         </div>
       </EmptyState>
     );

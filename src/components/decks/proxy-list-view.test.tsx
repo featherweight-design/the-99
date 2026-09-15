@@ -107,3 +107,14 @@ describe("the proxy list", () => {
     expect(screen.queryByRole("button", { name: /unmark|remove/i })).toBeNull();
   });
 });
+
+describe("the route's landmark", () => {
+  it("does not nest a second main inside the shell's", () => {
+    // The shell renders one around every route. Two main landmarks is invalid
+    // and exposes an ambiguous main region to a screen reader.
+    const { container } = render(
+      <ProxyListView newestAsOf={NEWEST} rows={[row()]} hasDecks hasCollection />,
+    );
+    expect(container.querySelector("main")).toBeNull();
+  });
+});

@@ -67,7 +67,10 @@ export function ProxyListView({
   const unpriced = rows.length - priced.length;
 
   return (
-    <main className="mx-auto w-full max-w-[900px] px-[16px] py-[20px] md:px-[34px] md:py-[28px]">
+    // A SECTION, not a `main`: the shell already renders one around every route,
+    // and a nested main landmark is invalid — it exposes two ambiguous main
+    // regions to a screen reader.
+    <section className="mx-auto w-full max-w-[900px] px-[16px] py-[20px] md:px-[34px] md:py-[28px]">
       <p className="font-mono text-[11px] mb-[6px]" style={{ color: "var(--fg-faint)" }}>
         {proxyCopy.page.breadcrumb}
       </p>
@@ -188,6 +191,6 @@ export function ProxyListView({
           </CardDetailProvider>
         </>
       )}
-    </main>
+    </section>
   );
 }

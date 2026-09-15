@@ -74,31 +74,51 @@ export async function loadProxyList(userId: string): Promise<ProxyList> {
           or d.commander_oracle_id = p.oracle_id
           or d.partner_oracle_id = p.oracle_id
         )
+    ),
+    -- BEFORE any printing join. printings fans out — a card with five
+    -- printings repeats its held row five times — and jsonb_agg does not
+    -- deduplicate, so aggregating after the join listed each deck once per
+    -- printing.
+    by_card as (
+      select
+        h.oracle_id,
+        jsonb_agg(
+          jsonb_build_object('id', h.deck_id, 'name', h.deck_name)
+          order by h.created_at desc, h.deck_id
+        ) as decks,
+        coalesce(bool_or(h.is_commander), false) as commander,
+        max(h.created_at) as newest
+      from held h
+      group by h.oracle_id
+    ),
+    -- ONE printing per card, chosen deterministically. Independent min()s over
+    -- the fan-out could take the set code from one printing and the rarity from
+    -- another and describe a printing that does not exist — the same failure the
+    -- price reader documents.
+    printing as (
+      select distinct on (pr.oracle_id) pr.oracle_id, pr.set_code, pr.rarity
+      from printings pr
+      order by pr.oracle_id, pr.released_at desc nulls last, pr.scryfall_id
     )
     select
-      h.oracle_id,
+      b.oracle_id,
       c.name,
       c.type_line,
       c.mana_cost,
       c.cmc,
       c.image_uri,
-      min(pr.set_code) as set_code,
-      min(pr.rarity) as rarity,
-      jsonb_agg(
-        jsonb_build_object('id', h.deck_id, 'name', h.deck_name)
-        order by h.created_at desc, h.deck_id
-      ) as decks,
-      -- COALESCED. bool_or returns NULL when every input is NULL, which is the
-      -- normal case for a body-card proxy — and a null would travel out through
-      -- a field the type says is boolean.
-      coalesce(bool_or(h.is_commander), false) as commander,
-      -- Newest MARK first, which created_at is the only record of.
-      max(h.created_at) as newest
-    from held h
-    join cards c on c.oracle_id = h.oracle_id
-    left join printings pr on pr.oracle_id = h.oracle_id
-    group by h.oracle_id, c.name, c.type_line, c.mana_cost, c.cmc, c.image_uri
-    order by newest desc, c.name
+      printing.set_code,
+      printing.rarity,
+      b.decks,
+      b.commander
+    from by_card b
+    join cards c on c.oracle_id = b.oracle_id
+    left join printing on printing.oracle_id = b.oracle_id
+    -- Newest MARK first. lower(name) then the oracle id break the tie, because
+    -- two same-named cards marked in the same millisecond would otherwise
+    -- reorder between reads of unchanged data — and this list exists to show
+    -- same-named cards side by side.
+    order by b.newest desc, lower(c.name), b.oracle_id
   `);
 
   // The app's own price read, rather than a second one written here. It carries
