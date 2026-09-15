@@ -28,6 +28,10 @@ export const shellCopy = {
       heading: "Reading your collection",
       status: "matching to Oracle…",
     },
+    proxies: {
+      heading: "Gathering your proxies",
+      status: "reading what each deck prints…",
+    },
     commanders: {
       heading: "Consulting the council",
       status: "ranking by what you own…",

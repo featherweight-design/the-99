@@ -38,6 +38,7 @@ import Link from "next/link";
 import { ViewToggle, type ViewToggleOption } from "../ui/view-toggle";
 import { setPageCopy } from "../../lib/copy/set-collections";
 import { viewToggleCopy } from "../../lib/copy/card-surfaces";
+import { proxyCopy } from "../../lib/copy/proxies";
 
 export { useIsDesktop };
 
@@ -294,6 +295,32 @@ export function FilterBar({
             {setPageCopy.entryPoint.label}
           </Link>
         ) : null}
+        {/* NOT gated on `hasCollection`, unlike `By set` beside it: a set browser
+            with no collection has nothing to say, while a proxy list is most
+            useful to exactly the player whose cards are all printed. The two sit
+            together and differ on this one condition. */}
+        <Link
+          href="/collection/proxies"
+          aria-label={proxyCopy.entryPoint.aria}
+          className={[
+            "inline-flex shrink-0 items-center gap-[6px] rounded-lg px-[10px] text-[13px]",
+            wide ? "min-h-[auto] h-[46px]" : "min-h-[44px]",
+            // `--border-strong`, not a second accent hairline: two accent edges
+            // inside 180px is two permanent off-default signals, and the second
+            // stops meaning anything. The label keeps `--fg-body`, identical to
+            // its neighbour's — ranking is not disabled-ness.
+            "border border-[color:var(--border-strong)] text-[color:var(--fg-body)]",
+            "hover:bg-[color:var(--elevated)]",
+          ].join(" ")}
+        >
+          {/* OUTLINED, not filled: `printing_picker`'s unset half, which is the
+              same move `By set` uses for its own ranking. */}
+          <span
+            aria-hidden
+            className="inline-block h-[7px] w-[7px] rotate-45 border border-[color:var(--fg-locked)]"
+          />
+          {proxyCopy.entryPoint.label}
+        </Link>
         <ViewToggle
           options={COLLECTION_VIEWS}
           value={view}

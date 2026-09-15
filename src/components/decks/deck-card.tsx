@@ -10,6 +10,7 @@ import { formatWhen } from "../../lib/format/when";
 import { ArtWash, INK_SHADOW } from "../ui/art-wash";
 import { DeckCardOverflow } from "./deck-card-overflow";
 import { StatusPillBadge } from "./status-pill";
+import { proxyCopy } from "../../lib/copy/proxies";
 
 /**
  * The one figure that explains the status (`STATES-deck-statuses.md` §7). Total
@@ -39,6 +40,16 @@ function detailFor(
   // the status the clause answers a question for — what is holding this deck up.
   if (statusDetail === null && deck.statusPill === "Building" && deck.inUseElsewhere > 0) {
     return { text: c.detailInUseElsewhere(deck.inUseElsewhere), color: "var(--accent)" };
+  }
+  // SECOND fallback, ranked after the clause above: that one answers "what is
+  // holding this deck up", and a proxy is not holding anything up.
+  //
+  // It can never take a warning colour, and nothing was added to prevent that:
+  // every status that would lend it one already fills this slot with a figure
+  // (`4 over`, `3 lines unresolved`, the To-buy roll-up), so the only statuses
+  // reaching here are Complete, Building and Draft — all `--fg-faint`.
+  if (statusDetail === null && deck.proxiedCount > 0) {
+    return { text: proxyCopy.deckCard.line(deck.proxiedCount), color: "var(--fg-faint)" };
   }
   return statusDetail === null
     ? null
