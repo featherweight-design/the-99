@@ -88,10 +88,18 @@ The division the rest of the app uses is **dot = ownership, marker = availabilit
 `decks/decklist-row.tsx:338` renders `OwnershipDot owned={card.owned}` with no `committed` prop,
 and a separate `AvailabilityMarker` at `:455`.
 
-One counter-precedent, named rather than hidden: `decks/deck-card-tile.tsx:261` keeps a
-three-state dot, deriving `committed` from `availState === "hard" || availState === "over"`. That
-is the app's answer for a tile with no room for a marker, and it reads availability rather than
-`committedTo`. The chips here do get a marker, so the decklist division governs.
+`decks/deck-card-tile.tsx` draws **both channels at once**, and is worth reading before ruling 2
+is taken as universal: its `OwnershipDot` (`:259-261`) tints `committed` from
+`availState === "hard" || availState === "over"` — availability, not `committedTo` — and the same
+caption renders an `AvailabilityMarker` at `:276-286`. So the app already has a surface where the
+dot carries severity beside a marker that also does. Ruling 2 follows the decklist rather than the
+tile, because a tinted dot plus a marker says one thing twice; the tile is named here so the
+implementation does not discover it and take it for the rule.
+
+**That tile also answers §4.6 the other way.** Its slot is gated on `card.owned` — an owned card
+with no free copy draws the MARKER — where `update-diff-row`'s is gated on having a free copy and
+draws the BUY TAG. Two shipped surfaces, two opposite answers, which is precisely why §4.6 is a
+ruling for Design and not an implementation detail.
 
 ---
 
@@ -99,10 +107,15 @@ is the app's answer for a tile with no room for a marker, and it reads availabil
 
 Settled in the workshop. These are not open.
 
-1. **No new vocabulary.** The page draws the app's existing five readings and invents none:
-   unowned (priced buy tag), free (silent), soft (`1 in a brew`), hard (`none free…`), over
-   (`short N`). A sixth reading for one page would break the one-vocabulary-per-page rule the
-   legend copy already states.
+1. **No new vocabulary.** The page draws from the app's existing five readings and invents none:
+   unowned (buy tag), free (silent), soft (`1 in a brew`), hard (`none free…`), over (`short N`).
+   A sixth reading for one page would break the one-vocabulary-per-page rule the legend copy
+   already states.
+
+   **This fixes the WORDS, not which word each surface picks.** Role Coverage's mapping is settled
+   in ruling 3 — markers for soft, hard and over, nothing for free, and no unowned rows to map. The
+   synergy panel's mapping for an owned card with no free copy is **open in §4.6**, because the two
+   shipped surfaces disagree about it. Nothing here pre-empts that.
 2. **The dot drops to two states on all three surfaces.** Ownership only. The marker carries
    severity.
 3. **Role Coverage takes a count-only marker,** never a deck name — the `nameless` contract
@@ -115,17 +128,28 @@ Settled in the workshop. These are not open.
    (`coverage-chip.tsx:35`, `:49`). The marker is the channel.
 5. **The synergy panel gains one availability slot before the toggle,** and an unowned row draws a
    **priced** buy tag in it. Phone puts the marker on the existing meta line beside `+8 · 14%`.
-   Rejected: an unpriced tag (every other buy tag in the app quotes a price); no tag at all (which
-   leaves Hugh's stated problem — "if something needs to be bought, that should be clear upfront" —
-   exactly where it is). **What the slot draws for an owned row with no free copy is NOT settled
-   here — see §4.6.**
+   Rejected: a deliberately unpriced tag (every other buy tag in the app quotes a price when it
+   has one); no tag at all (which leaves Hugh's stated problem — "if something needs to be bought,
+   that should be clear upfront" — exactly where it is).
+
+   **"Priced" means it quotes the price it has, not that a price always exists.** `priceState`
+   (`lib/decks/price.ts:82-96`) returns `absent` with no fact and `foilOnly` / `soldOut` besides,
+   and `BuyTag` already draws a bare `buy` or a qualified one for those. The rule here is to reuse
+   that component's own behaviour unchanged, not to require a figure the feed cannot supply.
+
+   **What the slot draws for an owned row with no free copy is NOT settled here — see §4.6.**
 6. **Role Coverage never draws a buy tag,** whatever §4.6 rules for the synergy panel. Its rows
    are drawn from the owned pool, and this brief does not put a price on a card the player already
    has. Role Coverage draws markers and nothing else.
-7. **The `Availability` sort option ships in the same round.** Its copy is written and ratified
-   (`commander-explained.ts`, `coverageSort.availability`) and was held back only because "it needs
-   the committed flag, which is slice B". This brief lands that read, four-way. Its sub-line needs
-   rewording: it describes two buckets and there are now four.
+7. **The `Availability` sort is UPGRADED, not introduced.** It already ships: `CoverageSortKey`
+   is `"played" | "availability"`, the menu draws both options, and `sortRoleCards`
+   (`commanders/coverage-sort.tsx:18-39`) partitions on `committedTo` into free-first and
+   already-in-a-deck-second. This brief takes that two-bucket partition to the four-state model.
+
+   The comment in `commander-explained.ts` saying the option "is not drawn at all" until the
+   committed read lands is **stale against the shipped control** and should be deleted in the same
+   round — an earlier draft of this brief repeated it as fact. Its sub-line still needs rewording:
+   it describes two buckets and there are now four.
 8. **Scope is the detail page.** The `/commanders` list row keeps its existing aggregate receipt
    (`34 of your cards fit · 12 already in use`, `commanders/receipt-line.tsx`) unchanged — that is
    the right altitude for a ranked list, and its one-clause-by-severity shape is a settled §8
@@ -146,7 +170,7 @@ Settled in the workshop. These are not open.
    accessible-name rows; the coupling is enforced in code at `availability-marker.tsx`.)
    Ratify the divergence, or rule that the chip loses the spoken name (a regression against what
    ships today), or give the marker a third option. Design's call; note the marker is shared
-   across eight surfaces, so a new option is not free.
+   across nine components, so a new option is not free.
 2. **The legend.** Three keys for five readings. The existing rule holds and is not up for
    revision: **no counts** — a key sitting above four panels cannot count for any one of them.
    Design owns the new key set and its phrasing.
@@ -167,6 +191,12 @@ Settled in the workshop. These are not open.
    lost); marker for every owned state and the tag for unowned only (ownership leads, and the
    surface stops answering "what would it cost"); or both, which needs a geometry that fits two
    items in one slot. Ruling 3's count-only marker on Role Coverage is unaffected either way.
+7. **The synergy row's accessible name.** The row authors its own `aria-label` on the `<li>`
+   (`commanders/synergy-row.tsx:80-94`) carrying ownership and the two figures, and it is composed,
+   not inherited — so a marker or buy tag added to the row is NOT announced unless that string is
+   extended. Design owns the wording: the severity clause, the price clause, and their order
+   against the figures already in the name. Note this interacts with §4.1 — if the visible label
+   goes count-only while the spoken one names a deck, this is the string that carries the name.
 
 ---
 
@@ -220,10 +250,26 @@ Recorded here so the handoff round does not have to carry them.
 - One `loadAvailability(userId, { oracleIds })` call on the detail page, off-decklist vantage
   (no `excludeDeckId`), narrowed to the role cards' and synergy cards' oracle ids. Never cached:
   a claim read is point-in-time by contract.
+- **A MISSING MAP ENTRY DOES NOT MEAN UNOWNED.** The query's outer select is driven by the `owned`
+  CTE (`availability-query.ts:196-204`, `:583-589`), which reads `collection_items` and excludes
+  basics from the whole model. So an unowned card, a basic, and a card the read could not reach all
+  come back the same way: absent. The buy branch reads `SynergyCard.owned`, never map absence, or a
+  basic land renders as something to go and buy.
 - `SynergyCard` carries no price today, so the priced buy tag adds a `printing_prices` join to this
   page. A printing absent from that table has never been stocked; a row with a null `price_cents`
   is stocked in foil only. Neither is "free" and neither is "unknown".
-- The sort comparator orders on `availabilityState`, not on `committedTo`.
+- The sort comparator orders on `availabilityState`, not on `committedTo` — but `RoleCard`
+  (`recs/score.ts:17-25`) carries no availability field and `sortRoleCards(cards, key)` receives
+  nothing else, so the card type gains one or the comparator gains the map as a second argument.
+  Pick one in the plan; the shipped signature does not support either as written.
+- **The total order is free → soft → hard → over**, stable within each bucket, which keeps the
+  shipped promise (free first) and orders the rest by severity. Stated here because the brief
+  otherwise names four buckets without saying which way they run; if Design's reworded sub-line
+  (§4.3) implies a different order, that wins.
 - `AvailabilityDot`, `availabilityDotState` and `LegendPip` are deleted, not deprecated.
-- Likely two PRs: the read plus Role Coverage, then the synergy panel plus the price join. Both sit
-  well inside the size bound, and neither stacks on the other.
+- Two PRs, and the boundary is NOT clean — say so in the plan rather than discovering it. The
+  availability read has to carry both surfaces' oracle ids from the first PR, because one call
+  serves the page. And `AvailabilityDot` / `availabilityDotState` / `LegendPip` cannot be deleted
+  until the synergy panel stops importing them, so PR 1 leaves them in place and PR 2 removes them.
+  "Deleted, not deprecated" is the end state across both, not a PR-1 task. Neither PR stacks: both
+  cut from `main`, and PR 1 is complete and shippable with the old panel untouched.
