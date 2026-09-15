@@ -167,6 +167,19 @@ entries point at `/decks`.
 Home is described here rather than given a chapter of its own: it is the place you return
 to, so it reads as the end of the loop rather than the start of it.
 
+### Amended 2026-09-15 — the handoff's copy file is the entry set of record
+
+The inventory above is the spec's original skeleton and is superseded by
+`design/design_handoff_the99_about/about · copy strings.ts`, which R3 regenerated to 32 entries
+across chapters of 7 / 6 / 10 / 9. Everything the skeleton listed survives; R3 added the deck
+page, browsing the collection, the deck update flow, export, Put back, themes, reservations and
+proxies.
+
+One entry is owed beyond that set: **the post-import summary** — what a collection replace did to
+your decks — which merged as #639 and #643 during the design round. It belongs in chapter 01
+beside "Import a collection", because it is the consequence of an import rather than a deck
+feature.
+
 ### Not documented
 
 Deck tuning suggestions (#10) is designed but parked and renders nothing — it gets no
@@ -275,8 +288,10 @@ A guard, `src/lib/copy/about.test.ts`, pinning four things:
    is worse than a stale link anywhere else.
 4. **No two entries share a title**, and every entry has a `route`.
 
-What no guard can catch is a feature shipping with no paragraph written at all. That is a
-line in the `feature-acceptance` close-out, not a check. Saying so is better than building
+What no guard can catch is a feature shipping with no paragraph written at all. That is a rule
+in three places rather than a check, and `AGENTS.md` §Design pipeline is where it lives: the
+entry is drawn in the feature's own design handoff, the `ABOUT_VERSION` bump is a named plan
+task, and `feature-acceptance` does not pass without both. Saying so is better than building
 something that reports green over it — the lesson `check:copy-drift` cost four review
 rounds to learn.
 
