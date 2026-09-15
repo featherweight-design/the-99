@@ -137,7 +137,7 @@ see the border, since a class-list assertion reads `border` and `outline` as equ
 ## Erratum 4 — the spent tile is a tenth state and is not drawn
 
 `DeckCardTile` renders `UndoTile` when the decklist marks its slot spent
-(`deck-card-tile.tsx:88`), and `deck-card-undo-tile.tsx:12-21` borrows `TILE_SHELL` and
+(`deck-card-tile.tsx:94`), and `deck-card-undo-tile.tsx:12-21` borrows `TILE_SHELL` and
 `TILE_ART_RATIO` from the live tile *so that a removed card leaves a hole exactly its own size*.
 
 Its caption height is hardcoded: `min-h-[44px] md:min-h-[36px]` (`:53`) — the live tile's current
