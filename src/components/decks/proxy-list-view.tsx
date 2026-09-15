@@ -6,6 +6,7 @@
 // state-changing targets in a list whose job is to be read, where a mis-tap
 // silently puts a deck back on the shopping list.
 
+import { hasFrontFaceCost } from "../../lib/cards/faces";
 import Link from "next/link";
 import { CardDetailProvider } from "../cards/card-detail-provider";
 import { CardDetailTrigger } from "../cards/card-detail-provider";
@@ -201,7 +202,7 @@ export function ProxyListView({
                     </span>
                   </span>
 
-                  {row.manaCost && <CostPips cost={row.manaCost} />}
+                  {hasFrontFaceCost(row.manaCost) && <CostPips cost={row.manaCost ?? ""} />}
 
                   {/* A BARE FIGURE, never a buy tag: `isShoppingCard` has just
                       removed every one of these from every Shopping list, and

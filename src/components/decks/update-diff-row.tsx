@@ -23,6 +23,7 @@
 //   row that owned both would be a row that offers a Keep on a surface where
 //   putting a card back means adding it to the deck.
 
+import { hasFrontFaceCost } from "../../lib/cards/faces";
 import { deckImportCopy } from "../../lib/copy/deck-import";
 import { deckVersioningCopy } from "../../lib/copy/deck-versioning";
 import type { Availability } from "../../lib/decks/availability";
@@ -321,7 +322,11 @@ function HeldBy({ deck }: { deck: string }) {
  *  row drawing a cost track — which has a fixed trailing column of its own —
  *  gives the space back rather than holding it empty. */
 function markerDrawn(card: DiffRowCard): boolean {
-  return card.auto || !card.manaCost;
+  // The FRONT face's cost, not the stored string's truthiness. A land-front,
+  // spell-back card stores `" // {3}{R}"` — non-empty, and describing a face
+  // this row does not show — so a truthiness test would take the box away from
+  // a row that draws no pips at all.
+  return card.auto || !hasFrontFaceCost(card.manaCost);
 }
 
 /** The row's name, and the flow's one way into the card itself. A player
@@ -456,7 +461,9 @@ export function DiffRowOut({
           The update flow, which passes no cost at all, draws no track: its six
           row kinds share one geometry and a 40px column on two of them would
           leave the other four short. */}
-      {review || card.manaCost ? <CostTrack cost={card.manaCost ?? null} /> : null}
+      {review || hasFrontFaceCost(card.manaCost) ? (
+        <CostTrack cost={card.manaCost ?? null} />
+      ) : null}
       {action}
     </div>
   );
@@ -573,14 +580,14 @@ export function DiffRowIn({
         // slot holds its place on short numbers but grows past four digits
         // instead of colliding with the type line — nothing caps import length.
         className={[
-          card.manaCost ? "flex" : "hidden md:flex",
+          hasFrontFaceCost(card.manaCost) ? "flex" : "hidden md:flex",
           "items-center justify-end font-mono text-[11px] min-w-[54px] flex-none",
           "text-right tabular-nums whitespace-nowrap text-[color:var(--fg-faint)]",
         ].join(" ")}
       >
-        {card.manaCost ? (
+        {hasFrontFaceCost(card.manaCost) ? (
           <CostPips
-            cost={card.manaCost}
+            cost={card.manaCost ?? ""}
             size={COST_PIP_SIZE}
             track={COST_TRACK}
             cap={COST_PIP_CAP}

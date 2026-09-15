@@ -15,10 +15,9 @@
 // is what `probe:black-pip` measures.
 //
 // This surface also draws BOTH halves of a two-cost card, where the runs in a
-// column draw the front half alone. A `transform` back's cost is absent from
-// both, and not by choice: Scryfall puts it in `card_faces` and the ingest reads
-// only the top level, so nothing in the catalog holds it. Giving the turn control
-// a cost to swap to needs a per-face column and an ingest change.
+// column draw the front half alone — including a modal DFC's castable back, which
+// the ingest joins into the same `a // b` string a split card carries. A
+// `transform` back is free, so such a card draws one cost and no separator.
 
 import { Fragment } from "react";
 

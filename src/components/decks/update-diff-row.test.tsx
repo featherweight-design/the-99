@@ -351,4 +351,15 @@ describe("the update flow's mounting", () => {
     const priced = draw(<DiffRowIn card={card({ auto: false, manaCost: "{U}" })} sourceLine={null} />);
     expect(priced.querySelector(".invisible")).toBeNull();
   });
+
+  // A modal DFC whose front is a land and whose back is a spell stores
+  // `" // {3}{R}"` — a NON-EMPTY string describing a face this row does not
+  // show. The row draws no pips for it, so it must keep the box a costless card
+  // keeps; a gate on the stored string's truthiness took that box away.
+  it("keeps the box for a card whose cost belongs to its back face", () => {
+    const row = draw(
+      <DiffRowIn card={card({ auto: false, manaCost: " // {3}{R}" })} sourceLine={3} />,
+    );
+    expect(row.querySelector(".invisible")).toBeTruthy();
+  });
 });

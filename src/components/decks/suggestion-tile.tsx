@@ -5,6 +5,7 @@
 // card was suggested for is never printed here — it is the shelf heading above,
 // so a tile in the Ramp shelf does not say "ramp" a second time.
 
+import { hasFrontFaceCost } from "../../lib/cards/faces";
 import type { DeckSuggestion } from "../../lib/decks/suggest";
 import { addCardToDeck } from "../../app/decks/actions";
 import { availabilityCopy } from "../../lib/copy/availability";
@@ -275,9 +276,9 @@ export function SuggestionTile({
                   {addPanelCopy.tile.detailHint}
                 </span>
               )}
-              {suggestion.manaCost && (
+              {hasFrontFaceCost(suggestion.manaCost) && (
                 <CostPips
-                  cost={suggestion.manaCost}
+                  cost={suggestion.manaCost ?? ""}
                   className="absolute left-[6px] bottom-[6px] flex gap-[3px]"
                 />
               )}
