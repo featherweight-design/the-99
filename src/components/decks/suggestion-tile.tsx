@@ -278,7 +278,7 @@ export function SuggestionTile({
               )}
               {hasFrontFaceCost(suggestion.manaCost) && (
                 <CostPips
-                  cost={suggestion.manaCost ?? ""}
+                  cost={suggestion.manaCost}
                   className="absolute left-[6px] bottom-[6px] flex gap-[3px]"
                 />
               )}

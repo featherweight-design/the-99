@@ -587,7 +587,7 @@ export function DiffRowIn({
       >
         {hasFrontFaceCost(card.manaCost) ? (
           <CostPips
-            cost={card.manaCost ?? ""}
+            cost={card.manaCost ?? null}
             size={COST_PIP_SIZE}
             track={COST_TRACK}
             cap={COST_PIP_CAP}

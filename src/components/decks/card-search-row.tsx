@@ -161,7 +161,7 @@ export function CardSearchRowBody({
           column stays on one vertical line down the list. */}
       <span aria-hidden className="hidden md:flex flex-none w-[34px] justify-start">
         {hasFrontFaceCost(result.manaCost) && (
-          <CostPips cost={result.manaCost ?? ""} className="flex gap-[3px]" />
+          <CostPips cost={result.manaCost} className="flex gap-[3px]" />
         )}
       </span>
 
