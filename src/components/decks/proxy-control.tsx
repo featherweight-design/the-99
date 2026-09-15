@@ -25,6 +25,7 @@ export function ProxyControl({
   oracleId,
   cardName,
   proxied,
+  known = true,
   onSaved,
 }: {
   deckId: string;
@@ -32,6 +33,14 @@ export function ProxyControl({
   oracleId: string;
   cardName: string;
   proxied: boolean;
+  /**
+   * Whether the proxy state was actually READ. False when the query failed —
+   * where `proxied` is not a fact but an absence of one, and pressing a toggle
+   * drawn from it sends the mark a proxied card already has, leaving the reader
+   * no way to unmark. Greyed in place rather than absent: the control belongs
+   * here, it just cannot answer yet.
+   */
+  known?: boolean;
   /**
    * Fired after a write lands. The receipt above this control reads the
    * provider's CACHED card, so without an invalidation it keeps listing the
@@ -72,7 +81,7 @@ export function ProxyControl({
     // does not promise: the server could finish `true` last while the reader's
     // last press was `false`, and a refusal rollback could overwrite a newer
     // tap. One in flight at a time makes the final state the final press.
-    if (pending) return;
+    if (pending || !known) return;
     const next = !on;
     setOn(next);
     setError(null);
@@ -117,9 +126,10 @@ export function ProxyControl({
         type="button"
         onClick={toggle}
         role="switch"
-        aria-checked={on}
+        aria-checked={known ? on : false}
+        aria-disabled={!known}
         aria-busy={pending}
-        className="mt-[8px] flex w-full items-center gap-[12px] md:gap-[11px] min-h-[44px] bg-transparent border-0 p-0 text-left cursor-pointer"
+        className={`mt-[8px] flex w-full items-center gap-[12px] md:gap-[11px] min-h-[44px] bg-transparent border-0 p-0 text-left ${known ? "cursor-pointer" : "cursor-default opacity-60"}`}
       >
         <span
           aria-hidden="true"
@@ -141,7 +151,12 @@ export function ProxyControl({
       {/* The marked state names what did NOT happen in the same breath as what
           did. "You're covered" alone is true and incomplete, and the incomplete
           half is the one a reader turns into a purchase they did not make. */}
-      {on && (
+      {!known && (
+        <p className="m-0 mt-[8px] text-[13px]" style={{ color: "var(--fg-muted)" }}>
+          {proxyCopy.control.unknown}
+        </p>
+      )}
+      {known && on && (
         <p className="m-0 mt-[8px] text-[13px]" style={{ color: "var(--fg-body)" }}>
           {proxyCopy.control.marked(deckName)}
         </p>

@@ -20,12 +20,16 @@ const mount = (proxied = false) =>
     />,
   );
 
+// FILE scope, not inside the first `describe`. Nested, it left a
+// never-resolving implementation from one block's in-flight test leaking into
+// the next block — where the failure read as a bug in the code under test.
+beforeEach(() => {
+  setCardProxied.mockReset();
+  onSaved.mockReset();
+  setCardProxied.mockResolvedValue({ ok: true });
+});
+
 describe("the proxy control", () => {
-  beforeEach(() => {
-    setCardProxied.mockReset();
-    onSaved.mockReset();
-    setCardProxied.mockResolvedValue({ ok: true });
-  });
 
   it("names the deck in the label, not just the heading", async () => {
     // A sheet paged through with Prev/Next is easy to lose your place in, so
@@ -143,5 +147,34 @@ describe("the control reconciles with the server", () => {
     );
     expect(screen.getByRole("switch").getAttribute("aria-checked")).toBe("true");
     await act(async () => { release({ ok: true }); });
+  });
+});
+
+describe("when the proxy state could not be read", () => {
+  it("does not act on a guess", async () => {
+    // `proxiedBy` is null when the query failed, which is NOT "no deck prints
+    // this". Drawn from that absence, the toggle shows unchecked over an
+    // already-proxied card and the press sends the mark it already has.
+    render(
+      <ProxyControl
+        deckId="d1" deckName="HD Gods" oracleId="o1" cardName="The Ozolith"
+        proxied={false} known={false} onSaved={onSaved}
+      />,
+    );
+    await act(async () => { fireEvent.click(screen.getByRole("switch")); });
+    expect(setCardProxied).not.toHaveBeenCalled();
+    expect(screen.getByRole("switch").getAttribute("aria-disabled")).toBe("true");
+  });
+
+  it("says so, rather than showing a confident tick", () => {
+    render(
+      <ProxyControl
+        deckId="d1" deckName="HD Gods" oracleId="o1" cardName="The Ozolith"
+        proxied known={false}
+      />,
+    );
+    expect(screen.getByText(proxyCopy.control.unknown)).toBeTruthy();
+    // And never the marked sentence, which asserts a state nobody read.
+    expect(screen.queryByText(proxyCopy.control.marked("HD Gods"))).toBeNull();
   });
 });

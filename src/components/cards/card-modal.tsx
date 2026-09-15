@@ -1292,6 +1292,7 @@ export function CardModal({
                 oracleId={card.oracleId}
                 cardName={card.name}
                 proxied={(card.proxiedBy ?? []).some((d) => d.id === deckId)}
+                known={card.proxiedBy !== null && card.proxiedBy !== undefined}
                 onSaved={onProxyWrite}
               />
             )}
