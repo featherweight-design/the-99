@@ -55,6 +55,18 @@ const pickCards = async () => {
 async function main() {
 const { cmdA, cmdB, card } = await pickCards();
 
+// Who is named as claiming this card, from a vantage. `free` alone cannot
+// answer this: seniority already leaves a JUNIOR claim out of the senior deck's
+// surplus, so a junior claim that should have retired is invisible in that
+// figure. The claims list is where `all_claims` is actually observable.
+const claimants = async (oracleId: string, vantage: string) => {
+  const availability = await loadAvailability(USER, {
+    oracleIds: [oracleId],
+    excludeDeckId: vantage,
+  });
+  return availability.get(oracleId)?.claims.length ?? null;
+};
+
 const free = async (oracleId: string, deckId: string) => {
   const availability = await loadAvailability(USER, {
     oracleIds: [oracleId],
@@ -127,10 +139,13 @@ try {
   // the junior deck is short a copy and is billed for it.
   check("before: the junior deck is short", await free(card, printer.id), -1);
   check("before: the junior deck is billed", await buyCopies(printer.id, card), 1);
+  check("before: the senior deck sees one other claimant",
+    await claimants(card, holder.id), 1);
 
   // 1. THE HEADLINE. The junior deck prints its copy. Its claim retires, so the
   //    senior deck's own page stops reporting a contested copy…
   await proxy(printer.id, card);
+  check("a proxied claim is not a claim", await claimants(card, holder.id), 0);
   check("a proxied claim releases the copy", await free(card, holder.id), 0);
   //    …and the printing deck no longer reads short, because it is asking for
   //    nothing. This is `own_claims`' anti-join rather than `all_claims`'.
