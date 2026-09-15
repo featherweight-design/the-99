@@ -472,6 +472,11 @@ export async function loadAvailability(
             -- of this a commander claim"; this answers "how much of it", which is what
             -- decides whether the rest can be given away.
             'commanderCopies', cd.commander_copies,
+            -- Copies RESERVED to this deck by the player, as the model granted them. Carried so a
+            -- reader can show the allocation without recomputing it: a second implementation of
+            -- the reservation arithmetic drifts from this one, and the row that draws it is the
+            -- one place the two disagreeing would be visible.
+            'granted', coalesce(rv.granted, 0),
             -- The two pull guards. Both are render-time facts: a control that
             -- can only fail must not be drawn, and the refusal string the
             -- transaction returns arrives far too late to decide that.

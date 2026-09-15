@@ -1,5 +1,9 @@
-import { describe, expect, it } from "vitest";
-import { render, screen } from "@testing-library/react";
+import { beforeEach, describe, expect, it, vi } from "vitest";
+import { fireEvent, render, screen, waitFor } from "@testing-library/react";
+
+// The server action, stubbed: what these cases are about is what the ROW does with each answer.
+const assign = vi.hoisted(() => vi.fn());
+vi.mock("../../app/decks/assignment-actions", () => ({ assignCopy: assign }));
 import { ContestedCardRow } from "./contested-card-row";
 import { cardAssignmentsCopy as copy } from "../../lib/copy/card-assignments";
 import type { ContestedCard } from "../../lib/collection/summary-read";
@@ -20,11 +24,11 @@ function card(over: Partial<ContestedCard> = {}): ContestedCard {
     brewNames: [],
     claimants: [
       {
-        deckId: "d1", deckName: "HD Avatar Aang", quantity: 1, commanderCopies: 0,
+        deckId: "d1", deckName: "HD Avatar Aang", quantity: 1, commanderCopies: 0, granted: 0,
         since: AUG, versionNumber: 7, allocated: 1,
       },
       {
-        deckId: "d2", deckName: "Elemental Dragons", quantity: 1, commanderCopies: 0,
+        deckId: "d2", deckName: "Elemental Dragons", quantity: 1, commanderCopies: 0, granted: 0,
         since: SEP, versionNumber: 2, allocated: 0,
       },
     ],
@@ -79,11 +83,11 @@ describe("ContestedCardRow", () => {
     render(<ContestedCardRow card={card({
       claimants: [
         {
-          deckId: "d1", deckName: "Led By It", quantity: 1, commanderCopies: 1,
+          deckId: "d1", deckName: "Led By It", quantity: 1, commanderCopies: 1, granted: 0,
           since: AUG, versionNumber: 1, allocated: 1,
         },
         {
-          deckId: "d2", deckName: "Lists It", quantity: 1, commanderCopies: 0,
+          deckId: "d2", deckName: "Lists It", quantity: 1, commanderCopies: 0, granted: 0,
           since: SEP, versionNumber: 1, allocated: 0,
         },
       ],
@@ -105,11 +109,11 @@ describe("ContestedCardRow", () => {
       arrived: 1,
       claimants: [
         {
-          deckId: "d1", deckName: "Folded", quantity: 2, commanderCopies: 1,
+          deckId: "d1", deckName: "Folded", quantity: 2, commanderCopies: 1, granted: 0,
           since: AUG, versionNumber: 3, allocated: 2,
         },
         {
-          deckId: "d2", deckName: "Lists It", quantity: 1, commanderCopies: 0,
+          deckId: "d2", deckName: "Lists It", quantity: 1, commanderCopies: 0, granted: 0,
           since: SEP, versionNumber: 1, allocated: 0,
         },
       ],
@@ -127,11 +131,11 @@ describe("ContestedCardRow", () => {
       owned: 1,
       claimants: [
         {
-          deckId: "d1", deckName: "First, by list", quantity: 1, commanderCopies: 0,
+          deckId: "d1", deckName: "First, by list", quantity: 1, commanderCopies: 0, granted: 0,
           since: AUG, versionNumber: 1, allocated: 1,
         },
         {
-          deckId: "d2", deckName: "Later, by commander", quantity: 1, commanderCopies: 1,
+          deckId: "d2", deckName: "Later, by commander", quantity: 1, commanderCopies: 1, granted: 0,
           since: SEP, versionNumber: 1, allocated: 0,
         },
       ],
@@ -147,8 +151,8 @@ describe("ContestedCardRow", () => {
       owned: 2,
       arrived: 2,
       claimants: [
-        { deckId: "d1", deckName: "One", quantity: 1, commanderCopies: 0, since: AUG, versionNumber: 1, allocated: 1 },
-        { deckId: "d2", deckName: "Two", quantity: 1, commanderCopies: 0, since: SEP, versionNumber: 1, allocated: 1 },
+        { deckId: "d1", deckName: "One", quantity: 1, commanderCopies: 0, granted: 0, since: AUG, versionNumber: 1, allocated: 1 },
+        { deckId: "d2", deckName: "Two", quantity: 1, commanderCopies: 0, granted: 0, since: SEP, versionNumber: 1, allocated: 1 },
       ],
     })} />);
     expect(screen.getByText(copy.contested.cap(2, 2))).toBeTruthy();
@@ -167,11 +171,11 @@ describe("ContestedCardRow", () => {
       arrived: 1,
       claimants: [
         {
-          deckId: "d1", deckName: "Folded", quantity: 2, commanderCopies: 1,
+          deckId: "d1", deckName: "Folded", quantity: 2, commanderCopies: 1, granted: 0,
           since: AUG, versionNumber: 3, allocated: 2,
         },
         {
-          deckId: "d2", deckName: "Lists It", quantity: 1, commanderCopies: 0,
+          deckId: "d2", deckName: "Lists It", quantity: 1, commanderCopies: 0, granted: 0,
           since: SEP, versionNumber: 1, allocated: 0,
         },
       ],
@@ -208,11 +212,11 @@ describe("ContestedCardRow", () => {
       ownedBefore: 0,
       claimants: [
         {
-          deckId: "d1", deckName: "Led By It", quantity: 1, commanderCopies: 1,
+          deckId: "d1", deckName: "Led By It", quantity: 1, commanderCopies: 1, granted: 0,
           since: AUG, versionNumber: 1, allocated: 1,
         },
         {
-          deckId: "d2", deckName: "Lists It", quantity: 2, commanderCopies: 0,
+          deckId: "d2", deckName: "Lists It", quantity: 2, commanderCopies: 0, granted: 0,
           since: SEP, versionNumber: 1, allocated: 1,
         },
       ],
@@ -234,11 +238,11 @@ describe("ContestedCardRow", () => {
       ownedBefore: 0,
       claimants: [
         {
-          deckId: "d1", deckName: "Led By It", quantity: 1, commanderCopies: 1,
+          deckId: "d1", deckName: "Led By It", quantity: 1, commanderCopies: 1, granted: 0,
           since: AUG, versionNumber: 1, allocated: 1,
         },
         {
-          deckId: "d2", deckName: "Lists It", quantity: 1, commanderCopies: 0,
+          deckId: "d2", deckName: "Lists It", quantity: 1, commanderCopies: 0, granted: 0,
           since: SEP, versionNumber: 1, allocated: 0,
         },
       ],
@@ -258,11 +262,11 @@ describe("ContestedCardRow", () => {
       owned: 2,
       claimants: [
         {
-          deckId: "d1", deckName: "Earlier, by list", quantity: 1, commanderCopies: 0,
+          deckId: "d1", deckName: "Earlier, by list", quantity: 1, commanderCopies: 0, granted: 0,
           since: AUG, versionNumber: 1, allocated: 1,
         },
         {
-          deckId: "d2", deckName: "Later, by commander", quantity: 1, commanderCopies: 1,
+          deckId: "d2", deckName: "Later, by commander", quantity: 1, commanderCopies: 1, granted: 0,
           since: SEP, versionNumber: 1, allocated: 1,
         },
       ],
@@ -278,11 +282,11 @@ describe("ContestedCardRow", () => {
       owned: 2,
       claimants: [
         {
-          deckId: "d1", deckName: "Led By It", quantity: 1, commanderCopies: 1,
+          deckId: "d1", deckName: "Led By It", quantity: 1, commanderCopies: 1, granted: 0,
           since: AUG, versionNumber: 1, allocated: 1,
         },
         {
-          deckId: "d2", deckName: "Lists It", quantity: 2, commanderCopies: 0,
+          deckId: "d2", deckName: "Lists It", quantity: 2, commanderCopies: 0, granted: 0,
           since: SEP, versionNumber: 1, allocated: 1,
         },
       ],
@@ -300,15 +304,15 @@ describe("ContestedCardRow", () => {
       ownedBefore: 1,
       claimants: [
         {
-          deckId: "d1", deckName: "Led By It", quantity: 1, commanderCopies: 1,
+          deckId: "d1", deckName: "Led By It", quantity: 1, commanderCopies: 1, granted: 0,
           since: AUG, versionNumber: 1, allocated: 1,
         },
         {
-          deckId: "d2", deckName: "Lists It", quantity: 1, commanderCopies: 0,
+          deckId: "d2", deckName: "Lists It", quantity: 1, commanderCopies: 0, granted: 0,
           since: SEP, versionNumber: 1, allocated: 1,
         },
         {
-          deckId: "d3", deckName: "Also lists it", quantity: 1, commanderCopies: 0,
+          deckId: "d3", deckName: "Also lists it", quantity: 1, commanderCopies: 0, granted: 0,
           since: SEP + 1, versionNumber: 1, allocated: 0,
         },
       ],
@@ -317,7 +321,8 @@ describe("ContestedCardRow", () => {
     expect(screen.queryByText(copy.contested.headingInert)).toBeNull();
     expect(screen.queryByText(copy.contested.headingSpare)).toBeNull();
     // The commander's option is still the one nobody can choose, and says so by its border.
-    const rows = screen.getAllByRole("listitem");
+    // The options are radios now, not bare list items: the row became the chooser.
+    const rows = screen.getAllByRole("radio");
     expect(rows[0].getAttribute("style")).toContain("dashed");
     expect(rows[1].getAttribute("style")).toContain("solid");
   });
@@ -341,5 +346,103 @@ describe("ContestedCardRow", () => {
     unmount();
     render(<ContestedCardRow card={card()} alsoAbove />);
     expect(screen.getByText(/answer different questions/)).toBeTruthy();
+  });
+});
+
+describe("ContestedCardRow — the chooser", () => {
+  beforeEach(() => assign.mockReset());
+
+  it("is a radiogroup whose options are the decks", () => {
+    render(<ContestedCardRow card={card()} />);
+    expect(screen.getByRole("radiogroup")).toBeTruthy();
+    expect(screen.getAllByRole("radio")).toHaveLength(2);
+    // Nothing is checked before a pick: a filled mark means the deck HOLDS a copy by default,
+    // and `aria-checked` means the player chose it. They are different facts.
+    expect(screen.queryByRole("radio", { checked: true })).toBeNull();
+  });
+
+  it("moves the words and the mark on the tap, without waiting for the server", async () => {
+    // Held open deliberately: if the row waited for the server, nothing below would be true yet.
+    // Settled at the end so the transition does not outlive the test and hang the next hook.
+    let settle: (v: unknown) => void = () => {};
+    assign.mockReturnValue(new Promise((r) => { settle = r; }));
+    render(<ContestedCardRow card={card()} />);
+    fireEvent.click(screen.getByRole("radio", { name: /Elemental Dragons/ }));
+    expect(screen.getByRole("radio", { checked: true })).toBeTruthy();
+    expect(assign).toHaveBeenCalledWith("o1", "d2");
+    settle({ ok: true, card: card() });
+    await waitFor(() => expect(screen.getByRole("radio", { checked: true })).toBeTruthy());
+  });
+
+  it("names the deck in the undo hint, which is the only non-colour carrier of authorship", async () => {
+    assign.mockResolvedValue({ ok: true, card: card() });
+    render(<ContestedCardRow card={card()} />);
+    fireEvent.click(screen.getByRole("radio", { name: /Elemental Dragons/ }));
+    expect(screen.getByText(copy.contested.undoHint("Elemental Dragons"))).toBeTruthy();
+    expect(screen.getByText(copy.contested.clear)).toBeTruthy();
+  });
+
+  it("pressing the chosen deck again clears it", async () => {
+    assign.mockResolvedValue({ ok: true, card: card() });
+    render(<ContestedCardRow card={card()} />);
+    const option = screen.getByRole("radio", { name: /Elemental Dragons/ });
+    fireEvent.click(option);
+    fireEvent.click(screen.getByRole("radio", { name: /your choice/ }));
+    expect(screen.queryByRole("radio", { checked: true })).toBeNull();
+    // …and a cleared row is indistinguishable from one never touched.
+    expect(screen.queryByText(copy.contested.clear)).toBeNull();
+  });
+
+  it("redraws from the server's own reading when a pick is refused", async () => {
+    assign.mockResolvedValue({
+      ok: false,
+      cause: "no-supply-left",
+      card: card({ cardName: "Brushland" }),
+    });
+    render(<ContestedCardRow card={card()} />);
+    fireEvent.click(screen.getByRole("radio", { name: /Elemental Dragons/ }));
+    await waitFor(() => {
+      expect(screen.getByText(copy.contested.refusedNoSupply("HD Avatar Aang", 1, "Elemental Dragons"))).toBeTruthy();
+    });
+    // The optimistic pick is taken back: the refusal means it never happened.
+    expect(screen.queryByRole("radio", { checked: true })).toBeNull();
+    // And the refusal note SUPERSEDES the footer — two competing instructions on one row is
+    // worse than one, and the refusal already names the way back.
+    expect(screen.queryByText(copy.contested.clear)).toBeNull();
+  });
+
+  it("has a sentence for each drawable cause", async () => {
+    for (const [cause, expected] of [
+      ["claimant-no-longer-asks", copy.contested.refusedNotWanted("Elemental Dragons", "Brushland", "HD Avatar Aang")],
+      ["target-is-commander", copy.contested.refusedIsCommander("Brushland", "Elemental Dragons")],
+    ] as const) {
+      assign.mockResolvedValue({ ok: false, cause, card: card() });
+      const { unmount } = render(<ContestedCardRow card={card()} />);
+      fireEvent.click(screen.getByRole("radio", { name: /Elemental Dragons/ }));
+      await waitFor(() => expect(screen.getByText(expected)).toBeTruthy());
+      unmount();
+    }
+  });
+
+  it("draws no control on an option nobody can choose", async () => {
+    render(<ContestedCardRow card={card({
+      claimants: [
+        { deckId: "d1", deckName: "Led By It", quantity: 1, commanderCopies: 1, granted: 0, since: AUG, versionNumber: 1, allocated: 1 },
+        { deckId: "d2", deckName: "Lists It", quantity: 1, commanderCopies: 0, granted: 0, since: SEP, versionNumber: 1, allocated: 0 },
+      ],
+    })} />);
+    const commander = screen.getByRole("radio", { name: /keeps Brushland as its commander/ });
+    fireEvent.click(commander);
+    expect(assign).not.toHaveBeenCalled();
+  });
+
+  it("announces both sides of the trade, once", async () => {
+    assign.mockResolvedValue({ ok: true, card: card() });
+    const { container } = render(<ContestedCardRow card={card()} />);
+    fireEvent.click(screen.getByRole("radio", { name: /Elemental Dragons/ }));
+    const live = container.querySelector("[aria-live]");
+    expect(live?.textContent).toBe(
+      copy.contested.announcedPick("Elemental Dragons", "Brushland", "HD Avatar Aang"),
+    );
   });
 });

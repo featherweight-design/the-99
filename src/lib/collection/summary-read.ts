@@ -17,9 +17,10 @@
 
 import { and, eq } from "drizzle-orm";
 import { db } from "../../db";
-import { csvUploads } from "../../db/schema";
+import { cards, csvUploads } from "../../db/schema";
 import { loadAvailability } from "../decks/availability-query";
 import type { ArrivalsSummary } from "./arrivals";
+import type { Availability } from "../decks/availability";
 
 /** One committed deck's place in a contested card's queue. */
 export type ContestedClaimant = {
@@ -29,6 +30,8 @@ export type ContestedClaimant = {
   quantity: number;
   /** How many of that ask is a commander or partner — never reservable. */
   commanderCopies: number;
+  /** Copies reserved to this deck by the player, as the claim model granted them. */
+  granted: number;
   /** `deck_version_cards.since`, epoch millis. The order this list is in, and the stamp it draws. */
   since: number | null;
   versionNumber: number | null;
@@ -62,35 +65,82 @@ export type SummaryView = {
 };
 
 /**
- * Allocates a card's copies across its committed claimants, in the order the model uses.
+ * Allocates a card's copies across its committed claimants, for display.
  *
- * STRICTLY IN QUEUE ORDER — `(since, deckId)` — and commander copies do NOT jump it. That is
- * the same correction the claim model itself took in PR 1: a commander claim is never
- * RESERVABLE, which is a rule about assignments, but it holds its place in the seniority queue
- * like any other claim. Taking commander copies off the top here would make the reader's view
- * disagree with the arithmetic underneath it — with one copy owned, an earlier list claimant
- * and a later commander claimant, the page would say the later deck keeps it and the deck that
- * committed first buys it, which is the opposite of what the model does and of what the section
- * note promises.
+ * RESERVATIONS COME FROM THE MODEL, never from here. `DeckClaim.granted` is what the claim query
+ * granted each deck — already capped at its own list ask and at the supply left when its turn
+ * came — so this function reads that figure rather than re-deriving it. An earlier version
+ * recomputed the queue from `owned` alone, which made the page a second source of truth for an
+ * arithmetic the query owns; the two would have disagreed the moment a reservation existed.
  *
- * Each claimant takes as much of its whole ask as is left when its turn comes; the commander
- * half is not special here and only matters to the chooser, which cannot offer those copies.
- *
- * IT DOES NOT KNOW ABOUT RESERVATIONS, and that is a deliberate boundary rather than an
- * oversight. `card_assignments` shipped with the model and `loadAvailability` already factors
- * grants into `free` — but nothing WRITES a row yet, so there is no allocation here that this
- * queue can currently disagree with. The moment the chooser can write one, recomputing the queue
- * in the reader becomes a second source of truth that drifts from the first, so the next PR
- * DELETES this function and carries the per-claim allocation out of the query that already
- * computes it. Do not extend it instead.
+ * What is left after the grants goes down the seniority queue in `(since, deckId)` order, which
+ * is the order the model itself uses. Commander copies are NOT promoted: a commander claim is
+ * never reservable, but it holds its place in the queue like any other.
  */
 function allocate(owned: number, claimants: Omit<ContestedClaimant, "allocated">[]): ContestedClaimant[] {
-  let left = owned;
+  const grantedTotal = claimants.reduce((n, c) => n + c.granted, 0);
+  let left = Math.max(owned - grantedTotal, 0);
   return claimants.map((c) => {
-    const allocated = Math.min(c.quantity, left);
-    left -= allocated;
-    return { ...c, allocated };
+    // The unreserved part of this deck's ask takes what the queue has left when its turn comes.
+    const unreserved = Math.max(c.quantity - c.granted, 0);
+    const fromQueue = Math.min(unreserved, left);
+    left -= fromQueue;
+    return { ...c, allocated: c.granted + fromQueue };
   });
+}
+
+/**
+ * One contested card, read live. The chooser's write returns this so a row can redraw itself from
+ * the state that authorized — or refused — the pick, rather than from props that just lost.
+ */
+export async function loadContestedCard(
+  oracleId: string,
+  userId: string,
+): Promise<ContestedCard | null> {
+  const availability = await loadAvailability(userId, { oracleIds: [oracleId] });
+  const a = availability.get(oracleId);
+  if (!a) return null;
+  const [name] = await db.select({ name: cards.name }).from(cards)
+    .where(eq(cards.oracleId, oracleId));
+  return buildContestedCard(oracleId, name?.name ?? "", a, { arrived: 0, ownedBefore: 0 });
+}
+
+/**
+ * The shape both readers build, so the summary's rows and a redrawn row cannot differ.
+ *
+ * `arrived` and `ownedBefore` come from the FROZEN receipt when there is one — they are facts
+ * about an import, not about now — and are nought for a row read outside that context.
+ */
+function buildContestedCard(
+  oracleId: string,
+  cardName: string,
+  a: Availability,
+  frozen: { arrived: number; ownedBefore: number },
+): ContestedCard {
+  const committed = a.claims
+    .filter((c) => c.mature)
+    .map((c) => ({
+      deckId: c.id,
+      deckName: c.name,
+      quantity: c.quantity,
+      commanderCopies: c.commanderCopies ?? (c.commander ? 1 : 0),
+      granted: c.granted ?? 0,
+      since: c.since ?? null,
+      versionNumber: c.versionNumber ?? null,
+    }))
+    // Commit order, per card. `claims` arrives ordered by deck NAME, which is the wrong order
+    // here: the queue is the explanation of the default, so it has to be the order the model
+    // uses. A null `since` cannot occur on a mature claim, and sorts last if it ever does.
+    .sort((x, y) => (x.since ?? Infinity) - (y.since ?? Infinity) || x.deckId.localeCompare(y.deckId));
+  return {
+    oracleId,
+    cardName,
+    arrived: frozen.arrived,
+    ownedBefore: frozen.ownedBefore,
+    owned: a.owned,
+    claimants: allocate(a.owned, committed),
+    brewNames: a.claims.filter((c) => !c.mature).map((c) => c.name),
+  };
 }
 
 export async function loadSummaryView(uploadId: string, userId: string): Promise<SummaryView | null> {
@@ -133,31 +183,12 @@ export async function loadSummaryView(uploadId: string, userId: string): Promise
     // in `arrivals.ts`. Re-asked live because the payload is a record of one import: a deck may
     // have committed a removal since.
     if (a.claims.filter((c) => c.mature).length < 2) return [];
-    const committed = a.claims
-      .filter((c) => c.mature)
-      .map((c) => ({
-        deckId: c.id,
-        deckName: c.name,
-        quantity: c.quantity,
-        commanderCopies: c.commanderCopies ?? (c.commander ? 1 : 0),
-        since: c.since ?? null,
-        versionNumber: c.versionNumber ?? null,
-      }))
-      // Commit order, per card. `claims` arrives ordered by deck NAME, which is the wrong
-      // order here: the queue is the explanation of the default, so it has to be the order the
-      // model uses. Null `since` cannot occur on a mature claim, and sorts last if it ever does.
-      .sort((x, y) => (x.since ?? Infinity) - (y.since ?? Infinity) || x.deckId.localeCompare(y.deckId));
-    return [{
-      oracleId: row.oracleId,
-      cardName: summary?.names.cards[row.oracleId] ?? "",
+    return [buildContestedCard(row.oracleId, summary?.names.cards[row.oracleId] ?? "", a, {
       arrived: row.arrived,
       // A receipt written before this field existed reads as nought, which makes `keeps it`
       // unavailable rather than wrong — the safe direction.
       ownedBefore: row.ownedBefore ?? 0,
-      owned: a.owned,
-      claimants: allocate(a.owned, committed),
-      brewNames: a.claims.filter((c) => !c.mature).map((c) => c.name),
-    }];
+    })];
   });
 
   return {

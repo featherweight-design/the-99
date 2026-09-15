@@ -71,6 +71,15 @@ export type DeckClaim = {
    */
   commanderCopies?: number;
   /**
+   * Copies of this card RESERVED to this deck, as the claim model granted them — already capped
+   * at the deck's own list ask and at the supply left when its turn came.
+   *
+   * Carried rather than recomputed downstream for the reason the model's own header gives: the
+   * reservation arithmetic has one implementation, and a reader re-deriving it becomes a second
+   * source of truth that drifts one round at a time. Zero when the player has reserved nothing.
+   */
+  granted?: number;
+  /**
    * `free` counts this claim, so releasing it could relieve the vantage deck's
    * shortfall. False for a sleeved deck that is JUNIOR to the vantage on this
    * card: seniority already leaves a junior claim out of `free`, so taking its
