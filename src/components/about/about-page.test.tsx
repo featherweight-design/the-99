@@ -155,14 +155,92 @@ describe("the figures", () => {
     }
   });
 
-  it("leaves an entry with no figure complete", () => {
-    // FIGURES is a partial map on purpose: a figure earns its place by
-    // teaching something the caption cannot, and a workflow entry's words are
-    // a finished answer.
-    render(<AboutPage seen={0} />);
+  it("leaves an entry with no figure complete, and gives it no empty frame", () => {
+    // The first version of this asserted only that the caption rendered, which
+    // held before figures existed and holds with FIGURES deleted — it named
+    // the partial-map behaviour and measured none of it. What distinguishes
+    // the two is whether this entry has a specimen box at all.
+    const { container } = render(<AboutPage seen={0} />);
     const workflow = aboutEntries.find((e) => e.id === "deck-import");
     expect(workflow).toBeTruthy();
-    expect(screen.getByText(workflow!.caption)).toBeTruthy();
+    const li = [...container.querySelectorAll("li")].find((el) =>
+      el.textContent?.includes(workflow!.caption),
+    );
+    expect(li).toBeTruthy();
+    expect(li!.querySelector("[data-specimen]")).toBeNull();
+  });
+
+  it("draws something inside every specimen", () => {
+    // The class that let three broken figures through: every earlier test
+    // asserted the FRAME — its data attribute, its aria-hidden, its
+    // pointer-events — and none asserted that the component inside it drew
+    // anything. StatusPillBadge defaulting to an absolute tile box, an
+    // unsized OwnershipDot at 0x0 and a TwoFacedMark with no layout all
+    // rendered nothing while passing.
+    const { container } = render(<AboutPage seen={0} />);
+    const figures = [...container.querySelectorAll("[data-specimen]")];
+    expect(figures.length).toBeGreaterThan(0);
+    for (const figure of figures) {
+      const name = figure.getAttribute("data-specimen");
+      // A cell's caption is this page's own text; what has to be there is
+      // something the APP drew, so count elements that are not our chassis.
+      const drawn = [...figure.querySelectorAll("*")].filter(
+        (el) => !el.className.toString().includes("font-mono text-[10px]"),
+      );
+      expect(drawn.length, `${name} drew nothing`).toBeGreaterThan(2);
+    }
+  });
+
+  it("gives every mark in the marks plate a drawn body", () => {
+    const { container } = render(<AboutPage seen={0} />);
+    const marks = container.querySelector('[data-specimen="marks"]');
+    expect(marks).toBeTruthy();
+
+    // A cell is [content box, caption]. Querying the CELL finds the caption
+    // span and passes over an empty content box — which is how a TwoFacedMark
+    // called with no layout, returning null, read as a drawn mark.
+    const cells = [...marks!.querySelectorAll(":scope > div > div")];
+    expect(cells).toHaveLength(4);
+    for (const [i, cell] of cells.entries()) {
+      const content = cell.firstElementChild;
+      expect(content, `mark ${i} has no content box`).toBeTruthy();
+      expect(content!.childElementCount, `mark ${i} drew nothing`).toBeGreaterThan(0);
+    }
+  });
+
+  it("sizes the ownership dots, which carry colour and shape only", () => {
+    // jsdom lays nothing out, so a 0x0 dot is present in the DOM and invisible
+    // on screen — the component sets fill and radius and leaves sizing to the
+    // caller, so the only thing a unit test can read is whether the caller
+    // supplied one.
+    const { container } = render(<AboutPage seen={0} />);
+    const marks = container.querySelector('[data-specimen="marks"]');
+    const dots = [...marks!.querySelectorAll("span")].filter((el) =>
+      el.className.toString().includes("rounded-full"),
+    );
+    expect(dots.length).toBeGreaterThanOrEqual(2);
+    for (const dot of dots) {
+      expect((dot as HTMLElement).style.width, "an unsized dot draws at 0x0").toBeTruthy();
+    }
+  });
+
+  it("keeps the status pills in flow", () => {
+    // StatusPillBadge defaults its className to the TILE box, which opens
+    // `absolute bottom-[13px] left-[13px]` because its usual home is pinned to
+    // a tile's art. Defaulted inside an unpositioned figure, all six leave
+    // flow and stack on the page's corner, and the plate draws empty.
+    //
+    // Scoped to this plate rather than swept across every specimen: a marker
+    // that positions its own internals — the over glyph's two diamonds and
+    // their seam — is doing it deliberately and inside its own box.
+    const { container } = render(<AboutPage seen={0} />);
+    const plate = container.querySelector('[data-specimen="status"]');
+    expect(plate).toBeTruthy();
+    const pinned = [...plate!.querySelectorAll("*")].filter((el) =>
+      el.className.toString().includes("absolute"),
+    );
+    expect(pinned).toHaveLength(0);
+    expect(plate!.querySelectorAll("span")).toHaveLength(6);
   });
 });
 

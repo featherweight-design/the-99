@@ -13,7 +13,7 @@
 
 import { AvailabilityMarker } from "../ui/availability-marker";
 import { OwnershipDot } from "../ui/ownership-dot";
-import { CostPips } from "../ui/cost-pips";
+import { COST_TRACK, CostPips } from "../ui/cost-pips";
 import { BuyTag } from "../decks/buy-tag";
 import { StatusPillBadge } from "../decks/status-pill";
 import { FitBar } from "../commanders/fit-bar";
@@ -44,7 +44,10 @@ function AvailabilityFigure() {
             {/* free renders null, and that IS the state — the cell keeps its
                 height so the absence reads as one of the four rather than as a
                 figure that failed to draw. */}
-            <AvailabilityMarker availability={a} density="row" />
+            {/* `seam` is the hairline joining the two over-diamonds and only
+                reads as a seam while it matches what is BEHIND it. It defaults
+                to `--bg`; the plate is `--surface-sunken`. */}
+            <AvailabilityMarker availability={a} density="row" seam="var(--surface-sunken)" />
           </SpecimenCell>
         ))}
       </SpecimenGrid>
@@ -88,7 +91,16 @@ function StatusFigure() {
     <Specimen label="status">
       <div className="flex flex-wrap items-center gap-[10px]">
         {STATUSES.map((status) => (
-          <StatusPillBadge key={status} status={status} />
+          // The className is REQUIRED here, not decoration: the component
+          // defaults to `TILE_CLASS`, which opens `absolute bottom-[13px]
+          // left-[13px]` because its usual home is pinned to a tile's art.
+          // Defaulted, all six leave flow and stack on the page's corner,
+          // leaving this plate empty.
+          <StatusPillBadge
+            key={status}
+            status={status}
+            className="flex h-[24px] items-center rounded-[6px] px-[9px] font-mono text-[11px] tracking-[0.06em]"
+          />
         ))}
       </div>
     </Specimen>
@@ -122,17 +134,23 @@ function MarksFigure() {
   return (
     <Specimen label="marks">
       <SpecimenGrid>
+        {/* `size` is required: the dot sets colour and shape and leaves
+            sizing to the caller, so an unsized one draws at 0×0. 7px is the
+            size a decklist row gives it. */}
         <SpecimenCell caption="owned and free">
-          <OwnershipDot owned />
+          <OwnershipDot owned size={7} />
         </SpecimenCell>
         <SpecimenCell caption="not owned">
-          <OwnershipDot owned={false} />
+          <OwnershipDot owned={false} size={7} />
         </SpecimenCell>
         <SpecimenCell caption="the printed cost">
-          <CostPips cost={COSTS.crowded} />
+          <CostPips cost={COSTS.crowded} track={COST_TRACK} />
         </SpecimenCell>
+        {/* A layout is required: the mark renders null for anything that is
+            not two-sided, INCLUDING an absent layout, so calling it bare
+            captions a glyph that never draws. */}
         <SpecimenCell caption="two faces">
-          <TwoFacedMark />
+          <TwoFacedMark layout="transform" />
         </SpecimenCell>
       </SpecimenGrid>
     </Specimen>

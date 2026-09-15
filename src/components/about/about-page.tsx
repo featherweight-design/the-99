@@ -1,6 +1,9 @@
-// The /about reference page. No figures yet — the specimens that mount the
-// app's real components with fixture props are PR 3, and an entry's words
-// stand on their own until then.
+// The /about reference page.
+//
+// An entry whose subject is a MARK carries a figure: the app's own component,
+// mounted with fixture props from `lib/about/fixtures.ts`. An entry whose
+// subject is a workflow carries its words, which is a finished answer —
+// `FIGURES` is a partial map on purpose.
 //
 // Copy: src/lib/copy/about.ts. Handoff: design/design_handoff_the99_about/
 // (R4 canvas §3 for the page, §4 for the behind and current readers).

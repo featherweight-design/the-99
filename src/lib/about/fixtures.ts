@@ -80,7 +80,9 @@ export const FIT_DEGRADED = fitSegments({
 
 /** Costs chosen to exercise the pip track rather than to be typical. */
 export const COSTS = {
-  /** Three pips past the second — the case the 72px track was widened for. */
+  /** Four symbols of the track's five slots — 5 × 12 + 4 × 3 = 72, which is
+   *  why COST_TRACK is 72. Drawn at that track rather than unbounded, so the
+   *  figure has the geometry a decklist row gives it. */
   crowded: "{2}{B}{B}{B}",
   simple: "{1}{G}",
   /** Costless: the one card that draws the marker box on a decklist row. */
