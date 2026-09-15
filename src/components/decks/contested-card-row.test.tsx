@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import { act, fireEvent, render, screen, waitFor } from "@testing-library/react";
+import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 
 // The server action, stubbed: what these cases are about is what the ROW does with each answer.
 const assign = vi.hoisted(() => vi.fn());
@@ -20,6 +20,7 @@ function card(over: Partial<ContestedCard> = {}): ContestedCard {
     // word says the deck had the card before the import, and the first-arrival case must not
     // borrow it.
     ownedBefore: 1,
+    fromImport: true,
     owned: 1,
     brewNames: [],
     claimants: [
@@ -40,6 +41,39 @@ describe("ContestedCardRow", () => {
   it("states the supply before the demand, because the shortage is why the row exists", () => {
     render(<ContestedCardRow card={card()} />);
     expect(screen.getByText(copy.contested.supply(1, 2))).toBeTruthy();
+  });
+
+  // `1 new copy` is a fact about an arrival. On a surface with no import behind it — the deck's
+  // own review page — the same line states the supply, or it tells the reader their collection
+  // turned up this morning.
+  it("does not call the player's own copies new when no import is behind the row", () => {
+    render(<ContestedCardRow card={card({ fromImport: false })} />);
+    expect(screen.getByText(copy.contested.supplyOwned(1, 2))).toBeTruthy();
+    expect(screen.getByText(copy.contested.headingOwned(1))).toBeTruthy();
+    expect(screen.queryByText(copy.contested.supply(1, 2))).toBeNull();
+    expect(screen.queryByText(copy.contested.heading(1))).toBeNull();
+  });
+
+  // `arrived` carries the TOTAL owned on the review door, and a commander's copy cannot be
+  // given to anybody. Counting it offered `Give the 2 copies to` over a single movable copy.
+  it("counts only the copies that can actually move on the review door", () => {
+    render(<ContestedCardRow card={card({
+      fromImport: false,
+      arrived: 2,
+      owned: 2,
+      claimants: [
+        { deckId: "d1", deckName: "HD Avatar Aang", quantity: 1, commanderCopies: 1, granted: 0, since: AUG, versionNumber: 7, allocated: 1 },
+        { deckId: "d2", deckName: "Elemental Dragons", quantity: 1, commanderCopies: 0, granted: 0, since: SEP, versionNumber: 2, allocated: 1 },
+      ],
+    })} />);
+    expect(screen.getByText(copy.contested.supplyOwned(1, 2))).toBeTruthy();
+    expect(screen.getByText(copy.contested.headingOwned(1))).toBeTruthy();
+    expect(screen.queryByText(copy.contested.headingOwned(2))).toBeNull();
+    expect(screen.queryByText(copy.contested.supplyOwned(2, 2))).toBeNull();
+    // And the accessible name takes the same figure, being the same claim about supply.
+    expect(screen.getByRole("radiogroup", {
+      name: copy.contested.a11yGroupOwned("Brushland", 1),
+    })).toBeTruthy();
   });
 
   it("names the verb in the heading and never as a button", () => {
@@ -210,6 +244,7 @@ describe("ContestedCardRow", () => {
       arrived: 2,
       owned: 2,
       ownedBefore: 0,
+    fromImport: true,
       claimants: [
         {
           deckId: "d1", deckName: "Led By It", quantity: 1, commanderCopies: 1, granted: 0,
@@ -236,6 +271,7 @@ describe("ContestedCardRow", () => {
   it("says a commander GETS a copy that has only just arrived", () => {
     render(<ContestedCardRow card={card({
       ownedBefore: 0,
+    fromImport: true,
       claimants: [
         {
           deckId: "d1", deckName: "Led By It", quantity: 1, commanderCopies: 1, granted: 0,
@@ -258,6 +294,7 @@ describe("ContestedCardRow", () => {
   it("says gets it when the old copy went to an earlier deck", () => {
     render(<ContestedCardRow card={card({
       ownedBefore: 1,
+    fromImport: true,
       arrived: 1,
       owned: 2,
       claimants: [
@@ -302,6 +339,7 @@ describe("ContestedCardRow", () => {
       owned: 2,
       arrived: 1,
       ownedBefore: 1,
+    fromImport: true,
       claimants: [
         {
           deckId: "d1", deckName: "Led By It", quantity: 1, commanderCopies: 1, granted: 0,
@@ -415,7 +453,10 @@ describe("ContestedCardRow — the chooser", () => {
     assign.mockResolvedValue({
       ok: false,
       cause: "no-supply-left",
-      card: card({ cardName: "Brushland" }),
+      // `fromImport: false`, as `loadContestedCard` really returns it: the live read has no
+      // import behind it. The ROW does, so the sentence must still be the arrival one — which
+      // it is only because the refusal reads the merged card rather than this object.
+      card: card({ cardName: "Brushland", fromImport: false }),
     });
     render(<ContestedCardRow card={card()} />);
     fireEvent.click(screen.getByRole("radio", { name: /Elemental Dragons/ }));
@@ -431,6 +472,52 @@ describe("ContestedCardRow — the chooser", () => {
     // And the refusal note SUPERSEDES the footer — two competing instructions on one row is
     // worse than one, and the refusal already names the way back.
     expect(screen.queryByText(copy.contested.clear)).toBeNull();
+  });
+
+  it("takes the fresh supply on the review door rather than freezing the first render", async () => {
+    // Another tab imports a second copy while this row sits open. The live read knows; the
+    // frozen `arrived` cannot, and carrying it would hold the heading at one copy for ever.
+    assign.mockResolvedValue({
+      ok: true,
+      card: card({ fromImport: false, arrived: 0, owned: 2, claimants: [
+        { deckId: "d1", deckName: "HD Avatar Aang", quantity: 1, commanderCopies: 0, granted: 0, since: AUG, versionNumber: 7, allocated: 1 },
+        { deckId: "d2", deckName: "Elemental Dragons", quantity: 1, commanderCopies: 0, granted: 1, since: SEP, versionNumber: 2, allocated: 1 },
+      ] }),
+    });
+    render(<ContestedCardRow card={card({ fromImport: false })} />);
+    fireEvent.click(screen.getByRole("radio", { name: /Elemental Dragons/ }));
+    await waitFor(() => {
+      expect(screen.getByText(copy.contested.supplyOwned(2, 2))).toBeTruthy();
+    });
+    expect(screen.queryByText(copy.contested.supplyOwned(1, 2))).toBeNull();
+  });
+
+  it("does not say a copy arrived when the refusal comes from the review page", async () => {
+    assign.mockResolvedValue({
+      ok: false,
+      cause: "no-supply-left",
+      card: card({ cardName: "Brushland", fromImport: false }),
+    });
+    render(<ContestedCardRow card={card({ fromImport: false })} />);
+    fireEvent.click(screen.getByRole("radio", { name: /Elemental Dragons/ }));
+    await waitFor(() => {
+      expect(screen.getAllByText(
+        copy.contested.refusedNoSupplyOwned("HD Avatar Aang", 1, "Elemental Dragons"),
+      )).toHaveLength(2);
+    });
+    // The arrival wording belongs to the receipt, and nothing arrived here.
+    expect(screen.queryByText(
+      copy.contested.refusedNoSupply("HD Avatar Aang", 1, "Elemental Dragons"),
+    )).toBeNull();
+  });
+
+  it("names the group without an arrival when no import is behind the row", () => {
+    render(<ContestedCardRow card={card({ fromImport: false })} />);
+    // A screen reader takes the group's NAME in place of the supply line above it, so the
+    // branch that fixes the visible text fixes nothing until this one moves too.
+    expect(screen.getByRole("radiogroup", {
+      name: copy.contested.a11yGroupOwned("Brushland", 1),
+    })).toBeTruthy();
   });
 
   it("has a sentence for each drawable cause", async () => {

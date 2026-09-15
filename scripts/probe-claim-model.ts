@@ -21,6 +21,7 @@ import { loadAvailability, loadDeckBuyRows } from "../src/lib/decks/availability
 import { assignCopyFor } from "../src/lib/decks/assign";
 import { commitVersion } from "../src/lib/decks/versions";
 import { pruneOrphanAssignments } from "../src/lib/decks/prune-assignments";
+import { loadContestedCards } from "../src/lib/collection/summary-read";
 
 neonConfig.webSocketConstructor = ws;
 
@@ -39,6 +40,9 @@ const USER_C = `probe-ceiling-${Date.now()}`;
 // And the chooser's own write gets a fourth. It calls the guarded write directly — the server
 // action around it needs a request, and what these cases are about is what the DATABASE refuses.
 const USER_W = `probe-write-${Date.now()}`;
+// And the review page's own read gets a fifth: its two filters and its UNEXCLUDED vantage are
+// facts about a query, and a component test fed hand-built props cannot see either.
+const USER_D = `probe-door-${Date.now()}`;
 
 let failures = 0;
 const check = (label: string, actual: unknown, expected: unknown) => {
@@ -718,6 +722,84 @@ async function assignmentWriteSection() {
   }
 }
 
+// ── THE SECOND DOOR'S OWN READ ─────────────────────────────────────────────────
+//
+// `loadContestedCards` is what `/decks/[id]/changes` hangs its chooser off, and two of its rules
+// are invisible to a component test fed hand-built props:
+//
+//   IT READS UNEXCLUDED. A row on that page is loaded from the deck's own vantage, which is right
+//   for its buy tag and wrong here — the queue's subject is the committed decks INCLUDING the one
+//   the reader is looking at, and an excluded read leaves that deck out of its own decision.
+//   IT FILTERS TWICE. Demand above supply, and at least two committed claimants: a shortage with
+//   one claimant is a purchase rather than a choice, and drawing it would offer a chooser with
+//   one option.
+async function changesDoorSection() {
+  const { rows: legends } = await fixture.execute<{ oracle_id: string }>(sql`
+    select oracle_id from cards
+    where type_line ~ 'Legendary Creature' and type_line !~ '\\mBasic\\M'
+    order by oracle_id limit 2
+  `);
+  const card = legends[0].oracle_id;
+  const cmd = legends[1].oracle_id;
+
+  const mk = async (name: string, ago: number, quantity: number) => {
+    const { rows: [d] } = await fixture.execute<{ id: string }>(sql`
+      insert into decks (user_id, name, commander_oracle_id)
+      values (${USER_D}, ${name}, ${cmd}) returning id
+    `);
+    const { rows: [v] } = await fixture.execute<{ id: string }>(sql`
+      insert into deck_versions (deck_id, number, committed_at, commander_oracle_id, commander_since)
+      values (${d.id}, 1, now() - (${ago} * interval '1 minute'), ${cmd},
+              now() - (${ago} * interval '1 minute'))
+      returning id
+    `);
+    await fixture.execute(sql`
+      insert into deck_version_cards (version_id, oracle_id, quantity, since)
+      values (${v.id}, ${card}, ${quantity}, now() - (${ago} * interval '1 minute'))
+    `);
+    await fixture.execute(sql`
+      insert into deck_cards (deck_id, oracle_id, quantity) values (${d.id}, ${card}, ${quantity})
+    `);
+    return d.id;
+  };
+
+  try {
+    await fixture.execute(sql`
+      insert into collection_items (user_id, oracle_id, quantity, set_code)
+      values (${USER_D}, ${card}, 1, 'probe')
+    `);
+    const senior = await mk("Door senior", 60, 1);
+    const junior = await mk("Door junior", 30, 1);
+
+    const [contested] = await loadContestedCards([card], USER_D);
+    check("the door finds the contested card", contested?.oracleId, card);
+    // BOTH decks, including the one whose page this would be. An excluded read returns one.
+    check("and both committed claimants", contested?.claimants.length, 2);
+    check("in commit order", contested?.claimants[0]?.deckId, senior);
+    check("with the junior deck buying", contested?.claimants[1]?.allocated, 0);
+
+    // A SHORTAGE WITH ONE CLAIMANT IS NOT A CHOICE. The junior deck goes; the senior one asks for
+    // two copies against the one owned, which is short by one and has nobody to be short against.
+    await fixture.execute(sql`delete from decks where id = ${junior}`);
+    await fixture.execute(sql`
+      update deck_version_cards vc set quantity = 2
+      from deck_versions v where v.id = vc.version_id and v.deck_id = ${senior}
+    `);
+    const alone = await loadContestedCards([card], USER_D);
+    check("one claimant short of two copies is not contested", alone.length, 0);
+
+    // AND NEITHER IS A CARD WITH ENOUGH COPIES FOR EVERYONE.
+    await fixture.execute(sql`
+      update collection_items set quantity = 4 where user_id = ${USER_D} and oracle_id = ${card}
+    `);
+    const covered = await loadContestedCards([card], USER_D);
+    check("nor a card the collection covers", covered.length, 0);
+  } finally {
+    await fixture.execute(sql`delete from decks where user_id = ${USER_D}`);
+    await fixture.execute(sql`delete from collection_items where user_id = ${USER_D}`);
+  }
+}
+
 // Wrapped in main() rather than run at top level: tsx transpiles this repo's
 // scripts to CJS, where a top-level await is a build error.
 async function main() {
@@ -854,6 +936,7 @@ try {
   await reservationSection();
   await commanderCeilingSection();
   await assignmentWriteSection();
+  await changesDoorSection();
 } finally {
   // Ordered by dependency; deck_versions and deck_cards cascade off decks.
   await fixture.execute(sql`delete from decks where user_id = ${USER}`);

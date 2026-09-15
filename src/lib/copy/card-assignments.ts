@@ -182,6 +182,20 @@ export const cardAssignmentsCopy = {
     supply: (copies: number, decks: number) =>
       `${copies === 1 ? "1 new copy" : `${copies} new copies`} · ` +
       `${decks === 1 ? "1 deck needs it" : `${decks} decks need it`}`,
+    /**
+     * The same two lines on a surface with NO IMPORT behind it — the deck's own review page,
+     * where the copies in question are simply the ones the player owns.
+     *
+     * `1 new copy` is a fact about an arrival, and on `/decks/[id]/changes` nothing arrived: the
+     * reader is looking at a draft they are editing. Saying it there tells them their own
+     * collection turned up this morning.
+     */
+    supplyOwned: (copies: number, decks: number) =>
+      `${copies === 1 ? "1 copy" : `${copies} copies`} · ` +
+      `${decks === 1 ? "1 deck needs it" : `${decks} decks need it`}`,
+    headingOwned: (copies: number) =>
+      copies === 1 ? "Give the copy to" : `Give the ${copies} copies to`,
+
     /** The cap, stated beside the heading whenever it is above one. */
     cap: (given: number, copies: number) => `${given} of ${copies} given`,
     brewNote: (deck: string) =>
@@ -229,6 +243,16 @@ export const cardAssignmentsCopy = {
     thisDeck: "this deck",
 
     /**
+     * On `/decks/[id]/changes`, the one place the distinction from a pull is spelt out.
+     *
+     * A CAPTION, not a warning — giving is the safe action of the two. The row above it keeps
+     * `Pull it`, which takes the card out of another deck's list and cuts that deck a version;
+     * this panel edits nobody's list, and a reader who confuses them cuts a version they never
+     * meant to.
+     */
+    seamCaption: "no list changes",
+
+    /**
      * A live pick. There is NO `your call` plate: a picked row already carried five signals for
      * one bit of state, and the plate was the weakest of them. This sentence is the word carrier
      * and a better one, because it NAMES THE DECK — the plate said "something here was chosen",
@@ -261,6 +285,16 @@ export const cardAssignmentsCopy = {
       `There's no copy left to give. ${holder} was already given the one that arrived, and your ` +
       `collection has ${have === 1 ? "one" : String(have)}. Nothing moved, and the decks above ` +
       `are what you actually have. Take it off ${holder} first if you want ${deck} to have it.`,
+    /**
+     * The same refusal on a surface with no import behind it. `refusedNoSupply` says the holder
+     * was given "the one that arrived", which is false on the deck's own review page — nothing
+     * arrived there, and the copy in question is one the player already owned.
+     */
+    refusedNoSupplyOwned: (holder: string, have: number, deck: string) =>
+      `There's no copy left to give. ${holder} already has ` +
+      `${have === 1 ? "the only one" : "one"}, and your collection has ` +
+      `${have === 1 ? "one" : String(have)}. Nothing moved, and the decks above are what you ` +
+      `actually have. Take it off ${holder} first if you want ${deck} to have it.`,
     /** Reachable: the payload records one import, so a deck can promote the card between renders. */
     refusedIsCommander: (card: string, deck: string) =>
       `${card} is ${deck}'s commander now. A commander's copy can't be given away. Nothing ` +
@@ -280,6 +314,13 @@ export const cardAssignmentsCopy = {
     /** Accessible names. Never rendered. */
     a11yGroup: (card: string, copies: number) =>
       `Which decks get ${card} — ${copies === 1 ? "1 new copy" : `${copies} new copies`}`,
+    /**
+     * The same group, named on a surface with no import behind it. A screen reader takes the
+     * group's name in place of the supply line it sits under, so leaving the arrival wording
+     * here would tell that reader the one thing the visible branch exists to stop saying.
+     */
+    a11yGroupOwned: (card: string, copies: number) =>
+      `Which decks get ${card} — ${copies === 1 ? "1 copy" : `${copies} copies`}`,
     a11yOption: (deck: string, outcome: string) => `${deck}, ${outcome}`,
     a11ySelected: (deck: string) =>
       `${deck}, your choice. Choose again to go back to first committed.`,

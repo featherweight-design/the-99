@@ -116,7 +116,7 @@ deck page** (state 25).
 | line-height | — | `1.6` |
 | margin | — | `0 0 18px` |
 | max-width | — | `680px` |
-| text | — | canvas: `Nothing here is a decision except the pulls. Tap any card to open it. Commit turns this into v3 and hands you the buy list.` — copy `review.lede(version)` ships a different second clause (see Discrepancies 1) |
+| text | — | canvas: `Nothing here is a decision except the pulls. Tap any card to open it. Commit turns this into v3 and hands you the buy list.` — copy `review.lede(version)` ships `The deck page already shows this list: this is what it costs to lock in as v{n}.` (see Discrepancies 1) |
 
 ---
 
@@ -239,8 +239,14 @@ it") — though the canvas draws two zero rows (`Artifacts 0`, `Lands 0`).
 
 ## Component: Count chips
 
-The facet strip's construct verbatim. Four chips: in, out, to buy (carrying the total),
-can be pulled. A count of nought is never drawn.
+The facet strip's construct verbatim. FIVE chips: in, out, to buy (carrying the total),
+can be pulled, and — added 2026-09-15 with the card-assignment chooser — still short. A count of
+nought is never drawn.
+
+**Amended 2026-09-15**: the fifth chip. `still short` counts the CARDS on this page with a
+contested copy — one decision each, never a count of copies — and takes the over state's own ink,
+because `marker.over` says `short n` about the same card on the deck page. Drawn last, under the
+same zero suppression as the other four.
 
 | Property | Mobile | Desktop |
 |----------|--------|---------|
@@ -252,8 +258,8 @@ can be pulled. A count of nought is never drawn.
 | chip border | — | `1px solid #3A3229` (`--border-strong`) |
 | chip border-radius | — | `999px` |
 | chip padding | — | `6px 14px` |
-| figure | — | mono `13px` — `#6FA368` in · `#E0913C` out · `#E0913C` to buy · `#C9A24B` pullable |
-| label | — | mono `11px` `#C6B79A` — `in` · `out` · `to buy` · `can be pulled` (`review.chipIn/chipOut/chipBuy/chipPullable`) |
+| figure | — | mono `13px` — `#6FA368` in · `#E0913C` out · `#E0913C` to buy · `#C9A24B` pullable · `var(--avail-over-fg)` still short |
+| label | — | mono `11px` `#C6B79A` — `in` · `out` · `to buy` · `can be pulled` · `still short` (`review.chipIn/chipOut/chipBuy/chipPullable/chipShort`) |
 | total (to-buy chip only) | — | a second mono `11px` `#E0913C` figure, `$254.10` |
 | zero suppression | — | a chip whose count is nought is absent (states 14, 15; matrix rule 1) |
 
@@ -722,11 +728,21 @@ discard confirm reached from this page). Diff source: `deck_cards` against the n
 
 1. **The lede.** Canvas: `Nothing here is a decision except the pulls. Tap any card to open it.
    Commit turns this into v3 and hands you the buy list.` Copy module `review.lede(version)`:
-   `Nothing here is a decision except the pulls. The deck page already shows this list: this is
-   what it costs to lock in as v{n}.` Same first sentence, different body, and the canvas's
-   "Tap" is a touch verb on a 1180px frame. (**Amended 2026-09-13**: the shipped body dropped
-   `this page exists to show you what it costs`, which restated the sentence before it. Hugh's
-   copy ruling — see §Errata in the handoff README.)
+   `The deck page already shows this list: this is what it costs to lock in as v{n}.` The canvas's "Tap" is a touch verb on a 1180px frame.
+   **Amended 2026-09-13**: the shipped body dropped `this page exists to show you what it costs`,
+   which restated the sentence before it. Hugh's copy ruling — see §Errata in the handoff README.
+
+   **Amended 2026-09-15**: the first sentence is gone too. "Except the pulls" was true when a pull
+   was the only decision on this page, and it is not — Put back restores a cut (#390) and a
+   contested row gives a copy to a deck (card assignments). Naming all three would make the
+   sentence a list, so it names none and says what the page IS. The quotation above this note is
+   the CURRENT copy. The retired sentence survives in this file only where the CANVAS is
+   transcribed — the rows at lines 119 and 723 record what the drawing says, which is a
+   historical fact and stays true — and nowhere as copy to implement from.
+
+   One thing this cost, worth knowing: `check:copy-drift` could not have caught the drift. It
+   finds a table quoting a shipped string with different PUNCTUATION, and a sentence replaced
+   outright shares no words to match on. Both quotations here were updated by hand.
 2. **Count-chip background.** Canvas `#1E1A15`; Component notes say `--surface`. `#1E1A15` is
    not in the brand ramp at all (it is also the canvas's browser-chrome plate).
 3. **Direction-header rule.** Canvas `border-bottom: 1px solid #2A241D` (the `--elevated`

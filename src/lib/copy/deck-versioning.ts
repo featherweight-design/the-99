@@ -149,9 +149,19 @@ export const deckVersioningCopy = {
   /* ---- §Surfaces 2 · review changes ---- */
   review: {
     heading: (n: number, version: number) => `${plural(n, "change")} since v${version}`,
+    /**
+     * "Except the pulls" was true when a pull was the only decision on this page. It is not:
+     * Put back (#390) restores a cut, and the contested rows give a copy to a deck. Naming them
+     * all would make the sentence a list, so it names none and says what the page IS.
+     *
+     * AND IT PROMISES NOTHING ABOUT UNDOING. A first draft closed with "anything you change here
+     * is yours to change back", which is true of a pick and of a put-back and FALSE of a pull —
+     * that one cuts another deck a version and is the one act on this page nobody can take
+     * back. A sentence that covers two of three decisions is worse than one that covers none.
+     */
     lede: (version: number) =>
-      "Nothing here is a decision except the pulls. The deck page already shows this list: " +
-      `this is what it costs to lock in as v${version}.`,
+      "The deck page already shows this list: this is what it costs to lock in as " +
+      `v${version}.`,
 
     // A versionless deck reaches this page to cut v1, and neither line above can
     // describe it: there is no predecessor to count changes against, so the pair
@@ -168,6 +178,13 @@ export const deckVersioningCopy = {
     chipOut: "out",
     chipBuy: "to buy",
     chipPullable: "can be pulled",
+    /**
+     * The fifth chip, and it borrows `marker.over`'s own word: a contested arrival IS the over
+     * state, so the strip, the marker and the receipt's section heading all say the same thing
+     * about the same card. Counts CARDS, not copies — it is the number of decisions waiting on
+     * this page, and each row is one.
+     */
+    chipShort: "still short",
 
     groupIn: (n: number) => `Coming in · ${n}`,
     groupOut: (n: number) => `Going out · ${n}`,

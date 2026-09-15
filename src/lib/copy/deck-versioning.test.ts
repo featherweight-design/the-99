@@ -11,9 +11,13 @@ describe("deckVersioningCopy", () => {
   // longer, and every other test on them reads a substring the long form also
   // contained, so a regression to the long form would stay green.
   it("states the shortened strings in full", () => {
+    // "Except the pulls" is gone: a pull is no longer the only decision here — Put back restores
+    // a cut, and a contested row gives a copy away. Naming all three would make the sentence a
+    // list, so it names none.
+    // No promise about undoing: true of a pick and a put-back, false of a pull, which cuts
+    // another deck a version and cannot be taken back.
     expect(copy.review.lede(2)).toBe(
-      "Nothing here is a decision except the pulls. The deck page already shows this list: " +
-        "this is what it costs to lock in as v2.",
+      "The deck page already shows this list: this is what it costs to lock in as v2.",
     );
     expect(copy.review.outNote(3)).toBe(
       "all 3 go back in the pool when you commit. Put one back and it never left.",

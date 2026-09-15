@@ -40,6 +40,7 @@ function contestedCard(): ContestedCard {
     cardName: "Brushland",
     arrived: 1,
     ownedBefore: 0,
+    fromImport: true,
     owned: 1,
     brewNames: [],
     claimants: [
