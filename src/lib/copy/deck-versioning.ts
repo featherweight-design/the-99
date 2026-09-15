@@ -71,10 +71,13 @@ export const deckVersioningCopy = {
       n === 1
         ? "1 card coming in is a proxy, so this commit asks for nothing."
         : `${n} cards coming in are proxies, so this commit asks for nothing.`,
-    moneyProxiedAlso: (n: number) =>
-      n === 1
-        ? "1 more is a proxy and asks for nothing."
-        : `${n} more are proxies and ask for nothing.`,
+    // The MIXED list: some adds have a spare copy, some are printed. Stated as
+    // one sentence rather than `moneyNone` plus a clause, because `moneyNone`
+    // claims EVERY card coming in has a spare copy — which is exactly false of
+    // the printed ones, and two sentences that disagree are worse than either.
+    moneyProxiedMixed: (proxied: number, adds: number) =>
+      `${proxied} of the ${adds} coming in ${proxied === 1 ? "is a proxy" : "are proxies"}`
+      + ", the rest have spare copies, and this commit asks for nothing.",
 
     reviewCta: (n: number) => `Review ${plural(n, "change")}`,
     reviewLink: "review changes",

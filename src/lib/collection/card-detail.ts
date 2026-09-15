@@ -132,9 +132,12 @@ export function catalogCard(
  * modal omits a block rather than losing the card.
  */
 async function proxyingDecks(userId: string, oracleId: string): Promise<ProxyingDeck[]> {
-  const { db } = await import("../../db");
-  const { sql } = await import("drizzle-orm");
   try {
+    // INSIDE the try, as `pricesFor` does it: a module that fails to resolve is
+    // as quiet a failure as a query that fails to run, and the block is optional
+    // either way. Left outside, a rejected import took the whole card down.
+    const { db } = await import("../../db");
+    const { sql } = await import("drizzle-orm");
     return await db
     .execute<{ id: string; name: string }>(sql`
       select d.id, d.name

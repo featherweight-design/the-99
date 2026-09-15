@@ -91,10 +91,10 @@ function moneyLine(state: DraftState): ReactNode | null {
     // card has no copy anywhere, so over a proxy-only add list that sentence is
     // exactly the assertion about where cardboard is that this vocabulary
     // forbids. Same conclusion — the commit asks for nothing — different reason.
-    if (proxiedCount > 0 && proxiedCount === state.addChanges.length) {
-      return copy.moneyProxiedOnly(proxiedCount);
-    }
-    return copy.moneyNone;
+    if (proxiedCount === 0) return copy.moneyNone;
+    if (proxiedCount === state.addChanges.length) return copy.moneyProxiedOnly(proxiedCount);
+    // The MIXED list gets its own sentence — see the copy module.
+    return copy.moneyProxiedMixed(proxiedCount, state.addChanges.length);
   }
   if (state.total === null) return null;
   const partial = state.pricedCopies < state.buyCount;

@@ -386,6 +386,25 @@ describe("a commit whose adds are all printed", () => {
     expect(container.textContent).toContain(copy.moneyProxiedOnly(19));
   });
 
+  it("does not claim a spare copy for a mixed list", () => {
+    // Reachable because `unfreeAdds` excludes free AND proxied: 10 covered, 9
+    // printed, `unfreeCount` 0. `moneyNone` here would assert a spare copy for
+    // nineteen cards when nine of them have no copy anywhere.
+    const mixed: DraftState = {
+      ...allProxied(19),
+      adds: Array.from({ length: 19 }, (_, i) => ({
+        oracleId: `a${i}`,
+        needed: 1,
+        shortfall: 0,
+        bucket: (i < 9 ? "proxied" : "free") as "proxied" | "free",
+        heldBy: [],
+      })),
+    };
+    const { container } = render(<PendingBanner deckId="d1" state={mixed} />);
+    expect(container.textContent).not.toContain(copy.moneyNone);
+    expect(container.textContent).toContain(copy.moneyProxiedMixed(9, 19));
+  });
+
   it("still says moneyNone when the adds are genuinely covered", () => {
     const covered: DraftState = {
       ...allProxied(19),

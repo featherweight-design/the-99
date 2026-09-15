@@ -44,7 +44,7 @@ import { GAME_AXIS_KEYS, isGameAxisKey, type GameAxisKey } from "../../lib/decks
 import { gameLogCopy } from "../../lib/copy/game-log";
 import { countCharacters, deckTuningCopy } from "../../lib/copy/deck-tuning";
 import { pruneOrphanProxies } from "../../lib/decks/prune-proxies";
-import { PROXY_READ_FAILED, proxiedOracleIds } from "../../lib/decks/proxies";
+import { PROXY_READ_FAILED, PULL_REFUSED_PROXIED, proxiedOracleIds } from "../../lib/decks/proxies";
 
 export type TopOffResult =
   | { ok: true; passId: string | null; added: number; total: number; boughtDelta: number }
@@ -1622,6 +1622,13 @@ export async function pullCardFromDeck(
     // A printed card asks the collection for nothing, so there is nothing to
     // pull FOR — the guard below refuses it on `bucket !== "claimed"`, which is
     // the same refusal a covered add already gets.
+    if (bucketed.bucket === "proxied") {
+      // Its own refusal, before the generic one. "Already has the copies it
+      // needs" would be a claim about the collection, and the whole point of a
+      // proxy is that the deck is covered while owning nothing — the app must
+      // not close that gap with a sentence.
+      return { ok: false, message: PULL_REFUSED_PROXIED };
+    }
     if (bucketed.bucket !== "claimed" || bucketed.shortfall <= 0) {
       return { ok: false, message: "That deck already has the copies it needs." };
     }
