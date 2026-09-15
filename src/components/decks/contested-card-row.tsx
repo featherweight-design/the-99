@@ -17,6 +17,7 @@
 
 import { useState, useTransition } from "react";
 import { cardAssignmentsCopy as copy } from "../../lib/copy/card-assignments";
+import { previewAllocation } from "../../lib/decks/preview-allocation";
 import { assignCopy, type AssignRefusal } from "../../app/decks/assignment-actions";
 import type { ContestedCard } from "../../lib/collection/summary-read";
 import { formatShortDeckDate } from "../../lib/decks/format";
@@ -295,10 +296,19 @@ export function ContestedCardRow({
   // every server read — so the review door's figures track a collection that changes under it,
   // where the frozen `arrived` could not.
   const inPlay = card.fromImport ? card.arrived : giveable;
+  // THE MARKS MOVE ON THE TAP, not on the round trip. `picked` is non-null only while a write is
+  // in flight, and for that window the row draws the allocation the pick is about to produce —
+  // otherwise the deck that is losing the copy stays filled until the server answers, and the
+  // reader sees two full marks for a card with one copy. Replaced by the server's own reading
+  // the moment it lands, and stood down with `picked` on a refusal or a throw, so a wrong guess
+  // could only ever survive one round trip.
+  const claimants = picked
+    ? previewAllocation(card.claimants, inPlay, [...picked][0] ?? null)
+    : card.claimants;
   // Capped at `inPlay` rather than `arrived`, or the cap could read `2 of 1` on the review door:
   // the numerator counts every non-commander allocation and the denominator is what can move.
   const givenOut = Math.min(
-    card.claimants.reduce((n, c) => n + Math.max(c.allocated - c.commanderCopies, 0), 0),
+    claimants.reduce((n, c) => n + Math.max(c.allocated - c.commanderCopies, 0), 0),
     inPlay,
   );
   // WHICH DECKS HELD A COPY BEFORE THIS IMPORT, per claimant rather than as a fact about the
@@ -325,7 +335,7 @@ export function ContestedCardRow({
   // The deck the shortage actually falls on — the one whose ask is not covered. Naming the
   // first commander claimant instead points at a deck that is keeping its copy, which is the
   // opposite of what the note says about it.
-  const payer = card.claimants.find((c) => c.allocated < c.quantity)?.deckName ?? "";
+  const payer = claimants.find((c) => c.allocated < c.quantity)?.deckName ?? "";
   const words = surfaceWords(card.fromImport);
 
   return (
@@ -368,7 +378,7 @@ export function ContestedCardRow({
         aria-label={words.group(card.cardName, inPlay)}
         aria-describedby={describedBy}
       >
-        {card.claimants.map((c) => {
+        {claimants.map((c) => {
           // `keeps it` rather than `gets it` for a commander: it had the card before the import,
           // so the arrival changed nothing for it. A folded claimant that ALSO took a spare copy
           // says both — `keeps it` alone would hide the second copy and contradict the heading,

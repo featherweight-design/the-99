@@ -438,6 +438,37 @@ describe("ContestedCardRow — the chooser", () => {
     expect(screen.getByText(copy.contested.clear)).toBeTruthy();
   });
 
+  it("moves the copy off the previous holder on the tap, before the server answers", async () => {
+    // THE BUG THIS EXISTS FOR. Only the radio was optimistic, so the picked deck went accent
+    // while the deck losing the copy stayed filled until the round trip finished: two full marks
+    // on a card with one copy, then one of them emptying a moment later.
+    //
+    // The action never resolves here, which is the point — everything asserted below is what the
+    // reader sees DURING the write, not after it.
+    let land: (v: unknown) => void = () => {};
+    assign.mockReturnValue(new Promise((resolve) => { land = resolve; }));
+    render(<ContestedCardRow card={card()} />);
+    // `HD Avatar Aang` holds the copy by seniority; `Elemental Dragons` is about to take it.
+    expect(screen.getByRole("radio", { name: /HD Avatar Aang/ }).textContent)
+      .toContain(copy.contested.gets);
+    fireEvent.click(screen.getByRole("radio", { name: /Elemental Dragons/ }));
+    await waitFor(() => {
+      expect(screen.getByRole("radio", { name: /Elemental Dragons/ }).textContent)
+        .toContain(copy.contested.gets);
+    });
+    // The whole finding: the previous holder gives it up in the same frame.
+    expect(screen.getByRole("radio", { name: /HD Avatar Aang/ }).textContent)
+      .toContain(copy.contested.buys);
+    // Let the write finish, so the transition does not outlive the test.
+    land({ ok: true, card: card({ claimants: [
+      { deckId: "d1", deckName: "HD Avatar Aang", quantity: 1, commanderCopies: 0, granted: 0, since: AUG, versionNumber: 7, allocated: 0 },
+      { deckId: "d2", deckName: "Elemental Dragons", quantity: 1, commanderCopies: 0, granted: 1, since: SEP, versionNumber: 2, allocated: 1 },
+    ] }) });
+    await waitFor(() => {
+      expect(screen.getByRole("radio", { checked: true })).toBeTruthy();
+    });
+  });
+
   it("pressing the chosen deck again clears it", async () => {
     assign.mockResolvedValue({ ok: true, card: card() });
     render(<ContestedCardRow card={card()} />);
