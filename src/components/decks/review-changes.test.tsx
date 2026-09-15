@@ -1304,7 +1304,10 @@ describe("ReviewChanges — the second door", () => {
     cardName: "Brushland",
     arrived: 1,
     ownedBefore: 0,
-    fromImport: true,
+    // FALSE, matching what `loadContestedCards` supplies on this route: nothing arrived on the
+    // deck's own review page. A fixture saying otherwise exercises the receipt's wording here
+    // and would stay green if the door wired the wrong surface.
+    fromImport: false,
     owned: 1,
     brewNames: [],
     // In commit order, as the loader returns them: the earlier deck first. The component does not

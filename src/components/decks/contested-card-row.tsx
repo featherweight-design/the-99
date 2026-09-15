@@ -316,7 +316,11 @@ export function ContestedCardRow({
       <ul
         className="list-none p-0 m-0 flex flex-col gap-[4px]"
         role="radiogroup"
-        aria-label={copy.contested.a11yGroup(card.cardName, card.arrived)}
+        aria-label={
+          card.fromImport
+            ? copy.contested.a11yGroup(card.cardName, card.arrived)
+            : copy.contested.a11yGroupOwned(card.cardName, card.arrived)
+        }
       >
         {card.claimants.map((c) => {
           // `keeps it` rather than `gets it` for a commander: it had the card before the import,

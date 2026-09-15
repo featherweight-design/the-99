@@ -314,6 +314,13 @@ export const cardAssignmentsCopy = {
     /** Accessible names. Never rendered. */
     a11yGroup: (card: string, copies: number) =>
       `Which decks get ${card} — ${copies === 1 ? "1 new copy" : `${copies} new copies`}`,
+    /**
+     * The same group, named on a surface with no import behind it. A screen reader takes the
+     * group's name in place of the supply line it sits under, so leaving the arrival wording
+     * here would tell that reader the one thing the visible branch exists to stop saying.
+     */
+    a11yGroupOwned: (card: string, copies: number) =>
+      `Which decks get ${card} — ${copies === 1 ? "1 copy" : `${copies} copies`}`,
     a11yOption: (deck: string, outcome: string) => `${deck}, ${outcome}`,
     a11ySelected: (deck: string) =>
       `${deck}, your choice. Choose again to go back to first committed.`,

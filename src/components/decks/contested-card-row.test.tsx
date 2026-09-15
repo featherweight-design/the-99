@@ -468,6 +468,15 @@ describe("ContestedCardRow — the chooser", () => {
     )).toBeNull();
   });
 
+  it("names the group without an arrival when no import is behind the row", () => {
+    render(<ContestedCardRow card={card({ fromImport: false })} />);
+    // A screen reader takes the group's NAME in place of the supply line above it, so the
+    // branch that fixes the visible text fixes nothing until this one moves too.
+    expect(screen.getByRole("radiogroup", {
+      name: copy.contested.a11yGroupOwned("Brushland", 1),
+    })).toBeTruthy();
+  });
+
   it("has a sentence for each drawable cause", async () => {
     for (const [cause, expected] of [
       ["claimant-no-longer-asks", copy.contested.refusedNotWanted("Elemental Dragons", "Brushland", "HD Avatar Aang")],
