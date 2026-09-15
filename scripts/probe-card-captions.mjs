@@ -30,6 +30,8 @@
 // Run by hand, and not part of `pnpm test`:
 //   node scripts/probe-card-captions.mjs
 //   PROBE_BASE=http://localhost:3600 PROBE_DECK=<uuid> node scripts/probe-card-captions.mjs
+import { readFileSync } from "node:fs";
+
 import { neon } from "@neondatabase/serverless";
 import { clerkSetup, setupClerkTestingToken } from "@clerk/testing/playwright";
 import { chromium } from "playwright";
@@ -47,6 +49,8 @@ const { E2E_AUDIT_USER_EMAIL: EMAIL, DATABASE_URL } = requireEnv([
   "DATABASE_URL",
 ]);
 const BASE = process.env.PROBE_BASE ?? "http://localhost:3000";
+/** The gate's threshold, read from the file the app pins it in. */
+const ABOUT_VERSION_FILE = new URL("../src/lib/copy/about.version.json", import.meta.url);
 const PASSWORD = process.env.E2E_AUDIT_USER_PASSWORD;
 if (!EMAIL.includes("+clerk_test") && !PASSWORD) throw new Error("Set E2E_AUDIT_USER_PASSWORD.");
 
@@ -80,6 +84,23 @@ async function signIn(page) {
     [EMAIL, PASSWORD ?? ""],
   );
   if (failure) throw new Error(`Clerk sign-in failed: ${failure}`);
+
+  // CLEAR THE ABOUT GATE before any route is asked for. Since #658 `proxy.ts`
+  // redirects a reader who has not seen the current `ABOUT_VERSION` to
+  // `/about?next=…` — so a probe that navigated straight to `/decks` scraped the
+  // about page and reported "the account owns none", a routing problem wearing a
+  // fixture problem's clothes.
+  //
+  // Seeded rather than clicked through: the flag lives in `user_prefs` and the
+  // probe account has no row at all, so visiting the page does not write one.
+  // Left set afterwards on purpose — "this account has seen the about page" is
+  // true once this ran, and clearing it would re-break every other probe on this
+  // account.
+  const [{ version }] = [JSON.parse(readFileSync(ABOUT_VERSION_FILE, "utf8"))];
+  await neon(DATABASE_URL)`
+    insert into user_prefs (user_id, about_version_seen)
+    values (${await page.evaluate(() => window.Clerk.user.id)}, ${version})
+    on conflict (user_id) do update set about_version_seen = ${version}`;
 }
 
 function report(label, ok, detail) {
@@ -493,21 +514,29 @@ async function run() {
   } finally {
     if (staged) {
       const clean = neon(DATABASE_URL);
-      // Unconditional, and guarded on the QUANTITY rather than on a receipt.
+      // ONE TRANSACTION, because this writes into a real player's deck. Two
+      // separate requests can fail between them: the card deleted and the
+      // version left standing, or — worse — the version gone while the card it
+      // was staged with remains, a row no version knows about. Either leaves the
+      // deck mutated by a probe that reported it had cleaned up.
+      //
+      // The card's delete is guarded on the QUANTITY rather than on a receipt.
       // A receipt read after the insert cannot tell "the write never happened"
       // from "the write committed and the reply was lost", and it strands the
-      // row in the player's deck in the second case. The card was chosen for
-      // being absent from this deck, so a row at quantity 1 is this run's; a
-      // concurrent edit that bumped the count is left alone by the guard.
-      await clean`
-        delete from deck_cards
-         where deck_id = ${staged.deckId}
-           and oracle_id = ${staged.oracleId}
-           and quantity = 1`;
-      // The version's cards go with it by cascade; deleting the version last
-      // means a failure here leaves the deck clean rather than holding a card
-      // no version knows about.
-      await clean`delete from deck_versions where id = ${staged.versionId}`;
+      // row in the second case. The card was chosen for being absent from this
+      // deck, so a row at quantity 1 is this run's; a concurrent edit that
+      // bumped the count is left alone by the guard.
+      //
+      // Order still matters inside the transaction for the reader, not for
+      // atomicity: the version's cards go with it by cascade.
+      await clean.transaction([
+        clean`
+          delete from deck_cards
+           where deck_id = ${staged.deckId}
+             and oracle_id = ${staged.oracleId}
+             and quantity = 1`,
+        clean`delete from deck_versions where id = ${staged.versionId}`,
+      ]);
       console.log("  ..   removed the staged version and its one added card");
     }
     await browser.close();
