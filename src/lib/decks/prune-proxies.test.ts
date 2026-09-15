@@ -19,58 +19,61 @@ const FILES = [
   "src/lib/decks/versions.ts",
 ];
 
-/** Source split into function bodies, crudely: a `delete(deckCards)` and the
- *  prune that answers it are always inside the same `db.transaction` callback,
- *  and transactions here never nest. */
-function transactionBlocks(source: string): string[] {
-  const blocks: string[] = [];
-  const marker = /(?:db|tx)\.transaction\(/g;
+/**
+ * Every `.delete(deckCards)` in the file, by index.
+ *
+ * NOT a parse into transaction callbacks, which is what this test did first and
+ * why it is worth a comment: that version walked braces from each
+ * `db.transaction(` and silently captured only three of this file's four delete
+ * sites, so a delete added after a prune passed the guard. A guard that skips a
+ * site reports clean over the exact defect it exists for.
+ *
+ * Positions and a window are cruder and cannot skip anything: for each delete,
+ * a prune has to appear after it and close enough to be in the same unit of
+ * work. Every real call site here sits within a few lines of its prune.
+ */
+const WINDOW = 1200;
+
+function deleteSites(source: string): number[] {
+  const sites: number[] = [];
+  const marker = /\.delete\(deckCards\)/g;
   let m: RegExpExecArray | null;
-  while ((m = marker.exec(source)) !== null) {
-    // Walk braces from the callback's opening to its close.
-    let depth = 0;
-    let i = m.index;
-    let start = -1;
-    for (; i < source.length; i += 1) {
-      if (source[i] === "{") {
-        if (depth === 0) start = i;
-        depth += 1;
-      } else if (source[i] === "}") {
-        depth -= 1;
-        if (depth === 0) break;
-      }
-    }
-    if (start >= 0) blocks.push(source.slice(start, i));
-  }
-  return blocks;
+  while ((m = marker.exec(source)) !== null) sites.push(m.index);
+  return sites;
+}
+
+function prunedAfter(source: string, at: number): boolean {
+  const window = source.slice(at, at + WINDOW);
+  return /pruneOrphanProxies\(/.test(window);
 }
 
 describe("proxy rows are reconciled wherever deck membership shrinks", () => {
-  it.each(FILES)("%s prunes in every transaction that deletes deck_cards", (file) => {
+  it.each(FILES)("%s prunes after every deck_cards delete", (file) => {
     const source = readFileSync(file, "utf8");
-    // AFTER THE LAST DELETE, not merely present. A second `delete(deckCards)`
-    // added below an existing prune would leave an orphan while a
-    // contains-a-prune test stayed green — and that is the likelier edit, since
-    // the prune tends to sit at the end of the block it was written for.
-    const offenders = transactionBlocks(source)
-      .filter((b) => /\.delete\(deckCards\)/.test(b))
-      .filter((b) => b.lastIndexOf("pruneOrphanProxies(") < b.lastIndexOf(".delete(deckCards)"));
+    const offenders = deleteSites(source)
+      .filter((at) => !prunedAfter(source, at))
+      .map((at) => `${file}@${source.slice(0, at).split("\n").length}`);
     expect(offenders).toEqual([]);
   });
 
-  // The ordering is load-bearing on exactly one path and invisible to the guard
-  // above, which only asks whether a prune appears SOMEWHERE in the transaction.
-  // `restoreDraftFromVersion` replaces the whole list — delete, then reinsert
-  // from the version — so a prune placed beside the delete would reconcile
-  // against an empty list and drop the proxies of every card the version
-  // restores. It has to run after the rewrite.
+  it("sees every delete site, so a missed one cannot pass by being invisible", () => {
+    // The count is asserted because the guard above is only as good as the set
+    // it walks, and the first version of this test silently walked a subset.
+    const counts = FILES.map((file) => deleteSites(readFileSync(file, "utf8")).length);
+    expect(counts).toEqual([4, 1, 1]);
+  });
+
+  // The ordering is load-bearing on exactly one path. `restoreDraftFromVersion`
+  // replaces the whole list — delete, then reinsert from the version — so a
+  // prune placed beside the delete would reconcile against an empty list and
+  // drop the proxies of every card the version restores. It has to run after
+  // the rewrite.
   it("prunes after the rewrite, not beside the delete, when the list is replaced", () => {
     const source = readFileSync("src/lib/decks/versions.ts", "utf8");
-    const block = transactionBlocks(source).find((b) => /\.delete\(deckCards\)/.test(b));
-    expect(block).toBeDefined();
-    const reinsert = block!.lastIndexOf(".insert(deckCards)");
-    const prune = block!.indexOf("pruneOrphanProxies(");
-    expect(reinsert).toBeGreaterThan(-1);
+    const del = source.indexOf(".delete(deckCards)");
+    const reinsert = source.indexOf(".insert(deckCards)", del);
+    const prune = source.indexOf("pruneOrphanProxies(", del);
+    expect(reinsert).toBeGreaterThan(del);
     expect(prune).toBeGreaterThan(reinsert);
   });
 
