@@ -140,10 +140,17 @@ export function ContestedCardRow({
   alsoAbove,
   /** The deck whose page this row is on, when it is on one. Tagged, never promoted. */
   thisDeckId,
+  /**
+   * An element naming what this chooser is FOR, when its surface draws one. On the review page
+   * the caption above the row is the only thing distinguishing giving a copy away from `Pull it`
+   * beside it, and a reader who tabs straight into the group never meets that paragraph.
+   */
+  describedBy,
 }: {
   card: ContestedCard;
   alsoAbove?: boolean;
   thisDeckId?: string;
+  describedBy?: string;
 }) {
   // OPTIMISTIC ON SUCCESS, AUTHORITATIVE ON REFUSAL. A pick moves the words and the marks on the
   // tap — there is no in-flight state, because a spinner on a control whose whole promise is
@@ -211,8 +218,13 @@ export function ContestedCardRow({
       const fresh = result.card
         ? {
             ...result.card,
-            arrived: card.arrived,
-            ownedBefore: card.ownedBefore,
+            // THE RECEIPT'S FIELDS ARE THE RECEIPT'S. An import row's `arrived` and `ownedBefore`
+            // are frozen facts the live read cannot know, so they are carried across. The review
+            // door has no receipt: there `arrived` was only ever the collection's own supply, and
+            // carrying the old one would freeze the heading and the cap at first render while
+            // `owned` moved underneath them. It takes the fresh figure instead.
+            arrived: card.fromImport ? card.arrived : result.card.owned,
+            ownedBefore: card.fromImport ? card.ownedBefore : 0,
             fromImport: card.fromImport,
           }
         : null;
@@ -354,6 +366,7 @@ export function ContestedCardRow({
         className="list-none p-0 m-0 flex flex-col gap-[4px]"
         role="radiogroup"
         aria-label={words.group(card.cardName, inPlay)}
+        aria-describedby={describedBy}
       >
         {card.claimants.map((c) => {
           // `keeps it` rather than `gets it` for a commander: it had the card before the import,

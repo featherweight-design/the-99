@@ -474,6 +474,24 @@ describe("ContestedCardRow — the chooser", () => {
     expect(screen.queryByText(copy.contested.clear)).toBeNull();
   });
 
+  it("takes the fresh supply on the review door rather than freezing the first render", async () => {
+    // Another tab imports a second copy while this row sits open. The live read knows; the
+    // frozen `arrived` cannot, and carrying it would hold the heading at one copy for ever.
+    assign.mockResolvedValue({
+      ok: true,
+      card: card({ fromImport: false, arrived: 0, owned: 2, claimants: [
+        { deckId: "d1", deckName: "HD Avatar Aang", quantity: 1, commanderCopies: 0, granted: 0, since: AUG, versionNumber: 7, allocated: 1 },
+        { deckId: "d2", deckName: "Elemental Dragons", quantity: 1, commanderCopies: 0, granted: 1, since: SEP, versionNumber: 2, allocated: 1 },
+      ] }),
+    });
+    render(<ContestedCardRow card={card({ fromImport: false })} />);
+    fireEvent.click(screen.getByRole("radio", { name: /Elemental Dragons/ }));
+    await waitFor(() => {
+      expect(screen.getByText(copy.contested.supplyOwned(2, 2))).toBeTruthy();
+    });
+    expect(screen.queryByText(copy.contested.supplyOwned(1, 2))).toBeNull();
+  });
+
   it("does not say a copy arrived when the refusal comes from the review page", async () => {
     assign.mockResolvedValue({
       ok: false,

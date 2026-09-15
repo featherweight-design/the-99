@@ -1356,6 +1356,23 @@ describe("ReviewChanges — the second door", () => {
     expect(chip?.textContent).not.toContain("4");
   });
 
+  it("points the chooser at the caption that says how it differs from Pull it", () => {
+    render(
+      <ReviewChanges
+        deckId="d" deckName="Korvold" rows={{ in: [row()], out: [] }}
+        {...SHAPE} contested={[contestedCard()]} state={STATE} cardCount={CARD_COUNT}
+      />,
+    );
+    // A reader who tabs into the group never passes the paragraph above it, so the group has to
+    // carry it: the caption is the ONLY thing separating giving a copy away from `Pull it`.
+    const group = screen.getByRole("radiogroup");
+    const id = group.getAttribute("aria-describedby");
+    expect(id).toBeTruthy();
+    expect(document.getElementById(id!)?.textContent).toBe(
+      cardAssignmentsCopy.contested.seamCaption,
+    );
+  });
+
   it("drops the chip at nought rather than drawing a nought", () => {
     render(
       <ReviewChanges

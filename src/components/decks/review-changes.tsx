@@ -365,12 +365,17 @@ function Column({
                   style={{ borderLeft: "2px solid var(--accent)" }}
                 >
                   <p
+                    id={`seam-${contestedCard.oracleId}`}
                     className="font-mono text-[10px] uppercase tracking-[0.13em] mt-0 mb-[6px]"
                     style={{ color: "var(--fg-faint)" }}
                   >
                     {cardAssignmentsCopy.contested.seamCaption}
                   </p>
-                  <ContestedCardRow card={contestedCard} thisDeckId={deckId} />
+                  <ContestedCardRow
+                    card={contestedCard}
+                    thisDeckId={deckId}
+                    describedBy={`seam-${contestedCard.oracleId}`}
+                  />
                 </div>
               )}
             </div>
