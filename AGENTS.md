@@ -635,4 +635,25 @@ in one payload when the set of parameters is small enough to precompute.
 - UI work is gated on design handoffs in `design/design_handoff_the99_*` — no UI until the handoff exists and has a READINESS verdict. Backend/API/DB work may proceed without one.
 - Every UI PR passes the design-review skill (property-table enumerate → verify → confirm) before `gh pr create`. Mobile + desktop parity ships in the same PR.
 - Pipeline state lives in `docs/superpowers/design-pipeline-status.md`; plans in `docs/superpowers/plans/`; gap reports in `docs/superpowers/gap-report-*.md`.
+- **Every UI feature ships an About entry, in the same round that ships the feature.** `/about`
+  is the app's own reference, and it is only true if a feature cannot land without one. Three
+  places carry it, and the third is the one that catches what the first two miss:
+  - **Design** — a UI handoff is not complete without its About entry, drawn on the per-entry
+    template artboard in `design/design_handoff_the99_about/` (§8 of the R3 canvas; `STATES-about-r3.md`
+    §G). Title, route, `opens`, caption, the specimen component and its fixture props, up to four
+    key lines, and the phone reduction.
+  - **The plan** — the entry and the `ABOUT_VERSION` bump are a named task, listed beside the PR
+    boundaries rather than assumed. A feature whose entry is deferred says so there, with a reason.
+  - **The close-out** — `feature-acceptance` does not pass until the entry exists on the page and
+    the version moved. A copy edit is not a bump; a new entry always is.
+
+  The version is what makes this matter: a bump puts the page in front of every account once more
+  with the new entries marked, so a feature with no entry reaches nobody who is not already
+  exploring. The `about.test.ts` content hash does the mechanical half — touching the copy forces
+  either a deliberate bump or a deliberate re-pin — but nothing can detect an entry that was never
+  written, which is why it is a rule and not a check.
+
+  The first case for it is already on record: the post-import summary merged as #639 and #643 on
+  2026-09-14/15, in the middle of the About design round, and reached `main` with no entry.
+
 - `design/` is **reference material, never shipped code**. It sits outside both `public/` and `src/`, so no route serves it and no module imports it. Each handoff's `support.js` is a generated runtime that evaluates code dynamically and loads React from a CDN — it is read by opening that bundle's `.dc.html` from disk, and by nothing else. Never import from `design/`, and never copy a handoff asset into `public/`.
