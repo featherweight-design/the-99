@@ -45,6 +45,7 @@ import { gameLogCopy } from "../../lib/copy/game-log";
 import { countCharacters, deckTuningCopy } from "../../lib/copy/deck-tuning";
 import { pruneOrphanProxies } from "../../lib/decks/prune-proxies";
 import { PROXY_READ_FAILED, PULL_REFUSED_PROXIED, proxiedOracleIds } from "../../lib/decks/proxies";
+import { proxyCopy } from "../../lib/copy/proxies";
 
 export type TopOffResult =
   | { ok: true; passId: string | null; added: number; total: number; boughtDelta: number }
@@ -385,6 +386,74 @@ export async function addCardToDeck(deckId: string, oracleId: string): Promise<D
   if (rejection) return { ok: false, message: deckAddRejectionMessage(rejection) };
   // /decks shows derived stats (built / to-buy) — keep the index fresh too, and
   // the two surfaces that draw availability off deck rows with it.
+  revalidateClaims(deckId, userId);
+  return { ok: true };
+}
+
+/**
+ * Mark or unmark one card in one deck as printed.
+ *
+ * Ruling 2: this takes effect at once. No commit, no pending state, nothing on
+ * `/decks/[id]/changes` — a proxy is not a change to the list, it is a statement
+ * about a slot the list already has.
+ *
+ * THE LOCK IS LOAD-BEARING and it is the deck row, taken before the membership
+ * check, in the order every other deck write here uses. The pair being
+ * serialised is this write against a concurrent removal: that removal deletes
+ * the card and calls `pruneOrphanProxies`, so an unlocked mark could validate
+ * membership, wait, and insert after the prune had run — leaving exactly the
+ * orphan the prune exists to prevent, on a card the deck no longer holds.
+ *
+ * MEMBERSHIP IS VALIDATED, and deck ownership alone is not enough: without it
+ * any oracle id at all can be posted and a row written for a card this deck has
+ * never held. Both commander columns count as membership, or a proxied commander
+ * could not be marked at all.
+ */
+export async function setCardProxied(
+  deckId: string,
+  oracleId: string,
+  proxied: boolean,
+): Promise<DeckMutationResult> {
+  const userId = await requireUserId();
+  if (!isUuid(deckId) || !isUuid(oracleId)) return { ok: false, message: proxyCopy.error.refused };
+  await requireDeck(deckId, userId);
+
+  const ok = await db.transaction(async (tx) => {
+    await tx.execute(sql`select 1 from ${decks} where ${decks.id} = ${deckId} for update`);
+    const { rows: [member] } = await tx.execute<{ held: boolean }>(sql`
+      select exists (
+        select 1 from deck_cards dc
+        where dc.deck_id = ${deckId} and dc.oracle_id = ${oracleId}
+        union all
+        select 1 from decks d
+        where d.id = ${deckId}
+          and (d.commander_oracle_id = ${oracleId} or d.partner_oracle_id = ${oracleId})
+      ) as held
+    `);
+    if (!member?.held) return false;
+
+    if (proxied) {
+      // Idempotent: pressing twice is one mark, and the second press of a
+      // control whose state the reader can already see is not an error.
+      await tx.execute(sql`
+        insert into deck_proxies (deck_id, oracle_id) values (${deckId}, ${oracleId})
+        on conflict (deck_id, oracle_id) do nothing
+      `);
+    } else {
+      await tx.execute(sql`
+        delete from deck_proxies where deck_id = ${deckId} and oracle_id = ${oracleId}
+      `);
+    }
+    // NO `touchDeck`. The stamp means "this deck's list was edited", and a proxy
+    // edits no list — Home's resume order would otherwise move a deck for a
+    // decision that changed nothing about what is in it.
+    return true;
+  });
+
+  if (!ok) return { ok: false, message: proxyCopy.error.notInDeck };
+  // A proxy toggle moves figures on OTHER decks' pages — the copy it releases or
+  // reclaims is theirs — and changes the proxy list, so both are revalidated
+  // alongside this deck's own surfaces.
   revalidateClaims(deckId, userId);
   return { ok: true };
 }
