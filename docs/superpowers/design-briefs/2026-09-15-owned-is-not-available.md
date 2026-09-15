@@ -119,8 +119,11 @@ Settled in the workshop. These are not open.
 2. **The dot drops to two states on all three surfaces.** Ownership only. The marker carries
    severity.
 3. **Role Coverage takes a count-only marker,** never a deck name — the `nameless` contract
-   `/collection` already ships. The chip grows roughly 40px in non-free states and is unchanged
-   when free. Rejected: the full name-bearing marker (~120px, which drops a contended panel from
+   `/collection` already ships. The chip grows in non-free states and is unchanged when free.
+   **Measured growth is 69–89px, not the ~40px an earlier draft of this ruling estimated** (R1
+   handoff §4.4): 40px buys about four mono characters and the shortest count-only form is seven.
+   The decision is unaffected — the name-bearing alternative is ~120px and truncates — but a
+   contended 12-chip panel falls to about three chips per line, not four. Rejected: the full name-bearing marker (~120px, which drops a contended panel from
    about five chips per line to two and makes pill length a proxy for badness); the marker
    replacing the figure plate (which hides the EDHREC figure on exactly the cards being decided
    about, and that figure is the panel's default sort key).
