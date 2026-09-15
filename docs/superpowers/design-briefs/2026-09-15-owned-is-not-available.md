@@ -33,7 +33,8 @@ Role Coverage shows two states and not three because it is drawn from the owned 
 the three that can draw an unowned card.
 
 The dot's three fills come from `availabilityDotState` (`components/ui/ownership-dot.tsx:69`),
-which reads `committedTo` and nothing else. `committedTo` is stamped by `withCommitted` off
+which returns `unowned` on `owned === false` and otherwise reads `committedTo` alone. It is that
+second half that is impoverished. `committedTo` is stamped by `withCommitted` off
 `readCommittedDecks` (`lib/decks/committed.ts:101`), a `deck_cards` join returning **the first deck
 naming each card**. It knows nothing about how many copies are owned, how many are claimed,
 whether the claiming deck is sleeved, seniority between claimants, or reservations.
@@ -66,8 +67,15 @@ Every other card surface in the app reads a four-way availability model and draw
   Kyknos`, `short 2`, with a ratified count-only variant behind `MarkerOpts.nameless`
   (`:32`) that `/collection` uses because it has no deck-name surface behind it.
 - **The slot.** `AvailabilitySlot` (`components/decks/update-diff-row.tsx:225`) is the shipped
-  pattern for one slot with three occupants: a priced `BuyTag` (`components/decks/buy-tag.tsx:135`)
-  when the card is unowned, the marker when it is owned and contended, nothing when it is free.
+  pattern for one slot with four occupants, tested in order: `ProxyTag` (a printed card asks the
+  collection for nothing), then a priced `BuyTag` (`components/decks/buy-tag.tsx:135`), then the
+  marker, then nothing.
+
+  **Read its real rule, because §4.6 turns on it.** The tag fires on
+  `!owned || committed || shortfall > 0`, and the function's own docblock (`:183-189`) states the
+  question as *"has this row a free copy", not "is the card owned"*. So on that surface the `hard`
+  and `over` states draw a **buy tag**, not a marker: "a row with nothing free has no headroom to
+  report, and a row that holds a free copy is not one to buy." Only `soft` reaches the marker.
 
 The commander detail page is the one recommendation surface that never received any of it. It got
 a bespoke three-state dot instead, invented because the panel had no marker.
@@ -80,7 +88,7 @@ The division the rest of the app uses is **dot = ownership, marker = availabilit
 `decks/decklist-row.tsx:338` renders `OwnershipDot owned={card.owned}` with no `committed` prop,
 and a separate `AvailabilityMarker` at `:455`.
 
-One counter-precedent, named rather than hidden: `decks/deck-card-tile.tsx:214` keeps a
+One counter-precedent, named rather than hidden: `decks/deck-card-tile.tsx:261` keeps a
 three-state dot, deriving `committed` from `availState === "hard" || availState === "over"`. That
 is the app's answer for a tile with no room for a marker, and it reads availability rather than
 `committedTo`. The chips here do get a marker, so the decklist division governs.
@@ -105,12 +113,15 @@ Settled in the workshop. These are not open.
    about, and that figure is the panel's default sort key).
 4. **The committed border tint retires** from both `chipBorder` and `rowBorder`
    (`coverage-chip.tsx:35`, `:49`). The marker is the channel.
-5. **The synergy panel gains one `AvailabilitySlot` before the toggle,** with a **priced** buy tag
-   on unowned rows. Phone puts the marker on the existing meta line beside `+8 · 14%`. Rejected:
-   an unpriced tag (every other buy tag in the app quotes a price); no tag at all (which leaves
-   Hugh's stated problem — "if something needs to be bought, that should be clear upfront" —
-   exactly where it is).
-6. **Role Coverage never draws a buy tag.** It is owned-only; there is no unowned row to tag.
+5. **The synergy panel gains one availability slot before the toggle,** and an unowned row draws a
+   **priced** buy tag in it. Phone puts the marker on the existing meta line beside `+8 · 14%`.
+   Rejected: an unpriced tag (every other buy tag in the app quotes a price); no tag at all (which
+   leaves Hugh's stated problem — "if something needs to be bought, that should be clear upfront" —
+   exactly where it is). **What the slot draws for an owned row with no free copy is NOT settled
+   here — see §4.6.**
+6. **Role Coverage never draws a buy tag,** whatever §4.6 rules for the synergy panel. Its rows
+   are drawn from the owned pool, and this brief does not put a price on a card the player already
+   has. Role Coverage draws markers and nothing else.
 7. **The `Availability` sort option ships in the same round.** Its copy is written and ratified
    (`commander-explained.ts`, `coverageSort.availability`) and was held back only because "it needs
    the committed flag, which is slice B". This brief lands that read, four-way. Its sub-line needs
@@ -130,8 +141,11 @@ Settled in the workshop. These are not open.
    (`commander-explained.ts:261`) speaks `Already in ${deck.name}.` So this surface wants a
    **visible count-only label with a spoken deck name**, which no current option expresses and
    which departs from the coupled contract in `docs/superpowers/design-tables/card-availability.md`
-   §2/§3. Ratify the divergence, or rule that the chip loses the spoken name (a regression against
-   what ships today), or give the marker a third option. Design's call; note the marker is shared
+   — §13 (`/collection` renders count-only "in the visible label **and** in the accessible name"),
+   row 14.4 and row 17.15. (§2 and §3 are the marker's two density tables and carry no
+   accessible-name rows; the coupling is enforced in code at `availability-marker.tsx`.)
+   Ratify the divergence, or rule that the chip loses the spoken name (a regression against what
+   ships today), or give the marker a third option. Design's call; note the marker is shared
    across eight surfaces, so a new option is not free.
 2. **The legend.** Three keys for five readings. The existing rule holds and is not up for
    revision: **no counts** — a key sitting above four panels cannot count for any one of them.
@@ -144,24 +158,47 @@ Settled in the workshop. These are not open.
    name and a 10.5px figure plate, and the phone row against a 13.5px name and an 11.5px figure.
 5. **The About entry** (title, route, `opens`, caption, specimen component and fixture props, up to
    four key lines, phone reduction), per the standing rule that no UI feature ships without one.
+6. **What the synergy panel's slot draws for an owned card with no free copy.** `AvailabilitySlot`
+   answers "has this row a free copy" — so reused as-is, a hard-claimed or over-committed card on
+   the synergy panel draws `buy $1.24` and never `none free, in Kyknos`. That is right on the diff
+   row, where the reader is committing a deck and the price is the alternative to a pull. It may be
+   wrong here, where the reader is browsing recommendations and the useful fact is that they own
+   the card and where it went. Three answers: reuse the slot unchanged (prices lead, ownership is
+   lost); marker for every owned state and the tag for unowned only (ownership leads, and the
+   surface stops answering "what would it cost"); or both, which needs a geometry that fits two
+   items in one slot. Ruling 3's count-only marker on Role Coverage is unaffected either way.
 
 ---
 
 ## §5 The Canopy clash, which is separable and ships first
 
-`--success: #6FA368` is the **only** palette token identical in all six themes
-(`src/app/globals.css:60, 108, 153, 197, 243, 287`). Every other color token is themed. The file
-already documents the consequence, at `:127-129`:
+`--success: #6FA368` is shared verbatim by all six themes (`src/app/globals.css:60, 108, 153, 197,
+243, 287`). It is not alone in that — parsing the six blocks, **nine tokens are identical across
+every theme**: `--success`, `--danger`, `--avail-over-border`, `--w`, `--u`, `--b`, `--r`, and
+`--avail-hard` / `--avail-soft` as shared `var()` aliases. A shared token is the norm here, not an
+oversight, so "it was never themed" is no argument by itself.
+
+The argument is that the file already says this one is tight, at `:126-128`:
 
 > Theme: ixalan — "Canopy". Jungle daylight; the yellow-green accent is the third green in its own
 > palette, so `--success` and `--g` are the two tokens with the least room here. Both clear the
 > 0.10 ΔE floor, but only just.
 
-So this is a known, documented near-miss rather than a new finding, and the fix is the token, not
-any component: theme `--success` per palette, six values, ΔE checked against that theme's
-`--accent`, `--g` and `--bg`. It lands on every ownership dot in the app at once — commander
-panels, decklist, collection, export — which is why it ships **ahead of and separately from** this
-design round and needs no handoff surface. Design supplies the six values.
+And there is precedent for the fix in the same file: `--g` is the one token of the nine that a
+theme *does* override, in **phyrexia** (`#527030` against the shared `#4B7A46`), because its
+oil-teal accent sat ΔE 0.09 from green. A palette that cannot hold a shared token overrides it.
+Canopy is the same case one token over.
+
+So the fix is **an override in Canopy alone**, not a re-theming of all six. That matters because
+the blast radius is wide: **37 files** read `--success`, far beyond `OwnershipDot` — win markers in
+`decks/game-history-row.tsx` and `decks/games-panel.tsx`, set-completion marks in
+`sets/set-icon.tsx` and `sets/set-index-view.tsx`, `collection/review-screen.tsx`, both
+`guided-banner.tsx` files. One theme's override moves all of those in that theme, which is the
+intent; six new values would move them everywhere for a problem only one palette has.
+
+Design supplies one value: a Canopy `--success` that clears ΔE 0.10 against that theme's
+`--accent` `#A3C445`, its `--g` `#4B7A46` and its `--bg` `#0E1310` by more than "only just". It
+ships **ahead of and separately from** this design round and needs no handoff surface.
 
 ---
 
