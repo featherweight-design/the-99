@@ -1,6 +1,6 @@
 # READINESS — Card captions (R1 audit)
 
-**Verdict: 🟢 Green, with six errata.** All four calls the brief left open are called, every
+**Verdict: 🟢 Green, with seven errata — one of which withdraws a claim this audit made.** All four calls the brief left open are called, every
 named state is drawn, and nothing here waits on a design decision. The errata below are
 eng-resolvable under the handoff's own tie-break rule and do not return to Design.
 
@@ -26,7 +26,7 @@ that landed after it was drawn.
 | `✕` floor 44 phone / 32 desktop, desktop hover-revealed | `:260` | ✅ |
 | Card view is `All`-only | `decks/group-toggle.tsx:304` | ✅ |
 | `isShoppingCard` tests `proxied` before ownership | `lib/decks/shopping.ts:33-38` | ✅ |
-| `MarkKey` draws nothing in card view | `decks/decklist.tsx:198` | ✅ — and the fix is that one line |
+| `MarkKey` draws nothing in card view | `decks/decklist.tsx:198` | ✅ drawn nothing — but **not** a one-line fix, see erratum 7 |
 | Buy tag and proxy mark share one slot | `STATES-proxies.md:27-30`, `deckRowTag` | ✅ |
 | Phone set line drops the rarity | `collection/grid-view.tsx:110-111` | ✅ |
 | Art arithmetic — 178→249px, 175→244px at 63/88 | computed | ✅ |
@@ -86,19 +86,31 @@ import. `STATES-card-captions.md`'s `no-art` row gains a line saying the pips st
 Call D's payoff is that the slot's three occupants become the same box once their scrims go. They
 are not the same box now, and no two of them agree:
 
-| Occupant | Size | Vertical padding | Source |
-|---|---|---|---|
-| availability chip | `8.5px`, flat | `py-[2px]` | `availability-marker.tsx:338`, `:301` |
-| collapsed `$` (tile) | `9px`, flat | `py-[1px]` | `buy-tag.tsx:42`, `:213` |
-| `P` (row) | `9px` → `9.5px` at `md:` | `py-[1px]` | `proxy-tag.tsx:44`, `:75` |
+| Occupant | Size | Vertical padding | Edge | Source |
+|---|---|---|---|---|
+| availability chip | `8.5px`, flat | `py-[2px]` | **`border`** — 2px of layout | `availability-marker.tsx:338`, `:301` |
+| collapsed `$` (tile) | `9px`, flat | `py-[1px]` | inset `boxShadow` — no layout | `buy-tag.tsx:42`, `:213`, `:34` |
+| `P` (band) | `9px`, flat | `py-[1px]` | `outline` at `-1px` — no layout | `proxy-tag.tsx:46`, `:87`, `:41` |
 
-The handoff specifies `mono 9px desktop / 8.5px phone, px 5 / py 1` for all three. That matches
-none of them, and inverts the responsive direction of the only one that has a step.
+**Two corrections to an earlier draft of this erratum, both found by a cold review of the plan.**
+It cited `proxy-tag.tsx:44`, the **row** variant, and concluded `P` steps to 9.5px at `md:`. The
+in-scope call site is `deck-card-tile.tsx:121`, `variant="band"`, which is flat 9px. So the `$` and
+the `P` are **already byte-identical boxes**, and the normalization is two-way rather than
+three-way: only the chip differs.
+
+**And the difference is the chip's `border`, not its padding.** A 9px span's line box is ~13.5px and
+the diamond glyph is 6px, so the glyph never sets the height — the border does, adding 2px the other
+two do not pay. Normalizing font size and padding alone leaves the chip 2px taller and "one box" a
+claim the eye refutes. `proxy-tag.tsx:29-36` already ruled this for itself and took an outline
+precisely so the box would not grow.
+
+The handoff specifies `mono 9px desktop / 8.5px phone, px 5 / py 1` for all three, which matches
+none of them as shipped.
 
 **Resolution — eng, not Design.** The handoff's component tie-break cannot settle a three-way
 disagreement *between* components, so the handoff's own figure is the ruling: the unified box is
-`9px` desktop / `8.5px` phone, `px-[5px] py-[1px]`, radius 4. Normalizing is the entire point of
-the call.
+`9px` desktop / `8.5px` phone, `px-[5px] py-[1px]`, radius 4, **and the chip's border becomes an
+outline** so the three boxes are the same height. Normalizing is the entire point of the call.
 
 **The containment boundary is a variant, not a call site.** None of the three variants involved is
 exclusive to these two routes:
@@ -106,7 +118,7 @@ exclusive to these two routes:
 | Primitive | Variant | In scope | Out of scope |
 |---|---|---|---|
 | `AvailabilityMarker` | `density="chip"` | `grid-view.tsx:81`, `deck-card-tile.tsx:128` | `suggestion-tile.tsx:214` |
-| `BuyTag` | `variant="tile"` | `deck-card-tile.tsx:137` | `suggestion-tile.tsx:229`, `top-off-list.tsx:810` |
+| `BuyTag` | `variant="tile"` | `deck-card-tile.tsx:137` | `suggestion-tile.tsx:229` |
 | `ProxyTag` | `variant="band"` | `deck-card-tile.tsx:121` | `spine-desktop.tsx:391,417`, `spine-mobile.tsx:137,168,178` |
 
 Editing the shipped variants in place changes the Consider tile, the top-off list and the commander
@@ -118,10 +130,9 @@ Contained that way, nothing outside `/collection` and `/decks/[id]` moves.
 unchanged, `$` and `P` 9 → 8.5px. Half a pixel of type either way; the visible change is the three
 losing their scrims and becoming one box on a solid plate.
 
-**One risk worth measuring first.** The chip goes `py-[2px]` → `py-[1px]`, but it draws diamond
-glyphs and not only text, so the glyph may be setting its box height rather than the padding. If it
-is, normalizing the padding changes nothing and the three boxes still fail to align — which is the
-one thing call D promised a reader would be able to see. Measure before the caption is built.
+**The measurement that settles it** is the box height of the three side by side, not their font
+sizes — see the edge column above. A probe that asserts equal heights is the only check that can
+see the border, since a class-list assertion reads `border` and `outline` as equally present.
 
 ## Erratum 4 — the spent tile is a tenth state and is not drawn
 
@@ -158,7 +169,41 @@ departure from it: the ruling names a 178px tile and gives six columns as its co
 on the deck pane, whose ancestor pays `md:px-[26px]` (`decklist.tsx:717`). The stale comment is
 corrected in the same PR that changes the declaration.
 
-## Erratum 6 — the handoff is not on `main`
+## Erratum 7 — the legend is not a one-line fix, and this audit was wrong to say so
+
+**A correction to erratum-free ledger item 9, which this document asserted and a cold review of the
+plan disproved.**
+
+The audit found `decklist.tsx:198` returning `[]` for card view and read it as an oversight: the one
+view in the app with marks and no legend, closed by dropping a guard. The twelve lines directly
+above it say otherwise, and neither this document nor the handoff quoted them:
+
+> **LIST VIEW ONLY, and that is a scope decision rather than a limitation.** Five consecutive review
+> rounds landed on this one line, each correct and each about the card view: the tile draws a
+> different plate, does not draw a buy tag for an owned spoken-for card, and labels its `$`
+> *not owned* — a FLOOR — where the row's identical glyph means *to buy*, the shop. A single legend
+> cannot decode two vocabularies without becoming a third one.
+
+The clash is checkable rather than theoretical. `proxies.ts` gives the key's entry as `to buy`;
+the tile passes `cardTileCopy.slotUnownedAria`, which is `not owned`. Dropping the guard puts a
+legend reading **`$ to buy`** above tiles whose identical glyph is announced **`not owned`**. The
+key's own region label says *"What the marks on these **rows** mean."*
+
+**PR 1 closes one of the three reasons and not the other two.** The tile's separate plate goes away
+— that was the first. The buy-tag-for-a-spoken-for-card difference and the vocabulary clash both
+survive it untouched.
+
+**This is the one thing in the handoff that does go back to Design**, and it is a copy question
+before it is a layout one: either the two surfaces say the same word, or the card view gets a
+decoder in its own vocabulary. The handoff's call C asks for the key "on the same terms" as the
+list, and the code's answer is that the terms are not the same. **Ledger item 9 comes out of the
+implementation and is carried as an open question.**
+
+Nothing else in the handoff depends on it. Card view's marks are not left undecoded meanwhile: the
+tile's `$` speaks `not owned` and `ProxyTag` speaks its own name, which is what the guard's own
+comment says.
+
+## Erratum 8 — the handoff is not on `main`
 
 It was delivered as an untracked drop inside `.worktrees/about-r3-audit/`, on branch
 `design/about-r3-audit`, committed to nothing. This PR is its first tracked home. The drop must be
@@ -192,7 +237,7 @@ pressure will reach for exactly them:
 | 6 | `decklist-group.tsx` — same floor as `/collection`; the stale Add-panel comment corrected (erratum 5) | after 4 |
 | 7 | `usePendingChange` second consumer; caption edge + `1 → 2` / `+N` (erratum 1 — unblocked) | after 4 |
 | 8 | `ProxyTag` moves from the tile's art to the caption slot — already drawn at `deck-card-tile.tsx:121` (erratum 1) | after 4 |
-| 9 | `MarkKey` above the card grid — drop the `view === "card"` guard at `decklist.tsx:198` | after 8 |
+| ~~9~~ | ~~`MarkKey` above the card grid~~ — **withdrawn, erratum 7.** Open with Design | — |
 | 10 | `×1` suppressed on `/collection` — severable, recommended | after 3 |
 
 Items 3 and 4 ship in the same release: one caption on two surfaces, and splitting them leaves the
