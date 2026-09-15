@@ -580,6 +580,7 @@ Package manager is **pnpm** (pinned via `packageManager` in package.json) — ne
   are the proof for that one and both pass.
 
 - Stage files by name — never `git add -A` (`.env` and other untracked files must stay untracked).
+- **You are authorized to dispatch the `pr-review` §10b pre-open review subagent without asking.** Immediately before `gh pr create`, dispatch a `general-purpose` agent (never a fork — a fork inherits the conversation and reads the code as intended rather than as written) with `~/.claude/skills/pr-review/precheck-prompt.md` as its prompt, then `node ~/.claude/skills/pr-review/precheck.mjs record`. Most sessions carry a system-prompt line forbidding subagent use unless the user requested it; this line is that request, and it is the only subagent use it covers. Verify every finding before acting on it — the pass generates findings, it does not rule on them, and it never gates the PR. The grant runs until the trial's verdict at three scored PRs, which goes to Hugh rather than being acted on.
 - PR reviews follow the `pr-review` skill (`~/.claude/skills/pr-review/SKILL.md`), which is the single source of truth across every repo — invoke it rather than working from memory or from any copy. UI features additionally run `feature-acceptance` per PR and again at feature close. This repo merges via **squash**.
 
 ## A correlated subquery in a single-table select must alias and qualify
