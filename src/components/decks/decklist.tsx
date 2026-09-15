@@ -763,7 +763,7 @@ export function Decklist({
           //
           // Both views, for the reason the caption above gives: this note is the
           // heading's half of one mark, and since card captions (R1) the card
-          // view's tiles draw the other half.
+          // view's tiles have drawn the other half.
           const changedInGroup = groupCards.filter(isMarked).length;
           return (
             <DecklistGroup
