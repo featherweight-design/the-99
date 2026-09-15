@@ -470,11 +470,18 @@ export async function loadAvailability(
             -- them is a source": an absent vantage, where free is owned - hard,
             -- and a vantage that has not sleeved this card, which is behind
             -- everyone who has.
-            'senior', cd.sleeved and (
+            -- OR a granted reservation, whoever it belongs to. A junior deck holding
+            -- one is exactly the claim a displaced senior deck needs to be able to ask
+            -- for: free subtracts that reserved copy from the senior's supply, so
+            -- releasing the junior deck's list card would drop its ask, void its
+            -- reservation and relieve the shortfall. Without this term the deck that
+            -- lost the copy is offered no route at all, which is the one vantage this
+            -- whole feature creates.
+            'senior', cd.sleeved and (coalesce(rv.granted, 0) > 0 or (
               not coalesce((select s.sleeved from skip_deck s), false)
               or m.since is null
               or (cd.since, cd.deck_id) < (m.since, (select s.id from skip_deck s))
-            )
+            ))
           )
           order by cd.name, cd.deck_id
         ) as claims

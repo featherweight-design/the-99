@@ -646,6 +646,10 @@ export const cardAssignments = pgTable("card_assignments", {
   // The claim model reads every reservation this player holds on the cards in one
   // query, so it reads by user and narrows by oracle.
   index("card_assignments_user_oracle_idx").on(t.userId, t.oracleId),
+  // The cascade's own lookup. The primary key above leads with user_id and oracle_id,
+  // so it cannot answer "which rows reference this deck" — without this index every
+  // deck deletion scans the whole table.
+  index("card_assignments_deck_idx").on(t.deckId),
   // A zero or negative value would be a durable row that reduces or inverts the
   // supply arithmetic, and a caller-side guard does not survive the next caller.
   check("card_assignments_copies_positive", sql`${t.copies} > 0`),

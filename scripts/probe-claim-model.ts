@@ -181,6 +181,20 @@ async function reservationSection() {
     check("the displaced senior deck is billed for a copy", await owes(a), 1);
     check("and the reserving deck is billed for none", await owes(b), 0);
 
+    // 2b-ii. THE DISPLACED DECK'S ROUTE BACK. `senior` gates whether a pull is
+    //     offered, and by default a junior claim is not a pull source — releasing it
+    //     could not relieve a senior deck that already had the copy. A junior deck
+    //     holding a RESERVATION is the exception, and it is the one vantage this
+    //     feature creates: the senior deck lost the copy to it, and dropping that
+    //     deck's list card would void the reservation and give it back. Without the
+    //     granted term the displaced deck is offered no route at all.
+    const seniorFlag = async (vantage: string, holder: string) => {
+      const av = await loadAvailability(USER_R, { oracleIds: [card], excludeDeckId: vantage });
+      return av.get(card)?.claims.find((c) => c.id === holder)?.senior ?? null;
+    };
+    check("a reserved junior claim is a pull source for the deck it displaced",
+      await seniorFlag(a, b), true);
+
     // 2c. OFF ANY DECKLIST. With no vantage deck, `free` means what it has always
     //     meant — copies not sleeved in a committed deck — and a reservation must not
     //     move it: a reserved copy is still sleeved in the same deck it was. This is
