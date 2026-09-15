@@ -213,10 +213,19 @@ export function ProxyListView({
                       cost and a real back one, and on this sheet that cost is
                       exactly what the reader needs. */}
                   {faceCosts(row.manaCost).length > 0 && (
-                    // SPOKEN, which this row never did. The pips are aria-hidden
-                    // and the card trigger's label is the name alone, so the cost
-                    // reached nobody using a screen reader — and the half this
-                    // change adds would have been silent in the same way.
+                    // SPOKEN, which this row never did: the pips are aria-hidden
+                    // and the card trigger's label is the name alone, so no cost
+                    // was in the accessible tree at all — and the half this change
+                    // adds would have been missing in the same way.
+                    //
+                    // A SIBLING of the trigger rather than part of its label,
+                    // which is the pattern every cost-bearing surface here uses
+                    // (`deck-card-tile.tsx` says why: a trigger's own accessible
+                    // name replaces everything nested inside it, so a cost spoken
+                    // in there is spoken nowhere). The cost is therefore read in
+                    // browse mode and not announced on focus — the same trade the
+                    // decklist rows make, and not one to change on this surface
+                    // alone.
                     <CostPips cost={row.manaCost} allFaces spoken />
                   )}
 
