@@ -35,8 +35,8 @@ tile, six is 178px, seven is 150px. **At 390px the phone tile is 175px** — 362
 
 **Collection tile** (`collection/grid-view.tsx`). On the art: `×N` quantity badge top-right
 (`:65`), availability chip top-left (`:81`). The `×N` is unconditional — a collection where one
-copy is the common case still prints `×1`. Caption: printed front-face name, then `SET · rarity`
-(`:110-111`).
+copy is the common case still prints `×1`. Caption: printed front-face name, then the set line —
+`SET · rarity` on desktop and the **set code alone at the phone** (`:110-111`).
 
 **Deck tile** (`decks/deck-card-tile.tsx`). On the art: availability chip *or* buy tag top-left,
 never both (`:107`, `:118`); `×N` top-right and **absent at one copy** (`:129`); ownership dot plus
@@ -44,8 +44,10 @@ cost pips sharing a bottom-left scrim (`:177`, `:187`). Caption: printed front-f
 two-faced mark, and the `✕` that is the only way to remove a card in this view (`:192`).
 
 The art in both carries `inset 0 -40px 40px -30px rgba(0,0,0,0.6)` at the phone and `-50px/-34px`
-above `md:`. That shadow exists to make the bottom-left group legible against light art. It has no
-other job.
+above `md:`. **Only the deck tile has a bottom-left group** — the collection tile's art carries the
+chip and the badge and nothing along its bottom edge, so there the shadow is already doing no work
+at all. On the deck tile it exists to hold the dot and the pips off light art, and it has no other
+job. It goes from both.
 
 ---
 
@@ -79,7 +81,9 @@ Settled in the workshop. These are not open.
 
 Per route, at 178px desktop and 175px phone.
 
-**`/collection`:** availability chip, quantity, name, `SET · rarity`.
+**`/collection`:** availability chip, quantity, name, and the set line — `SET · rarity` on desktop,
+the set code alone at the phone. That difference is shipped behaviour and is what keeps the line
+inside 175px.
 
 **`/decks/[id]`:** ownership, availability chip *or* buy tag *or* proxy mark (one slot, §5),
 quantity, name, two-faced mark, draft state, and the `✕`.
@@ -102,6 +106,11 @@ Two constraints on any answer:
 which get words, and whether anything at all is left on the art. Ruling 1 removes the modifiers;
 it does not say the art must be bare. A treatment that keeps exactly one corner and moves the rest
 is a legitimate answer if Design can defend it.
+
+> **Closed in the handoff (R1), call D: nothing stays on the art.** Design declined the corner and
+> named the price — the slot's three occupants would then be in two places, and keeping any corner
+> re-imports the scrim this brief identified as the thing worth recovering. The permission above is
+> spent; zero overlays is now the rule.
 
 ---
 
@@ -139,19 +148,32 @@ price, a quantity, an availability marker, or a filled ownership dot, and must n
 
 ---
 
-## §6 The columns, and why the deck is not simply six
+## §6 The columns are a tile floor, not a count
 
-`/collection` is a fixed column count and can take `md:grid-cols-6` directly.
+**Both grids take `repeat(auto-fill, minmax(178px, 1fr))`.** One declaration, one number, both
+routes. Six columns is what that floor *produces* at the 1300px reference width; it is not the
+thing being specified.
 
-`/decks/[id]` cannot. `decklist-group.tsx:69-74` records the reason: the Add panel is 340–346px and
-opens **over** this pane, so a fixed column count would either overflow or leave a gutter the
-moment it opens. The deck grid stays `auto-fill`; six is the count its floor should produce at the
-default desktop width with the panel closed, and fewer when it is open.
+Two corrections, both found in review of this brief, drove that:
 
-Design draws to the **178px tile**. Eng picks the `minmax()` floor that yields it. This is the one
-place in the brief where the two routes' answers differ by mechanism rather than by intent.
+**A fixed `md:grid-cols-6` breaks the tile it exists to protect.** `md:` begins at 768px, where
+`/collection` has 638px of track and six columns is a **90px** tile — half the 175px phone tile
+whose parity is ruling 3's entire argument. A fixed count holds the count and lets the tile vary,
+which is backwards: the tile is the design and the count is the consequence.
 
----
+**The Add panel no longer opens over the deck pane.** `decklist-group.tsx:69-74` says the deck grid
+is `auto-fill` because a 340–346px panel opens over it — and that is stale. `BuilderShell` renders
+`QuickAddBar` as a **full-width sticky bottom dock** (`builder-shell.tsx:1224`:
+`sticky bottom-[var(--tabbar-h)] md:bottom-0 … px-[16px] md:px-[30px]`). Nothing overlays the grid,
+so that rationale supports nothing. The grid still wants `auto-fill` — just for the ordinary reason,
+that a floor is what holds a tile size across widths. **That stale comment should be corrected in
+the same PR that changes the declaration.**
+
+**The arithmetic, at 1300px.** `/collection` has 1170px of track (1238px main, less 34px padding
+each side) and 20px gaps: six tracks of 178.3px. The deck pane has 1186px (its ancestor pays
+`md:px-[26px]`, `decklist.tsx:717`): six tracks of 181px. Both land within 3px of the target, and
+every figure here is quoted at that one reference width — a column count at any other width falls
+out of the floor rather than being stated.
 
 ## §7 Out of scope
 
