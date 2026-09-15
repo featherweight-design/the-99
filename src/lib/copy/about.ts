@@ -165,7 +165,7 @@ export const aboutEntries: readonly AboutEntry[] = [
       'free — you own it and nothing has claimed it. No diamond at all, which is the commonest state in the app.',
       'in a brew — a deck you have never committed wants it. The claim is real but not binding, and it is the state a reader is least likely to guess.',
       'none free — a committed deck holds every copy. The deck that sleeved it first keeps it by default, and you can hand it to another.',
-      'short 2 — more decks want it than you own. The last row is different again: a card you never owned at all.',
+      'short 2 — the committed decks between them ask for two more copies than you own. The last row is different again: a card you never owned at all.',
     ],
     since: 1,
   },
@@ -192,7 +192,7 @@ export const aboutEntries: readonly AboutEntry[] = [
     opens: 'opens the card detail',
     width: 'inset',
     caption:
-      'Prices come from ManaPool and refresh weekly. The tag has four states and they are different claims: a figure, a foil-only figure, sold out — stocked but unavailable today — and no figure at all, which means the feed has never carried that printing. None of those is free.',
+      'Prices come from ManaPool and refresh weekly. The tag has four states and they are different claims: a figure, a foil-only figure, sold out — stocked but unavailable today — and no figure at all, which is the feed having no price for that printing rather than a price of nothing. None of those is free.',
     keys: [],
     since: 1,
   },
@@ -204,7 +204,7 @@ export const aboutEntries: readonly AboutEntry[] = [
     opens: 'opens the card detail',
     width: 'inset',
     caption:
-      'Every printing of a card, its art at full size, and the back of a double-faced card. The filled diamond is the printing you own — the same shape, hollow, is one you do not. It opens from a card anywhere in the app, not only here.',
+      'Every printing of a card you own, its art at full size, and the back of a double-faced card. A tick marks the printing you picked to represent the card; a hollow diamond marks the one being shown right now. It opens from a card anywhere in the app, not only here.',
     keys: [],
     since: 1,
   },
@@ -332,7 +332,7 @@ export const aboutEntries: readonly AboutEntry[] = [
     keys: [
       'a filled green dot is a card you own; a dashed hollow one is a card you do not. Same shape, same place, every list in the app.',
       'the circled figure is how many copies this deck wants, and it is there whether that is one or four.',
-      'one mark, and only when there is something to say: `1 in a brew`, `none free`, `short N`, or `$` for a card you would have to buy.',
+      'one mark, and only when there is something to say: `1 in a brew`, `none free`, `short N`, `$` for a card you would have to buy, or `P` for one you are printing. One slot, one answer.',
       'the edge is the row’s own state — accent where you are working, and the over-committed colour when the deck wants more than you own.',
     ],
     since: 1,
@@ -499,7 +499,7 @@ export const aboutEntries: readonly AboutEntry[] = [
       'Six statuses, and each one has a single next action. Exactly one of them means you can put the deck on a table — a hundred-card list you still have to buy four cards for is not Complete. Beside each badge the app draws one figure and no sentence, so the explanations sit in the key below where they are honestly this page’s own words.',
     keys: [
       'Draft and Building are not legal lists yet, and the figure is how far off. Draft has nothing in it, so it shows when it was made instead.',
-      'Over and Unresolved are legal-sized lists with something to settle: too many cards, or lines we could not put a card to.',
+      'Over is past the body size and Unresolved is at it, each with something to settle: too many cards, or lines we could not put a card to.',
       'To buy is the one that catches people — a finished 99 you cannot sleeve, because some of it is not on your shelf.',
       'Complete is the only status that means you can put the deck on a table. Each badge carries one figure and no sentence.',
     ],
@@ -534,7 +534,7 @@ export const aboutEntries: readonly AboutEntry[] = [
     route: '/',
     width: 'inset',
     caption:
-      'Three figures, each with its denominator: how much of what you own is sleeved into a committed deck, how many cards two decks are both counting on, and what the whole library would cost to finish. The middle figure keeps its colour at zero — it is the row that would be red if it were not nought.',
+      'Three figures: how much of what you own is sleeved into a committed deck, against everything you own; how many cards are asked for more times than you own copies; and what the whole library would cost to finish. The middle figure keeps its colour at zero — it is the row that would be red if it were not nought.',
     keys: [],
     since: 1,
   },
