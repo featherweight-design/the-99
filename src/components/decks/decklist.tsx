@@ -171,19 +171,28 @@ export function Decklist({
   // stops there.
   const markKey = useMemo((): MarkKeyEntry[] => {
     const shown = filter === "shopping" ? cards.filter(isShoppingCard) : cards;
+    // Each view draws its own set of marks, so the key asks each view's OWN
+    // condition. The tile does not draw a buy tag for an owned spoken-for card —
+    // it draws the availability marker — so a key built from the row's rule
+    // would name a `$` that is not on screen in card view.
+    const drawsBuy = (c: DeckDetailCard) =>
+      view === "card"
+        ? deckRowTag(c) === "buy"
+        : deckRowTag(c, filter === "shopping" && isSpokenFor(c)) === "buy";
     const entries: MarkKeyEntry[] = [];
-    if (shown.some((c) => deckRowTag(c, filter === "shopping" && isSpokenFor(c)) === "buy")) {
+    if (shown.some(drawsBuy)) {
       entries.push({
         id: "buy",
         sample: <BuyTag variant="row" density="collapsed" price={null} />,
         word: proxyCopy.key.buy,
       });
     }
+    // Both views draw the proxy mark, on the same condition.
     if (shown.some((c) => c.proxied)) {
       entries.push({ id: "proxy", sample: <ProxyTag variant="row" />, word: proxyCopy.key.proxy });
     }
     return entries;
-  }, [cards, filter]);
+  }, [cards, filter, view]);
 
   // The toolbar's right slot while a draft exists. Needs both answers: a deck
   // with no version has no vN to count against, and a set with nothing in it has
