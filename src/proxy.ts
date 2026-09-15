@@ -1,4 +1,13 @@
+import { NextResponse } from "next/server";
 import { clerkMiddleware, createRouteMatcher } from "@clerk/nextjs/server";
+import {
+  ABOUT_COOKIE,
+  cookieIsCurrent,
+  gateApplies,
+  gateDecision,
+  gateHandles,
+} from "./lib/about/gate";
+import { aboutVersionSeen } from "./lib/about/read";
 
 // Next.js 16 renamed the middleware entrypoint: `src/proxy.ts` is the
 // replacement for `src/middleware.ts` (same functionality, new file convention).
@@ -14,7 +23,45 @@ import { clerkMiddleware, createRouteMatcher } from "@clerk/nextjs/server";
 const isPublic = createRouteMatcher(["/", "/api/cron(.*)", "/api/health", "/api/health/"]);
 
 export default clerkMiddleware(async (auth, req) => {
-  if (!isPublic(req)) await auth.protect();
+  // `isPublic` is path-only, and "/" is the one public path a SIGNED-IN reader
+  // uses constantly — it renders the dashboard, and it is where Clerk lands
+  // them after sign-in. Returning early on the whole matcher therefore left the
+  // most likely arrival in the app ungated, which is the one place the About
+  // page most needs to appear. So: protect what is not public, read the session
+  // on what is, and let the gate below judge both.
+  const { userId } = isPublic(req) ? await auth() : await auth.protect();
+  if (!userId) return;
+
+  const path = req.nextUrl.pathname;
+  if (!gateApplies(path) || !gateHandles(req.method, req.headers)) return;
+
+  // The cookie is the fast path and the reason this costs nothing on a normal
+  // navigation: one database read per browser per version per account.
+  if (cookieIsCurrent(req.cookies.get(ABOUT_COOKIE)?.value, userId)) return;
+
+  // A failed read must not lock the reader out of the app. The page is a
+  // reference; the app is the point.
+  let seen: number;
+  try {
+    seen = await aboutVersionSeen(userId);
+  } catch {
+    return;
+  }
+
+  const decision = gateDecision({ userId, pathname: path, search: req.nextUrl.search, seen });
+  const response =
+    decision.kind === "redirect"
+      ? NextResponse.redirect(new URL(decision.to, req.url))
+      : NextResponse.next();
+
+  response.cookies.set(ABOUT_COOKIE, decision.cookie, {
+    path: "/",
+    httpOnly: true,
+    sameSite: "lax",
+    secure: req.nextUrl.protocol === "https:",
+    maxAge: 60 * 60 * 24 * 365,
+  });
+  return response;
 });
 
 export const config = {

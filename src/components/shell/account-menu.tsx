@@ -12,12 +12,19 @@
 import { useEffect, useId, useRef, useState } from "react";
 import { useClerk, useUser } from "@clerk/nextjs";
 import { useDialogA11y } from "../../lib/a11y/dialog";
+import Link from "next/link";
 import { shellCopy } from "../../lib/copy/shell";
+import { aboutMenuCopy } from "../../lib/copy/about";
 import { accountIdentity, type AccountIdentity } from "../../lib/shell/identity";
 import { ThemePicker } from "./theme-picker";
 import type { ThemeKey } from "../../lib/theme/themes";
 
 const { manageAccount, signOut: signOutLabel, triggerLabel } = shellCopy.accountMenu;
+
+// About sits first and carries no badge, at any width, ever: the redirect is
+// the notification, so a dot here would announce a thing the reader has
+// already been shown.
+const aboutLabel = aboutMenuCopy.label;
 
 type PanelKind = "popover" | "sheet";
 
@@ -37,6 +44,10 @@ type MenuItemsProps = {
   busy: boolean;
   onManage: () => void;
   onSignOut: () => void;
+  /** The About row navigates client-side, so the panel has to be dismissed on
+   *  the way out — otherwise the popover, or the sheet with its backdrop and
+   *  focus trap, stays mounted over the destination. */
+  onClose: () => void;
 };
 
 /**
@@ -45,13 +56,21 @@ type MenuItemsProps = {
  * (X11). Table ambiguity 3 — the handoff specs hover but no roving-focus
  * visual, so focus reuses the hover background rather than inventing one.
  */
-function MenuItems({ kind, busy, onManage, onSignOut }: MenuItemsProps) {
+function MenuItems({ kind, busy, onManage, onSignOut, onClose }: MenuItemsProps) {
   const popover = kind === "popover";
   const [active, setActive] = useState(0);
-  const refs = [useRef<HTMLButtonElement>(null), useRef<HTMLButtonElement>(null)];
+  // One ref per item, sized from the list rather than written out: the row
+  // count was two for this menu's whole life and is three now, and a modulo
+  // hard-coded to the old count wraps focus into the wrong row silently.
+  const aboutRef = useRef<HTMLAnchorElement>(null);
+  const manageRef = useRef<HTMLButtonElement>(null);
+  const signOutRef = useRef<HTMLButtonElement>(null);
+  // Typed as the common supertype so one `move` can focus any of them; the
+  // rows are not the same element and the focus model does not care.
+  const refs: React.RefObject<HTMLElement | null>[] = [aboutRef, manageRef, signOutRef];
 
   function move(delta: number) {
-    const next = (active + delta + 2) % 2;
+    const next = (active + delta + refs.length) % refs.length;
     setActive(next);
     refs[next].current?.focus();
   }
@@ -66,32 +85,62 @@ function MenuItems({ kind, busy, onManage, onSignOut }: MenuItemsProps) {
     }
   }
 
-  const items = [
+  // About is a real link, not a button that routes: it is the one row here
+  // that goes somewhere, so it should open in a new tab when a reader asks it
+  // to. The other two act on the session and have no URL to offer.
+  const rowClass = (i: number) =>
+    `flex w-full items-center text-left text-[color:var(--fg)] transition-colors duration-[120ms] hover:bg-[color:var(--elevated)] focus-visible:bg-[color:var(--elevated)] disabled:opacity-60 ${
+      popover
+        ? "gap-[11px] rounded-lg px-3 py-[11px] text-[14px]"
+        : // Sheet rows are divided; the first row has no top rule.
+          `gap-3 px-[6px] py-[15px] text-[15px] ${
+            i === 0 ? "" : "border-t border-solid border-[color:var(--border)]"
+          }`
+    }`;
+
+  const buttons = [
     { label: manageAccount, onClick: onManage, danger: false },
     { label: signOutLabel, onClick: onSignOut, danger: true },
   ];
 
   return (
     <>
-      {items.map((item, i) => (
+      <Link
+        ref={aboutRef}
+        href="/about"
+        role="menuitem"
+        tabIndex={active === 0 ? 0 : -1}
+        onFocus={() => setActive(0)}
+        onKeyDown={onKeyDown}
+        // `aria-disabled` ANNOUNCES the state; it does not enforce it, and an
+        // anchor has no `disabled`. Both halves are needed or the row says it
+        // is unavailable and navigates anyway, racing the sign-out it claims
+        // to be waiting for.
+        aria-disabled={busy || undefined}
+        onClick={(e) => {
+          if (busy) {
+            e.preventDefault();
+            return;
+          }
+          onClose();
+        }}
+        className={rowClass(0)}
+      >
+        <ItemDiamond />
+        <span>{aboutLabel}</span>
+      </Link>
+      {buttons.map((item, i) => (
         <button
           key={item.label}
-          ref={refs[i]}
+          ref={i === 0 ? manageRef : signOutRef}
           type="button"
           role="menuitem"
-          tabIndex={active === i ? 0 : -1}
+          tabIndex={active === i + 1 ? 0 : -1}
           disabled={busy}
-          onFocus={() => setActive(i)}
+          onFocus={() => setActive(i + 1)}
           onKeyDown={onKeyDown}
           onClick={item.onClick}
-          className={`flex w-full items-center text-left text-[color:var(--fg)] transition-colors duration-[120ms] hover:bg-[color:var(--elevated)] focus-visible:bg-[color:var(--elevated)] disabled:opacity-60 ${
-            popover
-              ? "gap-[11px] rounded-lg px-3 py-[11px] text-[14px]"
-              : // Sheet rows are divided; the first row has no top rule.
-                `gap-3 px-[6px] py-[15px] text-[15px] ${
-                  i === 0 ? "" : "border-t border-solid border-[color:var(--border)]"
-                }`
-          }`}
+          className={rowClass(i + 1)}
         >
           <ItemDiamond danger={item.danger} />
           <span>{item.label}</span>

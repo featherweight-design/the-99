@@ -28,6 +28,13 @@ export const shellCopy = {
       heading: "Reading your collection",
       status: "matching to Oracle…",
     },
+    // The /about read is one primary-key lookup, so this boundary is almost
+    // never seen — it exists because every segment that owns a page owns one,
+    // and a route that skipped it would flash the shell instead.
+    about: {
+      heading: "Opening the rulebook",
+      status: "reading what the app does…",
+    },
     proxies: {
       heading: "Gathering your proxies",
       status: "reading what each deck prints…",

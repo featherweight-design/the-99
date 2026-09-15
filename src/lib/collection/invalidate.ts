@@ -20,6 +20,17 @@ export type CollectionRoute = { path: string; dynamic: boolean };
 
 export const COLLECTION_ROUTES: CollectionRoute[] = [
   { path: "/", dynamic: false },
+  // /about renders NOTHING out of the collection. It is here because
+  // `check:collection-routes` answers by import reachability — the page reads
+  // `user_prefs` through `db/schema`, and `collectionItems` is declared in that
+  // same module — so the checker cannot tell the two apart without being taught
+  // to look inside a barrel it deliberately treats as opaque.
+  //
+  // Listed rather than exempted, and the check left alone: it was wrong three
+  // review rounds running when it was a hand-written list, and its conservative
+  // answer costs one pointless revalidation of a static reference page. Making
+  // it cleverer to spare that is the trade in the wrong direction.
+  { path: "/about", dynamic: false },
   { path: "/collection", dynamic: false },
   // Reads `getCollectionStats` for the current card count the replace flow quotes back.
   { path: "/collection/replace", dynamic: false },

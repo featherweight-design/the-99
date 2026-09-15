@@ -93,13 +93,17 @@ describe("AccountMenu trigger", () => {
 });
 
 describe("AccountMenu popover", () => {
-  it("renders the identity header and both items", () => {
+  it("renders the identity header and all three items", () => {
     render(<AccountMenu panel="popover" theme="amonkhet" />);
     fireEvent.click(trigger());
     expect(screen.getByText("Ana Ruiz")).toBeTruthy();
     expect(screen.getByText("ana.ruiz@example.com")).toBeTruthy();
     const items = within(screen.getByRole("menu")).getAllByRole("menuitem");
-    expect(items.map((i) => i.textContent)).toEqual(["Manage account", "Sign out"]);
+    expect(items.map((i) => i.textContent)).toEqual([
+      "About The 99",
+      "Manage account",
+      "Sign out",
+    ]);
   });
 
   // RD§1 — --fg-faint is 4.42:1 on --surface-raised and fails AA at 11px.
@@ -245,24 +249,56 @@ describe("AccountMenu items", () => {
     expect(document.activeElement).toBe(
       screen.getByRole("radio", { name: "Low Sun, Amonkhet" }),
     );
-    const [manage, signOutItem] = screen.getAllByRole("menuitem");
-    expect(manage).toHaveAttribute("tabindex", "0");
+    const [about, manage, signOutItem] = screen.getAllByRole("menuitem");
+    expect(about).toHaveAttribute("tabindex", "0");
+    expect(manage).toHaveAttribute("tabindex", "-1");
     expect(signOutItem).toHaveAttribute("tabindex", "-1");
   });
 
   it("roves with the arrow keys and wraps in both directions", () => {
     render(<AccountMenu panel="popover" theme="amonkhet" />);
     fireEvent.click(trigger());
-    const [manage, signOutItem] = screen.getAllByRole("menuitem");
+    const [about, manage, signOutItem] = screen.getAllByRole("menuitem");
+
+    fireEvent.keyDown(about, { key: "ArrowDown" });
+    expect(document.activeElement).toBe(manage);
 
     fireEvent.keyDown(manage, { key: "ArrowDown" });
     expect(document.activeElement).toBe(signOutItem);
 
+    // The wrap is the half a hard-coded modulo gets wrong when a row is added:
+    // with `% 2` still in place this lands on Manage account.
     fireEvent.keyDown(signOutItem, { key: "ArrowDown" });
-    expect(document.activeElement).toBe(manage);
+    expect(document.activeElement).toBe(about);
 
-    fireEvent.keyDown(manage, { key: "ArrowUp" });
+    fireEvent.keyDown(about, { key: "ArrowUp" });
     expect(document.activeElement).toBe(signOutItem);
+  });
+
+  it("dismisses the menu on the way to About", () => {
+    // The row navigates client-side, so nothing unmounts the panel for us: a
+    // popover left open lands on top of /about, and the sheet takes its
+    // backdrop and focus trap with it.
+    render(<AccountMenu panel="popover" theme="amonkhet" />);
+    fireEvent.click(trigger());
+    fireEvent.click(screen.getByRole("menuitem", { name: "About The 99" }));
+    expect(screen.queryByRole("menu")).toBeNull();
+  });
+
+  it("says the About row is unavailable while sign-out is in flight, and means it", () => {
+    render(<AccountMenu panel="popover" theme="amonkhet" />);
+    fireEvent.click(trigger());
+    fireEvent.click(screen.getByRole("menuitem", { name: "Sign out" }));
+
+    const about = screen.getByRole("menuitem", { name: "About The 99" });
+    expect(about).toHaveAttribute("aria-disabled", "true");
+
+    // Announcing it is not enforcing it: an anchor has no `disabled`, so
+    // without the preventDefault the row navigates anyway and races the
+    // sign-out it claims to be waiting for. The menu staying open is how that
+    // shows up here — the press is refused, so nothing closes.
+    fireEvent.click(about);
+    expect(screen.queryByRole("menu")).not.toBeNull();
   });
 
   it("dismisses the menu before handing the focus trap to Clerk's modal", () => {
@@ -273,14 +309,16 @@ describe("AccountMenu items", () => {
     expect(openUserProfile).toHaveBeenCalledOnce();
   });
 
-  it("disables both items once sign-out is in flight", () => {
+  it("disables both buttons once sign-out is in flight", () => {
     render(<AccountMenu panel="popover" theme="amonkhet" />);
     fireEvent.click(trigger());
     fireEvent.click(screen.getByRole("menuitem", { name: "Sign out" }));
     expect(signOut).toHaveBeenCalledOnce();
-    for (const item of screen.getAllByRole("menuitem")) {
-      expect(item).toBeDisabled();
-    }
+    // About is a link and carries no disabled state — leaving the menu for a
+    // reference page cannot double-fire a sign-out, and a link that pretended
+    // to be disabled would still navigate.
+    expect(screen.getByRole("menuitem", { name: "Manage account" })).toBeDisabled();
+    expect(screen.getByRole("menuitem", { name: "Sign out" })).toBeDisabled();
     // A second press cannot double-fire.
     fireEvent.click(screen.getByRole("menuitem", { name: "Sign out" }));
     expect(signOut).toHaveBeenCalledOnce();

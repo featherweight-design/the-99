@@ -1,0 +1,55 @@
+import { describe, expect, it, vi, beforeEach } from "vitest";
+
+const requireUserId = vi.fn(async () => "user_1");
+const markAboutSeen = vi.fn(async () => {});
+const redirect = vi.fn((to: string) => {
+  throw new Error(`REDIRECT:${to}`);
+});
+
+vi.mock("../../lib/auth", () => ({ requireUserId }));
+vi.mock("../../lib/about/read", () => ({ markAboutSeen }));
+vi.mock("next/navigation", () => ({ redirect }));
+
+const { dismissAbout } = await import("./actions");
+const { ABOUT_VERSION } = await import("../../lib/copy/about");
+
+/** `redirect` throws by design, so every call here is expected to. */
+async function dismiss(next?: string): Promise<string> {
+  const form = new FormData();
+  if (next !== undefined) form.set("next", next);
+  try {
+    await dismissAbout(form);
+  } catch (e) {
+    return (e as Error).message.replace("REDIRECT:", "");
+  }
+  throw new Error("the action returned without redirecting");
+}
+
+beforeEach(() => {
+  requireUserId.mockClear();
+  markAboutSeen.mockClear();
+  redirect.mockClear();
+});
+
+describe("dismissAbout", () => {
+  it("authenticates, records the current version, and returns the reader", async () => {
+    const to = await dismiss("/decks?sort=name");
+    expect(requireUserId).toHaveBeenCalledOnce();
+    expect(markAboutSeen).toHaveBeenCalledWith("user_1", ABOUT_VERSION);
+    expect(to).toBe("/decks?sort=name");
+  });
+
+  it("validates `next` HERE, because this is what calls redirect", async () => {
+    // The page validates it too, but the field is a hidden input in a form the
+    // reader's browser owns — the page's copy of the value proves nothing about
+    // what arrives.
+    expect(await dismiss("//evil.example")).toBe("/");
+    expect(await dismiss("https://evil.example/decks")).toBe("/");
+    expect(await dismiss()).toBe("/");
+  });
+
+  it("records the acknowledgement even when the destination is refused", async () => {
+    await dismiss("//evil.example");
+    expect(markAboutSeen).toHaveBeenCalledWith("user_1", ABOUT_VERSION);
+  });
+});
