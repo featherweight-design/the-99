@@ -21,6 +21,7 @@ import ws from "ws";
 import { loadAvailability, loadDeckBuyRows } from "../src/lib/decks/availability-query";
 import { pruneOrphanProxies } from "../src/lib/decks/prune-proxies";
 import { proxyCounts } from "../src/lib/decks/proxies";
+import { listDecksWithStats } from "../src/lib/decks/read";
 // The prune runs inside its callers' transactions; here it is handed the app's
 // own db singleton, which satisfies the same interface for a single statement.
 import { db as realDb } from "../src/db";
@@ -258,6 +259,51 @@ try {
   await unproxy(printer.id, playset.oracle_id);
   await fixture.execute(sql`
     delete from deck_cards where deck_id = ${printer.id} and oracle_id = ${playset.oracle_id}
+  `);
+
+  // 3d. THE READER, END TO END. Everything above proves the queries; this proves
+  //     the PAYLOAD `/decks` renders — `proxiedCount`, the coverage-based
+  //     `toBuyCount`, and the status pill — because the wiring between them is
+  //     where the critical defect of this feature's first draft lived: a proxied
+  //     COMMANDER filling an unowned body slot and marking a deck Complete.
+  const tile = async (deckId: string, withStats: boolean) => {
+    const decks = await listDecksWithStats(USER, "name", { includeProxyStats: withStats });
+    return decks.find((d) => d.id === deckId);
+  };
+
+  //     The printer's body is one card, which it owns, and its two commanders
+  //     are printed. So: three marks, no covered body slot.
+  const printerTile = await tile(printer.id, true);
+  check("the tile counts every mark", printerTile?.proxiedCount, 3);
+  //     THE HEADLINE GUARD. built is 1 and ownedCount is 1 already; if the two
+  //     printed commanders were added to coverage this would read over.
+  check("printed commanders do not cover body slots", printerTile?.toBuyCount, 0);
+
+  //     A deck with an UNOWNED printed body card: one mark, one covered slot,
+  //     nothing left to buy, and a pill that says so.
+  const { rows: [printed] } = await fixture.execute<{ oracle_id: string }>(sql`
+    select oracle_id from cards
+    where type_line !~ '\\mBasic\\M' and type_line !~ 'Legendary'
+    order by oracle_id offset 2 limit 1
+  `);
+  await fixture.execute(sql`
+    insert into deck_cards (deck_id, oracle_id, quantity) values (${holder.id}, ${printed.oracle_id}, 1)
+  `);
+  const beforeMark = await tile(holder.id, true);
+  check("an unowned card is on the bill before it is printed", beforeMark?.toBuyCount, 1);
+  await proxy(holder.id, printed.oracle_id);
+  const afterMark = await tile(holder.id, true);
+  check("printing it clears the bill", afterMark?.toBuyCount, 0);
+  check("and the tile counts it", afterMark?.proxiedCount, 1);
+
+  //     And the opt-out path, which every deck page takes: no figures, and the
+  //     pre-proxy answer rather than a wrong one.
+  const unstated = await tile(holder.id, false);
+  check("without the option the count is absent", unstated?.proxiedCount, 0);
+  check("…and to-buy falls back to ownership", unstated?.toBuyCount, 1);
+  await unproxy(holder.id, printed.oracle_id);
+  await fixture.execute(sql`
+    delete from deck_cards where deck_id = ${holder.id} and oracle_id = ${printed.oracle_id}
   `);
 
   // 4. THE SLOT GOES, THE STATEMENT GOES. A proxy is one deck's answer about one
