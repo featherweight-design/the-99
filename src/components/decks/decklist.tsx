@@ -202,6 +202,18 @@ export function Decklist({
   // Withdrawing it entirely is what this cannot do: a one-character mark is only
   // safe when the word is reachable three ways, and with no key a sighted reader
   // on a phone — the reader most likely to be in card view — has none.
+  // THE EFFECTIVE SURFACE, never the stored view. `view` is persisted
+  // (`DECK_VIEW_KEY`) and the toggle only renders under `All`, so a reader who
+  // reads in card view and then switches to Shopping keeps `view === "card"`
+  // while the Shopping branch renders ROWS — it calls `DecklistRow` directly and
+  // takes no `view`. Keyed on the raw value, the legend then prints `not owned`
+  // over rows whose `$` includes spoken-for cards, which the player OWNS.
+  //
+  // That is the exact falsehood this key's own ruling forbids, so the condition
+  // has to name the surface that is actually drawn rather than the preference
+  // that is stored.
+  const inCardView = filter === "all" && view === "card";
+
   const markKey = useMemo((): MarkKeyEntry[] => {
     const shown = filter === "shopping" ? cards.filter(isShoppingCard) : cards;
     const entries: MarkKeyEntry[] = [];
@@ -213,20 +225,21 @@ export function Decklist({
         // is the row variant on both, unchanged — the key's own box is not the
         // caption's, and nothing here redraws it.
         sample: <BuyTag variant="row" density="collapsed" price={null} />,
-        word: view === "card" ? cardTileCopy.slotUnownedAria : proxyCopy.key.buy,
+        word: inCardView ? cardTileCopy.slotUnownedAria : proxyCopy.key.buy,
       });
     }
     if (shown.some((c) => c.proxied)) {
       entries.push({ id: "proxy", sample: <ProxyTag variant="row" />, word: proxyCopy.key.proxy });
     }
     return entries;
-  }, [cards, filter, view]);
+  }, [cards, filter, inCardView]);
 
   // One label, computed beside the entries and passed to every instance: the
   // three call sites are three branches of one surface, and a label chosen per
   // branch would be three chances to disagree about what is underneath.
-  const markKeyRegion =
-    view === "card" ? proxyCopy.key.regionAriaCards : proxyCopy.key.regionAria;
+  const markKeyRegion = inCardView
+    ? proxyCopy.key.regionAriaCards
+    : proxyCopy.key.regionAria;
 
   // ONE SORT PER FILTER, both remembered together. `All` keeps its own order
   // while `Shopping` keeps `Price · Highest`, so switching lanes swaps which is
