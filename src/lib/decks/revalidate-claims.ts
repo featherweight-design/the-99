@@ -46,5 +46,16 @@ export function revalidateClaims(deckId: string, userId: string): void {
   // Pattern form and the `"page"` argument for the same reason the commander
   // page takes them — a dynamic route, and no one path to name.
   revalidatePath("/decks/[id]/changes", "page");
+  // EVERY OTHER DECK'S OWN PAGE, by pattern. `claimSurfaces` names this deck's
+  // literal path alone, which was right while a claim change only moved figures
+  // on the deck that made it and on the shared lists. A proxy breaks that: the
+  // copy it releases belongs to whichever deck was going short for it, and that
+  // deck's own page is where the relief is drawn. Without this, ruling 1 is a
+  // change a player never sees until something else invalidates the page.
+  revalidatePath("/decks/[id]", "page");
+  // The proxy list itself. A literal path, so it could live in `claimSurfaces`
+  // with the rest — it is here because it is a proxy fact rather than a claim
+  // fact, and `claimSurfaces` is asserted by tests that predate this route.
+  revalidatePath("/collection/proxies");
   revalidateUserLists(userId);
 }

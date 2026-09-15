@@ -20,7 +20,7 @@ import { sql } from "drizzle-orm";
 import ws from "ws";
 import { loadAvailability, loadDeckBuyRows } from "../src/lib/decks/availability-query";
 import { pruneOrphanProxies } from "../src/lib/decks/prune-proxies";
-import { proxyCounts } from "../src/lib/decks/proxies";
+import { proxiedMembership, proxyCounts } from "../src/lib/decks/proxies";
 import { listDecksWithStats } from "../src/lib/decks/read";
 // The prune runs inside its callers' transactions; here it is handed the app's
 // own db singleton, which satisfies the same interface for a single statement.
@@ -346,6 +346,41 @@ try {
     insert into collection_items (user_id, oracle_id, quantity, set_code)
     values (${USER}, ${partner}, 1, 'probe')
   `);
+
+  // 3e. THE WRITE'S OWN RULES, against the real table. The server action itself
+  //     needs a signed-in request, so what is proved here is the pair of
+  //     invariants its SQL carries: a mark for a card the deck does not hold is
+  //     refused by the membership predicate, and marking is idempotent.
+  //     THE ACTION'S OWN PREDICATE, imported rather than retyped. A probe that
+  //     reimplements the thing it is proving proves the copy: with two versions
+  //     of this SQL, dropping a commander arm from the action left the probe
+  //     green while proxying a commander broke.
+  const held = async (deckId: string, oracleId: string) => {
+    const { rows } = await fixture.execute<{ held: boolean }>(
+      sql`select ${proxiedMembership(deckId, oracleId)} as held`,
+    );
+    return rows[0]?.held ?? null;
+  };
+  const { rows: [stranger] } = await fixture.execute<{ oracle_id: string }>(sql`
+    select oracle_id from cards
+    where type_line !~ '\\mBasic\\M' and type_line !~ 'Legendary'
+    order by oracle_id desc limit 1
+  `);
+  check("a card the deck holds passes the membership test", await held(printer.id, card), true);
+  check("this deck's commander passes it too", await held(printer.id, cmdB), true);
+  check("a card the deck never held does not", await held(printer.id, stranger.oracle_id), false);
+
+  //     Idempotent: the control's second press is the state the reader can
+  //     already see, not an error.
+  await fixture.execute(sql`
+    insert into deck_proxies (deck_id, oracle_id) values (${printer.id}, ${card})
+    on conflict (deck_id, oracle_id) do nothing
+  `);
+  const { rows: [again] } = await fixture.execute<{ n: number }>(sql`
+    select count(*)::int as n from deck_proxies
+    where deck_id = ${printer.id} and oracle_id = ${card}
+  `);
+  check("marking twice is one mark", again.n, 1);
 
   // 4. THE SLOT GOES, THE STATEMENT GOES. A proxy is one deck's answer about one
   //    slot, so the row dies with the slot — `pruneOrphanProxies`, which every

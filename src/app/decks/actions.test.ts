@@ -1,6 +1,27 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 // The action module imports the db client, which throws at module init without a live URL.
+/** A drizzle `sql` template rendered to something a test can match on.
+ *
+ *  RECURSES into nested fragments: `sql`select ${proxiedMembership(...)}`` holds
+ *  another sql object, and a serializer that stopped at the top level returned
+ *  the outer words only — so a matcher looking for `deck_cards` saw nothing and
+ *  the test failed for a reason that had nothing to do with the code. */
+const sqlText = (query: unknown): string => {
+  const chunks = (query as { queryChunks?: unknown[] })?.queryChunks;
+  if (!Array.isArray(chunks)) return "";
+  return chunks
+    .map((c) => {
+      if (typeof c === "string") return c;
+      const v = c as { value?: unknown; name?: unknown; queryChunks?: unknown[] };
+      if (Array.isArray(v?.queryChunks)) return sqlText(c);
+      if (Array.isArray(v?.value)) return v.value.join(" ");
+      if (typeof v?.name === "string") return v.name;
+      return "";
+    })
+    .join(" ");
+};
+
 const stub = vi.hoisted(() => {
   const nameOf = (table: unknown): string =>
     (table as Record<symbol, string>)[Symbol.for("drizzle:Name")];
@@ -24,6 +45,9 @@ const stub = vi.hoisted(() => {
      */
     executeError: null as Error | null,
     executeErrorMatch: null as string | null,
+    /** Rows the next raw reads return, and the SQL they were asked. */
+    executeRows: null as unknown[] | null,
+    executeTexts: [] as string[],
     // The rows already in the deck, returned by the in-transaction read
     deckRows: [] as { oracleId: string; quantity: number }[],
     // The same read, per deck, for the one action that reads TWO decks' drafts
@@ -276,13 +300,15 @@ const stub = vi.hoisted(() => {
     // readers destructure it. `proxiedOracleIds` fails CLOSED on the pull path,
     // so a stub that throws here refuses every pull rather than testing one.
     execute: async (query?: unknown) => {
-      if (state.executeError) {
-        const text = JSON.stringify((query as { queryChunks?: unknown })?.queryChunks ?? "");
-        if (!state.executeErrorMatch || text.includes(state.executeErrorMatch)) {
-          throw state.executeError;
-        }
+      // NOT `JSON.stringify` of the chunks: drizzle's table objects are
+      // circular and stringifying one throws inside the stub, which surfaces as
+      // an unrelated failure in whatever action ran the query.
+      const text = sqlText(query);
+      state.executeTexts.push(text);
+      if (state.executeError && (!state.executeErrorMatch || text.includes(state.executeErrorMatch))) {
+        throw state.executeError;
       }
-      return { rows: [] };
+      return { rows: state.executeRows ?? [] };
     },
     // Table-aware, because `recordFillPass` reads the highest ordinal the deck
     // has used and would otherwise be handed deck card rows. That read is an
@@ -330,13 +356,14 @@ const stub = vi.hoisted(() => {
     // is the driver's own shape; returning `undefined` made every pull refuse,
     // because `proxiedOracleIds` fails CLOSED on that path by design.
     execute: async (query?: unknown) => {
-      if (state.executeError) {
-        const text = JSON.stringify((query as { queryChunks?: unknown })?.queryChunks ?? "");
-        if (!state.executeErrorMatch || text.includes(state.executeErrorMatch)) {
-          throw state.executeError;
-        }
+      // `sqlText`, not `JSON.stringify`: drizzle's table objects are circular,
+      // and this stub is the one the db-level readers go through.
+      const text = sqlText(query);
+      state.executeTexts.push(text);
+      if (state.executeError && (!state.executeErrorMatch || text.includes(state.executeErrorMatch))) {
+        throw state.executeError;
       }
-      return { rows: [] };
+      return { rows: state.executeRows ?? [] };
     },
     transaction: async (fn: (t: typeof tx) => Promise<unknown>) => {
       if (state.transactionError) throw state.transactionError;
@@ -405,9 +432,10 @@ vi.mock("../../lib/decks/draft-state", () => ({
 
 import {
   commitDeckVersion, createDeck, deleteGame, discardDeckDraft, fillDeck, getVersionDiff, logGame,
-  pullCardFromDeck, restoreAutoCards,
+  pullCardFromDeck, restoreAutoCards, setCardProxied,
 } from "./actions";
 import { PROXY_READ_FAILED } from "../../lib/decks/proxies";
+import { proxyCopy } from "../../lib/copy/proxies";
 import {
   commitVersion, loadVersionDiff, newestVersion, restoreDraftFromVersion, versionCards,
   versionLiveAt,
@@ -484,6 +512,8 @@ beforeEach(() => {
   stub.state.transactionError = null;
   stub.state.executeError = null;
   stub.state.executeErrorMatch = null;
+  stub.state.executeRows = null;
+  stub.state.executeTexts = [];
   stub.state.deckRows.length = 0;
   stub.state.updateReturning.length = 0;
   stub.state.fillPasses.length = 0;
@@ -1378,6 +1408,86 @@ describe("discardDeckDraft", () => {
     expect(restoreDraftFromVersion).not.toHaveBeenCalled();
   });
 });
+
+describe("setCardProxied", () => {
+  beforeEach(() => { stub.state.decks = [OWNED_DECK]; });
+
+  it("refuses a card the deck does not hold", async () => {
+    // Deck ownership alone is not enough: without the membership check any
+    // oracle id at all can be posted and a row written for a card this deck has
+    // never held. `execute` returns no rows here, so `held` is false.
+    const result = await setCardProxied(DECK_ID, CARD_A, true);
+    expect(result).toEqual({ ok: false, message: proxyCopy.error.notInDeck });
+  });
+
+  it("refuses an id that is not a uuid without touching the database", async () => {
+    const result = await setCardProxied(DECK_ID, "not-a-uuid", true);
+    expect(result).toEqual({ ok: false, message: proxyCopy.error.refused });
+  });
+
+  it("takes the deck row's lock before it validates", async () => {
+    stub.state.executeRows = [{ held: true }];
+    await setCardProxied(DECK_ID, CARD_A, true);
+    stub.state.executeRows = null;
+    // The pair being serialised is this write against a concurrent removal,
+    // which deletes the card and prunes: unlocked, a mark can validate, wait,
+    // and insert after that prune, leaving the orphan the prune exists to stop.
+    const texts = stub.state.executeTexts;
+    const lock = texts.findIndex((t) => t.includes("for update"));
+    const check = texts.findIndex((t) => t.includes("deck_cards"));
+    expect(lock).toBeGreaterThanOrEqual(0);
+    expect(lock).toBeLessThan(check);
+  });
+
+  it("marks, idempotently", async () => {
+    // The marking branch had no assertion of its own: the only `true` case
+    // checked lock ordering. Without this, removing the insert — or its
+    // `on conflict` clause, which is what makes a second press of a control the
+    // reader can already see harmless rather than an error — stayed green.
+    stub.state.executeRows = [{ held: true }];
+    const result = await setCardProxied(DECK_ID, CARD_A, true);
+    const texts = stub.state.executeTexts.join(" ");
+    stub.state.executeRows = null;
+    expect(result).toEqual({ ok: true });
+    expect(texts).toContain("insert into deck_proxies");
+    expect(texts).toContain("on conflict (deck_id, oracle_id) do nothing");
+    expect(texts).not.toContain("delete from deck_proxies");
+  });
+
+  it("unmarks, and says so", async () => {
+    // Every other success case passes `true`. A regression that stopped deleting
+    // the row — or stopped revalidating after an unmark — would stay green
+    // without this, because the probe writes `deck_proxies` directly rather than
+    // through the action.
+    stub.state.executeRows = [{ held: true }];
+    const result = await setCardProxied(DECK_ID, CARD_A, false);
+    const texts = stub.state.executeTexts.join(" ");
+    stub.state.executeRows = null;
+    expect(result).toEqual({ ok: true });
+    expect(texts).toContain("delete from deck_proxies");
+    expect(texts).not.toContain("insert into deck_proxies");
+    expect(stub.state.revalidated).toContain("/collection/proxies");
+  });
+
+  it("refuses a non-boolean flag before touching the database", async () => {
+    // Wire input: the string "false" is truthy, so an unvalidated call marks the
+    // card the reader was unmarking.
+    const result = await setCardProxied(DECK_ID, CARD_A, "false" as unknown as boolean);
+    expect(result).toEqual({ ok: false, message: proxyCopy.error.refused });
+    expect(stub.state.executeTexts.join(" ")).not.toContain("deck_proxies");
+  });
+
+  it("does not stamp the deck as edited", async () => {
+    stub.state.executeRows = [{ held: true }];
+    await setCardProxied(DECK_ID, CARD_A, true);
+    stub.state.executeRows = null;
+    // `last_edited_at` means "this deck's list was edited". A proxy edits no
+    // list, and stamping would reorder Home's resume block for a decision that
+    // changed nothing about what is in the deck.
+    expect(stub.state.updateCalls.map((c) => c.table)).not.toContain("decks");
+  });
+});
+
 
 describe("getVersionDiff", () => {
   beforeEach(() => {
