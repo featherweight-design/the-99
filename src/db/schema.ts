@@ -315,6 +315,41 @@ export const deckCards = pgTable("deck_cards", {
 }, (t) => [primaryKey({ columns: [t.deckId, t.oracleId] })]);
 
 /**
+ * One deck's statement that its copy of a card is printed rather than owned.
+ *
+ * A side table rather than a column on `deck_cards`, for two reasons that each
+ * decide it alone. Neither commander is a `deck_cards` row — both are columns on
+ * `decks` — so a column there could not express a proxied commander at all. And
+ * proxy state sits OUTSIDE versioning: a column would have to be either absent
+ * from `deck_version_cards`, an asymmetry between the two lists waiting to be
+ * read wrong, or present and deliberately ignored.
+ *
+ * No quantity. A proxy covers the deck's whole ask for the card; Commander is a
+ * singleton format and the multi-copy exceptions would be printed as a set.
+ *
+ * A ROW IS INERT UNLESS THE CARD IS IN THE DECK. Every read joins against
+ * current membership — a `deck_cards` row, or either commander column — so a row
+ * whose card has since left does nothing at all. That is what lets six separate
+ * paths delete or replace `deck_cards` wholesale without any of them remembering
+ * to prune, and it is why a card returning to a deck is never silently already
+ * proxied.
+ *
+ * `created_at` is not decoration: `/collection/proxies` orders on it, and it is
+ * the only record of when a printed copy entered a deck.
+ */
+export const deckProxies = pgTable("deck_proxies", {
+  deckId: uuid("deck_id").notNull().references(() => decks.id, { onDelete: "cascade" }),
+  oracleId: uuid("oracle_id").notNull().references(() => cards.oracleId),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+}, (t) => [
+  primaryKey({ columns: [t.deckId, t.oracleId] }),
+  // The primary key's order serves the claim anti-join, which always knows the
+  // deck. The card detail receipt asks the opposite question — every deck
+  // proxying THIS card — and would scan the table for it.
+  index("deck_proxies_oracle_idx").on(t.oracleId, t.deckId),
+]);
+
+/**
  * One committed state of a deck: what was sleeved, when, and why.
  *
  * A version stores the FULL list rather than a diff from its predecessor.
