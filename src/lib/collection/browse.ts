@@ -60,6 +60,9 @@ export type Finish = "nonfoil" | "foil" | "etched";
 /** The printing a user chose to represent a card. Set code uppercased, as BrowsePrinting is. */
 export type PreferredPrinting = { setCode: string; collectorNumber: string };
 
+/** A deck that prints its copy of a card, for the receipt's second list. */
+export type ProxyingDeck = { id: string; name: string };
+
 export type BrowseCard = {
   oracleId: string;
   name: string;
@@ -101,6 +104,18 @@ export type BrowseCard = {
    * "Absent" and "read failed" both correctly render nothing.
    */
   availability?: Availability | null;
+  /**
+   * The decks printing this card, which is NOT part of `availability.claims` and
+   * must never be folded into it: `hardDecks`, `pullSources`, the markers and
+   * the pull authorization all read that list, and a proxying deck holds no
+   * cardboard for any of them to subtract.
+   *
+   * Its own field for a second reason — `loadCardDetail` computes availability
+   * only for a card the player owns a copy of, and the headline case for a proxy
+   * is a card owned in none. The receipt's proxy list has to survive that
+   * branch, so this is read on both.
+   */
+  proxiedBy?: ProxyingDeck[];
   /**
    * What the feed last carried for each of this card's printings, indexed both
    * ways `BrowsePrinting` can name one. Optional for the same reason

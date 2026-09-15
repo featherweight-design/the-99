@@ -20,6 +20,8 @@ import { sql } from "drizzle-orm";
 import ws from "ws";
 import { loadAvailability, loadDeckBuyRows } from "../src/lib/decks/availability-query";
 import { pruneOrphanProxies } from "../src/lib/decks/prune-proxies";
+import { proxyCounts } from "../src/lib/decks/proxies";
+import { listDecksWithStats } from "../src/lib/decks/read";
 // The prune runs inside its callers' transactions; here it is handed the app's
 // own db singleton, which satisfies the same interface for a single statement.
 import { db as realDb } from "../src/db";
@@ -221,6 +223,129 @@ try {
     where deck_id = ${printer.id} and oracle_id = ${partner}
   `);
   check("a partner's proxy survives the prune", partnerRow[0].n, 1);
+
+  // 3c. THE TILE'S TWO FIGURES, which are a different query again — raw SQL
+  //     behind `DeckListItem.proxiedCount` and the list's status pill, reachable
+  //     from no unit test. Conflating them shipped a real defect once already.
+  //
+  //     State here: the printer prints `card` (unowned by it? no — owned, one
+  //     copy in the collection), its commander `cmdB` and its partner. So three
+  //     marks, and `covers` counts only unowned BODY rows.
+  const counts = async (deckId: string) => (await proxyCounts(USER)).get(deckId);
+  const printerCounts = await counts(printer.id);
+  check("copies counts marks, commanders included", printerCounts?.copies, 3);
+  //     `card` is owned and `cmdB`/`partner` are not body rows, so nothing here
+  //     may be added to ownedCount — the exact arithmetic that let a printed
+  //     commander fill an unowned body slot.
+  check("covers counts no owned row and no commander", printerCounts?.covers, 0);
+
+  //     A playset marked once is ONE proxy (ruling 5) and, unowned, FOUR covered
+  //     slots. The two figures disagreeing on the same row is the whole point.
+  const { rows: [playset] } = await fixture.execute<{ oracle_id: string }>(sql`
+    select oracle_id from cards
+    where type_line !~ '\\mBasic\\M' and type_line !~ 'Legendary'
+    order by oracle_id offset 1 limit 1
+  `);
+  await fixture.execute(sql`
+    insert into deck_cards (deck_id, oracle_id, quantity)
+    values (${printer.id}, ${playset.oracle_id}, 4)
+  `);
+  await proxy(printer.id, playset.oracle_id);
+  const withPlayset = await counts(printer.id);
+  //     Three marks before, so one more mark is four — NOT seven, which is what
+  //     summing the row's four copies would have given.
+  check("a marked playset adds one to the proxy count", withPlayset?.copies, 4);
+  check("…while covering all four of its slots", withPlayset?.covers, 4);
+  await unproxy(printer.id, playset.oracle_id);
+  await fixture.execute(sql`
+    delete from deck_cards where deck_id = ${printer.id} and oracle_id = ${playset.oracle_id}
+  `);
+
+  // 3d. THE READER, END TO END. Everything above proves the queries; this proves
+  //     the PAYLOAD `/decks` renders — `proxiedCount`, the coverage-based
+  //     `toBuyCount`, and the status pill — because the wiring between them is
+  //     where the critical defect of this feature's first draft lived: a proxied
+  //     COMMANDER filling an unowned body slot and marking a deck Complete.
+  // The partner leaves the collection for this block ONLY. A coverage rule that
+  // counted commanders needs an unowned printed commander to count — which is
+  // the shape of this feature's first critical defect — and with every commander
+  // owned such a rule passes every check while being wrong. Put back below, so
+  // the claim checks above keep the owned partner they were written against.
+  await fixture.execute(sql`
+    delete from collection_items where user_id = ${USER} and oracle_id = ${partner}
+  `);
+
+  const tile = async (deckId: string, withStats: boolean) => {
+    const decks = await listDecksWithStats(USER, "name", { includeProxyStats: withStats });
+    return decks.find((d) => d.id === deckId);
+  };
+
+  //     The printer's body is one card, which it owns; its two commanders are
+  //     printed and the PARTNER is owned in no copy. So: three marks, and still
+  //     no covered body slot, because a commander is not a body slot however
+  //     unowned it is.
+  const printerTile = await tile(printer.id, true);
+  check("the tile counts every mark", printerTile?.proxiedCount, 3);
+  //     THE HEADLINE GUARD. built is 1 and ownedCount is 1 already; if the two
+  //     printed commanders were added to coverage this would read over.
+  check("printed commanders do not cover body slots", printerTile?.toBuyCount, 0);
+  //     Stated on the figure itself too: `covers` is what may be added to
+  //     ownedCount, and an unowned printed COMMANDER must contribute nothing.
+  check("…and contribute nothing to coverage", (await proxyCounts(USER)).get(printer.id)?.covers, 0);
+
+  //     A FULL DECK, because the pill is the point and `statusPill` answers
+  //     `Building` and exits long before it looks at coverage. 99 cards: 98
+  //     owned body rows plus one the player owns no copy of, printed.
+  const { rows: body } = await fixture.execute<{ oracle_id: string }>(sql`
+    select oracle_id from cards
+    where type_line !~ '\\mBasic\\M' and type_line !~ 'Legendary'
+    order by oracle_id offset 2 limit 99
+  `);
+  if (body.length < 99) throw new Error("catalog too small for a 99-card fixture");
+  const owned = body.slice(0, 98);
+  const printed = body[98];
+  await fixture.execute(sql`
+    insert into collection_items (user_id, oracle_id, quantity, set_code)
+    select ${USER}, unnest(${sql.param(owned.map((r) => r.oracle_id))}::uuid[]), 1, 'probe'
+  `);
+  await fixture.execute(sql`
+    insert into deck_cards (deck_id, oracle_id, quantity)
+    select ${holder.id}, unnest(${sql.param(body.map((r) => r.oracle_id))}::uuid[]), 1
+  `);
+  // The holder already held one card, so drop it: 99 body rows exactly, which is
+  // what `deckBodySize` wants for a single-commander deck.
+  await fixture.execute(sql`
+    delete from deck_cards where deck_id = ${holder.id} and oracle_id = ${card}
+  `);
+
+  const beforeMark = await tile(holder.id, true);
+  check("the last card unprinted, the deck is To buy", beforeMark?.statusPill, "To buy");
+  check("…and it is on the bill", beforeMark?.toBuyCount, 1);
+
+  await proxy(holder.id, printed.oracle_id);
+  const afterMark = await tile(holder.id, true);
+  // THE FEATURE, end to end: a 99-card deck whose one gap is printed is finished.
+  check("printing the last card completes the deck", afterMark?.statusPill, "Complete");
+  check("printing it clears the bill", afterMark?.toBuyCount, 0);
+  check("and the tile counts it", afterMark?.proxiedCount, 1);
+
+  //     And the opt-out path, which every deck page takes: no figures, and the
+  //     pre-proxy answer rather than a wrong one.
+  const unstated = await tile(holder.id, false);
+  check("without the option the count is absent", unstated?.proxiedCount, 0);
+  check("…and to-buy falls back to ownership", unstated?.toBuyCount, 1);
+  check("…and so does the pill", unstated?.statusPill, "To buy");
+
+  //     Put the deck back to its one-card shape for the checks below.
+  await unproxy(holder.id, printed.oracle_id);
+  await fixture.execute(sql`delete from deck_cards where deck_id = ${holder.id}`);
+  await fixture.execute(sql`
+    insert into deck_cards (deck_id, oracle_id, quantity) values (${holder.id}, ${card}, 1)
+  `);
+  await fixture.execute(sql`
+    insert into collection_items (user_id, oracle_id, quantity, set_code)
+    values (${USER}, ${partner}, 1, 'probe')
+  `);
 
   // 4. THE SLOT GOES, THE STATEMENT GOES. A proxy is one deck's answer about one
   //    slot, so the row dies with the slot — `pruneOrphanProxies`, which every

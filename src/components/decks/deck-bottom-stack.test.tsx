@@ -60,6 +60,7 @@ function makeDeck(): DeckDetail {
     cards,
     built: 40,
     ownedCount: 40,
+    coveredCount: 40,
     toBuyCount: 0,
     total: 99,
     filled: false,

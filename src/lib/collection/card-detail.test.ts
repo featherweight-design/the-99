@@ -224,6 +224,10 @@ describe("loadCardDetail availability", () => {
             leftJoin: () => ({ where: async () => [] }),
           }),
         }),
+        // The proxy read runs on both branches of this loader, so every stub of
+        // the db has to answer it. It returns no decks here, which is the state
+        // every case in this file is about.
+        execute: async () => ({ rows: [] }),
       },
     }));
 
@@ -234,6 +238,79 @@ describe("loadCardDetail availability", () => {
     vi.doUnmock("../../db");
 
     expect(card?.prices).toEqual(PRICES);
+  });
+
+  // Both branches load it, and the UNOWNED branch is the one that matters: the
+  // headline proxy is a card the player owns no copy of, so a receipt that could
+  // only name printing decks for owned cards would miss every case the feature
+  // exists for.
+  it("names the decks printing an unowned card", async () => {
+    selectCollectionRows.mockResolvedValue([]);
+    loadPrintingPrices.mockResolvedValue(PRICES);
+    const rows = [{ oracleId: "o-1", scryfallId: "s-1", name: "Arcane Signet" }];
+    vi.doMock("../../db", () => ({
+      db: {
+        select: () => ({
+          from: () => ({
+            where: async () => rows,
+            leftJoin: () => ({ where: async () => [] }),
+          }),
+        }),
+        execute: async () => ({ rows: [{ id: "d-1", name: "HD Gods" }] }),
+      },
+    }));
+    vi.resetModules();
+    const { loadCardDetail: fresh } = await import("./card-detail");
+    const card = await fresh("user_1", "o-1");
+    vi.doUnmock("../../db");
+
+    expect(card?.proxiedBy).toEqual([{ id: "d-1", name: "HD Gods" }]);
+  });
+
+  // The OWNED branch, which is a different code path: availability, prices and
+  // this read start together there. Without a case here, dropping
+  // `proxyingDecks` from that `Promise.all` would leave every test green — the
+  // unowned case below would still pass, and it is the only other one asserting
+  // a non-empty list.
+  it("names the decks printing a card the player also owns", async () => {
+    selectCollectionRows.mockResolvedValue([row]);
+    loadAvailability.mockResolvedValue(new Map());
+    loadPrintingPrices.mockResolvedValue(PRICES);
+    vi.doMock("../../db", () => ({
+      db: { execute: async () => ({ rows: [{ id: "d-2", name: "Prismari Artistry" }] }) },
+    }));
+    vi.resetModules();
+    const { loadCardDetail: fresh } = await import("./card-detail");
+    const card = await fresh("user_1", "o-1");
+    vi.doUnmock("../../db");
+
+    expect(card?.proxiedBy).toEqual([{ id: "d-2", name: "Prismari Artistry" }]);
+  });
+
+  // A failed proxy read costs the block, never the card — the same bargain the
+  // availability and price reads beside it make.
+  it("keeps the card when the proxy read fails", async () => {
+    selectCollectionRows.mockResolvedValue([]);
+    loadPrintingPrices.mockResolvedValue(PRICES);
+    const rows = [{ oracleId: "o-1", scryfallId: "s-1", name: "Arcane Signet" }];
+    vi.doMock("../../db", () => ({
+      db: {
+        select: () => ({
+          from: () => ({
+            where: async () => rows,
+            leftJoin: () => ({ where: async () => [] }),
+          }),
+        }),
+        execute: async () => { throw new Error("proxy read down"); },
+      },
+    }));
+    vi.resetModules();
+    const { loadCardDetail: fresh } = await import("./card-detail");
+    const card = await fresh("user_1", "o-1");
+    vi.doUnmock("../../db");
+
+    expect(card?.oracleId).toBe("o-1");
+    expect(card?.proxiedBy).toEqual([]);
   });
 
   // The figure is the one thing on this card the reader can live without. A feed

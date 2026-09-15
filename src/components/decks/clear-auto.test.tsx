@@ -508,6 +508,7 @@ function makeDeck(cards: DeckDetailCard[]): DeckDetail {
     cards,
     built,
     ownedCount: built,
+    coveredCount: built,
     toBuyCount: 0,
     total: built,
     unresolvedRows: [],

@@ -227,11 +227,15 @@ describe("deckCounts", () => {
       card({ oracleId: "a", owned: true, quantity: 2 }),
       card({ oracleId: "b", owned: false, quantity: 3 }),
     ]);
-    expect(counts).toEqual({ built: 5, ownedCount: 2, toBuyCount: 3, total: 5 });
+    expect(counts).toEqual({
+      built: 5, ownedCount: 2, coveredCount: 2, toBuyCount: 3, total: 5,
+    });
   });
 
   it("is zeroed for an empty deck", () => {
-    expect(deckCounts([])).toEqual({ built: 0, ownedCount: 0, toBuyCount: 0, total: 0 });
+    expect(deckCounts([])).toEqual({
+      built: 0, ownedCount: 0, coveredCount: 0, toBuyCount: 0, total: 0,
+    });
   });
 
   it("puts unresolved rows in total and in nothing else", () => {
@@ -246,7 +250,9 @@ describe("deckCounts", () => {
   });
 
   it("reports a deck of nothing but unresolved rows as built 0 with a non-zero total", () => {
-    expect(deckCounts([], 3)).toEqual({ built: 0, ownedCount: 0, toBuyCount: 0, total: 3 });
+    expect(deckCounts([], 3)).toEqual({
+      built: 0, ownedCount: 0, coveredCount: 0, toBuyCount: 0, total: 3,
+    });
   });
 });
 
@@ -294,5 +300,29 @@ describe("deckIsFlippable", () => {
     expect(
       deckIsFlippable({ built: 98, partnerName: "Kratos", ownedCount: 90, unresolvedCount: 0 }),
     ).toBe(false);
+  });
+});
+
+describe("deckIsFlippable reads coverage", () => {
+  // The seniority query runs only if some deck could reach `Complete`. A deck
+  // whose last gaps are printed now can — and asked on `ownedCount` alone it
+  // skipped that query, so its `unfundedCount` stayed 0 and it flipped to
+  // `Complete` without the check every other complete deck gets.
+  it("is flippable when proxies close the gap", () => {
+    expect(deckIsFlippable({
+      built: 99, partnerName: null, ownedCount: 92, coveredCount: 99, unresolvedCount: 0,
+    })).toBe(true);
+  });
+
+  it("is not flippable when the proxies do not close it", () => {
+    expect(deckIsFlippable({
+      built: 99, partnerName: null, ownedCount: 92, coveredCount: 97, unresolvedCount: 0,
+    })).toBe(false);
+  });
+
+  it("falls back to ownership for a caller that cannot count proxies", () => {
+    expect(deckIsFlippable({
+      built: 99, partnerName: null, ownedCount: 99, unresolvedCount: 0,
+    })).toBe(true);
   });
 });

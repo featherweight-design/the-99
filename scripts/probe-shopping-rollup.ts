@@ -10,9 +10,14 @@
 //      zero. Home has to tell "nothing to buy" apart from "no deck".
 //   2. total.copies never EXCEEDS the sum of every tile's toBuyCount. It is
 //      allowed to fall short: the roll-up excludes basics, as every Shopping
-//      surface does, while toBuyCount is `built − ownedCount` and does not, so
+//      surface does, while toBuyCount is `built − coveredCount` and does not, so
 //      an unowned Forest is the whole of any gap. Exceeding would mean the
 //      roll-up counted a copy the deck does not want.
+//
+//      `coveredCount`, not `ownedCount`, since proxies: a printed card is one
+//      the player has acquired, so it is not in the gap. The roll-up agrees —
+//      `list_claims` anti-joins the proxy table — so the inequality still holds
+//      and for the same reason it always did.
 //   3. An unpriced copy still counts as a copy. pricedCopies <= copies, and a
 //      deck holding a card the feed has never stocked has the gap.
 //
@@ -39,10 +44,15 @@ async function main() {
 
   for (const userId of userIds) {
     const rollup = await loadShoppingRollup(userId);
-    const tiles = await listDecksWithStats(userId, "lastPlayed");
+    const tiles = await listDecksWithStats(userId, "lastPlayed", { includeProxyStats: true });
     const tileTotal = tiles.reduce((n, d) => n + d.toBuyCount, 0);
 
-    const fullyOwned = tiles.filter((d) => d.toBuyCount === 0);
+    // `ownedCount === built`, NOT `toBuyCount === 0`. Since proxies, to-buy is
+    // coverage-based: a deck whose last gaps are printed reads 0 while owning
+    // none of those cards, and it SHOULD still appear in the roll-up if it has
+    // anything to buy. Read the coverage figure here and this invariant quietly
+    // stops being about ownership at all.
+    const fullyOwned = tiles.filter((d) => d.ownedCount === d.built);
     const wronglyPresent = fullyOwned.filter((d) => rollup.byDeck.has(d.id)).map((d) => d.name);
 
     const perDeck = tiles.map((d) => ({

@@ -277,6 +277,10 @@ export function BuilderShell({
   const serverStatus = statusPill({
     built: deck.built,
     ownedCount: deck.ownedCount,
+    // The pill reads coverage, so a deck whose last gaps are printed reads
+    // `Complete` on its own page exactly as its tile does on `/decks`. Without
+    // this the two surfaces disagree about the same deck.
+    coveredCount: deck.coveredCount,
     unresolvedCount: unresolvedCardCount(deck.unresolvedRows),
     // `isShoppingCard` is the client-side twin of `loadDeckBuyRows`, which is
     // what gives the deck list its pill. Both halves of the shopping list count

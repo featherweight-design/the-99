@@ -165,3 +165,29 @@ describe("deckVersioningCopy", () => {
     });
   });
 });
+
+describe("the breakdown's fourth term", () => {
+  it("is absent at zero, so today's line is unchanged", () => {
+    expect(copy.review.groupInBreakdown(3, 2, 1)).toBe("3 free · 2 sleeved · 1 to buy");
+    expect(copy.review.groupInBreakdown(3, 2, 1, 0)).toBe("3 free · 2 sleeved · 1 to buy");
+  });
+
+  it("accounts for printed rows when there are any", () => {
+    // Ruling 9: three terms that stop summing to the group's own count read as a
+    // rendering fault, and a printed row is in none of them.
+    expect(copy.review.groupInBreakdown(3, 2, 1, 1))
+      .toBe("3 free · 2 sleeved · 1 to buy · 1 proxied");
+  });
+});
+
+describe("a proxy-only commit is not 'enough spare copies'", () => {
+  it("says the cards are proxies instead", () => {
+    // `moneyNone` asserts a spare copy in the collection. A printed card has no
+    // copy anywhere, so that sentence is the one claim about where cardboard is
+    // that this vocabulary forbids.
+    expect(copy.pending.moneyProxiedOnly(1))
+      .toBe("1 card coming in is a proxy, so this commit asks for nothing.");
+    expect(copy.pending.moneyProxiedOnly(3))
+      .toBe("3 cards coming in are proxies, so this commit asks for nothing.");
+  });
+});

@@ -44,6 +44,7 @@ import { GAME_AXIS_KEYS, isGameAxisKey, type GameAxisKey } from "../../lib/decks
 import { gameLogCopy } from "../../lib/copy/game-log";
 import { countCharacters, deckTuningCopy } from "../../lib/copy/deck-tuning";
 import { pruneOrphanProxies } from "../../lib/decks/prune-proxies";
+import { PROXY_READ_FAILED, PULL_REFUSED_PROXIED, proxiedOracleIds } from "../../lib/decks/proxies";
 
 export type TopOffResult =
   | { ok: true; passId: string | null; added: number; total: number; boughtDelta: number }
@@ -1328,7 +1329,15 @@ export async function commitDeckVersion(
               { free: a.free, claims: pullSources(a) },
             ]),
           ),
-        ).filter((a) => a.bucket !== "free");
+          new Set(),
+          // The deck's printed cards, and THROWING on failure like the pull's
+          // read does. The receipt quotes money: a swallowed failure would say
+          // "no proxies" and bill a card the player has decided not to buy. The
+          // outer catch already has the honest answer for an unreadable
+          // receipt — `buy = null`, meaning nobody asked — so failing into it is
+          // both safer and already drawn.
+          await proxiedOracleIds(deckId, userId, "throw"),
+        ).filter((a) => a.bucket !== "free" && a.bucket !== "proxied");
       } catch {
         buy = null;
       }
@@ -1597,9 +1606,29 @@ export async function pullCardFromDeck(
     // `free`, so the answer over one is no: the copy would leave that deck's box and
     // the figure would not move. Refused, and the purchase stands.
     const sources = pullSources(askingAvailability.get(oracleId) ?? { claims: [] });
+    // FAIL CLOSED here, unlike every rendering caller. This read is part of the
+    // authorization for a destructive act — the pull takes a copy out of another
+    // deck — and a swallowed failure would say "no proxies", authorize a pull for
+    // a card the asking deck is not actually short of, and empty somebody's box.
+    let askingProxies: ReadonlySet<string>;
+    try {
+      askingProxies = await proxiedOracleIds(askingDeckId, userId, "throw");
+    } catch {
+      return { ok: false, message: PROXY_READ_FAILED };
+    }
     const [bucketed] = bucketAdds([add], new Map(
       [...askingAvailability].map(([id, a]) => [id, { free: a.free, claims: pullSources(a) }]),
-    ));
+    ), new Set(), askingProxies);
+    // A printed card asks the collection for nothing, so there is nothing to
+    // pull FOR — the guard below refuses it on `bucket !== "claimed"`, which is
+    // the same refusal a covered add already gets.
+    if (bucketed.bucket === "proxied") {
+      // Its own refusal, before the generic one. "Already has the copies it
+      // needs" would be a claim about the collection, and the whole point of a
+      // proxy is that the deck is covered while owning nothing — the app must
+      // not close that gap with a sentence.
+      return { ok: false, message: PULL_REFUSED_PROXIED };
+    }
     if (bucketed.bucket !== "claimed" || bucketed.shortfall <= 0) {
       return { ok: false, message: "That deck already has the copies it needs." };
     }

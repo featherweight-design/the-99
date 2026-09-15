@@ -22,6 +22,7 @@ const deck = (o: Partial<DeckListItem> = {}): DeckListItem => ({
   lastEditedAt: new Date("2026-09-01T00:00:00Z"),
   lastCommittedAt: null,
   inUseElsewhere: 0,
+  proxiedCount: 0,
   folderId: null,
   folderName: null,
   statusPill: "To buy",

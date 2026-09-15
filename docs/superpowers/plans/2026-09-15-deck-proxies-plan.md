@@ -54,6 +54,14 @@ Seven PRs. Each is independently mergeable and each is well under the ~20-file /
 - This plan document and the spec addendum.
 
 ### PR 2 — the readers
+**Boundary amended mid-flight (round 6).** Two rendered outputs moved here from PR 7 because
+this PR's data change made them wrong *now* rather than later: the review breakdown's fourth
+term, and the pending banner's money sentence. With `proxied` excluded from `unfreeAdds`, a
+proxy-only commit rendered *"Every card coming in has enough spare copies"* — a claim about
+where cardboard is, over cards that have no copy anywhere — and the breakdown read
+`0 free · 0 sleeved · 0 to buy` for a non-empty group. Leaving those for PR 7 would have
+shipped a surface that lies in the interim. The review ROW (chip, `AvailabilitySlot`) is
+untouched and stays PR 7's.
 `proxied` on `DeckDetailCard` and each `DeckCommander`; a `proxied` count on `DeckListItem`;
 the proxying-decks field on the card detail payload, loaded on **both** branches of
 `loadCardDetail`; `isShoppingCard` testing proxied first; covered semantics in `deckCounts`

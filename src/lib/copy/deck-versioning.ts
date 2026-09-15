@@ -64,6 +64,25 @@ export const deckVersioningCopy = {
     // The positive counterpart of `money`, in the same words: covered means
     // enough spare copies for what the row asks, not one copy owned.
     moneyNone: "Every card coming in has enough spare copies, so this commit asks for nothing.",
+    // A PRINTED card is not a spare copy, so `moneyNone` would be a lie about
+    // where those cards are — the one thing this vocabulary may never say. The
+    // commit still asks for nothing, which is the half worth keeping.
+    moneyProxiedOnly: (n: number) =>
+      n === 1
+        ? "1 card coming in is a proxy, so this commit asks for nothing."
+        : `${n} cards coming in are proxies, so this commit asks for nothing.`,
+    // The MIXED list: some adds have a spare copy, some are printed. Stated as
+    // one sentence rather than `moneyNone` plus a clause, because `moneyNone`
+    // claims EVERY card coming in has a spare copy — which is exactly false of
+    // the printed ones, and two sentences that disagree are worse than either.
+    // "the rest are covered", never "the rest have spare copies": an added BASIC
+    // is bucketed free because basics are unlimited, not because the collection
+    // holds a spare — so the narrower sentence would describe a Swamp as a copy
+    // the player owns. `covered` is legal in prose beside what did not happen,
+    // which is exactly this sentence's shape.
+    moneyProxiedMixed: (proxied: number, adds: number) =>
+      `${proxied} of the ${adds} coming in ${proxied === 1 ? "is a proxy" : "are proxies"}`
+      + ", the rest are covered, and this commit asks for nothing.",
 
     reviewCta: (n: number) => `Review ${plural(n, "change")}`,
     reviewLink: "review changes",
@@ -148,8 +167,13 @@ export const deckVersioningCopy = {
 
     groupIn: (n: number) => `Coming in · ${n}`,
     groupOut: (n: number) => `Going out · ${n}`,
-    groupInBreakdown: (free: number, sleeved: number, buy: number) =>
-      `${free} free · ${sleeved} sleeved · ${buy} to buy`,
+    // The fourth term is absent at zero, which is every deck that prints
+    // nothing — so this line is byte-for-byte what it was until a proxy exists.
+    // Ruling 9: a breakdown that does not account for every row in its group
+    // reads as a rendering fault, and the word is the row chip's own.
+    groupInBreakdown: (free: number, sleeved: number, buy: number, proxied = 0) =>
+      `${free} free · ${sleeved} sleeved · ${buy} to buy`
+      + (proxied > 0 ? ` · ${proxied} proxied` : ""),
 
     heldBy: (deck: string) => `in ${deck}`,
     pull: "Pull it",

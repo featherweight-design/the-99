@@ -38,8 +38,8 @@ export function draftDiff(draft: CardQty[], version: CardQty[]): DraftDiff {
   return { adds, removes };
 }
 
-/** Which of the three answers an added card gets. */
-export type AddBucket = "free" | "claimed" | "unowned";
+/** Which answer an added card gets. */
+export type AddBucket = "free" | "claimed" | "unowned" | "proxied";
 
 export type BucketedAdd = {
   oracleId: string;
@@ -93,9 +93,27 @@ export function bucketAdds(
   adds: DraftChange[],
   availability: Map<string, { free: number; claims: { id: string; name: string }[] }>,
   basics: ReadonlySet<string> = new Set(),
+  /**
+   * The cards this deck prints, answered BEFORE the map like `basics` is, and
+   * for a sharper version of the same reason: a proxied add usually has no
+   * availability entry at all, so it would fall through to `unowned` and be
+   * priced.
+   *
+   * It is not `free` either, and that distinction is the whole bucket. `free`
+   * means the collection has a spare copy for this; saying that about a printed
+   * card asserts a copy in a box, on the one surface whose job is telling a
+   * player what a commit will cost them.
+   */
+  proxied: ReadonlySet<string> = new Set(),
 ): BucketedAdd[] {
   return adds.map((change) => {
     const needed = change.to - change.from;
+    if (proxied.has(change.oracleId)) {
+      return {
+        oracleId: change.oracleId, needed, shortfall: 0,
+        bucket: "proxied" as const, heldBy: [],
+      };
+    }
     if (basics.has(change.oracleId)) {
       return {
         oracleId: change.oracleId, needed, shortfall: 0,

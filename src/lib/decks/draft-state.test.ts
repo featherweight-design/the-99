@@ -319,3 +319,29 @@ describe("heldElsewhere", () => {
   });
 });
 
+
+describe("a printed add costs nothing", () => {
+  const add = (oracleId: string) => ({ oracleId, from: 0, to: 1 });
+
+  it("is left out of the purchase set", () => {
+    // `unfreeAdds` drives `unfreeCount`, which prices load against and which the
+    // banner reads as "N of the M are short of spare copies". A printed add has
+    // a shortfall of zero, so counting it says a card is short when it is not.
+    const bucketed = bucketDraftAdds([add("a")], new Map(), new Set(), new Set(["a"]));
+    expect(bucketed[0].bucket).toBe("proxied");
+    expect(unfreeAdds(bucketed)).toEqual([]);
+  });
+
+  it("is answered even when the claim read failed", () => {
+    // A null availability map is a failed claim read. A printed card asks the
+    // collection for nothing, which is true whether or not that query ran.
+    const bucketed = bucketDraftAdds([add("a")], null, new Set(), new Set(["a"]));
+    expect(bucketed[0].bucket).toBe("proxied");
+    expect(unfreeAdds(bucketed)).toEqual([]);
+  });
+
+  it("still counts an unprinted add", () => {
+    const bucketed = bucketDraftAdds([add("a")], new Map(), new Set(), new Set());
+    expect(unfreeAdds(bucketed)).toHaveLength(1);
+  });
+});

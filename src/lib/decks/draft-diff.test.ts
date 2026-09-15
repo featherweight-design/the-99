@@ -164,3 +164,41 @@ describe("bucketAdds", () => {
     expect(row.shortfall).toBe(0);
   });
 });
+
+describe("a printed add", () => {
+  it("is neither unowned nor free", () => {
+    // It has no availability entry at all — the commonest proxy is a card the
+    // player owns none of — so without its own branch it falls to `unowned` and
+    // the review screen prices it.
+    const [row] = bucketAdds(
+      [{ oracleId: A, from: 0, to: 1 }],
+      new Map(),
+      new Set(),
+      new Set([A]),
+    );
+    expect(row.bucket).toBe("proxied");
+    // Nothing to obtain, so every purchase figure downstream excludes it.
+    expect(row.shortfall).toBe(0);
+    expect(row.heldBy).toEqual([]);
+  });
+
+  it("is answered before the availability map, like a basic", () => {
+    // Even with a claim on record, the deck is asking the collection for
+    // nothing — so the row must not read as `claimed` and offer a pull.
+    const avail = new Map([[A, { free: -1, claims: [{ id: "d1", name: "Other deck" }] }]]);
+    const [row] = bucketAdds(
+      [{ oracleId: A, from: 0, to: 1 }],
+      avail,
+      new Set(),
+      new Set([A]),
+    );
+    expect(row.bucket).toBe("proxied");
+    expect(row.heldBy).toEqual([]);
+  });
+
+  it("leaves an unprinted add exactly as it was", () => {
+    const [row] = bucketAdds([{ oracleId: A, from: 0, to: 1 }], new Map(), new Set(), new Set());
+    expect(row.bucket).toBe("unowned");
+    expect(row.shortfall).toBe(1);
+  });
+});

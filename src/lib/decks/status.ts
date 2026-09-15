@@ -65,6 +65,16 @@ export type StatusPill = "Draft" | "Building" | "Over" | "Unresolved" | "To buy"
 export function statusPill(args: {
   built: number;
   ownedCount: number;
+  /**
+   * Slots filled: owned, or printed. Defaults to `ownedCount`, so a caller that
+   * cannot compute proxies keeps the pre-proxy answer rather than having to
+   * restate it.
+   *
+   * The `Complete` branch reads THIS and not `ownedCount`: a deck whose only
+   * gaps are printed cards is finished, and the pill has always been a claim
+   * about the list rather than about a box.
+   */
+  coveredCount?: number;
   unresolvedCount?: number;
   unfundedCount?: number;
   /** 99, or 98 for a deck with a partner — see `deck-size.ts`. */
@@ -74,10 +84,16 @@ export function statusPill(args: {
   if (args.built < args.bodySize) return "Building";
   if (args.built > args.bodySize) return "Over";
   if ((args.unresolvedCount ?? 0) > 0) return "Unresolved";
-  // Unowned cards are always unfunded, so the two tests would normally collapse
+  // Unowned cards are USUALLY unfunded, so the two tests would normally collapse
   // into one. They are kept separate because a caller that cannot compute the
   // seniority allocation still gets the ownership answer rather than a wrong
   // `Complete`.
+  //
+  // A PROXY is the exception that makes "usually" the right word: a printed card
+  // is unowned and funded — it is in `coveredCount` and in no buy row — so this
+  // branch can now reach `Complete` with cards the collection has never held.
+  // That is the feature, not a hole in the test.
   const unfunded = args.unfundedCount ?? 0;
-  return args.ownedCount === args.built && unfunded === 0 ? "Complete" : "To buy";
+  const covered = args.coveredCount ?? args.ownedCount;
+  return covered === args.built && unfunded === 0 ? "Complete" : "To buy";
 }

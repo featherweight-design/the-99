@@ -17,6 +17,7 @@ import {
   selectCollectionRows,
 } from "../collection/browse";
 import { ownedCardsWhere } from "../collection/owned-cards";
+import { proxiedOracleIds, proxyCounts, type ProxyCount } from "./proxies";
 import { classifyRoles } from "../recs/roles";
 import { isCommanderCandidate } from "../recs/score";
 import { loadAvailability, loadDeckBuyRows } from "./availability-query";
@@ -96,11 +97,21 @@ export function deckIsFlippable(r: {
   built: number;
   partnerName: string | null;
   ownedCount: number;
+  /**
+   * Slots filled, printed ones included. Defaults to `ownedCount` for a caller
+   * that cannot count proxies.
+   *
+   * It is what this test reads, because the question is "could this deck reach
+   * `Complete`" and a deck whose last gaps are printed now can. On `ownedCount`
+   * alone such a deck skipped the seniority query and then flipped to
+   * `Complete` without the check every other complete deck gets.
+   */
+  coveredCount?: number;
   unresolvedCount: number;
 }): boolean {
   return (
     r.built === deckBodySize(r.partnerName !== null) &&
-    r.ownedCount === r.built &&
+    (r.coveredCount ?? r.ownedCount) === r.built &&
     r.unresolvedCount === 0
   );
 }
@@ -119,6 +130,14 @@ export type { DeckUnresolvedRow };
  */
 export type DeckCommander = {
   oracleId: string;
+  /**
+   * This deck prints its copy of this commander. Per id, because a pair deck can
+   * proxy one and own the other.
+   *
+   * Optional for the reason `DeckDetailCard.proxied` is: the literal is built in
+   * fixtures that cannot reach the database, and absent means not proxied.
+   */
+  proxied?: boolean;
   name: string;
   colorIdentity: string[];
   manaCost: string | null;
@@ -145,6 +164,8 @@ export type DeckDetail = {
   unresolvedRows: DeckUnresolvedRow[];
   built: number;
   ownedCount: number;
+  /** Slots filled: owned, or printed. See `deckCounts`. */
+  coveredCount: number;
   toBuyCount: number;
   /** built plus the cards on unresolved lines — the size of the deck the player asked for. */
   total: number;
@@ -198,10 +219,22 @@ export async function getDeckDetail(deckId: string, userId: string): Promise<Dec
     .from(cards)
     .where(inArray(cards.oracleId, commanderIds));
 
-  const commander = commanderRows.find((c) => c.oracleId === deck.commanderOracleId);
-  if (!commander) return null;
-  const partner = deck.partnerOracleId
+  // Every printed id in this deck, list cards and commanders alike, in one
+  // FAIL-SOFT read. It is not a column on the card query and not a join, because
+  // a proxy flag is decoration on a page that must render without it: the
+  // availability rollup and the printed-name lookup beside it both degrade the
+  // same way, and a transient failure here would otherwise 500 an otherwise
+  // readable deck over a mark.
+  const proxiedIds = await proxiedOracleIds(deckId, userId);
+
+  const commanderRow = commanderRows.find((c) => c.oracleId === deck.commanderOracleId);
+  if (!commanderRow) return null;
+  const commander = { ...commanderRow, proxied: proxiedIds.has(commanderRow.oracleId) };
+  const partnerRow = deck.partnerOracleId
     ? (commanderRows.find((c) => c.oracleId === deck.partnerOracleId) ?? null)
+    : null;
+  const partner = partnerRow
+    ? { ...partnerRow, proxied: proxiedIds.has(partnerRow.oracleId) }
     : null;
 
   // Third: fetch all deck cards with owned flag.
@@ -293,6 +326,7 @@ export async function getDeckDetail(deckId: string, userId: string): Promise<Dec
     role: primaryRole({ typeLine: row.typeLine, oracleText: row.oracleText, keywords: row.keywords }),
     cmc: row.cmc,
     owned: row.owned,
+    proxied: proxiedIds.has(row.oracleId),
     quantity: row.quantity,
     auto: row.auto,
     availability: availability?.get(row.oracleId) ?? null,
@@ -457,6 +491,17 @@ export type DeckListItem = {
    * tile draws when nothing is spoken for — a clause is not worth a 500.
    */
   inUseElsewhere: number;
+  /**
+   * How many CARDS in this deck are printed — distinct marks, not copies. One
+   * mark on a quantity-4 row counts 1, because a proxy covers the deck's whole
+   * ask for a card and has no quantity (ruling 5); `proxyCounts` and the probe
+   * both pin that. Summing `deck_cards.quantity` here would read `4 proxies`
+   * off a single marked playset.
+   *
+   * One figure, three readings: the tile's `N proxies` line, the covered count
+   * behind its status pill, and the subtitle on `/collection/proxies`.
+   */
+  proxiedCount: number;
   statusPill: StatusPill;
 };
 
@@ -519,7 +564,24 @@ export async function listDecksWithStats(
    * A caller that leaves it off gets `inUseElsewhere: 0`, which is what the
    * tile draws when nothing is spoken for anyway.
    */
-  opts: { includeInUseElsewhere?: boolean } = {},
+  opts: {
+    includeInUseElsewhere?: boolean;
+    /**
+     * Whether to count each deck's printed cards. Off by default, and
+     * `/decks/[id]` is the caller that leaves it off: it calls this for a
+     * deck-name list, discards every figure, and would otherwise pay a raw
+     * aggregate over the player's whole proxy table on every deck page load.
+     *
+     * `/` and `/decks` both pass it, because both RENDER a status pill from
+     * these rows — and a pill that reads `Complete` on one and `To buy` on the
+     * other, about one deck, is worse than the query it saves.
+     *
+     * With it off a deck's `proxiedCount` is 0 and its pill falls back to the
+     * ownership answer. That is the same bargain `includeInUseElsewhere` makes
+     * beside it: a caller that does not draw the figure does not buy it.
+     */
+    includeProxyStats?: boolean;
+  } = {},
 ): Promise<DeckListItem[]> {
   const ownedCountSql = sql<number>`coalesce(
     (
@@ -676,7 +738,27 @@ export async function listDecksWithStats(
   // scan whose result nothing reads — and `/decks` and Home both run
   // `loadShoppingRollup` alongside this, which asks the same question, so the
   // saving is a real second scan rather than a hypothetical one.
-  const canFlip = rows.some(deckIsFlippable);
+  // Two figures per deck, and conflating them was a real defect: a proxied
+  // COMMANDER is not a body slot, and a proxied card the player also owns is
+  // already inside `ownedCount`. Adding one total to `ownedCount` let a proxied
+  // commander fill an unowned body slot, so a 98-owned 99-card deck read
+  // `Complete` with one card genuinely missing. See `proxyCounts`.
+  //
+  // Tolerated like the two reads above: a failed count leaves every deck reading
+  // as it did before proxies existed, which is a missing line rather than a 500.
+  const proxiedByDeck = opts.includeProxyStats && rows.length > 0
+    ? await proxyCounts(userId)
+    : new Map<string, ProxyCount>();
+
+  // AFTER the proxy read, not before it. `deckIsFlippable` decides whether the
+  // seniority query runs at all, and it asks whether a deck could reach
+  // `Complete` — which a deck whose last gaps are printed now can. Asked on
+  // `ownedCount` alone, such a deck never fetched its buy rows, so its
+  // `unfundedCount` stayed 0 and it flipped to `Complete` without the seniority
+  // check every other complete deck gets.
+  const canFlip = rows.some((r) =>
+    deckIsFlippable({ ...r, coveredCount: r.ownedCount + (proxiedByDeck.get(r.id)?.covers ?? 0) }),
+  );
   // Tolerated the same way as `inUseElsewhere`: a failed read falls back to the
   // ownership answer, which is the pre-seniority behaviour and not a 500.
   const buyRows = canFlip ? await loadDeckBuyRows(userId).catch(() => []) : [];
@@ -686,9 +768,16 @@ export async function listDecksWithStats(
   }
 
   return rows.map((row) => {
+    const proxies = proxiedByDeck.get(row.id);
+    const proxiedCount = proxies?.copies ?? 0;
     const pill = statusPill({
       built: row.built,
       ownedCount: row.ownedCount,
+      // A printed slot is a filled slot, so a deck whose only gaps are proxies
+      // reads `Complete` here exactly as it does on its own page. `covers` is
+      // already restricted to unowned body rows, so this neither double-counts
+      // an owned proxy nor lets a commander fill a body slot.
+      coveredCount: row.ownedCount + (proxies?.covers ?? 0),
       unresolvedCount: row.unresolvedCount,
       unfundedCount: unfundedByDeck.get(row.id) ?? 0,
       bodySize: deckBodySize(row.partnerName !== null),
@@ -707,7 +796,12 @@ export async function listDecksWithStats(
       folderName: row.folderName,
       built: row.built,
       ownedCount: row.ownedCount,
-      toBuyCount: row.built - row.ownedCount,
+      proxiedCount,
+      // The same definition `deckCounts` uses on the deck page: what is still to
+      // ACQUIRE. Left as `built - ownedCount` the two payloads disagreed about
+      // one deck — the tile saying a printed card was still to buy while the
+      // page it links to said it was covered.
+      toBuyCount: row.built - (row.ownedCount + (proxies?.covers ?? 0)),
       unresolvedCount: row.unresolvedCount,
       // Normalised here rather than trusted from the driver: `lastPlayedSql` is
       // raw SQL, so it carries none of the column mapping that would hand back a

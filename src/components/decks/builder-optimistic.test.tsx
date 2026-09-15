@@ -89,6 +89,7 @@ function makeDeck(): DeckDetail {
     ],
     built: 1,
     ownedCount: 1,
+    coveredCount: 1,
     toBuyCount: 0,
     total: 1,
     unresolvedRows: [],

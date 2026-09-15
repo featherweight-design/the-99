@@ -327,6 +327,7 @@ function makeDeck(cards: DeckDetailCard[] = [solRing, arcaneSignet]): DeckDetail
     cards,
     built,
     ownedCount: built,
+    coveredCount: built,
     toBuyCount: 0,
     total: built,
     unresolvedRows: [],

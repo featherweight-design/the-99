@@ -501,6 +501,9 @@ export function ReviewChanges({
   const free = state.adds.filter((a) => a.bucket === "free").length;
   const sleeved = state.adds.filter((a) => a.bucket === "claimed").length;
   const buy = state.adds.filter((a) => a.bucket === "unowned").length;
+  // The fourth term. Without it the three above stop summing to the group's own
+  // count the moment a printed card is added — ruling 9.
+  const proxied = state.adds.filter((a) => a.bucket === "proxied").length;
 
   // A versionless deck: the page is the v1 commit surface, so the heading, the
   // lede and the bar's CTA all name that act instead of a diff. The route admits
@@ -805,7 +808,7 @@ export function ReviewChanges({
               headingTone="var(--success)"
               note={
                 state.claimsKnown
-                  ? copy.groupInBreakdown(free, sleeved, buy)
+                  ? copy.groupInBreakdown(free, sleeved, buy, proxied)
                   : copy.groupInUnknown
               }
               rows={rows.in}
