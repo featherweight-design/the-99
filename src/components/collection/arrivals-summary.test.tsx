@@ -89,9 +89,20 @@ describe("ArrivalsSummary", () => {
     expect(screen.queryByText(/Still short/)).toBeNull();
   });
 
-  it("takes the no-contention lede when arrivals had copies to spare", () => {
+  it("takes the no-contention lede only when nothing at all is still owed", () => {
     render(view(summary({ cleared: [{ deckId: DECK, oracleId: CARD, copies: 1 }] })));
     expect(screen.getByText(copy.summary.ledeNoContention(100, 3, 1))).toBeTruthy();
+  });
+
+  // A single deck short by two copies is not a contested row — there is nobody to choose
+  // between — but it did NOT have a copy to spare, so the sentence that says every arrival did
+  // would be a plain falsehood on a valid receipt.
+  it("takes the neutral lede when something is owed without being contested", () => {
+    render(view(summary({
+      still: [{ deckId: DECK, oracleId: CARD, owed: 2, reason: { kind: "partly", arrived: 1, wanted: 3 } }],
+    })));
+    expect(screen.getByText(copy.summary.ledeOwing(100, 3, 1))).toBeTruthy();
+    expect(screen.queryByText(copy.summary.ledeNoContention(100, 3, 1))).toBeNull();
   });
 
   it("takes the contention lede when a copy has to cover two decks", () => {

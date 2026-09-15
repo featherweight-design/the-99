@@ -59,6 +59,16 @@ export const cardAssignmentsCopy = {
     lede: (was: number, arrived: number, left: number) =>
       `Was ${fmt(was)}. ${arrived} arrived, ${left} left. Here's what your decks still need after ` +
       "the update — and, where one copy has to cover two decks, which one gets it.",
+    /**
+     * Arrivals, no contention, but some deck is still short. NOT `ledeNoContention`, which says
+     * every arrival had a copy to spare — that is false here: a single committed deck asking for
+     * three copies of a card one of which arrived is short, and is deliberately not drawn as a
+     * contested row because there is nobody to choose between. It still did not have a copy to
+     * spare.
+     */
+    ledeOwing: (was: number, arrived: number, left: number) =>
+      `Was ${fmt(was)}. ${arrived} arrived, ${left} left. Here's what your decks still need after ` +
+      "the update.",
     ledeNoContention: (was: number, arrived: number, left: number) =>
       `Was ${fmt(was)}. ${arrived} arrived, ${left} left. Every arrival a committed deck was ` +
       "waiting for had a copy to spare, so there is nothing to decide.",

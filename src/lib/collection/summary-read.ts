@@ -71,6 +71,14 @@ export type SummaryView = {
  *
  * Each claimant takes as much of its whole ask as is left when its turn comes; the commander
  * half is not special here and only matters to the chooser, which cannot offer those copies.
+ *
+ * IT DOES NOT KNOW ABOUT RESERVATIONS, and that is a deliberate boundary rather than an
+ * oversight. `card_assignments` shipped with the model and `loadAvailability` already factors
+ * grants into `free` — but nothing WRITES a row yet, so there is no allocation here that this
+ * queue can currently disagree with. The moment the chooser can write one, recomputing the queue
+ * in the reader becomes a second source of truth that drifts from the first, so the next PR
+ * DELETES this function and carries the per-claim allocation out of the query that already
+ * computes it. Do not extend it instead.
  */
 function allocate(owned: number, claimants: Omit<ContestedClaimant, "allocated">[]): ContestedClaimant[] {
   let left = owned;
