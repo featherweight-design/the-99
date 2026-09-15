@@ -6,6 +6,7 @@ import {
   cookieIsCurrent,
   cookieValue,
   gateApplies,
+  gateHandles,
 } from "./lib/about/gate";
 import { aboutVersionSeen } from "./lib/about/read";
 
@@ -22,19 +23,6 @@ import { aboutVersionSeen } from "./lib/about/read";
 // does not become public by accident.
 const isPublic = createRouteMatcher(["/", "/api/cron(.*)", "/api/health", "/api/health/"]);
 
-/**
- * Whether this request is a reader loading a page, rather than the router
- * fetching a segment or a script asking for data. A redirect is only honest
- * for the first kind: an RSC payload answered with a redirect swaps the
- * fragment the router asked for, which is not the same as sending the reader
- * somewhere.
- */
-function isDocumentRequest(req: Request): boolean {
-  if (req.method !== "GET") return false;
-  if (req.headers.get("RSC") === "1") return false;
-  return (req.headers.get("accept") ?? "").includes("text/html");
-}
-
 export default clerkMiddleware(async (auth, req) => {
   if (isPublic(req)) return;
 
@@ -44,7 +32,7 @@ export default clerkMiddleware(async (auth, req) => {
   const { userId } = await auth.protect();
 
   const path = req.nextUrl.pathname;
-  if (!gateApplies(path) || !isDocumentRequest(req)) return;
+  if (!gateApplies(path) || !gateHandles(req.method, req.headers)) return;
 
   // The cookie is the fast path and it is the whole reason this costs nothing
   // on a normal navigation: one database read per browser per version per

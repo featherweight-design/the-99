@@ -87,9 +87,16 @@ export function AboutPage({ seen, next }: { seen: number; next?: string }) {
   // Validated here as well as in the action: the page PRINTS the destination,
   // and printing an unvalidated value is its own small problem.
   const destination = safeNext(next);
+  const destinationClause =
+    destination === "/"
+      ? aboutCopy.dismissDestinationHome
+      : aboutCopy.dismissDestination(destination);
 
   return (
-    <main className="mx-auto w-full max-w-[760px] px-[16px] py-[20px] md:px-[34px] md:py-[28px]">
+    // Not a <main>: the shell already opens one (shell.tsx:43) and /about
+    // always renders inside it, so a second would give the document two main
+    // landmarks and leave a screen reader with no single "skip to content".
+    <article className="mx-auto w-full max-w-[760px] px-[16px] py-[20px] md:px-[34px] md:py-[28px]">
       {/* The eyebrow exists ONLY when the reader is behind: it is the reason
           they are looking at this page instead of the one they asked for, so
           it is a count and not an apology. */}
@@ -163,14 +170,18 @@ export function AboutPage({ seen, next }: { seen: number; next?: string }) {
       {behind && (
         <form action={dismissAbout} className="mt-[32px] flex items-center gap-[12px]">
           <input type="hidden" name="next" value={destination} />
-          <PrimaryButton type="submit">{aboutCopy.dismiss}</PrimaryButton>
+          {/* The destination rides in the accessible name as well as beside
+              the button: the clause is a sibling, so a screen-reader user
+              pressing `Got it` would otherwise be told nothing about where
+              they are about to land. */}
+          <PrimaryButton type="submit" aria-label={`${aboutCopy.dismiss} — ${destinationClause}`}>
+            {aboutCopy.dismiss}
+          </PrimaryButton>
           <span className="font-mono text-[11px]" style={{ color: "var(--fg-faint)" }}>
-            {destination === "/"
-              ? aboutCopy.dismissDestinationHome
-              : aboutCopy.dismissDestination(destination)}
+            {destinationClause}
           </span>
         </form>
       )}
-    </main>
+    </article>
   );
 }

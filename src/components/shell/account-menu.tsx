@@ -44,6 +44,10 @@ type MenuItemsProps = {
   busy: boolean;
   onManage: () => void;
   onSignOut: () => void;
+  /** The About row navigates client-side, so the panel has to be dismissed on
+   *  the way out — otherwise the popover, or the sheet with its backdrop and
+   *  focus trap, stays mounted over the destination. */
+  onClose: () => void;
 };
 
 /**
@@ -52,7 +56,7 @@ type MenuItemsProps = {
  * (X11). Table ambiguity 3 — the handoff specs hover but no roving-focus
  * visual, so focus reuses the hover background rather than inventing one.
  */
-function MenuItems({ kind, busy, onManage, onSignOut }: MenuItemsProps) {
+function MenuItems({ kind, busy, onManage, onSignOut, onClose }: MenuItemsProps) {
   const popover = kind === "popover";
   const [active, setActive] = useState(0);
   // One ref per item, sized from the list rather than written out: the row
@@ -108,6 +112,10 @@ function MenuItems({ kind, busy, onManage, onSignOut }: MenuItemsProps) {
         tabIndex={active === 0 ? 0 : -1}
         onFocus={() => setActive(0)}
         onKeyDown={onKeyDown}
+        onClick={onClose}
+        // A link cannot be `disabled`, and one that pretended to be would still
+        // navigate. `aria-disabled` states it while sign-out is unresolved.
+        aria-disabled={busy || undefined}
         className={rowClass(0)}
       >
         <ItemDiamond />

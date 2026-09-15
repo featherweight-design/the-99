@@ -43,32 +43,24 @@ export function cookieIsCurrent(
  */
 export function safeNext(raw: string | null | undefined): string {
   if (!raw) return "/";
-  let value: string;
-  try {
-    value = decodeURIComponent(raw);
-  } catch {
-    // decodeURIComponent THROWS on a lone escape rather than returning its
-    // input, so this exists to stop a malformed link 500ing. Its result is not
-    // separately observable — anything that fails to decode also fails the
-    // leading-slash test below — so no test pins it, and that is stated here
-    // rather than left to look like coverage.
-    return "/";
-  }
-  if (!value.startsWith("/")) return "/";
-  // ONE mechanism, deliberately. A separate string test for `//` and `/\` was
-  // written first and then removed: it and the resolution below each caught
-  // every case the other did, so neither could be shown to be load-bearing —
-  // dropping either one on its own left every test passing. Resolution is the
-  // general form (WHATWG reads `/\` as `//`), so it is the one that stays.
+  // NOT decoded here. Both callers hand over an already-decoded value —
+  // `searchParams` and `FormData` each decode on the way in — so a second
+  // decode eats the escapes that belong to the destination's own query:
+  // `/commanders?q=a%26b` becomes `/commanders?q=a&b`, which is two parameters
+  // where the reader had one, and `%23` becomes a fragment that is then
+  // dropped. Dismissing would land them on a different search than the one they
+  // left.
+  if (!raw.startsWith("/")) return "/";
   try {
     // The RETURN is the guarantee, not a test before it: `pathname + search`
     // cannot carry a scheme or an authority, so `//evil.example` resolves and
     // comes back as `/`. An origin comparison was written here first and
     // removed as dead — every mutation of it passed, because this line had
     // already made it unreachable.
-    const resolved = new URL(value, "https://the99.invalid");
+    const resolved = new URL(raw, "https://the99.invalid");
     return resolved.pathname + resolved.search;
   } catch {
+    // `new URL` throws on a value no amount of guarding ahead of it makes safe.
     return "/";
   }
 }
@@ -83,4 +75,28 @@ export function gateApplies(pathname: string): boolean {
   if (pathname.startsWith("/api/")) return false;
   if (pathname.startsWith("/_next/")) return false;
   return true;
+}
+
+/**
+ * Whether the gate should act on this request at all, given its method and
+ * headers. Pure so the rule can be tested; the proxy supplies the headers.
+ *
+ * **Prefetches are the exclusion, not client navigations.** An earlier version
+ * skipped every request carrying `RSC: 1`, which is every `<Link>` press in the
+ * shell — so a reader who landed on the public `/` and clicked Decks never met
+ * the gate at all, and the feature only worked on a hard reload. Next follows a
+ * middleware redirect on a client transition, so those must be gated.
+ *
+ * A prefetch must NOT be: the response writes the cookie, so gating one would
+ * mark the page shown because the reader's pointer passed over a link.
+ */
+export function gateHandles(method: string, headers: Headers): boolean {
+  if (method !== "GET") return false;
+  if (headers.get("Next-Router-Prefetch") === "1") return false;
+  if (headers.get("purpose") === "prefetch") return false;
+  // An RSC request that is not a prefetch is a real navigation the router will
+  // follow a redirect for. A document request is the hard-navigation form of
+  // the same thing.
+  if (headers.get("RSC") === "1") return true;
+  return (headers.get("accept") ?? "").includes("text/html");
 }

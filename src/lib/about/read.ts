@@ -22,8 +22,8 @@ export async function aboutVersionSeen(userId: string): Promise<number> {
  * stale tab pressing an older page's dismiss cannot walk the marker backwards
  * and re-show a version the reader has already acknowledged elsewhere.
  */
-export async function markAboutSeen(userId: string, version: number): Promise<void> {
-  await db
+export function markAboutSeenQuery(userId: string, version: number) {
+  return db
     .insert(userPrefs)
     .values({ userId, aboutVersionSeen: version })
     .onConflictDoUpdate({
@@ -32,4 +32,8 @@ export async function markAboutSeen(userId: string, version: number): Promise<vo
         aboutVersionSeen: sql`greatest(${userPrefs.aboutVersionSeen}, ${version})`,
       },
     });
+}
+
+export async function markAboutSeen(userId: string, version: number): Promise<void> {
+  await markAboutSeenQuery(userId, version);
 }

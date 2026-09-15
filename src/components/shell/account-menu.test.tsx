@@ -275,6 +275,26 @@ describe("AccountMenu items", () => {
     expect(document.activeElement).toBe(signOutItem);
   });
 
+  it("dismisses the menu on the way to About", () => {
+    // The row navigates client-side, so nothing unmounts the panel for us: a
+    // popover left open lands on top of /about, and the sheet takes its
+    // backdrop and focus trap with it.
+    render(<AccountMenu panel="popover" theme="amonkhet" />);
+    fireEvent.click(trigger());
+    fireEvent.click(screen.getByRole("menuitem", { name: "About The 99" }));
+    expect(screen.queryByRole("menu")).toBeNull();
+  });
+
+  it("says the About row is unavailable while sign-out is in flight", () => {
+    render(<AccountMenu panel="popover" theme="amonkhet" />);
+    fireEvent.click(trigger());
+    fireEvent.click(screen.getByRole("menuitem", { name: "Sign out" }));
+    expect(screen.getByRole("menuitem", { name: "About The 99" })).toHaveAttribute(
+      "aria-disabled",
+      "true",
+    );
+  });
+
   it("dismisses the menu before handing the focus trap to Clerk's modal", () => {
     render(<AccountMenu panel="popover" theme="amonkhet" />);
     fireEvent.click(trigger());

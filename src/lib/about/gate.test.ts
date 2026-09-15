@@ -1,11 +1,18 @@
 import { describe, expect, it } from "vitest";
 import { ABOUT_VERSION } from "../copy/about";
-import { cookieIsCurrent, cookieValue, gateApplies, safeNext } from "./gate";
+import { cookieIsCurrent, cookieValue, gateApplies, gateHandles, safeNext } from "./gate";
 
 describe("safeNext", () => {
   it("keeps a same-origin path and its query", () => {
     expect(safeNext("/decks?sort=name")).toBe("/decks?sort=name");
-    expect(safeNext(encodeURIComponent("/collection?view=rows"))).toBe("/collection?view=rows");
+  });
+
+  it("leaves the destination's own escapes alone", () => {
+    // Both callers hand over a decoded value, so decoding again here would eat
+    // the escapes that belong to the query: this destination is ONE parameter
+    // whose value contains an ampersand, and a second decode makes it two.
+    expect(safeNext("/commanders?q=a%26b")).toBe("/commanders?q=a%26b");
+    expect(safeNext("/collection?q=%23foil")).toBe("/collection?q=%23foil");
   });
 
   it("falls back home rather than leaving the origin", () => {
@@ -21,7 +28,7 @@ describe("safeNext", () => {
     expect(safeNext(null)).toBe("/");
     expect(safeNext(undefined)).toBe("/");
     expect(safeNext("")).toBe("/");
-    // decodeURIComponent throws on a lone escape rather than returning input.
+    // Not a path, so it never reaches the resolver.
     expect(safeNext("%")).toBe("/");
   });
 });
@@ -54,5 +61,32 @@ describe("gateApplies", () => {
     expect(gateApplies("/")).toBe(true);
     expect(gateApplies("/decks")).toBe(true);
     expect(gateApplies("/decks/abc/changes")).toBe(true);
+  });
+});
+
+describe("gateHandles", () => {
+  const h = (init: Record<string, string>) => new Headers(init);
+
+  it("gates a hard navigation", () => {
+    expect(gateHandles("GET", h({ accept: "text/html,application/xhtml+xml" }))).toBe(true);
+  });
+
+  it("gates a client transition, which is how the reader actually moves", () => {
+    // Every <Link> press in the shell carries RSC: 1. Skipping those was the
+    // first version of this rule, and it meant a reader who landed on the
+    // public "/" and clicked Decks never met the gate at all.
+    expect(gateHandles("GET", h({ RSC: "1" }))).toBe(true);
+  });
+
+  it("never gates a prefetch", () => {
+    // The gated response writes the cookie, so gating a prefetch would mark the
+    // page shown because a pointer passed over a link.
+    expect(gateHandles("GET", h({ RSC: "1", "Next-Router-Prefetch": "1" }))).toBe(false);
+    expect(gateHandles("GET", h({ RSC: "1", purpose: "prefetch" }))).toBe(false);
+  });
+
+  it("never gates a write, or a request for something that is not a page", () => {
+    expect(gateHandles("POST", h({ accept: "text/html" }))).toBe(false);
+    expect(gateHandles("GET", h({ accept: "application/json" }))).toBe(false);
   });
 });
