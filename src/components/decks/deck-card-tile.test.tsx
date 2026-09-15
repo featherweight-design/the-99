@@ -6,6 +6,7 @@ import { cardTileCopy } from "../../lib/copy/card-surfaces";
 import type { Availability } from "../../lib/decks/availability";
 import type { DeckDetailCard } from "../../lib/decks/grouping";
 import { CardDetailProvider, cardDetailCopy } from "../cards/card-detail-provider";
+import { proxyCopy } from "../../lib/copy/proxies";
 
 const { addCardToDeck, removeCardFromDeck } = vi.hoisted(() => ({
   addCardToDeck: vi.fn(),
@@ -64,6 +65,33 @@ describe("DeckCardTile — the four states of Matrix 2", () => {
 
     expect(screen.getByText("$")).toHaveAttribute("aria-hidden", "true");
     expect(screen.getByText(cardTileCopy.slotUnownedAria)).toBeInTheDocument();
+  });
+
+  // The Card view drew this tile's `$` off `card.owned` alone, so a printed card
+  // — which is unowned by design — was told to buy itself, one toggle away from
+  // the List view saying the opposite about the same card.
+  it("draws the proxy mark instead of the buy tag on a printed card", () => {
+    renderTile(
+      <DeckCardTile deckId="d1" card={{ ...card, owned: false, proxied: true }} />,
+    );
+
+    expect(screen.getByText(proxyCopy.tag.glyph)).toHaveAttribute("aria-hidden", "true");
+    expect(screen.getByText(proxyCopy.tag.aria)).toBeInTheDocument();
+    // The two share a slot and can never co-occur.
+    expect(screen.queryByText("$")).not.toBeInTheDocument();
+    expect(screen.queryByText(cardTileCopy.slotUnownedAria)).not.toBeInTheDocument();
+  });
+
+  it("draws no availability chip on a printed card the player owns", () => {
+    // Printing is the deck's answer about the slot, so it outranks the chip that
+    // would otherwise describe the copies competing for it.
+    const availability: Availability = { owned: 2, hard: 0, soft: 1, free: 1, claims: [] };
+    renderTile(
+      <DeckCardTile deckId="d1" card={{ ...card, owned: true, proxied: true, availability }} />,
+    );
+
+    expect(screen.getByText(proxyCopy.tag.aria)).toBeInTheDocument();
+    expect(screen.queryByText("$")).not.toBeInTheDocument();
   });
 
   // The chip sits outside the trigger, whose own accessible name would

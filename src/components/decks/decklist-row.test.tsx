@@ -12,6 +12,7 @@ import { deckImportCopy } from "../../lib/copy/deck-import";
 import { deckVersioningCopy } from "../../lib/copy/deck-versioning";
 import { PendingChangeProvider } from "./pending-change";
 import { COST_TRACK } from "../ui/cost-pips";
+import { proxyCopy } from "../../lib/copy/proxies";
 
 const { addCardToDeck, removeCardFromDeck, keepAutoCard } = vi.hoisted(() => ({
   addCardToDeck: vi.fn(),
@@ -625,6 +626,22 @@ describe("DecklistRow cost pips (#350)", () => {
 
 // #350 — the All tab collapses the tag; Shopping keeps it whole.
 describe("DecklistRow buy tag density (#350)", () => {
+  // One slot, one mark. The row draws the buy tag off `deckRowTag` now, so a
+  // printed card cannot also be told to buy itself — the state nobody drew.
+  it("draws the proxy mark instead of the buy tag on a printed card", () => {
+    renderRow(<DecklistRow deckId="d1" card={{ ...card, owned: false, proxied: true }} />);
+
+    expect(screen.getByText(proxyCopy.tag.aria)).toBeInTheDocument();
+    expect(screen.queryByText(addPanelCopy.unowned.tag)).not.toBeInTheDocument();
+  });
+
+  it("keeps the buy tag on an unowned card that is not printed", () => {
+    renderRow(<DecklistRow deckId="d1" card={{ ...card, owned: false }} />);
+
+    expect(screen.queryByText(proxyCopy.tag.aria)).not.toBeInTheDocument();
+    expect(screen.getByText(addPanelCopy.unowned.tag)).toBeInTheDocument();
+  });
+
   it("collapses to $ on the All tab", () => {
     renderRow(<DecklistRow deckId="d1" card={{ ...card, owned: false }} />);
     expect(screen.getByText("$")).toBeInTheDocument();

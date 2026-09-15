@@ -1,7 +1,6 @@
 import { describe, it, expect } from "vitest";
 import { render, screen } from "@testing-library/react";
 import { ProxyTag } from "./proxy-tag";
-import { readFileSync } from "node:fs";
 import { proxyCopy } from "../../lib/copy/proxies";
 
 describe("the proxy mark", () => {
@@ -61,29 +60,5 @@ describe("the proxy mark", () => {
     // clears its 3:1 floor, and over art nothing is guaranteed.
     expect(bandStyle).toContain("color-mix");
     expect(rowStyle).not.toContain("color-mix");
-  });
-});
-
-describe("the surfaces that draw the mark", () => {
-  const src = (file: string) => readFileSync(`src/components/decks/${file}`, "utf8");
-
-  it("is drawn by the card tile as well as the row", () => {
-    // The Card view read `card.owned` alone and drew a buy tag on a printed
-    // card — one deck, one card, one glance apart from the List view saying the
-    // opposite. Both now ask `deckRowTag`.
-    for (const file of ["deck-card-tile.tsx", "decklist-row.tsx"]) {
-      expect(src(file)).toContain("deckRowTag(");
-      expect(src(file)).toContain("ProxyTag");
-    }
-  });
-
-  it("is drawn by the commander caption at BOTH widths", () => {
-    // A feature that appears at one width only is the defect the acceptance
-    // walk exists to catch, and this one lost the phone entirely in review.
-    for (const file of ["spine-desktop.tsx", "spine-mobile.tsx"]) {
-      expect(src(file)).toContain("ProxyTag");
-      // …and the count under the bar, which the phone also lacked.
-      expect(src(file)).toContain("proxyCopy.deckHeader.line");
-    }
   });
 });

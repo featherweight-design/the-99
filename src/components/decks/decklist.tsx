@@ -642,6 +642,13 @@ export function Decklist({
         draftNote={draftNote}
       />
 
+      {/* The decoder, on the PRIMARY view. It was in the Shopping branch alone,
+          which is the one view a printed card is never in — so the surface that
+          actually draws `P` had nothing to decode it. */}
+      <div className="px-[16px] pt-[12px] md:px-[26px] md:pt-[14px] empty:hidden">
+        <MarkKey marks={markKey} />
+      </div>
+
       {/* Grouped card rows */}
       <HoverPreviewProvider className="px-[16px] py-[12px] md:px-[26px] md:py-[14px]">
         {/* A refused sweep, keep-all or undo. Each message names its own write:
