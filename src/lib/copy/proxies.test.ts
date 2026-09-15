@@ -6,8 +6,57 @@ import { proxyCopy } from "./proxies";
 // component test that renders it stays green, because the component asserts the
 // copy constant rather than its words.
 
+/**
+ * Every shipped string, INCLUDING the interpolated ones.
+ *
+ * `JSON.stringify(proxyCopy)` was the first version of this and it silently
+ * dropped every function-valued leaf — which is most of the module — so the
+ * three guards below scanned the literals only and a regression in
+ * `control.marked`, `announceMarked` or either subtitle passed them untouched.
+ * A guard that skips what it claims to cover is worse than no guard.
+ *
+ * Numeric branches are materialised at 1 AND 2, because the singular arm is
+ * separately authored and can regress on its own.
+ */
+const everyString = (): string => [
+  JSON.stringify(proxyCopy),
+  proxyCopy.tag.pair("Tymna"),
+  proxyCopy.tag.pairTitle("Tymna"),
+  proxyCopy.tag.pairAria("Tymna Weaver"),
+  proxyCopy.control.label("HD Gods"),
+  proxyCopy.control.marked("HD Gods"),
+  proxyCopy.control.refused("The Ozolith"),
+  proxyCopy.control.announceMarked("The Ozolith", "HD Gods"),
+  proxyCopy.control.announceUnmarked("The Ozolith", "HD Gods"),
+  proxyCopy.receipt.note(1),
+  proxyCopy.receipt.note(2),
+  proxyCopy.receipt.deckLinkAria("HD Gods"),
+  proxyCopy.deckHeader.line(1),
+  proxyCopy.deckHeader.line(2),
+  proxyCopy.deckCard.line(1),
+  proxyCopy.deckCard.line(2),
+  proxyCopy.review.a11y("The Ozolith"),
+  proxyCopy.page.subtitle(1, 1),
+  proxyCopy.page.subtitle(2, 3),
+  proxyCopy.page.subtitleWithCollection(1, 1),
+  proxyCopy.page.subtitleWithCollection(2, 3),
+  proxyCopy.page.tail(1),
+  proxyCopy.page.tail(2),
+  proxyCopy.cost.line(1, 1),
+  proxyCopy.cost.line(7, 9),
+  proxyCopy.cost.unpriced(1),
+  proxyCopy.cost.unpriced(2),
+  proxyCopy.cost.soldOut(1),
+  proxyCopy.cost.soldOut(2),
+  proxyCopy.cost.stale("14 September"),
+  proxyCopy.row.cardAria("The Ozolith"),
+  proxyCopy.row.deckAria("HD Gods"),
+  proxyCopy.row.deckCount(1),
+  proxyCopy.row.deckCount(2),
+].join(" \n ");
+
 describe("nothing here may be read as ownership", () => {
-  const every = JSON.stringify(proxyCopy);
+  const every = everyString();
 
   it("never says the player has or owns the card", () => {
     // The one rule this feature can break. `availability.ts`'s header states it:
