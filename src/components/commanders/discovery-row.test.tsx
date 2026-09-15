@@ -2,7 +2,7 @@ import { describe, expect, it, vi } from "vitest";
 import { fireEvent, render, screen } from "@testing-library/react";
 import type { DiscoveryItem } from "../../lib/discovery/list";
 import { discoveryCopy } from "../../lib/copy/commander-discovery";
-import { commandersCopy, discoverCopy } from "../../lib/copy/lanes";
+import { discoverCopy } from "../../lib/copy/lanes";
 import { planeCopy } from "../../lib/copy/commanders-plane";
 import { FLOOR_PCT } from "../../lib/discovery/floor";
 import { explainedCopy } from "../../lib/copy/commander-explained";
@@ -137,9 +137,7 @@ describe("DiscoveryRow", () => {
   // grid column it was clipping against.
   it("names no action beside the row itself", () => {
     row();
-    expect(
-      screen.queryByRole("link", { name: commandersCopy.row.action }),
-    ).not.toBeInTheDocument();
+    expect(screen.queryByRole("link", { name: "Start this deck" })).not.toBeInTheDocument();
     expect(screen.queryByText("See the pool")).not.toBeInTheDocument();
   });
 

@@ -208,7 +208,16 @@ export function SpineDesktop({
         // would print over the portrait.
         style={{ paddingRight: 24, paddingBottom: 18, gap: 18 }}
       >
-        <div className="flex min-w-0 flex-1 flex-col">
+        {/* `basis-[280px]`, not a bare `flex-1`: with a zero basis this column
+            takes only what the action column leaves, and that column sizes to
+            its content. Once the `Commit as v1` offer joined it the content was
+            wider than the row, so this column resolved to 0px and the name, the
+            commander line and the bar each measured zero — present in the DOM,
+            drawn nowhere. A basis states the column's claim, so the deficit is
+            taken out of the actions, which wrap, instead of out of the title,
+            which cannot. `min-w-0` stays: it is what keeps the ellipsis
+            reachable when the basis itself has to give. */}
+        <div className="flex min-w-0 flex-1 basis-[280px] flex-col">
           <div className="flex items-center">
             {renaming ? (
               <input
@@ -475,7 +484,22 @@ export function SpineDesktop({
           )}
         </div>
 
-        <div className="flex-none">
+        {/* Shrinkable, where this was `flex-none`: the offer's row is wider than
+            any row this column has held before, and a column that refuses to
+            shrink resolves its neighbour to zero rather than wrapping itself.
+            `shrink-[4]` against the title column's shrink of 1 decides which of
+            the two gives — the actions have a second line to fall onto and the
+            title does not. `min-w-0` is what lets it shrink below its content at
+            all, which is the width the wrap happens at.
+
+            While RENAMING it stays `flex-none`, which is what shipped. The
+            shrink is there for one row's content — the offer's — and that row is
+            replaced during a rename by §B14's Save/Cancel pair, which does not
+            wrap: shrinking the column below a pair of fixed-height buttons would
+            push them out of the band rather than onto a second line. The rename
+            column is also the narrower of the two, so the title has room without
+            it giving anything. */}
+        <div className={renaming ? "flex-none" : "min-w-0 shrink-[4] grow-0 basis-auto"}>
           {renaming ? (
             // §B14 — the actions are replaced, not joined. The hint row is
             // present in every state, which is what holds the column's height.
@@ -537,7 +561,11 @@ export function SpineDesktop({
               </p>
             </div>
           ) : (
-            <div className="flex items-center" style={{ gap: 9 }}>
+            // `flex-wrap justify-end`: with the first-commit offer present this
+            // row is wider than the column can be at any desktop width the app
+            // draws, so it takes a second line and stays at the band's right
+            // edge rather than pushing the title column to zero.
+            <div className="flex flex-wrap items-center justify-end" style={{ gap: 9 }}>
               {/* Absent on an empty deck for the same reason Export is disabled
                   there: nothing to diff. */}
               {built > 0 && (

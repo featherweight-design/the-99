@@ -1,7 +1,10 @@
 // The owned lane's row (§Recommendation Card, §Fit Bar, §Role Chips, §Synergy Line,
 // §Receipts Preview, §Per-Commander Degraded Note).
-// Desktop: grid 24px 1fr auto 32px (rank · identity · fit · action) over the band,
-// and the evidence below it.
+// Desktop: grid 24px 1fr auto (rank · identity · fit) over the band, and the
+// evidence below it. There is no action column: the `Start this deck` pill that
+// held one was revealed on hover, restated the destination the whole row links
+// to, and clipped against the 32px track it sat in — both went, here and in the
+// discover lane.
 // The art is no longer a thumbnail in a column of its own: it bleeds in from the
 // leading edge of a 148px band, and everything the row measures sits below that
 // band's divider on flat ground (§4).
@@ -228,11 +231,15 @@ export function RecCard(props: RecCardProps) {
           </div>
         </div>
 
-        {/* ── Desktop band: grid 24px 1fr auto 32px ── */}
+        {/* ── Desktop band: grid 24px 1fr auto ──
+            The trailing 32px track went with the `Start this deck` pill it
+            held: the pill was wider than the track and clipped against it, and
+            an empty track is 52px of the identity column spent on nothing. The
+            discover lane dropped the same column for the same reason. */}
         <div
           className="relative hidden h-full sm:grid p-[24px_26px]"
           style={{
-            gridTemplateColumns: "24px 1fr auto 32px",
+            gridTemplateColumns: "24px 1fr auto",
             gap: 20,
             alignItems: "end",
           }}
@@ -315,21 +322,12 @@ export function RecCard(props: RecCardProps) {
             </span>
           </div>
 
-          {/* Trailing action. `z-[2]` above the stretched link, which it shares a
-              destination with: the pill names the action the whole row performs.
-              It stays with the band, being an affordance for the row's identity
-              rather than one of the figures the row reports. Desktop only — a
-              second link to the same place on the phone would be a duplicate the
-              band has no room for and the row does not need. */}
-          <div className="flex items-center justify-center">
-            <Link
-              href={commanderDetailHref(c.slug, avail)}
-              className="relative z-[2] flex h-[32px] items-center rounded-full border border-[color:var(--border-strong)] bg-[color-mix(in_oklab,var(--bg)_50%,transparent)] px-[12px] font-mono whitespace-nowrap text-[color:var(--fg-body)] opacity-0 transition-opacity group-hover:opacity-100 focus-visible:opacity-100"
-              style={{ fontSize: 11 }}
-            >
-              {commandersCopy.row.action}
-            </Link>
-          </div>
+          {/* No trailing `Start this deck` pill. It was revealed on hover, and a
+              control revealed on hover has to be discovered by accident — there
+              is no hover on a phone, which is why the band never drew it there.
+              It also pointed at the destination the whole row already carries
+              (the stretched link above, with its own accessible name), so the
+              row loses no action by losing it. */}
         </div>
       </div>
 
@@ -418,11 +416,12 @@ export function RecCard(props: RecCardProps) {
         </div>
 
         {/* ── Desktop data. The band's column template again, so the evidence
-            starts under the name rather than under the rank. ── */}
+            starts under the name rather than under the rank. Its trailing 32px
+            track is dropped with the band's — nothing was ever placed in it. ── */}
         <div
           className="relative hidden sm:grid p-[24px_26px]"
           style={{
-            gridTemplateColumns: "24px 1fr 206px 32px",
+            gridTemplateColumns: "24px 1fr 206px",
             gap: 20,
             alignItems: "start",
           }}

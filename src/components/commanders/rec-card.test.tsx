@@ -155,11 +155,13 @@ describe("RecCard row shape", () => {
     expect(screen.getAllByText("6 already in use")).toHaveLength(2);
   });
 
-  // No header CTA, and no second copy on the phone: the row is the action, so
-  // exactly one link names it.
-  it("names its action exactly once", () => {
+  // The hover-revealed `Start this deck` pill is gone: the row itself is the
+  // link, so nothing names the action a second time and nothing appears only
+  // under a pointer.
+  it("draws no Start this deck pill", () => {
     card();
-    expect(screen.getAllByRole("link", { name: commandersCopy.row.action })).toHaveLength(1);
+    expect(screen.queryAllByRole("link", { name: "Start this deck" })).toHaveLength(0);
+    expect(screen.queryAllByText("Start this deck")).toHaveLength(0);
   });
 });
 

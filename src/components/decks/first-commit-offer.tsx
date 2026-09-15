@@ -19,7 +19,13 @@ export function FirstCommitOffer({ deckId }: { deckId: string }) {
       >
         {copy.firstCommitCta}
       </Link>
-      <span className="font-mono text-[10px] leading-[1.45] text-[color:var(--fg-locked)]">
+      {/* Capped, so the sentence wraps to the two lines the canvas draws it on.
+          Uncapped it is one ~318px line, and in the desktop spine — where this
+          offer sits in a row that sizes to its content — those 318px came out
+          of the title column, which reached 0px: the deck's name, its commander
+          line and its progress bar all measured zero and drew nothing. The cap
+          is what makes the wrapper's `flex-wrap` above reachable at all. */}
+      <span className="font-mono max-w-[188px] text-[10px] leading-[1.45] text-[color:var(--fg-locked)]">
         {copy.firstCommitNote}
       </span>
     </div>
