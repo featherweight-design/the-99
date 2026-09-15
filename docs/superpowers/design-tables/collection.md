@@ -993,14 +993,29 @@ illustrations, drawn as art and never masked or tinted.
 
 **Added 2026-09-15.** A `split`, `adventure` or `prepare` card prints two real
 castable costs on one piece of card stock (`Repudiate // Replicate` is
-`{G/U}{G/U} // {1}{G}{U}`), and this surface draws both — the only one that
-does. The mark between them is the same `//` the printed name carries, so the
-two separators on the card agree. It is punctuation between two costs, not a
-third cost, which is why it takes the muted ink and no ground.
+`{G/U}{G/U} // {1}{G}{U}`), and this surface draws both. The mark between them
+is the same `//` the printed name carries, so the two separators on the card
+agree. It is punctuation between two costs, not a third cost, which is why it
+takes the muted ink and no ground.
 
 A cost in a row keeps the front half alone: the 72px track caps at five pips and
 cannot hold two costs and a separator, and that reader is one tap from this
 modal.
+
+**Two surfaces draw both halves, and the difference between them is the
+question each asks** (amended 2026-09-15, `CostPips` gains `allFaces`):
+
+| Surface | Draws | Gate |
+|---|---|---|
+| The card modal, and `/collection/proxies` | Every printed cost, `//` between | Does the card print ANY cost |
+| Every run in a column | The front half alone | `hasFrontFaceCost` |
+
+The proxy sheet is the second one because it stands in for the card you play
+with: a proxy of `Repudiate // Replicate` carrying one of its two costs is a
+card you cannot cast the other half of. Its gate differs for the same reason —
+a card whose front is a land and whose back is a spell has no front cost and a
+real back one, and on a printed sheet that is the cost the reader needs, where
+a row deliberately draws nothing for it.
 
 **A castable back face counts as a second cost.** Scryfall keeps a two-sided
 card's costs in `card_faces` rather than at the top level, and the ingest joins
