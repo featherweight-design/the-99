@@ -451,7 +451,7 @@ State 2. Placement: **in the spine, beside `Export`** — not in a banner.
 
 | Property | Mobile | Desktop |
 |----------|--------|---------|
-| wrapper display / align-items / gap / flex-wrap | (same rule) | `flex` · `center` · `12px` · `wrap` |
+| wrapper | **RETIRED 2026-09-15**, with the note it was arranging — `flex` · `center` · `12px` · `wrap` described a row holding the control and the note, and the offer is now the control alone. A flex container around a single item decides only how much of the row that item claims, which is the property that zeroed the deck's title column. Do not restore it. |
 | button font-family / weight / size | (same rule) | `var(--font-sans)` · `500` · `13px` |
 | button color | (same rule) | `#EDE6D8` (`--fg`) |
 | button background | (same rule) | none — **outline/ghost, never the cream primary** |
