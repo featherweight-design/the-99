@@ -170,8 +170,9 @@ export function Decklist({
   const view = storedView ?? "list";
 
   // The marks this view actually contains, which is what the key decodes. Only
-  // the current view's rows: a legend naming a mark the reader cannot see on
-  // screen teaches the wrong thing, and an empty one is furniture.
+  // what the current view DRAWS — rows under `Shopping` and under `All`'s list,
+  // tiles under `All`'s card view: a legend naming a mark the reader cannot see
+  // on screen teaches the wrong thing, and an empty one is furniture.
   // The marks this view contains, decoded by a CANONICAL sample of each — not by
   // the live component at whatever density the rows happen to be drawing.
   //

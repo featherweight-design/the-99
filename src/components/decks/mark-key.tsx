@@ -1,5 +1,5 @@
 // MarkKey — one line under the decklist toolbar that decodes the marks on the
-// rows below it.
+// rows — or, since card captions (R1), the card tiles — below it.
 //
 // It exists because the marks are one character each. A glyph identifies and
 // cannot teach, so something on the surface has to say the word — and once marks
