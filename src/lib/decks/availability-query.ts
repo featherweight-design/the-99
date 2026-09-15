@@ -77,10 +77,12 @@ const claimModel = (userId: string) => sql`
   -- list card and for either commander, with no per-arm reasoning and no arm
   -- that can be forgotten when a seventh is added.
   --
-  -- It is also membership-scoped for free: every arm here IS a membership
-  -- statement, so a proxy row whose card has left the deck matches no arm and
-  -- does nothing. That is what lets the six paths that delete or replace
-  -- deck_cards wholesale leave deck_proxies alone.
+  -- It is membership-scoped for free: every arm here IS a membership statement,
+  -- so a proxy row whose card has left matches no arm. That is defence in depth
+  -- and NOT the lifecycle guarantee — an unread row matches again the moment the
+  -- card returns, so the six writes that can shrink a list each reconcile via
+  -- pruneOrphanProxies. Note too that a sleeved deck claims from
+  -- deck_version_cards, so this scoping does not even see a draft removal.
   all_claims as (
     select * from (
     select nv.deck_id, vc.oracle_id, vc.quantity, vc.since, false as is_commander

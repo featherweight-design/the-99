@@ -54,11 +54,30 @@ describe("proxy rows are reconciled wherever deck membership shrinks", () => {
     expect(offenders).toEqual([]);
   });
 
+  // The ordering is load-bearing on exactly one path and invisible to the guard
+  // above, which only asks whether a prune appears SOMEWHERE in the transaction.
+  // `restoreDraftFromVersion` replaces the whole list — delete, then reinsert
+  // from the version — so a prune placed beside the delete would reconcile
+  // against an empty list and drop the proxies of every card the version
+  // restores. It has to run after the rewrite.
+  it("prunes after the rewrite, not beside the delete, when the list is replaced", () => {
+    const source = readFileSync("src/lib/decks/versions.ts", "utf8");
+    const block = transactionBlocks(source).find((b) => /\.delete\(deckCards\)/.test(b));
+    expect(block).toBeDefined();
+    const reinsert = block!.lastIndexOf(".insert(deckCards)");
+    const prune = block!.indexOf("pruneOrphanProxies(");
+    expect(reinsert).toBeGreaterThan(-1);
+    expect(prune).toBeGreaterThan(reinsert);
+  });
+
   it("covers every file that deletes deck_cards at all", () => {
     // The list above is a list, so it can go stale in the other direction: a
     // NEW file that deletes deck_cards would simply not be tested.
     const all = readdirSync("src", { recursive: true, encoding: "utf8" })
-      .filter((file) => file.endsWith(".ts") && !file.includes(".test."))
+      // `.tsx` as well: a server action lives beside its component often enough
+      // that a future `delete(deckCards)` could land in one, and a guard that
+      // swept only `.ts` would pass while missing it entirely.
+      .filter((file) => /\.tsx?$/.test(file) && !/\.test\./.test(file))
       .map((file) => `src/${file}`)
       .filter((file) => /\.delete\(deckCards\)/.test(readFileSync(file, "utf8")));
     expect(all.sort()).toEqual([...FILES].sort());

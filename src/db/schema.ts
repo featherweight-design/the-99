@@ -327,12 +327,16 @@ export const deckCards = pgTable("deck_cards", {
  * No quantity. A proxy covers the deck's whole ask for the card; Commander is a
  * singleton format and the multi-copy exceptions would be printed as a set.
  *
- * A ROW IS INERT UNLESS THE CARD IS IN THE DECK. Every read joins against
- * current membership — a `deck_cards` row, or either commander column — so a row
- * whose card has since left does nothing at all. That is what lets six separate
- * paths delete or replace `deck_cards` wholesale without any of them remembering
- * to prune, and it is why a card returning to a deck is never silently already
- * proxied.
+ * A REMOVED SLOT TAKES ITS PROXY WITH IT. `pruneOrphanProxies` reconciles this
+ * deck's rows against current membership, and all six writes that can shrink a
+ * list call it inside their own transaction. That — not the reads — is what
+ * stops a card returning to a deck silently already proxied: an orphan row that
+ * merely went unread would match again the moment the card came back.
+ *
+ * The reads are membership-scoped as well, as defence in depth behind the
+ * prune. Note that a committed deck's claims come from `deck_version_cards`
+ * rather than `deck_cards`, so read-side scoping alone would not even cover a
+ * draft removal from a sleeved deck.
  *
  * `created_at` is not decoration: `/collection/proxies` orders on it, and it is
  * the only record of when a printed copy entered a deck.

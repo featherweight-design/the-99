@@ -91,6 +91,11 @@ record of when a printed copy entered a deck.
 row, or either of `decks.commander_oracle_id` / `partner_oracle_id`. A row whose
 card has since left the deck therefore does nothing while it is absent.
 
+That scoping is narrower than it first appears, which is the second reason it
+cannot be the guarantee: a **committed** deck claims from `deck_version_cards`,
+not from `deck_cards`, so a card removed from a sleeved deck's draft is still
+claimed by its version — and the proxy row is still matched against it.
+
 **That is defence in depth, and it is not the guarantee.** The first version of
 this spec said it was, and that was wrong: an inert row is not a gone row, and
 re-adding the same card makes the anti-join match it again, so the card arrives
