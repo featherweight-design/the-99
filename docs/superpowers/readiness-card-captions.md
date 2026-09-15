@@ -27,7 +27,7 @@ that landed after it was drawn.
 | `✕` floor 44 phone / 32 desktop, desktop hover-revealed | `:260` | ✅ |
 | Card view is `All`-only | `decks/group-toggle.tsx:304` | ✅ |
 | `isShoppingCard` tests `proxied` before ownership | `lib/decks/shopping.ts:33-38` | ✅ |
-| `MarkKey` draws nothing in card view | `decks/decklist.tsx:198` | ✅ drawn nothing — but **not** a one-line fix, see erratum 7 |
+| `MarkKey` drew nothing in card view | `decks/decklist.tsx:198`, as audited | ✅ at audit time. **Superseded**: erratum 7 said this was not a one-line fix, and Design's `ADDENDUM-the-key.md` then overturned the withdrawal — the guard is now a branch and card view has its key. See erratum 7's overturn and erratum 9 |
 | Buy tag and proxy mark share one slot | `STATES-proxies.md:27-30`, `deckRowTag` | ✅ |
 | Phone set line drops the rarity | `collection/grid-view.tsx:110-111` | ✅ |
 | Art arithmetic — 178→249px, 175→244px at 63/88 | computed | ✅ |

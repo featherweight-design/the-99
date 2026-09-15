@@ -224,10 +224,21 @@ Ledger 7. `usePendingChange` gains its second consumer.
 **Ledger 10, severable.** `×1` suppressed on `/collection`, matching the deck tile. The meta line
 makes the redundancy louder by putting the count beside a chip. One condition, one line.
 
-**Ledger 9 is withdrawn** — readiness erratum 7. `MarkKey` above the card grid is not a dropped
-guard: `decklist.tsx:185-196` records it as an argued scope decision, and the tile's `$` says
-*not owned* where the row's identical glyph says *to buy*. A legend cannot decode both. It is an
-open question with Design, not a task here.
+**Ledger 9 was withdrawn, and is now SHIPPED** — the record in full, because a plan that stopped at
+the withdrawal would tell future acceptance work the card-view key is intentionally absent.
+
+Erratum 7 withdrew it: `decklist.tsx:185-196` recorded the guard as an argued scope decision, and the
+tile's `$` says *not owned* where the row's identical glyph says *to buy*. That went back to Design
+as the one open question of this feature.
+
+Design answered with `ADDENDUM-the-key.md` and overturned it on a better argument than the erratum
+had. The two glyphs mark two different SETS of cards — `deckRowTag` returns `buy` for
+`!owned || spokenFor` and only the row passes `spokenFor` — so no one word is true of both, and
+shared copy was never available. But `P` is `card.proxied` on both, so **the divergence is one word
+wide**. Two keys differing by one entry are not a third vocabulary.
+
+Shipped as 9a–9d in its own PR: one sibling string (`key.regionAriaCards`), one optional prop on
+`MarkKey`, and the guard becomes a branch. Samples unchanged — readiness erratum 9.
 
 ## Out of scope
 
