@@ -1,6 +1,6 @@
 # READINESS — commander availability (R1)
 
-**Verdict: GREEN, with six errata and one drawn defect.**
+**Verdict: GREEN, with seven errata and one drawn defect.**
 
 Audited 2026-09-15 against `origin/main` at `d250ca83`. Every claim below was read on that commit.
 
@@ -29,8 +29,13 @@ contradicted by the handoff's own STATES table, so the spec already says which w
   (`card.owned`), not `update-diff-row`'s (has-a-free-copy). It is the right answer for a browsing
   surface and it is the one this audit accepts, but Design chose it without knowing the two shipped
   surfaces disagree.
-- **§4.7** (the synergy row's accessible name) is answered by ledger 4: `rowAria` calls
-  `markerAria(a)`.
+- **§4.7** (the synergy row's accessible name) is **NOT closed**, and an earlier draft of this audit
+  wrongly said it was. Ledger 4 has `rowAria` call `markerAria(a)`, which covers the three marker
+  readings — but the unowned reading draws a priced `BuyTag`, not a marker, and `markerAria` returns
+  `null` there (`availabilityState` reports `free` at `owned <= 0`; an unowned card has no map entry
+  at all). The `<li>`'s `aria-label` **replaces** everything beneath it, so the visible `buy · $4.50`
+  is drawn and never spoken. **`rowAria` needs a price clause — and a sold-out clause — beside the
+  severity one.** The wording is Design's; the gap is real and blocks §4.7.
 
 ---
 
@@ -81,8 +86,11 @@ not a fix. Eng may add one matching `:162`; it does not need a Design round.
    synergy row is given `#211C15`; it is `var(--elevated-hover)`, **`#201C17`** (`:27`). Only
    `--surface` `#1E1A15` is correct (`:21`).
 
-   The arithmetic matters less than the form: `seam` must be passed as `var(--surface-raised)` and
-   `var(--elevated-hover)`, never a resolved hex. A frozen hex is correct in one theme and paints a
+   **Three places carry the hexes, not one** — §4.4's table, `STATES:71`, and ledger 1 at
+   `README:188` — so the correction is made in all three or an engineer follows whichever they read.
+
+   The arithmetic matters less than the form: `seam` must be passed as `var(--surface-raised)`,
+   `var(--surface)` and `var(--elevated-hover)`, never a resolved hex. A frozen hex is correct in one theme and paints a
    hairline crack in the other five — the exact bug `CHIP_SKIN`'s own comment records fixing
    ("so a theme change carries the chip with it instead of leaving one fixed dark rectangle").
 
@@ -98,16 +106,23 @@ not a fix. Eng may add one matching `:162`; it does not need a Design round.
    `color-mix(in_srgb, var(--danger) 40%, var(--bg))`, matching the free branch's form, and the design
    table's three `#6B3226` rows want a separate erratum against the theme system. Not this round's.
 
-4. **Design worked from the pre-round-1 brief.** READINESS dependency 3 quotes §5 as "six themed
-   values" that "lands on every ownership dot in the app at once". The merged §5 asks for **one
-   Canopy value**: nine tokens are identical across all six themes, 37 files read `--success`, and
+4. **Design worked from the pre-round-1 brief, in two places.** READINESS dependency 3 and the
+   README's out-of-scope list (`:238`) both quote §5 as "six themed values" that "lands on every
+   ownership dot in the app at once", and both say "Design owes six values". The merged §5 asks for
+   **one Canopy value**: nine tokens are identical across all six themes, 37 files read `--success`, and
    only Canopy's palette has the clash. Out of scope for this round either way.
 
 5. **Design's gap 3 is already answered.** `RoleCard` gaining an availability field, versus passing
    the map as a second argument to `sortRoleCards`, is named in the merged brief's §7 with both
    options and the note that the shipped signature supports neither as written.
 
-6. **Design's gap 1 duplicates erratum 1**; gap 4 (the key's pip baseline) is a one-line eng check
+6. **Ledger 7 deletes `LegendPip` without naming its second caller.** `synergy-panel.tsx:259-264`
+   renders `LegendPip` three times and all three `dot*` strings. Ledger 7 deletes `LegendPip` and
+   ledger 6 deletes `dotCommitted`, and no ledger row covers that file — so the round as written is a
+   typecheck failure, and K.4's always-on `Owned.` / `Not owned.` legend never gets implemented.
+   **`synergy-panel.tsx` needs its own ledger row**, alongside `coverage-section.tsx`'s.
+
+7. **Design's gap 1 duplicates erratum 1**; gap 4 (the key's pip baseline) is a one-line eng check
    against `LegendPip`'s inline offsets (`ownership-dot.tsx:103-114`), which are `marginRight: 5`,
    `verticalAlign: baseline`, `top: -0.5`.
 
