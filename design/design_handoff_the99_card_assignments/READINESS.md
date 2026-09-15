@@ -106,7 +106,10 @@ written.
 
 ## Metrics
 
-- Deck option **44px one-line, 52px two-line**. The two-line form is chosen by **column width, not
+- Deck option **44px one-line, 52px two-line**. ⚠ *Amended: the deck-page panel is dropped, so the
+  two-line form is the 390px option only and the desktop `/changes` panel takes the one-line form.
+  The column-width rationale below is kept as the record of why the two-line form exists at all.*
+  The two-line form is chosen by **column width, not
   viewport width**: it is the 390px option *and* the deck-page panel's option at any width, since
   that panel's column is 345px — within a hair of the phone option's 336px — where a one-line
   option's fixed content (274px + 33px gaps + 20px padding) leaves the deck name 18px. Leading with `filter-panel.tsx`'s single-select
@@ -140,7 +143,7 @@ written.
   to fix — the link can take `--accent-hover` if the ruling goes that way.
 - `#6FA368` and `#E0913C` on `#1A1713` carry outcomes and clear 4.5:1 at mono 11px.
 - `your call` is `#14110E` on `#C9A24B` — the brand's own inverse pairing.
-- The deck-page trigger is the **shipped** `over` marker, unaltered: doubled `--danger` glyph with a
+- ⚠ *Superseded — no deck-page trigger is built.* The deck-page trigger is the **shipped** `over` marker, unaltered: doubled `--danger` glyph with a
   seam-coloured left border on the front diamond, label `--avail-over-fg` (`#E9917A`). **No accent
   is spent** — it stays reserved for *in use* / *to buy*.
 - Refusal note is `#C6B79A` / `#EDE6D8` on `#1A1310`; **the red is a 3px rule, never the text.**
@@ -185,8 +188,8 @@ hexes in frames 1–8.**
   name.
 - **Two live-region messages, never more:** one per settled pick, naming both sides of the trade;
   one per refusal, verbatim.
-- Focus: after a pick, the option tapped; after a refusal, the message; on the deck page, the
-  marker trigger.
+- Focus: after a pick, the option tapped; after a refusal, the message. *(The third clause named
+  the deck-page marker trigger, which is not built.)*
 - `Done` is a link, not a submit.
 
 ## Open, non-blocking

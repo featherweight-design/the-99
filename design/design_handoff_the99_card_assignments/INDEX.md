@@ -1,5 +1,19 @@
 # INDEX — assigning a contested copy
 
+> ## ⚠ AMENDED 2026-09-14 — read this before any line below
+>
+> **The deck-page door is dropped.** The availability marker stays inert in every state
+> (`availability-marker.tsx`'s shipped ruling holds), and the chooser appears on the post-import
+> summary and on `/decks/[id]/changes` only. **Any line anywhere in this file that specifies a
+> deck-page panel, a marker trigger or disclosure, focus returning to a marker, or the compact
+> two-line option at desktop is superseded and is not to be built.** The compact option survives
+> as the 390px form; the desktop `/changes` panel takes the one-line option, to be measured
+> against the real column when it is built.
+>
+> R2's own text is kept intact as the record of what was asked for and why. `READINESS.md`'s
+> amendment is the authority.
+
+
 **Read in this order.**
 
 | File | What it is |

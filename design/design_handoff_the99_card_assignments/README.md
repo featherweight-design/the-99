@@ -1,5 +1,19 @@
 # The 99 — Assigning a contested copy (design handoff, R2)
 
+> ## ⚠ AMENDED 2026-09-14 — read this before any line below
+>
+> **The deck-page door is dropped.** The availability marker stays inert in every state
+> (`availability-marker.tsx`'s shipped ruling holds), and the chooser appears on the post-import
+> summary and on `/decks/[id]/changes` only. **Any line anywhere in this file that specifies a
+> deck-page panel, a marker trigger or disclosure, focus returning to a marker, or the compact
+> two-line option at desktop is superseded and is not to be built.** The compact option survives
+> as the 390px form; the desktop `/changes` panel takes the one-line option, to be measured
+> against the real column when it is built.
+>
+> R2's own text is kept intact as the record of what was asked for and why. `READINESS.md`'s
+> amendment is the authority.
+
+
 **Gates PRs 3 and 4** of `docs/superpowers/specs/2026-09-14-card-assignments-design.md`
 (read at `main`, commit-of-record `b734d741bb5f`). Also read: `src/lib/copy/availability.ts`,
 `src/components/ui/availability-marker.tsx`, `src/lib/copy/deck-versioning.ts` §review.
@@ -75,7 +89,7 @@ the same silence the ticket is about.
 | 4 | **Four refusal causes, three drawable** — added *the card is that deck's own commander*, which R1 ruled unreachable. A stale payload reaches it. |
 | 5 | **Commander *and* list copy on one row.** A folded claim is part commander, part list card; only the commander half is protected. R1's "the whole row goes inert" would have hidden a legal choice. |
 | 6 | **Brews claim and cannot be listed.** Assignments are refused for decks with no committed version, so the supply line counts **committed decks** and a footnote names the brew. |
-| 7 | **The second door is two surfaces** — `/decks/[id]/changes` **and the deck page marker**. R1 drew one. |
+| 7 | *Amended: ONE surface — `/changes`. The deck page half is dropped.* **The second door is two surfaces** — `/decks/[id]/changes` **and the deck page marker**. R1 drew one. |
 | 8 | **`in the box` and `spoken for` retired** (vocabulary rulings 2 and 3). |
 | 9 | **`holds`/`wants` considered and rejected** (ruling 4). |
 
@@ -281,6 +295,7 @@ panel** with the app's brass-violet left rule. Two geometries, two meanings; the
 held rather than bent. The caption `no list changes` is the one place the distinction is spelt out
 on these surfaces — a caption, not a warning, because giving is the safe action.
 
+**⚠ SUPERSEDED — the deck-page panel is dropped; this paragraph describes no surface being built.**
 **The deck page's panel takes the two-line option at every width, and that is a ruling rather than a
 fallback.** It hangs inside the decklist column at **345px — within a hair of the phone option's own
 336px** — and a one-line option there spends 274px on mark, stamp and outcome, plus 33px of gaps and
@@ -393,7 +408,7 @@ depends on which accent is in force: every ruling is about *which token*, not wh
 | 4 | Summary at 390 (incl. a row mid-choice) | — | ✓ |
 | 5 | Contested row: default · after a pick · commander holds the only copy · commander + list copy · three refusals | ✓ | ✓ (in 4) |
 | 6 | Two demands, one card | ✓ | — |
-| 7 | The second door — `/changes` and the deck page marker | ✓ | — |
+| 7 | The second door — `/changes` only; the deck page marker is dropped (amended) | ✓ | — |
 | 8 | The seam with the shipped replace flow | ✓ | — |
 | 9 | The picked row in **all six themes**, from `globals.css` | ✓ | — |
 | 10 | The contract | ✓ | — |
@@ -433,8 +448,8 @@ depends on which accent is in force: every ruling is about *which token*, not wh
 - **Two live-region messages, never more:** one per settled pick, naming both sides
   (`Lotleth Aggro gets Fauna Shaman. Sidisi Graveyard buys it, $32.90.`), one per refusal, verbatim.
   **No motion anywhere.**
-- **Focus:** after a pick, the option tapped; after a refusal, the message; on the deck page, the
-  marker trigger.
+- **Focus:** after a pick, the option tapped; after a refusal, the message. *(The deck-page marker
+  clause is superseded — that surface is not built.)*
 
 ## Open questions (both need a ruling before PR 4)
 

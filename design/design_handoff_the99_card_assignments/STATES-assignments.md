@@ -1,5 +1,19 @@
 # States — post-import summary and the contested row (R2)
 
+> ## ⚠ AMENDED 2026-09-14 — read this before any line below
+>
+> **The deck-page door is dropped.** The availability marker stays inert in every state
+> (`availability-marker.tsx`'s shipped ruling holds), and the chooser appears on the post-import
+> summary and on `/decks/[id]/changes` only. **Any line anywhere in this file that specifies a
+> deck-page panel, a marker trigger or disclosure, focus returning to a marker, or the compact
+> two-line option at desktop is superseded and is not to be built.** The compact option survives
+> as the 390px form; the desktop `/changes` panel takes the one-line option, to be measured
+> against the real column when it is built.
+>
+> R2's own text is kept intact as the record of what was asked for and why. `READINESS.md`'s
+> amendment is the authority.
+
+
 Two tables. **A** is the summary route; **B** is `ContestedCardRow`, identical on the summary and
 `/decks/[id]/changes`.
 
@@ -58,6 +72,6 @@ Two tables. **A** is the summary route; **B** is `ContestedCardRow`, identical o
 | 41 | ~~**On the deck page**~~ **— DROPPED 2026-09-14, not built** | The `over`-state marker is the disclosure trigger (`short 1, also in Sidisi Graveyard`). Closed by default, one open at a time, never reflows the list. `free`/`soft`/`hard` are never triggers. **The panel uses the compact two-line option at any width** — the decklist column is 345px, within a hair of the phone option's 336px, and a one-line option's fixed content leaves the deck name 18px. ⚠ Contradicts a shipped ruling — README decision 10. |
 | 42 | **One claimant left** | Not contested; the row does not exist. Reached from 29 on the next load. |
 | 43 | **No shortage** | The row does not exist. Assignments are inert without contention. |
-| 44 | **Compact option · 390px and the deck-page panel** | Two-line, 52px: deck name over outcome, stamp demoted to the outcome line, `this deck` a `flex:none` plate on the name line. **The deck name never truncates to fit a price, and the stamp never truncates at all.** Chosen by column width, not viewport width. |
+| 44 | **Compact option · 390px only** *(the deck-page panel it also named is dropped)* | Two-line, 52px: deck name over outcome, stamp demoted to the outcome line, `this deck` a `flex:none` plate on the name line. **The deck name never truncates to fit a price, and the stamp never truncates at all.** Chosen by column width, not viewport width. |
 | 45 | **Keyboard** | `role=radiogroup` labelled by the heading; arrows move; Space/Enter selects, and on the selected option clears. **`aria-checked` is the whole authorship model** — checked means *you chose this*, unchecked with a filled mark means *it holds a copy by default*. Neutral fills are `aria-hidden` and each option's outcome carries the allocation into its accessible name. Inert options are skipped and carry the tag word in their accessible name. |
 | 46 | **Themes** | All six `[data-theme]` blocks, no variant. Every mark value is a token: neutral fill `--fg-body`, picked fill `--accent`, empty ring and inert fill `--fg-faint`, dot `--bg`. **Canopy and Low Sun are the two themes where hue cannot separate a pick from an outcome** — the footer sentence, which names the deck, does. |
