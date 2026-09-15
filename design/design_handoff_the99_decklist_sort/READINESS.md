@@ -104,7 +104,10 @@ The trade is legible enough to decide on the spot: **six labels become two**, th
 question above disappears entirely, and `A–Z` disappears with it. My read is that §2.3 is the more
 valuable of the two decisions and `A–Z` is the proof of it, so R1 draws the ruled shape — but the
 reference's own trigger independently matches decision 7, which is some evidence its authors
-thought about the same row we did. Drawn and argued in the canvas's §6b; **not decided here.**
+thought about the same row we did. Drawn and argued in the canvas's §6b.
+
+**Decided 2026-09-14: R1's shape stands.** Direction stays re-pick, there is no Ascending /
+Descending group, §2.2 and §2.3 both hold, and the component `/collection` shares is untouched.
 
 ---
 

@@ -172,7 +172,18 @@ export function GroupToggle({
             at 2px of margin. The wrapper is absent entirely when there is
             neither a note nor an auto cluster, rather than collecting a gap. */}
         {(draftNote || autoControls) && (
-          <span className="flex-none flex flex-wrap items-center gap-[8px]">
+          <span
+            /* The wrapper takes its CONTENTS' breakpoint, exactly as
+               `clear-auto.tsx` makes its own take the kept note's. Below `md:`
+               both notes are hidden and a zero-count auto cluster renders
+               nothing, so an unconditional wrapper would be an empty flex child
+               collecting the toolbar's 7px gap and spacing the row for content
+               nobody can see. `empty:hidden` covers the remaining case — a
+               wrapper whose children all declined to render at this width. */
+            className={`flex-none flex-wrap items-center gap-[8px] empty:hidden ${
+              autoCount > 0 ? "flex" : "hidden md:flex"
+            }`}
+          >
         {draftNote && (
           <span className="font-mono text-[11.5px] text-fg-locked hidden md:inline">
             {draftNote}
@@ -209,7 +220,10 @@ export function GroupToggle({
           aria-hidden
           className="hidden md:block h-[22px] w-px flex-none bg-[color:var(--border-strong)]"
         />
-        <span className="flex-none flex items-center gap-[7px] md:gap-[10px]">
+        {/* A `div`, not a `span`: this cluster holds `FilterPanel`, whose root
+            is a block element, and `<span><div/></span>` is invalid markup that
+            React warns about at runtime. */}
+        <div className="flex-none flex items-center gap-[7px] md:gap-[10px]">
         {/* By type — active: dark pill with border | idle: plain muted text */}
         {/* Mobile active: px-10 py-4; Desktop active: px-13 py-5              */}
         {/* Mobile idle:   px-6 py-4 no border; Desktop idle: px-13 py-5 border */}
@@ -277,7 +291,7 @@ export function GroupToggle({
         {filter === "all" && (
           <ViewToggle options={DECK_VIEWS} value={view} onChange={onViewChange} />
         )}
-        </span>
+        </div>
       </div>
 
       {/* Scoped to the filter it sits under: the sum of what Shopping is
