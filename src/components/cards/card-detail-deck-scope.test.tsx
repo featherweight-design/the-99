@@ -22,7 +22,11 @@ const card = (over: Partial<BrowseCard> = {}) => ({
   oracleId: "held", name: "The Ozolith", typeLine: "Legendary Artifact",
   manaCost: "{1}", cmc: 1, oracleText: null, keywords: [],
   rarity: "rare" as const, colorIdentity: [], imageUri: null,
-  printings: [], owned: [], ...over,
+  printings: [], owned: [],
+  // A READ state, not an absent one: undefined means the proxy query failed,
+  // which correctly disables the control — and would make these tests measure
+  // the failure path while claiming to measure scoping.
+  proxiedBy: [], ...over,
 }) as unknown as BrowseCard;
 
 function Open({ id }: { id: string }) {
