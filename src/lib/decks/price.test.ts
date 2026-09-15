@@ -1,10 +1,10 @@
 import { describe, expect, it } from "vitest";
 import {
   PRICE_STALE_AFTER_DAYS,
-  comparePriceDesc,
   formatCents,
   formatPriceFigure,
   parseAsOf,
+  priceRank,
   priceState,
   provenanceForm,
   summarisePrices,
@@ -176,97 +176,57 @@ describe("parseAsOf", () => {
   });
 });
 
-// The Shopping list's order. It ranks on the figure the row DRAWS — through
-// `priceState` and `priceOf`, the same pair the tag renders — so a row and its
-// place in the list can never disagree about what this card costs.
-describe("comparePriceDesc", () => {
-  // The id doubles as the fixture's handle and as the comparator's last clause,
-  // so a case that needs two rows to differ only by id says so by name.
-  const card = (name: string, price: PriceFact | null, oracleId = name) =>
-    ({ oracleId, name, price });
-
-  const order = (cards: { oracleId: string; name: string; price: PriceFact | null }[]) =>
-    cards.slice().sort((a, b) => comparePriceDesc(a, b, NEWEST)).map((c) => c.name);
-
-  it("puts the dearest card first", () => {
-    expect(order([
-      card("cheap", fact({ cents: 85 })),
-      card("dear", fact({ cents: 18999 })),
-      card("middling", fact({ cents: 3410 })),
-    ])).toEqual(["dear", "middling", "cheap"]);
+// The figure a row draws, which is what every order in the app ranks on. The
+// comparator that used to live beside it is `sort-cards.ts`'s now; this is the
+// half that answers "what does this row say it costs".
+describe("priceRank", () => {
+  it("is the live figure when there is one", () => {
+    expect(priceRank({ price: fact({ cents: 18999 }) }, NEWEST)).toBe(18999);
   });
 
-  // A foil-only row draws the foil figure, so that is the figure it is ranked
-  // on. Ranking it at zero would file a $40 foil under the 85c commons.
-  it("ranks a foil-only row by the figure its tag prints", () => {
-    expect(order([
-      card("normal", fact({ cents: 500 })),
-      card("foil only", fact({ foilCents: 4000 })),
-      card("etched only", fact({ etchedCents: 100 })),
-    ])).toEqual(["foil only", "normal", "etched only"]);
+  // The figure ON THE TAG. A foil-only row prints its foil price, so that is
+  // what it is ranked on; ranking it at zero would file a $40 foil under the
+  // 85-cent commons.
+  it("is the foil figure on a foil-only row, and the etched one on an etched row", () => {
+    expect(priceRank({ price: fact({ foilCents: 4000 }) }, NEWEST)).toBe(4000);
+    expect(priceRank({ price: fact({ etchedCents: 100 }) }, NEWEST)).toBe(100);
   });
 
-  // Neither is a price of zero: one has sold out and the other was never
-  // stocked. Sorted as 0 they would read as the cheapest things on the list,
-  // which is the one reading the feed's absence must never produce. The two are
-  // ranked EQUAL and fall to the name — the list draws no figure for either, so
-  // ordering one above the other would state a difference nothing on screen
-  // shows. The stale row's own last price is deliberately not used: it is what
-  // the card cost when it was last stocked, not what buying it costs today.
-  it("sends a sold-out row and a never-stocked row to the end, in name order", () => {
-    expect(order([
-      card("sold out", fact({ cents: 9999, asOf: OLDER })),
-      card("priced", fact({ cents: 1 })),
-      card("never stocked", null),
-    ])).toEqual(["priced", "never stocked", "sold out"]);
+  // Neither is a price of zero: one sold out and the other was never stocked.
+  it("is null for a sold-out row and for one that was never stocked", () => {
+    expect(priceRank({ price: fact({ cents: 9999, asOf: OLDER }) }, NEWEST)).toBeNull();
+    expect(priceRank({ price: null }, NEWEST)).toBeNull();
+    expect(priceRank({}, NEWEST)).toBeNull();
   });
 
-  // Without a tiebreak the order falls out of however the rows arrived, so two
-  // reads of one unchanged list can differ — and the test that pins the order
-  // passes or fails by luck.
-  it("breaks a tie on the name, so the order is stable", () => {
-    expect(order([
-      card("Zealot", fact({ cents: 250 })),
-      card("Acolyte", fact({ cents: 250 })),
-    ])).toEqual(["Acolyte", "Zealot"]);
-    expect(order([
-      card("Zealot", null),
-      card("Acolyte", null),
-    ])).toEqual(["Acolyte", "Zealot"]);
-  });
-
-  // `cards.name` carries no uniqueness constraint and the rows are keyed by
-  // `oracleId`, so two same-named cards at one price would still order by
-  // arrival without this last clause.
-  it("breaks a tie between two cards of the same name on the id", () => {
-    const pair = [
-      card("Forest Bear", fact({ cents: 250 }), "zzz"),
-      card("Forest Bear", fact({ cents: 250 }), "aaa"),
-    ];
-    expect(pair.slice().sort((a, b) => comparePriceDesc(a, b, NEWEST)).map((c) => c.oracleId))
-      .toEqual(["aaa", "zzz"]);
-  });
-
-  // The server renders this list and the browser renders it again. `localeCompare`
-  // reads the runtime's own locale, so a pair it orders one way in Node can come
-  // back the other way in a reader's browser — a hydration difference rather than
-  // a preference. The comparison is by code point for that reason.
-  it("orders equal prices by code point rather than by the runtime's locale", () => {
-    // `ä` sorts beside `a` under most locales' collation and after `z` by code
-    // point, so the two rules disagree on this pair and the assertion can tell
-    // them apart.
-    expect(order([
-      card("äther", fact({ cents: 100 })),
-      card("zephyr", fact({ cents: 100 })),
-    ])).toEqual(["zephyr", "äther"]);
-  });
-
-  // The whole table unreadable is not the same as every card being free: with
-  // no newest timestamp every row is `absent`, and the list keeps the order it
-  // would have had without a feed at all.
-  it("falls back to the name when there is no table to compare against", () => {
-    const cards = [card("Zealot", fact({ cents: 9999 })), card("Acolyte", fact({ cents: 1 }))];
-    expect(cards.slice().sort((a, b) => comparePriceDesc(a, b, null)).map((c) => c.name))
-      .toEqual(["Acolyte", "Zealot"]);
+  // The whole table unreadable is not every card being free.
+  it("is null for every row when there is no table to compare against", () => {
+    expect(priceRank({ price: fact({ cents: 500 }) }, null)).toBeNull();
   });
 });
+
+// `timestamp` without time zone holds a UTC instant, but a driver that hands
+// back the raw string hands back one with no zone marker on it. Read in the
+// runtime's zone, an evening row in Denver dates to the following day in UTC —
+// which is the day the provenance line then names.
+describe("parseAsOf", () => {
+  it("reads a zone-less Postgres string as UTC, not as local time", () => {
+    expect(parseAsOf("2026-09-01 09:00:00").toISOString()).toBe("2026-09-01T09:00:00.000Z");
+  });
+
+  it("keeps microseconds and an explicit zone when the driver supplies one", () => {
+    expect(parseAsOf("2026-09-01 09:00:00.156").toISOString()).toBe("2026-09-01T09:00:00.156Z");
+    expect(parseAsOf("2026-09-01T09:00:00+00:00").toISOString()).toBe("2026-09-01T09:00:00.000Z");
+  });
+
+  it("passes through a Date the driver already parsed", () => {
+    expect(parseAsOf(NEWEST)).toEqual(NEWEST);
+  });
+
+  // An Invalid Date fails every comparison, including its own: `NaN !== NaN`
+  // would read a whole deck as sold out rather than as unreadable.
+  it("throws rather than returning an Invalid Date", () => {
+    expect(() => parseAsOf("not a timestamp")).toThrow(/not a readable timestamp/);
+  });
+});
+

@@ -140,12 +140,15 @@ export function formatPriceFigure(fact: PriceFact, state: PriceState): string | 
 /**
  * The figure this row DRAWS, in cents, or null when it draws none.
  *
- * The one definition of that question. `comparePriceDesc` ranks on it, and so
- * does the deck list's ascending price order, which cannot be a negation of
- * this comparator: negating it would move the figure-less rows to the front and
- * reverse their own tiebreak, so reversing the order would reverse the meaning
- * of "we have no price for this". Both callers therefore ask for the rank and
- * decide what to do with a null themselves.
+ * The one definition of that question, and the whole of what this module says
+ * about ORDER. `sort-cards.ts` owns the comparator; a second one lived here
+ * until 2026-09-14 and the two had drifted apart on their tiebreaks — one on
+ * the oracle name, the other on the name the row actually prints — which is a
+ * disagreement about the same list that nothing would have caught. It has no
+ * callers left and is gone.
+ *
+ * A null is not a zero: the caller decides what "we have no price for this"
+ * means in its order, and in the deck list it means last in BOTH directions.
  */
 export function priceRank(row: PricedRank, newestAsOf: Date | null): number | null {
   const state = priceState(row.price, newestAsOf);
@@ -153,59 +156,12 @@ export function priceRank(row: PricedRank, newestAsOf: Date | null): number | nu
 }
 
 /**
- * The Shopping list's order: dearest first, then everything with no figure at
- * all, and the name as the tiebreak.
- *
- * IT RANKS ON THE FIGURE THE ROW DRAWS. The rank comes out of `priceState` and
- * `priceOf` — the same pair the buy tag renders through — so a row's place in
- * the list and the number printed on it cannot disagree. A foil-only row is
- * ranked on its foil figure for that reason: it is the figure on screen.
- *
- * A `soldOut` or `absent` row has no figure, and that is NOT a price of zero.
- * One has sold out and the other was never stocked; ranked as 0 they would file
- * at the cheap end and read as the bargains of the list, which is the one
- * reading the feed's absence must never produce. They go last, among themselves
- * by name.
- *
- * The name tiebreak is not decoration. Without it the order of two equal prices
- * falls out of however the rows happened to arrive, so two renders of one
- * unchanged list can differ — and any test pinning the order passes by luck.
- * The name is not unique either — `cards.name` carries no constraint and the
- * rows are keyed by `oracleId` — so the id is the last clause rather than the
- * name being trusted to separate every pair.
- *
- * BY CODE POINT, NEVER `localeCompare`, for the same reason `sortDecks` spells
- * out: this list is rendered on the server and again in the browser, and
- * `localeCompare` reads whichever locale the runtime holds. Two equal prices
- * could land in one order in Node and another in a reader's browser, which is a
- * hydration difference rather than a preference.
- */
-export function comparePriceDesc(
-  a: PricedRank,
-  b: PricedRank,
-  newestAsOf: Date | null,
-): number {
-  const left = priceRank(a, newestAsOf);
-  const right = priceRank(b, newestAsOf);
-  if (left !== right) {
-    if (left === null) return 1;
-    if (right === null) return -1;
-    return right - left;
-  }
-  return byCodePoint(a.name.toLowerCase(), b.name.toLowerCase())
-    || byCodePoint(a.oracleId, b.oracleId);
-}
-
-/** See `comparePriceDesc`: locale-free, so the server and the browser agree. */
-const byCodePoint = (a: string, b: string) => (a < b ? -1 : a > b ? 1 : 0);
-
-/**
- * What `comparePriceDesc` needs of a row: the fact the tag reads, and the name
- * that breaks a tie. Structural rather than `Pick<DeckDetailCard, …>` —
+ * What `priceRank` needs of a row: the fact the tag reads, and the name that
+ * used to break its ties. Structural rather than `Pick<DeckDetailCard, …>` —
  * `grouping.ts` imports this module for `PriceFact`, so naming its type here
  * would close the cycle.
  */
-type PricedRank = { oracleId: string; name: string; price?: PriceFact | null };
+type PricedRank = { price?: PriceFact | null };
 
 export type PricedCard = {
   quantity: number;

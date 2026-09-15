@@ -6,8 +6,9 @@ One control, one surface, eight variants. The brief said the placement was the w
 it was right: the menu is a mount of a shipped component with four props, and everything that took
 thought was the row it lands in.
 
-**Green, with one copy call I want a second opinion on and one figure I want re-measured in the
-browser.**
+**Green.** R1 raised one copy call and one figure to re-measure; **both were settled on
+2026-09-14** — the copy call as drawn, and the figure by `pnpm probe:deck-sort`, which measures the
+desktop row with a draft note present. Nothing in this document is open.
 
 ---
 
@@ -84,10 +85,10 @@ anyone adds to it does not fit.
   more. The hairline is the better of the two to spend, since decision 5 already treats it as a
   separator rather than a child.
 
-**Still to re-measure in a browser: the 390px arrangement line at 345 of 358.** Its three governing
-widths (`Name · A–Z` 110, `Price · Highest` 120, `Clear auto · 40` 134) are computed from the
-shipped type stack at the shipped sizes rather than read off a render, and a 4% font-metric
-difference on the trigger closes the gap. The desktop line is now measured; this one is not.
+**Measured 2026-09-14: the 390px arrangement line.** R1 computed it at 345 of 358 from the shipped
+type stack rather than off a render, and noted a 4% font-metric difference on the trigger would
+close the gap. `pnpm probe:deck-sort` reads it in a browser and reports **338px on one line**, with
+the cluster asserted never to split at either width. Both figures are measured now.
 
 ---
 
