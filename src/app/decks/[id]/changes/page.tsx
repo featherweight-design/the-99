@@ -102,7 +102,11 @@ export default async function ChangesPage({
     // Swallowed: the rest of this page already degrades when a claim read fails — `loadDraftRows`
     // catches its own and renders the unknown-claims state — and an uncaught one here would turn
     // the same transient failure into a route error, losing the whole review to lose a panel.
-    loadContestedCards(rows.in.map((r) => r.oracleId), userId).catch(() => []),
+    // PROXIED ADDS EXCLUDED. A printed card asks the collection for nothing — the draft buckets
+    // it as `proxied` precisely because no physical copy is owed — so offering to give it one of
+    // a contested card's copies would let a proxy take a copy off a deck that needs a real one.
+    loadContestedCards(rows.in.filter((r) => !r.proxied).map((r) => r.oracleId), userId)
+      .catch(() => []),
   ]);
 
   return (

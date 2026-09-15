@@ -730,8 +730,9 @@ discard confirm reached from this page). Diff source: `deck_cards` against the n
    was the only decision on this page, and it is not — Put back restores a cut (#390) and a
    contested row gives a copy to a deck (card assignments). Naming all three would make the
    sentence a list, so it names none and says what the page IS. The quotation above this note is
-   the CURRENT copy; the retired sentence is not quoted anywhere in this file, deliberately —
-   there is nothing to implement from it.
+   the CURRENT copy. The retired sentence survives in this file only where the CANVAS is
+   transcribed — the rows at lines 119 and 723 record what the drawing says, which is a
+   historical fact and stays true — and nowhere as copy to implement from.
 
    One thing this cost, worth knowing: `check:copy-drift` could not have caught the drift. It
    finds a table quoting a shipped string with different PUNCTUATION, and a sentence replaced

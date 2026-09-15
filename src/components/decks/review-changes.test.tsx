@@ -1339,10 +1339,21 @@ describe("ReviewChanges — the second door", () => {
     render(
       <ReviewChanges
         deckId="d" deckName="Korvold" rows={{ in: [row()], out: [] }}
-        {...SHAPE} contested={[contestedCard()]} state={STATE} cardCount={CARD_COUNT}
+        {...SHAPE}
+        // TWO cards, one of them asking for three copies. The figure is a count of CARDS —
+        // decisions waiting on this page — so a regression to copies would read 4 here, and a
+        // test that only proves the label exists would stay green through it.
+        contested={[
+          contestedCard({ arrived: 3, owned: 3 }),
+          contestedCard({ oracleId: "o2", cardName: "Birds of Paradise" }),
+        ]}
+        state={STATE} cardCount={CARD_COUNT}
       />,
     );
-    expect(screen.getByText(deckVersioningCopy.review.chipShort)).toBeTruthy();
+    const chip = screen.getByText(deckVersioningCopy.review.chipShort).closest("span")
+      ?.parentElement;
+    expect(chip?.textContent).toContain("2");
+    expect(chip?.textContent).not.toContain("4");
   });
 
   it("drops the chip at nought rather than drawing a nought", () => {

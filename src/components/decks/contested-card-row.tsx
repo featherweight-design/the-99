@@ -90,6 +90,32 @@ function AllocationMark({
   );
 }
 
+/**
+ * THE SURFACE'S WORDS, chosen once.
+ *
+ * Every sentence this row draws about supply exists twice: an arrival form for the import
+ * receipt, and a plain form for `/decks/[id]/changes`, where nothing arrived and the copies in
+ * question are ones the player already owned. Branching at each call site cost three consecutive
+ * review rounds — the visible line, then the refusal, then the accessible group name — each
+ * round finding the next sibling that had not been taught. One lookup means a sentence added
+ * later cannot be forgotten: it has nowhere else to come from.
+ */
+function surfaceWords(fromImport: boolean) {
+  return fromImport
+    ? {
+        supply: copy.contested.supply,
+        heading: copy.contested.heading,
+        group: copy.contested.a11yGroup,
+        refusedNoSupply: copy.contested.refusedNoSupply,
+      }
+    : {
+        supply: copy.contested.supplyOwned,
+        heading: copy.contested.headingOwned,
+        group: copy.contested.a11yGroupOwned,
+        refusedNoSupply: copy.contested.refusedNoSupplyOwned,
+      };
+}
+
 /** The on-screen sentence for a named refusal — announced verbatim, never summarised. */
 function refusalSentence(cause: AssignRefusal, card: ContestedCard, deckName: string): string {
   const holder = card.claimants.find((c) => c.allocated > 0)?.deckName ?? "";
@@ -97,12 +123,9 @@ function refusalSentence(cause: AssignRefusal, card: ContestedCard, deckName: st
     case "claimant-no-longer-asks":
       return copy.contested.refusedNotWanted(deckName, card.cardName, holder);
     case "no-supply-left":
-      // The arrival wording belongs to a receipt. This refusal is reachable on the review page
-      // too — a race, or a pick made while another tab took the last copy — and there nothing
-      // arrived at all.
-      return card.fromImport
-        ? copy.contested.refusedNoSupply(holder, card.owned, deckName)
-        : copy.contested.refusedNoSupplyOwned(holder, card.owned, deckName);
+      // Reachable on the review page too — a race, or a pick made while another tab took the
+      // last copy — and there nothing arrived at all.
+      return surfaceWords(card.fromImport).refusedNoSupply(holder, card.owned, deckName);
     case "target-is-commander":
       return copy.contested.refusedIsCommander(card.cardName, deckName);
     // `not-your-deck` has no sentence by design: a player cannot reach it from their own decks,
@@ -248,9 +271,23 @@ export function ContestedCardRow({
   // import brought. It sets the mark's shape as well as the cap, because both answer the same
   // question — how many copies are actually in play.
   const giveable = Math.min(spare, card.arrived);
+  // THE NUMBER THIS ROW TALKS ABOUT, derived once.
+  //
+  // On the receipt it is the arrival: the whole point of that surface is what the import
+  // brought, and its cap is deliberately measured against that. On the review door `arrived`
+  // carries the total owned, which over-counts the moment a commander holds one of two copies —
+  // the heading offered `Give the 2 copies to` while only one could actually move. There the
+  // number is what is in play, which is also what the mark and the cap already used.
+  //
+  // It falls out of the LIVE half of the card — `owned` and the claimants, both replaced on
+  // every server read — so the review door's figures track a collection that changes under it,
+  // where the frozen `arrived` could not.
+  const inPlay = card.fromImport ? card.arrived : giveable;
+  // Capped at `inPlay` rather than `arrived`, or the cap could read `2 of 1` on the review door:
+  // the numerator counts every non-commander allocation and the denominator is what can move.
   const givenOut = Math.min(
     card.claimants.reduce((n, c) => n + Math.max(c.allocated - c.commanderCopies, 0), 0),
-    card.arrived,
+    inPlay,
   );
   // WHICH DECKS HELD A COPY BEFORE THIS IMPORT, per claimant rather than as a fact about the
   // collection. `ownedBefore > 0` is not enough on its own: with one old copy, an earlier list
@@ -277,6 +314,7 @@ export function ContestedCardRow({
   // first commander claimant instead points at a deck that is keeping its copy, which is the
   // opposite of what the note says about it.
   const payer = card.claimants.find((c) => c.allocated < c.quantity)?.deckName ?? "";
+  const words = surfaceWords(card.fromImport);
 
   return (
     <div
@@ -290,9 +328,7 @@ export function ContestedCardRow({
         <span className="font-mono text-[10.5px] md:text-[11px] flex-none" style={{ color: "var(--fg-faint)" }}>
           {/* `1 new copy` is a fact about an ARRIVAL. On the review page nothing arrived — the
               reader is editing a draft — so the same line states the supply instead. */}
-          {card.fromImport
-            ? copy.contested.supply(card.arrived, card.claimants.length)
-            : copy.contested.supplyOwned(card.arrived, card.claimants.length)}
+          {words.supply(inPlay, card.claimants.length)}
         </span>
       </div>
 
@@ -304,14 +340,12 @@ export function ContestedCardRow({
           ? copy.contested.headingInert
           : folded
             ? copy.contested.headingSpare
-            : card.fromImport
-              ? copy.contested.heading(card.arrived)
-              : copy.contested.headingOwned(card.arrived)}
+            : words.heading(inPlay)}
         {/* The cap, stated beside the heading whenever it is above one — seniority has already
             given every copy away before any pick, so the figure is true in both states. */}
-        {!nothingToChoose && card.arrived > 1 ? (
+        {!nothingToChoose && inPlay > 1 ? (
           <span className="ml-[8px] normal-case tracking-normal" style={{ color: "var(--fg-faint)" }}>
-            {copy.contested.cap(givenOut, card.arrived)}
+            {copy.contested.cap(givenOut, inPlay)}
           </span>
         ) : null}
       </p>
@@ -319,11 +353,7 @@ export function ContestedCardRow({
       <ul
         className="list-none p-0 m-0 flex flex-col gap-[4px]"
         role="radiogroup"
-        aria-label={
-          card.fromImport
-            ? copy.contested.a11yGroup(card.cardName, card.arrived)
-            : copy.contested.a11yGroupOwned(card.cardName, card.arrived)
-        }
+        aria-label={words.group(card.cardName, inPlay)}
       >
         {card.claimants.map((c) => {
           // `keeps it` rather than `gets it` for a commander: it had the card before the import,

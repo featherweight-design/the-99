@@ -54,6 +54,28 @@ describe("ContestedCardRow", () => {
     expect(screen.queryByText(copy.contested.heading(1))).toBeNull();
   });
 
+  // `arrived` carries the TOTAL owned on the review door, and a commander's copy cannot be
+  // given to anybody. Counting it offered `Give the 2 copies to` over a single movable copy.
+  it("counts only the copies that can actually move on the review door", () => {
+    render(<ContestedCardRow card={card({
+      fromImport: false,
+      arrived: 2,
+      owned: 2,
+      claimants: [
+        { deckId: "d1", deckName: "HD Avatar Aang", quantity: 1, commanderCopies: 1, granted: 0, since: AUG, versionNumber: 7, allocated: 1 },
+        { deckId: "d2", deckName: "Elemental Dragons", quantity: 1, commanderCopies: 0, granted: 0, since: SEP, versionNumber: 2, allocated: 1 },
+      ],
+    })} />);
+    expect(screen.getByText(copy.contested.supplyOwned(1, 2))).toBeTruthy();
+    expect(screen.getByText(copy.contested.headingOwned(1))).toBeTruthy();
+    expect(screen.queryByText(copy.contested.headingOwned(2))).toBeNull();
+    expect(screen.queryByText(copy.contested.supplyOwned(2, 2))).toBeNull();
+    // And the accessible name takes the same figure, being the same claim about supply.
+    expect(screen.getByRole("radiogroup", {
+      name: copy.contested.a11yGroupOwned("Brushland", 1),
+    })).toBeTruthy();
+  });
+
   it("names the verb in the heading and never as a button", () => {
     render(<ContestedCardRow card={card()} />);
     expect(screen.getByText(copy.contested.heading(1))).toBeTruthy();
