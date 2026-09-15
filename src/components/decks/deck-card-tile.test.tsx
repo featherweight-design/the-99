@@ -394,6 +394,33 @@ describe("DeckCardTile — the draft touched this card", () => {
     expect(edged[0].className).toContain("items-stretch");
   });
 
+  it("associates the spoken state with the trigger, not just the DOM", () => {
+    renderWithDraft([[card.oracleId, { from: 1, to: 2 }]], { ...card, quantity: 2 });
+
+    // An `sr-only` sibling is read in document order and SKIPPED by a reader
+    // tabbing between controls — which is how most people meet this tile. The
+    // trigger is the tile's focusable element, so the description has to be
+    // associated with it, exactly as the list row does it.
+    const trigger = screen.getByRole("button", {
+      name: new RegExp(cardDetailCopy.triggerAria(card.name)),
+    });
+    const describedBy = trigger.getAttribute("aria-describedby");
+    expect(describedBy).toBeTruthy();
+    expect(document.getElementById(describedBy!)?.textContent).toBe(
+      deckVersioningCopy.pending.addMarkRecountedA11y(1, 2),
+    );
+  });
+
+  it("calls a recount that came DOWN a cut, not an add", () => {
+    renderWithDraft([[card.oracleId, { from: 3, to: 1 }]], { ...card, quantity: 1 });
+
+    // The card is still in the version, so calling the row a pending add would
+    // say the opposite of what happened to it — the row's own distinction.
+    expect(
+      screen.getByText(deckVersioningCopy.pending.cutMarkRecountedA11y(3, 1)),
+    ).toBeInTheDocument();
+  });
+
   it("leaves a clean draft alone", () => {
     renderWithDraft([["some-other-card", { from: 1, to: 2 }]], { ...card, quantity: 2 });
 

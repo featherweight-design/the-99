@@ -347,11 +347,18 @@ async function run() {
         // reading its not-found page as "no edges drawn".
         const deckId = deck.replace(/^\/decks\//, "");
         const [lead] = await sql`
-          select commander_oracle_id from decks where id = ${deckId}`;
+          select commander_oracle_id, partner_oracle_id from decks where id = ${deckId}`;
+        // NOT the commander, and not the partner. The app rejects either as
+        // `is-commander` (`lib/decks/add-validation.ts`), so a fixture that
+        // staged one would be testing a row the app cannot produce — and on a
+        // pair deck the obvious `not in (deck_cards)` filter selects exactly
+        // that, because a commander is not a `deck_cards` row.
         const [spare] = await sql`
           select c.oracle_id from cards c
            where c.oracle_id not in (
                  select dc.oracle_id from deck_cards dc where dc.deck_id = ${deckId})
+             and c.oracle_id is distinct from ${lead?.commander_oracle_id ?? null}
+             and c.oracle_id is distinct from ${lead?.partner_oracle_id ?? null}
            limit 1`;
         if (!lead?.commander_oracle_id || !spare) {
           checks += 1;
@@ -367,17 +374,36 @@ async function run() {
           // part-way through cannot strand a version or a row in this player's
           // deck. The same rule `probe:review` follows around the collection.
           const versionId = crypto.randomUUID();
-          staged = { deckId, oracleId: spare.oracle_id, versionId };
+          staged = { deckId, oracleId: spare.oracle_id, versionId, landed: false };
+          // BOTH commander columns. The partner is nullable, and a snapshot that
+          // dropped it would make this temporary version — which is the newest,
+          // and therefore the one every reader consults — say a pair deck has no
+          // partner. The probe would then be reading a deck in a state the app
+          // never produces.
+          //
+          // The `*_since` tenures are the VERSION's own and have no counterpart
+          // on `decks`, so they are left to their defaults rather than copied
+          // from a column that does not exist.
           await sql`
-            insert into deck_versions (id, deck_id, number, commander_oracle_id)
-            values (${versionId}, ${deckId}, ${next}, ${lead.commander_oracle_id})`;
+            insert into deck_versions (
+              id, deck_id, number, commander_oracle_id, partner_oracle_id)
+            values (
+              ${versionId}, ${deckId}, ${next},
+              ${lead.commander_oracle_id}, ${lead.partner_oracle_id ?? null})`;
           await sql`
             insert into deck_version_cards (version_id, oracle_id, quantity)
             select ${versionId}, dc.oracle_id, dc.quantity
               from deck_cards dc where dc.deck_id = ${deckId}`;
-          await sql`
+          // `returning` is the receipt. Cleanup deletes only when this exact
+          // write landed, and only a row still at the quantity it was inserted
+          // with — so a concurrent edit that bumped the count is left alone
+          // rather than having the player's copies deleted out from under it.
+          const inserted = await sql`
             insert into deck_cards (deck_id, oracle_id, quantity, auto)
-            values (${deckId}, ${spare.oracle_id}, 1, false)`;
+            values (${deckId}, ${spare.oracle_id}, 1, false)
+            on conflict do nothing
+            returning oracle_id`;
+          staged.landed = inserted.length === 1;
         }
       }
       if (staged) {
@@ -409,14 +435,22 @@ async function run() {
   } finally {
     if (staged) {
       const clean = neon(DATABASE_URL);
-      await clean`
-        delete from deck_cards
-         where deck_id = ${staged.deckId} and oracle_id = ${staged.oracleId}`;
+      if (staged.landed) {
+        await clean`
+          delete from deck_cards
+           where deck_id = ${staged.deckId}
+             and oracle_id = ${staged.oracleId}
+             and quantity = 1`;
+      }
       // The version's cards go with it by cascade; deleting the version last
       // means a failure here leaves the deck clean rather than holding a card
       // no version knows about.
       await clean`delete from deck_versions where id = ${staged.versionId}`;
-      console.log("  ..   removed the staged version and its one added card");
+      console.log(
+        staged.landed
+          ? "  ..   removed the staged version and its one added card"
+          : "  ..   removed the staged version; the card row was not this run's to delete",
+      );
     }
     await browser.close();
   }

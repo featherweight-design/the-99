@@ -9,6 +9,7 @@ import { recommendationsCopy } from "../../lib/copy/recommendations";
 import { addPanelCopy } from "../../lib/copy/decks-builder";
 import { ROLE_TARGETS } from "../../lib/recs/roles";
 import { CardDetailProvider, cardDetailCopy } from "../cards/card-detail-provider";
+import { PendingChangeProvider } from "./pending-change";
 import { deckVersioningCopy } from "../../lib/copy/deck-versioning";
 import { viewToggleCopy } from "../../lib/copy/card-surfaces";
 import { proxyCopy } from "../../lib/copy/proxies";
@@ -90,11 +91,20 @@ function renderDecklist(
     keep: vi.fn(),
   };
 
+  // `Decklist` takes `pendingChanges` as a PROP, but the tiles below it read the
+  // same map out of context — which `BuilderShell` provides in the app and this
+  // helper did not. Without it every tile saw a null context, so a card-view
+  // assertion could pass with the tile's edge and figure missing entirely.
+  const withDraft = (node: React.ReactNode) =>
+    opts.pendingChanges
+      ? <PendingChangeProvider value={{ moves: new Map(opts.pendingChanges) }}>{node}</PendingChangeProvider>
+      : node;
+
   render(
     <CardDetailProvider
       fetchCard={(opts.fetchCard ?? vi.fn().mockResolvedValue(null)) as never}
     >
-      <AddOptimisticCardProvider value={deckEdits}>
+      <AddOptimisticCardProvider value={deckEdits}>{withDraft(
         <Decklist
           deckId="deck-1"
           cards={cards}
@@ -114,7 +124,7 @@ function renderDecklist(
           newestAsOf={opts.newestAsOf ?? null}
           onAnnounce={opts.onAnnounce}
         />
-      </AddOptimisticCardProvider>
+      )}</AddOptimisticCardProvider>
     </CardDetailProvider>,
   );
 }
@@ -865,6 +875,11 @@ describe("the pending-change notes follow the mark, which both views now draw", 
     expect(
       screen.getByText(deckVersioningCopy.pending.groupChangeNote(1)),
     ).toBeInTheDocument();
+    // And the notes point at something the reader can find. Asserting only the
+    // two sentences would pass with the tiles drawing nothing at all, which is
+    // the state this change exists to end. The fixture's move is
+    // `{ from: 0, to: 1 }` — an add — so the tile's figure is the signed delta.
+    expect(screen.getByText(deckVersioningCopy.pending.tileAdded(1))).toBeInTheDocument();
   });
 });
 

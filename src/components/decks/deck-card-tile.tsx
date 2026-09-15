@@ -16,6 +16,8 @@
 // exception is a tile with NO art, whose plate prints no cost of its own and so
 // keeps the drawn pips; on a tile that has art the cost is spoken instead.
 
+import { useId } from "react";
+
 import { removeCardFromDeck } from "../../app/decks/actions";
 import { addPanelCopy } from "../../lib/copy/decks-builder";
 import { cardTileCopy, spokenManaCost } from "../../lib/copy/card-surfaces";
@@ -94,14 +96,24 @@ export function DeckCardTile({
       ? deckVersioningCopy.pending.tilePair(pendingMove.from, pendingMove.to)
       : deckVersioningCopy.pending.tileAdded(pendingMove.to)
     : null;
-  // Spoken separately: the figure is drawn in the count's position with no
-  // words around it, and an edge colour is not something a reader can be asked
-  // to infer. These are the row's own strings.
+  // Spoken separately: the figure is drawn in the count's position with no words
+  // around it, and an edge colour is not something a reader can be asked to
+  // infer. These are the row's own strings, including its distinction between a
+  // recount that went UP and one that came DOWN — calling a cut a pending add
+  // would say the opposite of what happened to the card.
   const draftSpoken = pendingMove
     ? pendingMove.from > 0
-      ? deckVersioningCopy.pending.addMarkRecountedA11y(pendingMove.from, pendingMove.to)
+      ? pendingMove.to > pendingMove.from
+        ? deckVersioningCopy.pending.addMarkRecountedA11y(pendingMove.from, pendingMove.to)
+        : deckVersioningCopy.pending.cutMarkRecountedA11y(pendingMove.from, pendingMove.to)
       : deckVersioningCopy.pending.addMarkA11y
     : null;
+  // The description has to be ASSOCIATED, not merely present. `CardDetailTrigger`
+  // is the tile's focusable element and its `aria-label` replaces everything
+  // nested inside it, so an `sr-only` sibling sitting in the caption is read in
+  // document order and skipped entirely by a reader tabbing between controls —
+  // which is how most people meet this tile. The row solves it the same way.
+  const draftDescriptionId = useId();
   const displayName = printedFaceName(card);
   const fullName = printedNameOf(card);
   // Null unless the string holds symbols this app can draw, so both branches
@@ -139,6 +151,7 @@ export function DeckCardTile({
             oracleId={card.oracleId}
             name={fullName}
             siblings={siblings}
+            describedBy={pendingMove ? draftDescriptionId : undefined}
             // `undefined` below one copy on purpose: that is what makes the
             // provider compose the label from `name`, which carries the full
             // printed name. The single-copy tile is the common case, and a
@@ -288,7 +301,9 @@ export function DeckCardTile({
                   <span aria-hidden className="flex-none" style={{ color: "var(--accent)" }}>
                     {draftFigure}
                   </span>
-                  <span className="sr-only">{draftSpoken}</span>
+                  <span id={draftDescriptionId} className="sr-only">
+                    {draftSpoken}
+                  </span>
                 </>
               ) : (
                 card.quantity > 1 && !proxied && (
