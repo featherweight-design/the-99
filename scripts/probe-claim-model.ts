@@ -404,6 +404,52 @@ async function commanderCeilingSection() {
       values (${USER_C}, ${card}, ${cmdDeck.id}, 2)
     `);
     check("a folded deck reserves its list copy only", await free(bystander.id), 1);
+
+    // A BREW'S COMMANDER SETS NO CEILING. The ceiling exists because a committed
+    // deck's commander copy is untouchable; a brew's is not — a brew claims softly,
+    // and counting its commander here would let one veto every reservation on its
+    // commander card. all_claims has three brew arms, two of them commander arms, so
+    // the restriction to committed decks is one join and easy to lose. Confirmed:
+    // with that join removed this is the only check in the file that fails.
+    await fixture.execute(sql`delete from decks where user_id = ${USER_C}`);
+    await fixture.execute(sql`delete from card_assignments where user_id = ${USER_C}`);
+    await own(1);
+    const mk = async (name: string, cmd: string, ago: number | null) => {
+      const { rows: [d] } = await fixture.execute<{ id: string }>(sql`
+        insert into decks (user_id, name, commander_oracle_id)
+        values (${USER_C}, ${name}, ${cmd}) returning id
+      `);
+      await fixture.execute(sql`
+        insert into deck_cards (deck_id, oracle_id, quantity) values (${d.id}, ${card}, 1)
+      `);
+      if (ago !== null) {
+        const { rows: [v] } = await fixture.execute<{ id: string }>(sql`
+          insert into deck_versions
+            (deck_id, number, committed_at, commander_oracle_id, commander_since)
+          values (${d.id}, 1, now() - (${ago} * interval '1 minute'), ${cmd},
+                  now() - (${ago} * interval '1 minute'))
+          returning id
+        `);
+        await fixture.execute(sql`
+          insert into deck_version_cards (version_id, oracle_id, quantity, since)
+          values (${v.id}, ${card}, 1, now() - (${ago} * interval '1 minute'))
+        `);
+      }
+      return d.id;
+    };
+    const seniorList = await mk("Senior", otherCmd, 90);
+    const juniorList = await mk("Junior", otherCmd, 60);
+    // A brew LED BY the contested card, which is the whole point of this case.
+    await fixture.execute(sql`
+      insert into decks (user_id, name, commander_oracle_id)
+      values (${USER_C}, 'Brew led by it', ${card})
+    `);
+    await fixture.execute(sql`
+      insert into card_assignments (user_id, oracle_id, deck_id)
+      values (${USER_C}, ${card}, ${juniorList})
+    `);
+    check("a brew's commander sets no ceiling", await free(juniorList), 0);
+    check("and the displaced senior deck buys", await free(seniorList), -1);
   } finally {
     await fixture.execute(sql`delete from card_assignments where user_id = ${USER_C}`);
     await fixture.execute(sql`delete from decks where user_id = ${USER_C}`);
