@@ -972,3 +972,46 @@ describe("a stack's remove control names the printed card too", () => {
     ).toBeInTheDocument();
   });
 });
+
+describe("DecklistRow — an owned card this deck prints", () => {
+  // The tile was fixed for this in #654; the row kept the defect, and the row's
+  // half is worse because it is SPOKEN. `grouping.ts` rules that `owned` and
+  // `proxied` are meant to disagree out loud — *not in your collection · this
+  // deck's slot is filled* — and a filled dot beside a `P` says the opposite.
+  const printed = { ...card, owned: true, proxied: true };
+
+  it("draws a hollow dot beside the mark", () => {
+    const { container } = render(
+      <CardDetailProvider fetchCard={vi.fn().mockResolvedValue(null)}>
+        <DecklistRow deckId="d1" card={printed} />
+      </CardDetailProvider>,
+    );
+
+    // The dot is unlabelled and aria-hidden by design — the word is the row's,
+    // said in its description — so this reads its SKIN.
+    //
+    // Matched on the arbitrary-property class the component actually emits.
+    // A `[class*="border-dashed"]` selector passes on the broken build: that
+    // literal appears nowhere on the dot (`[border:1px_dashed_…]` is what it
+    // writes) and does appear elsewhere on the row, so the check found a
+    // different element and reported a hollow dot either way.
+    const dot = container.querySelector('[class*="1px_dashed_var(--fg-locked)"]');
+    expect(dot).not.toBeNull();
+    expect(container.querySelector('[class*="1px_solid_var(--success)"]')).toBeNull();
+  });
+
+  it("does not tell a reader the deck owns it", () => {
+    renderRow(<DecklistRow deckId="d1" card={printed} />);
+
+    // The failure this closes: a reader who cannot see the dot was told `Owned`
+    // about a card the deck is printing.
+    expect(screen.queryByText("Owned")).toBeNull();
+    expect(screen.getByText("Not owned")).toBeInTheDocument();
+  });
+
+  it("still says Owned for a card the deck is not printing", () => {
+    renderRow(<DecklistRow deckId="d1" card={{ ...card, owned: true }} />);
+
+    expect(screen.getByText("Owned")).toBeInTheDocument();
+  });
+});

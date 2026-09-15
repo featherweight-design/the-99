@@ -235,7 +235,20 @@ export function DecklistRow({
   // row. Said through the name's description rather than as the dot's own label
   // so the two facts about the card — which card, and whether it is owned —
   // arrive as one announcement instead of a stray word before the name.
-  const availabilityWord = card.owned ? "Owned" : "Not owned";
+  // `proxied` is excluded from BOTH halves, drawn and spoken. `owned` is a fact
+  // about the collection and `proxied` a fact about this deck's slot, and
+  // `grouping.ts` rules that the two are meant to disagree out loud — *not in
+  // your collection · this deck's slot is filled*. A filled dot beside a `P`
+  // says the opposite, and the word said it twice: this line fed the row's own
+  // description, so a reader who cannot see the dot was TOLD the deck owns a
+  // card it is printing.
+  //
+  // Read off the row's OWN `tag` rather than `card.proxied`, so the dot and the
+  // mark beside it cannot disagree about what a proxied row is. `deckRowTag`
+  // answers `proxy` first, before the ownership test, so this is the same
+  // question the slot already asked.
+  const proxied = tag === "proxy";
+  const availabilityWord = card.owned && !proxied ? "Owned" : "Not owned";
   const availabilityDescriptionId = useId();
   const describedBy =
     [
@@ -335,7 +348,10 @@ export function DecklistRow({
         {/* Ownership dot: solid green (owned) vs dashed hollow (unowned).
             No label — unlabelled it marks itself aria-hidden, which is the
             §Errata ruling: the word is the row's, said below. */}
-        <OwnershipDot owned={card.owned} className="w-[7px] h-[7px] md:w-[8px] md:h-[8px]" />
+        <OwnershipDot
+          owned={card.owned && !proxied}
+          className="w-[7px] h-[7px] md:w-[8px] md:h-[8px]"
+        />
 
         {/* The word the dot used to carry. Ahead of the pass mark and the draft
             mark in `describedBy`, so a reader hears the card, then whether they
