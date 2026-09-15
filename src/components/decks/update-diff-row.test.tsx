@@ -363,3 +363,31 @@ describe("the update flow's mounting", () => {
     expect(row.querySelector(".invisible")).toBeTruthy();
   });
 });
+
+// A card the deck prints, on both mountings. `draft-state.ts` carries `proxied`
+// beside `owned` and leaves the row to decide what to draw — and `owned` is
+// forced true for every basic land there, so `owned: true, proxied: true` is an
+// ordinary pairing rather than a contrived one.
+describe("the dot on a printed row", () => {
+  const printed = card({ owned: true, proxied: true });
+
+  for (const [label, node] of [
+    ["out", <DiffRowOut key="o" card={printed} />],
+    ["in", <DiffRowIn key="i" card={printed} sourceLine={null} />],
+  ] as const) {
+    it(`draws hollow on the ${label} row, beside the mark`, () => {
+      const row = draw(node);
+
+      // The contradiction this closes: a solid green dot immediately left of the
+      // `P` the same row renders off the same field.
+      expect(row.querySelector('[class*="1px_dashed_var(--fg-locked)"]')).not.toBeNull();
+      expect(row.querySelector('[class*="1px_solid_var(--success)"]')).toBeNull();
+    });
+  }
+
+  it("leaves an ordinary owned row solid", () => {
+    const row = draw(<DiffRowOut card={card({ owned: true })} />);
+
+    expect(row.querySelector('[class*="1px_solid_var(--success)"]')).not.toBeNull();
+  });
+});

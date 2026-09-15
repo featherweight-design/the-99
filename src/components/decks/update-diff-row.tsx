@@ -444,7 +444,12 @@ export function DiffRowOut({
         review && !kept ? ROW_PLATE_HOVER : "",
       ].join(" ")}
     >
-      <OwnershipDot owned={card.owned} committed={card.committed} size={7} />
+      {/* `!card.proxied`, the same exclusion the decklist row and the card tile
+          make. `draft-state.ts` carries the flag beside `owned` and says the row
+          decides what to draw — and a solid dot next to the `P` this row renders
+          from the same field decides it wrongly. Reachable on any basic land,
+          which is forced `owned: true` there. */}
+      <OwnershipDot owned={card.owned && !card.proxied} committed={card.committed} size={7} />
       <DiffRowName
         oracleId={card.oracleId}
         name={card.name}
@@ -536,7 +541,12 @@ export function DiffRowIn({
   const stacked = review && action !== null;
   const nameLine = (
     <>
-      <OwnershipDot owned={card.owned} committed={card.committed} size={7} />
+      {/* `!card.proxied`, the same exclusion the decklist row and the card tile
+          make. `draft-state.ts` carries the flag beside `owned` and says the row
+          decides what to draw — and a solid dot next to the `P` this row renders
+          from the same field decides it wrongly. Reachable on any basic land,
+          which is forced `owned: true` there. */}
+      <OwnershipDot owned={card.owned && !card.proxied} committed={card.committed} size={7} />
       <DiffRowName
         oracleId={card.oracleId}
         name={card.name}
