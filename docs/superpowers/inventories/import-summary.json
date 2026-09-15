@@ -1,6 +1,6 @@
 {
-  "feature": "The post-import summary",
-  "note": "One route, two widths, and a fixture it cannot photograph without. `/collection/replace/summary/[uploadId]` needs a CONFIRMED upload carrying a summary_payload, and the contested section only draws where committed demand exceeds supply \u2014 the headless probe account has no committed deck at all, so a run with no fixture photographs a working feature as an empty one. `pnpm seed:summary <userId>` writes that fixture (two committed decks a month apart, and a receipt with all three sections populated) and prints the URL; it takes --clean. SUMMARY_UPLOAD comes from the environment for the same reason the other inventories take their deck id that way: no account's row id belongs in a checked-in file. The second row is the same route with its issues line opened, because IssueInspector reachable after the confirm is the one thing ruled IN scope for this PR that a still photograph of the page would otherwise miss. No `shares` block yet: ContestedCardRow's second surface is /decks/[id]/changes and lands in PR 4, and a shares block naming one route proves nothing. The third row exists because the phone's first screenful ends inside `Still to buy`: the contested section is the one thing this PR adds that a phone shot of the fold cannot show, and a row that photographs the top of the page reads as coverage while proving nothing about it. The fourth row presses an option, because the whole point of the chooser is what happens on the tap: the picked mark takes accent, the outcomes swap, and the footer appears naming the deck \u2014 none of which a photograph of the default state can show. It leaves a reservation behind in the fixture account, which `pnpm seed:summary <userId> --clean` removes along with the rest. The two picked rows are ONE PER WIDTH, and each presses a DIFFERENT deck, which is not a stylistic choice: a row that writes cannot be run twice against the same state. The first version pressed the same deck at both widths, the second press toggled the first one off, and the desktop photograph showed the default allocation while reporting a pass. Pressing different decks leaves each width with a pick of its own \u2014 the second press moves the reservation rather than clearing it. `pnpm seed:summary <userId> --clean` clears what they leave behind. Their ids carry no width: the harness appends one, so a row called `\u2026-phone` writes `\u2026-phone-phone.png` and leaves the file a reader expects sitting there from the previous run \u2014 which is exactly how a stale photograph got read as a finding once.",
+  "feature": "Assigning a contested copy",
+  "note": "One route, two widths, and a fixture it cannot photograph without. `/collection/replace/summary/[uploadId]` needs a CONFIRMED upload carrying a summary_payload, and the contested section only draws where committed demand exceeds supply \u2014 the headless probe account has no committed deck at all, so a run with no fixture photographs a working feature as an empty one. `pnpm seed:summary <userId>` writes that fixture (two committed decks a month apart, and a receipt with all three sections populated) and prints the URL; it takes --clean. SUMMARY_UPLOAD comes from the environment for the same reason the other inventories take their deck id that way: no account's row id belongs in a checked-in file. The second row is the same route with its issues line opened, because IssueInspector reachable after the confirm is the one thing ruled IN scope for this PR that a still photograph of the page would otherwise miss. No `shares` block yet: ContestedCardRow's second surface is /decks/[id]/changes and lands in PR 4, and a shares block naming one route proves nothing. The third row exists because the phone's first screenful ends inside `Still to buy`: the contested section is the one thing this PR adds that a phone shot of the fold cannot show, and a row that photographs the top of the page reads as coverage while proving nothing about it. The fourth row presses an option, because the whole point of the chooser is what happens on the tap: the picked mark takes accent, the outcomes swap, and the footer appears naming the deck \u2014 none of which a photograph of the default state can show. It leaves a reservation behind in the fixture account, which `pnpm seed:summary <userId> --clean` removes along with the rest. The two picked rows are ONE PER WIDTH, and each presses a DIFFERENT deck, which is not a stylistic choice: a row that writes cannot be run twice against the same state. The first version pressed the same deck at both widths, the second press toggled the first one off, and the desktop photograph showed the default allocation while reporting a pass. Pressing different decks leaves each width with a pick of its own \u2014 the second press moves the reservation rather than clearing it. `pnpm seed:summary <userId> --clean` clears what they leave behind. Their ids carry no width: the harness appends one, so a row called `\u2026-phone` writes `\u2026-phone-phone.png` and leaves the file a reader expects sitting there from the previous run \u2014 which is exactly how a stale photograph got read as a finding once. The `shares` block is what a picture cannot answer: both doors are supposed to be the SAME chooser, and `pnpm check:shared` passes only when each row's own view imports `ContestedCardRow` as a value and references it. The summary rows name `arrivals-summary.tsx` and the door row names `review-changes.tsx`, because those are the files that render it \u2014 a wrapper, not a leaf, is what each route actually mounts. `CONTESTED_DECK` comes from the environment: it is a deck whose draft touches a card two committed decks want, which `pnpm seed:summary` builds. Every row's `view` names the file that RENDERS the chooser, never the chooser itself: a component cannot import itself, and naming it failed three rows for the one thing that is not in question.",
   "rows": [
     {
       "id": "summary",
@@ -17,7 +17,7 @@
     {
       "id": "summary-contested",
       "label": "/collection/replace/summary \u2014 the contested row, below the fold on a phone",
-      "view": "src/components/decks/contested-card-row.tsx",
+      "view": "src/components/collection/arrivals-summary.tsx",
       "widths": [
         "phone"
       ],
@@ -51,7 +51,7 @@
     {
       "id": "summary-picked",
       "label": "/collection/replace/summary \u2014 a copy given by hand (phone)",
-      "view": "src/components/decks/contested-card-row.tsx",
+      "view": "src/components/collection/arrivals-summary.tsx",
       "widths": [
         "phone"
       ],
@@ -74,7 +74,7 @@
     {
       "id": "summary-moved",
       "label": "/collection/replace/summary \u2014 a copy given by hand (desktop)",
-      "view": "src/components/decks/contested-card-row.tsx",
+      "view": "src/components/collection/arrivals-summary.tsx",
       "widths": [
         "desktop"
       ],
@@ -93,6 +93,23 @@
           "scroll": "bottom"
         }
       ]
+    },
+    {
+      "id": "changes-door",
+      "label": "/decks/[id]/changes \u2014 the chooser under a contested row",
+      "view": "src/components/decks/review-changes.tsx",
+      "steps": [
+        {
+          "goto": "/decks/${CONTESTED_DECK}/changes",
+          "wait": "[role=radiogroup]",
+          "settle": 2500,
+          "scroll": "bottom"
+        }
+      ]
     }
-  ]
+  ],
+  "shares": {
+    "module": "src/components/decks/contested-card-row.tsx",
+    "binding": "ContestedCardRow"
+  }
 }

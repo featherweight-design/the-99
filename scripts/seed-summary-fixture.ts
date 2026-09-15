@@ -178,7 +178,15 @@ async function main() {
         now(), ${JSON.stringify(summary)}::jsonb)
     `);
 
+    // A DRAFT CHANGE ON THE CONTESTED CARD, so `/decks/[id]/changes` has a row for the chooser to
+    // hang under. The claim model reads VERSIONS, so raising the draft's count changes what the
+    // page shows without touching the contention the row is about.
+    await db.execute(sql`
+      update deck_cards set quantity = 2 where deck_id = ${DECK_A} and oracle_id = ${contested.oracle_id}
+    `);
+
     console.log(`/collection/replace/summary/${UPLOAD_ID}`);
+    console.log(`/decks/${DECK_A}/changes`);
   } finally {
     await pool.end();
   }
