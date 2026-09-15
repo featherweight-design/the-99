@@ -30,6 +30,12 @@ const CARD = process.env.PROBE_CARD ?? "Smothering Tithe";
  * build that drew one half twice would still read wrongly.
  */
 const SPLIT_CARD = process.env.PROBE_SPLIT_CARD ?? "Repudiate // Replicate";
+/**
+ * The mark drawn between two costs, as a LITERAL rather than as the copy
+ * constant the component reads. Kept here so a change to the drawn separator
+ * fails this probe and has to be made twice, on purpose.
+ */
+const SEPARATOR = "//";
 if (!EMAIL.includes("+clerk_test") && !PASSWORD) throw new Error("Set E2E_AUDIT_USER_PASSWORD.");
 
 /** The drawn box, per the property table: 22px under `md`, 26px from it up. */
@@ -313,11 +319,20 @@ async function run() {
         // The separator is punctuation, not a third cost: it carries text and no
         // art, where every pip carries art and no text. Read explicitly because
         // the two come out of the same list.
+        //
+        // Pinned to the LITERAL `//`, never to the copy constant the component
+        // draws from. A check asserting "some non-empty text" passes a build
+        // that swapped the mark for `/` or the word `or`, and one asserting
+        // `manaCopy.costHalfSeparator` moves with whatever that constant becomes
+        // — so both would ratify a change to the contract instead of catching
+        // it. The literal is the contract, and changing it should cost an
+        // edit here, deliberately.
         failures += !report(
           `${width}px · the separator is a mark rather than a pip`,
-          marks.length === 1 && marks[0].url === null && marks[0].text.length > 0,
+          marks.length === 1 && marks[0].url === null && marks[0].text === SEPARATOR,
           marks.length === 1
-            ? `text \`${marks[0].text}\`, background ${marks[0].url ?? "none"}`
+            ? `text \`${marks[0].text}\` against \`${SEPARATOR}\`,`
+              + ` background ${marks[0].url ?? "none"}`
             : "no separator to read",
         );
         await page.keyboard.press("Escape");

@@ -96,17 +96,24 @@ describe("ManaCost — a card with two printed costs", () => {
     // Leaf spans only. The run that CONTAINS the separator has `//` as its
     // whole text too, because a printed pip carries no text of its own — so a
     // sweep of every span counts the wrapper as a second separator.
+    //
+    // The LITERAL `//`, not `manaCopy.costHalfSeparator`. Asserting the constant
+    // against itself passes whatever that constant becomes — a `/`, or the word
+    // `or` — so it would ratify a change to the mark rather than catch it. The
+    // constant is still what the component draws from; this is the second place
+    // a change to it has to be made, deliberately.
     expect(
       [...container.querySelectorAll("span")].filter(
-        (el) => el.children.length === 0 && el.textContent === manaCopy.costHalfSeparator,
+        (el) => el.children.length === 0 && el.textContent === "//",
       ),
     ).toHaveLength(1);
+    expect(manaCopy.costHalfSeparator).toBe("//");
   });
 
   it("draws no separator for a card with one cost", () => {
     const { container } = render(<ManaCost cost="{3}{W}" />);
 
-    expect(container.textContent).not.toContain(manaCopy.costHalfSeparator);
+    expect(container.textContent).not.toContain("//");
   });
 
   // The `//` cannot be read aloud, so the label names the second cost instead.
@@ -123,6 +130,6 @@ describe("ManaCost — a card with two printed costs", () => {
     const { container } = render(<ManaCost cost="{B} // " />);
 
     expect(sources(container)).toEqual(["/mana/B.svg"]);
-    expect(container.textContent).not.toContain(manaCopy.costHalfSeparator);
+    expect(container.textContent).not.toContain("//");
   });
 });

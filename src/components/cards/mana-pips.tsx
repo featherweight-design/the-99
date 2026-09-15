@@ -72,8 +72,11 @@ export function ManaCost({ cost }: { cost: string | null }) {
       </span>
       {/* The symbols are art and say nothing, where the retired discs at least
           read out their own letters. The cost is spoken here instead — every
-          half of it, joined with "or", because that is the choice the card
-          offers and the `//` above cannot be read aloud. */}
+          half of it, since the `//` above cannot be read aloud. The second half
+          is announced as `second cost` rather than joined with "or": a hybrid
+          symbol already speaks as "green or blue", so an "or" between the halves
+          would be the third in the sentence and the only one dividing two
+          costs. `costAriaHalves` owns that wording. */}
       <span className="sr-only">{spokenFullManaCost(cost)}</span>
     </>
   );
