@@ -442,7 +442,7 @@ async function run() {
           // part-way through cannot strand a version or a row in this player's
           // deck. The same rule `probe:review` follows around the collection.
           const versionId = crypto.randomUUID();
-          staged = { deckId, oracleId: spare.oracle_id, versionId };
+          staged = { deckId, oracleId: spare.oracle_id, versionId, landed: false };
           // BOTH commander columns. The partner is nullable, and a snapshot that
           // dropped it would make this temporary version — which is the newest,
           // and therefore the one every reader consults — say a pair deck has no
@@ -486,10 +486,25 @@ async function run() {
           // No receipt is kept, deliberately — see the cleanup's own note. The
           // row is identified at teardown by the quantity it was inserted with,
           // which survives a lost reply where a receipt does not.
-          await sql`
+          // A RECEIPT AFTER ALL, and this reverses the reasoning that removed
+          // one on #656. That argument was that a receipt cannot tell "the write
+          // never happened" from "the write committed and the reply was lost",
+          // and strands a row in the second case. True — and it weighed the
+          // wrong pair of failures.
+          //
+          // Without a receipt the teardown deletes by deck and card alone. If
+          // another writer inserts this same card between the selection and the
+          // staging, `on conflict do nothing` leaves THEIR row and the teardown
+          // removes it — and a quantity guard does not help, because their row
+          // is quantity 1 too. That is a probe destroying somebody else's data.
+          // A stranded row is a stray card in a dev deck: visible, recoverable,
+          // and nobody's loss. Deletion is neither.
+          const inserted = await sql`
             insert into deck_cards (deck_id, oracle_id, quantity, auto)
             values (${deckId}, ${spare.oracle_id}, 1, false)
-            on conflict do nothing`;
+            on conflict do nothing
+            returning oracle_id`;
+          staged.landed = inserted.length === 1;
         }
       }
       if (staged) {
@@ -523,31 +538,33 @@ async function run() {
       const clean = neon(DATABASE_URL);
       // ONE TRANSACTION, because this writes into a real player's deck. Two
       // separate requests can fail between them: the card deleted and the
-      // version left standing, or — worse — the version gone while the card it
-      // was staged with remains, a row no version knows about. Either leaves the
-      // deck mutated by a probe that reported it had cleaned up.
+      // version left standing, or the version gone while the card it was staged
+      // with remains, a row no version knows about. Either leaves the deck
+      // mutated by a script that reported it had cleaned up.
       //
-      // The card's delete is guarded on the QUANTITY rather than on a receipt.
-      // A receipt read after the insert cannot tell "the write never happened"
-      // from "the write committed and the reply was lost", and it strands the
-      // row in the second case. The card was chosen for being absent from this
-      // deck, so a row at quantity 1 is this run's; a concurrent edit that
-      // bumped the count is left alone by the guard.
+      // The card's delete is skipped entirely unless THIS RUN's insert returned
+      // a row — see the staging note. The quantity guard rides along for the
+      // other direction: a concurrent edit that bumped the count leaves a row
+      // this run should no longer claim.
       //
-      // Order carries no meaning here, and that is the point of the change: the
-      // two statements used to be separate requests, where deleting the version
-      // last was what kept a failure from stranding a card no version knows
-      // about. Inside one transaction nobody observes an intermediate state and
-      // the cascade takes the version's cards whichever runs first.
+      // Order carries no meaning inside the transaction: nobody observes an
+      // intermediate state, and the version's cards go by cascade whichever
+      // statement runs first. It mattered when these were separate requests.
       await clean.transaction([
-        clean`
-          delete from deck_cards
-           where deck_id = ${staged.deckId}
-             and oracle_id = ${staged.oracleId}
-             and quantity = 1`,
+        ...(staged.landed
+          ? [clean`
+              delete from deck_cards
+               where deck_id = ${staged.deckId}
+                 and oracle_id = ${staged.oracleId}
+                 and quantity = 1`]
+          : []),
         clean`delete from deck_versions where id = ${staged.versionId}`,
       ]);
-      console.log("  ..   removed the staged version and its one added card");
+      console.log(
+        staged.landed
+          ? "  ..   removed the staged version and its one added card"
+          : "  ..   removed the staged version; the card row was not this run's to delete",
+      );
     }
     await browser.close();
   }
