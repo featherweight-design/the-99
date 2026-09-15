@@ -41,6 +41,8 @@ import { usePendingChange } from "./pending-change";
 import { deckVersioningCopy } from "../../lib/copy/deck-versioning";
 import { topOffCopy } from "../../lib/copy/top-off";
 import { useDeckMutation } from "./use-deck-mutation";
+import { ProxyTag } from "./proxy-tag";
+import { deckRowTag } from "../../lib/decks/row-tag";
 
 // Both rows are the same slot at both widths: phone 44px with the ✕'s own hit
 // box making up the vertical padding, desktop 34px with real padding.
@@ -214,6 +216,8 @@ export function DecklistRow({
   // Basics are excluded for the filter's own reason, not the meta line's: the
   // fill never buys them, so an owned basic is never a purchase.
   const spokenFor = inShopping && isSpokenFor(card);
+  // One answer, one slot — see `deckRowTag`.
+  const tag = deckRowTag(card);
   const passMark = usePassMark();
   const markLabel = passMark?.oracleIds.has(card.oracleId) ? passMark.label : null;
   const marked = markLabel !== null;
@@ -487,7 +491,12 @@ export function DecklistRow({
             because your copies are already sleeved elsewhere. One plate for
             both: the act is the same act, and which kind of row it is is
             already carried by the marker a few pixels to the left. */}
-        {(!card.owned || spokenFor) && (
+        {/* THE SLOT IS ONE SLOT. `deckRowTag` decides which mark lands in it and
+            the two can never co-occur: a row saying at once that the player is
+            printing this card and that they must buy it is the one state in this
+            feature nobody has drawn. */}
+        {tag === "proxy" && <ProxyTag variant="row" />}
+        {tag === "buy" && (!card.owned || spokenFor) && (
           /* The figure's own flag, not `inShopping`: the reserved slot exists
              to align the tag with the meta line, so with no meta line to align
              to there is nothing to reserve. Its width is BuyTag's own

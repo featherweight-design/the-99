@@ -21,6 +21,7 @@ import { STATUS_TOKEN, statusBarStyle } from "../../lib/decks/status-style";
 import { FirstCommitOffer } from "./first-commit-offer";
 import { StatusPillBadge } from "./status-pill";
 import { useDeckRename } from "./use-deck-rename";
+import { ProxyTag } from "./proxy-tag";
 
 /** The slice of the deck both widths of the header read. Narrower than
     `DeckDetail` on purpose: nothing in this band knows about the decklist. */
@@ -33,6 +34,9 @@ export interface SpineBandProps {
       name: string;
       colorIdentity: string[];
       artCropUri: string | null;
+      /** This deck prints its copy of this commander. Optional because the
+       *  fixtures that build this literal predate proxies; absent is unproxied. */
+      proxied?: boolean;
     };
     /**
      * The second commander, or null for the single-commander deck most decks
@@ -44,6 +48,8 @@ export interface SpineBandProps {
       name: string;
       colorIdentity: string[];
       artCropUri: string | null;
+      /** Per id: a pair deck can print one commander and own the other. */
+      proxied?: boolean;
     } | null;
   };
   counts: { built: number; ownedCount: number; toBuyCount: number };
@@ -368,6 +374,14 @@ export function SpineDesktop({
               }}
             >
               <span style={TRUNCATES}>{commander.name}</span>
+              {/* The mark, on the caption's own line. A PAIR names its owner —
+                  two commanders, two independent flags and one row, so a bare
+                  glyph could belong to either — and a single commander never
+                  pays for that. `P×2` is banned by ruling 5, so both proxied
+                  draws two named marks in name order. */}
+              {commander.proxied ? (
+                <ProxyTag variant="band" pairName={partner ? commander.name : undefined} />
+              ) : null}
               {partner ? (
                 <>
                   <span style={{ flex: "none" }}>+</span>
@@ -391,6 +405,9 @@ export function SpineDesktop({
                   >
                     {partner.name}
                   </CardDetailTrigger>
+                  {partner.proxied ? (
+                    <ProxyTag variant="band" pairName={partner.name} />
+                  ) : null}
                 </>
               ) : null}
               <span style={{ flex: "none" }}>· {colorLabel(identity)}</span>
