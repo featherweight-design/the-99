@@ -75,9 +75,14 @@ export const deckVersioningCopy = {
     // one sentence rather than `moneyNone` plus a clause, because `moneyNone`
     // claims EVERY card coming in has a spare copy — which is exactly false of
     // the printed ones, and two sentences that disagree are worse than either.
+    // "the rest are covered", never "the rest have spare copies": an added BASIC
+    // is bucketed free because basics are unlimited, not because the collection
+    // holds a spare — so the narrower sentence would describe a Swamp as a copy
+    // the player owns. `covered` is legal in prose beside what did not happen,
+    // which is exactly this sentence's shape.
     moneyProxiedMixed: (proxied: number, adds: number) =>
       `${proxied} of the ${adds} coming in ${proxied === 1 ? "is a proxy" : "are proxies"}`
-      + ", the rest have spare copies, and this commit asks for nothing.",
+      + ", the rest are covered, and this commit asks for nothing.",
 
     reviewCta: (n: number) => `Review ${plural(n, "change")}`,
     reviewLink: "review changes",

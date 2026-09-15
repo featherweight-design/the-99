@@ -403,6 +403,10 @@ describe("a commit whose adds are all printed", () => {
     const { container } = render(<PendingBanner deckId="d1" state={mixed} />);
     expect(container.textContent).not.toContain(copy.moneyNone);
     expect(container.textContent).toContain(copy.moneyProxiedMixed(9, 19));
+    // "covered", not "spare copies": an added basic buckets free because basics
+    // are unlimited, and calling that a spare copy describes a Swamp as one the
+    // player owns.
+    expect(container.textContent).not.toContain("spare copies");
   });
 
   it("still says moneyNone when the adds are genuinely covered", () => {

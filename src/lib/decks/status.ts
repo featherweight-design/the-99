@@ -84,10 +84,15 @@ export function statusPill(args: {
   if (args.built < args.bodySize) return "Building";
   if (args.built > args.bodySize) return "Over";
   if ((args.unresolvedCount ?? 0) > 0) return "Unresolved";
-  // Unowned cards are always unfunded, so the two tests would normally collapse
+  // Unowned cards are USUALLY unfunded, so the two tests would normally collapse
   // into one. They are kept separate because a caller that cannot compute the
   // seniority allocation still gets the ownership answer rather than a wrong
   // `Complete`.
+  //
+  // A PROXY is the exception that makes "usually" the right word: a printed card
+  // is unowned and funded — it is in `coveredCount` and in no buy row — so this
+  // branch can now reach `Complete` with cards the collection has never held.
+  // That is the feature, not a hole in the test.
   const unfunded = args.unfundedCount ?? 0;
   const covered = args.coveredCount ?? args.ownedCount;
   return covered === args.built && unfunded === 0 ? "Complete" : "To buy";
