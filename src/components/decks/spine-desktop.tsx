@@ -490,8 +490,16 @@ export function SpineDesktop({
             `shrink-[4]` against the title column's shrink of 1 decides which of
             the two gives — the actions have a second line to fall onto and the
             title does not. `min-w-0` is what lets it shrink below its content at
-            all, which is the width the wrap happens at. */}
-        <div className="min-w-0 shrink-[4] grow-0 basis-auto">
+            all, which is the width the wrap happens at.
+
+            While RENAMING it stays `flex-none`, which is what shipped. The
+            shrink is there for one row's content — the offer's — and that row is
+            replaced during a rename by §B14's Save/Cancel pair, which does not
+            wrap: shrinking the column below a pair of fixed-height buttons would
+            push them out of the band rather than onto a second line. The rename
+            column is also the narrower of the two, so the title has room without
+            it giving anything. */}
+        <div className={renaming ? "flex-none" : "min-w-0 shrink-[4] grow-0 basis-auto"}>
           {renaming ? (
             // §B14 — the actions are replaced, not joined. The hint row is
             // present in every state, which is what holds the column's height.

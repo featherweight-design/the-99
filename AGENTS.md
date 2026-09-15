@@ -464,7 +464,10 @@ Package manager is **pnpm** (pinned via `packageManager` in package.json) — ne
   be asked for more than it can have before it can be seen giving way. It asserts resolved
   widths against floors rather than asserting a class list, the defect having been a resolved
   width and not a missing rule, and it fails when the fixture draws no offer at all rather
-  than quietly measuring the header every other check already covers. It waits for the title
+  than quietly measuring the header every other check already covers. Its last block presses
+  the rename control at 820 and reads §B14's own row; that one is an INVARIANCE rather than a
+  mutation-proved case — the controls end inside the band whether or not the column is
+  shrinkable there — so it earns nothing today and catches a future widening of that row. It waits for the title
   `attached` rather than `visible`: a collapsed title is zero-width, which Playwright calls
   hidden, so waiting on visibility turns the defect into a 30s timeout that abandons every
   width after the first. Run with the fix reverted, 15 of its checks fail across four widths.

@@ -1,7 +1,10 @@
 // The owned lane's row (§Recommendation Card, §Fit Bar, §Role Chips, §Synergy Line,
 // §Receipts Preview, §Per-Commander Degraded Note).
-// Desktop: grid 24px 1fr auto 32px (rank · identity · fit · action) over the band,
-// and the evidence below it.
+// Desktop: grid 24px 1fr auto (rank · identity · fit) over the band, and the
+// evidence below it. There is no action column: the `Start this deck` pill that
+// held one was revealed on hover, restated the destination the whole row links
+// to, and clipped against the 32px track it sat in — both went, here and in the
+// discover lane.
 // The art is no longer a thumbnail in a column of its own: it bleeds in from the
 // leading edge of a 148px band, and everything the row measures sits below that
 // band's divider on flat ground (§4).

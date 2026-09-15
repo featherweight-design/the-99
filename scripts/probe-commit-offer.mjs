@@ -22,20 +22,24 @@ import { clerkSetup, setupClerkTestingToken } from "@clerk/testing/playwright";
 import { chromium } from "playwright";
 import { Pool, neonConfig } from "@neondatabase/serverless";
 import ws from "ws";
+import { onPage } from "./lib/surface.mjs";
 import { requireEnv } from "./lib/env.mjs";
 
 neonConfig.webSocketConstructor = ws;
 
-const {
-  E2E_AUDIT_USER_EMAIL: EMAIL,
-  E2E_AUDIT_USER_PASSWORD: PASSWORD,
-  DATABASE_URL,
-} = requireEnv([
+const { E2E_AUDIT_USER_EMAIL: EMAIL, DATABASE_URL } = requireEnv([
   "E2E_AUDIT_USER_EMAIL",
-  "E2E_AUDIT_USER_PASSWORD",
   "CLERK_SECRET_KEY",
   "DATABASE_URL",
 ]);
+// Demanded separately, because a `+clerk_test` fixture address takes the
+// email-code path and has no password to supply — the documented local account
+// is one, so requiring it through `requireEnv` would exit before the browser
+// launched. Same shape as `probe-collection-filter.mjs`.
+const PASSWORD = process.env.E2E_AUDIT_USER_PASSWORD;
+if (!EMAIL.includes("+clerk_test") && !PASSWORD) {
+  throw new Error("Set E2E_AUDIT_USER_PASSWORD.");
+}
 
 const BASE = process.env.PROBE_BASE ?? "http://localhost:3000";
 
@@ -80,7 +84,7 @@ async function signIn(page) {
         return error?.errors?.[0]?.longMessage ?? String(error);
       }
     },
-    [EMAIL, PASSWORD],
+    [EMAIL, PASSWORD ?? ""],
   );
   if (failure) throw new Error(`Clerk sign-in failed: ${failure}`);
   const userId = await page.evaluate(() => window.Clerk.user?.id ?? null);
@@ -137,14 +141,25 @@ async function buildBrew(userId, onDeck) {
   return deckId;
 }
 
-// Everything is read off the desktop band's own marker — both spines are in the
-// DOM, and `getClientRects()` is the only thing that knows which one a reader
-// sees. The offer is found by its own text so a run that never reached the gate
-// fails rather than measuring a header with no offer in it.
-const READ = `(() => {
+// The desktop band, reached through `onPage` and its own marker. Both spines are
+// in the DOM — that is what the responsive split is — so the phone's is filtered
+// out by `:visible` here and by `getClientRects()` inside the read.
+//
+// Scoped rather than queried straight off the document, like every other browser
+// script here: the shell draws `NavRail`, `MobileHeader` and `TabBar` around
+// `<main>`, and a probe that spells its own selector is a second definition of
+// what "the page" means. The read then runs THROUGH this locator, so `onPage`
+// keeps owning that.
+const band = (page) =>
+  onPage(page, "header[data-deck-spine-desktop]:visible").first();
+
+// The offer is found by its own text, so a run that never reached the gate fails
+// rather than measuring a header with no offer in it.
+// A function rather than a string: `Locator.evaluate` hands the element to it,
+// and a string would be evaluated as an expression with nothing bound to it.
+const READ = (header) => {
   const vis = (el) => el && el.getClientRects().length > 0;
-  const header = [...document.querySelectorAll('header[data-deck-spine-desktop]')].find(vis);
-  if (!header) return { found: false };
+  if (!vis(header)) return { found: false };
   const box = (el) => {
     if (!el) return null;
     const r = el.getBoundingClientRect();
@@ -166,7 +181,7 @@ const READ = `(() => {
     barTrack: box(bar?.parentElement),
     count: box(header.querySelector('[data-spine-count]')),
   };
-})()`;
+};
 
 let deckId = null;
 const browser = await clerkSetup().then(() => chromium.launch());
@@ -186,13 +201,17 @@ try {
     // which Playwright calls hidden — so waiting for visibility turns the very
     // defect this script exists to measure into a 30s timeout that abandons
     // every width after the first. Presence is what the read needs; the width is
-    // what it reports.
-    await page.waitForSelector("header[data-deck-spine-desktop] [data-deck-title]", {
-      state: "attached",
-      timeout: 30_000,
-    });
+    // what it reports. Scoped through `onPage` for the same reason the read is.
+    await onPage(page, "header[data-deck-spine-desktop] [data-deck-title]")
+      .first()
+      .waitFor({ state: "attached", timeout: 30_000 });
     await page.waitForTimeout(400);
-    const read = await page.evaluate(READ);
+    // Counted before it is read: a locator that resolves to nothing throws out of
+    // `evaluate`, and "no desktop band on this route" is a failure this run should
+    // report rather than crash on.
+    const header = band(page);
+    const read =
+      (await header.count()) === 0 ? { found: false } : await header.evaluate(READ);
 
     if (!read.found) {
       failures.push(`${width}: no desktop deck header is visible`);
@@ -232,6 +251,77 @@ try {
       failures.push(
         `${width}: the action column ends at ${read.actionColumn.right}px, past the band's ${read.header.right}px`,
       );
+    }
+  }
+  // The rename state, at the narrowest desktop. §B14 replaces the action row with
+  // a Save/Cancel pair that does not wrap, and the column is `flex-none` while
+  // the field is open for that reason.
+  //
+  // Reported as an invariant, not as a mutation-proved case: with the column
+  // left shrinkable here the controls still end inside the band at 820, so this
+  // block passes either way and the `flex-none` is conservative rather than
+  // load-bearing. It is kept because the rename column is the narrower of the
+  // two — it needs nothing from the title to fit — and because the shrink exists
+  // for content that state does not draw. What the block does earn: any future
+  // widening of §B14's row is caught here rather than on someone's screen.
+  await page.setViewportSize({ width: 820, height: 900 });
+  await page.goto(`${BASE}/decks/${deckId}`, { waitUntil: "domcontentloaded" });
+  await onPage(page, "header[data-deck-spine-desktop] [data-deck-title]")
+    .first()
+    .waitFor({ state: "attached", timeout: 30_000 });
+  const pencil = onPage(page, "header[data-deck-spine-desktop] button:visible").filter({
+    hasText: "✎",
+  });
+  if ((await pencil.count()) === 0) {
+    failures.push("820 renaming: the header draws no rename trigger, so nothing was proved");
+  } else {
+    await pencil.first().click();
+    // The field is the state's own marker: it replaces the heading, so its
+    // presence is what says the rename opened rather than a click landing on the
+    // band behind the glyph.
+    await onPage(page, "header[data-deck-spine-desktop] input")
+      .first()
+      .waitFor({ state: "visible", timeout: 10_000 });
+    const renaming = await band(page).evaluate((header) => {
+      const rect = (el) => (el ? Math.round(el.getBoundingClientRect().right) : null);
+      const row = [...header.children].find((el) => el.querySelector("input"));
+      const cols = row ? [...row.children] : [];
+      // The controls INSIDE the action column, not the first button in the
+      // header: with the field open the pencil is gone and the band's own
+      // `Card details` pill is the first button in document order, which sits
+      // at the far left and reported a comfortable 195px while proving nothing.
+      const actionColumn = cols[cols.length - 1];
+      const controls = actionColumn ? [...actionColumn.querySelectorAll("button")] : [];
+      return {
+        actions: rect(actionColumn),
+        controls: controls.length,
+        save: controls.length === 0 ? null : Math.max(...controls.map((b) => rect(b))),
+        header: rect(header),
+        field: Math.round(header.querySelector("input")?.getBoundingClientRect().width ?? 0),
+      };
+    });
+    note(
+      `820 renaming: actions end ${renaming.actions}px · ${renaming.controls} controls, ` +
+        `rightmost ends ${renaming.save}px · band ends ${renaming.header}px · ` +
+        `field ${renaming.field}px`,
+    );
+    // Two, and both of them §B14's: a count of anything else means this read
+    // found a different column and every edge below it is about the wrong box.
+    if (renaming.controls !== 2) {
+      failures.push(`820 renaming: the action column holds ${renaming.controls} controls, not 2`);
+    }
+    if (renaming.actions > renaming.header + 1) {
+      failures.push(
+        `820 renaming: the action column ends at ${renaming.actions}px, past the band's ${renaming.header}px`,
+      );
+    }
+    if (renaming.save === null || renaming.save > renaming.header + 1) {
+      failures.push(
+        `820 renaming: a rename control ends at ${renaming.save}px, past the band's ${renaming.header}px`,
+      );
+    }
+    if (renaming.field < 100) {
+      failures.push(`820 renaming: the field measures ${renaming.field}px`);
     }
   }
 } finally {
