@@ -1,0 +1,100 @@
+{
+  "feature": "Printed mana symbols on the large pip; no pips in the deck's card view",
+  "rows": [
+    {
+      "id": "modal-mono",
+      "label": "card modal — a generic + one hue",
+      "steps": [
+        {
+          "goto": "/collection?view=rows&q=Smothering%20Tithe",
+          "settle": 2500,
+          "wait": "main, [role=main], h1"
+        },
+        {
+          "clickRole": "button",
+          "name": "^Smothering Tithe,",
+          "wait": "[role=dialog]",
+          "settle": 2500
+        }
+      ]
+    },
+    {
+      "id": "modal-hybrid",
+      "label": "card modal — a hybrid cost",
+      "steps": [
+        {
+          "goto": "/collection?view=rows&q=Zirda",
+          "settle": 2500,
+          "wait": "main, [role=main], h1"
+        },
+        {
+          "clickRole": "button",
+          "name": "^Zirda, the Dawnwaker,",
+          "wait": "[role=dialog]",
+          "settle": 2500
+        }
+      ]
+    },
+    {
+      "id": "modal-phyrexian",
+      "label": "card modal — a Phyrexian cost",
+      "steps": [
+        {
+          "goto": "/collection?view=rows&q=Gitaxian%20Probe",
+          "settle": 2500,
+          "wait": "main, [role=main], h1"
+        },
+        {
+          "clickRole": "button",
+          "name": "^Gitaxian Probe,",
+          "wait": "[role=dialog]",
+          "settle": 2500
+        }
+      ]
+    },
+    {
+      "id": "deck-card-view",
+      "label": "/decks/[id] — card view draws no pips",
+      "steps": [
+        {
+          "goto": "/decks/${PROBE_DECK}",
+          "wait": "main, [role=main], h1",
+          "settle": 7000
+        },
+        {
+          "clickRole": "button",
+          "name": "^Card view$",
+          "settle": 3000
+        }
+      ]
+    },
+    {
+      "id": "deck-list-view",
+      "label": "/decks/[id] — list view keeps its pips",
+      "steps": [
+        {
+          "goto": "/decks/${PROBE_DECK}",
+          "wait": "main, [role=main], h1",
+          "settle": 7000
+        },
+        {
+          "clickRole": "button",
+          "name": "^List view$",
+          "settle": 3000
+        }
+      ]
+    },
+    {
+      "id": "collection-rows",
+      "label": "/collection (rows) — the small pips are unchanged",
+      "steps": [
+        {
+          "goto": "/collection?view=rows",
+          "settle": 4000,
+          "wait": "main, [role=main], h1"
+        }
+      ]
+    }
+  ],
+  "note": "The list view and /collection rows are photographed BECAUSE they must not change: this round swaps one treatment at one size, and a sweep of only the surfaces that moved cannot show that the small runs stayed discs. The deck rows take PROBE_DECK from the environment — any deck the signed-in account owns. A cost with a hybrid and one with a Phyrexian are separate rows because they are the two symbols the retired disc could not draw at all, and the generic-plus-hue row is the common case they would otherwise hide."
+}

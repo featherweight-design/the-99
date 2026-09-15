@@ -474,6 +474,35 @@ Package manager is **pnpm** (pinned via `packageManager` in package.json) — ne
   It deletes its deck in a `finally`; point it at `local-dev` or a scratch Neon branch,
   **never production**.
 
+- `pnpm fetch:mana` downloads Scryfall's mana symbols into `public/mana/` and rewrites the
+  manifest the renderer checks before reaching for one. The five WUBRG files the color filter
+  draws came from the same place; this is that set extended to the 59 symbols a mana cost can
+  contain, filtered on Scryfall's own `appears_in_mana_costs` so tap, energy and loyalty never
+  land here. The manifest exists because that list GROWS: a set with a new symbol arrives in the
+  weekly catalog refresh while these files move only when someone runs this, so the large pip
+  falls back to a lettered disc for a symbol it has no art for rather than drawing a 26px hole.
+  The script asserts per symbol that its slug equals Scryfall's own filename, which is the one
+  way a rename would otherwise ship as a silent 404.
+
+- `pnpm probe:mana-symbols` proves the two pip rulings in a real browser at 1300x900 and
+  390x844: that the card modal's cost draws printed symbols at its 26/22px box, and that the
+  deck's card view draws none. Both are facts about painted pixels — the unit tests can say
+  which file a pip ASKS for and that a tile renders no run, and neither of those says the art
+  RESOLVED. A 404 on `/mana/2R.svg` leaves markup identical to the working build's, so the
+  probe reads back the served bytes and requires a 200 with an SVG body for each of that
+  cost's own files. Scoped to the cost's files rather than every `/mana/` request the page
+  made, because the filter control draws the five hues on `/collection` too: a sweep of all
+  requests reports five healthy files over a modal whose every pip failed. It reads the pips
+  as the children of the run inside `[data-testid="modal-mana-cost"]`, never every span in
+  that slot — the slot also holds the run's container and the sr-only cost, and a sweep of
+  all three reads a 57px box and a lettered string belonging to neither pip, which is a probe
+  reporting its own markup as a defect. The card-view check counts the ownership DOTS beside
+  the pip runs, because a run that never reached the view reports zero pip runs while
+  measuring nothing. Three mutations were run against it and all three fail: the tile's pips
+  restored, the symbol art suppressed, and a typo in the slug — that last one passing every
+  DOM assertion while serving 404s, which is the failure it exists for. It makes no writes.
+  Point it at `local-dev`.
+
 - `pnpm probe:scroll-lock` presses every overlay the app draws over a scrim — the filter
   sheets on `/collection`, `/commanders`, `/discover`, `/decks` and a set page, the
   `FilterPanel` sort sheet, and the card modal — and proves the page behind each one does

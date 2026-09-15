@@ -2,7 +2,7 @@ import { act, cleanup, render, screen } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { addPanelCopy } from "../../lib/copy/decks-builder";
 import { availabilityCopy } from "../../lib/copy/availability";
-import { cardTileCopy } from "../../lib/copy/card-surfaces";
+import { cardTileCopy, manaCopy, spokenManaCost } from "../../lib/copy/card-surfaces";
 import type { Availability } from "../../lib/decks/availability";
 import type { DeckDetailCard } from "../../lib/decks/grouping";
 import { CardDetailProvider, cardDetailCopy } from "../cards/card-detail-provider";
@@ -229,5 +229,69 @@ describe("DeckCardTile printed name", () => {
   it("leaves an ordinary card on its oracle name, byte for byte", () => {
     renderTile(<DeckCardTile deckId="d1" card={{ ...card, name: "Fire // Ice" } as DeckDetailCard} />);
     expect(screen.getByText("Fire // Ice")).toBeInTheDocument();
+  });
+});
+
+describe("DeckCardTile — the cost the art already prints", () => {
+  // The drawn pips are gone from a tile with art: the card prints its cost in
+  // its own top-right corner, and a run of discs over the bottom-left said it
+  // twice. Asserted on the pip ELEMENTS rather than on the spoken string, which
+  // survives the change and would go green either way.
+  it("draws no cost pips over a tile with art", () => {
+    const { container } = render(
+      <CardDetailProvider fetchCard={vi.fn().mockResolvedValue(null)}>
+        <DeckCardTile deckId="d1" card={{ ...card, manaCost: "{3}{W}{W}" }} />
+      </CardDetailProvider>,
+    );
+
+    expect(container.querySelector("[class*='gap-[3px]']")).toBeNull();
+  });
+
+  // The pips were this tile's only cost for a reader who cannot see the art, so
+  // dropping them has to leave the spoken form behind.
+  it("still speaks the cost", () => {
+    renderTile(<DeckCardTile deckId="d1" card={{ ...card, manaCost: "{3}{W}{W}" }} />);
+
+    expect(screen.getByText(spokenManaCost("{3}{W}{W}"))).toBeInTheDocument();
+  });
+
+  // The rule is "the card is visible", so it does not reach a tile with no
+  // image: that one draws a plate printing nothing, and the pips are the only
+  // cost anyone can see.
+  it("keeps the pips on a tile with no art", () => {
+    const { container } = render(
+      <CardDetailProvider fetchCard={vi.fn().mockResolvedValue(null)}>
+        <DeckCardTile
+          deckId="d1"
+          card={{ ...card, manaCost: "{3}{W}{W}", imageUri: null } as DeckDetailCard}
+        />
+      </CardDetailProvider>,
+    );
+
+    expect(container.querySelector("[class*='gap-[3px]']")).not.toBeNull();
+    expect(screen.getByText(spokenManaCost("{3}{W}{W}"))).toBeInTheDocument();
+  });
+});
+
+describe("DeckCardTile — a cost string with nothing in it", () => {
+  // `spokenManaCost` answers `no mana cost` for a string it cannot parse, which
+  // is a claim about the CARD rather than about the string — a land. The tile
+  // must stay silent instead, which is what the retired `CostPips` path did by
+  // drawing nothing.
+  it("says nothing for a nonempty cost holding no symbols", () => {
+    renderTile(<DeckCardTile deckId="d1" card={{ ...card, manaCost: "???" }} />);
+
+    expect(screen.queryByText(manaCopy.costNone)).not.toBeInTheDocument();
+  });
+
+  it("says nothing for it on a tile with no art either", () => {
+    const { container } = render(
+      <CardDetailProvider fetchCard={vi.fn().mockResolvedValue(null)}>
+        <DeckCardTile deckId="d1" card={{ ...card, manaCost: "???", imageUri: null } as DeckDetailCard} />
+      </CardDetailProvider>,
+    );
+
+    expect(screen.queryByText(manaCopy.costNone)).not.toBeInTheDocument();
+    expect(container.querySelector("[class*='gap-[3px]']")).toBeNull();
   });
 });

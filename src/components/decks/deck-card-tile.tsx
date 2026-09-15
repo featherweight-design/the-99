@@ -3,11 +3,11 @@
 // The card view's unit (#349) — Matrix 2 of STATES-card-surfaces.md.
 //
 // Built from `collection/grid-view.tsx`'s tile, with four deltas: the ownership
-// dot and the cost pips share the art's bottom-left scrim, the set/rarity
-// caption is gone, the quantity badge disappears at one copy, and the `✕` joins
-// the caption. It is not a fork of `suggestion-tile.tsx` — that one carries
-// evidence bars, an Add button and a two-line clamped name it needs to keep a
-// shelf of tiles in alignment, none of which a decklist tile has any use for.
+// dot sits in the art's bottom-left scrim, the set/rarity caption is gone, the
+// quantity badge disappears at one copy, and the `✕` joins the caption. It is
+// not a fork of `suggestion-tile.tsx` — that one carries evidence bars, an Add
+// button and a two-line clamped name it needs to keep a shelf of tiles in
+// alignment, none of which a decklist tile has any use for.
 //
 // Three of the four corners are marked and the fourth is left bare on purpose:
 // four marked corners is a frame, and an empty bottom-right keeps the art
@@ -15,13 +15,13 @@
 
 import { removeCardFromDeck } from "../../app/decks/actions";
 import { addPanelCopy } from "../../lib/copy/decks-builder";
-import { cardTileCopy } from "../../lib/copy/card-surfaces";
+import { cardTileCopy, spokenManaCost } from "../../lib/copy/card-surfaces";
 import { cssUrl, printedFaceName, printedNameOf } from "../../lib/collection/browse";
 import { availabilityState } from "../../lib/decks/availability";
 import type { DeckDetailCard } from "../../lib/decks/grouping";
 import { DECK_REMOVE_FALLBACK_MESSAGE } from "../../lib/decks/mutation-result";
 import { AvailabilityMarker } from "../ui/availability-marker";
-import { CostPips } from "../ui/cost-pips";
+import { CostPips, parseManaCost } from "../ui/cost-pips";
 import { OwnershipDot } from "../ui/ownership-dot";
 import { BuyTag } from "./buy-tag";
 import { CardDetailTrigger, cardDetailCopy } from "../cards/card-detail-provider";
@@ -72,6 +72,9 @@ export function DeckCardTile({
   // does. The modal — one tap away on the art — is the recovery path.
   const displayName = printedFaceName(card);
   const fullName = printedNameOf(card);
+  // Null unless the string holds symbols this app can draw, so both branches
+  // below agree on what "has a cost" means.
+  const cost = card.manaCost && parseManaCost(card.manaCost).length > 0 ? card.manaCost : null;
 
   function handleRemove() {
     markSlotSpent(card);
@@ -196,11 +199,31 @@ export function DeckCardTile({
               className="w-[8px] h-[8px]"
               label={card.owned ? "Owned" : "Not owned"}
             />
-            {card.manaCost ? (
-              // No pre-parse: `CostPips` draws nothing for a cost with no
-              // symbols in it, so a second parse here would only ask the same
-              // question twice per tile.
-              <CostPips cost={card.manaCost} size={11} className="flex gap-[3px]" spoken />
+            {/* No drawn pips over art. The card prints its own cost in its own
+                top-right corner, and a run of discs over the bottom-left said
+                the same thing a second time in a worse hand. The list view keeps
+                its pips, because there the row has no art to read it off.
+
+                A tile with NO art keeps them, for that same reason read the
+                other way: the plate it draws instead prints nothing, so the pips
+                are the only cost anyone can see.
+
+                Either way the cost is SPOKEN. "The card is visible" is an
+                argument about a reader who can see the art; it reaches nobody
+                using a screen reader, for whom the pips were the only cost this
+                tile carried. */}
+            {/* PARSED, not merely truthy — the same test `decklist-row.tsx` makes.
+                `spokenManaCost` answers `no mana cost` for a string it cannot
+                parse, which is a claim about the card rather than about the
+                string: a stored cost that is nonempty and unreadable would be
+                announced as a land. `CostPips` drew nothing for it, and nothing
+                is still the right answer. */}
+            {cost ? (
+              card.imageUri ? (
+                <span className="sr-only">{spokenManaCost(cost)}</span>
+              ) : (
+                <CostPips cost={cost} size={11} className="flex gap-[3px]" spoken />
+              )
             ) : null}
           </span>
         </div>
