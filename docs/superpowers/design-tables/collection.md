@@ -926,7 +926,30 @@ on this row.
 | flex | none | none |
 | padding-top | 4px | — |
 
-### Mana Pip (generic {n})
+### Mana Pip (printed symbol)
+
+**Supersedes the two lettered-disc rows below**, ratified 2026-09-14: at this size the pip
+draws Scryfall's printed symbol — the art the color filter's own pips already use, extended
+from its five hues to every symbol a cost can contain. A twobrid's split ground, a Phyrexian's
+phi, snow and colourless each say something the disc could only approximate, and one lettered
+disc among printed symbols would be two treatments inside one cost. The symbols are finished
+illustrations, drawn as art and never masked or tinted.
+
+| Property | Mobile | Desktop |
+|----------|--------|---------|
+| width | 22px | 26px |
+| height | 22px | 26px |
+| border-radius | 999px | 999px |
+| background | `center / contain no-repeat url(/mana/<slug>.svg)` | same |
+| display | flex | flex |
+| align-items | center | center |
+| justify-content | center | center |
+
+### Mana Pip (generic {n}) — RETIRED, fallback only
+Drawn only for a symbol with no committed art: Scryfall's symbol list grows with the card pool
+and `public/mana/` moves only when someone runs `pnpm fetch:mana`, so a symbol printed since the
+last run takes this rather than a 26px hole.
+
 | Property | Mobile | Desktop |
 |----------|--------|---------|
 | width | 22px | 26px |
@@ -940,7 +963,9 @@ on this row.
 | align-items | center | center |
 | justify-content | center | center |
 
-### Mana Pip (WUBRG colored)
+### Mana Pip (WUBRG colored) — RETIRED, fallback only
+Same fallback rule as the row above.
+
 | Property | Mobile | Desktop |
 |----------|--------|---------|
 | width | 22px | 26px |
