@@ -823,3 +823,24 @@ export const commanderSupportCards = pgTable("commander_support_cards", {
   // commanders support it. The PK's leading column cannot serve that query.
   index("commander_support_cards_oracle_idx").on(t.oracleId),
 ]);
+
+/**
+ * Per-account preferences that are not a reading habit. A reading habit —
+ * which view, which order — lives in localStorage, because it belongs to the
+ * device and re-prompting on a second one costs nothing. This does not: the
+ * About page follows the account, and a version marker that lived per device
+ * would put the page in front of the same reader on every browser they use.
+ *
+ * Named for what it is rather than for its one column. A second per-account
+ * preference is a column here, not a second table — but it gains none
+ * speculatively.
+ *
+ * `about_version_seen` is the highest ABOUT_VERSION this account has
+ * acknowledged by pressing the page's dismiss. 0 is the default and means
+ * "never seen", which is every account at launch. A row is written on first
+ * dismiss; its absence reads as 0 rather than as an error.
+ */
+export const userPrefs = pgTable("user_prefs", {
+  userId: text("user_id").primaryKey(),
+  aboutVersionSeen: integer("about_version_seen").notNull().default(0),
+});
