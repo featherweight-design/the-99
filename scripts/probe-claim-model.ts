@@ -20,6 +20,7 @@ import ws from "ws";
 import { loadAvailability, loadDeckBuyRows } from "../src/lib/decks/availability-query";
 import { assignCopyFor } from "../src/lib/decks/assign";
 import { commitVersion } from "../src/lib/decks/versions";
+import { pruneOrphanAssignments } from "../src/lib/decks/prune-assignments";
 
 neonConfig.webSocketConstructor = ws;
 
@@ -642,9 +643,38 @@ async function assignmentWriteSection() {
     check("a pick with no giveable copy is refused by name",
       await assignCopyFor(USER_W, card, senior), "no-supply-left");
 
-    // 7. A COMMIT THAT DROPS THE CARD TAKES THE RESERVATION WITH IT. A deck that drops a card
-    //    and adds it back later must not resurrect a decision made about a different list.
+    // 7. A PROXY ENDS THE CLAIM, SO IT ENDS THE PICK. The claim model anti-joins `deck_proxies`,
+    //    so a deck printing the card claims nothing — reserving a real copy for it would take one
+    //    from a deck that needs it. Refused on the way in…
+    // The commander deck from case 5 holds the only copy, which is what case 6 just proved — so
+    // it goes before anything here can be given away at all.
     await fixture.execute(sql`delete from decks where id = ${cmdDeck.id}`);
+    await fixture.execute(sql`delete from card_assignments where user_id = ${USER_W}`);
+    await fixture.execute(sql`
+      insert into deck_proxies (deck_id, oracle_id) values (${junior}, ${card})
+      on conflict do nothing
+    `);
+    check("a proxied deck cannot be given a copy",
+      await assignCopyFor(USER_W, card, junior), "claimant-no-longer-asks");
+    await fixture.execute(sql`delete from deck_proxies where deck_id = ${junior}`);
+
+    //    …and swept if the proxy lands AFTER the pick. Inert is not gone: the row would match
+    //    again the moment the card was unproxied, arriving silently already holding the copy.
+    // The senior deck still holds the reservation from case 3's move, and one copy exists — so
+    // the junior's pick would be a MOVE and land, but the fixture is clearer with the card free.
+    await fixture.execute(sql`delete from card_assignments where user_id = ${USER_W}`);
+    check("a pick before the proxy is accepted", await assignCopyFor(USER_W, card, junior), null);
+    check("a reservation exists before the proxy", await rowsFor(junior), 1);
+    await fixture.execute(sql`
+      insert into deck_proxies (deck_id, oracle_id) values (${junior}, ${card})
+      on conflict do nothing
+    `);
+    await pruneOrphanAssignments(fixture, junior);
+    check("and is gone after the deck prints the card", await rowsFor(junior), 0);
+    await fixture.execute(sql`delete from deck_proxies where deck_id = ${junior}`);
+
+    // 8. A COMMIT THAT DROPS THE CARD TAKES THE RESERVATION WITH IT. A deck that drops a card
+    //    and adds it back later must not resurrect a decision made about a different list.
     await assignCopyFor(USER_W, card, senior);
     check("a reservation exists before the commit", await rowsFor(senior), 1);
     await fixture.execute(sql`delete from deck_cards where deck_id = ${senior}`);

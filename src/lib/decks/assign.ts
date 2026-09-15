@@ -60,10 +60,13 @@ export async function assignCopyFor(
     // model to grant one of them nothing while the row sits there counted as spent. The lock is
     // transaction-scoped, so a commit or a rollback releases it.
     //
-    // Keyed on the pair, because that is the supply being contended. `hashtextextended` for the
-    // reason `replaceCollection` uses it: the ids are text of arbitrary length.
+    // Keyed on the PAIR as one bigint, not as two arguments: the two-argument form of
+    // `pg_advisory_xact_lock` takes int4s, and `hashtextextended` returns a bigint, so the
+    // two-key spelling does not resolve to any function at all — it fails the query rather than
+    // taking a weaker lock, which is how the probe caught it. `hashtextextended` for the reason
+    // `replaceCollection` uses it: the ids are text of arbitrary length.
     await tx.execute(sql`
-      select pg_advisory_xact_lock(hashtextextended(${userId}, 0), hashtextextended(${oracleId}, 0))
+      select pg_advisory_xact_lock(hashtextextended(${userId} || ':' || ${oracleId}, 0))
     `);
     // The deck row first, and locked: every guard below reads what this deck currently claims,
     // and a commit landing between the read and the write would authorize against a version that
