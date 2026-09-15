@@ -17,7 +17,7 @@ import { Pool, neonConfig } from "@neondatabase/serverless";
 import { drizzle } from "drizzle-orm/neon-serverless";
 import { sql } from "drizzle-orm";
 import ws from "ws";
-import { loadAvailability } from "../src/lib/decks/availability-query";
+import { loadAvailability, loadDeckBuyRows } from "../src/lib/decks/availability-query";
 
 neonConfig.webSocketConstructor = ws;
 
@@ -165,6 +165,21 @@ async function reservationSection() {
     await assign(b);
     check("a reservation beats an earlier since", await free(b), 0);
     check("the displaced senior deck buys instead", await free(a), -1);
+
+    // 2b. THE OTHER READ SITE. loadDeckBuyRows is what the deck tile, the Shopping
+    //     list and the price strip bill from, and it computes the same allocation
+    //     through a second, independently written expression. A reservation that
+    //     moved `free` and not this one would leave the deck page and the receipt
+    //     disagreeing about the same card — which is the exact class of defect the
+    //     three-term decomposition exists to prevent, so it is asserted rather than
+    //     assumed. (With the reservation terms dropped from this query alone, the
+    //     figures below swap.)
+    const owes = async (deckId: string) => {
+      const rows = await loadDeckBuyRows(USER_R, [deckId]);
+      return rows.filter((r) => r.oracleId === card).reduce((n, r) => n + r.quantity, 0);
+    };
+    check("the displaced senior deck is billed for a copy", await owes(a), 1);
+    check("and the reserving deck is billed for none", await owes(b), 0);
 
     // 3. Capped at the deck's own ask — and the SUPPLY has to be generous for this
     //    case to measure anything. With one copy owned the supply ceiling binds
