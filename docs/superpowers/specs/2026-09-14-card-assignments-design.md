@@ -275,6 +275,33 @@ one merges.
 PRs 3 and 4 are new UI and so are blocked by the pipeline rule: no UI until a handoff exists
 and carries a READINESS verdict. PRs 1 and 2 carry no such gate.
 
+## Amendments, 2026-09-14
+
+**Rulings.** The deck-page door is dropped: the `over` availability marker stays inert, and the
+chooser lives on the summary and `/decks/[id]/changes` only. `IssueInspector` becomes reachable
+after the confirm, so the summary's issues line keeps its link.
+
+**The commander rule is a CEILING, not a promotion.** This design said commander copies come
+"off the top", ahead of reservations. Taken literally that promotes every commander claim ahead
+of the seniority queue unconditionally, which moves live figures with no assignment rows in the
+table at all — a deck holding a card as its commander with a later `commander_since` than
+another deck's list claim would start winning a copy it loses today, and that lands on the deck
+page marker, the Shopping filter and Home's commitments. What this design needs is narrower and
+is what shipped: commander copies **bound what may be reserved** and are otherwise left exactly
+where they are in the queue. With no reservations, every figure is unchanged.
+
+**`free` decomposes into three terms, not one.** `owned − own_claim − reserved_others −
+least(seniors_ahead_unreserved, remainder)`. Written as one term a reservation cannot change an
+allocation at all: the vantage deck's senior claimant stays counted against it at the old cap,
+so a deck reads short on the copy it just won. There is deliberately no global commander term —
+`own_claims` already subtracts the vantage deck's own commander, and a second subtraction would
+leave `free` one low on every deck's own commander, always.
+
+**Errata from the readiness audit.** `DeckClaim` carried no `since` and no version number, both
+of which the chooser's commit stamp and its ordering need; they ship in PR 1 beside
+`commanderCopies`. The handoff's flag against `review.bucketFreeNote` is stale — that string is
+retired. The `review.lede` finding stands and is fixed in PR 4.
+
 ## Settled
 
 - **The before/after reads are not one serialized snapshot, deliberately.** Review asked for
