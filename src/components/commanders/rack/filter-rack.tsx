@@ -73,6 +73,14 @@ export function FilterRack({
   // they are the same sentence; composing it in each place is what let the two
   // disagree.
   const resultLine = resultLineWithAside(shown, total, lane, excludedByExactly, sleevedByFree);
+
+  // NOT passed to the chassis as `announce`. That prop is for a message a
+  // surface raises on an event — supplying it as a standing value makes it
+  // `fresh` on mount, and the chassis reads its own count out on arrival, which
+  // is the one thing `ResultLine` keeps a null for. The aside is therefore
+  // spoken, because it is part of the visible sentence and the chassis speaks
+  // its visible sentence. That is the right region for it: the aside explains
+  // the count, and this is the region that owns the count.
   const [sheetOpen, setSheetOpen] = useState(false);
 
   // Same reason as `decks-view.tsx`: unmounting the sheet at the breakpoint

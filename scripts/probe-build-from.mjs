@@ -375,8 +375,13 @@ async function run() {
           `database and must be removed by hand (${error?.message ?? error})`,
       );
     } finally {
-      await browser.close();
-      await pool.end();
+      // Nested again, so a browser that refuses to close cannot leave the pool
+      // open behind it. Each shutdown is attempted whatever the other does.
+      try {
+        await browser.close();
+      } finally {
+        await pool.end();
+      }
     }
   }
 

@@ -55,6 +55,24 @@ function renderRack(
 // last count and read it out again the instant the sheet came back — on a
 // reopening where nothing had changed. Three review rounds went into managing
 // that lifetime before it was removed instead.
+// The chassis speaks its visible sentence, so the aside goes with it — which is
+// the region that owns the count the aside explains. Pinned because the obvious
+// alternative is to hand the chassis a separate `announce`, and that prop is for
+// a message raised on an event: supplied as a standing value it reads as fresh
+// on mount and the chassis announces its own count on arrival.
+describe("FilterRack spoken sentence", () => {
+  it("speaks the hidden-row aside with the count it explains, and says nothing on arrival", async () => {
+    stubWidth(true);
+    const { rerender } = render(rackEl("owned", defaultParams("owned"), 148, 148, false, null, null));
+    expect(screen.getByRole("status")).toHaveTextContent("");
+
+    rerender(rackEl("owned", defaultParams("owned"), 12, 148, false, null, 3));
+    await waitFor(() =>
+      expect(screen.getByRole("status")).toHaveTextContent(/3 more are sleeved/),
+    );
+  });
+});
+
 describe("FilterRack sheet lifetime", () => {
   it("starts each opening of the sheet silent", async () => {
     stubWidth(false);

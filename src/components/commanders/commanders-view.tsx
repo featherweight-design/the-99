@@ -467,18 +467,17 @@ export function CommandersView({
   useEffect(() => {
     if (prevAvail.current === avail) return;
     prevAvail.current = avail;
-    // The aside is NOT announced, in either form. It is drawn on the result line
-    // and in the sheet header, and `excludedByExactly` — the aside this one is
-    // modelled on — has never been announced either.
+    // This announces the FLIP. The aside that explains what the flip hid is
+    // spoken by the chassis result line, which is the region that owns the
+    // count it explains, and which speaks its visible sentence.
     //
-    // Three attempts at announcing it each moved the same duplication somewhere
-    // else. This lane has two live regions: this one, and the chassis result
-    // line, which is silenced only while the compact sheet is open
-    // (`silentResult={!wide && sheetOpen}`). A flip therefore speaks twice on
-    // the wide rack and twice in the sheet, and it did so before this change —
-    // adding the aside to either region only made the second voice louder. The
-    // fix is one region for the lane, which is a piece of work about this lane's
-    // a11y rather than about free mode, and is in the PR's follow-up list.
+    // So a `Build from` flip speaks twice on the wide rack: the mode from here,
+    // the count and its reason from there. That predates this change — the two
+    // regions have both spoken on a flip since the toggle shipped — and every
+    // attempt to route the aside around it during review moved the duplication
+    // rather than removing it. Collapsing the lane to one region is work about
+    // this lane's a11y rather than about free mode, and is in the PR's
+    // follow-up list.
     setAnnouncement(availabilityCopy.ranking.announce(avail, active.length));
   }, [avail, active.length]);
 
