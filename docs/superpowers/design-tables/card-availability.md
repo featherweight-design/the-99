@@ -389,7 +389,7 @@ One region, **max two lines**, **red above muted, always** — the order is fixe
 |---|---|---|---|---|---|---|---|
 | 13.1 | Name cell | shipped | shipped | `display:flex` inside the existing `1fr` | unchanged | — | A2RM:33–49 |
 | 13.2 | Name half | shipped | shipped | `truncate min-w-0` | flexible | full name in `title` **and** in the accessible name | RD2:119–133 |
-| 13.3 | Marker chip | mono 8.5/600 | per state | `flex: none` | hugs | **the deck-name half is the only part allowed to truncate** | A2RM:33–49, RD2:119–133 |
+| 13.3 | Marker chip | mono 8.5/600 (row density; the tile's caption box is 8.5/9) | per state | `flex: none` | hugs | **the deck-name half is the only part allowed to truncate** | A2RM:33–49, RD2:119–133 |
 | 13.4 | Chip seam | — | `#1E1A15` | — | 1px | phone collection chip / row | A2CV:87–147 |
 | 13.5 | Over row | — | container border tint retained | — | — | **border tint and nothing else** — no bg fill on the row | A2RM:33–49 |
 | 13.6 | Label copy | — | — | — | — | `marker.hard` only | A2RM:62–75 |
@@ -404,9 +404,9 @@ One region, **max two lines**, **red above muted, always** — the order is fixe
 
 | # | Element | Typography | Colour | Spacing | Size | States | Source |
 |---|---|---|---|---|---|---|---|
-| 14.1 | Tile chip | §2 | §2 | **top-left** | hugs | four states | A2RM:51–60 |
-| 14.2 | Tile caption | shipped | shipped | — | unchanged | `C21 · uncommon` **untouched** | A2RM:51–60 |
-| 14.3 | Desktop tile grid | — | — | `repeat(5, 1fr)` | unchanged | — | A2CV:371–396 |
+| 14.1 | Tile chip | §2 | §2 | ~~**top-left**~~ → **the caption's meta line** | hugs | four states | A2RM:51–60; superseded by card captions (R1) call D |
+| 14.2 | Tile caption | ~~shipped~~ → **two lines, fixed height** | shipped | — | ~~unchanged~~ → 52px phone / 46px desktop | `C21 · uncommon` moves onto the meta line, right-aligned | A2RM:51–60; superseded by card captions (R1) call A — see `collection.md` §Grid Tile: Caption Area |
+| 14.3 | Desktop tile grid | — | — | ~~`repeat(5, 1fr)`~~ → `repeat(auto-fill, minmax(178px, 1fr))` | unchanged | — | A2CV:371–396; superseded by card captions (R1) ruling 3 |
 | 14.4 | Card detail marker | — | per state | — | — | **count-only** — renders whenever the state is not `free`, so `marker.soft`, `marker.hard` or `marker.over`. Never `hardIn`, never `hardMulti`: `nameless` short-circuits both the naming and the deck COUNT, because counting claimants is the receipt’s job below and a marker that also counted them would print the same figure twice. Superseded by 14.7 (#353): the claim list below names every deck, so the marker naming one of them duplicated a link and made "first by name" look like a choice. The row's intent — card detail is where the deck gets named — is carried by 14.7 | A2RM:62–75, superseded #353 |
 | 14.5 | Card detail status pill | — | — | — | — | **ships WITHOUT the status pill the canvas draws** — ratified R5 §3; the pill would be inferred from `hard > 0` rather than read. `hardDeckNames` stays names only, never `{ name, pill }[]` | RD2:78–84, R5RM:102–116 |
 | 14.6 | Detail copy | shipped | shipped | — | — | `collection.detailHeading`, `detailHardNote`, `detailSoftNote`, `detailOverNote` | CP:195–227 |

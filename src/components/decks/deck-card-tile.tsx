@@ -2,16 +2,19 @@
 
 // The card view's unit (#349) — Matrix 2 of STATES-card-surfaces.md.
 //
-// Built from `collection/grid-view.tsx`'s tile, with four deltas: the ownership
-// dot sits in the art's bottom-left scrim, the set/rarity caption is gone, the
-// quantity badge disappears at one copy, and the `✕` joins the caption. It is
-// not a fork of `suggestion-tile.tsx` — that one carries evidence bars, an Add
-// button and a two-line clamped name it needs to keep a shelf of tiles in
-// alignment, none of which a decklist tile has any use for.
+// Built from `collection/grid-view.tsx`'s tile, and since card captions (R1)
+// the two have shared the caption itself — `ui/card-tile-caption.tsx`. Three deltas
+// remain: this one carries an ownership dot on the meta line, has no set/rarity
+// caption, and ends the caption with a full-height `✕` column. It is not a fork
+// of `suggestion-tile.tsx` — that one carries evidence bars, an Add button and a
+// two-line clamped name it needs to keep a shelf of tiles in alignment, none of
+// which a decklist tile has any use for.
 //
-// Three of the four corners are marked and the fourth is left bare on purpose:
-// four marked corners is a frame, and an empty bottom-right keeps the art
-// reading as one click target.
+// NOTHING IS DRAWN OVER THE ART. The four marks that used to hold its corners —
+// the availability chip, the collapsed `$`, the proxy `P` and the `×N` badge —
+// are on the caption's meta line, and the bottom wash deleted with them. The one
+// exception is a tile with NO art, whose plate prints no cost of its own and so
+// keeps the drawn pips; on a tile that has art the cost is spoken instead.
 
 import { removeCardFromDeck } from "../../app/decks/actions";
 import { addPanelCopy } from "../../lib/copy/decks-builder";
@@ -21,6 +24,7 @@ import { availabilityState } from "../../lib/decks/availability";
 import type { DeckDetailCard } from "../../lib/decks/grouping";
 import { DECK_REMOVE_FALLBACK_MESSAGE } from "../../lib/decks/mutation-result";
 import { AvailabilityMarker } from "../ui/availability-marker";
+import { CardTileCaption } from "../ui/card-tile-caption";
 import { CostPips, parseManaCost } from "../ui/cost-pips";
 import { OwnershipDot } from "../ui/ownership-dot";
 import { BuyTag } from "./buy-tag";
@@ -70,6 +74,11 @@ export function DeckCardTile({
   // Two strings, because they answer different questions. The caption is a
   // front face and may clip; the trigger's accessible name is whole and never
   // does. The modal — one tap away on the art — is the recovery path.
+  // One predicate for the whole proxied state, read the same way the slot reads
+  // it. The matrix ties the dot, the count and the mark to one another
+  // (`STATES-card-captions.md:31`), so three independent tests here is three
+  // chances for them to disagree.
+  const proxied = deckRowTag(card) === "proxy";
   const displayName = printedFaceName(card);
   const fullName = printedNameOf(card);
   // Null unless the string holds symbols this app can draw, so both branches
@@ -103,58 +112,6 @@ export function DeckCardTile({
         }`}
       >
         <div className="relative">
-          {/* Top-left is the availability slot, and on a card the player does
-              not own it is never empty. The marker only speaks about copies you
-              own, so unowned takes the collapsed `$` instead — with no price:
-              here the chip is the floor, not the shop. */}
-          {/* THE SAME EXCLUSIVE DECISION THE LIST ROW MAKES. Read off
-              `card.owned` alone, this tile drew a buy tag on a printed card —
-              the Card view telling the player to buy something the List view
-              says they are printing, on one deck, one card, one glance apart. */}
-          {/* The inner span takes the pointer so the tag's `title` is reachable:
-              the wrapper's `pointer-events-none` would otherwise make the
-              tooltip — one of the mark's three word-carriers — unavailable on
-              this surface, while still keeping the art around it clickable. */}
-          {deckRowTag(card) === "proxy" ? (
-            <span className="absolute z-10 top-[6px] left-[6px] pointer-events-none">
-              <span className="pointer-events-auto">
-                <ProxyTag variant="band" />
-              </span>
-            </span>
-          ) : card.owned ? (
-            card.availability && (
-              <AvailabilityMarker
-                availability={card.availability}
-                density="chip"
-                selfExcluded
-                // Nothing wraps the chip — the art trigger is its sibling, not
-                // its parent — so it carries §17's prose itself.
-                spoken
-                className="z-10 pointer-events-none"
-              />
-            )
-          ) : (
-            <BuyTag
-              variant="tile"
-              corner="left"
-              density="collapsed"
-              label={cardTileCopy.slotUnownedAria}
-            />
-          )}
-
-          {/* Top-right, and absent at one copy — the delta from `grid-view`,
-              which draws `×1` on a collection where one copy is the common
-              case and the badge is the tile's only count. */}
-          {card.quantity > 1 && (
-            <span
-              aria-hidden
-              className="absolute z-10 pointer-events-none font-mono font-semibold text-[11px] md:text-[12px] rounded-md top-[6px] md:top-[8px] right-[6px] md:right-[8px] px-[6px] md:px-[7px] py-[2px]"
-              style={{ background: "var(--accent)", color: "var(--bg)" }}
-            >
-              {addPanelCopy.row.quantity(card.quantity)}
-            </span>
-          )}
-
           <CardDetailTrigger
             oracleId={card.oracleId}
             name={fullName}
@@ -164,11 +121,18 @@ export function DeckCardTile({
             // printed name. The single-copy tile is the common case, and a
             // ternary fixed on one arm alone would leave it on the oracle name.
             ariaLabel={
-              card.quantity > 1
-                ? `${cardDetailCopy.triggerAria(fullName)}, ${cardTileCopy.copiesAria(card.quantity)}`
+              card.quantity > 1 && !proxied
+                // `!proxied` for the same reason the drawn count is suppressed:
+              // a quantity the proxy state does not claim must not be claimed to
+              // a reader who cannot see that it was withheld.
+              ? `${cardDetailCopy.triggerAria(fullName)}, ${cardTileCopy.copiesAria(card.quantity)}`
                 : undefined
             }
-            className="block w-full shadow-[inset_0_-40px_40px_-30px_rgba(0,0,0,0.6),inset_0_0_0_1px_rgba(0,0,0,0.25)] md:shadow-[inset_0_-50px_50px_-34px_rgba(0,0,0,0.6),inset_0_0_0_1px_rgba(0,0,0,0.25)]"
+            /* The bottom wash deletes with the marks it was holding off the
+               art (call D). The 1px inner edge stays — it keeps a pale card
+               frame from bleeding into the tile plate, which is a job nothing
+               else does. */
+            className="block w-full shadow-[inset_0_0_0_1px_rgba(0,0,0,0.25)]"
             style={{
               aspectRatio: TILE_ART_RATIO,
               // A card with no art draws a plate rather than a colour-identity
@@ -189,89 +153,149 @@ export function DeckCardTile({
             )}
           </CardDetailTrigger>
 
-          {/* Bottom-left, outside the trigger: `CardDetailTrigger` carries its
-              own accessible name, which replaces everything nested under it, so
-              a cost spoken in there would be spoken nowhere. */}
-          <span className="absolute left-[6px] bottom-[6px] z-10 pointer-events-none flex items-center gap-[5px]">
-            <OwnershipDot
-              owned={card.owned}
-              committed={availState === "hard" || availState === "over"}
-              className="w-[8px] h-[8px]"
-              label={card.owned ? "Owned" : "Not owned"}
-            />
-            {/* No drawn pips over art. The card prints its own cost in its own
-                top-right corner, and a run of discs over the bottom-left said
-                the same thing a second time in a worse hand. The list view keeps
-                its pips, because there the row has no art to read it off.
+          {/* Outside the trigger: `CardDetailTrigger` carries its own accessible
+              name, which replaces everything nested under it, so a cost spoken
+              in there would be spoken nowhere.
 
-                A tile with NO art keeps them, for that same reason read the
-                other way: the plate it draws instead prints nothing, so the pips
-                are the only cost anyone can see.
+              The ownership dot used to share this corner. It is on the caption's
+              meta line now with the rest of the marks (call D), which leaves
+              this position to the one thing that still has to be drawn over the
+              art's box.
 
-                Either way the cost is SPOKEN. "The card is visible" is an
-                argument about a reader who can see the art; it reaches nobody
-                using a screen reader, for whom the pips were the only cost this
-                tile carried. */}
-            {/* PARSED, not merely truthy — the same test `decklist-row.tsx` makes.
-                `spokenManaCost` answers `no mana cost` for a string it cannot
-                parse, which is a claim about the card rather than about the
-                string: a stored cost that is nonempty and unreadable would be
-                announced as a land. `CostPips` drew nothing for it, and nothing
-                is still the right answer. */}
-            {cost ? (
-              card.imageUri ? (
-                <span className="sr-only">{spokenManaCost(cost)}</span>
-              ) : (
+              No drawn pips over art. The card prints its own cost in its own
+              top-right corner, and a run of discs over the bottom-left said the
+              same thing a second time in a worse hand. The list view keeps its
+              pips, because there the row has no art to read it off.
+
+              A tile with NO art keeps them, for that same reason read the other
+              way: the plate it draws instead prints nothing, so the pips are the
+              only cost anyone can see. That plate is not the illustration call D
+              emptied — it is the absence of one.
+
+              Either way the cost is SPOKEN. "The card is visible" is an argument
+              about a reader who can see the art; it reaches nobody using a
+              screen reader, for whom the pips were the only cost this tile
+              carried.
+
+              PARSED, not merely truthy — the same test `decklist-row.tsx` makes.
+              `spokenManaCost` answers `no mana cost` for a string it cannot
+              parse, which is a claim about the card rather than about the
+              string: a stored cost that is nonempty and unreadable would be
+              announced as a land. `CostPips` drew nothing for it, and nothing is
+              still the right answer. */}
+          {cost ? (
+            card.imageUri ? (
+              <span className="sr-only">{spokenManaCost(cost)}</span>
+            ) : (
+              <span
+                data-testid="tile-cost-pips"
+                className="absolute left-[6px] bottom-[6px] z-10 pointer-events-none flex items-center"
+              >
                 <CostPips cost={cost} size={11} className="flex gap-[3px]" spoken />
-              )
-            ) : null}
-          </span>
+              </span>
+            )
+          ) : null}
         </div>
 
-        {/* Caption — the name and the only route out of the deck in this view. */}
-        <div className="flex items-center gap-[4px] min-h-[44px] md:min-h-[36px] pl-[9px] pr-[2px] md:pl-[11px] md:pr-[3px]">
-          {/* The printed front face, single line and never clamped: two lines
-              would make caption height depend on the data, and a grid whose
-              tiles are sometimes one line and sometimes two is either ragged or
-              padded to the worst case on every tile.
+        {/* Caption — the marks, the name, and the only route out of the deck in
+            this view. The meta line's order is the one `STATES` fixes: the dot,
+            then the one slot, then the count. */}
+        <CardTileCaption
+          meta={
+            <>
+              {/* HOLLOW AND DASHED WHEN PROXIED, whatever the collection says.
+                  `owned` is a fact about the box and `proxied` a fact about this
+                  deck's slot, and `grouping.ts:26-30` rules that the two must be
+                  allowed to disagree out loud: *not in your collection · this
+                  deck's slot is filled*. Folding the proxy into `owned` would be
+                  the lie; drawing a filled dot beside a `P` is the other one. */}
+              <OwnershipDot
+                owned={card.owned && !proxied}
+                committed={availState === "hard" || availState === "over"}
+                className="w-[8px] h-[8px] flex-none"
+                label={card.owned && !proxied ? "Owned" : "Not owned"}
+              />
+              {/* THE SAME EXCLUSIVE DECISION THE LIST ROW MAKES, and the reason
+                  all three occupants had to move together: read off `card.owned`
+                  alone, this tile drew a buy tag on a printed card — the Card
+                  view telling the player to buy something the List view says
+                  they are printing, on one deck, one card, one glance apart.
 
-              The `title` is gone and NOTHING replaces it on this element. An
-              `aria-label` on a plain `<span>` is exposed to nothing — it would
-              pass a testing-library query and reach no screen reader. The full
-              name's home is the trigger above, which is a real `<button>` and
-              is the tile's largest target. */}
-          <span
-            className="flex-auto min-w-0 truncate text-[12px] md:text-[13px] font-semibold"
-            style={{ color: "var(--fg)" }}
-          >
-            {displayName}
-          </span>
-          {/* `ml-[2px]` on top of the caption's 4px gap: the mark's gap is 6px
-              at both surfaces, and the caption's own rhythm is the ✕'s. */}
-          <TwoFacedMark layout={card.layout} className="ml-[2px]" />
-          {/* 32px on desktop rather than `grid-view`'s 24: this is the only way
-              to remove a card in card view, so it takes the floor rather than
-              the shortcut exception. Revealed on tile hover, which is a desktop
-              idea — the phone keeps it drawn. */}
-          <button
-            type="button"
-            onClick={handleRemove}
-            disabled={isPending}
-            className="flex-none flex items-center justify-center w-[44px] h-[44px] md:w-[32px] md:h-[32px]
-              rounded-[6px] bg-transparent border-none text-[13px] leading-none text-[color:var(--border-dashed)]
-              md:opacity-0 md:group-hover:opacity-100 md:focus-visible:opacity-100
-              md:group-hover:text-[color:var(--fg-body)]
-              active:bg-[color:var(--elevated)] active:text-[color:var(--fg-body)] md:active:bg-transparent
-              cursor-pointer disabled:opacity-50 disabled:cursor-default"
-            aria-label={
-              card.quantity > 1
-                ? addPanelCopy.row.removeCopyAria(card.name, card.quantity)
-                : addPanelCopy.row.removeAria(card.name)
-            }
-          >
-            {addPanelCopy.row.remove}
-          </button>
-        </div>
+                  Off the art the three are one box in three inks, which is what
+                  turns the one-slot rule from a convention into something a
+                  reader can see. Leaving any one of them on the art would put
+                  one slot in two places. */}
+              {proxied ? (
+                <ProxyTag variant="band" plate={false} />
+              ) : card.owned ? (
+                card.availability && (
+                  <AvailabilityMarker
+                    availability={card.availability}
+                    density="chip"
+                    plate={false}
+                    selfExcluded
+                    // Nothing wraps the chip, so it carries §17's prose itself.
+                    spoken
+                  />
+                )
+              ) : (
+                <BuyTag
+                  variant="tile"
+                  plate={false}
+                  density="collapsed"
+                  label={cardTileCopy.slotUnownedAria}
+                />
+              )}
+              {/* Absent at one copy — the delta from `grid-view`, which draws
+                  `×1` on a collection where one copy is the common case and the
+                  badge is that tile's only count.
+
+                  Absent when proxied too, which the matrix leaves empty: a proxy
+                  covers this deck's whole ask for the card and takes no quantity
+                  (proxies ruling 5), so a count here would claim a number the
+                  state does not have. */}
+              {card.quantity > 1 && !proxied && (
+                <span aria-hidden className="flex-none" style={{ color: "var(--fg-body)" }}>
+                  {addPanelCopy.row.quantity(card.quantity)}
+                </span>
+              )}
+            </>
+          }
+          /* The printed front face, single line and never clamped.
+
+             It carries no `title` and no `aria-label`. An `aria-label` on a
+             plain `<span>` is exposed to nothing — it would pass a
+             testing-library query and reach no screen reader. The full name's
+             home is the trigger above, which is a real `<button>` and is the
+             tile's largest target. */
+          name={displayName}
+          nameTrail={<TwoFacedMark layout={card.layout} />}
+          trailing={
+            /* A full-height column rather than an item on the name line: this
+               is the only way to remove a card in card view, so it takes the
+               floor rather than the shortcut exception, and height is what a
+               vertically-scrolling grid has to spend. Revealed on tile hover,
+               which is a desktop idea — the phone keeps it drawn. */
+            <button
+              type="button"
+              onClick={handleRemove}
+              disabled={isPending}
+              className="flex-none self-stretch flex items-center justify-center w-[44px] md:w-[32px]
+                rounded-[6px] bg-transparent border-none text-[13px] leading-none text-[color:var(--border-dashed)]
+                md:opacity-0 md:group-hover:opacity-100 md:focus-visible:opacity-100
+                md:group-hover:text-[color:var(--fg-body)]
+                active:bg-[color:var(--elevated)] active:text-[color:var(--fg-body)] md:active:bg-transparent
+                cursor-pointer disabled:opacity-50 disabled:cursor-default"
+              aria-label={
+                card.quantity > 1
+                  ? addPanelCopy.row.removeCopyAria(card.name, card.quantity)
+                  : addPanelCopy.row.removeAria(card.name)
+              }
+            >
+              {addPanelCopy.row.remove}
+            </button>
+          }
+        />
       </div>
       {error && !shellReportsFailure && <MutationError message={error} />}
     </li>

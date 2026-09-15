@@ -13,6 +13,8 @@
 
 import Link from "next/link";
 import { twMerge } from "tailwind-merge";
+
+import { CARD_TILE_SLOT_BOX, slotOutline } from "./card-tile-caption";
 import { availabilityCopy } from "../../lib/copy/availability";
 import {
   availabilityState,
@@ -220,9 +222,30 @@ const CHIP_SKIN: Record<Exclude<AvailabilityState, "free">, string> = {
 // and never anything else. Callers do not get to name it.
 const CHIP_SCRIM = "var(--bg)";
 
+/**
+ * The chip's edge alone, for the caption box (`plate={false}`), where the scrim
+ * it used to pair with is gone. Same three inks as `CHIP_SKIN`, drawn as an
+ * outline rather than a border — see `CARD_TILE_SLOT_BOX` for why that is
+ * load-bearing rather than a preference.
+ */
+const CHIP_EDGE: Record<Exclude<AvailabilityState, "free">, string> = {
+  soft: "var(--border-dashed)",
+  hard: "var(--accent)",
+  over: "var(--danger)",
+};
+
+/**
+ * What sits behind the over glyph's doubled diamonds once the chip has no scrim
+ * of its own: the caption's plate. Getting this wrong draws the seam between the
+ * two diamonds in the canvas colour over a surface-coloured caption, which reads
+ * as a hairline crack rather than as the join it is.
+ */
+const CAPTION_SCRIM = "var(--surface)";
+
 export function AvailabilityMarker({
   availability,
   density = "row",
+  plate = true,
   seam = "var(--bg)",
   spoken = false,
   linkDeck = false,
@@ -231,6 +254,17 @@ export function AvailabilityMarker({
 }: {
   availability: Availability;
   density?: "row" | "chip";
+  /**
+   * Chip density only. `false` drops the scrim AND the absolute positioning,
+   * leaving the glyph, the edge and the label in the shared caption box.
+   *
+   * A prop rather than a third density, deliberately: the caption's box is the
+   * chip's own ladder with its scrim removed, and a second density would be a
+   * second spec for one box. It is also the containment boundary — `chip` is
+   * shared with `suggestion-tile.tsx`, which this design never drew, so the
+   * caption's geometry must not be pushed into `CHIP_SKIN`.
+   */
+  plate?: boolean;
   /**
    * The colour sitting directly behind the marker, used for the over state's
    * seam only. Row density hosts this marker over six different backgrounds,
@@ -295,17 +329,25 @@ export function AvailabilityMarker({
     <span
       className={twMerge(
         "inline-flex items-center min-w-0",
-        chip
+        chip && plate
           ? // Top-left: top-right is the shipped accent quantity badge on both
             // tile surfaces (A2RM:51–60).
             `absolute left-[6px] top-[6px] gap-[4px] rounded-[4px] border px-[5px] py-[2px] ${CHIP_SKIN[state]}`
-          : // Row density sets no font size and no family — it rides the
-            // shipped meta line and must not change its height (row 3.1).
-            "gap-[6px]",
+          : chip
+            ? // In the caption, on a plate of its own: the shared box, in this
+              // state's ink.
+              CARD_TILE_SLOT_BOX
+            : // Row density sets no font size and no family — it rides the
+              // shipped meta line and must not change its height (row 3.1).
+              "gap-[6px]",
         className,
       )}
+      style={chip && !plate ? slotOutline(CHIP_EDGE[state]) : undefined}
     >
-      <AvailabilityGlyph state={state} seam={chip ? CHIP_SCRIM : seam} />
+      <AvailabilityGlyph
+        state={state}
+        seam={chip ? (plate ? CHIP_SCRIM : CAPTION_SCRIM) : seam}
+      />
       {/*
         The prefix never truncates; the deck name is the flexible half. This is
         the same split Addendum 2 §1 specifies for the collection name cell —
@@ -335,7 +377,9 @@ export function AvailabilityMarker({
         className={twMerge(
           "flex-none whitespace-pre",
           colour,
-          chip && "font-mono text-[8.5px] font-semibold tracking-[0.02em]",
+          // The caption box already sets the family, the size and the weight
+          // for every occupant, so the label only adds the tracking there.
+          chip && (plate ? "font-mono text-[8.5px] font-semibold tracking-[0.02em]" : "tracking-[0.02em]"),
         )}
       >
         {text.prefix}

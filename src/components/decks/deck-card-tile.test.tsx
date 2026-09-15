@@ -244,7 +244,7 @@ describe("DeckCardTile — the cost the art already prints", () => {
       </CardDetailProvider>,
     );
 
-    expect(container.querySelector("[class*='gap-[3px]']")).toBeNull();
+    expect(container.querySelector("[data-testid='tile-cost-pips']")).toBeNull();
   });
 
   // The pips were this tile's only cost for a reader who cannot see the art, so
@@ -268,7 +268,7 @@ describe("DeckCardTile — the cost the art already prints", () => {
       </CardDetailProvider>,
     );
 
-    expect(container.querySelector("[class*='gap-[3px]']")).not.toBeNull();
+    expect(container.querySelector("[data-testid='tile-cost-pips']")).not.toBeNull();
     expect(screen.getByText(spokenManaCost("{3}{W}{W}"))).toBeInTheDocument();
   });
 });
@@ -292,6 +292,46 @@ describe("DeckCardTile — a cost string with nothing in it", () => {
     );
 
     expect(screen.queryByText(manaCopy.costNone)).not.toBeInTheDocument();
-    expect(container.querySelector("[class*='gap-[3px]']")).toBeNull();
+    expect(container.querySelector("[data-testid='tile-cost-pips']")).toBeNull();
+  });
+});
+
+describe("DeckCardTile — the proxied state", () => {
+  // `STATES-card-captions.md:31`: hollow dashed dot, the `P`, and NO count.
+  // Each of the three is a separate way to claim something the state does not.
+  const proxiedCard = {
+    ...card,
+    owned: true,
+    quantity: 2,
+    proxied: true,
+  } as DeckDetailCard;
+
+  it("draws a hollow dot even on a card the collection holds", () => {
+    renderTile(<DeckCardTile deckId="d1" card={proxiedCard} />);
+
+    // `owned` is a fact about the box; `proxied` is a fact about this deck's
+    // slot. `grouping.ts:26-30` rules that the two are allowed to disagree out
+    // loud, and a filled dot beside a `P` is the reading that lies.
+    expect(screen.getByLabelText("Not owned")).toBeInTheDocument();
+    expect(screen.queryByLabelText("Owned")).toBeNull();
+  });
+
+  it("claims no quantity, drawn or spoken", () => {
+    renderTile(<DeckCardTile deckId="d1" card={proxiedCard} />);
+
+    // A proxy covers this deck's whole ask for the card and takes no quantity,
+    // so neither the meta line nor the trigger's accessible name may state one.
+    expect(screen.queryByText(addPanelCopy.row.quantity(2))).not.toBeInTheDocument();
+    expect(
+      screen.queryByRole("button", { name: new RegExp(cardTileCopy.copiesAria(2)) }),
+    ).toBeNull();
+  });
+
+  it("still counts copies on a card that is not proxied", () => {
+    renderTile(
+      <DeckCardTile deckId="d1" card={{ ...card, owned: true, quantity: 2 } as DeckDetailCard} />,
+    );
+
+    expect(screen.getByText(addPanelCopy.row.quantity(2))).toBeInTheDocument();
   });
 });

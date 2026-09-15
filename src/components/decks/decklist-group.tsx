@@ -67,12 +67,22 @@ export function DecklistGroup({
       />
 
       {view === "card" ? (
-        /* `auto-fill minmax(132px, …)` rather than a fixed 5-up: the add panel
-           is 340–346px and opens over this pane, so a column count fixed to the
-           closed width would either overflow or leave a gutter when it does.
-           The phone stays 2-up, where a third column puts the card name below
-           legibility. */
-        <ul className="grid grid-cols-2 gap-[12px] md:grid-cols-[repeat(auto-fill,minmax(132px,1fr))] md:gap-[20px]">
+        /* The SAME declaration `/collection`'s grid takes: one tile floor, and
+           the column count falls out of whatever width the pane has. Six at the
+           1300px reference width, where this pane's ancestor pays `md:px-[26px]`
+           and leaves 1186px — six tracks of 181px.
+
+           The floor used to be 132px, and the stated reason was that a 340–346px
+           Add panel opened over this pane, so a fixed count would overflow or
+           gutter the moment it did. That panel is gone: `BuilderShell` renders
+           `QuickAddBar` as a full-width sticky bottom dock. The grid still wants
+           `auto-fill`, for the ordinary reason — a floor is what holds a tile
+           size across widths — but not for that one.
+
+           The phone stays an explicit 2-up. At 390px the track is narrower than
+           one floor plus a gap, so auto-fill there collapses to a single column,
+           and a third column puts the card name below legibility anyway. */
+        <ul className="grid grid-cols-2 gap-[12px] md:grid-cols-[repeat(auto-fill,minmax(178px,1fr))] md:gap-[20px]">
           {cards.map((card) => (
             <DeckCardTile
               key={card.oracleId}

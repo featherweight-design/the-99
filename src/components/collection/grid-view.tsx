@@ -1,6 +1,15 @@
 "use client";
 // Card-art gallery per property table §Grid Tile (State 1b).
-// Grid: 2-up mobile / 5-up desktop.
+//
+// Grid: 2-up mobile, and a TILE FLOOR on desktop rather than a column count —
+// `repeat(auto-fill, minmax(178px, 1fr))`, which is six at the 1300px reference
+// width and fewer as the window narrows. It was a fixed 5-up until card
+// captions (R1) ruled the 178px tile; see the grid's own comment for why a
+// fixed six was rejected.
+//
+// Nothing is drawn over the art. The availability chip and the count are on the
+// caption's meta line, and the bottom wash went with them.
+//
 // Missing art → color-identity gradient (READINESS #4).
 
 import type { BrowseListCard } from "../../lib/collection/browse";
@@ -8,6 +17,7 @@ import { cssUrl, printedFaceName, printedNameOf } from "../../lib/collection/bro
 import { identityGradient } from "../../lib/collection/gradients";
 import { availabilityState } from "../../lib/decks/availability";
 import { AvailabilityMarker } from "../ui/availability-marker";
+import { CardTileCaption } from "../ui/card-tile-caption";
 import { GhostButton } from "../ui/button";
 
 export function GridView({
@@ -25,8 +35,17 @@ export function GridView({
   pendingOracleId?: string | null;
 }) {
   return (
-    // §Grid Container: grid, 1fr 1fr mobile / repeat(5,1fr) desktop, gap 12/20px (desktop +4 per Surfaces v2 browse loosening; mobile stays v1), padding 4px 14px 14px mobile / 20px 34px 34px desktop
-    <div className="grid grid-cols-2 md:grid-cols-5 gap-[12px] md:gap-[20px] px-[14px] md:px-[34px] pt-[4px] md:pt-[20px] pb-[14px] md:pb-[34px]">
+    /* §Grid Container. The desktop track is a TILE FLOOR rather than a column
+       count (card-captions readiness, erratum 5): `md:grid-cols-6` would begin
+       at 768px, where this container has 638px of track and six columns is a
+       90px tile — half the phone tile whose parity is the whole argument for the
+       178px figure. A floor holds the tile and lets the count fall out: six at
+       the 1300px reference width, three at 768.
+
+       The phone keeps an explicit 2-up. At 390px the track is 362px, which one
+       178px floor plus a gap already exceeds, so auto-fill there would collapse
+       to a single column. */
+    <div className="grid grid-cols-2 md:grid-cols-[repeat(auto-fill,minmax(178px,1fr))] gap-[12px] md:gap-[20px] px-[14px] md:px-[34px] pt-[4px] md:pt-[20px] pb-[14px] md:pb-[34px]">
       {cards.map((c) => {
         const state = c.availability ? availabilityState(c.availability) : "free";
         // Addendum 2 §2, matching the row: over-committed keeps its border tint
@@ -53,7 +72,10 @@ export function GridView({
         >
           {/* Art region — §Grid Tile: Art Region */}
           <div
-            className="relative shadow-[inset_0_-40px_40px_-30px_rgba(0,0,0,0.6),inset_0_0_0_1px_rgba(0,0,0,0.25)] md:shadow-[inset_0_-50px_50px_-34px_rgba(0,0,0,0.6),inset_0_0_0_1px_rgba(0,0,0,0.25)]"
+            /* The bottom wash is gone with the marks it was holding off the art
+               (call D). The 1px inner edge stays: it is not a scrim for a mark,
+               it keeps a pale card frame from bleeding into the tile plate. */
+            className="relative shadow-[inset_0_0_0_1px_rgba(0,0,0,0.25)]"
             style={{
               aspectRatio: "63/88",
               background: c.imageUri ? undefined : identityGradient(c.colorIdentity),
@@ -61,56 +83,49 @@ export function GridView({
               backgroundSize: "cover",
               backgroundPosition: "center",
             }}
-          >
-            {/* §Grid Tile: Quantity Badge — mono 11/12px 600, --bg on --accent, radius 6px */}
-            <span
-              className="absolute font-mono font-semibold text-[11px] md:text-[12px] rounded-md top-[6px] md:top-[8px] right-[6px] md:right-[8px] px-[6px] md:px-[7px] py-[2px]"
-              style={{ background: "var(--accent)", color: "var(--bg)" }}
-            >
-              ×{c.quantity}
-            </span>
+          />
 
-            {/* Availability chip — Addendum 2 §2, top-left on the art. The
-                quantity badge owns top-right. Chip density positions itself
-                (row 2.1) and forces count-only, so no wrapper: a second
-                positioned element here would offset the chip by its own inset.
+          {/* Caption. Everything that used to sit on the art is on the meta
+              line: the availability chip in the slot, then the count. The set
+              line right-aligns on that same line rather than taking a third row
+              — it is already mono `--fg-faint`, so it belongs there. */}
+          <CardTileCaption
+            meta={
+              <>
+                {c.availability && (
+                  <AvailabilityMarker
+                    availability={c.availability}
+                    density="chip"
+                    plate={false}
+                    spoken
+                  />
+                )}
+                <span aria-hidden style={{ color: "var(--fg-body)" }}>
+                  ×{c.quantity}
+                </span>
+              </>
+            }
+            metaTrail={
+              <span style={{ color: "var(--fg-faint)" }}>
+                <span className="md:hidden">{c.primarySetCode}</span>
+                <span className="hidden md:inline">{c.primarySetCode} · {c.rarity}</span>
+              </span>
+            }
+            /* The name printed on the copy the player owns, front face only,
+               single line and never clamped. This surface carries no `//` mark
+               (spec errata 3) — the set code below is the fact that explains the
+               name.
 
-                `spoken` because this tile, unlike the row, has no aria-label to
-                hoist the prose into — the same call `suggestion-tile` makes. */}
-            {c.availability && (
-              <AvailabilityMarker availability={c.availability} density="chip" spoken />
-            )}
-          </div>
-
-          {/* Caption — §Grid Tile: Caption Area */}
-          <div className="px-[9px] md:px-[15px] py-[7px] md:py-[13px] pb-[9px] md:pb-[15px]">
-            {/* Name — 12/13px 600, ellipsis. The name printed on the copy the
-                player owns, front face only, single line and never clamped: a
-                two-line caption makes tile height data-dependent and costs the
-                grid its equal-height read. This surface carries no `//` mark
-                (spec errata 3) — the set code below is the fact that explains
-                the name. */}
-            {/* The tile is a real <button> whose accessible name is its text
-                content — it carries no aria-label, because one would swallow the
-                availability marker's `spoken` prose above. So the full name is
-                spoken from an sr-only sibling and the clipped caption is hidden
-                from assistive tech, rather than a renamed two-faced card being
-                announced as its front face alone. For every card that is not
-                renamed the two strings are identical and nothing moves. */}
-            <div
-              aria-hidden
-              className="truncate text-[12px] md:text-[13px] font-semibold"
-              style={{ color: "var(--fg)" }}
-            >
-              {printedFaceName(c)}
-            </div>
-            <span className="sr-only">{printedNameOf(c)}</span>
-            {/* Set/rarity caption — mono 9.5/10px, --fg-faint */}
-            <div className="font-mono text-[9.5px] md:text-[10px] mt-[2px] md:mt-[3px]" style={{ color: "var(--fg-faint)" }}>
-              <span className="md:hidden">{c.primarySetCode}</span>
-              <span className="hidden md:inline">{c.primarySetCode} · {c.rarity}</span>
-            </div>
-          </div>
+               The tile is a real <button> whose accessible name is its text
+               content, so the clipped caption is hidden from assistive tech and
+               the whole name spoken from an sr-only sibling — rather than a
+               renamed two-faced card being announced as its front face alone.
+               For every card that is not renamed the two strings are identical
+               and nothing moves. */
+            name={printedFaceName(c)}
+            nameHidden
+            nameSpoken={<span className="sr-only">{printedNameOf(c)}</span>}
+          />
         </button>
         );
       })}
@@ -119,7 +134,7 @@ export function GridView({
         <GhostButton
           type="button"
           onClick={onShowMore}
-          className="col-span-2 md:col-span-5 mx-auto text-[13px] px-[16px] py-[9px] mt-[6px]"
+          className="col-span-full mx-auto text-[13px] px-[16px] py-[9px] mt-[6px]"
         >
           Show more ({(totalCards - cards.length).toLocaleString()} more)
         </GhostButton>

@@ -18,6 +18,7 @@ import { addCardToDeck } from "../../app/decks/actions";
 import { addPanelCopy } from "../../lib/copy/decks-builder";
 import type { DeckDetailCard } from "../../lib/decks/grouping";
 import { MutationError } from "./mutation-error";
+import { CARD_TILE_CAPTION_H } from "../ui/card-tile-caption";
 import { TILE_ART_RATIO, TILE_SHELL } from "./deck-card-tile";
 import { useAnnounceUndo } from "./optimistic-deck";
 import { useDeckMutation } from "./use-deck-mutation";
@@ -50,7 +51,12 @@ export function UndoTile({ deckId, card }: { deckId: string; card: DeckDetailCar
         </div>
         {/* Same caption slot as the live tile, so the Undo lands where the ✕ it
             answers for was. */}
-        <div className="flex items-center justify-center min-h-[44px] md:min-h-[36px] px-[9px] md:px-[11px]">
+        {/* The caption's height comes from the live tile's own constant, never
+            restated here: the receipt exists to leave a hole exactly the size of
+            the card it replaced, and a second copy of the figure breaks that
+            invariant the first time the caption moves — silently, because both
+            tiles still render. */}
+        <div className={`flex items-center justify-center ${CARD_TILE_CAPTION_H} px-[9px] md:px-[11px]`}>
           {!error && (
             <button
               type="button"

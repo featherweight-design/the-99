@@ -17,6 +17,7 @@
 // otherwise reach for. Neutral ink on a dashed edge borrows no meaning, and
 // dashed is already this app's word for "not settled cardboard".
 
+import { CARD_TILE_SLOT_BOX } from "../ui/card-tile-caption";
 import { proxyCopy } from "../../lib/copy/proxies";
 
 type ProxyTagVariant = "row" | "band";
@@ -65,10 +66,20 @@ export function ProxyTag({
    *  either name. A single commander never pays for this, and `P×2` is banned
    *  by ruling 5. */
   pairName,
+  plate = true,
   silent = false,
 }: {
   variant?: ProxyTagVariant;
   pairName?: string;
+  /**
+   * Band variant only. `false` drops the scrim and takes the shared caption box,
+   * which the availability chip and the collapsed buy tag also take there — the
+   * three are one slot by rule, and off the art they are one box.
+   *
+   * A prop rather than a third variant: `band` is also the commander spine's at
+   * both widths, and the caption's geometry must not reach those.
+   */
+  plate?: boolean;
   /**
    * Drop the tag's own spoken label, for a surface that says the same state in a
    * fuller sentence of its own.
@@ -82,10 +93,17 @@ export function ProxyTag({
   silent?: boolean;
 }) {
   const word = pairName ? proxyCopy.tag.pairAria(pairName) : proxyCopy.tag.aria;
+  // See `plate`. The edge is already an outline here, so only the scrim and the
+  // placement differ between the band and the caption.
+  const captionBox = variant === "band" && !plate;
   return (
     <span
-      className={`font-mono rounded-[4px] px-[5px] py-[1px] font-semibold ${PLACEMENT[variant]}`}
-      style={{ color: "var(--fg)", ...EDGE, ...PLATE[variant] }}
+      className={
+        captionBox
+          ? CARD_TILE_SLOT_BOX
+          : `font-mono rounded-[4px] px-[5px] py-[1px] font-semibold ${PLACEMENT[variant]}`
+      }
+      style={{ color: "var(--fg)", ...EDGE, ...(captionBox ? {} : PLATE[variant]) }}
       title={pairName ? proxyCopy.tag.pairTitle(pairName) : proxyCopy.tag.title}
     >
       {/* Drawn, never spoken — the glyph stands for the word rather than saying
