@@ -13,10 +13,19 @@
 // The small runs stay discs. `CostPips` draws at 11-14px, where a printed
 // symbol's interior line work turns to mud, and its contrast against every theme
 // is what `probe:black-pip` measures.
+//
+// This surface also draws BOTH halves of a two-cost card, where the runs in a
+// column draw the front half alone. A `transform` back's cost is absent from
+// both, and not by choice: Scryfall puts it in `card_faces` and the ingest reads
+// only the top level, so nothing in the catalog holds it. Giving the turn control
+// a cost to swap to needs a per-face column and an ingest change.
+
+import { Fragment } from "react";
 
 import { WUBRG_COLOR } from "../../lib/collection/browse";
+import { faceCosts } from "../../lib/cards/faces";
 import { manaSymbolSrc } from "../../lib/cards/mana-symbols";
-import { spokenManaCost } from "../../lib/copy/card-surfaces";
+import { manaCopy, spokenFullManaCost } from "../../lib/copy/card-surfaces";
 // One parser for both pip treatments. This file carried a second copy of the
 // same regex — the two never disagreed, they simply had no reason not to — and a
 // rule like the front-face one then has to be written twice to hold. Importing
@@ -25,20 +34,50 @@ import { parseManaCost } from "../ui/cost-pips";
 
 export function ManaCost({ cost }: { cost: string | null }) {
   if (!cost) return null;
-  const symbols = parseManaCost(cost);
-  if (symbols.length === 0) return null;
+  // BOTH halves, where the card has two. A `split`, `adventure` or `prepare`
+  // card prints two real costs on one piece of stock — `Repudiate // Replicate`
+  // is `{G/U}{G/U} // {1}{G}{U}` — and a reader choosing which half to cast
+  // needs both. The runs in a column keep the front half alone, because a 72px
+  // track cannot hold two costs and a separator; this surface has the room, and
+  // is where a reader is studying the card rather than scanning past it.
+  const halves = faceCosts(cost)
+    .map((half) => parseManaCost(half))
+    .filter((symbols) => symbols.length > 0);
+  if (halves.length === 0) return null;
   return (
     <>
       {/* §Mana Cost Pip Container: display flex, gap 4/5px, flex none, padding-top 4px mobile */}
-      <span aria-hidden className="flex gap-[4px] md:gap-[5px] flex-none pt-[4px] md:pt-0">
-        {symbols.map((sym, i) => (
-          <ManaPip key={i} symbol={sym} />
+      <span
+        aria-hidden
+        className="flex items-center gap-[4px] md:gap-[5px] flex-none pt-[4px] md:pt-0"
+      >
+        {halves.map((symbols, half) => (
+          <Fragment key={half}>
+            {/* The same `//` the printed name carries, so the two separators on
+                this surface agree. Muted and mono: it is punctuation between two
+                costs, not a third cost. */}
+            {half > 0 ? (
+              <span
+                className="font-mono text-[12px] md:text-[13px] px-[1px]"
+                style={{ color: "var(--fg-muted)" }}
+              >
+                {manaCopy.costHalfSeparator}
+              </span>
+            ) : null}
+            {symbols.map((sym, i) => (
+              <ManaPip key={i} symbol={sym} />
+            ))}
+          </Fragment>
         ))}
       </span>
       {/* The symbols are art and say nothing, where the retired discs at least
-          read out their own letters. The cost is spoken here instead, from the
-          same mapper the row pips use, so both surfaces say a cost the same way. */}
-      <span className="sr-only">{spokenManaCost(cost)}</span>
+          read out their own letters. The cost is spoken here instead — every
+          half of it, since the `//` above cannot be read aloud. The second half
+          is announced as `second cost` rather than joined with "or": a hybrid
+          symbol already speaks as "green or blue", so an "or" between the halves
+          would be the third in the sentence and the only one dividing two
+          costs. `costAriaHalves` owns that wording. */}
+      <span className="sr-only">{spokenFullManaCost(cost)}</span>
     </>
   );
 }
