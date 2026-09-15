@@ -266,18 +266,32 @@ try {
   //     `toBuyCount`, and the status pill — because the wiring between them is
   //     where the critical defect of this feature's first draft lived: a proxied
   //     COMMANDER filling an unowned body slot and marking a deck Complete.
+  // The partner leaves the collection for this block ONLY. A coverage rule that
+  // counted commanders needs an unowned printed commander to count — which is
+  // the shape of this feature's first critical defect — and with every commander
+  // owned such a rule passes every check while being wrong. Put back below, so
+  // the claim checks above keep the owned partner they were written against.
+  await fixture.execute(sql`
+    delete from collection_items where user_id = ${USER} and oracle_id = ${partner}
+  `);
+
   const tile = async (deckId: string, withStats: boolean) => {
     const decks = await listDecksWithStats(USER, "name", { includeProxyStats: withStats });
     return decks.find((d) => d.id === deckId);
   };
 
-  //     The printer's body is one card, which it owns, and its two commanders
-  //     are printed. So: three marks, no covered body slot.
+  //     The printer's body is one card, which it owns; its two commanders are
+  //     printed and the PARTNER is owned in no copy. So: three marks, and still
+  //     no covered body slot, because a commander is not a body slot however
+  //     unowned it is.
   const printerTile = await tile(printer.id, true);
   check("the tile counts every mark", printerTile?.proxiedCount, 3);
   //     THE HEADLINE GUARD. built is 1 and ownedCount is 1 already; if the two
   //     printed commanders were added to coverage this would read over.
   check("printed commanders do not cover body slots", printerTile?.toBuyCount, 0);
+  //     Stated on the figure itself too: `covers` is what may be added to
+  //     ownedCount, and an unowned printed COMMANDER must contribute nothing.
+  check("…and contribute nothing to coverage", (await proxyCounts(USER)).get(printer.id)?.covers, 0);
 
   //     A deck with an UNOWNED printed body card: one mark, one covered slot,
   //     nothing left to buy, and a pill that says so.
@@ -304,6 +318,10 @@ try {
   await unproxy(holder.id, printed.oracle_id);
   await fixture.execute(sql`
     delete from deck_cards where deck_id = ${holder.id} and oracle_id = ${printed.oracle_id}
+  `);
+  await fixture.execute(sql`
+    insert into collection_items (user_id, oracle_id, quantity, set_code)
+    values (${USER}, ${partner}, 1, 'probe')
   `);
 
   // 4. THE SLOT GOES, THE STATEMENT GOES. A proxy is one deck's answer about one
