@@ -12,22 +12,22 @@ const copy = deckVersioningCopy.pending;
 
 export function FirstCommitOffer({ deckId }: { deckId: string }) {
   return (
-    <div className="flex flex-wrap items-center gap-[12px]">
-      <Link
-        href={`/decks/${deckId}/changes?commit=1`}
-        className="inline-flex items-center rounded-[8px] px-[16px] py-[9px] font-sans font-medium text-[13px] text-[color:var(--fg)] no-underline [border:1px_solid_var(--border-strong)]"
-      >
-        {copy.firstCommitCta}
-      </Link>
-      {/* Capped, so the sentence wraps to the two lines the canvas draws it on.
-          Uncapped it is one ~318px line, and in the desktop spine — where this
-          offer sits in a row that sizes to its content — those 318px came out
-          of the title column, which reached 0px: the deck's name, its commander
-          line and its progress bar all measured zero and drew nothing. The cap
-          is what makes the wrapper's `flex-wrap` above reachable at all. */}
-      <span className="font-mono max-w-[188px] text-[10px] leading-[1.45] text-[color:var(--fg-locked)]">
-        {copy.firstCommitNote}
-      </span>
-    </div>
+    // The control alone. The mono note that used to sit beside it is CUT: it
+    // spent two lines and ~188px of the spine's narrowest row explaining that a
+    // commit does not change the deck, which is what `Commit as v1` already
+    // says, and the review page it links to describes the commit properly before
+    // anything is locked. Nothing is decided on this note that is not decided
+    // one click later.
+    //
+    // No wrapper row survives it. A flex container around one item is a box that
+    // only affects how much of the row this offer claims, and it claimed too
+    // much: the whole of #641 was that claim resolving the deck's title column
+    // to 0px.
+    <Link
+      href={`/decks/${deckId}/changes?commit=1`}
+      className="inline-flex items-center rounded-[8px] px-[16px] py-[9px] font-sans font-medium text-[13px] text-[color:var(--fg)] no-underline [border:1px_solid_var(--border-strong)]"
+    >
+      {copy.firstCommitCta}
+    </Link>
   );
 }

@@ -13,10 +13,13 @@ describe("FirstCommitOffer", () => {
     ).toHaveProperty("href", expect.stringContaining("/decks/d/changes?commit=1"));
   });
 
-  // The note is the whole answer to "what does this do to my deck", and a player
-  // who cannot see it is being asked to make a claim permanent blind.
-  it("states what the commit does and does not change", () => {
-    render(<FirstCommitOffer deckId="d" />);
-    expect(screen.getByText(copy.firstCommitNote)).toBeTruthy();
+  // The note is cut, and this asserts the offer is the control and nothing else:
+  // it was one sentence of mono beside the button, and on the desktop spine it
+  // was the widest thing in the band's narrowest row. What a commit does is the
+  // review page's job, which the control links to.
+  it("draws the control alone, with no note beside it", () => {
+    const { container } = render(<FirstCommitOffer deckId="d" />);
+    expect(container.querySelectorAll("a")).toHaveLength(1);
+    expect(container.textContent).toBe(copy.firstCommitCta);
   });
 });
