@@ -895,3 +895,80 @@ describe("DecklistRow — the row is the click target", () => {
     expect(trigger).not.toHaveAttribute("aria-busy", "true");
   });
 });
+
+// The receipt stands in for a row and sits in the row's place in the order, so
+// it has to call the card what that row calls it. A renamed printing named by
+// its oracle name would sit in the list by one name and announce itself by
+// another — and the list's own order is computed from the printed one.
+describe("the undo receipt names the player's own copy", () => {
+  it("uses the printed name, not the oracle name", () => {
+    renderRow(
+      <DecklistRow
+        deckId="d1"
+        spent
+        card={{
+          ...card,
+          name: "Wolfbitten Captive",
+          printedName: "Alpha Strike",
+        } as DeckDetailCard}
+      />,
+    );
+
+    expect(screen.getByText(addPanelCopy.undo.removed("Alpha Strike"))).toBeInTheDocument();
+    expect(
+      screen.queryByText(addPanelCopy.undo.removed("Wolfbitten Captive")),
+    ).not.toBeInTheDocument();
+  });
+});
+
+// The receipt, its action and the announcement are one act described three
+// times, so they have to name the same card. A renamed printing used to show
+// the printed name and announce the oracle one.
+describe("the receipt's action and announcement name the same card", () => {
+  it("labels Put back with the printed name", () => {
+    renderRow(
+      <DecklistRow
+        deckId="d1"
+        spent
+        card={{ ...card, name: "Wolfbitten Captive", printedName: "Alpha Strike" } as DeckDetailCard}
+      />,
+    );
+    expect(
+      screen.getByRole("button", { name: addPanelCopy.undo.actionAria("Alpha Strike") }),
+    ).toBeInTheDocument();
+  });
+
+  it("labels the remove control with the printed name too", () => {
+    renderRow(
+      <DecklistRow
+        deckId="d1"
+        card={{ ...card, name: "Wolfbitten Captive", printedName: "Alpha Strike" } as DeckDetailCard}
+      />,
+    );
+    expect(
+      screen.getByRole("button", { name: addPanelCopy.row.removeAria("Alpha Strike") }),
+    ).toBeInTheDocument();
+  });
+});
+
+// The multi-copy branch, which the first sweep missed: a stack's remove control
+// is a different string from a single copy's and named the oracle card while
+// the row beside it showed the printed one.
+describe("a stack's remove control names the printed card too", () => {
+  it("names the printed card in removeCopyAria", () => {
+    renderRow(
+      <DecklistRow
+        deckId="d1"
+        card={{
+          ...card,
+          quantity: 4,
+          name: "Wolfbitten Captive",
+          printedName: "Alpha Strike",
+        } as DeckDetailCard}
+      />,
+    );
+    expect(
+      screen.getByRole("button", { name: addPanelCopy.row.removeCopyAria("Alpha Strike", 4) }),
+    ).toBeInTheDocument();
+  });
+});

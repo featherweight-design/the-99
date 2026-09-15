@@ -6,8 +6,9 @@ One control, one surface, eight variants. The brief said the placement was the w
 it was right: the menu is a mount of a shipped component with four props, and everything that took
 thought was the row it lands in.
 
-**Green, with one copy call I want a second opinion on and one figure I want re-measured in the
-browser.**
+**Green.** R1 raised one copy call and one figure to re-measure; **both were settled on
+2026-09-14** — the copy call as drawn, and the figure by `pnpm probe:deck-sort`, which measures the
+desktop row with a draft note present. Nothing in this document is open.
 
 ---
 
@@ -28,7 +29,11 @@ None reopened. Decision 12 is the piece §2.6 explicitly hands Design (*how* the
 
 ---
 
-## The one thing I want a second opinion on
+## The one thing I wanted a second opinion on — settled 2026-09-14 as drawn
+
+`Curve up` / `Curve down` stands. `Low first` / `High first` was declined for the reason this
+section already gives: with `Price` reading `Lowest` / `Highest`, it would put two keys' extremes in
+near-identical words 44px apart. The reasoning below is kept as the record.
 
 **`Curve up` / `Curve down` for mana value — and R1's argument for it no longer holds.**
 
@@ -80,14 +85,16 @@ anyone adds to it does not fit.
   more. The hairline is the better of the two to spend, since decision 5 already treats it as a
   separator rather than a child.
 
-**Still to re-measure in a browser: the 390px arrangement line at 345 of 358.** Its three governing
-widths (`Name · A–Z` 110, `Price · Highest` 120, `Clear auto · 40` 134) are computed from the
-shipped type stack at the shipped sizes rather than read off a render, and a 4% font-metric
-difference on the trigger closes the gap. The desktop line is now measured; this one is not.
+**Measured 2026-09-14: the 390px arrangement line.** R1 computed it at 345 of 358 from the shipped
+type stack rather than off a render, and noted a 4% font-metric difference on the trigger would
+close the gap. `pnpm probe:deck-sort` reads it in a browser and reports **338px on one line**, with
+the cluster asserted never to split at either width. Both figures are measured now.
 
 ---
 
-## Open for Hugh, not for me
+## Open for Hugh — answered 2026-09-14: the ruled shape stands, no direction group
+
+The record of the question follows.
 
 **The review reference's Ascending / Descending group.** A comparable control shared in review puts
 the three keys and a separate direction pair in one menu, divided. It is a good control, and taking
@@ -98,7 +105,10 @@ The trade is legible enough to decide on the spot: **six labels become two**, th
 question above disappears entirely, and `A–Z` disappears with it. My read is that §2.3 is the more
 valuable of the two decisions and `A–Z` is the proof of it, so R1 draws the ruled shape — but the
 reference's own trigger independently matches decision 7, which is some evidence its authors
-thought about the same row we did. Drawn and argued in the canvas's §6b; **not decided here.**
+thought about the same row we did. Drawn and argued in the canvas's §6b.
+
+**Decided 2026-09-14: R1's shape stands.** Direction stays re-pick, there is no Ascending /
+Descending group, §2.2 and §2.3 both hold, and the component `/collection` shares is untouched.
 
 ---
 
@@ -129,9 +139,11 @@ thought about the same row we did. Drawn and argued in the canvas's §6b; **not 
 
 ## What this hands engineering
 
-One mount, four props (`selectionMode`, `widthPx`, `desktopRowMinPx`, `showCounts`), one copy block,
-three pure helpers with no UI imports, **one structural change to `group-toggle.tsx`** (three
-children into one `flex-none` span, plus the hairline) and **two one-line fixes in
+One mount, five props (`selectionMode`, `selectionOrnament`, `widthPx`, `desktopRowMinPx`,
+`showCounts`), one copy block,
+four pure helpers with no UI imports, **one structural change to `group-toggle.tsx`** (the four
+arrangement children — `By type`, `By role`, the trigger and the conditional view well — into one
+`flex-none` span, plus the hairline) and **two one-line fixes in
 `filter-panel.tsx`** that also improve `/collection`.
 
 No new component. No new token. No schema change. No new breakpoint — `md:` is the only one this

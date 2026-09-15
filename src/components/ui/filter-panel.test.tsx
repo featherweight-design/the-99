@@ -1,4 +1,4 @@
-import { render, screen, fireEvent, within } from "@testing-library/react";
+import { cleanup, render, screen, fireEvent, within } from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { collectionFilterCopy } from "../../lib/copy/collection";
 import type { BrowseFilters } from "../../lib/collection/browse";
@@ -1033,5 +1033,52 @@ describe("FilterBar sort and color controls", () => {
     expect(
       colorChangeAnnouncement(base, { ...base, types: ["Creature"] }, [], OPTIONS, 2933),
     ).toBeNull();
+  });
+});
+
+// Two branches keyed on `selected.length > 0`, which under single-select is
+// unconditionally true — so both drew permanently and neither carried
+// information. Found when the deck toolbar mounted this panel: that bar's own
+// rule is "No accent fill anywhere on the builder's control bar"
+// (`group-toggle.tsx:105-110`), and the borrowed border broke it on arrival.
+// Both fixes land on `/collection`'s Sort too, which is the same single-select
+// mount, and remove the same two signals there.
+describe("selectionOrnament", () => {
+  const chosen = { selected: [OPTIONS[0].code], options: OPTIONS.slice(0, 2) };
+
+  it("leaves the resting trigger's border alone when it is off", () => {
+    renderPanel({ selectionMode: "single", selectionOrnament: false, ...chosen });
+    expect(screen.getByRole("button", { name: /Filter by set/ }).className)
+      .not.toContain("border-[color:var(--accent)]");
+  });
+
+  it("draws no count badge on the sheet's title when it is off", () => {
+    setViewport(false);
+    renderPanel({ selectionMode: "single", selectionOrnament: false, ...chosen });
+    fireEvent.click(screen.getByRole("button", { name: /Filter by set/ }));
+    const heading = screen.getByRole("dialog").querySelector("h2");
+    expect(heading?.textContent).toBe(collectionFilterCopy.set.sheetTitle);
+  });
+
+  // THE CASE THAT MAKES IT A PROP. The set page's rarity panel is single-select
+  // WITH an off state, so a chosen rarity there is a real active filter and must
+  // keep saying so. Keying the suppression on `selectionMode` regressed it.
+  it("still lights a single-select panel that can be off, like the rarity filter", () => {
+    renderPanel({ selectionMode: "single", ...chosen });
+    expect(screen.getByRole("button", { name: /Filter by set/ }).className)
+      .toContain("border-[color:var(--accent)]");
+  });
+
+  it("still lights and badges a multi-select panel", () => {
+    renderPanel({ selectionMode: "multi", ...chosen });
+    expect(screen.getByRole("button", { name: /Filter by set/ }).className)
+      .toContain("border-[color:var(--accent)]");
+    cleanup();
+
+    setViewport(false);
+    renderPanel({ selectionMode: "multi", ...chosen });
+    fireEvent.click(screen.getByRole("button", { name: /Filter by set/ }));
+    expect(screen.getByRole("dialog").querySelector("h2")?.textContent)
+      .toBe(`${collectionFilterCopy.set.sheetTitle}1`);
   });
 });

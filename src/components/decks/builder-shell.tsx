@@ -4,6 +4,7 @@
 // coverage strip stays above both and the quick-add bar is pinned under both.
 "use client";
 
+import { printedFaceName } from "../../lib/collection/browse";
 import { useState, useMemo, useCallback, useEffect, useRef, useTransition } from "react";
 import { printedNameOf } from "../../lib/collection/browse";
 import { deckBodySize } from "../../lib/decks/deck-size";
@@ -454,7 +455,9 @@ export function BuilderShell({
       if (card.quantity > 1) return;
       setAnnouncement(
         addPanelCopy.undo.announceRemoved(
-          card.name,
+          // The pair of `announceUndone` below, and named the same way: the row
+          // that left and the receipt that brings it back are one card.
+          printedFaceName(card),
           deckCounts(cards).built - 1,
           bodySize,
         ),
@@ -471,7 +474,10 @@ export function BuilderShell({
     (card: DeckDetailCard) => {
       setAnnouncement(
         addPanelCopy.undo.announceUndone(
-          card.name,
+          // The name on the receipt the reader just pressed, not the oracle
+          // name behind it: the two differ on a renamed printing, and the
+          // announcement is the same act described twice.
+          printedFaceName(card),
           deckCounts(cards).built + card.quantity,
           bodySize,
         ),
@@ -1161,6 +1167,11 @@ export function BuilderShell({
                 provenance={provenance}
                 pendingChanges={pendingChange?.moves}
                 pendingVersion={draft?.version?.number ?? null}
+                // The page's one live region, shared with every other write on
+                // this surface. A reorder announces "Sorted by Name · Z–A." —
+                // the only thing that says the list moved, since nothing scrolls
+                // and no row changes.
+                onAnnounce={setAnnouncement}
               />
               </PendingChangeProvider>
             )}

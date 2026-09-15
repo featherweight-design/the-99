@@ -13,6 +13,7 @@
 // restating them, so a removed card leaves a hole exactly its own size and the
 // grid does not reflow around the receipt.
 
+import { printedFaceName } from "../../lib/collection/browse";
 import { addCardToDeck } from "../../app/decks/actions";
 import { addPanelCopy } from "../../lib/copy/decks-builder";
 import type { DeckDetailCard } from "../../lib/decks/grouping";
@@ -44,7 +45,7 @@ export function UndoTile({ deckId, card }: { deckId: string; card: DeckDetailCar
           style={{ aspectRatio: TILE_ART_RATIO }}
         >
           <span className="font-mono text-[11px] leading-[1.4] text-fg-locked">
-            {addPanelCopy.undo.removed(card.name)}
+            {addPanelCopy.undo.removed(printedFaceName(card))}
           </span>
         </div>
         {/* Same caption slot as the live tile, so the Undo lands where the ✕ it
@@ -59,7 +60,7 @@ export function UndoTile({ deckId, card }: { deckId: string; card: DeckDetailCar
                 bg-transparent border-0 md:border-b md:border-accent-shadow
                 text-[13px] md:text-[12.5px] font-semibold md:leading-[1.4]
                 text-accent md:hover:text-accent-hover cursor-pointer disabled:opacity-50 disabled:cursor-default"
-              aria-label={addPanelCopy.undo.actionAria(card.name)}
+              aria-label={addPanelCopy.undo.actionAria(printedFaceName(card))}
             >
               {addPanelCopy.undo.action}
             </button>

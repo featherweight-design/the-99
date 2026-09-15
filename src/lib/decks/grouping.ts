@@ -226,8 +226,20 @@ const ROLE_GROUP_LABELS = Object.fromEntries(
 // Generic over the row so a caller grouping a richer shape — a draft row
 // carrying its direction and quantity move — gets that shape back rather than
 // the narrowed card.
+/** The order these groups have always had, kept for every caller that takes no
+ *  comparator of its own. */
+const byName = <T extends Pick<DeckDetailCard, "name">>(a: T, b: T) =>
+  a.name.localeCompare(b.name);
+
+/**
+ * `compare` is the deck list's chosen order, applied INSIDE each group. Absent,
+ * the groups keep the alphabetical order they have always had — which is what
+ * every other caller (the review screen, the version diff, the what-changed
+ * strip) wants, and why this is an option rather than a parameter.
+ */
 export function groupByCardType<T extends Pick<DeckDetailCard, "cardTypeGroup" | "name">>(
   cards: T[],
+  compare?: (a: T, b: T) => number,
 ): [CardTypeGroup, T[]][] {
   const map = new Map<CardTypeGroup, T[]>();
   for (const g of CARD_TYPE_GROUP_ORDER) map.set(g, []);
@@ -238,13 +250,17 @@ export function groupByCardType<T extends Pick<DeckDetailCard, "cardTypeGroup" |
   for (const g of CARD_TYPE_GROUP_ORDER) {
     const group = map.get(g)!;
     if (group.length > 0) {
-      result.push([g, group.slice().sort((a, b) => a.name.localeCompare(b.name))]);
+      result.push([g, group.slice().sort(compare ?? byName)]);
     }
   }
   return result;
 }
 
-export function groupByRole(cards: DeckDetailCard[]): [string, DeckDetailCard[]][] {
+/** Same `compare` contract as `groupByCardType`. */
+export function groupByRole(
+  cards: DeckDetailCard[],
+  compare?: (a: DeckDetailCard, b: DeckDetailCard) => number,
+): [string, DeckDetailCard[]][] {
   const map = new Map<string, DeckDetailCard[]>();
   for (const r of ROLE_GROUP_ORDER) map.set(r, []);
   for (const c of cards) {
@@ -255,7 +271,7 @@ export function groupByRole(cards: DeckDetailCard[]): [string, DeckDetailCard[]]
   for (const r of ROLE_GROUP_ORDER) {
     const group = map.get(r)!;
     if (group.length > 0) {
-      result.push([ROLE_GROUP_LABELS[r], group.slice().sort((a, b) => a.name.localeCompare(b.name))]);
+      result.push([ROLE_GROUP_LABELS[r], group.slice().sort(compare ?? byName)]);
     }
   }
   return result;

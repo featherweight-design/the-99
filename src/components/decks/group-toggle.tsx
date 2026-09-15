@@ -4,6 +4,16 @@
 // §Decklist Group Toggle (design table).
 
 import { ClearAutoButton } from "./clear-auto";
+import { FilterPanel } from "../ui/filter-panel";
+import { useIsDesktop } from "../ui/use-is-desktop";
+import {
+  buildDeckSortOptions,
+  deckSortCopy,
+  deckSortOrderLabel,
+  nextDeckSortState,
+  type DeckSortDirection,
+  type DeckSortKey,
+} from "../../lib/copy/deck-sort";
 import { PriceStrip } from "./price-strip";
 import type { PriceSummary, ProvenanceForm } from "../../lib/decks/price";
 import { viewToggleCopy } from "../../lib/copy/card-surfaces";
@@ -60,11 +70,16 @@ type GroupToggleProps = {
       Required, not defaulted: an empty list renders the strip with no link at
       all, so a caller that forgot it would ship a silently link-less strip. */
   shoppingCards: { name: string; quantity: number }[];
+  /** The live order for the open filter, and the way to change it. */
+  sort: { key: DeckSortKey; direction: DeckSortDirection };
+  onSortChange: (next: { key: DeckSortKey; direction: DeckSortDirection }) => void;
+  /** Announced through the surface's own live region — see `BuilderShell`. */
+  onSortAnnounce?: (message: string) => void;
   /**
-   * The draft's own note for this slot (#389, surface 1) — `n of these are not
-   * in vN yet`. While it is set the auto cluster's kept note stands down: the
+   * The draft's own note for this slot (#389, surface 1) — `n of these differ
+   * from vN`. While it is set the auto cluster's kept note stands down: the
    * slot holds one sentence, and "37 cards are yours now" beside "12 of these
-   * are not in v2 yet" is two counts of the same list that answer different
+   * differ from v2" is two counts of the same list that answer different
    * questions. The bulk controls themselves are untouched.
    */
   draftNote?: string | null;
@@ -87,8 +102,14 @@ export function GroupToggle({
   priceSummary = null,
   provenance = null,
   shoppingCards,
+  sort,
+  onSortChange,
+  onSortAnnounce,
   draftNote = null,
 }: GroupToggleProps) {
+  // `md:` is the only breakpoint this row has ever used, and the panel's form
+  // follows it: a labelled 44px pill at phone, the desktop popover above.
+  const wide = useIsDesktop();
   return (
     /* Toggle bar container: mobile p=9px 16px | desktop p=14px 26px 10px.
        The strip sits INSIDE this container, above the bottom border, so the
@@ -142,10 +163,32 @@ export function GroupToggle({
             Absent at zero, disabled only while one of its own writes runs. Not
             gated on autoCount here: state 7 keeps the kept-note after the last
             auto card goes, and the component decides its own absence. */}
-        {/* The draft's note, in the slot the kept note otherwise holds. Its own
-            element rather than a value passed through the auto cluster: the
-            cluster is absent entirely on a deck the fill never ran on, and the
-            draft note has to survive that. */}
+        {/* CLUSTER 2 — act on the cards. One flex child, in both note forms.
+            `clear-auto.tsx` already wraps the KEPT note with the bulk pair; the
+            draft note used to sit outside that wrapper as a child of this row,
+            which made the handoff's stated invariant — the row wraps between
+            clusters and never inside one — false in exactly the variant nobody
+            had measured, and spent a 10px gap the desktop line could not afford
+            at 2px of margin. The wrapper is absent entirely when there is
+            neither a note nor an auto cluster, rather than collecting a gap. */}
+        {(draftNote || autoCount > 0 || keptCount > 0) && (
+          <span
+            /* Gated on VISIBLE CONTENT, not on `autoControls` — `BuilderShell`
+               passes that object whether or not there is anything to act on, so
+               testing it kept an empty wrapper (and the row's gap) in the
+               toolbar at every count of zero. The same predicate as the
+               hairline, for the same reason.
+               The wrapper also takes its CONTENTS' breakpoint, exactly as
+               `clear-auto.tsx` makes its own take the kept note's. Below `md:`
+               both notes are hidden and a zero-count auto cluster renders
+               nothing, so an unconditional wrapper would be an empty flex child
+               collecting the toolbar's 7px gap and spacing the row for content
+               nobody can see. `empty:hidden` covers the remaining case — a
+               wrapper whose children all declined to render at this width. */
+            className={`flex-none flex-wrap items-center gap-[8px] empty:hidden ${
+              autoCount > 0 ? "flex" : "hidden md:flex"
+            }`}
+          >
         {draftNote && (
           <span className="font-mono text-[11.5px] text-fg-locked hidden md:inline">
             {draftNote}
@@ -165,7 +208,35 @@ export function GroupToggle({
             keepAllPending={keepAllPending}
           />
         )}
+          </span>
+        )}
 
+        {/* CLUSTER 3 — how the list reads: what the sections are, what order
+            the rows inside them take, and how a row is drawn. One `flex-none`
+            child for the same reason cluster 2 is one: three loose children got
+            away with it at seven controls and do not at eight, and the failure
+            is the view well alone on a fourth line at 390px. */}
+        {/* The hairline divides ACTING ON the cards from READING them, and sort
+            is on the reading side — so it sits in front of this cluster rather
+            than past it, which is the opposite of the chassis' hairline (that
+            one says "not a filter").
+            A SEPARATOR, NOT A CHILD, which is a rule about what it may never
+            do: with nothing on its left it renders nothing. Its own condition
+            rather than cluster 2's, because that cluster is drawn whenever a
+            note or the controls exist while `ClearAutoButton` can still return
+            an empty wrapper at zero — a rule dividing nothing from something is
+            just a stray mark and a 10px gap. And nothing at phone either, where
+            there is no room for it. */}
+        {(draftNote || autoCount > 0 || keptCount > 0) && (
+          <span
+            aria-hidden
+            className="hidden md:block h-[22px] w-px flex-none bg-[color:var(--border-strong)]"
+          />
+        )}
+        {/* A `div`, not a `span`: this cluster holds `FilterPanel`, whose root
+            is a block element, and `<span><div/></span>` is invalid markup that
+            React warns about at runtime. */}
+        <div className="flex-none flex items-center gap-[7px] md:gap-[10px]">
         {/* By type — active: dark pill with border | idle: plain muted text */}
         {/* Mobile active: px-10 py-4; Desktop active: px-13 py-5              */}
         {/* Mobile idle:   px-6 py-4 no border; Desktop idle: px-13 py-5 border */}
@@ -194,11 +265,46 @@ export function GroupToggle({
           By role
         </button>
 
+        {/* The order the rows inside those sections take. One mount of the
+            panel `/collection`'s own Sort is, in single-select: `By type` names
+            the sections, this names what happens inside them, and the well
+            names how a row is drawn — the three read left to right as one
+            statement about the list. */}
+        <FilterPanel
+          // Keyed on the form: the panel holds its own `open` and has no reset,
+          // so a sheet left open across a resize would come back as a desktop
+          // popover with no trigger click. Every other mount does the same.
+          key={`deck-sort-${wide ? "wide" : "compact"}`}
+          compact={!wide}
+          desktopRowMinPx={44}
+          copy={deckSortCopy}
+          options={buildDeckSortOptions(filter, sort.key, sort.direction)}
+          selected={[sort.key]}
+          selectionMode="single"
+          // Exactly one order is always chosen, so a lit border would say "on"
+          // about a control that is never off, and a badge would count one of one.
+          selectionOrnament={false}
+          showCounts={false}
+          searchable={false}
+          widthPx={260}
+          footerStatus={false}
+          onToggle={(code) => {
+            const next = nextDeckSortState(sort, code as DeckSortKey);
+            onSortChange(next);
+            // Announced as authored: the labels carry `A–Z`, and lowercasing
+            // changes how a screen reader says it.
+            onSortAnnounce?.(`Sorted by ${deckSortOrderLabel(next.key, next.direction)}.`);
+          }}
+          onClear={() => {}}
+          onAnnounce={(message) => onSortAnnounce?.(message)}
+        />
+
         {/* Absent under Shopping, not disabled: a shopping list is a list of
             things to buy, and there is no second way to read it. */}
         {filter === "all" && (
           <ViewToggle options={DECK_VIEWS} value={view} onChange={onViewChange} />
         )}
+        </div>
       </div>
 
       {/* Scoped to the filter it sits under: the sum of what Shopping is

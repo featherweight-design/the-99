@@ -12,12 +12,21 @@ import { recommendationsCopy } from "../../lib/copy/recommendations";
 import { addPanelCopy } from "../../lib/copy/decks-builder";
 import { deckVersioningCopy } from "../../lib/copy/deck-versioning";
 import { DECK_VIEW_KEY, GroupToggle, isDeckView, type AutoControls } from "./group-toggle";
-import { comparePriceDesc, summarisePrices, type ProvenanceForm } from "../../lib/decks/price";
+import { deckCardComparator } from "../../lib/decks/sort-cards";
+import {
+  DECK_SORT_STORAGE_KEY,
+  isStoredDeckSort,
+  parseDeckSort,
+  withLaneOrder,
+  type DeckSortState,
+} from "../../lib/decks/sort-memory";
+import { summarisePrices, type ProvenanceForm } from "../../lib/decks/price";
 import { DecklistGroup } from "./decklist-group";
 import { DecklistGroupHeader } from "./decklist-group-header";
 import { DecklistRow } from "./decklist-row";
 import { HoverPreviewProvider } from "./hover-preview";
 import { useStoredView } from "../ui/use-stored-view";
+import { readRaw } from "../ui/local-store";
 import type { PendingChangeMove } from "./pending-change";
 import { UnresolvedGroup } from "./unresolved-group";
 import { SweepReceipt } from "./clear-auto";
@@ -109,6 +118,9 @@ type DecklistProps = {
   pendingChanges?: ReadonlyMap<string, PendingChangeMove>;
   /** The newest version's number, for the toolbar note. Null on a brew. */
   pendingVersion?: number | null;
+  /** The surface's live region. A reorder is the one change on this list that
+   *  moves nothing a reader can see happening. */
+  onAnnounce?: (message: string) => void;
 };
 
 /** Module-scoped, so the default does not hand a fresh map to the provider on
@@ -143,6 +155,7 @@ export function Decklist({
   provenance = null,
   pendingChanges = EMPTY_PENDING_CHANGES,
   pendingVersion = null,
+  onAnnounce,
 }: DecklistProps) {
   // The view persists and does not touch the URL. It is a reading preference,
   // not a description of what is on screen — `/collection`'s `?view=` answers
@@ -197,6 +210,24 @@ export function Decklist({
     }
     return entries;
   }, [cards, filter, view]);
+
+  // ONE SORT PER FILTER, both remembered together. `All` keeps its own order
+  // while `Shopping` keeps `Price · Highest`, so switching lanes swaps which is
+  // live rather than converting one into the other — and coming back restores
+  // what that lane was last read in. Same store as the view well beside it,
+  // and for the same reason: how you read a list is a fact about the reader.
+  const [storedSort, chooseSort] = useStoredView(DECK_SORT_STORAGE_KEY, isStoredDeckSort);
+  const sortMemory = parseDeckSort(storedSort);
+  const sort = sortMemory[filter];
+  // `withLaneOrder` owns the merge, including reading the stored value fresh
+  // and refusing one the guard rejects. Three review rounds landed on a copy of
+  // that logic living here; it is one tested function now.
+  const setSort = (next: DeckSortState) =>
+    chooseSort(withLaneOrder(readRaw(DECK_SORT_STORAGE_KEY), filter, next));
+
+  // The one comparator every group below orders its rows with. `newestAsOf` is
+  // only read by the price key; the other two ignore it.
+  const compareCards = deckCardComparator(sort.key, sort.direction, newestAsOf);
 
   // The toolbar's right slot while a draft exists. Needs both answers: a deck
   // with no version has no vN to count against, and a set with nothing in it has
@@ -278,7 +309,9 @@ export function Decklist({
 
   // Group the visible cards
   const groups =
-    grouping === "type" ? groupByCardType(listedCards) : groupByRole(listedCards);
+    grouping === "type"
+      ? groupByCardType(listedCards, compareCards)
+      : groupByRole(listedCards, compareCards);
 
   // Flattened in render order, so Prev/Next walks the list the way the eye does — across
   // group boundaries rather than restarting inside each one.
@@ -412,7 +445,7 @@ export function Decklist({
     ).map((section) => ({
       ...section,
       cards: section.cards.slice().sort((a, b) =>
-        comparePriceDesc(rankAsDrawn(a), rankAsDrawn(b), newestAsOf)),
+        compareCards(rankAsDrawn(a), rankAsDrawn(b))),
     }));
 
     // The open slots the player kept for themselves (not filled by auto).
@@ -465,6 +498,9 @@ export function Decklist({
             keepAllPending={keepAllPending}
             autoControls={autoControls}
             shoppingCards={shoppingList}
+            sort={sort}
+            onSortChange={setSort}
+            onSortAnnounce={onAnnounce}
             draftNote={draftNote}
           />
           <div className="px-[16px] pt-[12px] md:px-[26px] md:pt-[14px] empty:hidden">
@@ -531,6 +567,9 @@ export function Decklist({
           priceSummary={priceSummary}
           provenance={provenance}
           shoppingCards={shoppingList}
+          sort={sort}
+          onSortChange={setSort}
+          onSortAnnounce={onAnnounce}
           draftNote={draftNote}
         />
 
@@ -661,6 +700,9 @@ export function Decklist({
         priceSummary={priceSummary}
         provenance={provenance}
         shoppingCards={shoppingList}
+        sort={sort}
+        onSortChange={setSort}
+        onSortAnnounce={onAnnounce}
         draftNote={draftNote}
       />
 
