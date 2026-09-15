@@ -178,12 +178,13 @@ export function ContestedCardRow({
       const fresh = result.card
         ? { ...result.card, arrived: card.arrived, ownedBefore: card.ownedBefore }
         : null;
-      if (fresh) {
-        setCard(fresh);
-        // The optimistic set stands down: the row now has the server's own allocation, and
-        // authorship is read back out of it.
-        setPicked(null);
-      }
+      if (fresh) setCard(fresh);
+      // THE OPTIMISTIC SET ALWAYS STANDS DOWN when the server answers — including when the live
+      // read came back null, which the action's own type allows. Cleared only alongside a fresh
+      // card, a null read left the row wearing an accent and an undo footer backed by nothing,
+      // and nothing else would ever clear them. Authorship is read from data; this state exists
+      // only for the window before there is any.
+      setPicked(null);
       // ANNOUNCED FROM THE SERVER'S OWN ALLOCATION, once there is one. The trade is the news —
       // "X gets it, Y buys it" — and naming the loser before the server has decided who that is
       // announces a trade that may not have happened.
@@ -207,7 +208,6 @@ export function ContestedCardRow({
         // the undrawn state drawn. The optimistic pick still stands down; the shipped transport
         // treatment is what speaks for a request that should not have happened.
         setRefusal(result.cause === "not-your-deck" ? null : result.cause);
-        setPicked(null);
         // A refusal announces the on-screen sentence verbatim rather than a summary of it.
         const said = refusalSentence(result.cause, result.card ?? card, deckName);
         if (said) setAnnounce(said);
