@@ -18,6 +18,8 @@ import { drizzle } from "drizzle-orm/neon-serverless";
 import { sql } from "drizzle-orm";
 import ws from "ws";
 import { loadAvailability, loadDeckBuyRows } from "../src/lib/decks/availability-query";
+import { assignCopyFor } from "../src/lib/decks/assign";
+import { commitVersion } from "../src/lib/decks/versions";
 
 neonConfig.webSocketConstructor = ws;
 
@@ -33,6 +35,9 @@ const USER_R = `probe-reserve-${Date.now()}`;
 // And the commander ceiling gets a third, for the reason its own header gives: its
 // figures are only computable against a fixture where nothing else claims the card.
 const USER_C = `probe-ceiling-${Date.now()}`;
+// And the chooser's own write gets a fourth. It calls the guarded write directly — the server
+// action around it needs a request, and what these cases are about is what the DATABASE refuses.
+const USER_W = `probe-write-${Date.now()}`;
 
 let failures = 0;
 const check = (label: string, actual: unknown, expected: unknown) => {
@@ -529,6 +534,129 @@ async function commanderCeilingSection() {
   }
 }
 
+// ── THE CHOOSER'S WRITE ────────────────────────────────────────────────────────
+//
+// `assignCopy` authorizes itself inside its own transaction, and every guard it applies is a
+// question about what the database holds RIGHT NOW — the summary's rows come out of a payload
+// written at import time, so by the time a player presses one a deck can have committed a
+// removal, promoted the card to its commander, or had the last spare taken by another pick.
+// None of that is reachable from a unit test: the guards read committed versions, a collection
+// and other people's reservations.
+//
+// It calls the real action, which needs a signed-in reader — so the fixture writes under the id
+// `requireUserId` will return, and the run is pointed at a database where that account exists.
+async function assignmentWriteSection() {
+  const { rows: legends } = await fixture.execute<{ oracle_id: string }>(sql`
+    select oracle_id from cards
+    where type_line ~ 'Legendary Creature' and type_line !~ '\\mBasic\\M'
+    order by oracle_id limit 2
+  `);
+  if (legends.length < 2) throw new Error("catalog is empty — seed it first");
+  const card = legends[0].oracle_id;
+  const otherCmd = legends[1].oracle_id;
+
+  const decksMade: string[] = [];
+  const mk = async (name: string, cmd: string, ago: number, holds: boolean) => {
+    const { rows: [d] } = await fixture.execute<{ id: string }>(sql`
+      insert into decks (user_id, name, commander_oracle_id)
+      values (${USER_W}, ${name}, ${cmd}) returning id
+    `);
+    decksMade.push(d.id);
+    const { rows: [v] } = await fixture.execute<{ id: string }>(sql`
+      insert into deck_versions (deck_id, number, committed_at, commander_oracle_id, commander_since)
+      values (${d.id}, 1, now() - (${ago} * interval '1 minute'), ${cmd},
+              now() - (${ago} * interval '1 minute'))
+      returning id
+    `);
+    if (holds) {
+      await fixture.execute(sql`
+        insert into deck_version_cards (version_id, oracle_id, quantity, since)
+        values (${v.id}, ${card}, 1, now() - (${ago} * interval '1 minute'))
+      `);
+      await fixture.execute(sql`
+        insert into deck_cards (deck_id, oracle_id, quantity) values (${d.id}, ${card}, 1)
+      `);
+    }
+    return d.id;
+  };
+  const rowsFor = async (deckId: string) => {
+    const { rows } = await fixture.execute<{ n: number }>(sql`
+      select count(*)::int as n from card_assignments
+      where user_id = ${USER_W} and oracle_id = ${card} and deck_id = ${deckId}
+    `);
+    return rows[0].n;
+  };
+
+  try {
+    await fixture.execute(sql`
+      insert into collection_items (user_id, oracle_id, quantity, set_code)
+      values (${USER_W}, ${card}, 1, 'probe')
+    `);
+    const senior = await mk("Write senior", otherCmd, 60, true);
+    const junior = await mk("Write junior", otherCmd, 30, true);
+
+    // 1. THE PICK. One copy, two committed claimants, and the junior deck is given it.
+    check("a pick is accepted", await assignCopyFor(USER_W, card, junior), null);
+    check("and writes exactly one row", await rowsFor(junior), 1);
+
+    // 2. THE TOGGLE. Pressing the same deck again takes the copy back, and a cleared row is
+    //    indistinguishable from one never written.
+    check("pressing the same deck clears it", await assignCopyFor(USER_W, card, junior), null);
+    check("and leaves no row behind", await rowsFor(junior), 0);
+
+    // 3. THE MOVE. With the cap spent, naming a third deck moves the reservation rather than
+    //    adding to it — there is only one copy, and two decks cannot both be given it.
+    await assignCopyFor(USER_W, card, junior);
+    check("a pick with the cap spent moves the reservation",
+      await assignCopyFor(USER_W, card, senior), null);
+    check("off the deck that had it", await rowsFor(junior), 0);
+    check("and onto the deck just named", await rowsFor(senior), 1);
+    await fixture.execute(sql`delete from card_assignments where user_id = ${USER_W}`);
+
+    // 4. A DRAFT-ONLY ADD IS REFUSED BY NAME. The deck has a version, and that version does not
+    //    list the card — reserving on a draft add would let it displace a hard claimant.
+    const drafter = await mk("Write drafter", otherCmd, 20, false);
+    await fixture.execute(sql`
+      insert into deck_cards (deck_id, oracle_id, quantity) values (${drafter}, ${card}, 1)
+    `);
+    check("a draft-only add is refused by name",
+      await assignCopyFor(USER_W, card, drafter), "claimant-no-longer-asks");
+    check("and writes nothing", await rowsFor(drafter), 0);
+
+    // 5. A COMMANDER IS REFUSED BY ITS OWN NAME, and before the claim check: a player told
+    //    instead that the deck is not asking for the card would go looking for a problem with a
+    //    list that is perfectly correct.
+    const { rows: [cmdDeck] } = await fixture.execute<{ id: string }>(sql`
+      insert into decks (user_id, name, commander_oracle_id)
+      values (${USER_W}, 'Write commander', ${card}) returning id
+    `);
+    decksMade.push(cmdDeck.id);
+    await fixture.execute(sql`
+      insert into deck_versions (deck_id, number, commander_oracle_id) values (${cmdDeck.id}, 1, ${card})
+    `);
+    check("a commander is refused by its own name",
+      await assignCopyFor(USER_W, card, cmdDeck.id), "target-is-commander");
+
+    // 6. NO SUPPLY LEFT. The commander deck above now holds the only copy, so the ceiling is
+    //    nought and there is nothing any pick can give away.
+    check("a pick with no giveable copy is refused by name",
+      await assignCopyFor(USER_W, card, senior), "no-supply-left");
+
+    // 7. A COMMIT THAT DROPS THE CARD TAKES THE RESERVATION WITH IT. A deck that drops a card
+    //    and adds it back later must not resurrect a decision made about a different list.
+    await fixture.execute(sql`delete from decks where id = ${cmdDeck.id}`);
+    await assignCopyFor(USER_W, card, senior);
+    check("a reservation exists before the commit", await rowsFor(senior), 1);
+    await fixture.execute(sql`delete from deck_cards where deck_id = ${senior}`);
+    await commitVersion(senior, null);
+    check("and is gone after a commit without the card", await rowsFor(senior), 0);
+  } finally {
+    await fixture.execute(sql`delete from card_assignments where user_id = ${USER_W}`);
+    await fixture.execute(sql`delete from decks where user_id = ${USER_W}`);
+    await fixture.execute(sql`delete from collection_items where user_id = ${USER_W}`);
+  }
+}
+
 // Wrapped in main() rather than run at top level: tsx transpiles this repo's
 // scripts to CJS, where a top-level await is a build error.
 async function main() {
@@ -664,6 +792,7 @@ try {
 
   await reservationSection();
   await commanderCeilingSection();
+  await assignmentWriteSection();
 } finally {
   // Ordered by dependency; deck_versions and deck_cards cascade off decks.
   await fixture.execute(sql`delete from decks where user_id = ${USER}`);
