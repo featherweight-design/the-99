@@ -77,7 +77,8 @@ written.
    leading with the app's own single-select mark — **and the shape follows the cap: round at one
    copy, square above it, with the limit stated (`2 of 2 given`)** (README decision 3b). **The mark
    states allocation; brass and the `your call` plate state authorship** — nothing is brass until a
-   pick. **The `your call` plate is withdrawn** (README 3c) — a picked row carried five signals for
+   pick. *(Read that clause as historical: the plate is withdrawn two sentences on, and the
+   FOOTER is the non-colour authorship carrier. Nothing in the build draws a `your call` plate.)* **The `your call` plate is withdrawn** (README 3c) — a picked row carried five signals for
    one bit of state and the plate was the weakest, since **the footer sentence is the same word
    carrier and names the deck**. In exchange, **the footer is required on every surface the chooser
    appears on** — it is the feature's only non-colour carrier of authorship. **Three outcome words,
@@ -190,8 +191,9 @@ hexes in frames 1–8.**
 
 ## Open, non-blocking
 
-- **`review.bucketFreeNote` says "in the box already"**, which `availability.ts` bans. R2 obeys the
-  ban and flags the conflict; the shipped string is not edited here.
+- ~~**`review.bucketFreeNote` says "in the box already"**~~ — **historical, closed 2026-09-14.**
+  That string does not exist: it is listed among the retired strings in `deck-versioning.ts`, so
+  the rule it was said to break is unbroken and there is nothing to edit.
 - **`review.lede` is wrong by two** — flagged, not edited.
 
 ## Not designed, deliberately

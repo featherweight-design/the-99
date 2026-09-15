@@ -259,9 +259,24 @@ async function reservationSection() {
     // Back to the two copies case 6 is written against.
     await own(2);
 
-    // 6. No shortage, no rows: nothing to allocate and no figure moves.
+    // 6. NO SHORTAGE, WITH A LIVE RESERVATION — the state a player reaches by
+    //    choosing during a shortage and then buying the second copy. What must not
+    //    move is a PURCHASE: neither deck buys, before or after. `free` is not a
+    //    purchase — it is this deck's surplus — and it does move, from 1 to 0,
+    //    because a copy reserved to the other deck is not this deck's spare. That is
+    //    the same reading seniority already gives, with the reservation making a
+    //    junior claim senior for one copy.
+    //
+    //    Asserted rather than deleted: this case previously cleared the reservation
+    //    first, and so proved nothing about a reservation outliving its shortage.
+    await own(2);
+    await assign(b);
+    check("no shortage: the reserving deck buys nothing", await owes(b), 0);
+    check("no shortage: the other deck buys nothing either", await owes(a), 0);
+    check("and its surplus is the copy that is genuinely spare", await free(a), 0);
+    // Then with the reservation gone, the spare copy is the senior deck's again.
     await clearAssignments();
-    check("with supply for everyone a cleared reservation changes nothing", await free(a), 1);
+    check("with the reservation cleared the surplus returns", await free(a), 1);
 
     // 7. The stamp the chooser draws its order and its `v7 · 2 Aug` from.
     const senior = await claimOn(b, a);

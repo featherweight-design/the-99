@@ -67,30 +67,33 @@ reserve copies out of a collection the deck cannot draw on. The write validates 
 the same transaction as the upsert (see **The chooser**), which is where the rest of the
 target's eligibility is checked.
 
-### Three-phase supply
+### Reservations, under a commander ceiling
 
-`claimModel` today distributes the supply by one seniority queue. It gains two phases in
-front of it:
+*(Amended 2026-09-14. This section originally read "three-phase supply" and put commander claims
+ahead of the seniority queue. That is the rule the amendment below rejects, and what follows is
+what shipped.)*
 
-1. **Commander claims.** A committed deck's commander and partner take their copies first,
-   ahead of every reservation. This is what actually enforces the commander rule below; a
-   chooser that renders a commander holder as unpickable protects the screen and not the
-   arithmetic, and with one copy owned an assignment taken purely off the top would empty a
-   commander's slot in a way no surface can render. Both commander columns, and the
-   commander-plus-list-copy case, where the deck's single folded claim is part commander and
-   part list card and only the commander half is protected here.
-2. **Reservations**, over what phase 1 left. Each assignment reserves `copies`, capped twice:
-   at the target deck's own ask, and at the supply still unallocated when its turn comes.
-   Reservations take their turns in `(created_at, deck_id)` order, so two decks each assigned
-   one copy of a card with one copy left resolve deterministically — the earlier assignment is
-   honoured and the later one reserves nothing. Without the cumulative cap the remainder below
-   goes negative and nothing says which reservation won.
-3. **Seniority over what is left.** `remainder = owned − commander_claims − reserved`, floored
-   at zero, distributed across the unreserved parts of every claim by the existing
-   `(since, deck_id)` order. That ordering is unchanged.
+`claimModel` today distributes the supply by one seniority queue. Reservations go in front of
+it, under a ceiling:
 
-A deck's claim therefore splits into a commander part, a reserved part guaranteed whatever its
-`since`, and an unreserved remainder that queues as it always did.
+1. **The reservable ceiling.** `greatest(owned − commander_copies_committed, 0)`. A committed
+   deck's commander copies are never reservable, because `loadDeckBuyRows` emits no commander
+   row (#470), so a deck left short of its own commander is short in a way no surface can draw.
+   Commander claims are otherwise left exactly where they are in the queue — a ceiling, not a
+   promotion, because promoting them would move live figures with no reservation rows in the
+   table at all. Restricted to decks with a version: a brew's commander sets no ceiling, or one
+   brew could veto every reservation on its commander card.
+2. **Reservations**, capped twice: at the target deck's own ask **less its own commander
+   copies** — a folded claim's commander half is already guaranteed by the ceiling, so booking
+   it again would hand that deck more copies than it asks for — and at the ceiling still
+   unallocated when its turn comes. Turns run in `(created_at, deck_id)` order, so two decks
+   each assigned one copy of a single-copy card resolve deterministically.
+3. **Seniority over what is left.** `remainder = greatest(owned − granted_total, 0)`,
+   distributed across the unreserved parts of every claim by the existing `(since, deck_id)`
+   order, which is unchanged.
+
+A deck's claim therefore splits into a reserved part, guaranteed whatever its `since`, and an
+unreserved remainder that queues as it always did.
 
 A quantity model rather than a reordering is what makes "one assignment equals one copy"
 expressible. The queue sums whole claims, so a deck wanting four copies with one assigned to
@@ -101,7 +104,13 @@ reservation of one against an ask of four.
 
 - **The losing deck does not change.** Its committed version still lists the card, it still
   bills the purchase, and no new version is cut. This is the whole reason for the approach.
-- **Inert without a shortage.** Two copies and two claimants: reservations move no figure.
+- **Inert without a shortage — for every PURCHASE.** Two copies and two claimants, one of them
+  holding a reservation: neither deck buys anything, before or after. `free` is not a purchase,
+  though, and it does move: it is this deck's SURPLUS, and a copy reserved to another deck is
+  not this deck's spare. The senior deck's `free` goes from 1 to 0 there, which is the same
+  reading seniority already gives — a junior claim does not reduce your surplus, and a
+  reservation makes that claim senior for one copy. Stated precisely because the first draft of
+  this line said "no figure moves", which is false of `free` and was read as a defect.
   Assignments only bite under contention, which is why they need no expiry.
 - **Lifetime.** An assignment is about a **committed** claim, so "still wanted" means the
   deck's newest committed version still lists the card. The row is deleted in the commit
