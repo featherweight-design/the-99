@@ -619,7 +619,11 @@ function UndoRow({ deckId, card }: { deckId: string; card: DeckDetailCard }) {
             live rows above and below it. */}
         <span className="flex-none w-[7px] h-[7px] md:w-[8px] md:h-[8px]" aria-hidden />
         <span className="flex-1 min-w-0 whitespace-nowrap overflow-hidden text-ellipsis font-mono text-[11.5px] md:text-[12px] text-fg-locked">
-          {addPanelCopy.undo.removed(card.name)}
+          {/* The name the reader's own copy prints, exactly as the row this
+              receipt replaces does — and as the list's own order does. A
+              receipt calling a renamed printing by its oracle name sits in the
+              list by one name and announces itself by another. */}
+          {addPanelCopy.undo.removed(printedFaceName(card))}
         </span>
         {/* Absent once the undo has been refused: the message below tells the
             player where to go instead. */}

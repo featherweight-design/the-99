@@ -25,11 +25,13 @@ export type SortableCard = {
 /**
  * ON THE NAME THE ROW DRAWS, which is not always the oracle name.
  *
- * `decklist-row.tsx:182` renders `printedFaceName(card)`, so a player whose copy
- * is a renamed printing — a Secret Lair, an alternate-art face — sees that name
- * on the row. Sorting the oracle name would put those rows in a position the
- * visible labels contradict, which is the same mistake as ranking a price a row
- * does not print. Same resolver, so the two cannot drift.
+ * `decklist-row.tsx` renders `printedFaceName(card)` — for a live row, and for
+ * the undo receipt that stands in its place — so a player whose copy is a
+ * renamed printing sees that name on the list. Sorting the oracle name would
+ * put those rows in a position the visible labels contradict, which is the same
+ * mistake as ranking a price a row does not print. Every surface that names a
+ * card on this list goes through that one resolver, so none of them can drift
+ * from the order.
  *
  * By code point, never `localeCompare`, and the id after the name.
  * `localeCompare` reads whichever locale the runtime holds, and this list is
@@ -58,8 +60,8 @@ function byNameThenId(a: SortableCard, b: SortableCard): number {
  *
  * So the figure-less rows are taken out first and always sort last, among
  * themselves by name; only the priced rows take the direction. `priceRank` is
- * the same function `comparePriceDesc` ranks on, so the two can never disagree
- * about what figure a row draws.
+ * the one definition of the figure a row draws — `price.ts` holds it and holds
+ * no comparator of its own, so nothing can disagree with this one.
  */
 function byPrice(
   a: SortableCard,

@@ -895,3 +895,28 @@ describe("DecklistRow — the row is the click target", () => {
     expect(trigger).not.toHaveAttribute("aria-busy", "true");
   });
 });
+
+// The receipt stands in for a row and sits in the row's place in the order, so
+// it has to call the card what that row calls it. A renamed printing named by
+// its oracle name would sit in the list by one name and announce itself by
+// another — and the list's own order is computed from the printed one.
+describe("the undo receipt names the player's own copy", () => {
+  it("uses the printed name, not the oracle name", () => {
+    renderRow(
+      <DecklistRow
+        deckId="d1"
+        spent
+        card={{
+          ...card,
+          name: "Wolfbitten Captive",
+          printedName: "Alpha Strike",
+        } as DeckDetailCard}
+      />,
+    );
+
+    expect(screen.getByText(addPanelCopy.undo.removed("Alpha Strike"))).toBeInTheDocument();
+    expect(
+      screen.queryByText(addPanelCopy.undo.removed("Wolfbitten Captive")),
+    ).not.toBeInTheDocument();
+  });
+});
