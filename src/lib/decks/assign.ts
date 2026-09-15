@@ -182,11 +182,18 @@ export async function assignCopyFor(
 
     if (giveable <= 0) return "no-supply-left";
 
-    if (taken >= giveable) {
-      // The cap is spent, so this is a MOVE rather than an addition: the oldest reservation gives
-      // way to the deck the player has just named. Oldest, because `(created_at, deck_id)` is the
-      // order the model resolves reservations in, so releasing the oldest is the one release that
-      // frees the copy this deck will then take.
+    // ONE AUTHORED RESERVATION PER CARD. A pick always MOVES rather than adding, whatever the
+    // supply — which is the handoff's own accessibility model stated as a rule about the data:
+    // "`aria-checked` is true for the brass option only", so one deck at a time carries the
+    // player's authorship while seniority allocates the rest. Allowing two would put two checked
+    // radios in one group, which tells assistive technology the wrong thing about a control that
+    // is single-choice by design.
+    //
+    // The cap line is unaffected: it counts ALLOCATION — what every deck gets — and seniority
+    // hands out the copies this pick does not.
+    if (taken >= 1) {
+      // The existing reservation gives way to the deck the player has just named. Oldest first,
+      // because `(created_at, deck_id)` is the order the model resolves reservations in.
       const [oldest] = await tx.select({ deckId: cardAssignments.deckId })
         .from(cardAssignments)
         .where(and(

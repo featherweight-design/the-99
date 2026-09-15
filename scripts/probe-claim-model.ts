@@ -605,11 +605,17 @@ async function assignmentWriteSection() {
     check("pressing the same deck clears it", await assignCopyFor(USER_W, card, junior), null);
     check("and leaves no row behind", await rowsFor(junior), 0);
 
-    // 3. THE MOVE. With the cap spent, naming a third deck moves the reservation rather than
-    //    adding to it — there is only one copy, and two decks cannot both be given it.
+    // 3. THE MOVE, AND IT IS ALWAYS A MOVE. One authored reservation per card, whatever the
+    //    supply: the chooser is a single-choice control by design, and two reservations would put
+    //    two checked radios in one group. Seniority allocates every copy this pick does not.
     await assignCopyFor(USER_W, card, junior);
-    check("a pick with the cap spent moves the reservation",
+    check("a second pick moves the reservation rather than adding one",
       await assignCopyFor(USER_W, card, senior), null);
+    const { rows: [held] } = await fixture.execute<{ n: number }>(sql`
+      select count(*)::int as n from card_assignments
+      where user_id = ${USER_W} and oracle_id = ${card}
+    `);
+    check("leaving exactly one on the card", held.n, 1);
     check("off the deck that had it", await rowsFor(junior), 0);
     check("and onto the deck just named", await rowsFor(senior), 1);
     await fixture.execute(sql`delete from card_assignments where user_id = ${USER_W}`);

@@ -124,10 +124,11 @@ export function ContestedCardRow({
   // redrawing from them would show the player exactly the state that just lost.
   const [card, setCard] = useState(initial);
   const [refusal, setRefusal] = useState<AssignRefusal | null>(null);
-  // The optimistic pick, for the window between the tap and the server's answer, as a SET: with
-  // two copies in play two decks can each hold one, and a scalar would mask the second — the row
-  // would show one reservation, omit the other from the footer, and let a toggle clear a deck
-  // that still holds a copy. AUTHORSHIP ITSELF IS NOT STATE — see `chosenIds` below.
+  // The optimistic pick, for the window between the tap and the server's answer. A SET rather
+  // than a scalar because the DATA can hold more than one granted row — a reservation written
+  // before this rule existed, or by another tab — and the row has to draw what is there rather
+  // than the first of it. What this component WRITES is always one: see `pick` below.
+  // AUTHORSHIP ITSELF IS NOT STATE — see `chosenIds`.
   const [picked, setPicked] = useState<Set<string> | null>(null);
   // Which deck the player last tapped, kept only so a refusal can name the deck it refused. The
   // reservation set is not that: after a refusal clears the optimistic pick it holds whoever
@@ -164,10 +165,10 @@ export function ContestedCardRow({
     // reservations on `(created_at, deck_id)`, which is NOT the commit order this row is drawn
     // in, so a prediction made from these claimants is right only by luck. The returned card
     // carries the real allocation, and everything that depends on it waits for that.
-    const next = new Set(chosenIds);
-    if (wasChosen) next.delete(deckId);
-    else next.add(deckId);
-    setPicked(next);
+    // ONE AUTHORED PICK AT A TIME, which is what the write does and what the group's
+    // `aria-checked` promises: a pick moves the reservation rather than adding to it, so at most
+    // one option is ever checked. Seniority allocates every other copy.
+    setPicked(wasChosen ? new Set() : new Set([deckId]));
     startTransition(async () => {
       const result = await assignCopy(card.oracleId, deckId);
       // THE LIVE READ CARRIES NO RECEIPT. `arrived` and `ownedBefore` are facts about the import
@@ -201,10 +202,15 @@ export function ContestedCardRow({
             ));
       }
       if (!result.ok) {
-        setRefusal(result.cause);
+        // `not-your-deck` is the one cause with NO sentence, deliberately — a player cannot reach
+        // it from their own decks. Stored anyway it drew an empty red-ruled paragraph, which is
+        // the undrawn state drawn. The optimistic pick still stands down; the shipped transport
+        // treatment is what speaks for a request that should not have happened.
+        setRefusal(result.cause === "not-your-deck" ? null : result.cause);
         setPicked(null);
         // A refusal announces the on-screen sentence verbatim rather than a summary of it.
-        setAnnounce(refusalSentence(result.cause, result.card ?? card, deckName));
+        const said = refusalSentence(result.cause, result.card ?? card, deckName);
+        if (said) setAnnounce(said);
       }
     });
   };
@@ -375,6 +381,10 @@ export function ContestedCardRow({
                   // square mark there promises two decks can each have one.
                   copies={giveable}
                   commander={c.commanderCopies > 0}
+                  // The accent belongs on the MARK as much as on the border: the mark is the
+                  // control, and a pick whose only confirmation is a hairline is the weakest
+                  // signal on the row.
+                  picked={chosenIds.has(c.deckId)}
                 />
                 {/* Truncation only from `md`. At phone width this cell is stretched to the row,
                     and a deck name — the shared limit is 120 characters — would be ellipsised
