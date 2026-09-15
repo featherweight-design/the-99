@@ -47,7 +47,12 @@ async function main() {
     const tiles = await listDecksWithStats(userId, "lastPlayed", { includeProxyStats: true });
     const tileTotal = tiles.reduce((n, d) => n + d.toBuyCount, 0);
 
-    const fullyOwned = tiles.filter((d) => d.toBuyCount === 0);
+    // `ownedCount === built`, NOT `toBuyCount === 0`. Since proxies, to-buy is
+    // coverage-based: a deck whose last gaps are printed reads 0 while owning
+    // none of those cards, and it SHOULD still appear in the roll-up if it has
+    // anything to buy. Read the coverage figure here and this invariant quietly
+    // stops being about ownership at all.
+    const fullyOwned = tiles.filter((d) => d.ownedCount === d.built);
     const wronglyPresent = fullyOwned.filter((d) => rollup.byDeck.has(d.id)).map((d) => d.name);
 
     const perDeck = tiles.map((d) => ({
