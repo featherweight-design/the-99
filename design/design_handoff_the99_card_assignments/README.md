@@ -61,7 +61,7 @@ the same silence the ticket is about.
 2. **No sentence says where a card physically is.** `availability.ts`: *"we describe LISTS, never
    boxes, binders or sleeves."* R1's `cards in the box` heading is out — it reads `in your
    collection` — and nothing here is *sleeved*, *cardboard*, or *in the shop*. ⚠ **Conflict
-   flagged:** the shipped `review.bucketFreeNote` says *"in the box already"*, so the rule is
+   flagged — and CLOSED 2026-09-14, the string is retired:** `review.bucketFreeNote` said *"in the box already"*, so the rule was
    already broken once on a neighbouring surface.
 3. **`spoken for` is retired from this feature.** `spokenForTwice` ships on two surfaces and means
    **over-committed**. R1's `The copy is spoken for` heading would have made one phrase mean two
@@ -451,7 +451,11 @@ depends on which accent is in force: every ruling is about *which token*, not wh
 - **Focus:** after a pick, the option tapped; after a refusal, the message. *(The deck-page marker
   clause is superseded — that surface is not built.)*
 
-## Open questions (both need a ruling before PR 4)
+## Open questions — BOTH CLOSED 2026-09-14, kept as the record
+
+> Neither needs a ruling any longer, and neither is to be reopened. See `READINESS.md`.
+> **1** was ruled against: the marker stays inert and the deck-page door is dropped.
+> **2** was a false alarm: `review.bucketFreeNote` is a retired string, so nothing breaks the ban.
 
 1. **The marker becomes a tap target** — decision 10. The only shipped ruling R2 contradicts.
 2. **"in the box"** — `availability.ts` bans asserting physical location; `review.bucketFreeNote`

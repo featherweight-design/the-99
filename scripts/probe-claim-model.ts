@@ -181,20 +181,18 @@ async function reservationSection() {
     check("the displaced senior deck is billed for a copy", await owes(a), 1);
     check("and the reserving deck is billed for none", await owes(b), 0);
 
-    // 2b-ii. THE DISPLACED DECK'S ROUTE BACK. `senior` gates whether a pull is
-    //     offered, and by default a junior claim is not a pull source — releasing it
-    //     could not relieve a senior deck that already had the copy. A junior deck
-    //     holding a RESERVATION is the exception, and it is the one vantage this
-    //     feature creates: the senior deck lost the copy to it, and dropping that
-    //     deck's list card would void the reservation and give it back. Without the
-    //     granted term the displaced deck is offered no route at all.
+    // 2b-ii. RESERVATIONS DO NOT TOUCH THE PULL GUARD. `senior` gates whether a pull
+    //     is offered and stays a pure seniority question: a junior claim is not a pull
+    //     source, reservation or no reservation. A deck displaced by somebody's pick
+    //     gets its copy back by CHANGING THE PICK — reversible, and it cuts nobody a
+    //     version — where a pull cuts one. An exception here was added during review
+    //     and then removed: it is wrong for a partial reservation, since pulling one
+    //     copy from a deck asking for two leaves its reservation granting one and
+    //     moves no figure at all. See the note on DeckClaim.senior.
     const seniorFlag = async (vantage: string, holder: string) => {
       const av = await loadAvailability(USER_R, { oracleIds: [card], excludeDeckId: vantage });
       return av.get(card)?.claims.find((c) => c.id === holder)?.senior ?? null;
     };
-    // A reservation does NOT make its holder a pull source: the displaced deck's route
-    // back is the pick itself, not a pull that would cut the other deck a version.
-    // Tried the other way in review and reverted — see the note on DeckClaim.senior.
     check("a reservation does not make its holder a pull source",
       await seniorFlag(a, b), false);
 

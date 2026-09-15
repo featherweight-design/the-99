@@ -62,5 +62,7 @@ the `/decks` invalidation fix) carry no design gate and can proceed now.
   `design_handoff_the99_appshell`. **Build from frame 9 and `globals.css`, not frames 1–8.**
 - **In Oil Haze, `--accent` as small text is 4.39:1** — so `Back to first committed` fails in one
   theme. Every accent link in that theme inherits it, so it is not this feature's to fix.
-- **`review.lede` is wrong by two** on `/changes`, and **`review.bucketFreeNote` says "in the box"**,
-  which `availability.ts` bans. Both raised, neither edited.
+- **`review.lede` is wrong by two** on `/changes` — stands, and is fixed in PR 4.
+  ~~**`review.bucketFreeNote` says "in the box"**~~ — **closed 2026-09-14: that string is retired**
+  (`deck-versioning.ts` lists it among the strings that no longer exist), so the rule it was said to
+  break is unbroken and there is nothing to edit.
