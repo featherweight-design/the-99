@@ -53,7 +53,10 @@ function ReceiptRow({
 }) {
   return (
     <li
-      className="flex flex-col md:flex-row md:items-center gap-[2px] md:gap-[10px] py-[9px]"
+      // 46px two-line on a phone, 44px one-line from `md` — the handoff's receipt-row metrics,
+      // stated rather than left to padding and an inherited line-height, which landed at about
+      // 39px on desktop and 60px on a phone.
+      className="flex flex-col justify-center md:flex-row md:items-center gap-[2px] md:gap-[10px] py-[6px] min-h-[46px] md:min-h-[44px]"
       style={{ borderTop: "1px solid var(--border)" }}
     >
       <span className="text-[13.5px] font-semibold md:flex-1 min-w-0 md:truncate" style={{ color: "var(--fg)" }}>
@@ -119,7 +122,13 @@ export function ArrivalsSummary({
   // row the reader can see; pointing at one hidden behind `Show all` sends them looking for
   // something that is not there.
   const stillShown = showAllStill ? still : still.slice(0, MONEY_LIMIT);
-  const nothingToReport = cleared.length === 0 && still.length === 0 && contested.length === 0;
+  // THE FROZEN SECTIONS DECIDE THIS, not the live one. `summary.contested` is a record of what
+  // this import left contested; `contested` is what is still contested NOW, and a row leaves it
+  // when the shortage resolves. Reading the live list here makes a receipt whose only
+  // consequence was a contested arrival announce that nothing your decks care about moved —
+  // about an import that moved something. The live list still controls which rows are DRAWN.
+  const nothingToReport =
+    cleared.length === 0 && still.length === 0 && (summary?.contested.length ?? 0) === 0;
   const names = summary?.names ?? { cards: {}, decks: {} };
 
   const unmatched = summary?.issues.unmatched ?? 0;

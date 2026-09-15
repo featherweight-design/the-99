@@ -267,6 +267,38 @@ describe("ContestedCardRow", () => {
     expect(screen.getByText(copy.contested.cap(1, 2))).toBeTruthy();
   });
 
+  // STATE 35: a commander holds one copy and another is free. Nothing is inert about the ROW —
+  // there is a real choice — so the heading stays the ordinary one while the commander's own
+  // option remains unchoosable. Neither the inert case nor the folded case covers this.
+  it("keeps the ordinary heading when a commander holds one copy and another is free", () => {
+    render(<ContestedCardRow card={card({
+      owned: 2,
+      arrived: 1,
+      ownedBefore: 1,
+      claimants: [
+        {
+          deckId: "d1", deckName: "Led By It", quantity: 1, commanderCopies: 1,
+          since: AUG, versionNumber: 1, allocated: 1,
+        },
+        {
+          deckId: "d2", deckName: "Lists It", quantity: 1, commanderCopies: 0,
+          since: SEP, versionNumber: 1, allocated: 1,
+        },
+        {
+          deckId: "d3", deckName: "Also lists it", quantity: 1, commanderCopies: 0,
+          since: SEP + 1, versionNumber: 1, allocated: 0,
+        },
+      ],
+    })} />);
+    expect(screen.getByText(copy.contested.heading(1))).toBeTruthy();
+    expect(screen.queryByText(copy.contested.headingInert)).toBeNull();
+    expect(screen.queryByText(copy.contested.headingSpare)).toBeNull();
+    // The commander's option is still the one nobody can choose, and says so by its border.
+    const rows = screen.getAllByRole("listitem");
+    expect(rows[0].getAttribute("style")).toContain("dashed");
+    expect(rows[1].getAttribute("style")).toContain("solid");
+  });
+
   it("names a brew and excludes it, rather than counting it or offering it", () => {
     render(<ContestedCardRow card={card({ brewNames: ["Muldrotha Lands"] })} />);
     expect(screen.getByText(copy.contested.brewNote("Muldrotha Lands"))).toBeTruthy();
