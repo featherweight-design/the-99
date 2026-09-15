@@ -1,5 +1,5 @@
 {
-  "id": "71c427e2-84bf-464b-8be3-a799a9f7ac6c",
+  "id": "04389541-7c28-4123-9d63-c93e4143e897",
   "prevId": "42a5dc31-da10-4ba8-a1ea-4d9b45e2e2c4",
   "version": "7",
   "dialect": "postgresql",
@@ -102,17 +102,11 @@
         }
       },
       "indexes": {
-        "card_assignments_user_oracle_idx": {
-          "name": "card_assignments_user_oracle_idx",
+        "card_assignments_deck_idx": {
+          "name": "card_assignments_deck_idx",
           "columns": [
             {
-              "expression": "user_id",
-              "isExpression": false,
-              "asc": true,
-              "nulls": "last"
-            },
-            {
-              "expression": "oracle_id",
+              "expression": "deck_id",
               "isExpression": false,
               "asc": true,
               "nulls": "last"

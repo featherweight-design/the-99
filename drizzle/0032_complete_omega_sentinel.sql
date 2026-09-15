@@ -10,4 +10,4 @@ CREATE TABLE "card_assignments" (
 --> statement-breakpoint
 ALTER TABLE "card_assignments" ADD CONSTRAINT "card_assignments_oracle_id_cards_oracle_id_fk" FOREIGN KEY ("oracle_id") REFERENCES "public"."cards"("oracle_id") ON DELETE no action ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "card_assignments" ADD CONSTRAINT "card_assignments_deck_id_decks_id_fk" FOREIGN KEY ("deck_id") REFERENCES "public"."decks"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
-CREATE INDEX "card_assignments_user_oracle_idx" ON "card_assignments" USING btree ("user_id","oracle_id");
+CREATE INDEX "card_assignments_deck_idx" ON "card_assignments" USING btree ("deck_id");

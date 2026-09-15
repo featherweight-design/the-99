@@ -154,7 +154,9 @@ Each is run against the unfixed build before being believed:
   assigned one copy of a single-copy card resolve to the earlier assignment, and the remainder
   never goes negative
 - two copies, two assignments, both honoured
-- no shortage: no figure moves
+- no shortage, with a LIVE reservation: no deck buys anything. Purchases, not every
+  figure — `free` is a surplus and a reserved copy is not this deck's spare, so a covered
+  deck's `free` does move from 1 to 0, which the case asserts rather than avoids
 - **with no rows in the table at all, every figure equals the pre-change answer** — the claim
   that PR 1 is inert, measured rather than asserted
 - a commander claim is not displaced **in the arithmetic**, with one copy owned

@@ -229,15 +229,8 @@
     {
       "idx": 32,
       "version": "7",
-      "when": 1789434450334,
-      "tag": "0032_small_iron_monger",
-      "breakpoints": true
-    },
-    {
-      "idx": 33,
-      "version": "7",
-      "when": 1789435886245,
-      "tag": "0033_square_phil_sheldon",
+      "when": 1789437429900,
+      "tag": "0032_complete_omega_sentinel",
       "breakpoints": true
     }
   ]

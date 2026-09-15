@@ -1,1 +1,0 @@
-CREATE INDEX "card_assignments_deck_idx" ON "card_assignments" USING btree ("deck_id");

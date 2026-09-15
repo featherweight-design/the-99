@@ -610,8 +610,16 @@ export const commanderScores = pgTable("commander_scores", {
  * - It does not rewrite `since`. That column means "when this card entered this
  *   deck's committed version", and every other reader of it would inherit the lie.
  *
- * A reservation is INERT without a shortage: with enough copies for everyone it
- * moves no figure. That is why it needs no expiry. It is deleted when the deck's
+ * A reservation is INERT without a shortage: with enough copies for everyone, NO DECK
+ * BUYS ANYTHING, before or after. That is why it needs no expiry.
+ *
+ * Purchases, precisely — not every figure. `free` is a deck's SURPLUS, and a copy
+ * reserved to another deck is not this deck's spare, so a reservation does move a
+ * covered deck's `free` from 1 to 0. That is the same reading seniority already gives
+ * (a junior claim does not reduce your surplus; a reservation makes one senior for a
+ * copy), and `reserved_others` is subtracted unconditionally for that reason. Do not
+ * "fix" it by making the subtraction conditional — see probe:claims, which holds a
+ * live reservation across the transition and asserts both buy rows and both surpluses. It is deleted when the deck's
  * newest committed version no longer lists the card — a deck that drops a card and
  * adds it back must not resurrect a decision made about a different list — and it
  * cascades when the deck is deleted.
@@ -643,12 +651,11 @@ export const cardAssignments = pgTable("card_assignments", {
   // The natural key IS the key. A surrogate id would allow two rows for a pair the
   // model treats as one reservation.
   primaryKey({ columns: [t.userId, t.oracleId, t.deckId] }),
-  // The claim model reads every reservation this player holds on the cards in one
-  // query, so it reads by user and narrows by oracle.
-  index("card_assignments_user_oracle_idx").on(t.userId, t.oracleId),
-  // The cascade's own lookup. The primary key above leads with user_id and oracle_id,
-  // so it cannot answer "which rows reference this deck" — without this index every
-  // deck deletion scans the whole table.
+  // The cascade's own lookup, and the only index this table needs beyond its key. The
+  // primary key leads with user_id and oracle_id, so the claim model's read — every
+  // reservation this player holds — already uses it; a second index on that same
+  // prefix would be pure write cost. What the key cannot answer is "which rows
+  // reference this deck", so a deck deletion would scan the whole table without this.
   index("card_assignments_deck_idx").on(t.deckId),
   // A zero or negative value would be a durable row that reduces or inverts the
   // supply arithmetic, and a caller-side guard does not survive the next caller.

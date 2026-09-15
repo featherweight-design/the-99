@@ -76,13 +76,12 @@ export type DeckClaim = {
    * card: seniority already leaves a junior claim out of `free`, so taking its
    * copy away moves no figure and costs that deck its slot for nothing.
    *
-   * ONE EXCEPTION, and it is not a seniority question: a junior deck holding a
-   * granted RESERVATION is true. That copy IS subtracted from the vantage deck's
-   * `free`, so releasing the junior deck's list card would drop its ask, void its
-   * reservation and relieve the shortfall. It is the one vantage assignments
-   * create — the deck that lost a copy to someone else's pick — and without the
-   * exception it would be offered no route back at all. So read this flag as
-   * "releasing this claim could help me", never as "this deck is senior to me".
+   * RESERVATIONS DO NOT ENTER THIS FLAG. A deck displaced by another deck's
+   * reservation is not offered a pull, and that is deliberate: its route back is to
+   * change the pick, which is reversible and cuts no version, where a pull cuts one.
+   * An exception here was tried and removed — it is wrong for a partial reservation,
+   * since pulling one copy from a deck asking for two still leaves its reservation
+   * granting one and moves no figure at all.
    *
    * True for every sleeved claim when there is no vantage deck, and when the
    * vantage has not sleeved this card — both cases where `free` subtracts the

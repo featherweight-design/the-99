@@ -470,18 +470,21 @@ export async function loadAvailability(
             -- them is a source": an absent vantage, where free is owned - hard,
             -- and a vantage that has not sleeved this card, which is behind
             -- everyone who has.
-            -- OR a granted reservation, whoever it belongs to. A junior deck holding
-            -- one is exactly the claim a displaced senior deck needs to be able to ask
-            -- for: free subtracts that reserved copy from the senior's supply, so
-            -- releasing the junior deck's list card would drop its ask, void its
-            -- reservation and relieve the shortfall. Without this term the deck that
-            -- lost the copy is offered no route at all, which is the one vantage this
-            -- whole feature creates.
-            'senior', cd.sleeved and (coalesce(rv.granted, 0) > 0 or (
+            -- UNCHANGED BY RESERVATIONS, deliberately, and this was decided twice.
+            -- A reservation-aware exception was added here (any granted reservation
+            -- makes its holder a pull source) and then removed: it is wrong for a
+            -- PARTIAL reservation — a deck asking for two with one copy reserved still
+            -- grants one after a single copy is pulled, so the vantage deck's figure
+            -- does not move and the pull cost the other deck a slot for nothing — and
+            -- the refinement that would fix it grows the pull surface to serve a route
+            -- that already exists. A deck displaced by somebody's pick gets its copy
+            -- back by CHANGING THE PICK, which is reversible and cuts no version. A
+            -- pull cuts one. So this flag stays a pure seniority question.
+            'senior', cd.sleeved and (
               not coalesce((select s.sleeved from skip_deck s), false)
               or m.since is null
               or (cd.since, cd.deck_id) < (m.since, (select s.id from skip_deck s))
-            ))
+            )
           )
           order by cd.name, cd.deck_id
         ) as claims

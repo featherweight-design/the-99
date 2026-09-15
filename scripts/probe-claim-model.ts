@@ -192,8 +192,11 @@ async function reservationSection() {
       const av = await loadAvailability(USER_R, { oracleIds: [card], excludeDeckId: vantage });
       return av.get(card)?.claims.find((c) => c.id === holder)?.senior ?? null;
     };
-    check("a reserved junior claim is a pull source for the deck it displaced",
-      await seniorFlag(a, b), true);
+    // A reservation does NOT make its holder a pull source: the displaced deck's route
+    // back is the pick itself, not a pull that would cut the other deck a version.
+    // Tried the other way in review and reverted — see the note on DeckClaim.senior.
+    check("a reservation does not make its holder a pull source",
+      await seniorFlag(a, b), false);
 
     // 2c. OFF ANY DECKLIST. With no vantage deck, `free` means what it has always
     //     meant — copies not sleeved in a committed deck — and a reservation must not
@@ -281,7 +284,17 @@ async function reservationSection() {
     // 7. The stamp the chooser draws its order and its `v7 · 2 Aug` from.
     const senior = await claimOn(b, a);
     check("a committed claim carries its version number", senior?.versionNumber, 1);
-    check("a committed claim carries a since stamp", typeof senior?.since, "number");
+    // The EXACT value, not just its type. `since` is promised as epoch millis, and a
+    // regression to epoch seconds — or to any other numeric stamp — stays a number
+    // while the UI renders 1970. The fixture knows what it inserted, so it compares.
+    const { rows: [vsince] } = await fixture.execute<{ ms: string }>(sql`
+      select (extract(epoch from vc.since) * 1000)::bigint::text as ms
+      from deck_version_cards vc
+      join deck_versions v on v.id = vc.version_id
+      where v.deck_id = ${a} and vc.oracle_id = ${card}
+    `);
+    check("a committed claim carries its since as epoch millis",
+      String(senior?.since), vsince.ms);
     check("a list copy is no commander copies", senior?.commanderCopies, 0);
 
     // 8. A BREW IS NOT RESERVABLE. It claims softly by design, and a reservation
