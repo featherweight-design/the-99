@@ -133,7 +133,7 @@ const cards = () =>
 const resultLine = () =>
   screen.getByText(/commanders (you own and haven't built|match)/);
 
-// The rack mounts ONE treatment, chosen in JS at 1024px — below it the colour
+// The rack mounts ONE treatment, chosen in JS at `CHASSIS_WIDE_MIN_PX` — below it the colour
 // pips and `Build from` live in a closed sheet and are not in the document
 // at all. Every test here is about the list, so they all stand at the wide
 // breakpoint; the narrow treatment is `filter-rack.test.tsx`'s subject.

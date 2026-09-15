@@ -207,7 +207,12 @@ async function readLane(page, { avail, query }) {
   await onPage(page, "h1").first().waitFor({ timeout: 30_000 });
   await page.waitForTimeout(2_500);
 
-  const rows = onPage(page, "li h3, li h2, li [data-commander-name]");
+  // Both cards' name nodes. `RecCard` draws its compact treatment with a `span`
+  // and its wide one with an `h3`, so an `h3`-only lookup reads the phone's name
+  // out of the wide subtree that happens to be in the DOM beside it — a reading
+  // that is right by accident and stops being right the day that subtree is
+  // mounted by media query instead.
+  const rows = onPage(page, "li [data-wash-label] h3, li [data-wash-label] span, li h2");
   const names = await rows.allInnerTexts();
   // The RESULT ROW, not every paragraph the rack draws. `[data-chassis-row]`
   // unqualified also collects the control legends — which is why a desktop
@@ -269,12 +274,17 @@ async function detailHref(page, name) {
 }
 
 async function run() {
-  await clerkSetup();
-  const browser = await chromium.launch();
+  let browser = null;
   let deckId = null;
   let userId = null;
 
   try {
+    // Inside the guard, both of them. `clerkSetup()` and the launch used to run
+    // ahead of it, so a failure in either skipped the only `finally` that ends
+    // the pool — and the pool is created at module scope, so the run hung
+    // instead of reporting what went wrong.
+    await clerkSetup();
+    browser = await chromium.launch();
     const context = await browser.newContext({ viewport: VIEWPORTS[1] });
     const page = await context.newPage();
     userId = await signIn(page);
@@ -378,7 +388,7 @@ async function run() {
       // Nested again, so a browser that refuses to close cannot leave the pool
       // open behind it. Each shutdown is attempted whatever the other does.
       try {
-        await browser.close();
+        if (browser) await browser.close();
       } finally {
         await pool.end();
       }
