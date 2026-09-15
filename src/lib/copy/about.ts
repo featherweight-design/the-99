@@ -61,6 +61,10 @@ export const aboutCopy = {
   newSinceEyebrow: (n: number) =>
     n === 1 ? '1 new since you were last here' : `${n} new since you were last here`,
   newInChapter: (n: number) => `${n} new`,
+  // The contents row's figure when nothing in that chapter is new, which is
+  // every chapter for every reader at launch. A row that carried a count only
+  // when something was new would be blank for everyone on day one.
+  entriesInChapter: (n: number) => (n === 1 ? '1 entry' : `${n} entries`),
 
   dismiss: 'Got it',
   dismissDestination: (route: string) => `takes you to ${route}`,
