@@ -124,7 +124,9 @@ export function ContestedCardRow({
   // redrawing from them would show the player exactly the state that just lost.
   const [card, setCard] = useState(initial);
   const [refusal, setRefusal] = useState<AssignRefusal | null>(null);
-  const [chosen, setChosen] = useState<string | null>(null);
+  // The optimistic pick, for the window between the tap and the server's answer. AUTHORSHIP
+  // ITSELF IS NOT STATE — see `chosen` below.
+  const [picked, setPicked] = useState<string | null>(null);
   const [announce, setAnnounce] = useState("");
   const [, startTransition] = useTransition();
   // A fresh server payload always wins, and is filed on its way past. Adjusted during render
@@ -134,8 +136,15 @@ export function ContestedCardRow({
     setSeen(initial);
     setCard(initial);
     setRefusal(null);
-    setChosen(null);
+    setPicked(null);
   }
+
+  // AUTHORSHIP IS A FACT ABOUT THE DATA, not a fact about this component's lifetime. A deck with
+  // a GRANTED reservation is a deck the player chose — seniority grants nothing, it only orders a
+  // queue — so reading it off the row survives the revalidation that follows every pick. Held in
+  // state instead, the accent and the undo footer vanished the moment the server answered, which
+  // is exactly when the player looks for confirmation that their tap landed.
+  const chosen = picked ?? card.claimants.find((c) => c.granted > 0)?.deckId ?? null;
 
   const pick = (deckId: string, deckName: string) => {
     const wasChosen = chosen === deckId;
@@ -143,7 +152,7 @@ export function ContestedCardRow({
     // last to hold one it was not reserved. Words and marks move together, because the mark
     // states allocation and the word states the same thing — they cannot disagree.
     setRefusal(null);
-    setChosen(wasChosen ? null : deckId);
+    setPicked(wasChosen ? null : deckId);
     const displaced = card.claimants.find((c) => c.deckId !== deckId && c.allocated > 0);
     setAnnounce(wasChosen
       ? copy.contested.announcedCleared(card.cardName, displaced?.deckName ?? "")
@@ -153,7 +162,7 @@ export function ContestedCardRow({
       if (result.card) setCard(result.card);
       if (!result.ok) {
         setRefusal(result.cause);
-        setChosen(null);
+        setPicked(null);
         // A refusal announces the on-screen sentence verbatim rather than a summary of it.
         setAnnounce(refusalSentence(result.cause, result.card ?? card, deckName));
       }

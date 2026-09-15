@@ -1,6 +1,6 @@
 {
   "feature": "The post-import summary",
-  "note": "One route, two widths, and a fixture it cannot photograph without. `/collection/replace/summary/[uploadId]` needs a CONFIRMED upload carrying a summary_payload, and the contested section only draws where committed demand exceeds supply \u2014 the headless probe account has no committed deck at all, so a run with no fixture photographs a working feature as an empty one. `pnpm seed:summary <userId>` writes that fixture (two committed decks a month apart, and a receipt with all three sections populated) and prints the URL; it takes --clean. SUMMARY_UPLOAD comes from the environment for the same reason the other inventories take their deck id that way: no account's row id belongs in a checked-in file. The second row is the same route with its issues line opened, because IssueInspector reachable after the confirm is the one thing ruled IN scope for this PR that a still photograph of the page would otherwise miss. No `shares` block yet: ContestedCardRow's second surface is /decks/[id]/changes and lands in PR 4, and a shares block naming one route proves nothing. The third row exists because the phone's first screenful ends inside `Still to buy`: the contested section is the one thing this PR adds that a phone shot of the fold cannot show, and a row that photographs the top of the page reads as coverage while proving nothing about it.",
+  "note": "One route, two widths, and a fixture it cannot photograph without. `/collection/replace/summary/[uploadId]` needs a CONFIRMED upload carrying a summary_payload, and the contested section only draws where committed demand exceeds supply \u2014 the headless probe account has no committed deck at all, so a run with no fixture photographs a working feature as an empty one. `pnpm seed:summary <userId>` writes that fixture (two committed decks a month apart, and a receipt with all three sections populated) and prints the URL; it takes --clean. SUMMARY_UPLOAD comes from the environment for the same reason the other inventories take their deck id that way: no account's row id belongs in a checked-in file. The second row is the same route with its issues line opened, because IssueInspector reachable after the confirm is the one thing ruled IN scope for this PR that a still photograph of the page would otherwise miss. No `shares` block yet: ContestedCardRow's second surface is /decks/[id]/changes and lands in PR 4, and a shares block naming one route proves nothing. The third row exists because the phone's first screenful ends inside `Still to buy`: the contested section is the one thing this PR adds that a phone shot of the fold cannot show, and a row that photographs the top of the page reads as coverage while proving nothing about it. The fourth row presses an option, because the whole point of the chooser is what happens on the tap: the picked mark takes accent, the outcomes swap, and the footer appears naming the deck \u2014 none of which a photograph of the default state can show. It leaves a reservation behind in the fixture account, which `pnpm seed:summary <userId> --clean` removes along with the rest. The two picked rows are ONE PER WIDTH, and each presses a DIFFERENT deck, which is not a stylistic choice: a row that writes cannot be run twice against the same state. The first version pressed the same deck at both widths, the second press toggled the first one off, and the desktop photograph showed the default allocation while reporting a pass. Pressing different decks leaves each width with a pick of its own \u2014 the second press moves the reservation rather than clearing it. `pnpm seed:summary <userId> --clean` clears what they leave behind. Their ids carry no width: the harness appends one, so a row called `\u2026-phone` writes `\u2026-phone-phone.png` and leaves the file a reader expects sitting there from the previous run \u2014 which is exactly how a stale photograph got read as a finding once.",
   "rows": [
     {
       "id": "summary",
@@ -45,6 +45,52 @@
           "name": "Look at the file again",
           "wait": "[role=dialog]",
           "settle": 1200
+        }
+      ]
+    },
+    {
+      "id": "summary-picked",
+      "label": "/collection/replace/summary \u2014 a copy given by hand (phone)",
+      "view": "src/components/decks/contested-card-row.tsx",
+      "widths": [
+        "phone"
+      ],
+      "steps": [
+        {
+          "goto": "/collection/replace/summary/${SUMMARY_UPLOAD}",
+          "wait": "[role=radiogroup]",
+          "settle": 2000,
+          "scroll": "bottom"
+        },
+        {
+          "clickRole": "radio",
+          "name": "Summary fixture \u2014 first",
+          "wait": "[role=radiogroup]",
+          "settle": 2000,
+          "scroll": "bottom"
+        }
+      ]
+    },
+    {
+      "id": "summary-moved",
+      "label": "/collection/replace/summary \u2014 a copy given by hand (desktop)",
+      "view": "src/components/decks/contested-card-row.tsx",
+      "widths": [
+        "desktop"
+      ],
+      "steps": [
+        {
+          "goto": "/collection/replace/summary/${SUMMARY_UPLOAD}",
+          "wait": "[role=radiogroup]",
+          "settle": 2000,
+          "scroll": "bottom"
+        },
+        {
+          "clickRole": "radio",
+          "name": "Summary fixture \u2014 second",
+          "wait": "[role=radiogroup]",
+          "settle": 2000,
+          "scroll": "bottom"
         }
       ]
     }

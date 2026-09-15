@@ -352,6 +352,21 @@ describe("ContestedCardRow", () => {
 describe("ContestedCardRow — the chooser", () => {
   beforeEach(() => assign.mockReset());
 
+  // Authorship survives the revalidation that every pick triggers, because it is read off the
+  // row rather than held in this component's own state. Held in state, the accent and the undo
+  // footer vanished the moment the server answered.
+  it("reads a granted reservation as the player's own choice", () => {
+    render(<ContestedCardRow card={card({
+      claimants: [
+        { deckId: "d1", deckName: "HD Avatar Aang", quantity: 1, commanderCopies: 0, granted: 0, since: AUG, versionNumber: 7, allocated: 0 },
+        { deckId: "d2", deckName: "Elemental Dragons", quantity: 1, commanderCopies: 0, granted: 1, since: SEP, versionNumber: 2, allocated: 1 },
+      ],
+    })} />);
+    expect(screen.getByRole("radio", { checked: true }).getAttribute("aria-label"))
+      .toContain("Elemental Dragons");
+    expect(screen.getByText(copy.contested.undoHint("Elemental Dragons"))).toBeTruthy();
+  });
+
   it("is a radiogroup whose options are the decks", () => {
     render(<ContestedCardRow card={card()} />);
     expect(screen.getByRole("radiogroup")).toBeTruthy();
