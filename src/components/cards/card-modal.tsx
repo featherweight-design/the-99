@@ -32,6 +32,8 @@ import { cardZoomCopy, printedNameCopy, twoFacedCopy } from "../../lib/copy/card
 import { ExternalLink } from "../ui/external-link";
 import { manapoolCardUrl } from "../../lib/manapool/links";
 import { cardLinkOutCopy } from "../../lib/copy/collection-browse";
+import { ProxyControl } from "../decks/proxy-control";
+import { proxyCopy } from "../../lib/copy/proxies";
 
 const pickerCopy = printingPickerCopy.printing;
 
@@ -126,6 +128,53 @@ function OracleText({ text, keywords }: { text: string; keywords: string[] }) {
  * clause ships without it. The link is the honest version of the same impulse:
  * it takes you to the pill instead of inventing one.
  */
+/**
+ * The decks printing this card, below the receipt's own accounting.
+ *
+ * ITS OWN BLOCK, not a section inside `AvailabilityDetail`, because that
+ * component returns null for a card the player owns none of — and the headline
+ * proxy is exactly that card. Folded in, the Ozolith case would have rendered
+ * nothing at all.
+ *
+ * No right-hand column: `holds N` / `wants N` are quantities of cardboard and
+ * there is none here, so the missing figure IS the statement.
+ */
+function ProxyDetail({ card }: { card: BrowseCard }) {
+  const decks = card.proxiedBy ?? [];
+  if (decks.length === 0) return null;
+  const c = proxyCopy.receipt;
+  return (
+    <div
+      className="rounded-[10px] mt-[16px] md:mt-[22px] p-[14px_16px] md:p-[18px_20px]"
+      style={{ background: "var(--bg)", border: "1px solid var(--border)" }}
+    >
+      <div
+        id="proxy-decks-heading"
+        className="font-mono text-[10px] tracking-[0.1em] uppercase"
+        style={{ color: "var(--fg-faint)" }}
+      >
+        {c.heading}
+      </div>
+      <ul aria-labelledby="proxy-decks-heading" className="m-0 mt-[6px] list-none p-0">
+        {decks.map((deck) => (
+          <li key={deck.id} className="py-[2px] text-[13px]" style={{ color: "var(--fg-body)" }}>
+            <Link
+              href={`/decks/${deck.id}`}
+              aria-label={c.deckLinkAria(deck.name)}
+              className="truncate underline underline-offset-2 decoration-[color:var(--border-strong)] hover:decoration-current"
+            >
+              {deck.name}
+            </Link>
+          </li>
+        ))}
+      </ul>
+      <p className="m-0 mt-[8px] text-[13px]" style={{ color: "var(--fg-muted)" }}>
+        {c.note(decks.length)}
+      </p>
+    </div>
+  );
+}
+
 function AvailabilityDetail({ card }: { card: BrowseCard }) {
   const a = card.availability;
   if (!a) return null;
@@ -250,8 +299,14 @@ export function CardModal({
   onNext,
   onArtChange,
   openAtPrinting = null,
+  deckId = null,
+  deckName = null,
 }: {
   card: BrowseCard;
+  /** The deck this card was opened from, which scopes the proxy control. Null
+   *  everywhere but the deck page — see `CardDetailProvider.deckId`. */
+  deckId?: string | null;
+  deckName?: string | null;
   position: number;
   total: number;
   onClose: () => void;
@@ -1213,6 +1268,19 @@ export function CardModal({
             )}
 
             <AvailabilityDetail card={card} />
+            <ProxyDetail card={card} />
+
+            {/* Deck-scoped, and absent without a deck: opened from `/collection`
+                there is nothing for it to be about. */}
+            {deckId && (
+              <ProxyControl
+                deckId={deckId}
+                deckName={deckName ?? ""}
+                oracleId={card.oracleId}
+                cardName={card.name}
+                proxied={(card.proxiedBy ?? []).some((d) => d.id === deckId)}
+              />
+            )}
 
             {/* MOBILE meta grid — §Mobile: Meta 2×2 Grid. At 2+ printings the Set cell is
                 promoted out of the grid into a full-width row below Rarity and Identity, so

@@ -678,7 +678,10 @@ export function BuilderShell({
 
   return (
     // One card-detail modal for every surface below — spine, decklist, suggestions, search.
-    <CardDetailProvider>
+    // Every card opened from this page belongs to THIS deck, which is what
+    // scopes the sheet's proxy control. A card opened from `/collection` has no
+    // deck and draws no control — that provider passes none.
+    <CardDetailProvider deckId={deck.id} deckName={deck.name}>
       <AddOptimisticCardProvider value={deckEdits}>
         <PassMarkProvider value={passMark}>
         {/* One column at both widths now that the rail is gone. The document is
