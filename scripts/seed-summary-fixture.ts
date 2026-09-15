@@ -135,7 +135,10 @@ async function main() {
     // stating them here is exactly what the route reads in production — no code path is skipped
     // except the diff that produced them, which `pnpm probe:arrivals` covers.
     const summary = {
-      version: 1,
+      // The CURRENT payload shape. A v1 fixture would exercise the reader's legacy fallback
+      // (`ownedBefore ?? 0`) rather than the shape production writes, so the contact sheet would
+      // photograph a path no import takes.
+      version: 2,
       totalBefore: 2731,
       totalAfter: 2733,
       arrived: 3,
@@ -146,7 +149,9 @@ async function main() {
         { deckId: DECK_B, oracleId: still.oracle_id, owed: 1, reason: { kind: "partly", arrived: 1, wanted: 2 } },
         { deckId: DECK_A, oracleId: contested.oracle_id, owed: 1, reason: { kind: "gone" } },
       ],
-      contested: [{ oracleId: contested.oracle_id, arrived: 1 }],
+      // One copy owned and none before it: this fixture's contested card is chosen by owning
+      // exactly one, and that one is the arrival.
+      contested: [{ oracleId: contested.oracle_id, arrived: 1, ownedBefore: 0 }],
       names: {
         cards: {
           [cleared.oracle_id]: cleared.name,
