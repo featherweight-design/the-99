@@ -28,7 +28,11 @@ None reopened. Decision 12 is the piece §2.6 explicitly hands Design (*how* the
 
 ---
 
-## The one thing I want a second opinion on
+## The one thing I wanted a second opinion on — settled 2026-09-14 as drawn
+
+`Curve up` / `Curve down` stands. `Low first` / `High first` was declined for the reason this
+section already gives: with `Price` reading `Lowest` / `Highest`, it would put two keys' extremes in
+near-identical words 44px apart. The reasoning below is kept as the record.
 
 **`Curve up` / `Curve down` for mana value — and R1's argument for it no longer holds.**
 
@@ -87,7 +91,9 @@ difference on the trigger closes the gap. The desktop line is now measured; this
 
 ---
 
-## Open for Hugh, not for me
+## Open for Hugh — answered 2026-09-14: the ruled shape stands, no direction group
+
+The record of the question follows.
 
 **The review reference's Ascending / Descending group.** A comparable control shared in review puts
 the three keys and a separate direction pair in one menu, divided. It is a good control, and taking
@@ -130,8 +136,9 @@ thought about the same row we did. Drawn and argued in the canvas's §6b; **not 
 ## What this hands engineering
 
 One mount, four props (`selectionMode`, `widthPx`, `desktopRowMinPx`, `showCounts`), one copy block,
-three pure helpers with no UI imports, **one structural change to `group-toggle.tsx`** (three
-children into one `flex-none` span, plus the hairline) and **two one-line fixes in
+four pure helpers with no UI imports, **one structural change to `group-toggle.tsx`** (the four
+arrangement children — `By type`, `By role`, the trigger and the conditional view well — into one
+`flex-none` span, plus the hairline) and **two one-line fixes in
 `filter-panel.tsx`** that also improve `/collection`.
 
 No new component. No new token. No schema change. No new breakpoint — `md:` is the only one this

@@ -1035,3 +1035,43 @@ describe("FilterBar sort and color controls", () => {
     ).toBeNull();
   });
 });
+
+// Two branches keyed on `selected.length > 0`, which under single-select is
+// unconditionally true — so both drew permanently and neither carried
+// information. Found when the deck toolbar mounted this panel: that bar's own
+// rule is "No accent fill anywhere on the builder's control bar"
+// (`group-toggle.tsx:105-110`), and the borrowed border broke it on arrival.
+// Both fixes land on `/collection`'s Sort too, which is the same single-select
+// mount, and remove the same two signals there.
+describe("single-select draws no selection ornament", () => {
+  const chosen = { selected: [OPTIONS[0].code], options: OPTIONS.slice(0, 2) };
+
+  it("leaves the resting trigger's border alone", () => {
+    const { container } = renderPanel({ selectionMode: "single", ...chosen });
+    const trigger = screen.getByRole("button", { name: /Filter by set/ });
+    expect(trigger.className).not.toContain("border-[color:var(--accent)]");
+    void container;
+  });
+
+  it("still lights a multi-select trigger, where the count means something", () => {
+    renderPanel({ selectionMode: "multi", ...chosen });
+    expect(screen.getByRole("button", { name: /Filter by set/ }).className)
+      .toContain("border-[color:var(--accent)]");
+  });
+
+  it("draws no count badge on the sheet's title", () => {
+    setViewport(false);
+    renderPanel({ selectionMode: "single", ...chosen });
+    fireEvent.click(screen.getByRole("button", { name: /Filter by set/ }));
+    const heading = screen.getByRole("dialog").querySelector("h2");
+    expect(heading?.textContent).toBe(collectionFilterCopy.set.sheetTitle);
+  });
+
+  it("still badges a multi-select sheet", () => {
+    setViewport(false);
+    renderPanel({ selectionMode: "multi", ...chosen });
+    fireEvent.click(screen.getByRole("button", { name: /Filter by set/ }));
+    const heading = screen.getByRole("dialog").querySelector("h2");
+    expect(heading?.textContent).toBe(`${collectionFilterCopy.set.sheetTitle}1`);
+  });
+});

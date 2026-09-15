@@ -49,6 +49,7 @@
     "probe:build-from": "node scripts/probe-build-from.mjs",
     "probe:arrivals": "tsx scripts/probe-arrivals.ts",
     "probe:commit-offer": "node scripts/probe-commit-offer.mjs",
+    "probe:deck-sort": "node scripts/probe-deck-sort.mjs",
     "check:collection-routes": "node scripts/check-collection-routes.mjs",
     "seed:summary": "tsx scripts/seed-summary-fixture.ts",
     "probe:mana-symbols": "node scripts/probe-mana-symbols.mjs",

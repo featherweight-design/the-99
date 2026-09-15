@@ -8,9 +8,9 @@ in a bar plus its states.
 
 | File | What it is |
 |---|---|
-| `The 99 - Deck List Sort (R1).dc.html` | The deliverable. The row inventoried and read as three clusters, 4.1 answered, four variants at 1300 and four at 390 with the measurements, the trigger at rest / open / chosen, both popovers and the sheet, §4's five questions answered in order, the copy table, and three defects the mount exposes. |
+| `The 99 - Deck List Sort (R1).dc.html` | The deliverable. The row inventoried and read as three clusters, 4.1 answered, four variants at 1300 and four at 390 with the measurements, the trigger at rest / open / chosen, both popovers and the sheet, §4's five questions answered in order, the copy table, and two defects the mount exposes plus one accepted geometry note. |
 | `STATES-decklist-sort.md` | Eight variants × seven states, in full, including what each must not do. |
-| `decklist-sort · copy strings.ts` | Production strings and the three pure helpers, with the reuse from `collectionFilterCopy.sort` marked rather than duplicated. |
+| `decklist-sort · copy strings.ts` | Production strings and the four pure helpers, with the reuse from `collectionFilterCopy.sort` marked rather than duplicated. |
 | `READINESS.md` | Self-assessment, the one copy call I want a second opinion on, and what I would cut. |
 | `brand/` | The brand sheet, carried so the folder opens standalone. Unmodified. |
 
@@ -150,7 +150,9 @@ direction, no `Sort:` prefix — decision 7 confirmed from the outside). Its dir
 exactly the affordance §2.2 rules out by name, and one direction vocabulary for every key is §2.3
 reversed — six labels become two, `A–Z` goes, and the mana-value question above disappears. **A
 legible trade, two locked decisions, and a component shared with `/collection`: Hugh's call.** R1
-draws the ruled shape and states the alternative rather than quietly taking it. Its per-row icons
+draws the ruled shape and states the alternative rather than quietly taking it. **Settled
+2026-09-14: the ruled shape stands** — direction stays re-pick, no direction group, and
+`/collection` is untouched. The paragraph is kept for the argument, not as an open question. Its per-row icons
 and accent-ink chosen row are declined on their own merits — `leadingGlyph` exists and exactly one
 mount uses it, for rows distinguished by a mark rather than a word.
 

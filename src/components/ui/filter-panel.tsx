@@ -927,7 +927,16 @@ export function FilterPanel({
             ? "cursor-not-allowed bg-[color:var(--surface-raised)] text-[color:var(--fg-locked)] border-[color:var(--border)]"
             : open
               ? "cursor-pointer text-[color:var(--fg)] bg-[color:var(--border-strong)] border-[color:var(--accent)]"
-              : selected.length > 0
+              // `selectionMode === "multi"` is load-bearing, not decoration. A
+              // single-select panel always has exactly one row chosen, so
+              // `selected.length > 0` is unconditionally true there and the
+              // border said nothing — it read as a filter that is on, on a
+              // control that is a sort. It also broke the deck toolbar's own
+              // rule outright ("No accent fill anywhere on the builder's
+              // control bar", group-toggle.tsx:105-110) the moment that bar
+              // mounted this panel. The `open` branch above keeps its accent:
+              // that one is transient and it means something.
+              : selectionMode === "multi" && selected.length > 0
                 ? "cursor-pointer text-[color:var(--fg)] bg-[color:var(--elevated)] border-[color:var(--accent)] md:hover:bg-[color:var(--border-strong)]"
                 : "cursor-pointer text-[color:var(--fg)] bg-[color:var(--elevated)] border-[color:var(--border-strong)] md:hover:bg-[color:var(--border-strong)] md:hover:border-[color:var(--border-dashed)]",
         ].join(" ")}
@@ -1007,7 +1016,11 @@ export function FilterPanel({
               <div className="flex items-center justify-between px-[16px] pt-[4px] pb-[10px]">
                 <h2 className="m-0 font-display text-[18px] font-semibold text-[color:var(--fg)]">
                   {copy.sheetTitle}
-                  {selected.length > 0 && (
+                  {/* A badge counts a selection made AMONG MANY. Under
+                      single-select there is always exactly one row chosen, so
+                      this drew a permanent `1` beside every sort sheet's title
+                      — one out of one, which is not a count anyone needs. */}
+                  {selectionMode === "multi" && selected.length > 0 && (
                     <span className="ml-[8px] rounded-full px-[8px] py-px align-middle font-mono text-[12px] font-semibold bg-[color:var(--accent)] text-[color:var(--bg)]">
                       {selected.length}
                     </span>

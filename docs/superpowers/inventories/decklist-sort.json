@@ -1,0 +1,80 @@
+{
+  "feature": "Ordering the deck list — the sort trigger in the deck toolbar",
+  "note": "One control on one route, so the coverage question is not which routes got it but whether both LANES did and whether both widths draw it without pushing the view well onto a line of its own. Four rows: All and Shopping, each closed and open. The open rows photograph the panel itself, which is a popover at desktop and a sheet at phone — the same component in two frames, which is the pair a single width would have hidden. Set DECK_SORT_DECK to a deck of your own with unowned cards in it, or the Shopping rows photograph an empty list. The trigger is matched on `Sort the deck list` rather than the full accessible name: the name carries the CURRENT order (`Sort the deck list, Name · A–Z, collapsed`), so a row naming `…, collapsed` matches only the state where nothing is chosen, which single-select never reaches.",
+  "shares": {
+    "binding": "FilterPanel",
+    "module": "src/components/ui/filter-panel.tsx"
+  },
+  "rows": [
+    {
+      "id": "all-closed",
+      "label": "/decks/[id] · All — the toolbar with the trigger at rest",
+      "view": "src/components/decks/group-toggle.tsx",
+      "steps": [
+        {
+          "goto": "/decks/${DECK_SORT_DECK}",
+          "wait": "main, [role=main], h1",
+          "settle": 3500
+        }
+      ]
+    },
+    {
+      "id": "all-open",
+      "label": "/decks/[id] · All — the panel open, two rows and no Price",
+      "view": "src/components/decks/group-toggle.tsx",
+      "steps": [
+        {
+          "goto": "/decks/${DECK_SORT_DECK}",
+          "wait": "main, [role=main], h1",
+          "settle": 3500
+        },
+        {
+          "clickRole": "button",
+          "name": "Sort the deck list",
+          "wait": "[role=dialog]",
+          "settle": 900
+        }
+      ]
+    },
+    {
+      "id": "shopping-closed",
+      "label": "/decks/[id] · Shopping — the trigger reading Price · Highest",
+      "view": "src/components/decks/group-toggle.tsx",
+      "steps": [
+        {
+          "goto": "/decks/${DECK_SORT_DECK}",
+          "wait": "main, [role=main], h1",
+          "settle": 3500
+        },
+        {
+          "clickRole": "button",
+          "name": "^Shopping \\d+$",
+          "settle": 1200
+        }
+      ]
+    },
+    {
+      "id": "shopping-open",
+      "label": "/decks/[id] · Shopping — the panel open, all three rows",
+      "view": "src/components/decks/group-toggle.tsx",
+      "steps": [
+        {
+          "goto": "/decks/${DECK_SORT_DECK}",
+          "wait": "main, [role=main], h1",
+          "settle": 3500
+        },
+        {
+          "clickRole": "button",
+          "name": "^Shopping \\d+$",
+          "settle": 1200
+        },
+        {
+          "clickRole": "button",
+          "name": "Sort the deck list",
+          "wait": "[role=dialog]",
+          "settle": 900
+        }
+      ]
+    }
+  ]
+}

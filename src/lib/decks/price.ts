@@ -138,6 +138,21 @@ export function formatPriceFigure(fact: PriceFact, state: PriceState): string | 
 }
 
 /**
+ * The figure this row DRAWS, in cents, or null when it draws none.
+ *
+ * The one definition of that question. `comparePriceDesc` ranks on it, and so
+ * does the deck list's ascending price order, which cannot be a negation of
+ * this comparator: negating it would move the figure-less rows to the front and
+ * reverse their own tiebreak, so reversing the order would reverse the meaning
+ * of "we have no price for this". Both callers therefore ask for the rank and
+ * decide what to do with a null themselves.
+ */
+export function priceRank(row: PricedRank, newestAsOf: Date | null): number | null {
+  const state = priceState(row.price, newestAsOf);
+  return row.price ? priceOf(row.price, state) : null;
+}
+
+/**
  * The Shopping list's order: dearest first, then everything with no figure at
  * all, and the name as the tiebreak.
  *
@@ -170,12 +185,8 @@ export function comparePriceDesc(
   b: PricedRank,
   newestAsOf: Date | null,
 ): number {
-  const rank = (c: PricedRank) => {
-    const state = priceState(c.price, newestAsOf);
-    return c.price ? priceOf(c.price, state) : null;
-  };
-  const left = rank(a);
-  const right = rank(b);
+  const left = priceRank(a, newestAsOf);
+  const right = priceRank(b, newestAsOf);
   if (left !== right) {
     if (left === null) return 1;
     if (right === null) return -1;

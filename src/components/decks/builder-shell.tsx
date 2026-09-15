@@ -1161,6 +1161,11 @@ export function BuilderShell({
                 provenance={provenance}
                 pendingChanges={pendingChange?.moves}
                 pendingVersion={draft?.version?.number ?? null}
+                // The page's one live region, shared with every other write on
+                // this surface. A reorder announces "Sorted by Name · Z–A." —
+                // the only thing that says the list moved, since nothing scrolls
+                // and no row changes.
+                onAnnounce={setAnnouncement}
               />
               </PendingChangeProvider>
             )}

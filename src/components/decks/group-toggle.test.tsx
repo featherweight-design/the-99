@@ -19,6 +19,8 @@ const props = {
   view: "list" as const,
   onViewChange: () => {},
   shoppingCards: [{ name: "Sol Ring", quantity: 1 }],
+  sort: { key: "name" as const, direction: "asc" as const },
+  onSortChange: () => {},
 };
 
 describe("GroupToggle price strip", () => {

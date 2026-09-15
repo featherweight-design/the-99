@@ -75,6 +75,7 @@ function renderDecklist(
     filter?: "all" | "shopping";
     grouping?: "type" | "role";
     newestAsOf?: Date | null;
+    onAnnounce?: (message: string) => void;
     pendingChanges?: ReadonlyMap<string, { from: number; to: number }>;
   } = {},
 ) {
@@ -111,6 +112,7 @@ function renderDecklist(
           pendingChanges={opts.pendingChanges}
           shoppingFigures={opts.shoppingFigures === undefined ? {} : opts.shoppingFigures}
           newestAsOf={opts.newestAsOf ?? null}
+          onAnnounce={opts.onAnnounce}
         />
       </AddOptimisticCardProvider>
     </CardDetailProvider>,
@@ -892,5 +894,116 @@ describe("view preference", () => {
 
     renderDecklist([rampOwned], { filter: "all" });
     expect(listSegment()).toHaveAttribute("aria-pressed", "true");
+  });
+});
+
+// The sort control, mounted in the list's toolbar. `FilterPanel` in
+// single-select, the same component `/collection`'s Sort ▾ is.
+describe("the deck list's sort control", () => {
+  const NEWEST = new Date("2026-09-01T09:00:00.000Z");
+  const priced = (cents: number) => ({
+    cents, foilCents: null, etchedCents: null, asOf: NEWEST,
+  });
+  const unowned = (oracleId: string, name: string, over: object = {}) =>
+    makeCard({ oracleId, name, owned: false, auto: false, ...over } as never);
+
+  const openPanel = () => {
+    fireEvent.click(screen.getByRole("button", { name: /Sort the deck list/ }));
+    return screen.getByRole("dialog");
+  };
+
+  const rows = [
+    unowned("crypt", "Mana Crypt", { price: priced(18999), cmc: 0, role: "ramp" }),
+    unowned("signet", "Arcane Signet", { price: priced(85), cmc: 2, role: "ramp" }),
+    unowned("sol", "Sol Ring", { price: priced(3410), cmc: 1, role: "ramp" }),
+  ];
+
+  const renderedOrder = (wanted: string[]) => {
+    const text = [...document.querySelectorAll("*")]
+      .filter((el) => el.children.length === 0)
+      .map((el) => el.textContent?.trim() ?? "");
+    return wanted
+      .map((name) => ({ name, at: text.findIndex((t) => t === name) }))
+      .sort((a, b) => a.at - b.at)
+      .map((r) => r.name);
+  };
+
+  // The one departure from `/collection`'s block: no `Sort:` prefix. It costs
+  // 38px, which is the view well's place on the phone's arrangement line.
+  it("reads the whole order with no prefix", () => {
+    renderDecklist(rows, { newestAsOf: NEWEST });
+    expect(screen.getByRole("button", { name: /Sort the deck list/ }).textContent)
+      .toContain("Price · Highest");
+    expect(screen.getByRole("button", { name: /Sort the deck list/ }).textContent)
+      .not.toContain("Sort:");
+  });
+
+  it("offers three orders under Shopping and two under All", () => {
+    renderDecklist(rows, { newestAsOf: NEWEST });
+    openPanel();
+    expect(screen.getAllByRole("option")).toHaveLength(3);
+    cleanup();
+
+    renderDecklist(rows, { filter: "all", newestAsOf: NEWEST });
+    openPanel();
+    const options = screen.getAllByRole("option").map((o) => o.textContent ?? "");
+    expect(options).toHaveLength(2);
+    expect(options.join(" ")).not.toContain("Price");
+  });
+
+  it("re-orders the rows when a key is picked", () => {
+    renderDecklist(rows, { newestAsOf: NEWEST });
+    // Shopping opens on Price · Highest, which #629 shipped.
+    expect(renderedOrder(["Mana Crypt", "Sol Ring", "Arcane Signet"]))
+      .toEqual(["Mana Crypt", "Sol Ring", "Arcane Signet"]);
+
+    openPanel();
+    fireEvent.click(screen.getByRole("option", { name: /^Name/ }));
+    expect(renderedOrder(["Mana Crypt", "Sol Ring", "Arcane Signet"]))
+      .toEqual(["Arcane Signet", "Mana Crypt", "Sol Ring"]);
+  });
+
+  // The re-pick IS the direction control. Nothing else on screen offers one.
+  it("reverses the order when the chosen key is picked again", () => {
+    renderDecklist(rows, { newestAsOf: NEWEST });
+    openPanel();
+    fireEvent.click(screen.getByRole("option", { name: /^Name/ }));
+    openPanel();
+    fireEvent.click(screen.getByRole("option", { name: /^Name/ }));
+
+    expect(screen.getByRole("button", { name: /Sort the deck list/ }).textContent)
+      .toContain("Name · Z–A");
+    expect(renderedOrder(["Mana Crypt", "Sol Ring", "Arcane Signet"]))
+      .toEqual(["Sol Ring", "Mana Crypt", "Arcane Signet"]);
+  });
+
+  it("sorts by mana value up the curve", () => {
+    renderDecklist(rows, { newestAsOf: NEWEST });
+    openPanel();
+    fireEvent.click(screen.getByRole("option", { name: /^Mana value/ }));
+    expect(renderedOrder(["Mana Crypt", "Sol Ring", "Arcane Signet"]))
+      .toEqual(["Mana Crypt", "Sol Ring", "Arcane Signet"]);
+
+    openPanel();
+    fireEvent.click(screen.getByRole("option", { name: /^Mana value/ }));
+    expect(renderedOrder(["Mana Crypt", "Sol Ring", "Arcane Signet"]))
+      .toEqual(["Arcane Signet", "Sol Ring", "Mana Crypt"]);
+  });
+
+  it("announces the order it moved to", () => {
+    const onAnnounce = vi.fn();
+    renderDecklist(rows, { newestAsOf: NEWEST, onAnnounce });
+    openPanel();
+    fireEvent.click(screen.getByRole("option", { name: /^Name/ }));
+    expect(onAnnounce).toHaveBeenCalledWith("Sorted by Name · A–Z.");
+  });
+
+  // This bar says selection with the bone-on-elevated skin, never a coloured
+  // ground — and the panel's borrowed `selected.length > 0` branch broke that
+  // on arrival, because single-select always has one row chosen.
+  it("draws no accent border on the resting trigger", () => {
+    renderDecklist(rows, { newestAsOf: NEWEST });
+    expect(screen.getByRole("button", { name: /Sort the deck list/ }).className)
+      .not.toContain("border-[color:var(--accent)]");
   });
 });
