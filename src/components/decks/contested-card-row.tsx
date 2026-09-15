@@ -37,6 +37,52 @@ function stampDate(since: number | null): string {
   return since === null ? "" : formatShortDeckDate(new Date(since));
 }
 
+/**
+ * The allocation mark: a word is never the only carrier, and a hue never is either.
+ *
+ * It states ALLOCATION and not authorship — filled means this deck holds a copy under the
+ * allocation as it stands, empty means it is buying one. Nothing here is accent: accent means
+ * "you chose this", and until the chooser ships nobody has chosen anything.
+ *
+ * ROUND AT ONE COPY, SQUARE ABOVE IT, taking `filter-panel.tsx`'s rule — the shape is the
+ * affordance, and a square tick on a one-of-many list promises you can have two. With two
+ * copies arrived a player really can give two decks one each, so the shape says so.
+ *
+ * A commander's mark is dimmed: that copy cannot be moved, so a mark drawn at full strength
+ * would invite a press the next PR will have to refuse.
+ */
+function AllocationMark({
+  allocated,
+  copies,
+  commander,
+}: {
+  allocated: number;
+  copies: number;
+  commander: boolean;
+}) {
+  const filled = allocated > 0;
+  const square = copies > 1;
+  const fill = commander ? "var(--fg-faint)" : "var(--fg-body)";
+  return (
+    <span
+      aria-hidden
+      className="flex-none flex items-center justify-center w-[18px] h-[18px] md:w-[16px] md:h-[16px]"
+      style={{
+        borderRadius: square ? 4 : 999,
+        border: `1px solid ${filled ? fill : "var(--fg-faint)"}`,
+        background: filled ? fill : "transparent",
+      }}
+    >
+      {filled ? (
+        <span
+          className="block w-[7px] h-[7px] md:w-[6px] md:h-[6px]"
+          style={{ borderRadius: square ? 1 : 999, background: "var(--bg)" }}
+        />
+      ) : null}
+    </span>
+  );
+}
+
 export function ContestedCardRow({
   card,
   alsoAbove,
@@ -109,10 +155,19 @@ export function ContestedCardRow({
           return (
             <li
               key={c.deckId}
-              className="flex flex-col md:flex-row md:items-center gap-[1px] md:gap-[11px] py-[6px] px-[8px]"
+              className="flex flex-col md:flex-row md:items-start md:items-center gap-[1px] md:gap-[11px] py-[6px] px-[8px]"
               style={{ borderRadius: 7, background: "var(--bg)" }}
             >
-              <span className="text-[13px] md:flex-1 min-w-0 truncate" style={{ color: "var(--fg)" }}>
+              <span className="flex items-center gap-[11px] md:gap-[11px] md:flex-1 min-w-0">
+                <AllocationMark
+                  allocated={c.allocated}
+                  copies={card.arrived}
+                  commander={c.commanderCopies > 0}
+                />
+                {/* Truncation only from `md`. At phone width this cell is stretched to the row,
+                    and a deck name — the shared limit is 120 characters — would be ellipsised
+                    rather than taking the second line the design gives it. */}
+                <span className="text-[13px] min-w-0 md:truncate" style={{ color: "var(--fg)" }}>
                 {c.deckName}
                 {c.deckId === thisDeckId ? (
                   <span
@@ -130,8 +185,9 @@ export function ContestedCardRow({
                     {copy.contested.commanderTag}
                   </span>
                 ) : null}
+                </span>
               </span>
-              <span className="flex items-center gap-[8px] md:flex-none">
+              <span className="flex items-center gap-[8px] md:flex-none pl-[27px] md:pl-0">
                 {c.versionNumber !== null ? (
                   <span className="font-mono text-[10.5px] md:text-[11px]" style={{ color: "var(--fg-faint)" }}>
                     {copy.contested.stamp(c.versionNumber, stampDate(c.since))}

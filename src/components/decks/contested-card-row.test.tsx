@@ -175,6 +175,31 @@ describe("ContestedCardRow", () => {
     expect(screen.getByText(copy.contested.keepsAndGets(1, 1))).toBeTruthy();
   });
 
+  // A word is never the only carrier, and neither is a hue. The mark states ALLOCATION: filled
+  // means this deck holds a copy as things stand, empty means it is buying one.
+  it("marks each option by what it gets, filled or empty", () => {
+    const { container } = render(<ContestedCardRow card={card()} />);
+    const marks = container.querySelectorAll("li > span:first-child > span[aria-hidden]");
+    expect(marks).toHaveLength(2);
+    // The holder's mark carries an inner dot; the buyer's is an empty ring.
+    expect(marks[0].children).toHaveLength(1);
+    expect(marks[1].children).toHaveLength(0);
+  });
+
+  // The shape is the affordance: a square tick on a one-of-many list promises you can have two,
+  // and with two copies arrived a player really can give two decks one each.
+  it("goes square when more than one copy arrived", () => {
+    const { container } = render(<ContestedCardRow card={card({ arrived: 2, owned: 2 })} />);
+    const mark = container.querySelector("li > span:first-child > span[aria-hidden]");
+    expect(mark?.getAttribute("style")).toContain("border-radius: 4px");
+  });
+
+  it("stays round at one copy", () => {
+    const { container } = render(<ContestedCardRow card={card()} />);
+    const mark = container.querySelector("li > span:first-child > span[aria-hidden]");
+    expect(mark?.getAttribute("style")).toContain("border-radius: 999px");
+  });
+
   it("names a brew and excludes it, rather than counting it or offering it", () => {
     render(<ContestedCardRow card={card({ brewNames: ["Muldrotha Lands"] })} />);
     expect(screen.getByText(copy.contested.brewNote("Muldrotha Lands"))).toBeTruthy();

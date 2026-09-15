@@ -50,7 +50,7 @@ export default async function ImportSummaryPage({
         // names, because en-GB writes `Sept` where every other date in the app writes `Sep`, and
         // UTC, because `confirmed_at` is a timestamp without a zone and a local boundary would
         // render one day on the server and another in the browser.
-        stampDate={formatDeckDate(view.confirmedAt)}
+        stampDate={formatDeckDate(view.createdAt)}
       />
     </section>
   );
@@ -71,7 +71,15 @@ async function previewFor(
   const { db } = await import("../../../../../db");
   const { csvUploads } = await import("../../../../../db/schema");
   const { and, eq } = await import("drizzle-orm");
-  const [row] = await db.select().from(csvUploads)
+  // Projected, like the receipt read itself: this path wants three fields, and `select()` would
+  // carry `summary_payload` back a second time alongside every aggregated row of the import.
+  const [row] = await db
+    .select({
+      filename: csvUploads.filename,
+      rowCount: csvUploads.rowCount,
+      previewPayload: csvUploads.previewPayload,
+    })
+    .from(csvUploads)
     .where(and(eq(csvUploads.id, uploadId), eq(csvUploads.userId, userId)));
   if (!row) return null;
   const payload = row.previewPayload as {

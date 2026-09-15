@@ -51,6 +51,8 @@ export type ContestedCard = {
 export type SummaryView = {
   uploadId: string;
   filename: string;
+  /** When the file was uploaded — what the stamp says, and not the same as the confirm. */
+  createdAt: Date;
   confirmedAt: Date | null;
   /** Null when the receipt did not survive its write. Renders as nothing-to-report. */
   summary: ArrivalsSummary | null;
@@ -97,6 +99,10 @@ export async function loadSummaryView(uploadId: string, userId: string): Promise
     .select({
       id: csvUploads.id,
       filename: csvUploads.filename,
+      // The stamp says "uploaded", so it takes the time the FILE arrived. `confirmed_at` is when
+      // the player pressed through the confirm, which can be a different day if they left the
+      // review open overnight.
+      createdAt: csvUploads.createdAt,
       confirmedAt: csvUploads.confirmedAt,
       summaryPayload: csvUploads.summaryPayload,
     })
@@ -152,6 +158,7 @@ export async function loadSummaryView(uploadId: string, userId: string): Promise
   return {
     uploadId: upload.id,
     filename: upload.filename,
+    createdAt: upload.createdAt,
     confirmedAt: upload.confirmedAt,
     summary,
     contested,
