@@ -485,13 +485,30 @@ describe("ContestedCardRow — the chooser", () => {
     expect(assign).not.toHaveBeenCalled();
   });
 
-  it("announces both sides of the trade, once", async () => {
-    assign.mockResolvedValue({ ok: true, card: card() });
+  // Announced FROM THE SERVER'S OWN ALLOCATION, once it has one. The trade is the news, and the
+  // client cannot know which reservation the server evicted — it resolves them on
+  // `(created_at, deck_id)`, not the commit order this row is drawn in. Announcing a loser before
+  // the server has chosen one announces a trade that may not have happened.
+  it("announces both sides of the trade, once, and only once the server has allocated", async () => {
+    // After the pick: the junior deck holds the copy and the senior one buys.
+    assign.mockResolvedValue({
+      ok: true,
+      card: card({
+        claimants: [
+          { deckId: "d1", deckName: "HD Avatar Aang", quantity: 1, commanderCopies: 0, granted: 0, since: AUG, versionNumber: 7, allocated: 0 },
+          { deckId: "d2", deckName: "Elemental Dragons", quantity: 1, commanderCopies: 0, granted: 1, since: SEP, versionNumber: 2, allocated: 1 },
+        ],
+      }),
+    });
     const { container } = render(<ContestedCardRow card={card()} />);
-    fireEvent.click(screen.getByRole("radio", { name: /Elemental Dragons/ }));
     const live = container.querySelector("[aria-live]");
-    expect(live?.textContent).toBe(
-      copy.contested.announcedPick("Elemental Dragons", "Brushland", "HD Avatar Aang"),
-    );
+    fireEvent.click(screen.getByRole("radio", { name: /Elemental Dragons/ }));
+    // Nothing announced yet: no allocation has been decided.
+    expect(live?.textContent).toBe("");
+    await waitFor(() => {
+      expect(live?.textContent).toBe(
+        copy.contested.announcedPick("Elemental Dragons", "Brushland", "HD Avatar Aang"),
+      );
+    });
   });
 });

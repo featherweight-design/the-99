@@ -643,6 +643,31 @@ async function assignmentWriteSection() {
     check("a pick with no giveable copy is refused by name",
       await assignCopyFor(USER_W, card, senior), "no-supply-left");
 
+    // 6b. A FOLDED CLAIM IS RESERVABLE FOR ITS LIST COPY. A deck holding the card as its
+    //     commander AND on its list has one copy that cannot be given and one that can, and the
+    //     design draws that row as half-live. Refusing the whole deck — which an earlier guard
+    //     did, by asking only whether its commander was this card — made that state unreachable
+    //     for the deck it describes.
+    await fixture.execute(sql`delete from card_assignments where user_id = ${USER_W}`);
+    await fixture.execute(sql`
+      insert into collection_items (user_id, oracle_id, quantity, set_code)
+      values (${USER_W}, ${card}, 1, 'probe2')
+    `);
+    const { rows: [cmdVersion] } = await fixture.execute<{ id: string }>(sql`
+      select id from deck_versions where deck_id = ${cmdDeck.id} order by number desc limit 1
+    `);
+    await fixture.execute(sql`
+      insert into deck_version_cards (version_id, oracle_id, quantity, since)
+      values (${cmdVersion.id}, ${card}, 1, now())
+      on conflict do nothing
+    `);
+    check("a folded claim can be given its list copy",
+      await assignCopyFor(USER_W, card, cmdDeck.id), null);
+    await fixture.execute(sql`
+      delete from deck_version_cards where version_id = ${cmdVersion.id} and oracle_id = ${card}
+    `);
+    await fixture.execute(sql`delete from card_assignments where user_id = ${USER_W}`);
+
     // 7. A PROXY ENDS THE CLAIM, SO IT ENDS THE PICK. The claim model anti-joins `deck_proxies`,
     //    so a deck printing the card claims nothing — reserving a real copy for it would take one
     //    from a deck that needs it. Refused on the way in…

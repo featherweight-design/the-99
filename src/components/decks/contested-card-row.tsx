@@ -155,36 +155,50 @@ export function ContestedCardRow({
 
   const pick = (deckId: string, deckName: string) => {
     const wasChosen = chosenIds.has(deckId);
-    // The optimistic allocation: the chosen deck takes a copy, and the deck that loses one is the
-    // last to hold one it was not reserved. Words and marks move together, because the mark
-    // states allocation and the word states the same thing — they cannot disagree.
     setRefusal(null);
     setAttempted({ id: deckId, name: deckName });
-    // The optimistic set. Under the cap a pick ADDS; at the cap it MOVES, taking the place of the
-    // reservation the model would give way — the oldest, which is the order it resolves them in
-    // and therefore the one the server will release.
+    // THE OPTIMISTIC SET SAYS ONLY WHAT THIS CLIENT KNOWS: that the deck just tapped is picked,
+    // or is no longer. It does NOT predict which reservation the server will evict, and that is a
+    // decision rather than an omission — three separate review findings turned out to be three
+    // faces of one mistake, a client re-deriving the model's queue. The server resolves
+    // reservations on `(created_at, deck_id)`, which is NOT the commit order this row is drawn
+    // in, so a prediction made from these claimants is right only by luck. The returned card
+    // carries the real allocation, and everything that depends on it waits for that.
     const next = new Set(chosenIds);
     if (wasChosen) next.delete(deckId);
-    else {
-      if (next.size >= giveable) {
-        const oldest = card.claimants.find((c) => next.has(c.deckId));
-        if (oldest) next.delete(oldest.deckId);
-      }
-      next.add(deckId);
-    }
+    else next.add(deckId);
     setPicked(next);
-    const displaced = card.claimants.find((c) => !next.has(c.deckId) && c.allocated > 0);
-    setAnnounce(wasChosen
-      ? copy.contested.announcedCleared(card.cardName, displaced?.deckName ?? "")
-      : copy.contested.announcedPick(deckName, card.cardName, displaced?.deckName ?? ""));
     startTransition(async () => {
       const result = await assignCopy(card.oracleId, deckId);
       // THE LIVE READ CARRIES NO RECEIPT. `arrived` and `ownedBefore` are facts about the import
       // this row came from, and `loadContestedCard` has no import to read — it returns nought for
       // both. Taking its object whole would cost the row its cap, its mark shape and its
       // `keeps it` calculation on the first pick, so only the live half is merged.
-      if (result.card) {
-        setCard({ ...result.card, arrived: card.arrived, ownedBefore: card.ownedBefore });
+      const fresh = result.card
+        ? { ...result.card, arrived: card.arrived, ownedBefore: card.ownedBefore }
+        : null;
+      if (fresh) {
+        setCard(fresh);
+        // The optimistic set stands down: the row now has the server's own allocation, and
+        // authorship is read back out of it.
+        setPicked(null);
+      }
+      // ANNOUNCED FROM THE SERVER'S OWN ALLOCATION, once there is one. The trade is the news —
+      // "X gets it, Y buys it" — and naming the loser before the server has decided who that is
+      // announces a trade that may not have happened.
+      if (result.ok && fresh) {
+        const holder = fresh.claimants.find((c) => c.deckId === deckId);
+        const lost = fresh.claimants.find((c) => c.deckId !== deckId && c.allocated === 0);
+        setAnnounce(wasChosen
+          ? copy.contested.announcedCleared(
+              fresh.cardName,
+              fresh.claimants.find((c) => c.allocated > 0)?.deckName ?? "",
+            )
+          : copy.contested.announcedPick(
+              holder?.deckName ?? deckName,
+              fresh.cardName,
+              lost?.deckName ?? "",
+            ));
       }
       if (!result.ok) {
         setRefusal(result.cause);

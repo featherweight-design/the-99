@@ -77,29 +77,35 @@ export async function assignCopyFor(
       .for("update");
     if (!deck) return "not-your-deck";
 
-    // A commander's copy cannot be given away. It is checked before the claim below because it
-    // is the more specific answer: a player told instead that the deck is not asking for the card
-    // would go looking for a problem with a list that is perfectly correct.
-    if (deck.commanderOracleId === oracleId || deck.partnerOracleId === oracleId) {
-      return "target-is-commander";
-    }
-
     // A CURRENT HARD CLAIM, not merely a committed deck. A deck can hold the card as a draft add
     // its version does not contain, and reserving on that basis would let a draft-only ask
     // displace a hard claimant — the precise thing seniority exists to prevent.
-    const [newest] = await tx.select({ id: deckVersions.id })
+    // THE VERSION'S OWN COMMANDER COLUMNS, not the deck's live ones. The claim model unions the
+    // snapshot's columns — a deck claims what it is SLEEVED as — so a commander changed in the
+    // draft since the last commit does not move the claim, and reading `decks` here would answer
+    // for a list the player has not committed.
+    const [newest] = await tx.select({
+      id: deckVersions.id,
+      commanderOracleId: deckVersions.commanderOracleId,
+      partnerOracleId: deckVersions.partnerOracleId,
+    })
       .from(deckVersions)
       .where(eq(deckVersions.deckId, deckId))
       .orderBy(sql`${deckVersions.number} desc`)
       .limit(1);
     if (!newest) return "claimant-no-longer-asks";
-    const [claim] = await tx.select({ quantity: deckVersionCards.quantity })
+    const [listCard] = await tx.select({ quantity: deckVersionCards.quantity })
       .from(deckVersionCards)
       .where(and(
         eq(deckVersionCards.versionId, newest.id),
         eq(deckVersionCards.oracleId, oracleId),
       ));
-    if (!claim) return "claimant-no-longer-asks";
+    const listQuantity = listCard?.quantity ?? 0;
+    const commanderCopies =
+      (newest.commanderOracleId === oracleId ? 1 : 0)
+      + (newest.partnerOracleId === oracleId ? 1 : 0);
+    // No claim at all — neither on the list nor as a commander.
+    if (listQuantity + commanderCopies === 0) return "claimant-no-longer-asks";
 
     // A PROXY ENDS THE CLAIM TOO. The claim model anti-joins `deck_proxies`, so a deck printing
     // the card claims nothing — it is covered while owning nothing, which is the feature's whole
@@ -112,6 +118,13 @@ export async function assignCopyFor(
       ) as yes
     `);
     if (printed?.yes) return "claimant-no-longer-asks";
+
+    // A COMMANDER'S COPY CANNOT BE GIVEN AWAY — but a deck can hold the card as its commander AND
+    // on its list, and that second copy is perfectly reservable. The test is therefore about the
+    // LIST half of the ask, not about whether the deck's commander happens to be this card: an
+    // earlier version refused the folded claim outright, which made the one state the design
+    // draws as half-live (`keeps 1 · gets 1 more`) unreachable for the very deck it is about.
+    if (listQuantity === 0) return "target-is-commander";
 
     // Already reserved for this deck: the press takes it back. Nothing below applies — returning
     // a copy can never be short of supply — and a cleared row is indistinguishable from one that
