@@ -21,6 +21,7 @@ import { cards, csvUploads } from "../../db/schema";
 import { loadAvailability } from "../decks/availability-query";
 import type { ArrivalsSummary } from "./arrivals";
 import type { Availability } from "../decks/availability";
+import { allocate } from "../decks/allocate";
 
 /** One committed deck's place in a contested card's queue. */
 export type ContestedClaimant = {
@@ -72,30 +73,6 @@ export type SummaryView = {
   contested: ContestedCard[];
 };
 
-/**
- * Allocates a card's copies across its committed claimants, for display.
- *
- * RESERVATIONS COME FROM THE MODEL, never from here. `DeckClaim.granted` is what the claim query
- * granted each deck — already capped at its own list ask and at the supply left when its turn
- * came — so this function reads that figure rather than re-deriving it. An earlier version
- * recomputed the queue from `owned` alone, which made the page a second source of truth for an
- * arithmetic the query owns; the two would have disagreed the moment a reservation existed.
- *
- * What is left after the grants goes down the seniority queue in `(since, deckId)` order, which
- * is the order the model itself uses. Commander copies are NOT promoted: a commander claim is
- * never reservable, but it holds its place in the queue like any other.
- */
-function allocate(owned: number, claimants: Omit<ContestedClaimant, "allocated">[]): ContestedClaimant[] {
-  const grantedTotal = claimants.reduce((n, c) => n + c.granted, 0);
-  let left = Math.max(owned - grantedTotal, 0);
-  return claimants.map((c) => {
-    // The unreserved part of this deck's ask takes what the queue has left when its turn comes.
-    const unreserved = Math.max(c.quantity - c.granted, 0);
-    const fromQueue = Math.min(unreserved, left);
-    left -= fromQueue;
-    return { ...c, allocated: c.granted + fromQueue };
-  });
-}
 
 /**
  * Every contested card among `oracleIds`, read live — the `/decks/[id]/changes` door.

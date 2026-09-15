@@ -469,6 +469,35 @@ describe("ContestedCardRow — the chooser", () => {
     });
   });
 
+  it("previews against the copies owned, not the copies the import brought", async () => {
+    // THE SUPPLY THE ROW HANDS THE PREVIEW. `arrived` is smaller than `owned` whenever a deck
+    // already held a copy, and distributing the arrival starves the senior deck: it flips to
+    // `buys it` for one round trip and then flips back — the same flicker, reversed.
+    let land: (v: unknown) => void = () => {};
+    assign.mockReturnValue(new Promise((resolve) => { land = resolve; }));
+    const twoCopies = card({
+      arrived: 1,
+      owned: 2,
+      claimants: [
+        { deckId: "d1", deckName: "HD Avatar Aang", quantity: 1, commanderCopies: 0, granted: 0, since: AUG, versionNumber: 7, allocated: 1 },
+        { deckId: "d2", deckName: "Elemental Dragons", quantity: 2, commanderCopies: 0, granted: 0, since: SEP, versionNumber: 2, allocated: 1 },
+      ],
+    });
+    render(<ContestedCardRow card={twoCopies} />);
+    fireEvent.click(screen.getByRole("radio", { name: /Elemental Dragons/ }));
+    await waitFor(() => {
+      expect(screen.getByRole("radio", { name: /Elemental Dragons/ }).textContent)
+        .toContain(copy.contested.gets);
+    });
+    // Two copies, two decks, one apiece: the senior deck loses nothing to this pick.
+    expect(screen.getByRole("radio", { name: /HD Avatar Aang/ }).textContent)
+      .toContain(copy.contested.gets);
+    land({ ok: true, card: twoCopies });
+    await waitFor(() => {
+      expect(screen.getByRole("radio", { checked: true })).toBeTruthy();
+    });
+  });
+
   it("pressing the chosen deck again clears it", async () => {
     assign.mockResolvedValue({ ok: true, card: card() });
     render(<ContestedCardRow card={card()} />);

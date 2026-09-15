@@ -4,8 +4,12 @@ import type { ContestedClaimant } from "../collection/summary-read";
 
 const AUG = Date.parse("2026-08-01T00:00:00Z");
 const SEP = Date.parse("2026-09-01T00:00:00Z");
-const OCT = Date.parse("2026-10-01T00:00:00Z");
 
+/**
+ * Claimants are given in QUEUE ORDER — `(since, deckId)` — because that is the order they arrive
+ * in from `buildContestedCard` and the order `allocate` consumes them in. A fixture that lists
+ * them any other way is testing a state the row cannot be in.
+ */
 function claimant(over: Partial<ContestedClaimant> & { deckId: string }): ContestedClaimant {
   return {
     deckName: over.deckId,
@@ -24,8 +28,8 @@ const allocOf = (rows: ContestedClaimant[]) =>
 
 describe("previewAllocation", () => {
   it("moves the copy to the deck just picked, and off the one that held it", () => {
-    // The whole bug: the picked deck went accent while the previous holder stayed filled until
-    // the server answered, so both marks read full for the length of a round trip.
+    // The bug this exists for: the picked deck went accent while the previous holder stayed
+    // filled until the server answered, so both marks read full on a card with one copy.
     const rows = previewAllocation(
       [claimant({ deckId: "senior", since: AUG }), claimant({ deckId: "junior", since: SEP })],
       1,
@@ -43,48 +47,64 @@ describe("previewAllocation", () => {
     expect(allocOf(rows)).toEqual({ senior: 1, junior: 0 });
   });
 
-  it("takes the displaced copy from the most junior holder, not the first drawn", () => {
-    // Commit order is what the row draws; `since` is what the server allocates on. A fixture
-    // whose two orders agree cannot tell the difference, so this one reverses them.
+  it("drops a grant the row was already carrying, because a pick moves one reservation", () => {
     const rows = previewAllocation(
       [
-        claimant({ deckId: "drawn-first", since: OCT }),
-        claimant({ deckId: "drawn-second", since: AUG }),
-        claimant({ deckId: "picked", since: SEP }),
-      ],
-      2,
-      "picked",
-    );
-    expect(allocOf(rows)).toEqual({ "drawn-first": 0, "drawn-second": 1, picked: 1 });
-  });
-
-  it("never moves a commander's copy, and never counts it against the supply in play", () => {
-    // `inPlay` already excludes commander copies, so the commander keeps its own and the one
-    // movable copy still goes to the pick.
-    const rows = previewAllocation(
-      [
-        claimant({ deckId: "commander", quantity: 1, commanderCopies: 1, since: AUG }),
-        claimant({ deckId: "list", since: SEP }),
+        claimant({ deckId: "senior", since: AUG }),
+        claimant({ deckId: "was-granted", since: SEP, granted: 1, allocated: 1 }),
       ],
       1,
+      "senior",
+    );
+    expect(allocOf(rows)).toEqual({ senior: 1, "was-granted": 0 });
+  });
+
+  // THE THREE CASES BELOW ARE THE DIVERGENCES. Each one passed against the first version of this
+  // file, which was written from `allocate`'s prose rather than calling it, and each produced a
+  // preview the server's own answer then contradicted — the same flicker, pointing the other way.
+
+  it("distributes every copy owned, not only the copies an import brought", () => {
+    // The receipt's `inPlay` is the ARRIVAL, which is smaller than the supply whenever a deck
+    // already held a copy. Distributing it starved the senior deck: it read `buys it` for one
+    // round trip and then flipped back.
+    const rows = previewAllocation(
+      [claimant({ deckId: "senior", since: AUG }), claimant({ deckId: "junior", since: SEP, quantity: 2 })],
+      2,
+      "junior",
+    );
+    expect(allocOf(rows)).toEqual({ senior: 1, junior: 1 });
+  });
+
+  it("pays for a commander's copy out of the same supply as everything else", () => {
+    // Holding commander copies OUTSIDE the supply allocated three copies against two owned —
+    // three filled marks on a two-copy card.
+    const rows = previewAllocation(
+      [
+        claimant({ deckId: "commander", since: AUG, quantity: 1, commanderCopies: 1 }),
+        claimant({ deckId: "list", since: SEP, quantity: 2 }),
+      ],
+      2,
       "list",
     );
     expect(allocOf(rows)).toEqual({ commander: 1, list: 1 });
+    expect(rows.reduce((n, r) => n + r.allocated, 0)).toBe(2);
   });
 
-  it("gives a folded claimant its commander copy and lets the spare be taken away", () => {
+  it("gives a commander claim no place in the queue but its own", () => {
+    // `allocate` promotes nothing: a commander claim is unreservable, and junior all the same.
+    // Promoting it let a junior commander read `keeps it` mid-flight and drop back to nought.
     const rows = previewAllocation(
       [
-        claimant({ deckId: "folded", quantity: 2, commanderCopies: 1, since: AUG }),
-        claimant({ deckId: "other", since: SEP }),
+        claimant({ deckId: "senior-list", since: AUG, quantity: 2 }),
+        claimant({ deckId: "junior-commander", since: SEP, quantity: 1, commanderCopies: 1 }),
       ],
-      1,
-      "other",
+      2,
+      "senior-list",
     );
-    expect(allocOf(rows)).toEqual({ folded: 1, other: 1 });
+    expect(allocOf(rows)).toEqual({ "senior-list": 2, "junior-commander": 0 });
   });
 
-  it("never allocates more copies than are in play", () => {
+  it("never allocates more copies than are owned", () => {
     const rows = previewAllocation(
       [
         claimant({ deckId: "a", quantity: 2, since: AUG }),
@@ -102,21 +122,12 @@ describe("previewAllocation", () => {
     expect(allocOf(rows)).toEqual({ only: 1 });
   });
 
-  it("puts a deck that has not sleeved the card behind every deck that has", () => {
+  it("grants nothing to a deck that asks for nothing", () => {
     const rows = previewAllocation(
-      [claimant({ deckId: "unsleeved", since: null }), claimant({ deckId: "sleeved", since: OCT })],
+      [claimant({ deckId: "asks-none", quantity: 0 }), claimant({ deckId: "other", since: SEP })],
       1,
-      null,
+      "asks-none",
     );
-    expect(allocOf(rows)).toEqual({ unsleeved: 0, sleeved: 1 });
-  });
-
-  it("breaks a tie on deck id, the same tuple the claim query orders on", () => {
-    const rows = previewAllocation(
-      [claimant({ deckId: "b", since: AUG }), claimant({ deckId: "a", since: AUG })],
-      1,
-      null,
-    );
-    expect(allocOf(rows)).toEqual({ a: 1, b: 0 });
+    expect(allocOf(rows)).toEqual({ "asks-none": 0, other: 1 });
   });
 });

@@ -194,13 +194,13 @@ export function ContestedCardRow({
     const wasChosen = chosenIds.has(deckId);
     setRefusal(null);
     setAttempted({ id: deckId, name: deckName });
-    // THE OPTIMISTIC SET SAYS ONLY WHAT THIS CLIENT KNOWS: that the deck just tapped is picked,
-    // or is no longer. It does NOT predict which reservation the server will evict, and that is a
-    // decision rather than an omission — three separate review findings turned out to be three
-    // faces of one mistake, a client re-deriving the model's queue. The server resolves
-    // reservations on `(created_at, deck_id)`, which is NOT the commit order this row is drawn
-    // in, so a prediction made from these claimants is right only by luck. The returned card
-    // carries the real allocation, and everything that depends on it waits for that.
+    // THE OPTIMISTIC SET SAYS WHERE THE GRANT WENT, and nothing else. The allocation that
+    // follows from it is not guessed: `previewAllocation` runs the model's own `allocate` over
+    // these claimants with the grant moved, so the marks can move on the tap. What is still
+    // never predicted is which of SEVERAL reservations the server would evict — it resolves
+    // those on `(created_at, deck_id)`, which is not an order this row holds — and that case
+    // cannot arise from a pick, because a pick moves the one authored reservation rather than
+    // adding a second. The returned card replaces all of it the moment it lands.
     // ONE AUTHORED PICK AT A TIME, which is what the write does and what the group's
     // `aria-checked` promises: a pick moves the reservation rather than adding to it, so at most
     // one option is ever checked. Seniority allocates every other copy.
@@ -303,7 +303,7 @@ export function ContestedCardRow({
   // the moment it lands, and stood down with `picked` on a refusal or a throw, so a wrong guess
   // could only ever survive one round trip.
   const claimants = picked
-    ? previewAllocation(card.claimants, inPlay, [...picked][0] ?? null)
+    ? previewAllocation(card.claimants, card.owned, [...picked][0] ?? null)
     : card.claimants;
   // Capped at `inPlay` rather than `arrived`, or the cap could read `2 of 1` on the review door:
   // the numerator counts every non-commander allocation and the denominator is what can move.
