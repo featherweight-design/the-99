@@ -3,7 +3,7 @@
 // The card view's unit (#349) — Matrix 2 of STATES-card-surfaces.md.
 //
 // Built from `collection/grid-view.tsx`'s tile, and since card captions (R1)
-// the two share the caption itself — `ui/card-tile-caption.tsx`. Three deltas
+// the two have shared the caption itself — `ui/card-tile-caption.tsx`. Three deltas
 // remain: this one carries an ownership dot on the meta line, has no set/rarity
 // caption, and ends the caption with a full-height `✕` column. It is not a fork
 // of `suggestion-tile.tsx` — that one carries evidence bars, an Add button and a
@@ -74,6 +74,11 @@ export function DeckCardTile({
   // Two strings, because they answer different questions. The caption is a
   // front face and may clip; the trigger's accessible name is whole and never
   // does. The modal — one tap away on the art — is the recovery path.
+  // One predicate for the whole proxied state, read the same way the slot reads
+  // it. The matrix ties the dot, the count and the mark to one another
+  // (`STATES-card-captions.md:31`), so three independent tests here is three
+  // chances for them to disagree.
+  const proxied = deckRowTag(card) === "proxy";
   const displayName = printedFaceName(card);
   const fullName = printedNameOf(card);
   // Null unless the string holds symbols this app can draw, so both branches
@@ -116,8 +121,11 @@ export function DeckCardTile({
             // printed name. The single-copy tile is the common case, and a
             // ternary fixed on one arm alone would leave it on the oracle name.
             ariaLabel={
-              card.quantity > 1
-                ? `${cardDetailCopy.triggerAria(fullName)}, ${cardTileCopy.copiesAria(card.quantity)}`
+              card.quantity > 1 && !proxied
+                // `!proxied` for the same reason the drawn count is suppressed:
+              // a quantity the proxy state does not claim must not be claimed to
+              // a reader who cannot see that it was withheld.
+              ? `${cardDetailCopy.triggerAria(fullName)}, ${cardTileCopy.copiesAria(card.quantity)}`
                 : undefined
             }
             /* The bottom wash deletes with the marks it was holding off the
@@ -195,11 +203,17 @@ export function DeckCardTile({
         <CardTileCaption
           meta={
             <>
+              {/* HOLLOW AND DASHED WHEN PROXIED, whatever the collection says.
+                  `owned` is a fact about the box and `proxied` a fact about this
+                  deck's slot, and `grouping.ts:26-30` rules that the two must be
+                  allowed to disagree out loud: *not in your collection · this
+                  deck's slot is filled*. Folding the proxy into `owned` would be
+                  the lie; drawing a filled dot beside a `P` is the other one. */}
               <OwnershipDot
-                owned={card.owned}
+                owned={card.owned && !proxied}
                 committed={availState === "hard" || availState === "over"}
                 className="w-[8px] h-[8px] flex-none"
-                label={card.owned ? "Owned" : "Not owned"}
+                label={card.owned && !proxied ? "Owned" : "Not owned"}
               />
               {/* THE SAME EXCLUSIVE DECISION THE LIST ROW MAKES, and the reason
                   all three occupants had to move together: read off `card.owned`
@@ -211,7 +225,7 @@ export function DeckCardTile({
                   turns the one-slot rule from a convention into something a
                   reader can see. Leaving any one of them on the art would put
                   one slot in two places. */}
-              {deckRowTag(card) === "proxy" ? (
+              {proxied ? (
                 <ProxyTag variant="band" plate={false} />
               ) : card.owned ? (
                 card.availability && (
@@ -234,8 +248,13 @@ export function DeckCardTile({
               )}
               {/* Absent at one copy — the delta from `grid-view`, which draws
                   `×1` on a collection where one copy is the common case and the
-                  badge is that tile's only count. */}
-              {card.quantity > 1 && (
+                  badge is that tile's only count.
+
+                  Absent when proxied too, which the matrix leaves empty: a proxy
+                  covers this deck's whole ask for the card and takes no quantity
+                  (proxies ruling 5), so a count here would claim a number the
+                  state does not have. */}
+              {card.quantity > 1 && !proxied && (
                 <span aria-hidden className="flex-none" style={{ color: "var(--fg-body)" }}>
                   {addPanelCopy.row.quantity(card.quantity)}
                 </span>
