@@ -20,6 +20,7 @@ import { sql } from "drizzle-orm";
 import ws from "ws";
 import { loadAvailability, loadDeckBuyRows } from "../src/lib/decks/availability-query";
 import { pruneOrphanProxies } from "../src/lib/decks/prune-proxies";
+import { proxyCounts } from "../src/lib/decks/proxies";
 // The prune runs inside its callers' transactions; here it is handed the app's
 // own db singleton, which satisfies the same interface for a single statement.
 import { db as realDb } from "../src/db";
@@ -221,6 +222,43 @@ try {
     where deck_id = ${printer.id} and oracle_id = ${partner}
   `);
   check("a partner's proxy survives the prune", partnerRow[0].n, 1);
+
+  // 3c. THE TILE'S TWO FIGURES, which are a different query again — raw SQL
+  //     behind `DeckListItem.proxiedCount` and the list's status pill, reachable
+  //     from no unit test. Conflating them shipped a real defect once already.
+  //
+  //     State here: the printer prints `card` (unowned by it? no — owned, one
+  //     copy in the collection), its commander `cmdB` and its partner. So three
+  //     marks, and `covers` counts only unowned BODY rows.
+  const counts = async (deckId: string) => (await proxyCounts(USER)).get(deckId);
+  const printerCounts = await counts(printer.id);
+  check("copies counts marks, commanders included", printerCounts?.copies, 3);
+  //     `card` is owned and `cmdB`/`partner` are not body rows, so nothing here
+  //     may be added to ownedCount — the exact arithmetic that let a printed
+  //     commander fill an unowned body slot.
+  check("covers counts no owned row and no commander", printerCounts?.covers, 0);
+
+  //     A playset marked once is ONE proxy (ruling 5) and, unowned, FOUR covered
+  //     slots. The two figures disagreeing on the same row is the whole point.
+  const { rows: [playset] } = await fixture.execute<{ oracle_id: string }>(sql`
+    select oracle_id from cards
+    where type_line !~ '\\mBasic\\M' and type_line !~ 'Legendary'
+    order by oracle_id offset 1 limit 1
+  `);
+  await fixture.execute(sql`
+    insert into deck_cards (deck_id, oracle_id, quantity)
+    values (${printer.id}, ${playset.oracle_id}, 4)
+  `);
+  await proxy(printer.id, playset.oracle_id);
+  const withPlayset = await counts(printer.id);
+  //     Three marks before, so one more mark is four — NOT seven, which is what
+  //     summing the row's four copies would have given.
+  check("a marked playset adds one to the proxy count", withPlayset?.copies, 4);
+  check("…while covering all four of its slots", withPlayset?.covers, 4);
+  await unproxy(printer.id, playset.oracle_id);
+  await fixture.execute(sql`
+    delete from deck_cards where deck_id = ${printer.id} and oracle_id = ${playset.oracle_id}
+  `);
 
   // 4. THE SLOT GOES, THE STATEMENT GOES. A proxy is one deck's answer about one
   //    slot, so the row dies with the slot — `pruneOrphanProxies`, which every

@@ -72,8 +72,9 @@ export async function proxiedOracleIds(
 /**
  * What one deck prints, in two figures that must not be conflated.
  *
- * `copies` — every printed copy, commander included. This is the tile's
- *   `N proxies` line, which counts a printed commander with everything else.
+ * `copies` — how many CARDS this deck prints, commander included. One mark is
+ *   one proxy however many copies of the card the deck holds (ruling 5: a proxy
+ *   has no quantity). This is the tile's `N proxies` line.
  *
  * `covers` — printed copies of BODY rows the player does not own. The only
  *   figure that may be added to `ownedCount`, and the reason the two are
@@ -93,19 +94,14 @@ export async function proxyCounts(userId: string): Promise<Map<string, ProxyCoun
     const result = await db.execute<{ deck_id: string; copies: number; covers: number }>(sql`
       select
         p.deck_id,
-        -- A card can be BOTH this deck's commander and a row on its own list,
-        -- which the claim model folds into one claim of 1 + listQuantity. The
-        -- count follows it: the body quantity plus one for the commander, or
-        -- either alone. Written as a sum of two terms rather than a branch,
-        -- because a branch is how the folded state gets undercounted.
-        sum(
-          coalesce(dc.quantity, 0)
-          + case
-              when d.commander_oracle_id = p.oracle_id
-                or d.partner_oracle_id = p.oracle_id then 1
-              else 0
-            end
-        )::int as copies,
+        -- ONE MARK IS ONE PROXY. Ruling 5: a proxy covers the deck's whole ask
+        -- for a card and has no quantity, so a single mark on a row holding four
+        -- copies is one printed card, not four. Summing quantities here made a
+        -- deck with one marked playset read 4 proxies.
+        --
+        -- A card that is both this deck's commander and a row on its own list is
+        -- still one mark — the primary key says so — so nothing has to fold.
+        count(*)::int as copies,
         sum(
           case
             when dc.oracle_id is not null and not exists (

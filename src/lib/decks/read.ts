@@ -6,7 +6,6 @@ import {
   collectionItems,
   deckCards,
   deckFolders,
-  deckProxies,
   deckGames,
   deckUnresolvedRows,
   deckVersions,
@@ -18,7 +17,7 @@ import {
   selectCollectionRows,
 } from "../collection/browse";
 import { ownedCardsWhere } from "../collection/owned-cards";
-import { proxyCounts, type ProxyCount } from "./proxies";
+import { proxiedOracleIds, proxyCounts, type ProxyCount } from "./proxies";
 import { classifyRoles } from "../recs/roles";
 import { isCommanderCandidate } from "../recs/score";
 import { loadAvailability, loadDeckBuyRows } from "./availability-query";
@@ -220,23 +219,22 @@ export async function getDeckDetail(deckId: string, userId: string): Promise<Dec
     .from(cards)
     .where(inArray(cards.oracleId, commanderIds));
 
-  // Each commander's own proxy flag. Neither is a `deck_cards` row, so this is
-  // its own read rather than a column on the query above — and a pair deck can
-  // proxy one commander and not the other, so it is per id.
-  const proxiedCommanderRows = await db
-    .select({ oracleId: deckProxies.oracleId })
-    .from(deckProxies)
-    .where(and(eq(deckProxies.deckId, deckId), inArray(deckProxies.oracleId, commanderIds)));
-  const proxiedCommanders = new Set(proxiedCommanderRows.map((r) => r.oracleId));
+  // Every printed id in this deck, list cards and commanders alike, in one
+  // FAIL-SOFT read. It is not a column on the card query and not a join, because
+  // a proxy flag is decoration on a page that must render without it: the
+  // availability rollup and the printed-name lookup beside it both degrade the
+  // same way, and a transient failure here would otherwise 500 an otherwise
+  // readable deck over a mark.
+  const proxiedIds = await proxiedOracleIds(deckId, userId);
 
   const commanderRow = commanderRows.find((c) => c.oracleId === deck.commanderOracleId);
   if (!commanderRow) return null;
-  const commander = { ...commanderRow, proxied: proxiedCommanders.has(commanderRow.oracleId) };
+  const commander = { ...commanderRow, proxied: proxiedIds.has(commanderRow.oracleId) };
   const partnerRow = deck.partnerOracleId
     ? (commanderRows.find((c) => c.oracleId === deck.partnerOracleId) ?? null)
     : null;
   const partner = partnerRow
-    ? { ...partnerRow, proxied: proxiedCommanders.has(partnerRow.oracleId) }
+    ? { ...partnerRow, proxied: proxiedIds.has(partnerRow.oracleId) }
     : null;
 
   // Third: fetch all deck cards with owned flag.
@@ -258,13 +256,6 @@ export async function getDeckDetail(deckId: string, userId: string): Promise<Dec
       imageUri: cards.imageUri,
       layout: cards.layout,
       owned: ownedSql,
-      // The deck's own statement about this slot, which is NOT a fact about the
-      // collection and never touches `owned`. Selected here rather than joined
-      // downstream so the decklist and its counters read one row.
-      proxied: sql<boolean>`exists (
-        select 1 from deck_proxies p
-        where p.deck_id = ${deckCards.deckId} and p.oracle_id = ${deckCards.oracleId}
-      )`,
       quantity: deckCards.quantity,
       auto: deckCards.auto,
     })
@@ -335,7 +326,7 @@ export async function getDeckDetail(deckId: string, userId: string): Promise<Dec
     role: primaryRole({ typeLine: row.typeLine, oracleText: row.oracleText, keywords: row.keywords }),
     cmc: row.cmc,
     owned: row.owned,
-    proxied: row.proxied,
+    proxied: proxiedIds.has(row.oracleId),
     quantity: row.quantity,
     auto: row.auto,
     availability: availability?.get(row.oracleId) ?? null,
