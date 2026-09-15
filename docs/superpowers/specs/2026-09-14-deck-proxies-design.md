@@ -2,9 +2,8 @@
 
 Date: 2026-09-14
 Branch: `spec/deck-proxies`
-Handoff: not yet commissioned. The three UI surfaces in this spec are blocked on one;
-the backend is not.
-Status: proposed
+Handoff: `design/design_handoff_the99_proxies/` — R1 + R2, audited 🟢 Green on 2026-09-15.
+Status: accepted; see the addendum at the foot of this file for what the design rounds added
 
 ## Problem
 
@@ -89,19 +88,38 @@ record of when a printed copy entered a deck.
 
 **Every read joins `deck_proxies` against current membership** — a `deck_cards`
 row, or either of `decks.commander_oracle_id` / `partner_oracle_id`. A row whose
-card has since left the deck therefore does nothing at all.
+card has since left the deck therefore does nothing while it is absent.
 
-This is the whole answer to cleanup, and it is why this spec does not carry a
-list of write paths that must remember to prune. Six separate paths delete or
-replace `deck_cards` wholesale — `updateDeckFromList`, `removeCardFromDeck`,
-`clearAutoCards`, `undoFillPass`, `pullCardFromDeck`, `restoreDraftFromVersion` —
-and a spec that enumerates them is a list that rots the day a seventh is written,
-with the failure mode being a card that returns to a deck and is *silently
-already proxied*. Scoping the read to membership makes that unreachable by
-construction rather than by vigilance.
+That scoping is narrower than it first appears, which is the second reason it
+cannot be the guarantee: a **committed** deck claims from `deck_version_cards`,
+not from `deck_cards`, so a card removed from a sleeved deck's draft is still
+claimed by its version — and the proxy row is still matched against it.
 
-Orphan rows are consequently harmless, and no path prunes them. The write still
-validates membership (see Writes), so they are rare as well as inert.
+**That is defence in depth, and it is not the guarantee.** The first version of
+this spec said it was, and that was wrong: an inert row is not a gone row, and
+re-adding the same card makes the anti-join match it again, so the card arrives
+*silently already proxied* — the exact failure the scoping was supposed to make
+unreachable. Worse on the fill's path, where the app itself re-adds a card and
+the player is then told they need not buy something they never said they were
+printing.
+
+So a removed slot takes its proxy with it. `pruneOrphanProxies(tx, deckId)` is
+**one reconcile statement** — *which of this deck's proxy rows have no membership
+now* — and every write that can shrink a deck's list calls it inside its own
+transaction: `removeCardFromDeck`, `clearAutoCards`, `undoFillPass`,
+`pullCardFromDeck`, `updateDeckFromList`, `restoreDraftFromVersion`.
+
+Asking the always-right question rather than "which cards went" is what makes it
+safe on the two paths that replace the list wholesale: there, a card the new list
+still holds has left and come back inside one transaction, and a
+difference-based prune would drop a proxy the player never retracted. On those
+paths the call sits **after** the rewrite.
+
+A list of six call sites is a list that rots, so it is enforced rather than
+remembered: `prune-proxies.test.ts` reads the source and fails when a
+`delete(deckCards)` appears in a transaction with no prune beside it, and when a
+file that deletes `deck_cards` is missing from its own list. The seventh path is
+the one that would otherwise ship this bug.
 
 ## The claim rule
 
@@ -246,9 +264,16 @@ One server action, `setCardProxied(deckId, oracleId, proxied)`:
    changes the new proxy list. Both are added: the `/decks/[id]` pattern, and the
    literal `/collection/proxies`.
 
-**No cleanup path.** Orphan rows are inert by construction (see the data model),
-so no write prunes them and no future write has to remember to. Deck deletion
-cascades anyway.
+**Cleanup is `pruneOrphanProxies`, at all six list-shrinking writes** — see the
+data model above, which supersedes the "no cleanup path" this section claimed in
+the spec's first version. Deck deletion cascades and needs none of it.
+
+**The write takes the deck row's lock before it validates.** `select 1 from decks
+where id = $1 for update`, which is the lock `removeCardFromDeck` and
+`clearAutoCards` already take. Without it, a proxy write could validate
+membership, then have its insert land after a concurrent removal's prune has
+run, leaving an orphan for a card that is no longer in the deck — the one hole a
+reconcile statement cannot close from its own side.
 
 **Unproxying can create a shortfall.** The deck starts claiming again and may
 find its copy senior-claimed elsewhere. That is the same arithmetic a pull
@@ -307,3 +332,52 @@ this repository has hit repeatedly.
    extended revalidation. Backend, unblocked.
 3. `pnpm probe:proxies`. Backend, unblocked.
 4. The three surfaces, once the handoff returns Green.
+
+---
+
+# Addendum — what the design rounds added
+
+Date: 2026-09-15. The handoff (`design/design_handoff_the99_proxies/`, R1 + R2) was audited
+🟢 Green. Four rulings and three findings came out of those rounds; all of them are build
+scope this spec did not previously carry.
+
+## Rulings
+
+1. **The mark is the glyph `P`, decoded by a key.** A one-character mark in `BuyTag`'s box,
+   with a mark key under the decklist toolbar listing only the marks the current view
+   contains. The word rides three carriers — the key, a `title`, and an `sr-only` name — which
+   is `BuyTag`'s own arrangement at collapsed density. The key is a shared component that
+   future marks are added to, not a proxy-specific legend.
+2. **`/collection/proxies` is read-only.** A row names its decks and opens the card sheet;
+   unmarking happens in the deck, because the sheet's control is per deck and a row belongs
+   to several.
+3. **The proxy count appears on the deck page AND the `/decks` tile.** The deck page's line
+   sits under the progress bar; the tile takes `N proxies` in `detailFor`'s existing slot as a
+   second fallback, ranked after the `Building` + `inUseElsewhere` clause. It can never take a
+   warning colour, structurally: every status that would lend it one already fills that slot.
+4. **`groupInBreakdown` gains a fourth term.** `3 free · 2 sleeved · 1 to buy · 1 proxied`,
+   absent at zero. The alternative — leaving the terms to under-sum — was rejected: a
+   breakdown that does not account for every row in its group reads as a rendering fault.
+
+## Findings from the R2 read of the source
+
+1. **`AvailabilitySlot` draws a buy tag on a proxied add, as shipped.**
+   `update-diff-row.tsx:225` opens `if (buyable && (!card.owned || …))`, and a proxied add is
+   unowned — so `/decks/[id]/changes` would quote a price for a card the player has decided
+   not to buy. The slot must test proxied first. This is a defect, not a design call, and it
+   is the third surface the mutual-exclusion constraint reaches.
+2. **Three purchase figures must exclude a proxied add**: the review footer's `buy`, the commit
+   sheet's total, and the pending banner's `money` sentence (*N of the M are short of spare
+   copies*). A proxied add is not short of anything.
+3. **The review row needs its own word.** `bucketWord` returns `null` for `free`, and silence
+   would have been available — but `free` means *your collection has a spare copy for this*,
+   and borrowing it would assert a copy in a box on the one surface whose job is saying what a
+   commit will cost. The chip reads `proxied`, in the mark's dashed skin rather than a bucket's
+   tinted plate.
+
+## Copy corrections carried into the build
+
+The handoff's copy file ships two strings whose em dash is a sentence connector, which rule 4
+forbids here, and one ambiguous sentence: *"None of these is in your collection because of this
+page"* can be read as "…and that is because of this page". Both are rewritten in
+`src/lib/copy/proxies.ts` rather than transcribed.

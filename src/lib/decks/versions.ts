@@ -12,6 +12,7 @@ import {
 import { type CardQty, draftDiff } from "./draft-diff";
 import { touchDeck } from "./touch";
 import { averageManaValue } from "./mana-value";
+import { pruneOrphanProxies } from "./prune-proxies";
 
 type Tx = Parameters<Parameters<typeof db.transaction>[0]>[0];
 
@@ -267,6 +268,11 @@ export async function restoreDraftFromVersion(
         })),
       );
     }
+    // AFTER the rewrite, not beside the delete above: this path replaces the
+    // whole list, so a card the version still holds has left and come back
+    // within one transaction. Reconciling against the restored list keeps that
+    // card's proxy and drops only the ones whose slot the discard really cut.
+    await pruneOrphanProxies(tx, deckId);
     // A discard rewrites `deck_cards` wholesale, so the draft's contents have
     // changed even though the deck now matches a version rather than diverging
     // from one. `commitVersionIn` above deliberately does NOT stamp: a commit

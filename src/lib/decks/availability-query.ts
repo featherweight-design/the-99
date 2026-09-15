@@ -72,7 +72,19 @@ const claimModel = (userId: string) => sql`
   -- is_commander rides along per arm so a row can be recognised downstream as a
   -- claim no pull can release. It is per ARM rather than per card because the
   -- same oracle id can be one deck's commander and another deck's list card.
+  -- A PROXIED CLAIM IS NOT A CLAIM. The anti-join is applied once, around the
+  -- whole union, so it retires the claim for a sleeved deck and a brew, for a
+  -- list card and for either commander, with no per-arm reasoning and no arm
+  -- that can be forgotten when a seventh is added.
+  --
+  -- It is membership-scoped for free: every arm here IS a membership statement,
+  -- so a proxy row whose card has left matches no arm. That is defence in depth
+  -- and NOT the lifecycle guarantee — an unread row matches again the moment the
+  -- card returns, so the six writes that can shrink a list each reconcile via
+  -- pruneOrphanProxies. Note too that a sleeved deck claims from
+  -- deck_version_cards, so this scoping does not even see a draft removal.
   all_claims as (
+    select * from (
     select nv.deck_id, vc.oracle_id, vc.quantity, vc.since, false as is_commander
     from newest_version nv
     join deck_version_cards vc on vc.version_id = nv.version_id
@@ -101,6 +113,11 @@ const claimModel = (userId: string) => sql`
     from decks d
     where d.user_id = ${userId} and d.partner_oracle_id is not null
       and not exists (select 1 from newest_version nv where nv.deck_id = d.id)
+    ) arms
+    where not exists (
+      select 1 from deck_proxies p
+      where p.deck_id = arms.deck_id and p.oracle_id = arms.oracle_id
+    )
   ),
   -- Decks whose draft no longer matches the version they are sleeved as. A pull
   -- from one of these would commit edits its owner never asked to commit, so the
@@ -331,6 +348,9 @@ export async function loadAvailability(
     -- loadDeckBuyRows — which reads deck_cards — billed the purchase. free is
     -- documented as this deck's surplus, so it has to be measured against what
     -- this deck is asking for now.
+    -- The vantage deck's own draft ask, WITHOUT the cards it is printing. A
+    -- proxy asks nothing of the collection, so leaving it in would make this
+    -- deck's own free report a shortfall against a copy it is not using.
     own_claims as (
       select t.oracle_id, sum(t.quantity)::int as own_claim
       from (
@@ -356,6 +376,10 @@ export async function loadAvailability(
         where ${skip}::uuid is not null and d.id = ${skip}::uuid
           and d.user_id = ${userId} and d.partner_oracle_id is not null
       ) t
+      where not exists (
+        select 1 from deck_proxies p
+        where p.deck_id = ${skip}::uuid and p.oracle_id = t.oracle_id
+      )
       group by t.oracle_id
     ),
     -- The vantage deck's own place in the queue. Read from decks rather than
@@ -635,11 +659,21 @@ export async function loadDeckBuyRows(
     -- can be told to go and buy — the preview the player acts on — while
     -- seniority below is measured against what is sleeved. The two diverging
     -- is the feature, which is why the join in supply is a LEFT join.
+    -- The SECOND anti-join, and it is not the claim model's. This CTE reads
+    -- deck_cards directly — what a deck can be told to buy is its DRAFT list,
+    -- while seniority is measured against what is sleeved — so filtering
+    -- all_claims does nothing for it. Without this line a proxied card keeps a
+    -- positive buy row and the Shopping list, the price strip, the deck's cost
+    -- stat and both Mana Pool hrefs all bill a card the player has printed.
     list_claims as (
       select dc.deck_id, dc.oracle_id, sum(dc.quantity)::int as quantity
       from deck_cards dc
       join decks d on d.id = dc.deck_id
       where d.user_id = ${userId}
+        and not exists (
+          select 1 from deck_proxies p
+          where p.deck_id = dc.deck_id and p.oracle_id = dc.oracle_id
+        )
       group by dc.deck_id, dc.oracle_id
     ),
     -- Every decklist claim, beside the supply and the copies the decks ahead of

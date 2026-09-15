@@ -13,6 +13,7 @@ import { revalidateClaims } from "../../lib/decks/revalidate-claims";
 import { planDeckUpdate, type DeckUpdatePlan, type DeckUpdateRow } from "../../lib/decks/update";
 import { touchDeck } from "../../lib/decks/touch";
 import { newestVersion } from "../../lib/decks/versions";
+import { pruneOrphanProxies } from "../../lib/decks/prune-proxies";
 import {
   deckImportMaxBytes,
   deckImportTooLargeMessage,
@@ -337,6 +338,7 @@ export async function updateDeckFromList(
           inArray(deckCards.oracleId, removing.map((r) => r.oracleId)),
         ),
       );
+      await pruneOrphanProxies(tx, input.deckId);
     }
 
     for (let i = 0; i < plan.in.length; i += INSERT_BATCH) {
