@@ -166,6 +166,66 @@ async function main() {
       typeof stored.payload?.names.cards[second], "string");
     check("and for the deck",
       stored.payload?.names.decks[deck.id], "Probe receipt deck");
+
+    // 6. CONTENTION reaches the receipt. A second committed deck asking for two copies
+    //    takes committed demand to three against the two that arrived, so the card is
+    //    contested and the row is the chooser's subject in PR 3. Without a case like this
+    //    the claim read could be replaced by an empty map and every other check would
+    //    still pass — confirmed: it did.
+    const { rows: [rival] } = await fixture.execute<{ id: string }>(sql`
+      insert into decks (user_id, name, commander_oracle_id)
+      values (${USER}, 'Probe rival deck', ${legend.oracle_id}) returning id
+    `);
+    const { rows: [rivalVersion] } = await fixture.execute<{ id: string }>(sql`
+      insert into deck_versions (deck_id, number, commander_oracle_id)
+      values (${rival.id}, 1, ${legend.oracle_id}) returning id
+    `);
+    await fixture.execute(sql`
+      insert into deck_version_cards (version_id, oracle_id, quantity)
+      values (${rivalVersion.id}, ${second}, 2)
+    `);
+    await fixture.execute(sql`
+      insert into deck_cards (deck_id, oracle_id, quantity) values (${rival.id}, ${second}, 2)
+    `);
+    const contestedUpload = await newUpload();
+    await fixture.execute(sql`
+      update csv_uploads set confirmed_at = now() where id = ${contestedUpload}
+    `);
+    const withContention = await writeArrivalsReceipt({
+      userId: USER,
+      uploadId: contestedUpload,
+      pendingItems: items,
+      ownedBefore: { [first]: 1 },
+      buyBefore: [{ deckId: deck.id, oracleId: second, quantity: 1 }],
+      unmatched: [],
+      parseErrorCount: 0,
+    });
+    check("an arrival more decks want than there are copies is contested",
+      withContention.contested[0]?.oracleId, second);
+    check("and the row carries the copies this import brought",
+      withContention.contested[0]?.arrived, 2);
+    await fixture.execute(sql`delete from decks where id = ${rival.id}`);
+
+    // 7. TWO DIFFERENT UPLOADS, CONFIRMED TOGETHER. The conditional stamp locks one upload
+    //    row, so it does nothing here — both uploads are unconfirmed and both pass it. What
+    //    serializes them is the per-user advisory lock, and what it protects is the
+    //    collection: a delete-and-reinsert interleaved with another leaves a MIXTURE of the
+    //    two lists, or raises 23505 on the duplicate key. Asserted as "the collection is
+    //    exactly one of the two lists", which is the only outcome either order can produce
+    //    when the two replaces cannot overlap.
+    const oneCopy = [{ oracleId: first, setCode: "probe", condition: null, quantity: 1 }];
+    const [uA, uB] = [await newUpload(), await newUpload()];
+    await Promise.all([
+      replaceCollection(USER, items, { confirmUploadId: uA }),
+      replaceCollection(USER, oneCopy, { confirmUploadId: uB }),
+    ]);
+    const { rows: [final] } = await fixture.execute<{ shape: string }>(sql`
+      select string_agg(oracle_id::text || 'x' || quantity, ',' order by oracle_id) as shape
+      from collection_items where user_id = ${USER}
+    `);
+    const shapes = [`${second}x2`, `${first}x1`];
+    check("two concurrent replaces leave exactly one of the two lists",
+      shapes.includes(final.shape ?? ""), true);
   } finally {
     await fixture.execute(sql`delete from decks where user_id = ${USER}`);
     await fixture.execute(sql`delete from csv_uploads where user_id = ${USER}`);
