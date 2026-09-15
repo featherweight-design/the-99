@@ -100,9 +100,18 @@ export function GridView({
                     spoken
                   />
                 )}
-                <span aria-hidden style={{ color: "var(--fg-body)" }}>
-                  ×{c.quantity}
-                </span>
+                {/* Absent at one copy, matching the deck tile. It used to be
+                    unconditional, because on a collection one copy is the common
+                    case and the badge was the tile's ONLY figure — `×1` at least
+                    said the count was known. The meta line ended that: the count
+                    now sits beside an availability chip and a set code, so `×1`
+                    is the one figure there that tells the reader nothing, said
+                    loudest on the most ordinary card in the collection. */}
+                {c.quantity > 1 && (
+                  <span aria-hidden className="flex-none" style={{ color: "var(--fg-body)" }}>
+                    ×{c.quantity}
+                  </span>
+                )}
               </>
             }
             metaTrail={

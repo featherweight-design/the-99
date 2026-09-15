@@ -127,3 +127,21 @@ describe("GridView printed name", () => {
     expect(screen.getByRole("button", { name: /Sol Ring/ })).toBeInTheDocument();
   });
 });
+
+describe("GridView count", () => {
+  it("says nothing on a single copy", () => {
+    renderTiles({ ...card, quantity: 1 });
+
+    // `×1` was the tile's only figure when the badge sat alone on the art, so
+    // stating it at least said the count was known. On the meta line it sits
+    // beside a chip and a set code and is the one figure there that tells the
+    // reader nothing — said loudest on the most ordinary card they own.
+    expect(screen.queryByText("×1")).toBeNull();
+  });
+
+  it("states a count the reader could not have assumed", () => {
+    renderTiles({ ...card, quantity: 3 });
+
+    expect(screen.getByText("×3")).toBeInTheDocument();
+  });
+});

@@ -772,6 +772,7 @@ on this row.
 | font-size | 9px | 9.5px |
 | gap | 6px | 6px |
 | order | the one slot (availability chip), then `×N`, then the set line right-aligned | same |
+| `×N` | **absent at one copy**, matching the deck tile | same |
 
 ### Grid Tile: Slot Box
 | Property | Mobile | Desktop |
