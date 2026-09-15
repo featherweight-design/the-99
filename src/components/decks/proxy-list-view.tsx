@@ -53,6 +53,7 @@ export function ProxyListView({
   const deckCount = new Set(rows.flatMap((r) => r.decks.map((d) => d.id))).size;
   const priced = rows.filter((r) => r.priceCents !== null);
   const total = priced.reduce((n, r) => n + (r.priceCents ?? 0), 0);
+  const unpriced = rows.length - priced.length;
 
   return (
     <main className="mx-auto w-full max-w-[900px] px-[16px] py-[20px] md:px-[34px] md:py-[28px]">
@@ -88,6 +89,16 @@ export function ProxyListView({
             {priced.length > 0 && (
               <span className="font-mono text-[11px]" style={{ color: "var(--fg-faint)" }}>
                 {proxyCopy.cost.line(priced.length, rows.length)}
+              </span>
+            )}
+            {/* The caveat, which is what makes the gap above it legible: a
+                figure that covers 7 of 9 has to say WHY the other two are out,
+                and "never stocked" is not the same fact as "sold out". This list
+                can only tell the first — a card with no price row at all — so it
+                says that one and nothing it cannot stand behind. */}
+            {unpriced > 0 && (
+              <span className="ml-[6px] font-mono text-[11px]" style={{ color: "var(--fg-locked)" }}>
+                {proxyCopy.cost.unpriced(unpriced)}
               </span>
             )}
           </div>

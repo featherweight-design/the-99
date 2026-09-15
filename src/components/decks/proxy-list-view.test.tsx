@@ -51,6 +51,19 @@ describe("the proxy list", () => {
     expect(screen.getByText(proxyCopy.cost.line(1, 2))).toBeTruthy();
   });
 
+  it("says why the figure covers fewer cards than the list", () => {
+    // A total covering 7 of 9 has to say what the other two are. "Never stocked"
+    // is the one this list can stand behind — telling it from "sold out" needs
+    // provenance the loader does not read.
+    render(
+      <ProxyListView
+        rows={[row(), row({ oracleId: "o2", name: "Mana Crypt", priceCents: null })]}
+        hasDecks hasCollection
+      />,
+    );
+    expect(screen.getByText(proxyCopy.cost.unpriced(1))).toBeTruthy();
+  });
+
   it("marks a commander, which is otherwise invisible in this list", () => {
     render(<ProxyListView rows={[row({ commander: true })]} hasDecks hasCollection />);
     expect(screen.getByText(proxyCopy.row.commander)).toBeTruthy();

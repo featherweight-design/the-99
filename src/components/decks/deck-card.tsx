@@ -48,7 +48,17 @@ function detailFor(
   // every status that would lend it one already fills this slot with a figure
   // (`4 over`, `3 lines unresolved`, the To-buy roll-up), so the only statuses
   // reaching here are Complete, Building and Draft — all `--fg-faint`.
-  if (statusDetail === null && deck.proxiedCount > 0) {
+  // GUARDED to the three statuses that can reach the fallback honestly. `To buy`
+  // also returns null here — a deck whose only missing cards are basics has a
+  // `To buy` pill and no roll-up entry — and printing a proxy count there takes
+  // a slot that deliberately stays empty. The PR body claimed this was
+  // structurally impossible; it is not, which is what the guard is for.
+  const FALLBACK_STATUSES = ["Complete", "Building", "Draft"] as const;
+  if (
+    statusDetail === null
+    && deck.proxiedCount > 0
+    && (FALLBACK_STATUSES as readonly string[]).includes(deck.statusPill)
+  ) {
     return { text: proxyCopy.deckCard.line(deck.proxiedCount), color: "var(--fg-faint)" };
   }
   return statusDetail === null

@@ -2,6 +2,8 @@ import { describe, expect, it } from "vitest";
 import { render, screen } from "@testing-library/react";
 import { FilterBar } from "./filter-bar";
 import type { SetOption } from "../../lib/collection/set-filter";
+import { setPageCopy } from "../../lib/copy/set-collections";
+import { proxyCopy } from "../../lib/copy/proxies";
 
 const setOption = (code: string): SetOption => ({
   code, label: code, count: 1, disabled: false, releasedAt: "2026-08-01",
@@ -70,5 +72,27 @@ describe("the By set entry point", () => {
     bar([], {}, true);
     expect(screen.getByRole("link", { name: "Browse your collection by set" }))
       .toBeInTheDocument();
+  });
+});
+
+describe("the Proxies entry point", () => {
+  it("points at the proxy list", () => {
+    bar([setOption("RVR")]);
+    expect(screen.getByRole("link", { name: proxyCopy.entryPoint.aria }))
+      .toHaveAttribute("href", "/collection/proxies");
+  });
+
+  it("is there for a player with NO collection, unlike By set", () => {
+    // The one condition the two differ on: a set browser with no collection has
+    // nothing to say, while a proxy list is most useful to exactly the player
+    // whose cards are all printed.
+    bar([], {}, false);
+    expect(screen.getByRole("link", { name: proxyCopy.entryPoint.aria })).toBeTruthy();
+    expect(screen.queryByText(setPageCopy.entryPoint.label)).toBeNull();
+  });
+
+  it("names itself", () => {
+    bar([setOption("RVR")]);
+    expect(screen.getByText(proxyCopy.entryPoint.label)).toBeTruthy();
   });
 });

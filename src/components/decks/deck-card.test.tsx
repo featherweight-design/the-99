@@ -505,3 +505,18 @@ describe("the tile's proxy line", () => {
     expect(screen.getByText(proxyCopy.deckCard.line(2))).toBeTruthy();
   });
 });
+
+describe("the tile's proxy line yields where the slot is deliberately empty", () => {
+  it("does not print over a To buy deck with no roll-up", () => {
+    // A deck whose only missing cards are BASICS has a `To buy` pill and no
+    // roll-up entry, so `statusDetailFor` returns null on purpose — and printing
+    // a proxy count there takes a slot that is meant to stay empty.
+    render(
+      <DeckCard folders={[]} onCreateFolder={() => {}} say={() => {}} onMoved={() => {}} keepsFocus closeAfterCreate={null} now={now}
+        deck={deck({ statusPill: "To buy", proxiedCount: 3 })}
+        shopping={undefined}
+      />,
+    );
+    expect(screen.queryByText(proxyCopy.deckCard.line(3))).toBeNull();
+  });
+});
