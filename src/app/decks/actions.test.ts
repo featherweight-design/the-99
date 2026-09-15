@@ -405,8 +405,9 @@ vi.mock("../../lib/decks/draft-state", () => ({
 
 import {
   commitDeckVersion, createDeck, deleteGame, discardDeckDraft, fillDeck, getVersionDiff, logGame,
-  PROXY_READ_FAILED, pullCardFromDeck, restoreAutoCards,
+  pullCardFromDeck, restoreAutoCards,
 } from "./actions";
+import { PROXY_READ_FAILED } from "../../lib/decks/proxies";
 import {
   commitVersion, loadVersionDiff, newestVersion, restoreDraftFromVersion, versionCards,
   versionLiveAt,

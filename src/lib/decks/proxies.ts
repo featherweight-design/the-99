@@ -2,6 +2,19 @@ import { sql } from "drizzle-orm";
 import { db } from "../../db";
 
 /**
+ * The refusal a failed proxy read produces on the pull path.
+ *
+ * Here rather than in `actions.ts` because that module is `"use server"`, where
+ * a non-function export makes the whole file export NOTHING — the build fails
+ * with every action in it reported missing, several files away from the cause.
+ *
+ * Named at all so a test can tell this refusal from every other one: a fail-open
+ * bug refuses for a different reason, or not at all, and an assertion on
+ * `ok === false` alone would pass over both.
+ */
+export const PROXY_READ_FAILED = "Could not check that deck just now. Try again.";
+
+/**
  * The oracle ids this deck prints, as a set.
  *
  * Scoped to current membership — a `deck_cards` row or either commander column —

@@ -44,7 +44,7 @@ import { GAME_AXIS_KEYS, isGameAxisKey, type GameAxisKey } from "../../lib/decks
 import { gameLogCopy } from "../../lib/copy/game-log";
 import { countCharacters, deckTuningCopy } from "../../lib/copy/deck-tuning";
 import { pruneOrphanProxies } from "../../lib/decks/prune-proxies";
-import { proxiedOracleIds } from "../../lib/decks/proxies";
+import { PROXY_READ_FAILED, proxiedOracleIds } from "../../lib/decks/proxies";
 
 export type TopOffResult =
   | { ok: true; passId: string | null; added: number; total: number; boughtDelta: number }
@@ -1437,11 +1437,6 @@ export async function getVersionDiff(
  * already has pending changes, committing would sweep them into a version its
  * owner never asked for. That case sends the player to the source deck instead.
  */
-/** The refusal a failed proxy read produces on the pull path. Named so the test
- *  can tell it from every other refusal — a fail-open bug would refuse for some
- *  OTHER reason and a test asserting only `ok === false` would pass over it. */
-export const PROXY_READ_FAILED = "Could not check that deck just now. Try again.";
-
 export type PullResult =
   | {
       ok: true;
