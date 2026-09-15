@@ -19,6 +19,10 @@ import { drizzle } from "drizzle-orm/neon-serverless";
 import { sql } from "drizzle-orm";
 import ws from "ws";
 import { loadAvailability, loadDeckBuyRows } from "../src/lib/decks/availability-query";
+import { pruneOrphanProxies } from "../src/lib/decks/prune-proxies";
+// The prune runs inside its callers' transactions; here it is handed the app's
+// own db singleton, which satisfies the same interface for a single statement.
+import { db as realDb } from "../src/db";
 
 neonConfig.webSocketConstructor = ws;
 
@@ -164,26 +168,49 @@ try {
   await proxy(printer.id, cmdB);
   check("a proxied commander releases its copy", await free(cmdB, holder.id), 1);
 
-  // 4. AN ORPHAN ROW IS INERT. The card leaves the deck; the proxy row stays,
-  //    because no write path prunes it. It must do nothing — and when the card
-  //    comes back it must NOT arrive silently already proxied.
+  // 4. THE SLOT GOES, THE STATEMENT GOES. A proxy is one deck's answer about one
+  //    slot, so the row dies with the slot — `pruneOrphanProxies`, which every
+  //    write that can shrink a deck's list calls.
+  //
+  //    Membership-scoped reads alone are NOT this guarantee. They make a
+  //    surviving row inert for as long as the card is absent, and then the card
+  //    comes back and the anti-join matches it again. A probe that asserted only
+  //    the inert half would pass over exactly that: the check below removes the
+  //    card, puts it back, and asks what the deck is billed.
   await fixture.execute(sql`
     delete from deck_cards where deck_id = ${printer.id} and oracle_id = ${card}
   `);
+  await pruneOrphanProxies(realDb, printer.id);
   await commit(printer.id, cmdB, 2, []);
   const { rows: orphan } = await fixture.execute<{ n: number }>(sql`
     select count(*)::int as n from deck_proxies
     where deck_id = ${printer.id} and oracle_id = ${card}
   `);
-  check("the orphan row survives the removal", orphan[0].n, 1);
-  //    The senior deck holds the only copy and nobody else asks for it.
-  check("an orphan row claims nothing either way", await free(card, holder.id), 0);
+  check("the removal takes the proxy row with it", orphan[0].n, 0);
 
-  // 5. UNPROXYING RESTORES THE CLAIM. Put the card back in the printer's draft
-  //    and drop the proxy: the two decks are contesting one copy again.
+  // 4a. THE RE-ADD. The card returns to the deck. It must arrive UNPROXIED — the
+  //     deck claims a copy again and is billed for it, because nobody has said
+  //     they are printing this one since it came back.
   await fixture.execute(sql`
     insert into deck_cards (deck_id, oracle_id, quantity) values (${printer.id}, ${card}, 1)
   `);
+  check("a re-added card is not silently proxied", await free(card, printer.id), -1);
+  check("a re-added card is billed again", await buyCopies(printer.id, card), 1);
+
+  // 4b. A PROXIED COMMANDER SURVIVES AN EDIT TO THE LIST BELOW IT. The prune
+  //     reconciles against membership, and both commander columns are
+  //     membership — read from `deck_cards` alone it would delete this row on
+  //     the next removal of any other card.
+  await pruneOrphanProxies(realDb, printer.id);
+  const { rows: cmdRow } = await fixture.execute<{ n: number }>(sql`
+    select count(*)::int as n from deck_proxies
+    where deck_id = ${printer.id} and oracle_id = ${cmdB}
+  `);
+  check("a commander's proxy survives the prune", cmdRow[0].n, 1);
+
+  // 5. UNPROXYING RESTORES THE CLAIM, on a card that is proxied right now.
+  await proxy(printer.id, card);
+  check("proxied again, the deck is not short", await free(card, printer.id), 0);
   await unproxy(printer.id, card);
   check("unproxying puts the deck back in the queue", await free(card, printer.id), -1);
   check("unproxying puts the card back on the bill", await buyCopies(printer.id, card), 1);
