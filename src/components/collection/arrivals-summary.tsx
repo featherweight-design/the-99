@@ -109,6 +109,10 @@ export function ArrivalsSummary({
 
   const cleared = summary?.cleared ?? [];
   const still = summary?.still ?? [];
+  // What `Still to buy` is actually SHOWING. The cross-reference on a contested row points at a
+  // row the reader can see; pointing at one hidden behind `Show all` sends them looking for
+  // something that is not there.
+  const stillShown = showAllStill ? still : still.slice(0, MONEY_LIMIT);
   const nothingToReport = cleared.length === 0 && still.length === 0 && contested.length === 0;
   const names = summary?.names ?? { cards: {}, decks: {} };
 
@@ -192,7 +196,7 @@ export function ArrivalsSummary({
         <section className="mt-[26px]">
           <SectionHead label={copy.summary.sectionStill(still.length)} note={copy.summary.sectionStillNote} />
           <ul className="list-none p-0 m-0">
-            {(showAllStill ? still : still.slice(0, MONEY_LIMIT)).map((row) => {
+            {stillShown.map((row) => {
               const reason = reasonText(row);
               return (
                 <ReceiptRow
@@ -231,7 +235,7 @@ export function ArrivalsSummary({
                 // The page's one cross-reference, and it points UP. Silence here would look
                 // like a bug; a sum across the two would BE one — they answer different
                 // questions, one about a deck's draft demand and one about committed claims.
-                alsoAbove={still.some((r) => r.oracleId === card.oracleId)}
+                alsoAbove={stillShown.some((r) => r.oracleId === card.oracleId)}
               />
             ))}
           </div>

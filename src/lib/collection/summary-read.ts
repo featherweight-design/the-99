@@ -99,7 +99,14 @@ export async function loadSummaryView(uploadId: string, userId: string): Promise
     // A card whose contention has since resolved — a deck committed a removal, or copies
     // arrived another way — simply leaves. The payload is a record of one import, not a
     // promise about now.
+    // The same two tests the payload was built with, re-asked live: the shortage may have been
+    // resolved since (a deck committed a removal, or copies arrived another way), and a row that
+    // has only one committed claimant left is a purchase rather than a choice.
     if (!a || a.hard <= a.owned) return [];
+    // A row with one committed claimant left is a purchase rather than a choice — see the note
+    // in `arrivals.ts`. Re-asked live because the payload is a record of one import: a deck may
+    // have committed a removal since.
+    if (a.claims.filter((c) => c.mature).length < 2) return [];
     const committed = a.claims
       .filter((c) => c.mature)
       .map((c) => ({

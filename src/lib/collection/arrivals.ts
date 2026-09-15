@@ -42,8 +42,13 @@ export type OwnedCounts = Record<string, number>;
 /** One deck's purchase, as `loadDeckBuyRows` returns it: a positive DEFICIT. */
 export type BuyRow = { deckId: string; oracleId: string; quantity: number };
 
-/** What a claim read says about one arrived card. Version-shaped; see input 3. */
-export type ArrivedClaimState = { owned: number; hard: number };
+/**
+ * What a claim read says about one arrived card. Version-shaped; see input 3.
+ *
+ * `committedDecks` counts CLAIMANTS, not copies, and it is what separates a contested card from
+ * a merely short one: a chooser needs two decks to choose between.
+ */
+export type ArrivedClaimState = { owned: number; hard: number; committedDecks: number };
 
 /** A CSV line whose name matched no card. Carries no oracle id — that is what unmatched means. */
 export type UnmatchedLine = { name: string; line: number };
@@ -192,10 +197,18 @@ export function buildArrivalsSummary(input: ArrivalsInput): ArrivalsSummary {
   // A card this import brought copies of, that more committed decks want than the
   // collection now holds. Arrivals only: a card that was already contested and did not
   // move is not news about this import, and the deck pages have always shown it.
+  //
+  // TWO DECKS, NOT TWO COPIES OF DEMAND. `hard > owned` is a shortage, which is a different
+  // question: one committed deck asking for three Relentless Rats with one copy owned is short
+  // by two and has nobody to be short AGAINST. Drawn as a contested row it would offer a single
+  // option and no decision — a chooser with one choice. Its purchase is already reported in
+  // `Still to buy`, which is where a shortage belongs.
   const contested: ContestedRow[] = [];
   for (const [oracleId, state] of Object.entries(claims)) {
     const delta = (ownedAfter[oracleId] ?? 0) - (ownedBefore[oracleId] ?? 0);
-    if (delta > 0 && state.hard > state.owned) contested.push({ oracleId, arrived: delta });
+    if (delta > 0 && state.committedDecks > 1 && state.hard > state.owned) {
+      contested.push({ oracleId, arrived: delta });
+    }
   }
 
   const cards: Record<string, string> = {};

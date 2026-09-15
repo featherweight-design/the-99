@@ -17,7 +17,9 @@
 import { and, eq, inArray, sql } from "drizzle-orm";
 import { db } from "../../db";
 import { cards, csvUploads, collectionItems, decks } from "../../db/schema";
-import { buildArrivalsSummary, type ArrivalsSummary, type OwnedCounts } from "./arrivals";
+import {
+  buildArrivalsSummary, type ArrivalsSummary, type ArrivedClaimState, type OwnedCounts,
+} from "./arrivals";
 import type { PendingItem } from "./pending";
 import { loadAvailability, loadDeckBuyRows } from "../decks/availability-query";
 
@@ -109,11 +111,20 @@ export async function writeArrivalsReceipt(args: {
   const arrivedIds = Object.keys(ownedAfter).filter(
     (oracleId) => (ownedAfter[oracleId] ?? 0) > (ownedBefore[oracleId] ?? 0),
   );
-  const availability = arrivedIds.length
+  const availability: Awaited<ReturnType<typeof loadAvailability>> = arrivedIds.length
     ? await loadAvailability(userId, { oracleIds: arrivedIds })
     : new Map();
-  const claims: Record<string, { owned: number; hard: number }> = {};
-  for (const [oracleId, a] of availability) claims[oracleId] = { owned: a.owned, hard: a.hard };
+  const claims: Record<string, ArrivedClaimState> = {};
+  for (const [oracleId, a] of availability) {
+    claims[oracleId] = {
+      owned: a.owned,
+      hard: a.hard,
+      // Committed claimants, counted as DECKS. A contested row is a choice between decks, so one
+      // deck wanting three copies of a card the player owns one of is short rather than
+      // contested — see the note in `arrivals.ts`.
+      committedDecks: a.claims.filter((c) => c.mature).length,
+    };
+  }
 
   // Names for the rows the diff CAN EMIT, and nothing else: a card on a buy row either
   // side of the replace, or a contested arrival. Not the collection — a player with three
