@@ -81,19 +81,22 @@ const READ_COST = () => {
   // neither pip — which is a probe reporting its own markup as a defect.
   const run = slot.querySelector('[aria-hidden="true"]');
   if (!run) return null;
-  return [...run.children]
-    .map((el) => {
-      const r = el.getBoundingClientRect();
-      return {
-        url: getComputedStyle(el).backgroundImage.match(/url\("?([^")]+)"?\)/)?.[1] ?? null,
-        // The lettered fallback is the one thing that must not appear here: on a
-        // catalog this app has ingested, every cost symbol has committed art.
-        text: el.textContent?.trim() ?? "",
-        w: Math.round(r.width),
-        h: Math.round(r.height),
-      };
-    })
-    .filter((p) => p.w > 0);
+  // EVERY child, with no size filter. Dropping the zero-sized ones would hide
+  // exactly the regression this measures: a pip collapsed to nothing would leave
+  // the survivors satisfying the URL, text and box assertions, and the check
+  // would pass over a cost with a symbol missing from it. Kept in, it fails the
+  // box assertion, which is the reading that should catch it.
+  return [...run.children].map((el) => {
+    const r = el.getBoundingClientRect();
+    return {
+      url: getComputedStyle(el).backgroundImage.match(/url\("?([^")]+)"?\)/)?.[1] ?? null,
+      // The lettered fallback is the one thing that must not appear here: on a
+      // catalog this app has ingested, every cost symbol has committed art.
+      text: el.textContent?.trim() ?? "",
+      w: Math.round(r.width),
+      h: Math.round(r.height),
+    };
+  });
 };
 
 /**
@@ -107,20 +110,33 @@ const READ_TILES = (page) => {
   const tiles = [...document.querySelectorAll(`${page} li`)].filter((li) =>
     li.querySelector("[style*='aspect-ratio']"),
   );
+  let arted = 0;
   let dots = 0;
   let pipRuns = 0;
+  let noArtWithPips = 0;
   for (const tile of tiles) {
+    const art = tile.querySelector("[style*='aspect-ratio']");
     const slot = tile.querySelector("[class*='bottom-[6px]']");
     if (!slot) continue;
     // The dot is the round 8px mark; a pip run is two or more round boxes beside
-    // it, which is exactly the shape that must be gone.
+    // it.
     const round = [...slot.querySelectorAll("span.rounded-full")].filter(
       (el) => el.getBoundingClientRect().width > 0,
     );
     if (round.length > 0) dots += 1;
-    if (round.length > 1) pipRuns += 1;
+    // Split by whether the tile HAS art, because the rule is. A no-art tile
+    // keeps its pips deliberately, and `PROBE_DECK` is any deck the account
+    // owns — so a deck holding one costed card with no image would fail a
+    // check that counted every tile, over a component obeying the rule
+    // exactly. The same split turns that case into evidence rather than noise.
+    if (art && getComputedStyle(art).backgroundImage.includes("url(")) {
+      arted += 1;
+      if (round.length > 1) pipRuns += 1;
+    } else if (round.length > 1) {
+      noArtWithPips += 1;
+    }
   }
-  return { tiles: tiles.length, dots, pipRuns };
+  return { tiles: tiles.length, arted, dots, pipRuns, noArtWithPips };
 };
 
 async function run() {
@@ -264,10 +280,12 @@ async function run() {
       // only the dots tell that apart from the view drawn correctly.
       failures += !report(
         `${width}px · the card view draws no pips over art`,
-        tiles.tiles > 0 && tiles.dots > 0 && tiles.pipRuns === 0,
-        `${tiles.tiles} tiles, ${tiles.dots} with a marked slot, ${tiles.pipRuns} still drawing a pip run`
-          + (tiles.tiles === 0 || tiles.dots === 0
-            ? " — NOT a pass: the card view was never reached"
+        tiles.arted > 0 && tiles.dots > 0 && tiles.pipRuns === 0,
+        `${tiles.tiles} tiles (${tiles.arted} with art), ${tiles.dots} with a marked slot,`
+          + ` ${tiles.pipRuns} arted tiles still drawing a pip run,`
+          + ` ${tiles.noArtWithPips} no-art tiles keeping theirs`
+          + (tiles.arted === 0 || tiles.dots === 0
+            ? " — NOT a pass: the card view was never reached, or no tile has art"
             : ""),
       );
 

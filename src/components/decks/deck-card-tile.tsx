@@ -21,7 +21,7 @@ import { availabilityState } from "../../lib/decks/availability";
 import type { DeckDetailCard } from "../../lib/decks/grouping";
 import { DECK_REMOVE_FALLBACK_MESSAGE } from "../../lib/decks/mutation-result";
 import { AvailabilityMarker } from "../ui/availability-marker";
-import { CostPips } from "../ui/cost-pips";
+import { CostPips, parseManaCost } from "../ui/cost-pips";
 import { OwnershipDot } from "../ui/ownership-dot";
 import { BuyTag } from "./buy-tag";
 import { CardDetailTrigger, cardDetailCopy } from "../cards/card-detail-provider";
@@ -70,6 +70,9 @@ export function DeckCardTile({
   // does. The modal — one tap away on the art — is the recovery path.
   const displayName = printedFaceName(card);
   const fullName = printedNameOf(card);
+  // Null unless the string holds symbols this app can draw, so both branches
+  // below agree on what "has a cost" means.
+  const cost = card.manaCost && parseManaCost(card.manaCost).length > 0 ? card.manaCost : null;
 
   function handleRemove() {
     markSlotSpent(card);
@@ -193,14 +196,17 @@ export function DeckCardTile({
                 argument about a reader who can see the art; it reaches nobody
                 using a screen reader, for whom the pips were the only cost this
                 tile carried. */}
-            {card.manaCost ? (
-              // No pre-parse: `CostPips` draws nothing for a cost with no
-              // symbols in it and `spokenManaCost` says nothing, so a second
-              // parse here would only ask the same question twice per tile.
+            {/* PARSED, not merely truthy — the same test `decklist-row.tsx` makes.
+                `spokenManaCost` answers `no mana cost` for a string it cannot
+                parse, which is a claim about the card rather than about the
+                string: a stored cost that is nonempty and unreadable would be
+                announced as a land. `CostPips` drew nothing for it, and nothing
+                is still the right answer. */}
+            {cost ? (
               card.imageUri ? (
-                <span className="sr-only">{spokenManaCost(card.manaCost)}</span>
+                <span className="sr-only">{spokenManaCost(cost)}</span>
               ) : (
-                <CostPips cost={card.manaCost} size={11} className="flex gap-[3px]" spoken />
+                <CostPips cost={cost} size={11} className="flex gap-[3px]" spoken />
               )
             ) : null}
           </span>
