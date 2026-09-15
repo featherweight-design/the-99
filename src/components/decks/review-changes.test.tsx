@@ -1254,8 +1254,10 @@ describe("a printed add on the review screen", () => {
     // THE SHIPPED DEFECT. `AvailabilitySlot` opened on `!card.owned`, and a
     // printed card is unowned by design — so this screen quoted a price for a
     // card its owner had decided not to buy.
-    render(<ReviewChanges deckId="d" deckName="Korvold" rows={{ in: [proxiedRow()], out: [] }} {...SHAPE} state={STATE} cardCount={CARD_COUNT} />);
-    expect(screen.getByText(proxyCopy.tag.aria)).toBeInTheDocument();
+    const { container } = render(<ReviewChanges deckId="d" deckName="Korvold" rows={{ in: [proxiedRow()], out: [] }} {...SHAPE} state={STATE} cardCount={CARD_COUNT} />);
+    // The GLYPH, drawn: the tag's spoken word is deliberately suppressed on this
+    // row, where the full sentence rides `aria-describedby` instead.
+    expect(container.textContent).toContain(proxyCopy.tag.glyph);
     expect(screen.queryByText(addPanelCopy.unowned.tag)).not.toBeInTheDocument();
   });
 
@@ -1264,7 +1266,19 @@ describe("a printed add on the review screen", () => {
     // `proxied` would not say why the row costs nothing, which is the whole
     // reason it is not simply silent like a `free` add.
     render(<ReviewChanges deckId="d" deckName="Korvold" rows={{ in: [proxiedRow()], out: [] }} {...SHAPE} state={STATE} cardCount={CARD_COUNT} />);
-    expect(screen.getByText(proxyCopy.review.a11y("The Ozolith"))).toBeInTheDocument();
+
+    // Through `aria-describedby`, not merely present in the DOM: a sentence
+    // rendered anywhere on the page would satisfy the weaker assertion while
+    // reaching no reader on this row.
+    const trigger = screen.getByRole("button", { name: /The Ozolith/ });
+    const describedBy = trigger.getAttribute("aria-describedby");
+    expect(describedBy).toBeTruthy();
+    expect(document.getElementById(describedBy as string)?.textContent)
+      .toContain(proxyCopy.review.a11y("The Ozolith"));
+
+    // And exactly ONCE: the tag's own spoken word is suppressed here, or the
+    // same state is announced twice.
+    expect(screen.queryByText(proxyCopy.tag.aria)).toBeNull();
   });
 
   it("is not silent, which a `free` add would have been", () => {

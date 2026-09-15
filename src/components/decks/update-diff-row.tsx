@@ -235,7 +235,10 @@ function AvailabilitySlot({
   // collection for nothing, so neither the buy tag nor the marker beside it has
   // anything true to say about it. `deckRowTag` makes the same call on the
   // decklist; this is that ruling reaching its third surface.
-  if (card.proxied) return <ProxyTag variant="row" />;
+  // `silent`: this row's full sentence rides `aria-describedby` on the card
+  // trigger, and the tag's own word would announce the same state twice — where
+  // the guard tags beside it speak exactly once.
+  if (card.proxied) return <ProxyTag variant="row" silent />;
   if (buyable && (!card.owned || card.committed || (card.shortfall ?? 0) > 0)) {
     return (
       <BuyTag variant="row" price={card.price ?? null} newestAsOf={card.newestAsOf ?? null} />
