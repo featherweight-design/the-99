@@ -22,6 +22,12 @@ import type { PendingChangeMove } from "./pending-change";
 import { UnresolvedGroup } from "./unresolved-group";
 import { SweepReceipt } from "./clear-auto";
 import type { SweptRow } from "../../app/decks/actions";
+import { BuyTag } from "./buy-tag";
+import { ProxyTag } from "./proxy-tag";
+import { MarkKey, type MarkKeyEntry } from "./mark-key";
+import { deckRowTag } from "../../lib/decks/row-tag";
+import { proxyCopy } from "../../lib/copy/proxies";
+import { useMemo } from "react";
 
 // Role order for Shopping groups — matches ROLE_TARGETS keys.
 const SHOPPING_ROLE_ORDER: Array<"ramp" | "draw" | "removal" | "wipes"> = [
@@ -148,6 +154,27 @@ export function Decklist({
   // renders: the stored choice arrives on the pass after hydration.
   const [storedView, chooseView] = useStoredView(DECK_VIEW_KEY, isDeckView);
   const view = storedView ?? "list";
+
+  // The marks this view actually contains, which is what the key decodes. Only
+  // the current view's rows: a legend naming a mark the reader cannot see on
+  // screen teaches the wrong thing, and an empty one is furniture.
+  const markKey = useMemo((): MarkKeyEntry[] => {
+    // `cards` filtered, not `shoppingList` — that one is a name/quantity
+    // projection for the export dialog and carries no flags to read.
+    const shown = filter === "shopping" ? cards.filter(isShoppingCard) : cards;
+    const entries: MarkKeyEntry[] = [];
+    if (shown.some((c) => deckRowTag(c, filter === "shopping" && isSpokenFor(c)) === "buy")) {
+      entries.push({
+        id: "buy",
+        sample: <BuyTag variant="row" density="collapsed" price={null} />,
+        word: proxyCopy.key.buy,
+      });
+    }
+    if (shown.some((c) => c.proxied)) {
+      entries.push({ id: "proxy", sample: <ProxyTag variant="row" />, word: proxyCopy.key.proxy });
+    }
+    return entries;
+  }, [cards, filter]);
 
   // The toolbar's right slot while a draft exists. Needs both answers: a deck
   // with no version has no vN to count against, and a set with nothing in it has
@@ -419,6 +446,9 @@ export function Decklist({
             draftNote={draftNote}
           />
           <div className="px-[16px] pt-[12px] md:px-[26px] md:pt-[14px] empty:hidden">
+            <MarkKey marks={markKey} />
+          </div>
+          <div className="px-[16px] pt-[12px] md:px-[26px] md:pt-[14px] empty:hidden">
             {autoBanner}
           </div>
           {filled ? (
@@ -481,6 +511,10 @@ export function Decklist({
           shoppingCards={shoppingList}
           draftNote={draftNote}
         />
+
+        <div className="px-[16px] pt-[12px] md:px-[26px] md:pt-[14px] empty:hidden">
+          <MarkKey marks={markKey} />
+        </div>
 
         <HoverPreviewProvider className="px-[16px] py-[12px] md:px-[26px] md:py-[14px]">
           {autoBanner}

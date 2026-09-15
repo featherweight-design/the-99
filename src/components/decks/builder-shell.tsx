@@ -241,6 +241,14 @@ export function BuilderShell({
     keepAllOptimisticAuto,
   } = useOptimisticDeckCards(deck.cards, deck.unresolvedRows);
   const counts = deckCounts(cards, unresolvedCount);
+  // Printed CARDS, commanders included — the same figure the `/decks` tile
+  // draws, counted here off the rows the page already holds so the two surfaces
+  // cannot disagree about one deck. Distinct marks, never copies: one mark on a
+  // quantity-4 row is one printed card (ruling 5).
+  const proxiedCount =
+    cards.filter((c) => c.proxied).length
+    + (deck.commander.proxied ? 1 : 0)
+    + (deck.partner?.proxied ? 1 : 0);
   const { built } = counts;
 
   // The ceiling this page measures against, derived once. A pair's commanders
@@ -701,7 +709,7 @@ export function BuilderShell({
                 the exception lives in the prose below it. */}
             <BuilderSpine
               deck={deck}
-              counts={counts}
+              counts={{ ...counts, proxiedCount }}
               onExport={openExport}
               // The server status, the same one the tab strip names. Passed
               // rather than recomputed inside the spine, which holds the

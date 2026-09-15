@@ -30,6 +30,19 @@ describe("one slot, one mark", () => {
     expect(deckRowTag(card({ owned: false, proxied: true }))).not.toBe("buy");
   });
 
+  it("draws buy on a spoken-for row, which is owned", () => {
+    // The player owns it and still has to buy one, because the copies are
+    // sleeved in finished decks. Missing this input dropped the tag from the one
+    // kind of row whose presence on the Shopping list is not self-evident.
+    expect(deckRowTag(card({ owned: true }), true)).toBe("buy");
+  });
+
+  it("still prefers the proxy on a spoken-for row", () => {
+    // Printing it is the answer to being spoken for, so the mark that says the
+    // slot is filled wins over the one that says to go shopping.
+    expect(deckRowTag(card({ owned: true, proxied: true }), true)).toBe("proxy");
+  });
+
   it("prefers the proxy even on an owned card", () => {
     // Reachable: a player who owns one copy and prints another for a second
     // deck. The deck's own statement about the slot wins.

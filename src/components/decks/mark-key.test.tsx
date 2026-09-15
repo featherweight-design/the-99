@@ -32,6 +32,18 @@ describe("the mark key", () => {
     expect(screen.queryByText(proxyCopy.key.about)).toBeNull();
   });
 
+  it("does not repeat each mark's own spoken word", () => {
+    // The samples are the components the rows draw, so each carries its own
+    // `sr-only` word. Spoken here they would read twice, and the key would
+    // become a second copy of the row vocabulary in the reading order.
+    const { container } = render(<MarkKey marks={[{ ...proxy, sample: <span>speak me</span> }]} />);
+    // Drawn but not spoken. `queryByText` finds `aria-hidden` text, so the
+    // assertion is on the attribute rather than on findability.
+    expect(container.textContent).toContain("speak me");
+    const sample = screen.getByText("speak me").closest("[aria-hidden='true']");
+    expect(sample).not.toBeNull();
+  });
+
   it("names itself, since every glyph inside it is drawn rather than spoken", () => {
     render(<MarkKey marks={[proxy]} />);
     expect(screen.getByRole("group", { name: proxyCopy.key.regionAria })).toBeTruthy();

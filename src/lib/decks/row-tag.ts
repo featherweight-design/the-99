@@ -14,8 +14,21 @@ import type { DeckDetailCard } from "./grouping";
  * `list_claims` anti-join keeps it out of the buy rows, so a row that drew `buy`
  * here would contradict both.
  */
-export function deckRowTag(card: DeckDetailCard): "proxy" | "buy" | null {
+export function deckRowTag(
+  card: DeckDetailCard,
+  /**
+   * The row is on the Shopping list because its copies are sleeved elsewhere —
+   * `isSpokenFor`, which the row already computes and which depends on the VIEW
+   * rather than on the card. It is a `buy` row: the player owns the card and
+   * still has to buy one.
+   *
+   * Taken as an argument rather than re-derived here, because deriving it needs
+   * the view, and a tag function that guessed at the view would disagree with
+   * the row about which list it is on.
+   */
+  spokenFor = false,
+): "proxy" | "buy" | null {
   if (card.proxied) return "proxy";
-  if (!card.owned) return "buy";
+  if (!card.owned || spokenFor) return "buy";
   return null;
 }

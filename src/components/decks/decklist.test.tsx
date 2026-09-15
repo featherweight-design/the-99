@@ -11,6 +11,7 @@ import { ROLE_TARGETS } from "../../lib/recs/roles";
 import { CardDetailProvider, cardDetailCopy } from "../cards/card-detail-provider";
 import { deckVersioningCopy } from "../../lib/copy/deck-versioning";
 import { viewToggleCopy } from "../../lib/copy/card-surfaces";
+import { proxyCopy } from "../../lib/copy/proxies";
 
 // ── Server-action mocks ───────────────────────────────────────────────────────
 vi.mock("../../app/decks/actions", () => ({
@@ -659,7 +660,14 @@ describe("Shopping's predicate: unowned, or owned and over-committed", () => {
     renderDecklist([rampUnowned, rampSpokenFor]);
 
     expect(screen.queryByText(/2nd copy/)).not.toBeInTheDocument();
-    expect(screen.getAllByText(addPanelCopy.unowned.tag)).toHaveLength(2);
+    // Two ROWS carry the word. The third occurrence in the DOM is the mark key's
+    // sample, which is the same component drawn as a legend and is `aria-hidden`
+    // for exactly that reason — so the count is taken over the rows rather than
+    // over the whole render.
+    const key = screen.queryByRole("group", { name: proxyCopy.key.regionAria });
+    const rows = screen.getAllByText(addPanelCopy.unowned.tag)
+      .filter((el) => !key || !key.contains(el));
+    expect(rows).toHaveLength(2);
   });
 
   // Count-only is the list's own ruling, not a side effect of having a figure to

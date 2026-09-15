@@ -217,7 +217,7 @@ export function DecklistRow({
   // fill never buys them, so an owned basic is never a purchase.
   const spokenFor = inShopping && isSpokenFor(card);
   // One answer, one slot — see `deckRowTag`.
-  const tag = deckRowTag(card);
+  const tag = deckRowTag(card, spokenFor);
   const passMark = usePassMark();
   const markLabel = passMark?.oracleIds.has(card.oracleId) ? passMark.label : null;
   const marked = markLabel !== null;
@@ -496,7 +496,7 @@ export function DecklistRow({
             printing this card and that they must buy it is the one state in this
             feature nobody has drawn. */}
         {tag === "proxy" && <ProxyTag variant="row" />}
-        {tag === "buy" && (!card.owned || spokenFor) && (
+        {tag === "buy" && (
           /* The figure's own flag, not `inShopping`: the reserved slot exists
              to align the tag with the meta line, so with no meta line to align
              to there is nothing to reserve. Its width is BuyTag's own

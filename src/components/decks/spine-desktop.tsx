@@ -22,6 +22,7 @@ import { FirstCommitOffer } from "./first-commit-offer";
 import { StatusPillBadge } from "./status-pill";
 import { useDeckRename } from "./use-deck-rename";
 import { ProxyTag } from "./proxy-tag";
+import { proxyCopy } from "../../lib/copy/proxies";
 
 /** The slice of the deck both widths of the header read. Narrower than
     `DeckDetail` on purpose: nothing in this band knows about the decklist. */
@@ -52,7 +53,13 @@ export interface SpineBandProps {
       proxied?: boolean;
     } | null;
   };
-  counts: { built: number; ownedCount: number; toBuyCount: number };
+  counts: {
+    built: number;
+    ownedCount: number;
+    toBuyCount: number;
+    /** Printed cards in this deck. The line under the bar, absent at zero. */
+    proxiedCount?: number;
+  };
   status: StatusPill;
   onExport: () => void;
   /** True on a deck with no version whose list has reached a full body — the
@@ -481,6 +488,21 @@ export function SpineDesktop({
               )}
             </div>
           </div>
+
+          {/* One mono line under the bar, absent at zero. A 99-card deck reading
+              `Complete` with seven printed cards is correct AND is the moment a
+              player could be misled, so the count says so plainly — no colour,
+              no control, and it qualifies the pill rather than replacing it.
+              NOT a roll-up band: those are alarm chrome for over-commitment, and
+              a proxy is not a problem to be solved. */}
+          {(counts.proxiedCount ?? 0) > 0 && (
+            <p
+              className="font-mono m-0"
+              style={{ fontSize: 11.5, lineHeight: 1.5, marginTop: 6, color: "var(--fg-muted)" }}
+            >
+              {proxyCopy.deckHeader.line(counts.proxiedCount ?? 0)}
+            </p>
+          )}
 
           {over && (
             <p

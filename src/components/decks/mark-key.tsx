@@ -33,7 +33,12 @@ export function MarkKey({ marks }: { marks: MarkKeyEntry[] }) {
         // The real mark at its real size beside the word, so the line is a
         // SAMPLE rather than a description of one.
         <span key={mark.id} className="inline-flex items-center gap-[5px]">
-          {mark.sample}
+          {/* The sample is DECORATIVE here: it is the same component the rows
+              draw, so it carries that mark's own `sr-only` word — and this line
+              says the word right beside it. Left spoken, every key entry read
+              its mark twice, and the whole legend became a second copy of the
+              row vocabulary in the reading order. */}
+          <span aria-hidden="true">{mark.sample}</span>
           <span>{mark.word}</span>
         </span>
       ))}
