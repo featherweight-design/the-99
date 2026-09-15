@@ -263,16 +263,22 @@ async function run() {
           `${caps.boxes} boxes, heights ${caps.boxHeights.join(" / ") || "none"}, kinds ${caps.kinds.join("+") || "none"}`,
         );
 
-        if (width === 1300) {
-          const grid = await page.evaluate(GRID, { page: PAGE });
-          const want = label === "/collection" ? 178.3 : 181;
-          checks += 1;
-          failures += !report(
-            `${width}px · ${label} · six tracks at ${want}px`,
-            grid !== null && grid.columns === 6 && Math.abs(grid.tile - want) <= 2,
-            grid === null ? "no tiles" : `${grid.columns} columns, tile ${grid.tile}px`,
-          );
-        }
+        // BOTH widths. This was gated to 1300 alone, which left the phone's
+        // explicit 2-up — the one thing the desktop floor cannot express, since
+        // at 390px a 178px floor plus a gap exceeds the track and auto-fill
+        // would collapse to one column — asserted by nothing. A regression there
+        // passed every check on the surface it was most likely to break.
+        const grid = await page.evaluate(GRID, { page: PAGE });
+        const want = width === 1300 ? (label === "/collection" ? 178.3 : 181) : null;
+        const wantColumns = width === 1300 ? 6 : 2;
+        checks += 1;
+        failures += !report(
+          `${width}px · ${label} · ${wantColumns} tracks${want ? ` at ${want}px` : ""}`,
+          grid !== null
+            && grid.columns === wantColumns
+            && (want === null ? grid.tile > 120 : Math.abs(grid.tile - want) <= 2),
+          grid === null ? "no tiles" : `${grid.columns} columns, tile ${grid.tile}px`,
+        );
       }
       await context.close();
     }

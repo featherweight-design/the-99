@@ -717,7 +717,13 @@ on this row.
 |----------|--------|---------|
 | aspect-ratio | 63/88 | 63/88 |
 | position | relative | relative |
-| box-shadow | inset 0 -40px 40px -30px rgba(0,0,0,0.6), inset 0 0 0 1px rgba(0,0,0,0.25) | inset 0 -50px 50px -34px rgba(0,0,0,0.6), inset 0 0 0 1px rgba(0,0,0,0.25) |
+| box-shadow | `inset 0 0 0 1px rgba(0,0,0,0.25)` | `inset 0 0 0 1px rgba(0,0,0,0.25)` |
+
+> **The bottom wash is gone — card captions (R1), call D.** It was
+> `inset 0 -40px 40px -30px rgba(0,0,0,0.6)` at the phone and `-50px/-34px` above `md:`, and it
+> existed to hold marks off light art. Nothing is drawn over the art now, so it holds nothing off
+> anything. The 1px inner edge stays, and its job is different: it keeps a pale card frame from
+> bleeding into the tile plate.
 | background | color-identity gradient (see Art Gradients) | color-identity gradient |
 
 ### Art Placeholder Gradients (per identity)

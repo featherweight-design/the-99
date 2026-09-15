@@ -1,6 +1,15 @@
 "use client";
 // Card-art gallery per property table §Grid Tile (State 1b).
-// Grid: 2-up mobile / 5-up desktop.
+//
+// Grid: 2-up mobile, and a TILE FLOOR on desktop rather than a column count —
+// `repeat(auto-fill, minmax(178px, 1fr))`, which is six at the 1300px reference
+// width and fewer as the window narrows. It was a fixed 5-up until card
+// captions (R1) ruled the 178px tile; see the grid's own comment for why a
+// fixed six was rejected.
+//
+// Nothing is drawn over the art. The availability chip and the count are on the
+// caption's meta line, and the bottom wash went with them.
+//
 // Missing art → color-identity gradient (READINESS #4).
 
 import type { BrowseListCard } from "../../lib/collection/browse";

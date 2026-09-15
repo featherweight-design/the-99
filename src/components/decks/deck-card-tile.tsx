@@ -2,16 +2,19 @@
 
 // The card view's unit (#349) — Matrix 2 of STATES-card-surfaces.md.
 //
-// Built from `collection/grid-view.tsx`'s tile, with four deltas: the ownership
-// dot sits in the art's bottom-left scrim, the set/rarity caption is gone, the
-// quantity badge disappears at one copy, and the `✕` joins the caption. It is
-// not a fork of `suggestion-tile.tsx` — that one carries evidence bars, an Add
-// button and a two-line clamped name it needs to keep a shelf of tiles in
-// alignment, none of which a decklist tile has any use for.
+// Built from `collection/grid-view.tsx`'s tile, and since card captions (R1)
+// the two share the caption itself — `ui/card-tile-caption.tsx`. Three deltas
+// remain: this one carries an ownership dot on the meta line, has no set/rarity
+// caption, and ends the caption with a full-height `✕` column. It is not a fork
+// of `suggestion-tile.tsx` — that one carries evidence bars, an Add button and a
+// two-line clamped name it needs to keep a shelf of tiles in alignment, none of
+// which a decklist tile has any use for.
 //
-// Three of the four corners are marked and the fourth is left bare on purpose:
-// four marked corners is a frame, and an empty bottom-right keeps the art
-// reading as one click target.
+// NOTHING IS DRAWN OVER THE ART. The four marks that used to hold its corners —
+// the availability chip, the collapsed `$`, the proxy `P` and the `×N` badge —
+// are on the caption's meta line, and the bottom wash deleted with them. The one
+// exception is a tile with NO art, whose plate prints no cost of its own and so
+// keeps the drawn pips; on a tile that has art the cost is spoken instead.
 
 import { removeCardFromDeck } from "../../app/decks/actions";
 import { addPanelCopy } from "../../lib/copy/decks-builder";
