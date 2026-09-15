@@ -225,6 +225,15 @@ export function Decklist({
   // `All → Mana value` lost because this tab wrote `Shopping → Name` from a
   // render that predated it. Only the lane being changed is this render's to
   // decide; the other lane's value is read fresh.
+  //
+  // It is a read-modify-write and therefore still not atomic: two tabs changing
+  // DIFFERENT lanes inside the same tick can both read the same value and the
+  // later write wins. Left as it is, deliberately. What is lost in that window
+  // is one list's row order on the next visit, restored by one press of a
+  // control that is always on screen — against a revision counter and a retry
+  // loop, or two keys where the handoff recommends one. The fresh read closes
+  // the case that is actually reachable by a person: two tabs open, one lane
+  // changed in each, seconds or minutes apart.
   const setSort = (next: DeckSortState) =>
     chooseSort(serialiseDeckSort({
       ...parseDeckSort(readRaw(DECK_SORT_STORAGE_KEY)),

@@ -138,7 +138,8 @@ Descending group, §2.2 and §2.3 both hold, and the component `/collection` sha
 
 ## What this hands engineering
 
-One mount, four props (`selectionMode`, `widthPx`, `desktopRowMinPx`, `showCounts`), one copy block,
+One mount, five props (`selectionMode`, `selectionOrnament`, `widthPx`, `desktopRowMinPx`,
+`showCounts`), one copy block,
 four pure helpers with no UI imports, **one structural change to `group-toggle.tsx`** (the four
 arrangement children — `By type`, `By role`, the trigger and the conditional view well — into one
 `flex-none` span, plus the hairline) and **two one-line fixes in
