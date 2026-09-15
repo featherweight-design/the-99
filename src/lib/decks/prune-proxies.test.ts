@@ -20,20 +20,24 @@ const FILES = [
 ];
 
 /**
- * Every `.delete(deckCards)` in the file, by index.
+ * Every `.delete(deckCards)` in the file, by index, and the block each one sits
+ * in.
  *
- * NOT a parse into transaction callbacks, which is what this test did first and
- * why it is worth a comment: that version walked braces from each
- * `db.transaction(` and silently captured only three of this file's four delete
- * sites, so a delete added after a prune passed the guard. A guard that skips a
- * site reports clean over the exact defect it exists for.
+ * TWO EARLIER VERSIONS OF THIS HELPER WERE WRONG, in opposite directions, and
+ * both are worth stating because each passed its own test run:
  *
- * Positions and a window are cruder and cannot skip anything: for each delete,
- * a prune has to appear after it and close enough to be in the same unit of
- * work. Every real call site here sits within a few lines of its prune.
+ * 1. Walking braces from every `db.transaction(` captured three of this file's
+ *    four delete sites and silently skipped the fourth, so a delete added after
+ *    a prune passed the guard.
+ * 2. Replacing that with "a prune within the next 1200 characters" could be
+ *    satisfied by a prune in a LATER function, so a delete with no prune in its
+ *    own unit of work would still pass.
+ *
+ * What is bounded here is the delete's own enclosing block, found by walking
+ * forward from the delete until the brace depth goes negative — the closing
+ * brace of whatever `{` contains it. No window, no anchor to guess at, and
+ * nothing outside that block can satisfy it.
  */
-const WINDOW = 1200;
-
 function deleteSites(source: string): number[] {
   const sites: number[] = [];
   const marker = /\.delete\(deckCards\)/g;
@@ -42,9 +46,21 @@ function deleteSites(source: string): number[] {
   return sites;
 }
 
+/** The source from `at` to the end of the block containing it. */
+function enclosingBlockFrom(source: string, at: number): string {
+  let depth = 0;
+  for (let i = at; i < source.length; i += 1) {
+    if (source[i] === "{") depth += 1;
+    else if (source[i] === "}") {
+      depth -= 1;
+      if (depth < 0) return source.slice(at, i);
+    }
+  }
+  return source.slice(at);
+}
+
 function prunedAfter(source: string, at: number): boolean {
-  const window = source.slice(at, at + WINDOW);
-  return /pruneOrphanProxies\(/.test(window);
+  return /pruneOrphanProxies\(/.test(enclosingBlockFrom(source, at));
 }
 
 describe("proxy rows are reconciled wherever deck membership shrinks", () => {
