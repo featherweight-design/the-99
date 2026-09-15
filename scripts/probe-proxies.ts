@@ -293,20 +293,39 @@ try {
   //     ownedCount, and an unowned printed COMMANDER must contribute nothing.
   check("…and contribute nothing to coverage", (await proxyCounts(USER)).get(printer.id)?.covers, 0);
 
-  //     A deck with an UNOWNED printed body card: one mark, one covered slot,
-  //     nothing left to buy, and a pill that says so.
-  const { rows: [printed] } = await fixture.execute<{ oracle_id: string }>(sql`
+  //     A FULL DECK, because the pill is the point and `statusPill` answers
+  //     `Building` and exits long before it looks at coverage. 99 cards: 98
+  //     owned body rows plus one the player owns no copy of, printed.
+  const { rows: body } = await fixture.execute<{ oracle_id: string }>(sql`
     select oracle_id from cards
     where type_line !~ '\\mBasic\\M' and type_line !~ 'Legendary'
-    order by oracle_id offset 2 limit 1
+    order by oracle_id offset 2 limit 99
+  `);
+  if (body.length < 99) throw new Error("catalog too small for a 99-card fixture");
+  const owned = body.slice(0, 98);
+  const printed = body[98];
+  await fixture.execute(sql`
+    insert into collection_items (user_id, oracle_id, quantity, set_code)
+    select ${USER}, unnest(${sql.param(owned.map((r) => r.oracle_id))}::uuid[]), 1, 'probe'
   `);
   await fixture.execute(sql`
-    insert into deck_cards (deck_id, oracle_id, quantity) values (${holder.id}, ${printed.oracle_id}, 1)
+    insert into deck_cards (deck_id, oracle_id, quantity)
+    select ${holder.id}, unnest(${sql.param(body.map((r) => r.oracle_id))}::uuid[]), 1
   `);
+  // The holder already held one card, so drop it: 99 body rows exactly, which is
+  // what `deckBodySize` wants for a single-commander deck.
+  await fixture.execute(sql`
+    delete from deck_cards where deck_id = ${holder.id} and oracle_id = ${card}
+  `);
+
   const beforeMark = await tile(holder.id, true);
-  check("an unowned card is on the bill before it is printed", beforeMark?.toBuyCount, 1);
+  check("the last card unprinted, the deck is To buy", beforeMark?.statusPill, "To buy");
+  check("…and it is on the bill", beforeMark?.toBuyCount, 1);
+
   await proxy(holder.id, printed.oracle_id);
   const afterMark = await tile(holder.id, true);
+  // THE FEATURE, end to end: a 99-card deck whose one gap is printed is finished.
+  check("printing the last card completes the deck", afterMark?.statusPill, "Complete");
   check("printing it clears the bill", afterMark?.toBuyCount, 0);
   check("and the tile counts it", afterMark?.proxiedCount, 1);
 
@@ -315,9 +334,13 @@ try {
   const unstated = await tile(holder.id, false);
   check("without the option the count is absent", unstated?.proxiedCount, 0);
   check("…and to-buy falls back to ownership", unstated?.toBuyCount, 1);
+  check("…and so does the pill", unstated?.statusPill, "To buy");
+
+  //     Put the deck back to its one-card shape for the checks below.
   await unproxy(holder.id, printed.oracle_id);
+  await fixture.execute(sql`delete from deck_cards where deck_id = ${holder.id}`);
   await fixture.execute(sql`
-    delete from deck_cards where deck_id = ${holder.id} and oracle_id = ${printed.oracle_id}
+    insert into deck_cards (deck_id, oracle_id, quantity) values (${holder.id}, ${card}, 1)
   `);
   await fixture.execute(sql`
     insert into collection_items (user_id, oracle_id, quantity, set_code)

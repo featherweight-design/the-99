@@ -102,7 +102,11 @@ export default async function HomePage() {
     // The COLUMN it orders by is still read and still needed: `lastPlayedAt` is
     // one of the three timestamps `byTouched` weighs, and it is what makes a row
     // print `played`. Only the sorting of the whole list by it is dropped.
-    listDecksWithStats(userId, "name"),
+    // Proxy stats on, because this payload's rows are RENDERED here: `ResumeDecks`
+    // draws each deck's status pill, and without the figures a deck whose last
+    // slots are printed reads `To buy` on Home while `/decks` says `Complete`
+    // about the same deck.
+    listDecksWithStats(userId, "name", { includeProxyStats: true }),
   ]);
   if (stats.uniqueCards === 0 && decks.length === 0) {
     return <FirstRunChecklist />;
