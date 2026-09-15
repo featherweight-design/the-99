@@ -51,6 +51,14 @@ export function safeNext(raw: string | null | undefined): string {
   // dropped. Dismissing would land them on a different search than the one they
   // left.
   if (!raw.startsWith("/")) return "/";
+  // An authority, rejected BEFORE resolution. This guard was removed once as
+  // dead — its mutation passed — and that was wrong: the case testing it was
+  // `//evil.example`, whose path is empty, so the resolved answer was `/` and
+  // coincided with the fallback. `//evil.example/decks` resolves to `/decks`,
+  // which never leaves the origin but sends the reader to a route they did not
+  // ask for, and a crafted link decides which one. WHATWG reads a leading
+  // `/\` the same way.
+  if (raw.startsWith("//") || raw.startsWith("/\\")) return "/";
   try {
     // The RETURN is the guarantee, not a test before it: `pathname + search`
     // cannot carry a scheme or an authority, so `//evil.example` resolves and
@@ -72,8 +80,13 @@ export function safeNext(raw: string | null | undefined): string {
  */
 export function gateApplies(pathname: string): boolean {
   if (pathname === "/about") return false;
-  if (pathname.startsWith("/api/")) return false;
-  if (pathname.startsWith("/_next/")) return false;
+  // The bare roots as well as the prefixes: the proxy's matcher includes
+  // `/(api|trpc)(.*)`, which matches `/api` with no trailing slash, and a
+  // signed-in HTML GET to it would otherwise enter the gate's read and its
+  // redirect instead of being left to the handler or to a 404.
+  for (const ns of ["/api", "/trpc", "/_next"]) {
+    if (pathname === ns || pathname.startsWith(`${ns}/`)) return false;
+  }
   return true;
 }
 

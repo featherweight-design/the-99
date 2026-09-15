@@ -112,10 +112,18 @@ function MenuItems({ kind, busy, onManage, onSignOut, onClose }: MenuItemsProps)
         tabIndex={active === 0 ? 0 : -1}
         onFocus={() => setActive(0)}
         onKeyDown={onKeyDown}
-        onClick={onClose}
-        // A link cannot be `disabled`, and one that pretended to be would still
-        // navigate. `aria-disabled` states it while sign-out is unresolved.
+        // `aria-disabled` ANNOUNCES the state; it does not enforce it, and an
+        // anchor has no `disabled`. Both halves are needed or the row says it
+        // is unavailable and navigates anyway, racing the sign-out it claims
+        // to be waiting for.
         aria-disabled={busy || undefined}
+        onClick={(e) => {
+          if (busy) {
+            e.preventDefault();
+            return;
+          }
+          onClose();
+        }}
         className={rowClass(0)}
       >
         <ItemDiamond />

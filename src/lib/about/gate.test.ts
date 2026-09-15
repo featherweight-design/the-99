@@ -23,12 +23,20 @@ describe("safeNext", () => {
   });
 
   it("falls back home rather than leaving the origin", () => {
-    // The one that matters: a browser reads a protocol-relative URL as another
-    // origin, and it passes a naive "starts with a slash" test.
-    expect(safeNext("//evil.example")).toBe("/");
-    expect(safeNext("/\\evil.example")).toBe("/");
     expect(safeNext("https://evil.example/decks")).toBe("/");
     expect(safeNext("javascript:alert(1)")).toBe("/");
+  });
+
+  it("refuses an authority even when it would resolve to a real local route", () => {
+    // The case the first version of this test got wrong. `//evil.example` has
+    // an EMPTY path, so it resolved to "/" and matched the fallback by
+    // coincidence — which made the guard against it look dead when mutated.
+    // With a path attached, the resolved answer is a route the reader never
+    // asked for, chosen by whoever wrote the link.
+    expect(safeNext("//evil.example/decks")).toBe("/");
+    expect(safeNext("//evil.example/decks?a=1")).toBe("/");
+    expect(safeNext("/\\evil.example/collection")).toBe("/");
+    expect(safeNext("//evil.example")).toBe("/");
   });
 
   it("falls back home on nothing, and on a value that cannot be decoded", () => {
@@ -59,9 +67,15 @@ describe("gateApplies", () => {
     expect(gateApplies("/about")).toBe(false);
   });
 
-  it("exempts what is not a reader's page", () => {
+  it("exempts what is not a reader's page, bare roots included", () => {
     expect(gateApplies("/api/health")).toBe(false);
     expect(gateApplies("/_next/static/chunk.js")).toBe(false);
+    // The proxy's matcher includes `/(api|trpc)(.*)`, which matches these with
+    // no trailing slash; a prefix test alone lets them through to the gate.
+    expect(gateApplies("/api")).toBe(false);
+    expect(gateApplies("/trpc")).toBe(false);
+    // And a route that merely starts with those letters is still a page.
+    expect(gateApplies("/apiary")).toBe(true);
   });
 
   it("applies to the routes a reader is actually sent away from", () => {

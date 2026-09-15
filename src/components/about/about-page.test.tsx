@@ -115,3 +115,17 @@ describe("the dismiss control's accessible name", () => {
     ).toBeTruthy();
   });
 });
+
+describe("a crafted link", () => {
+  it("cannot pick a local route through an authority", async () => {
+    // `//evil.example/decks` never leaves the origin, but it resolves to
+    // /decks — a destination the reader never asked for, chosen by whoever
+    // wrote the link. The page must not print or carry it.
+    render(<AboutPage seen={0} next="//evil.example/decks" />);
+    const form = screen
+      .getByRole("button", { name: new RegExp("^" + aboutCopy.dismiss) })
+      .closest("form");
+    expect(form?.querySelector("input[name=next]")).toHaveValue("/");
+    expect(screen.getByText(aboutCopy.dismissDestinationHome)).toBeTruthy();
+  });
+});

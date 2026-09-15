@@ -285,14 +285,20 @@ describe("AccountMenu items", () => {
     expect(screen.queryByRole("menu")).toBeNull();
   });
 
-  it("says the About row is unavailable while sign-out is in flight", () => {
+  it("says the About row is unavailable while sign-out is in flight, and means it", () => {
     render(<AccountMenu panel="popover" theme="amonkhet" />);
     fireEvent.click(trigger());
     fireEvent.click(screen.getByRole("menuitem", { name: "Sign out" }));
-    expect(screen.getByRole("menuitem", { name: "About The 99" })).toHaveAttribute(
-      "aria-disabled",
-      "true",
-    );
+
+    const about = screen.getByRole("menuitem", { name: "About The 99" });
+    expect(about).toHaveAttribute("aria-disabled", "true");
+
+    // Announcing it is not enforcing it: an anchor has no `disabled`, so
+    // without the preventDefault the row navigates anyway and races the
+    // sign-out it claims to be waiting for. The menu staying open is how that
+    // shows up here — the press is refused, so nothing closes.
+    fireEvent.click(about);
+    expect(screen.queryByRole("menu")).not.toBeNull();
   });
 
   it("dismisses the menu before handing the focus trap to Clerk's modal", () => {
