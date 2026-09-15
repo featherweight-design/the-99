@@ -1077,3 +1077,25 @@ describe("the deck list remembers one order per lane", () => {
     expect(order(["Mana Crypt", "Arcane Signet"])).toEqual(["Mana Crypt", "Arcane Signet"]);
   });
 });
+
+// The cross-tab case. `useStoredView` syncs this key between tabs, so a write
+// that serialised THIS render's snapshot would carry an older value for the
+// lane it is not changing and quietly undo the other tab's choice.
+describe("writing one lane's order", () => {
+  it("merges against the latest stored value, not the rendered one", () => {
+    window.localStorage.setItem("the99:deck-sort", "all:name:asc|shopping:price:desc");
+    renderDecklist([makeCard({ oracleId: "a", name: "Arcane Signet", owned: false } as never)], {
+      filter: "shopping",
+    });
+
+    // Another tab moves the OTHER lane while this render is on screen.
+    window.localStorage.setItem("the99:deck-sort", "all:mana:desc|shopping:price:desc");
+
+    fireEvent.click(screen.getByRole("button", { name: /Sort the deck list/ }));
+    fireEvent.click(screen.getByRole("option", { name: /^Name/ }));
+
+    // This lane moved; the other tab's choice survived.
+    expect(window.localStorage.getItem("the99:deck-sort"))
+      .toBe("all:mana:desc|shopping:name:asc");
+  });
+});

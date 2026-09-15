@@ -62,9 +62,20 @@ describe("what it refuses", () => {
       .toEqual({ key: "mana", direction: "desc" });
   });
 
+  // EVERY combination, generated rather than listed: a hand-written list leaves
+  // out the ones nobody thought of, and `nextDeckSortState` can produce all of
+  // them — every key reverses, including the two the first version of this test
+  // omitted (`shopping:name:desc` and `shopping:mana:asc`).
   it("accepts every canonical value it can produce", () => {
-    for (const all of ["name:asc", "name:desc", "mana:asc", "mana:desc"]) {
-      for (const shopping of ["name:asc", "price:desc", "price:asc", "mana:desc"]) {
+    const lane = (keys: readonly string[]) =>
+      keys.flatMap((key) => ["asc", "desc"].map((d) => `${key}:${d}`));
+    const allOrders = lane(["name", "mana"]);
+    const shoppingOrders = lane(["name", "price", "mana"]);
+    expect(allOrders).toHaveLength(4);
+    expect(shoppingOrders).toHaveLength(6);
+
+    for (const all of allOrders) {
+      for (const shopping of shoppingOrders) {
         expect(isStoredDeckSort(`all:${all}|shopping:${shopping}`)).toBe(true);
       }
     }

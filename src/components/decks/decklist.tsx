@@ -26,6 +26,7 @@ import { DecklistGroupHeader } from "./decklist-group-header";
 import { DecklistRow } from "./decklist-row";
 import { HoverPreviewProvider } from "./hover-preview";
 import { useStoredView } from "../ui/use-stored-view";
+import { readRaw } from "../ui/local-store";
 import type { PendingChangeMove } from "./pending-change";
 import { UnresolvedGroup } from "./unresolved-group";
 import { SweepReceipt } from "./clear-auto";
@@ -218,8 +219,17 @@ export function Decklist({
   const [storedSort, chooseSort] = useStoredView(DECK_SORT_STORAGE_KEY, isStoredDeckSort);
   const sortMemory = parseDeckSort(storedSort);
   const sort = sortMemory[filter];
+  // MERGED AGAINST THE LATEST STORED VALUE, not against this render's snapshot.
+  // The store syncs across tabs, so a second tab holding an older snapshot would
+  // otherwise write it whole and silently restore the other lane's order —
+  // `All → Mana value` lost because this tab wrote `Shopping → Name` from a
+  // render that predated it. Only the lane being changed is this render's to
+  // decide; the other lane's value is read fresh.
   const setSort = (next: DeckSortState) =>
-    chooseSort(serialiseDeckSort({ ...sortMemory, [filter]: next }));
+    chooseSort(serialiseDeckSort({
+      ...parseDeckSort(readRaw(DECK_SORT_STORAGE_KEY)),
+      [filter]: next,
+    }));
 
   // The one comparator every group below orders its rows with. `newestAsOf` is
   // only read by the price key; the other two ignore it.
