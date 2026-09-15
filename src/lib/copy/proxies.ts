@@ -262,6 +262,9 @@ export const proxyCopy = {
   // neither blames them and neither names a table.
   error: {
     notInDeck: "That card isn't in this deck any more.",
-    refused: "Couldn't mark that just now. Try again.",
+    // DIRECTION-NEUTRAL. One string covers both presses, because the throw that
+    // produces it does not know which one it interrupted — and "couldn't mark
+    // that" over a failed UNMARK names the opposite of what the reader did.
+    refused: "That didn't save. Try again.",
   },
 } as const;

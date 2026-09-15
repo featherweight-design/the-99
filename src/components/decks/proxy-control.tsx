@@ -14,7 +14,7 @@
 // otherwise. A proxy claims nothing, so here the promise is TRUE: every deck can
 // print the same card at once, independently. Same rule, opposite answer.
 
-import { useState, useTransition } from "react";
+import { useState } from "react";
 import { setCardProxied } from "../../app/decks/actions";
 import { proxyCopy } from "../../lib/copy/proxies";
 import { MutationError } from "./mutation-error";
@@ -25,35 +25,65 @@ export function ProxyControl({
   oracleId,
   cardName,
   proxied,
+  onSaved,
 }: {
   deckId: string;
   deckName: string;
   oracleId: string;
   cardName: string;
   proxied: boolean;
+  /**
+   * Fired after a write lands. The receipt above this control reads the
+   * provider's CACHED card, so without an invalidation it keeps listing the
+   * decks as they were before the tap — and paging away and back re-serves the
+   * stale copy.
+   *
+   * A prop rather than the provider's hook, so this stays a leaf with explicit
+   * inputs: reaching for context made it unrenderable outside a provider, which
+   * is a cost paid by every test and every future caller.
+   */
+  onSaved?: () => void;
 }) {
   // Optimistic, and the tick IS the receipt — no spinner, no confirm, no undo
   // strip. Ruling 2 lands the toggle at once, and unmarking is one tap back.
   const [on, setOn] = useState(proxied);
   const [error, setError] = useState<string | null>(null);
-  const [, start] = useTransition();
+  const [announcement, setAnnouncement] = useState("");
+  const [pending, setPending] = useState(false);
 
   const toggle = () => {
+    // SERIALISED, because two quick taps are two writes whose ORDER the network
+    // does not promise: the server could finish `true` last while the reader's
+    // last press was `false`, and a refusal rollback could overwrite a newer
+    // tap. One in flight at a time makes the final state the final press.
+    if (pending) return;
     const next = !on;
     setOn(next);
     setError(null);
-    start(async () => {
+    setPending(true);
+    void (async () => {
       const result = await setCardProxied(deckId, oracleId, next).catch(() => ({
         ok: false as const,
         message: proxyCopy.error.refused,
       }));
+      setPending(false);
       if (!result.ok) {
         // The server refuses when the card left the deck between render and tap.
         // The tick reverts rather than staying in a state the deck does not hold.
         setOn(!next);
         setError(result.message);
+        return;
       }
-    });
+      // Announced ON THE TRANSITION, never from the state. Read off `on`, the
+      // live region announced a change every time an already-proxied card was
+      // opened, and said nothing at all on an unmark.
+      setAnnouncement(
+        next
+          ? proxyCopy.control.announceMarked(cardName, deckName)
+          : proxyCopy.control.announceUnmarked(cardName, deckName),
+      );
+      onSaved?.();
+    })();
   };
 
   return (
@@ -72,6 +102,7 @@ export function ProxyControl({
         onClick={toggle}
         role="switch"
         aria-checked={on}
+        aria-busy={pending}
         className="mt-[8px] flex w-full items-center gap-[12px] md:gap-[11px] min-h-[44px] bg-transparent border-0 p-0 text-left cursor-pointer"
       >
         <span
@@ -106,9 +137,7 @@ export function ProxyControl({
         {proxyCopy.control.note}
       </p>
       {error && <MutationError message={error} />}
-      <span className="sr-only" aria-live="polite">
-        {on ? proxyCopy.control.announceMarked(cardName, deckName) : ""}
-      </span>
+      <span className="sr-only" aria-live="polite">{announcement}</span>
     </div>
   );
 }

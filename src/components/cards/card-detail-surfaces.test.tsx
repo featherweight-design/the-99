@@ -46,6 +46,19 @@ describe("the sheet's proxy surfaces", () => {
     expect(screen.queryByText(proxyCopy.receipt.heading)).toBeNull();
   });
 
+  it("draws no control for a card the deck does not hold", () => {
+    // The provider also wraps Consider and search, which open cards this deck
+    // has never held. The server refuses those on the same membership test, so
+    // a control there is an affordance that can only ever fail.
+    render(
+      <CardModal
+        card={withDeck()} deckId="d1" deckName="HD Gods"
+        position={1} total={1} onClose={() => {}} onPrev={null} onNext={null}
+      />,
+    );
+    expect(screen.queryByRole("switch")).toBeNull();
+  });
+
   it("draws no control without a deck", () => {
     // Opened from `/collection` there is no deck to proxy into. Absent, not
     // disabled: there is no STATE here, because there is no deck.
@@ -61,7 +74,7 @@ describe("the sheet's proxy surfaces", () => {
   it("draws the control when the card was opened from a deck", () => {
     render(
       <CardModal
-        card={withDeck()} deckId="d1" deckName="HD Gods"
+        card={withDeck()} deckId="d1" deckName="HD Gods" deckHolds
         position={1} total={1} onClose={() => {}} onPrev={null} onNext={null}
       />,
     );

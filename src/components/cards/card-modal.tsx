@@ -301,12 +301,21 @@ export function CardModal({
   openAtPrinting = null,
   deckId = null,
   deckName = null,
+  deckHolds = false,
+  onProxyWrite,
 }: {
   card: BrowseCard;
   /** The deck this card was opened from, which scopes the proxy control. Null
    *  everywhere but the deck page — see `CardDetailProvider.deckId`. */
   deckId?: string | null;
   deckName?: string | null;
+  /** Whether that deck holds THIS card. The provider wraps surfaces that open
+   *  cards the deck does not hold — Consider, search — and the control refuses
+   *  every one of them, so it must not be drawn for them. */
+  deckHolds?: boolean;
+  /** Invalidates this card in the provider's cache after a proxy write, so the
+   *  receipt beside the control stops describing the state before the tap. */
+  onProxyWrite?: () => void;
   position: number;
   total: number;
   onClose: () => void;
@@ -1272,13 +1281,14 @@ export function CardModal({
 
             {/* Deck-scoped, and absent without a deck: opened from `/collection`
                 there is nothing for it to be about. */}
-            {deckId && (
+            {deckId && deckHolds && (
               <ProxyControl
                 deckId={deckId}
                 deckName={deckName ?? ""}
                 oracleId={card.oracleId}
                 cardName={card.name}
                 proxied={(card.proxiedBy ?? []).some((d) => d.id === deckId)}
+                onSaved={onProxyWrite}
               />
             )}
 

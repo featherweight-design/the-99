@@ -248,6 +248,19 @@ export function BuilderShell({
   // quantity-4 row is one printed card (ruling 5).
   // One derivation, shared with its test — see `proxiedCardCount`.
   const proxiedCount = proxiedCardCount(cards, deck.commander, deck.partner);
+  // What this deck HOLDS, which is what the sheet's proxy control is scoped to.
+  // Both commanders count, as they do in the server's own membership test — and
+  // the OPTIMISTIC list, so a card just added can be printed without a reload.
+  // Named apart from `deckOracleIds` below, which is the committed array the
+  // Add panel reads.
+  const proxyEligibleIds = useMemo(
+    () => new Set([
+      ...cards.map((c) => c.oracleId),
+      deck.commander.oracleId,
+      ...(deck.partner ? [deck.partner.oracleId] : []),
+    ]),
+    [cards, deck.commander.oracleId, deck.partner],
+  );
   const { built } = counts;
 
   // The ceiling this page measures against, derived once. A pair's commanders
@@ -681,7 +694,11 @@ export function BuilderShell({
     // Every card opened from this page belongs to THIS deck, which is what
     // scopes the sheet's proxy control. A card opened from `/collection` has no
     // deck and draws no control — that provider passes none.
-    <CardDetailProvider deckId={deck.id} deckName={deck.name}>
+    <CardDetailProvider
+      deckId={deck.id}
+      deckName={deck.name}
+      deckOracleIds={proxyEligibleIds}
+    >
       <AddOptimisticCardProvider value={deckEdits}>
         <PassMarkProvider value={passMark}>
         {/* One column at both widths now that the rail is gone. The document is

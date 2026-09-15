@@ -7,6 +7,7 @@ vi.mock("../../app/decks/actions", () => ({ setCardProxied: (...a: unknown[]) =>
 import { ProxyControl } from "./proxy-control";
 import { proxyCopy } from "../../lib/copy/proxies";
 
+const onSaved = vi.fn();
 const mount = (proxied = false) =>
   render(
     <ProxyControl
@@ -15,12 +16,14 @@ const mount = (proxied = false) =>
       oracleId="o1"
       cardName="The Ozolith"
       proxied={proxied}
+      onSaved={onSaved}
     />,
   );
 
 describe("the proxy control", () => {
   beforeEach(() => {
     setCardProxied.mockReset();
+    onSaved.mockReset();
     setCardProxied.mockResolvedValue({ ok: true });
   });
 
@@ -68,5 +71,44 @@ describe("the proxy control", () => {
     mount();
     await act(async () => { fireEvent.click(screen.getByRole("switch")); });
     expect(screen.getByRole("switch").getAttribute("aria-checked")).toBe("false");
+  });
+
+  it("invalidates the cached card so the receipt stops being stale", async () => {
+    mount();
+    await act(async () => { fireEvent.click(screen.getByRole("switch")); });
+    expect(onSaved).toHaveBeenCalled();
+  });
+
+  it("does not invalidate when the write was refused", async () => {
+    setCardProxied.mockResolvedValue({ ok: false, message: "nope" });
+    mount();
+    await act(async () => { fireEvent.click(screen.getByRole("switch")); });
+    expect(onSaved).not.toHaveBeenCalled();
+  });
+
+  it("ignores a second tap while the first is in flight", async () => {
+    // Two writes whose ORDER the network does not promise: the server could
+    // finish `true` last while the reader's last press was `false`.
+    let release: (v: unknown) => void = () => {};
+    setCardProxied.mockImplementation(() => new Promise((r) => { release = r; }));
+    mount();
+    await act(async () => { fireEvent.click(screen.getByRole("switch")); });
+    await act(async () => { fireEvent.click(screen.getByRole("switch")); });
+    expect(setCardProxied).toHaveBeenCalledTimes(1);
+    await act(async () => { release({ ok: true }); });
+  });
+
+  it("announces the unmark, not only the mark", async () => {
+    // Read off state rather than the transition, the live region announced a
+    // change every time an already-proxied card was opened, and said nothing at
+    // all on an unmark.
+    mount(true);
+    await act(async () => { fireEvent.click(screen.getByRole("switch")); });
+    expect(screen.getByText(proxyCopy.control.announceUnmarked("The Ozolith", "HD Gods"))).toBeTruthy();
+  });
+
+  it("announces nothing merely for opening a proxied card", () => {
+    mount(true);
+    expect(screen.queryByText(proxyCopy.control.announceMarked("The Ozolith", "HD Gods"))).toBeNull();
   });
 });
