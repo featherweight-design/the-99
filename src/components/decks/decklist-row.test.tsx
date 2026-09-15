@@ -950,3 +950,25 @@ describe("the receipt's action and announcement name the same card", () => {
     ).toBeInTheDocument();
   });
 });
+
+// The multi-copy branch, which the first sweep missed: a stack's remove control
+// is a different string from a single copy's and named the oracle card while
+// the row beside it showed the printed one.
+describe("a stack's remove control names the printed card too", () => {
+  it("names the printed card in removeCopyAria", () => {
+    renderRow(
+      <DecklistRow
+        deckId="d1"
+        card={{
+          ...card,
+          quantity: 4,
+          name: "Wolfbitten Captive",
+          printedName: "Alpha Strike",
+        } as DeckDetailCard}
+      />,
+    );
+    expect(
+      screen.getByRole("button", { name: addPanelCopy.row.removeCopyAria("Alpha Strike", 4) }),
+    ).toBeInTheDocument();
+  });
+});

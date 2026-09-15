@@ -271,7 +271,7 @@ export function DecklistRow({
           // Only when this was the last copy, because only then has the
           // prediction unmounted the row and left `run`'s message with nothing
           // to draw on. A decremented stack still has its own line to say it.
-          if (shellReportsFailure) reportRemoveFailure(card.name);
+          if (shellReportsFailure) reportRemoveFailure(displayName);
           throw cause;
         }
       },
@@ -574,7 +574,7 @@ export function DecklistRow({
             md:group-hover:text-[color:var(--fg-body)] cursor-pointer disabled:opacity-50 disabled:cursor-default"
           aria-label={
             card.quantity > 1
-              ? addPanelCopy.row.removeCopyAria(card.name, card.quantity)
+              ? addPanelCopy.row.removeCopyAria(displayName, card.quantity)
               : addPanelCopy.row.removeAria(displayName)
           }
         >

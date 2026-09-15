@@ -455,7 +455,9 @@ export function BuilderShell({
       if (card.quantity > 1) return;
       setAnnouncement(
         addPanelCopy.undo.announceRemoved(
-          card.name,
+          // The pair of `announceUndone` below, and named the same way: the row
+          // that left and the receipt that brings it back are one card.
+          printedFaceName(card),
           deckCounts(cards).built - 1,
           bodySize,
         ),
