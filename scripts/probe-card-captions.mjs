@@ -362,149 +362,64 @@ async function run() {
       // `finally` — a deck with a committed version is what makes a draft
       // possible at all, since a brew has nothing to diff against.
       if (staged === null) {
-        // A draft is a DIFF, so staging one needs a committed version to diff
-        // against — and the account this probe signs in as owns none. So it
-        // commits one itself, out of the deck's own current rows, which makes
-        // the version identical to the draft and the deck momentarily clean.
-        // Adding one card after that is then the only change there is, and `+1`
-        // is a figure whose true value is known rather than read back.
+        // THE PROBE'S OWN DECK, not the reader's.
         //
-        // The deck comes from the run's own discovery (`/decks` as the signed-in
-        // account). Picking one straight out of the database is how the first
-        // version of this block ended up navigating to ANOTHER USER'S deck and
-        // reading its not-found page as "no edges drawn".
-        const deckId = deck.replace(/^\/decks\//, "");
-        // OWNERSHIP IS PROVEN BEFORE ANYTHING IS WRITTEN. These are direct
-        // inserts with no Clerk authorization in front of them, so a typo in
-        // `PROBE_DECK` — or someone else's UUID — would otherwise stage a
-        // version and a card into a stranger's deck, on a route the browser
-        // cannot even read. The run's own `/decks` listing is the proof: a deck
-        // that appears there belongs to the account that signed in.
-        // Read on `/decks` ITSELF. The page is on a card route by now, where
-        // there are no deck links at all — scraping it there reported every deck
-        // as somebody else's, including the one the run had just discovered.
-        await page.goto(`${BASE}/decks`, { waitUntil: "networkidle" });
-        await page.waitForTimeout(1_500);
-        const ownedHere = await page.evaluate(() =>
-          [...document.querySelectorAll('a[href^="/decks/"]')]
-            .map((a) => a.getAttribute("href")?.replace(/^\/decks\//, "") ?? "")
-            .filter(Boolean),
-        );
-        if (!ownedHere.includes(deckId)) {
+        // This staged into a deck the account already owned, and two review
+        // rounds found the two halves of why that cannot be made safe: without
+        // a receipt the teardown deletes a concurrent writer's identical row,
+        // and with one a lost reply strands this run's. Both hazards exist only
+        // because the row sat in somebody's real deck among rows the probe did
+        // not put there. They are not a guard to be tuned; they are the wrong
+        // fixture.
+        //
+        // A deck created here holds nothing but what this run wrote, so the
+        // teardown deletes THE DECK and every hazard goes with it — versions,
+        // version cards and deck cards all cascade. This is what
+        // `probe:versions` and `probe:review` already do.
+        const owner = await page.evaluate(() => window.Clerk.user.id);
+        const [lead] = await sql`
+          select oracle_id from cards where commander_legal
+           and color_identity = '{}' limit 1`;
+        const body = await sql`
+          select oracle_id from cards
+           where commander_legal and image_uri is not null
+             and oracle_id is distinct from ${lead?.oracle_id ?? null}
+           limit 12`;
+        if (!lead || body.length < 2) {
           checks += 1;
           failures += !report(
-            `${width}px · draft · the deck is this account's`,
+            `${width}px · draft · a catalog to build a fixture from`,
             false,
-            `${deckId} is not in this account's deck list — refusing to write to it`,
-          );
-        }
-        const [lead] = ownedHere.includes(deckId)
-          ? await sql`
-          select commander_oracle_id, partner_oracle_id from decks where id = ${deckId}`
-          : [];
-        // NOT the commander, and not the partner. The app rejects either as
-        // `is-commander` (`lib/decks/add-validation.ts`), so a fixture that
-        // staged one would be testing a row the app cannot produce — and on a
-        // pair deck the obvious `not in (deck_cards)` filter selects exactly
-        // that, because a commander is not a `deck_cards` row.
-        // A card the APP COULD HAVE ADDED. Commander-legal, and inside the
-        // deck's colour identity, because a probe that stages a row no route can
-        // produce is describing a state the app never reaches. Not the deck's own
-        // commander or partner either: the app rejects both as `is-commander`,
-        // and on a pair deck the obvious `not in (deck_cards)` filter selects
-        // exactly them, since a commander is not a `deck_cards` row.
-        const [spare] = lead
-          ? await sql`
-          select c.oracle_id from cards c
-           where c.oracle_id not in (
-                 select dc.oracle_id from deck_cards dc where dc.deck_id = ${deckId})
-             and c.oracle_id is distinct from ${lead.commander_oracle_id ?? null}
-             and c.oracle_id is distinct from ${lead.partner_oracle_id ?? null}
-             and c.commander_legal
-             and c.color_identity <@ (
-                   select coalesce(lc.color_identity, '{}') || coalesce(pc.color_identity, '{}')
-                     from cards lc
-                     left join cards pc on pc.oracle_id = ${lead.partner_oracle_id ?? null}
-                    where lc.oracle_id = ${lead.commander_oracle_id})
-           limit 1`
-          : [];
-        if (!lead?.commander_oracle_id || !spare) {
-          checks += 1;
-          failures += !report(
-            `${width}px · draft · a deck to stage one in`,
-            false,
-            "the discovered deck has no commander, or the catalog no spare card",
+            "no commander-legal cards with art",
           );
         } else {
-          const [{ next }] = await sql`
-            select coalesce(max(number), 0) + 1 as next from deck_versions where deck_id = ${deckId}`;
-          // EVERY handle is recorded before the write it covers, so a throw
-          // part-way through cannot strand a version or a row in this player's
-          // deck. The same rule `probe:review` follows around the collection.
+          // The handle is recorded BEFORE the insert it covers, so a throw
+          // part-way through cannot leave a deck nobody knows to delete.
+          const deckId = crypto.randomUUID();
           const versionId = crypto.randomUUID();
-          staged = { deckId, oracleId: spare.oracle_id, versionId, landed: false };
-          // BOTH commander columns. The partner is nullable, and a snapshot that
-          // dropped it would make this temporary version — which is the newest,
-          // and therefore the one every reader consults — say a pair deck has no
-          // partner. The probe would then be reading a deck in a state the app
-          // never produces.
-          //
-          // The `*_since` tenures are the VERSION's own and have no counterpart
-          // on `decks`, so they are left to their defaults rather than copied
-          // from a column that does not exist.
-          // The tenures come with the commanders. `commander_since` and
-          // `partner_since` are what the availability query reads as a claim's
-          // SENIORITY, and `commitVersion` populates both for every non-null
-          // commander — so a snapshot that left the partner's null would change
-          // which deck goes short while this probe is running.
+          staged = { deckId, versionId };
           await sql`
-            insert into deck_versions (
-              id, deck_id, number,
-              commander_oracle_id, partner_oracle_id, commander_since, partner_since)
-            values (
-              ${versionId}, ${deckId}, ${next},
-              ${lead.commander_oracle_id}, ${lead.partner_oracle_id ?? null},
-              now(), ${lead.partner_oracle_id ? sql`now()` : null})`;
-          // `since` is INHERITED from the predecessor, exactly as the real commit
-          // path does it (`lib/decks/versions.ts`): an unchanged card keeps the
-          // tenure it already had, and only a card the predecessor did not hold
-          // starts its clock now. It is a claim's seniority, so defaulting every
-          // row to `now()` would reorder who goes short for cards this probe
-          // never touched, for as long as it runs.
+            insert into decks (id, user_id, name, commander_oracle_id)
+            values (${deckId}, ${owner}, ${`probe card captions ${Date.now()}`},
+                    ${lead.oracle_id})`;
+          // Every card but the last goes into the version AND the draft, so the
+          // deck is clean; the last one is added to the draft alone, which is
+          // the single pending add the tile is read for.
+          const held = body.slice(0, -1);
+          const add = body[body.length - 1];
+          for (const c of held) {
+            await sql`insert into deck_cards (deck_id, oracle_id, quantity, auto)
+                      values (${deckId}, ${c.oracle_id}, 1, false)`;
+          }
+          await sql`
+            insert into deck_versions (id, deck_id, number, commander_oracle_id)
+            values (${versionId}, ${deckId}, 1, ${lead.oracle_id})`;
           await sql`
             insert into deck_version_cards (version_id, oracle_id, quantity, since)
-            select ${versionId}, dc.oracle_id, dc.quantity,
-                   coalesce(prev.since, now())
-              from deck_cards dc
-              left join deck_version_cards prev
-                on prev.oracle_id = dc.oracle_id
-               and prev.version_id = (
-                     select v.id from deck_versions v
-                      where v.deck_id = ${deckId} and v.id <> ${versionId}
-                      order by v.number desc limit 1)
-             where dc.deck_id = ${deckId}`;
-          // No receipt is kept, deliberately — see the cleanup's own note. The
-          // row is identified at teardown by the quantity it was inserted with,
-          // which survives a lost reply where a receipt does not.
-          // A RECEIPT AFTER ALL, and this reverses the reasoning that removed
-          // one on #656. That argument was that a receipt cannot tell "the write
-          // never happened" from "the write committed and the reply was lost",
-          // and strands a row in the second case. True — and it weighed the
-          // wrong pair of failures.
-          //
-          // Without a receipt the teardown deletes by deck and card alone. If
-          // another writer inserts this same card between the selection and the
-          // staging, `on conflict do nothing` leaves THEIR row and the teardown
-          // removes it — and a quantity guard does not help, because their row
-          // is quantity 1 too. That is a probe destroying somebody else's data.
-          // A stranded row is a stray card in a dev deck: visible, recoverable,
-          // and nobody's loss. Deletion is neither.
-          const inserted = await sql`
-            insert into deck_cards (deck_id, oracle_id, quantity, auto)
-            values (${deckId}, ${spare.oracle_id}, 1, false)
-            on conflict do nothing
-            returning oracle_id`;
-          staged.landed = inserted.length === 1;
+            select ${versionId}, dc.oracle_id, dc.quantity, now()
+              from deck_cards dc where dc.deck_id = ${deckId}`;
+          await sql`insert into deck_cards (deck_id, oracle_id, quantity, auto)
+                    values (${deckId}, ${add.oracle_id}, 1, false)`;
         }
       }
       if (staged) {
@@ -535,36 +450,11 @@ async function run() {
     }
   } finally {
     if (staged) {
-      const clean = neon(DATABASE_URL);
-      // ONE TRANSACTION, because this writes into a real player's deck. Two
-      // separate requests can fail between them: the card deleted and the
-      // version left standing, or the version gone while the card it was staged
-      // with remains, a row no version knows about. Either leaves the deck
-      // mutated by a script that reported it had cleaned up.
-      //
-      // The card's delete is skipped entirely unless THIS RUN's insert returned
-      // a row — see the staging note. The quantity guard rides along for the
-      // other direction: a concurrent edit that bumped the count leaves a row
-      // this run should no longer claim.
-      //
-      // Order carries no meaning inside the transaction: nobody observes an
-      // intermediate state, and the version's cards go by cascade whichever
-      // statement runs first. It mattered when these were separate requests.
-      await clean.transaction([
-        ...(staged.landed
-          ? [clean`
-              delete from deck_cards
-               where deck_id = ${staged.deckId}
-                 and oracle_id = ${staged.oracleId}
-                 and quantity = 1`]
-          : []),
-        clean`delete from deck_versions where id = ${staged.versionId}`,
-      ]);
-      console.log(
-        staged.landed
-          ? "  ..   removed the staged version and its one added card"
-          : "  ..   removed the staged version; the card row was not this run's to delete",
-      );
+      // ONE DELETE, of a deck this run created. Versions, version cards and
+      // deck cards all cascade, so there is no ordering to get right and no
+      // row belonging to anyone else within reach.
+      await neon(DATABASE_URL)`delete from decks where id = ${staged.deckId}`;
+      console.log("  ..   removed the fixture deck");
     }
     await browser.close();
   }
