@@ -1,346 +1,526 @@
-// about · copy strings — design handoff R1, input to /copy-review in PR 1.
+// src/lib/copy/about.ts — the /about reference page.
 //
-// Shape follows the spec's content model exactly: ABOUT_VERSION, Entry, Chapter,
-// chapters. What the handoff adds is `aboutCopy` for the page's own chrome —
-// the spec's model covers the entries and says nothing about the h1, the lede,
-// the eyebrow, the contents heading or the dismiss, and all five are strings.
+// Regenerated for R3 against the R3 canvas. This file previously held R1's 26
+// entries under titles the canvas no longer used, with neither `caption` nor
+// `keys`; the audit flagged that as the one finding that blocked build rather
+// than degrading it. It now matches the canvas entry for entry, in order.
 //
-// Voice rules applied, from lib/copy/refresh.ts:
-//   - never explain that a state is fine;
-//   - a count is the honest form of a reassuring sentence;
-//   - name the thing on screen, never a noun the reader cannot see.
-// Assumes the reader knows how Magic works. Explains nothing about the game.
+// Voice: Kitchen Table. An entry explains a thing the app already does, to a
+// player who has met it and wants to know what it meant.
 //
-// EVERY `since` below is 1. At launch the whole page is version 1 and `seen`
-// is 0 for every account, so nothing is marked — the spec's rule, and the
-// reason the file needs no marked example to be correct.
+// RULES, enforced in review:
+//   1. `caption` and `keys` are THIS page's prose and may be written here.
+//   2. Every string drawn INSIDE a specimen comes from that surface's own copy
+//      file at render time — never retyped into this file. A rename in
+//      refresh.ts or lanes.ts must reach the figure without touching about.ts.
+//   3. `keys` is 0–4 entries. Zero is a finished answer, not a gap.
+//   4. A figure may only draw what the app draws. Explanatory sentences the
+//      product does not ship live in `keys`, never in the specimen.
+//   5. `since` is the ABOUT_VERSION in which the entry first appeared.
+//
+// ABOUT_VERSION is bumped when an entry is added or its caption materially
+// changes. about.test.ts pins a content hash, so a change forces either a
+// deliberate bump or a deliberate re-pin.
 
 export const ABOUT_VERSION = 1;
 
-type Entry = {
+export type AboutChapter = '01' | '02' | '03' | '04';
+export type AboutWidth = 'inset' | 'plate';
+
+export interface AboutEntry {
+  id: string;
+  chapter: AboutChapter;
   title: string;
-  body: string;
   route: string;
-  /** Rendered as a mono --fg-faint clause after the route. Omitted, never "". */
+  /** Appended after the route when the link does not land on the page itself. */
   opens?: string;
+  width: AboutWidth;
+  caption: string;
+  /** 0–4 lines, in numeral order. Read in sequence by a screen reader. */
+  keys: string[];
   since: number;
-};
+}
 
-type Chapter = { title: string; blurb: string; entries: Entry[] };
-
-/** The page's own chrome. Not in the spec's model; all five are strings. */
 export const aboutCopy = {
-  heading: "What The 99 does",
-  lede:
-    "Everything here is scored against the cards you actually own — decks, commanders, set " +
-    "completion and the buy list all read from your collection. Four chapters, in the order you " +
-    "would use them, and every entry links to where it lives.",
-  // Phone drops the clause after the em dash; same sentence, one string shorter.
-  ledeShort:
-    "Everything here is scored against the cards you actually own. Four chapters, in the order " +
-    "you would use them, and every entry links to where it lives.",
-  contents: "Contents",
-  // The eyebrow exists ONLY when the reader is behind. It is the reason they
-  // are looking at this page instead of the one they asked for, so it is a
-  // count and not an apology. Pluralised because 1 is the common case.
-  newSince: (n: number) => `${n} new since you were last here`,
-  // On a chapter heading and on the phone contents row.
-  chapterNew: (n: number) => `${n} new`,
-  // Inside the plate, sr-only. The plate's visible word is "NEW".
-  markLabel: "New in this version",
-  mark: "NEW",
-  dismiss: "Got it",
-  // Two strings, not one with a fallback: "home" is a place, not a path, and
-  // the app calls it that everywhere else.
-  dismissDestination: (path: string) => `takes you to ${path}`,
-  dismissHome: "takes you home",
+  pageTitle: 'What The 99 does',
+  pageIntro:
+    'Everything here is scored against the cards you actually own. Four chapters, in the order you would use them — each entry shows the thing it is describing and links to where it lives.',
+
+  contentsLabel: 'Contents',
+  newBadge: 'NEW',
+  newBadgeSr: 'New in this version',
+  newSinceEyebrow: (n: number) =>
+    n === 1 ? '1 new since you were last here' : `${n} new since you were last here`,
+  newInChapter: (n: number) => `${n} new`,
+
+  dismiss: 'Got it',
+  dismissDestination: (route: string) => `takes you to ${route}`,
+  dismissDestinationHome: 'takes you home',
+
+  chapters: {
+    '01': {
+      title: 'Your collection',
+      sub: 'Everything downstream is scored against what you own, so this is where the app starts.',
+    },
+    '02': {
+      title: 'Finding a commander',
+      sub: 'Two lanes: what your collection already supports, and what it would support if you bought one card.',
+    },
+    '03': {
+      title: 'Building the 99',
+      sub: 'The longest chapter, in the order a deck actually gets built.',
+    },
+    '04': {
+      title: 'Playing and tuning',
+      sub: 'Home is the end of the loop rather than the start of it, so it is described here.',
+    },
+  },
 } as const;
 
-export const chapters: Chapter[] = [
+export const aboutEntries: readonly AboutEntry[] = [
+  // ---- 01 · Your collection ------------------------------------------------
   {
-    title: "Your collection",
-    blurb:
-      "Everything downstream is scored against what you own, so this is where the app starts.",
-    entries: [
-      {
-        title: "Import a collection",
-        route: "/collection/replace",
-        body:
-          "A CSV export from Moxfield, Archidekt, Deckbox or ManaBox, or a list pasted straight " +
-          "in. An import replaces what is there rather than adding to it, and you see a preview " +
-          "before anything is written.",
-        since: 1,
-      },
-      {
-        title: "Rows the import could not place",
-        route: "/collection/replace",
-        opens: "opens the issue inspector",
-        body:
-          "Anything that could not be matched to a printing is listed with the reason, in an " +
-          "inspector on the import screen. A pasted list carries no set or collector number, " +
-          "which is why a pasted collection cannot drive set completion.",
-        since: 1,
-      },
-      {
-        title: "Browse what you own",
-        route: "/collection",
-        body:
-          "Every card in your collection, searchable and filterable, with how many copies you " +
-          "have and how many of them are committed to a deck.",
-        since: 1,
-      },
-      {
-        title: "Set completion",
-        route: "/collection/sets",
-        body:
-          "How close each set is to complete, and what is missing from the ones you are closest " +
-          "on. It reads set and collector numbers, so it needs a CSV rather than a pasted list.",
-        since: 1,
-      },
-      {
-        title: "What a card costs to buy",
-        route: "/collection",
-        opens: "opens the card detail",
-        body:
-          "Prices come from ManaPool and refresh weekly. A card with no price was never stocked " +
-          "there, which is not the same as free.",
-        since: 1,
-      },
-      {
-        title: "The card itself — printings, art, both faces",
-        route: "/collection",
-        opens: "opens the card detail",
-        body:
-          "Every printing of a card, its art at full size, and the back of a double-faced card. " +
-          "It opens from a card anywhere in the app, not only here.",
-        since: 1,
-      },
+    id: 'browse',
+    chapter: '01',
+    title: 'Browse what you own',
+    route: '/collection',
+    width: 'plate',
+    caption:
+      'Search by name, narrow by colour, type, set or availability, and read the result as a grid or as rows. Every narrowing is a chip you can see and remove, and the count above the results always says how much of the collection you are looking at.',
+    keys: [
+      'a chip per narrowing, each removable on its own, and one link that clears the lot. Nothing filters invisibly.',
+      'By set is a grouping, not a filter — it reorders what is shown and never changes how much is shown.',
+      'grid or rows is a reading choice. Both it and your filters are still here when you come back.',
     ],
+    since: 1,
   },
   {
-    title: "Finding a commander",
-    blurb:
-      "Two lanes: what your collection already supports, and what it would support if you " +
-      "bought one card.",
-    entries: [
-      {
-        title: "Commanders you can build today",
-        route: "/commanders",
-        body:
-          "Ranked by how much of a deck you already own for them. Filter by colour identity and " +
-          "reorder as you like.",
-        since: 1,
-      },
-      {
-        title: "Commanders worth acquiring",
-        route: "/discover",
-        body:
-          "The same ranking run over commanders you do not own — the one card that would unlock " +
-          "the most of what is already on your shelf.",
-        since: 1,
-      },
-      {
-        title: "Why this commander",
-        route: "/commanders",
-        opens: "opens a commander",
-        body:
-          "The reasoning behind a ranking: which themes in your collection it is using, and how " +
-          "much of each it reaches.",
-        since: 1,
-      },
-      {
-        title: "What the deck would be made of",
-        route: "/commanders",
-        opens: "opens a commander",
-        body:
-          "The cards you already own that would go in, grouped by the job they do, before you " +
-          "commit to building anything.",
-        since: 1,
-      },
-      {
-        title: "Partners",
-        route: "/commanders",
-        opens: "opens a commander",
-        body:
-          "Commanders that pair, and what the pair's wider colour identity opens up in your " +
-          "collection.",
-        since: 1,
-      },
-    ],
+    id: 'import',
+    chapter: '01',
+    title: 'Import a collection',
+    route: '/collection/replace',
+    width: 'inset',
+    caption:
+      'A CSV export from Moxfield, Archidekt, Deckbox or ManaBox, or a list pasted straight in. We read owned counts, sets and finishes. An import replaces what is there rather than adding to it, and you see a preview before anything is written.',
+    keys: [],
+    since: 1,
   },
   {
-    title: "Building the 99",
-    blurb: "The longest chapter, in the order a deck actually gets built.",
-    entries: [
-      {
-        title: "Start a deck",
-        route: "/decks/new",
-        body: "Name it, pick a commander, and the 99 fills from there.",
-        since: 1,
-      },
-      {
-        title: "Import a decklist you already have",
-        route: "/decks/import",
-        body:
-          "Paste a list or bring a file. Cards you own are matched to your own copies; the rest " +
-          "arrive as a buy list rather than as a problem.",
-        since: 1,
-      },
-      {
-        title: "The deck page",
-        route: "/decks",
-        opens: "opens a deck",
-        body:
-          "One deck in one place: the list by role, what it still needs, its games and its " +
-          "versions.",
-        since: 1,
-      },
-      {
-        title: "Adding cards",
-        route: "/decks",
-        opens: "opens a deck's Add panel",
-        body:
-          "Search your collection or all of Magic, with the cards you own marked, and add " +
-          "without leaving the list you are looking at.",
-        since: 1,
-      },
-      {
-        title: "Topping off the last slots",
-        route: "/decks",
-        opens: "opens a deck",
-        body:
-          "When a deck is nearly there, this fills the remaining slots from what you own instead " +
-          "of making you search for them one at a time.",
-        since: 1,
-      },
-      {
-        // The entry most likely to be misread, so it gets three sentences and
-        // the only "cannot" on the page. "The deck that sleeved it first",
-        // never "the oldest deck": the ordering is per-card, so a newer deck
-        // can outrank an older one on a card it committed earlier.
-        title: "Who holds this card",
-        route: "/decks",
-        opens: "opens a deck",
-        body:
-          "A card you own one copy of cannot be in two committed decks at once. The deck that " +
-          "sleeved it first holds it, and the other deck is told which one that is. A card " +
-          "staged into a draft counts against the supply from the moment you add it.",
-        since: 1,
-      },
-      {
-        title: "What you would need to buy",
-        route: "/decks",
-        opens: "opens the shopping roll-up",
-        body:
-          "Every card your decks want and you do not own, priced and grouped, across the whole " +
-          "library rather than one deck at a time.",
-        since: 1,
-      },
-      {
-        title: "Shelves",
-        route: "/decks",
-        body:
-          "Folders for decks. A deck sits on one shelf or on none, and choosing a shelf narrows " +
-          "the library rather than filtering it.",
-        since: 1,
-      },
-      {
-        // Two entries, not one, because they are two surfaces: the rail is in
-        // the deck's Versions tab and the review screen is its own route that
-        // redirects away when there is nothing to review. Neither is linkable
-        // in the abstract, so both point at /decks.
-        title: "Versions",
-        route: "/decks",
-        opens: "opens a deck's Versions tab",
-        body:
-          "A deck has a committed list and a draft you are working on. Committing the draft cuts " +
-          "a version, and you can read any earlier one.",
-        since: 1,
-      },
-      {
-        title: "Reviewing a draft before you commit it",
-        route: "/decks",
-        opens: "opens a deck's pending banner",
-        body:
-          "Every add and cut in the draft, beside the committed list, before any of it counts " +
-          "against your collection.",
-        since: 1,
-      },
-      {
-        title: "Export a decklist",
-        route: "/decks",
-        opens: "opens a deck",
-        body: "The list as plain text, in the format the other deck sites read.",
-        since: 1,
-      },
-    ],
+    id: 'import-issues',
+    chapter: '01',
+    title: 'Rows the import could not place',
+    route: '/collection/replace',
+    opens: 'opens the issue inspector',
+    width: 'inset',
+    caption:
+      'Every line we could not put a card to, with the reason beside it. They are not errors and not a buy list — a misspelling and a printing we do not stock read differently and are labelled differently. A pasted list carries no set or collector number, which is why a pasted collection cannot drive set completion.',
+    keys: [],
+    since: 1,
   },
   {
-    title: "Playing and tuning",
-    blurb: "Home is the end of the loop rather than the start of it, so it is described here.",
-    entries: [
-      {
-        title: "Log a game",
-        route: "/decks",
-        opens: "opens a deck's Games tab",
-        body:
-          "Who played, who won, and how long it ran. A few seconds after the game, on the deck " +
-          "you played.",
-        since: 1,
-      },
-      {
-        title: "What the log tells you",
-        route: "/decks",
-        opens: "opens a deck's Games tab",
-        body:
-          "How a deck has done, against whom, and how it has done since the version you are on.",
-        since: 1,
-      },
-      {
-        title: "Picking up where you left off",
-        route: "/",
-        body: "Home leads with the deck you touched last and what it is waiting on.",
-        since: 1,
-      },
-      {
-        title: "Where your collection is committed",
-        route: "/",
-        body:
-          "How much of what you own is in a deck, how much is free, and which decks are asking " +
-          "for more than you have.",
-        since: 1,
-      },
+    id: 'availability',
+    chapter: '01',
+    title: 'Free, in a brew, committed, over-committed',
+    route: '/collection?avail=inuse,over',
+    width: 'plate',
+    caption:
+      'One copy cannot be in two committed decks at once. Instead of a status word, a card carries a diamond that says how contested it is — and a card that is free carries nothing at all.',
+    keys: [
+      'free — you own it and nothing has claimed it. No diamond at all, which is the commonest state in the app.',
+      'in a brew — a deck you have never committed wants it. The claim is real but not binding, and it is the state a reader is least likely to guess.',
+      'none free — a committed deck holds every copy. The deck that sleeved it first keeps it.',
+      'short 2 — more decks want it than you own. The last row is different again: a card you never owned at all.',
     ],
+    since: 1,
   },
-];
+  {
+    id: 'sets',
+    chapter: '01',
+    title: 'Set completion — what you are missing',
+    route: '/collection/sets',
+    width: 'plate',
+    caption:
+      'Every card in a set in collector order, with the ones you do not own dashed and dimmed rather than hidden. The base run is counted apart from the extras, so a set reads as complete when you have the set, not when you have every alternate printing of it.',
+    keys: [
+      'missing — dashed edge, dimmed art, and a price an owned cell never carries. Absent, not disabled: it still opens.',
+      'the cost covers the cards ManaPool actually stocks. One that has never been stocked is named and left out rather than priced at zero.',
+      'Base run is the set; extras are counted apart and sit below. That is why 162 of 208 and 321 cells are both true.',
+    ],
+    since: 1,
+  },
+  {
+    id: 'buy-tag',
+    chapter: '01',
+    title: 'What a card costs to buy',
+    route: '/collection',
+    opens: 'opens the card detail',
+    width: 'inset',
+    caption:
+      'Prices come from ManaPool and refresh weekly. The tag has four states and they are different claims: a figure, a foil-only figure, sold out — stocked but unavailable today — and no figure at all, which means the feed has never carried that printing. None of those is free.',
+    keys: [],
+    since: 1,
+  },
+  {
+    id: 'card-detail',
+    chapter: '01',
+    title: 'The card itself — printings, art, both faces',
+    route: '/collection',
+    opens: 'opens the card detail',
+    width: 'inset',
+    caption:
+      'Every printing of a card, its art at full size, and the back of a double-faced card. The filled diamond is the printing you own — the same shape, hollow, is one you do not. It opens from a card anywhere in the app, not only here.',
+    keys: [],
+    since: 1,
+  },
 
-// ─── Reuse, not re-authored ──────────────────────────────────────────────────
-//
-// shellCopy.accountMenu gains ONE string. Nothing else in that object changes.
-//
-//   about: "About The 99"
-//
-// Rejected: "How this works" (warmer, but the row would name the page
-// differently from the /about URL it shows on hover) and "What's new" (promises
-// the changelog ruling 2 and the spec's out-of-scope list both refuse).
-//
-// ─── Not documented, deliberately ───────────────────────────────────────────
-//
-// Deck tuning suggestions renders nothing, so it gets no entry. Shelves is
-// ABOVE at since: 1 on the assumption its PR merges before about.ts is
-// written; if it has not, the entry comes out and arrives later at since: 2.
-//
-// Two features in design right now are deliberately ABSENT, and the handoff
-// draws them as the version-2 arrivals so the mechanism has a real example:
-//
-//   { title: "Which deck gets a shared copy", route: "/decks", since: 2,
-//     body: "When more decks want a card than you own copies of, the deck " +
-//           "that committed it first gets it — unless you say otherwise." }
-//   { title: "Cards you are proxying", route: "/decks", opens: "opens a deck",
-//     since: 2,
-//     body: "Mark a card in a deck as one you are printing. It stops being " +
-//           "something to buy, it does not become something you own, and " +
-//           "the deck's list says which rows they are." }
-//
-// Nothing in the backlog gets a paragraph ahead of its merge; that rule is
-// what makes `since` mean anything.
+  // ---- 02 · Finding a commander -------------------------------------------
+  {
+    id: 'ready-to-build',
+    chapter: '02',
+    title: 'Ready to build, on Home',
+    route: '/',
+    width: 'plate',
+    caption:
+      'Two commanders you could build today, picked from the top nine by fit and rotated daily — so the pair changes while the ranking behind it does not. Each card says how much of your collection fits and how much of that is already sleeved elsewhere.',
+    keys: [
+      'the pair rotates daily out of the top nine by fit — a rank cut, never a score cut.',
+      'cards that fit, then how many are already in a committed deck. The second clause is absent at zero.',
+      'the floor is the lowest score actually shown, so the count is checkable against the lane.',
+    ],
+    since: 1,
+  },
+  {
+    id: 'fit-score',
+    chapter: '02',
+    title: 'How a fit score is made',
+    route: '/commanders',
+    opens: 'opens a commander',
+    width: 'plate',
+    caption:
+      "Three parts, added: how much of your collection is even legal here, whether you own enough ramp, draw, removal and wipes to field a deck at all, and how much of this commander's most-played list you already have. The bar is those three in order, and the key on the page is the same words you are reading now.",
+    keys: [
+      'the denominator is not always 100: where synergy could not be measured the score is out of 40, and it is never rescaled.',
+      'the sum is printed, so the three parts can be checked against the headline figure.',
+      'two scores are only comparable within one collection: the whole reading is about your shelf.',
+    ],
+    since: 1,
+  },
+  {
+    id: 'commander-lane',
+    chapter: '02',
+    title: 'Commanders you can build today',
+    route: '/commanders',
+    width: 'inset',
+    caption:
+      "Every commander you own and have not built, ranked by fit. Build from chooses the pool the scores are read against: All my cards, or Free cards only — not spoken for by a deck you have already built. Where we could not read a commander's most-played list, the bar has two segments instead of three and the denominator drops to 40.",
+    keys: [],
+    since: 1,
+  },
+  {
+    id: 'discover',
+    chapter: '02',
+    title: 'Commanders worth acquiring, and what each order means',
+    route: '/discover',
+    width: 'plate',
+    caption:
+      'Commanders you do not own, ranked by what your collection would support if you bought one card. Discover prints counts, never a score — how many of its most-played cards you already own, how many decks are tracked, and how many of its top cards would be new to you.',
+    keys: [
+      'five orders, and two of them — Best fit and Something new — change which commanders the list holds, not just their sequence.',
+      'the headline count is how much of its most-played list you already own, out of however many were measurable.',
+      '“new to you” is the acquisition argument: cards this commander wants that nothing you own already covers.',
+    ],
+    since: 1,
+  },
+  {
+    id: 'role-coverage',
+    chapter: '02',
+    title: 'Why this commander, and what the deck would be made of',
+    route: '/commanders',
+    opens: 'opens a commander',
+    width: 'inset',
+    caption:
+      'The cards you already own that would go in, grouped by the job they do, and how each role measures against its baseline — so a 1/3 on board wipes tells you what to fix before you commit to building anything. Each group can be read in the shipped order or with free cards first, which puts the copies no committed deck is holding at the top.',
+    keys: [],
+    since: 1,
+  },
+  {
+    id: 'partners',
+    chapter: '02',
+    title: 'Partners',
+    route: '/commanders',
+    opens: 'opens a commander',
+    width: 'inset',
+    caption:
+      "Commanders that pair, and what the pair's wider colour identity opens up in your collection. A pair deck is still a hundred cards, so its 99 is 98 — every count and progress bar in the app measures it against that.",
+    keys: [],
+    since: 1,
+  },
+
+  // ---- 03 · Building the 99 -----------------------------------------------
+  {
+    id: 'deck-page',
+    chapter: '03',
+    title: 'The deck page',
+    route: '/decks',
+    opens: 'opens a deck',
+    width: 'plate',
+    caption:
+      'One page per deck: the commander, the status and how far along it is, then the list itself. Four tabs sit under the header — the deck, cards worth considering, the games you have played with it, and its committed versions — so everything about a deck lives on the deck.',
+    keys: [
+      'the badge and the bar are the same pair the library shows, so a deck reads the same from either direction.',
+      'the tabs carry counts, which is how you can tell a deck has never been played without opening it.',
+      'Consider is the other half of the recommendation: cards this commander wants that are not in the list yet.',
+    ],
+    since: 1,
+  },
+  {
+    id: 'auto-fill',
+    chapter: '03',
+    title: 'How much we fill in for you',
+    route: '/decks/new',
+    width: 'inset',
+    caption:
+      'Pick a commander and we assemble as much of the 99 as your collection supports — typically most of it, never all of it. The rest is yours to fill, before or after you sleeve it up: Top off fills the remaining slots from what you own in one pass, and anything auto-added can be cleared in one action if you would rather start from your own picks.',
+    keys: [],
+    since: 1,
+  },
+  {
+    id: 'decklist-marks',
+    chapter: '03',
+    title: 'Every mark on a decklist',
+    route: '/decks',
+    opens: 'opens a deck',
+    width: 'plate',
+    caption:
+      'A decklist is rows, and each row answers four questions from left to right: do you own it, what is it, how many does the deck want, and is anything standing in the way. A row with nothing in the way carries no mark at all, so the marks you do see are all things to deal with.',
+    keys: [
+      'a filled green dot is a card you own; a dashed hollow one is a card you do not. Same shape, same place, every list in the app.',
+      'the circled figure is how many copies this deck wants, and it is there whether that is one or four.',
+      'one mark, and only when there is something to say: `1 in a brew`, `none free`, `short N`, or `$` for a card you would have to buy.',
+      'the edge is the row’s own state — accent where you are working, and the over-committed colour when the deck wants more than you own.',
+    ],
+    since: 1,
+  },
+  {
+    id: 'roles',
+    chapter: '03',
+    title: 'Why a card is filed under Ramp',
+    route: '/decks',
+    opens: 'opens a deck',
+    width: 'plate',
+    caption:
+      'A decklist is read by the job a card does, not by type line, because that is how a deck is short: eleven creatures is not a problem, one board wipe is. The recommended mix is EDHREC’s averages, not a rule — a role over its number is fine and says so by saying nothing.',
+    keys: [
+      'the second figure is the recommendation, so 5 wipes against 3 is a surplus rather than an error. Nothing is capped.',
+      'a short role is the one thing here that names what to do next, and `consider` goes straight to cards that would fill it.',
+    ],
+    since: 1,
+  },
+  {
+    id: 'add-cards',
+    chapter: '03',
+    title: 'Adding cards',
+    route: '/decks',
+    opens: "opens a deck's Add panel",
+    width: 'inset',
+    caption:
+      'Search what you own or all of Magic, with the ownership dot on every result, and add without leaving the list you are looking at. A card another committed deck is holding still adds — it arrives carrying the mark that says so, rather than being refused.',
+    keys: [],
+    since: 1,
+  },
+  {
+    id: 'put-back',
+    chapter: '03',
+    title: 'Put back',
+    route: '/decks',
+    opens: 'opens a deck',
+    width: 'inset',
+    caption:
+      "Every removal can be undone from where it happened, with the card named. Putting a card back also puts back what it cost — the deck's count, its shopping total and any claim it had on your collection all return together, so undo never leaves the figures half-changed.",
+    keys: [],
+    since: 1,
+  },
+  {
+    id: 'deck-import',
+    chapter: '03',
+    title: 'Bring a deck over, or update one',
+    route: '/decks/import',
+    width: 'inset',
+    caption:
+      'A Moxfield link, a pasted list or a file. The same route updates a deck you already have. A line we cannot put a card to does not stop the import — the deck is still made, the line is flagged inside it, and it counts toward the 99 but not toward what is built.',
+    keys: [],
+    since: 1,
+  },
+  {
+    id: 'versions',
+    chapter: '03',
+    title: 'Drafts, committing, and versions',
+    route: '/decks',
+    opens: "opens a deck's Versions tab",
+    width: 'plate',
+    caption:
+      'A deck has a committed list and a draft you are working on. Every add and cut sits in the draft until you commit it, and committing cuts a version you can read back. Cards staged in a draft already count against your collection, which is why a draft can make another deck read short 1.',
+    keys: [
+      'the draft is reviewable before it lands: every add and cut beside the committed list, with nothing counted twice.',
+      'a version carries its own record, so you can see whether a change helped rather than only that it happened.',
+    ],
+    since: 1,
+  },
+  {
+    id: 'export',
+    chapter: '03',
+    title: 'Take the list somewhere else',
+    route: '/decks',
+    opens: 'opens the export dialog',
+    width: 'plate',
+    caption:
+      'The whole 99 as text a deckbuilding site will read, or just the cards you do not own. Buying is a link out, not a checkout — we hand Mana Pool the list and they take it from there, in a new tab, with nothing of yours attached.',
+    keys: [
+      'the Shopping tab is the cards you do not own, counted on the pill — the same set the library-wide roll-up totals.',
+      "the link opens in a new tab and carries the list, nothing else. A card's own link lands on every printing, because the app recommends a card rather than a printing.",
+      'copy and .txt are the same list in the form each site wants. Nothing here changes the deck.',
+    ],
+    since: 1,
+  },
+  {
+    id: 'shopping',
+    chapter: '03',
+    title: 'What you would need to buy',
+    route: '/decks',
+    opens: 'opens the shopping roll-up',
+    width: 'inset',
+    caption:
+      'Every card your decks want and you cannot supply, priced and grouped, across the whole library rather than one deck at a time. A card you own can be on this list: if an older committed deck is already holding your only copy, the newer deck has to buy one. Unpriced copies still count in the tally and add nothing to the total.',
+    keys: [],
+    since: 1,
+  },
+
+  // ---- 04 · Playing and tuning --------------------------------------------
+  {
+    id: 'log-a-game',
+    chapter: '04',
+    title: 'Log a game',
+    route: '/decks',
+    opens: "opens a deck's Games tab",
+    width: 'plate',
+    caption:
+      'About fifteen seconds after the game, on the deck you played: the result, the pod size, and the two or three things that decided it. The same eight things can be marked either way — what worked or what let you down — and all of it is optional: a result on its own is a game.',
+    keys: [
+      'pod size is on the form because a win into three opponents and a win into one are not the same evidence.',
+      'the note is quoted back verbatim in the history and never summarised, which is why it asks for one line rather than a paragraph.',
+      'the eight axes are the same eight on both sides, so a deck’s record can say a thing cut both ways.',
+    ],
+    since: 1,
+  },
+  {
+    id: 'log-findings',
+    chapter: '04',
+    title: 'What the log tells you back',
+    route: '/decks',
+    opens: "opens a deck's Games tab",
+    width: 'plate',
+    caption:
+      'One game you already remember. The third is where this earns its keep: at three games the tab stops describing and starts making a finding, sorted into what to fix and what to keep. Every figure carries its denominator — no percentages, at any number of games.',
+    keys: [
+      'under three games the heading describes instead: one game is a note, two is a leaning, three is a finding.',
+      'anything that has cut both ways is stated rather than filed — one line, never a third column.',
+    ],
+    since: 1,
+  },
+  {
+    id: 'statuses',
+    chapter: '04',
+    title: "What a deck's status badge means",
+    route: '/decks',
+    width: 'plate',
+    caption:
+      'Six statuses, and each one has a single next action. Exactly one of them means you can put the deck on a table — a hundred-card list you still have to buy four cards for is not Complete. Beside each badge the app draws one figure and no sentence, so the explanations sit in the key below where they are honestly this page’s own words.',
+    keys: [
+      'Draft and Building are not legal lists yet, and the figure is how far off. Draft has nothing in it, so it shows when it was made instead.',
+      'Over and Unresolved are legal-sized lists with something to settle: too many cards, or lines we could not put a card to.',
+      'To buy is the one that catches people — a finished 99 you cannot sleeve, because some of it is not on your shelf.',
+      'Complete is the only status that means you can put the deck on a table. Each badge carries one figure and no sentence.',
+    ],
+    since: 1,
+  },
+  {
+    id: 'folders',
+    chapter: '04',
+    title: 'Sorting decks into folders',
+    route: '/decks',
+    width: 'inset',
+    caption:
+      'A deck sits on one folder or on none. Every folder and its count is on screen without opening anything, and choosing one narrows the library rather than filtering it — it spends no accent, appears in no filter chip, and is not cleared by Clear all filters. Unfiled appears once you have made your first folder.',
+    keys: [],
+    since: 1,
+  },
+  {
+    id: 'resume',
+    chapter: '04',
+    title: 'Picking up where you left off',
+    route: '/',
+    width: 'inset',
+    caption:
+      'Home leads with the decks you touched last, newest first, and each row says which event put it there — edited, committed or played. The keyline on the left is the deck’s status in the same six colours as its badge.',
+    keys: [],
+    since: 1,
+  },
+  {
+    id: 'commitments',
+    chapter: '04',
+    title: 'Where your collection is committed',
+    route: '/',
+    width: 'inset',
+    caption:
+      'Three figures, each with its denominator: how much of what you own is sleeved into a committed deck, how many cards two decks are both counting on, and what the whole library would cost to finish. The middle figure keeps its colour at zero — it is the row that would be red if it were not nought.',
+    keys: [],
+    since: 1,
+  },
+  {
+    id: 'reservations',
+    chapter: '04',
+    title: 'Which deck gets a shared copy',
+    route: '/decks',
+    opens: 'opens a deck',
+    width: 'inset',
+    caption:
+      'When two decks want the same card and you own one, the committed deck holds it and the other reads as short. Committing a draft can therefore move a card away from a deck that had it, which is why the diamond is on the card and not on the deck.',
+    keys: [],
+    since: 1,
+  },
+  {
+    id: 'proxies',
+    chapter: '04',
+    title: 'Cards you are proxying',
+    route: '/decks',
+    opens: 'opens a deck',
+    width: 'inset',
+    caption:
+      "Mark a card as one you are printing and it leaves the buy list without joining your collection. P is the mark, the deck's shopping total drops by that card's price, and set completion does not move — a proxy is a card you can play with, not a card you have.",
+    keys: [],
+    since: 1,
+  },
+  {
+    id: 'themes',
+    chapter: '04',
+    title: 'Themes',
+    route: '/',
+    opens: 'in the account menu',
+    width: 'plate',
+    caption:
+      'Six of them, each named for how it looks rather than where it came from — Low Sun, Neon Rain, Canopy, Oil Haze, Witching Hour, First Frost. A theme changes the palette, never the meaning: owned is green in all six, over-committed is red in all six.',
+    keys: [
+      'the plane is the subtitle, not the name — you pick Neon Rain, not Kamigawa.',
+      'the accent moves; the greens, ambers and reds that carry meaning do not.',
+      'your choice is remembered per account, so it follows you between devices rather than living in one browser.',
+    ],
+    since: 1,
+  },
+] as const;
+
+// ---- Account menu ---------------------------------------------------------
+// One row, first, above Manage account. No badge, at any width, ever — the
+// redirect is the notification.
+export const aboutMenuCopy = {
+  label: 'About The 99',
+} as const;

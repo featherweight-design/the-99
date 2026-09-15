@@ -1,81 +1,65 @@
-# About The 99 — R2
+# About The 99 — R3
 
-**R1 was the wrong artifact.** It answered the five open questions and delivered a page of
-paragraphs — which cannot teach a fit score, a doubled diamond, a dashed cell or six status badges.
-R2 keeps every locked decision and changes the unit: **an entry is a figure with a caption.**
+R2 was the right artifact with wrong figures in three places and eight features missing.
+**R3 makes all five corrections, draws all eight missing entries, regenerates the copy file to
+match, and adds the thing that stops it recurring: a blank per-entry template.**
+The specimen grammar from R2 is unchanged, and every locked decision from R1 and R2 holds.
 
-**Deliverable:** `The 99 - About Page (R2).dc.html` (canvas, six-theme `theme` prop, Kamigawa
-default to match the surfaces under review).
-`The 99 - About Page (R1).dc.html` is kept for the audit trail. It is superseded.
+**Deliverable:** `The 99 - About Page (R3).dc.html` (canvas, six-theme `theme` prop).
+R1 and R2 are kept for the audit trail. Both are superseded.
 
 | File | What it is |
 |---|---|
-| `The 99 - About Page (R2).dc.html` | The deliverable. Specimen grammar and the annotation key (§1), the mark (§2), **the page at desktop with all four chapters and twenty-four figures (§3)**, the behind and current readers (§4), phone (§5), the account menu (§6), the contract (§7). |
-| `STATES-about.md` | Every state, both widths. **Superseded by `STATES-about-r2.md` where they disagree.** |
-| `STATES-about-r2.md` | The states the figures add: specimen, annotation, per-figure phone reduction, and what a specimen must never do. |
-| `about · copy strings.ts` | Entry copy. **R2 adds `caption` and `keys[]` per entry** — see the delta note at the foot of `READINESS.md`. |
-| `READINESS.md` | R1's assessment. |
-| `READINESS-r2.md` | This round: what is green, the three Product calls, what is unverified. |
+| `The 99 - About Page (R3).dc.html` | The deliverable. Grammar and annotation key (§1), the mark (§2), **the page at desktop — four chapters, thirty-two figures (§3)**, the behind and current readers (§4), phone (§5), account menu (§6), the contract (§7), **the blank per-entry template (§8)**. |
+| `about · copy strings.ts` | **Regenerated.** 32 entries in canvas order with `caption`, `keys[]`, `width`, `chapter` and `since`. Replaces R1's 26. |
+| `READINESS-r3.md` | This round: what each correction changed, what is still unverified, the one thing Product must do. |
+| `STATES-about-r3.md` | The states R3 adds or changes. Supersedes `STATES-about-r2.md` where they disagree. |
+| `READINESS-r3-audit.md` | The audit this round answers. |
+| Earlier rounds | `The 99 - About Page (R1/R2).dc.html`, `READINESS.md`, `READINESS-r2.md`, `STATES-about.md`, `STATES-about-r2.md`. |
 
 ---
 
-## What the twenty-four figures are
+## The five corrections
 
-Organised by what the reader is doing (ruling 4), six entries per chapter, **twelve insets and
-twelve plates**.
+**Fit denominator.** `41/65` was impossible — `measurableTotalFor` returns 40 or 100 and nothing
+between. The degraded specimen now reads `27/40`, and the lane caption says the denominator drops
+to 40 rather than "says so".
 
-**01 Your collection** — the import drop and its *replaces* rule · the rows we could not place,
-with the reason chip · **free / committed / over-committed as four real rows** (plate) ·
-**set completion: owned, `BY NAME`, `FOIL`, missing-dashed and never-stocked cells** (plate) · the
-buy tag's four states · the printing picker's filled *Your pick* diamond.
+**Status plate.** The fourth column was a JSDoc table written for engineers, and `Nothing in it
+yet` is not in the tree. The specimen now draws what the app draws — badge, bar, **one figure, no
+sentence** (`created today`, `87 of 99`, `5 over`, `2 lines unresolved`, `3 to buy · $12.40`,
+`99 of 99`). The explanations moved into four key lines, which say in the caption that they are
+this page's prose and not the product's.
 
-**02 Finding a commander** — **Ready to build: the hero pair, the fit chip, `1615 of your cards
-fit · 550 in use`, and the daily rotation out of the top nine** (plate) · **how a fit score is
-made: the three-segment bar, the legend, the opened key and `15 + 25 + 33 = 73`** (plate) · the
-lane row, including the two-segment *measurable fit* form · **Discover: the counts row plus all
-five orders with their glosses, and which two change the list rather than reorder it** (plate) ·
-role coverage against baseline · partners, and why a pair deck's 99 is 98.
+**Availability has four states.** `soft` — `1 in a brew` — is drawn, and it is numeral 2 of 4,
+between free and committed. The not-owned row keeps its place and loses its numeral, so the figure
+stays inside the four-annotation ceiling. Desktop and phone both.
 
-**03 Building the 99** — **every mark on a decklist: four tiles, by corner** (plate) · how much we
-auto-fill and the *Top off* pass · **why a card is filed under Ramp, with per-role baselines**
-(plate) · the Add panel with ownership on every result · **draft, commit, versions, and a version's
-own record** (plate) · the shopping roll-up, including why a card you own can be on it.
+**Tokens.** `--avail-soft: var(--fg-muted)` ✓, `--avail-hard: var(--accent)` with
+`--avail-hard-fg`, and a per-theme over pair — applied everywhere a diamond is drawn, including
+the §2 legend and the decklist tiles.
 
-**04 Playing and tuning** — the log form in fifteen seconds · **what the log says back: Fix, Keep,
-Mixed, and the three-game threshold** (plate) · **all six status badges with their progress bar,
-explaining figure and single next action** (plate) · folders, and why they are not a filter · the
-resume rows with the status keyline · the three Commitments figures.
+**Roles.** `Ramp / Card draw / Removal / Board wipes` at `10 / 10 / 8 / 3`. `Lands` is gone from
+both role figures; `Draw` is now `Card draw`.
 
----
+## The eight new entries
 
-## The grammar, in four rules
+Thirty-two total — **16 insets, 16 plates** — across chapters of 7 / 6 / 10 / 9.
 
-1. **Inset or plate.** Inset: 300px figure left, caption right — one row or one control. Plate:
-   caption above, figure the full column — anything with parts that need naming.
-2. **Specimens are the real components.** Fed fixture props from one module, sitting on
-   `--surface-sunken` inside a `--border` hairline at radius 8, `aria-hidden` in full, inert. Not
-   screenshots: a screenshot is one theme, one density, and stale by the next refresh.
-3. **Annotation is a numeral and a line.** 14px `--accent` circle beside the part, one mono
-   `--fg-faint` line per numeral under the figure, four per figure maximum. No leaders, no arrows,
-   no hover — the constraints are no motion and nothing interactive, and this is the only
-   annotation that survives both. Every key line is prose in reading order.
-4. **Phone halves the grid, never the marks.** 4 tiles → 2×2, 3 key columns → 3 rows, the status
-   table drops its progress column, the set grid drops to 3 cells, Ready-to-build draws one card.
-   A 6px diamond stays 6px, because that is the size the reader has to recognise in the app.
+**01** Browse what you own (plate) — search, filters, grid-or-rows, and that the view is remembered.
+**03** The deck page (plate), first in its chapter, so the marks entry has something to be about ·
+Bring a deck over, or update one (inset) · Put back (inset) · Take the list somewhere else (plate),
+covering export and the Mana Pool link-out.
+**04** Which deck gets a shared copy (inset) · Cards you are proxying (inset) · Themes (plate).
 
-## What did not change
+Reservations and proxies ship as `since: 1` per Product's overrule, so **the version-2 artboard in
+§4 now uses an illustrative `since: 2`** on Put back, and says so. No real entry is deferred.
 
-One artifact. Redirect, not a banner. Organised by doing, not by screen. Auth-gated. The account
-menu as the permanent entry point — `About The 99`, first, no badge ever. The `NEW` plate, with one
-boundary added: **it sits on the title line and never inside a specimen's hairline**, so the app's
-eleven marks and the page's one mark never share a plate.
+## The template (§8)
 
-## Source read for this round
-
-`marks.tsx`, `ui/availability-marker.tsx`, `ui/ownership-dot.tsx`, `ui/cost-pips.tsx`,
-`ui/colour-pips.tsx`, `cards/two-faced-mark.tsx`, `commanders/fit-bar.tsx`,
-`commanders/fit-legend.tsx`, `commanders/coverage-sort.tsx`, `home/ready-to-build.tsx`,
-`home/hero-commander.tsx`, `home/commitments-card.tsx`, `decks/buy-tag.tsx`,
-`decks/deck-card-tile.tsx`, `decks/builder-spine.tsx`, `decks/status-pill.tsx`,
-`decks/shelf-line.tsx`, `sets/set-cell.tsx`, `lib/decks/status.ts`, `lib/decks/status-style.ts`,
-`lib/copy/refresh.ts`, `lib/copy/lanes.ts`, `lib/copy/game-log.ts`, plus R1's four surfaces.
+Blank on the left, the Put back entry filled in beside it: title, route, opens, chapter, width,
+caption, specimen component, fixture props, up to four key lines, phone reduction, `since`, and
+which copy file the strings come from. A future feature's design round produces **one filled-in
+page**, not an edit to a 260KB canvas. The audit's process hooks — `AGENTS.md`, the plan, and
+acceptance close-out — are named on the artboard as Product's to make; a template nobody is
+required to fill in is decoration.
