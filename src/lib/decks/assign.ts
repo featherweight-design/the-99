@@ -54,6 +54,17 @@ export async function assignCopyFor(
 ): Promise<AssignRefusal | null> {
   if (!isUuid(oracleId) || !isUuid(deckId)) return "not-your-deck";
   return db.transaction<AssignRefusal | null>(async (tx) => {
+    // SERIALIZED PER CARD, before anything is read. The deck row lock below covers one deck, and
+    // the supply question is about every deck at once: two picks naming DIFFERENT decks would
+    // otherwise both read `taken < giveable` for a one-copy card and both insert, leaving the
+    // model to grant one of them nothing while the row sits there counted as spent. The lock is
+    // transaction-scoped, so a commit or a rollback releases it.
+    //
+    // Keyed on the pair, because that is the supply being contended. `hashtextextended` for the
+    // reason `replaceCollection` uses it: the ids are text of arbitrary length.
+    await tx.execute(sql`
+      select pg_advisory_xact_lock(hashtextextended(${userId}, 0), hashtextextended(${oracleId}, 0))
+    `);
     // The deck row first, and locked: every guard below reads what this deck currently claims,
     // and a commit landing between the read and the write would authorize against a version that
     // no longer exists. `commitVersion` takes this same lock first, so holding it is what makes
@@ -86,6 +97,18 @@ export async function assignCopyFor(
         eq(deckVersionCards.oracleId, oracleId),
       ));
     if (!claim) return "claimant-no-longer-asks";
+
+    // A PROXY ENDS THE CLAIM TOO. The claim model anti-joins `deck_proxies`, so a deck printing
+    // the card claims nothing — it is covered while owning nothing, which is the feature's whole
+    // point. Reserving a copy for it would give a real copy to a deck that does not need one, and
+    // the row would then be counted as spent against every deck that does.
+    const { rows: [printed] } = await tx.execute<{ yes: boolean }>(sql`
+      select exists (
+        select 1 from deck_proxies p
+        where p.deck_id = ${deckId} and p.oracle_id = ${oracleId}
+      ) as yes
+    `);
+    if (printed?.yes) return "claimant-no-longer-asks";
 
     // Already reserved for this deck: the press takes it back. Nothing below applies — returning
     // a copy can never be short of supply — and a cleared row is indistinguishable from one that

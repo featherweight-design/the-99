@@ -124,9 +124,15 @@ export function ContestedCardRow({
   // redrawing from them would show the player exactly the state that just lost.
   const [card, setCard] = useState(initial);
   const [refusal, setRefusal] = useState<AssignRefusal | null>(null);
-  // The optimistic pick, for the window between the tap and the server's answer. AUTHORSHIP
-  // ITSELF IS NOT STATE — see `chosen` below.
-  const [picked, setPicked] = useState<string | null>(null);
+  // The optimistic pick, for the window between the tap and the server's answer, as a SET: with
+  // two copies in play two decks can each hold one, and a scalar would mask the second — the row
+  // would show one reservation, omit the other from the footer, and let a toggle clear a deck
+  // that still holds a copy. AUTHORSHIP ITSELF IS NOT STATE — see `chosenIds` below.
+  const [picked, setPicked] = useState<Set<string> | null>(null);
+  // Which deck the player last tapped, kept only so a refusal can name the deck it refused. The
+  // reservation set is not that: after a refusal clears the optimistic pick it holds whoever
+  // already had one, which is a different deck and the wrong name to print.
+  const [attempted, setAttempted] = useState<{ id: string; name: string } | null>(null);
   const [announce, setAnnounce] = useState("");
   const [, startTransition] = useTransition();
   // A fresh server payload always wins, and is filed on its way past. Adjusted during render
@@ -144,22 +150,42 @@ export function ContestedCardRow({
   // queue — so reading it off the row survives the revalidation that follows every pick. Held in
   // state instead, the accent and the undo footer vanished the moment the server answered, which
   // is exactly when the player looks for confirmation that their tap landed.
-  const chosen = picked ?? card.claimants.find((c) => c.granted > 0)?.deckId ?? null;
+  const chosenIds = picked ?? new Set(card.claimants.filter((c) => c.granted > 0).map((c) => c.deckId));
+  const chosenNames = card.claimants.filter((c) => chosenIds.has(c.deckId)).map((c) => c.deckName);
 
   const pick = (deckId: string, deckName: string) => {
-    const wasChosen = chosen === deckId;
+    const wasChosen = chosenIds.has(deckId);
     // The optimistic allocation: the chosen deck takes a copy, and the deck that loses one is the
     // last to hold one it was not reserved. Words and marks move together, because the mark
     // states allocation and the word states the same thing — they cannot disagree.
     setRefusal(null);
-    setPicked(wasChosen ? null : deckId);
-    const displaced = card.claimants.find((c) => c.deckId !== deckId && c.allocated > 0);
+    setAttempted({ id: deckId, name: deckName });
+    // The optimistic set. Under the cap a pick ADDS; at the cap it MOVES, taking the place of the
+    // reservation the model would give way — the oldest, which is the order it resolves them in
+    // and therefore the one the server will release.
+    const next = new Set(chosenIds);
+    if (wasChosen) next.delete(deckId);
+    else {
+      if (next.size >= giveable) {
+        const oldest = card.claimants.find((c) => next.has(c.deckId));
+        if (oldest) next.delete(oldest.deckId);
+      }
+      next.add(deckId);
+    }
+    setPicked(next);
+    const displaced = card.claimants.find((c) => !next.has(c.deckId) && c.allocated > 0);
     setAnnounce(wasChosen
       ? copy.contested.announcedCleared(card.cardName, displaced?.deckName ?? "")
       : copy.contested.announcedPick(deckName, card.cardName, displaced?.deckName ?? ""));
     startTransition(async () => {
       const result = await assignCopy(card.oracleId, deckId);
-      if (result.card) setCard(result.card);
+      // THE LIVE READ CARRIES NO RECEIPT. `arrived` and `ownedBefore` are facts about the import
+      // this row came from, and `loadContestedCard` has no import to read — it returns nought for
+      // both. Taking its object whole would cost the row its cap, its mark shape and its
+      // `keeps it` calculation on the first pick, so only the live half is merged.
+      if (result.card) {
+        setCard({ ...result.card, arrived: card.arrived, ownedBefore: card.ownedBefore });
+      }
       if (!result.ok) {
         setRefusal(result.cause);
         setPicked(null);
@@ -270,23 +296,43 @@ export function ContestedCardRow({
               // A filled mark on an unchecked option means the deck holds a copy by default,
               // which is a different fact and must not read as a selection.
               role="radio"
-              aria-checked={chosen === c.deckId}
+              aria-checked={chosenIds.has(c.deckId)}
               aria-disabled={inert || undefined}
-              tabIndex={inert ? -1 : chosen === c.deckId || (!chosen && first) ? 0 : -1}
+              tabIndex={inert ? -1 : chosenIds.has(c.deckId) || (chosenIds.size === 0 && first) ? 0 : -1}
               aria-label={
                 c.commanderCopies >= c.quantity
                   ? copy.contested.a11yCommander(c.deckName, card.cardName)
-                  : chosen === c.deckId
+                  : chosenIds.has(c.deckId)
                     ? copy.contested.a11ySelected(c.deckName)
                     : copy.contested.a11yOption(c.deckName, outcome)
               }
               onClick={inert ? undefined : () => pick(c.deckId, c.deckName)}
+              // A radiogroup is reached by Tab and traversed by ARROWS — every option but one
+              // carries `tabIndex={-1}`, so without this a keyboard reader can see the group and
+              // never reach the second deck in it. Roving focus, wrapping at both ends, skipping
+              // the options nobody can choose.
               onKeyDown={inert ? undefined : (e) => {
                 if (e.key === " " || e.key === "Enter") {
                   e.preventDefault();
                   pick(c.deckId, c.deckName);
+                  return;
                 }
+                const step = e.key === "ArrowDown" || e.key === "ArrowRight" ? 1
+                  : e.key === "ArrowUp" || e.key === "ArrowLeft" ? -1 : 0;
+                if (step === 0) return;
+                e.preventDefault();
+                const reachable = card.claimants.filter(
+                  (x) => !(nothingToChoose || x.commanderCopies >= x.quantity),
+                );
+                const here = reachable.findIndex((x) => x.deckId === c.deckId);
+                const next = reachable[(here + step + reachable.length) % reachable.length];
+                if (!next) return;
+                const el = e.currentTarget.parentElement?.querySelector<HTMLElement>(
+                  `[data-deck="${next.deckId}"]`,
+                );
+                el?.focus();
               }}
+              data-deck={c.deckId}
               // 52px two-line on a phone, 44px one-line from `md` — the handoff's own targets,
               // stated rather than left to padding. `items-start` and `items-center` were both
               // present, which resolves by utility order rather than by intent.
@@ -301,7 +347,7 @@ export function ContestedCardRow({
                   ? "1px dashed var(--border)"
                   // Accent ONLY on a pick. Accent means "you chose this" everywhere in this app,
                   // so an option wearing it by default would claim an authorship nobody has.
-                  : chosen === c.deckId
+                  : chosenIds.has(c.deckId)
                     ? "1px solid var(--accent)"
                     : "1px solid transparent",
                 cursor: inert ? "default" : "pointer",
@@ -392,17 +438,22 @@ export function ContestedCardRow({
           className="text-[11.5px] mt-[9px] mb-0 pl-[9px]"
           style={{ color: "var(--fg-body)", borderLeft: "3px solid var(--danger)" }}
         >
-          {refusalSentence(refusal, card, card.claimants.find((c) => c.deckId === chosen)?.deckName ?? "")}
+          {/* The deck the player TAPPED, not whoever holds a reservation now: after a refusal
+              clears the optimistic pick, the latter is a different deck and the wrong name. */}
+          {refusalSentence(refusal, card, attempted?.name ?? "")}
         </p>
-      ) : chosen ? (
+      ) : chosenNames.length > 0 ? (
         <p className="flex flex-col md:flex-row md:items-baseline gap-[2px] md:gap-[10px] text-[11.5px] mt-[9px] mb-0"
            style={{ color: "var(--fg-body)" }}>
-          <span>{copy.contested.undoHint(card.claimants.find((c) => c.deckId === chosen)?.deckName ?? "")}</span>
+          <span>{copy.contested.undoHint(chosenNames.join(" and "))}</span>
           <button
             type="button"
             onClick={() => {
-              const deck = card.claimants.find((c) => c.deckId === chosen);
-              if (deck) pick(deck.deckId, deck.deckName);
+              // Clears every reservation on this card, which is what `Back to first committed`
+              // says: one press returns the whole row to the default, not the newest pick only.
+              for (const c of card.claimants.filter((x) => chosenIds.has(x.deckId))) {
+                pick(c.deckId, c.deckName);
+              }
             }}
             // 34px tall inside a 44px target, per the handoff.
             className="font-mono text-[11px] text-left text-[color:var(--accent)] min-h-[44px] md:min-h-0 md:py-[5px]"

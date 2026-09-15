@@ -416,8 +416,12 @@ describe("ContestedCardRow — the chooser", () => {
     });
     render(<ContestedCardRow card={card()} />);
     fireEvent.click(screen.getByRole("radio", { name: /Elemental Dragons/ }));
+    // TWICE, deliberately: the note the reader sees, and the live region announcing it VERBATIM
+    // rather than as a summary of it.
     await waitFor(() => {
-      expect(screen.getByText(copy.contested.refusedNoSupply("HD Avatar Aang", 1, "Elemental Dragons"))).toBeTruthy();
+      expect(screen.getAllByText(
+        copy.contested.refusedNoSupply("HD Avatar Aang", 1, "Elemental Dragons"),
+      )).toHaveLength(2);
     });
     // The optimistic pick is taken back: the refusal means it never happened.
     expect(screen.queryByRole("radio", { checked: true })).toBeNull();
@@ -434,9 +438,39 @@ describe("ContestedCardRow — the chooser", () => {
       assign.mockResolvedValue({ ok: false, cause, card: card() });
       const { unmount } = render(<ContestedCardRow card={card()} />);
       fireEvent.click(screen.getByRole("radio", { name: /Elemental Dragons/ }));
-      await waitFor(() => expect(screen.getByText(expected)).toBeTruthy());
+      await waitFor(() => expect(screen.getAllByText(expected).length).toBeGreaterThan(0));
       unmount();
     }
+  });
+
+  // A radiogroup is reached by Tab and traversed by arrows: every option but one carries
+  // `tabIndex={-1}`, so without arrow handling a keyboard reader can see the group and never
+  // reach the second deck in it.
+  it("moves focus between options with the arrow keys", () => {
+    render(<ContestedCardRow card={card()} />);
+    const [first, second] = screen.getAllByRole("radio");
+    first.focus();
+    fireEvent.keyDown(first, { key: "ArrowDown" });
+    expect(document.activeElement).toBe(second);
+    // …and wraps, rather than stopping at the end.
+    fireEvent.keyDown(second, { key: "ArrowDown" });
+    expect(document.activeElement).toBe(first);
+  });
+
+  it("skips an option nobody can choose when arrowing", () => {
+    render(<ContestedCardRow card={card({
+      owned: 2,
+      claimants: [
+        { deckId: "d1", deckName: "Lists It", quantity: 1, commanderCopies: 0, granted: 0, since: AUG, versionNumber: 1, allocated: 1 },
+        { deckId: "d2", deckName: "Led By It", quantity: 1, commanderCopies: 1, granted: 0, since: SEP, versionNumber: 1, allocated: 1 },
+        { deckId: "d3", deckName: "Also lists", quantity: 1, commanderCopies: 0, granted: 0, since: SEP + 1, versionNumber: 1, allocated: 0 },
+      ],
+    })} />);
+    const radios = screen.getAllByRole("radio");
+    radios[0].focus();
+    fireEvent.keyDown(radios[0], { key: "ArrowDown" });
+    // Past the commander, which cannot be chosen, and onto the third deck.
+    expect(document.activeElement).toBe(radios[2]);
   });
 
   it("draws no control on an option nobody can choose", async () => {

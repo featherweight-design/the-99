@@ -4,16 +4,16 @@
 // means "which deck is this card already in", so nothing here says "committed
 // cards". A VERSION is a snapshot; the DRAFT is `deck_cards`.
 
-import { and, count, desc, eq, inArray, lte, notInArray, sql } from "drizzle-orm";
+import { and, count, desc, eq, inArray, lte, sql } from "drizzle-orm";
 import { db } from "../../db";
 import {
-  cardAssignments, cards, deckCards, deckGames, deckUnresolvedRows, deckVersionCards,
-  deckVersions, decks,
+  cards, deckCards, deckGames, deckUnresolvedRows, deckVersionCards, deckVersions, decks,
 } from "../../db/schema";
 import { type CardQty, draftDiff } from "./draft-diff";
 import { touchDeck } from "./touch";
 import { averageManaValue } from "./mana-value";
 import { pruneOrphanProxies } from "./prune-proxies";
+import { pruneOrphanAssignments } from "./prune-assignments";
 
 type Tx = Parameters<Parameters<typeof db.transaction>[0]>[0];
 
@@ -189,21 +189,10 @@ async function commitVersionIn(
       })),
     );
   }
-  // A RESERVATION DIES WITH THE CLAIM IT WAS MADE ABOUT. `card_assignments` rows for this deck
-  // survive only while its newest committed version still lists the card: a deck that drops a
-  // card and adds it back later must not resurrect a decision the player made about a different
-  // list. Deleted here, inside the commit, because this is the transaction that decides what the
-  // deck now claims.
-  //
-  // The row is also inert in the meantime — the claim model caps a reservation at the deck's own
-  // committed ask, so one for a card the version no longer holds reserves nothing even before
-  // this runs. The delete is what stops it coming back to life.
-  const kept = rows.map((r) => r.oracleId);
-  await tx.delete(cardAssignments).where(
-    kept.length > 0
-      ? and(eq(cardAssignments.deckId, deckId), notInArray(cardAssignments.oracleId, kept))
-      : eq(cardAssignments.deckId, deckId),
-  );
+  // A RESERVATION DIES WITH THE CLAIM IT WAS MADE ABOUT — the same reconcile the proxy path
+  // runs, and for the same reason. This commit has just decided what the deck claims, so a
+  // reservation for a card the new version does not list has nothing left to be about.
+  await pruneOrphanAssignments(tx, deckId);
 
   // Counted off the rows this just snapshotted, and returned rather than left to
   // the caller's own read of `deck_cards`. A path that INSERTS a card the deck
