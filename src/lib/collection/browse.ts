@@ -115,7 +115,9 @@ export type BrowseCard = {
    * is a card owned in none. The receipt's proxy list has to survive that
    * branch, so this is read on both.
    */
-  proxiedBy?: ProxyingDeck[];
+  /** Null when the read FAILED — never an empty array, which would mean "no
+   *  deck prints this". The control refuses to guess on null. */
+  proxiedBy?: ProxyingDeck[] | null;
   /**
    * What the feed last carried for each of this card's printings, indexed both
    * ways `BrowsePrinting` can name one. Optional for the same reason

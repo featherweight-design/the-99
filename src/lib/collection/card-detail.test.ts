@@ -310,7 +310,10 @@ describe("loadCardDetail availability", () => {
     vi.doUnmock("../../db");
 
     expect(card?.oracleId).toBe("o-1");
-    expect(card?.proxiedBy).toEqual([]);
+    // NULL, not `[]`. An empty list says "no deck prints this", which a failed
+    // read cannot claim — and the sheet would then draw an unchecked toggle over
+    // an already-proxied card, leaving no way to unmark it.
+    expect(card?.proxiedBy).toBeNull();
   });
 
   // The figure is the one thing on this card the reader can live without. A feed

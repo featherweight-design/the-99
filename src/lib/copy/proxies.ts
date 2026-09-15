@@ -91,6 +91,11 @@ export const proxyCopy = {
     // Ruling 2, said once, in both states. The reader's real question is "do I have to
     // commit this?" and it is cheaper to answer than to leave hanging.
     note: "Takes effect at once. A proxy is not part of a version.",
+    // The read failed, so the app cannot say whether this one is printed — and a
+    // toggle drawn over a state nobody knows invites the wrong press. Greyed in
+    // place rather than absent: the control still belongs here, it just cannot
+    // answer yet.
+    unknown: "Can't tell whether this one's a proxy right now.",
     // The membership validation can refuse: the card left the deck between render and tap.
     // Names what is true now rather than what failed.
     refused: (card: string) => `${card} isn't in this deck any more, so there's nothing to proxy.`,
@@ -262,6 +267,9 @@ export const proxyCopy = {
   // neither blames them and neither names a table.
   error: {
     notInDeck: "That card isn't in this deck any more.",
-    refused: "Couldn't mark that just now. Try again.",
+    // DIRECTION-NEUTRAL. One string covers both presses, because the throw that
+    // produces it does not know which one it interrupted — and "couldn't mark
+    // that" over a failed UNMARK names the opposite of what the reader did.
+    refused: "That didn't save. Try again.",
   },
 } as const;

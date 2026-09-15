@@ -22,6 +22,26 @@ export const cardDetailCopy = {
 
 type CardDetailContextValue = {
   /**
+   * The deck every card opened from this provider belongs to, or null.
+   *
+   * A PROVIDER-level fact rather than a per-trigger argument, because that is
+   * what makes it impossible to get wrong: the deck page mounts its own
+   * provider, so every card opened from it carries the deck, and `/collection`
+   * and commander detail mount theirs without one — where the proxy control
+   * correctly does not render at all, there being no deck for it to be about.
+   */
+  deckId: string | null;
+  /**
+   * The oracle ids that deck actually HOLDS — its list plus both commanders.
+   *
+   * Carried because the provider wraps more than the decklist: the Consider
+   * panel and the search results open cards this deck does not hold, and a
+   * proxy control on one of those is an affordance that can only ever fail —
+   * `setCardProxied` refuses it on the same membership test. The control asks
+   * this set before it renders.
+   */
+  deckOracleIds: ReadonlySet<string>;
+  /**
    * Open the modal for `oracleId`. `siblings` is the ordered oracle-id list the card belongs
    * to, which is what Prev/Next page through; omit it where there is no list (the commander,
    * a suggestion) and the modal renders "1 of 1" with both arrows disabled.
@@ -134,14 +154,27 @@ export function CardDetailTrigger({
   );
 }
 
+/** Stable, so the context value's identity does not change every render. */
+const EMPTY_IDS: ReadonlySet<string> = new Set();
+
 export function CardDetailProvider({
   children,
   // Injected for tests; production always uses the server action.
   fetchCard = getCardDetail,
   onArtChange,
+  deckId = null,
+  deckName = null,
+  deckOracleIds,
 }: {
   children: ReactNode;
   fetchCard?: (oracleId: string) => Promise<BrowseCard | null>;
+  /** See `CardDetailContextValue.deckId`. Set by the deck page alone. */
+  deckId?: string | null;
+  /** That deck's name, which the control's label and its marked sentence both
+   *  spend — a sheet paged through with Prev/Next is easy to lose your place in. */
+  deckName?: string | null;
+  /** See `CardDetailContextValue.deckOracleIds`. */
+  deckOracleIds?: ReadonlySet<string>;
   /**
    * Fired when a printing pick is ATTEMPTED, and again when it settles — including when
    * the write was refused and the modal has rolled its own state back. It is a nudge that
@@ -418,8 +451,10 @@ export function CardDetailProvider({
       setSiblings,
       evict,
       close,
+      deckId,
+      deckOracleIds: deckOracleIds ?? EMPTY_IDS,
     }),
-    [open, pendingOracleId, card, evict, close],
+    [open, pendingOracleId, card, evict, close, deckId, deckOracleIds],
   );
 
   const index = card ? siblings.indexOf(card.oracleId) : -1;
@@ -441,6 +476,10 @@ export function CardDetailProvider({
           // optimistic art pick across — same reason the collection browser remounts.
           key={card.oracleId}
           card={card}
+          deckId={deckId}
+          deckName={deckName}
+          deckHolds={(deckOracleIds ?? EMPTY_IDS).has(card.oracleId)}
+          onProxyWrite={() => evict(card.oracleId)}
           openAtPrinting={openAtPrinting}
           onArtChange={() => { evict(card.oracleId); onArtChange?.(card.oracleId); }}
           position={paging ? index + 1 : 1}

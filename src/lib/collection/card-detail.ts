@@ -131,7 +131,7 @@ export function catalogCard(
  * Failure is swallowed to null-ish, as the availability read beside it is: the
  * modal omits a block rather than losing the card.
  */
-async function proxyingDecks(userId: string, oracleId: string): Promise<ProxyingDeck[]> {
+async function proxyingDecks(userId: string, oracleId: string): Promise<ProxyingDeck[] | null> {
   try {
     // INSIDE the try, as `pricesFor` does it: a module that fails to resolve is
     // as quiet a failure as a query that fails to run, and the block is optional
@@ -157,8 +157,12 @@ async function proxyingDecks(userId: string, oracleId: string): Promise<Proxying
     `)
     .then((r) => r.rows);
   } catch {
-    // Synchronous throws too — a db stub with no `execute` is the usual one.
-    return [];
+    // NULL, not `[]`. An empty list is a statement — *no deck prints this* — and
+    // a failed read has no standing to make it: the sheet would draw an
+    // unchecked toggle over an already-proxied card, and the reader's press
+    // would send the idempotent mark, leaving them no way to unmark it.
+    // Synchronous throws too; a db stub with no `execute` is the usual one.
+    return null;
   }
 }
 
