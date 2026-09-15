@@ -159,6 +159,10 @@ export function Decklist({
   // the current view's rows: a legend naming a mark the reader cannot see on
   // screen teaches the wrong thing, and an empty one is furniture.
   const markKey = useMemo((): MarkKeyEntry[] => {
+    // LIST VIEW ONLY. The samples are the row treatments, and the card view
+    // draws neither of them — its tiles carry the tile/band variants — so a key
+    // rendered there would decode glyphs that are not below it.
+    if (view === "card") return [];
     // `cards` filtered, not `shoppingList` — that one is a name/quantity
     // projection for the export dialog and carries no flags to read.
     const shown = filter === "shopping" ? cards.filter(isShoppingCard) : cards;
@@ -174,7 +178,7 @@ export function Decklist({
       entries.push({ id: "proxy", sample: <ProxyTag variant="row" />, word: proxyCopy.key.proxy });
     }
     return entries;
-  }, [cards, filter]);
+  }, [cards, filter, view]);
 
   // The toolbar's right slot while a draft exists. Needs both answers: a deck
   // with no version has no vN to count against, and a set with nothing in it has

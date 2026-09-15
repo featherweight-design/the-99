@@ -66,6 +66,7 @@ import { computeRoleCounts, RECOMMENDED_MIX, type MixRole } from "../../lib/deck
 import { useIsDesktop } from "../ui/use-is-desktop";
 import type { ProvenanceForm } from "../../lib/decks/price";
 import type { TopOffCandidate } from "../../lib/decks/last-slots";
+import { proxiedCardCount } from "../../lib/decks/proxy-count";
 
 // Shared by both shelf paths — the one that is already on Consider and the one
 // that has to switch views first — so they land identically.
@@ -245,15 +246,8 @@ export function BuilderShell({
   // draws, counted here off the rows the page already holds so the two surfaces
   // cannot disagree about one deck. Distinct marks, never copies: one mark on a
   // quantity-4 row is one printed card (ruling 5).
-  // A SET of oracle ids, not a row count plus two booleans: a commander can also
-  // be a row on its own list, and adding the two counted that one printed card
-  // twice. The server's `proxyCounts` folds the same case for the same reason —
-  // the primary key says one mark — so the header and the tile agree.
-  const proxiedCount = new Set([
-    ...cards.filter((c) => c.proxied).map((c) => c.oracleId),
-    ...(deck.commander.proxied ? [deck.commander.oracleId] : []),
-    ...(deck.partner?.proxied ? [deck.partner.oracleId] : []),
-  ]).size;
+  // One derivation, shared with its test — see `proxiedCardCount`.
+  const proxiedCount = proxiedCardCount(cards, deck.commander, deck.partner);
   const { built } = counts;
 
   // The ceiling this page measures against, derived once. A pair's commanders

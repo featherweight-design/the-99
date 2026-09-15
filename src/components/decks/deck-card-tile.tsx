@@ -108,9 +108,15 @@ export function DeckCardTile({
               `card.owned` alone, this tile drew a buy tag on a printed card —
               the Card view telling the player to buy something the List view
               says they are printing, on one deck, one card, one glance apart. */}
+          {/* The inner span takes the pointer so the tag's `title` is reachable:
+              the wrapper's `pointer-events-none` would otherwise make the
+              tooltip — one of the mark's three word-carriers — unavailable on
+              this surface, while still keeping the art around it clickable. */}
           {deckRowTag(card) === "proxy" ? (
             <span className="absolute z-10 top-[6px] left-[6px] pointer-events-none">
-              <ProxyTag variant="band" />
+              <span className="pointer-events-auto">
+                <ProxyTag variant="band" />
+              </span>
             </span>
           ) : card.owned ? (
             card.availability && (

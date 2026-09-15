@@ -388,7 +388,7 @@ export function SpineDesktop({
                   pays for that. `P×2` is banned by ruling 5, so both proxied
                   draws two named marks in name order. */}
               {commander.proxied ? (
-                <ProxyTag variant="band" pairName={partner ? commander.name : undefined} />
+                <ProxyTag variant="band" pairName={partner ? shortName(commander.name) : undefined} />
               ) : null}
               {partner ? (
                 <>
