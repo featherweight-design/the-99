@@ -213,7 +213,11 @@ export function ProxyListView({
                       cost and a real back one, and on this sheet that cost is
                       exactly what the reader needs. */}
                   {faceCosts(row.manaCost).length > 0 && (
-                    <CostPips cost={row.manaCost} allFaces />
+                    // SPOKEN, which this row never did. The pips are aria-hidden
+                    // and the card trigger's label is the name alone, so the cost
+                    // reached nobody using a screen reader — and the half this
+                    // change adds would have been silent in the same way.
+                    <CostPips cost={row.manaCost} allFaces spoken />
                   )}
 
                   {/* A BARE FIGURE, never a buy tag: `isShoppingCard` has just

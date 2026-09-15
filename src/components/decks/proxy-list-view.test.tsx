@@ -200,3 +200,19 @@ describe("ProxyListView — a card that prints two costs", () => {
     expect(document.querySelectorAll("span.rounded-full").length).toBeGreaterThanOrEqual(2);
   });
 });
+
+// The pips are aria-hidden and the row's card trigger is labelled with the name
+// alone, so without this the sheet's costs reach nobody using a screen reader.
+it("speaks every cost it prints", () => {
+  render(
+    <ProxyListView
+      newestAsOf={NEWEST}
+      rows={[row({ manaCost: "{G/U}{G/U} // {1}{G}{U}" })]}
+      hasDecks
+      hasCollection
+    />,
+  );
+
+  const spoken = [...document.querySelectorAll(".sr-only")].map((el) => el.textContent);
+  expect(spoken.join(" ")).toContain("second cost 1 green blue");
+});
