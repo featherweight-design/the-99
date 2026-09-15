@@ -9,7 +9,7 @@
 // run on screen carries would be its own defect. A reader who cannot see the
 // pips is the one reader for whom truncation is not a trade.
 
-import { frontFaceCost } from "../cards/faces";
+import { faceCosts, frontFaceCost } from "../cards/faces";
 
 const SYMBOL: Record<string, string> = {
   W: "white",
@@ -35,6 +35,22 @@ export const manaCopy = {
    * count the symbols twice.
    */
   pipOverflow: (omitted: number) => `+${omitted}`,
+  /**
+   * The two halves of a split or Adventure cost, spoken.
+   *
+   * NOT "or", which is the obvious word and the wrong one: a hybrid symbol
+   * already speaks as "green or blue", so `", or "` between the halves reads
+   * "green or blue green or blue, or 1 green blue" — three ors, and no way to
+   * hear where one cost ends. "second cost" cannot collide with a symbol's own
+   * wording, and names what the reader is being given.
+   *
+   * Only ever given two or more halves. One cost speaks through `costAria`
+   * alone, and announcing a second would promise a half the card lacks.
+   */
+  costAriaHalves: (spokenHalves: readonly string[]) =>
+    `mana cost ${spokenHalves[0]}${spokenHalves.slice(1).map((half) => `, second cost ${half}`).join("")}`,
+  /** The mark between two drawn costs — the separator the printed name uses. */
+  costHalfSeparator: "//",
 } as const;
 
 /**
@@ -129,9 +145,29 @@ function speakSymbol(symbol: string): string {
 export function spokenManaCost(cost: string | null | undefined): string {
   // The same half the pips draw. A label that spoke both halves of an Adventure
   // would describe a cost the run beside it does not show.
-  const symbols = [...frontFaceCost(cost ?? "").matchAll(/\{([^}]+)\}/g)].map((m) => m[1]);
-  if (symbols.length === 0) return manaCopy.costNone;
-  return manaCopy.costAria(symbols.map(speakSymbol).join(" "));
+  const spoken = speakHalf(frontFaceCost(cost ?? ""));
+  return spoken === null ? manaCopy.costNone : manaCopy.costAria(spoken);
+}
+
+/**
+ * Every printed cost on the card, spoken — the modal's label, and only the
+ * modal's.
+ *
+ * It exists as a second function rather than a flag because the rule above is
+ * the rule: a label describes the run beside it. The modal draws both halves of
+ * a split cost, so its label speaks both; a row draws one, so its label speaks
+ * one. A card with a single cost reads identically through either.
+ */
+export function spokenFullManaCost(cost: string | null | undefined): string {
+  const halves = faceCosts(cost).map(speakHalf).filter((half): half is string => half !== null);
+  if (halves.length === 0) return manaCopy.costNone;
+  return halves.length === 1 ? manaCopy.costAria(halves[0]) : manaCopy.costAriaHalves(halves);
+}
+
+/** One half's symbols, spoken, or null when it holds none. */
+function speakHalf(half: string): string | null {
+  const symbols = [...half.matchAll(/\{([^}]+)\}/g)].map((m) => m[1]);
+  return symbols.length === 0 ? null : symbols.map(speakSymbol).join(" ");
 }
 
 /**

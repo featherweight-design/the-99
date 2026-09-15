@@ -7,7 +7,7 @@ import { describe, expect, it } from "vitest";
 import { cleanup, render } from "@testing-library/react";
 import { afterEach } from "vitest";
 
-import { spokenManaCost } from "../../lib/copy/card-surfaces";
+import { manaCopy, spokenFullManaCost, spokenManaCost } from "../../lib/copy/card-surfaces";
 import { ManaCost } from "./mana-pips";
 
 afterEach(cleanup);
@@ -64,11 +64,65 @@ describe("ManaCost", () => {
     expect(render(<ManaCost cost="" />).container.textContent).toBe("");
   });
 
-  // The front face only, the rule `parseManaCost` owns: an adventure or split
-  // card stores both halves in one string and a pip run cannot say `//`.
-  it("draws the front face of a two-part cost", () => {
+  // Both halves of a two-part cost, which is this surface's own rule — the runs
+  // in a column keep `parseManaCost`'s front half. `{3}{B} // {B}` is an
+  // Adventure: a three-mana creature and a one-mana spell on one card.
+  it("draws both halves of a two-part cost", () => {
     const { container } = render(<ManaCost cost="{3}{B} // {B}" />);
 
-    expect(sources(container)).toEqual(["/mana/3.svg", "/mana/B.svg"]);
+    expect(sources(container)).toEqual(["/mana/3.svg", "/mana/B.svg", "/mana/B.svg"]);
+  });
+});
+
+describe("ManaCost — a card with two printed costs", () => {
+  // `split`, `adventure` and `prepare` print two real, castable costs on one
+  // piece of stock. The modal has the room and draws both; the runs in a column
+  // keep the front half alone.
+  it("draws both halves, in printed order", () => {
+    const { container } = render(<ManaCost cost="{G/U}{G/U} // {1}{G}{U}" />);
+
+    expect(sources(container)).toEqual([
+      "/mana/GU.svg",
+      "/mana/GU.svg",
+      "/mana/1.svg",
+      "/mana/G.svg",
+      "/mana/U.svg",
+    ]);
+  });
+
+  it("separates them with the same mark the printed name carries", () => {
+    const { container } = render(<ManaCost cost="{G/U}{G/U} // {1}{G}{U}" />);
+
+    // Leaf spans only. The run that CONTAINS the separator has `//` as its
+    // whole text too, because a printed pip carries no text of its own — so a
+    // sweep of every span counts the wrapper as a second separator.
+    expect(
+      [...container.querySelectorAll("span")].filter(
+        (el) => el.children.length === 0 && el.textContent === manaCopy.costHalfSeparator,
+      ),
+    ).toHaveLength(1);
+  });
+
+  it("draws no separator for a card with one cost", () => {
+    const { container } = render(<ManaCost cost="{3}{W}" />);
+
+    expect(container.textContent).not.toContain(manaCopy.costHalfSeparator);
+  });
+
+  // The `//` cannot be read aloud, so the label names the second cost instead.
+  it("speaks both halves", () => {
+    const { container } = render(<ManaCost cost="{G/U}{G/U} // {1}{G}{U}" />);
+
+    expect(container.textContent).toContain(spokenFullManaCost("{G/U}{G/U} // {1}{G}{U}"));
+    expect(container.textContent).toContain("second cost 1 green blue");
+  });
+
+  // A half with no symbols in it draws nothing and earns no separator — the
+  // shape a malformed cost reduces to.
+  it("draws one run and no separator when a half is empty", () => {
+    const { container } = render(<ManaCost cost="{B} // " />);
+
+    expect(sources(container)).toEqual(["/mana/B.svg"]);
+    expect(container.textContent).not.toContain(manaCopy.costHalfSeparator);
   });
 });

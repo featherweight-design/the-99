@@ -53,12 +53,34 @@ export function faceNames(name: string): { front: string; back: string } {
  * recognises, which is `transform` and `modal_dfc`, so an `adventure` or `split`
  * row still prints both halves of its name next to one half of its cost.
  *
- * A split card's second cost is therefore drawn nowhere today — a real loss, and
- * the reason this lives in one function rather than inline in each pip renderer:
- * a treatment that wants both halves has one place to start from.
+ * The card modal draws BOTH halves — see `faceCosts` below. This one is what the
+ * runs in a column keep: a 72px track caps at five pips and cannot hold two
+ * costs and a separator, and a reader scanning rows is one tap from the modal.
  *
  * A cost with no separator is returned whole, so this is safe on every card.
  */
 export function frontFaceCost(cost: string): string {
   return cost.split(" // ")[0];
+}
+
+/**
+ * Every printed cost on one piece of card stock, in printed order.
+ *
+ * One entry for almost every card. Two for `split`, `adventure` and `prepare`,
+ * where both halves are real and castable — `Repudiate // Replicate` is stored
+ * as `{G/U}{G/U} // {1}{G}{U}`, and a reader choosing between them needs both.
+ *
+ * **The separator in the string is the whole test, and no `layout` lookup is
+ * needed.** Scryfall carries no top-level `mana_cost` for a card printed on two
+ * sides, so a stored cost containing ` // ` can only have come from a layout
+ * that prints two costs on ONE side. A `transform` back's cost is not missing
+ * from this list by choice: nothing in the catalog holds it. See the note in
+ * `card-modal.tsx` for what that would take.
+ *
+ * Empty halves are dropped, so a malformed `"{G} // "` yields one cost rather
+ * than a second, silent, symbol-free run.
+ */
+export function faceCosts(cost: string | null | undefined): string[] {
+  if (!cost) return [];
+  return cost.split(" // ").map((half) => half.trim()).filter((half) => half.length > 0);
 }
