@@ -192,6 +192,27 @@ async function reservationSection() {
     check("two copies cover both reservations", await free(a), 0);
     check("from either side", await free(b), 0);
 
+    // 5b. A RESERVED SENIOR IS NOT ALSO A SENIOR CLAIM. Three copies, two of them
+    //     reserved to a and b, and a third deck holding neither: it takes the copy
+    //     that is left. Counting a reserved claim in the seniority term as well as in
+    //     reserved_others bills that third deck twice for the same two copies and it
+    //     reads -1. The remainder cap hides this whenever the remainder is 0, which
+    //     is every other case in this section — confirmed: with the double count put
+    //     back, this is the only check in the file that fails.
+    await own(3);
+    const third = await makeDeck("Third list", cmdB);
+    await commit(third, cmdB, 1, { holds: 1, ago: 5 });
+    await fixture.execute(sql`
+      insert into deck_cards (deck_id, oracle_id, quantity) values (${third}, ${card}, 1)
+    `);
+    await assign(a, 1, 40);
+    await assign(b, 1, 35);
+    check("a reserved senior claim is not counted twice", await free(third), 0);
+    await fixture.execute(sql`delete from decks where id = ${third}`);
+    await clearAssignments();
+    // Back to the two copies case 6 is written against.
+    await own(2);
+
     // 6. No shortage, no rows: nothing to allocate and no figure moves.
     await clearAssignments();
     check("with supply for everyone a cleared reservation changes nothing", await free(a), 1);
@@ -352,6 +373,37 @@ async function commanderCeilingSection() {
     `);
     check("only the list copy of a folded claim is reservable", await free(cmdDeck.id), -1);
     check("so the reserving deck gets exactly one", await free(lister.id), 0);
+
+    // AND THE SAME CAP WHEN THE FOLDED DECK IS THE ONE RESERVING. Its ask is two,
+    // but one of those two is its commander and the ceiling already guarantees that
+    // copy — so a reservation of two would book three copies for an ask of two, and
+    // the deck that loses one is a third deck nobody was choosing between. Three
+    // copies owned, because at two the ceiling binds first and the cap is invisible
+    // (confirmed: with the commander subtraction removed, a two-copy fixture passes).
+    await own(3);
+    await fixture.execute(sql`delete from card_assignments where user_id = ${USER_C}`);
+    const { rows: [bystander] } = await fixture.execute<{ id: string }>(sql`
+      insert into decks (user_id, name, commander_oracle_id)
+      values (${USER_C}, 'Bystander', ${otherCmd}) returning id
+    `);
+    const { rows: [vb] } = await fixture.execute<{ id: string }>(sql`
+      insert into deck_versions (deck_id, number, committed_at, commander_oracle_id, commander_since)
+      values (${bystander.id}, 1, now() - interval '120 minutes', ${otherCmd},
+              now() - interval '120 minutes')
+      returning id
+    `);
+    await fixture.execute(sql`
+      insert into deck_version_cards (version_id, oracle_id, quantity, since)
+      values (${vb.id}, ${card}, 1, now() - interval '120 minutes')
+    `);
+    await fixture.execute(sql`
+      insert into deck_cards (deck_id, oracle_id, quantity) values (${bystander.id}, ${card}, 1)
+    `);
+    await fixture.execute(sql`
+      insert into card_assignments (user_id, oracle_id, deck_id, copies)
+      values (${USER_C}, ${card}, ${cmdDeck.id}, 2)
+    `);
+    check("a folded deck reserves its list copy only", await free(bystander.id), 1);
   } finally {
     await fixture.execute(sql`delete from card_assignments where user_id = ${USER_C}`);
     await fixture.execute(sql`delete from decks where user_id = ${USER_C}`);
