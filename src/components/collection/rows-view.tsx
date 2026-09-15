@@ -148,7 +148,7 @@ export function RowsView({
               its width, so nothing ragged-edges and there is no disc to keep. */}
           <span className="flex w-[76px] md:w-[90px] items-center justify-end">
             {hasFrontFaceCost(c.manaCost) ? (
-              <CostPips cost={c.manaCost ?? ""} size={COST_PIP_SIZE} cap={COST_PIP_CAP} />
+              <CostPips cost={c.manaCost} size={COST_PIP_SIZE} cap={COST_PIP_CAP} />
             ) : null}
           </span>
 

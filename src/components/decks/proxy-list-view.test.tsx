@@ -171,3 +171,48 @@ describe("the row and the strip agree about one card", () => {
     expect(screen.queryByText(proxyCopy.cost.unpriced(1))).toBeNull();
   });
 });
+
+// The sheet stands in for the card you play with, so it prints every cost the
+// card prints — the one surface where that differs from a row.
+describe("ProxyListView — a card that prints two costs", () => {
+  it("draws both halves and the mark between them", () => {
+    render(
+      <ProxyListView
+        newestAsOf={NEWEST}
+        rows={[row({ manaCost: "{G/U}{G/U} // {1}{G}{U}" })]}
+        hasDecks
+        hasCollection
+      />,
+    );
+
+    const pips = document.querySelectorAll("span.rounded-full");
+    expect(pips.length).toBeGreaterThanOrEqual(5);
+    expect(document.body.textContent).toContain("//");
+  });
+
+  // A land front with a spell back prints a cost this sheet must still show,
+  // where a row deliberately shows nothing for it.
+  it("draws a back face's cost when the front has none", () => {
+    render(
+      <ProxyListView newestAsOf={NEWEST} rows={[row({ manaCost: " // {3}{R}" })]} hasDecks hasCollection />,
+    );
+
+    expect(document.querySelectorAll("span.rounded-full").length).toBeGreaterThanOrEqual(2);
+  });
+});
+
+// The pips are aria-hidden and the row's card trigger is labelled with the name
+// alone, so without this the sheet's costs reach nobody using a screen reader.
+it("speaks every cost it prints", () => {
+  render(
+    <ProxyListView
+      newestAsOf={NEWEST}
+      rows={[row({ manaCost: "{G/U}{G/U} // {1}{G}{U}" })]}
+      hasDecks
+      hasCollection
+    />,
+  );
+
+  const spoken = [...document.querySelectorAll(".sr-only")].map((el) => el.textContent);
+  expect(spoken.join(" ")).toContain("second cost 1 green blue");
+});

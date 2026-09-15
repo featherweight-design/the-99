@@ -226,7 +226,7 @@ function NameLine({
         {/* The shared track, so a card's cost lands on the same vertical line here
             and in the decklist below. `CostPips` defaults neither, so both pass. */}
         {hasFrontFaceCost(cost) ? (
-          <CostPips cost={cost ?? ""} size={COST_PIP_SIZE} track={COST_TRACK} cap={COST_PIP_CAP} spoken />
+          <CostPips cost={cost ?? null} size={COST_PIP_SIZE} track={COST_TRACK} cap={COST_PIP_CAP} spoken />
         ) : null}
       </span>
     </li>

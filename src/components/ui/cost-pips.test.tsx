@@ -149,3 +149,51 @@ describe("CostPips — the spoken cost", () => {
     expect(container.querySelector(".sr-only")).toBeNull();
   });
 });
+
+describe("CostPips — every printed cost", () => {
+  // Off by default: a run in a column shows one face, and its track is sized for
+  // one cost.
+  it("draws the front half alone unless asked for all of them", () => {
+    expect(pipsOf(<CostPips cost="{G/U}{G/U} // {1}{G}{U}" />)).toHaveLength(2);
+  });
+
+  it("draws both halves with the printed mark between them when asked", () => {
+    const run = runOf(<CostPips cost="{G/U}{G/U} // {1}{G}{U}" allFaces />);
+    expect(run.querySelectorAll("span.rounded-full")).toHaveLength(5);
+    // Leaf spans only: the run's own text is `//` too, since a pip carries none.
+    expect(
+      [...run.querySelectorAll("span")].filter(
+        (el) => el.children.length === 0 && el.textContent === "//",
+      ),
+    ).toHaveLength(1);
+  });
+
+  it("draws no mark for a card with one cost, asked or not", () => {
+    expect(runOf(<CostPips cost="{3}{W}" allFaces />).textContent).not.toContain("//");
+  });
+
+  // A card whose FRONT is a land and whose back is a spell. The proxy sheet is
+  // the one surface that should still print that cost, and it is the shape the
+  // rows deliberately draw nothing for.
+  it("draws a back face's cost when the front has none", () => {
+    expect(pipsOf(<CostPips cost=" // {3}{R}" allFaces />)).toHaveLength(2);
+    // And nothing at all without it — the front half this run would show is
+    // empty, so a row draws no pips for such a card.
+    expect(render(<CostPips cost=" // {3}{R}" />).container.firstElementChild).toBeNull();
+  });
+
+  it("speaks every half it drew, and only the front half when it drew one", () => {
+    const both = render(<CostPips cost="{G/U}{G/U} // {1}{G}{U}" allFaces spoken />);
+    expect(both.container.querySelector(".sr-only")?.textContent).toContain("second cost");
+    both.unmount();
+    const one = render(<CostPips cost="{G/U}{G/U} // {1}{G}{U}" spoken />);
+    expect(one.container.querySelector(".sr-only")?.textContent).not.toContain("second cost");
+  });
+
+  // A null cost is an ordinary answer, not a caller error: every surface that
+  // draws a cost also draws lands.
+  it("draws nothing for a null cost rather than requiring a caller to guard", () => {
+    const { container } = render(<CostPips cost={null} spoken />);
+    expect(container.firstElementChild).toBeNull();
+  });
+});

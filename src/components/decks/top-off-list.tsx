@@ -140,9 +140,9 @@ function CostTrack({ cost }: { cost: string | null }) {
   if (!hasFrontFaceCost(cost)) return null;
   return (
     <span className="flex-none md:order-3">
-      <CostPips cost={cost ?? ""} size={13} className="flex gap-[3px] md:hidden" />
+      <CostPips cost={cost} size={13} className="flex gap-[3px] md:hidden" />
       <CostPips
-        cost={cost ?? ""}
+        cost={cost}
         size={COST_PIP_SIZE}
         cap={COST_PIP_CAP}
         track={COST_TRACK}

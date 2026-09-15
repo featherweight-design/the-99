@@ -142,9 +142,11 @@ describe("a two-sided card's back-face cost", () => {
       ...solRing,
       name: "Birgi, God of Storytelling // Harnfel, Horn of Bounty",
       layout: "modal_dfc", mana_cost: undefined,
-      card_faces: [{ mana_cost: "{2}{R}" }, { mana_cost: "{3}{R}" }],
+      // The real figures: Birgi is {2}{R}, Harnfel {4}{R}. A fixture that
+      // invents them is a fixture nobody can check against the card.
+      card_faces: [{ mana_cost: "{2}{R}" }, { mana_cost: "{4}{R}" }],
     });
-    expect(row?.manaCost).toBe("{2}{R} // {3}{R}");
+    expect(row?.manaCost).toBe("{2}{R} // {4}{R}");
   });
 
   // The joined string has to keep answering both of its readers: the row draws
@@ -152,10 +154,10 @@ describe("a two-sided card's back-face cost", () => {
   it("leaves the row on the front face and the modal on both", () => {
     const row = toCardRow({
       ...solRing, name: "Birgi // Harnfel", layout: "modal_dfc", mana_cost: undefined,
-      card_faces: [{ mana_cost: "{2}{R}" }, { mana_cost: "{3}{R}" }],
+      card_faces: [{ mana_cost: "{2}{R}" }, { mana_cost: "{4}{R}" }],
     });
     expect(frontFaceCost(row?.manaCost ?? "")).toBe("{2}{R}");
-    expect(faceCosts(row?.manaCost)).toEqual(["{2}{R}", "{3}{R}"]);
+    expect(faceCosts(row?.manaCost)).toEqual(["{2}{R}", "{4}{R}"]);
   });
 
   // A transform back is free, so there is no second cost to join — and no

@@ -6,7 +6,7 @@
 // state-changing targets in a list whose job is to be read, where a mis-tap
 // silently puts a deck back on the shopping list.
 
-import { hasFrontFaceCost } from "../../lib/cards/faces";
+import { faceCosts } from "../../lib/cards/faces";
 import Link from "next/link";
 import { CardDetailProvider } from "../cards/card-detail-provider";
 import { CardDetailTrigger } from "../cards/card-detail-provider";
@@ -202,7 +202,32 @@ export function ProxyListView({
                     </span>
                   </span>
 
-                  {hasFrontFaceCost(row.manaCost) && <CostPips cost={row.manaCost ?? ""} />}
+                  {/* EVERY printed cost, not the front face's alone. This sheet
+                      stands in for the card you play with, and a proxy of
+                      `Repudiate // Replicate` carrying one of its two costs is a
+                      card you cannot cast the other half of.
+
+                      The gate asks the same question the run does — does this
+                      card print ANY cost — rather than `hasFrontFaceCost`, which
+                      the rows use. A land-front, spell-back card has no front
+                      cost and a real back one, and on this sheet that cost is
+                      exactly what the reader needs. */}
+                  {faceCosts(row.manaCost).length > 0 && (
+                    // SPOKEN, which this row never did: the pips are aria-hidden
+                    // and the card trigger's label is the name alone, so no cost
+                    // was in the accessible tree at all — and the half this change
+                    // adds would have been missing in the same way.
+                    //
+                    // A SIBLING of the trigger rather than part of its label,
+                    // which is the pattern every cost-bearing surface here uses
+                    // (`deck-card-tile.tsx` says why: a trigger's own accessible
+                    // name replaces everything nested inside it, so a cost spoken
+                    // in there is spoken nowhere). The cost is therefore read in
+                    // browse mode and not announced on focus — the same trade the
+                    // decklist rows make, and not one to change on this surface
+                    // alone.
+                    <CostPips cost={row.manaCost} allFaces spoken />
+                  )}
 
                   {/* A BARE FIGURE, never a buy tag: `isShoppingCard` has just
                       removed every one of these from every Shopping list, and

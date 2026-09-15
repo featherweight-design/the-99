@@ -1,6 +1,8 @@
+import { Fragment } from "react";
+
 import { WUBRG_COLOR } from "../../lib/collection/browse";
-import { manaCopy, spokenManaCost } from "../../lib/copy/card-surfaces";
-import { frontFaceCost } from "../../lib/cards/faces";
+import { manaCopy, spokenFullManaCost, spokenManaCost } from "../../lib/copy/card-surfaces";
+import { faceCosts, frontFaceCost } from "../../lib/cards/faces";
 
 // Mana cost as coloured pips. Promoted out of `suggestion-tile.tsx`, which drew
 // the shipped treatment the design tables then ratified: hybrid and Phyrexian
@@ -67,7 +69,18 @@ export function CostTrack({ cost }: { cost: string | null }) {
 }
 
 type CostPipsProps = {
-  cost: string;
+  /**
+   * The stored cost. NULL is accepted and draws nothing, because "this card has
+   * no cost" is an ordinary answer on every surface that draws one — a land, or
+   * a face the catalog gives no cost. Callers used to gate on it themselves and
+   * pass `cost ?? ""` to satisfy the type, which is the same question asked
+   * twice and answered here anyway.
+   *
+   * A caller deciding its own LAYOUT from the cost still has to ask
+   * `hasFrontFaceCost`: whether this component draws anything is a different
+   * question from whether the row should reserve space for it.
+   */
+  cost: string | null;
   /** Pip diameter. 12px in the decklist's desktop track, 13px on the phone meta line. */
   size?: number;
   /** Fixed track width in px. Omitted, the run is as wide as its pips. */
@@ -82,18 +95,38 @@ type CostPipsProps = {
    * pips are. Omit where an adjacent element already names the cost.
    */
   spoken?: boolean;
+  /**
+   * Draw EVERY cost the card prints rather than the front face's alone, with
+   * the printed `//` between them — a split, an adventure, or a castable back.
+   *
+   * Off by default, because a run in a column shows one face and has a fixed
+   * track that two costs and a separator would burst. It is on where the sheet
+   * stands in for the card itself: the proxy list prints a card to play with,
+   * and a proxy of `Repudiate // Replicate` carrying one of its two costs is a
+   * card you cannot cast the other half of.
+   *
+   * `cap` and `track` are per-run figures and are not designed against this —
+   * pass it on an uncapped, untracked run.
+   */
+  allFaces?: boolean;
   className?: string;
 };
 
-export function CostPips({ cost, size = 14, track, cap, spoken, className }: CostPipsProps) {
-  const symbols = parseManaCost(cost);
-  if (symbols.length === 0) return null;
-
-  // At the cap, four coloured pips plus the overflow pip — so `{W}{U}{B}{R}{G}`
-  // draws five real pips and only a sixth symbol starts the count.
-  const capped = cap !== undefined && symbols.length > cap;
-  const drawn = capped ? symbols.slice(0, cap - 1) : symbols;
-  const omitted = symbols.length - drawn.length;
+export function CostPips({
+  cost,
+  size = 14,
+  track,
+  cap,
+  spoken,
+  allFaces,
+  className,
+}: CostPipsProps) {
+  // One run by default — `parseManaCost` takes the front half, which is the face
+  // a row shows. `allFaces` draws every printed cost instead.
+  const halves = (allFaces ? faceCosts(cost) : [cost ?? ""])
+    .map((half) => parseManaCost(half))
+    .filter((symbols) => symbols.length > 0);
+  if (halves.length === 0) return null;
 
   return (
     <>
@@ -106,14 +139,40 @@ export function CostPips({ cost, size = 14, track, cap, spoken, className }: Cos
         // including the default below.
         style={track === undefined ? undefined : { width: track, justifyContent: "flex-end" }}
       >
-        {drawn.map((sym, i) => (
-          <Pip key={i} symbol={sym} size={size} />
-        ))}
-        {capped ? (
-          <Pip symbol={null} label={manaCopy.pipOverflow(omitted)} size={size} />
-        ) : null}
+        {halves.map((symbols, half) => {
+          // At the cap, four coloured pips plus the overflow pip — so
+          // `{W}{U}{B}{R}{G}` draws five real pips and only a sixth symbol
+          // starts the count.
+          const capped = cap !== undefined && symbols.length > cap;
+          const drawn = capped ? symbols.slice(0, cap - 1) : symbols;
+          const omitted = symbols.length - drawn.length;
+          return (
+            <Fragment key={half}>
+              {/* The mark the printed name carries, and the same one the card
+                  modal draws between two costs. */}
+              {half > 0 ? (
+                <span
+                  className="font-mono px-[1px]"
+                  style={{ color: "var(--fg-muted)", fontSize: Math.round(size * 0.8) }}
+                >
+                  {manaCopy.costHalfSeparator}
+                </span>
+              ) : null}
+              {drawn.map((sym, i) => (
+                <Pip key={i} symbol={sym} size={size} />
+              ))}
+              {capped ? (
+                <Pip symbol={null} label={manaCopy.pipOverflow(omitted)} size={size} />
+              ) : null}
+            </Fragment>
+          );
+        })}
       </span>
-      {spoken ? <span className="sr-only">{spokenManaCost(cost)}</span> : null}
+      {spoken ? (
+        <span className="sr-only">
+          {allFaces ? spokenFullManaCost(cost) : spokenManaCost(cost)}
+        </span>
+      ) : null}
     </>
   );
 }
