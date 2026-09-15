@@ -162,10 +162,11 @@ export const proxyCopy = {
   },
 
   // ── The review row on /decks/[id]/changes (R2) ────────────────────────
-  // A FOURTH BRANCH OF `bucketWord`, not a bucket heading: deck-versioning's R2 ruled
-  // availability a per-row treatment rather than a grouping, deleted `review.bucketFree`
-  // and its siblings, and pinned their absence with a test. The buckets survive as counts
-  // and per-row chips, so this joins the chips.
+  // NOT a branch of `bucketWord`, though R2 drew it as one. The row's VISIBLE mark is
+  // `ProxyTag` in the availability slot — the same slot and treatment the buy tag takes,
+  // which is what keeps the two exclusive — and its per-row word is a full sentence on
+  // `describedBy` rather than a chip. `bucketWord` deliberately has no `proxied` arm:
+  // returning the bare chip there would only make the sentence unreachable.
   //
   // WHY IT IS NOT SILENT. `bucketWord` returns null at `free` and at a null bucket, so
   // silence was available and would have cost nothing to adopt. It is wrong: `free` means

@@ -1243,6 +1243,10 @@ describe("a printed add on the review screen", () => {
       owned: false,
       proxied: true,
       bucket: "proxied" as Row["bucket"],
+      // A REAL availability, not null. Left null, the test proved only that the
+      // proxy beats the unowned buy branch — a marker-first implementation would
+      // still reach the proxy, because there was no marker data to render.
+      availability: { owned: 1, hard: 0, soft: 1, free: 0, claims: [] } as Row["availability"],
       ...over,
     });
 

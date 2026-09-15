@@ -1,6 +1,6 @@
 {
   "feature": "Deck proxies \u2014 the mark",
-  "note": "The three surfaces that draw `ProxyTag`, which must draw the SAME one: the decklist row, the commander caption on the deck head, and the review row. Its own inventory rather than a section of `proxies.json`, because `check:shared` asks the `shares` block of every row in its file \u2014 and that file also photographs the list route and the `/decks` tile, neither of which draws a mark. The deck head is a separate row from the decklist even though one `goto` reaches both: the caption is in a `<header>` outside `<main>`, and a shot scrolled to the rows does not show it.",
+  "note": "The three surfaces that draw `ProxyTag`, which must draw the SAME one: the decklist row, the commander caption on the deck head, and the review row. Its own inventory rather than a section of `proxies.json`, because `check:shared` asks the `shares` block of every row in its file \u2014 and that file also photographs the list route and the `/decks` tile, neither of which draws a mark. The deck head is a separate row from the decklist even though one `goto` reaches both: the caption is in a `<header>` outside `<main>`, and a shot scrolled to the rows does not show it. `spine-mobile.tsx` gets its OWN row: `check:shared` reads each row's `view` directly, so with the desktop spine alone a phone-only regression would leave the gate green while the mobile caption stopped using the shared mark \u2014 the same reason `commander-image.json` carries both spines. And the review row needs `PROXY_REVIEW_DECK`: a versioned deck whose DRAFT holds a printed add, because `admitsReview` redirects a deck with no pending changes and the cell would photograph a redirect.",
   "shares": {
     "module": "src/components/decks/proxy-tag.tsx",
     "binding": "ProxyTag",
@@ -21,13 +21,13 @@
     },
     {
       "id": "review-proxied",
-      "label": "/decks/[id]/changes \u2014 a printed add, marked rather than billed",
+      "label": "/decks/[id]/changes \u2014 a PENDING printed add, marked not billed",
       "view": "src/components/decks/update-diff-row.tsx",
       "steps": [
         {
-          "goto": "/decks/${PROXY_DECK}/changes",
+          "goto": "/decks/${PROXY_REVIEW_DECK}/changes",
           "wait": "h1",
-          "settle": 3000
+          "settle": 3500
         }
       ]
     },
@@ -35,6 +35,21 @@
       "id": "commander-caption",
       "label": "/decks/[id] \u2014 the mark on a commander caption",
       "view": "src/components/decks/spine-desktop.tsx",
+      "steps": [
+        {
+          "goto": "/decks/${PROXY_DECK}",
+          "wait": "h1",
+          "settle": 3500
+        }
+      ]
+    },
+    {
+      "id": "commander-caption-phone",
+      "label": "/decks/[id] \u2014 the commander caption's mark, phone spine",
+      "view": "src/components/decks/spine-mobile.tsx",
+      "widths": [
+        "phone"
+      ],
       "steps": [
         {
           "goto": "/decks/${PROXY_DECK}",
