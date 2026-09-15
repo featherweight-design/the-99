@@ -170,7 +170,16 @@ export function Decklist({
     if (shown.some((c) => deckRowTag(c, filter === "shopping" && isSpokenFor(c)) === "buy")) {
       entries.push({
         id: "buy",
-        sample: <BuyTag variant="row" density="collapsed" price={null} />,
+        // The density the rows below it actually draw: Shopping rows carry the
+        // full `not owned` wording, All rows the collapsed glyph. A legend that
+        // sampled the wrong one would explain a mark that is not on screen.
+        sample: (
+          <BuyTag
+            variant="row"
+            density={filter === "shopping" ? "full" : "collapsed"}
+            price={null}
+          />
+        ),
         word: proxyCopy.key.buy,
       });
     }

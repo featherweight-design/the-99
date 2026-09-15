@@ -446,8 +446,12 @@ export function DecklistRow({
           </span>
         ) : null}
 
-        {/* Availability marker */}
-        {card.availability && (
+        {/* Availability marker — suppressed on a printed row, as the card tile
+            suppresses its chip for the same state. Printing IS the slot's
+            answer, so a chip describing the copies competing for it contradicts
+            the mark beside it, and the two views would disagree about one card
+            one toggle apart. */}
+        {card.availability && tag !== "proxy" && (
           <AvailabilityMarker
             availability={card.availability}
             seam="var(--row-bg)"

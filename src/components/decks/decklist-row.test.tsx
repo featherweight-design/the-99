@@ -13,6 +13,7 @@ import { deckVersioningCopy } from "../../lib/copy/deck-versioning";
 import { PendingChangeProvider } from "./pending-change";
 import { COST_TRACK } from "../ui/cost-pips";
 import { proxyCopy } from "../../lib/copy/proxies";
+import { markerAria } from "../ui/availability-marker";
 
 const { addCardToDeck, removeCardFromDeck, keepAutoCard } = vi.hoisted(() => ({
   addCardToDeck: vi.fn(),
@@ -633,6 +634,28 @@ describe("DecklistRow buy tag density (#350)", () => {
 
     expect(screen.getByText(proxyCopy.tag.aria)).toBeInTheDocument();
     expect(screen.queryByText(addPanelCopy.unowned.tag)).not.toBeInTheDocument();
+  });
+
+  it("draws no availability marker on a printed row", () => {
+    // The tile suppresses its chip for this state; the row must agree, or one
+    // card reads two ways a toggle apart. Printing IS the slot's answer, so a
+    // chip about the copies competing for it contradicts the mark beside it.
+    // `free < 0` — the over state, which is the one that still speaks from this
+    // row's own vantage. At `free === 0` self-excluded the marker is silent by
+    // design, so a fixture built there asserts nothing about suppression.
+    const availability = { owned: 1, hard: 1, soft: 0, free: -1, claims: [] };
+    const marker = markerAria(availability, { selfExcluded: true });
+    // The marker's own prose, not a testid it does not carry: the first version
+    // of this asserted `queryByTestId("availability-marker")`, which is absent
+    // whatever the row draws, so it passed with the suppression removed.
+    expect(marker).toBeTruthy();
+
+    renderRow(
+      <DecklistRow deckId="d1" card={{ ...card, owned: true, proxied: true, availability }} />,
+    );
+
+    expect(screen.getByText(proxyCopy.tag.aria)).toBeInTheDocument();
+    expect(document.body.textContent).not.toContain(marker as string);
   });
 
   it("keeps the buy tag on an unowned card that is not printed", () => {
