@@ -21,6 +21,8 @@ import { FirstCommitOffer } from "./first-commit-offer";
 import { type SpineBandProps, TRUNCATES } from "./spine-desktop";
 import { StatusPillBadge } from "./status-pill";
 import { useDeckRename } from "./use-deck-rename";
+import { ProxyTag } from "./proxy-tag";
+import { proxyCopy } from "../../lib/copy/proxies";
 
 /** The rename glyph's drawn size. Named because the measurement below has to
     keep the glyph inside the block, and the heading reserves the same figure. */
@@ -128,6 +130,11 @@ export function SpineMobile({
         {partner ? (
           <>
             <span style={TRUNCATES}>{commander.name}</span>
+            {/* The pair names its owner, here as on desktop: two flags on one
+                caption row make a bare glyph ambiguous. */}
+            {commander.proxied ? (
+              <ProxyTag variant="band" pairName={commander.name} />
+            ) : null}
             <span style={{ flex: "none" }}>+</span>
             {/* The partner's printing opens from the word that names it. The
                 padding reaches a 44px target and the equal negative margin
@@ -157,6 +164,7 @@ export function SpineMobile({
                 {partner.name}
               </span>
             </CardDetailTrigger>
+            {partner.proxied ? <ProxyTag variant="band" pairName={partner.name} /> : null}
           </>
         ) : (
           <>
@@ -166,6 +174,7 @@ export function SpineMobile({
                 since it is three or four characters. The name gives instead,
                 which is the same ordered shrink the pair row above uses. */}
             <span style={TRUNCATES}>{commander.name}</span>
+            {commander.proxied ? <ProxyTag variant="band" /> : null}
             <span style={{ flex: "none", whiteSpace: "nowrap" }}>
               &nbsp;· {colorLabel(commander.colorIdentity)}
             </span>
@@ -479,6 +488,18 @@ export function SpineMobile({
             )}
           </div>
         </div>
+        {/* The same line the desktop head draws, on the surface where the pill
+            is just as capable of reading `Complete` over printed cards. A
+            feature that appears at one width only is the defect the acceptance
+            walk exists to catch. */}
+        {(counts.proxiedCount ?? 0) > 0 && (
+          <p
+            className="font-mono text-center m-0"
+            style={{ fontSize: 11.5, lineHeight: 1.5, marginTop: 6, color: "var(--fg-muted)" }}
+          >
+            {proxyCopy.deckHeader.line(counts.proxiedCount ?? 0)}
+          </p>
+        )}
         {over && (
           <p
             className="text-center"

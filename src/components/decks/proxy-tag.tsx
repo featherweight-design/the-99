@@ -21,11 +21,24 @@ import { proxyCopy } from "../../lib/copy/proxies";
 
 type ProxyTagVariant = "row" | "band";
 
-/** The edge is `--fg-locked`, never `--border-dashed`: a dashed line that
- *  carries state takes a foreground token. Measured against `--surface-rail`,
- *  `--fg-locked` clears 3.14–3.35:1 in all six themes; `--border-dashed` clears
- *  none of them. */
-const EDGE = "1px dashed var(--fg-locked)";
+/**
+ * The edge is `--fg-locked`, never `--border-dashed`: a dashed line that carries
+ * state takes a foreground token. Measured against `--surface-rail`,
+ * `--fg-locked` clears 3.14–3.35:1 in all six themes; `--border-dashed` clears
+ * none of them.
+ *
+ * AN OUTLINE, NOT A BORDER, and that is the shared slot's whole contract. A
+ * border is layout: it makes this tag 2px wider and taller than the collapsed
+ * `$` it stands in for, so flipping between the two would nudge the row and
+ * change how much width the card name has. An outline is painted outside the
+ * box model, and — unlike a box-shadow, which cannot be dashed at all — it keeps
+ * the dashed stroke, which is load-bearing: dashed is already this app's word
+ * for "not settled cardboard".
+ *
+ * The offset pulls it onto the box's own edge rather than 1px outside it, so it
+ * reads as the tag's border without occupying space.
+ */
+const EDGE = { outline: "1px dashed var(--fg-locked)", outlineOffset: "-1px" } as const;
 
 const PLACEMENT: Record<ProxyTagVariant, string> = {
   row: "flex-none text-[9px] md:text-[9.5px]",
@@ -57,7 +70,7 @@ export function ProxyTag({
   return (
     <span
       className={`font-mono rounded-[4px] px-[5px] py-[1px] font-semibold ${PLACEMENT[variant]}`}
-      style={{ color: "var(--fg)", border: EDGE, ...PLATE[variant] }}
+      style={{ color: "var(--fg)", ...EDGE, ...PLATE[variant] }}
       title={pairName ? proxyCopy.tag.pairTitle(pairName) : proxyCopy.tag.title}
     >
       {/* Drawn, never spoken — the glyph stands for the word rather than saying
