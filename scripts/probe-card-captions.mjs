@@ -96,11 +96,18 @@ async function signIn(page) {
   // Left set afterwards on purpose — "this account has seen the about page" is
   // true once this ran, and clearing it would re-break every other probe on this
   // account.
+  //
+  // `greatest(...)`, which is what `lib/about/read.ts` itself writes. A bare
+  // assignment LOWERS the stored value when this checkout is pinned behind the
+  // database's — putting the About page back in front of a real reader on their
+  // next navigation, which is a probe editing a person's state rather than its
+  // own fixture.
   const [{ version }] = [JSON.parse(readFileSync(ABOUT_VERSION_FILE, "utf8"))];
   await neon(DATABASE_URL)`
     insert into user_prefs (user_id, about_version_seen)
     values (${await page.evaluate(() => window.Clerk.user.id)}, ${version})
-    on conflict (user_id) do update set about_version_seen = ${version}`;
+    on conflict (user_id) do update
+      set about_version_seen = greatest(user_prefs.about_version_seen, ${version})`;
 }
 
 function report(label, ok, detail) {
@@ -527,8 +534,11 @@ async function run() {
       // deck, so a row at quantity 1 is this run's; a concurrent edit that
       // bumped the count is left alone by the guard.
       //
-      // Order still matters inside the transaction for the reader, not for
-      // atomicity: the version's cards go with it by cascade.
+      // Order carries no meaning here, and that is the point of the change: the
+      // two statements used to be separate requests, where deleting the version
+      // last was what kept a failure from stranding a card no version knows
+      // about. Inside one transaction nobody observes an intermediate state and
+      // the cascade takes the version's cards whichever runs first.
       await clean.transaction([
         clean`
           delete from deck_cards

@@ -1,15 +1,15 @@
 {
-  "feature": "Deck proxies \u2014 the mark",
-  "note": "The three surfaces that draw `ProxyTag`, which must draw the SAME one: the decklist row, the commander caption on the deck head, and the review row. Its own inventory rather than a section of `proxies.json`, because `check:shared` asks the `shares` block of every row in its file \u2014 and that file also photographs the list route and the `/decks` tile, neither of which draws a mark. The deck head is a separate row from the decklist even though one `goto` reaches both: the caption is in a `<header>` outside `<main>`, and a shot scrolled to the rows does not show it. `spine-mobile.tsx` gets its OWN row: `check:shared` reads each row's `view` directly, so with the desktop spine alone a phone-only regression would leave the gate green while the mobile caption stopped using the shared mark \u2014 the same reason `commander-image.json` carries both spines. And the review row needs `PROXY_REVIEW_DECK`: a versioned deck whose DRAFT holds a printed add, because `admitsReview` redirects a deck with no pending changes and the cell would photograph a redirect. NOT COVERED HERE: `deck-card-tile.tsx` is a fifth renderer of the mark and this file does not check it. Reaching the card view needs a click on a toggle whose choice lives in `localStorage` \u2014 no URL addresses it, the runner has no seed verb, and that toggle resolves then times out on click exactly as the Shopping pill does in `proxies.json`. Two labelled toolbar buttons failing the same way is a harness or overlay question rather than a fact about this feature, and it is the follow-up that would let this row exist. Until then the tile's use of the shared mark is held by `deck-card-tile.test.tsx`, which renders a proxied card and asserts the mark rather than a local copy \u2014 weaker than an import check, and named as such rather than implied.",
+  "feature": "Deck proxies — the mark",
+  "note": "The three surfaces that draw `ProxyTag`, which must draw the SAME one: the decklist row, the commander caption on the deck head, and the review row. Its own inventory rather than a section of `proxies.json`, because `check:shared` asks the `shares` block of every row in its file — and that file also photographs the list route and the `/decks` tile, neither of which draws a mark. The deck head is a separate row from the decklist even though one `goto` reaches both: the caption is in a `<header>` outside `<main>`, and a shot scrolled to the rows does not show it. `spine-mobile.tsx` gets its OWN row: `check:shared` reads each row's `view` directly, so with the desktop spine alone a phone-only regression would leave the gate green while the mobile caption stopped using the shared mark — the same reason `commander-image.json` carries both spines. And the review row needs `PROXY_REVIEW_DECK`: a versioned deck whose DRAFT holds a printed add, because `admitsReview` redirects a deck with no pending changes and the cell would photograph a redirect. CORRECTED 2026-09-15 — this paragraph said `deck-card-tile.tsx` was a fifth renderer of the mark that this file does not check, because reaching the card view needed a click on a toggle that \"resolves then times out\". MEASURED: it does not time out. `card-captions.json` presses the same toggle by the same accessible name and reached all four of its cells, and `probe:card-captions` clicks it too. What actually defeats a run on these routes is the About gate (#658), which redirects a reader below `ABOUT_VERSION` and lets the cell count as reached while photographing the About page — see that file's note. A card-view row for the mark is therefore BUILDABLE here and is left unbuilt rather than blocked; the tile's use of the shared mark is still held by `deck-card-tile.test.tsx`, which renders a proxied card and asserts the mark rather than a local copy.",
   "shares": {
     "module": "src/components/decks/proxy-tag.tsx",
     "binding": "ProxyTag",
-    "note": "Each view renders it as-is \u2014 no wrapper between them \u2014 so the check is asked of the file each row already names."
+    "note": "Each view renders it as-is — no wrapper between them — so the check is asked of the file each row already names."
   },
   "rows": [
     {
       "id": "deck-all",
-      "label": "/decks/[id] \u2014 the mark on a row, and the key that decodes it",
+      "label": "/decks/[id] — the mark on a row, and the key that decodes it",
       "view": "src/components/decks/decklist-row.tsx",
       "steps": [
         {
@@ -21,7 +21,7 @@
     },
     {
       "id": "review-proxied",
-      "label": "/decks/[id]/changes \u2014 a PENDING printed add, marked not billed",
+      "label": "/decks/[id]/changes — a PENDING printed add, marked not billed",
       "view": "src/components/decks/update-diff-row.tsx",
       "steps": [
         {
@@ -33,7 +33,7 @@
     },
     {
       "id": "commander-caption",
-      "label": "/decks/[id] \u2014 the mark on a commander caption",
+      "label": "/decks/[id] — the mark on a commander caption",
       "view": "src/components/decks/spine-desktop.tsx",
       "steps": [
         {
@@ -45,7 +45,7 @@
     },
     {
       "id": "commander-caption-phone",
-      "label": "/decks/[id] \u2014 the commander caption's mark, phone spine",
+      "label": "/decks/[id] — the commander caption's mark, phone spine",
       "view": "src/components/decks/spine-mobile.tsx",
       "widths": [
         "phone"
