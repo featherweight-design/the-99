@@ -134,11 +134,11 @@ export const aboutEntries: readonly AboutEntry[] = [
     // `src/lib/copy/card-assignments.ts` — the summary has no copy module of
     // its own. See `design/design_handoff_the99_about/READINESS-r4.md`.
     //
-    // One structural decision inside it, not a fixture: the `freed up` row
-    // carries NO diamond. `3 cards freed up` means those copies became free,
-    // and free carries nothing anywhere in the app — the availability entry
-    // two above this one teaches exactly that. A solid diamond there would be
-    // the `none free` mark on a row announcing the opposite.
+    // One structural decision inside it, not a fixture: a row under
+    // `No longer to buy` carries NO diamond. Those copies became free, and
+    // free carries nothing anywhere in the app — the availability entry two
+    // above this one teaches exactly that. A solid diamond there would be the
+    // `none free` mark on a row announcing the opposite.
     since: 1,
   },
   {
@@ -180,7 +180,7 @@ export const aboutEntries: readonly AboutEntry[] = [
     keys: [
       'missing — dashed edge, dimmed art, and a price an owned cell never carries. Absent, not disabled: it still opens.',
       'the cost covers the cards ManaPool actually stocks. One that has never been stocked is named and left out rather than priced at zero.',
-      'Base run is the set; extras are counted apart and sit below. That is why 162 of 208 and 321 cells are both true.',
+      'Base run is the set; extras are counted apart and sit below — which is why the completion figure and the number of cells on screen do not match.',
     ],
     since: 1,
   },
