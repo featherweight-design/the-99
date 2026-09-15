@@ -307,3 +307,52 @@ this repository has hit repeatedly.
    extended revalidation. Backend, unblocked.
 3. `pnpm probe:proxies`. Backend, unblocked.
 4. The three surfaces, once the handoff returns Green.
+
+---
+
+# Addendum — what the design rounds added
+
+Date: 2026-09-15. The handoff (`design/design_handoff_the99_proxies/`, R1 + R2) was audited
+🟢 Green. Four rulings and three findings came out of those rounds; all of them are build
+scope this spec did not previously carry.
+
+## Rulings
+
+1. **The mark is the glyph `P`, decoded by a key.** A one-character mark in `BuyTag`'s box,
+   with a mark key under the decklist toolbar listing only the marks the current view
+   contains. The word rides three carriers — the key, a `title`, and an `sr-only` name — which
+   is `BuyTag`'s own arrangement at collapsed density. The key is a shared component that
+   future marks are added to, not a proxy-specific legend.
+2. **`/collection/proxies` is read-only.** A row names its decks and opens the card sheet;
+   unmarking happens in the deck, because the sheet's control is per deck and a row belongs
+   to several.
+3. **The proxy count appears on the deck page AND the `/decks` tile.** The deck page's line
+   sits under the progress bar; the tile takes `N proxies` in `detailFor`'s existing slot as a
+   second fallback, ranked after the `Building` + `inUseElsewhere` clause. It can never take a
+   warning colour, structurally: every status that would lend it one already fills that slot.
+4. **`groupInBreakdown` gains a fourth term.** `3 free · 2 sleeved · 1 to buy · 1 proxied`,
+   absent at zero. The alternative — leaving the terms to under-sum — was rejected: a
+   breakdown that does not account for every row in its group reads as a rendering fault.
+
+## Findings from the R2 read of the source
+
+1. **`AvailabilitySlot` draws a buy tag on a proxied add, as shipped.**
+   `update-diff-row.tsx:225` opens `if (buyable && (!card.owned || …))`, and a proxied add is
+   unowned — so `/decks/[id]/changes` would quote a price for a card the player has decided
+   not to buy. The slot must test proxied first. This is a defect, not a design call, and it
+   is the third surface the mutual-exclusion constraint reaches.
+2. **Three purchase figures must exclude a proxied add**: the review footer's `buy`, the commit
+   sheet's total, and the pending banner's `money` sentence (*N of the M are short of spare
+   copies*). A proxied add is not short of anything.
+3. **The review row needs its own word.** `bucketWord` returns `null` for `free`, and silence
+   would have been available — but `free` means *your collection has a spare copy for this*,
+   and borrowing it would assert a copy in a box on the one surface whose job is saying what a
+   commit will cost. The chip reads `proxied`, in the mark's dashed skin rather than a bucket's
+   tinted plate.
+
+## Copy corrections carried into the build
+
+The handoff's copy file ships two strings whose em dash is a sentence connector, which rule 4
+forbids here, and one ambiguous sentence: *"None of these is in your collection because of this
+page"* can be read as "…and that is because of this page". Both are rewritten in
+`src/lib/copy/proxies.ts` rather than transcribed.
