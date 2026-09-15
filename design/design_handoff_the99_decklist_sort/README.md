@@ -11,7 +11,7 @@ in a bar plus its states.
 | `The 99 - Deck List Sort (R1).dc.html` | The deliverable. The row inventoried and read as three clusters, 4.1 answered, four variants at 1300 and four at 390 with the measurements, the trigger at rest / open / chosen, both popovers and the sheet, §4's five questions answered in order, the copy table, and two defects the mount exposes plus one accepted geometry note. |
 | `STATES-decklist-sort.md` | Eight variants × seven states, in full, including what each must not do. |
 | `decklist-sort · copy strings.ts` | Production strings and the four pure helpers, with the reuse from `collectionFilterCopy.sort` marked rather than duplicated. |
-| `READINESS.md` | Self-assessment, the one copy call I want a second opinion on, and what I would cut. |
+| `READINESS.md` | Self-assessment, the two calls it raised — both settled 2026-09-14 as drawn — and what it would cut. |
 | `brand/` | The brand sheet, carried so the folder opens standalone. Unmodified. |
 
 Open the `.dc.html` directly in a browser — it needs no server. Every frame is drawn at its true

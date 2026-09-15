@@ -167,11 +167,15 @@ async function openSortPanel(page) {
   await onPage(page, "[role=option]").first().waitFor({ timeout: 5_000 });
 }
 
-/** The toolbar's row, its children, and where each of them ends. */
-const MEASURE = () => {
-  const trigger = [...document.querySelectorAll("main button")]
-    .find((b) => /Sort the deck list/.test(b.getAttribute("aria-label") ?? ""));
-  if (!trigger) return null;
+/**
+ * The toolbar's row, its children, and where each of them ends.
+ *
+ * Evaluated THROUGH the scoped trigger locator rather than re-querying `main`
+ * inside the page: `surface.mjs` owns what "the page" means, and a second copy
+ * of `PAGE` here is how a probe drifts from the one definition — the thing
+ * `surface.test.mts` exists to enforce. The element arrives as the argument.
+ */
+const MEASURE = (trigger) => {
   // The row is the wrapping flex container the trigger's cluster sits in.
   // The trigger's own cluster is the nearest `flex-none` ancestor; `FilterPanel`
   // wraps its button in a `relative` div of its own, so `parentElement` is that
@@ -258,9 +262,14 @@ async function run() {
       await page.waitForTimeout(2_500);
 
       console.log(`\n=== ${width}px · All, auto cluster and a DRAFT note present`);
-      const all = await page.evaluate(MEASURE);
+      const trigger = onPageRole(page, "button", /Sort the deck list/).first();
+      if (await trigger.count() === 0) {
+        failures += !report("the toolbar draws a sort trigger", false, "no trigger on the page");
+        continue;
+      }
+      const all = await trigger.evaluate(MEASURE);
       if (all === null) {
-        failures += !report("the toolbar draws a sort trigger", false, "no trigger found");
+        failures += !report("the toolbar's row can be measured", false, "no wrapping row found");
         continue;
       }
 

@@ -214,12 +214,20 @@ export function GroupToggle({
         {/* The hairline divides ACTING ON the cards from READING them, and sort
             is on the reading side — so it sits in front of this cluster rather
             than past it, which is the opposite of the chassis' hairline (that
-            one says "not a filter"). A separator, not a child: it renders
-            nothing at phone, where there is no room for it. */}
-        <span
-          aria-hidden
-          className="hidden md:block h-[22px] w-px flex-none bg-[color:var(--border-strong)]"
-        />
+            one says "not a filter").
+            A SEPARATOR, NOT A CHILD, which is a rule about what it may never
+            do: with nothing on its left it renders nothing. Its own condition
+            rather than cluster 2's, because that cluster is drawn whenever a
+            note or the controls exist while `ClearAutoButton` can still return
+            an empty wrapper at zero — a rule dividing nothing from something is
+            just a stray mark and a 10px gap. And nothing at phone either, where
+            there is no room for it. */}
+        {(draftNote || autoCount > 0 || keptCount > 0) && (
+          <span
+            aria-hidden
+            className="hidden md:block h-[22px] w-px flex-none bg-[color:var(--border-strong)]"
+          />
+        )}
         {/* A `div`, not a `span`: this cluster holds `FilterPanel`, whose root
             is a block element, and `<span><div/></span>` is invalid markup that
             React warns about at runtime. */}
