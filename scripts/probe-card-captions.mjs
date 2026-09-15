@@ -455,10 +455,9 @@ async function run() {
                       where v.deck_id = ${deckId} and v.id <> ${versionId}
                       order by v.number desc limit 1)
              where dc.deck_id = ${deckId}`;
-          // `returning` is the receipt. Cleanup deletes only when this exact
-          // write landed, and only a row still at the quantity it was inserted
-          // with — so a concurrent edit that bumped the count is left alone
-          // rather than having the player's copies deleted out from under it.
+          // No receipt is kept, deliberately — see the cleanup's own note. The
+          // row is identified at teardown by the quantity it was inserted with,
+          // which survives a lost reply where a receipt does not.
           await sql`
             insert into deck_cards (deck_id, oracle_id, quantity, auto)
             values (${deckId}, ${spare.oracle_id}, 1, false)
