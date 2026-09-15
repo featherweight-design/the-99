@@ -492,10 +492,25 @@ describe("ContestedCardRow — the chooser", () => {
     // Two copies, two decks, one apiece: the senior deck loses nothing to this pick.
     expect(screen.getByRole("radio", { name: /HD Avatar Aang/ }).textContent)
       .toContain(copy.contested.gets);
-    land({ ok: true, card: twoCopies });
+    // Resolved with the GRANT on it, so the settled state is observably different from the
+    // optimistic one: `picked` stands down here and authorship is read from the data instead.
+    // A payload granting nobody leaves the assertion passing on the optimistic render it was
+    // meant to outlive.
+    land({ ok: true, card: card({
+      arrived: 1,
+      owned: 2,
+      claimants: [
+        { deckId: "d1", deckName: "HD Avatar Aang", quantity: 1, commanderCopies: 0, granted: 0, since: AUG, versionNumber: 7, allocated: 1 },
+        { deckId: "d2", deckName: "Elemental Dragons", quantity: 2, commanderCopies: 0, granted: 1, since: SEP, versionNumber: 2, allocated: 1 },
+      ],
+    }) });
     await waitFor(() => {
-      expect(screen.getByRole("radio", { checked: true })).toBeTruthy();
+      expect(screen.getByRole("radio", { name: /Elemental Dragons/ }).getAttribute("aria-checked"))
+        .toBe("true");
     });
+    // Read off the DATA now, not the optimistic set — the senior deck still holds its copy.
+    expect(screen.getByRole("radio", { name: /HD Avatar Aang/ }).textContent)
+      .toContain(copy.contested.gets);
   });
 
   it("discards a superseded tap's answer instead of drawing it", async () => {
@@ -529,6 +544,34 @@ describe("ContestedCardRow — the chooser", () => {
       .toBe("true");
     expect(screen.getByRole("radio", { name: /Elemental Dragons/ }).getAttribute("aria-checked"))
       .toBe("false");
+  });
+
+  it("lets a fresher payload retire a write that is still in flight", async () => {
+    // A revalidation can land while a pick is unanswered — another tab, or the action's own
+    // `revalidateClaims` reaching the parent first. Adopting those props retires the write: its
+    // answer is an older reading, and drawing it would undo the fresher one.
+    let land: (v: unknown) => void = () => {};
+    assign.mockReturnValue(new Promise((resolve) => { land = resolve; }));
+    const { rerender } = render(<ContestedCardRow card={card()} />);
+    fireEvent.click(screen.getByRole("radio", { name: /Elemental Dragons/ }));
+    // New props arrive: the senior deck was granted the copy by something else entirely.
+    const fresher = card({ claimants: [
+      { deckId: "d1", deckName: "HD Avatar Aang", quantity: 1, commanderCopies: 0, granted: 1, since: AUG, versionNumber: 7, allocated: 1 },
+      { deckId: "d2", deckName: "Elemental Dragons", quantity: 1, commanderCopies: 0, granted: 0, since: SEP, versionNumber: 2, allocated: 0 },
+    ] });
+    rerender(<ContestedCardRow card={fresher} />);
+    await waitFor(() => {
+      expect(screen.getByRole("radio", { name: /HD Avatar Aang/ }).getAttribute("aria-checked"))
+        .toBe("true");
+    });
+    // The retired write answers, naming the other deck. It must not be drawn.
+    land({ ok: true, card: card({ claimants: [
+      { deckId: "d1", deckName: "HD Avatar Aang", quantity: 1, commanderCopies: 0, granted: 0, since: AUG, versionNumber: 7, allocated: 0 },
+      { deckId: "d2", deckName: "Elemental Dragons", quantity: 1, commanderCopies: 0, granted: 1, since: SEP, versionNumber: 2, allocated: 1 },
+    ] }) });
+    await waitFor(() => expect(assign).toHaveBeenCalledTimes(1));
+    expect(screen.getByRole("radio", { name: /HD Avatar Aang/ }).getAttribute("aria-checked"))
+      .toBe("true");
   });
 
   it("pressing the chosen deck again clears it", async () => {

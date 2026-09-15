@@ -170,14 +170,14 @@ export function ContestedCardRow({
   // reservation set is not that: after a refusal clears the optimistic pick it holds whoever
   // already had one, which is a different deck and the wrong name to print.
   const [attempted, setAttempted] = useState<{ id: string; name: string } | null>(null);
+  const [announce, setAnnounce] = useState("");
   // WHICH TAP IS STILL THE CURRENT ONE. Next dispatches Server Actions one at a time per client
   // (`node_modules/next/dist/docs/01-app/02-guides/server-actions.md`, "Sequential dispatch on
   // the client"), so the WRITES cannot race or land out of order. The taps are not serialised
-  // though, and without this the first write's `finally` stood the second tap's preview down
-  // while that write was still queued: the marks fell back to the props for a moment and then
-  // corrected, which is the flicker this component exists to remove, one tap later.
+  // though, and neither are they the only thing that can supersede a write: a fresher payload
+  // arriving from the server does it too. Both advance this, and a write whose number is stale
+  // neither draws its answer nor stands anything down.
   const tap = useRef(0);
-  const [announce, setAnnounce] = useState("");
   const [, startTransition] = useTransition();
   // A fresh server payload always wins, and is filed on its way past. Adjusted during render
   // rather than in an effect, or the previous allocation paints once before being corrected.
@@ -187,6 +187,11 @@ export function ContestedCardRow({
     setCard(initial);
     setRefusal(null);
     setPicked(null);
+    // AND THE IN-FLIGHT WRITE LOSES ITS CLAIM ON THIS ROW. Adopting new props is the same event
+    // as a newer tap for the purpose of the token below: without this, a write that started
+    // before the payload arrived would still pass its guard and overwrite the fresher reading
+    // with its own, older one.
+    tap.current += 1;
   }
 
   // AUTHORSHIP IS A FACT ABOUT THE DATA, not a fact about this component's lifetime. A deck with
