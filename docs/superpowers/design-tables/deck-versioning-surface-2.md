@@ -239,8 +239,14 @@ it") — though the canvas draws two zero rows (`Artifacts 0`, `Lands 0`).
 
 ## Component: Count chips
 
-The facet strip's construct verbatim. Four chips: in, out, to buy (carrying the total),
-can be pulled. A count of nought is never drawn.
+The facet strip's construct verbatim. FIVE chips: in, out, to buy (carrying the total),
+can be pulled, and — added 2026-09-15 with the card-assignment chooser — still short. A count of
+nought is never drawn.
+
+**Amended 2026-09-15**: the fifth chip. `still short` counts the CARDS on this page with a
+contested copy — one decision each, never a count of copies — and takes the over state's own ink,
+because `marker.over` says `short n` about the same card on the deck page. Drawn last, under the
+same zero suppression as the other four.
 
 | Property | Mobile | Desktop |
 |----------|--------|---------|
@@ -252,8 +258,8 @@ can be pulled. A count of nought is never drawn.
 | chip border | — | `1px solid #3A3229` (`--border-strong`) |
 | chip border-radius | — | `999px` |
 | chip padding | — | `6px 14px` |
-| figure | — | mono `13px` — `#6FA368` in · `#E0913C` out · `#E0913C` to buy · `#C9A24B` pullable |
-| label | — | mono `11px` `#C6B79A` — `in` · `out` · `to buy` · `can be pulled` (`review.chipIn/chipOut/chipBuy/chipPullable`) |
+| figure | — | mono `13px` — `#6FA368` in · `#E0913C` out · `#E0913C` to buy · `#C9A24B` pullable · `var(--avail-over-fg)` still short |
+| label | — | mono `11px` `#C6B79A` — `in` · `out` · `to buy` · `can be pulled` · `still short` (`review.chipIn/chipOut/chipBuy/chipPullable/chipShort`) |
 | total (to-buy chip only) | — | a second mono `11px` `#E0913C` figure, `$254.10` |
 | zero suppression | — | a chip whose count is nought is absent (states 14, 15; matrix rule 1) |
 

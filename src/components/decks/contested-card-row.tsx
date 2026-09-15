@@ -124,7 +124,7 @@ function refusalSentence(cause: AssignRefusal, card: ContestedCard, deckName: st
       return copy.contested.refusedNotWanted(deckName, card.cardName, holder);
     case "no-supply-left":
       // Reachable on the review page too — a race, or a pick made while another tab took the
-      // last copy — and there nothing arrived at all.
+      // last copy — and nothing arrived there at all.
       return surfaceWords(card.fromImport).refusedNoSupply(holder, card.owned, deckName);
     case "target-is-commander":
       return copy.contested.refusedIsCommander(card.cardName, deckName);
