@@ -1,8 +1,10 @@
 # READINESS — Card captions (R1 audit)
 
-**Verdict: 🟢 Green, with five errata.** All four calls the brief left open are called, every
+**Verdict: 🟢 Green, with six errata.** All four calls the brief left open are called, every
 named state is drawn, and nothing here waits on a design decision. The errata below are
 eng-resolvable under the handoff's own tie-break rule and do not return to Design.
+
+Erratum 5 was added after the brief's own review round; the other five came from the audit.
 
 **Audited against `origin/main` at `f5745d11` on 2026-09-15.** Every claim below was read on that
 commit. The handoff was drawn against an earlier tree, and three of the five errata are merges
@@ -135,7 +137,28 @@ phone and 10px short on desktop, and the invariant its own comment states quietl
 Export the caption height beside `TILE_SHELL` and have both read it, exactly as they already share
 the shell and the ratio. Ledger gains an item.
 
-## Erratum 5 — the handoff is not on `main`
+## Erratum 5 — the grid is a tile floor, not a column count
+
+Found in review of the brief (#635), and it changes ledger items 3 and 6.
+
+**`md:grid-cols-6` breaks the tile it exists to protect.** `md:` begins at 768px, where
+`/collection` has 638px of track and six columns is a **90px** tile — half the 175px phone tile
+whose parity is the entire argument for ruling 3. A fixed count holds the count and lets the tile
+vary, which inverts the design: the tile is what was ruled on.
+
+**And the deck grid's stated reason for `auto-fill` is stale.** `decklist-group.tsx:69-74` says a
+340–346px Add panel opens over the pane. It does not: `BuilderShell` renders `QuickAddBar` as a
+full-width sticky bottom dock (`builder-shell.tsx:1224` —
+`sticky bottom-[var(--tabbar-h)] md:bottom-0 … px-[16px] md:px-[30px]`). Nothing overlays the grid.
+
+**Resolution — eng, not Design.** Both grids take one declaration,
+`repeat(auto-fill, minmax(178px, 1fr))`. This is the faithful reading of ruling 3 rather than a
+departure from it: the ruling names a 178px tile and gives six columns as its consequence at the
+1300px reference width, which is exactly what the floor produces — 178.3px on `/collection`, 181px
+on the deck pane, whose ancestor pays `md:px-[26px]` (`decklist.tsx:717`). The stale comment is
+corrected in the same PR that changes the declaration.
+
+## Erratum 6 — the handoff is not on `main`
 
 It was delivered as an untracked drop inside `.worktrees/about-r3-audit/`, on branch
 `design/about-r3-audit`, committed to nothing. This PR is its first tracked home. The drop must be
@@ -163,10 +186,10 @@ pressure will reach for exactly them:
 |---|---|---|
 | 1 | `AvailabilityMarker` gains `plate?: boolean` | no |
 | 2 | `BuyTag` gains the same prop | no |
-| 3 | `collection/grid-view.tsx` — caption chassis, `md:grid-cols-6` | after 1 |
+| 3 | `collection/grid-view.tsx` — caption chassis, `repeat(auto-fill, minmax(178px, 1fr))` (erratum 5) | after 1 |
 | 4 | `deck-card-tile.tsx` — caption chassis, `✕` column, art bare, scrim deleted. **`CostPips`, `spokenManaCost` and the no-art branch all stay** (erratum 2) | after 1, 2 |
 | 5 | Caption height exported beside `TILE_SHELL`; `UndoTile` reads it (erratum 4) | after 4 |
-| 6 | `decklist-group.tsx` — `minmax()` floor tuned to yield 178px with the panel closed | after 4 |
+| 6 | `decklist-group.tsx` — same floor as `/collection`; the stale Add-panel comment corrected (erratum 5) | after 4 |
 | 7 | `usePendingChange` second consumer; caption edge + `1 → 2` / `+N` (erratum 1 — unblocked) | after 4 |
 | 8 | `ProxyTag` moves from the tile's art to the caption slot — already drawn at `deck-card-tile.tsx:121` (erratum 1) | after 4 |
 | 9 | `MarkKey` above the card grid — drop the `view === "card"` guard at `decklist.tsx:198` | after 8 |

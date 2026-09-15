@@ -121,7 +121,8 @@ three side by side and measure before the caption is assembled.
 - Chip and `×N` down onto the meta line; `SET · rarity` right-aligned on it, rarity dropped at the
   phone as shipped.
 - No ownership dot (the route lists what you own), no `//`, no `trailing`.
-- Grid goes `md:grid-cols-6`.
+- Grid goes `repeat(auto-fill, minmax(178px, 1fr))` — readiness erratum 5. **Not `md:grid-cols-6`**:
+  `md:` begins at 768px, where six columns is a 90px tile.
 - The tile stays one `<button>`. The caption is inside it, so the `aria-hidden` name and its
   `sr-only` sibling keep their current arrangement — `CardTileCaption` must not introduce a nested
   interactive element on this route.
@@ -142,12 +143,19 @@ invariant that actually matters.
 
 ### T6 · The grid floor
 
-`decks/decklist-group.tsx`, ledger 6.
+`decks/decklist-group.tsx`, ledger 6, readiness erratum 5.
 
-Keeps `auto-fill` — the Add panel is 340–346px and opens over the pane, so a fixed count would
-overflow or gutter. Raise `minmax(132px, 1fr)` to the floor that yields 178px at the default desktop
-width with the panel closed. **Compute against the deck pane's own measured width, not
-`/collection`'s** — the two containers differ and 178px is the target tile, not a shared arithmetic.
+Takes the **same declaration as `/collection`** — `repeat(auto-fill, minmax(178px, 1fr))`. One
+number, both routes, and the column count falls out of the width.
+
+**Correct the stale comment in the same edit.** `:69-74` says the grid is `auto-fill` because a
+340–346px Add panel opens over the pane. `QuickAddBar` is a full-width sticky bottom dock
+(`builder-shell.tsx:1224`) and nothing overlays the grid. The grid still wants `auto-fill`, for the
+ordinary reason: a floor is what holds a tile size across widths. Leaving the comment would hand
+the next reader a rationale that supports nothing.
+
+At 1300px this yields six tracks of 181px on the deck pane, whose ancestor pays `md:px-[26px]`
+(`decklist.tsx:717`), and 178.3px on `/collection`.
 
 ### T7 · Tests
 
