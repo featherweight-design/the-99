@@ -181,6 +181,23 @@ async function reservationSection() {
     check("the displaced senior deck is billed for a copy", await owes(a), 1);
     check("and the reserving deck is billed for none", await owes(b), 0);
 
+    // 2c. OFF ANY DECKLIST. With no vantage deck, `free` means what it has always
+    //     meant — copies not sleeved in a committed deck — and a reservation must not
+    //     move it: a reserved copy is still sleeved in the same deck it was. This is
+    //     the branch that reads the UNRESERVED hard total, and it exists only because
+    //     reserved copies are subtracted separately; reading the raw hard total there
+    //     subtracts them twice. Nothing else in this file takes this read, so the
+    //     branch is unproven without it. (With the split reverted this is the only
+    //     check that fails.)
+    const offDecklist = async () => {
+      const av = await loadAvailability(USER_R, { oracleIds: [card] });
+      return av.get(card)?.free ?? null;
+    };
+    // Two committed decks each claim the one copy, so this reads -1 with or without
+    // a reservation — that invariance IS the check. Reading the raw hard total here
+    // subtracts the reserved copy a second time and it reads -2.
+    check("off any decklist a reservation moves nothing", await offDecklist(), -1);
+
     // 3. Capped at the deck's own ask — and the SUPPLY has to be generous for this
     //    case to measure anything. With one copy owned the supply ceiling binds
     //    first, so a reservation of three grants one whether or not the ask is
