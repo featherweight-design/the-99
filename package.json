@@ -29,6 +29,7 @@
     "db:build:index": "tsx scripts/build-commander-index.ts",
     "db:build:prose": "tsx scripts/generate-commander-prose.ts",
     "db:copy:prose": "tsx scripts/copy-commander-prose.ts",
+    "probe:card-captions": "node scripts/probe-card-captions.mjs",
     "probe:claims": "tsx scripts/probe-claim-model.ts",
     "probe:proxies": "tsx scripts/probe-proxies.ts",
     "probe:sets": "node scripts/probe-sets.mjs",

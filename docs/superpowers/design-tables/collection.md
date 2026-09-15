@@ -687,9 +687,16 @@ on this row.
 | Property | Mobile | Desktop |
 |----------|--------|---------|
 | display | grid | grid |
-| grid-template-columns | 1fr 1fr (2-up) | repeat(5, 1fr) (5-up) |
+| grid-template-columns | 1fr 1fr (2-up) | `repeat(auto-fill, minmax(178px, 1fr))` — **six at the 1300px reference width** |
 | gap | 12px | 20px (v2: 16 + 4, browse loosening) |
 | padding | 4px 14px 14px | 20px 34px 34px |
+
+> **Superseded 2026-09-15 — card captions (R1), ruling 3 and readiness erratum 5.** The desktop
+> track was `repeat(5, 1fr)`. It is a TILE FLOOR now, and the column count falls out of the width:
+> the ruling names a 178px tile, chosen because the phone's 2-up tile is 175px and one caption then
+> serves both widths. A fixed `grid-cols-6` was rejected — `md:` begins at 768px, where this
+> container has 638px of track and six columns is a 90px tile. The phone keeps an explicit 2-up,
+> because at 390px one 178px floor plus a gap already exceeds the track.
 
 ### Grid Tile Container
 | Property | Mobile | Desktop |
@@ -725,23 +732,47 @@ on this row.
 | Multi (2-color) | `linear-gradient(125deg, color1-mid, color1-light 40%, color2-light 60%, color2-mid)` |
 
 ### Grid Tile: Quantity Badge
-| Property | Mobile | Desktop |
-|----------|--------|---------|
-| position | absolute | absolute |
-| top | 6px | 8px |
-| right | 6px | 8px |
-| font-family | 'IBM Plex Mono', monospace | 'IBM Plex Mono', monospace |
-| font-size | 11px | 12px |
-| font-weight | 600 | 600 |
-| color | #14110E | #14110E |
-| background | #C9A24B | #C9A24B |
-| border-radius | 6px | 6px |
-| padding | 2px 6px | 2px 7px |
+
+> **Retired 2026-09-15 — card captions (R1), call D.** The badge is gone from the art. It was the
+> loudest thing on the illustration — accent fill, `--bg` ink — for the most ordinary fact a tile
+> carries, and a count is now a mono figure on the caption's meta line beside the availability chip.
+> The accent plate, the absolute position and the 6px radius all go with it; nothing on this tile is
+> drawn over the art any more.
 
 ### Grid Tile: Caption Area
 | Property | Mobile | Desktop |
 |----------|--------|---------|
-| padding | 7px 9px 9px | 13px 15px 15px (v2: each +4, browse loosening) |
+| min-height | **52px** | **46px** |
+| layout | two lines: a mono meta line, then the name | same |
+| padding | `6px 9px` | `6px 10px` |
+| line gap | 3px | 3px |
+
+> **Rebuilt 2026-09-15 — card captions (R1), call A.** The caption was a name over a set line at
+> `7px 9px 9px` / `13px 15px 15px`. It is two lines at a fixed height now, because the marks that
+> used to sit on the art have to land somewhere and one line is ~72px short of holding them beside
+> a readable name. The height is fixed at both widths so tile height never depends on the data.
+> Rendered by `src/components/ui/card-tile-caption.tsx`, which `/decks/[id]` shares.
+
+### Grid Tile: Meta Line
+| Property | Mobile | Desktop |
+|----------|--------|---------|
+| font-family | 'IBM Plex Mono', monospace | 'IBM Plex Mono', monospace |
+| font-size | 9px | 9.5px |
+| gap | 6px | 6px |
+| order | the one slot (availability chip), then `×N`, then the set line right-aligned | same |
+
+### Grid Tile: Slot Box
+| Property | Mobile | Desktop |
+|----------|--------|---------|
+| font-size | 8.5px | 9px |
+| padding | 1px 5px | 1px 5px |
+| border-radius | 4px | 4px |
+| edge | `outline` at `outlineOffset: -1px` | same |
+
+> **The edge is an outline and never a border**, and that is layout rather than taste: a border adds
+> 2px to the box, and this box is shared with the collapsed buy tag and the proxy mark on
+> `/decks/[id]`, neither of which pays it. One slot, three occupants, one box — the invariant the
+> outline exists to keep true.
 
 > **v2 density delta (Surfaces v2 §Collection).** The mock states "grid tiles:
 > padding 12→16, gap 14→18". Neither "before" matches shipped code, so the **+4
