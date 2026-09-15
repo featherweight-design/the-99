@@ -1,0 +1,1 @@
+ALTER TABLE "csv_uploads" ADD COLUMN "summary_payload" jsonb;
