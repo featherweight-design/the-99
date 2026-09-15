@@ -915,7 +915,7 @@ does not set are omitted rather than guessed.
 | height | — | 32px |
 | background | — | rgba(20,17,14,.5) |
 | border-radius | — | 8px |
-| copy key | — | `commandersCopy.row.action` |
+| copy key | — | `commandersCopy.row.action` **RETIRED 2026-09-14** — the pill was revealed on hover only, restated the destination the whole row already links to, and had no phone state; the discover lane had already dropped its equivalent. The key is deleted from `lanes.ts`. Do not implement against it. |
 | note | the row itself is the action | the row itself is the action |
 
 ---

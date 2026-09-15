@@ -449,6 +449,28 @@ Package manager is **pnpm** (pinned via `packageManager` in package.json) — ne
   with the membership filter reverted, 4 of its 8 checks fail. It deletes the deck in a
   `finally`; point it at `local-dev` or a scratch Neon branch, **never production**.
 
+- `pnpm probe:commit-offer` measures the desktop deck header in the one state that collapsed
+  it: a versionless deck at a full body, where `Commit as v1` and its note join the action
+  column. That note is a single ~318px mono line, the column sized to its content and was
+  `flex-none`, and the deficit came out of the title column, which resolved to **0px** — the
+  deck's name, its commander line and its progress track each measured zero while every one
+  of them sat in the DOM with its text intact, and the actions drew 283px past the band's
+  right edge. jsdom lays nothing out, so every component test on this header passed over it.
+
+  No fixture account happened to own a deck in that state, which is why no probe saw it
+  either, so this one writes it: a brew with 99 `deck_cards` rows and no version, which is
+  the exact gate `builder-shell.tsx` reads. The deck's name is deliberately LONG, because a
+  short one leaves slack in the title column and slack is what hid this — the column has to
+  be asked for more than it can have before it can be seen giving way. It asserts resolved
+  widths against floors rather than asserting a class list, the defect having been a resolved
+  width and not a missing rule, and it fails when the fixture draws no offer at all rather
+  than quietly measuring the header every other check already covers. It waits for the title
+  `attached` rather than `visible`: a collapsed title is zero-width, which Playwright calls
+  hidden, so waiting on visibility turns the defect into a 30s timeout that abandons every
+  width after the first. Run with the fix reverted, 15 of its checks fail across four widths.
+  It deletes its deck in a `finally`; point it at `local-dev` or a scratch Neon branch,
+  **never production**.
+
 - `pnpm probe:scroll-lock` presses every overlay the app draws over a scrim — the filter
   sheets on `/collection`, `/commanders`, `/discover`, `/decks` and a set page, the
   `FilterPanel` sort sheet, and the card modal — and proves the page behind each one does

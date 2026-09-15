@@ -48,6 +48,7 @@
     "probe:pip-gap": "node scripts/probe-pip-gap.mjs",
     "probe:build-from": "node scripts/probe-build-from.mjs",
     "probe:arrivals": "tsx scripts/probe-arrivals.ts",
+    "probe:commit-offer": "node scripts/probe-commit-offer.mjs",
     "check:collection-routes": "node scripts/check-collection-routes.mjs"
   },
   "dependencies": {

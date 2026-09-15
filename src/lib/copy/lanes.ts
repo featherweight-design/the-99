@@ -96,7 +96,11 @@ export const commandersCopy = {
     // The same slot when synergy went unmeasured: the figure is out of what
     // could be scored, and printing `/100` there would claim a reading nobody took.
     fitDenominatorMeasurable: (max: number) => `/${n(max)} MEASURABLE FIT`,
-    action: "Start this deck",
+    // `action` is RETIRED. It named the hover-revealed `Start this deck` pill at
+    // the end of the owned row; the discover lane dropped its equivalent when the
+    // pill was found to restate the destination the whole row already carries,
+    // and this lane follows. A control revealed on hover is discovered by
+    // accident and has no phone state at all.
   },
 
   empty: {
