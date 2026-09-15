@@ -43,6 +43,7 @@ function ReceiptRow({
   cardName,
   deckName,
   reason,
+  warn,
 }: {
   cardName: string;
   deckName: string;
@@ -62,7 +63,13 @@ function ReceiptRow({
         {deckName}
       </span>
       {reason ? (
-        <span className="font-mono text-[10.5px] md:text-[11px] md:flex-none" style={{ color: "var(--fg-faint)" }}>
+        <span
+          className="font-mono text-[10.5px] md:text-[11px] md:flex-none"
+          // `--warning` is reserved for the one reason a player can act on without buying
+          // anything: they own the card and the CSV line failed. Every other reason is a fact
+          // about what they have to go and buy, and reads in the faint ramp.
+          style={{ color: warn ? "var(--warning)" : "var(--fg-faint)" }}
+        >
           {reason}
         </span>
       ) : null}
@@ -115,7 +122,11 @@ export function ArrivalsSummary({
         {copy.summary.eyebrow}
       </p>
       <h1 className="font-display font-bold text-[24px] md:text-[30px] mt-[6px] mb-[8px]" style={{ color: "var(--fg)" }}>
-        {copy.summary.heading(summary?.totalAfter ?? 0)}
+        {/* A LOST RECEIPT HAS NO FIGURE, and must not invent one. `summary` is null only when
+            the payload did not survive its write, and `heading(0)` would then tell a player
+            with 2,733 cards that they have none — a false statement, and one that makes a
+            successful import look like an emptied collection. */}
+        {summary ? copy.summary.heading(summary.totalAfter) : copy.summary.headingNoReceipt}
       </h1>
       <p className="text-[13.5px] m-0" style={{ color: "var(--fg-body)" }}>
         {nothingToReport
@@ -126,6 +137,9 @@ export function ArrivalsSummary({
       </p>
       <p className="font-mono text-[10.5px] mt-[8px] mb-0" style={{ color: "var(--fg-faint)" }}>
         {copy.summary.fileStamp(stampDate, filename)}
+        {/* On the empty receipt the lede says nothing your DECKS care about moved, and without
+            the file's own delta beside it that reads as an import which did nothing at all. */}
+        {nothingToReport && summary ? ` · ${copy.summary.fileDelta(summary.arrived + summary.left)}` : ""}
       </p>
 
       {/* The issues line. Counts and a route back, never the list again: `IssueInspector`

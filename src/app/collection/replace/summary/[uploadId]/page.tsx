@@ -13,6 +13,7 @@ import { requireUserId } from "../../../../../lib/auth";
 import { loadSummaryView } from "../../../../../lib/collection/summary-read";
 import { ArrivalsSummary } from "../../../../../components/collection/arrivals-summary";
 import { isUuid } from "../../../../../lib/uuid";
+import { formatDeckDate } from "../../../../../lib/decks/format";
 import type { UploadPreview } from "../../../actions";
 
 export default async function ImportSummaryPage({
@@ -35,7 +36,7 @@ export default async function ImportSummaryPage({
   // The issues line's route back reads the preview payload this upload already carries, which
   // is what `IssueInspector` is built against — so nothing new is stored and nothing is fetched.
   const preview = view.summary && view.summary.issues.unmatched + view.summary.issues.parseErrors > 0
-    ? await previewFor(uploadId, userId)
+    ? await previewFor(uploadId, userId, view.summary.totalBefore)
     : null;
 
   return (
@@ -45,9 +46,11 @@ export default async function ImportSummaryPage({
         contested={view.contested}
         preview={preview}
         filename={view.filename}
-        stampDate={view.confirmedAt.toLocaleDateString("en-GB", {
-          day: "numeric", month: "short", year: "numeric",
-        })}
+        // Through the app's own formatter, which owns both rules this stamp needs: en-US month
+        // names, because en-GB writes `Sept` where every other date in the app writes `Sep`, and
+        // UTC, because `confirmed_at` is a timestamp without a zone and a local boundary would
+        // render one day on the server and another in the browser.
+        stampDate={formatDeckDate(view.confirmedAt)}
       />
     </section>
   );
@@ -60,7 +63,11 @@ export default async function ImportSummaryPage({
  * parse errors and nothing else, and the rest of `UploadPreview` describes a decision the
  * player has already made.
  */
-async function previewFor(uploadId: string, userId: string): Promise<UploadPreview | null> {
+async function previewFor(
+  uploadId: string,
+  userId: string,
+  totalBefore: number,
+): Promise<UploadPreview | null> {
   const { db } = await import("../../../../../db");
   const { csvUploads } = await import("../../../../../db/schema");
   const { and, eq } = await import("drizzle-orm");
@@ -78,7 +85,10 @@ async function previewFor(uploadId: string, userId: string): Promise<UploadPrevi
     unmatchedRows: payload.unmatched ?? [],
     skippedByDesignCount: payload.skippedByDesignCount ?? 0,
     parseErrors: payload.parseErrors ?? [],
-    currentCollectionCount: 0,
+    // The count BEFORE this import, out of the receipt. `IssueInspector` branches its help text
+    // on this — nought means "initial import", and every post-confirm receipt would then tell a
+    // player replacing a full collection that every other row still gets imported.
+    currentCollectionCount: totalBefore,
     filename: row.filename,
     rowCount: row.rowCount,
   };

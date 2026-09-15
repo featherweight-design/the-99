@@ -41,8 +41,12 @@ const FIXTURE_NAME = "Summary fixture";
 async function main() {
   try {
     if (clean) {
-      await db.execute(sql`delete from csv_uploads where id = ${UPLOAD_ID}`);
-      await db.execute(sql`delete from decks where id in (${DECK_A}, ${DECK_B})`);
+      await db.execute(sql`
+        delete from csv_uploads where id = ${UPLOAD_ID} and user_id = ${userId}
+      `);
+      await db.execute(sql`
+        delete from decks where id in (${DECK_A}, ${DECK_B}) and user_id = ${userId}
+      `);
       console.log("fixture removed");
       return;
     }
@@ -77,8 +81,16 @@ async function main() {
     if (cards.length < 3) throw new Error("catalog is empty — seed it first");
     const [cleared, still, commander] = cards;
 
-    await db.execute(sql`delete from csv_uploads where id = ${UPLOAD_ID}`);
-    await db.execute(sql`delete from decks where id in (${DECK_A}, ${DECK_B})`);
+    // Scoped to this user, both here and in --clean. The ids are fixed so a re-run replaces its
+    // own fixture, but two accounts on one local database share those ids — an unscoped delete
+    // would take the other account's receipt with it, which is not what "removes exactly what it
+    // wrote" means.
+    await db.execute(sql`
+      delete from csv_uploads where id = ${UPLOAD_ID} and user_id = ${userId}
+    `);
+    await db.execute(sql`
+      delete from decks where id in (${DECK_A}, ${DECK_B}) and user_id = ${userId}
+    `);
 
     // Two committed decks that both list the contested card, so the live claim read finds real
     // contention. `since` is stated a month apart: the queue order IS the explanation of the

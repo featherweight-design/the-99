@@ -52,6 +52,12 @@ export function ContestedCardRow({
   const spare = Math.max(card.owned - card.claimants.reduce((n, c) => n + c.commanderCopies, 0), 0);
   const nothingToChoose = spare === 0;
   const folded = card.claimants.some((c) => c.commanderCopies > 0 && c.quantity > c.commanderCopies);
+  // Copies already allocated by the default, for the cap beside the heading.
+  const givenOut = card.claimants.reduce((n, c) => n + c.allocated, 0);
+  // The deck the shortage actually falls on — the one whose ask is not covered. Naming the
+  // first commander claimant instead points at a deck that is keeping its copy, which is the
+  // opposite of what the note says about it.
+  const payer = card.claimants.find((c) => c.allocated < c.quantity)?.deckName ?? "";
 
   return (
     <div
@@ -76,14 +82,26 @@ export function ContestedCardRow({
           : folded
             ? copy.contested.headingSpare
             : copy.contested.heading(card.arrived)}
+        {/* The cap, stated beside the heading whenever it is above one — seniority has already
+            given every copy away before any pick, so the figure is true in both states. */}
+        {!nothingToChoose && card.arrived > 1 ? (
+          <span className="ml-[8px] normal-case tracking-normal" style={{ color: "var(--fg-faint)" }}>
+            {copy.contested.cap(givenOut, card.arrived)}
+          </span>
+        ) : null}
       </p>
 
       <ul className="list-none p-0 m-0 flex flex-col gap-[4px]">
         {card.claimants.map((c) => {
-          // Three outcome words and no more. `keeps it` rather than `gets it` for a commander:
-          // it had the card before the import, so the arrival changed nothing for it.
+          // `keeps it` rather than `gets it` for a commander: it had the card before the import,
+          // so the arrival changed nothing for it. A folded claimant that ALSO took a spare copy
+          // says both — `keeps it` alone would hide the second copy and contradict the heading,
+          // which has just said there is a spare to give.
+          const spareToThisDeck = c.allocated - Math.min(c.commanderCopies, c.allocated);
           const outcome = c.commanderCopies > 0 && c.allocated > 0
-            ? copy.contested.keeps
+            ? (spareToThisDeck > 0
+                ? copy.contested.keepsAndGets(Math.min(c.commanderCopies, c.allocated), spareToThisDeck)
+                : copy.contested.keeps)
             : c.allocated > 0 ? copy.contested.gets : copy.contested.buys;
           return (
             <li
@@ -142,7 +160,7 @@ export function ContestedCardRow({
 
       {nothingToChoose ? (
         <p className="text-[11px] mt-[8px] mb-0" style={{ color: "var(--fg-faint)" }}>
-          {copy.contested.commanderNote(card.claimants.find((c) => c.commanderCopies > 0)?.deckName ?? "")}
+          {copy.contested.commanderNote(payer)}
         </p>
       ) : folded ? (
         <p className="text-[11px] mt-[8px] mb-0" style={{ color: "var(--fg-faint)" }}>

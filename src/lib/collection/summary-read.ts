@@ -60,20 +60,24 @@ export type SummaryView = {
 /**
  * Allocates a card's copies across its committed claimants, in the order the model uses.
  *
- * A READER'S VIEW OF THE ALLOCATION, and deliberately a simple one: commander copies first,
- * then the queue in `(since, deckId)` order until the supply runs out. It does NOT know about
- * reservations — those arrive with the chooser, which is the next PR, and this function is
- * where they land. Until then it states exactly what the default is, which is what the section
- * says it states.
+ * STRICTLY IN QUEUE ORDER — `(since, deckId)` — and commander copies do NOT jump it. That is
+ * the same correction the claim model itself took in PR 1: a commander claim is never
+ * RESERVABLE, which is a rule about assignments, but it holds its place in the seniority queue
+ * like any other claim. Taking commander copies off the top here would make the reader's view
+ * disagree with the arithmetic underneath it — with one copy owned, an earlier list claimant
+ * and a later commander claimant, the page would say the later deck keeps it and the deck that
+ * committed first buys it, which is the opposite of what the model does and of what the section
+ * note promises.
+ *
+ * Each claimant takes as much of its whole ask as is left when its turn comes; the commander
+ * half is not special here and only matters to the chooser, which cannot offer those copies.
  */
 function allocate(owned: number, claimants: Omit<ContestedClaimant, "allocated">[]): ContestedClaimant[] {
-  // Commander copies come off the top, because nothing can take them.
-  let left = Math.max(owned - claimants.reduce((n, c) => n + c.commanderCopies, 0), 0);
+  let left = owned;
   return claimants.map((c) => {
-    const listAsk = Math.max(c.quantity - c.commanderCopies, 0);
-    const fromQueue = Math.min(listAsk, left);
-    left -= fromQueue;
-    return { ...c, allocated: c.commanderCopies + fromQueue };
+    const allocated = Math.min(c.quantity, left);
+    left -= allocated;
+    return { ...c, allocated };
   });
 }
 

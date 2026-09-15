@@ -44,6 +44,12 @@ export const cardAssignmentsCopy = {
   summary: {
     eyebrow: "Collection replaced",
     heading: (total: number) => `${fmt(total)} cards in your collection`,
+    /**
+     * The heading when the receipt itself did not survive its write. It states no figure,
+     * because the only figure available would be a nought — and telling a player with a full
+     * collection that they have none is worse than telling them nothing.
+     */
+    headingNoReceipt: "Your collection was replaced",
 
     /**
      * Says what the page is FOR, not what the write did internally. An earlier form reassured
@@ -180,6 +186,12 @@ export const cardAssignmentsCopy = {
     buys: "buys it",
     /** The fixed holder. It had the card before the import, so the arrival changed nothing for it. */
     keeps: "keeps it",
+    /**
+     * The folded claim's outcome: one copy protected as a commander, and a spare it has also
+     * been allocated. `keeps it` alone would hide the second copy and contradict the row's own
+     * heading, which has just said there is a spare to give.
+     */
+    keepsAndGets: (kept: number, extra: number) => `keeps ${kept} · gets ${extra} more`,
 
     /** Borrowed verbatim from the review page's own commander guard. */
     commanderTag: "commander",

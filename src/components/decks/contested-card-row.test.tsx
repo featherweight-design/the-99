@@ -85,7 +85,9 @@ describe("ContestedCardRow", () => {
       ],
     })} />);
     expect(screen.getByText(copy.contested.headingInert)).toBeTruthy();
-    expect(screen.getByText(copy.contested.commanderNote("Led By It"))).toBeTruthy();
+    // The note names the deck the shortage FALLS ON, not the commander holder: the holder is
+    // keeping its copy, so naming it says the opposite of what the sentence means.
+    expect(screen.getByText(copy.contested.commanderNote("Lists It"))).toBeTruthy();
     // `keeps it`, not `gets it`: it had the card before the import, so nothing changed for it.
     expect(screen.getByText(copy.contested.keeps)).toBeTruthy();
     expect(screen.queryByText(copy.contested.gets)).toBeNull();
@@ -110,6 +112,67 @@ describe("ContestedCardRow", () => {
     })} />);
     expect(screen.getByText(copy.contested.headingSpare)).toBeTruthy();
     expect(screen.getByText(copy.contested.commanderNoteFolded("Folded"))).toBeTruthy();
+  });
+
+  // The reader's view has to agree with the model underneath it: a commander claim is never
+  // RESERVABLE, but it holds its place in the queue like any other. Allocating commander copies
+  // off the top made the page say the later deck keeps it while the deck that committed first
+  // buys it — the opposite of both the model and the section note.
+  it("allocates in commit order, and does not promote a later commander", () => {
+    render(<ContestedCardRow card={card({
+      owned: 1,
+      claimants: [
+        {
+          deckId: "d1", deckName: "First, by list", quantity: 1, commanderCopies: 0,
+          since: AUG, versionNumber: 1, allocated: 1,
+        },
+        {
+          deckId: "d2", deckName: "Later, by commander", quantity: 1, commanderCopies: 1,
+          since: SEP, versionNumber: 1, allocated: 0,
+        },
+      ],
+    })} />);
+    // The earlier list claimant gets it; the later commander deck is the one that buys.
+    expect(screen.getByText(copy.contested.gets)).toBeTruthy();
+    expect(screen.getByText(copy.contested.buys)).toBeTruthy();
+    expect(screen.queryByText(copy.contested.keeps)).toBeNull();
+  });
+
+  it("states the cap beside the heading when more than one copy arrived", () => {
+    render(<ContestedCardRow card={card({
+      owned: 2,
+      arrived: 2,
+      claimants: [
+        { deckId: "d1", deckName: "One", quantity: 1, commanderCopies: 0, since: AUG, versionNumber: 1, allocated: 1 },
+        { deckId: "d2", deckName: "Two", quantity: 1, commanderCopies: 0, since: SEP, versionNumber: 1, allocated: 1 },
+      ],
+    })} />);
+    expect(screen.getByText(copy.contested.cap(2, 2))).toBeTruthy();
+  });
+
+  it("says nothing about a cap when one copy arrived", () => {
+    render(<ContestedCardRow card={card()} />);
+    expect(screen.queryByText(/of 1 given/)).toBeNull();
+  });
+
+  // A folded claimant that also took the spare says both halves. `keeps it` alone hides the
+  // second copy and contradicts the heading, which has just offered a spare.
+  it("names both halves when a folded claim also takes the spare", () => {
+    render(<ContestedCardRow card={card({
+      owned: 2,
+      arrived: 1,
+      claimants: [
+        {
+          deckId: "d1", deckName: "Folded", quantity: 2, commanderCopies: 1,
+          since: AUG, versionNumber: 3, allocated: 2,
+        },
+        {
+          deckId: "d2", deckName: "Lists It", quantity: 1, commanderCopies: 0,
+          since: SEP, versionNumber: 1, allocated: 0,
+        },
+      ],
+    })} />);
+    expect(screen.getByText(copy.contested.keepsAndGets(1, 1))).toBeTruthy();
   });
 
   it("names a brew and excludes it, rather than counting it or offering it", () => {

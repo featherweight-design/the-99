@@ -63,17 +63,23 @@ describe("ArrivalsSummary", () => {
   it("renders for an empty result rather than redirecting", () => {
     render(view(summary()));
     expect(screen.getByText(copy.summary.ledeNothingToReport)).toBeTruthy();
-    // …and still says what the file did, so "nothing moved" reads as a fact about DECKS.
-    expect(screen.getByText(copy.summary.fileStamp("14 Sep 2026", "collection.csv"))).toBeTruthy();
+    // …and still says what the FILE did, so "nothing moved" reads as a fact about decks rather
+    // than as an import that did nothing at all. Four copies moved here: 3 in, 1 out.
+    const stamp = screen.getByText(new RegExp(copy.summary.fileDelta(4)));
+    expect(stamp.textContent).toContain(copy.summary.fileStamp("14 Sep 2026", "collection.csv"));
     expect(screen.getByText(copy.summary.doneNoteEmpty)).toBeTruthy();
   });
 
   // The receipt is written after the replace commits, so a failure between the two leaves a
   // confirmed upload with no payload. The design draws that as nothing-to-report rather than an
   // error screen, and this pins it.
-  it("renders a lost receipt as nothing to report", () => {
+  it("renders a lost receipt as nothing to report, and states no figure it does not have", () => {
     render(view(null));
     expect(screen.getByText(copy.summary.ledeNothingToReport)).toBeTruthy();
+    expect(screen.getByText(copy.summary.headingNoReceipt)).toBeTruthy();
+    // `0 cards in your collection` would be false for anybody with a collection, and would make
+    // a successful import look like an emptied one.
+    expect(screen.queryByText(copy.summary.heading(0))).toBeNull();
   });
 
   it("drops a section with no rows rather than heading a nought", () => {
@@ -103,7 +109,13 @@ describe("ArrivalsSummary", () => {
     })));
     expect(screen.getByText(copy.summary.reasonPartly(1, 2))).toBeTruthy();
     // The one reason a player can act on without buying anything: they own the card, the line failed.
-    expect(screen.getByText(copy.summary.reasonUnmatched)).toBeTruthy();
+    const unmatched = screen.getByText(copy.summary.reasonUnmatched);
+    expect(unmatched).toBeTruthy();
+    // …and it is the one reason drawn in `--warning`, because it is the one a player can act on
+    // without buying anything.
+    expect(unmatched.getAttribute("style")).toContain("--warning");
+    expect(screen.getByText(copy.summary.reasonPartly(1, 2)).getAttribute("style"))
+      .toContain("--fg-faint");
   });
 
   it("truncates a money section at four and never the contested one", () => {
