@@ -437,10 +437,24 @@ async function run() {
               ${versionId}, ${deckId}, ${next},
               ${lead.commander_oracle_id}, ${lead.partner_oracle_id ?? null},
               now(), ${lead.partner_oracle_id ? sql`now()` : null})`;
+          // `since` is INHERITED from the predecessor, exactly as the real commit
+          // path does it (`lib/decks/versions.ts`): an unchanged card keeps the
+          // tenure it already had, and only a card the predecessor did not hold
+          // starts its clock now. It is a claim's seniority, so defaulting every
+          // row to `now()` would reorder who goes short for cards this probe
+          // never touched, for as long as it runs.
           await sql`
-            insert into deck_version_cards (version_id, oracle_id, quantity)
-            select ${versionId}, dc.oracle_id, dc.quantity
-              from deck_cards dc where dc.deck_id = ${deckId}`;
+            insert into deck_version_cards (version_id, oracle_id, quantity, since)
+            select ${versionId}, dc.oracle_id, dc.quantity,
+                   coalesce(prev.since, now())
+              from deck_cards dc
+              left join deck_version_cards prev
+                on prev.oracle_id = dc.oracle_id
+               and prev.version_id = (
+                     select v.id from deck_versions v
+                      where v.deck_id = ${deckId} and v.id <> ${versionId}
+                      order by v.number desc limit 1)
+             where dc.deck_id = ${deckId}`;
           // `returning` is the receipt. Cleanup deletes only when this exact
           // write landed, and only a row still at the quantity it was inserted
           // with — so a concurrent edit that bumped the count is left alone

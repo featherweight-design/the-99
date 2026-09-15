@@ -428,3 +428,43 @@ describe("DeckCardTile — the draft touched this card", () => {
     expect(screen.queryByText(deckVersioningCopy.pending.tilePair(1, 2))).not.toBeInTheDocument();
   });
 });
+
+describe("DeckCardTile — a proxied card the draft also touched", () => {
+  // The two states are ORTHOGONAL: `STATES-card-captions.md` says such a tile
+  // draws the caption edge and the `P`. The count position stays empty, because
+  // a proxy covers this deck's whole ask and takes no quantity — the same
+  // invariant that suppresses `×N` two positions along.
+  const card_ = { ...card, owned: true, quantity: 2, proxied: true } as DeckDetailCard;
+
+  function renderIt() {
+    render(
+      <CardDetailProvider fetchCard={vi.fn().mockResolvedValue(null)}>
+        <PendingChangeProvider value={{ moves: new Map([[card.oracleId, { from: 1, to: 2 }]]) }}>
+          <DeckCardTile deckId="d1" card={card_} />
+        </PendingChangeProvider>
+      </CardDetailProvider>,
+    );
+  }
+
+  it("draws no figure where the matrix leaves the position empty", () => {
+    renderIt();
+
+    expect(screen.queryByText(deckVersioningCopy.pending.tilePair(1, 2))).not.toBeInTheDocument();
+    expect(screen.queryByText(addPanelCopy.row.quantity(2))).not.toBeInTheDocument();
+  });
+
+  it("still speaks the draft, and its description is not left dangling", () => {
+    renderIt();
+
+    const trigger = screen.getByRole("button", {
+      name: new RegExp(cardDetailCopy.triggerAria(card.name)),
+    });
+    const id = trigger.getAttribute("aria-describedby");
+    expect(id).toBeTruthy();
+    // The reference must RESOLVE. Nesting the description in the figure's branch
+    // makes it vanish for exactly this card while the trigger still names it.
+    expect(document.getElementById(id!)?.textContent).toBe(
+      deckVersioningCopy.pending.addMarkRecountedA11y(1, 2),
+    );
+  });
+});

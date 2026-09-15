@@ -91,11 +91,22 @@ export function DeckCardTile({
   // `from` is 0 for a card the version did not hold at all — the plain add —
   // which `PendingChangeMove` already documents, so the two figures need no
   // query the provider is not already making.
-  const draftFigure = pendingMove
-    ? pendingMove.from > 0
-      ? deckVersioningCopy.pending.tilePair(pendingMove.from, pendingMove.to)
-      : deckVersioningCopy.pending.tileAdded(pendingMove.to)
-    : null;
+  // DRAWN only when the count position is the draft's to take. A proxied tile
+  // leaves that position empty whatever the draft did — the two states are
+  // orthogonal, and `STATES-card-captions.md` says a proxied card in a dirty
+  // draft draws the caption edge and the `P`, not a figure. A proxy covers this
+  // deck's whole ask and takes no quantity, so a number here would contradict
+  // the same invariant that suppresses `×N` two positions along.
+  //
+  // The SPOKEN form is unaffected and still rendered: the draft touched this
+  // card either way, and gating the description on `proxied` would leave the
+  // trigger's `aria-describedby` pointing at nothing.
+  const draftFigure =
+    pendingMove && !proxied
+      ? pendingMove.from > 0
+        ? deckVersioningCopy.pending.tilePair(pendingMove.from, pendingMove.to)
+        : deckVersioningCopy.pending.tileAdded(pendingMove.to)
+      : null;
   // Spoken separately: the figure is drawn in the count's position with no words
   // around it, and an edge colour is not something a reader can be asked to
   // infer. These are the row's own strings, including its distinction between a
@@ -297,20 +308,25 @@ export function DeckCardTile({
                   figure to put in the name's place; here both cases displace the
                   count, because both have one. */}
               {draftFigure ? (
-                <>
-                  <span aria-hidden className="flex-none" style={{ color: "var(--accent)" }}>
-                    {draftFigure}
-                  </span>
-                  <span id={draftDescriptionId} className="sr-only">
-                    {draftSpoken}
-                  </span>
-                </>
+                <span aria-hidden className="flex-none" style={{ color: "var(--accent)" }}>
+                  {draftFigure}
+                </span>
               ) : (
                 card.quantity > 1 && !proxied && (
                   <span aria-hidden className="flex-none" style={{ color: "var(--fg-body)" }}>
                     {addPanelCopy.row.quantity(card.quantity)}
                   </span>
                 )
+              )}
+              {/* Rendered on `pendingMove`, NOT on `draftFigure`. A proxied tile
+                  draws no figure and the draft still touched it, so a
+                  description nested in the figure's branch would vanish exactly
+                  when the trigger's `aria-describedby` still names it — a
+                  dangling reference, and the state spoken nowhere. */}
+              {pendingMove && (
+                <span id={draftDescriptionId} className="sr-only">
+                  {draftSpoken}
+                </span>
               )}
             </>
           }

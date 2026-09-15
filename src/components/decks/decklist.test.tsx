@@ -777,11 +777,16 @@ describe("Removing a card from Shopping leaves its undo row in place", () => {
 });
 
 // Both pending notes promise a visual mapping: the caption says the brass rule
-// marks the changed rows, and the group note says how many of a heading's rows the
-// draft changed. Only `decklist-row.tsx` draws that rule — `DeckCardTile` carries
-// no pending mark at all — so in card view each sentence would point at a marker
-// the reader cannot find. `toolbarNote` states a count and no marker, so it
-// stays in both views; the test below holds that distinction in place.
+// marks the changed rows, and the group note says how many of a heading's rows
+// the draft changed.
+//
+// That promise used to be keepable in list view only, because `decklist-row.tsx`
+// was the only thing drawing the rule — so in card view each sentence pointed at
+// a marker the reader could not find. Since card captions (R1) call B,
+// `DeckCardTile` draws it too: a 2px accent edge on the caption, and the draft's
+// figure in the count's position. Both sentences therefore render in both views,
+// and the card-view test below asserts the FIGURE they point at rather than the
+// sentences alone — which would pass with the tiles drawing nothing.
 describe("the pending-change notes follow the mark, which both views now draw", () => {
   const pendingChanges = new Map([["sol-ring", { from: 0, to: 1 }]]);
 
