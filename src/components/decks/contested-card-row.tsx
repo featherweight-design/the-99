@@ -103,6 +103,10 @@ export function ContestedCardRow({
   // says two copies were handed out when only one was ever in play. Clamped to what this import
   // brought as well: the allocation covers every copy owned, so with one old copy and two
   // arrivals it would otherwise claim three new copies were given.
+  // Copies that could go to any deck: the supply less what commanders hold, capped at what this
+  // import brought. It sets the mark's shape as well as the cap, because both answer the same
+  // question — how many copies are actually in play.
+  const giveable = Math.min(spare, card.arrived);
   const givenOut = Math.min(
     card.claimants.reduce((n, c) => n + Math.max(c.allocated - c.commanderCopies, 0), 0),
     card.arrived,
@@ -112,6 +116,13 @@ export function ContestedCardRow({
   // claimant and a later commander claimant, the queue gives the old copy to the list deck and
   // the arriving one to the commander — so the commander did NOT keep anything, however true it
   // is that a copy existed. Re-running the same queue over the pre-import supply answers it.
+  //
+  // ONE LIMITATION, stated rather than hidden: `ownedBefore` is an aggregate, and the claimants
+  // are read LIVE, so a deck that joined the queue after the import can be handed one of the
+  // pre-import copies by this reconstruction and read as `keeps it`. Storing the per-deck
+  // pre-import holders would fix it and is not done here — `keeps it`'s semantics were ruled a
+  // design question at review round 10, and this is the same word. It is wrong only for a deck
+  // that both joined after the import and outranks an original holder.
   const heldBefore = new Set<string>();
   {
     let left = card.ownedBefore;
@@ -195,7 +206,10 @@ export function ContestedCardRow({
               <span className="flex items-center gap-[11px] md:gap-[11px] md:flex-1 min-w-0">
                 <AllocationMark
                   allocated={c.allocated}
-                  copies={card.arrived}
+                  // The GIVEABLE count, not the arrival count. Two copies can arrive with one
+                  // consumed by a commander, leaving one that can actually be assigned — and a
+                  // square mark there promises two decks can each have one.
+                  copies={giveable}
                   commander={c.commanderCopies > 0}
                 />
                 {/* Truncation only from `md`. At phone width this cell is stretched to the row,

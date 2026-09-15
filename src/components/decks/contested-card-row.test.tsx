@@ -198,6 +198,29 @@ describe("ContestedCardRow", () => {
     expect(mark?.getAttribute("style")).toContain("border-radius: 4px");
   });
 
+  // The shape answers "can two decks each have one", so it follows the copies actually in play.
+  // Two arrivals with one consumed by a commander leave one giveable copy, and a square mark
+  // there promises something the allocation cannot deliver.
+  it("stays round when a commander consumes one of two arrivals", () => {
+    const { container } = render(<ContestedCardRow card={card({
+      arrived: 2,
+      owned: 2,
+      ownedBefore: 0,
+      claimants: [
+        {
+          deckId: "d1", deckName: "Led By It", quantity: 1, commanderCopies: 1,
+          since: AUG, versionNumber: 1, allocated: 1,
+        },
+        {
+          deckId: "d2", deckName: "Lists It", quantity: 2, commanderCopies: 0,
+          since: SEP, versionNumber: 1, allocated: 1,
+        },
+      ],
+    })} />);
+    const mark = container.querySelector("li > span:first-child > span[aria-hidden]");
+    expect(mark?.getAttribute("style")).toContain("border-radius: 999px");
+  });
+
   it("stays round at one copy", () => {
     const { container } = render(<ContestedCardRow card={card()} />);
     const mark = container.querySelector("li > span:first-child > span[aria-hidden]");

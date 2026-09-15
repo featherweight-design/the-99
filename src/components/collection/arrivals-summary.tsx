@@ -148,14 +148,19 @@ export function ArrivalsSummary({
         {summary ? copy.summary.heading(summary.totalAfter) : copy.summary.headingNoReceipt}
       </h1>
       <p className="text-[13.5px] m-0" style={{ color: "var(--fg-body)" }}>
-        {/* Three sentences, and the middle one is narrower than it looks. `ledeNoContention`
+        {/* THE FROZEN SECTIONS CHOOSE THE SENTENCE, for the reason the empty state does: a row
+            whose contention has since resolved leaves the LIVE list, and reading that list here
+            would let a receipt that recorded a contested arrival announce that every arrival had
+            a copy to spare.
+
+            Three sentences, and the middle one is narrower than it looks. `ledeNoContention`
             claims every arrival a committed deck was waiting for had a copy to SPARE, which is
             false whenever anything is still owed — including a single deck short by two copies,
             which is deliberately not a contested row because there is nobody to choose between.
             That case takes the neutral sentence. */}
         {nothingToReport
           ? copy.summary.ledeNothingToReport
-          : contested.length > 0
+          : (summary?.contested.length ?? 0) > 0
             ? copy.summary.lede(summary?.totalBefore ?? 0, summary?.arrived ?? 0, summary?.left ?? 0)
             : still.length > 0
               ? copy.summary.ledeOwing(summary?.totalBefore ?? 0, summary?.arrived ?? 0, summary?.left ?? 0)
