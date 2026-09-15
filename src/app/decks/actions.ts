@@ -44,7 +44,9 @@ import { GAME_AXIS_KEYS, isGameAxisKey, type GameAxisKey } from "../../lib/decks
 import { gameLogCopy } from "../../lib/copy/game-log";
 import { countCharacters, deckTuningCopy } from "../../lib/copy/deck-tuning";
 import { pruneOrphanProxies } from "../../lib/decks/prune-proxies";
-import { PROXY_READ_FAILED, PULL_REFUSED_PROXIED, proxiedOracleIds } from "../../lib/decks/proxies";
+import {
+  PROXY_READ_FAILED, PULL_REFUSED_PROXIED, proxiedMembership, proxiedOracleIds,
+} from "../../lib/decks/proxies";
 import { proxyCopy } from "../../lib/copy/proxies";
 
 export type TopOffResult =
@@ -425,16 +427,9 @@ export async function setCardProxied(
 
   const ok = await db.transaction(async (tx) => {
     await tx.execute(sql`select 1 from ${decks} where ${decks.id} = ${deckId} for update`);
-    const { rows: [member] } = await tx.execute<{ held: boolean }>(sql`
-      select exists (
-        select 1 from deck_cards dc
-        where dc.deck_id = ${deckId} and dc.oracle_id = ${oracleId}
-        union all
-        select 1 from decks d
-        where d.id = ${deckId}
-          and (d.commander_oracle_id = ${oracleId} or d.partner_oracle_id = ${oracleId})
-      ) as held
-    `);
+    const { rows: [member] } = await tx.execute<{ held: boolean }>(
+      sql`select ${proxiedMembership(deckId, oracleId)} as held`,
+    );
     if (!member?.held) return false;
 
     if (proxied) {

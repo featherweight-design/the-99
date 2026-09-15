@@ -12,6 +12,29 @@ import { db } from "../../db";
  * bug refuses for a different reason, or not at all, and an assertion on
  * `ok === false` alone would pass over both.
  */
+/**
+ * Is this card in this deck right now? A `deck_cards` row, or either commander
+ * column.
+ *
+ * ONE definition, exported, because it had two: the action carried this
+ * predicate and `probe-proxies` carried a copy of it, so a regression dropping
+ * either commander arm left both proofs green while proxying a commander broke
+ * in production. A probe that reimplements the thing it is proving proves the
+ * copy.
+ *
+ * `proxies-sql.test.ts` renders it and asserts both commander columns are in
+ * the emitted SQL, which is the `.toSQL()` idiom this repository already uses
+ * for query shape.
+ */
+export const proxiedMembership = (deckId: string, oracleId: string) => sql`exists (
+  select 1 from deck_cards dc
+  where dc.deck_id = ${deckId} and dc.oracle_id = ${oracleId}
+  union all
+  select 1 from decks d
+  where d.id = ${deckId}
+    and (d.commander_oracle_id = ${oracleId} or d.partner_oracle_id = ${oracleId})
+)`;
+
 export const PROXY_READ_FAILED = "Could not check that deck just now. Try again.";
 
 /**

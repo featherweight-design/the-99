@@ -20,7 +20,7 @@ import { sql } from "drizzle-orm";
 import ws from "ws";
 import { loadAvailability, loadDeckBuyRows } from "../src/lib/decks/availability-query";
 import { pruneOrphanProxies } from "../src/lib/decks/prune-proxies";
-import { proxyCounts } from "../src/lib/decks/proxies";
+import { proxiedMembership, proxyCounts } from "../src/lib/decks/proxies";
 import { listDecksWithStats } from "../src/lib/decks/read";
 // The prune runs inside its callers' transactions; here it is handed the app's
 // own db singleton, which satisfies the same interface for a single statement.
@@ -351,17 +351,14 @@ try {
   //     needs a signed-in request, so what is proved here is the pair of
   //     invariants its SQL carries: a mark for a card the deck does not hold is
   //     refused by the membership predicate, and marking is idempotent.
+  //     THE ACTION'S OWN PREDICATE, imported rather than retyped. A probe that
+  //     reimplements the thing it is proving proves the copy: with two versions
+  //     of this SQL, dropping a commander arm from the action left the probe
+  //     green while proxying a commander broke.
   const held = async (deckId: string, oracleId: string) => {
-    const { rows } = await fixture.execute<{ held: boolean }>(sql`
-      select exists (
-        select 1 from deck_cards dc
-        where dc.deck_id = ${deckId} and dc.oracle_id = ${oracleId}
-        union all
-        select 1 from decks d
-        where d.id = ${deckId}
-          and (d.commander_oracle_id = ${oracleId} or d.partner_oracle_id = ${oracleId})
-      ) as held
-    `);
+    const { rows } = await fixture.execute<{ held: boolean }>(
+      sql`select ${proxiedMembership(deckId, oracleId)} as held`,
+    );
     return rows[0]?.held ?? null;
   };
   const { rows: [stranger] } = await fixture.execute<{ oracle_id: string }>(sql`

@@ -1,14 +1,20 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 // The action module imports the db client, which throws at module init without a live URL.
-/** A drizzle `sql` template rendered to something a test can match on. Reads the
- *  string chunks and any table name it can see, and ignores the rest. */
+/** A drizzle `sql` template rendered to something a test can match on.
+ *
+ *  RECURSES into nested fragments: `sql`select ${proxiedMembership(...)}`` holds
+ *  another sql object, and a serializer that stopped at the top level returned
+ *  the outer words only — so a matcher looking for `deck_cards` saw nothing and
+ *  the test failed for a reason that had nothing to do with the code. */
 const sqlText = (query: unknown): string => {
-  const chunks = (query as { queryChunks?: unknown[] })?.queryChunks ?? [];
+  const chunks = (query as { queryChunks?: unknown[] })?.queryChunks;
+  if (!Array.isArray(chunks)) return "";
   return chunks
     .map((c) => {
       if (typeof c === "string") return c;
-      const v = c as { value?: unknown; name?: unknown };
+      const v = c as { value?: unknown; name?: unknown; queryChunks?: unknown[] };
+      if (Array.isArray(v?.queryChunks)) return sqlText(c);
       if (Array.isArray(v?.value)) return v.value.join(" ");
       if (typeof v?.name === "string") return v.name;
       return "";
@@ -1431,6 +1437,21 @@ describe("setCardProxied", () => {
     const check = texts.findIndex((t) => t.includes("deck_cards"));
     expect(lock).toBeGreaterThanOrEqual(0);
     expect(lock).toBeLessThan(check);
+  });
+
+  it("marks, idempotently", async () => {
+    // The marking branch had no assertion of its own: the only `true` case
+    // checked lock ordering. Without this, removing the insert — or its
+    // `on conflict` clause, which is what makes a second press of a control the
+    // reader can already see harmless rather than an error — stayed green.
+    stub.state.executeRows = [{ held: true }];
+    const result = await setCardProxied(DECK_ID, CARD_A, true);
+    const texts = stub.state.executeTexts.join(" ");
+    stub.state.executeRows = null;
+    expect(result).toEqual({ ok: true });
+    expect(texts).toContain("insert into deck_proxies");
+    expect(texts).toContain("on conflict (deck_id, oracle_id) do nothing");
+    expect(texts).not.toContain("delete from deck_proxies");
   });
 
   it("unmarks, and says so", async () => {
