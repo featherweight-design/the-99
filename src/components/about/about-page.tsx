@@ -52,10 +52,10 @@ function NewMark() {
 function Entry({ entry, marked }: { entry: AboutEntry; marked: boolean }) {
   const Figure = FIGURES[entry.id];
   return (
-    // No per-entry rule below `md:`: the chapter hairline is the only one the
+    // No per-entry rule below `min-[1000px]:`: the chapter hairline is the only one the
     // compact state draws, and a rule per entry turned a chapter into a table.
-    <li className="pt-[14px] md:border-t md:border-solid md:border-[color:var(--border)]">
-      <h3 className="font-display text-[15px] md:text-[16px]" style={{ color: "var(--fg)" }}>
+    <li className="pt-[14px] min-[1000px]:border-t min-[1000px]:border-solid min-[1000px]:border-[color:var(--border)]">
+      <h3 className="font-display text-[15px] min-[1000px]:text-[16px]" style={{ color: "var(--fg)" }}>
         {entry.title}
         {marked && <NewMark />}
       </h3>
@@ -64,7 +64,7 @@ function Entry({ entry, marked }: { entry: AboutEntry; marked: boolean }) {
         {entry.caption}
       </p>
 
-      {Figure && <Figure />}
+      {Figure && <Figure width={entry.width} />}
 
       {entry.keys.length > 0 && (
         <ul className="mt-[8px] list-none space-y-[4px] p-0">
@@ -105,7 +105,7 @@ export function AboutPage({ seen, next }: { seen: number; next?: string }) {
     // Not a <main>: the shell already opens one (shell.tsx:43) and /about
     // always renders inside it, so a second would give the document two main
     // landmarks and leave a screen reader with no single "skip to content".
-    <article className="mx-auto w-full max-w-[760px] px-[16px] py-[20px] md:px-[34px] md:py-[28px]">
+    <article className="mx-auto w-full max-w-[760px] px-[16px] py-[20px] min-[1000px]:px-[34px] min-[1000px]:py-[28px]">
       {/* The eyebrow exists ONLY when the reader is behind: it is the reason
           they are looking at this page instead of the one they asked for, so
           it is a count and not an apology. */}
@@ -115,7 +115,7 @@ export function AboutPage({ seen, next }: { seen: number; next?: string }) {
         </p>
       )}
 
-      <h1 className="font-display text-[24px] md:text-[30px]" style={{ color: "var(--fg)" }}>
+      <h1 className="font-display text-[24px] min-[1000px]:text-[30px]" style={{ color: "var(--fg)" }}>
         {aboutCopy.pageTitle}
       </h1>
       <p className="mt-[6px] text-[13.5px] leading-[1.55]" style={{ color: "var(--fg-muted)" }}>
@@ -142,7 +142,7 @@ export function AboutPage({ seen, next }: { seen: number; next?: string }) {
                     inside running prose. */}
                 <a
                   href={`#chapter-${n}`}
-                  className="flex min-h-[44px] items-center justify-between gap-[12px] border-b border-solid border-[color:var(--border)] text-[14px] text-[color:var(--accent)] md:min-h-0 md:border-0 md:py-[3px] md:text-[13px]"
+                  className="flex min-h-[44px] items-center justify-between gap-[12px] border-b border-solid border-[color:var(--border)] text-[14px] text-[color:var(--accent)] min-[1000px]:min-h-0 min-[1000px]:border-0 min-[1000px]:py-[3px] min-[1000px]:text-[13px]"
                 >
                   <span>
                     <span className="font-mono text-[11px] text-[color:var(--fg-faint)]">{n}</span>{" "}
@@ -166,7 +166,7 @@ export function AboutPage({ seen, next }: { seen: number; next?: string }) {
 
       {CHAPTERS.map((n) => (
         <section key={n} id={`chapter-${n}`} className="mt-[28px] scroll-mt-[20px]">
-          <h2 className="font-display text-[19px] md:text-[21px]" style={{ color: "var(--fg)" }}>
+          <h2 className="font-display text-[19px] min-[1000px]:text-[21px]" style={{ color: "var(--fg)" }}>
             <span className="font-mono text-[12px]" style={{ color: "var(--fg-faint)" }}>
               {n}
             </span>{" "}
@@ -196,7 +196,7 @@ export function AboutPage({ seen, next }: { seen: number; next?: string }) {
           // Stacked and full width on a phone, inline above it. The clause is
           // a sentence, and at 390px it and a button do not share a line
           // without one of them being cut.
-          className="mt-[32px] flex flex-col items-stretch gap-[10px] md:flex-row md:items-center md:gap-[12px]"
+          className="mt-[32px] flex flex-col items-stretch gap-[10px] min-[1000px]:flex-row min-[1000px]:items-center min-[1000px]:gap-[12px]"
         >
           <input type="hidden" name="next" value={destination} />
           {/* The destination rides in the accessible name as well as beside
@@ -205,12 +205,12 @@ export function AboutPage({ seen, next }: { seen: number; next?: string }) {
               they are about to land. */}
           <PrimaryButton
             type="submit"
-            className="min-h-[44px] w-full md:w-auto"
+            className="min-h-[44px] w-full min-[1000px]:w-auto"
             aria-label={`${aboutCopy.dismiss} — ${destinationClause}`}
           >
             {aboutCopy.dismiss}
           </PrimaryButton>
-          <span className="text-center font-mono text-[11px] text-[color:var(--fg-faint)] md:text-left">
+          <span className="text-center font-mono text-[11px] text-[color:var(--fg-faint)] min-[1000px]:text-left">
             {destinationClause}
           </span>
         </form>

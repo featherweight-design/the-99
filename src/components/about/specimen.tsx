@@ -15,16 +15,29 @@
 export function Specimen({
   children,
   label,
+  width = "plate",
 }: {
   children: React.ReactNode;
   /** Names the figure for the annotation key; never announced. */
   label?: string;
+  /**
+   * From the entry's own `width`. A plate takes the column; an inset is a
+   * 300px figure with the caption beside it — one row or one control, where a
+   * full-width frame would be a lot of empty box around a small mark.
+   *
+   * Compact collapses both to the same thing: at 390px there is no room for a
+   * figure beside anything.
+   */
+  width?: "inset" | "plate";
 }) {
   return (
     <figure
       aria-hidden
-      className="pointer-events-none m-0 mt-[10px] select-none overflow-hidden rounded-[8px] border border-solid border-[color:var(--border)] bg-[color:var(--surface-sunken)] p-[14px]"
       data-specimen={label}
+      data-width={width}
+      className={`pointer-events-none m-0 mt-[10px] select-none overflow-hidden rounded-[8px] border border-solid border-[color:var(--border)] bg-[color:var(--surface-sunken)] p-[14px] ${
+        width === "inset" ? "min-[1000px]:max-w-[300px]" : ""
+      }`}
     >
       {children}
     </figure>
@@ -53,7 +66,14 @@ export function SpecimenCell({
   );
 }
 
-/** A plate's grid: four across on desktop, two at phone. §Phone halves the grid. */
+/**
+ * A plate's grid: four across from the app's wide stop, two below it.
+ *
+ * `min-[1000px]:`, not `md:`. The compact state runs to 1000px here, which is
+ * `CHASSIS_WIDE_MIN_PX` — the width the rest of the app changes shape at. At
+ * `md` a 768–999px reader gets the desktop grid while every other surface
+ * around it is still compact.
+ */
 export function SpecimenGrid({ children }: { children: React.ReactNode }) {
-  return <div className="grid grid-cols-2 gap-[14px] md:grid-cols-4">{children}</div>;
+  return <div className="grid grid-cols-2 gap-[14px] min-[1000px]:grid-cols-4">{children}</div>;
 }

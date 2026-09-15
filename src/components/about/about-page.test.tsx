@@ -131,35 +131,104 @@ describe("a crafted link", () => {
 });
 
 describe("the figures", () => {
-  it("draws a specimen for the entries whose subject is a mark", () => {
-    const { container } = render(<AboutPage seen={0} />);
-    const drawn = [...container.querySelectorAll("[data-specimen]")].map((f) =>
-      f.getAttribute("data-specimen"),
+  const figures = (c: HTMLElement): Record<string, HTMLElement> =>
+    Object.fromEntries(
+      [...c.querySelectorAll<HTMLElement>("[data-specimen]")].map((f) => [
+        f.getAttribute("data-specimen") ?? "",
+        f,
+      ]),
     );
-    expect(drawn).toContain("availability");
-    expect(drawn).toContain("marks");
-    expect(drawn).toContain("status");
+
+  it("draws one for every entry whose subject is a mark", () => {
+    // The complete set, not a sample: a partial list leaves a miswired figure
+    // green, which is the regression this whole file exists to catch.
+    const { container } = render(<AboutPage seen={0} />);
+    expect(Object.keys(figures(container)).sort()).toEqual([
+      "availability",
+      "buy-tag",
+      "fit",
+      "marks",
+      "status",
+    ]);
   });
 
-  it("hides every specimen from the reading order", () => {
-    // A figure repeats what the caption and the key lines already say.
-    // Announced, it reads every mark twice and names controls that cannot be
-    // pressed — and `pointer-events: none` is what makes "inert" true of a
-    // real component rather than merely intended.
+  it("hides every specimen from the reading order and from the pointer", () => {
     const { container } = render(<AboutPage seen={0} />);
-    const figures = [...container.querySelectorAll("[data-specimen]")];
-    expect(figures.length).toBeGreaterThan(0);
-    for (const figure of figures) {
-      expect(figure).toHaveAttribute("aria-hidden", "true");
-      expect(figure.className).toContain("pointer-events-none");
+    for (const [name, figure] of Object.entries(figures(container))) {
+      expect(figure, name).toHaveAttribute("aria-hidden", "true");
+      expect(figure.className, name).toContain("pointer-events-none");
     }
   });
 
+  it("gives an inset entry the inset frame and a plate entry the plate", () => {
+    const { container } = render(<AboutPage seen={0} />);
+    const f = figures(container);
+    // `width` is a field on every entry and was ignored at first, so the
+    // buy-tag entry drew a full-width frame around one small mark.
+    expect(f["buy-tag"]).toHaveAttribute("data-width", "inset");
+    expect(f["availability"]).toHaveAttribute("data-width", "plate");
+  });
+
+  // Each figure is asserted on ITS OWN content. The first version of this
+  // counted elements inside the frame, which counts the grid and the cells —
+  // an empty plate has more than two of those and passed.
+  it("draws the four availability states, including the one that draws nothing", () => {
+    const { container } = render(<AboutPage seen={0} />);
+    const plate = figures(container)["availability"];
+    expect(plate.textContent).toContain("in a brew");
+    expect(plate.textContent).toContain("none free");
+    expect(plate.textContent).toContain("short 2");
+    // free renders no marker at all, and that IS the state.
+    expect(plate.textContent).toContain("free — nothing at all");
+  });
+
+  it("draws all six statuses, each with the figure that explains it", () => {
+    const { container } = render(<AboutPage seen={0} />);
+    const plate = figures(container)["status"];
+    const pills = [...plate.querySelectorAll("span")].filter((el) =>
+      el.className.toString().includes("rounded-[6px]"),
+    );
+    expect(pills).toHaveLength(6);
+    // `TILE_CLASS` is the component's default and opens `absolute
+    // bottom-[13px] left-[13px]`; defaulted here all six leave flow.
+    for (const pill of pills) expect(pill.className).not.toContain("absolute");
+    // The clause beside the badge, in the app's own words.
+    expect(plate.textContent).toContain("created today");
+    expect(plate.textContent).toContain("2 lines unresolved");
+  });
+
+  it("draws the decklist marks as rows, at the row's own geometry", () => {
+    const { container } = render(<AboutPage seen={0} />);
+    const plate = figures(container)["marks"];
+    // A dot with no size draws at 0x0, and jsdom cannot see that — what a
+    // unit test can read is whether the caller supplied one.
+    const dots = [...plate.querySelectorAll("span")].filter((el) =>
+      el.className.toString().includes("rounded-full"),
+    );
+    expect(dots.length).toBeGreaterThanOrEqual(3);
+    for (const dot of dots) expect((dot as HTMLElement).style.width).toBeTruthy();
+    // `//` renders only for a two-sided layout; called bare the mark is null.
+    // Asserted on the MARK's own element — the row's note also contains the
+    // characters, so a textContent sweep passes over a mark that never drew.
+    const flip = [...plate.querySelectorAll("span")].filter(
+      (el) => el.textContent?.trim() === "//",
+    );
+    expect(flip.length, "the two-faced mark drew nothing").toBeGreaterThan(0);
+    expect(plate.textContent).toContain("Sol Ring");
+  });
+
+  it("draws both fit shapes and writes no prose inside the frame", () => {
+    const { container } = render(<AboutPage seen={0} />);
+    const plate = figures(container)["fit"];
+    // Rule 4 of the copy file: a figure may only draw what the app draws.
+    // The decomposition and the denominators are annotation under the bar,
+    // never sentences inside it.
+    expect(plate.textContent).not.toContain("15 + 25 + 33");
+    expect(plate.textContent).toContain("out of 100");
+    expect(plate.textContent).toContain("out of 40");
+  });
+
   it("leaves an entry with no figure complete, and gives it no empty frame", () => {
-    // The first version of this asserted only that the caption rendered, which
-    // held before figures existed and holds with FIGURES deleted — it named
-    // the partial-map behaviour and measured none of it. What distinguishes
-    // the two is whether this entry has a specimen box at all.
     const { container } = render(<AboutPage seen={0} />);
     const workflow = aboutEntries.find((e) => e.id === "deck-import");
     expect(workflow).toBeTruthy();
@@ -168,79 +237,6 @@ describe("the figures", () => {
     );
     expect(li).toBeTruthy();
     expect(li!.querySelector("[data-specimen]")).toBeNull();
-  });
-
-  it("draws something inside every specimen", () => {
-    // The class that let three broken figures through: every earlier test
-    // asserted the FRAME — its data attribute, its aria-hidden, its
-    // pointer-events — and none asserted that the component inside it drew
-    // anything. StatusPillBadge defaulting to an absolute tile box, an
-    // unsized OwnershipDot at 0x0 and a TwoFacedMark with no layout all
-    // rendered nothing while passing.
-    const { container } = render(<AboutPage seen={0} />);
-    const figures = [...container.querySelectorAll("[data-specimen]")];
-    expect(figures.length).toBeGreaterThan(0);
-    for (const figure of figures) {
-      const name = figure.getAttribute("data-specimen");
-      // A cell's caption is this page's own text; what has to be there is
-      // something the APP drew, so count elements that are not our chassis.
-      const drawn = [...figure.querySelectorAll("*")].filter(
-        (el) => !el.className.toString().includes("font-mono text-[10px]"),
-      );
-      expect(drawn.length, `${name} drew nothing`).toBeGreaterThan(2);
-    }
-  });
-
-  it("gives every mark in the marks plate a drawn body", () => {
-    const { container } = render(<AboutPage seen={0} />);
-    const marks = container.querySelector('[data-specimen="marks"]');
-    expect(marks).toBeTruthy();
-
-    // A cell is [content box, caption]. Querying the CELL finds the caption
-    // span and passes over an empty content box — which is how a TwoFacedMark
-    // called with no layout, returning null, read as a drawn mark.
-    const cells = [...marks!.querySelectorAll(":scope > div > div")];
-    expect(cells).toHaveLength(4);
-    for (const [i, cell] of cells.entries()) {
-      const content = cell.firstElementChild;
-      expect(content, `mark ${i} has no content box`).toBeTruthy();
-      expect(content!.childElementCount, `mark ${i} drew nothing`).toBeGreaterThan(0);
-    }
-  });
-
-  it("sizes the ownership dots, which carry colour and shape only", () => {
-    // jsdom lays nothing out, so a 0x0 dot is present in the DOM and invisible
-    // on screen — the component sets fill and radius and leaves sizing to the
-    // caller, so the only thing a unit test can read is whether the caller
-    // supplied one.
-    const { container } = render(<AboutPage seen={0} />);
-    const marks = container.querySelector('[data-specimen="marks"]');
-    const dots = [...marks!.querySelectorAll("span")].filter((el) =>
-      el.className.toString().includes("rounded-full"),
-    );
-    expect(dots.length).toBeGreaterThanOrEqual(2);
-    for (const dot of dots) {
-      expect((dot as HTMLElement).style.width, "an unsized dot draws at 0x0").toBeTruthy();
-    }
-  });
-
-  it("keeps the status pills in flow", () => {
-    // StatusPillBadge defaults its className to the TILE box, which opens
-    // `absolute bottom-[13px] left-[13px]` because its usual home is pinned to
-    // a tile's art. Defaulted inside an unpositioned figure, all six leave
-    // flow and stack on the page's corner, and the plate draws empty.
-    //
-    // Scoped to this plate rather than swept across every specimen: a marker
-    // that positions its own internals — the over glyph's two diamonds and
-    // their seam — is doing it deliberately and inside its own box.
-    const { container } = render(<AboutPage seen={0} />);
-    const plate = container.querySelector('[data-specimen="status"]');
-    expect(plate).toBeTruthy();
-    const pinned = [...plate!.querySelectorAll("*")].filter((el) =>
-      el.className.toString().includes("absolute"),
-    );
-    expect(pinned).toHaveLength(0);
-    expect(plate!.querySelectorAll("span")).toHaveLength(6);
   });
 });
 
