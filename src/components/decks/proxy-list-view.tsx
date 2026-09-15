@@ -15,6 +15,11 @@ import { formatCents, priceOf, priceState, provenanceForm } from "../../lib/deck
 import { proxyCopy } from "../../lib/copy/proxies";
 import type { ProxyRow } from "../../lib/decks/proxy-list";
 
+/** The two states that carry a real amount. `soldOut` does not: its figure is a
+ *  last-known price for something nobody is selling. */
+const costableState = (state: ReturnType<typeof priceState> | undefined) =>
+  state === "priced" || state === "foilOnly";
+
 function Empty({ hasDecks }: { hasDecks: boolean }) {
   // Two branches naming two different preconditions. An empty state that names
   // the wrong one sends the reader somewhere that cannot help them.
@@ -64,18 +69,20 @@ export function ProxyListView({
   // sold-out one contributes nothing — its row is a last-known figure for
   // something nobody is selling, and quoting it puts a number in a total the
   // reader cannot spend.
-  const costable = rows.filter((r) => {
-    const state = states.get(r.oracleId);
-    return state === "priced" || state === "foilOnly";
-  });
+  const costable = rows.filter((r) => r.price && costableState(states.get(r.oracleId)));
   const total = costable.reduce(
     (n, r) => n + (r.price ? priceOf(r.price, states.get(r.oracleId)!) ?? 0 : 0),
     0,
   );
-  // The two non-costable states are DIFFERENT facts and the copy says so: a card
-  // the feed has never carried was never stocked, and a sold-out one was.
+  // The non-costable states are DIFFERENT facts and the copy says so. `absent`
+  // covers TWO of them — no price row at all, and a live row whose three price
+  // columns are all null — so the presence of the fact is what tells them apart.
+  // Folded together, an existing ManaPool row was made to claim it had never
+  // been stocked.
   const soldOut = rows.filter((r) => states.get(r.oracleId) === "soldOut").length;
-  const neverStocked = rows.filter((r) => states.get(r.oracleId) === "absent").length;
+  const neverStocked = rows.filter(
+    (r) => states.get(r.oracleId) === "absent" && !r.price,
+  ).length;
   // TABLE-level staleness, which row-to-row comparison cannot see: when the
   // newest run itself is old, every figure here is current relative to the
   // others and out of date against the shop. Disclosed once, beside the total,
@@ -202,13 +209,16 @@ export function ProxyListView({
                       surfaces in direct disagreement. */}
                   <span
                     className={`font-mono text-[11.5px] flex-none ${
-                      states.get(row.oracleId) === "priced"
+                      costableState(states.get(row.oracleId))
                         ? "text-[color:var(--fg-body)]"
                         : "text-[color:var(--fg-locked)]"
                     }`}
                   >
-                    {states.get(row.oracleId) === "priced"
-                      ? formatCents(row.price ? priceOf(row.price, "priced") ?? 0 : 0)
+                    {/* `priced` OR `foilOnly`: the strip counts a live foil-only
+                        card at its foil price, so a row saying `no stock` beside
+                        it would have the same screen disagreeing with itself. */}
+                    {row.price && costableState(states.get(row.oracleId))
+                      ? formatCents(priceOf(row.price, states.get(row.oracleId)!) ?? 0)
                       : proxyCopy.row.noStock}
                   </span>
                 </li>

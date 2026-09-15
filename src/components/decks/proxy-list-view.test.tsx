@@ -146,3 +146,28 @@ describe("what the money says about itself", () => {
     expect(screen.queryByText(/prices as of/)).toBeNull();
   });
 });
+
+describe("the row and the strip agree about one card", () => {
+  it("shows a foil-only card's figure in its row, not `no stock`", () => {
+    // The strip counted its foil price while the row said nobody stocks it —
+    // one screen disagreeing with itself about one card.
+    const foil = row({
+      oracleId: "o4",
+      price: { cents: null, foilCents: 1250, asOf: NEWEST } as unknown as ProxyRow["price"],
+    });
+    render(<ProxyListView newestAsOf={NEWEST} rows={[foil]} hasDecks hasCollection />);
+    expect(screen.queryByText(proxyCopy.row.noStock)).toBeNull();
+    expect(screen.getAllByText("$12.50").length).toBeGreaterThanOrEqual(1);
+  });
+
+  it("does not call a live row with no figure `never stocked`", () => {
+    // `priceState` returns `absent` both for no row at all and for a live row
+    // whose three price columns are null. Only the first was never stocked.
+    const nullish = row({
+      oracleId: "o5",
+      price: { cents: null, asOf: NEWEST } as unknown as ProxyRow["price"],
+    });
+    render(<ProxyListView newestAsOf={NEWEST} rows={[nullish]} hasDecks hasCollection />);
+    expect(screen.queryByText(proxyCopy.cost.unpriced(1))).toBeNull();
+  });
+});
