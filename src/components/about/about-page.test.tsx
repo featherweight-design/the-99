@@ -129,3 +129,50 @@ describe("a crafted link", () => {
     expect(screen.getByText(aboutCopy.dismissDestinationHome)).toBeTruthy();
   });
 });
+
+describe("the figures", () => {
+  it("draws a specimen for the entries whose subject is a mark", () => {
+    const { container } = render(<AboutPage seen={0} />);
+    const drawn = [...container.querySelectorAll("[data-specimen]")].map((f) =>
+      f.getAttribute("data-specimen"),
+    );
+    expect(drawn).toContain("availability");
+    expect(drawn).toContain("marks");
+    expect(drawn).toContain("status");
+  });
+
+  it("hides every specimen from the reading order", () => {
+    // A figure repeats what the caption and the key lines already say.
+    // Announced, it reads every mark twice and names controls that cannot be
+    // pressed — and `pointer-events: none` is what makes "inert" true of a
+    // real component rather than merely intended.
+    const { container } = render(<AboutPage seen={0} />);
+    const figures = [...container.querySelectorAll("[data-specimen]")];
+    expect(figures.length).toBeGreaterThan(0);
+    for (const figure of figures) {
+      expect(figure).toHaveAttribute("aria-hidden", "true");
+      expect(figure.className).toContain("pointer-events-none");
+    }
+  });
+
+  it("leaves an entry with no figure complete", () => {
+    // FIGURES is a partial map on purpose: a figure earns its place by
+    // teaching something the caption cannot, and a workflow entry's words are
+    // a finished answer.
+    render(<AboutPage seen={0} />);
+    const workflow = aboutEntries.find((e) => e.id === "deck-import");
+    expect(workflow).toBeTruthy();
+    expect(screen.getByText(workflow!.caption)).toBeTruthy();
+  });
+});
+
+describe("the contents", () => {
+  it("gives every chapter row a figure, new or not", () => {
+    // A row that carried a count only when something was new would be blank
+    // for every reader at launch, which is everyone.
+    render(<AboutPage seen={0} />);
+    const nav = screen.getByRole("navigation", { name: aboutCopy.contentsLabel });
+    const counts = within(nav).getAllByText(/\d+ (entries|entry|new)/);
+    expect(counts).toHaveLength(4);
+  });
+});
