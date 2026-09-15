@@ -431,7 +431,10 @@ describe("ContestedCardRow — the chooser", () => {
     assign.mockResolvedValue({
       ok: false,
       cause: "no-supply-left",
-      card: card({ cardName: "Brushland" }),
+      // `fromImport: false`, as `loadContestedCard` really returns it: the live read has no
+      // import behind it. The ROW does, so the sentence must still be the arrival one — which
+      // it is only because the refusal reads the merged card rather than this object.
+      card: card({ cardName: "Brushland", fromImport: false }),
     });
     render(<ContestedCardRow card={card()} />);
     fireEvent.click(screen.getByRole("radio", { name: /Elemental Dragons/ }));

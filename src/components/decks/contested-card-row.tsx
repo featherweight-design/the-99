@@ -220,7 +220,10 @@ export function ContestedCardRow({
         // treatment is what speaks for a request that should not have happened.
         setRefusal(result.cause === "not-your-deck" ? null : result.cause);
         // A refusal announces the on-screen sentence verbatim rather than a summary of it.
-        const said = refusalSentence(result.cause, result.card ?? card, deckName);
+        // `fresh`, never `result.card`: the live read has no import behind it and so always
+        // says `fromImport: false`, which would tell a reader ON THE RECEIPT that nothing
+        // arrived. `fresh` is that same live card with this row's receipt facts merged back.
+        const said = refusalSentence(result.cause, fresh ?? card, deckName);
         if (said) setAnnounce(said);
       }
       } catch {
