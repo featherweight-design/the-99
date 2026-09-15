@@ -30,9 +30,11 @@ numbers hold up unusually well — two of the three I expected to be approximati
 ## The two findings in `filter-panel.tsx` are real, and worth taking
 
 Both are live on `/collection` today and neither is introduced by this mount. Both are one-line
-fixes conditioning the branch on `selectionMode === "multi"`, and both improve `/collection`:
-an always-lit accent border there distinguishes `Sort` from nothing and reads as a filter that is
-on, and a badge counting a single-select's one selection counts nothing.
+fixes conditioning the branch on `selectionMode === "multi"` — and because `/collection`'s own Sort
+is a single-select mount too (`filter-bar.tsx:251-255`), the fixes **remove** both signals there as
+well. That is the improvement: an always-lit accent border on a Sort trigger reads as a filter that
+is on, and a badge counting one selection out of one counts nothing. Neither is information; the
+fix takes both away.
 
 They belong in this build rather than in a follow-up, because this row has a **stated rule about
 accent** that the borrowed branch breaks on arrival: *"No accent fill anywhere on the builder's
@@ -56,13 +58,20 @@ Five. None blocking; all of them things an implementer would otherwise copy forw
    *"Desktop widest state (D1) is 953 of 1008"*, which README and READINESS both correct to
    **1006 of 1008 — 2px spare**. The states file is the document an implementer reads while
    building, so the dead figure is the dangerous copy of the two. **1006 is the figure of record.**
-3. **The 390px arithmetic uses 96 for the view well; the shipped component computes 94.** Two
-   pixels, in the direction of safety, inside a budget argued off 13. The arrangement line is
-   343 of 358, not 345.
+3. ~~The 390px arithmetic uses 96 for the view well.~~ **Withdrawn — this erratum was wrong, and
+   review caught it.** `view-toggle.tsx:50-52` carries `border: 1px solid var(--border-strong)` as
+   an inline style on top of the `p-[2px]`/`gap-[2px]` content box, so the well is 94×48 of
+   content inside a **96×50 outer box**. Layout budgets the outer box, so STATES' 96 is the right
+   number and R1's "70×36 and 94×48 content boxes" is the right description of the other thing.
+   Both were correct; the erratum was mine.
 4. **Cluster 2 is one child only when the note is the KEPT note.** `clear-auto.tsx` wraps the kept
    note with the bulk pair, but the *draft* note is a separate flex child of the toolbar
    (`group-toggle.tsx:149-153`), at 11.5px rather than 11px, and it brings its own 10px gap. R1's
-   cluster table lists "note" inside cluster 2 without that distinction.
+   cluster table lists "note" inside cluster 2 without that distinction, so its stated invariant —
+   *the row wraps between clusters and never inside one* — does not hold in that variant.
+   **Resolved in the plan rather than deferred to measurement:** Task 3 wraps the draft note into
+   cluster 2's own `flex-none` child, which makes the invariant true in both note forms and
+   removes the extra 10px gap that put the 2px desktop margin at risk in the first place.
 5. **README's decision list runs 1–14, then 16, then 15.** Cosmetic; the content is unaffected.
 
 ## The measurement eng must take before believing the desktop line

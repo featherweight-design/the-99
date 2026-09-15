@@ -20,8 +20,12 @@ is itself a nowrap flex row.
 | **2 · auto** — act on the cards | note, `Keep all N`, `Clear all auto · N` | the deck has auto cards, or a note survives |
 | **3 · arrangement** — how it reads | `By type`, `By role`, **sort trigger**, list/card well | always; the well `All` only |
 
-Cluster 2 is already one child (`clear-auto.tsx` wraps the pair itself). **Cluster 3 is the one
-structural change this round asks for** — three loose children become one wrapper.
+Cluster 2 is one child **when the note is the kept note** — `clear-auto.tsx` wraps that pair
+itself. The *draft* note is a separate toolbar child (`group-toggle.tsx:149-153`), so in that
+variant the invariant above does not hold as drawn. **Eng resolves it rather than accepting the
+exception:** the plan's Task 3 wraps the draft note into cluster 2's child, which also removes the
+extra 10px gap that variant was spending. **Cluster 3 is the other structural change this round
+asks for** — three loose children become one wrapper.
 
 The desktop hairline (1px × 22px `--border-strong`) sits **in front of cluster 3**. It is a
 separator, not a child: with nothing on its left, and on any wrapped line, it renders nothing.
@@ -44,7 +48,10 @@ separator, not a child: with nothing on its left, and on any wrapped line, it re
 | **P4** | 390 | Shopping | absent | **2** | 255 of 358px | absent |
 
 Measured at 390 (358px of content, gap 7): lane `64 + 7 + 92 = 163` · auto `76 + 8 + 134 = 218` ·
-arrangement `66 + 52 + 110 + 96 + 21 = 345`. Desktop widest state (D1) is **953 of 1008**.
+arrangement `66 + 52 + 110 + 96 + 21 = 345` (the well's 96 is its OUTER box — 94 of content
+inside a 1px border, `view-toggle.tsx:50-52`). Desktop widest state (D1) is **1006 of 1008 — 2px
+spare**, measured; the `953` this line carried before the audit was computed against the frame's
+border box and was 53px light.
 
 - **Must not** let the arrangement cluster split. The well alone on a fourth line at 390px is the
   defect the wrapper exists to prevent — drawn as a counter-example in P4's frame.

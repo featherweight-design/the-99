@@ -58,6 +58,13 @@ name then id, and a mutation check per key.
 - Wrap `By type`, `By role`, the new trigger and the view well in ONE `flex-none` child that is
   itself a nowrap flex row — the cluster treatment `clear-auto.tsx:113-119` already applies to the
   bulk pair, for the reason its comment gives.
+- **And wrap the draft note into cluster 2.** `clear-auto.tsx` wraps the *kept* note with the bulk
+  pair, but the draft note is a separate toolbar child (`group-toggle.tsx:149-153`), so R1's stated
+  invariant — the row wraps between clusters, never inside one — is false in that variant, which is
+  also the variant nobody measured. Wrapping it makes the invariant true in both note forms and
+  returns the 10px gap that variant was spending, which is five times the desktop margin being
+  defended. The note keeps its own `hidden md:inline`; the wrapper must not mount an empty box when
+  there is no note and no auto cluster.
 - The desktop hairline (1px × 22px `--border-strong`, `hidden md:block`) goes **in front of** that
   cluster. It is a separator: it renders nothing when nothing precedes it.
 - **The spacer must keep its shipped form** — `<span className="flex-1" aria-hidden />`, `flex-1`

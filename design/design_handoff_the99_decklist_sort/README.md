@@ -17,6 +17,12 @@ in a bar plus its states.
 Open the `.dc.html` directly in a browser — it needs no server. Every frame is drawn at its true
 width, so pan rather than resizing.
 
+> **Eng corrections applied after the readiness audit (2026-09-14).** Three statements in this
+> file were corrected in place rather than left for an R2: the draft note's shipped wording, the
+> framing of the three findings, and what the `filter-panel.tsx` fix does to `/collection`. The
+> reasoning is Design's; only the facts moved. `docs/superpowers/readiness-decklist-sort.md` records
+> every erratum, including one of mine that review overturned.
+
 ---
 
 ## Read at `main`, not recalled
@@ -32,9 +38,9 @@ box at `min-h-[44px]`, the well's 70×36 and 94×48 content boxes, the panel's 2
 and 16px round marker, the sheet's 36×4 handle. Nothing is drawn from the brief's prose where the
 source had a number.
 
-**One correction to the handoff prompt, folded.** The prompt describes the auto cluster as
-`Keep all N + Clear all auto · N` and the note as a kept note. At `main` the note in that slot is
-the *draft's* (`n of these are not in vN yet`, `:149`, `hidden md:inline`), and while it is set the
+**One correction to the handoff prompt, folded.** The prompt described the auto cluster as
+`Keep all N + Clear all auto · N` and the note as a kept note, and quoted the draft note's
+pre-#631 wording. At `main` the note in that slot is the *draft's* (`n of these differ from vN`, `:149`, `hidden md:inline`), and while it is set the
 kept note stands down — one sentence per slot. Both notes are desktop-only either way, so the
 390px measurements are unaffected; the desktop frames draw the kept-note form, since the fixture
 has no draft.
@@ -158,23 +164,27 @@ URL carrying someone else's row order is noise in a link.
 
 ---
 
-## Three defects `selectionMode="single"` already has
+## Two defects `selectionMode="single"` already has, and one accepted geometry note
 
-All three are live on `/collection` today and are not introduced here. Each is a branch keyed on
-`selected.length > 0`, which under single-select is **always true** and therefore carries no
+Findings 1 and 2 are live on `/collection` today and are not introduced here. **Each is a branch
+keyed on `selected.length > 0`, which under single-select is always true** and therefore carries no
 information. This mount is what makes them visible, because this bar has a stated rule about accent.
+Finding 3 is not one of those: it is a 2px height difference, accepted as drawn, and it is recorded
+here only so the next reader does not take it for a mistake.
 
 **Finding 1 — the permanent accent border.** `filter-panel.tsx`'s trigger takes
 `border-[color:var(--accent)]` whenever `selected.length > 0`. On the builder's control bar that
 collides with the bar's own comment: *"No accent fill anywhere on the builder's control bar:
 selection here is said with the bone-on-elevated skin, never with a coloured ground."* Fix:
-condition the branch on `selectionMode === "multi"`. It improves `/collection` too — an always-lit
-border there distinguishes Sort from nothing, and reads as a filter that is on. **The `open`
-branch's accent border stays**: it is transient and it means something.
+condition the branch on `selectionMode === "multi"`. **That removes the border from `/collection`'s
+Sort trigger too** (`filter-bar.tsx:251-255` is a single-select mount), which is the improvement: an
+always-lit accent border there reads as a filter that is on. **The `open` branch's accent border
+stays**: it is transient and it means something.
 
 **Finding 2 — the sheet's badge reading `1`.** The sheet title takes an accent count pill on the
-same condition, so *Sort by* wears a permanent `1`. Same one-line fix, same collateral
-improvement. A badge counts a selection made *among many*; one-of-many has nothing to count.
+same condition, so *Sort by* wears a permanent `1`. Same one-line fix, and it **removes that badge
+from `/collection`'s Sort sheet as well**. A badge counts a selection made *among many*; one out of
+one has nothing to count.
 
 **Finding 3 — the trigger is 36px and the well is 38px.** **Accepted, not fixed.** The row already
 mixes 27px pills with a 38px well under `items-center`; a third height 2px off the well adds no
