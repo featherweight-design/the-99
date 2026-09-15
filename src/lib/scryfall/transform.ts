@@ -31,13 +31,12 @@ export function toCardRow(raw: ScryfallCard): CardRow | null {
     scryfallId: raw.id,
     name: raw.name,
     // Scryfall omits the top-level `mana_cost` on the two-sided layouts and
-    // prints the cost on the front face instead, so a transform card stored
-    // from the top level alone has no cost and the decklist row draws no pips.
-    // Split and adventure cards carry theirs joined at the top level
-    // (`{1}{R} // {1}{U}`), so asking the face only when the top level is empty
-    // keeps this from having to name the layouts — the same trick as
-    // `backImageUri` below.
-    manaCost: raw.mana_cost || faces?.[0]?.mana_cost || null,
+    // prints the cost on each face instead, so a transform card stored from the
+    // top level alone has no cost and the decklist row draws no pips. Split and
+    // adventure cards carry theirs joined at the top level (`{1}{R} // {1}{U}`),
+    // so asking the faces only when the top level is empty keeps this from
+    // having to name the layouts — the same trick as `backImageUri` below.
+    manaCost: raw.mana_cost || joinedFaceCost(faces) || null,
     cmc: raw.cmc ?? 0,
     colorIdentity: raw.color_identity ?? [],
     typeLine: raw.type_line ?? "",
@@ -55,4 +54,33 @@ export function toCardRow(raw: ScryfallCard): CardRow | null {
     // here without this needing to know their names.
     backImageUri: faces?.[1]?.image_uris?.normal ?? null,
   };
+}
+
+/**
+ * A two-sided card's faces, joined the way Scryfall joins the layouts that print
+ * two costs on one side.
+ *
+ * A modal DFC's back face is castable and printed with its own cost — Birgi, God
+ * of Storytelling turns to Harnfel, Horn of Bounty at `{3}{R}` — and storing the
+ * front alone left that cost nowhere in the app. Joining them means every reader
+ * is already right: a row takes `frontFaceCost`, which is the face that row
+ * shows, and the card modal takes `faceCosts`, which draws both halves with a
+ * `//` between them. Neither needed changing, and no column was added.
+ *
+ * A `transform` back has no cost at all — Delver of Secrets turns to Insectile
+ * Aberration for free — and there the join is skipped rather than storing a
+ * trailing separator. `faceCosts` would drop the empty half anyway, but a stored
+ * string is read by more things than this file can see.
+ *
+ * A front face with no cost keeps its empty half (`" // {3}{R}"`), so
+ * `frontFaceCost` answers "" for it rather than borrowing the back's pips —
+ * the shape `front-face-cost.test.ts` already pins.
+ */
+function joinedFaceCost(
+  faces: { mana_cost?: string | null }[] | null | undefined,
+): string | null {
+  const front = faces?.[0]?.mana_cost ?? "";
+  const back = faces?.[1]?.mana_cost ?? "";
+  if (!front && !back) return null;
+  return back ? `${front} // ${back}` : front;
 }

@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vitest";
+import { faceCosts, frontFaceCost } from "../cards/faces";
 import { toCardRow } from "./transform";
 
 const solRing = {
@@ -129,5 +130,72 @@ describe("toCardRow", () => {
   it("skips token/emblem/art-series layouts", () => {
     expect(toCardRow({ ...solRing, layout: "token" })).toBeNull();
     expect(toCardRow({ ...solRing, layout: "art_series" })).toBeNull();
+  });
+});
+
+describe("a two-sided card's back-face cost", () => {
+  // A modal DFC's back face is castable and printed with its own cost. Stored
+  // front-only, that cost appeared nowhere in the app; joined, the modal draws
+  // both halves and a row still draws the face it shows.
+  it("joins both faces when the back has a cost of its own", () => {
+    const row = toCardRow({
+      ...solRing,
+      name: "Birgi, God of Storytelling // Harnfel, Horn of Bounty",
+      layout: "modal_dfc", mana_cost: undefined,
+      card_faces: [{ mana_cost: "{2}{R}" }, { mana_cost: "{3}{R}" }],
+    });
+    expect(row?.manaCost).toBe("{2}{R} // {3}{R}");
+  });
+
+  // The joined string has to keep answering both of its readers: the row draws
+  // the face it shows, the modal draws every cost the card prints.
+  it("leaves the row on the front face and the modal on both", () => {
+    const row = toCardRow({
+      ...solRing, name: "Birgi // Harnfel", layout: "modal_dfc", mana_cost: undefined,
+      card_faces: [{ mana_cost: "{2}{R}" }, { mana_cost: "{3}{R}" }],
+    });
+    expect(frontFaceCost(row?.manaCost ?? "")).toBe("{2}{R}");
+    expect(faceCosts(row?.manaCost)).toEqual(["{2}{R}", "{3}{R}"]);
+  });
+
+  // A transform back is free, so there is no second cost to join — and no
+  // trailing separator stored for one.
+  it("stores the front alone when the back face is free", () => {
+    const row = toCardRow({
+      ...solRing, name: "Delver of Secrets // Insectile Aberration",
+      layout: "transform", mana_cost: undefined,
+      card_faces: [{ mana_cost: "{U}" }, { mana_cost: "" }],
+    });
+    expect(row?.manaCost).toBe("{U}");
+  });
+
+  // A costless FRONT keeps its empty half rather than inheriting the back's, so
+  // a row showing that face draws no pips.
+  it("keeps an empty front half rather than borrowing the back's cost", () => {
+    const row = toCardRow({
+      ...solRing, name: "Some Land // Some Spell", layout: "modal_dfc", mana_cost: undefined,
+      card_faces: [{ mana_cost: "" }, { mana_cost: "{3}{R}" }],
+    });
+    expect(row?.manaCost).toBe(" // {3}{R}");
+    expect(frontFaceCost(row?.manaCost ?? "")).toBe("");
+    expect(faceCosts(row?.manaCost)).toEqual(["{3}{R}"]);
+  });
+
+  it("is null when neither face carries a cost", () => {
+    const row = toCardRow({
+      ...solRing, name: "A Land // Another Land", layout: "modal_dfc", mana_cost: undefined,
+      card_faces: [{ mana_cost: "" }, { mana_cost: "" }],
+    });
+    expect(row?.manaCost).toBeNull();
+  });
+
+  // Untouched: a split card's cost is already joined at the top level, so the
+  // faces are never consulted for it.
+  it("leaves a split card's top-level cost alone", () => {
+    const row = toCardRow({
+      ...solRing, name: "Fire // Ice", layout: "split", mana_cost: "{1}{R} // {1}{U}",
+      card_faces: [{ mana_cost: "{1}{R}" }, { mana_cost: "{1}{U}" }],
+    });
+    expect(row?.manaCost).toBe("{1}{R} // {1}{U}");
   });
 });

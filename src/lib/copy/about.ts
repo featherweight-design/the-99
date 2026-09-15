@@ -31,7 +31,7 @@
 // changes. about.test.ts pins a content hash, so a change forces either a
 // deliberate bump or a deliberate re-pin.
 
-export const ABOUT_VERSION = 1;
+export const ABOUT_VERSION = 2;
 
 export type AboutChapter = '01' | '02' | '03' | '04';
 export type AboutWidth = 'inset' | 'plate';
@@ -204,7 +204,7 @@ export const aboutEntries: readonly AboutEntry[] = [
     opens: 'opens the card detail',
     width: 'inset',
     caption:
-      'Every printing of a card you own, its art at full size, and the back of a double-faced card. A tick marks the printing you picked to represent the card; a hollow diamond marks the one being shown right now. It opens from a card anywhere in the app, not only here.',
+      'Every printing of a card you own, its art at full size, and the back of a double-faced card. A tick marks the printing you picked to represent the card; a hollow diamond marks the one being shown right now. The cost beside the name is drawn with the real mana symbols, and a card that prints two costs — a split, an adventure, or a card with a castable back — shows both. It opens from a card anywhere in the app, not only here.',
     keys: [],
     since: 1,
   },
