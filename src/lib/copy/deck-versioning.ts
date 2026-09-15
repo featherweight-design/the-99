@@ -173,6 +173,13 @@ export const deckVersioningCopy = {
     chipOut: "out",
     chipBuy: "to buy",
     chipPullable: "can be pulled",
+    /**
+     * The fifth chip, and it borrows `marker.over`'s own word: a contested arrival IS the over
+     * state, so the strip, the marker and the receipt's section heading all say the same thing
+     * about the same card. Counts CARDS, not copies — it is the number of decisions waiting on
+     * this page, and each row is one.
+     */
+    chipShort: "still short",
 
     groupIn: (n: number) => `Coming in · ${n}`,
     groupOut: (n: number) => `Going out · ${n}`,

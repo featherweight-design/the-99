@@ -724,14 +724,19 @@ discard confirm reached from this page). Diff source: `deck_cards` against the n
    Commit turns this into v3 and hands you the buy list.` Copy module `review.lede(version)`:
    `The deck page already shows this list: this is what it costs to lock in as v{n}. Anything you
    change here is yours to change back.` The canvas's "Tap" is a touch verb on a 1180px frame.
-   (**Amended 2026-09-15**: the first sentence is gone. "Except the pulls" was true when a pull
+   **Amended 2026-09-13**: the shipped body dropped `this page exists to show you what it costs`,
+   which restated the sentence before it. Hugh's copy ruling — see §Errata in the handoff README.
+
+   **Amended 2026-09-15**: the first sentence is gone too. "Except the pulls" was true when a pull
    was the only decision on this page, and it is not — Put back restores a cut (#390) and a
    contested row gives a copy to a deck (card assignments). Naming all three would make the
-   sentence a list, so it names none and says what the page IS. Note that `check:copy-drift`
-   could not have caught this: it finds a table quoting a shipped string with different
-   PUNCTUATION, and a sentence replaced outright shares no words to match on.) (**Amended 2026-09-13**: the shipped body dropped
-   `this page exists to show you what it costs`, which restated the sentence before it. Hugh's
-   copy ruling — see §Errata in the handoff README.)
+   sentence a list, so it names none and says what the page IS. The quotation above this note is
+   the CURRENT copy; the retired sentence is not quoted anywhere in this file, deliberately —
+   there is nothing to implement from it.
+
+   One thing this cost, worth knowing: `check:copy-drift` could not have caught the drift. It
+   finds a table quoting a shipped string with different PUNCTUATION, and a sentence replaced
+   outright shares no words to match on. Both quotations here were updated by hand.
 2. **Count-chip background.** Canvas `#1E1A15`; Component notes say `--surface`. `#1E1A15` is
    not in the brand ramp at all (it is also the canvas's browser-chrome plate).
 3. **Direction-header rule.** Canvas `border-bottom: 1px solid #2A241D` (the `--elevated`

@@ -1328,6 +1328,26 @@ describe("ReviewChanges — the second door", () => {
     expect(screen.getByText(cardAssignmentsCopy.contested.seamCaption)).toBeTruthy();
   });
 
+  it("counts the contested cards on the strip, in the over state's own ink", () => {
+    render(
+      <ReviewChanges
+        deckId="d" deckName="Korvold" rows={{ in: [row()], out: [] }}
+        {...SHAPE} contested={[contestedCard()]} state={STATE} cardCount={CARD_COUNT}
+      />,
+    );
+    expect(screen.getByText(deckVersioningCopy.review.chipShort)).toBeTruthy();
+  });
+
+  it("drops the chip at nought rather than drawing a nought", () => {
+    render(
+      <ReviewChanges
+        deckId="d" deckName="Korvold" rows={{ in: [row()], out: [] }}
+        {...SHAPE} state={STATE} cardCount={CARD_COUNT}
+      />,
+    );
+    expect(screen.queryByText(deckVersioningCopy.review.chipShort)).toBeNull();
+  });
+
   it("draws no panel on a row nobody is contesting", () => {
     render(
       <ReviewChanges

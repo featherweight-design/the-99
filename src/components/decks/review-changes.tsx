@@ -747,6 +747,15 @@ export function ReviewChanges({
       label: copy.chipPullable,
       total: null,
     },
+    {
+      // CARDS, not copies: each contested row is one decision waiting on this page. The ink is
+      // the over state's own, because that is what a contested card is — `marker.over` says
+      // `short n` about the same card on the deck page.
+      figure: contested.length,
+      tone: "var(--avail-over-fg)",
+      label: copy.chipShort,
+      total: null,
+    },
   ].filter((chip) => chip.figure > 0);
 
   // Both columns present is the only case with anything to switch between, and
