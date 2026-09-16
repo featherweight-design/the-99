@@ -30,7 +30,7 @@ and the brand sheet establish. **Implementations must use the variable, never th
 | `#1A160F` | `var(--surface-rail)` | the strip box |
 | `#2A241D` | `var(--border)` | row borders, rules, chips |
 | `#3A3229` | `var(--border-strong)` | strip border, ghost-button border, dashed rules |
-| `#14110E` | `var(--base)` | the phone commit bar / quick-add dock ground |
+| `#14110E` | `var(--bg)` | the phone commit bar / quick-add dock ground |
 | `#F4E9C4` | `var(--w)` | white cost pip |
 | `#3A6AA5` | `var(--u)` | blue cost pip |
 | `#C05A3E` | `var(--r)` | red cost pip |
@@ -581,7 +581,7 @@ Neither occupant **gates the tick**. Availability is a label.
 | Property | Mobile | Desktop |
 |---|---|---|
 | position | pinned bottom (`position:absolute/fixed; left:0; right:0; bottom:0` in the scroll column) | **n/a — not sticky at desktop** |
-| background | `var(--base)` (`#14110E`) | — |
+| background | `var(--bg)` (`#14110E`) | — |
 | border-top | `1px solid var(--border-strong)` | — |
 | border (other sides) | — | — |
 | padding | `11px 12px 13px` | — |
@@ -631,7 +631,7 @@ Three lines, in order:
 
 | Property | Mobile | Desktop |
 |---|---|---|
-| background | `var(--base)` | — |
+| background | `var(--bg)` | — |
 | border | `1px solid var(--border-strong)` | — |
 | border-radius | `8px` | — |
 | padding | `10px 11px` | — |

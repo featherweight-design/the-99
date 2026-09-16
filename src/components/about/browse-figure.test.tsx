@@ -60,14 +60,24 @@ describe("the browse figure", () => {
     // 1000px and keeps a shorter placeholder. Drawing the wide bar to a phone
     // reader would show them controls their phone does not have — so BOTH
     // forms are in the markup, each hidden at the other width.
-    expect(screen.getByText("Search your cards…")).toBeInTheDocument();
-    expect(screen.getByText("Search by card name…")).toBeInTheDocument();
+    // Read from the copy module, not retyped: the point of moving these out
+    // of `filter-bar.tsx` was that a rename reaches this figure, and a test
+    // holding its own copy of the string would hide exactly that.
+    expect(
+      screen.getByText(collectionChassisCopy.searchPlaceholder.compact),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByText(collectionChassisCopy.searchPlaceholder.wide),
+    ).toBeInTheDocument();
     expect(screen.getByText(collectionChassisCopy.sheet.trigger)).toBeInTheDocument();
 
     // The wide form's own controls, read from the route's copy so a rename
     // reaches the figure without anyone editing it.
     expect(screen.getByText(collectionFilterCopy.type.triggerLabel)).toBeInTheDocument();
     expect(screen.getByText(collectionFilterCopy.set.triggerOne("The Hobbit"))).toBeInTheDocument();
+    expect(
+      screen.getByText(collectionFilterCopy.sort.triggerOne("Name · A–Z")),
+    ).toBeInTheDocument();
     expect(screen.getByText(chassisCopy.chips.clearAll)).toBeInTheDocument();
     expect(screen.getByText(setPageCopy.entryPoint.label)).toBeInTheDocument();
 

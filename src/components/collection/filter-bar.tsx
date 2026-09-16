@@ -351,7 +351,11 @@ export function FilterBar({
           className="text-[14px]"
           value={filters.search}
           onChange={(e) => onFiltersChange({ ...filters, search: e.target.value })}
-          placeholder={isDesktop ? "Search by card name…" : "Search your cards…"}
+          placeholder={
+            isDesktop
+              ? collectionChassisCopy.searchPlaceholder.wide
+              : collectionChassisCopy.searchPlaceholder.compact
+          }
           aria-label="Search your cards"
           ref={searchRef}
         />

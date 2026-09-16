@@ -46,6 +46,20 @@ export const collectionChassisCopy = {
    */
   resultCompact: (shown: number) => (shown === 1 ? "1 result" : `${count(shown)} results`),
   /**
+   * The persistent search field, in its two forms.
+   *
+   * Both were literals in `filter-bar.tsx` until the About page needed to draw
+   * this row and copied them — two strings in two files with nothing joining
+   * them, so a rename would have left the reference page describing a field
+   * that no longer says that. They fork on `useIsDesktop` (768), NOT on the
+   * chassis's 1000: the field itself is the one control here whose form the
+   * narrower breakpoint governs.
+   */
+  searchPlaceholder: {
+    wide: "Search by card name…",
+    compact: "Search your cards…",
+  },
+  /**
    * The route's wide line, in two states.
    *
    * Three figures, because `/collection` counts three things and they are not

@@ -38,13 +38,34 @@ export function declaredTokens(...sources) {
  * that motivated this had no fallback at all.
  */
 export function usedTokens(source) {
-  return (
-    [...source.matchAll(/var\(\s*(--[a-zA-Z0-9-]+)/g)]
-      .map((m) => m[1])
-      // `var(--fg-${tone})` leaves `--fg-` behind. A token name never ends in a
-      // dash, so that is an interpolation and not a reference this can resolve.
-      .filter((token) => !token.endsWith("-"))
-  );
+  const used = [];
+  for (const m of source.matchAll(/var\(\s*(--[a-zA-Z0-9-]*)(\$\{([^}]*)\})?/g)) {
+    const [, stem, , expr] = m;
+
+    // A plain reference. `var(--fg-${tone})` leaves the stem `--fg-` with no
+    // interpolation captured when the brace is further along, and a token name
+    // never ends in a dash — so a trailing dash with nothing after it is an
+    // interpolation this cannot resolve, and is skipped rather than reported.
+    if (!expr) {
+      if (!stem.endsWith("-")) used.push(stem);
+      continue;
+    }
+
+    // An interpolation. `var(--${inert ? "border" : "border-strong"})` names
+    // two real tokens and the old regex matched NEITHER — it stopped at the
+    // `$` and produced the stem `--`, which was then filtered away as noise.
+    // Both branches were outside the check entirely, so a typo in either would
+    // have shipped exactly the way `--surface-2` did.
+    //
+    // Every string literal in the expression is a candidate suffix. A ternary
+    // over two literals yields both; an expression with no literal at all
+    // yields nothing, which is honest — this cannot evaluate arbitrary code and
+    // does not pretend to.
+    for (const lit of expr.matchAll(/["'`]([A-Za-z0-9-]+)["'`]/g)) {
+      used.push(`${stem}${lit[1]}`);
+    }
+  }
+  return used;
 }
 
 export async function findUndeclared(cssPath, files) {

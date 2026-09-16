@@ -7,9 +7,9 @@ import { findUndeclared } from "./lib/tokens.mjs";
 const files = [];
 for await (const f of glob("src/**/*.{ts,tsx}")) {
   // A test may quote a token name as an EXAMPLE (`--token`), which is not a
-  // read the app ever performs. Tests are also where a real class-string
-  // assertion lives, so they are still read for DECLARATIONS above — only
-  // their reads are exempt.
+  // read the app ever performs, so tests are skipped outright. They are NOT
+  // read for declarations either: a token declared only in a test fixture is
+  // not declared for the app, and a component reading one should be reported.
   if (!/\.test\.tsx?$/.test(f)) files.push(f);
 }
 

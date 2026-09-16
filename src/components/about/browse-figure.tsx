@@ -88,8 +88,13 @@ export function BrowseFigureBody() {
           does not have. */}
       <div className="flex items-center gap-[8px]">
         <span className="min-w-0 flex-1 truncate rounded-[8px] border border-solid border-[color:var(--border)] px-[10px] py-[7px] text-[12px] text-[color:var(--fg-faint)]">
-          <span className="min-[1000px]:hidden">Search your cards…</span>
-          <span className="hidden min-[1000px]:inline">Search by card name…</span>
+          {/* 768, not 1000. The route runs on TWO breakpoints: the chassis
+              switches the pips and the panels at 1000, and `useIsDesktop` (768)
+              governs this field alone. Forking both at 1000 made the figure
+              describe a phone across 768-999 while the route was already wide
+              there. */}
+          <span className="md:hidden">{collectionChassisCopy.searchPlaceholder.compact}</span>
+          <span className="hidden md:inline">{collectionChassisCopy.searchPlaceholder.wide}</span>
         </span>
 
         <span className="min-[1000px]:hidden">
@@ -112,7 +117,7 @@ export function BrowseFigureBody() {
           <Trigger label={collectionFilterCopy.type.triggerLabel} />
           <Trigger label={collectionFilterCopy.set.triggerOne("The Hobbit")} active />
           <Trigger label={collectionFilterCopy.availability.triggerLabel} />
-          <Trigger label={`${collectionFilterCopy.sort.triggerLabel}: Name · A–Z`} active />
+          <Trigger label={collectionFilterCopy.sort.triggerOne("Name · A–Z")} active />
         </span>
       </div>
 
