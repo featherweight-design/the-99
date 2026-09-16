@@ -19,7 +19,6 @@
 import type { RoleCard } from "../../lib/recs/score";
 import { CardDetailTrigger, cardDetailCopy } from "../cards/card-detail-provider";
 import { recommendationsCopy } from "../../lib/copy/recommendations";
-import { explainedCopy } from "../../lib/copy/commander-explained";
 import { OwnershipDot } from "../ui/ownership-dot";
 import { AvailabilityMarker, markerAria } from "../ui/availability-marker";
 import { availabilityState } from "../../lib/decks/availability";

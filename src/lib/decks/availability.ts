@@ -184,6 +184,31 @@ export function withAvailability<T extends { oracleId: string }>(
   return cards.map((card) => ({ ...card, availability: byCard.get(card.oracleId) ?? null }));
 }
 
+/**
+ * Whether this card draws an availability MARKER.
+ *
+ * One definition, because the question is asked in three places — the chip, the
+ * synergy slot, and the dot key that has to know whether either of them is
+ * saying anything — and three copies of it drift a round at a time.
+ *
+ * Two ways to draw nothing. A free card has nothing to report, which is the
+ * feature. And an UNOWNED card draws a buy tag instead: the slot is one column
+ * with two occupants, so a card you do not own is never also carrying a marker.
+ * `owned` is optional because Role Coverage is built from the owned pool and its
+ * cards do not carry the field; absent means owned.
+ *
+ * A null `availability` is NO ROW — an unowned card, a basic, or a read that
+ * could not reach — and reads as free here, which is right: nothing to report.
+ */
+export function drawsMarker(card: {
+  owned?: boolean;
+  availability: Availability | null;
+}): boolean {
+  if (card.owned === false) return false;
+  if (card.availability === null) return false;
+  return availabilityState(card.availability) !== "free";
+}
+
 export type AvailabilityState = "free" | "soft" | "hard" | "over";
 
 /**

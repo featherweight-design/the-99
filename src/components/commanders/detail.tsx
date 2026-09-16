@@ -2,6 +2,7 @@
 // Desktop: sticky left column (63/88 card + oracle glass + build button) + scrolling right column.
 // Mobile: art header band (1.6:1, the shared art wash + overlay text) + sticky bottom Build bar + sections.
 
+import { drawsMarker } from "../../lib/decks/availability";
 import { commanderGradient } from "../../lib/collection/gradients";
 import { WUBRG_COLOR, cssUrl } from "../../lib/collection/browse";
 import { fitSegments } from "../../lib/recs/format";
@@ -232,6 +233,18 @@ export function CommanderDetail({
   newestAsOf,
   prose = null,
 }: CommanderDetailProps) {
+  // THE PAGE-LEVEL ANSWER, computed once over every card either panel draws.
+  //
+  // The dot key asserts "Owned and available." — a claim about the commander,
+  // not about the list beneath it — so it cannot be computed from one panel's
+  // cards. `drawsMarker` is the shared definition: free says nothing, and an
+  // unowned synergy row draws a buy tag rather than a marker.
+  //
+  // A future panel that draws markers joins this expression. It does not reopen
+  // the key's ruling.
+  const markerOnPage =
+    Object.values(c.roleCards).flat().some(drawsMarker) || synergyCards.some(drawsMarker);
+
   const gradient = commanderGradient(c.colorIdentity);
   // No back chrome here: the rail and the tab bar are the route back at both
   // widths, and a 30px glyph over card art is the second way to do one thing
@@ -433,6 +446,7 @@ export function CommanderDetail({
         <CoverageSection
           width="phone"
           slug={c.slug}
+          markerOnPage={markerOnPage}
           roleCards={c.roleCards}
           roleCounts={c.roleCounts}
           synergyState={c.synergyState}
@@ -672,6 +686,7 @@ export function CommanderDetail({
           <CoverageSection
             width="desktop"
             slug={c.slug}
+            markerOnPage={markerOnPage}
             roleCards={c.roleCards}
             roleCounts={c.roleCounts}
             synergyState={c.synergyState}

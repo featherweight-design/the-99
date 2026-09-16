@@ -8,7 +8,6 @@ import { useRouter } from "next/navigation";
 import { CoverageChip, CoverageRow, CoverageDisclosure, COVERAGE_CAP, COVERAGE_EXPANDED_CAP } from "./coverage-chip";
 import { explainedCopy } from "../../lib/copy/commander-explained";
 import { KeyPip } from "../ui/ownership-dot";
-import { availabilityState } from "../../lib/decks/availability";
 import {
   CoverageSortMenu,
   COVERAGE_SORT_LABELS,
@@ -52,51 +51,46 @@ const ROLE_NOUNS: Record<RoleName, string> = {
  * one marked chip in the fourth panel needs the key that was above the first.
  *
  * Free is unconditional — every panel holding a card draws that dot, because
- * Role Coverage is built from the owned pool. Committed is not: with no deck
- * holding any of these cards there is no second colour on screen to explain.
+ * Role Coverage is built from the owned pool.
  */
 function DotKey({
   roleCards,
+  markerOnPage,
   isDesktop,
 }: {
   roleCards: Record<RoleName, RoleCard[]>;
+  /**
+   * Whether ANY marker is on screen — anywhere on the page, not just in these
+   * four panels.
+   *
+   * THE INVARIANT IS THE SENTENCE, not the count: *no key asserts availability
+   * while a marker is on screen.* `dotFree` says "Owned and available.", which
+   * is a claim about the COMMANDER rather than about the list beneath the key —
+   * and a page-level claim cannot be computed from a panel-level input.
+   *
+   * This read four panels when four panels were the whole surface. The synergy
+   * panel made that definition stale: a commander whose only marked card was a
+   * synergy row printed "Owned and available." here while a marker sat on screen
+   * below, and the synergy panel's own key said "Owned." for the same dot.
+   *
+   * Passed in rather than computed here, so the next panel to draw markers adds
+   * itself to one expression on the page instead of reopening this ruling.
+   */
+  markerOnPage: boolean;
   isDesktop: boolean;
 }): JSX.Element | null {
   const all = ROLE_ORDER.flatMap((role) => roleCards[role]);
   if (all.length === 0) return null;
-  // Any card with anything to say — i.e. any marker in the ROLE PANELS.
-  // Replaces `anyCommitted` one line for one line; the mechanism is the shipped
-  // one.
-  //
-  // Read across ALL FOUR panels rather than the chips a cap happens to show, so
-  // expanding a panel cannot change the key under the reader.
-  //
-  // SCOPE, stated because it is not obvious: this reads the role panels and
-  // nothing else. The synergy panel below now draws markers of its own, so a
-  // commander whose only marked card is a synergy row prints
-  // `Owned and available.` here while a marker is on screen further down — and
-  // the synergy panel's own key says `Owned.` for the same green dot. Two words
-  // for one mark on one page.
-  //
-  // Not resolved here, deliberately. Design's K.1/K.2 define this condition as
-  // "no marker anywhere in the four panels", and widening it to a panel Design
-  // scoped it away from is a ruling about what the key MEANS, which is theirs to
-  // make. Flagged to them; the alternative is that `dotFree` stops being
-  // conditional at all, which costs the byte-identical free state this round
-  // promised.
-  const anyMarker = all.some(
-    (c) => c.availability !== null && availabilityState(c.availability) !== "free",
-  );
 
   return (
     <p
       className="font-mono text-fg-locked m-0"
       style={{ fontSize: 10.5, marginTop: isDesktop ? 8 : 10, lineHeight: 1.4 }}
     >
-      {/* One entry, two forms, picked by `anyMarker` — which is an availability
-          question now, not a membership one. A SOFT claim with no committed deck
-          selects `dotOwned`, where the retired `committedTo` read would have left
-          the free form standing over a panel that was already drawing a marker.
+      {/* One entry, two forms, picked by `markerOnPage` — an availability
+          question, page-wide. A SOFT claim with no committed deck selects
+          `dotOwned`, where the retired `committedTo` read would have left the
+          free form standing over a panel already drawing a marker.
 
           Four of the five readings print glyph + number + word and legend
           themselves; the dot is the only mark here that is a colour with no word
@@ -108,7 +102,7 @@ function DotKey({
           player whose collection covers their decks seeing nothing changed is
           this round's one unusual constraint. */}
       <KeyPip owned />
-      {anyMarker
+      {markerOnPage
         ? explainedCopy.committed.dotOwned
         : explainedCopy.committed.dotFree}
     </p>
@@ -343,6 +337,14 @@ export type CoverageSectionProps = {
   roleCards: Record<RoleName, RoleCard[]>;
   roleCounts: Record<RoleName, number>;
   synergyState: "ok" | "absent" | "degraded";
+  /**
+   * Whether any marker is on screen anywhere on the page — see `DotKey`.
+   *
+   * REQUIRED, with no default: the key it feeds makes a claim about the
+   * commander, and a default would let a caller quietly assert availability it
+   * had not checked.
+   */
+  markerOnPage: boolean;
   /** Injected by the page — server action that re-resolves EDHREC.
       Passed explicitly so tests can mock it without a server-action import. */
   retryCoverageFigures: (slug: string) => Promise<Record<RoleName, RoleCard[]> | null>;
@@ -354,6 +356,7 @@ export function CoverageSection({
   roleCards: initialRoleCards,
   roleCounts,
   synergyState,
+  markerOnPage,
   retryCoverageFigures,
 }: CoverageSectionProps): JSX.Element {
   const router = useRouter();
@@ -459,7 +462,7 @@ export function CoverageSection({
       <p className="m-0 font-mono mt-[2px]" style={{ fontSize: 12, color: "var(--fg-faint)" }}>
         {subcaption}
       </p>
-      <DotKey roleCards={roleCards} isDesktop={isDesktop} />
+      <DotKey roleCards={roleCards} markerOnPage={markerOnPage} isDesktop={isDesktop} />
       {!isDesktop && (
         <div className="mt-[10px]">
           <CoverageSortMenu sort={sort} showFigures={showFigures} isDesktop={false} onChange={chooseSort} />
