@@ -160,18 +160,56 @@ routes. That is precisely the reported defect, reintroduced by its own fix.
 row count for **3,340 of 3,342** commanders, differing by 1 on two of them. Both sides read the
 same underlying EDHREC list, which is what makes agreement plausible.
 
-**The numerators are not measured, and that is the half that can differ** — one resolves by id,
-the other by name, and flavor names, DFCs and names the index never resolved are exactly where
-those two part company (see #467's matching precedence). So:
+### Measured 2026-09-15: parity FAILS, and the cause is drift
 
-- **PR 1 carries a named task: measure numerator agreement** across the catalog against a real
-  collection, before anything prints a figure.
-- **If they agree, the ruling stands as written.** If they disagree on any row, the resolution
-  is to make Commander Details read the same stored counts the row does — not to teach the row
-  the name match, which would cost a per-row EDHREC read and is the thing `rankFree` already
-  refuses to do (`free-ranking.ts:105–112`).
-- **The parity probe cannot be written until this is settled**, since it would be asserting the
-  thing under question.
+`pnpm probe:fit-parity` calls the real `loadCandidates` and the real `scoreOneCommander` for
+the same commanders and compares. It samples nothing: the population is every discovery
+candidate whose EDHREC cache row is already fresh, which on the fixture account is **95**. (An
+earlier, sampled version of the probe read 15 of 60 — the same answer from a narrower and
+non-deterministic window.)
+
+| | disagree |
+|---|---|
+| numerator — owned support | **57 / 95** |
+| denominator — EDHREC total | **56 / 95** |
+| **the resulting `fitSynergy`** | **20 / 95** |
+
+Mostly by one point; `Faceless One` reads **23 stored against 18 live**. **The divergence runs
+in both directions** — stored above live and live above stored, on different commanders — so
+this is not a resolution failure. It is **drift**: `commander_support` is a monthly snapshot
+(the `Commander index` workflow runs on the 3rd) and the live EDHREC payload changes
+continuously.
+
+So a row printing a stored-derived Fit would disagree with its own detail page on roughly a
+quarter of commanders. That is the reported defect — *"why is the score different across
+views"* — reproduced at smaller magnitude by the change meant to remove it.
+
+### Ruling D — one source of truth: every Fit reads the stored index
+
+**Settled 2026-09-15.** `scoreCommander`'s synergy overlap moves from the live EDHREC payload
+to the stored index, so `/discover`, `/commanders`, Commander Details and Home's hero all
+compute the same figure from the same rows.
+
+Three things make this smaller and better-founded than it first looks:
+
+- **Commander Details already mixes the two sources, and this removes the mix rather than
+  creating one.** Its synergy panel reads `commander_support_cards` today
+  (`app/commanders/[slug]/synergy-read.ts`) while its Fit reads the live payload — so the page
+  currently draws a card list from one source and a score from another. After this they agree.
+- **The alternative was rejected for a reason already in the tree.** Teaching the row the live
+  name match means a per-row EDHREC read across ~3,085 rows, which is exactly what `rankFree`
+  refuses to do and says so (`free-ranking.ts:105–112`).
+- **The figures become as fresh as the index and no fresher**, which is the honest cost: a
+  commander whose EDHREC list moved last week reads last month's overlap until the 3rd. Every
+  surface being wrong together is worth more than one surface being right alone, because the
+  reader can only ever compare two surfaces to each other.
+
+`probe:fit-parity` is the acceptance test for this ruling: **it must go green**, and it is
+written to exit non-zero while the two disagree, so it cannot pass by measuring nothing.
+
+**This is its own PR and it lands before the row** — see the revised boundaries below. It
+changes a figure on shipped surfaces, so it also needs the `commander_scores` writer-version
+stamp considered (`probe:writer-version`) and both cache versions bumped.
 
 `fitSynergy` is `null` where `edhrecTotal` is, and the score is **not** rescaled to fill the
 gap — a commander with no synergy read tops out at 40, and `measurableTotal` is 40 rather
@@ -218,36 +256,89 @@ rather than in a guard. What *is* worth a guard is the ceiling itself — see Ve
 
 ### The tag classifier
 
-130 of the 401 distinct tag labels resolve to creature types. The classifier's job is to keep
-those out of the gap line and let mechanics through.
+**134** of the 401 distinct tag labels resolve to creature types. The classifier's job is to
+keep those out of the gap line and let mechanics through.
 
-**The rule was built and run rather than described, and three of its four mechanics only
-appeared once it was.** The generator's final classification of the 401-label vocabulary is
-**269 mechanic · 125 creature · 7 format**, with every case below asserted inside the
-generator so it proves its own fixes instead of claiming them.
+**The rule was built and run rather than described, and it took six measured corrections.** The
+generator's final classification of the 401-label vocabulary is **260 mechanic · 134 creature ·
+7 format**, with every case below asserted inside the generator so it proves its own fixes
+instead of claiming them.
 
-- **A tribe is a creature subtype and nothing else.** Restricting the vocabulary to the
-  creature half of the type line — the obvious fix, and the one an earlier draft of this spec
-  stated — **is not sufficient, and fails on 10 of the 13 dual-role subtypes.** `Food` really
-  is a creature subtype, on `Artifact Creature — Food Golem`; so are `Treasure`, `Equipment`,
-  `Clues`, `Sagas`, `Shrines`, `Books`, `Auras`, `Adventures` and `Vehicles` on their own
-  creature-bearing cards. What separates them from `Frog` is that each is *also* a
-  non-creature subtype elsewhere, on hundreds of cards. So the generator collects both sets
-  and **subtracts**: a label qualifies as a tribe only if it appears as a creature subtype and
-  never as any other kind.
-- **`Kindred` bears creature types without being a creature.** That subtraction, applied
-  naively, sent `Faeries` to the mechanic side — MTG's `Kindred` (formerly `Tribal`) types put
-  creature types on non-creature cards, as in `Tribal Enchantment — Faerie Aura`, so every
-  Kindred tribe lands in the "other" set and is subtracted from itself. Faces whose type line
-  says `Creature`, `Kindred` **or** `Tribal` all count as creature-bearing.
-- **Irregular plurals.** `Dwarves`, `Faeries`, `Horses`, `Fungi` and `Heroes` are missed by a
-  naive singularizer. An explicit irregular table is required; a suffix rule alone is
-  insufficient.
-- **`Eggs`, `Mounts` and `Toys` are creature types, and an earlier draft of this spec was
-  wrong to call them mechanics.** All three are real subtypes — Bloomburrow's `Mount`, the
-  `Egg` type — whose EDHREC tag is genuinely ambiguous between the tribe and an archetype
-  built around it. The safety asymmetry below resolves them to the hidden side, which costs
-  three labels that might have been mildly useful and risks nothing.
+**The vocabulary is Scryfall's six subtype catalogs unioned with the card-derived one, because
+neither source is sufficient alone.** Deriving it from card type lines — the fix an earlier
+revision of this spec stated — fails four separate ways:
+
+- **The creature half of the type line keeps all 10 of the 13 dual-role subtypes.** `Food`
+  really is a creature subtype, on `Artifact Creature — Food Golem`; so are `Treasure`,
+  `Equipment`, `Clues`, `Sagas`, `Shrines`, `Books`, `Auras`, `Adventures` and `Vehicles` on
+  their own creature-bearing cards.
+- **Subtracting every subtype that appears on a non-creature line deletes `Dinosaur`**, which
+  has **231 creature printings against a single non-creature one**. The exclusion has to be by
+  catalog, not by card occurrence.
+- **`Servo` is token-only.** `transform.ts:13` drops token layouts, so it is absent from `cards`
+  entirely and `Servos` was allowlisted as a mechanic.
+- **`Time Lord` is multi-word.** Splitting subtypes on whitespace records `time` and `lord`, so
+  `Time Lords` could never match — and no guard on the matcher could have saved it.
+
+Scryfall's catalogs fix all four, and they are **provably usable as an exclusion set**: measured
+2026-09-15, `creature-types` (350 entries) has **zero overlap** with the artifact, enchantment,
+land, spell and planeswalker catalogs, and all ten dual-role labels sit in one of those five.
+
+**But the authoritative list alone is not sufficient either.** `Cephalid` is a real tribe that
+appears in **no** Scryfall subtype catalog, so a catalog-only vocabulary allowlists `Cephalids`
+as a mechanic. The card-derived half covers that gap, which is why both are kept.
+
+Two more corrections, both recorded because each was a tribe reaching the reader:
+
+- **`Kindred` bears creature types without being a creature.** `Tribal Enchantment — Faerie
+  Aura` sent `Faeries` to the mechanic side of the card-derived half, so faces whose type line
+  says `Creature`, `Kindred` **or** `Tribal` all count as creature-bearing. **That clause is no
+  longer provable by mutation and is kept anyway:** the union put `faerie` in reach of Scryfall's
+  catalog, so dropping the two words changes no answer today. It was proved by mutation before
+  the union, the claim was then carried across the change that invalidated it, and review caught
+  that. It stays because it is the correct reading of a type line — it fires the first time
+  Scryfall's catalog lags a Kindred-only tribe — not because anything currently demonstrates it.
+- **`Eggs`, `Mounts` and `Toys` are creature types**, and an earlier revision of this spec was
+  wrong to call them mechanics. All three are real subtypes — Bloomburrow's `Mount`, the `Egg`
+  type — whose EDHREC tag is genuinely ambiguous between the tribe and an archetype built around
+  it. The safety asymmetry resolves them to the hidden side.
+
+**Reducing EDHREC's plural labels to Scryfall's singular type names is a SECOND, independent
+problem, and a hand table of known words is the wrong mechanism for it.** One was written —
+five entries — and it was still missing four tribes: `Mice` and `Werewolves`, which review
+found, and `Cybermen` and `Pegasi`, which turned up only when the entire mechanic allowlist was
+swept against Scryfall's creature types. Every one of the four is a regular instance of an
+irregular English pattern, so the pattern is what the code carries now: a table entry fixes one
+word, a rule fixes the next set's tribe too.
+
+| ending | becomes | the tribe that paid for it |
+|---|---|---|
+| `-ves` | `-f`, `-fe` | `wolves`, `elves`, `dwarves`, `werewolves` |
+| `-men` | `-man` | `cybermen` |
+| `-i` | `-us` | `fungi`, `pegasi` |
+| `-ice` | `-ouse` | `mice` |
+| `-oes` | *drop 2* | `heroes` |
+| `-ies` | `-y` | `allies` |
+| `-(sh\|ch\|s\|x\|z)es` | *drop 2* | `foxes` |
+| `-s` | *drop 1* | `frogs`, `faeries`, `horses`, `humans`, `zombies` |
+
+Over-reduction is safe and deliberate — a form matching no creature type costs nothing. What
+would not be safe is a rule pulling a real mechanic across, and it is worth stating exactly how
+much is proved about that, since two revisions of this spec overstated it. Five mechanic labels
+that each FIRE a rule are pinned in both the generator and the tests — `Caves` for `-ves`,
+`Sacrifice` for `-ice`, `Activated Abilities` for `-ies`, `Curses` for `-es`, `Artifacts` for
+`-s`. **They are regression guards, not proofs:** over-reduction misclassifies only when the
+reduced form happens to be a real creature type, and none of theirs is, so no tweak to those
+rules can pull them across. `-men`, `-oes` and `-i` have no case at all, because no mechanic
+label ends that way.
+
+**The real protection is the pinned counts.** Any label changing bucket moves 260/134/7 and
+fails, whether or not anyone anticipated that label — which is the only guard here that does not
+depend on having thought of the case in advance.
+
+**One residual gap, stated rather than papered over:** a multi-word subtype that Scryfall omits
+would be split into words by the card-derived half and missed. No such case exists in the
+current vocabulary.
 
 An **unclassifiable label is excluded** from the gap line. The asymmetry is deliberate: a
 mechanic wrongly hidden produces a thinner sentence, while a creature type wrongly shown is
@@ -313,10 +404,14 @@ must not print an empty clause.
 
 ## Verification
 
-- **Unit** — the classifier over all 401 labels, asserting the counts it produced
-  (269 / 125 / 7), the **ten** dual-role subtypes that must read as mechanics, the five
-  irregular plurals, and `Eggs` / `Mounts` / `Toys` on the creature side — plus the
-  proportional floor at a null `deck_count` and the three `GapSlot` branches. Fit arithmetic
+- **Unit, two suites.** `gap-slot.test.ts` asserts the checked-in artifact: the counts it
+  produced (**260 / 134 / 7**), the ten dual-role subtypes that must read as mechanics, one
+  case per plural rule (there are **eight**), `Eggs` / `Mounts` / `Toys` on the creature side,
+  the four labels a card-derived vocabulary could not classify, `Cephalids` which no Scryfall
+  catalog lists, the proportional floor at a null `deck_count`, and the three `GapSlot`
+  branches. `tag-kinds.test.ts` asserts the generator's own two pure steps over fixtures —
+  **necessary because the artifact suite alone would stay green over a stale artifact**, which
+  is the one thing a checked-in generated file cannot prove about itself. Fit arithmetic
   is already covered in `score.ts`'s tests, and **so is the row's denominator**:
   `rec-card.test.tsx:226` already asserts a null-synergy commander prints
   `fitDenominatorMeasurable(40)` at both widths and that the rescaled `80` never appears, with
@@ -353,28 +448,40 @@ must not print an empty clause.
 Named here rather than discovered during implementation, per the ~20-file / ~800-line split
 rule. No stacking — each merges to `main` before the next opens.
 
-1. **Data and arithmetic, no UI.** The tag classifier and its generator, `prose` added to both
-   lane queries, the `GapSlot` builder, Fit computed for discovery rows, the payload shape
-   change and its byte guard. Nothing user-visible moves. Three things this PR must carry that
-   are easy to miss:
-   - **The numerator-parity measurement above**, before any figure is printed.
-   - **Both cache versions bump.** There are two, in different modules, and each is dropped
-     independently: `PAYLOAD_VERSION` in `src/lib/discovery/list.ts:224` (currently 2, feeding
-     `discoveryKey`) and `PAYLOAD_VERSION` in `src/lib/commanders/rankings.ts:56` (currently
-     3). Both payloads change what they *say* for unchanged rows, which is exactly the
-     condition those constants document, and a warm entry would otherwise serve prose-less
-     rows for up to the hour ceiling to any reader who writes nothing.
+**Revised 2026-09-15, from three to five.** The original PR 1 bundled the classifier with the
+payload work and assumed Fit was a free addition. It is not: Ruling D changes a figure on every
+surface that prints one, and that cannot ride along with a payload reshape. The parity
+measurement that forced the split was itself the original PR 1's first task, so the boundary
+moved for the reason the task existed.
+
+1. **The classifier and the gap slot.** `tag-kinds.ts` and its generator, the `GapSlot`
+   builder, the 0.5% floor, and `probe:fit-parity`. Pure code and one probe; no surface reads
+   any of it, no payload changes, no figure moves. **This PR is where the parity answer comes
+   from**, which is why it carries the probe rather than the payload.
+2. **One source of truth for Fit** — Ruling D. `scoreCommander`'s synergy overlap moves to the
+   stored index, `probe:fit-parity` goes green, and `/commanders`, Commander Details and Home
+   all shift by the drift they currently carry. Needs the `commander_scores` writer-version
+   stamp considered and a reason recorded for whichever way that goes.
+3. **The payload and the lane reads.** `prose` into both lane queries, the `GapSlot` on the
+   row payload, Fit on discovery rows, the encode shape change and its byte guard. Two things
+   easy to miss:
+   - **Both cache versions bump**, in different modules and each dropped independently:
+     `PAYLOAD_VERSION` in `src/lib/discovery/list.ts:224` (currently 2, feeding `discoveryKey`)
+     and `PAYLOAD_VERSION` in `src/lib/commanders/rankings.ts:56` (currently 3). Both payloads
+     change what they *say* for unchanged rows, which is exactly the condition those constants
+     document, and a warm entry would otherwise serve prose-less rows for up to the hour
+     ceiling to any reader who writes nothing.
    - **The owned lane needs two fields it does not have.** `CommanderListItem`
      (`recommend.ts:38–62`) carries no `deckCount` and no price, so the shared row's
      popularity and price figures have no source on `/commanders` today. `deck_count` is a
-     column on `commander_support` and the price comes from `loadPrices` — which
-     `/discover` already uses and which must be reused rather than re-derived, since a
-     hand-rolled price CTE was already replaced wholesale once for getting foil, staleness
-     and stock semantics wrong.
-2. **The unified row.** `rec-card.tsx` and `discovery-row.tsx` collapse into one component;
+     column on `commander_support` and the price comes from `loadPrices` — which `/discover`
+     already uses and which must be reused rather than re-derived, since a hand-rolled price
+     CTE was already replaced wholesale once for getting foil, staleness and stock semantics
+     wrong.
+4. **The unified row.** `rec-card.tsx` and `discovery-row.tsx` collapse into one component;
    both lanes adopt it; the five states are drawn; retired copy is deleted and the property
    tables quoting it are corrected.
-3. **Acceptance.** About entry and version bump, probe extensions, contact sheet.
+5. **Acceptance.** About entry and version bump, probe extensions, contact sheet.
 
 ---
 
