@@ -43,10 +43,12 @@ export function SetCell({
    * The newest `as_of` in the price table, for measuring a row's liveness.
    *
    * REQUIRED, with no default. A component that does not receive it reads every
-   * live price as `absent` and draws a bare `buy` with no figure — a wrong price
-   * rather than a missing prop, and silent. That shipped once: the commander
-   * page threaded it to one of two synergy panels and every desktop row lost its
-   * figure, while the phone was correct and every component test passed.
+   * live price as `absent`, and here that draws `no stock` — this cell's tag is
+   * `PriceTag`, not `BuyTag`, so the failure reads as a printing nobody carries
+   * rather than as a missing figure. Wrong in a more convincing way than a blank
+   * would be, and just as silent. The same omission shipped once elsewhere: the
+   * commander page threaded this to one of two synergy panels, every desktop row
+   * lost its figure, the phone was correct, and every component test passed.
    *
    * Pass `null` explicitly where there is no price feed to measure against. The
    * point is that the caller states it.
