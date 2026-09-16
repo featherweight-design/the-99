@@ -177,7 +177,7 @@ describe("planDeckUpdate", () => {
       deckUnresolved: [],
       cardFor,
     });
-    expect(result).toEqual({ listCommander: "Atraxa, Praetors' Voice" });
+    expect(result).toEqual({ listCommander: "Atraxa, Praetors' Voice", deckOracleId: KORVOLD });
   });
 
   // A shortlist is not a declaration. Refusing on it would break every deck
@@ -295,5 +295,87 @@ describe("planDeckUpdate", () => {
     expect(result.in).toEqual([
       { oracleId: "o-island", ...cardFor("o-island"), sourceLine: 10, quantity: 9, auto: false },
     ]);
+  });
+});
+
+// A pair deck's second half decides the identity jointly with the first, so a
+// list naming a different one is a different deck for the same reason. Before
+// `(Partner)` was readable this could not arise from a tag; now it can.
+describe("planDeckUpdate — the pair's second half", () => {
+  const PARTNER = "o-partner";
+  const OTHER = "o-other-partner";
+
+  it("refuses a list declaring a different partner", () => {
+    const result = planDeckUpdate({
+      parsed: parsed({
+        cards: [{ oracleId: "o-sol-ring", quantity: 1, sourceLine: 3 }],
+        declaredPartner: { oracleId: OTHER, name: "Tana, the Bloodsower", sourceLine: 2 },
+      }),
+      deckCards: [card("o-sol-ring")],
+      commanderOracleId: KORVOLD,
+      partnerOracleId: PARTNER,
+      deckUnresolved: [],
+      cardFor,
+    });
+
+    // The deck's own PARTNER is named on the other side of the banner, not its
+    // primary: the disagreement being refused is about the pair's second half.
+    expect(result).toEqual({ listCommander: "Tana, the Bloodsower", deckOracleId: PARTNER });
+  });
+
+  // A deck with no partner is not a pair, so any declared one changes what the
+  // deck is.
+  it("refuses a declared partner on a deck that leads alone", () => {
+    const result = planDeckUpdate({
+      parsed: parsed({
+        declaredPartner: { oracleId: OTHER, name: "Tana, the Bloodsower", sourceLine: 2 },
+      }),
+      deckCards: [],
+      commanderOracleId: KORVOLD,
+      partnerOracleId: null,
+      deckUnresolved: [],
+      cardFor,
+    });
+
+    // No partner to name, so the primary stands for what this deck is.
+    expect(result).toEqual({ listCommander: "Tana, the Bloodsower", deckOracleId: KORVOLD });
+  });
+
+  it("plans normally when the declared partner is this deck's own", () => {
+    const result = plan({
+      parsed: parsed({
+        cards: [{ oracleId: "o-sol-ring", quantity: 1, sourceLine: 3 }],
+        declaredPartner: { oracleId: PARTNER, name: "Sidar Kondo", sourceLine: 2 },
+      }),
+      deckCards: [card("o-sol-ring")],
+      commanderOracleId: KORVOLD,
+      partnerOracleId: PARTNER,
+      deckUnresolved: [],
+      cardFor,
+    });
+
+    expect(result.noChange).toBe(true);
+  });
+
+  // An export lists the pair; neither half fills a slot in the 99. The
+  // commander's line was already dropped and the partner's was not, so an
+  // untagged partner line arrived as a card going IN to its own deck.
+  it("drops the deck's own partner from the list rather than adding it", () => {
+    const result = plan({
+      parsed: parsed({
+        cards: [
+          { oracleId: PARTNER, quantity: 1, sourceLine: 2 },
+          { oracleId: "o-sol-ring", quantity: 1, sourceLine: 3 },
+        ],
+      }),
+      deckCards: [card("o-sol-ring")],
+      commanderOracleId: KORVOLD,
+      partnerOracleId: PARTNER,
+      deckUnresolved: [],
+      cardFor,
+    });
+
+    expect(result.in).toEqual([]);
+    expect(result.noChange).toBe(true);
   });
 });

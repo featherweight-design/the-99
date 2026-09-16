@@ -84,6 +84,9 @@ async function loadDeckMeta(userId: string, deckId: string) {
       id: decks.id,
       name: decks.name,
       commanderOracleId: decks.commanderOracleId,
+      // The pair's second half: the planner refuses a list declaring a
+      // different one, and drops this deck's own from the 99.
+      partnerOracleId: decks.partnerOracleId,
     })
     .from(decks)
     .where(and(eq(decks.id, deckId), eq(decks.userId, userId)));
@@ -156,15 +159,19 @@ export async function previewDeckUpdate(input: UpdateDeckInput): Promise<DeckUpd
     parsed,
     deckCards: rows,
     commanderOracleId: deck.commanderOracleId,
+    partnerOracleId: deck.partnerOracleId,
     deckUnresolved: existingUnresolved,
     cardFor: cardLookup(catalog),
   });
 
   if ("listCommander" in plan) {
+    // The deck's own half that the declaration disagrees with, not always the
+    // primary: a list naming a different PARTNER is refused over the partner,
+    // and naming the primary here would describe the wrong disagreement.
     const [commander] = await db
       .select({ name: cards.name })
       .from(cards)
-      .where(eq(cards.oracleId, deck.commanderOracleId));
+      .where(eq(cards.oracleId, plan.deckOracleId));
     return {
       ok: false,
       reason: "commanderConflict",
@@ -319,6 +326,7 @@ export async function updateDeckFromList(
       parsed,
       deckCards: rows,
       commanderOracleId: deck.commanderOracleId,
+      partnerOracleId: deck.partnerOracleId,
       // Only `noChange` reads this, and the apply path does not: it replaces the
       // unnamed rows unconditionally a few lines below. Passing nothing keeps
       // the write off a query it would not consult.
