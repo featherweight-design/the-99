@@ -411,7 +411,11 @@ export const CONTESTED_ARRIVAL = {
       deckName: "Muldrotha Value",
       quantity: 1,
       commanderCopies: 0,
-      granted: 1,
+      // ZERO. `ContestedCardRow` reads `granted > 0` as an AUTHORED
+      // selection and draws the deck checked and accented — which would show
+      // a reservation the player made, where this figure's subject is the
+      // DEFAULT the seniority rule produces before anyone chooses.
+      granted: 0,
       since: Date.UTC(2026, 2, 14),
       versionNumber: 3,
       // The senior deck holds the one copy that arrived; the other gets none.

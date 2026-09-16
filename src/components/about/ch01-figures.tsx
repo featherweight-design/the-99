@@ -24,7 +24,11 @@ import {
   REPLACE_SUMMARY,
 } from "../../lib/about/fixtures";
 import { cardAssignmentsCopy } from "../../lib/copy/card-assignments";
+import { collectionChassisCopy } from "../../lib/copy/collection";
 import { printingPickerCopy } from "../../lib/copy/collection";
+import { COSTS } from "../../lib/about/fixtures";
+import { COST_PIP_SIZE, CostPips } from "../ui/cost-pips";
+import { TwoFacedMark } from "../cards/two-faced-mark";
 import { ContestedCardRow } from "../decks/contested-card-row";
 import { ReceiptRow } from "../collection/arrivals-summary";
 import { issueInspectorCopy } from "../../lib/copy/issue-inspector";
@@ -49,8 +53,15 @@ export function ImportFigureBody() {
     // the reader will actually meet on `/collection/replace`.
     <div className="flex flex-col gap-[9px]">
       <div className="rounded-[8px] border border-dashed border-[color:var(--border-dashed)] px-[12px] py-[14px] text-center">
+        {/* The ROUTE's words, not §3's. The canvas says `Drop a CSV export`,
+            `Upload a CSV`, `Paste a list`; `UploadEntry` has never said any of
+            them. A reference page naming controls the app does not have is the
+            one failure this page cannot afford, so the drawing's LAYOUT
+            transfers and its labels do not. Both forms are drawn because the
+            route forks them at `md`. */}
         <div className="mb-[3px] text-[12.5px] text-[color:var(--fg-body)]">
-          Drop a CSV export
+          <span className="md:hidden">{collectionChassisCopy.upload.dropCompact}</span>
+          <span className="hidden md:inline">{collectionChassisCopy.upload.dropWide}</span>
         </div>
         <div className="font-mono text-[10px] text-[color:var(--fg-faint)]">
           {IMPORT_SOURCES.join(" · ")}
@@ -61,10 +72,10 @@ export function ImportFigureBody() {
             is what makes `Upload a CSV` the default door and `Paste a list`
             the other one. */}
         <span className="flex h-[30px] flex-1 items-center justify-center rounded-[8px] bg-[color:var(--fg)] text-[11.5px] font-semibold text-[color:var(--bg)]">
-          Upload a CSV
+          {collectionChassisCopy.upload.browse}
         </span>
         <span className="flex h-[30px] flex-1 items-center justify-center rounded-[8px] border border-solid border-[color:var(--border-strong)] text-[11.5px] text-[color:var(--fg-body)]">
-          Paste a list
+          {collectionChassisCopy.upload.paste}
         </span>
       </div>
     </div>
@@ -121,7 +132,11 @@ export function PostImportFigureBody() {
                   cardName={row.card}
                   deckName={row.deck}
                   reason={row.reason}
-                  warn={row.section === "short"}
+                  // NOT `warn`. `ReceiptRow` reserves `--warning` for the one
+                  // reason a player can act on without buying anything, and a
+                  // contested shortage is not it — the real `sectionShort`
+                  // hands that case to `ContestedCardRow`, which this figure
+                  // now draws below.
                 />
               </ul>
             </li>
@@ -236,6 +251,22 @@ export function CardDetailFigureBody() {
           </div>
         );
       })}
+
+      {/* THE COST AND THE BACK FACE. The entry's caption promises both — "the
+          cost beside the name is drawn with the real mana symbols, and a card
+          that prints two costs shows both", and "the back of a double-faced
+          card" — and the printings list alone substantiates neither. The first
+          rebuild dropped them for the list, which left the figure unable to
+          show what its own words claim. Same failure as the replace figure:
+          an assertion about a figure cannot see the caption above it.
+
+          `allFaces`, because the subject is a card printing TWO costs. The
+          default draws the front alone, which is the right pips for the wrong
+          card. */}
+      <div className="mt-[3px] flex items-center gap-[10px] border-t border-solid border-[color:var(--border)] pt-[9px]">
+        <CostPips cost={COSTS.twoFaced} allFaces spoken size={COST_PIP_SIZE} />
+        <TwoFacedMark layout="transform" />
+      </div>
     </div>
   );
 }

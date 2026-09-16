@@ -5,7 +5,9 @@ import { ABOUT_VERSION, aboutCopy, aboutEntries } from "../../lib/copy/about";
 import { FIGURES } from "./figures";
 import { availabilityCopy } from "../../lib/copy/availability";
 import { cardAssignmentsCopy } from "../../lib/copy/card-assignments";
-import { printingPickerCopy } from "../../lib/copy/collection";
+import { collectionChassisCopy, printingPickerCopy } from "../../lib/copy/collection";
+import { spokenFullManaCost, twoFacedCopy } from "../../lib/copy/card-surfaces";
+import { COSTS } from "../../lib/about/fixtures";
 import { setPageCopy } from "../../lib/copy/set-collections";
 import { PIP_ORDER } from "../../lib/copy/filter-chassis";
 import {
@@ -657,18 +659,24 @@ describe("what each chapter 01 figure actually draws", () => {
     // TRANSCRIBED from §3. The figure used to list four source names as pills
     // and repeat the entry's own replace sentence in a warning band — neither
     // of which Design drew, and the sentence is the caption directly above it.
-    expect(el.textContent).toContain("Drop a CSV export");
+    // The ROUTE's words, read from the copy module. §3's labels — `Drop a CSV
+    // export`, `Upload a CSV`, `Paste a list` — are none of them what
+    // `UploadEntry` says, and a reference page naming controls the app does
+    // not have is the one failure this page cannot afford. Both forms are
+    // asserted because the route forks them at `md`.
+    expect(el.textContent).toContain(collectionChassisCopy.upload.dropCompact);
+    expect(el.textContent).toContain(collectionChassisCopy.upload.dropWide);
     for (const source of IMPORT_SOURCES) {
       expect(el.textContent).toContain(source);
     }
-    expect(el.textContent).toContain("Upload a CSV");
-    expect(el.textContent).toContain("Paste a list");
+    expect(el.textContent).toContain(collectionChassisCopy.upload.browse);
+    expect(el.textContent).toContain(collectionChassisCopy.upload.paste);
 
     // The primary door is an INVERSION — `--fg` on `--bg`, the only one in
     // chapter 01 — and it is what makes one of the two read as the default.
     // Both doors present with identical skins would pass every check above.
     const primary = [...el.querySelectorAll("span")].find(
-      (n) => n.textContent === "Upload a CSV",
+      (n) => n.textContent === collectionChassisCopy.upload.browse,
     );
     expect(primary?.className).toContain("bg-[color:var(--fg)]");
     expect(primary?.className).toContain("text-[color:var(--bg)]");
@@ -762,6 +770,19 @@ describe("what each chapter 01 figure actually draws", () => {
     expect(el.textContent).toContain("◇");
     expect(el.textContent).toContain(printingPickerCopy.printing.badgePicked);
     expect(el.textContent).toContain(printingPickerCopy.printing.badgeShownNow);
+
+    // The caption promises the cost and the back face; the printings list
+    // alone substantiates neither, and the first rebuild dropped both for it.
+    //
+    // ASSERTED APART, because BOTH draw the glyph `//` — a sweep of the
+    // plate's text is satisfied by whichever survives, and dropping either one
+    // left the run green. The test this replaced carried a comment warning of
+    // exactly that, and deleting it is how the trap was walked into again.
+    //
+    // The cost is read through its SPOKEN form, which states both faces; the
+    // mark through its own sr-only name.
+    expect(el.textContent).toContain(twoFacedCopy.markAria);
+    expect(el.textContent).toContain(spokenFullManaCost(COSTS.twoFaced));
   });
 });
 

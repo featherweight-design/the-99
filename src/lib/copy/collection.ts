@@ -60,6 +60,21 @@ export const collectionChassisCopy = {
     compact: "Search your cards…",
   },
   /**
+   * The upload door's own words, in the two forms `UploadEntry` draws.
+   *
+   * Literals in `upload-entry.tsx` until the About page needed to draw this
+   * surface — and the figure first took §3's labels instead (`Drop a CSV
+   * export`, `Upload a CSV`, `Paste a list`), none of which the route has ever
+   * said. A reference page naming controls the app does not have is the one
+   * failure this page cannot afford, so both sides read these now.
+   */
+  upload: {
+    dropWide: "Drop your new collection CSV here",
+    dropCompact: "Drop your new CSV",
+    browse: "Browse files",
+    paste: "Paste a list instead",
+  },
+  /**
    * The route's wide line, in two states.
    *
    * Three figures, because `/collection` counts three things and they are not
