@@ -120,7 +120,7 @@ describe("rankFree with preloaded reads", () => {
     fitSynergy: null,
     synergyState: "absent",
     score: 10,
-    rankScore: 25,
+    rankScore: 10,
     measurableTotal: 40,
     imageUri: null,
     artCropUri: null,
@@ -176,7 +176,7 @@ describe("rankFree reads the stored support list", () => {
     colorPoolSize: 1, roleCounts: { ramp: 0, draw: 0, removal: 0, wipes: 0 },
     edhrecOwnedCount: 0, edhrecTotal: 0, receipts: "",
     fitPool: 0, fitRoles: 0, fitSynergy: null, synergyState: "absent",
-    score: 10, rankScore: 25, measurableTotal: 40,
+    score: 10, rankScore: 10, measurableTotal: 40,
     imageUri: null, artCropUri: null,
   });
 

@@ -177,9 +177,10 @@ describe("scoreCommander", () => {
     expect(unindexed.rankScore).toBeLessThanOrEqual(POOL_WEIGHT + ROLES_WEIGHT);
   });
 
-  // The other half of the same rule, and the reason the field is not simply deleted: for
-  // an indexed commander the two figures have always been equal, because that rescale was
-  // a division by 100.
+  // An INVARIANCE, and it earns nothing on its own: for an indexed commander the two
+  // figures were always equal, because the retired rescale divided by 100 there. It is
+  // here to state that the field now has no formula of its own, so a future change that
+  // gives it one has to break this as well as the case above.
   it("leaves an indexed commander's rank where its score is", () => {
     const indexed = scoreCommander({ commander, collection, support: support(["Sol Ring"]), inclusionByName: null });
     expect(indexed.rankScore).toBe(indexed.score);
