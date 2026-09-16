@@ -236,7 +236,14 @@ export async function loadSummaryView(uploadId: string, userId: string): Promise
     // The money sections lose whatever the chooser below is still deciding — see
     // `withoutUndecided`. Keyed on the LIVE list above, not the payload's, so a card whose
     // contention has resolved leaves the chooser and returns to the money sections together.
-    summary: summary ? withoutUndecided(summary, contested.map((c) => c.oracleId)) : null,
+    summary: summary
+      ? withoutUndecided(
+          summary,
+          // The chooser's OWN claimants per card, not just the card: a money row belonging to a
+          // deck the chooser never lists is a deck whose demand nothing else would report.
+          contested.map((c) => ({ oracleId: c.oracleId, deckIds: c.claimants.map((x) => x.deckId) })),
+        )
+      : null,
     contested,
   };
 }

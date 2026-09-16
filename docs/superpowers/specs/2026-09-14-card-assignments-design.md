@@ -331,9 +331,17 @@ edited — it is the record of what Design decided — so the divergence is stat
    which deck gets it, and picking the other deck falsified that line without touching it. The
    handoff's answer was a cross-reference — `Also above, under Still to buy — these answer
    different questions` — which explains the duplication rather than removing it. Contested oracle
-   ids are now excluded from both `cleared` and `still`, and the cross-reference is retired with
+   rows are now excluded from both `cleared` and `still`, and the cross-reference is retired with
    the duplication it described. Nothing goes unreported: the chooser names the losing deck's
    outcome on its own row.
+
+   The exclusion is **by deck and card, never by card alone, and the deck list is the chooser's
+   own claimants.** The two sides count different decks — the money rows are draft-shaped, so a
+   deck whose draft adds the card has a row there and no option in the version-shaped chooser,
+   and dropping every row for the card would report that deck's demand nowhere at all. An
+   `unmatched` row survives regardless: it is about the FILE rather than the allocation, and the
+   issues line promises that any deck still billing an unparsed name is marked below, which the
+   chooser draws no marker for.
 
 3. **The footer note beside `Done` is gone and the button names its destination**:
    `View your collection`. The note existed to say that nothing was being saved, which a button

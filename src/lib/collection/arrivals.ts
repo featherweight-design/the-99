@@ -260,7 +260,7 @@ export function summaryIsEmpty(s: ArrivalsSummary): boolean {
 }
 
 /**
- * The money sections with every still-undecided card taken out of them.
+ * The money sections with the rows the chooser has taken over removed from them.
  *
  * A CONTESTED CARD IS REPORTED ONCE, in the section that decides it. The frozen payload and the
  * live contested read are computed from different questions, so one card reached both: the
@@ -273,15 +273,28 @@ export function summaryIsEmpty(s: ArrivalsSummary): boolean {
  * it here also repairs receipts written before this rule existed, which a write-time filter
  * could not reach — the payload is frozen the moment the confirm lands.
  *
- * `oracleIds` is the LIVE contested list, so a card whose contention has since resolved leaves
- * the chooser and returns to the money sections in the same pass, which is the honest reading.
+ * BY DECK AND CARD, never by card alone, and the deck list is the chooser's OWN claimants. The
+ * two sides count different decks: the money rows are draft-shaped, so a deck whose draft adds
+ * the card has a row here while the version-shaped chooser never lists it as a claimant. Dropping
+ * every row for the card would take that deck's only line off the receipt and leave its demand
+ * reported nowhere at all.
+ *
+ * AN UNMATCHED ROW SURVIVES REGARDLESS. That row is about the FILE — a line whose name did not
+ * parse — and the issues line at the top of the page promises that any deck still billing one of
+ * those is marked below. The chooser draws no file-error marker, so excluding it would leave that
+ * promise pointing at nothing.
  */
-export function withoutUndecided(summary: ArrivalsSummary, oracleIds: string[]): ArrivalsSummary {
-  if (oracleIds.length === 0) return summary;
-  const undecided = new Set(oracleIds);
+export function withoutUndecided(
+  summary: ArrivalsSummary,
+  undecided: { oracleId: string; deckIds: string[] }[],
+): ArrivalsSummary {
+  if (undecided.length === 0) return summary;
+  const taken = new Map(undecided.map((u) => [u.oracleId, new Set(u.deckIds)]));
+  const decided = (r: { oracleId: string; deckId: string }) =>
+    !taken.get(r.oracleId)?.has(r.deckId);
   return {
     ...summary,
-    cleared: summary.cleared.filter((r) => !undecided.has(r.oracleId)),
-    still: summary.still.filter((r) => !undecided.has(r.oracleId)),
+    cleared: summary.cleared.filter(decided),
+    still: summary.still.filter((r) => r.reason.kind === "unmatched" || decided(r)),
   };
 }
