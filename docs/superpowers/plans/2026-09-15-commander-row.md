@@ -179,13 +179,43 @@ caller.
 
 ## PR 5 — acceptance
 
-About entry and `ABOUT_VERSION` bump, probe extensions for the row's own rulings, contact sheet
-over both lanes at both widths, and the close-out walk.
+Probe extensions for the row's own rulings, contact sheet over both lanes at both widths, and
+the close-out walk.
+
+### No About work in this feature — Hugh, 2026-09-16
+
+**The About entry and the `ABOUT_VERSION` bump are OUT**, and `/about` is not touched by any PR
+here. Hugh will take it to Design separately: there are several features in flight at once and
+the entries are shifting around, so filing one from this run would be writing against a page
+whose shape is being decided elsewhere.
+
+This is the ruling AGENTS.md reserves for him — *"Design draws the entries and Hugh decides
+which features owe one"*, and he may overrule that file. `feature-acceptance` does not gate on
+the entry for this feature, and `about.test.ts`'s content hash stays pinned because no copy in
+`src/lib/copy/about.ts` moves.
+
+**Carried into that Design conversation, not actioned here.** The existing `discover` entry
+becomes factually false the moment PR 4 ships, and this is a different thing from declining to
+add an entry:
+
+> "Discover prints **counts, never a score** — how many of its most-played cards you already
+> own, how many decks are tracked, and how many of its top cards would be new to you."
+
+Fit **is** a score, and the row prints it. Two of that entry's three key lines go with it (the
+headline-count line, and the "new to you" line the mechanic gap slot replaces). The
+`/commanders` entries survive — `fit-score` describes the three-part arithmetic and
+`commander-lane` describes `Build from`, neither of which moves — but they deserve the same
+re-read whenever the About round happens.
+
+Nothing mechanical will catch this: the content hash notices an edit to that copy and cannot
+notice that unedited copy has stopped being true.
 
 ---
 
 ## Fixture note, for every PR from 3 onward
 
-`pnpm db:copy:prose` against local-dev first. It holds **1,070 of 3,279** sentences against
-production's 3,341 of 3,342, so two thirds of rows render as `No sentence` until that runs —
-a fixture gap that reads exactly like a bug.
+`pnpm db:copy:prose` against local-dev first. Production holds 3,341 of 3,342 sentences.
+Local-dev held **1,070 of 3,279** until the copy was run on 2026-09-16, which installed 2,778;
+**501 rows keep their null** (inputs the target no longer has) and render with no paragraph,
+which is the state the design draws rather than a fixture gap. Before that run two thirds of
+rows drew empty, which reads exactly like a bug.
