@@ -137,6 +137,11 @@ export interface DiscardConfirmProps {
    *  because the trigger is unmounted while the question is up — and a discard
    *  that wins the race throws away a card the reader has just put back. */
   disabled?: boolean;
+  /** Reports this question's own write, for the same reason the commit sheet does:
+   *  a discard started FIRST would otherwise race a restore started second, and
+   *  the two serialize on the deck lock. `unknown` is never followed by `settled`
+   *  — a throw can be a discard that landed and lost its reply. */
+  onWriteState?: (state: "writing" | "settled" | "unknown") => void;
 }
 
 /**
@@ -177,6 +182,7 @@ export function DiscardConfirm({
   onDiscarded,
   className = "",
   disabled = false,
+  onWriteState,
 }: DiscardConfirmProps) {
   const [error, setError] = useState<string | null>(null);
   const [pending, startTransition] = useTransition();
@@ -204,6 +210,11 @@ export function DiscardConfirm({
     safeRef.current?.focus();
     draftAnnouncer();
   }, []);
+
+  // On unmount only, and `settled` rather than a clear: dismissing the question
+  // after a throw is the reader acknowledging a message, never the write becoming
+  // known. What an unknown outcome means for the page is the host's to hold.
+  useEffect(() => () => onWriteState?.("settled"), [onWriteState]);
 
   // The caller withholds the offer on a brew; this is the type narrowing for the
   // same fact.
@@ -272,9 +283,13 @@ export function DiscardConfirm({
           onClick={() => {
             if (inFlightRef.current) return;
             inFlightRef.current = true;
+            // Same tick as the click, beside the ref that already guards this
+            // component against its own second press.
+            onWriteState?.("writing");
             setError(null);
             startTransition(async () => {
               let result: DeckMutationResult;
+              let outcomeUnknown = false;
               // `finally`, not a `.catch`: a synchronous throw would escape a
               // promise-level catch and leave the latch stuck, killing the
               // control for the rest of the page's life.
@@ -292,13 +307,24 @@ export function DiscardConfirm({
                 // outcome is unknown and the router re-reads to settle it — which
                 // also closes this question, because `useDiscardConfirm` drops it
                 // the moment the refreshed state has no changes left.
+                //
+                // The latch is held shut for the same reason, and that matters
+                // most for `PendingBanner`, which passes no `onWriteState`: there
+                // this ref is the only thing between the reader and a second
+                // destructive write against a draft that may already be gone. It
+                // opens when the question is dismissed, which unmounts this.
+                outcomeUnknown = true;
+                onWriteState?.("unknown");
                 setError(copy.unresolved);
                 router.refresh();
                 return;
               } finally {
-                inFlightRef.current = false;
+                if (!outcomeUnknown) inFlightRef.current = false;
               }
               if (!result.ok) {
+                // A refusal IS settled: the server declined before it wrote, so
+                // nothing is in doubt and the host's controls open again.
+                onWriteState?.("settled");
                 // The server's own message is dropped deliberately. Every way this
                 // write can fail leaves the draft intact, and that — not which
                 // guard turned it down — is what the player needs told.

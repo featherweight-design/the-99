@@ -16,7 +16,7 @@
 // can have moved.
 
 import { useRouter } from "next/navigation";
-import { useEffect, useId, useState, useTransition } from "react";
+import { useEffect, useId, useRef, useState, useTransition } from "react";
 import { commitDeckVersion, type CommitResult } from "../../app/decks/actions";
 import { deckVersioningCopy } from "../../lib/copy/deck-versioning";
 import { releasedCopies, type DraftState } from "../../lib/decks/draft-shape";
@@ -78,6 +78,16 @@ export type CommitSheetProps = {
    *  passes this during a restore. The two serialize on the deck lock, and a
    *  commit that wins the race freezes a cut the reader has just undone. */
   commitDisabled?: boolean;
+  /** Reports this sheet's own write, so a host can shut the controls that
+   *  serialize with it on the deck lock. The mirror image of `commitDisabled`:
+   *  without both, a commit started FIRST still raced a restore started second,
+   *  because this sheet is not unmounted while its own write runs.
+   *
+   *  `settled` is a claim about this write alone — the host decides what it means
+   *  for the page — and `unknown` is never followed by one: a throw can be a
+   *  version that was written and lost its reply, and only the server can say.
+   */
+  onWriteState?: (state: "writing" | "settled" | "unknown") => void;
   /** Folds the sheet away. The sheet is unmounted rather than hidden, which is
    *  what leaves the note empty when it is opened again. */
   onCancel: () => void;
@@ -90,6 +100,7 @@ export function CommitSheet({
   cardCount,
   releasedOverride,
   commitDisabled = false,
+  onWriteState,
   onCancel,
 }: CommitSheetProps) {
   const router = useRouter();
@@ -97,6 +108,12 @@ export function CommitSheet({
   const [pending, startTransition] = useTransition();
   const [note, setNote] = useState("");
   const [error, setError] = useState<string | null>(null);
+  // Synchronous, as the discard question's is: `pending` is a transition update
+  // and is not visible to the next click in the same tick, so two presses would
+  // start two commits. Held shut through an unknown outcome — that is the last
+  // state a second commit should be startable from — and cleared on a refusal,
+  // which the server declined before it wrote.
+  const inFlightRef = useRef(false);
 
   // The region has to be in the document before any text reaches it, and this
   // sheet cannot rely on a row having put it there: a first commit, a draft that
@@ -104,6 +121,12 @@ export function CommitSheet({
   useEffect(() => {
     draftAnnouncer();
   }, []);
+
+  // On unmount only, and it says `settled` rather than clearing the host's guard
+  // outright: cancelling after a throw is the reader dismissing a message, not
+  // the write becoming known. The host holds an unknown outcome until the server
+  // sends rows built on what actually happened.
+  useEffect(() => () => onWriteState?.("settled"), [onWriteState]);
 
   const version = (state.version?.number ?? 0) + 1;
   // Copies, not rows — `3 → 1` releases two. See `releasedCopies`.
@@ -289,7 +312,13 @@ export function CommitSheet({
             disabled={pending || commitDisabled}
             className={`${BAR_BUTTON} min-h-[48px] md:min-h-0 md:py-[11px] md:px-[20px] text-[14px]`}
             onClick={() => {
+              if (inFlightRef.current) return;
+              inFlightRef.current = true;
               setError(null);
+              // Before the transition, not inside it: the host has to know in
+              // the same tick as the click, or a restore pressed in the window
+              // before this child re-renders reads the guard as open.
+              onWriteState?.("writing");
               startTransition(async () => {
                 let result: CommitResult;
                 try {
@@ -301,11 +330,20 @@ export function CommitSheet({
                   // no longer differs from anything. The message says the outcome
                   // is unknown and the router re-reads the route the sheet's own
                   // figures came from.
+                  //
+                  // The latch and the host's guard both stay shut. An unknown
+                  // outcome is the one state a second write to this draft must
+                  // not start from, and dismissing this sheet does not settle it.
+                  onWriteState?.("unknown");
                   setError(copy.unresolved);
                   router.refresh();
                   return;
                 }
                 if (!result.ok) {
+                  // A refusal IS settled: the server declined before it wrote,
+                  // so this latch and the host's controls both open again.
+                  inFlightRef.current = false;
+                  onWriteState?.("settled");
                   // The server's own message is dropped on purpose. Every way this
                   // write can fail leaves the changes intact, and that — not which
                   // race lost — is the thing the player needs told.

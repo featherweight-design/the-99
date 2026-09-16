@@ -59,9 +59,11 @@ const BODY = "the draft's own account";
 function Host({
   state = STATE_36,
   onDiscarded,
+  onWriteState,
 }: {
   state?: DraftState;
   onDiscarded?: () => void;
+  onWriteState?: (next: "writing" | "settled" | "unknown") => void;
 }) {
   const discard = useDiscardConfirm(state);
   if (discard.confirming) {
@@ -72,6 +74,7 @@ function Host({
         versionCards={VERSION_CARDS}
         onCancel={discard.cancel}
         onDiscarded={onDiscarded}
+        onWriteState={onWriteState}
       />
     );
   }
@@ -289,6 +292,41 @@ describe("the discard confirm", () => {
     // The refresh is what settles it, and what drops the question once the
     // re-read comes back with no changes left.
     expect(refresh).toHaveBeenCalledTimes(1);
+  });
+
+  // The latch used to open in a `finally`, which runs on the throw as well: a
+  // second press then sent a second discard carrying the same expected version,
+  // against a draft that may already be gone. It matters most for the pending
+  // banner, which passes no `onWriteState` — there this ref is the only thing
+  // between the reader and that second destructive write. It opens when the
+  // question is dismissed, which unmounts the component.
+  it("sends no second discard once the outcome is unknown", async () => {
+    vi.mocked(discardDeckDraft).mockRejectedValue(new Error("offline"));
+    discard();
+    act(raise);
+    const go = screen.getByRole("button", { name: copy.confirm(36) });
+    await act(async () => {
+      go.click();
+    });
+    expect(screen.getByRole("alert").textContent).toBe(copy.unresolved);
+    await act(async () => {
+      go.click();
+    });
+    expect(discardDeckDraft).toHaveBeenCalledTimes(1);
+  });
+
+  // The host is told, in the same tick as the click, so a write it owns cannot
+  // start against this one. `settled` is reported on a REFUSAL — the server
+  // declined before it wrote — and never after a throw.
+  it("reports its own write to the host, and never settles an unknown one", async () => {
+    const onWriteState = vi.fn();
+    vi.mocked(discardDeckDraft).mockRejectedValue(new Error("offline"));
+    discard({ onWriteState });
+    act(raise);
+    await act(async () => {
+      screen.getByRole("button", { name: copy.confirm(36) }).click();
+    });
+    expect(onWriteState.mock.calls.map(([s]) => s)).toEqual(["writing", "unknown"]);
   });
 
   it("draws no control on a brew — there is no version to go back to", () => {

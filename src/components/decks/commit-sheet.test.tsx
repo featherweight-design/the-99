@@ -332,6 +332,47 @@ describe("CommitSheet", () => {
     expect(push).not.toHaveBeenCalled();
     expect(screen.getByRole("status").textContent).toBe("");
   });
+
+  // A transition update is not visible to the next click in the same tick, so
+  // `disabled={pending}` lands a render too late. Two presses used to send two
+  // commits, and the first one's refusal would then open the host's controls
+  // while the second was still in the air.
+  it("sends one commit however fast the button is pressed twice", async () => {
+    vi.mocked(commitDeckVersion).mockResolvedValue({
+      ok: true, number: 3, cardCount: 99, buy: [], pull: [],
+    });
+    sheet();
+    const go = screen.getByRole("button", { name: copy.cta(3) });
+    await act(async () => {
+      go.click();
+      go.click();
+    });
+    expect(commitDeckVersion).toHaveBeenCalledTimes(1);
+  });
+
+  // The host is told in the same tick as the click, because a restore pressed in
+  // the window before this sheet re-renders would otherwise read the guard as
+  // open. `settled` follows a REFUSAL, where the server declined before it wrote,
+  // and never a throw: that one can be a version that landed and lost its reply.
+  it("reports its own write to the host, and never settles an unknown one", async () => {
+    const onWriteState = vi.fn();
+    vi.mocked(commitDeckVersion).mockRejectedValue(new Error("offline"));
+    sheet({ onWriteState });
+    await act(async () => {
+      screen.getByRole("button", { name: copy.cta(3) }).click();
+    });
+    expect(onWriteState.mock.calls.map(([state]) => state)).toEqual(["writing", "unknown"]);
+  });
+
+  it("reports the refusal as settled, because nothing was written", async () => {
+    const onWriteState = vi.fn();
+    vi.mocked(commitDeckVersion).mockResolvedValue({ ok: false, message: "no" });
+    sheet({ onWriteState });
+    await act(async () => {
+      screen.getByRole("button", { name: copy.cta(3) }).click();
+    });
+    expect(onWriteState.mock.calls.map(([state]) => state)).toEqual(["writing", "settled"]);
+  });
 });
 
 // `pullNote` is split on its own punctuation to draw the opening clause in the
