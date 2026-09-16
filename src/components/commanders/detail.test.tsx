@@ -81,17 +81,17 @@ function noSynergy(synergyState: SynergyState): CommanderDetailScore {
 
 describe("CommanderDetail synergy states", () => {
   it("shows no synergy note when the state is ok", () => {
-    render(<CommanderDetail commander={commander()} rank={1} isBestFit synergyCards={noSynergyCards} newestAsOf={null} />);
+    render(<CommanderDetail commander={commander()} rank={1} isBestFit synergyCards={noSynergyCards} newestAsOf={null}  avail="all"/>);
     expect(screen.queryByText(/Synergy data unavailable/i)).toBeNull();
   });
 
   it("says the data is unavailable when the state is degraded", () => {
-    render(<CommanderDetail commander={noSynergy("degraded")} rank={1} isBestFit={false} synergyCards={noSynergyCards} newestAsOf={null} />);
+    render(<CommanderDetail commander={noSynergy("degraded")} rank={1} isBestFit={false} synergyCards={noSynergyCards} newestAsOf={null}  avail="all"/>);
     expect(screen.getAllByText(/Synergy data unavailable/i).length).toBeGreaterThan(0);
   });
 
   it("says the commander is not indexed, with no Retry, when the state is absent", () => {
-    render(<CommanderDetail commander={noSynergy("absent")} rank={1} isBestFit={false} synergyCards={noSynergyCards} newestAsOf={null} />);
+    render(<CommanderDetail commander={noSynergy("absent")} rank={1} isBestFit={false} synergyCards={noSynergyCards} newestAsOf={null}  avail="all"/>);
     expect(screen.getAllByText(/EDHREC doesn't track this commander/i).length).toBeGreaterThan(0);
     expect(screen.queryByText(/Synergy data unavailable/i)).toBeNull();
     expect(screen.queryByRole("button", { name: /retry/i })).toBeNull();
@@ -103,7 +103,7 @@ describe("CommanderDetail fit hero", () => {
   // index is scored out of 40, and printing that 32 beside "/100" is the fabricated
   // comparability the denominator exists to close.
   it("prints the raw score over 100 when synergy was measured", () => {
-    render(<CommanderDetail commander={commander()} rank={1} isBestFit synergyCards={noSynergyCards} newestAsOf={null} />);
+    render(<CommanderDetail commander={commander()} rank={1} isBestFit synergyCards={noSynergyCards} newestAsOf={null}  avail="all"/>);
     expect(screen.getAllByText("44").length).toBeGreaterThan(0);
     expect(screen.getAllByText("/100").length).toBeGreaterThan(0);
     expect(screen.queryByText(/measurable/)).toBeNull();
@@ -116,7 +116,7 @@ describe("CommanderDetail fit hero", () => {
         rank={3}
         isBestFit={false}
         synergyCards={noSynergyCards} newestAsOf={null}
-      />,
+       avail="all"/>,
     );
     expect(screen.getAllByText("/40 measurable").length).toBeGreaterThan(0);
     expect(screen.queryByText("/100")).toBeNull();
@@ -126,7 +126,7 @@ describe("CommanderDetail fit hero", () => {
   // summed to 100% and taught nothing about the weights. Points over weight makes the
   // headline auditable by addition.
   it("prints each segment's points over its weight", () => {
-    render(<CommanderDetail commander={commander()} rank={1} isBestFit synergyCards={noSynergyCards} newestAsOf={null} />);
+    render(<CommanderDetail commander={commander()} rank={1} isBestFit synergyCards={noSynergyCards} newestAsOf={null}  avail="all"/>);
     expect(screen.getAllByLabelText("Pool, 12 of 15 points").length).toBeGreaterThan(0);
     expect(screen.getAllByLabelText("Roles, 8 of 25 points").length).toBeGreaterThan(0);
     expect(screen.getAllByLabelText("Synergy, 24 of 60 points").length).toBeGreaterThan(0);
@@ -140,7 +140,7 @@ describe("CommanderDetail fit hero", () => {
         rank={3}
         isBestFit={false}
         synergyCards={noSynergyCards} newestAsOf={null}
-      />,
+       avail="all"/>,
     );
     expect(screen.queryByText(/^Synergy —/)).toBeNull();
     expect(screen.queryByLabelText(/^Synergy,/)).toBeNull();
@@ -153,7 +153,7 @@ describe("CommanderDetail fit hero", () => {
         rank={3}
         isBestFit={false}
         synergyCards={noSynergyCards} newestAsOf={null}
-      />,
+       avail="all"/>,
     );
     fireEvent.click(screen.getAllByRole("button", { name: /What Pool, Roles and Synergy mean/i })[0]);
     expect(screen.getAllByText(/Breadth, not quality/).length).toBeGreaterThan(0);
@@ -164,7 +164,7 @@ describe("CommanderDetail fit hero", () => {
   // An aria-controls pointing at an id no element carries is a broken relationship,
   // and the panel only exists while the key is open.
   it("names the panel it controls only while that panel exists", () => {
-    render(<CommanderDetail commander={commander()} rank={1} isBestFit synergyCards={noSynergyCards} newestAsOf={null} />);
+    render(<CommanderDetail commander={commander()} rank={1} isBestFit synergyCards={noSynergyCards} newestAsOf={null}  avail="all"/>);
     const trigger = screen.getAllByRole("button", { name: /What Pool, Roles and Synergy mean/i })[0];
     expect(trigger).not.toHaveAttribute("aria-controls");
 
@@ -177,7 +177,7 @@ describe("CommanderDetail fit hero", () => {
   });
 
   it("closes the key again", () => {
-    render(<CommanderDetail commander={commander()} rank={1} isBestFit synergyCards={noSynergyCards} newestAsOf={null} />);
+    render(<CommanderDetail commander={commander()} rank={1} isBestFit synergyCards={noSynergyCards} newestAsOf={null}  avail="all"/>);
     const trigger = screen.getAllByRole("button", { name: /What Pool, Roles and Synergy mean/i })[0];
     fireEvent.click(trigger);
     expect(screen.getAllByText(/12 \+ 8 \+ 24 = 44\./).length).toBeGreaterThan(0);
@@ -192,21 +192,21 @@ describe("CommanderDetail hidden-receipts note", () => {
   // of those an outage promises a recovery that will never come.
   it("keeps the outage note off an absent commander", () => {
     render(
-      <CommanderDetail commander={noSynergy("absent")} rank={1} isBestFit={false} synergyCards={noSynergyCards} newestAsOf={null} />,
+      <CommanderDetail commander={noSynergy("absent")} rank={1} isBestFit={false} synergyCards={noSynergyCards} newestAsOf={null}  avail="all"/>,
     );
     expect(screen.queryByText(/EDHREC data unavailable/i)).toBeNull();
   });
 
   it("keeps the outage note off a commander whose rows are all excluded", () => {
     render(
-      <CommanderDetail commander={commander()} rank={1} isBestFit synergyCards={noSynergyCards} newestAsOf={null} />,
+      <CommanderDetail commander={commander()} rank={1} isBestFit synergyCards={noSynergyCards} newestAsOf={null}  avail="all"/>,
     );
     expect(screen.queryByText(/EDHREC data unavailable/i)).toBeNull();
   });
 
   it("still shows the outage note when EDHREC is unreachable", () => {
     render(
-      <CommanderDetail commander={noSynergy("degraded")} rank={1} isBestFit={false} synergyCards={noSynergyCards} newestAsOf={null} />,
+      <CommanderDetail commander={noSynergy("degraded")} rank={1} isBestFit={false} synergyCards={noSynergyCards} newestAsOf={null}  avail="all"/>,
     );
     expect(screen.getAllByText(/EDHREC data unavailable/i).length).toBeGreaterThan(0);
   });
@@ -218,7 +218,7 @@ describe("CommanderDetail hidden-receipts note", () => {
 describe("CommanderDetail synergy panel", () => {
   it("says the sub-caption once per width, and never beside the heading as well", () => {
     render(
-      <CommanderDetail commander={commander()} rank={1} isBestFit synergyCards={synergyCards} newestAsOf={null} />,
+      <CommanderDetail commander={commander()} rank={1} isBestFit synergyCards={synergyCards} newestAsOf={null}  avail="all"/>,
     );
     expect(screen.getAllByText(synergyCopy.panel.subcaption("2"))).toHaveLength(1);
     expect(screen.getAllByText(synergyCopy.panel.subcaptionMobile("2"))).toHaveLength(1);
@@ -226,7 +226,7 @@ describe("CommanderDetail synergy panel", () => {
 
   it("toggles a row through the provider, the bridge and the panel together", () => {
     render(
-      <CommanderDetail commander={commander()} rank={1} isBestFit synergyCards={synergyCards} newestAsOf={null} />,
+      <CommanderDetail commander={commander()} rank={1} isBestFit synergyCards={synergyCards} newestAsOf={null}  avail="all"/>,
     );
     const addLabel = synergyCopy.select.addAria("Goblin Bombardment");
     const removeLabel = synergyCopy.select.removeAria("Goblin Bombardment");
@@ -256,7 +256,7 @@ describe("CommanderDetail synergy panel", () => {
 
   it("leaves the Build href unchanged while nothing is selected", () => {
     render(
-      <CommanderDetail commander={commander()} rank={1} isBestFit synergyCards={synergyCards} newestAsOf={null} />,
+      <CommanderDetail commander={commander()} rank={1} isBestFit synergyCards={synergyCards} newestAsOf={null}  avail="all"/>,
     );
     for (const link of screen.getAllByRole("link", { name: /Build this deck/i })) {
       expect(link).toHaveAttribute("href", `/decks?commander=${commander().oracleId}`);
@@ -265,7 +265,7 @@ describe("CommanderDetail synergy panel", () => {
 
   it("carries the selected oracle ids into the Build href", () => {
     render(
-      <CommanderDetail commander={commander()} rank={1} isBestFit synergyCards={synergyCards} newestAsOf={null} />,
+      <CommanderDetail commander={commander()} rank={1} isBestFit synergyCards={synergyCards} newestAsOf={null}  avail="all"/>,
     );
     const rows = screen.getAllByRole("listitem");
     fireEvent.click(within(rows[0]).getByRole("button", { name: /^Add / }));
@@ -294,7 +294,7 @@ describe("CommanderDetail availability mode", () => {
   });
 
   it("says nothing about availability in the canonical mode", () => {
-    render(<CommanderDetail commander={commander()} rank={1} isBestFit synergyCards={noSynergyCards} newestAsOf={null} />);
+    render(<CommanderDetail commander={commander()} rank={1} isBestFit synergyCards={noSynergyCards} newestAsOf={null}  avail="all"/>);
     expect(screen.queryByText(availabilityCopy.ranking.freeNote)).toBeNull();
   });
 });
@@ -307,7 +307,7 @@ describe("CommanderDetail card details trigger", () => {
   // the printings, the rulings and a two-faced commander's flip control were
   // unreachable at that width.
   it("offers a card-details control at both widths", () => {
-    render(<CommanderDetail commander={commander()} rank={1} isBestFit synergyCards={noSynergyCards} newestAsOf={null} />);
+    render(<CommanderDetail commander={commander()} rank={1} isBestFit synergyCards={noSynergyCards} newestAsOf={null}  avail="all"/>);
     expect(screen.getAllByRole("button", { name: "View card details" })).toHaveLength(2);
   });
 });
@@ -320,7 +320,7 @@ describe("commander detail — the desktop card face", () => {
   // the printing here rather than identify a row.
   it("rings and shadows the face at the converged values", () => {
     const { container } = render(
-      <CommanderDetail commander={commander()} rank={1} isBestFit synergyCards={noSynergyCards} newestAsOf={null} />,
+      <CommanderDetail commander={commander()} rank={1} isBestFit synergyCards={noSynergyCards} newestAsOf={null}  avail="all"/>,
     );
     const face = Array.from(container.querySelectorAll<HTMLElement>("div")).find(
       (el) => el.style.aspectRatio === "63/88",
@@ -340,7 +340,7 @@ describe("commander detail — the art header band", () => {
   // device rather than of the job, and whose scrim scaled its darkness with it.
   it("states 288px rather than an aspect ratio", () => {
     const { container } = render(
-      <CommanderDetail commander={commander()} rank={1} isBestFit synergyCards={noSynergyCards} newestAsOf={null} />,
+      <CommanderDetail commander={commander()} rank={1} isBestFit synergyCards={noSynergyCards} newestAsOf={null}  avail="all"/>,
     );
     const band = container.querySelector<HTMLElement>(".sm\\:hidden.relative.flex-none");
     expect(band).not.toBeNull();
@@ -374,7 +374,7 @@ describe("commander detail — the art header band", () => {
         rank={1}
         isBestFit
         synergyCards={noSynergyCards} newestAsOf={null}
-      />,
+       avail="all"/>,
     );
     const band = container.querySelector<HTMLElement>(".sm\\:hidden.relative.flex-none")!;
     const heading = band.querySelector<HTMLElement>("h1")!;
@@ -391,7 +391,7 @@ describe("commander detail — the art header band", () => {
   // than plating them and what leaves this top edge empty.
   it("draws the identity pips in the block, not at the top edge", () => {
     const { container } = render(
-      <CommanderDetail commander={commander()} rank={1} isBestFit synergyCards={noSynergyCards} newestAsOf={null} />,
+      <CommanderDetail commander={commander()} rank={1} isBestFit synergyCards={noSynergyCards} newestAsOf={null}  avail="all"/>,
     );
     const band = container.querySelector<HTMLElement>(".sm\\:hidden.relative.flex-none")!;
     const pinned = Array.from(band.querySelectorAll<HTMLElement>("div.absolute")).filter(
@@ -416,7 +416,7 @@ describe("commander detail — the art header band", () => {
   // under a plate drawn over it.
   it("keeps the block clear of the card-details corner", () => {
     const { container } = render(
-      <CommanderDetail commander={commander()} rank={1} isBestFit synergyCards={noSynergyCards} newestAsOf={null} />,
+      <CommanderDetail commander={commander()} rank={1} isBestFit synergyCards={noSynergyCards} newestAsOf={null}  avail="all"/>,
     );
     const band = container.querySelector<HTMLElement>(".sm\\:hidden.relative.flex-none")!;
     const block = band.querySelector<HTMLElement>("h1")!.closest("div.absolute") as HTMLElement;
@@ -460,7 +460,7 @@ describe("the price reaches both panels", () => {
         isBestFit
         synergyCards={priced}
         newestAsOf={new Date("2026-09-15")}
-      />,
+       avail="all"/>,
     );
     // Both panels are in the document at once — one per width — so a price that
     // reached only one of them shows up as a count of 1.
@@ -497,6 +497,7 @@ describe("the dot key reads the synergy panel too", () => {
         isBestFit
         synergyCards={[contendedSynergy]}
         newestAsOf={null}
+        avail="all"
       />,
     );
     // Role Coverage is entirely free; the marker is in the panel below it.
@@ -513,6 +514,7 @@ describe("the dot key reads the synergy panel too", () => {
         isBestFit
         synergyCards={[{ ...contendedSynergy, availability: null }]}
         newestAsOf={null}
+        avail="all"
       />,
     );
     expect(screen.getAllByText("Owned and available.").length).toBeGreaterThan(0);

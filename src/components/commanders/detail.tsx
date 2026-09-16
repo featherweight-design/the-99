@@ -203,8 +203,15 @@ export type CommanderDetailProps = {
   commander: CommanderDetailScore;
   rank: number;
   isBestFit: boolean;
-  /** Which pool the score and the rank above were computed against. */
-  avail?: "all" | "free";
+  /**
+   * Which pool the score and the rank above were computed against.
+   *
+   * REQUIRED, with no default, since it now also decides the pool a RETRY scores
+   * against. A render that omitted it got a free-mode page whose retry silently
+   * returned the whole collection — the defect this chain exists to close, one
+   * link above where it was found.
+   */
+  avail: "all" | "free";
   synergyCards: SynergyCard[];
   /**
    * The newest `as_of` in the price table, for the synergy panel's buy tags.
@@ -228,7 +235,7 @@ export function CommanderDetail({
   commander: c,
   rank,
   isBestFit,
-  avail = "all",
+  avail,
   synergyCards,
   newestAsOf,
   prose = null,
@@ -451,6 +458,7 @@ export function CommanderDetail({
           roleCards={c.roleCards}
           roleCounts={c.roleCounts}
           synergyState={c.synergyState}
+          avail={avail}
           retryCoverageFigures={retryCoverageFigures}
         />
 
@@ -691,6 +699,7 @@ export function CommanderDetail({
             roleCards={c.roleCards}
             roleCounts={c.roleCounts}
             synergyState={c.synergyState}
+            avail={avail}
             retryCoverageFigures={retryCoverageFigures}
           />
 

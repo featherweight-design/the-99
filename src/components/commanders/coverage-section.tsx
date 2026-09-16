@@ -354,9 +354,18 @@ export type CoverageSectionProps = {
    * had not checked.
    */
   markerElsewhere: boolean;
+  /**
+   * The mode the page is drawing, handed to the retry so a successful one scores
+   * against the same pool. Without it a free-mode retry silently returned the
+   * all-owned panel while the URL still said free.
+   */
+  avail: "all" | "free";
   /** Injected by the page — server action that re-resolves EDHREC.
       Passed explicitly so tests can mock it without a server-action import. */
-  retryCoverageFigures: (slug: string) => Promise<Record<RoleName, RoleCard[]> | null>;
+  retryCoverageFigures: (
+    slug: string,
+    avail: "all" | "free",
+  ) => Promise<Record<RoleName, RoleCard[]> | null>;
 };
 
 export function CoverageSection({
@@ -366,6 +375,7 @@ export function CoverageSection({
   roleCounts,
   synergyState,
   markerElsewhere,
+  avail,
   retryCoverageFigures,
 }: CoverageSectionProps): JSX.Element {
   const router = useRouter();
@@ -431,7 +441,7 @@ export function CoverageSection({
   function handleRetry() {
     startRetry(async () => {
       try {
-        const result = await retryCoverageFigures(slug);
+        const result = await retryCoverageFigures(slug, avail);
         if (result !== null) {
           setRoleCards(result);
           setHasRetryData(true);

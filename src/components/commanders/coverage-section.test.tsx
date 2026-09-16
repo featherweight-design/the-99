@@ -51,7 +51,8 @@ function renderSection(
     roleCounts?: Record<RoleName, number>;
     synergyState?: "ok" | "absent" | "degraded";
     markerElsewhere?: boolean;
-    retryCoverageFigures?: () => Promise<Record<RoleName, RoleCard[]> | null>;
+    avail?: "all" | "free";
+    retryCoverageFigures?: (slug: string, avail: "all" | "free") => Promise<Record<RoleName, RoleCard[]> | null>;
   } = {},
 ) {
   const fetchCard = vi.fn<(id: string) => Promise<BrowseCard | null>>().mockResolvedValue(null);
@@ -65,7 +66,8 @@ function renderSection(
     // page-wide keeps its meaning. The cases that prove the new behaviour pass
     // it explicitly.
     markerElsewhere = false,
-    retryCoverageFigures = vi.fn<() => Promise<Record<RoleName, RoleCard[]> | null>>().mockResolvedValue(null),
+    avail = "all",
+    retryCoverageFigures = vi.fn<(slug: string, avail: "all" | "free") => Promise<Record<RoleName, RoleCard[]> | null>>().mockResolvedValue(null),
   } = overrides;
 
   render(
@@ -76,6 +78,7 @@ function renderSection(
         roleCards={roleCards}
         roleCounts={roleCounts}
         synergyState={synergyState}
+        avail={avail}
         retryCoverageFigures={retryCoverageFigures}
        markerElsewhere={markerElsewhere}/>
     </CardDetailProvider>,
@@ -220,6 +223,7 @@ describe("absent vs degraded note rendering", () => {
           roleCards={EMPTY_ROLE_CARDS}
           roleCounts={BASE_ROLE_COUNTS}
           synergyState="degraded"
+          avail="all"
           retryCoverageFigures={vi.fn<() => Promise<Record<RoleName, RoleCard[]> | null>>().mockResolvedValue(null)}
           markerElsewhere={false}
         />
@@ -238,6 +242,7 @@ describe("absent vs degraded note rendering", () => {
           roleCards={EMPTY_ROLE_CARDS}
           roleCounts={BASE_ROLE_COUNTS}
           synergyState="absent"
+          avail="all"
           retryCoverageFigures={vi.fn<() => Promise<Record<RoleName, RoleCard[]> | null>>().mockResolvedValue(null)}
           markerElsewhere={false}
         />
@@ -766,5 +771,36 @@ describe("the Role Coverage sort", () => {
     expect(region.textContent).toBe("");
     chooseAvailability();
     expect(region.textContent).toBe(explainedCopy.coverageSort.announce("Availability"));
+  });
+});
+
+// ── The retry is told which pool the page is drawing ───────────────────────
+//
+// The action half of this is tested in `coverage-action.test.ts`. The COMPONENT
+// half was covered by nothing: the mock was typed with no parameters and every
+// assertion counted calls, so dropping the argument left the whole suite and
+// typecheck green while restoring the bug — a free-mode retry scoring against
+// the collection.
+describe("the retry carries the page's mode", () => {
+  it("passes the mode it was rendered with", async () => {
+    const retry = vi
+      .fn<(slug: string, avail: "all" | "free") => Promise<Record<RoleName, RoleCard[]> | null>>()
+      .mockResolvedValue(null);
+    renderSection({ synergyState: "degraded", avail: "free", retryCoverageFigures: retry });
+    fireEvent.click(
+      screen.getByRole("button", { name: recommendationsCopy.coverage.degradedRetryAria }),
+    );
+    await waitFor(() => expect(retry).toHaveBeenCalledWith("commander-slug", "free"));
+  });
+
+  it("passes the default mode when the page is not in free", async () => {
+    const retry = vi
+      .fn<(slug: string, avail: "all" | "free") => Promise<Record<RoleName, RoleCard[]> | null>>()
+      .mockResolvedValue(null);
+    renderSection({ synergyState: "degraded", avail: "all", retryCoverageFigures: retry });
+    fireEvent.click(
+      screen.getByRole("button", { name: recommendationsCopy.coverage.degradedRetryAria }),
+    );
+    await waitFor(() => expect(retry).toHaveBeenCalledWith("commander-slug", "all"));
   });
 });
