@@ -1,12 +1,12 @@
 "use client";
 
-import { useEffect, useId, useRef, useState, useTransition } from "react";
+import { useEffect, useId, useRef, useState } from "react";
 import Link from "next/link";
-import { deleteDeck } from "../../app/decks/actions";
 import { deckImportCopy } from "../../lib/copy/deck-import";
 import { refreshCopy } from "../../lib/copy/refresh";
 import { RenameForm } from "./rename-form";
 import { MoveMode } from "./deck-move-mode";
+import { DeleteMode } from "./deck-delete-mode";
 import { folderCopy } from "../../lib/copy/folders";
 
 /** One menu row. The same geometry `DeckSortMenu` draws, which is the only
@@ -77,8 +77,7 @@ export function DeckCardOverflow({
   closeAfterCreate,
 }: DeckCardOverflowProps) {
   const [open, setOpen] = useState(false);
-  const [mode, setMode] = useState<"menu" | "rename" | "move">("menu");
-  const [isPending, startTransition] = useTransition();
+  const [mode, setMode] = useState<"menu" | "rename" | "move" | "delete">("menu");
   const buttonRef = useRef<HTMLButtonElement>(null);
   // Every deck card renders one of these, so the id has to be per-instance.
   const panelId = useId();
@@ -105,10 +104,7 @@ export function DeckCardOverflow({
   function handleDelete(e: React.MouseEvent) {
     e.preventDefault();
     e.stopPropagation();
-    if (!confirm(`Delete "${deckName}"? This cannot be undone.`)) return;
-    startTransition(async () => {
-      await deleteDeck(deckId);
-    });
+    setMode("delete");
   }
 
   // Optimistic, because the tile's own menu is the only place the fact is
@@ -245,7 +241,14 @@ export function DeckCardOverflow({
       {open && (
         <div
           id={panelId}
-          className="absolute right-0 top-full z-20 mt-[6px] w-[186px] overflow-hidden rounded-[10px] border border-solid border-[color:var(--border-strong)] bg-[color:var(--surface)] shadow-[0_22px_50px_rgba(0,0,0,0.6)] sm:mt-[4px]"
+          className={`absolute right-0 top-full z-20 mt-[6px] overflow-hidden rounded-[10px] border border-solid border-[color:var(--border-strong)] bg-[color:var(--surface)] shadow-[0_22px_50px_rgba(0,0,0,0.6)] sm:mt-[4px] ${
+            // The confirm pane is the folder pane, and the folders handoff
+            // specifies it inside a 248px panel. At the menu's own 186px its
+            // two side-by-side buttons get ~77px each, which is under what
+            // `del.confirm` needs. The panel takes the pane's width while it
+            // draws the pane, and nothing else changes width.
+            mode === "delete" ? "w-[248px]" : "w-[186px]"
+          }`}
           // Propagation only: the deck-card Link overlay beneath fires on
           // bubbling, so stopping the bubble is the whole fix. preventDefault
           // here would also cancel the browser default for clicks inside the
@@ -296,11 +299,9 @@ export function DeckCardOverflow({
               <button
                 type="button"
                 onClick={handleDelete}
-                disabled={isPending}
-                className={`${ITEM} bg-transparent text-[color:var(--danger)]`}
-                style={{ cursor: isPending ? "default" : "pointer" }}
+                className={`${ITEM} cursor-pointer bg-transparent text-[color:var(--danger)]`}
               >
-                {isPending ? "Deleting…" : refreshCopy.decks.menu.delete}
+                {refreshCopy.decks.menu.delete}
               </button>
             </div>
           ) : mode === "move" ? (
@@ -346,6 +347,16 @@ export function DeckCardOverflow({
                 // the grid and every figure above it is stale.
                 onMoved({ refused: false });
               }}
+            />
+          ) : mode === "delete" ? (
+            <DeleteMode
+              deckId={deckId}
+              deckName={deckName}
+              // Back to the menu, not closed: a reader who declines has not
+              // finished with the card, and the folder pane's own cancel does
+              // the same. Focus follows the panel's existing rule — the pane
+              // unmounts and the menu it returns to is what the trigger owns.
+              onCancel={() => setMode("menu")}
             />
           ) : (
             <div className="p-[12px]">

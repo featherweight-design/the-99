@@ -142,6 +142,36 @@ export const refreshCopy = {
       trigger: (deckName: string) => `Actions for ${deckName}`,
     },
 
+    /**
+     * The delete confirm, drawn in the overflow panel rather than by
+     * `window.confirm`. The pane is the folder delete's, specified by the
+     * folders handoff (decision 25); only the sentence differs, because what a
+     * deck takes with it is not what a folder takes with it.
+     */
+    del: {
+      /** The deck is named, because a player has many and the tile is small. */
+      heading: (name: string) => `Delete “${name}”?`,
+      /**
+       * THE SENTENCE. Same shape as the folder's, for the same reason: what
+       * happens, then what does not, because the second half is what a reader
+       * fears. Every table that references a deck is `on delete cascade`, so
+       * the first half is a promise the database keeps however the deck goes;
+       * `collection_items` references no deck at all, which is why the second
+       * half can be stated flatly.
+       */
+      body: 'Its list, its versions and its game log go with it. Nothing leaves your collection.',
+      cancel: 'Keep it',
+      confirm: 'Delete deck',
+      /** Present tense, because the row it replaces is still on screen. */
+      pending: 'Deleting…',
+      /**
+       * An outage, not a refusal: `deleteDeck` has no `false` to return — it
+       * either deletes and redirects or throws. So this names the one thing
+       * that can have happened and asks for the one thing that can be done.
+       */
+      failed: 'Could not delete that deck. Try again.',
+    },
+
     // Card label for screen readers: name, identity, status, count, and the
     // detail figure — the same five things the tile shows, in the same order.
     // `identity` is the commander (both, on a pair) and the deck's colour,
