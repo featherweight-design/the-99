@@ -637,6 +637,11 @@ describe("what each chapter 01 figure actually draws", () => {
     // 2 — and a figure pricing every cell would have passed a looser form.
     const grid = el.querySelector('[class*="grid-cols-3"]');
     expect(grid, "the cell grid").not.toBeNull();
+    // The COUNT first. Asserting only the priced descendants left the four
+    // owned cells unprotected: dropping any one of them keeps both price tags
+    // and every other assertion here intact, so "six cells as drawn" was a
+    // claim the test did not make.
+    expect(grid!.children).toHaveLength(SET_CELLS.length);
     const priced = [...grid!.querySelectorAll("*")].filter(
       (n) => n.children.length === 0 && /^\$[0-9.,]+$/.test(n.textContent ?? ""),
     );
@@ -718,6 +723,7 @@ describe("what each chapter 01 figure actually draws", () => {
 
     // Both figures of the eyebrow line survive the section rewrite.
     expect(el.textContent).toContain(`${REPLACE_SUMMARY.noLongerOwned} no longer owned`);
+    expect(el.textContent).toContain(`${REPLACE_SUMMARY.unaffectedDecks} other decks unaffected`);
 
     // THE CHOOSER. It was missing entirely, and it is the only thing on the
     // summary a reader can act on. Both committed decks are named, because a

@@ -307,7 +307,7 @@ export function UploadEntry({
           onClick={() => setMode("paste")}
           className="hidden md:inline-block mt-[14px] text-[13px] whitespace-nowrap text-[color:var(--accent)]"
         >
-          Paste a list instead →
+          {collectionChassisCopy.upload.paste} →
         </button>
       )}
 

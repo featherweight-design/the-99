@@ -89,7 +89,7 @@ export function ImportFigureBody() {
  * the decks that did not.
  */
 export function PostImportFigureBody() {
-  const { before, after, noLongerOwned } = REPLACE_SUMMARY;
+  const { before, after, noLongerOwned, unaffectedDecks } = REPLACE_SUMMARY;
   const c = cardAssignmentsCopy.summary;
   const heads: Record<string, string> = {
     cleared: c.sectionCleared(61),
@@ -110,6 +110,12 @@ export function PostImportFigureBody() {
         </span>
         <span className="font-mono text-[10.5px] text-[color:var(--fg-faint)]">
           {noLongerOwned} no longer owned
+        </span>
+        {/* Decks nothing happened to are COUNTED, never listed — the summary
+            is what changed, not an inventory. The fixture carried the figure
+            and the rebuild into sections dropped the line that drew it. */}
+        <span className="font-mono text-[10.5px] text-[color:var(--fg-faint)]">
+          {unaffectedDecks} other decks unaffected
         </span>
       </div>
 
