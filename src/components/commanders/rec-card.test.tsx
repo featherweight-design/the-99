@@ -39,7 +39,7 @@ function item(overrides: Partial<CommanderListItem> = {}): CommanderListItem {
 function noSynergy(synergyState: SynergyState): CommanderListItem {
   // Dropping fitSynergy drops the score and the denominator with it: score is
   // exactly fitPool + fitRoles (12 + 8) per score.ts:254, out of 40.
-  return item({ synergyState, fitSynergy: null, score: 20, rankScore: 50, measurableTotal: 40, edhrecOwnedCount: null, edhrecTotal: null });
+  return item({ synergyState, fitSynergy: null, score: 20, rankScore: 20, measurableTotal: 40, edhrecOwnedCount: null, edhrecTotal: null });
 }
 
 const NO_CLAIMS: ReceiptCounts = { inUse: 0, wantedByBrew: 0 };
@@ -220,12 +220,13 @@ describe("RecCard score delta", () => {
 });
 
 describe("RecCard score and denominator", () => {
-  // The card prints the score, not the bar's fill. 32 of 40 fills 80% of the
-  // track, and an 80 here against a 32 on the detail page is the same commander
-  // wearing two numbers.
+  // The card prints the score, not the bar's fill. 32 of 40 fills 80% of the track, and
+  // printing that 80 against a 32 on the detail page would be the same commander wearing
+  // two numbers. The fixture's `rankScore` is 32 because that is what the writer emits
+  // now — the 80 it used to carry here was the retired rescale, and this case never
+  // depended on the two differing.
   it("prints the score with the denominator that measured it", () => {
-    // rankScore is deliberately the rescaled 80 this test asserts is never shown.
-    card({ commander: { ...noSynergy("absent"), fitPool: 20, fitRoles: 12, score: 32, rankScore: 80 } });
+    card({ commander: { ...noSynergy("absent"), fitPool: 20, fitRoles: 12, score: 32, rankScore: 32 } });
     expect(screen.getAllByText("32")).toHaveLength(2);
     expect(
       screen.getAllByText(commandersCopy.row.fitDenominatorMeasurable(40)),
@@ -241,7 +242,7 @@ describe("RecCard score and denominator", () => {
   // The mobile tile has no room to print a denominator, so both layouts carry
   // it in the accessible name instead.
   it("names the figure and its ceiling together at both widths", () => {
-    card({ commander: { ...noSynergy("absent"), fitPool: 20, fitRoles: 12, score: 32, rankScore: 80 } });
+    card({ commander: { ...noSynergy("absent"), fitPool: 20, fitRoles: 12, score: 32, rankScore: 32 } });
     expect(screen.getAllByText(explainedCopy.score.scoreAria(32, 40))).toHaveLength(2);
   });
 });

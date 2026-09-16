@@ -94,10 +94,13 @@ export type RecommendResult = {
 };
 
 /**
- * Orders by `rankScore`, not by the printed score. The two differ for a
- * commander EDHREC does not index, whose score is out of 40 — sorting on the
- * printed figure would put it below every commander that reached 41 on a scale
- * two and a half times as long.
+ * Orders by `rankScore`, which is now the same number the card prints: `scoreCommander`
+ * sets `rankScore` equal to `score` for every commander. The two used to differ for a
+ * commander EDHREC does not index, whose 40-point score was rescaled to 100 here so that a
+ * gap in our data would not demote it. Because the weights are 15 + 25 + 60, that rescale
+ * touched no other commander, and it handed the top of the list to the ones we know least
+ * about. Retired 2026-09-16; the field stays because it is a persisted column that
+ * `loadScores` orders by in SQL.
  *
  * oracleId breaks ties so the compute order matches `rank_score desc, oracle_id`
  * in loadScores/findScoredCommander. Without it, tied commanders (common after

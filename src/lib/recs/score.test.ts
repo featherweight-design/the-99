@@ -165,16 +165,52 @@ describe("scoreCommander", () => {
     expect(s.measurableTotal).toBe(POOL_WEIGHT + ROLES_WEIGHT + SYNERGY_WEIGHT);
   });
 
-  // #385 shipped the honest denominator without the ordering it was meant to
-  // survive, which demoted every unindexed commander for a gap in our data
-  // rather than a gap in their fit. rankScore is what puts the two scales back
-  // on speaking terms; it is never printed.
-  it("puts both scales on one axis for ordering", () => {
+  // THE LIST IS ORDERED BY THE FIGURE IT PRINTS. #385 took the rescale off the printed
+  // score and left it on the rank, so that a commander would not be demoted for a gap in
+  // OUR data. Because the weights are 15 + 25 + 60, that rescale reaches untracked
+  // commanders and nobody else, multiplying them by 2.5 — so one took rank 1 with a
+  // perfect 40/40 beside a note saying fit came from pool and roles alone. Ruled
+  // 2026-09-16.
+  it("ranks an unindexed commander by the score it prints", () => {
     const unindexed = scoreCommander({ commander, collection, support: support(null), inclusionByName: null });
-    expect(unindexed.rankScore).toBe(
-      Math.round((100 * unindexed.score) / unindexed.measurableTotal),
-    );
-    expect(unindexed.rankScore).toBeGreaterThan(unindexed.score);
+    expect(unindexed.rankScore).toBe(unindexed.score);
+    expect(unindexed.rankScore).toBeLessThanOrEqual(POOL_WEIGHT + ROLES_WEIGHT);
+  });
+
+  // An INVARIANCE, and it earns nothing on its own: for an indexed commander the two
+  // figures were always equal, because the retired rescale divided by 100 there. It is
+  // here to state that the field now has no formula of its own, so a future change that
+  // gives it one has to break this as well as the case above.
+  it("leaves an indexed commander's rank where its score is", () => {
+    const indexed = scoreCommander({ commander, collection, support: support(["Sol Ring"]), inclusionByName: null });
+    expect(indexed.rankScore).toBe(indexed.score);
+  });
+
+  // The defect as reported, and it needs the MAXED pool: on an ordinary fixture the rescale
+  // lifts a small score to another small score, and the ceiling below passes over the broken
+  // build. A commander that measures perfectly is the one the rescale sent to rank 1, which
+  // is where it was found — 40/40, top of the list, under a note reading "EDHREC doesn't
+  // track this commander".
+  //
+  // The ORDERING that follows from this ceiling is asserted in `recommend.test.ts`, beside
+  // the comparator: importing it here would pull `recommend.ts` and the database client it
+  // reaches at module load into a test file that otherwise touches neither.
+  it("ranks no higher than pool and roles when it measured perfectly", () => {
+    const role = (text: string, n: number) =>
+      Array.from({ length: n }, () => card({ oracleText: text }));
+    const maxed: PoolCard[] = [
+      ...role("{t}: add {g}.", ROLE_TARGETS.ramp),
+      ...role("Draw a card.", ROLE_TARGETS.draw),
+      ...role("Destroy target creature.", ROLE_TARGETS.removal),
+      ...role("Destroy all creatures.", ROLE_TARGETS.wipes),
+    ];
+    while (maxed.length < 200) maxed.push(card({}));
+
+    const untracked = scoreCommander({ commander, collection: maxed, support: support(null), inclusionByName: null });
+    expect(untracked.score).toBe(POOL_WEIGHT + ROLES_WEIGHT);
+    // Under the rescale this read 100 — the highest rank the list can award, given to the
+    // commander it knows least about.
+    expect(untracked.rankScore).toBe(POOL_WEIGHT + ROLES_WEIGHT);
   });
 
   it("passes commander colorIdentity and imageUri through onto the score", () => {

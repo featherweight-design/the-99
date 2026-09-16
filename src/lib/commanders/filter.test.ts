@@ -25,7 +25,7 @@ function stub(name: string, colorIdentity: string[], score = 0): RankedCommander
     fitSynergy: null,
     score,
     measurableTotal: 40,
-    rankScore: score * 2.5,
+    rankScore: score,
     slug: name.toLowerCase().replace(/\s+/g, "-"),
     synergyState: "ok",
   };

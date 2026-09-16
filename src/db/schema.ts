@@ -607,19 +607,32 @@ export const RANK_SCORE_UNWRITTEN = -1;
  * the whole version is refused rather than the unsafe subset, which is the only
  * distinction the column can draw. The cost is one recompute per reader, which
  * is what every bump here costs.
+ *
+ * Version 5 is the first writer that orders by the printed figure. Version 4 — the only one
+ * that ever wrote a meaningful `rank_score`, since migration 0017 added the column after
+ * versions 1-3 and they can only have left its sentinel — rescaled a no-synergy score from
+ * 40 back to 100, which put untracked commanders at the top of every list. Version 5 stores
+ * `score` itself. The rows are the
+ * same shape and one column's MEANING moved, so a version-4 row looks perfectly current
+ * while sorting an untracked commander above everything — exactly the blindness this
+ * mechanism exists for. The deployment-window argument applies unchanged.
  */
-export const SCORE_WRITER_CURRENT = 4;
+export const SCORE_WRITER_CURRENT = 5;
 
 export const commanderScores = pgTable("commander_scores", {
   userId: text("user_id").notNull(),
   oracleId: uuid("oracle_id").notNull().references(() => cards.oracleId),
   slug: text("slug").notNull(),
   score: real("score").notNull(),
-  // What the list sorts by, and the only thing it is for. `score` is out of 40
-  // for a commander EDHREC does not index and out of 100 for every other, so
-  // ordering by it demotes the first group for a gap in our data rather than a
-  // gap in their fit. This is that same score back on the 0–100 scale; it is
-  // never printed and never drawn.
+  // What the list sorts by, and the only thing it is for. It used to be `score` rescaled
+  // to a 0-100 axis when the commander had no synergy read, on the argument that a gap in
+  // OUR data should not demote anyone — but the weights are 15 + 25 + 60, so that rescale
+  // reached untracked commanders alone and multiplied them by 2.5, handing them the top of
+  // every list with a perfect 40/40. Writer 5 stores `score` verbatim instead.
+  //
+  // It keeps its own column rather than being folded into `score`: `loadScores` orders by
+  // it in SQL, Home reads it as the ready-to-build floor, and the negative sentinel below
+  // rides on it.
   //
   // The default exists for the deployment window alone: 0017 adds this column while the
   // previous deployment is still inserting rows without it. Every insert from this schema

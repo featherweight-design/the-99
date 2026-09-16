@@ -69,8 +69,14 @@ export type CommanderRankings = {
  * rollout a version-3 deployment can cache a payload built from a write that
  * landed after a rebuild's clear, and the new deployment would go on serving it
  * for up to the hour ceiling to every reader who writes nothing.
+ *
+ * 6 — the list is ordered by the printed figure now: `rank_score` no longer rescales a
+ * no-synergy score from 40 back to 100, so untracked commanders stop taking the top of
+ * the list. Same trigger as 5, one step on: the ROWS behind a warm entry are refused by
+ * `SCORE_WRITER_CURRENT` 5, and a cache hit never reaches that check — so without this a
+ * reader who writes nothing keeps being served the old order for up to the hour ceiling.
  */
-const PAYLOAD_VERSION = 5;
+const PAYLOAD_VERSION = 6;
 
 /** The cache key this payload is filed under, version included. */
 export const commanderRankingsKey = ["commander-rankings", `v${PAYLOAD_VERSION}`];

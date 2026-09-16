@@ -35,7 +35,10 @@ function stubScore(name: string, score = 0): CommanderScore & { synergyState: Sy
     fitSynergy: null,
     score,
     measurableTotal: 40,
-    rankScore: Math.round((100 * score) / 40),
+    // The writer emits these equal, for every commander: the rescale that made them
+    // differ on a no-synergy score was retired 2026-09-16, having handed the top of the
+    // list to the commanders EDHREC does not track.
+    rankScore: score,
     synergyState: "ok",
   };
 }
@@ -46,17 +49,33 @@ describe("byScoreThenOracleId", () => {
     expect(sorted.map((r) => r.oracleId)).toEqual(["b", "a"]);
   });
 
-  // The printed score and the ordering key part company for a commander EDHREC
-  // does not index. 32 of 40 is the better fit and must outrank 41 of 100, which
-  // sorting on the printed figure got backwards.
-  it("ranks a no-synergy commander on its own scale, not its printed score", () => {
+  // A commander EDHREC does not index is ordered by the figure it prints, like everyone
+  // else. Its 32 of 40 used to be rescaled to 80 and sorted above an indexed 41 of 100 —
+  // meant to protect it from a gap in OUR data, and in practice the reason an untracked
+  // commander with a perfect measurable fit took rank 1.
+  it("ranks a no-synergy commander by the score it prints", () => {
     const rows = [
       { rankScore: 41, oracleId: "indexed", score: 41 },
-      { rankScore: 80, oracleId: "unindexed", score: 32 },
+      { rankScore: 32, oracleId: "unindexed", score: 32 },
     ];
     expect([...rows].sort(byScoreThenOracleId).map((r) => r.oracleId)).toEqual([
-      "unindexed",
       "indexed",
+      "unindexed",
+    ]);
+  });
+
+  // The ordering that follows from the 40-point ceiling `score.test.ts` pins: a commander
+  // that measured perfectly and has no synergy read still sits below a tracked one scoring
+  // a single point past what pool and roles are worth. Asserted here rather than there
+  // because the comparator lives in this module, which reaches the database client.
+  it("keeps a perfect no-synergy commander below a tracked one that scored past 40", () => {
+    const rows = [
+      { rankScore: 41, oracleId: "tracked", score: 41 },
+      { rankScore: 40, oracleId: "measured-perfectly", score: 40 },
+    ];
+    expect([...rows].sort(byScoreThenOracleId).map((r) => r.oracleId)).toEqual([
+      "tracked",
+      "measured-perfectly",
     ]);
   });
 
@@ -176,7 +195,7 @@ describe("finalizeRecommendations", () => {
         fitSynergy: null,
         synergyState: "ok",
         score: 34,
-        rankScore: 85,
+        rankScore: 34,
         measurableTotal: 40,
         imageUri: null,
         artCropUri: null,

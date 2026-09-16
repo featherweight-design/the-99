@@ -112,7 +112,7 @@ describe("CommanderDetail fit hero", () => {
   it("names the shorter ceiling when synergy was not measured", () => {
     render(
       <CommanderDetail
-        commander={commander({ synergyState: "absent", fitSynergy: null, score: 20, measurableTotal: 40, rankScore: 50, edhrecOwnedCount: null, edhrecTotal: null })}
+        commander={commander({ synergyState: "absent", fitSynergy: null, score: 20, measurableTotal: 40, rankScore: 20, edhrecOwnedCount: null, edhrecTotal: null })}
         rank={3}
         isBestFit={false}
         synergyCards={noSynergyCards} newestAsOf={null}
@@ -136,7 +136,7 @@ describe("CommanderDetail fit hero", () => {
   it("drops the synergy legend entry rather than drawing a placeholder", () => {
     render(
       <CommanderDetail
-        commander={commander({ synergyState: "absent", fitSynergy: null, score: 20, measurableTotal: 40, rankScore: 50 })}
+        commander={commander({ synergyState: "absent", fitSynergy: null, score: 20, measurableTotal: 40, rankScore: 20 })}
         rank={3}
         isBestFit={false}
         synergyCards={noSynergyCards} newestAsOf={null}
@@ -149,7 +149,7 @@ describe("CommanderDetail fit hero", () => {
   it("explains only the segments that were measured", () => {
     render(
       <CommanderDetail
-        commander={commander({ synergyState: "absent", fitSynergy: null, score: 20, measurableTotal: 40, rankScore: 50 })}
+        commander={commander({ synergyState: "absent", fitSynergy: null, score: 20, measurableTotal: 40, rankScore: 20 })}
         rank={3}
         isBestFit={false}
         synergyCards={noSynergyCards} newestAsOf={null}
