@@ -7,7 +7,7 @@ import { commanderSlug } from "../edhrec/slug";
 import { readEdhrecCache, resolveEdhrecData } from "../edhrec/client";
 import { supportOverlap } from "../edhrec/support-overlap";
 import { loadSupportLists } from "../edhrec/support-read";
-import { synergyStateFrom, type SynergyState } from "./synergy-state";
+import { scoringSynergyState, type SynergyState } from "./synergy-state";
 import { committedSupport, readCommittedDecks, withCommitted } from "../decks/committed";
 import {
   commanderPool,
@@ -255,13 +255,18 @@ export async function recommendCommanders(
         // with no cache). 4xx (commander not on EDHREC) is a per-commander data
         // absence, not a service issue — data === null but unreachable === false.
         if (result.unreachable) degraded = true;
+        const support = supportLists.get(commander.oracleId) ?? null;
+        const scored = scoreCommander({
+          commander, collection,
+          support,
+          inclusionByName: result.data?.inclusionByName ?? null,
+        });
         return {
-          ...scoreCommander({
-            commander, collection,
-            support: supportLists.get(commander.oracleId) ?? null,
-            inclusionByName: result.data?.inclusionByName ?? null,
-          }),
-          synergyState: synergyStateFrom(result),
+          ...scored,
+          // Keyed off the FIGURE, not off a second reading of the index, so the
+          // pair `commander_scores` constrains cannot come apart however
+          // `scoreCommander` decides a total is usable.
+          synergyState: scoringSynergyState(result, scored.fitSynergy !== null),
         };
       }),
     );
@@ -340,7 +345,7 @@ export async function scoreOneCommander(
     ...scored,
     roleCards,
     slug,
-    synergyState: synergyStateFrom(result),
+    synergyState: scoringSynergyState(result, scored.fitSynergy !== null),
     committedSupport: committedSupport(ownedOverlapIds, committed),
   };
 }

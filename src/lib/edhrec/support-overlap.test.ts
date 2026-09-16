@@ -14,9 +14,14 @@ describe("supportOverlap", () => {
     expect(got.names).toEqual(["card-a", "card-c"]);
   });
 
-  it("is ordered by the POOL, not by the support list", () => {
+  // The SUPPORT LIST's order, which `loadSupportLists` sets to inclusion
+  // descending. `overlapOwned` feeds `receiptsPreview`, which prints the first
+  // three — so iterating the pool instead compiles the same set and prints
+  // three arbitrary names.
+  it("preserves the support list's order, not the pool's", () => {
     const got = supportOverlap(list(["c", "a"]), pool("a", "b", "c"));
-    expect(got.oracleIds).toEqual(["a", "c"]);
+    expect(got.oracleIds).toEqual(["c", "a"]);
+    expect(got.names).toEqual(["card-c", "card-a"]);
   });
 
   // The pool is `commanderPool`'s output, so the identity restriction and the

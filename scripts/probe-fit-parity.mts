@@ -1,12 +1,16 @@
 // Does a commander row's Fit equal the Fit its own detail page prints?
 //
-// The row would compute `fitSynergy` from STORED counts — `edhrec_total` and an
-// `oracle_id` join over `commander_support_cards` (candidates.ts:310). Commander
-// Details computes it from the LIVE EDHREC payload, by NAME, with a front-face
-// fallback for DFCs (`edhrecOverlap`, score.ts:151, reaching `fitSynergy` at
-// score.ts:288, via scoreOneCommander). Two computations over two data paths,
-// and `page.tsx` calls `scoreOneCommander` for every commander, owned or not —
-// so every row links to a page that recomputes the same number a different way.
+// BOTH SIDES NOW READ THE STORED INDEX — Ruling D shipped. Before it, Commander
+// Details derived the overlap by matching the live EDHREC payload's card NAMES
+// against the pool while a row would read the stored counts, and this probe
+// measured 57 numerators, 56 denominators and 20 Fit figures disagreeing across
+// 95 commanders. `edhrecOverlap`, the name matcher, is gone.
+//
+// So the question it answers now is narrower and still worth asking: do TWO
+// INDEPENDENT EXPRESSIONS of the same allocation agree — the SQL a row's payload
+// will be built from, written below, against the TypeScript `scoreCommander`
+// runs? `page.tsx` scores every commander through `scoreOneCommander`, so every
+// row links to a page that recomputes the figure by the other expression.
 //
 // This script is the acceptance test for Ruling D. It went green when
 // `scoreCommander` moved to the stored index, and it is what will catch the
@@ -123,7 +127,12 @@ const candidates = await loadCandidates(
 );
 if (candidates.length === 0) throw new Error("no discovery candidates for this account");
 
-// A stored total of null means the index never scored it; 0 is a real reading.
+// A stored total of null means the index has no usable synergy reading. A total
+// of 0 is UNREACHABLE rather than a real reading, and by constraint rather than
+// by luck: the index writes `edhrec_total` only when `synergyStateFrom` returns
+// "ok", which needs a non-empty `topCards`, and `commander_support` carries
+// `(synergy_state = 'ok') = (edhrec_total is not null)`. The count below is kept
+// as a tripwire on that pairing, not as a population the run expects.
 const withStoredTotal = candidates.filter((c) => c.edhrecTotal != null);
 const cache = await readEdhrecCache(withStoredTotal.map((c) => c.oracleId));
 const now = Date.now();
@@ -238,14 +247,18 @@ console.log(
   `compared ${rows.length} — ${scored.length} scored live, ${withOverlap} with a ` +
     `non-zero stored overlap, ${zeroTotals} with a stored total of 0\n`,
 );
-// The floor belongs on what was actually COMPARED, not on what looked warm: a
-// fresh cache row can hold no parsed top-card list, so 20 warm rows can yield
-// fewer than 20 comparisons.
+// The floor belongs on what was actually COMPARED, not on what looked warm.
+//
+// `scored` keys on a non-null `liveTotal`, and since Ruling D that comes from
+// `commander_support.edhrec_total` — so a row dropped here is one the INDEX has
+// no usable total for, not one whose EDHREC cache is cold. Warming the cache
+// cannot add any of them; building the index can. The remedy said the opposite
+// until the source moved under it.
 if (scored.length < MIN_COMPARED) {
   throw new Error(
-    `only ${scored.length} of ${population.length} compared candidates scored live, ` +
-      `need ${MIN_COMPARED}. Load /commanders and /discover once to warm the cache, ` +
-      "then re-run.",
+    `only ${scored.length} of ${population.length} compared candidates have a stored ` +
+      `synergy total, need ${MIN_COMPARED}. Run \`pnpm db:build:index\` against this ` +
+      "branch, or point at one whose commander index is built.",
   );
 }
 if (withOverlap === 0) {
@@ -256,8 +269,26 @@ if (withOverlap === 0) {
 }
 
 const numeratorDiffs = scored.filter((r) => r.storedOwned !== r.liveOwned);
-const denominatorDiffs = scored.filter((r) => r.storedTotal !== r.liveTotal);
 const synergyDiffs = scored.filter((r) => r.storedSynergy !== r.liveSynergy);
+
+// THE DENOMINATOR IS NO LONGER A COMPARISON and is not reported as one. Both
+// sides now read `commander_support.edhrec_total` — `loadCandidates` selects it
+// and `loadSupportLists` selects it — so an "AGREE" here would be one column
+// read twice, and it would keep saying AGREE with `supportOverlap` or the
+// identity filter broken. It is asserted as an INVARIANT instead: if the two
+// ever differ, one of the two reads has stopped reading that column, which is a
+// different and worse failure than drift.
+const denominatorDiffs = scored.filter((r) => r.storedTotal !== r.liveTotal);
+if (denominatorDiffs.length > 0) {
+  for (const r of denominatorDiffs.slice(0, 5)) {
+    console.log(`   ${r.name}: stored ${r.storedTotal} vs live ${r.liveTotal}`);
+  }
+  throw new Error(
+    `${denominatorDiffs.length} of ${scored.length} denominators differ, which should be ` +
+      "impossible: both sides read commander_support.edhrec_total. One of the two reads " +
+      "has changed source.",
+  );
+}
 
 const report = (label: string, bad: Row[], pick: (r: Row) => string) => {
   const verdict = bad.length === 0 ? "AGREE" : `DIFFER on ${bad.length}/${scored.length}`;
@@ -266,8 +297,8 @@ const report = (label: string, bad: Row[], pick: (r: Row) => string) => {
   if (bad.length > 12) console.log(`   ... and ${bad.length - 12} more`);
 };
 
+console.log(`denominator  one column, read twice — ${scored.length} identical, as required\n`);
 report("numerator", numeratorDiffs, (r) => `stored ${r.storedOwned} vs live ${r.liveOwned}`);
-report("denominator", denominatorDiffs, (r) => `stored ${r.storedTotal} vs live ${r.liveTotal}`);
 report("fitSynergy", synergyDiffs, (r) => `stored ${r.storedSynergy} vs live ${r.liveSynergy}`);
 
 console.log();

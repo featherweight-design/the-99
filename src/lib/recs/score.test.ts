@@ -219,16 +219,31 @@ describe("scoreCommander", () => {
     expect(s.roleCards.removal.map((c) => c.name)).not.toContain("Wrath of God");
   });
 
-  // Task 2: overlapOwned
-  it("overlapOwned preserves EDHREC casing and order, excluding missing cards", () => {
-    // Sol Ring is in pool (colorIdentity []); Rhystic Study is not in collection
+  // Task 2: overlapOwned.
+  //
+  // Retitled and rebuilt. It used to claim EDHREC casing, order and exclusion,
+  // and after the source moved it measured none of the three: the `support`
+  // helper drops a name no fixture card carries, so the exclusion happened in
+  // the fixture rather than in the function; casing now comes from the pool
+  // card; and one surviving element holds under any ordering.
+  //
+  // What it asserts instead is what the function now decides — which pool cards
+  // a stored list names, IN THE LIST'S ORDER, since `overlapOwned` feeds
+  // `receiptsPreview` and that prints the first three.
+  it("overlapOwned holds the pool's support cards in the support list's order", () => {
     const s = scoreCommander({
       commander,
       collection,
-      support: support(["Sol Ring", "Rhystic Study"]),
+      // Read the Bones and Cultivate are both in the pool, listed in that order;
+      // Lightning Bolt is in the collection but outside the commander's
+      // identity, so the pool excludes it and the overlap must too.
+      support: support(["Read the Bones", "Cultivate", "Lightning Bolt"]),
       inclusionByName: null,
     });
-    expect(s.overlapOwned).toEqual(["Sol Ring"]);
+    expect(s.overlapOwned).toEqual(["Read the Bones", "Cultivate"]);
+    expect(s.edhrecOwnedCount).toBe(2);
+    // The denominator still counts the name the pool excluded.
+    expect(s.edhrecTotal).toBe(3);
     expect(s).not.toHaveProperty("overlapMissing");
   });
 

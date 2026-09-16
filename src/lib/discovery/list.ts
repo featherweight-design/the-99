@@ -221,14 +221,17 @@ export function assembleDiscovery(input: {
  * commander, so a payload assembled by version 1 can still be offering a
  * commander the player has already built around.
  *
- * 3 — every Fit's synergy now reads the stored commander index rather than the
- * live EDHREC payload (Ruling D of the commander-row spec). This payload does
- * not print a Fit yet, so nothing a reader sees changes — but it is assembled
- * from `loadCandidates`, whose figures feed that arithmetic in PR 3, and a warm
- * entry written before the change would carry counts taken against the old
- * source. Bumped with its sibling in `commanders/rankings.ts` rather than left
- * for the PR that starts drawing the figure, because the two caches are dropped
- * independently and a half-bumped pair is the state nobody would think to check.
+ * 3 — bumped for a WEAKER reason than its sibling in `commanders/rankings.ts`,
+ * and the difference is worth stating rather than blurring. Ruling D moved every
+ * Fit's synergy to the stored index, which changes what that payload SAYS. It
+ * does not change this one: `ownedSupport` and `supportPct` come from
+ * `loadCandidates`, which already counted `commander_support_cards` and is
+ * untouched, and no other field moved either. So every warm entry is dropped
+ * for no content difference — a deliberate cost, taken because the two caches
+ * are dropped independently and a pair bumped half-way is the state nobody
+ * thinks to check. If that trade ever looks wrong, the honest fix is to bump
+ * this one when PR 3 changes the payload's shape, not to leave the pair
+ * mismatched now.
  */
 const PAYLOAD_VERSION = 3;
 

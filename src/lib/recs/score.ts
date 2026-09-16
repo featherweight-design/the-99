@@ -203,8 +203,12 @@ export function scoreCommander(args: {
 
   // `inclusionByName` is keyed lowercase by parseEdhrecPayload, so every read
   // lowercases first. And EDHREC names a double-faced card by its front face
-  // while Scryfall names it "Front // Back" — the same mismatch the topCards
-  // overlap below already handles.
+  // while Scryfall names it "Front // Back", so both spellings are tried.
+  //
+  // This is the LAST name matching in the scoring path. The overlap below used
+  // to need the same handling and no longer does — it intersects oracle ids from
+  // the stored index, which resolved every name when it was built. This map is
+  // still keyed by name because it is still read from the live payload.
   const inclusionOf = (name: string): number | null => {
     const map = args.inclusionByName;
     if (!map) return null;

@@ -47,18 +47,33 @@ export type SupportList = {
  * 96 playable. Fit measures what could actually be played, so the pool's
  * restriction is the correct one and an unfiltered count is a different
  * quantity.
+ *
+ * **Iterates the SUPPORT LIST, not the pool**, so its order survives into
+ * `names`. That matters because `overlapOwned` feeds `receiptsPreview`, which
+ * prints the first three — and `loadSupportLists` orders by inclusion
+ * descending, so the three printed are the three most-included cards the reader
+ * owns, which is what the line showed before the source moved. Iterating the
+ * pool instead compiles the same SET in `cards.oracleId` order and prints three
+ * arbitrary names.
  */
 export function supportOverlap(
   support: SupportList,
   pool: readonly { oracleId: string; name: string }[],
 ): { names: string[]; oracleIds: string[] } {
-  const supported = new Set(support.oracleIds);
+  const inPool = new Map(pool.map((c) => [c.oracleId, c.name]));
   const names: string[] = [];
   const oracleIds: string[] = [];
-  for (const card of pool) {
-    if (!supported.has(card.oracleId)) continue;
-    names.push(card.name);
-    oracleIds.push(card.oracleId);
+  const seen = new Set<string>();
+  for (const oracleId of support.oracleIds) {
+    // A support list should not repeat an id — the child table's primary key is
+    // `(commander_oracle_id, oracle_id)` — but the guard keeps this function's
+    // own output well-formed rather than resting on that.
+    if (seen.has(oracleId)) continue;
+    const name = inPool.get(oracleId);
+    if (name === undefined) continue;
+    seen.add(oracleId);
+    names.push(name);
+    oracleIds.push(oracleId);
   }
   return { names, oracleIds };
 }

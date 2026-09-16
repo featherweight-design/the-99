@@ -3,7 +3,7 @@
 // components reach — see the note there, and `client-bundle-safety.test.ts`,
 // which caught the two being one file.
 
-import { inArray } from "drizzle-orm";
+import { asc, inArray, sql } from "drizzle-orm";
 import { db } from "../../db";
 import { commanderSupport, commanderSupportCards } from "../../db/schema";
 import type { SupportList } from "./support-overlap";
@@ -39,7 +39,21 @@ export async function loadSupportLists(
         oracleId: commanderSupportCards.oracleId,
       })
       .from(commanderSupportCards)
-      .where(inArray(commanderSupportCards.commanderOracleId, commanderOracleIds)),
+      .where(inArray(commanderSupportCards.commanderOracleId, commanderOracleIds))
+      // MOST-INCLUDED FIRST, and this ordering is load-bearing rather than
+      // tidiness. `overlapOwned` feeds `receiptsPreview`, which prints the first
+      // three names — so before Ruling D the receipts line showed the three
+      // most-included support cards the reader owns, because EDHREC's array
+      // arrived in that order. Reading the index without an ORDER BY replaced
+      // that with whatever the database returned, which is three arbitrary
+      // cards. `inclusion` is stored per support card, so the same source can
+      // restore the same order. Nulls last: a card upstream gave no figure for
+      // must not outrank one it did, and `oracleId` breaks the remaining ties so
+      // two requests cannot disagree.
+      .orderBy(
+        sql`${commanderSupportCards.inclusion} desc nulls last`,
+        asc(commanderSupportCards.oracleId),
+      ),
   ]);
 
   const out = new Map<string, SupportList>();
