@@ -120,3 +120,65 @@ describe("about content", () => {
 // failed on prose. Any cheap form of it measures the wrong thing; it stays a
 // review rule, and the page's figures enforce it in build by mounting the real
 // component rather than a retyped copy of one.
+
+describe("every entry is drawn, not just described", () => {
+  // The handoff's unit is a FIGURE WITH A CAPTION — R2's whole pivot away from
+  // R1 was Design saying a page of paragraphs cannot teach a fit score, a
+  // doubled diamond or a dashed cell, and R3's own heading reads "thirty-two
+  // entries, thirty-two figures".
+  //
+  // What shipped was five figures and a comment in `figures.tsx` calling the
+  // map "partial on purpose". That comment is an argument; this is a test,
+  // which is the difference. The gap was invisible to every gate the feature
+  // passed: a diff shows what was added, review reads the diff, and the
+  // contact-sheet inventory photographed the figures that existed — so it
+  // confirmed the scope back to its author.
+  //
+  // `NOT_YET_DRAWN` is a ledger that must shrink to empty. An entry is removed
+  // from it when its figure lands; nothing is ever added.
+  const NOT_YET_DRAWN = new Set<string>([
+    // 01 Your collection — every entry drawn
+    // 02 Finding a commander
+    "ready-to-build", "commander-lane", "discover", "role-coverage", "partners",
+    // 03 Building the 99
+    "deck-page", "auto-fill", "roles", "decklist-order", "add-cards",
+    "undo-removal", "deck-import", "versions", "export", "shopping",
+    // 04 Playing and tuning
+    "log-a-game", "log-findings", "folders", "resume", "commitments",
+    "reservations", "proxies", "themes",
+  ]);
+
+  it("registers no figure under a name no entry has", async () => {
+    // Without this, a typo pairs with the ledger to hide itself: `brows` in
+    // FIGURES and `browse` on the ledger satisfies both the count and the
+    // undrawn check, and the entry stays wordless.
+    const { FIGURES } = await import("../../components/about/figures");
+    const ids = new Set(aboutEntries.map((e) => e.id));
+    expect(Object.keys(FIGURES).filter((k) => !ids.has(k))).toEqual([]);
+  });
+
+  it("has a figure for every entry, or names it in the ledger", async () => {
+    const { FIGURES } = await import("../../components/about/figures");
+    const undrawn = aboutEntries.filter((e) => !(e.id in FIGURES)).map((e) => e.id);
+    // Nothing may go undrawn without being on the ledger. A new entry that
+    // arrives with neither a figure nor a line here fails immediately, which
+    // is the case the rule in AGENTS.md cannot enforce on its own.
+    expect(undrawn.filter((id) => !NOT_YET_DRAWN.has(id))).toEqual([]);
+  });
+
+  it("keeps no stale names on the ledger", () => {
+    // A figure that lands must take its entry off the list, or the ledger
+    // stops measuring how far there is left to go.
+    const ids = new Set(aboutEntries.map((e) => e.id));
+    expect([...NOT_YET_DRAWN].filter((id) => !ids.has(id))).toEqual([]);
+  });
+
+  it("reports how much of the page is still words", async () => {
+    const { FIGURES } = await import("../../components/about/figures");
+    const drawn = aboutEntries.filter((e) => e.id in FIGURES).length;
+    // Not an assertion about the number — a place for it to be READ. The
+    // feature shipped reporting "four composition plates" outstanding when the
+    // real figure was twenty-nine.
+    expect(drawn + NOT_YET_DRAWN.size).toBe(aboutEntries.length);
+  });
+});

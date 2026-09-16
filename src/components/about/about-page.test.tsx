@@ -1,7 +1,8 @@
-import { render, screen, within } from "@testing-library/react";
+import { act, render, screen, within } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
 import { AboutPage } from "./about-page";
 import { ABOUT_VERSION, aboutCopy, aboutEntries } from "../../lib/copy/about";
+import { FIGURES } from "./figures";
 
 // The action is a server function; the page only needs it to exist as a form
 // target, and importing it for real drags a database client into jsdom.
@@ -87,7 +88,10 @@ describe("where the dismiss sends them", () => {
 describe("the contents", () => {
   it("links every chapter that has entries", () => {
     render(<AboutPage seen={0} />);
-    const nav = screen.getByRole("navigation", { name: aboutCopy.contentsLabel });
+    // TWO navigations carry this label now — the in-flow list below the wide
+    // stop and the sticky rail above it — so the compact one is taken by
+    // position rather than by name alone.
+    const [nav] = screen.getAllByRole("navigation", { name: aboutCopy.contentsLabel });
     for (const n of ["01", "02", "03", "04"] as const) {
       const link = within(nav).getByRole("link", {
         name: new RegExp(escape(aboutCopy.chapters[n].title)),
@@ -139,17 +143,16 @@ describe("the figures", () => {
       ]),
     );
 
-  it("draws one for every entry whose subject is a mark", () => {
-    // The complete set, not a sample: a partial list leaves a miswired figure
-    // green, which is the regression this whole file exists to catch.
+  it("draws one specimen for every entry that has a figure", () => {
+    // DERIVED, not a hard-coded list. A literal set of labels has to be edited
+    // every time a figure lands, which makes the test a chore rather than a
+    // guard — and the thing worth catching is a figure REGISTERED in FIGURES
+    // that renders nothing, which counting catches and a label list does not.
     const { container } = render(<AboutPage seen={0} />);
-    expect(Object.keys(figures(container)).sort()).toEqual([
-      "availability",
-      "buy-tag",
-      "fit",
-      "marks",
-      "status",
-    ]);
+    const drawn = container.querySelectorAll("[data-specimen]").length;
+    const registered = aboutEntries.filter((e) => e.id in FIGURES).length;
+    expect(registered, "no entry has a figure at all").toBeGreaterThan(0);
+    expect(drawn).toBe(registered);
   });
 
   it("hides every specimen from the reading order and from the pointer", () => {
@@ -385,8 +388,201 @@ describe("the contents", () => {
     // A row that carried a count only when something was new would be blank
     // for every reader at launch, which is everyone.
     render(<AboutPage seen={0} />);
-    const nav = screen.getByRole("navigation", { name: aboutCopy.contentsLabel });
+    const [nav] = screen.getAllByRole("navigation", { name: aboutCopy.contentsLabel });
     const counts = within(nav).getAllByText(/\d+ (entries|entry|new)/);
     expect(counts).toHaveLength(4);
+  });
+});
+
+describe("the contents rail", () => {
+  it("draws beside the column at the wide stop and not below it", () => {
+    // The page is about nine screens long. An in-flow list answers "what is
+    // here" once and scrolls away; the rail is what says where you ARE, which
+    // is the reason it was wrong to take Design's offer to cut it.
+    const navs = screen.queryAllByRole("navigation", { name: aboutCopy.contentsLabel });
+    expect(navs).toHaveLength(0);
+
+    render(<AboutPage seen={0} />);
+    const [inFlow, rail] = screen.getAllByRole("navigation", {
+      name: aboutCopy.contentsLabel,
+    });
+    // Each is present at exactly one width, and the pair is what makes the
+    // links reachable at both.
+    expect(inFlow.className).toContain("min-[1000px]:hidden");
+    expect(rail.className).toContain("sticky");
+    expect(rail.className).toContain("hidden");
+    expect(rail.className).toContain("min-[1000px]:block");
+  });
+
+  it("marks where the reader is, for a screen reader as well as an eye", () => {
+    render(<AboutPage seen={0} />);
+    const [, rail] = screen.getAllByRole("navigation", { name: aboutCopy.contentsLabel });
+    const current = within(rail).getAllByRole("link").filter((a) => a.getAttribute("aria-current"));
+    expect(current).toHaveLength(1);
+    expect(current[0]).toHaveAttribute("href", "#chapter-01");
+  });
+
+  it("follows the reader down the page, and back up it", () => {
+    // jsdom has no IntersectionObserver, so without a stub the test above
+    // asserts the initial useState and nothing else — deleting the entire
+    // effect left every test in this file green, which the pre-open pass
+    // proved by doing it.
+    //
+    // The stub is also what makes the REAL defect testable: the callback
+    // receives only the entries whose state CHANGED, so a reading that sorts
+    // "this callback's intersecting entries" answers "whichever chapter most
+    // recently entered the band". Scrolling 01 → 02 delivers 02 alone.
+    const callbacks: IntersectionObserverCallback[] = [];
+    const observed: Element[] = [];
+    class Stub {
+      constructor(cb: IntersectionObserverCallback) {
+        callbacks.push(cb);
+      }
+      observe(el: Element) {
+        observed.push(el);
+      }
+      disconnect() {}
+      unobserve() {}
+      takeRecords() {
+        return [];
+      }
+      root = null;
+      rootMargin = "";
+      thresholds = [];
+    }
+    vi.stubGlobal("IntersectionObserver", Stub);
+    try {
+      render(<AboutPage seen={0} />);
+      const [, rail] = screen.getAllByRole("navigation", { name: aboutCopy.contentsLabel });
+      const marked = () =>
+        within(rail)
+          .getAllByRole("link")
+          .find((a) => a.getAttribute("aria-current"))
+          ?.getAttribute("href");
+
+      // BOTH observers — the rail and the compact list each hold one, because
+      // `aria-current` has to be true at both widths and a phone is where the
+      // page is longest. Firing only the first marked whichever nav happened
+      // to mount first and left the other static.
+      const fire = (changes: { id: string; isIntersecting: boolean }[]) =>
+        act(() => {
+          for (const cb of callbacks) cb(
+            changes.map((c) => ({
+              target: observed.find((el) => el.id === `chapter-${c.id}`)!,
+              isIntersecting: c.isIntersecting,
+            })) as unknown as IntersectionObserverEntry[],
+            {} as IntersectionObserver,
+          );
+        });
+
+      // Everything starts on screen at the top of the page.
+      fire([{ id: "01", isIntersecting: true }]);
+      expect(marked()).toBe("#chapter-01");
+
+      // Scrolling into 02 delivers ONE entry. 01 is still intersecting and is
+      // absent from the callback — the case that broke the first version.
+      fire([{ id: "02", isIntersecting: true }]);
+      expect(marked()).toBe("#chapter-01");
+
+      // 01 leaves the band. Now 02 is the first in order still on screen.
+      fire([{ id: "01", isIntersecting: false }]);
+      expect(marked()).toBe("#chapter-02");
+
+      fire([{ id: "03", isIntersecting: true }, { id: "02", isIntersecting: false }]);
+      expect(marked()).toBe("#chapter-03");
+
+      // And back up: 02 returning takes the mark back, because it is earlier.
+      fire([{ id: "02", isIntersecting: true }]);
+      expect(marked()).toBe("#chapter-02");
+
+      // The compact list carries the same mark. It is the ONLY navigation
+      // below the wide stop, so a mark that lived on the rail alone answered
+      // nobody on a phone.
+      const [list] = screen.getAllByRole("navigation", { name: aboutCopy.contentsLabel });
+      const listMarked = within(list)
+        .getAllByRole("link")
+        .find((a) => a.getAttribute("aria-current"));
+      expect(listMarked).toHaveAttribute("href", "#chapter-02");
+    } finally {
+      vi.unstubAllGlobals();
+    }
+  });
+
+  it("links every chapter from the rail", () => {
+    render(<AboutPage seen={0} />);
+    const [, rail] = screen.getAllByRole("navigation", { name: aboutCopy.contentsLabel });
+    for (const n of ["01", "02", "03", "04"] as const) {
+      expect(within(rail).getByRole("link", { name: new RegExp(escape(aboutCopy.chapters[n].title)) }))
+        .toHaveAttribute("href", `#chapter-${n}`);
+    }
+  });
+});
+
+describe("what each chapter 01 figure actually draws", () => {
+  // Counting frames is not coverage: `Specimen` creates the `[data-specimen]`
+  // node itself, so a registered figure can return an empty frame and the
+  // count assertion still passes. Six figures landed with no content check at
+  // all, which is the fifth round in this feature that an assertion measured
+  // the frame instead of the body.
+  const plate = (label: string) => {
+    const { container } = render(<AboutPage seen={0} />);
+    const el = container.querySelector(`[data-specimen="${label}"]`);
+    expect(el, `${label} drew no specimen`).toBeTruthy();
+    return el as HTMLElement;
+  };
+
+  it("sets: four cells, and only the missing one carries a price", () => {
+    const el = plate("sets");
+    // The completion figure and the cell count disagree on purpose — base run
+    // versus extras — and the entry's key line is about exactly that.
+    expect(el.textContent).toContain("162 / 208");
+    expect(el.textContent).toContain("321 cells");
+    expect(el.querySelectorAll("button").length).toBe(4);
+  });
+
+  it("browse: a chip per narrowing, a count, and the reading choice", () => {
+    const el = plate("browse");
+    expect(el.textContent).toContain("1 colour");
+    expect(el.textContent).toContain("The Hobbit");
+    expect(el.textContent).toContain("Showing");
+    // The third key line is the grid-or-rows choice, which the first version
+    // of this figure left out entirely.
+    expect(el.textContent).toMatch(/rows/i);
+    expect(el.textContent).toMatch(/grid/i);
+  });
+
+  it("import: the doors, and the fact that decides whether you lose anything", () => {
+    const el = plate("import");
+    expect(el.textContent).toContain("Moxfield");
+    expect(el.textContent).toContain("ManaBox");
+    expect(el.textContent).toContain("replaces");
+  });
+
+  it("post-import: the three sections, in the app's own words", () => {
+    const el = plate("post-import");
+    expect(el.textContent).toContain("No longer to buy");
+    expect(el.textContent).toContain("Still to buy");
+    expect(el.textContent).toContain("Still short");
+  });
+
+  it("import-issues: both tabs, because they are different failures", () => {
+    const el = plate("import-issues");
+    expect(el.textContent).toContain("Unmatched");
+    expect(el.textContent).toContain("Parse errors");
+  });
+
+  it("card-detail: the pick, the preview, and BOTH printed costs", () => {
+    const el = plate("card-detail");
+    expect(el.textContent).toContain("✓");
+    expect(el.textContent).toContain("◇");
+    // Scoped to the COST cell. The plate also draws a two-faced mark, whose
+    // glyph is `//` — so a sweep of the plate's text is satisfied by the wrong
+    // element and passes with the cost drawing its front face alone, which is
+    // the right pips for the wrong card.
+    const costCell = [...el.querySelectorAll(":scope > div > div")].find((c) =>
+      (c.lastElementChild?.textContent ?? "").includes("both halves"),
+    );
+    expect(costCell, "no cell captions the two-cost case").toBeTruthy();
+    expect(costCell!.firstElementChild?.textContent).toContain("//");
   });
 });

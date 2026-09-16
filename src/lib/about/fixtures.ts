@@ -14,6 +14,9 @@ import type { Availability } from "../decks/availability";
 import type { PriceFact, PriceState } from "../decks/price";
 import { fitSegments } from "../recs/format";
 import type { StatusPill } from "../decks/status";
+import type { Cell } from "../sets/completion";
+import type { FilterChip } from "../../components/ui/filter-chassis";
+import { collectionChassisCopy } from "../copy/collection";
 
 /** The four availability states, in the order the plate draws them. */
 export const AVAILABILITY: { key: string; a: Availability }[] = [
@@ -91,6 +94,9 @@ export const COSTS = {
   simple: "{1}{G}",
   /** Costless: the one card that draws the marker box on a decklist row. */
   none: null,
+  /** Two printed costs on one piece of stock — a modal DFC, where the back
+   *  face is castable and the modal is the only surface drawing both. */
+  twoFaced: "{2}{B} // {B}",
 };
 
 export const CARDS = {
@@ -99,3 +105,86 @@ export const CARDS = {
   twoFaced: "Delver of Secrets",
   proxied: "Mana Crypt",
 };
+
+/**
+ * Set-completion cells: owned, owned-by-name, owned-in-foil, and missing. The
+ * four a reader has to tell apart on a set page, and the reason that grid is
+ * worth a figure at all — the gaps ARE the page.
+ */
+export const SET_CELLS: Cell[] = [
+  {
+    scryfallId: "f0000000-0000-4000-8000-000000000001",
+    oracleId: "a0000000-0000-4000-8000-000000000001",
+    collectorNumber: "12",
+    name: "Attercop",
+    imageUriSmall: null,
+    colorIdentity: [],
+    rarity: "common",
+    booster: true,
+    isVariant: false,
+    owned: true,
+    byName: false,
+    foilOnly: false,
+  },
+  {
+    scryfallId: "f0000000-0000-4000-8000-000000000002",
+    oracleId: "a0000000-0000-4000-8000-000000000002",
+    collectorNumber: "13",
+    name: "Beorn the Fierce",
+    imageUriSmall: null,
+    colorIdentity: [],
+    rarity: "common",
+    booster: true,
+    isVariant: false,
+    owned: true,
+    byName: true,
+    foilOnly: false,
+  },
+  {
+    scryfallId: "f0000000-0000-4000-8000-000000000003",
+    oracleId: "a0000000-0000-4000-8000-000000000003",
+    collectorNumber: "14",
+    name: "Beorn, Reluctant Host",
+    imageUriSmall: null,
+    colorIdentity: [],
+    rarity: "common",
+    booster: true,
+    isVariant: false,
+    owned: true,
+    byName: false,
+    foilOnly: true,
+  },
+  {
+    // The one the entry is about: not owned, so it draws dashed and dimmed and
+    // carries a price an owned cell never does.
+    scryfallId: "f0000000-0000-4000-8000-000000000004",
+    oracleId: "a0000000-0000-4000-8000-000000000004",
+    collectorNumber: "15",
+    name: "Case of the Filched Falcon",
+    imageUriSmall: null,
+    colorIdentity: [],
+    rarity: "common",
+    booster: true,
+    isVariant: false,
+    owned: false,
+    byName: false,
+    foilOnly: false,
+  },
+];
+
+/** Two narrowings, one of which collapsed several values into a count. */
+export const BROWSE_CHIPS: FilterChip[] = [
+  // `onRemove` is required by the chip and is a no-op here: a specimen is
+  // inert, and the figure's subject is that the control EXISTS and is
+  // per-dimension, not what pressing it does.
+  {
+    key: "colour",
+    // From the collection's own derivation, not retyped: a rename in
+    // `collectionFilterCopy` must reach this figure, and a literal here would
+    // leave the specimen stale while still mounting the real chip.
+    label: collectionChassisCopy.chip.colours(1),
+    dots: ["var(--success)"],
+    onRemove: () => {},
+  },
+  { key: "set", label: "The Hobbit", onRemove: () => {} },
+];
