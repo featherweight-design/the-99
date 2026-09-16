@@ -108,7 +108,9 @@ Per-reader data gets a **two-layer** model, not a replacement:
 - **`'use cache: private'`** is added on top, for the revisit. It caches a function that reads
   `cookies()` / `headers()` / `searchParams`, and its results are held **only in browser memory,
   never stored on the server** — the right shape for an app where every payload is one player's
-  collection. `cacheLife({ stale })` is set at 30s minimum to keep per-link prefetch working, and
+  collection. Mechanically: the function runs during a server render, its output rides along in the
+  RSC payload sent for that navigation or prefetch, and the browser then keeps it for its `stale`
+  window. That is what turns a revisit inside the window into no round trip at all. `cacheLife({ stale })` is set at 30s minimum to keep per-link prefetch working, and
   5 minutes where the content should reach the route's App Shell.
 
 Per-segment `prefetch` config replaces the global knob the old rule objected to: `'force-disabled'`
@@ -143,8 +145,10 @@ persisted explicitly.
 ### §5 Proof
 
 The throwaway probe is promoted to `scripts/probe-nav-cost.mjs` with asserted budgets — a warm
-revisit costs 0 RSC fetches, and `/collection`'s payload stays under an agreed ceiling. It lands
-**first**, before any behavior change, so every later PR is measured against a committed baseline.
+revisit inside the configured `stale` window costs 0 RSC fetches, and each route's payload stays
+under a recorded ceiling. It lands **first**, before any behavior change, and the ceilings it
+commits are the figures measured today (`/collection` 1,595.8 KB, `/discover` 951.3 KB,
+`/decks/[id]` 553.7 KB); later PRs lower them deliberately rather than negotiating them.
 A browser probe is this repository's standard of proof for a change of this kind, and it doubles as
 the regression gate.
 
@@ -192,8 +196,11 @@ At most ~20 files or ~800 lines each, no stacked PRs.
 
 ## Success criteria
 
-- A warm revisit to any converted route costs **0 RSC fetches**, asserted by the probe.
-- `/collection`'s payload is measurably smaller, with the figure recorded in the probe's budget.
+- A warm revisit to any converted route, **within the `stale` window configured for it**, costs
+  **0 RSC fetches**, asserted by the probe. Outside that window a refetch is correct behavior, not
+  a regression, and the probe's case names the window it is testing.
+- `/collection`'s payload is measurably smaller than the 1,595.8 KB baseline, with the new figure
+  committed as the probe's ceiling.
 - `/decks/[id]` server time is reduced against its measured 550–790ms, or the doc records why it
   could not be.
 - No `instant = false` remains in `src/app`.
