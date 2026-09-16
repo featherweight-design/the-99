@@ -32,8 +32,17 @@ import { loadCommanderRankings } from "../src/lib/commanders/rankings";
 neonConfig.webSocketConstructor = ws;
 
 const CEILING_BYTES = 2_000_000;
-/** 80% of the ceiling. Measured at 1.184 MB (59.2%) on the largest collection
-    here, with the six fields PR 4 removes still present. */
+/**
+ * 80% of the ceiling, leaving room for a larger collection than any here and for
+ * the sentences still to be generated.
+ *
+ * NO MEASURED FIGURE IS QUOTED HERE ON PURPOSE. This comment held 1.184 MB from
+ * when the probe measured one chosen account, and kept holding it after the
+ * probe changed to measure every account and enforce the worst — which is
+ * 1.448 MB, a third less headroom than the stale number implied. A constant's
+ * doc that quotes a result goes stale the moment the measurement moves, and it
+ * goes stale silently. The run prints the figure; read it there.
+ */
 const BUDGET_BYTES = 1_600_000;
 
 const { DATABASE_URL } = requireEnv(["DATABASE_URL"]);
@@ -73,17 +82,25 @@ async function main() {
     console.log(`measuring ${accounts.length} account(s), worst per lane\n`);
 
     for (const sort of ["fit", "new"] as const) {
-      let worst = { bytes: 0, plain: 0, rows: 0, prose: 0, user: "" };
+      let worst = { bytes: 0, plain: 0, rows: 0, prose: 0 };
+      // TRACKED SEPARATELY FROM THE BYTE WINNER. The two need not be the same
+      // account, and reading the ratio off `worst` meant a smaller payload with
+      // a poor ratio passed unmeasured — the ratio guard was enforced for one
+      // account while claiming to cover every one.
+      let worstRatio = 0;
+      let leastRows = Number.POSITIVE_INFINITY;
       for (const account of accounts) {
         const list = await loadDiscovery(account.user_id, { sort });
+        const plain = Buffer.byteLength(JSON.stringify(list));
         const bytes = Buffer.byteLength(JSON.stringify(encodeDiscovery(list)));
+        worstRatio = Math.max(worstRatio, bytes / plain);
+        leastRows = Math.min(leastRows, list.items.length);
         if (bytes > worst.bytes) {
           worst = {
             bytes,
-            plain: Buffer.byteLength(JSON.stringify(list)),
+            plain,
             rows: list.items.length,
             prose: list.items.filter((i) => i.prose).length,
-            user: account.user_id,
           };
         }
       }
@@ -105,13 +122,15 @@ async function main() {
       // today and would be one collection away from not fitting, so the RATIO
       // is asserted rather than only the total.
       check(
-        `${sort} still compresses`,
-        worst.bytes < worst.plain * 0.6,
-        `${((worst.bytes / worst.plain) * 100).toFixed(1)}% of plain (want under 60%)`,
+        `${sort} still compresses, on every account`,
+        worstRatio < 0.6,
+        `worst ratio ${(worstRatio * 100).toFixed(1)}% of plain (want under 60%)`,
       );
       // An empty list would pass every byte assertion above while proving
       // nothing, and this route has had an empty-payload regression before.
-      check(`${sort} returned rows`, worst.rows > 0, `${worst.rows} rows`);
+      // Read off the LEAST rows of any account, for the same reason the ratio is:
+      // the byte winner is by definition not the empty one.
+      check(`${sort} returned rows for every account`, leastRows > 0, `fewest ${leastRows} rows`);
     }
 
     // THE OWNED LANE IS CACHED THROUGH THE SAME DATA CACHE and now carries the

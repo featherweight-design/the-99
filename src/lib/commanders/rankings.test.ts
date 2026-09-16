@@ -18,7 +18,7 @@ vi.mock("../edhrec/support-read", () => ({ loadSupportMeta: vi.fn() }));
 vi.mock("../discovery/novelty", () => ({ loadPlayedTags: vi.fn() }));
 vi.mock("../discovery/price", async (orig) => ({
   ...(await orig<typeof import("../discovery/price")>()),
-  pricesOrEmpty: vi.fn(),
+  readPrices: vi.fn(),
 }));
 
 import { commanderRankingsKey, loadCommanderRankings } from "./rankings";
@@ -29,7 +29,7 @@ import { loadAvailability } from "../decks/availability-query";
 import { rankFree } from "../recs/free-ranking";
 import { loadSupportMeta } from "../edhrec/support-read";
 import { loadPlayedTags } from "../discovery/novelty";
-import { pricesOrEmpty } from "../discovery/price";
+import { readPrices } from "../discovery/price";
 
 const item = (oracleId: string, over: Record<string, unknown> = {}) => ({
   oracleId, slug: oracleId, name: oracleId.toUpperCase(),
@@ -58,7 +58,7 @@ describe("loadCommanderRankings · the row's four joined fields", () => {
     vi.mocked(loadPlayedTags).mockResolvedValue([
       { deckName: "Zur", colorIdentity: ["W"], slugs: new Set(["blink"]) },
     ]);
-    vi.mocked(pricesOrEmpty).mockResolvedValue(new Map());
+    vi.mocked(readPrices).mockResolvedValue({ prices: new Map(), ok: true });
     vi.mocked(loadSupportMeta).mockResolvedValue(new Map());
   });
 
@@ -106,9 +106,10 @@ describe("loadCommanderRankings · the row's four joined fields", () => {
   });
 
   it("slots the price per commander, and absent where the feed has none", async () => {
-    vi.mocked(pricesOrEmpty).mockResolvedValue(
-      new Map([["a", { oracleId: "a", liveCents: 1499, everPriced: true, live: true }]]) as never,
-    );
+    vi.mocked(readPrices).mockResolvedValue({
+      prices: new Map([["a", { oracleId: "a", liveCents: 1499, everPriced: true, live: true }]]),
+      ok: true,
+    } as never);
 
     const { items } = await loadCommanderRankings("user_1");
 
@@ -122,7 +123,7 @@ describe("loadCommanderRankings · the row's four joined fields", () => {
     await loadCommanderRankings("user_1");
 
     expect(vi.mocked(loadSupportMeta)).toHaveBeenCalledWith(["a", "b"]);
-    expect(vi.mocked(pricesOrEmpty)).toHaveBeenCalledWith(["a", "b"]);
+    expect(vi.mocked(readPrices)).toHaveBeenCalledWith(["a", "b"]);
   });
 
   // No candidates means the page draws its empty state, and the three reads are
@@ -137,7 +138,7 @@ describe("loadCommanderRankings · the row's four joined fields", () => {
 
     expect(items).toEqual([]);
     expect(vi.mocked(loadSupportMeta)).not.toHaveBeenCalled();
-    expect(vi.mocked(pricesOrEmpty)).not.toHaveBeenCalled();
+    expect(vi.mocked(readPrices)).not.toHaveBeenCalled();
   });
 });
 

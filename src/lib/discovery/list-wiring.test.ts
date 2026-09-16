@@ -49,7 +49,7 @@ vi.mock("./candidates", () => ({
   loadCandidates: (...args: unknown[]) =>
     (loadCandidates as unknown as (...a: unknown[]) => unknown)(...args),
 }));
-// `pricesOrEmpty`, NOT `loadPrices`. The route calls the wrapper, and the
+// `readPrices`, NOT `loadPrices`. The route calls the wrapper, and the
 // wrapper closes over `loadPrices` inside its own module scope — so overriding
 // that export left the real database-backed read in place, and the wrapper's
 // catch then swallowed the failure into an empty map. The test passed while
@@ -57,7 +57,7 @@ vi.mock("./candidates", () => ({
 // review, on the same PR that introduced the wrapper.
 vi.mock("./price", async (importOriginal) => ({
   ...(await importOriginal<typeof import("./price")>()),
-  pricesOrEmpty: async () => new Map(),
+  readPrices: async () => ({ prices: new Map(), ok: true }),
 }));
 vi.mock("./novelty", async (importOriginal) => ({
   ...(await importOriginal<typeof import("./novelty")>()),

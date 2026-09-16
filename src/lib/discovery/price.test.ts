@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { pricesOrEmpty, slotFor } from "./price";
+import { readPrices, slotFor } from "./price";
 
 describe("slotFor", () => {
   it("row 1/2 — a live priced printing prints the figure", () => {
@@ -45,11 +45,11 @@ describe("slotFor", () => {
 //
 // `loadPrices` is mocked here rather than called, because what is under test is
 // the boundary's behaviour on a rejection and not the query.
-describe("pricesOrEmpty", () => {
+describe("readPrices", () => {
   it("returns an empty map when the price read rejects", async () => {
     const reject = () => Promise.reject(new Error("feed down"));
 
-    await expect(pricesOrEmpty(["a"], reject)).resolves.toEqual(new Map());
+    await expect(readPrices(["a"], reject)).resolves.toEqual({ prices: new Map(), ok: false });
   });
 
   // The other half, and not a formality: a wrapper that swallowed EVERYTHING
@@ -57,13 +57,13 @@ describe("pricesOrEmpty", () => {
   it("passes the rows through when the read succeeds", async () => {
     const rows = new Map([["a", { oracleId: "a", liveCents: 100, everPriced: true, live: true }]]);
 
-    await expect(pricesOrEmpty(["a"], async () => rows)).resolves.toBe(rows);
+    await expect(readPrices(["a"], async () => rows)).resolves.toEqual({ prices: rows, ok: true });
   });
 
   it("hands the ids it was given to the read", async () => {
     const seen: string[][] = [];
 
-    await pricesOrEmpty(["a", "b"], async (ids) => { seen.push(ids); return new Map(); });
+    await readPrices(["a", "b"], async (ids) => { seen.push(ids); return new Map(); });
 
     expect(seen).toEqual([["a", "b"]]);
   });

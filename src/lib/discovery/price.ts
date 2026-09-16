@@ -77,47 +77,52 @@ export async function loadPrices(oracleIds: string[]): Promise<Map<string, Price
 }
 
 /**
- * `loadPrices`, but a failure costs the prices rather than the page.
+ * `loadPrices`, and whether it READ — never a silent empty map.
  *
- * A PRICE IS THE ONE FIGURE ON THESE SURFACES THAT ALREADY HAS AN ABSENT STATE.
- * `PriceSlot`'s `absent` member exists because the feed omits out-of-stock
- * cards, so every row already knows how to draw without one — which makes a
- * rejected price read the cheapest thing on the page to lose and the most
- * expensive to fail on. Unguarded it takes `/commanders` and `/discover` down
- * whole, and both of them rank perfectly well with no prices at all.
+ * A PRICE FAILURE MUST NOT BECOME A CACHED CLAIM. Both lanes assemble inside
+ * `cacheForUser`, so a result computed from a failed read is stored for up to
+ * the hour ceiling: an empty map makes every row draw `absent`, which this
+ * module defines as a printing the feed has never carried. That is a statement
+ * about the market, it stays wrong after prices recover, and nothing
+ * distinguishes it from the truth. An earlier version of this wrapper returned
+ * the bare map and argued the absence "makes no claim"; it does.
  *
- * Deliberately NOT how the availability reads fail: those set an `availOk` flag,
- * because losing them removes a CLAIM the reader would otherwise believe (an
- * empty availability map counts every owned card as uncommitted).
+ * So the read's status travels with it, and the surface omits the figure rather
+ * than asserting absence — which is ruling D3 of the commander-row handoff, *a
+ * figure with no reading is omitted, never zeroed*, applied to the reading
+ * itself rather than to the value. Omitting needs no new drawn state: it is the
+ * `Unpriced` state the row already has.
  *
- * An empty price map reads as `absent`, which is `slotFor(undefined)` — the
- * state of a printing the feed has never carried. It is NOT `notStocked`, which
- * this module reserves for a printing that WAS priced and is missing from the
- * newest run: that one is a claim about the market, and a transient read failure
- * has no business making it. An earlier version of this comment called the
- * fallback "not stocked" and so conflated the two, which the states matrix above
- * already separates.
- *
- * `absent` makes no claim at all, which is why there is nothing for the surface
- * to announce and no flag to thread.
+ * Still soft rather than thrown, for round 1's reason: every row draws without a
+ * price, so taking two whole routes down over the cheapest figure on them is the
+ * wrong trade. What changes is that the lost read is now VISIBLE in the payload
+ * instead of being indistinguishable from a sold-out card.
  */
-export async function pricesOrEmpty(
+export type PriceRead = {
+  prices: Map<string, PriceAggRow>;
+  /** False when the read failed. The surface omits every price figure rather
+      than drawing `absent`, and a fresh payload after the hour ceiling — or
+      after any write that drops the tag — reads prices again. */
+  ok: boolean;
+};
+
+export async function readPrices(
   oracleIds: string[],
   /**
-   * The read, injectable ONLY so the catch can be tested.
+   * The read, injectable ONLY so the failure path can be tested.
    *
    * Not stylistic: a spy on this module's own export cannot intercept an
    * internal call, so `vi.spyOn(priceModule, "loadPrices")` left the real
    * database-backed read in place. The rejection case then passed because that
-   * read threw on its own — a test green for a reason that had nothing to do
-   * with the spy — and the success case failed outright. The same binding is why
-   * `list-wiring.test.ts` mocking `loadPrices` never reached this wrapper.
+   * read threw on its own — green for a reason unrelated to the spy — and the
+   * success case failed outright. The same binding is why `list-wiring.test.ts`
+   * mocking `loadPrices` never reached this wrapper.
    */
   load: (ids: string[]) => Promise<Map<string, PriceAggRow>> = loadPrices,
-): Promise<Map<string, PriceAggRow>> {
+): Promise<PriceRead> {
   try {
-    return await load(oracleIds);
+    return { prices: await load(oracleIds), ok: true };
   } catch {
-    return new Map();
+    return { prices: new Map(), ok: false };
   }
 }

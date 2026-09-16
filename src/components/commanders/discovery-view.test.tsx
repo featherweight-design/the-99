@@ -58,6 +58,7 @@ const list = (over: Partial<DiscoveryList> = {}): EncodedDiscovery =>
     hasDecks: true,
     deckIdentities: [],
     availOk: true,
+    priceOk: true,
     sort: "fit",
     ...over,
   });

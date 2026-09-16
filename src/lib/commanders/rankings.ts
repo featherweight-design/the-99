@@ -19,7 +19,7 @@ import type { CommanderListItem } from "../recs/recommend";
 import { loadSupportMeta } from "../edhrec/support-read";
 import { gapSlotFor, type GapSlot } from "../edhrec/gap-slot";
 import { loadPlayedTags } from "../discovery/novelty";
-import { pricesOrEmpty, slotFor, type PriceSlot } from "../discovery/price";
+import { readPrices, slotFor, type PriceSlot } from "../discovery/price";
 
 /**
  * A list item plus the four things the shared row draws that the SCORE does not
@@ -50,6 +50,11 @@ export type CommanderRankings = {
   receipts: [string, ReceiptCounts][];
   freeRanking: FreeRankingDelta | null;
   availOk: boolean;
+  /** False when the price read failed — see `readPrices`. The rows still carry
+      an `absent` slot, and the surface must omit the figure rather than draw
+      it: `absent` means the feed has never carried the printing, which a lost
+      read has no standing to say. */
+  priceOk: boolean;
 };
 
 /**
@@ -128,7 +133,7 @@ export async function loadCommanderRankings(userId: string): Promise<CommanderRa
     // id list.
     return {
       items: [], degraded, uniqueCardsRead, candidateCount,
-      receipts: [], freeRanking: null, availOk: true,
+      receipts: [], freeRanking: null, availOk: true, priceOk: true,
     };
   }
 
@@ -183,10 +188,10 @@ export async function loadCommanderRankings(userId: string): Promise<CommanderRa
   // without the tag sets the gap line would claim the reader plays nothing, and
   // without the metadata every row loses its sentence.
   const oracleIds = items.map((i) => i.oracleId);
-  const [meta, playedTags, prices] = await Promise.all([
+  const [meta, playedTags, priceRead] = await Promise.all([
     loadSupportMeta(oracleIds),
     loadPlayedTags(userId),
-    pricesOrEmpty(oracleIds),
+    readPrices(oracleIds),
   ]);
   const played = new Set(playedTags.flatMap((d) => [...d.slugs]));
 
@@ -200,11 +205,12 @@ export async function loadCommanderRankings(userId: string): Promise<CommanderRa
       prose: m?.prose ?? null,
       gapSlot: gapSlotFor(m?.tags ?? [], m?.deckCount ?? null, played),
       deckCount: m?.deckCount ?? null,
-      price: slotFor(prices.get(item.oracleId)),
+      price: slotFor(priceRead.prices.get(item.oracleId)),
     };
   });
 
   return {
     items: rows, degraded, uniqueCardsRead, candidateCount, receipts, freeRanking, availOk,
+    priceOk: priceRead.ok,
   };
 }

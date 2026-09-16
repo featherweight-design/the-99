@@ -33,6 +33,7 @@ describe("assembleDiscovery", () => {
     cardsRead: 2805,
     freePoolSize: 2805,
     availOk: true,
+    priceOk: true,
   };
 
   // THE FOUR NEW FIELDS, ASSERTED BY VALUE. `probe:fit-parity` exercises

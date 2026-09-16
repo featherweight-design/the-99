@@ -156,11 +156,7 @@ export async function loadPlayedTags(userId: string): Promise<DeckTagSet[]> {
     .where(eq(decks.userId, userId));
   if (built.length === 0) return [];
 
-  // Both slots, in one read. A pair's two commanders are two index rows, so the
-  // lookup covers the union rather than being run twice.
-  const wanted = [
-    ...new Set(built.flatMap((d) => [d.oracleId, d.partnerOracleId].filter((id) => id != null))),
-  ] as string[];
+  const wanted = commanderIdsIn(built);
   const support = await db
     .select({ oracleId: commanderSupport.commanderOracleId, tags: commanderSupport.tags })
     .from(commanderSupport)
@@ -169,6 +165,30 @@ export async function loadPlayedTags(userId: string): Promise<DeckTagSet[]> {
   // `commanderSupport.tags` is `jsonb().notNull()`, so no `?? []` on the value.
   const tagsByOracleId = new Map(support.map((s) => [s.oracleId, s.tags]));
   return toDeckTagSets(built, tagsByOracleId);
+}
+
+/**
+ * Every commander id these decks name, both slots, deduplicated.
+ *
+ * Split out to be testable, and that is the point rather than tidiness: the
+ * union in `toDeckTagSets` can only fold tags the LOOKUP fetched, so a
+ * regression that dropped `partnerOracleId` here would omit a partner's tags in
+ * production while every test of the fold still passed. Named by review, which
+ * is exactly where it found the gap the first extraction left.
+ *
+ * A pair's two commanders are two index rows, so one read covers the union
+ * rather than being run twice.
+ */
+export function commanderIdsIn(
+  decks: readonly { oracleId: string; partnerOracleId: string | null }[],
+): string[] {
+  return [
+    ...new Set(
+      decks.flatMap((d) =>
+        [d.oracleId, d.partnerOracleId].filter((id): id is string => id != null),
+      ),
+    ),
+  ];
 }
 
 /**

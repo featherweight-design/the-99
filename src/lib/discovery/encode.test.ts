@@ -40,6 +40,7 @@ function listOf(items: DiscoveryItem[]): DiscoveryList {
     unmeasured: 1,
     hasDecks: true,
     availOk: true,
+  priceOk: true,
     deckIdentities: [["W", "U"], []],
     sort: "new",
   };

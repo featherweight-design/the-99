@@ -4,7 +4,7 @@ import { loadCollectionPool } from "../recs/recommend";
 import { buildPoolRollup, rollupFor, type PoolRollup } from "../recs/pool-rollup";
 import type { RoleName } from "../recs/score";
 import { loadCandidates, type CandidateRow } from "./candidates";
-import { pricesOrEmpty, slotFor, type PriceAggRow, type PriceSlot } from "./price";
+import { readPrices, slotFor, type PriceAggRow, type PriceSlot } from "./price";
 import { computeFit } from "../recs/score";
 import { gapSlotFor, type GapSlot } from "../edhrec/gap-slot";
 import { assignDiscoverySlugs } from "./slugs";
@@ -116,6 +116,12 @@ export type DiscoveryList = {
       unmeasured` to come to zero. Always 0 under `fit`, which excludes nothing. */
   unmeasured: number;
   hasDecks: boolean;
+  /** False when the price read failed. The rows still carry a `price` slot —
+      `slotFor(undefined)` is `absent` — and the surface must OMIT the figure
+      rather than draw that, because `absent` means the feed has never carried
+      the printing. Cached with the payload, so the distinction survives the
+      hour the wrong claim would otherwise be served for. */
+  priceOk: boolean;
   /** False when the availability read failed. The ranking still stands — it never
       depended on availability — but the receipt counts do, and an empty map
       reports them as zeros rather than as unknown unless this flag is read
@@ -139,6 +145,7 @@ export function assembleDiscovery(input: {
   candidates: CandidateRow[];
   playedTags: DeckTagSet[];
   prices: Map<string, PriceAggRow>;
+  priceOk: boolean;
   rollup: PoolRollup;
   cardsRead: number;
   freePoolSize: number;
@@ -267,6 +274,7 @@ export function assembleDiscovery(input: {
     poolExcluded,
     unmeasured: input.candidates.length - active.length - excluded.length,
     hasDecks: input.playedTags.length > 0,
+    priceOk: input.priceOk,
     availOk: input.availOk,
     deckIdentities: input.playedTags.map((d) => d.colorIdentity),
     sort: input.sort,
@@ -364,8 +372,8 @@ export async function loadDiscovery(
     collection.map((c) => c.oracleId),
   );
 
-  const [prices, playedTags] = await Promise.all([
-    pricesOrEmpty(candidates.map((c) => c.oracleId)),
+  const [priceRead, playedTags] = await Promise.all([
+    readPrices(candidates.map((c) => c.oracleId)),
     loadPlayedTags(userId),
   ]);
 
@@ -373,7 +381,8 @@ export async function loadDiscovery(
     availOk,
     candidates,
     playedTags,
-    prices,
+    prices: priceRead.prices,
+    priceOk: priceRead.ok,
     rollup: buildPoolRollup(collection, availability),
     cardsRead: collection.length,
     freePoolSize: collection.length,

@@ -350,11 +350,13 @@ function ownedSupportTable(ownedOracleIds: string[], commanderIds?: string[]) {
  *
  * The effect is CONCENTRATED rather than spread, which is why it survived this
  * long: EDHREC's list for a coloured commander is already identity-legal, so
- * the predicate removes almost nothing there. Measured on local-dev, it takes
- * ~81 rows of ~257,700 across all 3,279 commanders — and 26 of those belong to
- * `Faceless One` alone, whose identity is empty and which read 122 owned
- * against 96 playable. A 27% overcount, on precisely the commanders whose Fit
- * would look too good.
+ * the predicate removes almost nothing there. Measured on local-dev against the
+ * REAL query — an earlier figure here came from a reduced one and mixed rows,
+ * cards and commanders in a single sentence — it changes the count for
+ * **2 commanders of 3,074**, by 26 and 29 support cards: 55 in total. The
+ * visible one is `Faceless One`, whose identity is empty and which read 122
+ * owned against 96 playable, a 27% overcount on exactly the kind of commander
+ * whose Fit would look too good. `probe:fit-parity` pins the pair.
  *
  * `<@` IS ALREADY CORRECT FOR A COLOURLESS COMMANDER and needs no special case:
  * `{} <@ {}` is true and `{R} <@ {}` is false. `withinColorIdentity` exists

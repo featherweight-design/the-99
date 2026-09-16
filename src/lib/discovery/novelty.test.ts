@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { discoveryCopy } from "../copy/commander-discovery";
-import { byFit, byNovelty, clearsFloor, floorPct, nearestDeck, orderDeckSets, toDeckTagSets, unplayedTags } from "./novelty";
+import { byFit, byNovelty, clearsFloor, commanderIdsIn, floorPct, nearestDeck, orderDeckSets, toDeckTagSets, unplayedTags } from "./novelty";
 
 const tag = (slug: string, count = 1) => ({ slug, label: slug.toUpperCase(), count });
 
@@ -190,5 +190,29 @@ describe("toDeckTagSets", () => {
     expect(set.slugs.size).toBe(0);
     expect(set.deckName).toBe("Deck");
     expect(set.colorIdentity).toEqual(["G"]);
+  });
+});
+
+// THE LOOKUP'S ID LIST, which `toDeckTagSets` cannot cover: it folds only tags
+// the read fetched, so dropping `partnerOracleId` here omits a partner's tags in
+// production while every fold test still passes. Named by review, on the
+// extraction that was supposed to close this.
+describe("commanderIdsIn", () => {
+  it("names both slots", () => {
+    expect(commanderIdsIn([{ oracleId: "a", partnerOracleId: "b" }]).sort()).toEqual(["a", "b"]);
+  });
+
+  it("drops a null partner rather than carrying it", () => {
+    expect(commanderIdsIn([{ oracleId: "a", partnerOracleId: null }])).toEqual(["a"]);
+  });
+
+  // One read, so an id two decks share is asked for once.
+  it("deduplicates across decks and across slots", () => {
+    const ids = commanderIdsIn([
+      { oracleId: "a", partnerOracleId: "b" },
+      { oracleId: "b", partnerOracleId: "a" },
+    ]);
+
+    expect(ids.sort()).toEqual(["a", "b"]);
   });
 });
