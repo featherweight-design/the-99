@@ -203,19 +203,21 @@ export async function buildCommanderIndex(
   // why nothing here calls `revalidateUserLists`. Both are larger than the
   // window they would close.
   //
-  // NOR IS THIS A BARRIER AGAINST A CONCURRENT SCORE WRITE, and that one is a
-  // race rather than a staleness window. A request can read the support data
-  // before this delete, finish its fanout after it, and upsert a set computed
-  // against the old index — and `rankableScoreRows` has no generation check, so
-  // those rows are current-writer rows and are served as warm until something
-  // else invalidates them.
+  // NOR IS THIS A BARRIER AGAINST A CONCURRENT SCORE WRITE on its own, and that
+  // one is a race rather than a staleness window: a request can read the support
+  // data before this delete, finish its fanout after it, and upsert a set
+  // computed against the old index.
   //
-  // The window is seconds, once a month, for one reader. Closing it properly
-  // needs a generation stamped by `persistScores` and compared by the reader,
-  // which is a migration plus a writer plus a reader — a mechanism, at the
-  // fourth round of a PR about where one figure comes from. It is a NAMED TASK
-  // in PR 3 of the plan rather than a vague follow-up, because PR 3 is where the
-  // row begins reading these figures and is the coherent place to harden them.
+  // THAT RACE IS CLOSED, on the other side. `persistScores` re-reads
+  // `max(commander_support.computed_at)` inside its own transaction and
+  // abandons the write if it has moved since the caller captured it — see
+  // `indexGeneration` in `store.ts`. So this delete handles the ordinary case
+  // and that guard handles the raced one, and neither is sufficient alone.
+  //
+  // An earlier revision of this comment described the race as open and named a
+  // migration plus a reader-side check as the fix. Neither was built: the guard
+  // reuses the shape the collection generation already had, which costs no
+  // migration and no read-path query. The claim outlived the change by one PR.
   //
   // Only when the index could actually have moved. A run that failed every
   // commander changed no input, and throwing away every reader's scores for it
