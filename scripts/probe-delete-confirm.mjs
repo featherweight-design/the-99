@@ -9,7 +9,12 @@
 // own left edge if the card is narrow enough.
 //
 // Point it at `local-dev` or a scratch Neon branch, NEVER production. It writes
-// one deck under the account it signs in as and deletes it in a `finally`.
+// ONE DECK PER WIDTH under the account it signs in as — the last block of each
+// width presses the real Delete, so each width needs its own — and deletes any
+// that survive in a `finally`. The survivors are tracked in a SET rather than a
+// single handle: a `deckId` reassigned at the top of the second width would
+// leave the first width's deck behind whenever its delete check failed, which is
+// exactly the run on which cleanup matters.
 //
 //   node scripts/probe-delete-confirm.mjs
 import { clerkSetup, setupClerkTestingToken } from "@clerk/testing/playwright";
@@ -116,7 +121,9 @@ async function openConfirm(page) {
 async function run() {
   await clerkSetup();
   const browser = await chromium.launch();
-  let deckId = null;
+  // Populated the instant a deck exists, never at the end of a block: a throw
+  // part-way through must not strand a row.
+  const written = new Set();
   try {
     for (const width of WIDTHS) {
       console.log(`\n${width}px`);
@@ -125,7 +132,8 @@ async function run() {
       const userId = await signIn(page);
       // Per width: the last width DELETES the deck, which is the point of the
       // last block, so each width needs its own.
-      deckId = await makeDeck(userId);
+      const deckId = await makeDeck(userId);
+      written.add(deckId);
 
       await page.goto(`${BASE}/decks`, { waitUntil: "domcontentloaded" });
       const panel = await openConfirm(page);
@@ -142,12 +150,15 @@ async function run() {
       const box = await panel.boundingBox();
       // The panel keeps its own 186px in every mode. The pane was ported from the
       // folder menu, which the folders handoff specifies inside a 248px panel, and
-      // widening for it looked necessary: two side-by-side buttons in 162px of
-      // content box is ~75px each, which reads as too little for `Delete deck`.
-      // Measurement says otherwise — 75px holds both labels on one line, and the
-      // paragraph settles at 176px tall — so the mode-dependent width was dropped
-      // rather than shipped on an estimate. This check pins that: a panel that
-      // changes width when it changes mode has regained the mechanism.
+      // widening for it looked necessary — two buttons side by side in a 186px
+      // panel reads as too little for `Delete deck`. A mode-dependent 248px was
+      // written, and then MEASURED against this script rather than reasoned about:
+      // at 186px both labels sit on one line with room to spare and the paragraph
+      // settles at 176px tall, so the widening was dropped. The figures are below
+      // in this run's own output; nothing here restates them, because the estimate
+      // that justified the widening was itself arithmetic written from memory.
+      // This check pins the outcome: a panel that changes width when it changes
+      // mode has regained the mechanism.
       check(
         Math.round(box.width) === 186,
         `panel keeps its 186px while confirming (${Math.round(box.width)})`,
@@ -214,12 +225,14 @@ async function run() {
         if (!gone) await new Promise((r) => setTimeout(r, 250));
       }
       check(gone, "Delete deck deletes the deck");
-      if (gone) deckId = null;
+      if (gone) written.delete(deckId);
 
       await context.close();
     }
   } finally {
-    if (deckId) await pool.query(`delete from decks where id = $1`, [deckId]).catch(() => {});
+    for (const id of written) {
+      await pool.query(`delete from decks where id = $1`, [id]).catch(() => {});
+    }
     await browser.close();
     await pool.end();
   }

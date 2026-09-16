@@ -118,6 +118,11 @@ export function DeckCardOverflow({
   // consumes it — the cascading render this repo's lint rejects.
   const wantsMoveRowFocus = useRef(false);
   const moveRow = useRef<HTMLButtonElement>(null);
+  // The same one-shot instruction for the delete pane's cancel, which unmounts
+  // holding focus. Its own ref rather than a shared flag, because the two modes
+  // return to different rows.
+  const wantsDeleteRowFocus = useRef(false);
+  const deleteRow = useRef<HTMLButtonElement>(null);
   // The optimistic receipt EXPIRES ON THE FIRST CHANGED SERVER PROP, whether it
   // agrees or not. Clearing only on agreement left it standing forever when the
   // destination was deleted or the deck moved elsewhere before the refresh
@@ -175,6 +180,12 @@ export function DeckCardOverflow({
     if (mode !== "menu" || !wantsMoveRowFocus.current) return;
     wantsMoveRowFocus.current = false;
     moveRow.current?.focus();
+  }, [mode]);
+
+  useEffect(() => {
+    if (mode !== "menu" || !wantsDeleteRowFocus.current) return;
+    wantsDeleteRowFocus.current = false;
+    deleteRow.current?.focus();
   }, [mode]);
 
   function handleClose() {
@@ -290,6 +301,7 @@ export function DeckCardOverflow({
                 </span>
               </button>
               <button
+                ref={deleteRow}
                 type="button"
                 onClick={handleDelete}
                 className={`${ITEM} cursor-pointer bg-transparent text-[color:var(--danger)]`}
@@ -347,9 +359,14 @@ export function DeckCardOverflow({
               deckName={deckName}
               // Back to the menu, not closed: a reader who declines has not
               // finished with the card, and the folder pane's own cancel does
-              // the same. Focus follows the panel's existing rule — the pane
-              // unmounts and the menu it returns to is what the trigger owns.
-              onCancel={() => setMode("menu")}
+              // the same. Focus is returned EXPLICITLY — the pane unmounts with
+              // focus on its own cancel button, and nothing puts it anywhere
+              // afterwards, so without this the reader is dropped on the body.
+              // The Delete row, because that is where they pressed.
+              onCancel={() => {
+                wantsDeleteRowFocus.current = true;
+                setMode("menu");
+              }}
             />
           ) : (
             <div className="p-[12px]">

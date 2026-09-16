@@ -208,6 +208,26 @@ describe("DeckCardOverflow — the delete confirm", () => {
     expect(deleteDeck).not.toHaveBeenCalled();
   });
 
+  // Entering the mode replaces the focused menu row, and this panel is not a
+  // `dialog` and traps nothing — so a reader dropped on <body> here resumes at
+  // the top of the DOCUMENT, with both buttons reachable only by tabbing the
+  // whole page. `deck-move-mode.tsx` solves the same case the same way.
+  it("puts focus in the pane, on the button that changes nothing", () => {
+    deleteDeck.mockReset();
+    open();
+    expect(screen.getByRole("button", { name: "Keep it" })).toHaveFocus();
+  });
+
+  // And hands it back, because the pane unmounts holding it.
+  it("returns focus to the row that was pressed", async () => {
+    deleteDeck.mockReset();
+    open();
+    fireEvent.click(screen.getByRole("button", { name: "Keep it" }));
+    await waitFor(() =>
+      expect(screen.getByRole("button", { name: "Delete", exact: true })).toHaveFocus(),
+    );
+  });
+
   it("deletes the deck it named on Delete deck", async () => {
     deleteDeck.mockReset();
     deleteDeck.mockResolvedValue(undefined);
@@ -225,8 +245,14 @@ describe("DeckCardOverflow — the delete confirm", () => {
     fireEvent.click(screen.getByRole("button", { name: "Delete deck" }));
     const alert = await screen.findByRole("alert");
     expect(alert).toHaveTextContent("Could not delete that deck. Try again.");
-    // Re-enabled, because the reader's only move is to try again.
-    expect(screen.getByRole("button", { name: "Delete deck" })).not.toBeDisabled();
+    // Re-enabled, because the reader's only move is to try again. Awaited rather
+    // than read in the alert's own tick: `setError` runs inside the transition,
+    // so the alert can commit while `pending` is still true — and while it is,
+    // this button is labelled `Deleting…` and the query throws rather than
+    // asserting.
+    await waitFor(() =>
+      expect(screen.getByRole("button", { name: "Delete deck" })).not.toBeDisabled(),
+    );
   });
 
   // THE TRAP. `deleteDeck` ends in `redirect()`, which signals BY THROWING, and

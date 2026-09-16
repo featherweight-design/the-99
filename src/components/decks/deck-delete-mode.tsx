@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef, useState, useTransition } from "react";
+import { useEffect, useRef, useState, useTransition } from "react";
 import { unstable_rethrow } from "next/navigation";
 import { deleteDeck } from "../../app/decks/actions";
 import { refreshCopy } from "../../lib/copy/refresh";
@@ -28,7 +28,18 @@ export function DeleteMode({
   // Guards the double-press the `disabled` attribute cannot: a second click
   // dispatched in the same commit as the first sees the old prop.
   const inFlight = useRef(false);
+  const cancel = useRef<HTMLButtonElement>(null);
   const c = refreshCopy.decks.del;
+
+  // Entering this mode replaces the focused menu row, so without this the reader
+  // is dropped on the body — and this panel is not a `dialog` and traps nothing,
+  // so Tab would resume at the top of the document with both buttons reachable
+  // only by tabbing the whole page. `deck-move-mode.tsx` does the same on the
+  // same reasoning. KEEP IT takes focus rather than the confirm: the destructive
+  // button should not be one Return away from a keystroke that opened a pane.
+  useEffect(() => {
+    cancel.current?.focus();
+  }, []);
 
   function confirm() {
     if (inFlight.current) return;
@@ -67,6 +78,7 @@ export function DeleteMode({
       )}
       <div className="flex gap-[8px]">
         <button
+          ref={cancel}
           type="button"
           disabled={pending}
           onClick={onCancel}
