@@ -130,7 +130,8 @@ export const aboutEntries: readonly AboutEntry[] = [
     keys: [
       'before and after, both printed, so the change is checkable rather than asserted.',
       'a row is a card, not a deck: it carries the decks that wanted it underneath, in the order the claim model puts them.',
-      'three sections, and each is a different answer — no longer to buy, still to buy, still short.',
+      'three money sections, and each is a different answer — no longer to buy, still to buy, still short.',
+      'and one choice: when two committed decks want the copy that arrived, the first to sleeve it keeps it unless you say otherwise.',
     ],
     // ⚠ R4: strings inside this figure are FIXTURES, not read from source.
     // #639/#643 landed after the last read of main; the structure is the

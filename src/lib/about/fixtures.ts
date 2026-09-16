@@ -310,3 +310,57 @@ export const PRINTING_ROWS: { set: string; collector: string; state: "picked" | 
   { set: "Double Masters", collector: "0332", state: "shown" },
   { set: "Ravnica Allegiance", collector: "0176", state: "plain" },
 ];
+
+/**
+ * One contested arrival: two committed decks, one copy between them.
+ *
+ * This is the part of the replace summary the About figure was missing
+ * entirely. §3 predates the surface — `about.ts` already carries Design's own
+ * ⚠ note that #639/#643 landed after their last read of `main` — so the
+ * drawing has deck rows where the shipped summary has three money sections
+ * plus THIS, the one control on the page a reader can act on.
+ *
+ * The two tests the receipt itself applies: demand above supply, and at least
+ * two committed claimants. A shortage with one claimant is a purchase, not a
+ * choice, so a fixture with one deck would draw no chooser at all.
+ *
+ * `since` is what orders the queue and what the row stamps, so the two decks
+ * carry different ones — equal stamps would make the seniority rule invisible.
+ */
+export const CONTESTED_ARRIVAL = {
+  oracleId: "about-contested",
+  // Deliberately NOT a name used by REPLACE_ROWS above. The first version
+  // reused `Smothering Tithe` and both deck names, so every assertion about
+  // this row was satisfied by the money sections and passed with the chooser
+  // deleted.
+  cardName: "Dockside Extortionist",
+  arrived: 1,
+  fromImport: true,
+  ownedBefore: 0,
+  owned: 1,
+  claimants: [
+    {
+      deckId: "about-deck-atraxa",
+      deckName: "Muldrotha Value",
+      quantity: 1,
+      commanderCopies: 0,
+      granted: 1,
+      since: Date.UTC(2026, 2, 14),
+      versionNumber: 3,
+      // The senior deck holds the one copy that arrived; the other gets none.
+      // Both at 1 would draw no contention for the chooser to resolve.
+      allocated: 1,
+    },
+    {
+      deckId: "about-deck-kinnan",
+      deckName: "Yuriko Ninjas",
+      quantity: 1,
+      commanderCopies: 0,
+      granted: 0,
+      since: Date.UTC(2026, 7, 2),
+      versionNumber: 1,
+      allocated: 0,
+    },
+  ],
+  brewNames: [],
+};

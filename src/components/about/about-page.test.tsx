@@ -7,6 +7,7 @@ import { availabilityCopy } from "../../lib/copy/availability";
 import { cardAssignmentsCopy } from "../../lib/copy/card-assignments";
 import { printingPickerCopy } from "../../lib/copy/collection";
 import {
+  CONTESTED_ARRIVAL,
   IMPORT_SOURCES,
   PRINTING_ROWS,
   ISSUE_PARSE_ERROR,
@@ -666,6 +667,22 @@ describe("what each chapter 01 figure actually draws", () => {
 
     // Both figures of the eyebrow line survive the section rewrite.
     expect(el.textContent).toContain(`${REPLACE_SUMMARY.noLongerOwned} no longer owned`);
+
+    // THE CHOOSER. It was missing entirely, and it is the only thing on the
+    // summary a reader can act on. Both committed decks are named, because a
+    // chooser with one option is not a choice — the receipt's own test is at
+    // least two committed claimants.
+    for (const claimant of CONTESTED_ARRIVAL.claimants) {
+      expect(el.textContent).toContain(claimant.deckName);
+    }
+    expect(el.textContent).toContain(CONTESTED_ARRIVAL.cardName);
+    // A CONTROL, not just text: the chooser's subject is that you can act, and
+    // the money sections above carry none. One radio per committed claimant —
+    // the row draws `role="radio"` list items, so a count of buttons finds
+    // nothing and passes for the wrong reason.
+    expect(el.querySelectorAll('[role="radio"]')).toHaveLength(
+      CONTESTED_ARRIVAL.claimants.length,
+    );
   });
 
   // The old figure drew the two TAB LABELS as pills, which says the inspector

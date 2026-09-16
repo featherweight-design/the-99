@@ -18,12 +18,14 @@ import {
   IMPORT_SOURCES,
   ISSUE_PARSE_ERROR,
   ISSUE_UNMATCHED,
+  CONTESTED_ARRIVAL,
   PRINTING_ROWS,
   REPLACE_ROWS,
   REPLACE_SUMMARY,
 } from "../../lib/about/fixtures";
 import { cardAssignmentsCopy } from "../../lib/copy/card-assignments";
 import { printingPickerCopy } from "../../lib/copy/collection";
+import { ContestedCardRow } from "../decks/contested-card-row";
 import { ReceiptRow } from "../collection/arrivals-summary";
 import { issueInspectorCopy } from "../../lib/copy/issue-inspector";
 import {
@@ -126,6 +128,22 @@ export function PostImportFigureBody() {
           ))}
         </ul>
         <KeyNumeral n={3} className="mt-[3px]" />
+      </div>
+
+      {/* THE CHOOSER, and it was missing entirely.
+          The three sections above say what the replace cost; this is the one
+          thing on the summary a reader can act on. It appears under the two
+          tests the receipt itself applies — demand above supply, and at least
+          two COMMITTED claimants — because a shortage with one claimant is a
+          purchase rather than a choice.
+          The route's own row, mounted as-is. It is inert here like every
+          specimen: `Specimen` puts `pointer-events: none` over the figure, so
+          the server action it imports is unreachable. */}
+      <div className="flex items-start gap-[8px]">
+        <KeyNumeral n={4} className="mt-[3px]" />
+        <div className="min-w-0 flex-1">
+          <ContestedCardRow card={CONTESTED_ARRIVAL} />
+        </div>
       </div>
     </div>
   );
