@@ -664,9 +664,9 @@ in one payload when the set of parameters is small enough to precompute.
 - UI work is gated on design handoffs in `design/design_handoff_the99_*` — no UI until the handoff exists and has a READINESS verdict. Backend/API/DB work may proceed without one.
 - Every UI PR passes the design-review skill (property-table enumerate → verify → confirm) before `gh pr create`. Mobile + desktop parity ships in the same PR.
 - Pipeline state lives in `docs/superpowers/design-pipeline-status.md`; plans in `docs/superpowers/plans/`; gap reports in `docs/superpowers/gap-report-*.md`.
-- **Every UI feature ships an About entry, in the same round that ships the feature.** `/about`
-  is the app's own reference, and it is only true if a feature cannot land without one. Three
-  places carry it, and the third is the one that catches what the first two miss:
+- **No FEATURE launches without an About entry, in the same round that ships it.** `/about` is the
+  app's own reference, and it is only true if a feature cannot land without one. Three places carry
+  it, and the third is the one that catches what the first two miss:
   - **Design** — a UI handoff is not complete without its About entry, drawn on the per-entry
     template artboard in `design/design_handoff_the99_about/` (§8 of the R3 canvas; `STATES-about-r3.md`
     §G). Title, route, `opens`, caption, the specimen component and its fixture props, up to four
@@ -684,5 +684,18 @@ in one payload when the set of parameters is small enough to precompute.
 
   The first case for it is already on record: the post-import summary merged as #639 and #643 on
   2026-09-14/15, in the middle of the About design round, and reached `main` with no entry.
+
+  **A COSMETIC CHANGE IS NOT A FEATURE, and does not owe an entry.** The rule is about a reader
+  discovering something the app can now do. Restyling a surface they already know — moving a mark,
+  respacing a chip, changing where an edge is drawn — teaches them nothing they need, and an entry
+  for it spends a version bump putting the page in front of every account to announce that a
+  caption looks different. Where a cosmetic change is worth describing anyway it is an ORDINARY
+  EDIT to the entry that already covers that surface, at whatever version comes next, not a new
+  entry and not a bump of its own.
+
+  Card captions is the case on record for this half: it moved every modifier off the card art on
+  two routes and added no capability, and Hugh ruled on 2026-09-15 that it carries no entry. The
+  ruling is his to make — **Design draws the entries and Hugh decides which features owe one**, and
+  he may overrule a determination from either Design or this file.
 
 - `design/` is **reference material, never shipped code**. It sits outside both `public/` and `src/`, so no route serves it and no module imports it. Each handoff's `support.js` is a generated runtime that evaluates code dynamically and loads React from a CDN — it is read by opening that bundle's `.dc.html` from disk, and by nothing else. Never import from `design/`, and never copy a handoff asset into `public/`.
