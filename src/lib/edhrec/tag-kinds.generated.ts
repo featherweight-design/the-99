@@ -7,7 +7,7 @@
 //
 // Vocabulary at generation: 401 EDHREC labels against
 // a 404-entry creature vocabulary
-//   mechanic 264 · creature type 130 · format 7
+//   mechanic 260 · creature type 134 · format 7
 
 export const MECHANIC_LABELS: readonly string[] = [
   "-1/-1 Counters",
@@ -65,7 +65,6 @@ export const MECHANIC_LABELS: readonly string[] = [
   "Creatureless",
   "Crime",
   "Curses",
-  "Cybermen",
   "Cycling",
   "Dandan",
   "Dash",
@@ -158,7 +157,6 @@ export const MECHANIC_LABELS: readonly string[] = [
   "Mana Rocks",
   "Mayhem",
   "Menace",
-  "Mice",
   "Midrange",
   "Mill",
   "Miracles",
@@ -178,7 +176,6 @@ export const MECHANIC_LABELS: readonly string[] = [
   "Paradigm",
   "Paradox",
   "Party",
-  "Pegasi",
   "Persistent Petitioners",
   "Phasing",
   "Pillow Fort",
@@ -269,7 +266,6 @@ export const MECHANIC_LABELS: readonly string[] = [
   "Waterbending",
   "Web-slinging",
   "Weenies",
-  "Werewolves",
   "Wheels",
   "X Spells",
   "Zirda Companion",
@@ -302,6 +298,7 @@ export const CREATURE_TYPE_LABELS: readonly string[] = [
   "Constructs",
   "Crabs",
   "Crocodiles",
+  "Cybermen",
   "Daleks",
   "Demons",
   "Detectives",
@@ -347,6 +344,7 @@ export const CREATURE_TYPE_LABELS: readonly string[] = [
   "Lizards",
   "Mercenaries",
   "Merfolk",
+  "Mice",
   "Minions",
   "Minotaurs",
   "Monkeys",
@@ -363,6 +361,7 @@ export const CREATURE_TYPE_LABELS: readonly string[] = [
   "Oozes",
   "Orcs",
   "Otters",
+  "Pegasi",
   "Phoenixes",
   "Phyrexians",
   "Pirates",
@@ -403,6 +402,7 @@ export const CREATURE_TYPE_LABELS: readonly string[] = [
   "Vampires",
   "Villains",
   "Warriors",
+  "Werewolves",
   "Whales",
   "Wizards",
   "Wolves",

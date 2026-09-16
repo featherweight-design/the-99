@@ -258,7 +258,7 @@ rather than in a guard. What *is* worth a guard is the ceiling itself — see Ve
 those out of the gap line and let mechanics through.
 
 **The rule was built and run rather than described, and it took six measured corrections.** The
-generator's final classification of the 401-label vocabulary is **264 mechanic · 130 creature ·
+generator's final classification of the 401-label vocabulary is **260 mechanic · 134 creature ·
 7 format**, with every case below asserted inside the generator so it proves its own fixes
 instead of claiming them.
 
@@ -296,11 +296,28 @@ Two more corrections, both recorded because each was a tribe reaching the reader
   type — whose EDHREC tag is genuinely ambiguous between the tribe and an archetype built around
   it. The safety asymmetry resolves them to the hidden side.
 
-**Irregular plurals** are still needed to reduce EDHREC's plural labels to Scryfall's singular
-type names: five entries, `dwarves`, `elves`, `fungi`, `heroes` and `wolves`, none reachable by
-any suffix rule. `faeries`, `horses`, `humans` and `zombies` were in that table and are gone —
-the trailing-`s` rule already yields their singulars — and so is `thieves`, which is moot twice
-over since `Thief` is not a creature type in Scryfall's taxonomy.
+**Reducing EDHREC's plural labels to Scryfall's singular type names is a SECOND, independent
+problem, and a hand table of known words is the wrong mechanism for it.** One was written —
+five entries — and it was still missing four tribes: `Mice` and `Werewolves`, which review
+found, and `Cybermen` and `Pegasi`, which turned up only when the entire mechanic allowlist was
+swept against Scryfall's creature types. Every one of the four is a regular instance of an
+irregular English pattern, so the pattern is what the code carries now: a table entry fixes one
+word, a rule fixes the next set's tribe too.
+
+| ending | becomes | the tribe that paid for it |
+|---|---|---|
+| `-ves` | `-f`, `-fe` | `wolves`, `elves`, `dwarves`, `werewolves` |
+| `-men` | `-man` | `cybermen` |
+| `-i` | `-us` | `fungi`, `pegasi` |
+| `-ice` | `-ouse` | `mice` |
+| `-oes` | *drop 2* | `heroes` |
+| `-ies` | `-y` | `allies` |
+| `-s` | *drop 1* | `frogs`, `faeries`, `horses`, `humans`, `zombies` |
+
+Over-reduction is safe and deliberate — a form matching no creature type costs nothing — and
+the generator's `MUST_BE_MECHANIC` cases catch a rule that pulls a real mechanic across.
+`Cycling`, `Surveil`, `Prison` and `Spellslinger` are pinned for exactly that, since each ends
+in letters one of these rules fires on.
 
 **One residual gap, stated rather than papered over:** a multi-word subtype that Scryfall omits
 would be split into words by the card-derived half and missed. No such case exists in the

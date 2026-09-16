@@ -31,32 +31,46 @@ export const FORMAT_LABELS: readonly string[] = [
 ];
 
 /**
- * Plurals the suffix rules below cannot reach.
+ * Every singular a label could reduce to, as RULES rather than as a table of
+ * known words.
  *
- * Five entries, and every one is load-bearing against Scryfall's own
- * creature-type catalog: no suffix rule produces `dwarf` from `dwarves`, `hero`
- * from `heroes`, or `fungus` from `fungi` at all. Entries that WERE here and are
- * gone, each because a suffix rule already yields the same answer and the table
- * row could never fire: `faeries`, `horses`, `humans`, `zombies` — and
- * `thieves`, which is moot twice over, since `Thief` is not a creature type in
- * Scryfall's taxonomy and `Thieves` is not in EDHREC's vocabulary.
+ * **A hand table was tried first and is gone, because it cannot generalise.**
+ * It held five entries and was still missing four tribes — `Mice`,
+ * `Werewolves`, `Cybermen` and `Pegasi` — two of which a review found and two
+ * of which turned up only when the whole mechanic allowlist was swept against
+ * Scryfall's creature types. Every one of those four is a regular instance of an
+ * irregular English pattern, so the pattern is what belongs here: a table entry
+ * fixes one word, a rule fixes the next set's tribe too.
+ *
+ * The patterns, each with the tribe that paid for it:
+ *
+ * | ending | becomes | case |
+ * |---|---|---|
+ * | `-ves` | `-f`, `-fe` | `wolves`, `elves`, `dwarves`, `werewolves`, `thieves` |
+ * | `-men` | `-man` | `cybermen` |
+ * | `-i` | `-us` | `fungi`, `pegasi` |
+ * | `-ice` | `-ouse` | `mice` |
+ * | `-oes` | *(drop 2)* | `heroes` |
+ * | `-ies` | `-y` | `allies` |
+ * | `-(sh\|ch\|s\|x\|z)es` | *(drop 2)* | `foxes` |
+ * | `-s` | *(drop 1)* | `frogs`, `faeries`, `horses`, `humans`, `zombies` |
+ *
+ * Over-reduction is safe and deliberate: a form that matches no creature type
+ * costs nothing, and the generator's own `MUST_BE_MECHANIC` assertions catch a
+ * rule that pulls a real mechanic across.
  */
-const IRREGULAR_PLURALS: Readonly<Record<string, string>> = {
-  dwarves: "dwarf",
-  elves: "elf",
-  fungi: "fungus",
-  heroes: "hero",
-  wolves: "wolf",
-};
-
-/** Every singular a label could be, most specific first. */
 export function singularForms(label: string): string[] {
   const lower = label.toLowerCase();
   const forms = [lower];
-  const irregular = IRREGULAR_PLURALS[lower];
-  if (irregular) forms.push(irregular);
+  if (lower.endsWith("ves")) {
+    forms.push(`${lower.slice(0, -3)}f`, `${lower.slice(0, -3)}fe`);
+  }
+  if (lower.endsWith("men")) forms.push(`${lower.slice(0, -3)}man`);
+  if (lower.endsWith("ice")) forms.push(`${lower.slice(0, -3)}ouse`);
+  if (lower.endsWith("oes")) forms.push(lower.slice(0, -2));
   if (lower.endsWith("ies")) forms.push(`${lower.slice(0, -3)}y`);
   if (/(sh|ch|s|x|z)es$/.test(lower)) forms.push(lower.slice(0, -2));
+  if (lower.endsWith("i")) forms.push(`${lower.slice(0, -1)}us`);
   if (lower.endsWith("s")) forms.push(lower.slice(0, -1));
   return forms;
 }

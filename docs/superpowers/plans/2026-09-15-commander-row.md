@@ -16,9 +16,9 @@ Pure code and one probe. No surface reads any of it, no payload changes, no figu
 |---|---|
 | 1. `src/lib/edhrec/tag-kinds.ts` — the format list, irregular plurals, `isCreatureTypeLabel` | done |
 | 2. `scripts/build-tag-kinds.mts` + `pnpm build:tag-kinds`, asserting its own cases | done |
-| 3. `src/lib/edhrec/tag-kinds.generated.ts` — 264 mechanic · 130 creature · 7 format | done |
+| 3. `src/lib/edhrec/tag-kinds.generated.ts` — 260 mechanic · 134 creature · 7 format | done |
 | 4. `src/lib/edhrec/gap-slot.ts` — `isMechanic`, the 0.5% floor, `gapSlotFor` | done |
-| 5. `gap-slot.test.ts` — 53 cases, mutation-checked | done |
+| 5. `gap-slot.test.ts` — 61 cases, mutation-checked | done |
 | 6. `scripts/probe-fit-parity.mts` + `pnpm probe:fit-parity` | done |
 | 7. Spec updated with the parity answer and Ruling D; boundaries revised | done |
 

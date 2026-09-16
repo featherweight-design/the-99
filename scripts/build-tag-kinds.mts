@@ -6,6 +6,11 @@
 // whose index is current — the tag vocabulary is identical on local-dev and
 // production (401 labels on both).
 //
+// TWO INDEPENDENT PROBLEMS LIVE HERE, and both took several rounds to get right:
+// WHICH WORDS ARE CREATURE TYPES (this file) and HOW A PLURAL LABEL REDUCES TO
+// ONE (`singularForms`, in tag-kinds.ts — a hand table of known words was tried
+// there and replaced by rules, after it was found missing four tribes).
+//
 // THE CREATURE VOCABULARY TAKES TWO SOURCES BECAUSE NEITHER IS SUFFICIENT.
 // An earlier version derived it from `cards.type_line` alone and got three
 // separate things wrong, none of them visible without measuring:
@@ -149,8 +154,14 @@ const MUST_BE_MECHANIC = [
 ];
 const MUST_BE_CREATURE = [
   "Bears", "Crocodiles", "Frogs", // the reported row
-  "Dwarves", "Fungi", "Heroes", "Elves", "Wolves", // need the irregular table
-  "Faeries", "Horses", "Humans", "Zombies", // reduce from the suffix rules alone
+  // One per irregular-plural RULE, so a rule deleted is a case failed. Four of
+  // these were missing while the rules were a hand table of known words.
+  "Wolves", "Elves", "Dwarves", "Werewolves", // -ves -> -f / -fe
+  "Cybermen", // -men -> -man
+  "Fungi", "Pegasi", // -i -> -us
+  "Mice", // -ice -> -ouse
+  "Heroes", // -oes
+  "Faeries", "Horses", "Humans", "Zombies", // the plain trailing -s
   "Eggs", "Mounts", "Toys", // real creature types whose EDHREC tag is ambiguous
   "Servos", // TOKEN-ONLY: absent from `cards` entirely, since tokens are dropped
   "Time Lords", // MULTI-WORD: whitespace-split subtypes could never match it

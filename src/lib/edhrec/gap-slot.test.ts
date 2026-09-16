@@ -20,8 +20,8 @@ describe("the generated classification", () => {
   // The counts the generator produced. Pinned so a regeneration that moves the
   // vocabulary is a visible diff rather than a silent one.
   it("covers the whole vocabulary at the measured split", () => {
-    expect(MECHANIC_LABELS).toHaveLength(264);
-    expect(CREATURE_TYPE_LABELS).toHaveLength(130);
+    expect(MECHANIC_LABELS).toHaveLength(260);
+    expect(CREATURE_TYPE_LABELS).toHaveLength(134);
     expect(FORMAT_LABELS).toHaveLength(7);
     expect(MECHANIC_LABELS.length + CREATURE_TYPE_LABELS.length + FORMAT_LABELS.length).toBe(401);
   });
@@ -44,25 +44,29 @@ describe("the generated classification", () => {
     expect(isMechanic(label)).toBe(false);
   });
 
-  // The plurals no suffix rule can reach: `dwarves` reduces to `dwarve`,
-  // `heroes` to `heroe`, and `fungi` carries no plural suffix at all. These are
-  // the entries the irregular table exists for.
-  it.each(["Dwarves", "Fungi", "Heroes", "Elves", "Wolves"])(
-    "%s needs the irregular table to reduce to its singular",
-    (label) => {
-      expect(isMechanic(label)).toBe(false);
-      expect(CREATURE_TYPE_LABELS).toContain(label);
-    },
-  );
+  // One case per irregular-plural RULE, so deleting a rule fails a case. A hand
+  // table of known words was tried here first and was still missing four of
+  // these: `Mice` and `Werewolves`, which review found, and `Cybermen` and
+  // `Pegasi`, which only a sweep of the whole allowlist against Scryfall's
+  // creature types turned up. Each is a regular instance of an irregular
+  // pattern, which is why rules replaced the table.
+  it.each([
+    "Wolves", "Elves", "Dwarves", "Werewolves", // -ves -> -f / -fe
+    "Cybermen", // -men -> -man
+    "Fungi", "Pegasi", // -i -> -us
+    "Mice", // -ice -> -ouse
+    "Heroes", // -oes
+  ])("%s reduces via an irregular-plural rule and is a creature type", (label) => {
+    expect(isMechanic(label)).toBe(false);
+    expect(CREATURE_TYPE_LABELS).toContain(label);
+  });
 
-  // These reduce correctly from the trailing-`s` rule alone, which is why they
-  // are NOT in the irregular table — four such entries were there and were
-  // removed as dead weight. Kept as cases because they must stay classified
-  // whichever rule gets them there. `Faeries` is load-bearing for a different
-  // reason: it reaches the mechanic side if the generator forgets that
-  // `Kindred` type lines carry creature types.
+  // These reduce from the plain trailing-`s` rule. Kept as cases because they
+  // must stay classified whichever rule gets them there; `Faeries` is
+  // load-bearing for a second reason, reaching the mechanic side if the
+  // generator forgets that `Kindred` type lines carry creature types.
   it.each(["Faeries", "Horses", "Humans", "Zombies"])(
-    "%s reduces from the generic rule and is still a creature type",
+    "%s reduces from the plain trailing-s rule and is still a creature type",
     (label) => {
       expect(isMechanic(label)).toBe(false);
       expect(CREATURE_TYPE_LABELS).toContain(label);
@@ -125,15 +129,27 @@ describe("the generated classification", () => {
   });
 
   it("offers every singular a plural could reduce to", () => {
-    // From the irregular table — no suffix rule reaches these.
     expect(singularForms("Wolves")).toContain("wolf");
-    expect(singularForms("Heroes")).toContain("hero");
+    expect(singularForms("Werewolves")).toContain("werewolf");
+    expect(singularForms("Cybermen")).toContain("cyberman");
     expect(singularForms("Fungi")).toContain("fungus");
-    // From the suffix rules alone.
+    expect(singularForms("Pegasi")).toContain("pegasus");
+    expect(singularForms("Mice")).toContain("mouse");
+    expect(singularForms("Heroes")).toContain("hero");
     expect(singularForms("Frogs")).toContain("frog");
     expect(singularForms("Allies")).toContain("ally");
     expect(singularForms("Faeries")).toContain("faerie");
   });
+
+  // The rules over-reduce on purpose — a form matching no creature type costs
+  // nothing — but they must not pull a real mechanic across. These four end in
+  // the letters the irregular rules fire on.
+  it.each(["Cycling", "Surveil", "Prison", "Spellslinger"])(
+    "%s stays a mechanic despite resembling a creature type",
+    (label) => {
+      expect(isMechanic(label)).toBe(true);
+    },
+  );
 });
 
 describe("the theme floor", () => {
