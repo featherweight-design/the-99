@@ -53,6 +53,16 @@ export type SetPrinting = {
    * would render.
    */
   imageUri?: string | null;
+  /**
+   * This printing's back face, handed over with the front for the same reason and on the
+   * same terms. A cell opened at a printing the reader does not own is injected into the
+   * modal as a row of its own, and a row with no back of its own falls to the oracle-level
+   * image — which is this printing's front against another printing's back, the mismatch
+   * `printings.back_image_uri` exists to close.
+   *
+   * Optional, and null on every single-faced printing: only the GRID query selects it.
+   */
+  backImageUri?: string | null;
   colorIdentity: string[];
   rarity: string | null;
   booster: boolean | null;

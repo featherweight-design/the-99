@@ -149,6 +149,57 @@ describe("CardModal flip control", () => {
     expect(wash().style.backgroundImage).not.toContain(BACK);
   });
 
+  // A set cell is a printing the reader often does not own, so the modal injects it as a row
+  // of its own. A row with no back reads as "this printing has no second face", and the flip
+  // then draws this printing's front against the ORACLE row's back — the same two-printing
+  // pairing, reached through the door that injects rather than the one that resolves.
+  it("turns to the back of a printing it was opened at but does not own", () => {
+    const CELL_FRONT = "https://x/cell-front.jpg";
+    const CELL_BACK = "https://x/cell-back.jpg";
+    render(
+      <CardModal
+        card={delver}
+        position={1}
+        total={1}
+        onClose={() => {}}
+        onPrev={null}
+        onNext={null}
+        openAtPrinting={{
+          setCode: "SLD", collectorNumber: "7",
+          imageUri: CELL_FRONT, backImageUri: CELL_BACK,
+        }}
+      />,
+    );
+    expect(wash().style.backgroundImage).toContain(CELL_FRONT);
+    fireEvent.click(flipTo("Insectile Aberration")[0]);
+    expect(wash().style.backgroundImage).toContain(CELL_BACK);
+    expect(wash().style.backgroundImage).not.toContain(BACK);
+  });
+
+  // The same door, on a card the reader DOES own: the row is repointed rather than injected,
+  // and a repointing that moved the front and left the back is the same mismatch.
+  it("repoints both faces when the opened printing is one it owns", () => {
+    const CELL_FRONT = "https://x/owned-front.jpg";
+    const CELL_BACK = "https://x/owned-back.jpg";
+    render(
+      <CardModal
+        card={delver}
+        position={1}
+        total={1}
+        onClose={() => {}}
+        onPrev={null}
+        onNext={null}
+        openAtPrinting={{
+          setCode: "ISD", collectorNumber: "51",
+          imageUri: CELL_FRONT, backImageUri: CELL_BACK,
+        }}
+      />,
+    );
+    expect(wash().style.backgroundImage).toContain(CELL_FRONT);
+    fireEvent.click(flipTo("Insectile Aberration")[0]);
+    expect(wash().style.backgroundImage).toContain(CELL_BACK);
+  });
+
   // Until the catalog is re-seeded against the new column every printing row carries a null
   // back, and the flip has to go on working exactly as it did before.
   it("keeps the oracle-level back when the printing carries none", () => {

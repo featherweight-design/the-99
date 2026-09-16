@@ -384,8 +384,13 @@ export function CardModal({
    * server uses, so a list behind the modal can patch its own copy rather than refetch a
    * payload measured in megabytes. Null when the card names no printing to resolve — a
    * caller that only wants the nudge ignores the argument, as the set grid does.
+   *
+   * `settled` says which of the two calls this is. The optimistic one is a nudge about a
+   * write that has not started; only the settled one can say the server holds anything, so
+   * a caller that re-READS on this signal must wait for it or spend a round trip fetching
+   * the state the write is about to replace.
    */
-  onArtChange?: (art: CardArt | null) => void;
+  onArtChange?: (art: CardArt | null, settled: boolean) => void;
   /**
    * The printing this card was opened AT, when the surface that opened it was showing one
    * in particular. The set grid's cells each ARE a printing, so clicking the dashed #239
@@ -396,7 +401,14 @@ export function CardModal({
    * and nothing is written by looking. The moment the reader picks something in this modal,
    * their choice takes over.
    */
-  openAtPrinting?: (PreferredPrinting & { imageUri?: string | null; scryfallId?: string }) | null;
+  openAtPrinting?: (PreferredPrinting & {
+    imageUri?: string | null;
+    /** The target printing's own back face. Both faces travel together or a flip on a cell
+     *  opened at an unowned printing draws this printing's front against the oracle row's
+     *  back — the mismatch `printings.back_image_uri` exists to close. */
+    backImageUri?: string | null;
+    scryfallId?: string;
+  }) | null;
 }) {
   const dialogRef = useRef<HTMLDivElement>(null);
   // One trigger per breakpoint tree; only one has layout at a time, and focus() on the
@@ -569,6 +581,11 @@ export function CardModal({
           return {
             ...withId,
             imageUri: at.imageUri,
+            // The back moves with the front, on the same condition: this row is being
+            // repointed at the printing the caller named, and half a repointing is the
+            // two-printing pairing the column exists to prevent. `undefined` leaves the
+            // row's own back alone, which is the honest answer when the caller sent none.
+            ...(at.backImageUri === undefined ? {} : { backImageUri: at.backImageUri }),
             flavorName: at.imageUri === p.imageUri ? p.flavorName : null,
           };
         })
@@ -584,6 +601,12 @@ export function CardModal({
       // full-size art the catalog does not hold would otherwise open on the identity
       // gradient, where the modal used to show the card's own image.
       imageUri: at.imageUri ?? card.imageUri,
+      backImageUri: at.backImageUri ?? card.backImageUri ?? null,
+      // The card-level back is the same fallback `imageUri` takes above, and the same one a
+      // printing ingested before the column existed falls to. What it must not do is stay
+      // absent: an injected row with no back reads as "this printing has no second face",
+      // and `resolved?.backImageUri ?? card.backImageUri` would then pair this printing's
+      // front with the oracle row's back without either of them saying so.
       flavorName: null,
     }];
     // The title follows the art. `printedName` is a CARD-level field, set from whichever
@@ -763,7 +786,7 @@ export function CardModal({
     }
     // Whatever stands now, which for an older write settling under a newer pick is that
     // newer pick — untouched by this settlement and still the thing on screen.
-    onArtChange?.(artFor(livePick.current));
+    onArtChange?.(artFor(livePick.current), true);
   }
 
   function onPick(p: { setCode: string; collectorNumber: string }) {
@@ -771,7 +794,7 @@ export function CardModal({
     setPick(written);
     livePick.current = written;
     setPicked(true);
-    onArtChange?.(artFor(written));
+    onArtChange?.(artFor(written), false);
     const generation = ++writes.current;
     startWrite(async () => {
       let wrote = false;
@@ -788,7 +811,7 @@ export function CardModal({
     setPick(null);
     livePick.current = null;
     setPicked(true);
-    onArtChange?.(artFor(null));
+    onArtChange?.(artFor(null), false);
     const generation = ++writes.current;
     startWrite(async () => {
       let wrote = false;

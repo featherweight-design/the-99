@@ -106,6 +106,9 @@ function catalogFor(code: string) {
       name: cards.name,
       imageUriSmall: printings.imageUriSmall,
       imageUri: printings.imageUri,
+      // Both faces travel together or the modal draws one printing's front against
+      // another's back — see `SetPrinting.backImageUri`.
+      backImageUri: printings.backImageUri,
       colorIdentity: cards.colorIdentity,
       rarity: printings.rarity,
       booster: printings.booster,

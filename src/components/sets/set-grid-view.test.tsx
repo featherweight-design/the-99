@@ -382,7 +382,7 @@ describe("SetGridView — the cell is the target", () => {
     view([p("1"), p("2")], []);
     fireEvent.click(screen.getAllByRole("button", { name: /not in your collection/ })[0]);
     expect(openCard).toHaveBeenCalledWith(
-      "o-1", ["o-1", "o-2"], { setCode: "DSK", collectorNumber: "1", imageUri: null, scryfallId: "s-1" },
+      "o-1", ["o-1", "o-2"], { setCode: "DSK", collectorNumber: "1", imageUri: null, backImageUri: null, scryfallId: "s-1" },
     );
   });
 
@@ -392,7 +392,7 @@ describe("SetGridView — the cell is the target", () => {
     fireEvent.click(screen.getAllByRole("button", { name: /not in your collection/ })[0]);
     // #2 is owned and hidden by missing-only, so it is not a sibling to page to.
     expect(openCard).toHaveBeenCalledWith(
-      "o-1", ["o-1", "o-3"], { setCode: "DSK", collectorNumber: "1", imageUri: null, scryfallId: "s-1" },
+      "o-1", ["o-1", "o-3"], { setCode: "DSK", collectorNumber: "1", imageUri: null, backImageUri: null, scryfallId: "s-1" },
     );
   });
 });
@@ -617,8 +617,23 @@ describe("SetGridView — a cell opens its own printing", () => {
     expect(openCard).toHaveBeenCalledWith(
       "o-239",
       ["o-239"],
-      { setCode: "DSK", collectorNumber: "239", imageUri: null, scryfallId: "s-239" },
+      { setCode: "DSK", collectorNumber: "239", imageUri: null, backImageUri: null, scryfallId: "s-239" },
     );
+  });
+
+  // Both faces or neither. A cell opened at a printing the reader does not own is injected
+  // into the modal as a row of its own, and a row with no back falls to the oracle-level
+  // image — this printing's front against another printing's back.
+  it("hands over the printing's back face with its front", () => {
+    view([p("7", {
+      imageUri: "https://cards.scryfall.io/normal/dsk-7.jpg",
+      backImageUri: "https://cards.scryfall.io/normal/dsk-7-back.jpg",
+    })], []);
+    fireEvent.click(screen.getByRole("button", { name: /not in your collection/ }));
+    expect(openCard.mock.calls[0][2]).toMatchObject({
+      imageUri: "https://cards.scryfall.io/normal/dsk-7.jpg",
+      backImageUri: "https://cards.scryfall.io/normal/dsk-7-back.jpg",
+    });
   });
 
   it("names the printing in upper case, which is how printings compare", () => {
@@ -644,6 +659,7 @@ describe("SetGridView — the cell forwards its full-size art", () => {
         setCode: "DSK",
         collectorNumber: "1",
         imageUri: "https://cards.scryfall.io/normal/dsk-1.jpg",
+        backImageUri: null,
         // The cell IS this catalog row, so its exact id travels with the open —
         // two printings can share a (set, collector number) pair.
         scryfallId: "s-1",
