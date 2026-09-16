@@ -75,11 +75,13 @@ CSS — so the phone downloads the same bytes over a worse connection.
 
 ---
 
-## PR 1 — the probe and the baseline
+## PR 1 — the probe and the baseline — ✅ MERGED AS #692
 
-No behavior change. Lands this plan, the permanent probe, and the committed benchmark.
+No behavior change. Landed this plan, the permanent probe, and the committed benchmark. Its tasks are
+kept below as the record of what was done and why; **do not re-run them**. In particular the phone
+baseline exists, and re-taking it silently rebases every later comparison.
 
-### Task 1.1: the probe script
+### Task 1.1: the probe script — LANDED in PR 1 (#692)
 
 **Files:**
 - Create: `scripts/probe-nav-cost.mjs`
@@ -155,7 +157,11 @@ if (expect && new URL(page.url()).pathname !== expect) {
 // the baseline still expects fetches. Once PRs 3-6 convert every route, a healthy
 // walk legitimately makes none, and an unconditional form of this guard fails the
 // exact outcome the work is for.
-const expectsFetches = Object.values(budgetsForWidth).some((b) => b.rsc > 0);
+// Null-safe: `--baseline=none` (how a NEW baseline is generated) leaves this
+// null, and `Object.values(null)` throws before the report is written.
+const expectsFetches = budgetsForWidth
+  ? Object.values(budgetsForWidth).some((b) => b.rsc > 0)
+  : false;
 if (expectsFetches && rows.every((r) => r.rsc === 0 && r.prefetch === 0)) {
   throw new Error("no RSC or prefetch request recorded while the baseline expects fetches");
 }
@@ -205,7 +211,9 @@ clicking, so a future chrome change fails loudly instead of clicking the wrong n
 ```bash
 DATABASE_URL=... pnpm build
 pnpm start --port 3007 &
-PROBE_BASE=http://localhost:3007 pnpm probe:nav-cost --width=1300 --out=/tmp/nav-1300.json
+# `--baseline=none` again: Task 1.2 has not written the baseline yet, and the
+# probe reads it by default.
+PROBE_BASE=http://localhost:3007 pnpm probe:nav-cost --width=1300 --baseline=none --out=/tmp/nav-1300.json
 ```
 Expected: every route reports `rsc: 1` on revisit, `back()`/`forward()` report `rsc: 0`, and
 `/collection` reports ~1,595.8 KB. If the figures differ materially from the table above, stop and
@@ -230,7 +238,7 @@ git add scripts/probe-nav-cost.mjs package.json docs/superpowers/plans/2026-09-1
 git commit -m "Measure what one navigation costs"
 ```
 
-### Task 1.2: the committed baseline
+### Task 1.2: the committed baseline — LANDED in PR 1 (#692)
 
 **Files:**
 - Create: `docs/superpowers/benchmarks/nav-cost-baseline.json`
@@ -291,7 +299,7 @@ git add docs/superpowers/benchmarks/
 git commit -m "Commit the navigation baseline, both widths"
 ```
 
-### Task 1.3: budget assertions, in baseline mode
+### Task 1.3: budget assertions, in baseline mode — LANDED in PR 1 (#692)
 
 **Files:**
 - Modify: `scripts/probe-nav-cost.mjs`

@@ -12,7 +12,11 @@
 //   DATABASE_URL=... pnpm build && pnpm start --port 3007
 //   PROBE_BASE=http://localhost:3007 pnpm probe:nav-cost --width=1300
 //
-// It makes NO writes and needs no fixture. Point it at `local-dev`.
+// It makes NO WRITES. It does need the fixture account — `E2E_AUDIT_USER_EMAIL`
+// plus Clerk credentials, read through `scripts/lib/env.mjs` — and an account
+// holding at least one deck, since `/decks/[id]` is one of the measured routes
+// and the committed baseline pins which deck it measured. Point it at
+// `local-dev`.
 //
 // Four mechanics here are load-bearing, and each one was paid for by a run that
 // reported a flawless app while measuring nothing:
