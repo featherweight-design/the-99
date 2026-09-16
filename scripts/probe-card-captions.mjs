@@ -178,15 +178,15 @@ const DRAFT = ({ page }) => {
   );
   return {
     edges: edged.length,
-    // The caption is the flex row; the shell is the rounded plate above it. If
-    // the edge ever migrates, this is what says so.
-    onCaption: edged.filter((el) => el.className.includes("items-stretch")).length,
+    // On the SHELL — the rounded plate — rather than the caption row inside it.
+    // If the edge ever migrates back, this is what says so.
+    onShell: edged.filter((el) => /rounded-\[(9|10)px\]/.test(el.className)).length,
     // SCOPED TO A CAPTION. Unscoped, this read the deck header's own `+1`
     // pending-count chip and passed with the tile's figure deleted outright —
     // the check existed and measured nothing. The caption is the only place the
     // tile's figure can legitimately be.
     figures: [...document.querySelectorAll(
-      `${page} [class*="min-h-[52px]"][class*="min-h-[46px]"] span`,
+      `${page} [class*="min-h-[56px]"][class*="min-h-[50px]"] span`,
     )]
       .filter((el) => /^(\+\d+|\d+ → \d+)$/.test((el.textContent ?? "").trim()))
       .map((el) => el.textContent.trim()),
@@ -196,10 +196,11 @@ const DRAFT = ({ page }) => {
 /** Every caption's height, and every slot box's height, on the page. */
 const CAPTIONS = (page) => {
   // BOTH halves of the pair. `decklist-row`'s meta shell is also `min-h-[52px]`
+  // — and the caption's phone figure was 52 until the chip padding grew it to 56
   // — with `md:min-h-[34px]` — so matching the phone figure alone measured the
   // LIST's rows and reported a tidy single height of 34 for them.
   const caps = [...document.querySelectorAll(
-    `${page} [class*="min-h-[52px]"][class*="min-h-[46px]"]`,
+    `${page} [class*="min-h-[56px]"][class*="min-h-[50px]"]`,
   )];
   const heights = [...new Set(caps.map((c) => Math.round(c.getBoundingClientRect().height)))];
   // The slot's occupants: the one box, whoever is in it. Found by the geometry they share —
@@ -237,7 +238,7 @@ const GRID = ({ page }) => {
   const grids = [...document.querySelectorAll(`${page} *`)].filter((el) => {
     const s = getComputedStyle(el);
     if (!s.display.includes("grid")) return false;
-    return el.querySelector('[class*="min-h-[52px]"][class*="min-h-[46px]"]') !== null;
+    return el.querySelector('[class*="min-h-[56px]"][class*="min-h-[50px]"]') !== null;
   });
   if (!grids.length) return null;
   const tracks = getComputedStyle(grids[0]).gridTemplateColumns.split(" ").filter(Boolean);
@@ -451,13 +452,15 @@ async function run() {
         // caption. Zero would mean the card view still photographs a dirty draft
         // as a clean one, which is the state this whole call exists to end.
         failures += !report(
-          `${width}px · draft · one accent edge, on the caption`,
-          draft.edges === 1 && draft.onCaption === 1,
-          `${draft.edges} edges, ${draft.onCaption} on a caption`,
+          `${width}px · draft · one accent edge, down the shell`,
+          draft.edges === 1 && draft.onShell === 1,
+          `${draft.edges} edges, ${draft.onShell} on a shell`,
         );
+        // NO `+1`. A single-copy add prints no figure at all now — the edge says
+        // the draft touched it and the count says nothing it could not assume.
         failures += !report(
-          `${width}px · draft · a signed figure in the count's position`,
-          draft.figures.includes("+1"),
+          `${width}px · draft · a single-copy add prints no figure`,
+          draft.figures.length === 0,
           `figures ${draft.figures.join(" / ") || "none"}`,
         );
       }

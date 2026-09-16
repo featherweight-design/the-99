@@ -1,6 +1,6 @@
 # READINESS — Card captions (R1 audit)
 
-**Verdict: 🟢 Green, with nine errata — one withdrawing a claim this audit made, and one recording
+**Verdict: 🟢 Green, with twelve errata (10–12 are Hugh's post-ship rulings, awaiting Design's ratification) — one withdrawing a claim this audit made, and one recording
 that Design then overturned the withdrawal with a better argument.** All four calls the brief left open are called, every
 named state is drawn, and nothing here waits on a design decision. The errata below are
 eng-resolvable under the handoff's own tie-break rule and do not return to Design.
@@ -243,6 +243,32 @@ other**, not to the row's box.
 **Resolution — eng, and it is a deletion.** The ledger's own line is right: *samples unchanged*. The
 key keeps rendering the row variant exactly as it does today, on both instances, and nothing here
 redraws a box. The figures in that table are struck rather than implemented.
+
+## Errata 10–12 — three rulings from Hugh, 2026-09-15, after seeing it on real decks
+
+All three overturn something the handoff called. Recorded here for Design to ratify; the tracker
+row moves to ⚖️.
+
+**10 · The draft edge runs the whole left edge of the tile, not the caption.** Call B put it on the
+caption because the shell's border already carries over-committed and "the two facts are
+orthogonal". `decklist-row.tsx:268-269` had already settled that the other way and shipped it — the
+row stacks `inset 2px 0 0 0 --accent` and `inset 0 0 0 1px --avail-over-border` on ONE element, and
+a row that is both reads fine because the chip carries the shortfall while the edge carries the
+draft. Hugh's evidence was a tile that is both: the red `short 1` chip stays obvious under the
+accent edge. Over 46px of caption the edge was easy to miss; over a whole tile it is not, and the
+two views now say it the same way.
+
+**11 · A single-copy add prints no figure.** Call B specified `+N` for an add. It restated the count
+beside it, and in a singleton format nearly every add is `+1`. Dropped — an add now falls through
+to the ordinary count, which is what the list already does (`decklist-row.tsx` prints its glyph on
+`quantity > 1 && !recounted`, so an added singleton is a bare name there too). **Recount pairs are
+unchanged**: `6 → 8` is a move and says something a count cannot.
+
+**12 · The slot box gains vertical padding, and the caption grows with it.** `py-[1px]` around 9px
+of text read as pinched on every chip — most visibly the proxy `P` and `1 in a brew`. Now
+`py-[3px]`, which takes the box from 10.5px to 14.5px. The meta line grows 13/14 → 17/18 or the box
+clips, and the caption 52/46 → **56/50** or the height stops being fixed, which erratum 3's whole
+argument depends on. The figures in `design-tables/collection.md` move with it.
 
 ## Erratum 8 — the handoff is not on `main`
 

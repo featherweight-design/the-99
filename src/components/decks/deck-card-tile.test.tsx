@@ -366,16 +366,23 @@ describe("DeckCardTile — the draft touched this card", () => {
     ).toBeInTheDocument();
   });
 
-  it("prints a signed delta for a card the draft added", () => {
-    // The list view has no shape for this at all: a row the version did not hold
-    // has no count to move. It is the one thing the tile says that the row cannot.
+  it("prints no figure for a single-copy add, only the edge", () => {
+    // `+1` restated the row beside it, and in a singleton format nearly every
+    // add is `+1`. The list does the same — an added singleton is a bare name
+    // there — and the draft is still said by the edge and spoken in full.
     renderWithDraft([[card.oracleId, { from: 0, to: 1 }]], card);
 
-    expect(screen.getByText(deckVersioningCopy.pending.tileAdded(1))).toBeInTheDocument();
+    expect(screen.queryByText("+1")).not.toBeInTheDocument();
     expect(screen.getByText(deckVersioningCopy.pending.addMarkA11y)).toBeInTheDocument();
   });
 
-  it("draws the accent edge on the caption, never the shell", () => {
+  it("still counts a multi-copy add, which is a number nobody could assume", () => {
+    renderWithDraft([[card.oracleId, { from: 0, to: 3 }]], { ...card, quantity: 3 });
+
+    expect(screen.getByText(addPanelCopy.row.quantity(3))).toBeInTheDocument();
+  });
+
+  it("draws the accent edge down the shell, not just the caption", () => {
     const { container } = render(
       <CardDetailProvider fetchCard={vi.fn().mockResolvedValue(null)}>
         <PendingChangeProvider value={{ moves: new Map([[card.oracleId, { from: 1, to: 2 }]]) }}>
@@ -384,14 +391,14 @@ describe("DeckCardTile — the draft touched this card", () => {
       </CardDetailProvider>,
     );
 
-    // The shell's border already carries over-committed, and both are true at
-    // once often enough to matter. An accent ring 1px inside that tint would be
-    // two unrelated facts on one edge.
+    // On the SHELL, which is what `decklist-row.tsx:268-269` does — it stacks
+    // the accent rule and the over-committed ring on one element and a row that
+    // is both reads fine. Over 46px of caption the accent was easy to miss.
     const edged = [...container.querySelectorAll<HTMLElement>("*")].filter((el) =>
       el.style.boxShadow.includes("var(--accent)"),
     );
     expect(edged).toHaveLength(1);
-    expect(edged[0].className).toContain("items-stretch");
+    expect(edged[0].className).toContain("rounded-[9px]");
   });
 
   it("associates the spoken state with the trigger, not just the DOM", () => {

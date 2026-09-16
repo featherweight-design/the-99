@@ -954,9 +954,16 @@ describe("the pending-change notes follow the mark, which both views now draw", 
     ).toBeInTheDocument();
     // And the notes point at something the reader can find. Asserting only the
     // two sentences would pass with the tiles drawing nothing at all, which is
-    // the state this change exists to end. The fixture's move is
-    // `{ from: 0, to: 1 }` — an add — so the tile's figure is the signed delta.
-    expect(screen.getByText(deckVersioningCopy.pending.tileAdded(1))).toBeInTheDocument();
+    // the state this change exists to end.
+    //
+    // The EDGE is that something, not a figure: the fixture's move is
+    // `{ from: 0, to: 1 }`, and since erratum 11 a single-copy add prints no
+    // figure at all — `+1` restated the count beside it. The edge runs the whole
+    // tile (erratum 10), which is what the caption above is pointing at.
+    const edged = [...document.querySelectorAll<HTMLElement>("*")].filter((el) =>
+      el.style.boxShadow.includes("var(--accent)"),
+    );
+    expect(edged).toHaveLength(1);
   });
 });
 

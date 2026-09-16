@@ -102,11 +102,16 @@ export function DeckCardTile({
   // The SPOKEN form is unaffected and still rendered: the draft touched this
   // card either way, and gating the description on `proxied` would leave the
   // trigger's `aria-describedby` pointing at nothing.
+  // ONLY A RECOUNT PRINTS A FIGURE. A pair says something the count cannot —
+  // `6 → 8` is a move — where `+1` restated what the row beside it already
+  // showed, and in a singleton format nearly every add is `+1`. An add falls
+  // through to the ordinary count instead, which is exactly what the list does:
+  // `decklist-row.tsx` prints its glyph on `quantity > 1 && !recounted`, so an
+  // added singleton is a bare name there too. More than one copy still shows,
+  // because that is a number the reader could not have assumed.
   const draftFigure =
-    pendingMove && !proxied
-      ? pendingMove.from > 0
-        ? deckVersioningCopy.pending.tilePair(pendingMove.from, pendingMove.to)
-        : deckVersioningCopy.pending.tileAdded(pendingMove.to)
+    pendingMove && !proxied && pendingMove.from > 0
+      ? deckVersioningCopy.pending.tilePair(pendingMove.from, pendingMove.to)
       : null;
   // Spoken separately: the figure is drawn in the count's position with no words
   // around it, and an edge colour is not something a reader can be asked to
@@ -152,6 +157,16 @@ export function DeckCardTile({
   return (
     <li className="flex flex-col">
       <div
+        /* THE WHOLE LEFT EDGE, art included. It was on the caption, on call B's
+           reasoning that the shell's border already carries over-committed and
+           two unrelated facts should not share one edge.
+           `decklist-row.tsx:268-269` had already settled that the other way and
+           shipped it: the row stacks `inset 2px 0 0 0 --accent` and
+           `inset 0 0 0 1px --avail-over-border` on one element, and a row that is
+           both reads fine — the chip carries the shortfall, the edge carries the
+           draft. Over 46px of caption the accent was easy to miss; over a whole
+           tile it is not, and the two views now say it the same way. */
+        style={pendingMove ? { boxShadow: "inset 2px 0 0 0 var(--accent)" } : undefined}
         className={`${TILE_SHELL} bg-[color:var(--surface)] ${
           availState === "over"
             ? "[border:1px_solid_var(--avail-over-border)]"
@@ -338,7 +353,6 @@ export function DeckCardTile({
              testing-library query and reach no screen reader. The full name's
              home is the trigger above, which is a real `<button>` and is the
              tile's largest target. */
-          draftTouched={pendingMove !== undefined}
           name={displayName}
           nameTrail={<TwoFacedMark layout={card.layout} />}
           trailing={

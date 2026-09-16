@@ -748,14 +748,14 @@ on this row.
 ### Grid Tile: Caption Area
 | Property | Mobile | Desktop |
 |----------|--------|---------|
-| min-height | **52px** | **46px** |
+| min-height | **56px** | **50px** |
 | layout | two lines: a mono meta line, then the name | same |
 | padding | `8px 9px` | `6px 10px` |
 | line gap | 3px | 3px |
 
 > The two paddings differ so both widths land on a whole figure with the same two
-> lines: `8 + 13 + 3 + 20 + 8 = 52` at the phone, `6 + 14 + 3 + 17 + 6 = 46` on
-> desktop. Both lines carry an explicit height for the same reason — sized to
+> lines: `8 + 17 + 3 + 20 + 8 = 56` at the phone, `6 + 18 + 3 + 17 + 6 = 50` on
+> desktop (erratum 12 — the meta line grew with the slot box's padding). Both lines carry an explicit height for the same reason — sized to
 > their own text they land at 49px on some tiles and 50px on others, and a floor
 > that content always exceeds is not a fixed height.
 
@@ -770,6 +770,7 @@ on this row.
 |----------|--------|---------|
 | font-family | 'IBM Plex Mono', monospace | 'IBM Plex Mono', monospace |
 | font-size | 9px | 9.5px |
+| line box | 17px | 18px |
 | gap | 6px | 6px |
 | order | the one slot (availability chip), then `×N`, then the set line right-aligned | same |
 | `×N` | **absent at one copy**, matching the deck tile | same |
@@ -778,7 +779,7 @@ on this row.
 | Property | Mobile | Desktop |
 |----------|--------|---------|
 | font-size | 8.5px | 9px |
-| padding | 1px 5px | 1px 5px |
+| padding | **3px 5px** | **3px 5px** |
 | border-radius | 4px | 4px |
 | edge | `outline` at `outlineOffset: -1px` | same |
 
