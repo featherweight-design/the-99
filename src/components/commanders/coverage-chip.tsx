@@ -21,7 +21,7 @@ import { CardDetailTrigger, cardDetailCopy } from "../cards/card-detail-provider
 import { recommendationsCopy } from "../../lib/copy/recommendations";
 import { OwnershipDot } from "../ui/ownership-dot";
 import { AvailabilityMarker, markerAria } from "../ui/availability-marker";
-import { availabilityState } from "../../lib/decks/availability";
+import { availabilityState, drawsMarker } from "../../lib/decks/availability";
 import type { JSX } from "react";
 
 export const COVERAGE_CAP = { desktop: 12, phone: 6 } as const;
@@ -46,9 +46,11 @@ export const COVERAGE_EXPANDED_CAP = 40;
  * pool, so a card with no claim row has no claim to report.
  */
 function markerState(card: RoleCard) {
-  if (!card.availability) return null;
-  const state = availabilityState(card.availability);
-  return state === "free" ? null : state;
+  // `drawsMarker` decides WHETHER, this decides WHICH. Routed through the shared
+  // predicate rather than repeating its conditions, so the chip and the dot key
+  // above it cannot disagree about whether anything is being said.
+  if (!drawsMarker(card)) return null;
+  return availabilityState(card.availability);
 }
 
 /**

@@ -8,6 +8,7 @@ import { useRouter } from "next/navigation";
 import { CoverageChip, CoverageRow, CoverageDisclosure, COVERAGE_CAP, COVERAGE_EXPANDED_CAP } from "./coverage-chip";
 import { explainedCopy } from "../../lib/copy/commander-explained";
 import { KeyPip } from "../ui/ownership-dot";
+import { drawsMarker } from "../../lib/decks/availability";
 import {
   CoverageSortMenu,
   COVERAGE_SORT_LABELS,
@@ -55,13 +56,12 @@ const ROLE_NOUNS: Record<RoleName, string> = {
  */
 function DotKey({
   roleCards,
-  markerOnPage,
+  markerElsewhere,
   isDesktop,
 }: {
   roleCards: Record<RoleName, RoleCard[]>;
   /**
-   * Whether ANY marker is on screen — anywhere on the page, not just in these
-   * four panels.
+   * Whether a marker is on screen OUTSIDE these four panels.
    *
    * THE INVARIANT IS THE SENTENCE, not the count: *no key asserts availability
    * while a marker is on screen.* `dotFree` says "Owned and available.", which
@@ -73,14 +73,23 @@ function DotKey({
    * synergy row printed "Owned and available." here while a marker sat on screen
    * below, and the synergy panel's own key said "Owned." for the same dot.
    *
-   * Passed in rather than computed here, so the next panel to draw markers adds
-   * itself to one expression on the page instead of reopening this ruling.
+   * ONLY the outside half is passed in. The role panels' own half is computed
+   * here, from the CURRENT cards — because a successful degraded-retry replaces
+   * them, and a prop derived from the page's initial set would then show a
+   * marker while the key still read `dotFree`. `router.refresh()` is
+   * asynchronous, so the retried cards render before any new prop could arrive.
+   *
+   * The next panel to draw markers adds itself to the page's expression rather
+   * than reopening this ruling.
    */
-  markerOnPage: boolean;
+  markerElsewhere: boolean;
   isDesktop: boolean;
 }): JSX.Element | null {
   const all = ROLE_ORDER.flatMap((role) => roleCards[role]);
   if (all.length === 0) return null;
+  // The invariant, assembled: no key asserts availability while a marker is on
+  // screen — here or anywhere else.
+  const markerOnPage = markerElsewhere || all.some(drawsMarker);
 
   return (
     <p
@@ -338,13 +347,13 @@ export type CoverageSectionProps = {
   roleCounts: Record<RoleName, number>;
   synergyState: "ok" | "absent" | "degraded";
   /**
-   * Whether any marker is on screen anywhere on the page — see `DotKey`.
+   * Whether a marker is on screen outside the role panels — see `DotKey`.
    *
    * REQUIRED, with no default: the key it feeds makes a claim about the
    * commander, and a default would let a caller quietly assert availability it
    * had not checked.
    */
-  markerOnPage: boolean;
+  markerElsewhere: boolean;
   /** Injected by the page — server action that re-resolves EDHREC.
       Passed explicitly so tests can mock it without a server-action import. */
   retryCoverageFigures: (slug: string) => Promise<Record<RoleName, RoleCard[]> | null>;
@@ -356,7 +365,7 @@ export function CoverageSection({
   roleCards: initialRoleCards,
   roleCounts,
   synergyState,
-  markerOnPage,
+  markerElsewhere,
   retryCoverageFigures,
 }: CoverageSectionProps): JSX.Element {
   const router = useRouter();
@@ -462,7 +471,7 @@ export function CoverageSection({
       <p className="m-0 font-mono mt-[2px]" style={{ fontSize: 12, color: "var(--fg-faint)" }}>
         {subcaption}
       </p>
-      <DotKey roleCards={roleCards} markerOnPage={markerOnPage} isDesktop={isDesktop} />
+      <DotKey roleCards={roleCards} markerElsewhere={markerElsewhere} isDesktop={isDesktop} />
       {!isDesktop && (
         <div className="mt-[10px]">
           <CoverageSortMenu sort={sort} showFigures={showFigures} isDesktop={false} onChange={chooseSort} />

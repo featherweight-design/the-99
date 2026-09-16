@@ -15,7 +15,7 @@ import { synergyCopy, synergySignedDisplay } from "../../lib/copy/synergy-discov
 import { CardDetailTrigger } from "../cards/card-detail-provider";
 import { OwnershipDot } from "../ui/ownership-dot";
 import { AvailabilityMarker, markerAria } from "../ui/availability-marker";
-import { availabilityState } from "../../lib/decks/availability";
+import { availabilityState, drawsMarker } from "../../lib/decks/availability";
 import { BuyTag } from "../decks/buy-tag";
 import { formatPriceFigure, priceState } from "../../lib/decks/price";
 import { ROW_GAP_PX, ROW_RADIUS_PX } from "../ui/row-shell";
@@ -69,14 +69,13 @@ function AvailabilitySlot({
   newestAsOf: Date | null;
   selected: boolean;
 }) {
-  const state = card.availability ? availabilityState(card.availability) : "free";
   return (
     <span
       style={{ width: 88, flexShrink: 0, display: "flex", justifyContent: "flex-end" }}
     >
       {!card.owned ? (
         <BuyTag variant="row" price={card.price} newestAsOf={newestAsOf} reserveSlot />
-      ) : card.availability && state !== "free" ? (
+      ) : drawsMarker(card) ? (
         <AvailabilityMarker
           availability={card.availability}
           nameless
@@ -295,7 +294,7 @@ export function SynergyRow({
                     false at the width most people read on. */}
                 <BuyTag variant="row" price={card.price} newestAsOf={newestAsOf} />
               </>
-            ) : card.availability && availabilityState(card.availability) !== "free" ? (
+            ) : drawsMarker(card) ? (
               <>
                 <span aria-hidden="true" style={{ color: "var(--fg-locked)" }}>·</span>
                 <AvailabilityMarker

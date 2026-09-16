@@ -200,10 +200,9 @@ export function withAvailability<T extends { oracleId: string }>(
  * A null `availability` is NO ROW — an unowned card, a basic, or a read that
  * could not reach — and reads as free here, which is right: nothing to report.
  */
-export function drawsMarker(card: {
-  owned?: boolean;
-  availability: Availability | null;
-}): boolean {
+export function drawsMarker<T extends { owned?: boolean; availability: Availability | null }>(
+  card: T,
+): card is T & { availability: Availability } {
   if (card.owned === false) return false;
   if (card.availability === null) return false;
   return availabilityState(card.availability) !== "free";

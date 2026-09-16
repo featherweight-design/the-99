@@ -51,7 +51,7 @@ function renderSection(
     roleCards?: Record<RoleName, RoleCard[]>;
     roleCounts?: Record<RoleName, number>;
     synergyState?: "ok" | "absent" | "degraded";
-    markerOnPage?: boolean;
+    markerElsewhere?: boolean;
     retryCoverageFigures?: () => Promise<Record<RoleName, RoleCard[]> | null>;
   } = {},
 ) {
@@ -65,7 +65,7 @@ function renderSection(
     // condition used to read — so every case written before the key went
     // page-wide keeps its meaning. The cases that prove the new behaviour pass
     // it explicitly.
-    markerOnPage = Object.values(roleCards).flat().some(drawsMarker),
+    markerElsewhere = false,
     retryCoverageFigures = vi.fn<() => Promise<Record<RoleName, RoleCard[]> | null>>().mockResolvedValue(null),
   } = overrides;
 
@@ -78,7 +78,7 @@ function renderSection(
         roleCounts={roleCounts}
         synergyState={synergyState}
         retryCoverageFigures={retryCoverageFigures}
-       markerOnPage={markerOnPage}/>
+       markerElsewhere={markerElsewhere}/>
     </CardDetailProvider>,
   );
 }
@@ -222,7 +222,7 @@ describe("absent vs degraded note rendering", () => {
           roleCounts={BASE_ROLE_COUNTS}
           synergyState="degraded"
           retryCoverageFigures={vi.fn<() => Promise<Record<RoleName, RoleCard[]> | null>>().mockResolvedValue(null)}
-          markerOnPage={false}
+          markerElsewhere={false}
         />
       </CardDetailProvider>,
     );
@@ -240,7 +240,7 @@ describe("absent vs degraded note rendering", () => {
           roleCounts={BASE_ROLE_COUNTS}
           synergyState="absent"
           retryCoverageFigures={vi.fn<() => Promise<Record<RoleName, RoleCard[]> | null>>().mockResolvedValue(null)}
-          markerOnPage={false}
+          markerElsewhere={false}
         />
       </CardDetailProvider>,
     );
@@ -671,7 +671,7 @@ describe("the dot key", () => {
     renderSection({
       roleCards: { ...EMPTY_ROLE_CARDS, ramp: makeCards(3) },
       roleCounts: { ...BASE_ROLE_COUNTS, ramp: 3 },
-      markerOnPage: true, // ...but something on the page is marked.
+      markerElsewhere: true, // ...but something on the page is marked.
     });
     expect(screen.getByText(explainedCopy.committed.dotOwned)).toBeInTheDocument();
     expect(screen.queryByText("Owned and available.")).toBeNull();
@@ -683,7 +683,7 @@ describe("the dot key", () => {
     renderSection({
       roleCards: { ...EMPTY_ROLE_CARDS, ramp: makeCards(3) },
       roleCounts: { ...BASE_ROLE_COUNTS, ramp: 3 },
-      markerOnPage: false,
+      markerElsewhere: false,
     });
     expect(screen.getByText("Owned and available.")).toBeInTheDocument();
   });

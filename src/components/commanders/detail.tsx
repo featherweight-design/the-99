@@ -242,8 +242,9 @@ export function CommanderDetail({
   //
   // A future panel that draws markers joins this expression. It does not reopen
   // the key's ruling.
-  const markerOnPage =
-    Object.values(c.roleCards).flat().some(drawsMarker) || synergyCards.some(drawsMarker);
+  // Only the synergy panel's half. Role Coverage computes its own from the cards
+  // it is currently showing, which a successful retry replaces — see `DotKey`.
+  const markerElsewhere = synergyCards.some(drawsMarker);
 
   const gradient = commanderGradient(c.colorIdentity);
   // No back chrome here: the rail and the tab bar are the route back at both
@@ -446,7 +447,7 @@ export function CommanderDetail({
         <CoverageSection
           width="phone"
           slug={c.slug}
-          markerOnPage={markerOnPage}
+          markerElsewhere={markerElsewhere}
           roleCards={c.roleCards}
           roleCounts={c.roleCounts}
           synergyState={c.synergyState}
@@ -686,7 +687,7 @@ export function CommanderDetail({
           <CoverageSection
             width="desktop"
             slug={c.slug}
-            markerOnPage={markerOnPage}
+            markerElsewhere={markerElsewhere}
             roleCards={c.roleCards}
             roleCounts={c.roleCounts}
             synergyState={c.synergyState}
