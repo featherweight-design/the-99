@@ -27,16 +27,28 @@ busy state.
 `◆ none free` sitting directly above the words `none free`, `◇ 1 in a brew` above `in a brew`.
 Both halves were individually correct, which is why four review rounds and every assertion in the
 file passed over it — the marker was right, the caption was right, and together they read as a
-fault. Captions now annotate rather than echo, and `about-page.test.tsx` pins the rule: a caption
-may not contain its own mark's words. `free` is exempt and has to be, because it draws nothing at
-all and the caption is the only thing saying what the blank means.
+fault. Captions annotate rather than echo now — **in all three plates that had it**. The pre-open pass
+caught that the first fix was the instance rather than the class: the marks row drew
+`1 in a brew` over the note `a brew wants it`, and the buy tag drew `buy·$6.40 foil` over
+`foil only`.
 
-That is the whole argument for this artifact. No assertion catches it, because there is nothing
-wrong with either string.
+`about-page.test.tsx` pins the rule for the **availability plate only**, and that scope is the
+honest part. There the mark is the whole label, so "does the caption repeat it" is a containment
+test. On the other two it is not: the marks row reads `Rhystic Study 2 1 in a brew` and the buy
+tag `buy·$6.40 foil`, so the mark carries a card name and a price and neither string contains the
+other. A loop written across all five plates ran green over the defect in two of them — it was
+written, mutation-tested, found to measure nothing, and narrowed rather than shipped. Those two
+are held by the fix and by the sheet.
+
+That is the whole argument for this artifact, twice over. No assertion catches the stutter,
+because there is nothing wrong with either string — and the assertion written to catch it
+afterwards could only reach a third of it.
 
 ## What the walk could not answer
 
-**The three reader states are not separable on one account.** The page renders differently for a
+**The three rows are one reader state, not three.** The inventory's note called them three
+states reached by URL; that is wrong and the note is corrected. `?next=` sets only the dismiss
+destination. The page renders differently for a
 reader at version 0, a reader who is behind, and a reader who is current — but the acknowledged
 version lives in `user_prefs`, so the fixture account is in exactly one of them at a time. The
 sheet's three rows all photographed the same state. The other two are covered by

@@ -92,7 +92,7 @@ function BuyTagFigure({ width }: { width: AboutWidth }) {
   const Layout = width === "inset" ? SpecimenRows : SpecimenGrid;
   const caption: Record<string, string> = {
     priced: "a figure — stocked today",
-    foilOnly: "foil only",
+    foilOnly: "the only copies stocked are the shiny ones",
     soldOut: "stocked, none today",
     absent: "no price in the feed",
   };
@@ -255,7 +255,7 @@ function FitFigure({ width }: { width: AboutWidth }) {
 function MarksFigure({ width }: { width: AboutWidth }) {
   const rows = [
     { name: CARDS.owned, cost: COSTS.simple, a: AVAILABILITY[0].a, note: "yours, and nothing wants it" },
-    { name: CARDS.removed, cost: COSTS.crowded, a: AVAILABILITY[1].a, note: "a brew wants it" },
+    { name: CARDS.removed, cost: COSTS.crowded, a: AVAILABILITY[1].a, note: "an unfinished deck has claimed it" },
     { name: "Cyclonic Rift", cost: COSTS.simple, a: AVAILABILITY[3].a, note: "more asked for than you own" },
   ];
   return (
