@@ -46,6 +46,12 @@ const WIDTHS = [390, 1300];
 // deck among several in the grid.
 const DECK_NAME = "probe · delete confirm";
 
+// `DECK_NAME_MAX` is 120 and nothing forbids an unbroken run, so this is the
+// worst name a reader can actually make. Normal word-breaking sends it straight
+// past the panel's content box, and the panel clips its own overflow — so the
+// deck the pane is asking about is the one thing it fails to show.
+const LONG_NAME = `probe${"x".repeat(114)}`;
+
 const failures = [];
 const note = (line) => console.log(`  ${line}`);
 const check = (ok, label) => {
@@ -89,7 +95,7 @@ async function signIn(page) {
 
 const pool = new Pool({ connectionString: DATABASE_URL });
 
-async function makeDeck(userId) {
+async function makeDeck(userId, name = DECK_NAME) {
   const commander = await pool.query(
     `select oracle_id from cards
       where commander_legal and type_line like '%Legendary%' and type_line like '%Creature%'
@@ -99,14 +105,14 @@ async function makeDeck(userId) {
   const { rows } = await pool.query(
     `insert into decks (user_id, name, commander_oracle_id, filled)
        values ($1, $2, $3, true) returning id`,
-    [userId, DECK_NAME, commander.rows[0].oracle_id],
+    [userId, name, commander.rows[0].oracle_id],
   );
   return rows[0].id;
 }
 
 /** Opens this deck's panel and presses Delete. Returns the panel locator. */
-async function openConfirm(page) {
-  const trigger = onPage(page, `button[aria-label="Actions for ${DECK_NAME}"]`);
+async function openConfirm(page, name = DECK_NAME) {
+  const trigger = onPage(page, `button[aria-label="Actions for ${name}"]`);
   await trigger.waitFor({ state: "visible", timeout: 20_000 });
   await trigger.click();
   const panelId = await trigger.getAttribute("aria-controls");
@@ -213,7 +219,6 @@ async function run() {
       );
       const kept = await pool.query(`select 1 from decks where id = $1`, [deckId]);
       check(kept.rows.length === 1, "Keep it keeps the deck");
-
       // And the act itself, at this width, against the real action.
       await panel.getByRole("button", { name: "Delete", exact: true }).click();
       await panel.getByRole("button", { name: "Delete deck", exact: true }).click();
@@ -235,6 +240,24 @@ async function run() {
       }
       check(gone, "Delete deck deletes the deck");
       if (gone) written.delete(deckId);
+
+      // LAST, deliberately. This block reloads the route, which leaves the main
+      // deck's panel locator stale — running it earlier made every check after it
+      // time out against an id that no longer existed.
+      const longId = await makeDeck(userId, LONG_NAME);
+      written.add(longId);
+      await page.goto(`${BASE}/decks`, { waitUntil: "domcontentloaded" });
+      const longPanel = await openConfirm(page, LONG_NAME);
+      const headingFit = await longPanel
+        .locator("p")
+        .first()
+        .evaluate((el) => ({ scroll: el.scrollWidth, client: el.clientWidth }));
+      check(
+        headingFit.scroll <= headingFit.client,
+        `a ${LONG_NAME.length}-character name wraps rather than running past the panel (${headingFit.scroll} in ${headingFit.client})`,
+      );
+      await pool.query(`delete from decks where id = $1`, [longId]);
+      written.delete(longId);
 
       await context.close();
     }
