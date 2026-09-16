@@ -15,6 +15,14 @@
 //   - The live tile and the undo receipt report the SAME caption height, which is what makes
 //     a removed card leave a hole exactly its own size.
 //
+//   - The caption name's DESCENDERS fall inside the box that clips them. `truncate` makes
+//     that span an `overflow: hidden` box, so at `line-height: 1` its content box was
+//     exactly the font size and every tail was cut off flat at the baseline. The two
+//     utilities that fix it leave the markup working when either is removed, and the
+//     measurement uses the metrics of the face the browser ACTUALLY used — read once
+//     normally and once with every webfont aborted, since a fallback descent is what the
+//     span's padding exists to absorb.
+//
 // It also reads each grid's column count and tile width. The two routes' achievable tiles
 // DIFFER and the probe asserts each one by name rather than a shared tolerance: `/collection`
 // has 1170px of track at 1300px and lands on 178.3px, the deck pane has 1186px (its ancestor
@@ -108,6 +116,20 @@ async function signIn(page) {
     values (${await page.evaluate(() => window.Clerk.user.id)}, ${version})
     on conflict (user_id) do update
       set about_version_seen = greatest(user_prefs.about_version_seen, ${version})`;
+}
+
+/**
+ * How a clipped-name failure reads. Capped at three names and a count: every tile on the
+ * page shares one rule, so a regression cuts all 113 of them and an uncapped list buries
+ * the rest of the run's output under one finding.
+ */
+function nameDetail(names, cut) {
+  if (names.length === 0) return "no drawn name carries a descender — this run proves nothing";
+  const slack = Math.min(...names.map((n) => Math.min(n.above, n.below)));
+  if (cut.length === 0) return `${names.length} names, least slack ${slack}px`;
+  const shown = cut.slice(0, 3).map((n) => `${n.text} ${n.above}/${n.below}`).join(", ");
+  return `${names.length} names, least slack ${slack}px, ${cut.length} CUT: ${shown}`
+    + (cut.length > 3 ? ", …" : "");
 }
 
 function report(label, ok, detail) {
@@ -257,6 +279,74 @@ const CAPTIONS = (page) => {
 };
 
 /**
+ * Where each caption name's INK falls against the box that clips it.
+ *
+ * The name span carries `truncate`, which is `overflow: hidden`, so that span is the clip
+ * box — and at `line-height: 1` its content box is exactly the font size, which cut every
+ * descender off flat at the baseline (the `g` in `Along the Crooked Way`). A class-list
+ * assertion cannot see this and neither can jsdom, which lays out no text: the fix is two
+ * utilities whose removal leaves the markup working and the glyphs cut.
+ *
+ * So this measures the ink rather than the rule. The font's own metrics come from the
+ * canvas, for the FACE THE BROWSER ACTUALLY USED — which is the half a declared
+ * line-height cannot answer, since a fallback face, or Plex Sans before `display: swap`
+ * resolves, may have a taller descent than the face the value was chosen against. The
+ * baseline sits half the leading below the padding box's top edge, so the two slacks are
+ * what is left above the ink and below it; either going negative is a clipped glyph.
+ *
+ * Only names with a real descender are read: a span of `Aang` clears any box, and a run
+ * that measured those alone would report slack it had not tested.
+ */
+const NAMES = (page) => {
+  const caps = [...document.querySelectorAll(
+    `${page} [class*="min-h-[56px]"][class*="min-h-[50px]"]`,
+  )];
+  const spans = caps.flatMap((c) =>
+    [...c.querySelectorAll("span")].filter((s) => {
+      const st = getComputedStyle(s);
+      return st.textOverflow === "ellipsis" && parseFloat(st.fontSize) >= 12;
+    }),
+  );
+  const ctx = document.createElement("canvas").getContext("2d");
+  const read = [];
+  for (const s of spans) {
+    const text = (s.textContent ?? "").trim();
+    if (!/[gjpqy,;]/.test(text)) continue;
+    const st = getComputedStyle(s);
+    ctx.font = st.font && st.font !== "" ? st.font
+      : `${st.fontStyle} ${st.fontWeight} ${st.fontSize}/${st.lineHeight} ${st.fontFamily}`;
+    const m = ctx.measureText(text);
+    const lineHeight = parseFloat(st.lineHeight);
+    const padTop = parseFloat(st.paddingTop);
+    // The face's own box, not this string's ink: half-leading is distributed against the
+    // font's ascent and descent, whatever the glyphs happen to reach.
+    const baseline = padTop
+      + (lineHeight - (m.fontBoundingBoxAscent + m.fontBoundingBoxDescent)) / 2
+      + m.fontBoundingBoxAscent;
+    read.push({
+      text,
+      fontSize: parseFloat(st.fontSize),
+      lineHeight,
+      // The padding box — what `overflow: hidden` clips against.
+      clip: s.clientHeight,
+      // What the span costs the layout: its border box PLUS its margins, which are
+      // negative here and hand the padding straight back. It should come out at the line
+      // height exactly — that is what makes the slack free.
+      own: Math.round(s.getBoundingClientRect().height + parseFloat(st.marginTop)
+        + parseFloat(st.marginBottom)),
+      // And the line the caption's height sum is built on, read off the row the span sits
+      // in rather than off the span: 20px on a phone, 17px on desktop.
+      line: s.parentElement === null
+        ? null
+        : Math.round(s.parentElement.getBoundingClientRect().height),
+      above: Math.round((baseline - m.actualBoundingBoxAscent) * 10) / 10,
+      below: Math.round((s.clientHeight - (baseline + m.actualBoundingBoxDescent)) * 10) / 10,
+    });
+  }
+  return read;
+};
+
+/**
  * The grid's column count and track width, read off `grid-template-columns`.
  *
  * Computed, not declared: `auto-fill` resolves to an explicit track list, so this reports
@@ -373,6 +463,33 @@ async function run() {
           caps.boxes === 0
             ? "no card in a marked state — seed one, this run proves nothing"
             : `${caps.boxes} boxes, heights ${caps.boxHeights.join(" / ")}, kinds ${caps.kinds.join("+")}`,
+        );
+
+        // The name's descenders, against the box that clips them. Zero names with a
+        // descender is a FAILURE and says so: it means the run read a page whose every
+        // visible name happened to be ascender-only, which measures nothing here.
+        const names = await page.evaluate(NAMES, PAGE);
+        checks += 2;
+        const cut = names.filter((n) => n.above < 0 || n.below < 0);
+        failures += !report(
+          `${width}px · ${label} · descenders inside the clip box`,
+          names.length > 0 && cut.length === 0,
+          nameDetail(names, cut),
+        );
+        // And the slack is not paid for out of the layout. The row the name sits in is
+        // still 20px on a phone and 17px on desktop, and the span costs that row exactly
+        // its own line height — so the padding that buys the ink its room is handed back
+        // by the margin rather than growing the caption. Both halves, because either one
+        // alone passes a build that moved the figure: a span that kept its padding reads
+        // the right row height on a phone, where the row has 4px of slack anyway.
+        const wantLine = width === 1300 ? 17 : 20;
+        failures += !report(
+          `${width}px · ${label} · the name row still measures ${wantLine}px, free`,
+          names.length > 0
+            && names.every((n) => n.line === wantLine && n.own === n.lineHeight),
+          `rows ${[...new Set(names.map((n) => n.line))].join(" / ") || "none"}`
+            + `, span cost ${[...new Set(names.map((n) => `${n.own}/${n.lineHeight}`))].join(" ") || "none"}`
+            + `, clip boxes ${[...new Set(names.map((n) => n.clip))].join(" / ") || "none"}`,
         );
 
         // BOTH widths. This was gated to 1300 alone, which left the phone's
@@ -496,6 +613,31 @@ async function run() {
           draft.figures.length === 0,
           `figures ${draft.figures.join(" / ") || "none"}`,
         );
+      }
+      // The same reading with every webfont ABORTED, which is the case the name span's
+      // padding exists for. The line-height was chosen against Plex Sans, and on desktop
+      // 17px of line for a 13px face leaves about a tenth of a pixel over that face's own
+      // ink — so a fallback with a deeper descent, or Plex Sans itself in the window before
+      // `display: swap` resolves, clips the very glyph the fix restores. Nothing about the
+      // markup differs, so only measured ink can tell the two runs apart. Its own context,
+      // because the route has to be aborted before the document loads.
+      const bare = await browser.newContext({ viewport: { width, height: 900 } });
+      try {
+        const barePage = await bare.newPage();
+        await barePage.route(/\.(woff2?|ttf|otf)(\?.*)?$/, (r) => r.abort());
+        await signIn(barePage);
+        await barePage.goto(`${BASE}/collection?view=grid`, { waitUntil: "networkidle" });
+        await barePage.waitForTimeout(1_500);
+        const bareNames = await barePage.evaluate(NAMES, PAGE);
+        const bareCut = bareNames.filter((n) => n.above < 0 || n.below < 0);
+        checks += 1;
+        failures += !report(
+          `${width}px · /collection · descenders survive the fallback face`,
+          bareNames.length > 0 && bareCut.length === 0,
+          nameDetail(bareNames, bareCut),
+        );
+      } finally {
+        await bare.close();
       }
       await context.close();
     }

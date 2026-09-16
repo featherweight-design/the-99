@@ -120,10 +120,26 @@ export function CardTileCaption({
           {meta}
           {metaTrail && <span className="ml-auto flex-none">{metaTrail}</span>}
         </div>
-        <div className={`flex items-center gap-[6px] min-w-0 leading-none ${NAME_LINE}`}>
+        {/* The name line carries a line-height, where the meta line above it
+            takes `leading-none`. `truncate` means `overflow: hidden`, so at
+            `line-height: 1` the span's content box is exactly its font-size and
+            every descender — the `g` in `Along the Crooked Way` — is clipped at
+            the baseline. Both values sit within each width's fixed box (16px in
+            a 20px line, 17px in a 17px line), so the caption's height sum is
+            untouched.
+
+            The span then pays 2px of vertical padding and takes it straight
+            back as a negative margin. The padding box is what `overflow: hidden`
+            clips, so that buys the ink 2px of slack above and below; the margin
+            box is what the flex line measures, so nothing moves. Desktop is why:
+            17px of line for a 13px face is 1.31em, and a face in the fallback
+            chain — or Plex Sans itself before `display: swap` resolves — whose
+            ascent and descent exceed that would clip the very `g` this fixes,
+            with the phone's 1.33em absorbing what desktop could not. */}
+        <div className={`flex items-center gap-[6px] min-w-0 leading-[16px] md:leading-[17px] ${NAME_LINE}`}>
           <span
             aria-hidden={nameHidden || undefined}
-            className="min-w-0 truncate text-[12px] md:text-[13px] font-semibold"
+            className="min-w-0 truncate py-[2px] -my-[2px] text-[12px] md:text-[13px] font-semibold"
             style={{ color: "var(--fg)" }}
           >
             {name}
