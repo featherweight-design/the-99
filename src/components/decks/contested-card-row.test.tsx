@@ -578,9 +578,9 @@ describe("ContestedCardRow — the chooser", () => {
     const option = screen.getByRole("radio", { name: /Elemental Dragons/ });
     fireEvent.click(option);
     fireEvent.click(screen.getByRole("radio", { name: /your choice/ }));
+    // A cleared row is indistinguishable from one never touched: no option checked, and the
+    // accent gone with it.
     expect(screen.queryByRole("radio", { checked: true })).toBeNull();
-    // …and a cleared row is indistinguishable from one never touched.
-    expect(screen.queryByText(/first committed/)).toBeNull();
   });
 
   it("redraws from the server's own reading when a pick is refused", async () => {
@@ -603,9 +603,6 @@ describe("ContestedCardRow — the chooser", () => {
     });
     // The optimistic pick is taken back: the refusal means it never happened.
     expect(screen.queryByRole("radio", { checked: true })).toBeNull();
-    // And the refusal note SUPERSEDES the footer — two competing instructions on one row is
-    // worse than one, and the refusal already names the way back.
-    expect(screen.queryByText(/first committed/)).toBeNull();
   });
 
   it("takes the fresh supply on the review door rather than freezing the first render", async () => {

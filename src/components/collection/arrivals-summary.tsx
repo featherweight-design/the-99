@@ -118,9 +118,7 @@ export function ArrivalsSummary({
 
   const cleared = summary?.cleared ?? [];
   const still = summary?.still ?? [];
-  // What `Still to buy` is actually SHOWING. The cross-reference on a contested row points at a
-  // row the reader can see; pointing at one hidden behind `Show all` sends them looking for
-  // something that is not there.
+  // What `Still to buy` is actually SHOWING — the rest sit behind `Show all`.
   const stillShown = showAllStill ? still : still.slice(0, MONEY_LIMIT);
   // THE FROZEN SECTIONS DECIDE THIS, not the live one. `summary.contested` is a record of what
   // this import left contested; `contested` is what is still contested NOW, and a row leaves it
@@ -262,9 +260,6 @@ export function ArrivalsSummary({
               <ContestedCardRow
                 key={card.oracleId}
                 card={card}
-                // The page's one cross-reference, and it points UP. Silence here would look
-                // like a bug; a sum across the two would BE one — they answer different
-                // questions, one about a deck's draft demand and one about committed claims.
               />
             ))}
           </div>

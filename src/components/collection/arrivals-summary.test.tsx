@@ -156,7 +156,6 @@ describe("ArrivalsSummary", () => {
     const done = screen.getByText(copy.summary.done);
     expect(done.getAttribute("href")).toBe("/collection");
     // The note beside the button is retired: the label names its destination.
-    expect(screen.getByText(copy.summary.done)).toBeTruthy();
     expect(screen.queryByText(/nothing here needs saving/)).toBeNull();
   });
 });

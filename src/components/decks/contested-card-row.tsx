@@ -187,8 +187,7 @@ export function ContestedCardRow({
   // IN AN EFFECT, NOT IN THE RENDER ABOVE. The token is a ref, and a ref mutated during render
   // survives a render React abandons — a concurrent update that starts with a new payload and
   // is dropped would retire a write whose props never committed, and that write would then
-  // decline to stand its own preview down, leaving the accent and the undo footer stuck on the
-  // row for good. An effect runs only after a commit, so an abandoned render moves nothing.
+  // decline to stand its own preview down, leaving the accent stuck on the row for good. An effect runs only after a commit, so an abandoned render moves nothing.
   useEffect(() => {
     tap.current += 1;
   }, [initial]);
@@ -196,7 +195,7 @@ export function ContestedCardRow({
   // AUTHORSHIP IS A FACT ABOUT THE DATA, not a fact about this component's lifetime. A deck with
   // a GRANTED reservation is a deck the player chose — seniority grants nothing, it only orders a
   // queue — so reading it off the row survives the revalidation that follows every pick. Held in
-  // state instead, the accent and the undo footer vanished the moment the server answered, which
+  // state instead, the accent vanished the moment the server answered, which
   // is exactly when the player looks for confirmation that their tap landed.
   const chosenIds = picked ?? new Set(card.claimants.filter((c) => c.granted > 0).map((c) => c.deckId));
 
@@ -218,7 +217,7 @@ export function ContestedCardRow({
     const mine = ++tap.current;
     startTransition(async () => {
       // `finally`, not a trailing statement: a thrown action — a dropped connection, an expired
-      // session — exits this callback, and the optimistic accent and undo footer would then stand
+      // session — exits this callback, and the optimistic accent would then stand
       // forever behind a write whose outcome nobody knows. Standing the state down is the one
       // thing that must happen on every path out of here.
       try {

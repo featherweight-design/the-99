@@ -280,9 +280,14 @@ describe("withoutUndecided", () => {
     expect(withoutUndecided(before, [])).toBe(before);
   });
 
-  it("keys on the LIVE list, so a card whose contention resolved comes back", () => {
-    // `summary.contested` still names the card; the caller passes what the claim read says NOW.
-    const s = withoutUndecided(summary(), []);
+  it("keys on the LIVE list, not on what the payload recorded as contested", () => {
+    // The payload still names CARD as contested; the caller passes what the claim read says NOW.
+    // Passing an empty list would prove nothing — that is the early return — so this passes a
+    // DIFFERENT card, which exercises both filters and must leave CARD's rows alone.
+    const s = withoutUndecided(summary(), [OTHER]);
+    expect(s.contested.map((c) => c.oracleId)).toEqual([CARD]);
     expect(s.cleared.map((r) => r.oracleId)).toContain(CARD);
+    expect(s.cleared.map((r) => r.oracleId)).not.toContain(OTHER);
+    expect(s.still.map((r) => r.oracleId)).toContain(CARD);
   });
 });
