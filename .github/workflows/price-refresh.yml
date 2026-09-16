@@ -16,23 +16,65 @@ on:
         options: [staging, production]
         default: staging
 
-concurrency:
-  group: price-refresh-${{ github.event.inputs.target || 'production' }}
-  cancel-in-progress: false
-
 permissions:
   contents: read
 
 jobs:
-  refresh:
-    # Set the PRICE_REFRESH_ENABLED repository variable to 'true' or the
-    # schedule never fires; a manual dispatch always runs.
+  # Resolves which databases this run prices. A scheduled run fans out over both environments;
+  # a manual dispatch prices only the one it names. This has to be a separate job because a
+  # matrix can only be built from a `needs` output — the alternative, an expression on
+  # `environment`, is what this workflow shipped with, and it let staging sit 11 days stale
+  # while production refreshed on schedule every Monday. Catalog refresh learned the same
+  # lesson first; this is that fix, ported.
+  plan:
+    # Kill switch for the schedule; a manual dispatch always runs. Set the
+    # PRICE_REFRESH_ENABLED repository variable to 'true' or scheduled refresh never fires.
     if: vars.PRICE_REFRESH_ENABLED == 'true' || github.event_name == 'workflow_dispatch'
     runs-on: ubuntu-latest
+    outputs:
+      targets: ${{ steps.pick.outputs.targets }}
+    steps:
+      - id: pick
+        shell: bash
+        env:
+          # Read through the environment rather than interpolating into the script body, so the
+          # input cannot inject shell. The `case` re-validates what the `choice` type already
+          # constrains, because `github.event.inputs` is unset — not defaulted — off schedule.
+          TARGET: ${{ github.event.inputs.target }}
+        run: |
+          case "$TARGET" in
+            staging|production) targets="[\"$TARGET\"]" ;;
+            '') targets='["staging","production"]' ;;
+            *) echo "Unrecognised target: $TARGET" >&2; exit 1 ;;
+          esac
+          echo "targets=$targets" >> "$GITHUB_OUTPUT"
+          echo "Pricing: $targets"
+
+  refresh:
+    needs: plan
+    strategy:
+      matrix:
+        target: ${{ fromJSON(needs.plan.outputs.targets) }}
+      # The two environments are independent databases. A staging ingest that fails must not
+      # cancel the production one, which is the environment the app actually serves.
+      fail-fast: false
+    runs-on: ubuntu-latest
+    concurrency:
+      # Per target: the two environments hold different databases, so a manual staging refresh
+      # has no reason to queue behind — or delay — the scheduled production one. Never cancel
+      # in progress; the upsert walks the feed in batches and a half-applied run leaves the
+      # table split across two `as_of` stamps, which is what liveness is read from.
+      group: price-refresh-${{ matrix.target }}
+      cancel-in-progress: false
     timeout-minutes: 60
-    environment: catalog-${{ github.event.inputs.target || 'production' }}
+    # GitHub environment names are `catalog-staging` / `catalog-production` — see the note in
+    # catalog-refresh.yml. Each holds its own CATALOG_DATABASE_URL, so this is what routes the
+    # ingest at one database rather than the other.
+    environment: catalog-${{ matrix.target }}
     defaults:
       run:
+        # GitHub expands `shell: bash` to `bash -eo pipefail`. Without it the seed step's exit
+        # status would be `tee`'s, so a failed ingest would report the job as green.
         shell: bash
     env:
       DATABASE_URL: ${{ secrets.CATALOG_DATABASE_URL }}
@@ -53,7 +95,7 @@ jobs:
           {
             echo "## Price refresh"
             echo ""
-            echo "- Target: \`catalog-${{ github.event.inputs.target || 'production' }}\`"
+            echo "- Target: \`catalog-${{ matrix.target }}\`"
             echo ""
           } >> "$GITHUB_STEP_SUMMARY"
           pnpm --silent db:seed:prices | tee -a "$GITHUB_STEP_SUMMARY"
