@@ -18,10 +18,18 @@ export function DeleteMode({
   deckId,
   deckName,
   onCancel,
+  onBusy,
 }: {
   deckId: string;
   deckName: string;
   onCancel: () => void;
+  /**
+   * Raised while the action is in flight. The pane's own `pending` and
+   * `inFlight` guard the pane, and a pane that has been UNMOUNTED guards
+   * nothing — so the panel above has to hold the fact too, exactly as
+   * `ShelfMenu` does with its own `busy`.
+   */
+  onBusy: (busy: boolean) => void;
 }) {
   const [pending, startTransition] = useTransition();
   const [error, setError] = useState<string | null>(null);
@@ -45,6 +53,7 @@ export function DeleteMode({
     if (inFlight.current) return;
     inFlight.current = true;
     setError(null);
+    onBusy(true);
     startTransition(async () => {
       try {
         await deleteDeck(deckId);
@@ -56,18 +65,24 @@ export function DeleteMode({
         // documents. Rethrow first, then handle what is left: a real outage.
         unstable_rethrow(err);
         inFlight.current = false;
+        onBusy(false);
         setError(c.failed);
         return;
       }
-      // Deliberately not cleared on success: the redirect above is still in
-      // flight, and re-enabling the buttons would offer a second delete of a
-      // deck that is already gone.
+      // Deliberately not cleared on success — neither the local guard nor the
+      // panel's: the redirect above is still in flight, and releasing either
+      // would offer a second delete of a deck that is already gone.
     });
   }
 
   return (
     <div className="flex flex-col gap-[10px] p-[12px]">
-      <p className="m-0 font-display text-[14px] font-semibold text-[color:var(--fg)]">
+      {/* `break-words`, because the name is the reader's and `DECK_NAME_MAX` is
+          120 characters with no rule against an unbroken run. Normal
+          word-breaking sends such a name straight past the panel's 160px
+          content box, and the panel clips its own overflow — so the deck the
+          pane is asking about would be the one thing it failed to show. */}
+      <p className="m-0 font-display text-[14px] font-semibold break-words text-[color:var(--fg)]">
         {c.heading(deckName)}
       </p>
       <p className="m-0 text-[12.5px] leading-[1.5] text-[color:var(--fg-body)]">{c.body}</p>

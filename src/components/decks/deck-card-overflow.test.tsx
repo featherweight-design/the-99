@@ -255,6 +255,34 @@ describe("DeckCardOverflow — the delete confirm", () => {
     );
   });
 
+  // The pane's `pending` and `inFlight` guard the PANE, and a pane that has been
+  // unmounted guards nothing. The ⋯ trigger sits outside the panel and stays
+  // reachable by Shift+Tab and by pointer, so without a busy flag held ABOVE the
+  // pane, toggling the panel mid-request resets the guard and a reopened menu
+  // submits the same delete a second time.
+  it("refuses to close the panel while a delete is in flight", async () => {
+    deleteDeck.mockReset();
+    // Never settles: the window under test is exactly the time the action is
+    // outstanding, so a resolved mock would close it before the assertion.
+    deleteDeck.mockImplementation(() => new Promise(() => {}));
+    open();
+    fireEvent.click(screen.getByRole("button", { name: "Delete deck" }));
+    await waitFor(() => expect(deleteDeck).toHaveBeenCalledTimes(1));
+
+    fireEvent.click(trigger());
+    // Still the pane, not the menu and not a closed panel.
+    expect(screen.getByText("Delete “Atraxa”?")).toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "Rename" })).toBeNull();
+
+    // And the second submit a reopened menu would have offered never happens:
+    // pressing the trigger twice more leaves the pane standing, so the Delete
+    // row that would start a second request is never on screen to press.
+    fireEvent.click(trigger());
+    fireEvent.click(trigger());
+    expect(screen.getByText("Delete “Atraxa”?")).toBeInTheDocument();
+    expect(deleteDeck).toHaveBeenCalledTimes(1);
+  });
+
   // THE TRAP. `deleteDeck` ends in `redirect()`, which signals BY THROWING, and
   // the throw arrives in the pane's catch before the router navigates. A bare
   // catch reports a failure over a deletion that succeeded.

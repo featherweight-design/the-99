@@ -78,6 +78,13 @@ export function DeckCardOverflow({
 }: DeckCardOverflowProps) {
   const [open, setOpen] = useState(false);
   const [mode, setMode] = useState<"menu" | "rename" | "move" | "delete">("menu");
+  // Raised by the delete pane while its action is in flight. The pane's own
+  // guards die with the pane, and the ⋯ trigger sits OUTSIDE the panel and stays
+  // reachable by Shift+Tab and by pointer: without this, toggling the panel
+  // unmounts the pane mid-request, resets its guard, and a reopened menu can
+  // submit the same delete again. `ShelfMenu` holds the same fact for the same
+  // reason.
+  const [busy, setBusy] = useState(false);
   const buttonRef = useRef<HTMLButtonElement>(null);
   // Every deck card renders one of these, so the id has to be per-instance.
   const panelId = useId();
@@ -85,6 +92,7 @@ export function DeckCardOverflow({
   function handleToggle(e: React.MouseEvent) {
     e.preventDefault();
     e.stopPropagation();
+    if (busy) return;
     setOpen((o) => !o);
     setMode("menu");
   }
@@ -189,6 +197,7 @@ export function DeckCardOverflow({
   }, [mode]);
 
   function handleClose() {
+    if (busy) return;
     setOpen(false);
     setMode("menu");
     buttonRef.current?.focus();
@@ -367,6 +376,7 @@ export function DeckCardOverflow({
                 wantsDeleteRowFocus.current = true;
                 setMode("menu");
               }}
+              onBusy={setBusy}
             />
           ) : (
             <div className="p-[12px]">

@@ -217,7 +217,16 @@ async function run() {
       // And the act itself, at this width, against the real action.
       await panel.getByRole("button", { name: "Delete", exact: true }).click();
       await panel.getByRole("button", { name: "Delete deck", exact: true }).click();
-      await page.waitForURL(/\/decks\/?$/, { timeout: 20_000 }).catch(() => {});
+      // ASSERTED, never swallowed. `deleteDeck` ends in `redirect("/decks")`, so
+      // the navigation is part of the flow under test — and the database poll
+      // below would go green on a build whose client never followed it, leaving
+      // the reader on a deck page whose deck is gone. A `.catch(() => {})` here
+      // turned that into a silent pass.
+      let landed = true;
+      await page.waitForURL(/\/decks\/?$/, { timeout: 20_000 }).catch(() => {
+        landed = false;
+      });
+      check(landed, `the delete lands the reader on /decks (at ${page.url()})`);
       let gone = false;
       for (let i = 0; i < 20 && !gone; i += 1) {
         const row = await pool.query(`select 1 from decks where id = $1`, [deckId]);
