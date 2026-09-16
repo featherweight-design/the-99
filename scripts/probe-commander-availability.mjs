@@ -736,6 +736,16 @@ async function run() {
  * `beforeExit` covers the remaining case: a normal return whose `finally` was
  * skipped because something above it called `process.exit`. Nothing here does
  * today, and `probe:score-lock` learned what it costs when something does.
+ *
+ * MEASURED, and narrower than it looks. Interrupting mid-run with a browser
+ * operation in flight already cleaned up before this existed: Playwright installs
+ * its own SIGINT handling, the pending operation rejects, and the `finally` runs
+ * normally — removing these handlers and repeating the interrupt still left no
+ * deck behind. What they cover is the window with NO browser call pending, which
+ * on this script is the fixture setup itself: the deck row is written, then three
+ * more inserts, and an interrupt in there exits with the claim standing on a
+ * shared account. Small window, and the cost of losing it is a row that silently
+ * changes every availability reading taken afterwards.
  */
 async function sweepFixture() {
   if (!fixtureDeckId) return;
