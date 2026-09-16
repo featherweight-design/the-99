@@ -120,7 +120,13 @@ export function CardTileCaption({
           {meta}
           {metaTrail && <span className="ml-auto flex-none">{metaTrail}</span>}
         </div>
-        <div className={`flex items-center gap-[6px] min-w-0 leading-none ${NAME_LINE}`}>
+        {/* The name line carries a line-height, where the meta line above it
+            takes `leading-none`. `truncate` means `overflow: hidden`, so at
+            `line-height: 1` the span's content box is exactly its font-size and
+            every descender — the `g` in `Along the Crooked Way` — is clipped at
+            the baseline. The values sit inside each width's fixed box (16px in
+            a 20px line, 17px in a 17px line), so nothing moves. */}
+        <div className={`flex items-center gap-[6px] min-w-0 leading-[16px] md:leading-[17px] ${NAME_LINE}`}>
           <span
             aria-hidden={nameHidden || undefined}
             className="min-w-0 truncate text-[12px] md:text-[13px] font-semibold"
