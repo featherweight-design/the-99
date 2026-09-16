@@ -15,26 +15,30 @@ some of them. Reported against two real rows:
   reaches `Dinosaurs · Explore · Mice · Miracles · Paradox · Reach · Saprolings · Tyranids ·
   Umori Companion · Wurms`.
 
-Three separate faults, and they have three separate causes.
+Four separate faults, and they have four separate causes.
 
-1. **The tag list names creature types.** The novelty sort ranks tags by how *unplayed* they
-   are, so low-signal tribal labels rise to the top of the list precisely because nobody
-   builds them. `Frogs`, `Crocodiles` and `Bears` say nothing about how a Glarb deck plays,
-   and two of the three have no relationship to the card at all.
-2. **The nearest-deck clause argues the wrong way.** `Your closest build, HD - Goblins,
+1. **The tag list names creature types.** `Frogs` says nothing about how a Glarb deck plays,
+   and the report names that kind of line explicitly as unhelpful. It is **not** noise,
+   though — see Ruling A — so nothing is wrong with the ranking that produced it, and the
+   rule that removes it is the classifier in Ruling B.
+2. **Two of the three names are statistical accidents.** `Crocodiles` and `Bears` sit at
+   EDHREC counts of **2 and 1** out of Glarb's 24,054 tracked decks. They appear because the
+   descending list ran out of real themes and continued into a tail holding 48% of the
+   commander's tags, and no classifier addresses that — Ruling C does.
+3. **The nearest-deck clause argues the wrong way.** `Your closest build, HD - Goblins,
    plays …` was a deliberate ruling — end the sentence on newness rather than on overlap —
    but under a sort whose whole purpose is to surface the unfamiliar, naming the familiar
    deck is the opposite of the point.
-3. **The floor note repeats on every row.** `clears the 30% floor: you own 33% of its
+4. **The floor note repeats on every row.** `clears the 30% floor: you own 33% of its
    support list` restates a rule the page header has already stated once.
 
-Underneath those is a fourth, which is the reason the first three were worth a redesign
+Underneath those is a fifth, which is the reason the first four were worth a redesign
 rather than a copy edit: **the row is a data table, and the reader does not want one.** The
 figures on it — role counts, a support count over an EDHREC total, a ratio bar, a deck
 count, an availability line — are only interesting after the decision to investigate has
 already been made, and that decision is made on Commander Details.
 
-Fifth, and reported alongside: **the same commander carries two different headline
+Sixth, and reported alongside: **the same commander carries two different headline
 numbers.** `/discover` prints `86 OF TOP 262 OWNED`; Commander Details prints
 `FIT FOR YOUR COLLECTION 60/100`. Both are honest and they measure different things, which
 is exactly why showing one on one route and the other on another is a defect rather than a
@@ -148,19 +152,28 @@ the untagged exclusion applies), 3,085 rows, a 2,733-card collection:
 
 | | |
 |---|---|
-| baseline payload | 0.93 MB |
+| baseline payload, this collection | 0.93 MB |
 | prose added | +488 KB |
 | cut fields and trimmed labels recovered | −448 KB |
-| **variant payload** | **0.97 MB** (net +40 KB) |
-| headroom under the ceiling | 1.03 MB |
+| **variant payload, this collection** | **0.97 MB** |
+| **net change** | **+40 KB** |
+
+**What this measurement establishes is the +40 KB delta, not the absolute.** Its 0.93 MB
+baseline is this collection's, and it is not the 1.09 MB recorded in `encode.ts` and
+`src/lib/cache/user-lists.ts` — that figure came from a larger collection than any now on
+local-dev, and production's `collection_items` is currently empty, so it cannot be
+re-measured here. The two are not in conflict and neither is wrong; they are different
+collections. **The absolute is therefore the byte guard's job, not this document's** — see
+Verification, where the guard encodes a full-catalog payload and fails above a stated budget.
+Against the recorded 1.09 MB the same delta lands at ~1.13 MB, still well under the ceiling.
 
 The recovery comes from six fields the row stops printing — `roleCounts`, `colorPoolSize`,
 `ownedSupport`, `supportPct`, `tagTotal` and `nearestDeck` — collapsing into one `score`
 integer, plus `unplayedLabels` dropping from every unplayed tag to three dictionary indices.
 
 Two reasons to trust the direction of the error. Local prose averages 160 characters against
-production's 148, so the measurement is pessimistic. And at 3,085 of a possible 3,342 rows
-the row count is near its ceiling, so a larger collection adds at most ~8%.
+production's 148, so the measurement is pessimistic. And at 3,085 rows of a local catalog of
+**3,279**, the row count is near its ceiling, so a larger collection adds at most ~6%.
 
 **No two-tier payload is needed.** The measurement was taken with a throwaway script that is
 deliberately not kept: it answers one question once, and the number belongs in this document
@@ -186,6 +199,14 @@ An **unclassifiable label is excluded** from the gap line. The asymmetry is deli
 mechanic wrongly hidden produces a thinner sentence, while a creature type wrongly shown is
 the defect this spec exists to fix.
 
+**That rule forces the classifier to be an allowlist of mechanics, not a denylist of creature
+types**, and getting this backwards would reintroduce the defect. A denylist defaults an
+unrecognised label to *mechanic*, so the first creature type EDHREC adds after the last
+vocabulary refresh reaches the reader — precisely the reported bug, arriving by itself. An
+allowlist defaults it to *hidden*, which is the direction the rule above asks for. So the
+generated artifact is the set of labels known to be mechanics, and a label absent from it is
+excluded until the generator runs again.
+
 The classifier is pure code with no network access, and it is unit-tested against the whole
 401-label vocabulary rather than against a sample — the vocabulary is small, fixed between
 index rebuilds, and reading it in full is what turns a spot check into a proof.
@@ -202,6 +223,35 @@ Five, each of which needs drawing rather than defaulting:
 | Nothing new | every mechanic tag already played | **new state, no precedent** — needs a ruling |
 | Unpriced | `price.kind === "absent"` | the slot unmounts; no dash, no zero, no reason given |
 
+### The gap slot ships as a tagged union, because `tagTotal` is one of the cut fields
+
+`No tags` and `Nothing new` both leave the label list empty, so a client holding only
+`unplayedLabels: []` cannot tell them apart — and `tagTotal`, the field that would have
+discriminated, is cut for its bytes. **So the state is decided on the server and shipped as
+the slot's own discriminator:**
+
+```ts
+type GapSlot =
+  | { kind: "unplayed"; labels: string[] }  // 1–3 names, already classified, floored, ordered
+  | { kind: "allPlayed" }                   // mechanic set non-empty, every member played
+  | { kind: "noMechanics" };                // mechanic set empty after classification
+```
+
+Three consequences, all of them wanted. The classifier, the floor and the ordering run once
+per row on the server rather than in the component, so the row draws what it is given and has
+no rule in it. The redefinition R1 asked for — decide on the classifier's output, not
+`tags.length` — has exactly one place it can be implemented. And the payload carries **one
+small tag plus at most three dictionary indices** where it used to carry `tagTotal`, every
+unplayed label and `nearestDeck`, so the discriminator costs less than the field it replaces.
+
+**One claim in R1's readiness doc does not survive this, and it is a scope correction rather
+than an erratum.** `showUntagged` is `fit && item.tagTotal === 0` (`discovery-row.tsx:287`),
+so the `No tag data` note renders today under **one sort on one lane** — `rec-card.tsx` has
+no such note at all. Calling it "the shipped note with its condition redefined" understates
+the work: on the merged row it draws under both sorts and on both lanes, which is new
+rendering on three of those four combinations. The note's markup and copy are reused; its
+reachability is not.
+
 `Nothing new` is the one with no existing answer. It is reachable: a reader with many decks
 across many archetypes can own a commander whose every mechanic they already play, and the
 gap line then has nothing to assert. It must not fall back to naming creature types, and it
@@ -209,13 +259,19 @@ must not print an empty clause.
 
 ## Verification
 
-- **Unit** — the classifier over all 401 labels, including the twelve mis-sorted mechanic
-  tags and the five irregular plurals named above as explicit cases. Fit arithmetic is
-  already covered in `score.ts`'s tests; the row's use of `measurableTotal` is not and needs
-  a case that a null-synergy commander prints `40/40` and never `40/100`.
+- **Unit** — the classifier over all 401 labels, including the **thirteen** mis-sorted
+  mechanic tags and the five irregular plurals named above as explicit cases, plus the
+  proportional floor at a null `deck_count` and the three `GapSlot` branches. Fit arithmetic
+  is already covered in `score.ts`'s tests, and **so is the row's denominator**:
+  `rec-card.test.tsx:226` already asserts a null-synergy commander prints
+  `fitDenominatorMeasurable(40)` at both widths and that the rescaled `80` never appears, with
+  `scoreAria(32, 40)` at `:246`. The merged row inherits those cases rather than needing new
+  ones; what it needs is that they still run against the new component.
 - **Payload guard** — a test that encodes a full-catalog payload and fails above a stated
-  byte budget. The ceiling's breach is silent, and 1.03 MB of headroom today is not a reason
-  to leave the next 500 KB unmeasured.
+  byte budget. This is also what establishes the payload's **absolute** size, which the
+  measurement above deliberately does not: a breach of the ceiling is silent, so the budget
+  has to be asserted somewhere that runs, against a catalog-sized row count rather than one
+  collection's.
 - **Probe** — `/discover` and `/commanders` at both widths: the sentence renders, the gap
   line names no creature type, the Fit figure equals the one Commander Details prints for
   the same commander, and the row's height is identical under both `/discover` sorts. The
@@ -335,10 +391,11 @@ Measured across the catalog, mechanic tags surviving each candidate floor:
 
 **2% is disqualified by a case, not by the aggregate.** Kenrith's largest theme — `Group Hug` at
 614 — is under 2% of its 31,481 tracked decks, so at that floor a commander with 31,481 decks on
-file has no theme at all. **1% costs 118 commanders their three-name form** for no gain in tail
-removal. **0.5% cuts Glarb from 132 eligible mechanic tags to 13 and leaves the zero-tag
-population exactly where it was**, which is the whole test: the floor should delete accidents,
-not states.
+file has no theme at all. **1% costs 115 commanders their three-name form**: commanders left with
+fewer than three eligible tags go from 118 + 120 = 238 at 0.5% to 121 + 232 = 353 at 1%. **0.5%
+cuts Glarb from 132 eligible mechanic tags to 13 and leaves the zero-tag population exactly where
+it was** — 118, the same as with no floor at all — which is the whole test: the floor should
+delete accidents, not states.
 
 A median of 9 is comfortably clear of the 3 names the line needs, so the cap in Ruling A stays
 the binding constraint for almost every row rather than the floor.
@@ -398,11 +455,16 @@ land on **one** mechanic tag. The distribution over 3,279 commanders:
 
 | mechanic tags after classification | commanders | share |
 |---|---|---|
+| exactly 0 — every tag a creature type | 9 | 0.3% |
 | exactly 1 | 51 | 1.6% |
 | exactly 2 | 63 | 1.9% |
 | exactly 3 | 70 | 2.1% |
 | **4 or more** | **2,977** | **90.8%** |
-| tags empty upstream | 109 | — |
+| tags empty upstream | 109 | 3.3% |
+
+Those six rows are the whole catalog: 9 + 51 + 63 + 70 + 2,977 + 109 = **3,279**. The first
+and last rows together are the 118 that Ruling C's table reports as its zero-tag column —
+`No tag data`'s population, by the redefinition above.
 
 The three-name form is the near-universal case and the one-name form is the rarity. No geometry
 moves, exactly as R1 predicted. What changes is that the three-name cap is **load-bearing rather
@@ -420,13 +482,23 @@ Production, 3,341 stored sentences: mean **148**, p95 **171**, max **190**.
 R1's stated remedy stands unchanged: widen to the row's full `1fr` before adding a line. Not
 blocking.
 
-## Erratum 4 — amber C closes benignly, with a caveat about the fixture
+## Erratum 4 — amber C closes benignly, and its figure is not the shipping one
 
-`Nothing new` is **2.6%** of rows against a 2,733-card collection (`Full` 93.8%, `No tag data`
-3.6%). The calm treatment is right at any frequency, which R1 had already argued. The caveat is
-that this account plays only **43 distinct tag slugs** across its decks, so a reader with many
-decks in many archetypes will see the state considerably more often; the figure is a floor, not
-an estimate.
+`Nothing new` measured **2.6%** of rows against a 2,733-card collection (`Full` 93.8%,
+`No tag data` 3.6%), which closes R1's amber C: the calm treatment is right at that frequency,
+and R1 had already argued it is right at any.
+
+**But that measurement predates Ruling C and must not be read as the shipping frequency.** It
+was taken with no proportional floor, and the floor moves rows from `Full` to `Nothing new` by
+construction — most visibly the reported Glarb row, which is `Full` in that very measurement
+and becomes `Nothing new` under the floor. The direction is known and the magnitude is not; the
+figure is a floor on the state's frequency in two senses at once.
+
+The fixture compounds it in the same direction: this account plays only **43 distinct tag
+slugs** across its decks, so a reader with many decks in many archetypes reaches the state more
+often again. R1's ruling stands either way, which is why this is an erratum about a number
+rather than a reopened question — but a document or probe that quotes 2.6% as what readers will
+see is quoting a pre-floor world.
 
 ## Erratum 5 — `FitBar` is not dead code
 
