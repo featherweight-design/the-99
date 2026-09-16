@@ -38,8 +38,7 @@ import { DECK_GROUPING_LABELS } from "../../lib/copy/deck-sort";
 import { BrowseFigureBody } from "./browse-figure";
 import { KeyNumeral } from "./numeral";
 import { setFilterCopy, setPageCopy } from "../../lib/copy/set-collections";
-import { PIP_ORDER } from "../../lib/copy/filter-chassis";
-import { PIP_SRC } from "../ui/colour-pips";
+import { PIP_ORDER, PIP_SRC } from "../../lib/copy/filter-chassis";
 import {
   ImportFigureBody,
   CardDetailFigureBody,

@@ -12,7 +12,7 @@
 // Parameterised, never flagged: the same rule set collections' own extraction
 // carries. A route passes its state in and gets pips out; no prop names a route.
 
-import { chassisCopy, PIP_ORDER, type PipCode } from "../../lib/copy/filter-chassis";
+import { chassisCopy, PIP_ORDER, PIP_SRC, type PipCode } from "../../lib/copy/filter-chassis";
 
 /**
  * Scryfall's own symbols, committed under `public/mana/`. They are finished
@@ -27,9 +27,6 @@ import { chassisCopy, PIP_ORDER, type PipCode } from "../../lib/copy/filter-chas
  * line below. Decision 7 rules on how an available filter is drawn; a filter
  * with nothing to match is not one.
  */
-export const PIP_SRC: Record<PipCode, string> = {
-  W: "/mana/W.svg", U: "/mana/U.svg", B: "/mana/B.svg", R: "/mana/R.svg", G: "/mana/G.svg",
-};
 
 /** 22px desktop, a real 44px target on the phone (decision 8). */
 const DESKTOP_PX = 22;

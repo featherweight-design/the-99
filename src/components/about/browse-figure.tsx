@@ -12,8 +12,7 @@
 // figure without anyone editing it.
 
 import { collectionChassisCopy, collectionFilterCopy } from "../../lib/copy/collection";
-import { chassisCopy, PIP_ORDER } from "../../lib/copy/filter-chassis";
-import { PIP_SRC } from "../ui/colour-pips";
+import { chassisCopy, PIP_ORDER, PIP_SRC } from "../../lib/copy/filter-chassis";
 import { setPageCopy } from "../../lib/copy/set-collections";
 import { sortOrderLabel } from "../../lib/collection/sort-options";
 import { CardTileCaption } from "../ui/card-tile-caption";

@@ -7,6 +7,7 @@ import { availabilityCopy } from "../../lib/copy/availability";
 import { cardAssignmentsCopy } from "../../lib/copy/card-assignments";
 import { printingPickerCopy } from "../../lib/copy/collection";
 import { setPageCopy } from "../../lib/copy/set-collections";
+import { PIP_ORDER } from "../../lib/copy/filter-chassis";
 import {
   CONTESTED_ARRIVAL,
   IMPORT_SOURCES,
@@ -612,6 +613,23 @@ describe("what each chapter 01 figure actually draws", () => {
     expect(el.textContent).toContain(setPageCopy.cost.line(h.costPriced, h.costMissing));
     expect(el.textContent).toContain(setPageCopy.cost.unpriced(h.costUnpriced));
     expect(el.textContent).toContain(setPageCopy.cost.send(h.sendCount));
+
+    // THE PIPS RESOLVE. They rendered as five 16px boxes with
+    // `background: url(undefined)` — no error, no failing test, nothing on
+    // screen — because `PIP_SRC` lived in a `"use client"` module and a SERVER
+    // component importing it gets a client reference rather than the value.
+    // The browse figure was unaffected only because it is itself a client
+    // module, which is exactly what made the difference invisible.
+    //
+    // Asserted on the emitted URL, not on the element count: five boxes are
+    // present either way.
+    const pips = [...el.querySelectorAll("span")].filter((n) =>
+      (n.getAttribute("style") ?? "").includes("/mana/"),
+    );
+    expect(pips).toHaveLength(PIP_ORDER.length);
+    for (const pip of pips) {
+      expect(pip.getAttribute("style")).not.toContain("undefined");
+    }
 
     // Six cells as drawn, and only a missing one shows a price. This is an
     // INVARIANCE over the route's rule rather than a guard on this figure:
