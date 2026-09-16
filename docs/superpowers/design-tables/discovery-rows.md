@@ -193,7 +193,7 @@ still here reading as the spec:
 |---|---|
 | Price wrapper: `gap 7px`, `margin-top 4px`, `padding-top 9/10px`, `border-top 1px solid var(--border)` — "the hairline belongs to the slot" | `flex items-center gap-[6px]`, no padding, no margin, **no hairline** — the foot line is one row of figures, so a rule above the price would divide it from the deck count beside it |
 | Price figure: `11.5px` mobile, `12.5px` desktop | `12.5px` at both widths |
-| A `manapool` provenance word at 9.5/10px, `margin-left: auto` | **not drawn.** `discoveryCopy.price.source` has no caller on the row: `margin-left: auto` pushed it to the end of a column the row no longer has |
+| A `manapool` provenance word at 9.5/10px, `margin-left: auto` | drawn at 10px, `aria-hidden`, immediately after the figure — **not** pushed to the end of a column this row no longer has. The word stays because §C names the source label unchanged; only its placement moved |
 | Untagged note: bordered box, `--elevated-hover` ground, 2px left border, radius 7px, 13px `⚠`, heading joined by ` — ` at `--fg-body`/600 | a plain `<p>`, heading at `--fg-muted` joined by a space. It shares the gap slot with two sentences, so a plated box would make one of three states look like a warning |
 | `Row hover: —`, `transition: — ("Motion: none")` | `transition-colors hover:bg-[color:var(--elevated-hover)]` on the row shell |
 | Row shell: `grid-template-columns 40px 100px 1fr 236px`, radius 11/12px, full `1px solid var(--border)`, `background var(--surface)` | `borderBottom` only, no radius, no grid, no ground — the row is a band and a block, not a card |
@@ -368,6 +368,8 @@ All six left with the composition. What remains:
    ruling if it ever clips is to widen the measure, never to add a fifth line.
 3. **`planeCopy.overflow.*` has no caller.** Kept per the handoff, which says the plane keeps
    them; the code says the row and its own copy test were the only consumers there ever were.
-4. **`discoveryCopy.price.source`** — the `manapool` provenance word — has no caller on the row.
-   It is still drawn by the deck surfaces, so it is not dead; it is simply not part of this
-   composition, and the retired table specified it as though it were.
+4. **`discoveryCopy.price.source` IS drawn**, and this item used to say it was not. Round 2 of
+   review pointed out that §C names `PriceSlot` unchanged — *"its dot, its source label, its
+   absent rule"* — so the `manapool` word was restored beside the figure, `aria-hidden`, and
+   takes the figure's absence with it. Recorded because the erratum outlived the fix by one
+   round: the row dropped the word, this table explained why, and then the row got it back.

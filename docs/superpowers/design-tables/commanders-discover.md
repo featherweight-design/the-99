@@ -957,24 +957,23 @@ Shares art bleed, rank, name, identity pips and role chips with the owned row. D
 | fill | #C9A24B, single segment | #C9A24B, single segment |
 | segments | 1 — discovery does not blend, so there is no three-part ramp | 1 |
 
-### Popularity / novelty lines
+### Popularity line
 
 | Property | Mobile | Desktop |
 |---|---|---|
 | font-family | IBM Plex Mono | IBM Plex Mono |
-| font-size | 10.5px | 10.5px |
-| color | #A89B84 | #A89B84 |
-| gap | — | 4px |
-| copy keys | `discoverCopy.row.popularity(n)` · `.novelty(n)` | same |
+| font-size | 11.5px | 11.5px |
+| color | `var(--fg-faint)` | `var(--fg-faint)` |
+| copy key | `discoverCopy.row.popularity(n)` | same |
 
-### Not-owned line
+The **novelty count went with the composition.** `.novelty` was deleted; the mechanic gap line
+replaced it, and it is a sentence rather than a figure — see `discovery-rows.md`.
 
-| Property | Mobile | Desktop |
-|---|---|---|
-| font-family | IBM Plex Mono | IBM Plex Mono |
-| font-size | 10.5px | 11.5px |
-| color | #8E8269 | #A89B84 |
-| copy key | `discoverCopy.row.notOwned` | same |
+### Not-owned line — RETIRED
+
+`discoverCopy.row.notOwned` was deleted. Ruling D1: one component serves both lanes, so every
+`/discover` row is unowned and every `/commanders` row is owned, and the line distinguished
+nothing. The ownership pip's two readings and the accessible name's leading clause went with it.
 
 ### Absent on this lane
 
