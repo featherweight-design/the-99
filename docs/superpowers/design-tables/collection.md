@@ -971,6 +971,35 @@ on this row.
 | flex | none | none |
 | padding-top | 4px | — |
 
+### Header row — the cost may take its own line
+
+**Added 2026-09-16.** The name and the cost share a row, and the row **wraps**:
+a cost too wide to sit beside the name drops below it rather than squeezing the
+name into two lines. `Find // Finality` was drawn on two lines because its
+five-pip split cost took 173px of a 388px column, leaving 203px for a name that
+wants 241px.
+
+**There is no threshold.** Flex wraps on an item's hypothetical width, and the
+name block sizes to its content (`flex-initial`), so the rule falls out of the
+two widths: a name that fits beside its cost keeps the line, and one that does
+not sends the cost below. `Smothering Tithe` at 285px plus a 57px two-pip cost
+still shares the row; `Sol Ring` at 137px always did. A `flex-1` on the name
+block would give it a zero basis and defeat this — the row would shrink the name
+instead, which is the defect — so `probe:mana-symbols` reads the cost's own top
+against the title's rather than the class list.
+
+**Both widths.** The name block is in this row on a phone as well: the art
+header takes it only when the header collapses, which wants the printing picker
+expanded, and that is not the state a modal opens in. Measured at 390px,
+`Repudiate // Replicate`'s cost sits on its own line with the name whole above
+it — the same rule, at the width where the column is tightest.
+
+| Property | Mobile | Desktop |
+|----------|--------|---------|
+| flex-wrap | wrap | wrap |
+| Name block | sizes to content, `min-w-0`, never `flex-1` — and moves to the art header only in the collapsed state | sizes to content, `min-w-0`, never `flex-1` |
+| Wrapped cost | its own line, left-aligned under the name block | its own line, left-aligned under the name block |
+
 ### Mana Pip (printed symbol)
 
 **Supersedes the two lettered-disc rows below**, ratified 2026-09-14: at this size the pip

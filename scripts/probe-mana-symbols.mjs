@@ -121,43 +121,50 @@ const READ_COST = () => {
 };
 
 /**
- * The tiles' bottom-left slot in the deck's card view.
+ * The deck card view's tiles: how many draw art, and which of them draw pips.
  *
- * Counts the OWNERSHIP DOTS as well as the pips: the dot and the pips shared one
- * wrapper, so a run that reported zero pips because it never reached the view
- * would report zero dots too, and this is what tells the two apart.
+ * Liveness comes from the ARTED count rather than from a marker beside the pips:
+ * a run that never reached the card view reports zero pips while measuring
+ * nothing, and `arted > 0` is what tells that apart. An earlier version counted
+ * the ownership dots in the same slot for this, which went stale the moment the
+ * dot moved into the caption.
  */
 const READ_TILES = (page) => {
   const tiles = [...document.querySelectorAll(`${page} li`)].filter((li) =>
     li.querySelector("[style*='aspect-ratio']"),
   );
   let arted = 0;
-  let dots = 0;
-  let pipRuns = 0;
+  let pipsOverArt = 0;
   let noArtWithPips = 0;
   for (const tile of tiles) {
     const art = tile.querySelector("[style*='aspect-ratio']");
-    const slot = tile.querySelector("[class*='bottom-[6px]']");
-    if (!slot) continue;
-    // The dot is the round 8px mark; a pip run is two or more round boxes beside
-    // it.
-    const round = [...slot.querySelectorAll("span.rounded-full")].filter(
-      (el) => el.getBoundingClientRect().width > 0,
-    );
-    if (round.length > 0) dots += 1;
+    if (!art) continue;
+    const box = art.getBoundingClientRect();
+    // GEOMETRY, not a wrapper. A pip over the art is a drawn round box whose
+    // centre lies inside the art's own rect, whatever element holds it — where a
+    // testid reading can only see the wrapper the component happens to use
+    // today. `tile-cost-pips` is rendered in the NO-ART branch alone, so a
+    // counter keyed on it could never fire for an arted tile: a regression
+    // drawing pips over art under any other wrapper would report a clean run.
+    const overArt = [...tile.querySelectorAll("span.rounded-full")].filter((el) => {
+      const r = el.getBoundingClientRect();
+      if (r.width === 0 || r.height === 0) return false;
+      const cx = r.left + r.width / 2;
+      const cy = r.top + r.height / 2;
+      return cx >= box.left && cx <= box.right && cy >= box.top && cy <= box.bottom;
+    });
     // Split by whether the tile HAS art, because the rule is. A no-art tile
     // keeps its pips deliberately, and `PROBE_DECK` is any deck the account
-    // owns — so a deck holding one costed card with no image would fail a
-    // check that counted every tile, over a component obeying the rule
-    // exactly. The same split turns that case into evidence rather than noise.
-    if (art && getComputedStyle(art).backgroundImage.includes("url(")) {
+    // owns — so a deck holding one costed card with no image would fail a check
+    // that counted every tile, over a component obeying the rule exactly.
+    if (getComputedStyle(art).backgroundImage.includes("url(")) {
       arted += 1;
-      if (round.length > 1) pipRuns += 1;
-    } else if (round.length > 1) {
+      if (overArt.length > 0) pipsOverArt += 1;
+    } else if (overArt.length > 0) {
       noArtWithPips += 1;
     }
   }
-  return { tiles: tiles.length, arted, dots, pipRuns, noArtWithPips };
+  return { tiles: tiles.length, arted, pipsOverArt, noArtWithPips };
 };
 
 /**
@@ -342,6 +349,45 @@ async function run() {
               + ` background ${marks[0].url ?? "none"}`
             : "no separator to read",
         );
+        // The header wraps rather than squeezing the name. Only a layout engine
+        // can answer this: the unit test asserts the ROW may wrap, and that is
+        // true of a build where it never does — the name block having picked up
+        // a `flex-1` and a zero basis, say, which makes the row shrink the name
+        // instead. What tells them apart is the cost's own top against the
+        // title's, and the title's line count.
+        const header = await page.evaluate(() => {
+          const slot = document.querySelector('[data-testid="modal-mana-cost"]');
+          const h3 = document.querySelector("#card-modal-title");
+          if (!slot || !h3) return null;
+          const cs = getComputedStyle(h3);
+          const box = h3.getBoundingClientRect();
+          return {
+            costTop: Math.round(slot.getBoundingClientRect().top),
+            titleTop: Math.round(box.top),
+            titleLines: Math.round(box.height / Number.parseFloat(cs.lineHeight)),
+          };
+        });
+        // BOTH widths. The name block is in this row on a phone too — the art
+        // header only takes it when `compactArt` is true, and that wants the
+        // printing picker expanded, which it is not as the modal opens.
+        //
+        // Asserted as an INVARIANT rather than as an outcome: a cost sharing the
+        // name's line means the name was not squeezed by it. Demanding the cost
+        // be on its own line would be a fact about one card — `Fire // Ice` is
+        // narrow enough to sit beside its own four pips and should — so
+        // `PROBE_SPLIT_CARD` would stop being overridable with any two-cost card
+        // the account holds. This clause fails the build the change was made
+        // for: a squeezed name wraps while the cost stays beside it.
+        failures += !report(
+          `${width}px · no cost squeezes the name onto a second line`,
+          header !== null && (header.costTop > header.titleTop || header.titleLines === 1),
+          header === null
+            ? "no header to read"
+            : `cost top ${header.costTop} against title top ${header.titleTop},`
+              + ` title on ${header.titleLines} line(s)`
+              + (header.costTop > header.titleTop ? " — cost on its own line" : " — sharing the line"),
+        );
+
         await page.keyboard.press("Escape");
       }
 
@@ -371,16 +417,17 @@ async function run() {
       if (await cardView.count()) await cardView.click({ timeout: 10_000 }).catch(() => {});
       await page.waitForTimeout(2_500);
       const tiles = await page.evaluate(READ_TILES, PAGE);
-      // Three clauses, and the dot is the load-bearing one: a run that never
-      // reached the card view reports zero pip runs while measuring nothing, and
-      // only the dots tell that apart from the view drawn correctly.
+      // Two clauses, and `arted` is the load-bearing one: a run that never
+      // reached the card view reports zero pips while measuring nothing, and the
+      // count of tiles actually drawing art is what tells that apart from the
+      // view drawn correctly.
       failures += !report(
         `${width}px · the card view draws no pips over art`,
-        tiles.arted > 0 && tiles.dots > 0 && tiles.pipRuns === 0,
-        `${tiles.tiles} tiles (${tiles.arted} with art), ${tiles.dots} with a marked slot,`
-          + ` ${tiles.pipRuns} arted tiles still drawing a pip run,`
+        tiles.arted > 0 && tiles.pipsOverArt === 0,
+        `${tiles.tiles} tiles (${tiles.arted} with art),`
+          + ` ${tiles.pipsOverArt} arted tiles still drawing pips,`
           + ` ${tiles.noArtWithPips} no-art tiles keeping theirs`
-          + (tiles.arted === 0 || tiles.dots === 0
+          + (tiles.arted === 0
             ? " — NOT a pass: the card view was never reached, or no tile has art"
             : ""),
       );

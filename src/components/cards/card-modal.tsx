@@ -1209,7 +1209,24 @@ export function CardModal({
             {/* Name + type + mana pips — §Mobile: Name + Type Header.
                 Right padding on desktop clears the absolutely-positioned close
                 button, which otherwise sits on top of the mana pips. */}
-            <div className="flex items-start justify-between gap-[12px] md:pr-[46px]">
+            {/* WRAPS, so the cost moves to its own line rather than squeezing the
+                name into two. Flex wraps on an item's hypothetical width — the
+                name's natural one-line width, since that block is `flex-initial`
+                — so the rule falls out of the measurements rather than a
+                threshold: `Find // Finality` wants 241px at 29px display and its
+                split cost 173px, which together burst the 388px column, while
+                `Smothering Tithe` at 285px plus a 57px two-pip cost does not.
+                No card loses a line it had.
+
+                A `flex-1` here would defeat it: a zero basis makes the row shrink
+                the name instead of wrapping, which is the defect, while the class
+                below still reads correctly. `probe:mana-symbols` measures the
+                cost's own top against the title's for that reason.
+
+                BOTH widths. The name block is in this row on a phone too — the
+                art header only takes it when `compactArt` is true, and that wants
+                the printing picker expanded. */}
+            <div className="flex flex-wrap items-start justify-between gap-[12px] md:pr-[46px]">
               {/* The tag survives the collapse and moves out of the art (card-detail R2,
                   table rows 2.1-2.2): a 72px thumb has no room beneath it. It lands
                   beside the mana cost, which is the one thing still drawn in this row on
