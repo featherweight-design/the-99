@@ -3,6 +3,7 @@ import { describe, expect, it } from "vitest";
 
 import { BROWSE_CELLS, BROWSE_SET_CODE } from "../../lib/about/fixtures";
 import { identityGradient } from "../../lib/collection/gradients";
+import { sortOrderLabel } from "../../lib/collection/sort-options";
 import { collectionChassisCopy, collectionFilterCopy } from "../../lib/copy/collection";
 import { chassisCopy, PIP_ORDER } from "../../lib/copy/filter-chassis";
 import { setPageCopy } from "../../lib/copy/set-collections";
@@ -55,6 +56,18 @@ describe("the browse figure", () => {
       (el) => el.style.aspectRatio === "63/88",
     );
     expect(art).toHaveLength(BROWSE_CELLS.length);
+
+    // Every tile sits in the ROUTE's own plate — `--surface` inside a
+    // `--border`, owning the radius and the clipping. Asserted on the art's
+    // parent rather than by counting plates, so a shell that stopped wrapping
+    // the caption is caught too.
+    for (const cell of art) {
+      const shell = cell.parentElement!;
+      expect(shell.className).toContain("bg-[color:var(--surface)]");
+      expect(shell.className).toContain("border-[color:var(--border)]");
+      expect(shell.className).toContain("overflow-hidden");
+      expect(shell.querySelector("[class*='truncate'], [class*='line-clamp']")).not.toBeNull();
+    }
     for (const cell of art) {
       // jsdom normalises hex to `rgb()`, so the two are compared through the
       // same normalisation rather than as strings — asserting the raw helper
@@ -119,28 +132,49 @@ describe("the browse figure", () => {
   // class is what gets asserted, per element, on both sides of each fork.
   it("hides each form at the width the other belongs to", () => {
     const { container } = render(<BrowseFigureBody />);
-    const at = (text: string) =>
-      [...container.querySelectorAll("*")].find(
-        (el) => el.children.length === 0 && el.textContent === text,
+    // `at` matched only CHILDLESS elements, and a `Trigger` label carries an
+    // arrow span — so `trigger` and `panel` came back UNDEFINED and
+    // `expect(undefined).not.toBeNull()` passed. Both breakpoint assertions
+    // measured nothing, in a test written to answer a finding about tests
+    // measuring nothing. It matches the element owning the label's own text
+    // node now, and every lookup is asserted to have found something before
+    // anything is read off it.
+    const at = (text: string) => {
+      const found = [...container.querySelectorAll("*")].find((el) =>
+        [...el.childNodes].some((n) => n.nodeType === 3 && n.textContent?.trim() === text),
       );
+      expect(found, `nothing in the figure reads "${text}"`).toBeDefined();
+      return found!;
+    };
 
     // The FIELD forks at 768 — `useIsDesktop`, which is the route's own
     // breakpoint for this control and not the chassis's 1000.
-    expect(at(collectionChassisCopy.searchPlaceholder.compact)?.className).toContain("md:hidden");
-    const wide = at(collectionChassisCopy.searchPlaceholder.wide)?.className ?? "";
+    expect(at(collectionChassisCopy.searchPlaceholder.compact).className).toContain("md:hidden");
+    const wide = at(collectionChassisCopy.searchPlaceholder.wide).className;
     expect(wide).toContain("hidden");
     expect(wide).toContain("md:inline");
 
     // The CONTROLS fork at 1000 — the chassis's stop, where the pips and the
     // four panels move into the sheet behind one trigger.
-    const trigger = at(collectionChassisCopy.sheet.trigger);
-    expect(trigger?.closest("[class*='min-[1000px]:hidden']")).not.toBeNull();
-    const panel = at(collectionFilterCopy.type.triggerLabel);
-    expect(panel?.closest("[class*='min-[1000px]:flex']")).not.toBeNull();
+    expect(
+      at(collectionChassisCopy.sheet.trigger).closest("[class*='min-[1000px]:hidden']"),
+    ).not.toBeNull();
+    expect(
+      at(collectionFilterCopy.type.triggerLabel).closest("[class*='min-[1000px]:flex']"),
+    ).not.toBeNull();
+
+    // Sort is NOT one of the controls that moves. `FilterChassis` keeps it in
+    // its own persistent slot past the hairline — only colour, type, set and
+    // availability go into the sheet — so a compact figure that hid it would
+    // tell a phone reader the order lives behind `Filters`.
+    expect(
+      at(collectionFilterCopy.sort.triggerOne(sortOrderLabel("name", "asc")))
+        .closest("[class*='min-[1000px]:flex']"),
+    ).toBeNull();
 
     // And the count line, which forks with the controls: the long form has
     // room beside two of them on the wide bar and does not at 390px.
-    expect(at(collectionChassisCopy.resultCompact(34))?.className).toContain(
+    expect(at(collectionChassisCopy.resultCompact(34)).className).toContain(
       "min-[1000px]:hidden",
     );
   });

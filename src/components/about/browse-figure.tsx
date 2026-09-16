@@ -30,7 +30,7 @@ const noop = () => {};
 
 const CHIPS: FilterChip[] = [
   { key: "colour", label: collectionChassisCopy.chip.colours(1), dots: ["var(--g)"], onRemove: noop },
-  { key: "set", label: "The Hobbit", onRemove: noop },
+  { key: "set", label: collectionChassisCopy.chip.sets(1, "The Hobbit"), onRemove: noop },
 ];
 
 /**
@@ -80,7 +80,11 @@ function Cell({
   colorIdentity: string[];
 }) {
   return (
-    <div className="min-w-0">
+    // §Grid Tile Container, and it belongs to the ROUTE: a `--surface` plate
+    // inside a `--border`, owning the radius and the clipping. Without it the
+    // caption sat directly on the specimen's ground and the art carried the
+    // rounding alone, so the tile had no edge at all.
+    <div className="min-w-0 overflow-hidden rounded-[9px] border border-solid border-[color:var(--border)] bg-[color:var(--surface)] md:rounded-[10px]">
       {/* The ROUTE's own art placeholder, via `identityGradient`. The canvas
           draws `linear-gradient(150deg, var(--g), var(--surface))`, and for one
           round this figure drew that — but `/collection` has never drawn it: a
@@ -89,7 +93,6 @@ function Cell({
           the SURFACE owns, the surface wins, or the reference page teaches a
           card art nobody will ever see. */}
       <div
-        className="overflow-hidden rounded-[8px]"
         data-identity={colorIdentity.join(",")}
         style={{ aspectRatio: "63/88", background: identityGradient(colorIdentity) }}
       />
@@ -130,7 +133,12 @@ export function BrowseFigureBody() {
           trigger and the field keeps its own shorter placeholder. Drawing the
           wide bar to a phone reader would show them four controls their phone
           does not have. */}
-      <div className="flex items-center gap-[8px]">
+      {/* `flex-wrap`, as §3's own row carries. At 390px the field's 150px
+          floor plus `Filters` plus the persistent `Sort` exceeds the plate, and
+          without wrapping the sort trigger ran off the right edge — visible in
+          a screenshot and invisible to every assertion here, because jsdom
+          lays nothing out. */}
+      <div className="flex flex-wrap items-center gap-[8px]">
         {/* §3's own geometry, value for value: 30px tall, `flex:1` over a
             150px floor, `--bg` fill inside a `border-strong` edge, 11px
             `--fg-locked`. The first version was a bare bordered span with no
@@ -166,8 +174,18 @@ export function BrowseFigureBody() {
           <Trigger label={collectionFilterCopy.type.triggerLabel} />
           <Trigger label={collectionFilterCopy.set.triggerOne("The Hobbit")} active />
           <Trigger label={collectionFilterCopy.availability.triggerLabel} />
-          <Trigger label={collectionFilterCopy.sort.triggerOne(sortOrderLabel("name", "asc"))} active />
         </span>
+
+        {/* Sort does NOT move into the sheet. `FilterChassis` keeps it in its
+            own slot past a hairline, and the hairline is the separation that
+            makes it read as not-a-filter — only colour, type, set and
+            availability go behind `Filters`. Hiding it here told a phone
+            reader the order lived behind that trigger. */}
+        <span
+          aria-hidden
+          className="hidden h-[20px] w-px flex-none bg-[color:var(--border)] min-[1000px]:block"
+        />
+        <Trigger label={collectionFilterCopy.sort.triggerOne(sortOrderLabel("name", "asc"))} active />
       </div>
 
       {/* ROW 2 — key 1's subject: a chip per narrowing, each removable on its
