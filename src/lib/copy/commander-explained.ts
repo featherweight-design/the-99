@@ -235,10 +235,15 @@ export const explainedCopy = {
   // The dot's fill is the channel. These strings are the other two channels: the key that names
   // each state and the chip's accessible name. Colour is never alone.
   committed: {
-    /** One clause per dot state, shared by every surface that draws the dots — the synergy
-        panel, which can show all three, and Role Coverage, which is drawn from the owned pool
-        and so only ever shows two. One vocabulary for one page: the same colour explained two
-        ways on one screen reads as two different marks.
+    /** One clause per dot state, shared by every surface that draws the dots. TWO states now,
+        not three: the committed clause retired with the three-state dot it named, and severity
+        moved to the marker beside each card. One vocabulary for one page — the same colour
+        explained two ways on one screen reads as two different marks.
+
+        The two panels differ in HOW they pick, not in what they say. Role Coverage draws one
+        entry in two forms, `dotFree` while nothing on its four panels carries a marker and
+        `dotOwned` once something does; the synergy panel draws `dotOwned` and `dotUnowned`
+        unconditionally, being the only list in the app that mixes owned and unowned rows.
 
         NO COUNTS. These replaced a per-panel line that also carried "3 of the 5 shown", which
         only worked as a footnote under the chips it counted. A key that sits above four panels

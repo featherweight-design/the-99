@@ -86,6 +86,10 @@ const WIDTHS = [
 /** The chip's own declared height. A wrapped name is what breaks it. */
 const CHIP_HEIGHT = 28;
 
+/** The synergy slot's width, by value — the column is sized to its widest
+    occupant rather than to its content, so it is a constant and not a floor. */
+const SLOT_PX = 88;
+
 /** §4.4's ruling, by value at each geometry. */
 const MARKER_PX = { chip: 10.5, row: 11.5 };
 
@@ -349,13 +353,17 @@ async function run() {
           const widths = await slots.evaluateAll((els) =>
             els.map((el) => Math.round(el.getBoundingClientRect().width * 100) / 100),
           );
+          // The contract is 88px, not "at least 88px". A floor would pass a
+          // regression widening the column to 100 — uniform, wider, and wrong,
+          // since the figure is chosen to hold `buy · sold out` and no more.
           const uniform = new Set(widths).size === 1;
+          const exact = uniform && Math.abs(widths[0] - SLOT_PX) < 0.5;
           report(
-            "every synergy slot is the same width",
-            uniform && widths[0] >= 87.5,
-            `${widths.length} slots, widths ${[...new Set(widths)].join("/")}px`,
+            "every synergy slot is exactly the slot width",
+            exact,
+            `${widths.length} slots, widths ${[...new Set(widths)].join("/")}px against ${SLOT_PX}px`,
           );
-          if (!uniform || widths[0] < 87.5) fail();
+          if (!exact) fail();
         }
       }
 

@@ -192,6 +192,7 @@ describe("SelectableLiveAnnouncer — placement in CommanderDetail", () => {
         rank={1}
         isBestFit
         synergyCards={synergyCards(3)}
+        newestAsOf={null}
       />,
     );
     // The SelectableLiveAnnouncer renders a <span>; other providers in the tree

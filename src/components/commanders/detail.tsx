@@ -211,7 +211,14 @@ export type CommanderDetailProps = {
    * ONE per surface rather than one per card: liveness is a property of the
    * table, not of a row, and `top-off-list.tsx` already threads it this way.
    */
-  newestAsOf?: Date | null;
+  /**
+   * REQUIRED, and for the reason the panel chain below it is: a default turns a
+   * missed integration into a wrong price rather than a type error. This is the
+   * level the original miss lived at — the page passed it to one of two panels —
+   * so leaving it optional here would have left the same hole one step above the
+   * place it was closed.
+   */
+  newestAsOf: Date | null;
   /** The stored sentence, or null when none has been accepted for this commander. */
   prose?: string | null;
 };
@@ -222,7 +229,7 @@ export function CommanderDetail({
   isBestFit,
   avail = "all",
   synergyCards,
-  newestAsOf = null,
+  newestAsOf,
   prose = null,
 }: CommanderDetailProps) {
   const gradient = commanderGradient(c.colorIdentity);
