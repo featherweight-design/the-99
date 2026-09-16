@@ -408,15 +408,19 @@ describe("the figures", () => {
       const figure = li.querySelector("[data-specimen]");
       const title = li.querySelector("h3")?.textContent ?? "";
       expect(figure, `${title} has no figure`).toBeTruthy();
-      // NOT `childElementCount`, and not "has a leaf" either. Every Specimen
-      // wraps its content in one div, so the count is 1 whatever that div
-      // holds — and an EMPTY div is itself a leaf, so counting leaves passed
-      // over the same emptiness one attempt later. What a drawn figure has is
-      // words or drawn art: text, or an svg or img.
+      // NOT `childElementCount`, not "has a leaf", and not raw `textContent`.
+      // Every Specimen wraps its content in one div, so the count is 1 whatever
+      // it holds; an EMPTY div is itself a leaf; and `textContent` includes
+      // sr-only descendants, so a figure whose only words are hidden would
+      // satisfy the very check meant to catch a blank one. Three attempts,
+      // each passing over the emptiness the last one missed.
       const el = figure as HTMLElement;
-      const text = (el.textContent ?? "").trim();
+      const visible = [...el.querySelectorAll("*")]
+        .filter((n) => n.childElementCount === 0 && n.closest(".sr-only") === null)
+        .map((n) => (n.textContent ?? "").trim())
+        .join("");
       const art = el.querySelector("svg, img");
-      expect(text.length > 0 || art !== null, `${title} draws an empty frame`).toBe(true);
+      expect(visible.length > 0 || art !== null, `${title} draws an empty frame`).toBe(true);
     }
   });
 });
@@ -641,6 +645,50 @@ describe("the themes figure", () => {
         (el) => (el as HTMLElement).style.background !== "",
       );
       expect(swatches, `${tile.getAttribute("data-theme")} draws no palette`).toHaveLength(3);
+    }
+  });
+});
+
+describe("what each legend must hold", () => {
+  // The empty-frame gate is a floor, not coverage: a legend dropping a row —
+  // Discover drawing four of its five orders — clears it, and those rows ARE
+  // the entry. Where an entry's caption states a count, the figure is held to
+  // it here rather than left to a photograph.
+  const rows = (container: HTMLElement, label: string) => {
+    const el = container.querySelector(`[data-specimen="${label}"]`);
+    expect(el, `${label} drew no figure`).toBeTruthy();
+    return [...el!.querySelectorAll("dt")];
+  };
+
+  it("gives Discover all five of its orders", () => {
+    // "two of them change which commanders the list holds" only means anything
+    // beside the other three.
+    const { container } = render(<AboutPage seen={0} />);
+    expect(rows(container, "discover")).toHaveLength(5);
+  });
+
+  it("gives the deck page all four of its tabs", () => {
+    const { container } = render(<AboutPage seen={0} />);
+    expect(rows(container, "deck-page")).toHaveLength(4);
+  });
+
+  it("gives the resume rows all three verbs", () => {
+    // edited, committed, played — the entry's line is that each row says which
+    // event put it there, which two verbs cannot demonstrate.
+    const { container } = render(<AboutPage seen={0} />);
+    expect(rows(container, "resume")).toHaveLength(3);
+  });
+
+  it("pairs every legend mark with a meaning", () => {
+    // A `dt` with no `dd` is a mark nobody explained, and the pairing is the
+    // whole reason a legend is a description list.
+    const { container } = render(<AboutPage seen={0} />);
+    for (const el of container.querySelectorAll("[data-legend]")) {
+      const label = el.getAttribute("data-specimen");
+      const dts = el.querySelectorAll("dt").length;
+      const dds = el.querySelectorAll("dd").length;
+      expect(dts, `${label} has no rows`).toBeGreaterThan(1);
+      expect(dds, `${label} has ${dts} marks and ${dds} meanings`).toBe(dts);
     }
   });
 });
