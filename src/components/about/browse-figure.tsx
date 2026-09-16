@@ -15,6 +15,8 @@ import { collectionChassisCopy, collectionFilterCopy } from "../../lib/copy/coll
 import { chassisCopy, PIP_ORDER } from "../../lib/copy/filter-chassis";
 import { PIP_SRC } from "../ui/colour-pips";
 import { setPageCopy } from "../../lib/copy/set-collections";
+import { sortOrderLabel } from "../../lib/collection/sort-options";
+import { CardTileCaption } from "../ui/card-tile-caption";
 import { viewToggleCopy } from "../../lib/copy/card-surfaces";
 import { BROWSE_CELLS, BROWSE_SET_CODE } from "../../lib/about/fixtures";
 import { FilterChipPill, type FilterChip } from "../ui/filter-chassis";
@@ -26,7 +28,7 @@ import { KeyNumeral } from "./numeral";
 const noop = () => {};
 
 const CHIPS: FilterChip[] = [
-  { key: "colour", label: collectionChassisCopy.chip.colours(1), dots: ["var(--success)"], onRemove: noop },
+  { key: "colour", label: collectionChassisCopy.chip.colours(1), dots: ["var(--g)"], onRemove: noop },
   { key: "set", label: "The Hobbit", onRemove: noop },
 ];
 
@@ -38,10 +40,14 @@ const CHIPS: FilterChip[] = [
 function Trigger({ label, active = false }: { label: string; active?: boolean }) {
   return (
     <span
-      className={`flex items-center gap-[6px] rounded-[8px] border border-solid px-[10px] py-[6px] text-[12px] whitespace-nowrap ${
+      // §3 fills every trigger — `background: var(--elevated)` over
+      // `border-strong` — and `FilterPanel` does the same. Setting only the
+      // border and the ink drew four bare outlines against the specimen's own
+      // ground, which is not what either the canvas or the route shows.
+      className={`flex items-center gap-[6px] rounded-[7px] border border-solid bg-[color:var(--elevated)] px-[9px] py-[5px] text-[12px] whitespace-nowrap ${
         active
           ? "border-[color:var(--accent)] text-[color:var(--fg)]"
-          : "border-[color:var(--border)] text-[color:var(--fg-muted)]"
+          : "border-[color:var(--border-strong)] text-[color:var(--fg-muted)]"
       }`}
     >
       {label}
@@ -64,15 +70,25 @@ function Trigger({ label, active = false }: { label: string; active?: boolean })
 function Cell({ name, copies, rarity }: { name: string; copies: number; rarity: string }) {
   return (
     <div className="min-w-0">
-      <div className="relative aspect-[63/88] rounded-[8px] border border-solid border-[color:var(--border-strong)] bg-[linear-gradient(150deg,var(--elevated),var(--surface-sunken))]">
+      {/* The canvas's own wash, value for value:
+          `linear-gradient(150deg, var(--g), var(--surface))`. The first pass
+          substituted a neutral `--elevated`/`--surface-sunken` ramp and called
+          it a judgment about not fetching art on a reference page — but §3
+          states the value, so that was a divergence wearing a decision's
+          clothes. These five are green cards and the wash carries their
+          identity. Still no image request: it is a gradient. */}
+      <div className="relative aspect-[63/88] overflow-hidden rounded-[8px] bg-[linear-gradient(150deg,var(--g),var(--surface))]">
         <span className="absolute top-[6px] right-[6px] rounded-[5px] bg-[color:var(--accent)] px-[5px] py-[1px] font-mono text-[9px] text-[color:var(--bg)]">
           ×{copies}
         </span>
       </div>
-      <p className="mt-[6px] truncate text-[11.5px] font-semibold text-[color:var(--fg)]">{name}</p>
-      <p className="truncate font-mono text-[9.5px] text-[color:var(--fg-faint)]">
-        {BROWSE_SET_CODE} · {rarity}
-      </p>
+      {/* The ROUTE's caption, not a second one. `CardTileCaption` is pure
+          presentation — ReactNode slots, no handlers — so a figure can mount it
+          as-is, which is what §G3 asks and what keeps the truncation, the
+          metrics and the meta line from drifting away from `/collection`. The
+          grid around it is still the figure's own, because §I rules on the
+          column count and the route does not. */}
+      <CardTileCaption name={name} metaTrail={`${BROWSE_SET_CODE} · ${rarity}`} />
     </div>
   );
 }
@@ -117,7 +133,7 @@ export function BrowseFigureBody() {
           <Trigger label={collectionFilterCopy.type.triggerLabel} />
           <Trigger label={collectionFilterCopy.set.triggerOne("The Hobbit")} active />
           <Trigger label={collectionFilterCopy.availability.triggerLabel} />
-          <Trigger label={collectionFilterCopy.sort.triggerOne("Name · A–Z")} active />
+          <Trigger label={collectionFilterCopy.sort.triggerOne(sortOrderLabel("name", "asc"))} active />
         </span>
       </div>
 
@@ -152,7 +168,6 @@ export function BrowseFigureBody() {
             </span>
             {setPageCopy.entryPoint.label}
           </span>
-          <KeyNumeral n={3} />
           {/* The well, drawn rather than mounted: `ViewToggle` is a radio group
               with a handler, and a specimen is inert. Its two glyphs and both
               names are the route's, so a renamed segment reaches this figure. */}
@@ -175,6 +190,10 @@ export function BrowseFigureBody() {
               </span>
             ))}
           </span>
+          {/* AFTER the well, which is where §3 puts it. Between `By set` and
+              the toggle the mark reads as pointing at the grouping pill, and
+              key line 3 is about the reading choice. */}
+          <KeyNumeral n={3} />
         </span>
       </div>
 

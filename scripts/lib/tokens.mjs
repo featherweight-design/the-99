@@ -25,8 +25,20 @@
 //     globally valid let any component read `--row-bg` with the property unset
 //     in its subtree and still pass.
 
+/**
+ * Comments are stripped first. `declarationsIn` used to scan raw source, so a
+ * line like `// --ghost-token: the old name` declared `--ghost-token` — and a
+ * real `var(--ghost-token)` in that same file then passed. A false NEGATIVE in
+ * the guard's own failure mode, and prose is exactly where a retired token name
+ * survives longest.
+ */
+function stripComments(text) {
+  return text.replace(/\/\*[\s\S]*?\*\//g, " ").replace(/(^|[^:])\/\/[^\n]*/g, "$1");
+}
+
 /** `--foo` on the left of a `:` declares `foo`. */
-function declarationsIn(text) {
+function declarationsIn(raw) {
+  const text = stripComments(raw);
   const found = new Set();
   for (const m of text.matchAll(/["']?(--[a-zA-Z0-9-]+)["']?\s*:/g)) found.add(m[1]);
   // `next/font` declares its variables in a config object, not in CSS:
@@ -55,26 +67,34 @@ export function localTokens(source) {
  */
 export function usedTokens(source) {
   const used = [];
-  // `[^)]*` after the name is what distinguishes `var(--x)` from
-  // `var(--x, 3s)`: the second capture is the comma and whatever follows it.
-  for (const m of source.matchAll(/var\(\s*(--[a-zA-Z0-9-]*)(\$\{([^}]*)\})?([^)]*)\)/g)) {
-    const [, stem, , expr, tail] = m;
-    if (tail.trimStart().startsWith(",")) continue; // a default, not a dependency
+  // Every `var(` is matched on its own rather than as a whole balanced
+  // expression, which is what makes nesting fall out for free:
+  // `var(--primary, var(--fallback))` is TWO matches. The outer carries a
+  // comma and is skipped; the inner does not and is checked. An earlier
+  // version matched the whole expression with `[^)]*`, stopped at the first
+  // `)`, and so saw neither — and a nested fallback is load-bearing, because
+  // the declaration drops when both names are unset.
+  for (const m of source.matchAll(/var\(\s*(--[a-zA-Z0-9-]*)(\$\{([^}]*)\})?\s*(,)?/g)) {
+    const [, stem, , expr, comma] = m;
+
+    // A default. That is what having one means: the outer name may be missing
+    // and the value still resolves.
+    if (comma) continue;
 
     // A plain reference. `var(--fg-${tone})` leaves the stem `--fg-` when the
-    // brace is further along, and a token name never ends in a dash — so a
-    // trailing dash is an interpolation this cannot resolve, and is skipped
-    // rather than reported.
+    // brace follows, and a token name never ends in a dash — so a trailing
+    // dash with no interpolation captured is something this cannot resolve,
+    // and is skipped rather than reported as a miss.
     if (!expr) {
       if (!stem.endsWith("-")) used.push(stem);
       continue;
     }
 
     // An interpolation. `var(--${inert ? "border" : "border-strong"})` names
-    // two real tokens and the first regex matched NEITHER — it stopped at the
-    // `$` and produced the stem `--`, filtered away as noise. Both branches
-    // were outside the check, so a typo in either would have shipped exactly
-    // the way `--surface-2` did.
+    // two real tokens and the first version matched NEITHER — it stopped at
+    // the `$` and produced the stem `--`, filtered away as noise. Both
+    // branches were outside the check, so a typo in either would have shipped
+    // exactly the way `--surface-2` did.
     //
     // Every string literal in the expression is a candidate suffix. An
     // expression with no literal yields nothing, which is honest — this cannot

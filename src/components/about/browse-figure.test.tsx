@@ -20,15 +20,19 @@ describe("the browse figure", () => {
     for (const cell of BROWSE_CELLS) {
       expect(screen.getByText(cell.name)).toBeInTheDocument();
     }
-    // Three of the five are `common`, so each caption is counted rather than
+    // Three of the five are `common`, so each caption is COUNTED rather than
     // found: `getByText` throws on the duplicates, and taking the first would
     // pass over a figure that drew one caption five times.
-    const captions = [...container.querySelectorAll("p")]
-      .map((el) => el.textContent)
-      .filter((text) => text?.startsWith(`${BROWSE_SET_CODE} · `));
-    expect(captions.sort()).toEqual(
-      BROWSE_CELLS.map((c) => `${BROWSE_SET_CODE} · ${c.rarity}`).sort(),
-    );
+    //
+    // Matched by text rather than by element, because the caption is the
+    // route's `CardTileCaption` and its markup is that component's business —
+    // a selector naming a tag here would break the moment it restyled, which
+    // is the drift mounting it was meant to avoid.
+    const wanted = BROWSE_CELLS.map((c) => `${BROWSE_SET_CODE} · ${c.rarity}`);
+    const captions = [...container.querySelectorAll("*")]
+      .filter((el) => el.children.length === 0 && wanted.includes(el.textContent ?? ""))
+      .map((el) => el.textContent);
+    expect(captions.sort()).toEqual([...wanted].sort());
     const badges = [...container.querySelectorAll("span")].filter((s) =>
       /^×\d+$/.test(s.textContent ?? ""),
     );
@@ -87,6 +91,50 @@ describe("the browse figure", () => {
     expect(
       screen.getByText(collectionChassisCopy.result(34, 2805, 4120, true)),
     ).toBeInTheDocument();
+  });
+
+  // jsdom applies no media query, so "both strings are in the document" is all
+  // a render can say — and it says it just as happily when both render at the
+  // same width. What decides which one a reader sees is the class, so the
+  // class is what gets asserted, per element, on both sides of each fork.
+  it("hides each form at the width the other belongs to", () => {
+    const { container } = render(<BrowseFigureBody />);
+    const at = (text: string) =>
+      [...container.querySelectorAll("*")].find(
+        (el) => el.children.length === 0 && el.textContent === text,
+      );
+
+    // The FIELD forks at 768 — `useIsDesktop`, which is the route's own
+    // breakpoint for this control and not the chassis's 1000.
+    expect(at(collectionChassisCopy.searchPlaceholder.compact)?.className).toContain("md:hidden");
+    const wide = at(collectionChassisCopy.searchPlaceholder.wide)?.className ?? "";
+    expect(wide).toContain("hidden");
+    expect(wide).toContain("md:inline");
+
+    // The CONTROLS fork at 1000 — the chassis's stop, where the pips and the
+    // four panels move into the sheet behind one trigger.
+    const trigger = at(collectionChassisCopy.sheet.trigger);
+    expect(trigger?.closest("[class*='min-[1000px]:hidden']")).not.toBeNull();
+    const panel = at(collectionFilterCopy.type.triggerLabel);
+    expect(panel?.closest("[class*='min-[1000px]:flex']")).not.toBeNull();
+
+    // And the count line, which forks with the controls: the long form has
+    // room beside two of them on the wide bar and does not at 390px.
+    expect(at(collectionChassisCopy.resultCompact(34))?.className).toContain(
+      "min-[1000px]:hidden",
+    );
+  });
+
+  it("colours the one-colour chip with the route's green, not a status hue", () => {
+    // §3 gives the dot `var(--g)` — the WUBRG green of the filter it stands
+    // for. It shipped as `--success`, which is a different palette value and
+    // says "this went well" rather than "this is the green filter". Both are
+    // declared, so `check:tokens` is silent about it and only the canvas
+    // disagrees.
+    const { container } = render(<BrowseFigureBody />);
+    const dots = [...container.querySelectorAll("[style*='--g']")];
+    expect(dots.length).toBeGreaterThan(0);
+    expect(container.innerHTML).not.toContain("var(--success)");
   });
 
   it("draws the route's own five hues, not five discs that look like them", () => {

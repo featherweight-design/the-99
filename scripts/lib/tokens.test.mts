@@ -19,6 +19,14 @@ describe("usedTokens", () => {
     expect(usedTokens("color: var(--fg, #fff);")).toEqual([]);
   });
 
+  it("checks a var() nested inside a fallback, which is load-bearing", () => {
+    // `var(--primary, var(--fallback))` drops the whole declaration when BOTH
+    // are unset, so the inner name is a real dependency. The version that
+    // matched a whole balanced expression with `[^)]*` stopped at the first
+    // `)` and saw neither name.
+    expect(usedTokens("color: var(--primary, var(--fallback));")).toEqual(["--fallback"]);
+  });
+
   it("resolves both branches of an interpolated read", () => {
     // The first version's regex stopped at the `$` and produced the stem `--`,
     // which was then filtered away as noise — so `top-off-list.tsx` named two
@@ -39,6 +47,14 @@ describe("declarations", () => {
   it("reads a CSS declaration and a quoted style-object key", () => {
     expect([...globalTokens("--fg: #fff;")]).toContain("--fg");
     expect([...localTokens('{ "--row-bg": "var(--surface)" }')]).toContain("--row-bg");
+  });
+
+  it("does not take a declaration out of a comment", () => {
+    // Prose is where a retired token name survives longest, and a comment
+    // declaring one let a real read of it pass — a false negative in the
+    // guard's own failure mode.
+    expect([...localTokens("// --ghost-token: the old name\nconst a = 1;")]).toEqual([]);
+    expect([...localTokens("/* --ghost-block: gone */")]).toEqual([]);
   });
 
   it("reads a next/font variable, which is declared in no stylesheet", () => {
