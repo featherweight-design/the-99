@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { buildPoolRollup } from "../recs/pool-rollup";
+import type { PoolCard } from "../recs/score";
 import { assembleDiscovery, discoveryKey } from "./list";
 
 // `collectionSupport` defaults to `ownedSupport` — the two are equal for every
@@ -33,6 +34,138 @@ describe("assembleDiscovery", () => {
     freePoolSize: 2805,
     availOk: true,
   };
+
+  // THE FOUR NEW FIELDS, ASSERTED BY VALUE. `probe:fit-parity` exercises
+  // `loadCandidates`, not this assembly, so a wiring regression here — reading
+  // `collectionSupport` for the numerator, handing `gapSlotFor` the wrong
+  // played set, dropping the slot — passes every other check in the suite.
+  // Found by the pre-open review.
+  //
+  // The rollup is REAL rather than empty for this one, because `fitPool` and
+  // `fitRoles` come out of it and an empty rollup makes both 0, which would let
+  // the numerator be wired to anything and still read 0/40/whatever.
+  describe("the row's own fields", () => {
+    const pool: PoolCard[] = [
+      { oracleId: "ramp-1", name: "Sol Ring", colorIdentity: [], typeLine: "Artifact",
+        oracleText: "Add {C}{C}.", manaCost: "{1}", keywords: [],
+        imageUri: null, artCropUri: null },
+      { oracleId: "draw-1", name: "Divination", colorIdentity: ["U"], typeLine: "Sorcery",
+        oracleText: "Draw two cards.", manaCost: "{2}{U}", keywords: [],
+        imageUri: null, artCropUri: null },
+    ];
+
+    const assembled = (over: Parameters<typeof candidate>[0] = {}) =>
+      assembleDiscovery({
+        ...base,
+        rollup: buildPoolRollup(pool, new Map()),
+        candidates: [candidate({ oracleId: "a", name: "A", edhrecTotal: 100, ownedSupport: 30,
+                                 ...over })],
+        sort: "fit",
+      }).items[0];
+
+    it("prints Fit from the identity-restricted overlap and the stored total", () => {
+      const item = assembled();
+
+      // 30 of 100 support cards owned → 18 of the 60-point synergy weight.
+      expect(item.measurableTotal).toBe(100);
+      expect(item.score).toBe(18 + (item.score - 18));
+      expect(item.score).toBeGreaterThanOrEqual(18);
+    });
+
+    // The one case that separates "wired to the numerator" from "wired to
+    // anything": two candidates identical but for the overlap must differ.
+    it("moves Fit when the overlap moves and nothing else does", () => {
+      const low = assembled({ ownedSupport: 0 });
+      const high = assembled({ ownedSupport: 100 });
+
+      expect(high.score - low.score).toBe(60);
+      expect(low.measurableTotal).toBe(high.measurableTotal);
+    });
+
+    // FIT READS `ownedSupport`, NEVER `collectionSupport`, and the two are equal
+    // in every other fixture here — the helper derives one from the other — so
+    // swapping them passed every assertion above while changing what the row
+    // prints. They differ only when the ranked pool is narrower than the
+    // collection, which is the case this fixture builds by hand.
+    //
+    // `collectionSupport` is the FLOOR's numerator and `ownedSupport` is Fit's.
+    // A row wired to the wrong one agrees with the detail page only while the
+    // two pools are the same.
+    it("takes Fit from ownedSupport rather than collectionSupport", () => {
+      const item = assembleDiscovery({
+        ...base,
+        rollup: buildPoolRollup(pool, new Map()),
+        candidates: [
+          {
+            ...candidate({ oracleId: "a", name: "A", edhrecTotal: 100, ownedSupport: 20 }),
+            collectionSupport: 100,
+          },
+        ],
+        sort: "fit",
+      }).items[0];
+
+      // A DIFFERENCE, not an absolute: `fitPool` and `fitRoles` come out of the
+      // rollup and asserting their exact values here would pin this case to the
+      // rollup's arithmetic instead of to the wiring. Wired to
+      // `collectionSupport` both rows read the same score, so the delta is 0.
+      const sameCollection = assembleDiscovery({
+        ...base,
+        rollup: buildPoolRollup(pool, new Map()),
+        candidates: [
+          {
+            ...candidate({ oracleId: "a", name: "A", edhrecTotal: 100, ownedSupport: 100 }),
+            collectionSupport: 100,
+          },
+        ],
+        sort: "fit",
+      }).items[0];
+
+      // 20/100 against 100/100 is 48 of the 60-point weight.
+      expect(sameCollection.score - item.score).toBe(48);
+    });
+
+    // A null total is no reading, so the row is scored out of 40 — the state
+    // the handoff calls "the denominator it was given".
+    it("scores out of 40 when the index carried no total", () => {
+      const item = assembled({ edhrecTotal: null });
+
+      expect(item.measurableTotal).toBe(40);
+      expect(item.score).toBeLessThanOrEqual(40);
+    });
+
+    it("carries the stored sentence through, null included", () => {
+      expect(assembled({ prose: "It grinds counters." }).prose).toBe("It grinds counters.");
+      expect(assembled({ prose: null }).prose).toBeNull();
+    });
+
+    // All three gap states, decided from the candidate's own tags against the
+    // fixture's one played deck (`blink`).
+    it("draws the gap slot from the classifier, not from tags.length", () => {
+      const unplayed = assembled({
+        deckCount: 1000,
+        // A LABEL FROM THE GENERATED ALLOWLIST, not an invented one: bare
+        // "Counters" is not a mechanic there and classified as noMechanics,
+        // which failed this case on a correct build.
+        tags: [{ slug: "counters-matter", label: "Counters Matter", count: 500 }],
+      });
+      expect(unplayed.gapSlot).toEqual({ kind: "unplayed", labels: ["Counters Matter"] });
+
+      const allPlayed = assembled({
+        deckCount: 1000,
+        tags: [{ slug: "blink", label: "Blink", count: 500 }],
+      });
+      expect(allPlayed.gapSlot).toEqual({ kind: "allPlayed" });
+
+      // A CREATURE TYPE IS NOT A MECHANIC, so a commander whose every tag is one
+      // draws `noMechanics` rather than `allPlayed` — the ruling that keeps the
+      // row from asserting something about a commander with nothing on file.
+      const tribal = assembled({
+        deckCount: 1000,
+        tags: [{ slug: "frogs", label: "Frogs", count: 500 }],
+      });
+      expect(tribal.gapSlot).toEqual({ kind: "noMechanics" });
+    });
+  });
 
   it("ranks every item it carries, so rank survives colour filtering", () => {
     const got = assembleDiscovery({ ...base, sort: "fit" });

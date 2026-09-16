@@ -4,7 +4,7 @@ import { loadCollectionPool } from "../recs/recommend";
 import { buildPoolRollup, rollupFor, type PoolRollup } from "../recs/pool-rollup";
 import type { RoleName } from "../recs/score";
 import { loadCandidates, type CandidateRow } from "./candidates";
-import { loadPrices, slotFor, type PriceAggRow, type PriceSlot } from "./price";
+import { pricesOrEmpty, slotFor, type PriceAggRow, type PriceSlot } from "./price";
 import { computeFit } from "../recs/score";
 import { gapSlotFor, type GapSlot } from "../edhrec/gap-slot";
 import { assignDiscoverySlugs } from "./slugs";
@@ -59,8 +59,16 @@ export type DiscoveryItem = {
    */
   gapSlot: GapSlot;
   /**
-   * Fit, 0–`measurableTotal`. The row's headline, and the same figure
-   * `/commanders` and Commander Details print — Ruling D.
+   * Fit. The row's headline, and the same figure `/commanders` and Commander
+   * Details print — Ruling D.
+   *
+   * NORMALLY 0..`measurableTotal`, AND THAT IS NOT AN INVARIANT. `computeFit`
+   * leaves the synergy ratio unclamped on purpose, and `edhrec_total` sits one
+   * below the child-row count on 2 of 3,342 commanders — so a reader owning
+   * every support card can read a point or two over. Clamping would fix the
+   * bound and break the thing the bound is for, since `scoreCommander` has the
+   * same exposure through the same data and the two surfaces have to agree.
+   * Treat it as a figure to print, never as a bound to assert.
    *
    * Computed here by `computeFit` rather than shipped as its four inputs and
    * assembled on the client: one number is smaller than four, and a client that
@@ -357,7 +365,7 @@ export async function loadDiscovery(
   );
 
   const [prices, playedTags] = await Promise.all([
-    loadPrices(candidates.map((c) => c.oracleId)),
+    pricesOrEmpty(candidates.map((c) => c.oracleId)),
     loadPlayedTags(userId),
   ]);
 

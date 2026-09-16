@@ -168,14 +168,44 @@ empty, index has since been built — that passes under the conflation.
 7. **The owned lane's two missing fields**: `deckCount` from `commander_support.deck_count`, and
    price from `loadPrices` — reused, never re-derived.
 
-## PR 4 — the unified row
+## PR 4 — the unified row · SPLIT IN TWO
 
-`rec-card.tsx` and `discovery-row.tsx` collapse into one component; both lanes adopt it; the
-five states are drawn; retired copy is deleted and the property tables quoting it corrected.
-`check:copy-drift` will fail until those tables are fixed, which is the point of it.
+`rec-card.tsx` and `discovery-row.tsx` are 1,222 lines between them, and the work adds a copy
+block, a new component, two lane adoptions, eleven retired string groups, the property tables
+quoting them and the six payload fields 3b left in place. That is over the ~20-file / ~800-line
+gate, so the boundary is named here before implementation rather than discovered mid-PR.
 
 **`FitBar` is not dead code** — `about/figures.tsx` renders it. `RoleChips` does lose every
 caller.
+
+### PR 4a — the row, on both lanes
+
+The whole visible change, and the smallest unit that puts the feature on screen.
+
+1. `commanderRowCopy` — one new block, the gap line's four forms and the foot separator. Every
+   other string is imported per the handoff's reuse manifest, never retyped.
+2. The shared row component, drawing the handoff's five states. No `"use client"`: the
+   disclosure trigger retired with the tag list, so the row has no control on it.
+3. Both lanes adopt it in the same PR. The row reads nothing lane-specific — ruling D1 — so a
+   one-lane adoption would prove nothing the second could not undo.
+4. The eleven retired string groups deleted, and **the property tables quoting them corrected
+   in the same PR.** `check:copy-drift` reads JSX text nodes as well as copy modules, so the
+   moment the row stops emitting `not in your collection` a table still quoting it is drift.
+   That coupling is why the deletions cannot wait for 4b.
+
+### PR 4b — what the old row leaves behind
+
+Mechanical, and separable because nothing on screen depends on it.
+
+1. The six payload fields 3b deliberately kept: `roleCounts`, `colorPoolSize`, `ownedSupport`,
+   `supportPct`, `tagTotal`, `nearestDeck` — plus `unplayedLabels`, `unplayedCount` and
+   `edhrecTotal`, which the gap slot and Fit replaced. `ROW_KEYS` and the encoder shrink with
+   them.
+2. `discovery-row.tsx` and `rec-card.tsx` deleted; `RoleChips` with them.
+3. A THIRD cache bump on both constants, because the payload's shape moves again. Cheap, and
+   the alternative is a warm entry whose rows carry fields the decoder no longer names.
+
+**Neither half is a stacked PR**: 4b branches from main after 4a merges.
 
 ## PR 5 — acceptance
 

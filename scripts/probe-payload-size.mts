@@ -48,15 +48,24 @@ const check = (label: string, ok: boolean, detail: string) => {
 
 async function main() {
   try {
-    // The LARGEST collection, because the payload scales with it and the
-    // smallest one would report a comfortable figure for every build.
+    // The largest LEGAL pool, not the largest collection. Both payloads are
+    // built from `loadCollectionPool`, which inner-joins `cards` and filters
+    // `commander_legal` — so counting raw `collection_items` can crown an
+    // account carrying a pile of illegal cards while another account has the
+    // bigger scoring pool and the bigger payload, leaving this guard blind to
+    // the worst input it has. Same join, same filter, so "largest" means the
+    // same thing here as it does downstream.
     const { rows } = await fixture.execute<{ user_id: string; n: number }>(sql`
-      select user_id, count(distinct oracle_id)::int as n
-        from collection_items group by user_id order by n desc limit 1
+      select ci.user_id, count(distinct ci.oracle_id)::int as n
+        from collection_items ci
+        join cards c on c.oracle_id = ci.oracle_id and c.commander_legal
+       group by ci.user_id
+       order by n desc
+       limit 1
     `);
     const subject = rows[0];
     if (!subject) throw new Error("no collection in this database — seed one first");
-    console.log(`largest collection: ${subject.n} distinct cards\n`);
+    console.log(`largest legal pool: ${subject.n} distinct commander-legal cards\n`);
 
     for (const sort of ["fit", "new"] as const) {
       const list = await loadDiscovery(subject.user_id, { sort });

@@ -19,7 +19,7 @@ import type { CommanderListItem } from "../recs/recommend";
 import { loadSupportMeta } from "../edhrec/support-read";
 import { gapSlotFor, type GapSlot } from "../edhrec/gap-slot";
 import { loadPlayedTags } from "../discovery/novelty";
-import { loadPrices, slotFor, type PriceSlot } from "../discovery/price";
+import { pricesOrEmpty, slotFor, type PriceSlot } from "../discovery/price";
 
 /**
  * A list item plus the four things the shared row draws that the SCORE does not
@@ -172,14 +172,21 @@ export async function loadCommanderRankings(userId: string): Promise<CommanderRa
   // `toFreeDelta` key on scores and indices and read none of these, so
   // enriching before them would only widen what they copy.
   //
-  // Three reads in parallel, all REUSED rather than re-derived — `loadPrices`
-  // and `loadPlayedTags` are the discover lane's own, and a second spelling of
+  // Three reads in parallel, all REUSED rather than re-derived — the price and
+  // played-tag reads are the discover lane's own, and a second spelling of
   // either would be free to disagree with the lane it was copied from.
+  //
+  // The price read is the SOFT one. `pricesOrEmpty` swallows a transient feed or
+  // database failure, because every row already draws without a price and
+  // nothing else here does: taking the whole recommendations page down over the
+  // cheapest figure on it would be the wrong trade. The other two are hard —
+  // without the tag sets the gap line would claim the reader plays nothing, and
+  // without the metadata every row loses its sentence.
   const oracleIds = items.map((i) => i.oracleId);
   const [meta, playedTags, prices] = await Promise.all([
     loadSupportMeta(oracleIds),
     loadPlayedTags(userId),
-    loadPrices(oracleIds),
+    pricesOrEmpty(oracleIds),
   ]);
   const played = new Set(playedTags.flatMap((d) => [...d.slugs]));
 

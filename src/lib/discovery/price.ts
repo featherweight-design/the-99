@@ -75,3 +75,28 @@ export async function loadPrices(oracleIds: string[]): Promise<Map<string, Price
   // quietly absorb a real change in the query's shape.
   return new Map(rows.map((r) => [r.oracleId, r]));
 }
+
+/**
+ * `loadPrices`, but a failure costs the prices rather than the page.
+ *
+ * A PRICE IS THE ONE FIGURE ON THESE SURFACES THAT ALREADY HAS AN ABSENT STATE.
+ * `PriceSlot`'s `absent` member exists because the feed omits out-of-stock
+ * cards, so every row already knows how to draw without one — which makes a
+ * rejected price read the cheapest thing on the page to lose and the most
+ * expensive to fail on. Unguarded it takes `/commanders` and `/discover` down
+ * whole, and both of them rank perfectly well with no prices at all.
+ *
+ * Deliberately NOT how the availability reads fail: those set an `availOk` flag,
+ * because losing them removes a CLAIM the reader would otherwise believe (an
+ * empty availability map counts every owned card as uncommitted). An empty price
+ * map makes no claim — it reads as "not stocked", which is what a card the feed
+ * has never carried reads as anyway. So there is nothing for the surface to
+ * announce and no flag to thread.
+ */
+export async function pricesOrEmpty(oracleIds: string[]): Promise<Map<string, PriceAggRow>> {
+  try {
+    return await loadPrices(oracleIds);
+  } catch {
+    return new Map();
+  }
+}

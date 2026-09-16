@@ -1,7 +1,146 @@
-import { describe, expect, it } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 
-import { commanderRankingsKey } from "./rankings";
+// THE ENRICHMENT HAD NO BEHAVIOUR TEST — only the cache constants were pinned,
+// and the payload probe counts bytes and rows. So a regression in any of the
+// three reads, or in the missing-metadata fallbacks, would have served wrong
+// prose, gap slots, deck counts or prices with the suite green. Found by the
+// pre-open review.
+//
+// Mocked at the module boundary rather than against a database: what is under
+// test is the JOIN this function performs between four sources, and every one of
+// them is proved elsewhere (`loadSupportMeta` by its own query shape,
+// `gapSlotFor` by `gap-slot.test.ts`, the prices by `price.test.ts`).
+vi.mock("../recs/ranked-list", () => ({ getRankedList: vi.fn() }));
+vi.mock("../recs/recommend", () => ({ loadCollectionPool: vi.fn() }));
+vi.mock("../decks/availability-query", () => ({ loadAvailability: vi.fn() }));
+vi.mock("../recs/free-ranking", () => ({ rankFree: vi.fn() }));
+vi.mock("../edhrec/support-read", () => ({ loadSupportMeta: vi.fn() }));
+vi.mock("../discovery/novelty", () => ({ loadPlayedTags: vi.fn() }));
+vi.mock("../discovery/price", async (orig) => ({
+  ...(await orig<typeof import("../discovery/price")>()),
+  pricesOrEmpty: vi.fn(),
+}));
+
+import { commanderRankingsKey, loadCommanderRankings } from "./rankings";
 import { discoveryKey } from "../discovery/list";
+import { getRankedList } from "../recs/ranked-list";
+import { loadCollectionPool } from "../recs/recommend";
+import { loadAvailability } from "../decks/availability-query";
+import { rankFree } from "../recs/free-ranking";
+import { loadSupportMeta } from "../edhrec/support-read";
+import { loadPlayedTags } from "../discovery/novelty";
+import { pricesOrEmpty } from "../discovery/price";
+
+const item = (oracleId: string, over: Record<string, unknown> = {}) => ({
+  oracleId, slug: oracleId, name: oracleId.toUpperCase(),
+  typeLine: "Legendary Creature", colorIdentity: ["G"],
+  colorPoolSize: 100, roleCounts: { ramp: 1, draw: 1, removal: 1, wipes: 1 },
+  edhrecOwnedCount: 10, edhrecTotal: 100,
+  fitPool: 8, fitRoles: 5, fitSynergy: 6, synergyState: "ok" as const,
+  score: 19, rankScore: 19, measurableTotal: 100,
+  imageUri: null, artCropUri: null, receipts: "", ...over,
+});
+
+describe("loadCommanderRankings · the row's four joined fields", () => {
+  beforeEach(() => {
+    // Implementations alone are not enough: without this the CALL COUNTS
+    // accumulate across cases, and the no-candidates case read 5 calls from
+    // its predecessors while asserting none.
+    vi.clearAllMocks();
+    vi.mocked(getRankedList).mockResolvedValue({
+      items: [item("a"), item("b")],
+      degraded: false, uniqueCardsRead: 10, candidateCount: 2,
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    } as any);
+    vi.mocked(loadCollectionPool).mockResolvedValue({ collection: [] as never[] } as never);
+    vi.mocked(loadAvailability).mockResolvedValue(new Map());
+    vi.mocked(rankFree).mockResolvedValue({ ok: false } as never);
+    vi.mocked(loadPlayedTags).mockResolvedValue([
+      { deckName: "Zur", colorIdentity: ["W"], slugs: new Set(["blink"]) },
+    ]);
+    vi.mocked(pricesOrEmpty).mockResolvedValue(new Map());
+    vi.mocked(loadSupportMeta).mockResolvedValue(new Map());
+  });
+
+  it("carries the sentence, the deck count and the gap slot off the metadata", async () => {
+    vi.mocked(loadSupportMeta).mockResolvedValue(
+      new Map([
+        ["a", { prose: "A grinds counters.", deckCount: 1000,
+                tags: [{ slug: "counters-matter", label: "Counters Matter", count: 500 }] }],
+      ]),
+    );
+
+    const { items } = await loadCommanderRankings("user_1");
+
+    expect(items[0].prose).toBe("A grinds counters.");
+    expect(items[0].deckCount).toBe(1000);
+    expect(items[0].gapSlot).toEqual({ kind: "unplayed", labels: ["Counters Matter"] });
+  });
+
+  // THE FALLBACK PATH, and the reason it is not a `?? {}` at the call site: a
+  // commander scored but absent from `commander_support` is a real state — the
+  // score comes from a per-user cache and the index is rebuilt monthly. Its gap
+  // slot must be `noMechanics`, decided by the classifier from an empty tag
+  // list, never `allPlayed` — which would assert the reader plays everything a
+  // commander with nothing on file leans on.
+  it("draws noMechanics for a commander with no support row", async () => {
+    const { items } = await loadCommanderRankings("user_1");
+
+    expect(items[0].prose).toBeNull();
+    expect(items[0].deckCount).toBeNull();
+    expect(items[0].gapSlot).toEqual({ kind: "noMechanics" });
+  });
+
+  it("reads the gap slot against THIS reader's played tags", async () => {
+    vi.mocked(loadSupportMeta).mockResolvedValue(
+      new Map([
+        ["a", { prose: null, deckCount: 1000,
+                tags: [{ slug: "blink", label: "Blink", count: 500 }] }],
+      ]),
+    );
+
+    const { items } = await loadCommanderRankings("user_1");
+
+    // `blink` is the fixture deck's tag, so the reader already plays it.
+    expect(items[0].gapSlot).toEqual({ kind: "allPlayed" });
+  });
+
+  it("slots the price per commander, and absent where the feed has none", async () => {
+    vi.mocked(pricesOrEmpty).mockResolvedValue(
+      new Map([["a", { oracleId: "a", liveCents: 1499, everPriced: true, live: true }]]) as never,
+    );
+
+    const { items } = await loadCommanderRankings("user_1");
+
+    expect(items[0].price.kind).toBe("priced");
+    expect(items[1].price.kind).toBe("absent");
+  });
+
+  // Every read is keyed on the listed commanders, so a list of two must not ask
+  // for the whole catalogue.
+  it("asks for metadata and prices by the ids it is about to draw", async () => {
+    await loadCommanderRankings("user_1");
+
+    expect(vi.mocked(loadSupportMeta)).toHaveBeenCalledWith(["a", "b"]);
+    expect(vi.mocked(pricesOrEmpty)).toHaveBeenCalledWith(["a", "b"]);
+  });
+
+  // No candidates means the page draws its empty state, and the three reads are
+  // skipped rather than made against an empty id list.
+  it("makes no row reads when there are no candidates", async () => {
+    vi.mocked(getRankedList).mockResolvedValue({
+      items: [], degraded: false, uniqueCardsRead: 0, candidateCount: 0,
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    } as any);
+
+    const { items } = await loadCommanderRankings("user_1");
+
+    expect(items).toEqual([]);
+    expect(vi.mocked(loadSupportMeta)).not.toHaveBeenCalled();
+    expect(vi.mocked(pricesOrEmpty)).not.toHaveBeenCalled();
+  });
+});
+
 
 // BOTH CACHE VERSIONS, PINNED TOGETHER, and that pairing is the whole point.
 //
