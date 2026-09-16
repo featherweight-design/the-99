@@ -21,10 +21,11 @@ export default async function ReplacePage() {
         <a href="/collection" aria-label="Back to Collection" className="text-[20px] text-[color:var(--accent)]">‹</a>
         <h1 className="font-display font-semibold text-[19px]" style={{ color: "var(--fg)" }}>Replace collection</h1>
       </div>
-      <div className="hidden md:block md:p-[28px_34px_0]">
-        <a href="/collection" className="font-mono text-[11px] tracking-[0.06em] text-[color:var(--fg-faint)]">‹ Collection</a>
-        <h1 className="font-display font-bold text-[30px] mt-[8px]" style={{ color: "var(--fg)" }}>Replace collection</h1>
-      </div>
+      {/* THE DESKTOP HEADING BELONGS TO THE STEP, so `ReplaceFlow` draws it. This page has two
+          layouts — the entry sits in a 760px column, the review in a 1280px one — and a heading
+          rendered here could only be centred to one of them. Pinned left it was 102px out of
+          step with the review; centred to the entry's column it would have been 252px out. The
+          review draws its own `Review import` title, so nothing is lost by letting it go. */}
       <ReplaceFlow currentCardCount={stats.totalCards} />
     </section>
   );

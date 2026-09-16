@@ -48,7 +48,19 @@ export function ReplaceFlow({
 
   if (!preview) {
     return (
-      <UploadEntry
+      <>
+        {/* The entry's own column, and the heading centred with it — see the note on the page.
+            Hidden on the phone, where the page's back-chevron bar carries the title instead.
+            AND NOT WHEN EMBEDDED: `FirstRunChecklist` mounts this flow inside its own step-1
+            card, which already has a Welcome heading and is not the collection route — a second
+            `Replace collection` title and a `‹ Collection` link back would both be wrong there. */}
+        {embedded ? null : (
+          <div className="hidden md:block md:mx-auto md:w-full md:max-w-[760px] md:p-[28px_48px_0]">
+            <a href="/collection" className="font-mono text-[11px] tracking-[0.06em] text-[color:var(--fg-faint)]">‹ Collection</a>
+            <h1 className="font-display font-bold text-[30px] mt-[8px]" style={{ color: "var(--fg)" }}>Replace collection</h1>
+          </div>
+        )}
+        <UploadEntry
         currentCardCount={currentCardCount}
         entry={entry}
         onPreview={(p) => {
@@ -56,7 +68,8 @@ export function ReplaceFlow({
           setConfirming(false);
           setPreview(p);
         }}
-      />
+        />
+      </>
     );
   }
 

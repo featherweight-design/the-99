@@ -69,7 +69,7 @@ describe("ArrivalsSummary", () => {
     // than as an import that did nothing at all. Four copies moved here: 3 in, 1 out.
     const stamp = screen.getByText(new RegExp(copy.summary.fileDelta(4)));
     expect(stamp.textContent).toContain(copy.summary.fileStamp("14 Sep 2026", "collection.csv"));
-    expect(screen.getByText(copy.summary.doneNoteEmpty)).toBeTruthy();
+    expect(screen.getByText(copy.summary.done)).toBeTruthy();
   });
 
   // The receipt is written after the replace commits, so a failure between the two leaves a
@@ -155,6 +155,7 @@ describe("ArrivalsSummary", () => {
     render(view(summary({ cleared: [{ deckId: DECK, oracleId: CARD, copies: 1 }] })));
     const done = screen.getByText(copy.summary.done);
     expect(done.getAttribute("href")).toBe("/collection");
-    expect(screen.getByText(copy.summary.doneNote)).toBeTruthy();
+    // The note beside the button is retired: the label names its destination.
+    expect(screen.queryByText(/nothing here needs saving/)).toBeNull();
   });
 });

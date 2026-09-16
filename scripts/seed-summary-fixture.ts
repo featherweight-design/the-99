@@ -144,10 +144,23 @@ async function main() {
       arrived: 3,
       left: 1,
       issues: { unmatched: 2, parseErrors: 1 },
-      cleared: [{ deckId: DECK_A, oracleId: cleared.oracle_id, copies: 1 }],
+      cleared: [
+        { deckId: DECK_A, oracleId: cleared.oracle_id, copies: 1 },
+        // THE CONTESTED CARD, CLEARED FOR THE SENIOR DECK — the state a real import produces and
+        // the fixture did not: seniority hands the arrival to one deck, so that deck's buy row
+        // clears while the chooser below is still asking which deck gets it. `withoutUndecided`
+        // takes this row back out at the read; without it the fixture photographs a receipt that
+        // contradicts its own chooser, which is what the first real walkthrough found.
+        { deckId: DECK_A, oracleId: contested.oracle_id, copies: 1 },
+      ],
       still: [
         { deckId: DECK_B, oracleId: still.oracle_id, owed: 1, reason: { kind: "partly", arrived: 1, wanted: 2 } },
-        { deckId: DECK_A, oracleId: contested.oracle_id, owed: 1, reason: { kind: "gone" } },
+        // DECK_B, not DECK_A. `diffBuyRows` keys on deck-and-card and its branches are mutually
+        // exclusive, so no import can report the same pair as both cleared and still owed — a
+        // fixture that did would photograph a payload the real diff cannot produce. The state a
+        // real import DOES produce is this: seniority clears the card for one deck while the
+        // other stays short of it, which is the pair the chooser below is deciding between.
+        { deckId: DECK_B, oracleId: contested.oracle_id, owed: 1, reason: { kind: "gone" } },
       ],
       // One copy owned and none before it: this fixture's contested card is chosen by owning
       // exactly one, and that one is the arrival.

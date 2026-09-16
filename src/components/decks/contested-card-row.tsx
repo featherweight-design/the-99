@@ -22,12 +22,6 @@ import { assignCopy, type AssignRefusal } from "../../app/decks/assignment-actio
 import type { ContestedCard } from "../../lib/collection/summary-read";
 import { formatShortDeckDate } from "../../lib/decks/format";
 
-/**
- * The `Still to buy` heading, named without its count. The cross-reference points at the
- * SECTION, so it wants the heading's words and not a figure — building it by trimming
- * `sectionStill(0)` would make the copy depend on the punctuation between the two.
- */
-const STILL_SECTION_LABEL = "Still to buy";
 
 /**
  * `deck_version_cards.since`, epoch millis, as the stamp draws it.
@@ -138,7 +132,6 @@ function refusalSentence(cause: AssignRefusal, card: ContestedCard, deckName: st
 
 export function ContestedCardRow({
   card: initial,
-  alsoAbove,
   /** The deck whose page this row is on, when it is on one. Tagged, never promoted. */
   thisDeckId,
   /**
@@ -149,7 +142,6 @@ export function ContestedCardRow({
   describedBy,
 }: {
   card: ContestedCard;
-  alsoAbove?: boolean;
   thisDeckId?: string;
   describedBy?: string;
 }) {
@@ -195,8 +187,7 @@ export function ContestedCardRow({
   // IN AN EFFECT, NOT IN THE RENDER ABOVE. The token is a ref, and a ref mutated during render
   // survives a render React abandons — a concurrent update that starts with a new payload and
   // is dropped would retire a write whose props never committed, and that write would then
-  // decline to stand its own preview down, leaving the accent and the undo footer stuck on the
-  // row for good. An effect runs only after a commit, so an abandoned render moves nothing.
+  // decline to stand its own preview down, leaving the accent stuck on the row for good. An effect runs only after a commit, so an abandoned render moves nothing.
   useEffect(() => {
     tap.current += 1;
   }, [initial]);
@@ -204,10 +195,9 @@ export function ContestedCardRow({
   // AUTHORSHIP IS A FACT ABOUT THE DATA, not a fact about this component's lifetime. A deck with
   // a GRANTED reservation is a deck the player chose — seniority grants nothing, it only orders a
   // queue — so reading it off the row survives the revalidation that follows every pick. Held in
-  // state instead, the accent and the undo footer vanished the moment the server answered, which
+  // state instead, the accent vanished the moment the server answered, which
   // is exactly when the player looks for confirmation that their tap landed.
   const chosenIds = picked ?? new Set(card.claimants.filter((c) => c.granted > 0).map((c) => c.deckId));
-  const chosenNames = card.claimants.filter((c) => chosenIds.has(c.deckId)).map((c) => c.deckName);
 
   const pick = (deckId: string, deckName: string) => {
     const wasChosen = chosenIds.has(deckId);
@@ -227,7 +217,7 @@ export function ContestedCardRow({
     const mine = ++tap.current;
     startTransition(async () => {
       // `finally`, not a trailing statement: a thrown action — a dropped connection, an expired
-      // session — exits this callback, and the optimistic accent and undo footer would then stand
+      // session — exits this callback, and the optimistic accent would then stand
       // forever behind a write whose outcome nobody knows. Standing the state down is the one
       // thing that must happen on every path out of here.
       try {
@@ -569,12 +559,11 @@ export function ContestedCardRow({
         </p>
       ) : null}
 
-      {/* THE FOOTER IS REQUIRED WHEREVER THE CHOOSER APPEARS. It is the feature's only non-colour
-          carrier of authorship — it NAMES THE DECK, where a plate could only say that something
-          was chosen — and in the two themes where accent sits in a neighbouring hue family it is
-          the only thing separating a pick from an outcome. A refusal note supersedes it: that
-          sentence already names the holder and the way back, and two competing instructions on
-          one row is worse than one. */}
+      {/* A REFUSAL IS THE ONLY THING THAT SPEAKS HERE NOW. The undo hint that used to share this
+          slot was retired: it read `Tap <deck> again to undo this. Back to first committed` even
+          when the deck just tapped WAS the first committed, where there is nothing to undo and
+          nothing to go back to. The accent row is the authorship, and tapping a chosen deck
+          again still clears it — the control was describing a gesture the row already affords. */}
       {refusal ? (
         <p
           className="text-[11.5px] mt-[9px] mb-0 pl-[9px]"
@@ -584,35 +573,11 @@ export function ContestedCardRow({
               clears the optimistic pick, the latter is a different deck and the wrong name. */}
           {refusalSentence(refusal, card, attempted?.name ?? "")}
         </p>
-      ) : chosenNames.length > 0 ? (
-        <p className="flex flex-col md:flex-row md:items-baseline gap-[2px] md:gap-[10px] text-[11.5px] mt-[9px] mb-0"
-           style={{ color: "var(--fg-body)" }}>
-          <span>{copy.contested.undoHint(chosenNames.join(" and "))}</span>
-          <button
-            type="button"
-            onClick={() => {
-              // Clears every reservation on this card, which is what `Back to first committed`
-              // says: one press returns the whole row to the default, not the newest pick only.
-              for (const c of card.claimants.filter((x) => chosenIds.has(x.deckId))) {
-                pick(c.deckId, c.deckName);
-              }
-            }}
-            // 34px tall inside a 44px target, per the handoff.
-            className="font-mono text-[11px] text-left text-[color:var(--accent)] min-h-[44px] md:min-h-0 md:py-[5px]"
-          >
-            {copy.contested.clear}
-          </button>
-        </p>
       ) : null}
 
       {/* One announcement per settled pick and one per refusal, and no more. */}
       <span aria-live="polite" className="sr-only">{announce}</span>
 
-      {alsoAbove ? (
-        <p className="text-[11px] mt-[8px] mb-0" style={{ color: "var(--fg-faint)" }}>
-          {copy.summary.alsoAbove(STILL_SECTION_LABEL)}
-        </p>
-      ) : null}
     </div>
   );
 }

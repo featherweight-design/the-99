@@ -118,9 +118,7 @@ export function ArrivalsSummary({
 
   const cleared = summary?.cleared ?? [];
   const still = summary?.still ?? [];
-  // What `Still to buy` is actually SHOWING. The cross-reference on a contested row points at a
-  // row the reader can see; pointing at one hidden behind `Show all` sends them looking for
-  // something that is not there.
+  // What `Still to buy` is actually SHOWING — the rest sit behind `Show all`.
   const stillShown = showAllStill ? still : still.slice(0, MONEY_LIMIT);
   // THE FROZEN SECTIONS DECIDE THIS, not the live one. `summary.contested` is a record of what
   // this import left contested; `contested` is what is still contested NOW, and a row leaves it
@@ -136,7 +134,10 @@ export function ArrivalsSummary({
   const hasIssues = unmatched + parseErrors > 0;
 
   return (
-    <div className="p-[18px] md:p-[28px_34px] max-w-[760px]">
+    // CENTRED, not pinned left. The 760px cap is the handoff's; what it did not say was where
+    // the column sits in a body that is far wider than it, and at 1440 the receipt read as a
+    // narrow strip against a screen of empty ground.
+    <div className="mx-auto w-full p-[18px] md:p-[28px_34px] max-w-[760px]">
       <p className="font-mono text-[11px] uppercase tracking-[0.16em] m-0" style={{ color: "var(--fg-faint)" }}>
         {copy.summary.eyebrow}
       </p>
@@ -259,21 +260,14 @@ export function ArrivalsSummary({
               <ContestedCardRow
                 key={card.oracleId}
                 card={card}
-                // The page's one cross-reference, and it points UP. Silence here would look
-                // like a bug; a sum across the two would BE one — they answer different
-                // questions, one about a deck's draft demand and one about committed claims.
-                alsoAbove={stillShown.some((r) => r.oracleId === card.oracleId)}
               />
             ))}
           </div>
         </section>
       ) : null}
 
-      <div className="mt-[30px] flex items-center gap-[12px]">
+      <div className="mt-[30px]">
         <PrimaryButton href="/collection" className="px-[18px] py-[9px] text-[13.5px]">{copy.summary.done}</PrimaryButton>
-        <span className="font-mono text-[10.5px]" style={{ color: "var(--fg-faint)" }}>
-          {nothingToReport ? copy.summary.doneNoteEmpty : copy.summary.doneNote}
-        </span>
       </div>
 
       {inspectorOpen && preview ? (

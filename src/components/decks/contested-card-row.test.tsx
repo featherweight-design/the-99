@@ -378,13 +378,6 @@ describe("ContestedCardRow", () => {
     expect(screen.getByText(copy.contested.brewNoteMany(3))).toBeTruthy();
   });
 
-  it("carries the cross-reference only when the card is also owed above", () => {
-    const { unmount } = render(<ContestedCardRow card={card()} />);
-    expect(screen.queryByText(/answer different questions/)).toBeNull();
-    unmount();
-    render(<ContestedCardRow card={card()} alsoAbove />);
-    expect(screen.getByText(/answer different questions/)).toBeTruthy();
-  });
 });
 
 describe("ContestedCardRow — the chooser", () => {
@@ -402,7 +395,6 @@ describe("ContestedCardRow — the chooser", () => {
     })} />);
     expect(screen.getByRole("radio", { checked: true }).getAttribute("aria-label"))
       .toContain("Elemental Dragons");
-    expect(screen.getByText(copy.contested.undoHint("Elemental Dragons"))).toBeTruthy();
   });
 
   it("is a radiogroup whose options are the decks", () => {
@@ -430,12 +422,18 @@ describe("ContestedCardRow — the chooser", () => {
     await waitFor(() => expect(screen.queryByRole("radio", { checked: true })).toBeNull());
   });
 
-  it("names the deck in the undo hint, which is the only non-colour carrier of authorship", async () => {
+  it("draws no undo control under a pick — the accent row is the authorship", async () => {
+    // The retired hint read `Tap <deck> again to undo this. Back to first committed` even when
+    // the deck just tapped WAS the first committed, where there is nothing to undo and nothing
+    // to go back to. Tapping a chosen deck again still clears it; the control only described a
+    // gesture the row already affords.
     assign.mockResolvedValue({ ok: true, card: card() });
     render(<ContestedCardRow card={card()} />);
     fireEvent.click(screen.getByRole("radio", { name: /Elemental Dragons/ }));
-    expect(screen.getByText(copy.contested.undoHint("Elemental Dragons"))).toBeTruthy();
-    expect(screen.getByText(copy.contested.clear)).toBeTruthy();
+    expect(screen.queryByText(/again to undo this/)).toBeNull();
+    expect(screen.queryByText(/first committed/)).toBeNull();
+    expect(screen.getByRole("radio", { checked: true }).getAttribute("aria-label"))
+      .toContain("Elemental Dragons");
   });
 
   it("moves the copy off the previous holder on the tap, before the server answers", async () => {
@@ -580,9 +578,9 @@ describe("ContestedCardRow — the chooser", () => {
     const option = screen.getByRole("radio", { name: /Elemental Dragons/ });
     fireEvent.click(option);
     fireEvent.click(screen.getByRole("radio", { name: /your choice/ }));
+    // A cleared row is indistinguishable from one never touched: no option checked, and the
+    // accent gone with it.
     expect(screen.queryByRole("radio", { checked: true })).toBeNull();
-    // …and a cleared row is indistinguishable from one never touched.
-    expect(screen.queryByText(copy.contested.clear)).toBeNull();
   });
 
   it("redraws from the server's own reading when a pick is refused", async () => {
@@ -605,9 +603,6 @@ describe("ContestedCardRow — the chooser", () => {
     });
     // The optimistic pick is taken back: the refusal means it never happened.
     expect(screen.queryByRole("radio", { checked: true })).toBeNull();
-    // And the refusal note SUPERSEDES the footer — two competing instructions on one row is
-    // worse than one, and the refusal already names the way back.
-    expect(screen.queryByText(copy.contested.clear)).toBeNull();
   });
 
   it("takes the fresh supply on the review door rather than freezing the first render", async () => {

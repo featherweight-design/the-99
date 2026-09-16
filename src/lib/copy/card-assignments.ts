@@ -153,20 +153,15 @@ export const cardAssignmentsCopy = {
       "More decks need these than copies arrived. The deck that committed the card first gets " +
       "it, unless you say otherwise.",
 
-    /**
-     * The one cross-reference on the page, on a contested row whose card also appears in the
-     * `Still to buy` section above. Silence there is what would look like a bug; a sum across
-     * the two is what would BE one — one counts a deck's draft demand, the other counts
-     * committed claims.
-     */
-    alsoAbove: (section: string) => `Also above, under ${section} — these answer different questions.`,
 
     showAll: (n: number) => `Show all ${n}`,
 
-    /** `Done` is a ROUTE, not a commit, and says so: a page of consequences must not look like a form. */
-    done: "Done",
-    doneNote: "goes to your collection · nothing here needs saving",
-    doneNoteEmpty: "view your collection",
+    /**
+     * A ROUTE, not a commit, and the label says where it goes rather than that it is finished.
+     * `Done` needed a note beside it to say nothing was being saved; a button that names its
+     * destination needs no gloss at all, so the note is gone with it.
+     */
+    done: "View your collection",
   },
 
   contested: {
@@ -252,20 +247,6 @@ export const cardAssignmentsCopy = {
      */
     seamCaption: "no list changes",
 
-    /**
-     * A live pick. There is NO `your call` plate: a picked row already carried five signals for
-     * one bit of state, and the plate was the weakest of them. This sentence is the word carrier
-     * and a better one, because it NAMES THE DECK — the plate said "something here was chosen",
-     * this says which. It is therefore required wherever the chooser appears; it is the feature's
-     * only non-colour carrier of authorship, and in Canopy and Low Sun it is the only thing
-     * separating a pick from an outcome.
-     *
-     * One exception: a refusal note supersedes it. `refusedNoSupply` already names the holding
-     * deck and the way back in one sentence, and two competing instructions on one row is worse
-     * than one.
-     */
-    undoHint: (deck: string) => `Tap ${deck} again to undo this.`,
-    clear: "Back to first committed",
 
     /**
      * Refusals. Every sentence does four things in order: names the deck and card, gives the
