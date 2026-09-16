@@ -191,6 +191,12 @@ async function storedNumerators(
         sql`${sup.colorIdentity} <@ ${cmd.colorIdentity}`,
         // `commanderPool` excludes the commander's own card from its pool.
         sql`${sup.oracleId} <> ${cmd.oracleId}`,
+        // And `loadCollectionPool` filters the collection to commander-legal
+        // cards before `scoreCommander` ever sees it (`recommend.ts:188`).
+        // Without this the two sides count different populations, so a banned
+        // support card the reader owns would read as a mismatch that is really
+        // the probe asking a different question.
+        sql`${sup.commanderLegal}`,
       ),
     )
     .groupBy(commanderSupportCards.commanderOracleId);

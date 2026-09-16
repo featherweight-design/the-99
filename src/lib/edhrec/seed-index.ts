@@ -1,6 +1,6 @@
 import { eq, sql } from "drizzle-orm";
 import { db } from "../../db";
-import { cards, commanderSupport, commanderSupportCards } from "../../db/schema";
+import { cards, commanderScores, commanderSupport, commanderSupportCards } from "../../db/schema";
 import { isCommanderCandidate } from "../recs/score";
 import { fetchEdhrecUncached, type EdhrecFetchResult } from "./client";
 import {
@@ -20,6 +20,9 @@ export type BuildIndexOptions = {
   loadAlreadyComputed?: () => Promise<Set<string>>;
   fetch?: (name: string) => Promise<EdhrecFetchResult>;
   write?: (header: SupportHeader, cards: SupportCard[]) => Promise<void>;
+  /** Injectable for the same reason as `write`: the build is unit-tested
+      without a database, and this is the run's last write. */
+  clearScores?: () => Promise<void>;
   delayMs?: number;
   sleep?: (ms: number) => Promise<void>;
 };
@@ -84,6 +87,16 @@ async function writeToDb(header: SupportHeader, cardRows: SupportCard[]): Promis
 }
 
 /**
+ * Throws away every persisted commander score.
+ *
+ * Separate from `writeToDb` because it is not per-commander: it runs once, after
+ * the whole rebuild, and the reasoning for that is at the call site.
+ */
+async function clearPersistedScores(): Promise<void> {
+  await db.delete(commanderScores);
+}
+
+/**
  * Rebuilds `commander_support` and `commander_support_cards` for every card that
  * can legally be a commander.
  *
@@ -104,6 +117,7 @@ export async function buildCommanderIndex(
     (() => db.select({ oracleId: cards.oracleId, name: cards.name }).from(cards));
   const fetchOne = opts.fetch ?? fetchEdhrecUncached;
   const write = opts.write ?? writeToDb;
+  const clearScores = opts.clearScores ?? clearPersistedScores;
   const sleep = opts.sleep ?? defaultSleep;
   const delayMs = opts.delayMs ?? DEFAULT_DELAY_MS;
 
@@ -152,6 +166,32 @@ export async function buildCommanderIndex(
       console.error(`commander-index: ${commander.name} failed`, err);
     }
   }
+
+  // EVERY PERSISTED SCORE IS NOW STALE, so every one goes.
+  //
+  // Ruling D made `commander_scores.fit_synergy` a function of this table. A
+  // rebuild therefore invalidates scores the way a deployment does — except the
+  // writer version cannot express it, being a code constant that this workflow
+  // does not change. Without this, `loadScores` keeps serving the old Fit from a
+  // warm set while Commander Details scores from the new index, which is exactly
+  // the cross-surface disagreement Ruling D exists to remove, reintroduced
+  // monthly.
+  //
+  // ALL ROWS, not the rebuilt commanders' rows. `loadScores` detects a set with
+  // a stale SENTINEL and cannot detect one with rows DELETED out of it — that
+  // blindness is why `SCORE_WRITER_CURRENT` was invented (see its note in
+  // `schema.ts`). Deleting per commander would leave partial sets served as
+  // whole. Clearing the table leaves every reader with a full set or none, and
+  // a miss costs one recompute.
+  //
+  // Only when the run actually wrote something: a run that failed every
+  // commander has changed no input, and throwing away every reader's scores for
+  // it would be a self-inflicted cold start.
+  if (r.commanders > 0) {
+    await clearScores();
+    console.log("commander-index: cleared persisted commander scores");
+  }
+
   return r;
 }
 
