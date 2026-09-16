@@ -259,6 +259,30 @@ export async function setCardArtPreference(
       target: [cardArtPreferences.userId, cardArtPreferences.oracleId],
       set: { setCode: normalizedSetCode, collectorNumber },
     });
+  // INSIDE `after`, AND THAT IS LOAD-BEARING. A Server Action that revalidates during its own
+  // run re-renders the route it was called from into its own response, and this one is called
+  // from `/collection`, whose payload is the largest in the app.
+  //
+  // Measured on 2026-09-16 at 1300px, picking a printing: 1,665,949 bytes of reply with the
+  // revalidation inline, 122 bytes with it deferred. Cutting only `revalidatePath("/collection")`
+  // and keeping the other two changed nothing — ONE revalidation of any path re-renders the
+  // current route — so deferring is the whole fix, not the path list.
+  //
+  // Nothing on screen is waiting for it: the modal paints the pick optimistically and the
+  // browse list patches its own copy of that one card, so the megabyte bought nothing.
+  //
+  // `updateTag` still reaches a Server Action context in here, which a route handler would not
+  // — it throws there, and `revalidateTag` is the only alternative, which serves one stale read
+  // of the very list this write just changed.
+  after(() => invalidateArtCaches(userId));
+  return true;
+}
+
+/**
+ * Every cache a card-art pick makes stale. Both writes drop the same set, which is why it is
+ * one function rather than two lists that could drift.
+ */
+function invalidateArtCaches(userId: string): void {
   // The browse payload carries the chosen printing's art, so it is stale now.
   revalidateUserLists(userId);
   revalidatePath("/collection");
@@ -266,7 +290,6 @@ export async function setCardArtPreference(
   // two cells change from one act, with the set's ratio unmoved. The set page is the only
   // surface where that swap is legible, and without this it happens invisibly.
   revalidatePath("/collection/sets/[code]", "page");
-  return true;
 }
 
 /** Forget the pick, returning the card to the resolver's choice. */
@@ -276,8 +299,8 @@ export async function clearCardArtPreference(oracleId: string): Promise<void> {
     eq(cardArtPreferences.userId, userId),
     eq(cardArtPreferences.oracleId, oracleId),
   ));
-  revalidateUserLists(userId);
-  revalidatePath("/collection");
-  // Clearing a pick moves the fill back, so the set page is stale for the same reason.
-  revalidatePath("/collection/sets/[code]", "page");
+  // Deferred for the reason `setCardArtPreference` states: a revalidation during the action
+  // itself re-renders `/collection` into this reply, and clearing a pick is called from
+  // exactly that page.
+  after(() => invalidateArtCaches(userId));
 }
