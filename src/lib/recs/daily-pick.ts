@@ -52,8 +52,8 @@ function hash(seed: string): number {
 /**
  * A per-account permutation of `0..size-1`, stable for that account.
  *
- * Fisher-Yates over a linear congruential generator seeded by the account, rather
- * than `Math.random`: this runs on the server on every Home render, and a
+ * Fisher-Yates over a seeded xorshift32 — see the step itself for why NOT an LCG —
+ * rather than `Math.random`: this runs on the server on every Home render, and a
  * permutation that changed between two renders of the same day would make the
  * rotation per-visit — the thing the daily boundary exists to prevent.
  *
@@ -91,8 +91,10 @@ const DAY_MS = 86_400_000;
 
 /**
  * `count` items from `set` for the UTC day containing `now`, walking a per-account
- * cycle so no two consecutive days share a card and every item comes up on a fixed
- * beat.
+ * cycle so every item comes up on a fixed beat — and, while `2 * count <= size`,
+ * so no two consecutive days share one. The header states where that second half
+ * stops holding; do not restate it here as unconditional, which is how it read
+ * until review caught the copy the module header had already been corrected for.
  *
  * The day boundary is UTC. Hugh's call on 2026-09-16, over a pinned US zone: the
  * server does not know the reader's zone at render time, and a client-side boundary

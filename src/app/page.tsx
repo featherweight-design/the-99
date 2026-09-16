@@ -118,9 +118,13 @@ export default async function HomePage() {
     loadShoppingRollup(userId),
   ]);
 
-  // `new Date()` here rather than inside the slice: the boundary is a fact about
-  // this render, and a helper reading the clock itself could not be tested.
-  const ready = readySlice(ranked.items, { userId, now: new Date() });
+  // ONE clock for the whole render. The rotation's day boundary and the
+  // dashboard's stamp both read it, and two `new Date()` calls either side of an
+  // await can straddle UTC midnight — which would draw yesterday's pair beside a
+  // figure stamped today. Read here rather than inside the slice because a helper
+  // reading the clock itself could not be tested.
+  const now = new Date();
+  const ready = readySlice(ranked.items, { userId, now });
 
   // One availability read between the in-use clause and the Commitments card.
   // Fail soft, the same way src/app/commanders/page.tsx does: losing
@@ -154,7 +158,7 @@ export default async function HomePage() {
       shopping={shopping}
       // One clock for the whole page, read on the server, so every relative
       // date below agrees.
-      now={new Date().toISOString()}
+      now={now.toISOString()}
     />
   );
 }
