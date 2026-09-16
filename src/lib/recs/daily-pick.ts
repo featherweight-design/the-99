@@ -19,8 +19,11 @@
  * whatever index falls out. That is independent sampling, not a rotation, so it
  * streaks: simulated over 3,000 accounts × 365 days, a nine-commander pool left one
  * commander unseen for **15 consecutive days** at worst, which is the complaint this
- * exists to answer. Walking a cycle gives every commander a fixed 4.5-day beat, a
- * guaranteed full tour in 4.5 days, and two fresh cards every single day.
+ * exists to answer. Walking a cycle gives every commander a fixed beat — 4.5 days
+ * on average across a set of nine — a full tour within five days, since the pair
+ * turns over once per UTC day, and two fresh cards each day at the sizes named
+ * below. Read the next paragraph before quoting any of those three: each one has
+ * a condition, and this sentence used to claim all three unconditionally.
  *
  * WHERE "TWO FRESH CARDS" STOPS BEING TRUE, precisely: consecutive days are disjoint
  * only while `2 * count <= size`. At `count` 2 that means a set of FOUR or more, and
