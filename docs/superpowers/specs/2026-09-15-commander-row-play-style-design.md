@@ -257,33 +257,54 @@ rather than in a guard. What *is* worth a guard is the ceiling itself — see Ve
 130 of the 401 distinct tag labels resolve to creature types. The classifier's job is to keep
 those out of the gap line and let mechanics through.
 
-**The rule was built and run rather than described, and three of its four mechanics only
-appeared once it was.** The generator's final classification of the 401-label vocabulary is
-**269 mechanic · 125 creature · 7 format**, with every case below asserted inside the
-generator so it proves its own fixes instead of claiming them.
+**The rule was built and run rather than described, and it took six measured corrections.** The
+generator's final classification of the 401-label vocabulary is **264 mechanic · 130 creature ·
+7 format**, with every case below asserted inside the generator so it proves its own fixes
+instead of claiming them.
 
-- **A tribe is a creature subtype and nothing else.** Restricting the vocabulary to the
-  creature half of the type line — the obvious fix, and the one an earlier draft of this spec
-  stated — **is not sufficient, and fails on 10 of the 13 dual-role subtypes.** `Food` really
-  is a creature subtype, on `Artifact Creature — Food Golem`; so are `Treasure`, `Equipment`,
-  `Clues`, `Sagas`, `Shrines`, `Books`, `Auras`, `Adventures` and `Vehicles` on their own
-  creature-bearing cards. What separates them from `Frog` is that each is *also* a
-  non-creature subtype elsewhere, on hundreds of cards. So the generator collects both sets
-  and **subtracts**: a label qualifies as a tribe only if it appears as a creature subtype and
-  never as any other kind.
-- **`Kindred` bears creature types without being a creature.** That subtraction, applied
-  naively, sent `Faeries` to the mechanic side — MTG's `Kindred` (formerly `Tribal`) types put
-  creature types on non-creature cards, as in `Tribal Enchantment — Faerie Aura`, so every
-  Kindred tribe lands in the "other" set and is subtracted from itself. Faces whose type line
-  says `Creature`, `Kindred` **or** `Tribal` all count as creature-bearing.
-- **Irregular plurals.** `Dwarves`, `Faeries`, `Horses`, `Fungi` and `Heroes` are missed by a
-  naive singularizer. An explicit irregular table is required; a suffix rule alone is
-  insufficient.
-- **`Eggs`, `Mounts` and `Toys` are creature types, and an earlier draft of this spec was
-  wrong to call them mechanics.** All three are real subtypes — Bloomburrow's `Mount`, the
-  `Egg` type — whose EDHREC tag is genuinely ambiguous between the tribe and an archetype
-  built around it. The safety asymmetry below resolves them to the hidden side, which costs
-  three labels that might have been mildly useful and risks nothing.
+**The vocabulary is Scryfall's six subtype catalogs unioned with the card-derived one, because
+neither source is sufficient alone.** Deriving it from card type lines — the fix an earlier
+revision of this spec stated — fails four separate ways:
+
+- **The creature half of the type line keeps all 10 of the 13 dual-role subtypes.** `Food`
+  really is a creature subtype, on `Artifact Creature — Food Golem`; so are `Treasure`,
+  `Equipment`, `Clues`, `Sagas`, `Shrines`, `Books`, `Auras`, `Adventures` and `Vehicles` on
+  their own creature-bearing cards.
+- **Subtracting every subtype that appears on a non-creature line deletes `Dinosaur`**, which
+  has **231 creature printings against a single non-creature one**. The exclusion has to be by
+  catalog, not by card occurrence.
+- **`Servo` is token-only.** `transform.ts:13` drops token layouts, so it is absent from `cards`
+  entirely and `Servos` was allowlisted as a mechanic.
+- **`Time Lord` is multi-word.** Splitting subtypes on whitespace records `time` and `lord`, so
+  `Time Lords` could never match — and no guard on the matcher could have saved it.
+
+Scryfall's catalogs fix all four, and they are **provably usable as an exclusion set**: measured
+2026-09-15, `creature-types` (350 entries) has **zero overlap** with the artifact, enchantment,
+land, spell and planeswalker catalogs, and all ten dual-role labels sit in one of those five.
+
+**But the authoritative list alone is not sufficient either.** `Cephalid` is a real tribe that
+appears in **no** Scryfall subtype catalog, so a catalog-only vocabulary allowlists `Cephalids`
+as a mechanic. The card-derived half covers that gap, which is why both are kept.
+
+Two more corrections, both recorded because each was a tribe reaching the reader:
+
+- **`Kindred` bears creature types without being a creature.** `Tribal Enchantment — Faerie
+  Aura` sent `Faeries` to the mechanic side of the card-derived half. Faces whose type line says
+  `Creature`, `Kindred` **or** `Tribal` all count as creature-bearing.
+- **`Eggs`, `Mounts` and `Toys` are creature types**, and an earlier revision of this spec was
+  wrong to call them mechanics. All three are real subtypes — Bloomburrow's `Mount`, the `Egg`
+  type — whose EDHREC tag is genuinely ambiguous between the tribe and an archetype built around
+  it. The safety asymmetry resolves them to the hidden side.
+
+**Irregular plurals** are still needed to reduce EDHREC's plural labels to Scryfall's singular
+type names: five entries, `dwarves`, `elves`, `fungi`, `heroes` and `wolves`, none reachable by
+any suffix rule. `faeries`, `horses`, `humans` and `zombies` were in that table and are gone —
+the trailing-`s` rule already yields their singulars — and so is `thieves`, which is moot twice
+over since `Thief` is not a creature type in Scryfall's taxonomy.
+
+**One residual gap, stated rather than papered over:** a multi-word subtype that Scryfall omits
+would be split into words by the card-derived half and missed. No such case exists in the
+current vocabulary.
 
 An **unclassifiable label is excluded** from the gap line. The asymmetry is deliberate: a
 mechanic wrongly hidden produces a thinner sentence, while a creature type wrongly shown is

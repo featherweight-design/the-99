@@ -11,8 +11,14 @@
  * `cEDH` sits on 1,504 commanders and `Reanimator` on 1,519.
  *
  * `None of your decks play cEDH` is a category error rather than a false claim,
- * which is the whole reason for the list. It will drift as EDHREC's vocabulary
- * grows; that is a known cost, noted in the commander-index runbook.
+ * which is the whole reason for the list.
+ *
+ * IT WILL DRIFT as EDHREC's vocabulary grows, and nothing detects that — a new
+ * format label is simply allowlisted as a mechanic at the next regeneration.
+ * The cost is recorded in the spec
+ * (`docs/superpowers/specs/2026-09-15-commander-row-play-style-design.md`) and
+ * in `scripts/build-tag-kinds.mts`. There is no runbook; an earlier revision of
+ * this comment cited one that does not exist.
  */
 export const FORMAT_LABELS: readonly string[] = [
   "cEDH",
@@ -27,19 +33,19 @@ export const FORMAT_LABELS: readonly string[] = [
 /**
  * Plurals the suffix rules below cannot reach.
  *
- * Six entries, not ten. `faeries`, `horses`, `humans` and `zombies` were here
- * and are gone: the trailing-`s` rule already yields `faerie`, `horse`, `human`
- * and `zombie`, so those entries could never change an answer — the same dead
- * -weight class as the format guard `gap-slot.ts` describes. What the six have
- * in common is that no suffix rule produces their singular: `dwarves` reduces
- * to `dwarve`, `heroes` to `heroe`, and `fungi` has no plural suffix at all.
+ * Five entries, and every one is load-bearing against Scryfall's own
+ * creature-type catalog: no suffix rule produces `dwarf` from `dwarves`, `hero`
+ * from `heroes`, or `fungus` from `fungi` at all. Entries that WERE here and are
+ * gone, each because a suffix rule already yields the same answer and the table
+ * row could never fire: `faeries`, `horses`, `humans`, `zombies` — and
+ * `thieves`, which is moot twice over, since `Thief` is not a creature type in
+ * Scryfall's taxonomy and `Thieves` is not in EDHREC's vocabulary.
  */
 const IRREGULAR_PLURALS: Readonly<Record<string, string>> = {
   dwarves: "dwarf",
   elves: "elf",
   fungi: "fungus",
   heroes: "hero",
-  thieves: "thief",
   wolves: "wolf",
 };
 
@@ -56,21 +62,22 @@ export function singularForms(label: string): string[] {
 }
 
 /**
- * Whether a label names a creature type, against a vocabulary of subtypes that
- * ONLY ever name creatures.
+ * Whether a label names a creature type, against Scryfall's creature-type
+ * catalog (lower-cased).
  *
- * Multi-word labels — `Modified Creatures`, `Sea Creatures`, `Commander
- * Matters` — fall out as mechanics without a guard, and an explicit
- * `if (/\s/.test(label)) return false` was written here and removed: the
- * vocabulary is built by splitting type lines on whitespace, so every member is
- * one word, and `singularForms` only ever yields whole-label forms. A
- * space-bearing label therefore cannot match any entry, and a mutation run
- * confirmed the guard changed no answer in the 43-case suite.
+ * **Multi-word creature types work because the catalog carries the phrase.**
+ * `Time Lord` is a real creature type, and `singularForms("Time Lords")` yields
+ * `"time lord"`, which the catalog holds verbatim. An earlier version derived
+ * the vocabulary from card type lines split on whitespace, which recorded
+ * `time` and `lord` separately and so allowlisted `Time Lords` as a mechanic;
+ * no guard on this function could have saved it, and the explicit
+ * `if (/\s/.test(label)) return false` that once lived here would have produced
+ * the same wrong answer by a different route.
  *
- * The behaviour is still asserted in the tests, because it is a property of
- * `singularForms` rather than of this function — a future `singularForms` that
- * split words would break it silently.
+ * Multi-word MECHANIC labels — `Modified Creatures`, `Sea Creatures`,
+ * `Commander Matters` — are absent from the catalog and fall out as mechanics
+ * with no special handling.
  */
-export function isCreatureTypeLabel(label: string, creatureOnlySubtypes: Set<string>): boolean {
-  return singularForms(label).some((form) => creatureOnlySubtypes.has(form));
+export function isCreatureTypeLabel(label: string, creatureTypes: Set<string>): boolean {
+  return singularForms(label).some((form) => creatureTypes.has(form));
 }

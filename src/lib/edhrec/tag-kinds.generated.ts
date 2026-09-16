@@ -5,8 +5,9 @@
 // hidden from the gap line rather than shown — see scripts/build-tag-kinds.mts
 // for why that direction is the safe one.
 //
-// Vocabulary at generation: 401 labels
-//   mechanic 269 · creature type 125 · format 7
+// Vocabulary at generation: 401 EDHREC labels against
+// a 404-entry creature vocabulary
+//   mechanic 264 · creature type 130 · format 7
 
 export const MECHANIC_LABELS: readonly string[] = [
   "-1/-1 Counters",
@@ -66,7 +67,6 @@ export const MECHANIC_LABELS: readonly string[] = [
   "Curses",
   "Cybermen",
   "Cycling",
-  "Daleks",
   "Dandan",
   "Dash",
   "Day / Night",
@@ -79,7 +79,6 @@ export const MECHANIC_LABELS: readonly string[] = [
   "Devoid",
   "Devotion",
   "Die Roll",
-  "Dinosaurs",
   "Discard",
   "Discover",
   "Donate",
@@ -215,7 +214,6 @@ export const MECHANIC_LABELS: readonly string[] = [
   "Self-Destruct",
   "Self-Discard",
   "Self-Mill",
-  "Servos",
   "Shadowborn Apostles",
   "Shrines",
   "Skulk",
@@ -224,7 +222,6 @@ export const MECHANIC_LABELS: readonly string[] = [
   "Sneak Attack",
   "Snow",
   "Spacecraft",
-  "Specters",
   "Speed",
   "Spell Copy",
   "Spellslinger",
@@ -248,7 +245,6 @@ export const MECHANIC_LABELS: readonly string[] = [
   "The Ring",
   "Theft",
   "Time Counters",
-  "Time Lords",
   "Tokens",
   "Toolbox",
   "Topdeck",
@@ -306,9 +302,11 @@ export const CREATURE_TYPE_LABELS: readonly string[] = [
   "Constructs",
   "Crabs",
   "Crocodiles",
+  "Daleks",
   "Demons",
   "Detectives",
   "Devils",
+  "Dinosaurs",
   "Dogs",
   "Dragons",
   "Drakes",
@@ -380,6 +378,7 @@ export const CREATURE_TYPE_LABELS: readonly string[] = [
   "Saprolings",
   "Satyrs",
   "Scarecrows",
+  "Servos",
   "Shades",
   "Shamans",
   "Shapeshifters",
@@ -388,12 +387,14 @@ export const CREATURE_TYPE_LABELS: readonly string[] = [
   "Slivers",
   "Snakes",
   "Soldiers",
+  "Specters",
   "Sphinxes",
   "Spiders",
   "Spirits",
   "Squirrels",
   "Symbiotes",
   "Thopters",
+  "Time Lords",
   "Toys",
   "Treefolk",
   "Turtles",

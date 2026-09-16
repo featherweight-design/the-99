@@ -16,17 +16,26 @@ Pure code and one probe. No surface reads any of it, no payload changes, no figu
 |---|---|
 | 1. `src/lib/edhrec/tag-kinds.ts` — the format list, irregular plurals, `isCreatureTypeLabel` | done |
 | 2. `scripts/build-tag-kinds.mts` + `pnpm build:tag-kinds`, asserting its own cases | done |
-| 3. `src/lib/edhrec/tag-kinds.generated.ts` — 269 mechanic · 125 creature · 7 format | done |
+| 3. `src/lib/edhrec/tag-kinds.generated.ts` — 264 mechanic · 130 creature · 7 format | done |
 | 4. `src/lib/edhrec/gap-slot.ts` — `isMechanic`, the 0.5% floor, `gapSlotFor` | done |
-| 5. `gap-slot.test.ts` — 43 cases, mutation-checked | done |
+| 5. `gap-slot.test.ts` — 53 cases, mutation-checked | done |
 | 6. `scripts/probe-fit-parity.mts` + `pnpm probe:fit-parity` | done |
 | 7. Spec updated with the parity answer and Ruling D; boundaries revised | done |
 
-**Both of the generator's failure paths were run** before its green was believed: dropping the
-`Kindred` clause fails on `Faeries`, dropping the dual-role subtraction fails 9 of the 10
-mechanic assertions. **One test of my own was found vacuous** by a mutation run — removing the
-runtime format guard failed nothing, because the generator already omits format labels from the
-allowlist — so the guard is deleted and the test asserts the mechanism instead.
+**The generator's failure paths were run** before its green was believed: dropping the `Kindred`
+clause fails on `Faeries`, dropping the dual-role exclusion fails the mechanic assertions,
+removing a load-bearing irregular plural fails on `Dwarves`.
+
+**Six measured corrections, four of them found only by running it.** The vocabulary is now
+Scryfall's six subtype catalogs unioned with the card-derived one, because neither is sufficient
+alone: the catalogs supply token-only (`Servo`) and multi-word (`Time Lord`) types that `cards`
+cannot know, and the card data supplies `Cephalid`, a real tribe in no Scryfall catalog. Full
+reasoning in the spec.
+
+**Three dead guards and one vacuous test of my own**, each found by a mutation run rather than by
+reading: a runtime format guard that could never fire, a multi-word guard in
+`isCreatureTypeLabel` that changed no answer, and four irregular-plural entries the trailing-`s`
+rule already handled.
 
 ## PR 2 — one source of truth for Fit (Ruling D)
 
@@ -37,7 +46,7 @@ The parity fix. It changes a figure on every surface that prints one, which is w
    (`candidates.ts:310`) — extract rather than write a second copy, since two expressions of one
    allocation are how the deck page and its receipt came to disagree once already.
 2. **`scoreCommander` takes the overlap instead of deriving it.** Today it receives
-   `edhrecTopCards` and calls `edhrecOverlap` (`score.ts:252`). It should receive the resolved
+   `edhrecTopCards` and calls `edhrecOverlap` (`score.ts:151`, reaching `fitSynergy` at `score.ts:288`). It should receive the resolved
    overlap and the stored total. `inclusionByName` stays live — it feeds role-chip percentages,
    not the score, and nothing compares it across surfaces.
 3. **Every caller updated**: `getRankedList` / `rankFree` (`/commanders`, Home), and

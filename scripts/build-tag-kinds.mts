@@ -1,9 +1,25 @@
 // Regenerates `src/lib/edhrec/tag-kinds.generated.ts` — the set of EDHREC theme
 // labels that name a MECHANIC rather than a creature type or a format.
 //
-// Run: `pnpm build:tag-kinds`. Reads the catalog and the commander index; writes
-// no database rows. Point it at any branch whose catalog is current — the tag
-// vocabulary is identical on local-dev and production (401 labels on both).
+// Run: `pnpm build:tag-kinds`. Reads the commander index, the card catalog and
+// six Scryfall subtype catalogs; writes no database rows. Point it at any branch
+// whose index is current — the tag vocabulary is identical on local-dev and
+// production (401 labels on both).
+//
+// THE CREATURE VOCABULARY TAKES TWO SOURCES BECAUSE NEITHER IS SUFFICIENT.
+// An earlier version derived it from `cards.type_line` alone and got three
+// separate things wrong, none of them visible without measuring:
+//   • `Servo` is a token-only creature type, and `transform.ts:13` drops token
+//     layouts, so it was absent from `cards` entirely and `Servos` was
+//     allowlisted as a mechanic.
+//   • `Time Lord` is a MULTI-WORD creature type. Splitting subtypes on
+//     whitespace recorded `time` and `lord`, so `Time Lords` could never match.
+//   • Subtracting every subtype that ever appears on a non-creature line deleted
+//     `Dinosaur`, which has 231 creature printings and ONE non-creature line.
+// Scryfall's catalogs fix all three. But the catalog alone is not enough either:
+// `Cephalid` is a real tribe that appears in NO Scryfall subtype catalog, so a
+// catalog-only vocabulary allowlists `Cephalids` as a mechanic. The two halves
+// each cover the other's gap — see `creatureVocabularyFor`.
 //
 // WHY AN ALLOWLIST OF MECHANICS AND NOT A DENYLIST OF TRIBES. A denylist defaults
 // an unrecognised label to *shown*, so the first creature type EDHREC adds after
@@ -22,36 +38,91 @@ import { FORMAT_LABELS, isCreatureTypeLabel } from "../src/lib/edhrec/tag-kinds"
 
 const OUT = new URL("../src/lib/edhrec/tag-kinds.generated.ts", import.meta.url);
 
+/** Scryfall's subtype catalogs. Measured 2026-09-15: the six are DISJOINT —
+    nothing in `creature-types` appears in any other — which is what makes the
+    non-creature ones usable as an exclusion set. */
+const CREATURE_CATALOG = "creature-types";
+const OTHER_CATALOGS = [
+  "artifact-types",
+  "enchantment-types",
+  "land-types",
+  "spell-types",
+  "planeswalker-types",
+];
+
 /**
- * The subtypes that only ever name creatures.
+ * One Scryfall catalog, lower-cased.
  *
- * A tribe is a creature subtype AND NOTHING ELSE. Restricting the vocabulary to
- * the creature half of the type line is NOT enough on its own and fails on ten
- * dual-role subtypes: `Food` really is a creature subtype, on
- * `Artifact Creature — Food Golem`, as are `Treasure`, `Equipment`, `Clues`,
- * `Sagas`, `Shrines`, `Books`, `Auras`, `Adventures` and `Vehicles` on their own
- * creature-bearing cards. What separates them from `Frog` is that each is also a
- * NON-creature subtype elsewhere, so the two sets are collected and subtracted.
+ * The shape is asserted rather than assumed, in the same spirit as
+ * `check:scryfall`: these are the upstream dependency the classification rests
+ * on, and a silently empty or reshaped payload would allowlist every tribe in
+ * EDHREC's vocabulary as a mechanic. There is no daily contract check because
+ * the generator is run by hand and fails loudly here instead.
  */
-async function creatureOnlySubtypes(): Promise<Set<string>> {
+async function catalog(name: string, floor: number): Promise<Set<string>> {
+  const url = `https://api.scryfall.com/catalog/${name}`;
+  const res = await fetch(url, {
+    headers: { Accept: "application/json", "User-Agent": "the-99/tag-kinds" },
+  });
+  if (!res.ok) throw new Error(`${url} -> HTTP ${res.status}`);
+  const body = (await res.json()) as { object?: string; data?: unknown };
+  if (body.object !== "catalog" || !Array.isArray(body.data)) {
+    throw new Error(`${url} -> not a catalog payload`);
+  }
+  const data = body.data.filter((d): d is string => typeof d === "string" && d.length > 0);
+  if (data.length < floor) {
+    throw new Error(`${url} -> only ${data.length} entries, expected ${floor}+`);
+  }
+  return new Set(data.map((d) => d.toLowerCase()));
+}
+
+/**
+ * The creature vocabulary: Scryfall's catalog, plus any creature subtype in
+ * this database that Scryfall's catalog omits.
+ *
+ * NEITHER SOURCE IS SUFFICIENT ALONE, and each covers the other's gap.
+ *
+ * Scryfall's catalog is authoritative, carries multi-word types verbatim
+ * (`Time Lord`) and includes token-only types (`Servo`) that `cards` cannot
+ * know about, since `transform.ts:13` drops token layouts. But it omits at
+ * least one real tribe: `Cephalid` is in NO Scryfall subtype catalog, so the
+ * catalog alone allowlists `Cephalids` as a mechanic.
+ *
+ * The card-derived half fills that in — and the exclusion is by CATALOG rather
+ * than by card occurrence, which is the fix for the third failure mode. An
+ * earlier version subtracted every subtype that ever appeared on a non-creature
+ * line, and that deleted `Dinosaur`, which has 231 creature printings against a
+ * single non-creature one. Subtracting the artifact, enchantment, land, spell
+ * and planeswalker catalogs instead removes exactly the dual-role subtypes
+ * (`Food`, `Equipment`, `Treasure`, `Saga`, `Aura`, …) and nothing else.
+ *
+ * One residual gap, stated rather than papered over: a MULTI-WORD subtype that
+ * Scryfall omits would still be split into words here and missed. No such case
+ * exists in the current vocabulary.
+ */
+async function creatureVocabularyFor(): Promise<Set<string>> {
+  const [fromCatalog, ...others] = await Promise.all([
+    catalog(CREATURE_CATALOG, 250),
+    ...OTHER_CATALOGS.map((c) => catalog(c, 5)),
+  ]);
+  const notCreature = new Set(others.flatMap((s) => [...s]));
+
   const rows = await db.select({ typeLine: cards.typeLine }).from(cards);
-  const creature = new Set<string>();
-  const other = new Set<string>();
+  const derived = new Set<string>();
   for (const { typeLine } of rows) {
     if (!typeLine) continue;
     for (const face of String(typeLine).split("//")) {
       const [types, subs] = face.split("—");
-      if (!subs) continue;
-      // `Kindred` (formerly `Tribal`) puts creature types on non-creature cards
-      // — `Tribal Enchantment — Faerie Aura`. Without these two words every
-      // Kindred tribe lands in `other` and is subtracted from itself, which is
-      // how `Faeries` reached the mechanic side.
-      const target = /creature|kindred|tribal/i.test(types) ? creature : other;
-      for (const word of subs.trim().split(/\s+/)) target.add(word.toLowerCase());
+      // `Kindred` (formerly `Tribal`) bears creature types without being a
+      // creature: `Tribal Enchantment — Faerie Aura`.
+      if (!subs || !/creature|kindred|tribal/i.test(types)) continue;
+      for (const word of subs.trim().split(/\s+/)) {
+        const w = word.toLowerCase();
+        if (!notCreature.has(w)) derived.add(w);
+      }
     }
   }
-  for (const word of other) creature.delete(word);
-  return creature;
+  return new Set([...fromCatalog, ...derived]);
 }
 
 async function vocabulary(): Promise<string[]> {
@@ -68,18 +139,27 @@ async function vocabulary(): Promise<string[]> {
  * own rules rather than restating them. Every one cost a wrong classification.
  */
 const MUST_BE_MECHANIC = [
-  // The dual-role subtypes: creature subtypes on some card, and something else
-  // on hundreds. Ten of the thirteen the first attempt mis-sorted.
+  // Artifact and enchantment subtypes that a card-derived vocabulary keeps,
+  // because each also appears on a creature somewhere — `Artifact Creature —
+  // Food Golem`. Scryfall's catalog lists none of them as creature types, so
+  // they need no special handling now; they stay asserted because they are the
+  // cases that proved the derived vocabulary wrong.
   "Adventures", "Auras", "Books", "Clues", "Equipment", "Food",
   "Sagas", "Shrines", "Treasure", "Vehicles",
 ];
 const MUST_BE_CREATURE = [
   "Bears", "Crocodiles", "Frogs", // the reported row
-  "Dwarves", "Faeries", "Fungi", "Heroes", "Horses", // irregular plurals
-  "Eggs", "Mounts", "Toys", // real creature types, ambiguous tags, hidden by the safety rule
+  "Dwarves", "Fungi", "Heroes", "Elves", "Wolves", // need the irregular table
+  "Faeries", "Horses", "Humans", "Zombies", // reduce from the suffix rules alone
+  "Eggs", "Mounts", "Toys", // real creature types whose EDHREC tag is ambiguous
+  "Servos", // TOKEN-ONLY: absent from `cards` entirely, since tokens are dropped
+  "Time Lords", // MULTI-WORD: whitespace-split subtypes could never match it
+  "Dinosaurs", // 231 creature printings and one non-creature line, which an
+  // unconditional subtraction deleted
+  "Cephalids", // in NO Scryfall subtype catalog; only the card-derived half has it
 ];
 
-const subtypes = await creatureOnlySubtypes();
+const creatureVocabulary = await creatureVocabularyFor();
 const labels = await vocabulary();
 
 const mechanic: string[] = [];
@@ -87,7 +167,7 @@ const creature: string[] = [];
 const format: string[] = [];
 for (const label of labels) {
   if (FORMAT_LABELS.includes(label)) format.push(label);
-  else if (isCreatureTypeLabel(label, subtypes)) creature.push(label);
+  else if (isCreatureTypeLabel(label, creatureVocabulary)) creature.push(label);
   else mechanic.push(label);
 }
 
@@ -114,7 +194,8 @@ const body = `// GENERATED by \`pnpm build:tag-kinds\` — do not edit by hand.
 // hidden from the gap line rather than shown — see scripts/build-tag-kinds.mts
 // for why that direction is the safe one.
 //
-// Vocabulary at generation: ${labels.length} labels
+// Vocabulary at generation: ${labels.length} EDHREC labels against
+// a ${creatureVocabulary.size}-entry creature vocabulary
 //   mechanic ${mechanic.length} · creature type ${creature.length} · format ${format.length}
 
 export const MECHANIC_LABELS: readonly string[] = [

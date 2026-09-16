@@ -20,8 +20,8 @@ describe("the generated classification", () => {
   // The counts the generator produced. Pinned so a regeneration that moves the
   // vocabulary is a visible diff rather than a silent one.
   it("covers the whole vocabulary at the measured split", () => {
-    expect(MECHANIC_LABELS).toHaveLength(269);
-    expect(CREATURE_TYPE_LABELS).toHaveLength(125);
+    expect(MECHANIC_LABELS).toHaveLength(264);
+    expect(CREATURE_TYPE_LABELS).toHaveLength(130);
     expect(FORMAT_LABELS).toHaveLength(7);
     expect(MECHANIC_LABELS.length + CREATURE_TYPE_LABELS.length + FORMAT_LABELS.length).toBe(401);
   });
@@ -73,6 +73,27 @@ describe("the generated classification", () => {
   // archetype built around it. The safety asymmetry resolves them to hidden.
   it.each(["Eggs", "Mounts", "Toys"])("%s is hidden rather than guessed at", (label) => {
     expect(isMechanic(label)).toBe(false);
+  });
+
+  // Three tribes a card-derived vocabulary cannot see, each for a different
+  // reason, and each allowlisted as a mechanic until the generator took
+  // Scryfall's catalogs: `Servo` is token-only and tokens are dropped from
+  // `cards`; `Time Lord` is multi-word and whitespace-splitting destroyed it;
+  // `Dinosaur` has 231 creature printings and one non-creature line, which an
+  // unconditional subtraction was enough to delete it on.
+  it.each(["Servos", "Time Lords", "Dinosaurs", "Daleks", "Specters"])(
+    "%s is a creature type the card catalog alone could not classify",
+    (label) => {
+      expect(isMechanic(label)).toBe(false);
+      expect(CREATURE_TYPE_LABELS).toContain(label);
+    },
+  );
+
+  // The gap in the other direction: a real tribe that appears in NO Scryfall
+  // subtype catalog, so the authoritative list alone is not sufficient either.
+  it("classifies Cephalids, which no Scryfall catalog lists", () => {
+    expect(isMechanic("Cephalids")).toBe(false);
+    expect(CREATURE_TYPE_LABELS).toContain("Cephalids");
   });
 
   // Asserted against the MECHANISM as well as the behaviour. Format labels are
