@@ -151,7 +151,12 @@ export const aboutEntries: readonly AboutEntry[] = [
     title: 'Rows the import could not place',
     route: '/collection/replace',
     opens: 'opens the issue inspector',
-    width: 'inset',
+    // A ROW figure, so it takes the full plate. The route's own issue rows carry
+    // a name, a line number, a set code and a reason on one line; at the inset's
+    // 300px cap `no Oracle match` wrapped and the copy count collided with it —
+    // a figure demonstrating the route's row while showing a shape the route
+    // never produces.
+    width: 'plate',
     caption:
       'Every line we could not put a card to, with the reason beside it, split into names we could not match and lines we could not read. Neither is a buy list, and neither stops the rest of the import. A pasted list carries no set or collector number, which is why a pasted collection cannot drive set completion.',
     keys: [],

@@ -4,6 +4,13 @@ import { AboutPage } from "./about-page";
 import { ABOUT_VERSION, aboutCopy, aboutEntries } from "../../lib/copy/about";
 import { FIGURES } from "./figures";
 import { availabilityCopy } from "../../lib/copy/availability";
+import { cardAssignmentsCopy } from "../../lib/copy/card-assignments";
+import {
+  ISSUE_PARSE_ERROR,
+  ISSUE_UNMATCHED,
+  REPLACE_ROWS,
+  REPLACE_SUMMARY,
+} from "../../lib/about/fixtures";
 
 // The action is a server function; the page only needs it to exist as a form
 // target, and importing it for real drags a database client into jsdom.
@@ -605,17 +612,57 @@ describe("what each chapter 01 figure actually draws", () => {
     expect(el.textContent).toContain("replaces");
   });
 
-  it("post-import: the three sections, in the app's own words", () => {
+  // The figure used to print the summary's three section HEADINGS as mono
+  // strings. §3 draws the thing the entry's key lines are actually about, and
+  // this asserts that instead: both figures, a line per deck that felt the
+  // replace, and a COUNT of the decks that did not.
+  it("post-import: both figures, the decks that felt it, the count that did not", () => {
     const el = plate("post-import");
-    expect(el.textContent).toContain("No longer to buy");
-    expect(el.textContent).toContain("Still to buy");
-    expect(el.textContent).toContain("Still short");
+    expect(el.textContent).toContain(cardAssignmentsCopy.summary.eyebrow);
+
+    // Key 1 — BEFORE and AFTER, so the change is checkable rather than
+    // asserted. One figure alone would satisfy a looser assertion and say
+    // nothing about the rule.
+    expect(el.textContent).toContain("4,910");
+    expect(el.textContent).toContain("5,132");
+
+    // Keys 2 and 3 — THREE SECTIONS, and a row that is a card carrying the
+    // deck that wanted it. The first rebuild of this figure followed the R4
+    // canvas, which draws deck rows with a per-deck count — and it then
+    // contradicted the three captions printed directly beneath it on the page.
+    // A screenshot caught that; no assertion here could have.
+    for (const head of [
+      cardAssignmentsCopy.summary.sectionCleared(61),
+      cardAssignmentsCopy.summary.sectionStill(12),
+      cardAssignmentsCopy.summary.sectionShort(2),
+    ]) {
+      expect(el.textContent).toContain(head);
+    }
+    for (const row of REPLACE_ROWS) {
+      expect(el.textContent).toContain(row.card);
+      expect(el.textContent).toContain(row.deck);
+    }
+
+    // Both figures of the eyebrow line survive the section rewrite.
+    expect(el.textContent).toContain(`${REPLACE_SUMMARY.noLongerOwned} no longer owned`);
   });
 
-  it("import-issues: both tabs, because they are different failures", () => {
+  // The old figure drew the two TAB LABELS as pills, which says the inspector
+  // has two tabs and nothing about the entry's subject — that a misspelling and
+  // a line we could not read are different failures, labelled differently. It
+  // mounts the route's own two row views now, so the difference is the thing on
+  // screen rather than a claim about it.
+  it("import-issues: one row of each KIND, drawn by the route", () => {
     const el = plate("import-issues");
-    expect(el.textContent).toContain("Unmatched");
-    expect(el.textContent).toContain("Parse errors");
+    expect(el.textContent).toContain(ISSUE_UNMATCHED.name);
+    expect(el.textContent).toContain(ISSUE_PARSE_ERROR.reason);
+
+    // The unmatched row carries the warning edge the route gives it. Two rows
+    // of the same kind would satisfy every text assertion above.
+    const warned = [...el.querySelectorAll("div")].filter((d) =>
+      d.getAttribute("style")?.includes("var(--warning)"),
+    );
+    expect(warned.length).toBeGreaterThan(0);
   });
 
   it("card-detail: the pick, the preview, and BOTH printed costs", () => {

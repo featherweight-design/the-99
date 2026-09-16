@@ -241,3 +241,56 @@ export const BROWSE_CELLS: {
 
 /** The set code those five share, drawn in every caption beside the rarity. */
 export const BROWSE_SET_CODE = "HOB";
+
+/**
+ * The two rows §3 draws for the issue inspector, one of each KIND — a name we
+ * could not match, and a line we could not read. The entry's whole point is
+ * that those read differently and are labelled differently, so a fixture of
+ * two unmatched rows would illustrate the opposite.
+ *
+ * `Mox Dimaond` is the canvas's own misspelling and is deliberate: it is what
+ * makes the row a misspelling rather than a printing nobody stocks.
+ */
+export const ISSUE_UNMATCHED = { name: "Mox Dimaond", setCode: "VMA", line: 907, quantity: 1 };
+export const ISSUE_PARSE_ERROR = { line: 412, reason: "no printing" };
+
+/**
+ * The replace summary's own figures, from §3. Before and after are BOTH
+ * printed, which is key line 1 — a change you can check rather than one you
+ * are asked to believe.
+ */
+export const REPLACE_SUMMARY = {
+  before: 4910,
+  after: 5132,
+  noLongerOwned: 61,
+  unaffectedDecks: 11,
+};
+
+/**
+ * One row per SECTION of the replace summary, because the entry's key lines
+ * say what the sections are and that a row is a CARD carrying the deck that
+ * wanted it — not a deck carrying a count.
+ *
+ * The R4 canvas draws deck rows with per-deck lines, and this deliberately
+ * does not follow it: the shipped summary has three sections of card rows, the
+ * entry's own captions describe THAT, and a figure built from the drawing
+ * contradicted the three lines printed directly beneath it. Where the canvas
+ * and the surface disagree about something the surface owns, the surface wins.
+ *
+ * One row per section rather than several, because what the figure has to
+ * teach is that the three sections are different ANSWERS — a fourth row in any
+ * one of them adds length and no meaning.
+ */
+export const REPLACE_ROWS: {
+  section: "cleared" | "still" | "short";
+  card: string;
+  deck: string;
+  reason?: string;
+}[] = [
+  { section: "cleared", card: "Cultivate", deck: "Kinnan Ramp" },
+  { section: "still", card: "Smothering Tithe", deck: "Atraxa Counters", reason: "not in the new list" },
+  { section: "short", card: "Arcane Signet", deck: "Preston Tokens", reason: "2 decks want 1 copy" },
+];
+
+/** The four doors a collection arrives through, in §3's order. */
+export const IMPORT_SOURCES = ["Moxfield", "Archidekt", "Deckbox", "ManaBox"];

@@ -36,8 +36,12 @@ import { GAME_AXIS_KEYS } from "../../lib/decks/game-axes";
 import { deckSortLabel } from "../../lib/about/sort-labels";
 import { DECK_GROUPING_LABELS } from "../../lib/copy/deck-sort";
 import { BrowseFigureBody } from "./browse-figure";
+import {
+  ImportFigureBody,
+  ImportIssuesFigureBody,
+  PostImportFigureBody,
+} from "./ch01-figures";
 import { cardAssignmentsCopy } from "../../lib/copy/card-assignments";
-import { issueInspectorCopy } from "../../lib/copy/issue-inspector";
 import { statusBarStyle } from "../../lib/decks/status-style";
 import type { StatusPill } from "../../lib/decks/status";
 import { refreshCopy } from "../../lib/copy/refresh";
@@ -425,16 +429,7 @@ function BrowseFigure({ width }: { width: AboutWidth }) {
 function ImportFigure({ width }: { width: AboutWidth }) {
   return (
     <Specimen label="import" width={width}>
-      <div className="flex flex-col gap-[8px]">
-        {["Moxfield", "Archidekt", "Deckbox", "ManaBox"].map((source) => (
-          <span key={source} className="font-mono text-[11px] text-[color:var(--fg-body)]">
-            {source} · CSV
-          </span>
-        ))}
-        <span className="mt-[4px] font-mono text-[11px] text-[color:var(--warning)]">
-          replaces — never adds
-        </span>
-      </div>
+      <ImportFigureBody />
     </Specimen>
   );
 }
@@ -444,16 +439,9 @@ function ImportFigure({ width }: { width: AboutWidth }) {
  * moves between them; no deck is edited.
  */
 function PostImportFigure({ width }: { width: AboutWidth }) {
-  const c = cardAssignmentsCopy.summary;
   return (
     <Specimen label="post-import" width={width}>
-      <div className="flex flex-col gap-[8px]">
-        {[c.sectionCleared(61), c.sectionStill(12), c.sectionShort(2)].map((heading) => (
-          <span key={heading} className="font-mono text-[11px] text-[color:var(--fg-body)]">
-            {heading}
-          </span>
-        ))}
-      </div>
+      <PostImportFigureBody />
     </Specimen>
   );
 }
@@ -462,16 +450,7 @@ function PostImportFigure({ width }: { width: AboutWidth }) {
 function ImportIssuesFigure({ width }: { width: AboutWidth }) {
   return (
     <Specimen label="import-issues" width={width}>
-      <div className="flex flex-wrap items-center gap-[10px]">
-        {[issueInspectorCopy.tabs.unmatched, issueInspectorCopy.tabs.parseErrors].map((tab) => (
-          <span
-            key={tab}
-            className="rounded-[6px] border border-solid border-[color:var(--border-strong)] px-[9px] py-[4px] font-mono text-[11px] text-[color:var(--fg-body)]"
-          >
-            {tab}
-          </span>
-        ))}
-      </div>
+      <ImportIssuesFigureBody />
     </Specimen>
   );
 }
