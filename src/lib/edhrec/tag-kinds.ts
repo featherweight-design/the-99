@@ -46,7 +46,7 @@ export const FORMAT_LABELS: readonly string[] = [
  *
  * | ending | becomes | case |
  * |---|---|---|
- * | `-ves` | `-f`, `-fe` | `wolves`, `elves`, `dwarves`, `werewolves`, `thieves` |
+ * | `-ves` | `-f`, `-fe` | `wolves`, `elves`, `dwarves`, `werewolves` |
  * | `-men` | `-man` | `cybermen` |
  * | `-i` | `-us` | `fungi`, `pegasi` |
  * | `-ice` | `-ouse` | `mice` |
@@ -58,6 +58,11 @@ export const FORMAT_LABELS: readonly string[] = [
  * Over-reduction is safe and deliberate: a form that matches no creature type
  * costs nothing, and the generator's own `MUST_BE_MECHANIC` assertions catch a
  * rule that pulls a real mechanic across.
+ *
+ * `thieves` is deliberately absent from the table above even though `-ves`
+ * would handle it: `Thief` is not a creature type in Scryfall's taxonomy and
+ * `Thieves` is not in EDHREC's vocabulary, so listing it would imply a verified
+ * invariant that does not exist.
  */
 export function singularForms(label: string): string[] {
   const lower = label.toLowerCase();
@@ -94,4 +99,60 @@ export function singularForms(label: string): string[] {
  */
 export function isCreatureTypeLabel(label: string, creatureTypes: Set<string>): boolean {
   return singularForms(label).some((form) => creatureTypes.has(form));
+}
+
+/**
+ * The creature subtypes a set of type lines carries, minus the ones Scryfall
+ * files under another card type.
+ *
+ * Pure, and exported so the generator's parsing is unit-testable: the checked-in
+ * artifact can be asserted all day without ever executing the code that
+ * produced it, which would let a change here leave `pnpm test` green over a
+ * stale or unreproducible artifact.
+ */
+export function creatureSubtypesFromTypeLines(
+  typeLines: readonly (string | null)[],
+  notCreature: ReadonlySet<string>,
+): Set<string> {
+  const derived = new Set<string>();
+  for (const typeLine of typeLines) {
+    if (!typeLine) continue;
+    for (const face of typeLine.split("//")) {
+      const [types, subs] = face.split("—");
+      // `Kindred` (formerly `Tribal`) bears creature types without being a
+      // creature: `Tribal Enchantment — Faerie Aura`.
+      if (!subs || !/creature|kindred|tribal/i.test(types)) continue;
+      for (const word of subs.trim().split(/\s+/)) {
+        const w = word.toLowerCase();
+        if (!notCreature.has(w)) derived.add(w);
+      }
+    }
+  }
+  return derived;
+}
+
+export type LabelKinds = {
+  mechanic: string[];
+  creature: string[];
+  format: string[];
+};
+
+/**
+ * The classification itself, pure and exported for the same reason as above.
+ *
+ * Order matters: a format label is a format even if some creature shares its
+ * name, and the mechanic bucket is the FALLBACK — which is what makes the
+ * allowlist's default direction hidden rather than shown.
+ */
+export function classifyLabels(
+  labels: readonly string[],
+  creatureTypes: Set<string>,
+): LabelKinds {
+  const kinds: LabelKinds = { mechanic: [], creature: [], format: [] };
+  for (const label of labels) {
+    if (FORMAT_LABELS.includes(label)) kinds.format.push(label);
+    else if (isCreatureTypeLabel(label, creatureTypes)) kinds.creature.push(label);
+    else kinds.mechanic.push(label);
+  }
+  return kinds;
 }

@@ -39,7 +39,11 @@ import { writeFileSync } from "node:fs";
 import { sql } from "drizzle-orm";
 import { db } from "../src/db";
 import { cards, commanderSupport } from "../src/db/schema";
-import { FORMAT_LABELS, isCreatureTypeLabel } from "../src/lib/edhrec/tag-kinds";
+import {
+  classifyLabels,
+  creatureSubtypesFromTypeLines,
+  FORMAT_LABELS,
+} from "../src/lib/edhrec/tag-kinds";
 
 const OUT = new URL("../src/lib/edhrec/tag-kinds.generated.ts", import.meta.url);
 
@@ -112,32 +116,14 @@ async function creatureVocabularyFor(): Promise<Set<string>> {
   ]);
   const notCreature = new Set(others.flatMap((s) => [...s]));
 
+  // The parsing lives in `creatureSubtypesFromTypeLines`, unit-tested with
+  // fixtures, because a classification asserted only through the checked-in
+  // artifact can go stale without anything going red.
   const rows = await db.select({ typeLine: cards.typeLine }).from(cards);
-  const derived = new Set<string>();
-  for (const { typeLine } of rows) {
-    if (!typeLine) continue;
-    for (const face of String(typeLine).split("//")) {
-      const [types, subs] = face.split("—");
-      // `Kindred` (formerly `Tribal`) bears creature types without being a
-      // creature: `Tribal Enchantment — Faerie Aura`.
-      //
-      // NOT PROVABLE BY MUTATION, and kept anyway. While the vocabulary was
-      // card-derived alone, dropping these two words sent `Faeries` to the
-      // mechanic side and a mutation run showed it. Since the union landed it
-      // changes no answer — `faerie` is in Scryfall's catalog, so the
-      // card-derived half no longer decides that label — and an earlier
-      // revision of this comment went on claiming the mutation anyway, which
-      // was a stale claim carried across a change that invalidated it. It stays
-      // because it is the correct reading of a type line, not a guard against a
-      // case that cannot arise: it fires the first time Scryfall's catalog lags
-      // a Kindred-only tribe.
-      if (!subs || !/creature|kindred|tribal/i.test(types)) continue;
-      for (const word of subs.trim().split(/\s+/)) {
-        const w = word.toLowerCase();
-        if (!notCreature.has(w)) derived.add(w);
-      }
-    }
-  }
+  const derived = creatureSubtypesFromTypeLines(
+    rows.map((r) => r.typeLine),
+    notCreature,
+  );
   return new Set([...fromCatalog, ...derived]);
 }
 
@@ -192,14 +178,7 @@ const MUST_BE_CREATURE = [
 const creatureVocabulary = await creatureVocabularyFor();
 const labels = await vocabulary();
 
-const mechanic: string[] = [];
-const creature: string[] = [];
-const format: string[] = [];
-for (const label of labels) {
-  if (FORMAT_LABELS.includes(label)) format.push(label);
-  else if (isCreatureTypeLabel(label, creatureVocabulary)) creature.push(label);
-  else mechanic.push(label);
-}
+const { mechanic, creature, format } = classifyLabels(labels, creatureVocabulary);
 
 /**
  * Mechanic labels that LOOK like an unreduced creature plural, printed for a

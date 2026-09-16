@@ -56,16 +56,48 @@ const ownedOracleIds = collection.map((c) => c.oracleId);
 const candidates = await loadCandidates(userId, ownedOracleIds);
 if (candidates.length === 0) throw new Error("no discovery candidates for this account");
 
-// Prefer commanders with a real overlap: a row whose stored numerator is 0
-// agrees with a live 0 for free and proves nothing.
-const ranked = [...candidates]
+// THE SAMPLE SPANS THE POPULATION, and both properties below were defects.
+//
+// An earlier version took the SAMPLE highest stored overlaps, on the reasoning
+// that a stored 0 agrees with a live 0 for free. That is a real blind spot: the
+// index can say 0 while the live name match has gone positive since the monthly
+// snapshot, which is a parity failure the probe would never compare. Zero-
+// overlap rows are now sampled deliberately.
+//
+// And it was not deterministic. `loadCandidates` imposes no ordering and the
+// comparator returns 0 for every tie, so the slice depended on unspecified
+// database order — two runs of an acceptance test compared different
+// commanders. Sorting by `oracleId` fixes the order; striding over it is what
+// keeps the sample spread across the whole range rather than clustered at one
+// end of it.
+const eligible = [...candidates]
   .filter((c) => c.edhrecTotal != null && c.edhrecTotal > 0)
-  .sort((a, b) => b.ownedSupport - a.ownedSupport)
-  .slice(0, SAMPLE);
+  .sort((a, b) => a.oracleId.localeCompare(b.oracleId));
+if (eligible.length === 0) {
+  throw new Error(
+    "no candidate has a positive stored edhrec_total — nothing to compare. " +
+      "Is the commander index built on this branch?",
+  );
+}
+const stride = Math.max(1, Math.floor(eligible.length / Math.max(1, SAMPLE)));
+const ranked = eligible.filter((_, i) => i % stride === 0).slice(0, SAMPLE);
+
+// Distinguished from the zero-overlap case below, which an earlier version
+// conflated: `SAMPLE=0` reported that every sampled candidate had no overlap.
+if (ranked.length === 0) {
+  throw new Error(`SAMPLE=${SAMPLE} selected no candidates from ${eligible.length} eligible`);
+}
 const withOverlap = ranked.filter((c) => c.ownedSupport > 0).length;
-console.log(`comparing ${ranked.length} candidates, ${withOverlap} with a non-zero stored overlap`);
+console.log(
+  `comparing ${ranked.length} of ${eligible.length} eligible candidates ` +
+    `(stride ${stride}) — ${withOverlap} with a non-zero stored overlap, ` +
+    `${ranked.length - withOverlap} with zero`,
+);
 if (withOverlap === 0) {
-  throw new Error("every sampled candidate has a stored overlap of 0 — the comparison is vacuous");
+  throw new Error(
+    `all ${ranked.length} sampled candidates have a stored overlap of 0 — ` +
+      "the comparison is vacuous. Raise SAMPLE or use an account with a larger collection.",
+  );
 }
 
 type Row = {

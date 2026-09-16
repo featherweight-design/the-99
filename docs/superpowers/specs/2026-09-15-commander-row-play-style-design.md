@@ -392,10 +392,14 @@ must not print an empty clause.
 
 ## Verification
 
-- **Unit** — the classifier over all 401 labels, asserting the counts it produced
-  (269 / 125 / 7), the **ten** dual-role subtypes that must read as mechanics, the five
-  irregular plurals, and `Eggs` / `Mounts` / `Toys` on the creature side — plus the
-  proportional floor at a null `deck_count` and the three `GapSlot` branches. Fit arithmetic
+- **Unit, two suites.** `gap-slot.test.ts` asserts the checked-in artifact: the counts it
+  produced (**260 / 134 / 7**), the ten dual-role subtypes that must read as mechanics, one
+  case per plural rule (there are **seven**), `Eggs` / `Mounts` / `Toys` on the creature side,
+  the four labels a card-derived vocabulary could not classify, `Cephalids` which no Scryfall
+  catalog lists, the proportional floor at a null `deck_count`, and the three `GapSlot`
+  branches. `tag-kinds.test.ts` asserts the generator's own two pure steps over fixtures —
+  **necessary because the artifact suite alone would stay green over a stale artifact**, which
+  is the one thing a checked-in generated file cannot prove about itself. Fit arithmetic
   is already covered in `score.ts`'s tests, and **so is the row's denominator**:
   `rec-card.test.tsx:226` already asserts a null-synergy commander prints
   `fitDenominatorMeasurable(40)` at both widths and that the rescaled `80` never appears, with
