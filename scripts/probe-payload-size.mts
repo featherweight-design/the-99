@@ -49,6 +49,25 @@ const { DATABASE_URL } = requireEnv(["DATABASE_URL"]);
 const pool = new Pool({ connectionString: DATABASE_URL });
 const fixture = drizzle(pool);
 
+/**
+ * Refuses to measure a payload assembled from a failed read.
+ *
+ * The receipts, the free ranking and every price figure are dropped on a soft
+ * failure, all of which make the serialised result SMALLER — so a degraded
+ * response is the one payload guaranteed to fit a budget it should not have
+ * been judged against.
+ */
+function assertHealthy(what: string, priceOk: boolean, availOk: boolean): void {
+  if (priceOk && availOk) return;
+  const lost = [!priceOk && "the price read", !availOk && "the availability read"]
+    .filter(Boolean)
+    .join(" and ");
+  throw new Error(
+    `${what} came back degraded — ${lost} failed, so the payload is smaller than ` +
+      "the one this budget guards. Fix the read and run again rather than trusting the figure.",
+  );
+}
+
 let failures = 0;
 const check = (label: string, ok: boolean, detail: string) => {
   if (!ok) failures += 1;
@@ -91,6 +110,14 @@ async function main() {
       let leastRows = Number.POSITIVE_INFINITY;
       for (const account of accounts) {
         const list = await loadDiscovery(account.user_id, { sort });
+        // A DEGRADED PAYLOAD IS A SMALLER PAYLOAD, so measuring one certifies
+        // the budget from the wrong number. Both lanes now return `priceOk` /
+        // `availOk` instead of throwing — the change this PR made two rounds
+        // ago — so a failed read quietly removes figures from every row and the
+        // guard passes on a payload it was never meant to measure. Rejected
+        // rather than retried: a probe that silently retries hides a failing
+        // dependency, and this script's whole job is to not hide things.
+        assertHealthy(`${sort} for one account`, list.priceOk, list.availOk);
         const plain = Buffer.byteLength(JSON.stringify(list));
         const bytes = Buffer.byteLength(JSON.stringify(encodeDiscovery(list)));
         worstRatio = Math.max(worstRatio, bytes / plain);
@@ -142,6 +169,7 @@ async function main() {
     let worstOwned = { bytes: 0, rows: 0, prose: 0 };
     for (const account of accounts) {
       const rankings = await loadCommanderRankings(account.user_id);
+      assertHealthy("the owned lane for one account", rankings.priceOk, rankings.availOk);
       const bytes = Buffer.byteLength(JSON.stringify(rankings));
       if (bytes > worstOwned.bytes) {
         worstOwned = {

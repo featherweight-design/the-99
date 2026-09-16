@@ -181,12 +181,17 @@ export async function loadCommanderRankings(userId: string): Promise<CommanderRa
   // played-tag reads are the discover lane's own, and a second spelling of
   // either would be free to disagree with the lane it was copied from.
   //
-  // The price read is the SOFT one. `pricesOrEmpty` swallows a transient feed or
-  // database failure, because every row already draws without a price and
-  // nothing else here does: taking the whole recommendations page down over the
-  // cheapest figure on it would be the wrong trade. The other two are hard —
-  // without the tag sets the gap line would claim the reader plays nothing, and
-  // without the metadata every row loses its sentence.
+  // The price read is the SOFT one. `readPrices` reports a transient feed or
+  // database failure instead of throwing, because every row already draws
+  // without a price and nothing else here does: taking the whole
+  // recommendations page down over the cheapest figure on it would be the wrong
+  // trade. What it does NOT do is hide the failure — `priceOk` rides in the
+  // payload so the surface omits the figure rather than drawing `absent`, which
+  // would be a claim that the feed has never carried the printing.
+  //
+  // The other two are hard: without the tag sets the gap line would claim the
+  // reader plays nothing, and without the metadata every row loses its
+  // sentence.
   const oracleIds = items.map((i) => i.oracleId);
   const [meta, playedTags, priceRead] = await Promise.all([
     loadSupportMeta(oracleIds),

@@ -1,16 +1,27 @@
 // The discover payload, on a diet (#52 follow-up).
 //
-// `/discover` ranks every commander the collection can support — 3,086 rows on
-// the largest collection here, 2.76 MB of RSC payload. Most of that is not
-// information: the 17 field names are repeated on every row (654 KB), the theme
-// labels are drawn from a 399-word vocabulary but written out in full every time
-// they appear (984 KB), and every art URL carries the same 44-character host.
+// `/discover` ranks every commander the collection can support — a few thousand
+// rows, and when this was written most of the payload was not information: the
+// field names were repeated on every row, the theme labels were drawn from a
+// few hundred words but written out in full every time they appeared, and every
+// art URL carried the same host.
+//
+// The figures that motivated it — 3,086 rows, 2.76 MB, 654 KB of keys, 984 KB of
+// labels — were measured at the time and are NOT maintained here. The plain form
+// has since grown past them, which is the whole hazard of a header that quotes
+// results.
 //
 // So the list ships as a dictionary and a table. Rows become positional tuples
 // under a key order the payload carries, repeated strings are filed once and
-// referenced by index, and the Scryfall art stem is dropped. The measured result
-// is 1.09 MB — under the 2 MB data-cache ceiling, which is what lets the whole
+// referenced by index, and the Scryfall art stem is dropped. The result is
+// comfortably under the 2 MB data-cache ceiling, which is what lets the whole
 // list be cached per user rather than recomputed on every visit.
+//
+// NO CURRENT FIGURE IS QUOTED. This header held an encoded 1.09 MB from before
+// the sentence, the gap slot and Fit were added, and kept holding it afterwards
+// — understating the footprint and making the budget look safer than it was.
+// `pnpm probe:payload` prints the current worst case across every account; read
+// it there, where it cannot go stale.
 //
 // The key order and the role order travel in the payload rather than being
 // implied by this module's constants, so a decoder reading an older payload

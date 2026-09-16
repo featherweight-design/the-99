@@ -43,10 +43,19 @@ export type CandidateSqlRow = {
    * change would not be affordable, and none are made, because the sentence is
    * identical for every player and so is generated once per commander.
    *
-   * A null renders as NO PARAGRAPH rather than as a placeholder. 501 of
-   * local-dev's 3,279 rows are null, against 1 of production's 3,342 — a
-   * fixture gap that reads exactly like a bug, so run `pnpm db:copy:prose`
-   * before judging a local walk.
+   * A NULL IS A LEGITIMATE OUTPUT, not a gap to be filled. The generator stores
+   * nothing when a candidate sentence fails its accept contract, and a commander
+   * whose every attempt failed keeps its null and renders with no paragraph —
+   * the state the design draws, and never a truncated sentence nobody wrote.
+   * The same is true of a commander the index has no inputs for.
+   *
+   * An earlier version of this comment called every null a fixture gap and told
+   * the reader to copy production data over it, which contradicts that contract
+   * and would overwrite a valid state. What IS environment-specific is the
+   * PROPORTION: a database generated against will have few, one never generated
+   * against will have many, and a local walk that finds most rows blank wants
+   * `pnpm db:copy:prose` before anything is concluded from it. That is a fact
+   * about the fixture, not about this column.
    */
   prose: string | null;
   ownedSupport: number;

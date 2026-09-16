@@ -105,6 +105,28 @@ describe("loadCommanderRankings · the row's four joined fields", () => {
     expect(items[0].gapSlot).toEqual({ kind: "allPlayed" });
   });
 
+  // PRICEOK IS THE WHOLE POINT OF THE SOFT READ. Without it a failed read is
+  // cached for up to the hour ceiling as `absent`, which means the feed has
+  // never carried the printing — a claim about the market that a lost read has
+  // no standing to make. Every other mock here returns ok:true, so a wiring
+  // change that dropped the flag would leave the suite green.
+  it("reports a failed price read in the payload", async () => {
+    vi.mocked(readPrices).mockResolvedValue({ prices: new Map(), ok: false });
+
+    const { items, priceOk } = await loadCommanderRankings("user_1");
+
+    expect(priceOk).toBe(false);
+    // The rows still carry a slot; it is the SURFACE that must omit it. A row
+    // with no slot at all would be a second way to say the same thing.
+    expect(items[0].price.kind).toBe("absent");
+  });
+
+  it("reports a healthy price read too, so the flag is not a constant", async () => {
+    const { priceOk } = await loadCommanderRankings("user_1");
+
+    expect(priceOk).toBe(true);
+  });
+
   it("slots the price per commander, and absent where the feed has none", async () => {
     vi.mocked(readPrices).mockResolvedValue({
       prices: new Map([["a", { oracleId: "a", liveCents: 1499, everPriced: true, live: true }]]),
