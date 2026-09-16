@@ -332,6 +332,80 @@ describe("CommitSheet", () => {
     expect(push).not.toHaveBeenCalled();
     expect(screen.getByRole("status").textContent).toBe("");
   });
+
+  // The latch is held through an unknown outcome, so the offer has to be withheld
+  // with it: a sheet whose button stayed enabled over a shut latch would look live
+  // and swallow every press — and a commit that threw is precisely when a reader
+  // tries again. The re-read is what gives the offer back.
+  it("withholds the offer while the outcome is unknown, and restores it on the re-read", async () => {
+    vi.mocked(commitDeckVersion).mockRejectedValue(new Error("offline"));
+    const view = sheet();
+    await act(async () => {
+      screen.getByRole("button", { name: copy.cta(3) }).click();
+    });
+    expect(screen.getByText(copy.unresolved)).toBeTruthy();
+    expect(screen.getByRole("button", { name: copy.cta(3) })).toBeDisabled();
+
+    // The refresh landing: a new state object is the server's answer.
+    vi.mocked(commitDeckVersion).mockResolvedValue({
+      ok: true, number: 3, cardCount: CARD_COUNT, buy: [], pull: [],
+    });
+    await act(async () => {
+      view.rerender(
+        <CommitSheet
+          deckId="d" state={{ ...STATE_36 }} rows={ROWS_36} cardCount={CARD_COUNT} onCancel={vi.fn()}
+        />,
+      );
+    });
+    const retry = screen.getByRole("button", { name: copy.cta(3) });
+    expect(retry).toBeEnabled();
+    await act(async () => {
+      retry.click();
+    });
+    // Not swallowed by a latch nobody reopened.
+    expect(commitDeckVersion).toHaveBeenCalledTimes(2);
+  });
+
+  // A transition update is not visible to the next click in the same tick, so
+  // `disabled={pending}` lands a render too late. Two presses used to send two
+  // commits, and the first one's refusal would then open the host's controls
+  // while the second was still in the air.
+  it("sends one commit however fast the button is pressed twice", async () => {
+    vi.mocked(commitDeckVersion).mockResolvedValue({
+      ok: true, number: 3, cardCount: 99, buy: [], pull: [],
+    });
+    sheet();
+    const go = screen.getByRole("button", { name: copy.cta(3) });
+    await act(async () => {
+      go.click();
+      go.click();
+    });
+    expect(commitDeckVersion).toHaveBeenCalledTimes(1);
+  });
+
+  // The host is told in the same tick as the click, because a restore pressed in
+  // the window before this sheet re-renders would otherwise read the guard as
+  // open. `settled` follows a REFUSAL, where the server declined before it wrote,
+  // and never a throw: that one can be a version that landed and lost its reply.
+  it("reports its own write to the host, and never settles an unknown one", async () => {
+    const onWriteState = vi.fn();
+    vi.mocked(commitDeckVersion).mockRejectedValue(new Error("offline"));
+    sheet({ onWriteState });
+    await act(async () => {
+      screen.getByRole("button", { name: copy.cta(3) }).click();
+    });
+    expect(onWriteState.mock.calls.map(([state]) => state)).toEqual(["writing", "unknown"]);
+  });
+
+  it("reports the refusal as settled, because nothing was written", async () => {
+    const onWriteState = vi.fn();
+    vi.mocked(commitDeckVersion).mockResolvedValue({ ok: false, message: "no" });
+    sheet({ onWriteState });
+    await act(async () => {
+      screen.getByRole("button", { name: copy.cta(3) }).click();
+    });
+    expect(onWriteState.mock.calls.map(([state]) => state)).toEqual(["writing", "settled"]);
+  });
 });
 
 // `pullNote` is split on its own punctuation to draw the opening clause in the

@@ -137,6 +137,11 @@ export interface DiscardConfirmProps {
    *  because the trigger is unmounted while the question is up — and a discard
    *  that wins the race throws away a card the reader has just put back. */
   disabled?: boolean;
+  /** Reports this question's own write, for the same reason the commit sheet does:
+   *  a discard started FIRST would otherwise race a restore started second, and
+   *  the two serialize on the deck lock. `unknown` is never followed by `settled`
+   *  — a throw can be a discard that landed and lost its reply. */
+  onWriteState?: (state: "writing" | "settled" | "unknown") => void;
 }
 
 /**
@@ -177,6 +182,7 @@ export function DiscardConfirm({
   onDiscarded,
   className = "",
   disabled = false,
+  onWriteState,
 }: DiscardConfirmProps) {
   const [error, setError] = useState<string | null>(null);
   const [pending, startTransition] = useTransition();
@@ -193,6 +199,13 @@ export function DiscardConfirm({
   // request carries the same expected version, so a commit landing between the
   // two is the one case where the guard passes for a discard nobody asked for.
   const inFlightRef = useRef(false);
+  // An unknown outcome, held in state because the ANSWER is what enforces it: a
+  // second destructive write must not start against a draft that may already be
+  // gone, and a latch the button does not reflect is a control that eats presses.
+  // `PendingBanner` passes no `disabled` and no `onWriteState`, so on that surface
+  // this is the whole guard. The handler needs no clause of its own — a disabled
+  // button fires nothing.
+  const [unresolved, setUnresolved] = useState(false);
 
   // The question took the host's body with it, so the focus the trigger held is
   // gone from the document. It goes to the way out, never to the destructive
@@ -204,6 +217,17 @@ export function DiscardConfirm({
     safeRef.current?.focus();
     draftAnnouncer();
   }, []);
+
+  // The re-read landing: a new `state` was built by the server after whatever did
+  // or did not happen, and it is the only thing that can settle an outcome nobody
+  // here learned. Adjusted during RENDER, as `useDiscardConfirm` does with the same
+  // prop: an effect would paint the withheld answer once over a draft that has
+  // already settled it.
+  const [seenState, setSeenState] = useState(state);
+  if (seenState !== state) {
+    setSeenState(state);
+    if (unresolved) setUnresolved(false);
+  }
 
   // The caller withholds the offer on a brew; this is the type narrowing for the
   // same fact.
@@ -267,11 +291,14 @@ export function DiscardConfirm({
           type="button"
           // The destructive half only. The way out stays live: a reader who
           // cannot discard right now should still be able to stop asking.
-          disabled={pending || disabled}
+          disabled={pending || disabled || unresolved}
           aria-describedby={whyId}
           onClick={() => {
             if (inFlightRef.current) return;
             inFlightRef.current = true;
+            // Same tick as the click, beside the ref that already guards this
+            // component against its own second press.
+            onWriteState?.("writing");
             setError(null);
             startTransition(async () => {
               let result: DeckMutationResult;
@@ -292,13 +319,28 @@ export function DiscardConfirm({
                 // outcome is unknown and the router re-reads to settle it — which
                 // also closes this question, because `useDiscardConfirm` drops it
                 // the moment the refreshed state has no changes left.
+                //
+                // `unresolved` is what holds the answer shut afterwards, and it
+                // matters most for `PendingBanner`: that caller passes no
+                // `onWriteState`, so nothing else there stands between the reader
+                // and a second destructive write against a draft that may already
+                // be gone.
+                onWriteState?.("unknown");
+                setUnresolved(true);
                 setError(copy.unresolved);
                 router.refresh();
                 return;
               } finally {
+                // The same-tick window only. What holds the answer shut through an
+                // UNKNOWN outcome is `unresolved`, which the button is disabled by
+                // as well: a latch the control does not reflect is a button that
+                // eats presses with nothing on screen to explain it.
                 inFlightRef.current = false;
               }
               if (!result.ok) {
+                // A refusal IS settled: the server declined before it wrote, so
+                // nothing is in doubt and the host's controls open again.
+                onWriteState?.("settled");
                 // The server's own message is dropped deliberately. Every way this
                 // write can fail leaves the draft intact, and that — not which
                 // guard turned it down — is what the player needs told.

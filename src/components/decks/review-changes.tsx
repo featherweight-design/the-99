@@ -15,7 +15,7 @@
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useCallback, useId, useOptimistic, useRef, useState, useTransition } from "react";
+import { useCallback, useEffect, useId, useOptimistic, useRef, useState, useTransition } from "react";
 import { deckVersioningCopy } from "../../lib/copy/deck-versioning";
 import {
   heldElsewhere, printsPair, pullCandidate, releasedCopies, type DraftState,
@@ -40,6 +40,9 @@ import { MutationError } from "./mutation-error";
 import { addCardToDeck } from "../../app/decks/actions";
 import { DiffRowIn, DiffRowOut } from "./update-diff-row";
 import { proxyCopy } from "../../lib/copy/proxies";
+
+/** Every write to this draft, as one state. See the latch in `ReviewChanges`. */
+type WriteState = "idle" | "writing" | "unknown";
 
 const copy = deckVersioningCopy.review;
 const restoreCopy = deckVersioningCopy.restore;
@@ -506,21 +509,73 @@ export function ReviewChanges({
     EMPTY_RESTORED,
     (current, oracleId) => [...current, oracleId],
   );
-  // Keyed per row, not one slot: the controls stay live while another restore
-  // is going, so two failures in flight would otherwise leave the first row
-  // back on screen with the second row's message — or with none at all.
+  // Keyed per row, not one slot: a row that failed keeps its own message while
+  // the reader moves on to another, and the map outlives the write that wrote it.
   const [restoreErrors, setRestoreErrors] = useState<Record<string, string>>({});
-  // Kept, not dropped. Commit and discard serialize with this add on the deck
-  // lock, so a commit that wins the race snapshots the cut the optimistic row
-  // has already hidden — and the restore then lands as a fresh draft on the
-  // other side of the navigation. The two doors are shut for the round trip.
-  const [restoring, startRestore] = useTransition();
-  // Rows already in the air. `PutBackControl` stays enabled by design — R3 rules
-  // a disabled state out — so nothing stops a second click on the SAME row
-  // before the transition re-renders, and a duplicate id would have every
-  // projection counting that card twice. A ref rather than state: it has to be
-  // true for the next click in the same tick, before any render.
-  const inFlight = useRef<Set<string>>(new Set());
+  // The transition is the optimistic list's, and nothing else: which doors are
+  // shut is the latch's business below, because `restoring` cannot describe a
+  // write this component does not own or an outcome it never learned.
+  const [, startRestore] = useTransition();
+  // ONE latch for every write to this draft, whoever owns it. Three states:
+  //
+  //  `idle`     nothing in the air.
+  //  `writing`  a write is going — a restore here, or the commit sheet or the
+  //             discard question, which report their own through `onWriteState`.
+  //             Both of those can be open BEFORE a restore starts and neither is
+  //             unmounted while it runs, so a guard on this page's transition
+  //             alone only ever shut the door one way.
+  //  `unknown`  a write threw. A throw can be a write that LANDED and lost its
+  //             reply, so nothing this client already holds can settle it —
+  //             only rows the server built after the fact. In particular the
+  //             reader dismissing the message is not an answer, which is why a
+  //             child unmounting reports `settled` and this state ignores it.
+  //
+  // All three writes serialize on the deck lock, so one latch is the honest
+  // model: the second write cannot proceed until the first is answered, and
+  // every apparatus for describing two at once — settled ids, sibling counts, a
+  // reconciliation against refreshed rows — is a client narrating a race it
+  // cannot see the end of. One restore at a time is a scope decision, and it is
+  // what lets the receipt below be counted rather than predicted.
+  //
+  // A ref as well as state: the ref has to be true for the next click in the
+  // same tick, before any render, and the state is what disables the other two
+  // doors during one. `PutBackControl` itself stays live — R3 rules a disabled
+  // state out — and a press while the latch is shut is ignored, exactly as a
+  // second press on the same row already was.
+  const writeRef = useRef<WriteState>("idle");
+  const [writeState, setWriteState] = useState<WriteState>("idle");
+  const setWrite = useCallback((next: WriteState) => {
+    writeRef.current = next;
+    setWriteState(next);
+  }, []);
+  // What the commit sheet and the discard question report. `settled` is a claim
+  // about THEIR write, not about the page: an unknown outcome outlives the
+  // component that failed to learn it, so only fresh rows clear that.
+  //
+  // That rule is also why neither child hands anything back on unmount. Both keep
+  // their own way out disabled while their write is pending, so a reader cannot
+  // dismiss one mid-write; the only state they can be dismissed in is over an
+  // unresolved message, where `unknown` has already been reported — and the rule
+  // below then ignores the `settled` an unmount cleanup would send. A cleanup
+  // that cleared the guard outright is exactly the defect: it made dismissing a
+  // message the same act as learning the answer.
+  const reportWrite = useCallback(
+    (next: "writing" | "settled" | "unknown") => {
+      if (next === "settled") {
+        // The asymmetry is the whole rule, and it is deliberately kept even though
+        // no child can reach it today: a `settled` only ever follows that child's
+        // own refusal, and a refusal cannot follow the throw that made the page
+        // uncertain. Written as a rule about the PAGE rather than a fact about
+        // today's children, because the version that read it as a fact — clearing
+        // the guard on whatever a child last said — is the defect this fixes.
+        if (writeRef.current !== "unknown") setWrite("idle");
+        return;
+      }
+      setWrite(next);
+    },
+    [setWrite],
+  );
+  const writeBusy = writeState !== "idle";
   // The same hook the banner's control uses, so the question asked from either
   // door is one construct with one set of answers.
   const discard = useDiscardConfirm(state);
@@ -605,40 +660,39 @@ export function ReviewChanges({
   // here is a whole removal of a single copy, so there is no quantity to carry
   // and no bespoke action to write. It already ends in `revalidateClaims`, which
   // is the helper a claim write owes every other deck's availability.
+  // The refresh a lost reply asked for, landing. New rows are the only thing that
+  // can settle an unknown outcome: they were built by the server after whatever
+  // did or did not happen, and until they arrive this client's own figures may
+  // describe a draft that no longer exists.
+  useEffect(() => {
+    if (writeRef.current === "unknown") setWrite("idle");
+  }, [rows, setWrite]);
+
   const restore = useCallback(
     (card: { oracleId: string; name: string }) => {
-      // Different rows may go at once; the same row may not go twice.
-      if (inFlight.current.has(card.oracleId)) return;
-      inFlight.current.add(card.oracleId);
+      // One write at a time, whoever owns it — see the latch. The control stays
+      // live and the press is ignored.
+      if (writeRef.current !== "idle") return;
+      setWrite("writing");
       setRestoreErrors((current) => {
         if (!(card.oracleId in current)) return current;
         const next = { ...current };
         delete next[card.oracleId];
         return next;
       });
-      const groupOfRow = rows.out.find((row) => row.oracleId === card.oracleId)?.cardTypeGroup;
-      // Read BEFORE the write, from the figures this render already has: after
-      // it, the row is gone from both the optimistic list and the server's.
-      const outAfter = outCount - 1;
-      const cardsAfter = liveCardCount + 1;
-      // Whether another restore is already going. Read at the click, because
-      // both figures above are this render's snapshot: tap two rows inside one
-      // round trip and each would compute `outAfter === 0` from a column the
-      // other has not left yet, and both would announce a dissolution that has
-      // not happened. The stronger sentence is only earned when this write is
-      // the only one in the air.
-      const alone = !restoring;
-      // How many OTHER rows were in the air when this one was pressed. Measured
-      // here rather than at the announcement, where the set has already been
-      // emptied by whichever write settled first.
-      const othersInFlight = Math.max(inFlight.current.size - 1, 0);
+      const restoredRow = rows.out.find((row) => row.oracleId === card.oracleId);
+      const groupOfRow = restoredRow?.cardTypeGroup;
       startRestore(async () => {
         addRestoredId(card.oracleId);
         let result: Awaited<ReturnType<typeof addCardToDeck>>;
         try {
           result = await addCardToDeck(deckId, card.oracleId);
         } catch {
-          inFlight.current.delete(card.oracleId);
+          // The latch is NOT opened. A throw can be an add that landed and lost
+          // its reply, so the next write would be computing its receipt — and
+          // the commit sheet its figures — off a list that is already wrong. The
+          // effect above opens it when the refresh this asks for delivers rows.
+          setWrite("unknown");
           // A throw is a transport or database failure, not a refusal: nothing
           // was decided and trying again is the whole remedy. React drops the
           // optimistic id when this transition settles, so the row returns and
@@ -652,8 +706,9 @@ export function ReviewChanges({
           router.refresh();
           return;
         }
-        inFlight.current.delete(card.oracleId);
         if (!result.ok) {
+          // A refusal IS settled: the server declined before it wrote.
+          setWrite("idle");
           // `addCardToDeck` can still refuse on its own vocabulary — an
           // off-identity card, say, if the catalogue moved under a committed
           // list. Passed through rather than re-worded: it is a sentence about
@@ -661,6 +716,27 @@ export function ReviewChanges({
           setRestoreErrors((current) => ({ ...current, [card.oracleId]: result.message }));
           return;
         }
+        // The write LANDED, so the latch opens — and the two figures are exact,
+        // which they were not before. Both are still this render's snapshot: the
+        // closure captured them at the click and moving the expressions below the
+        // `await` does not re-read a prop. What changed is that the snapshot can
+        // no longer be WRONG. A receipt used to guess what every other write in
+        // the air would leave behind, and the guess failed for whichever of them
+        // settled second: it had been told one more row was going out than was
+        // still true, and said so out loud. The latch means no other write to this
+        // draft can have moved the column since the press, so the snapshot is the
+        // answer. (A revalidation from some other surface still could, and this
+        // deliberately does not model that — a receipt is a sentence about one
+        // act, not a live figure.)
+        //
+        // Copies, not rows, and written as the subtraction `releasedCopies` does
+        // rather than as `from`: every row offered a control is a cut of exactly
+        // one copy — `restorable` is `from - to === 1` — so a `5 → 4` basic has a
+        // `from` of five and releases one, and the two figures must not be
+        // confused.
+        setWrite("idle");
+        const outAfter = outCount - 1;
+        const cardsAfter = liveCardCount + ((restoredRow?.from ?? 1) - (restoredRow?.to ?? 0));
         // Announced into the region that outlives this row, because the row is
         // removed by its own success. Which sentence depends on what is left.
         //
@@ -669,25 +745,15 @@ export function ReviewChanges({
         // route's own `admitsReview` asks it the same way. The pair used to be
         // two questions and two flags, because a moved basic could empty both
         // columns while the draft still differed.
-        const redirecting = alone && outAfter === 0 && inCount === 0;
+        const redirecting = outAfter === 0 && inCount === 0;
         draftAnnouncer().textContent =
           redirecting
             ? restoreCopy.announcedLastChange(card.name, state.version?.number ?? 1)
-            : outAfter === 0 && alone
-              // `alone` for the same reason it gates the sentence above: with
-              // another restore in the air, "nothing going out" is a claim about
-              // a column that write may yet put a row back into, and this
-              // sentence has already been spoken by then.
+            : outAfter === 0
               ? restoreCopy.announcedLastOut(card.name, cardsAfter)
-              // The rows still on screen PLUS the ones another write is holding
-              // optimistically hidden. Never a nought — the copy promises one is
-              // never drawn — and honest: those rows are going out as far as
-              // this write knows, and it is the one speaking.
-              : restoreCopy.announced(
-                  card.name,
-                  cardsAfter,
-                  outAfter + othersInFlight,
-                );
+              // Never a nought — the copy promises one is never drawn — and it
+              // cannot be one: a nought is the branch above.
+              : restoreCopy.announced(card.name, cardsAfter, outAfter);
         // Focus before the refresh, while the tree this render built is still
         // in the document. The group heading the row left, never the next row's
         // control.
@@ -730,7 +796,7 @@ export function ReviewChanges({
     },
     [
       addRestoredId, deckId, descriptionId, inCount, liveCardCount,
-      outCount, restoring, rows.out, router, state.version,
+      outCount, rows.out, router, setWrite, state.version,
     ],
   );
 
@@ -925,12 +991,19 @@ export function ReviewChanges({
             <CommitSheet
               deckId={deckId}
               // Same race, one door further in: a sheet already open when a
-              // restore starts can commit the draft the row has left.
-              commitDisabled={restoring}
+              // restore starts can commit the draft the row has left. And any
+              // write whose outcome is unknown, which is the one state a commit
+              // must not be started from: the draft it would freeze may already
+              // have changed under it.
+              commitDisabled={writeBusy}
               state={state}
               rows={rows}
               cardCount={liveCardCount}
               releasedOverride={released}
+              // The other half of the same guard. Without it a commit started
+              // FIRST still raced a restore started second — the sheet is not
+              // unmounted while its own write runs, so nothing here knew.
+              onWriteState={reportWrite}
               onCancel={closeCommitSheet}
             />
           ) : (
@@ -952,7 +1025,13 @@ export function ReviewChanges({
                   // The question can already be open when a restore starts, and
                   // the trigger's own guard cannot reach it: the trigger is
                   // unmounted while the question is up.
-                  disabled={restoring}
+                  //
+                  // It reports its own write here too, and that is what keeps the
+                  // destructive answer shut after one throws: `pending` goes false
+                  // while the outcome is still unknown, and the answer would come
+                  // back live over a draft that may already be gone.
+                  disabled={writeBusy}
+                  onWriteState={reportWrite}
                   onCancel={discard.cancel}
                   // This page is a page about a draft, so once the draft is gone
                   // there is nothing here to read: the route's own guard would
@@ -980,8 +1059,10 @@ export function ReviewChanges({
                       // writes serialize on the deck lock, so a commit that wins
                       // the race freezes the cut the optimistic row has already
                       // taken off the screen — and the restore then lands as a
-                      // fresh draft on the far side of the navigation.
-                      disabled={restoring}
+                      // fresh draft on the far side of the navigation. And for
+                      // any other write in flight, including one whose outcome
+                      // is still unknown.
+                      disabled={writeBusy}
                       className="inline-flex flex-1 md:flex-none items-center justify-center min-h-[48px] md:min-h-0 md:py-[11px] md:px-[20px] text-[14px]"
                     >
                       {deckVersioningCopy.pending.commitCta((state.version?.number ?? 0) + 1)}
@@ -992,7 +1073,7 @@ export function ReviewChanges({
                       <DiscardTrigger
                         onOpen={discard.open}
                         triggerRef={discard.triggerRef}
-                        disabled={restoring}
+                        disabled={writeBusy}
                       />
                     )}
                   </div>

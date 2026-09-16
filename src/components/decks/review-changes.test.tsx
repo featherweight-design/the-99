@@ -20,15 +20,25 @@ import { ReviewChanges } from "./review-changes";
 import { proxyCopy } from "../../lib/copy/proxies";
 
 const refresh = vi.fn();
-vi.mock("next/navigation", () => ({ useRouter: () => ({ refresh }) }));
+const push = vi.fn();
+vi.mock("next/navigation", () => ({ useRouter: () => ({ refresh, push }) }));
 
 const addCardToDeck = vi.fn<(deckId: string, oracleId: string) => Promise<{ ok: boolean; message?: string }>>(
   async () => ({ ok: true }),
 );
+// The other two writes to the same draft, held rather than stubbed: the latch
+// this page keeps is about all three, so a test that cannot pause a commit
+// cannot say whether a commit shuts anything.
+const commitDeckVersion = vi.fn<(deckId: string, note: string) => Promise<unknown>>(
+  async () => ({ ok: true, number: 2, cardCount: CARD_COUNT, buy: [], pull: [] }),
+);
+const discardDeckDraft = vi.fn<(deckId: string, versionId: string) => Promise<unknown>>(
+  async () => ({ ok: true }),
+);
 vi.mock("../../app/decks/actions", () => ({
   addCardToDeck: (deckId: string, oracleId: string) => addCardToDeck(deckId, oracleId),
-  commitDeckVersion: vi.fn(async () => ({ ok: true })),
-  discardDeckDraft: vi.fn(async () => ({ ok: true })),
+  commitDeckVersion: (deckId: string, note: string) => commitDeckVersion(deckId, note),
+  discardDeckDraft: (deckId: string, versionId: string) => discardDeckDraft(deckId, versionId),
   pullCardFromDeck: vi.fn(async () => ({ ok: true, buy: 0, total: null })),
 }));
 
@@ -834,9 +844,10 @@ describe("ReviewChanges", () => {
      *  finish. A promise left unsettled keeps its transition pending for the
      *  rest of the file, and every test after it stops re-rendering. */
     function hold() {
-      // Every resolver, not the last one: the concurrent-restore test starts two
-      // writes, and releasing only the second would leave the first pending and
-      // its transition open for the rest of the file.
+      // Every resolver, not the last one. Nothing here starts two adds any more —
+      // the latch ignores the second press — but a held write that is never
+      // resolved keeps its transition pending for the rest of the FILE, so the
+      // release collects whatever was actually issued rather than assuming one.
       const answers: Array<(r: { ok: boolean }) => void> = [];
       addCardToDeck.mockImplementation(
         () => new Promise((resolve) => { answers.push(resolve); }),
@@ -853,6 +864,10 @@ describe("ReviewChanges", () => {
     beforeEach(() => {
       addCardToDeck.mockReset();
       addCardToDeck.mockResolvedValue({ ok: true });
+      commitDeckVersion.mockReset();
+      commitDeckVersion.mockResolvedValue({ ok: true, number: 2, cardCount: CARD_COUNT, buy: [], pull: [] });
+      discardDeckDraft.mockReset();
+      discardDeckDraft.mockResolvedValue({ ok: true });
       // Or an assertion that the catch re-reads the route passes on the refresh
       // a previous test's success already made.
       refresh.mockClear();
@@ -1133,10 +1148,13 @@ describe("ReviewChanges", () => {
       expect(refresh).toHaveBeenCalled();
     });
 
-    // Two taps inside one round trip: each computes its own "how many are left"
-    // from a column the other has not left yet, so both would otherwise claim
-    // to be the last and announce a dissolution that has not happened.
-    it("does not let two restores both claim to be the last", async () => {
+    // ONE write at a time, whoever owns it. Two taps inside one round trip used
+    // to send two adds, and then each receipt described a column the other had
+    // not left yet: whichever settled second had been told one more row was
+    // going out than was still true, and said so out loud. The second press is
+    // ignored instead — the control stays live, which R3 requires, and the row
+    // is still there to press again once the first lands.
+    it("files one write while another row's is in the air", async () => {
       const held = hold();
       mount({ in: [], out: [cut(), cut({ oracleId: "o3", name: "Chrome Mox" })] });
       await act(async () => {
@@ -1145,9 +1163,9 @@ describe("ReviewChanges", () => {
       await act(async () => {
         fireEvent.click(putBack("Chrome Mox"));
       });
+      expect(addCardToDeck).toHaveBeenCalledTimes(1);
+      expect(addCardToDeck).toHaveBeenCalledWith("d", "o2");
       await held.release();
-      const spoken = document.getElementById("draft-announcer")?.textContent ?? "";
-      expect(spoken).not.toContain("matches v");
     });
 
     // The shape strip describes the DRAFT, so a restored card belongs in it.
@@ -1207,24 +1225,155 @@ describe("ReviewChanges", () => {
       await held.release();
     });
 
-    // With another restore still in the air, "nothing going out" is a claim
-    // about a column the other write may yet put a row back into — and the
-    // sentence has already been spoken by then.
-    it("does not say the column is empty while another write is in flight", async () => {
-      const held = hold();
+    // The receipt's figures, by value rather than by absence: a sentence that
+    // merely avoided saying "nothing going out" would pass with the count off by
+    // one, which is the defect this replaces. It pins the sentence rather than the
+    // fix — with one write in the air the retired code computed the same string,
+    // and what makes the figures trustworthy is the serialisation the case above
+    // asserts.
+    it("counts the receipt off what the write actually left behind", async () => {
       mount({ in: [row()], out: [cut(), cut({ oracleId: "o3", name: "Chrome Mox" })] });
       await act(async () => {
         fireEvent.click(putBack());
       });
-      await act(async () => {
-        fireEvent.click(putBack("Chrome Mox"));
-      });
-      await held.release();
+      await settle();
       const spoken = document.getElementById("draft-announcer")?.textContent ?? "";
-      expect(spoken).not.toContain("nothing going out");
-      // And never a nought, which the copy promises is never drawn: the figure
-      // counts the rows another write is still holding hidden.
-      expect(spoken).not.toMatch(/\b0 going out\b/);
+      expect(spoken).toBe(
+        deckVersioningCopy.restore.announced("Mox Diamond", CARD_COUNT + 1, 1),
+      );
+    });
+
+    // A commit started FIRST used to race a restore started second: the sheet is
+    // not unmounted while its own write runs, so nothing on this page knew about
+    // it, and the guard only ever shut one way.
+    it("shuts Put back while the commit sheet's own write is in flight", async () => {
+      let answer: ((value: unknown) => void) | null = null;
+      commitDeckVersion.mockImplementation(() => new Promise((resolve) => { answer = resolve; }));
+      render(
+        <ReviewChanges
+          deckId="d" deckName="Korvold" rows={{ in: [], out: [cut()] }}
+          {...SHAPE} state={STATE} cardCount={CARD_COUNT} commitOpen
+        />,
+      );
+      await act(async () => {
+        fireEvent.click(screen.getByRole("button", { name: deckVersioningCopy.commit.cta(2) }));
+      });
+      expect(commitDeckVersion).toHaveBeenCalledTimes(1);
+
+      await act(async () => {
+        fireEvent.click(putBack());
+      });
+      expect(addCardToDeck).not.toHaveBeenCalled();
+      await act(async () => {
+        answer?.({ ok: true, number: 2, cardCount: CARD_COUNT, buy: [], pull: [] });
+      });
+    });
+
+    // The destructive half of the same mirror. A discard already in flight used to
+    // leave Put back live, and the two serialize on the deck lock: the discard
+    // wins and the restore lands as a fresh draft on a deck that just went back
+    // to its version.
+    it("shuts Put back while the discard question's own write is in flight", async () => {
+      let answer: ((value: unknown) => void) | null = null;
+      discardDeckDraft.mockImplementation(() => new Promise((resolve) => { answer = resolve; }));
+      mount({ in: [], out: [cut()] });
+      await act(async () => {
+        fireEvent.click(
+          screen.getByRole("button", { name: deckVersioningCopy.pending.discardCta }),
+        );
+      });
+      await act(async () => {
+        // By pattern: the count is the fixture's whole change set, and naming a
+        // figure here would pin the case to that fixture rather than to the rule.
+        fireEvent.click(screen.getByRole("button", { name: /^Discard \d+ changes?$/ }));
+      });
+      expect(discardDeckDraft).toHaveBeenCalledTimes(1);
+
+      await act(async () => {
+        fireEvent.click(putBack());
+      });
+      expect(addCardToDeck).not.toHaveBeenCalled();
+      await act(async () => {
+        answer?.({ ok: true });
+      });
+    });
+
+    // A throw can be a version that was WRITTEN and lost its reply, so the
+    // outcome is unknown rather than failed — and dismissing the sheet is the
+    // reader acknowledging a message, never the write becoming known. Only rows
+    // the server built after the fact can settle it.
+    it("keeps the page's writes shut after a commit throws, until new rows arrive", async () => {
+      commitDeckVersion.mockRejectedValue(new Error("network"));
+      const view = render(
+        <ReviewChanges
+          deckId="d" deckName="Korvold" rows={{ in: [], out: [cut()] }}
+          {...SHAPE} state={STATE} cardCount={CARD_COUNT} commitOpen
+        />,
+      );
+      await act(async () => {
+        fireEvent.click(screen.getByRole("button", { name: deckVersioningCopy.commit.cta(2) }));
+      });
+      await screen.findByText(deckVersioningCopy.commit.unresolved);
+
+      // The way out of the sheet stays live — a reader who cannot commit should
+      // still be able to stop asking — and taking it unmounts the sheet.
+      await act(async () => {
+        fireEvent.click(screen.getByRole("button", { name: deckVersioningCopy.commit.cancel }));
+      });
+      await act(async () => {
+        fireEvent.click(putBack());
+      });
+      expect(addCardToDeck).not.toHaveBeenCalled();
+
+      // The refresh landing: a new rows object is the server's answer, and the
+      // page takes the reader at their word again.
+      await act(async () => {
+        view.rerender(
+          <ReviewChanges
+            deckId="d" deckName="Korvold" rows={{ in: [], out: [cut()] }}
+            {...SHAPE} state={STATE} cardCount={CARD_COUNT}
+          />,
+        );
+      });
+      await act(async () => {
+        fireEvent.click(putBack());
+      });
+      expect(addCardToDeck).toHaveBeenCalledTimes(1);
+    });
+
+    // The mirror of the case above, on the door that was already shut for a
+    // restore in flight: `restoring` goes false the moment the transition
+    // settles, so both doors used to come back live while the restore's outcome
+    // was still unknown.
+    it("keeps both doors shut after a restore throws, until new rows arrive", async () => {
+      addCardToDeck.mockRejectedValue(new Error("network"));
+      const view = mount({ in: [], out: [cut(), cut({ oracleId: "o3", name: "Chrome Mox" })] });
+      await act(async () => {
+        fireEvent.click(putBack());
+      });
+      await settle();
+      await screen.findByText(deckVersioningCopy.restore.failed);
+      expect(
+        screen.getByRole("button", { name: deckVersioningCopy.pending.commitCta(2) }),
+      ).toBeDisabled();
+      expect(
+        screen.getByRole("button", { name: deckVersioningCopy.pending.discardCta }),
+      ).toBeDisabled();
+
+      await act(async () => {
+        view.rerender(
+          <ReviewChanges
+            deckId="d" deckName="Korvold" rows={{ in: [], out: [cut()] }}
+            {...SHAPE} state={STATE} cardCount={CARD_COUNT}
+          />,
+        );
+      });
+      expect(
+        screen.getByRole("button", { name: deckVersioningCopy.pending.commitCta(2) }),
+      ).toBeEnabled();
+      expect(
+        screen.getByRole("button", { name: deckVersioningCopy.pending.discardCta }),
+      ).toBeEnabled();
     });
 
     // The whole row is a button that opens the card. Without `stopPropagation`
