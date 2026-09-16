@@ -142,8 +142,12 @@ describe("getRankedList", () => {
 
     await getRankedList("user_1");
 
-    expect(order.indexOf("compute")).toBeGreaterThan(order.indexOf("collection"));
-    expect(order.indexOf("compute")).toBeGreaterThan(order.indexOf("index"));
+    // THE FULL SEQUENCE, not two `indexOf` comparisons. An absent entry yields
+    // -1, and `compute` at index 0 is greater than -1 — so both comparisons
+    // PASSED with either fingerprint call removed, which is the one thing this
+    // case exists to catch. Asserting the whole order also fixes what a pair of
+    // "before" checks cannot see: a third read slipping between them.
+    expect(order).toEqual(["collection", "index", "compute"]);
   });
 
   // A degraded row the list does not show is a row nobody is looking at. Left in

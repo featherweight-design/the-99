@@ -217,11 +217,23 @@ it("leaves scores alone when every commander failed and none was skipped", async
 // Without the lock the delete can land between a score writer's generation
 // check and its inserts, and those pre-rebuild rows survive the clear.
 it("clears scores under an exclusive index lock, in a transaction", async () => {
-  const executed: string[] = [];
-  let deleted = false;
+  // ONE ORDERED TRACE ACROSS BOTH CALLS. A separate `executed` list and a
+  // `deleted` flag say a lock statement happened and a delete happened, in no
+  // particular order — so moving `tx.delete` ahead of the lock passed, and the
+  // lock covering the delete is the entire property.
+  const trace: string[] = [];
+  let exclusive = false;
   const tx = {
-    execute: async (q: unknown) => { executed.push(JSON.stringify(q)); },
-    delete: async () => { deleted = true; },
+    execute: async (q: unknown) => {
+      const text = JSON.stringify(q);
+      if (text.includes("pg_advisory_xact_lock")) {
+        trace.push("lock");
+        exclusive = !text.includes("pg_advisory_xact_lock_shared");
+      } else {
+        trace.push("execute");
+      }
+    },
+    delete: async () => { trace.push("delete"); },
   };
   stub.db.transaction = (cb: (t: typeof tx) => Promise<void>) => cb(tx);
 
@@ -233,9 +245,10 @@ it("clears scores under an exclusive index lock, in a transaction", async () => 
     delayMs: 0,
   });
 
-  expect(deleted).toBe(true);
-  const statements = executed.join(" ");
-  expect(statements).toContain("pg_advisory_xact_lock");
+  expect(trace).toEqual(["lock", "delete"]);
   // Exclusive, not shared: this one has to wait for every in-flight writer.
-  expect(statements).not.toContain("pg_advisory_xact_lock_shared");
+  // Read off the raw statement, since the trace deliberately collapses both
+  // lock modes onto one label so the ORDER assertion above is about position
+  // rather than mode.
+  expect(exclusive).toBe(true);
 });
