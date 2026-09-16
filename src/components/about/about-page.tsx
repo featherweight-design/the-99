@@ -1,9 +1,9 @@
 // The /about reference page.
 //
-// An entry whose subject is a MARK carries a figure: the app's own component,
-// mounted with fixture props from `lib/about/fixtures.ts`. An entry whose
-// subject is a workflow carries its words, which is a finished answer —
-// `FIGURES` is a partial map on purpose.
+// Every entry carries a figure: the app's own component, mounted with fixture
+// props from `lib/about/fixtures.ts`. That is the handoff's unit — a figure
+// with a caption — and `about.test.ts` holds the ledger of the ones still
+// undrawn, which must shrink to empty.
 //
 // Copy: src/lib/copy/about.ts. Handoff: design/design_handoff_the99_about/
 // (R4 canvas §3 for the page, §4 for the behind and current readers).
@@ -131,9 +131,15 @@ export function AboutPage({ seen, next }: { seen: number; next?: string }) {
   const destination = safeNext(next);
   // Counted here, where `seen` is known — the rail is a client component and
   // has no business reading the reader's acknowledged version.
-  const newPerChapter = Object.fromEntries(
-    CHAPTERS.map((n) => [n, aboutEntries.filter((e) => e.chapter === n && isNew(e, seen)).length]),
-  );
+  const railChapters = CHAPTERS.map((n) => {
+    const entries = aboutEntries.filter((e) => e.chapter === n);
+    return {
+      id: n,
+      title: aboutCopy.chapters[n].title,
+      count: entries.length,
+      newCount: entries.filter((e) => isNew(e, seen)).length,
+    };
+  });
   const destinationClause =
     destination === "/"
       ? aboutCopy.dismissDestinationHome
@@ -146,21 +152,29 @@ export function AboutPage({ seen, next }: { seen: number; next?: string }) {
     // Two columns from the wide stop: the reading column, and the rail beside
     // it. Below it the rail is gone and the in-flow list carries the same four
     // links, because at 390px a 220px rail is a third of the screen.
-    <div className="mx-auto flex w-full max-w-[1060px] items-start gap-[40px] px-[16px] py-[20px] min-[1000px]:px-[34px] min-[1000px]:py-[28px]">
-      <article className="min-w-0 flex-1 max-w-[760px]">
+    // `justify-center` matters below the wide stop, where the rail is
+    // `display:none`: without it the article sits at flex-start inside a
+    // 1060px container and a 1000px window leaves ~200px of dead space on the
+    // right, where the page used to be centred by its own `mx-auto`.
+    //
+    // The container is 1088 rather than 1060 so the reading column can actually
+    // reach 760: 1088 − 68 padding − 220 rail − 40 gap = 760. At 1060 the cap
+    // was unreachable and the column silently topped out at 732.
+    <div className="mx-auto flex w-full max-w-[1088px] items-start justify-center gap-[40px] px-[16px] py-[20px] min-[1000px]:px-[34px] min-[1000px]:py-[28px]">
+      <article className="min-w-0 max-w-[760px] flex-1">
       {/* The eyebrow exists ONLY when the reader is behind: it is the reason
           they are looking at this page instead of the one they asked for, so
           it is a count and not an apology. */}
       {behind && newCount > 0 && (
-        <p className="mb-[6px] font-mono text-[11px]" style={{ color: "var(--accent)" }}>
+        <p className="mb-[6px] font-mono text-[11px]">
           {aboutCopy.newSinceEyebrow(newCount)}
         </p>
       )}
 
-      <h1 className="font-display text-[24px] min-[1000px]:text-[30px]" style={{ color: "var(--fg)" }}>
+      <h1 className="font-display text-[24px] text-[color:var(--fg)] min-[1000px]:text-[30px]">
         {aboutCopy.pageTitle}
       </h1>
-      <p className="mt-[6px] text-[13.5px] leading-[1.55]" style={{ color: "var(--fg-muted)" }}>
+      <p className="mt-[6px] text-[13.5px] leading-[1.55] text-[color:var(--fg-muted)]">
         {aboutCopy.pageIntro}
       </p>
 
@@ -209,13 +223,13 @@ export function AboutPage({ seen, next }: { seen: number; next?: string }) {
           id={`chapter-${n}`}
           className="mt-[28px] border-t border-solid border-[color:var(--border)] pt-[18px] scroll-mt-[20px]"
         >
-          <h2 className="font-display text-[19px] min-[1000px]:text-[21px]" style={{ color: "var(--fg)" }}>
-            <span className="font-mono text-[12px]" style={{ color: "var(--fg-faint)" }}>
+          <h2 className="font-display text-[19px] text-[color:var(--fg)] min-[1000px]:text-[21px]">
+            <span className="font-mono text-[12px]">
               {n}
             </span>{" "}
             {aboutCopy.chapters[n].title}
           </h2>
-          <p className="mt-[4px] text-[13px]" style={{ color: "var(--fg-muted)" }}>
+          <p className="mt-[4px] text-[13px] text-[color:var(--fg-muted)]">
             {aboutCopy.chapters[n].sub}
           </p>
 
@@ -260,7 +274,7 @@ export function AboutPage({ seen, next }: { seen: number; next?: string }) {
       )}
       </article>
 
-      <ContentsRail chapters={CHAPTERS} newPerChapter={newPerChapter} />
+      <ContentsRail chapters={railChapters} />
     </div>
   );
 }

@@ -1,7 +1,8 @@
-import { render, screen, within } from "@testing-library/react";
+import { act, render, screen, within } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
 import { AboutPage } from "./about-page";
 import { ABOUT_VERSION, aboutCopy, aboutEntries } from "../../lib/copy/about";
+import { FIGURES } from "./figures";
 
 // The action is a server function; the page only needs it to exist as a form
 // target, and importing it for real drags a database client into jsdom.
@@ -142,17 +143,16 @@ describe("the figures", () => {
       ]),
     );
 
-  it("draws one for every entry whose subject is a mark", () => {
-    // The complete set, not a sample: a partial list leaves a miswired figure
-    // green, which is the regression this whole file exists to catch.
+  it("draws one specimen for every entry that has a figure", () => {
+    // DERIVED, not a hard-coded list. A literal set of labels has to be edited
+    // every time a figure lands, which makes the test a chore rather than a
+    // guard — and the thing worth catching is a figure REGISTERED in FIGURES
+    // that renders nothing, which counting catches and a label list does not.
     const { container } = render(<AboutPage seen={0} />);
-    expect(Object.keys(figures(container)).sort()).toEqual([
-      "availability",
-      "buy-tag",
-      "fit",
-      "marks",
-      "status",
-    ]);
+    const drawn = container.querySelectorAll("[data-specimen]").length;
+    const registered = aboutEntries.filter((e) => e.id in FIGURES).length;
+    expect(registered, "no entry has a figure at all").toBeGreaterThan(0);
+    expect(drawn).toBe(registered);
   });
 
   it("hides every specimen from the reading order and from the pointer", () => {
@@ -418,11 +418,81 @@ describe("the contents rail", () => {
     render(<AboutPage seen={0} />);
     const [, rail] = screen.getAllByRole("navigation", { name: aboutCopy.contentsLabel });
     const current = within(rail).getAllByRole("link").filter((a) => a.getAttribute("aria-current"));
-    // Exactly one, and it is the first chapter before any scrolling has
-    // happened — jsdom has no IntersectionObserver, which is the state the
-    // component guards for rather than throwing in.
     expect(current).toHaveLength(1);
     expect(current[0]).toHaveAttribute("href", "#chapter-01");
+  });
+
+  it("follows the reader down the page, and back up it", () => {
+    // jsdom has no IntersectionObserver, so without a stub the test above
+    // asserts the initial useState and nothing else — deleting the entire
+    // effect left every test in this file green, which the pre-open pass
+    // proved by doing it.
+    //
+    // The stub is also what makes the REAL defect testable: the callback
+    // receives only the entries whose state CHANGED, so a reading that sorts
+    // "this callback's intersecting entries" answers "whichever chapter most
+    // recently entered the band". Scrolling 01 → 02 delivers 02 alone.
+    const callbacks: IntersectionObserverCallback[] = [];
+    const observed: Element[] = [];
+    class Stub {
+      constructor(cb: IntersectionObserverCallback) {
+        callbacks.push(cb);
+      }
+      observe(el: Element) {
+        observed.push(el);
+      }
+      disconnect() {}
+      unobserve() {}
+      takeRecords() {
+        return [];
+      }
+      root = null;
+      rootMargin = "";
+      thresholds = [];
+    }
+    vi.stubGlobal("IntersectionObserver", Stub);
+    try {
+      render(<AboutPage seen={0} />);
+      const [, rail] = screen.getAllByRole("navigation", { name: aboutCopy.contentsLabel });
+      const marked = () =>
+        within(rail)
+          .getAllByRole("link")
+          .find((a) => a.getAttribute("aria-current"))
+          ?.getAttribute("href");
+
+      const fire = (changes: { id: string; isIntersecting: boolean }[]) =>
+        act(() => {
+          callbacks[0](
+            changes.map((c) => ({
+              target: observed.find((el) => el.id === `chapter-${c.id}`)!,
+              isIntersecting: c.isIntersecting,
+            })) as unknown as IntersectionObserverEntry[],
+            {} as IntersectionObserver,
+          );
+        });
+
+      // Everything starts on screen at the top of the page.
+      fire([{ id: "01", isIntersecting: true }]);
+      expect(marked()).toBe("#chapter-01");
+
+      // Scrolling into 02 delivers ONE entry. 01 is still intersecting and is
+      // absent from the callback — the case that broke the first version.
+      fire([{ id: "02", isIntersecting: true }]);
+      expect(marked()).toBe("#chapter-01");
+
+      // 01 leaves the band. Now 02 is the first in order still on screen.
+      fire([{ id: "01", isIntersecting: false }]);
+      expect(marked()).toBe("#chapter-02");
+
+      fire([{ id: "03", isIntersecting: true }, { id: "02", isIntersecting: false }]);
+      expect(marked()).toBe("#chapter-03");
+
+      // And back up: 02 returning takes the mark back, because it is earlier.
+      fire([{ id: "02", isIntersecting: true }]);
+      expect(marked()).toBe("#chapter-02");
+    } finally {
+      vi.unstubAllGlobals();
+    }
   });
 
   it("links every chapter from the rail", () => {

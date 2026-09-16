@@ -137,8 +137,7 @@ describe("every entry is drawn, not just described", () => {
   // `NOT_YET_DRAWN` is a ledger that must shrink to empty. An entry is removed
   // from it when its figure lands; nothing is ever added.
   const NOT_YET_DRAWN = new Set<string>([
-    // 01 Your collection
-    "browse", "import", "post-import", "import-issues", "sets", "card-detail",
+    // 01 Your collection — every entry drawn
     // 02 Finding a commander
     "ready-to-build", "commander-lane", "discover", "role-coverage", "partners",
     // 03 Building the 99

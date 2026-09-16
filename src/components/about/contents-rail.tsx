@@ -10,47 +10,59 @@
 // effort.
 //
 // A client component, and it has to be: "which chapter am I in" is a fact about
-// scroll position. The page around it stays a server component — this is the
-// only thing here that observes anything.
+// scroll position. It takes everything else as props — the counts are computed
+// on the server where `seen` is known, and importing the copy module here would
+// pull all thirty-four captions and their key lines into the client bundle to
+// read four array lengths.
 
-import { useEffect, useState } from "react";
-import { aboutCopy, aboutEntries, type AboutChapter } from "../../lib/copy/about";
+import { useEffect, useRef, useState } from "react";
+import { aboutCopy, type AboutChapter } from "../../lib/copy/about";
 
-export function ContentsRail({
-  chapters,
-  newPerChapter,
-}: {
-  chapters: readonly AboutChapter[];
-  /** Counted on the server, where `seen` is known. */
-  newPerChapter: Record<string, number>;
-}) {
-  const [current, setCurrent] = useState<AboutChapter>(chapters[0]);
+export type RailChapter = {
+  id: AboutChapter;
+  title: string;
+  /** Entries in the chapter, or the count of new ones when there are any. */
+  count: number;
+  newCount: number;
+};
+
+export function ContentsRail({ chapters }: { chapters: readonly RailChapter[] }) {
+  const [current, setCurrent] = useState<AboutChapter | null>(chapters[0]?.id ?? null);
+  // Which sections are on screen, ACCUMULATED across callbacks. The observer
+  // hands over only the entries whose state CHANGED, never the full set — so
+  // scrolling from 01 into 02 delivers one entry, 02, while 01 is still
+  // intersecting and simply absent. A "topmost of this callback's entries"
+  // reading therefore answers "whichever chapter most recently entered the
+  // band", which is the opposite of the question.
+  const onScreen = useRef(new Map<string, boolean>());
 
   useEffect(() => {
     // Guarded rather than assumed. Without an observer the rail still draws
     // every link and still marks the first chapter — a page that cannot say
-    // where you are is a smaller loss than a page that throws, and jsdom is
-    // one environment that has no IntersectionObserver.
+    // where you are is a smaller loss than a page that throws.
     if (typeof IntersectionObserver === "undefined") return;
 
-    const sections = chapters
-      .map((n) => document.getElementById(`chapter-${n}`))
+    const ids = chapters.map((c) => c.id);
+    const sections = ids
+      .map((id) => document.getElementById(`chapter-${id}`))
       .filter((el): el is HTMLElement => el !== null);
     if (sections.length === 0) return;
 
-    // The TOPMOST section whose heading has passed the reader, rather than the
-    // first one intersecting: with four long chapters, two are on screen at
-    // once for most of the page, and "first intersecting" flickers between them
-    // on every small scroll. A rootMargin that only admits the upper strip of
-    // the viewport makes the answer stable.
     const observer = new IntersectionObserver(
       (entries) => {
-        const visible = entries
-          .filter((e) => e.isIntersecting)
-          .sort((a, b) => a.boundingClientRect.top - b.boundingClientRect.top);
-        const first = visible[0]?.target.id.replace("chapter-", "");
-        if (first) setCurrent(first as AboutChapter);
+        for (const entry of entries) {
+          onScreen.current.set(entry.target.id.replace("chapter-", ""), entry.isIntersecting);
+        }
+        // The first chapter in DOCUMENT order that is on screen. Order comes
+        // from the chapter list rather than from measured rectangles, which
+        // makes the answer the same in a browser and in a test.
+        const first = ids.find((id) => onScreen.current.get(id));
+        if (first) setCurrent(first);
       },
+      // Only the upper strip of the viewport counts as "here". With four long
+      // chapters two are on screen for most of the page, and a full-viewport
+      // root makes the first-in-order answer stick on chapter 01 far past the
+      // point a reader has left it.
       { rootMargin: "0px 0px -70% 0px", threshold: 0 },
     );
     for (const section of sections) observer.observe(section);
@@ -66,13 +78,12 @@ export function ContentsRail({
         {aboutCopy.contentsLabel}
       </p>
       <ol className="mt-[10px] list-none p-0">
-        {chapters.map((n) => {
-          const entries = aboutEntries.filter((e) => e.chapter === n);
-          const isCurrent = n === current;
+        {chapters.map((chapter) => {
+          const isCurrent = chapter.id === current;
           return (
-            <li key={n}>
+            <li key={chapter.id}>
               <a
-                href={`#chapter-${n}`}
+                href={`#chapter-${chapter.id}`}
                 // `aria-current` is the whole reason this is worth being a
                 // client component: the fill says where you are to someone
                 // looking, and this says it to someone who is not.
@@ -84,11 +95,13 @@ export function ContentsRail({
                 }`}
               >
                 <span className="min-w-0 truncate">
-                  <span className="font-mono text-[10.5px] text-[color:var(--fg-faint)]">{n}</span>{" "}
-                  {aboutCopy.chapters[n].title}
+                  <span className="font-mono text-[10.5px] text-[color:var(--fg-faint)]">
+                    {chapter.id}
+                  </span>{" "}
+                  {chapter.title}
                 </span>
                 <span className="flex-none font-mono text-[10.5px] text-[color:var(--fg-faint)]">
-                  {newPerChapter[n] > 0 ? aboutCopy.newInChapter(newPerChapter[n]) : entries.length}
+                  {chapter.newCount > 0 ? aboutCopy.newInChapter(chapter.newCount) : chapter.count}
                 </span>
               </a>
             </li>

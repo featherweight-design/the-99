@@ -5,11 +5,11 @@
 // size or glyph changes in its own component changes here on the next render,
 // where a screenshot or a hand-drawn copy would quietly start lying.
 //
-// Not every entry has one. A figure earns its place by teaching something the
-// caption cannot — a glyph, a state a word does not distinguish, a set of
-// options a reader has to recognise later. An entry whose subject is a
-// workflow keeps its words; `FIGURES` is a partial map on purpose, and the
-// page draws the caption alone where there is no entry for it.
+// EVERY entry gets one. That is the handoff's unit and the reason it exists:
+// R2's pivot away from R1 was Design saying a page of paragraphs cannot teach
+// a fit score, a doubled diamond or a dashed cell. The map is incomplete today
+// and `about.test.ts` holds the ledger of what is missing; the page draws the
+// caption alone for those, which is a gap rather than a design.
 
 import { AvailabilityMarker } from "../ui/availability-marker";
 import { OwnershipDot } from "../ui/ownership-dot";
@@ -17,6 +17,11 @@ import { COST_PIP_CAP, COST_PIP_SIZE, COST_TRACK, CostPips } from "../ui/cost-pi
 import { BuyTag } from "../decks/buy-tag";
 import { ProxyTag } from "../decks/proxy-tag";
 import { StatusPillBadge } from "../decks/status-pill";
+import { SetCell } from "../sets/set-cell";
+import { FilterChipPill } from "../ui/filter-chassis";
+import { collectionChassisCopy } from "../../lib/copy/collection";
+import { cardAssignmentsCopy } from "../../lib/copy/card-assignments";
+import { issueInspectorCopy } from "../../lib/copy/issue-inspector";
 import { statusBarStyle } from "../../lib/decks/status-style";
 import type { StatusPill } from "../../lib/decks/status";
 import { refreshCopy } from "../../lib/copy/refresh";
@@ -34,6 +39,8 @@ import type { AboutWidth } from "../../lib/copy/about";
 import {
   AVAILABILITY,
   CARDS,
+  BROWSE_CHIPS,
+  SET_CELLS,
   COSTS,
   FIT_DEGRADED,
   FIT_DEGRADED_SCORE,
@@ -329,6 +336,151 @@ function MarksFigure({ width }: { width: AboutWidth }) {
 }
 
 /**
+ * A set page's cells: the four states a reader has to tell apart, and the
+ * reason the grid is worth drawing at all — a missing cell keeps its name and
+ * its price, so the GAPS are the page.
+ *
+ * `SetCell` is mounted as-is. It takes a cell, an optional price and the
+ * newest stamp, and nothing else — no deck, no handlers — which is what makes
+ * it one of the few whole surfaces this page can show rather than legend.
+ */
+function SetsFigure({ width }: { width: AboutWidth }) {
+  const caption = [
+    "owned",
+    "matched by name, not by printing",
+    "your only copy is foil",
+    "missing — dimmed, dashed, and carrying a price",
+  ];
+  const newest = PRICES[0].fact.asOf;
+  return (
+    <Specimen label="sets" width={width}>
+      <SpecimenGrid>
+        {SET_CELLS.map((cell, i) => (
+          <SpecimenCell key={cell.scryfallId} caption={caption[i]}>
+            <div className="w-[88px]">
+              <SetCell
+                cell={cell}
+                // Only the missing cell is priced: an owned one never carries a
+                // figure, which is half of what tells the two apart.
+                price={cell.owned ? null : PRICES[0].fact}
+                newestAsOf={cell.owned ? null : newest}
+              />
+            </div>
+          </SpecimenCell>
+        ))}
+      </SpecimenGrid>
+    </Specimen>
+  );
+}
+
+/**
+ * What a narrowing looks like once it is applied: a chip per dimension, each
+ * removable on its own. `FilterChipPill` is the collection's own chip — the
+ * entry's first key line is about chips being visible and removable, and a
+ * drawing of one would be the page asserting that rather than showing it.
+ */
+function BrowseFigure({ width }: { width: AboutWidth }) {
+  return (
+    <Specimen label="browse" width={width}>
+      <div className="flex flex-col gap-[10px]">
+        <div className="flex flex-wrap items-center gap-[8px]">
+          {BROWSE_CHIPS.map((chip) => (
+            <FilterChipPill key={chip.key} chip={chip} />
+          ))}
+        </div>
+        <span className="font-mono text-[11px] text-[color:var(--fg-faint)]">
+          {collectionChassisCopy.result(34, 2805, 4120, true)}
+        </span>
+      </div>
+    </Specimen>
+  );
+}
+
+/**
+ * The three doors a collection arrives through, and the one fact that decides
+ * whether a reader is about to lose something: an import REPLACES.
+ */
+function ImportFigure({ width }: { width: AboutWidth }) {
+  return (
+    <Specimen label="import" width={width}>
+      <div className="flex flex-col gap-[8px]">
+        {["Moxfield", "Archidekt", "Deckbox", "ManaBox"].map((source) => (
+          <span key={source} className="font-mono text-[11px] text-[color:var(--fg-body)]">
+            {source} · CSV
+          </span>
+        ))}
+        <span className="mt-[4px] font-mono text-[11px] text-[color:var(--warning)]">
+          replaces — never adds
+        </span>
+      </div>
+    </Specimen>
+  );
+}
+
+/**
+ * The post-import summary's three sections, in the app's own words. A card
+ * moves between them; no deck is edited.
+ */
+function PostImportFigure({ width }: { width: AboutWidth }) {
+  const c = cardAssignmentsCopy.summary;
+  return (
+    <Specimen label="post-import" width={width}>
+      <div className="flex flex-col gap-[8px]">
+        {[c.sectionCleared(61), c.sectionStill(12), c.sectionShort(2)].map((heading) => (
+          <span key={heading} className="font-mono text-[11px] text-[color:var(--fg-body)]">
+            {heading}
+          </span>
+        ))}
+      </div>
+    </Specimen>
+  );
+}
+
+/** The inspector's two tabs: a name we could not match, and a line we could not read. */
+function ImportIssuesFigure({ width }: { width: AboutWidth }) {
+  return (
+    <Specimen label="import-issues" width={width}>
+      <div className="flex flex-wrap items-center gap-[10px]">
+        {[issueInspectorCopy.tabs.unmatched, issueInspectorCopy.tabs.parseErrors].map((tab) => (
+          <span
+            key={tab}
+            className="rounded-[6px] border border-solid border-[color:var(--border-strong)] px-[9px] py-[4px] font-mono text-[11px] text-[color:var(--fg-body)]"
+          >
+            {tab}
+          </span>
+        ))}
+      </div>
+    </Specimen>
+  );
+}
+
+/**
+ * The printing picker's two marks, which are the ones most often misread: a
+ * tick for the printing you PICKED, a hollow diamond for the one being SHOWN.
+ * Neither is about ownership, and the caption used to say it was.
+ */
+function CardDetailFigure({ width }: { width: AboutWidth }) {
+  return (
+    <Specimen label="card-detail" width={width}>
+      <SpecimenGrid>
+        <SpecimenCell caption="the printing you picked">
+          <span className="font-mono text-[12px] text-[color:var(--accent)]">✓</span>
+        </SpecimenCell>
+        <SpecimenCell caption="the one being shown now">
+          <span className="font-mono text-[12px] text-[color:var(--fg-faint)]">◇</span>
+        </SpecimenCell>
+        <SpecimenCell caption="two faces, and the back is castable">
+          <TwoFacedMark layout="transform" />
+        </SpecimenCell>
+        <SpecimenCell caption="its printed cost, at the row's own track">
+          <CostPips cost={COSTS.crowded} size={COST_PIP_SIZE} track={COST_TRACK} cap={COST_PIP_CAP} />
+        </SpecimenCell>
+      </SpecimenGrid>
+    </Specimen>
+  );
+}
+
+/**
  * Entry id → figure. A partial map: an entry with no figure draws its caption
  * and its key lines, which is what every entry did before this PR and is still
  * a complete answer for a workflow.
@@ -344,4 +496,10 @@ export const FIGURES: Partial<
   statuses: StatusFigure,
   "fit-score": FitFigure,
   "decklist-marks": MarksFigure,
+  sets: SetsFigure,
+  browse: BrowseFigure,
+  import: ImportFigure,
+  "post-import": PostImportFigure,
+  "import-issues": ImportIssuesFigure,
+  "card-detail": CardDetailFigure,
 };
