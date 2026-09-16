@@ -11,6 +11,10 @@ vi.mock("./recommend", async (orig) => ({
 }));
 vi.mock("../decks/availability-query", () => ({ loadAvailability }));
 vi.mock("../edhrec/client", () => ({ readEdhrecCache: async () => new Map() }));
+// Ruling D: the score's synergy comes from the stored index, so the loader has
+// to be mocked alongside the live cache. An empty map is no synergy reading,
+// which is what every case here already assumed from an empty cache.
+vi.mock("../edhrec/support-read", () => ({ loadSupportLists: async () => new Map() }));
 
 const card = (oracleId: string): PoolCard => ({
   oracleId,

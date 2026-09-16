@@ -578,8 +578,16 @@ export const RANK_SCORE_UNWRITTEN = -1;
  * old writer can repopulate the table in between, and a one-off `DELETE` would
  * be undone by it. Rows written in that window carry the default and are refused
  * like any other stale row.
+ *
+ * Version 3 is the first writer whose SYNERGY comes from the stored commander
+ * index rather than the live EDHREC payload — Ruling D of the commander-row
+ * spec. This is the case the mechanism was built for and the least visible: the
+ * rows are the same SHAPE and a different MEANING, so nothing about a version-2
+ * row looks stale. `probe:fit-parity` measured the two sources disagreeing on 20
+ * of 95 commanders, which is how far a warm version-2 set would have been out.
+ * The deployment window argument applies unchanged.
  */
-export const SCORE_WRITER_CURRENT = 2;
+export const SCORE_WRITER_CURRENT = 3;
 
 export const commanderScores = pgTable("commander_scores", {
   userId: text("user_id").notNull(),

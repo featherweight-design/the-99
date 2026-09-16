@@ -52,8 +52,15 @@ export type CommanderRankings = {
  * this bump a warm entry keeps serving the old free list, and the defect this
  * release fixes survives the deploy for up to the hour ceiling for every reader
  * who does not write.
+ *
+ * 4 — every Fit's synergy now comes from the stored commander index rather than
+ * the live EDHREC payload (Ruling D). Same shape again, and this time the FIGURE
+ * moved: `probe:fit-parity` measured the two sources disagreeing on 20 of 95
+ * commanders. A warm version-3 entry would keep printing the live-derived score
+ * beside a detail page printing the index-derived one, which is the exact
+ * disagreement the change removes.
  */
-const PAYLOAD_VERSION = 3;
+const PAYLOAD_VERSION = 4;
 
 /** The cache key this payload is filed under, version included. */
 export const commanderRankingsKey = ["commander-rankings", `v${PAYLOAD_VERSION}`];

@@ -220,8 +220,17 @@ export function assembleDiscovery(input: {
  * 2 — the candidate query now excludes a deck's PARTNER as well as its
  * commander, so a payload assembled by version 1 can still be offering a
  * commander the player has already built around.
+ *
+ * 3 — every Fit's synergy now reads the stored commander index rather than the
+ * live EDHREC payload (Ruling D of the commander-row spec). This payload does
+ * not print a Fit yet, so nothing a reader sees changes — but it is assembled
+ * from `loadCandidates`, whose figures feed that arithmetic in PR 3, and a warm
+ * entry written before the change would carry counts taken against the old
+ * source. Bumped with its sibling in `commanders/rankings.ts` rather than left
+ * for the PR that starts drawing the figure, because the two caches are dropped
+ * independently and a half-bumped pair is the state nobody would think to check.
  */
-const PAYLOAD_VERSION = 2;
+const PAYLOAD_VERSION = 3;
 
 /** The cache key a discovery payload is filed under: its sort, and the version
     of the code that produced it. */

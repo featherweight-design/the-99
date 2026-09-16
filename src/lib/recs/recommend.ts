@@ -5,11 +5,12 @@ import { cards, collectionItems } from "../../db/schema";
 import { ownedCardsWhere } from "../collection/owned-cards";
 import { commanderSlug } from "../edhrec/slug";
 import { readEdhrecCache, resolveEdhrecData } from "../edhrec/client";
+import { supportOverlap } from "../edhrec/support-overlap";
+import { loadSupportLists } from "../edhrec/support-read";
 import { synergyStateFrom, type SynergyState } from "./synergy-state";
 import { committedSupport, readCommittedDecks, withCommitted } from "../decks/committed";
 import {
   commanderPool,
-  edhrecOverlap,
   isCommanderCandidate,
   scoreCommander,
   type CommanderScore,
@@ -231,7 +232,13 @@ export async function recommendCommanders(
 
   // One cache read for the whole fanout — a per-commander SELECT here meant
   // ~196 round-trips on every compute, warm or cold.
-  const edhrecCache = await readEdhrecCache(candidates.map((c) => c.oracleId));
+  // The live read still happens, for `inclusionByName` and for `synergyState`:
+  // the role chips keep the fresher figures, and an EDHREC outage still has to
+  // be describable. What moved to the index is the SCORE — Ruling D.
+  const [edhrecCache, supportLists] = await Promise.all([
+    readEdhrecCache(candidates.map((c) => c.oracleId)),
+    loadSupportLists(candidates.map((c) => c.oracleId)),
+  ]);
 
   // Fetch EDHREC data with bounded concurrency: sequential awaits would make
   // cold loads with dozens of candidates exceed the page's time budget.
@@ -251,7 +258,7 @@ export async function recommendCommanders(
         return {
           ...scoreCommander({
             commander, collection,
-            edhrecTopCards: result.data?.topCards ?? null,
+            support: supportLists.get(commander.oracleId) ?? null,
             inclusionByName: result.data?.inclusionByName ?? null,
           }),
           synergyState: synergyStateFrom(result),
@@ -299,14 +306,18 @@ export async function scoreOneCommander(
     collection.find((c) => c.oracleId === oracleId) ?? (await loadPoolCard(oracleId));
   if (!commander) return null;
 
-  const edhrecCache = await readEdhrecCache([oracleId]);
+  const [edhrecCache, supportLists] = await Promise.all([
+    readEdhrecCache([oracleId]),
+    loadSupportLists([oracleId]),
+  ]);
+  const support = supportLists.get(oracleId) ?? null;
   const [result, committed] = await Promise.all([
     resolveEdhrecData(oracleId, commander.name, edhrecCache.get(oracleId)),
     readCommittedDecks(userId),
   ]);
   const scored = scoreCommander({
     commander, collection: pool ?? collection,
-    edhrecTopCards: result.data?.topCards ?? null,
+    support,
     inclusionByName: result.data?.inclusionByName ?? null,
   });
 
@@ -321,8 +332,8 @@ export async function scoreOneCommander(
   // sleeved into a finished deck is exactly what that pool leaves out — asking
   // it which decks hold these cards could only ever answer "none".
   const ownedOverlapIds =
-    pool && result.data?.topCards
-      ? edhrecOverlap(result.data.topCards, commanderPool(commander, collection)).oracleIds
+    pool && support
+      ? supportOverlap(support, commanderPool(commander, collection)).oracleIds
       : scored.overlapOwnedIds;
 
   return {

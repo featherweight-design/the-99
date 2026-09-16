@@ -1,6 +1,7 @@
 import type { Availability } from "../decks/availability";
 import { frontFaceOracle, frontFaceTypeLine } from "./faces";
 import { classifyRoles, ROLE_TARGETS } from "./roles";
+import { supportOverlap, type SupportList } from "../edhrec/support-overlap";
 
 export type PoolCard = {
   oracleId: string; name: string; typeLine: string; oracleText: string | null;
@@ -132,45 +133,17 @@ export function fitsIdentity(card: PoolCard, identity: Set<string>): boolean {
   return card.colorIdentity.every((c) => identity.has(c));
 }
 
-/**
- * Which of a commander's EDHREC top cards are present in a given set of cards.
+/*
+ * `edhrecOverlap` lived here and is gone.
  *
- * Names AND oracle ids, because the two answers are asked by different readers:
- * the receipts line prints names, and the committed-deck clause has to ask which
- * decks hold these cards, which only ids can answer.
- *
- * Exported because the detail page needs this overlap over two different sets in
- * free mode — the free pool, which is what the score is about, and the whole
- * collection, which is what "already in a deck" is about. A card in a finished
- * deck is by construction absent from the free pool, so asking the pool would
- * report that no deck holds any of them.
- *
- * Indexes full name AND front face: EDHREC lists DFCs/MDFCs by front face while
- * Scryfall names them "Front // Back".
+ * It matched EDHREC's card NAMES against the pool, indexing both the full name
+ * and the front face because EDHREC lists a DFC by its front while Scryfall
+ * names it "Front // Back". Ruling D replaced it with `supportOverlap`, an id
+ * intersection over the stored index — the names were already resolved to oracle
+ * ids when the index was built, so none of that matching is needed on the read
+ * path. Deleted rather than kept: it had no caller and no test left, and a
+ * second way to resolve a card to an id is exactly what drifted from the first.
  */
-export function edhrecOverlap(
-  topCards: string[],
-  pool: PoolCard[],
-): { names: string[]; oracleIds: string[] } {
-  const byName = new Map<string, string>();
-  for (const c of pool) {
-    const lower = c.name.toLowerCase();
-    if (!byName.has(lower)) byName.set(lower, c.oracleId);
-    const front = lower.split(" // ")[0];
-    if (!byName.has(front)) byName.set(front, c.oracleId);
-  }
-
-  const names: string[] = [];
-  const oracleIds: string[] = [];
-  for (const n of topCards) {
-    const oracleId = byName.get(n.toLowerCase());
-    if (oracleId !== undefined) {
-      names.push(n);
-      oracleIds.push(oracleId);
-    }
-  }
-  return { names, oracleIds };
-}
 
 /**
  * The owned cards that could go in this commander's 99: colour-identity legal,
@@ -206,10 +179,24 @@ export function byInclusionThenName(a: RoleCard, b: RoleCard): number {
 export function scoreCommander(args: {
   commander: PoolCard;
   collection: PoolCard[];
-  edhrecTopCards: string[] | null;
+  /**
+   * The STORED support list, from `commander_support` — never the live EDHREC
+   * payload. Ruling D: every Fit reads one source, because the two disagreed on
+   * 20 of 95 commanders when `probe:fit-parity` measured them, and a row
+   * disagreeing with its own detail page is the defect the commander row exists
+   * to remove.
+   *
+   * Absent (`null`) means no synergy reading, and leaves `fitSynergy` null
+   * rather than zeroing it — see `measurableTotalFor`.
+   */
+  support: SupportList | null;
   // Sparse: EDHREC reports a figure for the cards it knows, so most names miss.
   // The `| undefined` is what makes the guard below type-visible rather than
   // dead-looking code.
+  //
+  // STILL LIVE, deliberately. This feeds the role chips' inclusion percentages,
+  // not the score, and nothing compares it across surfaces — so it keeps the
+  // fresher reading while the figure that IS compared reads the index.
   inclusionByName: Record<string, number | undefined> | null;
 }): CommanderScore {
   const pool = commanderPool(args.commander, args.collection);
@@ -265,15 +252,21 @@ export function scoreCommander(args: {
   const overlapOwned: string[] = [];
   const overlapOwnedIds: string[] = [];
 
-  if (args.edhrecTopCards && args.edhrecTopCards.length > 0) {
-    const overlap = edhrecOverlap(args.edhrecTopCards, pool);
-    edhrecTotal = args.edhrecTopCards.length;
+  // A total of 0 is treated as NO READING, not as a measured zero — which is
+  // what the live payload's empty `topCards` meant and is preserved verbatim.
+  // Ruling D moves the SOURCE of this figure, and deciding that an empty list
+  // now scores 0 of 60 would be a second change riding along on it. The case is
+  // unreachable in any event: all 3,342 indexed commanders carry a positive
+  // `edhrec_total`.
+  if (args.support && args.support.total != null && args.support.total > 0) {
+    const overlap = supportOverlap(args.support, pool);
+    edhrecTotal = args.support.total;
     overlapOwned.push(...overlap.names);
     overlapOwnedIds.push(...overlap.oracleIds);
     edhrecOwnedCount = overlapOwned.length;
   }
 
-  const overlapRatio = edhrecTotal ? (edhrecOwnedCount! / edhrecTotal) : 0;
+  const overlapRatio = edhrecTotal ? edhrecOwnedCount! / edhrecTotal : 0;
   const roleCoverage =
     (Object.keys(ROLE_TARGETS) as (keyof typeof ROLE_TARGETS)[])
       .reduce((sum, r) => sum + Math.min(roleCounts[r], ROLE_TARGETS[r]) / ROLE_TARGETS[r], 0) /

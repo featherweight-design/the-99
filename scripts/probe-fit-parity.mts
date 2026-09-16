@@ -8,8 +8,26 @@
 // and `page.tsx` calls `scoreOneCommander` for every commander, owned or not —
 // so every row links to a page that recomputes the same number a different way.
 //
-// This script is the acceptance test for Ruling D, and it must go GREEN before
-// any surface prints a Fit derived from the stored counts.
+// This script is the acceptance test for Ruling D. It went green when
+// `scoreCommander` moved to the stored index, and it is what will catch the
+// figure drifting back apart.
+//
+// WHAT IT COMPARES NOW. Both sides read the stored index, so the question is no
+// longer stored-versus-live — it is whether TWO INDEPENDENT EXPRESSIONS of the
+// same allocation agree: the SQL the row's payload will be built from, written
+// here, against the TypeScript `scoreCommander` runs. Two expressions of one
+// figure drifting apart is how the deck page and its receipt came to disagree
+// once already, which is why `loadDeckBuyRows` is asserted beside
+// `loadAvailability` rather than assumed to match it.
+//
+// THE IDENTITY FILTER IS THE WHOLE REASON THE SQL IS WRITTEN HERE. An earlier
+// version compared `loadCandidates.ownedSupport`, which counts support cards the
+// reader owns WITHOUT restricting them to the commander's colour identity, and
+// it disagreed with the score on `Faceless One` — a colourless commander whose
+// stored support list holds 83 off-identity cards out of 322, so 122 owned
+// against 96 playable. The score's figure is the right one for Fit, which
+// measures what could actually be played; `ownedSupport` is a different
+// quantity and PR 3 must not build the row's Fit from it.
 //
 // IT COMPARES EVERY WARM CANDIDATE AND SAMPLES NOTHING. Three review rounds
 // landed on an earlier version's sampling: it took only the highest stored
@@ -44,9 +62,10 @@
 // First, and on its own line: src/db reads DATABASE_URL at module scope.
 import { requireEnv } from "./lib/env.mjs";
 requireEnv(["DATABASE_URL"]);
-import { sql } from "drizzle-orm";
+import { and, eq, inArray, sql } from "drizzle-orm";
+import { alias } from "drizzle-orm/pg-core";
 import { db } from "../src/db";
-import { collectionItems } from "../src/db/schema";
+import { cards, collectionItems, commanderSupportCards } from "../src/db/schema";
 import { loadCandidates } from "../src/lib/discovery/candidates";
 import { readEdhrecCache } from "../src/lib/edhrec/client";
 import { loadCollectionPool, scoreOneCommander } from "../src/lib/recs/recommend";
@@ -122,6 +141,54 @@ console.log(
     (warm.length > population.length ? ` (capped at MAX_COMPARED=${MAX_COMPARED})` : ""),
 );
 
+/**
+ * The row's numerator, in SQL: support cards this reader owns whose colour
+ * identity is a subset of the commander's.
+ *
+ * Written here rather than reusing `loadCandidates.ownedSupport` because that
+ * figure omits the identity restriction — see the header. Written in SQL rather
+ * than reusing `supportOverlap` because a second expression of the same
+ * allocation is the entire point: sharing the implementation would make this
+ * compare a function with itself.
+ */
+async function storedNumerators(
+  userId: string,
+  commanderIds: string[],
+): Promise<Map<string, number>> {
+  if (commanderIds.length === 0) return new Map();
+  // Two aliases of `cards`: one for the commander, one for the support card.
+  // Both are needed because the identity test compares the two rows.
+  const cmd = alias(cards, "cmd");
+  const sup = alias(cards, "sup");
+  const owned = db
+    .selectDistinct({ oracleId: collectionItems.oracleId })
+    .from(collectionItems)
+    .where(eq(collectionItems.userId, userId))
+    .as("own");
+
+  const rows = await db
+    .select({
+      commanderOracleId: commanderSupportCards.commanderOracleId,
+      owned: sql<number>`count(distinct ${commanderSupportCards.oracleId})::int`,
+    })
+    .from(commanderSupportCards)
+    .innerJoin(cmd, eq(cmd.oracleId, commanderSupportCards.commanderOracleId))
+    .innerJoin(sup, eq(sup.oracleId, commanderSupportCards.oracleId))
+    .innerJoin(owned, eq(owned.oracleId, commanderSupportCards.oracleId))
+    .where(
+      and(
+        inArray(commanderSupportCards.commanderOracleId, commanderIds),
+        // The identity restriction the score applies and `ownedSupport` does not.
+        sql`${sup.colorIdentity} <@ ${cmd.colorIdentity}`,
+        // `commanderPool` excludes the commander's own card from its pool.
+        sql`${sup.oracleId} <> ${cmd.oracleId}`,
+      ),
+    )
+    .groupBy(commanderSupportCards.commanderOracleId);
+
+  return new Map(rows.map((r) => [r.commanderOracleId, r.owned]));
+}
+
 type Row = {
   name: string;
   storedOwned: number;
@@ -138,16 +205,24 @@ type Row = {
 const synergyOf = (owned: number, total: number): number | null =>
   total > 0 ? Math.round((owned / total) * SYNERGY_WEIGHT) : null;
 
+const sqlOwned = await storedNumerators(
+  owner,
+  population.map((c) => c.oracleId),
+);
+
 const rows: Row[] = [];
 for (const c of population) {
   const detail = await scoreOneCommander(owner, c.oracleId, c.name);
+  // 0 rather than undefined: a commander with no owned support card produces no
+  // GROUP BY row, and that is a real overlap of zero.
+  const storedOwned = sqlOwned.get(c.oracleId) ?? 0;
   rows.push({
     name: c.name,
-    storedOwned: c.ownedSupport,
+    storedOwned,
     liveOwned: detail?.edhrecOwnedCount ?? null,
     storedTotal: c.edhrecTotal!,
     liveTotal: detail?.edhrecTotal ?? null,
-    storedSynergy: synergyOf(c.ownedSupport, c.edhrecTotal!),
+    storedSynergy: synergyOf(storedOwned, c.edhrecTotal!),
     liveSynergy: detail?.fitSynergy ?? null,
   });
 }
@@ -204,9 +279,10 @@ if (synergyDiffs.length === 0) {
   process.exit(0);
 }
 console.log(
-  "PARITY FAILS. The row must NOT print a Fit derived from the stored counts.\n" +
-    "The resolution is Ruling D: Commander Details reads the same stored counts,\n" +
-    "not the row learning the name match — a per-row EDHREC read is what rankFree\n" +
-    "already refuses to do (free-ranking.ts:105-112).",
+  "PARITY FAILS. The SQL a row's payload is built from and the TypeScript the\n" +
+    "score runs disagree, so the row and the detail page it links to would print\n" +
+    "different figures for the same commander — the defect the commander row\n" +
+    "exists to remove. Check the identity restriction and the commander's own\n" +
+    "card first: those are the two clauses the two expressions can differ on.",
 );
 process.exit(1);

@@ -26,15 +26,27 @@ vi.mock("../decks/committed", async (importOriginal) => ({
   readCommittedDecks: () => Promise.resolve(committed.value),
 }));
 
-const edhrec = vi.hoisted(() => ({ topCards: null as string[] | null }));
+// The live read still happens — it supplies `inclusionByName` for the role
+// chips and `synergyState` for the degraded note — but it no longer supplies
+// the SCORE. Ruling D moved that to the stored index, so `support` is what
+// these cases arm.
+const edhrec = vi.hoisted(() => ({ reachable: true }));
 vi.mock("../edhrec/client", () => ({
   readEdhrecCache: vi.fn(async () => new Map()),
   resolveEdhrecData: vi.fn(async () => ({
-    data: edhrec.topCards === null
-      ? null
-      : { topCards: edhrec.topCards, inclusionByName: new Map<string, number>() },
+    data: edhrec.reachable ? { topCards: [], inclusionByName: new Map<string, number>() } : null,
     unreachable: false,
   })),
+}));
+
+// The stored support list, keyed by commander oracle id. Armed per case; an
+// empty map means no `commander_support` row, which `scoreCommander` reads as no
+// synergy reading at all.
+const support = vi.hoisted(() => ({
+  lists: new Map<string, { total: number | null; oracleIds: string[] }>(),
+}));
+vi.mock("../edhrec/support-read", () => ({
+  loadSupportLists: vi.fn(async () => support.lists),
 }));
 
 import { scoreOneCommander } from "./recommend";
@@ -50,7 +62,8 @@ beforeEach(() => {
   pool.collection = [];
   pool.card = [];
   committed.value = new Map();
-  edhrec.topCards = null;
+  edhrec.reachable = true;
+  support.lists = new Map();
 });
 
 describe("scoreOneCommander", () => {
@@ -135,7 +148,11 @@ describe("scoreOneCommander committed-support attribution", () => {
     const signet = card({ oracleId: "signet", name: "Arcane Signet", typeLine: "Artifact", oracleText: "Add {C}." });
     pool.collection = [sol, signet];
     pool.card = [card({ oracleId: "unowned", name: "Atraxa, Praetors' Voice" })];
-    edhrec.topCards = ["Sol Ring", "Arcane Signet"];
+    // The index resolved both names to ids when it was built, which is why the
+    // overlap is an id intersection now rather than a name match.
+    support.lists = new Map([
+      ["unowned", { total: 2, oracleIds: ["sol", "signet"] }],
+    ]);
     committed.value = new Map([
       ["sol", { id: "d1", name: "Krenko" }],
       ["signet", { id: "d1", name: "Krenko" }],
