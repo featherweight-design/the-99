@@ -70,10 +70,20 @@ export type CommanderScore = {
   /** What `score` is out of: 100 normally, `POOL_WEIGHT + ROLES_WEIGHT` for a
       commander with no synergy read, whose score is not rescaled to fill the gap. */
   measurableTotal: number;
-  /** `score` back on the 0–100 scale, for ordering only. Never printed and never
-      drawn. Without it, #385's honest denominator would also demote every
-      commander EDHREC does not index, which was never the intent: the figure was
-      wrong, the rank was not. */
+  /**
+   * The figure the list is ordered by, and now exactly `score`.
+   *
+   * It used to rescale a no-synergy score from its 40-point maximum back to 100, so that
+   * #385's honest denominator would not demote a commander for a gap in OUR data. The
+   * effect on screen was the opposite of the intent: since pool + roles + synergy weigh
+   * 15 + 25 + 60, that rescale applies to untracked commanders and to nobody else, and it
+   * multiplies them by 2.5 — so a commander EDHREC has never heard of took rank 1 on the
+   * strength of a perfect 40/40, above every commander we actually know something about.
+   * Ruled 2026-09-16.
+   *
+   * The field stays rather than being folded into `score`: it is a persisted column that
+   * `loadScores` orders by in SQL, and the two readers must agree on the name.
+   */
   rankScore: number;
 };
 
@@ -298,11 +308,18 @@ export function scoreCommander(args: {
   // `fitSynergy` stays null either way: the component is absent, not 0.
   const measurableTotal = measurableTotalFor(fitSynergy);
   const score = fitPool + fitRoles + (fitSynergy ?? 0);
-  // The rescale #333 removed, kept for ordering alone. Printing it was the bug —
-  // it claimed a certainty the read never had. Ordering by it is what the list
-  // always did, and a commander does not become a worse suggestion because
-  // EDHREC has no page for it.
-  const rankScore = Math.round((100 * score) / measurableTotal);
+  // ORDERED BY THE SAME FIGURE THAT IS PRINTED. #385 took the rescale off the printed
+  // score and left it on the rank, on the argument that a commander is no worse a
+  // suggestion for EDHREC having no page for it. What that missed: the weights are
+  // 15 + 25 + 60, so the rescale touches untracked commanders alone and multiplies them
+  // by 2.5. A commander nobody has written a page about therefore took rank 1 with a
+  // perfect 40/40 beside a note reading "fit comes from pool and roles alone".
+  //
+  // Unrescaled, such a commander tops out at 40 — which is what pool and roles alone are
+  // worth, and the same sentence #385 wrote about the printed figure. It can still beat a
+  // tracked commander that scores below 40; what it can no longer do is beat one that
+  // scores above it on a measurement we actually have.
+  const rankScore = score;
 
   return {
     oracleId: args.commander.oracleId,

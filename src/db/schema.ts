@@ -607,8 +607,15 @@ export const RANK_SCORE_UNWRITTEN = -1;
  * the whole version is refused rather than the unsafe subset, which is the only
  * distinction the column can draw. The cost is one recompute per reader, which
  * is what every bump here costs.
+ *
+ * Version 5 is the first writer that orders by the printed figure. Versions 1-4 stored a
+ * `rank_score` that rescaled a no-synergy score from 40 back to 100, which put untracked
+ * commanders at the top of every list; version 5 stores `score` itself. The rows are the
+ * same shape and one column's MEANING moved, so a version-4 row looks perfectly current
+ * while sorting an untracked commander above everything — exactly the blindness this
+ * mechanism exists for. The deployment-window argument applies unchanged.
  */
-export const SCORE_WRITER_CURRENT = 4;
+export const SCORE_WRITER_CURRENT = 5;
 
 export const commanderScores = pgTable("commander_scores", {
   userId: text("user_id").notNull(),
