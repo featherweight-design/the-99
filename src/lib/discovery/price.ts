@@ -88,14 +88,35 @@ export async function loadPrices(oracleIds: string[]): Promise<Map<string, Price
  *
  * Deliberately NOT how the availability reads fail: those set an `availOk` flag,
  * because losing them removes a CLAIM the reader would otherwise believe (an
- * empty availability map counts every owned card as uncommitted). An empty price
- * map makes no claim — it reads as "not stocked", which is what a card the feed
- * has never carried reads as anyway. So there is nothing for the surface to
- * announce and no flag to thread.
+ * empty availability map counts every owned card as uncommitted).
+ *
+ * An empty price map reads as `absent`, which is `slotFor(undefined)` — the
+ * state of a printing the feed has never carried. It is NOT `notStocked`, which
+ * this module reserves for a printing that WAS priced and is missing from the
+ * newest run: that one is a claim about the market, and a transient read failure
+ * has no business making it. An earlier version of this comment called the
+ * fallback "not stocked" and so conflated the two, which the states matrix above
+ * already separates.
+ *
+ * `absent` makes no claim at all, which is why there is nothing for the surface
+ * to announce and no flag to thread.
  */
-export async function pricesOrEmpty(oracleIds: string[]): Promise<Map<string, PriceAggRow>> {
+export async function pricesOrEmpty(
+  oracleIds: string[],
+  /**
+   * The read, injectable ONLY so the catch can be tested.
+   *
+   * Not stylistic: a spy on this module's own export cannot intercept an
+   * internal call, so `vi.spyOn(priceModule, "loadPrices")` left the real
+   * database-backed read in place. The rejection case then passed because that
+   * read threw on its own — a test green for a reason that had nothing to do
+   * with the spy — and the success case failed outright. The same binding is why
+   * `list-wiring.test.ts` mocking `loadPrices` never reached this wrapper.
+   */
+  load: (ids: string[]) => Promise<Map<string, PriceAggRow>> = loadPrices,
+): Promise<Map<string, PriceAggRow>> {
   try {
-    return await loadPrices(oracleIds);
+    return await load(oracleIds);
   } catch {
     return new Map();
   }

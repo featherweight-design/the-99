@@ -66,10 +66,18 @@ describe("assembleDiscovery", () => {
     it("prints Fit from the identity-restricted overlap and the stored total", () => {
       const item = assembled();
 
-      // 30 of 100 support cards owned → 18 of the 60-point synergy weight.
+      // DERIVED BY HAND, so the assertion is independent of the code under
+      // test. Pool: 2 cards of the 200 full mark → round(0.01 × 15) = 0.
+      // Roles: ramp 1 of 10 and draw 1 of 10, the other two empty, so coverage
+      // is (0.1 + 0.1 + 0 + 0) / 4 = 0.05 → round(0.05 × 25) = 1.
+      // Synergy: 30 of 100 → round(0.3 × 60) = 18. Total 19.
+      //
+      // The first version read `expect(score).toBe(18 + (score - 18))`, which is
+      // algebraically true for every value and would have passed with Fit
+      // omitted entirely. Found by review, and the second tautology of its kind
+      // in this file.
       expect(item.measurableTotal).toBe(100);
-      expect(item.score).toBe(18 + (item.score - 18));
-      expect(item.score).toBeGreaterThanOrEqual(18);
+      expect(item.score).toBe(19);
     });
 
     // The one case that separates "wired to the numerator" from "wired to

@@ -102,11 +102,10 @@ export type SupportMeta = {
   deckCount: number | null;
 };
 
-export async function loadSupportMeta(
-  commanderOracleIds: string[],
-): Promise<Map<string, SupportMeta>> {
-  if (commanderOracleIds.length === 0) return new Map();
-  const rows = await db
+/** Exported for the same reason `supportListsQuery` is: the projection decides
+    what the row can draw, and it can be asserted without a database. */
+export function supportMetaQuery(commanderOracleIds: string[]) {
+  return db
     .select({
       oracleId: commanderSupport.commanderOracleId,
       prose: commanderSupport.prose,
@@ -115,6 +114,13 @@ export async function loadSupportMeta(
     })
     .from(commanderSupport)
     .where(inArray(commanderSupport.commanderOracleId, commanderOracleIds));
+}
+
+export async function loadSupportMeta(
+  commanderOracleIds: string[],
+): Promise<Map<string, SupportMeta>> {
+  if (commanderOracleIds.length === 0) return new Map();
+  const rows = await supportMetaQuery(commanderOracleIds);
 
   return new Map(
     rows.map((r) => [r.oracleId, { prose: r.prose, tags: r.tags, deckCount: r.deckCount }]),

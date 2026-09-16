@@ -3,11 +3,20 @@ import { describe, expect, it } from "vitest";
 import { computeFit, POOL_FULL_AT, ROLES_WEIGHT, SYNERGY_WEIGHT } from "./score";
 import { ROLE_TARGETS } from "./roles";
 
-// `computeFit` IS ONLY REACHED THROUGH `scoreCommander` ELSEWHERE, and that
-// caller filters a non-positive total to null before calling — so the two
-// contracts this function documents are unreachable from every other test in
-// the repository. Both decide what the row prints, so both are exercised here
-// against the function itself. Found by the pre-open review.
+// THE TWO CONTRACTS THIS FUNCTION DOCUMENTS ARE UNREACHABLE FROM ITS OTHER
+// CALLERS' TESTS, which is why they are exercised here against the function
+// itself. Found by the pre-open review.
+//
+// `scoreCommander` filters a non-positive total to null before calling, so
+// `score.test.ts` can never reach the no-reading branch. `assembleDiscovery`
+// DOES call `computeFit` directly (`discovery/list.ts`) and passes
+// `edhrecTotal` through unfiltered — so that path can reach it, but its tests
+// assert the assembled row rather than the arithmetic, and neither the overfull
+// ratio nor a negative total is among their fixtures.
+//
+// An earlier version of this comment said `computeFit` is only reached through
+// `scoreCommander`, which was false and named by review — the direct call is one
+// I added in the same PR.
 
 const full = Object.fromEntries(
   Object.entries(ROLE_TARGETS).map(([role, target]) => [role, target]),

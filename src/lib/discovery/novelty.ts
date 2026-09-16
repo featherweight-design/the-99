@@ -168,7 +168,27 @@ export async function loadPlayedTags(userId: string): Promise<DeckTagSet[]> {
 
   // `commanderSupport.tags` is `jsonb().notNull()`, so no `?? []` on the value.
   const tagsByOracleId = new Map(support.map((s) => [s.oracleId, s.tags]));
-  return built.map((d) => ({
+  return toDeckTagSets(built, tagsByOracleId);
+}
+
+/**
+ * One tag set per deck, folding BOTH commanders' tags into it.
+ *
+ * Pure, and split out so the union is testable: the read around it needs a
+ * database, and the union is the part a regression would silently undo — a
+ * return to the primary alone reports a partner's mechanics as never played,
+ * which the gap line then says out loud. Named by review.
+ */
+export function toDeckTagSets(
+  decks: readonly {
+    name: string;
+    oracleId: string;
+    partnerOracleId: string | null;
+    colorIdentity: string[];
+  }[],
+  tagsByOracleId: ReadonlyMap<string, EdhrecTag[]>,
+): DeckTagSet[] {
+  return decks.map((d) => ({
     deckName: d.name,
     colorIdentity: d.colorIdentity,
     // One SET per deck, so a pair whose two commanders share a theme counts it

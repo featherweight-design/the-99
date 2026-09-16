@@ -48,41 +48,56 @@ const check = (label: string, ok: boolean, detail: string) => {
 
 async function main() {
   try {
-    // The largest LEGAL pool, not the largest collection. Both payloads are
-    // built from `loadCollectionPool`, which inner-joins `cards` and filters
-    // `commander_legal` — so counting raw `collection_items` can crown an
-    // account carrying a pile of illegal cards while another account has the
-    // bigger scoring pool and the bigger payload, leaving this guard blind to
-    // the worst input it has. Same join, same filter, so "largest" means the
-    // same thing here as it does downstream.
-    const { rows } = await fixture.execute<{ user_id: string; n: number }>(sql`
+    // EVERY ACCOUNT, because no collection figure bounds either payload and two
+    // attempts to find one were both wrong. Raw `collection_items` was wrong
+    // because both payloads are built from `loadCollectionPool`, which filters
+    // `commander_legal`. The legal pool was wrong too, and more interestingly:
+    // `/discover` EXCLUDES owned and built commanders, so a bigger collection
+    // yields FEWER rows, not more — the relationship is inverse, and the
+    // owned lane's row count is the commanders a reader owns and has not built,
+    // which tracks neither figure.
+    //
+    // So the subject is not chosen. Every account is measured and the worst per
+    // lane is what the budget is enforced against. There are two accounts here
+    // and this is a probe, not a request path; when that stops being cheap the
+    // honest fix is to sample deliberately and SAY so, not to pick a proxy and
+    // hope it correlates.
+    const { rows: accounts } = await fixture.execute<{ user_id: string; n: number }>(sql`
       select ci.user_id, count(distinct ci.oracle_id)::int as n
         from collection_items ci
         join cards c on c.oracle_id = ci.oracle_id and c.commander_legal
        group by ci.user_id
        order by n desc
-       limit 1
     `);
-    const subject = rows[0];
-    if (!subject) throw new Error("no collection in this database — seed one first");
-    console.log(`largest legal pool: ${subject.n} distinct commander-legal cards\n`);
+    if (accounts.length === 0) throw new Error("no collection in this database — seed one first");
+    console.log(`measuring ${accounts.length} account(s), worst per lane\n`);
 
     for (const sort of ["fit", "new"] as const) {
-      const list = await loadDiscovery(subject.user_id, { sort });
-      const encoded = encodeDiscovery(list);
-      const bytes = Buffer.byteLength(JSON.stringify(encoded));
-      const plain = Buffer.byteLength(JSON.stringify(list));
-      const withProse = list.items.filter((i) => i.prose).length;
-      const pct = ((bytes / CEILING_BYTES) * 100).toFixed(1);
+      let worst = { bytes: 0, plain: 0, rows: 0, prose: 0, user: "" };
+      for (const account of accounts) {
+        const list = await loadDiscovery(account.user_id, { sort });
+        const bytes = Buffer.byteLength(JSON.stringify(encodeDiscovery(list)));
+        if (bytes > worst.bytes) {
+          worst = {
+            bytes,
+            plain: Buffer.byteLength(JSON.stringify(list)),
+            rows: list.items.length,
+            prose: list.items.filter((i) => i.prose).length,
+            user: account.user_id,
+          };
+        }
+      }
+      const pct = ((worst.bytes / CEILING_BYTES) * 100).toFixed(1);
 
       console.log(
-        `${sort}: ${list.items.length} rows · ${withProse} with a sentence · ` +
-          `encoded ${(bytes / 1e6).toFixed(3)} MB of the ${(plain / 1e6).toFixed(3)} MB plain form`,
+        `${sort}: worst of ${accounts.length} — ${worst.rows} rows · ${worst.prose} with a ` +
+          `sentence · encoded ${(worst.bytes / 1e6).toFixed(3)} MB of the ` +
+          `${(worst.plain / 1e6).toFixed(3)} MB plain form`,
       );
       check(
         `${sort} is inside the budget`,
-        bytes <= BUDGET_BYTES,
-        `${(bytes / 1e6).toFixed(3)} MB, ${pct}% of the 2 MB ceiling ` +
+        worst.bytes <= BUDGET_BYTES,
+        `${(worst.bytes / 1e6).toFixed(3)} MB, ${pct}% of the 2 MB ceiling ` +
           `(budget ${(BUDGET_BYTES / 1e6).toFixed(1)} MB)`,
       );
       // The dictionary and the positional rows are the whole point of the
@@ -91,12 +106,12 @@ async function main() {
       // is asserted rather than only the total.
       check(
         `${sort} still compresses`,
-        bytes < plain * 0.6,
-        `${((bytes / plain) * 100).toFixed(1)}% of plain (want under 60%)`,
+        worst.bytes < worst.plain * 0.6,
+        `${((worst.bytes / worst.plain) * 100).toFixed(1)}% of plain (want under 60%)`,
       );
       // An empty list would pass every byte assertion above while proving
       // nothing, and this route has had an empty-payload regression before.
-      check(`${sort} returned rows`, list.items.length > 0, `${list.items.length} rows`);
+      check(`${sort} returned rows`, worst.rows > 0, `${worst.rows} rows`);
     }
 
     // THE OWNED LANE IS CACHED THROUGH THE SAME DATA CACHE and now carries the
@@ -105,24 +120,29 @@ async function main() {
     // reader owns — which is a reason to expect it to pass, not a reason not to
     // measure it. It ships unencoded, so there is no compression ratio to
     // assert; the total is the whole reading.
-    const rankings = await loadCommanderRankings(subject.user_id);
-    const rankBytes = Buffer.byteLength(JSON.stringify(rankings));
-    const rankProse = rankings.items.filter((i) => i.prose).length;
+    let worstOwned = { bytes: 0, rows: 0, prose: 0 };
+    for (const account of accounts) {
+      const rankings = await loadCommanderRankings(account.user_id);
+      const bytes = Buffer.byteLength(JSON.stringify(rankings));
+      if (bytes > worstOwned.bytes) {
+        worstOwned = {
+          bytes,
+          rows: rankings.items.length,
+          prose: rankings.items.filter((i) => i.prose).length,
+        };
+      }
+    }
     console.log(
-      `\ncommanders: ${rankings.items.length} rows · ${rankProse} with a sentence · ` +
-        `${(rankBytes / 1e6).toFixed(3)} MB`,
+      `\ncommanders: worst of ${accounts.length} — ${worstOwned.rows} rows · ` +
+        `${worstOwned.prose} with a sentence · ${(worstOwned.bytes / 1e6).toFixed(3)} MB`,
     );
     check(
       "the owned lane is inside the budget",
-      rankBytes <= BUDGET_BYTES,
-      `${(rankBytes / 1e6).toFixed(3)} MB, ${((rankBytes / CEILING_BYTES) * 100).toFixed(1)}% ` +
-        `of the 2 MB ceiling`,
+      worstOwned.bytes <= BUDGET_BYTES,
+      `${(worstOwned.bytes / 1e6).toFixed(3)} MB, ` +
+        `${((worstOwned.bytes / CEILING_BYTES) * 100).toFixed(1)}% of the 2 MB ceiling`,
     );
-    check(
-      "the owned lane returned rows",
-      rankings.items.length > 0,
-      `${rankings.items.length} rows`,
-    );
+    check("the owned lane returned rows", worstOwned.rows > 0, `${worstOwned.rows} rows`);
   } catch (err) {
     // A `process.exit` in the `finally` below swallows whatever threw: the
     // `finally` runs first, sees `failures === 0`, prints "all checks passed"
