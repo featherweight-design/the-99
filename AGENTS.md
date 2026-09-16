@@ -496,10 +496,15 @@ Package manager is **pnpm** (pinned via `packageManager` in package.json) — ne
   as the children of the run inside `[data-testid="modal-mana-cost"]`, never every span in
   that slot — the slot also holds the run's container and the sr-only cost, and a sweep of
   all three reads a 57px box and a lettered string belonging to neither pip, which is a probe
-  reporting its own markup as a defect. The card-view check reads the no-art pips' own
-  `data-testid` and takes its liveness from the count of tiles actually drawing ART: it used to
-  count the ownership dots beside the pips, which went stale the moment that dot moved into the
-  caption, and it then reported every tile unmarked and failed a build that was correct.
+  reporting its own markup as a defect. The card-view check reads pips over art by GEOMETRY — any
+  drawn round box whose centre lies inside the art's own rect — and takes its liveness from the
+  count of tiles actually drawing art. Both halves were paid for. It first counted the ownership
+  dots beside the pips, which went stale the moment that dot moved into the caption, and then
+  reported every tile unmarked and failed a build that was correct. Its replacement keyed on the
+  no-art pips' `data-testid`, which the component renders in the NO-ART branch alone — so
+  `pipsOverArt` could never fire for an arted tile, and a regression drawing pips over art under
+  any other wrapper would have reported a clean run. A wrapper is what the component happens to
+  use today; the rect is what the rule is about.
 
   Its last two checks are a card printing TWO costs — `split`, `adventure` and `prepare` put two
   real castable costs on one piece of stock, and this surface and `/collection/proxies` draw both. The
