@@ -121,11 +121,13 @@ const READ_COST = () => {
 };
 
 /**
- * The tiles' bottom-left slot in the deck's card view.
+ * The deck card view's tiles: how many draw art, and which of them draw pips.
  *
- * Counts the OWNERSHIP DOTS as well as the pips: the dot and the pips shared one
- * wrapper, so a run that reported zero pips because it never reached the view
- * would report zero dots too, and this is what tells the two apart.
+ * Liveness comes from the ARTED count rather than from a marker beside the pips:
+ * a run that never reached the card view reports zero pips while measuring
+ * nothing, and `arted > 0` is what tells that apart. An earlier version counted
+ * the ownership dots in the same slot for this, which went stale the moment the
+ * dot moved into the caption.
  */
 const READ_TILES = (page) => {
   const tiles = [...document.querySelectorAll(`${page} li`)].filter((li) =>
@@ -357,19 +359,26 @@ async function run() {
             titleLines: Math.round(box.height / Number.parseFloat(cs.lineHeight)),
           };
         });
-        // Desktop only. Below `md:` the name moves into the art header, where it
-        // has the full width and never competes with the cost — so there is no
-        // wrap to measure and a check would be asserting the phone's own layout.
-        if (width >= 768) {
-          failures += !report(
-            `${width}px · a wide cost takes its own line rather than wrapping the name`,
-            header !== null && header.costTop > header.titleTop && header.titleLines === 1,
-            header === null
-              ? "no header to read"
-              : `cost top ${header.costTop} against title top ${header.titleTop},`
-                + ` title on ${header.titleLines} line(s)`,
-          );
-        }
+        // BOTH widths. The name block is in this row on a phone too — the art
+        // header only takes it when `compactArt` is true, and that wants the
+        // printing picker expanded, which it is not as the modal opens.
+        //
+        // Asserted as an INVARIANT rather than as an outcome: a cost sharing the
+        // name's line means the name was not squeezed by it. Demanding the cost
+        // be on its own line would be a fact about one card — `Fire // Ice` is
+        // narrow enough to sit beside its own four pips and should — so
+        // `PROBE_SPLIT_CARD` would stop being overridable with any two-cost card
+        // the account holds. This clause fails the build the change was made
+        // for: a squeezed name wraps while the cost stays beside it.
+        failures += !report(
+          `${width}px · no cost squeezes the name onto a second line`,
+          header !== null && (header.costTop > header.titleTop || header.titleLines === 1),
+          header === null
+            ? "no header to read"
+            : `cost top ${header.costTop} against title top ${header.titleTop},`
+              + ` title on ${header.titleLines} line(s)`
+              + (header.costTop > header.titleTop ? " — cost on its own line" : " — sharing the line"),
+        );
 
         await page.keyboard.press("Escape");
       }
@@ -400,9 +409,10 @@ async function run() {
       if (await cardView.count()) await cardView.click({ timeout: 10_000 }).catch(() => {});
       await page.waitForTimeout(2_500);
       const tiles = await page.evaluate(READ_TILES, PAGE);
-      // Three clauses, and the dot is the load-bearing one: a run that never
-      // reached the card view reports zero pip runs while measuring nothing, and
-      // only the dots tell that apart from the view drawn correctly.
+      // Two clauses, and `arted` is the load-bearing one: a run that never
+      // reached the card view reports zero pips while measuring nothing, and the
+      // count of tiles actually drawing art is what tells that apart from the
+      // view drawn correctly.
       failures += !report(
         `${width}px · the card view draws no pips over art`,
         tiles.arted > 0 && tiles.pipsOverArt === 0,

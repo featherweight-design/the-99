@@ -1216,7 +1216,16 @@ export function CardModal({
                 threshold: `Find // Finality` wants 241px at 29px display and its
                 split cost 173px, which together burst the 388px column, while
                 `Smothering Tithe` at 285px plus a 57px two-pip cost does not.
-                No card loses a line it had. */}
+                No card loses a line it had.
+
+                A `flex-1` here would defeat it: a zero basis makes the row shrink
+                the name instead of wrapping, which is the defect, while the class
+                below still reads correctly. `probe:mana-symbols` measures the
+                cost's own top against the title's for that reason.
+
+                BOTH widths. The name block is in this row on a phone too — the
+                art header only takes it when `compactArt` is true, and that wants
+                the printing picker expanded. */}
             <div className="flex flex-wrap items-start justify-between gap-[12px] md:pr-[46px]">
               {/* The tag survives the collapse and moves out of the art (card-detail R2,
                   table rows 2.1-2.2): a 72px thumb has no room beneath it. It lands

@@ -987,14 +987,17 @@ block would give it a zero basis and defeat this — the row would shrink the na
 instead, which is the defect — so `probe:mana-symbols` reads the cost's own top
 against the title's rather than the class list.
 
-Desktop only by construction: below `md:` the name moves into the art header,
-where it has the full width and never competes with the cost.
+**Both widths.** The name block is in this row on a phone as well: the art
+header takes it only when the header collapses, which wants the printing picker
+expanded, and that is not the state a modal opens in. Measured at 390px,
+`Repudiate // Replicate`'s cost sits on its own line with the name whole above
+it — the same rule, at the width where the column is tightest.
 
 | Property | Mobile | Desktop |
 |----------|--------|---------|
 | flex-wrap | wrap | wrap |
-| Name block | in the art header | sizes to content, `min-w-0`, never `flex-1` |
-| Wrapped cost | — | its own line, left-aligned under the name block |
+| Name block | sizes to content, `min-w-0`, never `flex-1` — and moves to the art header only in the collapsed state | sizes to content, `min-w-0`, never `flex-1` |
+| Wrapped cost | its own line, left-aligned under the name block | its own line, left-aligned under the name block |
 
 ### Mana Pip (printed symbol)
 

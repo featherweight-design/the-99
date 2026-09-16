@@ -496,12 +496,13 @@ Package manager is **pnpm** (pinned via `packageManager` in package.json) — ne
   as the children of the run inside `[data-testid="modal-mana-cost"]`, never every span in
   that slot — the slot also holds the run's container and the sr-only cost, and a sweep of
   all three reads a 57px box and a lettered string belonging to neither pip, which is a probe
-  reporting its own markup as a defect. The card-view check counts the ownership DOTS beside
-  the pip runs, because a run that never reached the view reports zero pip runs while
-  measuring nothing.
+  reporting its own markup as a defect. The card-view check reads the no-art pips' own
+  `data-testid` and takes its liveness from the count of tiles actually drawing ART: it used to
+  count the ownership dots beside the pips, which went stale the moment that dot moved into the
+  caption, and it then reported every tile unmarked and failed a build that was correct.
 
   Its last two checks are a card printing TWO costs — `split`, `adventure` and `prepare` put two
-  real castable costs on one piece of stock, and this surface is the only one drawing both. The
+  real castable costs on one piece of stock, and this surface and `/collection/proxies` draw both. The
   load-bearing clause is the SEPARATOR rather than the pip count: a build drawing the front half
   alone paints the right pips for the wrong card, and every other check here passes over it. A
   run with no separator therefore FAILS rather than passing quietly — the fixture is a two-cost
@@ -510,10 +511,20 @@ Package manager is **pnpm** (pinned via `packageManager` in package.json) — ne
   text and no art, and a classifier that lumped them would see a separator as a pip that fell
   back to a letter.
 
-  Five mutations were run against it and all five fail: the tile's pips restored, the symbol art
+  Its last check is the header's own geometry: **no cost squeezes the name onto a second line.**
+  An INVARIANT rather than an outcome — a cost sharing the name's line means the name was not
+  squeezed by it — because demanding the cost be on its own line would be a fact about one card,
+  and `PROBE_SPLIT_CARD` is meant to take any two-cost card the account holds. `Fire // Ice` is
+  narrow enough to sit beside its own four pips and should. Read at BOTH widths: the name block is
+  in that row on a phone too, since the art header takes it only in the collapsed state, which
+  wants the printing picker expanded.
+
+  Seven mutations were run against it and all seven fail: the tile's pips restored, the symbol art
   suppressed, a typo in the slug — that one passing every DOM assertion while serving 404s, which
-  is the failure it exists for — the front half drawn alone, and a background put on the
-  separator. It makes no writes. Point it at `local-dev`.
+  is the failure it exists for — the front half drawn alone, a background put on the separator,
+  `flex-wrap` dropped from the header row, and a `flex-1` put on the name block, which leaves the
+  class list reading correctly while the row shrinks the name instead of wrapping. It makes no
+  writes. Point it at `local-dev`.
 
 - `pnpm probe:scroll-lock` presses every overlay the app draws over a scrim — the filter
   sheets on `/collection`, `/commanders`, `/discover`, `/decks` and a set page, the
