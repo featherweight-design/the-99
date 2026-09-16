@@ -748,9 +748,9 @@ describe("the page's own type, against the design table", () => {
       expect(h2.className).toContain("text-[16px]");
     }
     for (const h3 of screen.getAllByRole("heading", { level: 3 })) {
-      expect(h3.className, "an h3 inherits the body weight without one").toContain(
-        "font-semibold",
-      );
+      // Tailwind's preflight gives an h3 the body weight, so the class is what
+      // produces the 600 the table specifies — not decoration on top of it.
+      expect(h3.className, "the entry title carries its own weight").toContain("font-semibold");
     }
   });
 
@@ -760,14 +760,34 @@ describe("the page's own type, against the design table", () => {
     expect(intro?.className).toContain("mt-[10px]");
   });
 
-  it("gives a plate and an inset their own padding", () => {
+  it("gives every plate and every inset its own padding, in both chassis", () => {
     // Two treatments in the canvas — 14px 16px and 12px — collapsed into one
     // row of the first table and then one blanket value in the code.
+    //
+    // EVERY frame, and both chassis. `Specimen` and `LegendBox` each carry
+    // their own padding branch, so checking the first plate and the first
+    // inset tested `Specimen` twice and `LegendBox` never — reverting the
+    // legend's branch to the old blanket value left the suite green.
     const { container } = render(<AboutPage seen={0} />);
-    const plate = container.querySelector('[data-width="plate"]');
-    const inset = container.querySelector('[data-width="inset"]');
-    expect(plate?.className).toContain("px-[16px]");
-    expect(plate?.className).toContain("py-[14px]");
-    expect(inset?.className).toContain("p-[12px]");
+    const frames = [...container.querySelectorAll("[data-width]")];
+    expect(frames.length).toBeGreaterThan(30);
+
+    const kinds = { mountedPlate: 0, mountedInset: 0, legendPlate: 0, legendInset: 0 };
+    for (const frame of frames) {
+      const label = frame.getAttribute("data-specimen");
+      const inset = frame.getAttribute("data-width") === "inset";
+      const legend = frame.hasAttribute("data-legend");
+      if (inset) {
+        expect(frame.className, `${label} inset padding`).toContain("p-[12px]");
+      } else {
+        expect(frame.className, `${label} plate padding`).toContain("px-[16px]");
+        expect(frame.className, `${label} plate padding`).toContain("py-[14px]");
+      }
+      kinds[legend ? (inset ? "legendInset" : "legendPlate") : inset ? "mountedInset" : "mountedPlate"] += 1;
+    }
+    // Both chassis must actually be represented, or the loop above is checking
+    // one implementation twice.
+    expect(kinds.mountedPlate + kinds.mountedInset).toBeGreaterThan(0);
+    expect(kinds.legendPlate + kinds.legendInset).toBeGreaterThan(0);
   });
 });
