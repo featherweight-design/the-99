@@ -33,6 +33,31 @@ export type CandidateSqlRow = {
       The discover row prints it, and the `Popularity` order ranks on it. */
   deckCount: number | null;
   tags: EdhrecTag[];
+  /**
+   * The one accepted sentence about how this commander's decks tend to play, or
+   * null where none has been generated.
+   *
+   * It costs this query NOTHING — `commander_support` is already the driving
+   * table, so the sentence is one more column on a row being read anyway. That
+   * is the whole reason the row can carry it: 3,342 model calls per collection
+   * change would not be affordable, and none are made, because the sentence is
+   * identical for every player and so is generated once per commander.
+   *
+   * A NULL IS A LEGITIMATE OUTPUT, not a gap to be filled. The generator stores
+   * nothing when a candidate sentence fails its accept contract, and a commander
+   * whose every attempt failed keeps its null and renders with no paragraph —
+   * the state the design draws, and never a truncated sentence nobody wrote.
+   * The same is true of a commander the index has no inputs for.
+   *
+   * An earlier version of this comment called every null a fixture gap and told
+   * the reader to copy production data over it, which contradicts that contract
+   * and would overwrite a valid state. What IS environment-specific is the
+   * PROPORTION: a database generated against will have few, one never generated
+   * against will have many, and a local walk that finds most rows blank wants
+   * `pnpm db:copy:prose` before anything is concluded from it. That is a fact
+   * about the fixture, not about this column.
+   */
+  prose: string | null;
   ownedSupport: number;
   /** The same count over the player's whole collection rather than over the
       pool being ranked. Equal to `ownedSupport` unless the ranking is scoped to
@@ -98,6 +123,7 @@ export async function loadCandidates(
       edhrecTotal: commanderSupport.edhrecTotal,
       deckCount: commanderSupport.deckCount,
       tags: commanderSupport.tags,
+      prose: commanderSupport.prose,
       ownedSupport: ownedSupportColumn(),
       collectionSupport: collectionSupportColumn(collectionOracleIds != null),
     })
@@ -316,9 +342,46 @@ function ownedSupportTable(ownedOracleIds: string[], commanderIds?: string[]) {
                 from ${commanderSupportCards} csc
                 join unnest(${owned}::uuid[]) as owned(oracle_id)
                   on owned.oracle_id = csc.oracle_id
+                ${IDENTITY_RESTRICTION}
                ${commanderScope(commanderIds)}
                group by csc.commander_oracle_id) as osc`;
 }
+
+/**
+ * Only support cards the commander can legally play.
+ *
+ * WITHOUT THIS THE COUNT IS NOT THE ONE THE DETAIL PAGE PRINTS, which is the
+ * whole of Ruling D. `scoreCommander` takes its numerator from
+ * `supportOverlap(support, commanderPool(commander, collection))`, and
+ * `commanderPool` filters the collection to the commander's colour identity —
+ * so a figure counted without that filter is a different figure, and the row
+ * and the detail page it links to disagree about the same commander.
+ *
+ * The effect is CONCENTRATED rather than spread, which is why it survived this
+ * long: EDHREC's list for a coloured commander is already identity-legal, so
+ * the predicate removes almost nothing there. Measured on local-dev against the
+ * REAL query — an earlier figure here came from a reduced one and mixed rows,
+ * cards and commanders in a single sentence — it changes the count for
+ * **2 commanders of 3,074**, by 26 and 29 support cards: 55 in total. The
+ * visible one is `Faceless One`, whose identity is empty and which read 122
+ * owned against 96 playable, a 27% overcount on exactly the kind of commander
+ * whose Fit would look too good. `probe:fit-parity` pins the pair.
+ *
+ * `<@` IS ALREADY CORRECT FOR A COLOURLESS COMMANDER and needs no special case:
+ * `{} <@ {}` is true and `{R} <@ {}` is false. `withinColorIdentity` exists
+ * because Drizzle's `arrayContained` throws on an empty JS array — a
+ * client-side limitation of a constant, not a property of the operator — and
+ * both sides here are columns.
+ *
+ * It also reaches `supportPct`, and so the novelty floor: a commander now
+ * clears 30% on what the reader can actually build rather than on cards their
+ * identity forbids. That is the same correction one layer out, not a side
+ * effect to be undone.
+ */
+const IDENTITY_RESTRICTION = sql`
+  join ${cards} sc on sc.oracle_id = csc.oracle_id
+  join ${cards} cm on cm.oracle_id = csc.commander_oracle_id
+   and sc.color_identity <@ cm.color_identity`;
 
 /**
  * Narrows an aggregate to the commanders the caller will actually project.
@@ -354,6 +417,7 @@ function collectionSupportTable(collectionOracleIds: string[], commanderIds?: st
                 from ${commanderSupportCards} csc
                 join unnest(${owned}::uuid[]) as owned(oracle_id)
                   on owned.oracle_id = csc.oracle_id
+                ${IDENTITY_RESTRICTION}
                ${commanderScope(commanderIds)}
                group by csc.commander_oracle_id) as csa`;
 }

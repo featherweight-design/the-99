@@ -3,7 +3,7 @@
 // none of it is visible from the assembly: which pool the candidate query is
 // asked against, what a failed availability read leaves behind, and which
 // collection size the subtitle reads.
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import type { Availability } from "../decks/availability";
 
 const collection = [
@@ -49,9 +49,22 @@ vi.mock("./candidates", () => ({
   loadCandidates: (...args: unknown[]) =>
     (loadCandidates as unknown as (...a: unknown[]) => unknown)(...args),
 }));
+// `readPrices`, NOT `loadPrices`. The route calls the wrapper, and the
+// wrapper closes over `loadPrices` inside its own module scope — so overriding
+// that export left the real database-backed read in place, and the wrapper's
+// catch then swallowed the failure into an empty map. The test passed while
+// reaching for a database and unable to control what prices came back. Named by
+// review, on the same PR that introduced the wrapper.
+// Mutable, so one case can fail the read. `readPrices`, NOT `loadPrices`: the
+// route calls the wrapper, and the wrapper closes over `loadPrices` inside its
+// own module scope — so overriding that export left the real database-backed
+// read in place, and the wrapper then swallowed the failure into an empty map.
+// The test passed while reaching for a database and unable to control what came
+// back. Named by review, on the PR that introduced the wrapper.
+let priceRead = { prices: new Map(), ok: true };
 vi.mock("./price", async (importOriginal) => ({
   ...(await importOriginal<typeof import("./price")>()),
-  loadPrices: async () => new Map(),
+  readPrices: async () => priceRead,
 }));
 vi.mock("./novelty", async (importOriginal) => ({
   ...(await importOriginal<typeof import("./novelty")>()),
@@ -115,5 +128,28 @@ describe("loadDiscovery — wiring", () => {
     ];
     expect(userArg).toBe("user-1");
     expect([...opts.oracleIds].sort()).toEqual(["sol-ring", "swords"]);
+  });
+});
+
+// THE FLAG HAS TO SURVIVE THE LOADER, not just the assembly. The assembly tests
+// assert whatever `priceOk` their fixture supplies, so a regression that dropped
+// `priceRead.ok` on the way through `loadDiscovery` would leave both green while
+// the cached payload lost the one signal distinguishing a failed read from a
+// genuinely unstocked printing.
+describe("loadDiscovery · the price read's status", () => {
+  afterEach(() => { priceRead = { prices: new Map(), ok: true }; });
+
+  it("carries a failed price read through to the payload", async () => {
+    priceRead = { prices: new Map(), ok: false };
+
+    const list = await loadDiscovery("user_1", { sort: "fit" });
+
+    expect(list.priceOk).toBe(false);
+  });
+
+  it("carries a healthy one, so the field is not a constant", async () => {
+    const list = await loadDiscovery("user_1", { sort: "fit" });
+
+    expect(list.priceOk).toBe(true);
   });
 });

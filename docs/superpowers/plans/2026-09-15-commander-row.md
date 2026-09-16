@@ -168,24 +168,84 @@ empty, index has since been built — that passes under the conflation.
 7. **The owned lane's two missing fields**: `deckCount` from `commander_support.deck_count`, and
    price from `loadPrices` — reused, never re-derived.
 
-## PR 4 — the unified row
+## PR 4 — the unified row · SPLIT IN TWO
 
-`rec-card.tsx` and `discovery-row.tsx` collapse into one component; both lanes adopt it; the
-five states are drawn; retired copy is deleted and the property tables quoting it corrected.
-`check:copy-drift` will fail until those tables are fixed, which is the point of it.
+`rec-card.tsx` and `discovery-row.tsx` are 1,222 lines between them, and the work adds a copy
+block, a new component, two lane adoptions, eleven retired string groups, the property tables
+quoting them and the six payload fields 3b left in place. That is over the ~20-file / ~800-line
+gate, so the boundary is named here before implementation rather than discovered mid-PR.
 
 **`FitBar` is not dead code** — `about/figures.tsx` renders it. `RoleChips` does lose every
 caller.
 
+### PR 4a — the row, on both lanes
+
+The whole visible change, and the smallest unit that puts the feature on screen.
+
+1. `commanderRowCopy` — one new block, the gap line's four forms and the foot separator. Every
+   other string is imported per the handoff's reuse manifest, never retyped.
+2. The shared row component, drawing the handoff's five states. No `"use client"`: the
+   disclosure trigger retired with the tag list, so the row has no control on it.
+3. Both lanes adopt it in the same PR. The row reads nothing lane-specific — ruling D1 — so a
+   one-lane adoption would prove nothing the second could not undo.
+4. The eleven retired string groups deleted, and **the property tables quoting them corrected
+   in the same PR.** `check:copy-drift` reads JSX text nodes as well as copy modules, so the
+   moment the row stops emitting `not in your collection` a table still quoting it is drift.
+   That coupling is why the deletions cannot wait for 4b.
+
+### PR 4b — what the old row leaves behind
+
+Mechanical, and separable because nothing on screen depends on it.
+
+1. The six payload fields 3b deliberately kept: `roleCounts`, `colorPoolSize`, `ownedSupport`,
+   `supportPct`, `tagTotal`, `nearestDeck` — plus `unplayedLabels`, `unplayedCount` and
+   `edhrecTotal`, which the gap slot and Fit replaced. `ROW_KEYS` and the encoder shrink with
+   them.
+2. `discovery-row.tsx` and `rec-card.tsx` deleted; `RoleChips` with them.
+3. A THIRD cache bump on both constants, because the payload's shape moves again. Cheap, and
+   the alternative is a warm entry whose rows carry fields the decoder no longer names.
+
+**Neither half is a stacked PR**: 4b branches from main after 4a merges.
+
 ## PR 5 — acceptance
 
-About entry and `ABOUT_VERSION` bump, probe extensions for the row's own rulings, contact sheet
-over both lanes at both widths, and the close-out walk.
+Probe extensions for the row's own rulings, contact sheet over both lanes at both widths, and
+the close-out walk.
+
+### No About work in this feature — Hugh, 2026-09-16
+
+**The About entry and the `ABOUT_VERSION` bump are OUT**, and `/about` is not touched by any PR
+here. Hugh will take it to Design separately: there are several features in flight at once and
+the entries are shifting around, so filing one from this run would be writing against a page
+whose shape is being decided elsewhere.
+
+This is the ruling AGENTS.md reserves for him — *"Design draws the entries and Hugh decides
+which features owe one"*, and he may overrule that file. `feature-acceptance` does not gate on
+the entry for this feature, and `about.test.ts`'s content hash stays pinned because no copy in
+`src/lib/copy/about.ts` moves.
+
+**Carried into that Design conversation, not actioned here.** The existing `discover` entry
+becomes factually false the moment PR 4 ships, and this is a different thing from declining to
+add an entry:
+
+> "Discover prints **counts, never a score** — how many of its most-played cards you already
+> own, how many decks are tracked, and how many of its top cards would be new to you."
+
+Fit **is** a score, and the row prints it. Two of that entry's three key lines go with it (the
+headline-count line, and the "new to you" line the mechanic gap slot replaces). The
+`/commanders` entries survive — `fit-score` describes the three-part arithmetic and
+`commander-lane` describes `Build from`, neither of which moves — but they deserve the same
+re-read whenever the About round happens.
+
+Nothing mechanical will catch this: the content hash notices an edit to that copy and cannot
+notice that unedited copy has stopped being true.
 
 ---
 
 ## Fixture note, for every PR from 3 onward
 
-`pnpm db:copy:prose` against local-dev first. It holds **1,070 of 3,279** sentences against
-production's 3,341 of 3,342, so two thirds of rows render as `No sentence` until that runs —
-a fixture gap that reads exactly like a bug.
+`pnpm db:copy:prose` against local-dev first. Production holds 3,341 of 3,342 sentences.
+Local-dev held **1,070 of 3,279** until the copy was run on 2026-09-16, which installed 2,778;
+**501 rows keep their null** (inputs the target no longer has) and render with no paragraph,
+which is the state the design draws rather than a fixture gap. Before that run two thirds of
+rows drew empty, which reads exactly like a bug.

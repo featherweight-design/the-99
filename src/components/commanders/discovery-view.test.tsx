@@ -58,6 +58,7 @@ const list = (over: Partial<DiscoveryList> = {}): EncodedDiscovery =>
     hasDecks: true,
     deckIdentities: [],
     availOk: true,
+    priceOk: true,
     sort: "fit",
     ...over,
   });
@@ -75,6 +76,10 @@ const item = (over: Partial<DiscoveryList["items"][number]>): DiscoveryList["ite
   colorPoolSize: 34,
   roleCounts: { ramp: 0, draw: 0, removal: 0, wipes: 0 },
   price: { kind: "absent" },
+  prose: null,
+  gapSlot: { kind: "noMechanics" },
+  score: 58,
+  measurableTotal: 100,
   tagTotal: 4,
   unplayedLabels: [],
   unplayedCount: 0,

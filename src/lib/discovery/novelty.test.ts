@@ -1,8 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { discoveryCopy } from "../copy/commander-discovery";
-import {
-  byFit, byNovelty, clearsFloor, floorPct, nearestDeck, orderDeckSets, unplayedTags,
-} from "./novelty";
+import { byFit, byNovelty, clearsFloor, commanderIdsIn, floorPct, nearestDeck, orderDeckSets, toDeckTagSets, unplayedTags } from "./novelty";
 
 const tag = (slug: string, count = 1) => ({ slug, label: slug.toUpperCase(), count });
 
@@ -141,5 +139,80 @@ describe("orderings", () => {
   it("novelty sorts on unplayed tags, then overlap, then id", () => {
     const rows = [r("a", 90, 1), r("b", 10, 4), r("c", 50, 4)];
     expect(rows.sort(byNovelty).map((x) => x.oracleId)).toEqual(["c", "b", "a"]);
+  });
+});
+
+// THE PARTNER'S TAGS COUNT. `notBuiltBy` — which decides who reaches this lane
+// at all — matches `commander_oracle_id` OR `partner_oracle_id`, so a commander
+// in a deck's partner slot is already one the reader has built. Reading only the
+// primary reported that deck's partner-side mechanics as never played, and the
+// gap line said so out loud. A regression back to the primary alone is invisible
+// in every other test here, which is why this one exists. Named by review.
+describe("toDeckTagSets", () => {
+  const tags = new Map([
+    ["primary", [{ slug: "counters-matter", label: "Counters Matter", count: 9 }]],
+    ["partner", [{ slug: "blink", label: "Blink", count: 9 }]],
+    ["shared", [{ slug: "blink", label: "Blink", count: 9 }]],
+  ]);
+  const deck = (over: Partial<Parameters<typeof toDeckTagSets>[0][0]> = {}) => ({
+    name: "Deck", oracleId: "primary", partnerOracleId: null, colorIdentity: ["G"], ...over,
+  });
+
+  it("folds both commanders' tags into one set", () => {
+    const [set] = toDeckTagSets([deck({ partnerOracleId: "partner" })], tags);
+
+    expect([...set.slugs].sort()).toEqual(["blink", "counters-matter"]);
+  });
+
+  it("reads the primary alone when there is no partner", () => {
+    const [set] = toDeckTagSets([deck()], tags);
+
+    expect([...set.slugs]).toEqual(["counters-matter"]);
+  });
+
+  // A pair sharing a theme counts it ONCE — the same rule two decks sharing an
+  // archetype follow. A Set does this, and the case pins it so a future change
+  // to an array cannot quietly double-count.
+  it("counts a theme both commanders carry once", () => {
+    const [set] = toDeckTagSets(
+      [deck({ oracleId: "partner", partnerOracleId: "shared" })],
+      tags,
+    );
+
+    expect([...set.slugs]).toEqual(["blink"]);
+  });
+
+  // An unindexed commander contributes nothing rather than dropping the deck:
+  // it keeps its name and identity for the built clause to count against.
+  it("keeps a deck whose commanders are unindexed, with an empty set", () => {
+    const [set] = toDeckTagSets([deck({ oracleId: "missing", partnerOracleId: "gone" })], tags);
+
+    expect(set.slugs.size).toBe(0);
+    expect(set.deckName).toBe("Deck");
+    expect(set.colorIdentity).toEqual(["G"]);
+  });
+});
+
+// THE LOOKUP'S ID LIST, which `toDeckTagSets` cannot cover: it folds only tags
+// the read fetched, so dropping `partnerOracleId` here omits a partner's tags in
+// production while every fold test still passes. Named by review, on the
+// extraction that was supposed to close this.
+describe("commanderIdsIn", () => {
+  it("names both slots", () => {
+    expect(commanderIdsIn([{ oracleId: "a", partnerOracleId: "b" }]).sort()).toEqual(["a", "b"]);
+  });
+
+  it("drops a null partner rather than carrying it", () => {
+    expect(commanderIdsIn([{ oracleId: "a", partnerOracleId: null }])).toEqual(["a"]);
+  });
+
+  // One read, so an id two decks share is asked for once.
+  it("deduplicates across decks and across slots", () => {
+    const ids = commanderIdsIn([
+      { oracleId: "a", partnerOracleId: "b" },
+      { oracleId: "b", partnerOracleId: "a" },
+    ]);
+
+    expect(ids.sort()).toEqual(["a", "b"]);
   });
 });

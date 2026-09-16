@@ -9,7 +9,7 @@
 // correlated subquery.
 import { describe, expect, it } from "vitest";
 import { PgDialect } from "drizzle-orm/pg-core";
-import { supportListsQuery } from "./support-read";
+import { supportListsQuery, supportMetaQuery } from "./support-read";
 
 const dialect = new PgDialect();
 const rendered = (ids: string[]) => dialect.sqlToQuery(supportListsQuery(ids).getSQL()).sql;
@@ -53,6 +53,28 @@ describe("supportListsQuery", () => {
   });
 
   it("filters to the commanders asked about", () => {
+    expect(sql).toMatch(/in \(/i);
+  });
+});
+
+// THE ROW'S THREE COLUMNS. A projection or predicate regression here leaves the
+// suite green and silently removes the sentence, the gap slot's input or the
+// deck count from every owned-lane row — `rankings.test.ts` mocks this loader
+// and the payload probe only counts bytes. Named by review.
+describe("supportMetaQuery", () => {
+  const sql = dialect.sqlToQuery(supportMetaQuery(["a", "b"]).getSQL()).sql;
+
+  it("projects the three columns the row draws, and no card list", () => {
+    expect(sql).toMatch(/"?prose"?/i);
+    expect(sql).toMatch(/"?tags"?/i);
+    expect(sql).toMatch(/"?deck_count"?/i);
+    // The point of being separate from `supportListsQuery`: this one must not
+    // reach the child table, which is hundreds of rows per commander.
+    expect(sql).not.toMatch(/commander_support_cards/i);
+  });
+
+  it("narrows to the ids it was given rather than reading the table", () => {
+    expect(sql).toMatch(/where/i);
     expect(sql).toMatch(/in \(/i);
   });
 });

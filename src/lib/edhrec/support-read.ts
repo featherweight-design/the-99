@@ -7,6 +7,7 @@ import { inArray, sql } from "drizzle-orm";
 import { db } from "../../db";
 import { commanderSupport } from "../../db/schema";
 import type { SupportList } from "./support-overlap";
+import type { EdhrecTag } from "./parse";
 
 /**
  * The SQL, exported so its shape can be asserted without a database.
@@ -73,4 +74,55 @@ export async function loadSupportLists(
   if (commanderOracleIds.length === 0) return new Map();
   const rows = await supportListsQuery(commanderOracleIds);
   return new Map(rows.map((r) => [r.oracleId, { total: r.total, oracleIds: r.oracleIds }]));
+}
+
+/**
+ * The commander-level facts the shared row draws, for a set of commanders.
+ *
+ * The owned lane needs this and the discover lane does not: `loadCandidates`
+ * drives off `commander_support` and so has these columns already, while the
+ * owned lane's list comes from `commander_scores` — a per-user cache that holds
+ * scoring figures and nothing about the commander itself.
+ *
+ * SEPARATE FROM `loadSupportLists` because they are read for different reasons
+ * and cost different amounts. That one aggregates `commander_support_cards`,
+ * hundreds of rows per commander, to score with; this one is three columns off
+ * one row per commander, to draw with. Folding them would make every row-draw
+ * pay for an aggregate it never reads.
+ *
+ * These columns are NOT per-user, which is why they are read here rather than
+ * stored on `commander_scores`: one sentence and one tag list serve every
+ * player, and copying them per reader into a cache invalidated by that reader's
+ * collection would store the same text thousands of times and rewrite it on
+ * every upload.
+ */
+export type SupportMeta = {
+  prose: string | null;
+  tags: EdhrecTag[];
+  deckCount: number | null;
+};
+
+/** Exported for the same reason `supportListsQuery` is: the projection decides
+    what the row can draw, and it can be asserted without a database. */
+export function supportMetaQuery(commanderOracleIds: string[]) {
+  return db
+    .select({
+      oracleId: commanderSupport.commanderOracleId,
+      prose: commanderSupport.prose,
+      tags: commanderSupport.tags,
+      deckCount: commanderSupport.deckCount,
+    })
+    .from(commanderSupport)
+    .where(inArray(commanderSupport.commanderOracleId, commanderOracleIds));
+}
+
+export async function loadSupportMeta(
+  commanderOracleIds: string[],
+): Promise<Map<string, SupportMeta>> {
+  if (commanderOracleIds.length === 0) return new Map();
+  const rows = await supportMetaQuery(commanderOracleIds);
+
+  return new Map(
+    rows.map((r) => [r.oracleId, { prose: r.prose, tags: r.tags, deckCount: r.deckCount }]),
+  );
 }

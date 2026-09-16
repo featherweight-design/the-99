@@ -75,3 +75,54 @@ export async function loadPrices(oracleIds: string[]): Promise<Map<string, Price
   // quietly absorb a real change in the query's shape.
   return new Map(rows.map((r) => [r.oracleId, r]));
 }
+
+/**
+ * `loadPrices`, and whether it READ — never a silent empty map.
+ *
+ * A PRICE FAILURE MUST NOT BECOME A CACHED CLAIM. Both lanes assemble inside
+ * `cacheForUser`, so a result computed from a failed read is stored for up to
+ * the hour ceiling: an empty map makes every row draw `absent`, which this
+ * module defines as a printing the feed has never carried. That is a statement
+ * about the market, it stays wrong after prices recover, and nothing
+ * distinguishes it from the truth. An earlier version of this wrapper returned
+ * the bare map and argued the absence "makes no claim"; it does.
+ *
+ * So the read's status travels with it, and the surface omits the figure rather
+ * than asserting absence — which is ruling D3 of the commander-row handoff, *a
+ * figure with no reading is omitted, never zeroed*, applied to the reading
+ * itself rather than to the value. Omitting needs no new drawn state: it is the
+ * `Unpriced` state the row already has.
+ *
+ * Still soft rather than thrown, for round 1's reason: every row draws without a
+ * price, so taking two whole routes down over the cheapest figure on them is the
+ * wrong trade. What changes is that the lost read is now VISIBLE in the payload
+ * instead of being indistinguishable from a sold-out card.
+ */
+export type PriceRead = {
+  prices: Map<string, PriceAggRow>;
+  /** False when the read failed. The surface omits every price figure rather
+      than drawing `absent`, and a fresh payload after the hour ceiling — or
+      after any write that drops the tag — reads prices again. */
+  ok: boolean;
+};
+
+export async function readPrices(
+  oracleIds: string[],
+  /**
+   * The read, injectable ONLY so the failure path can be tested.
+   *
+   * Not stylistic: a spy on this module's own export cannot intercept an
+   * internal call, so `vi.spyOn(priceModule, "loadPrices")` left the real
+   * database-backed read in place. The rejection case then passed because that
+   * read threw on its own — green for a reason unrelated to the spy — and the
+   * success case failed outright. The same binding is why `list-wiring.test.ts`
+   * mocking `loadPrices` never reached this wrapper.
+   */
+  load: (ids: string[]) => Promise<Map<string, PriceAggRow>> = loadPrices,
+): Promise<PriceRead> {
+  try {
+    return { prices: await load(oracleIds), ok: true };
+  } catch {
+    return { prices: new Map(), ok: false };
+  }
+}

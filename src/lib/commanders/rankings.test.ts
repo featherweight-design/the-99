@@ -1,0 +1,203 @@
+import { beforeEach, describe, expect, it, vi } from "vitest";
+
+// THE ENRICHMENT HAD NO BEHAVIOUR TEST — only the cache constants were pinned,
+// and the payload probe counts bytes and rows. So a regression in any of the
+// three reads, or in the missing-metadata fallbacks, would have served wrong
+// prose, gap slots, deck counts or prices with the suite green. Found by the
+// pre-open review.
+//
+// Mocked at the module boundary rather than against a database: what is under
+// test is the JOIN this function performs between four sources, and every one of
+// them is proved elsewhere (`loadSupportMeta` by its own query shape,
+// `gapSlotFor` by `gap-slot.test.ts`, the prices by `price.test.ts`).
+vi.mock("../recs/ranked-list", () => ({ getRankedList: vi.fn() }));
+vi.mock("../recs/recommend", () => ({ loadCollectionPool: vi.fn() }));
+vi.mock("../decks/availability-query", () => ({ loadAvailability: vi.fn() }));
+vi.mock("../recs/free-ranking", () => ({ rankFree: vi.fn() }));
+vi.mock("../edhrec/support-read", () => ({ loadSupportMeta: vi.fn() }));
+vi.mock("../discovery/novelty", () => ({ loadPlayedTags: vi.fn() }));
+vi.mock("../discovery/price", async (orig) => ({
+  ...(await orig<typeof import("../discovery/price")>()),
+  readPrices: vi.fn(),
+}));
+
+import { commanderRankingsKey, loadCommanderRankings } from "./rankings";
+import { discoveryKey } from "../discovery/list";
+import { getRankedList } from "../recs/ranked-list";
+import { loadCollectionPool } from "../recs/recommend";
+import { loadAvailability } from "../decks/availability-query";
+import { rankFree } from "../recs/free-ranking";
+import { loadSupportMeta } from "../edhrec/support-read";
+import { loadPlayedTags } from "../discovery/novelty";
+import { readPrices } from "../discovery/price";
+
+const item = (oracleId: string, over: Record<string, unknown> = {}) => ({
+  oracleId, slug: oracleId, name: oracleId.toUpperCase(),
+  typeLine: "Legendary Creature", colorIdentity: ["G"],
+  colorPoolSize: 100, roleCounts: { ramp: 1, draw: 1, removal: 1, wipes: 1 },
+  edhrecOwnedCount: 10, edhrecTotal: 100,
+  fitPool: 8, fitRoles: 5, fitSynergy: 6, synergyState: "ok" as const,
+  score: 19, rankScore: 19, measurableTotal: 100,
+  imageUri: null, artCropUri: null, receipts: "", ...over,
+});
+
+describe("loadCommanderRankings · the row's four joined fields", () => {
+  beforeEach(() => {
+    // Implementations alone are not enough: without this the CALL COUNTS
+    // accumulate across cases, and the no-candidates case read 5 calls from
+    // its predecessors while asserting none.
+    vi.clearAllMocks();
+    vi.mocked(getRankedList).mockResolvedValue({
+      items: [item("a"), item("b")],
+      degraded: false, uniqueCardsRead: 10, candidateCount: 2,
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    } as any);
+    vi.mocked(loadCollectionPool).mockResolvedValue({ collection: [] as never[] } as never);
+    vi.mocked(loadAvailability).mockResolvedValue(new Map());
+    vi.mocked(rankFree).mockResolvedValue({ ok: false } as never);
+    vi.mocked(loadPlayedTags).mockResolvedValue([
+      { deckName: "Zur", colorIdentity: ["W"], slugs: new Set(["blink"]) },
+    ]);
+    vi.mocked(readPrices).mockResolvedValue({ prices: new Map(), ok: true });
+    vi.mocked(loadSupportMeta).mockResolvedValue(new Map());
+  });
+
+  it("carries the sentence, the deck count and the gap slot off the metadata", async () => {
+    vi.mocked(loadSupportMeta).mockResolvedValue(
+      new Map([
+        ["a", { prose: "A grinds counters.", deckCount: 1000,
+                tags: [{ slug: "counters-matter", label: "Counters Matter", count: 500 }] }],
+      ]),
+    );
+
+    const { items } = await loadCommanderRankings("user_1");
+
+    expect(items[0].prose).toBe("A grinds counters.");
+    expect(items[0].deckCount).toBe(1000);
+    expect(items[0].gapSlot).toEqual({ kind: "unplayed", labels: ["Counters Matter"] });
+  });
+
+  // THE FALLBACK PATH, and the reason it is not a `?? {}` at the call site: a
+  // commander scored but absent from `commander_support` is a real state — the
+  // score comes from a per-user cache and the index is rebuilt monthly. Its gap
+  // slot must be `noMechanics`, decided by the classifier from an empty tag
+  // list, never `allPlayed` — which would assert the reader plays everything a
+  // commander with nothing on file leans on.
+  it("draws noMechanics for a commander with no support row", async () => {
+    const { items } = await loadCommanderRankings("user_1");
+
+    expect(items[0].prose).toBeNull();
+    expect(items[0].deckCount).toBeNull();
+    expect(items[0].gapSlot).toEqual({ kind: "noMechanics" });
+  });
+
+  it("reads the gap slot against THIS reader's played tags", async () => {
+    vi.mocked(loadSupportMeta).mockResolvedValue(
+      new Map([
+        ["a", { prose: null, deckCount: 1000,
+                tags: [{ slug: "blink", label: "Blink", count: 500 }] }],
+      ]),
+    );
+
+    const { items } = await loadCommanderRankings("user_1");
+
+    // `blink` is the fixture deck's tag, so the reader already plays it.
+    expect(items[0].gapSlot).toEqual({ kind: "allPlayed" });
+  });
+
+  // PRICEOK IS THE WHOLE POINT OF THE SOFT READ. Without it a failed read is
+  // cached for up to the hour ceiling as `absent`, which means the feed has
+  // never carried the printing — a claim about the market that a lost read has
+  // no standing to make. Every other mock here returns ok:true, so a wiring
+  // change that dropped the flag would leave the suite green.
+  it("reports a failed price read in the payload", async () => {
+    vi.mocked(readPrices).mockResolvedValue({ prices: new Map(), ok: false });
+
+    const { items, priceOk } = await loadCommanderRankings("user_1");
+
+    expect(priceOk).toBe(false);
+    // The rows still carry a slot; it is the SURFACE that must omit it. A row
+    // with no slot at all would be a second way to say the same thing.
+    expect(items[0].price.kind).toBe("absent");
+  });
+
+  it("reports a healthy price read too, so the flag is not a constant", async () => {
+    const { priceOk } = await loadCommanderRankings("user_1");
+
+    expect(priceOk).toBe(true);
+  });
+
+  it("slots the price per commander, and absent where the feed has none", async () => {
+    vi.mocked(readPrices).mockResolvedValue({
+      prices: new Map([["a", { oracleId: "a", liveCents: 1499, everPriced: true, live: true }]]),
+      ok: true,
+    } as never);
+
+    const { items } = await loadCommanderRankings("user_1");
+
+    expect(items[0].price.kind).toBe("priced");
+    expect(items[1].price.kind).toBe("absent");
+  });
+
+  // Every read is keyed on the listed commanders, so a list of two must not ask
+  // for the whole catalogue.
+  it("asks for metadata and prices by the ids it is about to draw", async () => {
+    await loadCommanderRankings("user_1");
+
+    expect(vi.mocked(loadSupportMeta)).toHaveBeenCalledWith(["a", "b"]);
+    expect(vi.mocked(readPrices)).toHaveBeenCalledWith(["a", "b"]);
+  });
+
+  // No candidates means the page draws its empty state, and the three reads are
+  // skipped rather than made against an empty id list.
+  it("makes no row reads when there are no candidates", async () => {
+    vi.mocked(getRankedList).mockResolvedValue({
+      items: [], degraded: false, uniqueCardsRead: 0, candidateCount: 0,
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    } as any);
+
+    const { items } = await loadCommanderRankings("user_1");
+
+    expect(items).toEqual([]);
+    expect(vi.mocked(loadSupportMeta)).not.toHaveBeenCalled();
+    expect(vi.mocked(readPrices)).not.toHaveBeenCalled();
+  });
+});
+
+
+// BOTH CACHE VERSIONS, PINNED TOGETHER, and that pairing is the whole point.
+//
+// The two payloads are cached under separate constants in separate modules and
+// are dropped independently, which `rankings.ts` itself calls "the state nobody
+// thinks to check" — a release that changes the row's shape and bumps one leaves
+// warm entries of the other decoding into items with no sentence, no gap slot
+// and no headline figure.
+//
+// Nothing else asserts the owned lane's version. `discoveryKey` had its literal
+// pinned in `discovery/list.test.ts` and `commanderRankingsKey` had nothing, so
+// reverting that half would have failed no test — found by the pre-open review.
+// Asserting the pair in one case means a reader editing either sees both lines
+// and has to decide about both.
+//
+// This is a CHANGE DETECTOR on purpose, of the same kind as `about.test.ts`'s
+// content hash: there is no invariant relating these two numbers, and the value
+// of the case is that a bump cannot be incidental.
+//
+// IT HAS ALREADY EARNED ITSELF. #702 took `commanderRankingsKey` to v6 while
+// this branch was in review, and this case is what forced the collision to be
+// noticed and resolved as v7 — rather than both releases sharing a key, which
+// would have served every reader whose entry #702 wrote a payload with no
+// sentence, no gap slot and no headline figure.
+describe("the list caches' payload versions", () => {
+  it("pins both, so a pair bumped half-way fails", () => {
+    expect(commanderRankingsKey).toEqual(["commander-rankings", "v7"]);
+    expect(discoveryKey("fit")).toEqual(["discovery", "fit", "v4"]);
+  });
+
+  // The sort rides in the key beside the version, so two sorts cannot share an
+  // entry — a property of the key's shape rather than of either number.
+  it("keeps the two discovery sorts apart at the same version", () => {
+    expect(discoveryKey("new")).not.toEqual(discoveryKey("fit"));
+    expect(discoveryKey("new")).toContain("v4");
+  });
+});

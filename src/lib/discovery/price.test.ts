@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { slotFor } from "./price";
+import { readPrices, slotFor } from "./price";
 
 describe("slotFor", () => {
   it("row 1/2 — a live priced printing prints the figure", () => {
@@ -35,5 +35,36 @@ describe("slotFor", () => {
   it("never reads a zero as free", () => {
     expect(slotFor({ oracleId: "a", liveCents: 0, everPriced: true, live: true }))
       .toEqual({ kind: "priced", cents: 0 });
+  });
+});
+
+// THE CATCH IS THE WHOLE POINT OF THE WRAPPER, and nothing exercised it: the
+// route tests mock the wrapper itself, so removing the catch left every suite
+// green while a transient price failure rejected the route's `Promise.all` and
+// took `/commanders` and `/discover` down whole. Named by review.
+//
+// `loadPrices` is mocked here rather than called, because what is under test is
+// the boundary's behaviour on a rejection and not the query.
+describe("readPrices", () => {
+  it("returns an empty map when the price read rejects", async () => {
+    const reject = () => Promise.reject(new Error("feed down"));
+
+    await expect(readPrices(["a"], reject)).resolves.toEqual({ prices: new Map(), ok: false });
+  });
+
+  // The other half, and not a formality: a wrapper that swallowed EVERYTHING
+  // would pass the case above while returning nothing on a healthy read.
+  it("passes the rows through when the read succeeds", async () => {
+    const rows = new Map([["a", { oracleId: "a", liveCents: 100, everPriced: true, live: true }]]);
+
+    await expect(readPrices(["a"], async () => rows)).resolves.toEqual({ prices: rows, ok: true });
+  });
+
+  it("hands the ids it was given to the read", async () => {
+    const seen: string[][] = [];
+
+    await readPrices(["a", "b"], async (ids) => { seen.push(ids); return new Map(); });
+
+    expect(seen).toEqual([["a", "b"]]);
   });
 });
