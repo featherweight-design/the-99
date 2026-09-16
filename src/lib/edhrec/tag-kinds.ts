@@ -141,8 +141,15 @@ export type LabelKinds = {
  * The classification itself, pure and exported for the same reason as above.
  *
  * Order matters: a format label is a format even if some creature shares its
- * name, and the mechanic bucket is the FALLBACK — which is what makes the
- * allowlist's default direction hidden rather than shown.
+ * name, and the mechanic bucket is the FALLBACK.
+ *
+ * **THE FALLBACK IS THE DANGEROUS DIRECTION, not the safe one**, and an earlier
+ * revision of this comment had it exactly backwards. Hidden-by-default protects
+ * only labels absent from the generated set — a label this function SEES and
+ * misclassifies is written into `MECHANIC_LABELS` and shown. That is precisely
+ * how `Mice`, `Werewolves`, `Cybermen` and `Pegasi` reached the allowlist. The
+ * safety here comes from the pinned counts and the per-rule invariants, never
+ * from the direction of this branch.
  */
 export function classifyLabels(
   labels: readonly string[],

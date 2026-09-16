@@ -269,3 +269,35 @@ describe("gapSlotFor", () => {
     expect(slot).toEqual({ kind: "unplayed", labels: ["Combo", "Ramp", "Reanimator"] });
   });
 });
+
+
+describe("the floor and the empty states", () => {
+  const none = new Set<string>();
+  // Real mechanics, real counts, all far below ceil(24054 * 0.005) = 121.
+  const subFloor = [
+    tag("Reanimator", 3, "reanimator"),
+    tag("Landfall", 2, "landfall"),
+    tag("Proliferate", 1, "proliferate"),
+  ];
+
+  // The distinction round 5 asked for. `noMechanics` means "no mechanic theme
+  // worth naming", which is WIDER than "the classifier found nothing": a
+  // commander whose mechanic tags all sit under the floor lands here too. Both
+  // other answers would be false — the reader plays none of those themes, so
+  // `allPlayed` is a lie, and none is nameable, so no label list can be filled.
+  // Pinned as current behaviour; the copy for it is a Design question, recorded
+  // as a follow-up rather than invented here.
+  it("reports noMechanics when every mechanic tag sits under the floor", () => {
+    expect(gapSlotFor(subFloor, 24054, none)).toEqual({ kind: "noMechanics" });
+  });
+
+  // The same tags with no deck count: the floor stands aside, so they become
+  // nameable and the slot has something to say. This is what makes the case
+  // above about the FLOOR rather than about the classifier.
+  it("names those same tags when there is no deck count to take a floor of", () => {
+    expect(gapSlotFor(subFloor, null, none)).toEqual({
+      kind: "unplayed",
+      labels: ["Reanimator", "Landfall", "Proliferate"],
+    });
+  });
+});

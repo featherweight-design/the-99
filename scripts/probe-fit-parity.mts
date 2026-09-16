@@ -39,11 +39,15 @@ import { SYNERGY_WEIGHT } from "../src/lib/recs/score";
     decisively (15 of 60 disagreed at the widest run). */
 const SAMPLE = Number(process.env.SAMPLE ?? 40);
 
+// `USER_ID` overrides; otherwise the largest collection, with the user id as a
+// tiebreak. Without that tiebreak two fixture accounts of equal size make
+// successive acceptance runs compare different collections, which is the same
+// non-determinism the sample ordering had.
 const owner = await db
   .select({ userId: collectionItems.userId, items: sql<number>`count(*)::int` })
   .from(collectionItems)
   .groupBy(collectionItems.userId)
-  .orderBy(sql`count(*) desc`)
+  .orderBy(sql`count(*) desc`, collectionItems.userId)
   .limit(1);
 if (owner.length === 0) throw new Error("no collection in this database");
 const userId = owner[0].userId;
@@ -70,12 +74,17 @@ if (candidates.length === 0) throw new Error("no discovery candidates for this a
 // commanders. Sorting by `oracleId` fixes the order; striding over it is what
 // keeps the sample spread across the whole range rather than clustered at one
 // end of it.
+// A stored `edhrec_total` of 0 is a REAL state, not a missing one — the index
+// writes `topCards.length`, which is 0 when EDHREC listed nothing at snapshot
+// time. If EDHREC has cards now, the live side returns a number while the stored
+// side has no ratio to offer, and that is a parity failure too. An earlier
+// version filtered those rows out and could never see it.
 const eligible = [...candidates]
-  .filter((c) => c.edhrecTotal != null && c.edhrecTotal > 0)
+  .filter((c) => c.edhrecTotal != null)
   .sort((a, b) => a.oracleId.localeCompare(b.oracleId));
 if (eligible.length === 0) {
   throw new Error(
-    "no candidate has a positive stored edhrec_total — nothing to compare. " +
+    "no candidate has a stored edhrec_total — nothing to compare. " +
       "Is the commander index built on this branch?",
   );
 }
@@ -88,10 +97,11 @@ if (ranked.length === 0) {
   throw new Error(`SAMPLE=${SAMPLE} selected no candidates from ${eligible.length} eligible`);
 }
 const withOverlap = ranked.filter((c) => c.ownedSupport > 0).length;
+const zeroTotals = ranked.filter((c) => c.edhrecTotal === 0).length;
 console.log(
   `comparing ${ranked.length} of ${eligible.length} eligible candidates ` +
     `(stride ${stride}) — ${withOverlap} with a non-zero stored overlap, ` +
-    `${ranked.length - withOverlap} with zero`,
+    `${ranked.length - withOverlap} with zero, ${zeroTotals} with a stored total of 0`,
 );
 if (withOverlap === 0) {
   throw new Error(
@@ -106,12 +116,16 @@ type Row = {
   liveOwned: number | null;
   storedTotal: number;
   liveTotal: number | null;
-  storedSynergy: number;
+  zeroTotal: boolean;
+  storedSynergy: number | null;
   liveSynergy: number | null;
 };
 
-const synergyOf = (owned: number, total: number): number =>
-  Math.round((owned / total) * SYNERGY_WEIGHT);
+/** Null where the stored side has no ratio to offer, mirroring `scoreCommander`,
+    which leaves `fitSynergy` null rather than zeroing it. A stored null against
+    a live number is a disagreement, and is counted as one below. */
+const synergyOf = (owned: number, total: number): number | null =>
+  total > 0 ? Math.round((owned / total) * SYNERGY_WEIGHT) : null;
 
 const rows: Row[] = [];
 for (const c of ranked) {
@@ -125,6 +139,7 @@ for (const c of ranked) {
     storedTotal: c.edhrecTotal!,
     liveTotal,
     storedSynergy: synergyOf(c.ownedSupport, c.edhrecTotal!),
+    zeroTotal: c.edhrecTotal === 0,
     liveSynergy: detail?.fitSynergy ?? null,
   });
 }

@@ -317,6 +317,7 @@ word, a rule fixes the next set's tribe too.
 | `-ice` | `-ouse` | `mice` |
 | `-oes` | *drop 2* | `heroes` |
 | `-ies` | `-y` | `allies` |
+| `-(sh\|ch\|s\|x\|z)es` | *drop 2* | `foxes` |
 | `-s` | *drop 1* | `frogs`, `faeries`, `horses`, `humans`, `zombies` |
 
 Over-reduction is safe and deliberate — a form matching no creature type costs nothing — and
@@ -394,7 +395,7 @@ must not print an empty clause.
 
 - **Unit, two suites.** `gap-slot.test.ts` asserts the checked-in artifact: the counts it
   produced (**260 / 134 / 7**), the ten dual-role subtypes that must read as mechanics, one
-  case per plural rule (there are **seven**), `Eggs` / `Mounts` / `Toys` on the creature side,
+  case per plural rule (there are **eight**), `Eggs` / `Mounts` / `Toys` on the creature side,
   the four labels a card-derived vocabulary could not classify, `Cephalids` which no Scryfall
   catalog lists, the proportional floor at a null `deck_count`, and the three `GapSlot`
   branches. `tag-kinds.test.ts` asserts the generator's own two pure steps over fixtures —

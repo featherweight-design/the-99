@@ -81,6 +81,18 @@ export function eligibleMechanics(
  * both leave the label list empty, and asserting *you already play every
  * mechanic this commander leans on* about a commander with no mechanics on file
  * is the defect this feature exists to prevent, one layer down.
+ *
+ * **`noMechanics` means "no mechanic theme worth naming", which is WIDER than
+ * "the classifier found nothing".** It also covers a commander whose mechanic
+ * tags all sit under the floor. That case is currently UNREACHABLE on real data
+ * — the floor was chosen partly because it leaves the zero-eligible population
+ * exactly where no floor leaves it, at 118 — but the code has to answer for it,
+ * and both of the other answers would be false: the reader plays none of those
+ * themes, so `allPlayed` is a lie, and they are not nameable themes, so the
+ * label list cannot be filled. If it ever becomes reachable the COPY needs a
+ * Design ruling, because `discoveryCopy.untagged` says EDHREC lists no
+ * archetypes, which would then be false too. Recorded as a follow-up rather
+ * than answered here: inventing a fourth string is a design decision.
  */
 export type GapSlot =
   | { readonly kind: "unplayed"; readonly labels: string[] }
@@ -97,8 +109,12 @@ export function gapSlotFor(
   deckCount: number | null,
   played: ReadonlySet<string>,
 ): GapSlot {
+  // Both emptiness tests, in order, so the two causes are distinguishable here
+  // even though they currently draw the same member. `hasAnyMechanic` is what a
+  // future fourth state would branch on.
+  const hasAnyMechanic = tags.some((t) => isMechanic(t.label));
   const eligible = eligibleMechanics(tags, deckCount);
-  if (eligible.length === 0) return { kind: "noMechanics" };
+  if (!hasAnyMechanic || eligible.length === 0) return { kind: "noMechanics" };
 
   const unplayed = eligible
     .filter((t) => !played.has(t.slug))
