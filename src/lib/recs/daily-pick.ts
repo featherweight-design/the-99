@@ -92,10 +92,13 @@ export function dailyPicks<T>(
 
   const size = set.length;
   const order = permutation(size, userId);
-  // The account's own starting point, so two accounts on one ranking are not
-  // walking the same positions on the same days.
-  const offset = hash(`${userId}:offset`) % size;
-  const day = Math.floor(now.getTime() / DAY_MS) + offset;
+  const day = Math.floor(now.getTime() / DAY_MS);
+
+  // No per-account phase offset here, deliberately. One was written and removed:
+  // every account walks the same POSITIONS on the same day, but through its own
+  // permutation, so what it draws is already its own. Adding an offset moved
+  // nothing observable — the test that two accounts see different sequences
+  // passes identically with and without it.
 
   // `(day * count + i) % size` is distinct for every `i < count` whenever
   // `count <= size`, which the guard above has established — so a day never draws

@@ -31,7 +31,7 @@
 // changes. about.test.ts pins a content hash, so a change forces either a
 // deliberate bump or a deliberate re-pin.
 
-export const ABOUT_VERSION = 3;
+export const ABOUT_VERSION = 4;
 
 export type AboutChapter = '01' | '02' | '03' | '04';
 export type AboutWidth = 'inset' | 'plate';
@@ -221,11 +221,12 @@ export const aboutEntries: readonly AboutEntry[] = [
     route: '/',
     width: 'plate',
     caption:
-      'The two commanders you could build today that score highest, off the top nine by fit. Each card says how much of your collection fits them and how much of that is already sleeved into something else.',
+      'Two commanders you could build today, drawn from the top nine by fit and turned over daily so Home is not the same pair every morning. Each card says how much of your collection fits them and how much of that is already sleeved into something else.',
     keys: [
       'the nine are a rank cut, never a score cut — the floor moves with your collection rather than sitting at a fixed number.',
       'cards that fit, then how many are already in a committed deck. The second clause is absent at zero.',
-      'the floor is the lowest score actually shown, so the count is checkable against the lane.',
+      'the pair changes at midnight UTC and shares no commander with the day before, so all nine come up within five days.',
+      "the floor is the ninth commander's own score, so the count is checkable against the lane.",
     ],
     since: 1,
   },
