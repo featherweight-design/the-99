@@ -160,18 +160,54 @@ routes. That is precisely the reported defect, reintroduced by its own fix.
 row count for **3,340 of 3,342** commanders, differing by 1 on two of them. Both sides read the
 same underlying EDHREC list, which is what makes agreement plausible.
 
-**The numerators are not measured, and that is the half that can differ** — one resolves by id,
-the other by name, and flavor names, DFCs and names the index never resolved are exactly where
-those two part company (see #467's matching precedence). So:
+### Measured 2026-09-15: parity FAILS, and the cause is drift
 
-- **PR 1 carries a named task: measure numerator agreement** across the catalog against a real
-  collection, before anything prints a figure.
-- **If they agree, the ruling stands as written.** If they disagree on any row, the resolution
-  is to make Commander Details read the same stored counts the row does — not to teach the row
-  the name match, which would cost a per-row EDHREC read and is the thing `rankFree` already
-  refuses to do (`free-ranking.ts:105–112`).
-- **The parity probe cannot be written until this is settled**, since it would be asserting the
-  thing under question.
+`pnpm probe:fit-parity` calls the real `loadCandidates` and the real
+`scoreOneCommander` for the same commanders and compares. Over 60 candidates with a non-zero
+stored overlap:
+
+| | disagree |
+|---|---|
+| numerator — owned support | **40 / 60** |
+| denominator — EDHREC total | **39 / 60** |
+| **the resulting `fitSynergy`** | **15 / 60** |
+
+Mostly by one point; `Faceless One` reads **23 stored against 18 live**. **The divergence runs
+in both directions** — stored above live and live above stored, on different commanders — so
+this is not a resolution failure. It is **drift**: `commander_support` is a monthly snapshot
+(the `Commander index` workflow runs on the 3rd) and the live EDHREC payload changes
+continuously.
+
+So a row printing a stored-derived Fit would disagree with its own detail page on roughly a
+quarter of commanders. That is the reported defect — *"why is the score different across
+views"* — reproduced at smaller magnitude by the change meant to remove it.
+
+### Ruling D — one source of truth: every Fit reads the stored index
+
+**Settled 2026-09-15.** `scoreCommander`'s synergy overlap moves from the live EDHREC payload
+to the stored index, so `/discover`, `/commanders`, Commander Details and Home's hero all
+compute the same figure from the same rows.
+
+Three things make this smaller and better-founded than it first looks:
+
+- **Commander Details already mixes the two sources, and this removes the mix rather than
+  creating one.** Its synergy panel reads `commander_support_cards` today
+  (`app/commanders/[slug]/synergy-read.ts`) while its Fit reads the live payload — so the page
+  currently draws a card list from one source and a score from another. After this they agree.
+- **The alternative was rejected for a reason already in the tree.** Teaching the row the live
+  name match means a per-row EDHREC read across ~3,085 rows, which is exactly what `rankFree`
+  refuses to do and says so (`free-ranking.ts:105–112`).
+- **The figures become as fresh as the index and no fresher**, which is the honest cost: a
+  commander whose EDHREC list moved last week reads last month's overlap until the 3rd. Every
+  surface being wrong together is worth more than one surface being right alone, because the
+  reader can only ever compare two surfaces to each other.
+
+`probe:fit-parity` is the acceptance test for this ruling: **it must go green**, and it is
+written to exit non-zero while the two disagree, so it cannot pass by measuring nothing.
+
+**This is its own PR and it lands before the row** — see the revised boundaries below. It
+changes a figure on shipped surfaces, so it also needs the `commander_scores` writer-version
+stamp considered (`probe:writer-version`) and both cache versions bumped.
 
 `fitSynergy` is `null` where `edhrecTotal` is, and the score is **not** rescaled to fill the
 gap — a commander with no synergy read tops out at 40, and `measurableTotal` is 40 rather
@@ -353,28 +389,40 @@ must not print an empty clause.
 Named here rather than discovered during implementation, per the ~20-file / ~800-line split
 rule. No stacking — each merges to `main` before the next opens.
 
-1. **Data and arithmetic, no UI.** The tag classifier and its generator, `prose` added to both
-   lane queries, the `GapSlot` builder, Fit computed for discovery rows, the payload shape
-   change and its byte guard. Nothing user-visible moves. Three things this PR must carry that
-   are easy to miss:
-   - **The numerator-parity measurement above**, before any figure is printed.
-   - **Both cache versions bump.** There are two, in different modules, and each is dropped
-     independently: `PAYLOAD_VERSION` in `src/lib/discovery/list.ts:224` (currently 2, feeding
-     `discoveryKey`) and `PAYLOAD_VERSION` in `src/lib/commanders/rankings.ts:56` (currently
-     3). Both payloads change what they *say* for unchanged rows, which is exactly the
-     condition those constants document, and a warm entry would otherwise serve prose-less
-     rows for up to the hour ceiling to any reader who writes nothing.
+**Revised 2026-09-15, from three to five.** The original PR 1 bundled the classifier with the
+payload work and assumed Fit was a free addition. It is not: Ruling D changes a figure on every
+surface that prints one, and that cannot ride along with a payload reshape. The parity
+measurement that forced the split was itself the original PR 1's first task, so the boundary
+moved for the reason the task existed.
+
+1. **The classifier and the gap slot.** `tag-kinds.ts` and its generator, the `GapSlot`
+   builder, the 0.5% floor, and `probe:fit-parity`. Pure code and one probe; no surface reads
+   any of it, no payload changes, no figure moves. **This PR is where the parity answer comes
+   from**, which is why it carries the probe rather than the payload.
+2. **One source of truth for Fit** — Ruling D. `scoreCommander`'s synergy overlap moves to the
+   stored index, `probe:fit-parity` goes green, and `/commanders`, Commander Details and Home
+   all shift by the drift they currently carry. Needs the `commander_scores` writer-version
+   stamp considered and a reason recorded for whichever way that goes.
+3. **The payload and the lane reads.** `prose` into both lane queries, the `GapSlot` on the
+   row payload, Fit on discovery rows, the encode shape change and its byte guard. Two things
+   easy to miss:
+   - **Both cache versions bump**, in different modules and each dropped independently:
+     `PAYLOAD_VERSION` in `src/lib/discovery/list.ts:224` (currently 2, feeding `discoveryKey`)
+     and `PAYLOAD_VERSION` in `src/lib/commanders/rankings.ts:56` (currently 3). Both payloads
+     change what they *say* for unchanged rows, which is exactly the condition those constants
+     document, and a warm entry would otherwise serve prose-less rows for up to the hour
+     ceiling to any reader who writes nothing.
    - **The owned lane needs two fields it does not have.** `CommanderListItem`
      (`recommend.ts:38–62`) carries no `deckCount` and no price, so the shared row's
      popularity and price figures have no source on `/commanders` today. `deck_count` is a
-     column on `commander_support` and the price comes from `loadPrices` — which
-     `/discover` already uses and which must be reused rather than re-derived, since a
-     hand-rolled price CTE was already replaced wholesale once for getting foil, staleness
-     and stock semantics wrong.
-2. **The unified row.** `rec-card.tsx` and `discovery-row.tsx` collapse into one component;
+     column on `commander_support` and the price comes from `loadPrices` — which `/discover`
+     already uses and which must be reused rather than re-derived, since a hand-rolled price
+     CTE was already replaced wholesale once for getting foil, staleness and stock semantics
+     wrong.
+4. **The unified row.** `rec-card.tsx` and `discovery-row.tsx` collapse into one component;
    both lanes adopt it; the five states are drawn; retired copy is deleted and the property
    tables quoting it are corrected.
-3. **Acceptance.** About entry and version bump, probe extensions, contact sheet.
+5. **Acceptance.** About entry and version bump, probe extensions, contact sheet.
 
 ---
 
