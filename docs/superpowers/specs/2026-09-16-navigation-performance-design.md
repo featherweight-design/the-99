@@ -23,6 +23,11 @@ server cache or a first chunk download. Desktop 1300x900. The fixture account ho
 `collection_items` rows; Hugh's own account holds 3,239, so these numbers are if anything
 conservative.
 
+**Speculative prefetches are counted separately and excluded from the RSC column.** A request
+carrying `Next-Router-Prefetch: 1` is classified as a prefetch, never as a navigation fetch; the
+walk ran with `<Link>` prefetch enabled, so without that split a prefetch could make a 0-fetch
+budget pass or fail for the wrong reason. The permanent probe keeps the two columns.
+
 Payload sizes are `decodedBodySize` read from the browser's own resource timeline. Three earlier
 attempts at this figure — Playwright's `sizes()`, `response.body()`, and CDP `loadingFinished` —
 all reported **0 KB** for these streamed RSC responses, which reads as a free navigation. That is
@@ -77,9 +82,20 @@ its own commit history rather than taken as given.
 `staleTimes.dynamic = 30` was added in **#264** to fix this exact symptom, and it worked. What went
 wrong was not the setting: the window *exposed* write paths that had never called
 `revalidatePath` — `createDeck` revalidated nothing at all. Those were fixed, and the fix is still
-here, in `src/lib/decks/revalidate.ts` (`deckSurfaces` / `claimSurfaces`). It was retired in **#460**
-because `/collection` had moved its URL sync to `replaceState` and no longer needed it, not because
-it had proven harmful — a follow-up recorded the window as *unmeasured* and it was never revisited.
+here, in `src/lib/decks/revalidate.ts` (`deckSurfaces` / `claimSurfaces`). On why it was retired in **#460**, the repository says two things and both belong here. The commit
+message says `/collection` was the last surface leaning on the window and had moved its URL sync to
+`replaceState`. The comment left behind in `next.config.ts` states the *reason* differently and more
+strongly: the setting "is a router-wide setting, so it bought that one fix by holding a stale copy of
+every dynamic page in the app." An earlier draft of this document called the removal incidental
+cleanup. That was too dismissive of the second source, and it is corrected here.
+
+**The blast-radius objection is legitimate, and this design does not ask to reopen it.** That is the
+concrete reason the design reaches for Cache Components rather than for `staleTimes`: `staleTimes`
+has exactly one knob for every dynamic route in the app, while `'use cache: private'` sets a lifetime
+**per cached function** and the `prefetch` segment export sets a policy **per route**. A stale window
+on `/collection` no longer implies one on a deck page. What survives the correction is the narrower
+claim: the #264 window was never shown to be harmful in itself, and the missing `revalidatePath`
+calls it exposed were real bugs that are now fixed.
 
 **"A cache lives for one visit. Leaving the route unmounts it."** Obsolete. That describes a
 limitation of the hand-rolled pattern, written as a law of the framework. Under Cache Components,
@@ -107,7 +123,13 @@ Per-reader data gets a **two-layer** model, not a replacement:
 - **`cacheForUser`** (server, `unstable_cache`, 2 MB ceiling) **stays**. It is the only layer that
   helps a *first* visit, and its measured wins are real: `/discover` spent 1.1–1.6s assembling its
   payload before it was cached.
-- **`'use cache: private'`** is added on top, for the revisit. It caches a function that reads
+- **`'use cache: private'`** is added on top, for the revisit — **not on `cacheForUser` itself.**
+  That wrapper takes a `load: () => Promise<T>` callback, and a cache boundary requires serializable
+  arguments, so putting the directive on the generic wrapper would pass a function through the
+  boundary and fail. The directive goes on the **route-specific loader** behind each call site
+  (`loadBrowseCards`, the commander rankings loader, the deck detail loaders), each of which takes
+  plain serializable inputs. The implementation plan names one boundary per call site rather than
+  one shared boundary. It caches a function that reads
   `cookies()` / `headers()` / `searchParams`, and its results are held **only in browser memory,
   never stored on the server** — the right shape for an app where every payload is one player's
   collection. Mechanically: the function runs during a server render, its output rides along in the
@@ -115,20 +137,40 @@ Per-reader data gets a **two-layer** model, not a replacement:
   window. That is what turns a revisit inside the window into no round trip at all. `cacheLife({ stale })` is set at 30s minimum to keep per-link prefetch working, and
   5 minutes where the content should reach the route's App Shell.
 
+**`<Activity>` changes the invalidation contract, and that is a gap this design has to close rather
+than inherit.** Preserving a hidden route's state means a write on another route can reveal a mounted
+tree that never took a fresh server payload — and this repository has already met that edge and
+documented it: `src/components/sets/set-grid-client.tsx` explains that `revalidatePath` "does not
+refresh a mounted client route and window focus does not fire for an action taken in this tab", and
+solves it by bumping a generation the grid rechecks on. Under Cache Components that stops being one
+grid's problem and becomes the general case, with a 30s–5min private cache behind it.
+
+So every route converted in PRs 3–6 carries a **client invalidation story** alongside its cache
+lifetime: which writes can change what it shows, and how a hidden-then-revealed tree learns about
+them. The generation-bump pattern already in `set-grid-client.tsx` is the reference. Claim and
+collection writes are the cases to reason about first, because availability markers are read on
+routes other than the one that writes them. **This is proved in a browser, not asserted**: a probe
+case writes on one route, reveals another, and asserts the revealed tree shows the write. No route's
+conversion is complete without it.
+
 Per-segment `prefetch` config replaces the global knob the old rule objected to: `'force-disabled'`
 on heavy, rarely-visited routes, `'partial'` where prefetching pays.
 
 `unstable_cache` is called in exactly one place — `src/lib/cache/user-lists.ts`, inside
 `cacheForUser`. (`src/lib/decks/suggestions-read.ts` names it only in a comment; its payload is
-cached by its caller.) But **eight modules call `cacheForUser`** — `src/app/collection/page.tsx`,
+cached by its caller.) **Six modules import and call `cacheForUser`, across seven call sites** — `src/app/collection/page.tsx`,
 `collection/sets/page.tsx`, `collection/sets/[code]/page.tsx`, `commanders/page.tsx`,
-`discover/page.tsx`, `decks/[id]/page.tsx`, `src/lib/sets/read.ts`, `src/lib/edhrec/seed-index.ts` —
-so while the migration touches one implementation, it is observed at eight call sites, and two of
-those (`sets/read.ts`, `seed-index.ts`) are not page components at all. Only one route sets `dynamic`
-(`src/app/api/health/route.ts`).
+`discover/page.tsx`, and `decks/[id]/page.tsx`, which calls it **twice**. Every one is a page
+component. `src/lib/sets/read.ts` and `src/lib/edhrec/seed-index.ts` name it only in comments and are
+**not** in scope — in particular the EDHREC index job is not pulled into this plan. Only one route
+sets `dynamic` (`src/app/api/health/route.ts`).
 
-That is a narrow data layer with a wide readership, not a narrow blast radius: a change in
-`cacheForUser`'s semantics has to be checked against all eight.
+That is a narrow data layer with a wide readership: a change in `cacheForUser`'s semantics has to be
+checked against all seven call sites.
+
+This inventory was wrong twice before it was right, in the same way both times — `grep -l` matches a
+mention in a comment as readily as a call. It is stated here as imports and call sites because that
+is what a migration actually has to touch.
 
 ### §2 Payload size
 
@@ -161,9 +203,17 @@ persisted explicitly.
 
 The throwaway probe is promoted to `scripts/probe-nav-cost.mjs` with asserted budgets — a warm
 revisit inside the configured `stale` window costs 0 RSC fetches, and each route's payload stays
-under a recorded ceiling. It lands **first**, before any behavior change, and the ceilings it
-commits are the figures measured today (`/collection` 1,595.8 KB, `/discover` 951.3 KB,
-`/decks/[id]` 553.7 KB); later PRs lower them deliberately rather than negotiating them.
+under a recorded ceiling. It lands **first**, before any behavior change, and it commits a ceiling for **every route in the measured
+table, not only the big three**: `/collection` 1,595.8 KB, `/discover` 951.3 KB, `/decks/[id]`
+553.7 KB, `/commanders` 174.7 KB, `/` 29.5 KB, `/decks` 28.3 KB. A route with no budget is a route
+whose regression passes a green gate. Later PRs lower these deliberately rather than negotiating
+them.
+
+**PR 1 runs in baseline mode, and its probe must pass on today's build.** The zero-fetch assertion
+describes the *finished* state — today every revisit costs exactly 1 fetch, so a probe asserting 0 on
+an unchanged app would fail the one PR that is defined as changing no behavior. Baseline mode records
+the current fetch count per route as the expected value. Each route's zero-fetch assertion is enabled
+by the PR that converts that route, and not before.
 A browser probe is this repository's standard of proof for a change of this kind, and it doubles as
 the regression gate.
 
