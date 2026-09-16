@@ -79,12 +79,22 @@ described as its four hardest plates. The number was not checked before it was w
 artifact here would have contradicted it — the inventory photographed the figures that existed, so
 the sheet confirmed the scope back to its author.
 
-Of the 34, four mount an app component with fixture props and the rest are legends. That split is
-the settled rule rather than a shortfall: a figure reproducing a surface becomes a second copy of it
-and drifts an edit at a time, and `DecklistRow`, `DeckCard` and `RoleCounterStrip` all take deck
-ids, mutation handlers and card records a reference page has none of. Every mark in a legend comes
-from the surface's own copy module, and `figures.test.ts` fails when one duplicates a shipped
-string.
+**Seventeen are `Specimen`-rooted and seventeen are `Legend`-rooted.** This record said "four mount
+and the rest are legends" — wrong again, and wrong in the paragraph correcting a previous wrong
+count, which is the second time a figure here was written down without being counted. The seventeen
+range from mounting a whole surface as-is (`SetCell`, `CommitmentsCard`, `GameAxisCell`,
+`RoleChips`) to composing the app's own leaf components into an arrangement this page owns (the
+marks legend, the card-detail cells, the buy-tag states).
+
+The split is a settled rule rather than a shortfall: a figure reproducing a surface becomes a second
+copy of it and drifts an edit at a time, and `DecklistRow`, `DeckCard` and `RoleCounterStrip` all
+take deck ids, mutation handlers and card records a reference page has none of.
+
+`figures.test.ts` fails when a legend's mark **duplicates a string the app already ships**. It does
+not require every mark to come from a copy module: `draft`, `63 / 99` and `a shelf` are this page's
+own annotation, which no module owns and the grammar allows. The rule is narrower than "read it
+from copy" and that is deliberate — a machine cannot tell an annotation from a label by shape, but
+it can tell whether the app already says it.
 
 ## The gate that was skipped
 

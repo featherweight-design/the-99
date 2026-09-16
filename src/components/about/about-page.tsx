@@ -171,10 +171,10 @@ export function AboutPage({ seen, next }: { seen: number; next?: string }) {
         </p>
       )}
 
-      <h1 className="font-display text-[24px] leading-[1.2] text-[color:var(--fg)] min-[1000px]:text-[29px]">
+      <h1 className="font-display text-[24px] leading-[1.2] font-bold text-[color:var(--fg)] min-[1000px]:text-[29px]">
         {aboutCopy.pageTitle}
       </h1>
-      <p className="mt-[6px] text-[13.5px] leading-[1.55] text-[color:var(--fg-muted)]">
+      <p className="mt-[10px] text-[13.5px] leading-[1.55] text-[color:var(--fg-muted)]">
         {aboutCopy.pageIntro}
       </p>
 
@@ -186,7 +186,7 @@ export function AboutPage({ seen, next }: { seen: number; next?: string }) {
           id={`chapter-${n}`}
           className="mt-[28px] border-t border-solid border-[color:var(--border)] pt-[18px] scroll-mt-[20px]"
         >
-          <h2 className="font-display text-[19px] text-[color:var(--fg)] min-[1000px]:text-[21px]">
+          <h2 className="font-display text-[19px] font-bold text-[color:var(--fg)] min-[1000px]:text-[21px]">
             <span className="font-mono text-[12px]">
               {n}
             </span>{" "}

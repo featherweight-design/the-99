@@ -25,6 +25,19 @@ they are not looking at the table, because nobody had written it.
 | 4 | `about-page.tsx` | key line | font-size | 10.5px | 11px | 10.5px |
 | 5 | `specimen.tsx` | frame | padding | 14px 16px | 14px | 14px 16px |
 | 6 | `contents-rail.tsx` | rail | top | 0 | 24px | 0 |
+| 7 | `about-page.tsx` | h1 | font-weight | 700 | 400 (preflight) | `font-bold` |
+| 8 | `about-page.tsx` | h2 | font-weight | 700 | 400 (preflight) | `font-bold` |
+| 9 | `about-page.tsx` | h1 → intro | separation | 10px | 6px | 10px |
+
+Rows 7–9 were found by REVIEW, not by this pass, and that is the finding worth keeping. The table
+records weight 700 on both headings; the verification pass wrote that row and then read past it,
+and Tailwind's preflight gives an `h1` and an `h2` the body weight, so `font-display` alone
+rendered them at 400 while the table above claimed 700.
+
+That is exactly the attention drift the skill's three-agent split exists to prevent, happening in
+the way it predicts when one reader enumerates and verifies in sequence. The method note at the top
+of the property table says the protection was lost; this is what it cost. A row a machine can check
+is now checked by one — `about-page.test.tsx` asserts both weights, and dropping either fails.
 
 ## Not gaps, and worth recording
 

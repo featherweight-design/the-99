@@ -724,3 +724,18 @@ describe("the commander-availability figure", () => {
     }
   });
 });
+
+describe("the page's own type, against the design table", () => {
+  // `docs/superpowers/design-tables/about.md` states weight 700 on both
+  // headings, and Tailwind's preflight gives an h1 and an h2 the BODY weight —
+  // so `font-display` alone rendered them at 400 while the table said 700 and
+  // the verification pass that wrote the table read past it. A row a machine
+  // can check should not be left to a reader who has just written it down.
+  it("gives both headings the weight the table specifies", () => {
+    render(<AboutPage seen={0} />);
+    const h1 = screen.getByRole("heading", { level: 1 });
+    expect(h1.className).toContain("font-bold");
+    const [h2] = screen.getAllByRole("heading", { level: 2 });
+    expect(h2.className).toContain("font-bold");
+  });
+});

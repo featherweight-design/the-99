@@ -15,17 +15,17 @@ attention-drift protection, which is stated here rather than left to be assumed.
 | Property | Phone | Desktop |
 |---|---|---|
 | font-family | `var(--font-display-face)` (Cinzel on Amonkhet) | same |
-| font-weight | 700 | 700 |
+| font-weight | 700 (`font-bold`) | 700 (`font-bold`) |
 | font-size | 24px | **29px** |
 | line-height | 1.2 | 1.2 |
 | color | `var(--fg)` | `var(--fg)` |
-| margin-bottom | 10px | 10px |
+| separation from the intro | 10px | 10px |
 
 ### h2 — chapter heading
 | Property | Phone | Desktop |
 |---|---|---|
 | font-family | display face | display face |
-| font-weight | 700 | 700 |
+| font-weight | 700 (`font-bold`) | 700 (`font-bold`) |
 | font-size | 19px | 21px |
 | color | `var(--fg)` | `var(--fg)` |
 
