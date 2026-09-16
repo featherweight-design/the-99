@@ -1,4 +1,10 @@
+import { dailyPicks } from "./daily-pick";
+
 // The Ready-to-build set — plan ruling 1.
+//
+// WHICH TWO OF THE NINE get cards rotates daily; see `daily-pick.ts` for why, and
+// for why it is a cycle over a per-account shuffle rather than a daily hash. The
+// SET is untouched by that, and so are both figures drawn beside it.
 //
 // Design's READINESS blocks a green on "a threshold nobody has set". There is
 // one, and it predates the refresh: the headline this section replaces read
@@ -28,7 +34,14 @@ export type ReadySlice<T> = {
   floor: number | null;
 };
 
-export function readySlice<T extends { rankScore: number }>(items: readonly T[]): ReadySlice<T> {
+export function readySlice<T extends { rankScore: number }>(
+  items: readonly T[],
+  /**
+   * Who is looking, and when. The set and its floor are the same for everyone;
+   * only WHICH two of the nine get cards depends on these — see `dailyPicks`.
+   */
+  rotation: { userId: string; now: Date },
+): ReadySlice<T> {
   // Sorted here rather than trusted from the caller: getRankedList orders by
   // rankScore today, and a floor taken from an unsorted list would be some
   // arbitrary ninth element rather than the smallest of the nine.
@@ -40,7 +53,11 @@ export function readySlice<T extends { rankScore: number }>(items: readonly T[])
   // already broken on it.
   const set = [...items].sort((a, b) => b.rankScore - a.rankScore).slice(0, READY_COUNT);
   return {
-    shown: set.slice(0, READY_SHOWN),
+    // The two cards ROTATE within the set; the set itself does not move. That
+    // keeps `moreCount` and `floor` exactly what they were — seven others in the
+    // set, and the set's own lowest score — because both are facts about the
+    // nine and neither was ever a fact about the two.
+    shown: dailyPicks(set, rotation.userId, rotation.now, READY_SHOWN),
     moreCount: Math.max(0, set.length - READY_SHOWN),
     floor: set.length === 0 ? null : set[set.length - 1].rankScore,
   };
