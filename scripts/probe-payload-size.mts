@@ -90,10 +90,25 @@ async function main() {
     // and this is a probe, not a request path; when that stops being cheap the
     // honest fix is to sample deliberately and SAY so, not to pick a proxy and
     // hope it correlates.
+    // EVERY user with a collection row, and no legality filter on the ACCOUNT
+    // SET. A third wrong subject, and the sharpest: an account holding only
+    // non-commander-legal cards has an EMPTY legal pool, so `loadCandidates([])`
+    // excludes nothing and ranks the whole index — potentially the largest
+    // payload there is. Joining `commander_legal` here dropped exactly that
+    // account from the scan.
+    //
+    // The count is kept for the log alone. It has been the wrong basis for
+    // choosing a subject three times over, which is why nothing is chosen any
+    // more.
     const { rows: accounts } = await fixture.execute<{ user_id: string; n: number }>(sql`
-      select ci.user_id, count(distinct ci.oracle_id)::int as n
+      select ci.user_id,
+             count(distinct ci.oracle_id) filter (
+               where exists (
+                 select 1 from cards c
+                  where c.oracle_id = ci.oracle_id and c.commander_legal
+               )
+             )::int as n
         from collection_items ci
-        join cards c on c.oracle_id = ci.oracle_id and c.commander_legal
        group by ci.user_id
        order by n desc
     `);
@@ -153,11 +168,20 @@ async function main() {
         worstRatio < 0.6,
         `worst ratio ${(worstRatio * 100).toFixed(1)}% of plain (want under 60%)`,
       );
-      // An empty list would pass every byte assertion above while proving
-      // nothing, and this route has had an empty-payload regression before.
-      // Read off the LEAST rows of any account, for the same reason the ratio is:
-      // the byte winner is by definition not the empty one.
-      check(`${sort} returned rows for every account`, leastRows > 0, `fewest ${leastRows} rows`);
+      // AT LEAST ONE account with rows, never every account. An empty result is
+      // a supported production state — `/commanders` draws its no-candidates
+      // state, and the `new` sort can legitimately exclude every candidate at
+      // the novelty floor — so requiring rows everywhere fails the probe on
+      // valid data. A round-3 fix over-corrected from "the byte winner" to
+      // "every account" and swapped one wrong reading for another.
+      //
+      // What this still has to catch is the run that measured NOTHING: every
+      // byte assertion above passes over an empty list.
+      check(
+        `${sort} measured a non-empty payload somewhere`,
+        worst.rows > 0,
+        `largest ${worst.rows} rows, smallest ${leastRows}`,
+      );
     }
 
     // THE OWNED LANE IS CACHED THROUGH THE SAME DATA CACHE and now carries the
@@ -184,12 +208,17 @@ async function main() {
         `${worstOwned.prose} with a sentence · ${(worstOwned.bytes / 1e6).toFixed(3)} MB`,
     );
     check(
+      "the owned lane measured a non-empty payload somewhere",
+      worstOwned.rows > 0,
+      `${worstOwned.rows} rows`,
+    );
+    check(
       "the owned lane is inside the budget",
       worstOwned.bytes <= BUDGET_BYTES,
       `${(worstOwned.bytes / 1e6).toFixed(3)} MB, ` +
         `${((worstOwned.bytes / CEILING_BYTES) * 100).toFixed(1)}% of the 2 MB ceiling`,
     );
-    check("the owned lane returned rows", worstOwned.rows > 0, `${worstOwned.rows} rows`);
+
   } catch (err) {
     // A `process.exit` in the `finally` below swallows whatever threw: the
     // `finally` runs first, sees `failures === 0`, prints "all checks passed"
