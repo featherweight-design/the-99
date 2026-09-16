@@ -45,11 +45,18 @@ import {
 
 /** The four availability states, including the one that draws nothing. */
 function AvailabilityFigure({ width }: { width: AboutWidth }) {
+  // The caption ANNOTATES; it never repeats the mark. The marker already draws
+  // its own words — `1 in a brew`, `none free`, `short 2` — so a caption
+  // echoing them reads as a stutter, which is what the close-out contact sheet
+  // showed: `◆ none free` sitting directly above the words `none free`.
+  //
+  // `free` is the exception and has to be: it draws nothing at all, so its cell
+  // would be blank without a caption saying what the blank means.
   const caption: Record<string, string> = {
-    free: "free — nothing at all",
-    soft: "in a brew",
-    hard: "none free",
-    over: "short 2",
+    free: "nothing claims it — and free carries no mark anywhere",
+    soft: "a deck you have never committed wants it",
+    hard: "a committed deck holds every copy",
+    over: "more copies are asked for than you own",
   };
   return (
     <Specimen label="availability" width={width}>
@@ -85,7 +92,7 @@ function BuyTagFigure({ width }: { width: AboutWidth }) {
   const Layout = width === "inset" ? SpecimenRows : SpecimenGrid;
   const caption: Record<string, string> = {
     priced: "a figure — stocked today",
-    foilOnly: "foil only",
+    foilOnly: "the only copies stocked are the shiny ones",
     soldOut: "stocked, none today",
     absent: "no price in the feed",
   };
@@ -248,7 +255,7 @@ function FitFigure({ width }: { width: AboutWidth }) {
 function MarksFigure({ width }: { width: AboutWidth }) {
   const rows = [
     { name: CARDS.owned, cost: COSTS.simple, a: AVAILABILITY[0].a, note: "yours, and nothing wants it" },
-    { name: CARDS.removed, cost: COSTS.crowded, a: AVAILABILITY[1].a, note: "a brew wants it" },
+    { name: CARDS.removed, cost: COSTS.crowded, a: AVAILABILITY[1].a, note: "an unfinished deck has claimed it" },
     { name: "Cyclonic Rift", cost: COSTS.simple, a: AVAILABILITY[3].a, note: "more asked for than you own" },
   ];
   return (

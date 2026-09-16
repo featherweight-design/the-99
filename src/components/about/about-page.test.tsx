@@ -220,6 +220,44 @@ describe("the figures", () => {
     expect(drawn.filter((t) => t.length > 0)).toHaveLength(3);
     expect(drawn.join(" ")).toContain("in a brew");
     expect(drawn.join(" ")).toContain("short 2");
+
+    // The no-echo rule is swept across every plate below rather than checked
+    // here — fixing it in this one plate and pinning it in this one test was
+    // the instance, not the class, and the marks and buy-tag plates were still
+    // doing it.
+  });
+
+  it("lets no availability caption repeat the mark it sits under", () => {
+    // The close-out contact sheet's finding: a cell drew `◆ none free` with
+    // the words `none free` directly beneath it. Both halves individually
+    // correct, which is why every other assertion in this file passed over it.
+    //
+    // SCOPED TO THIS PLATE, deliberately, and the scope is the honest part.
+    // Here the mark IS the whole label, so "does the caption repeat it" is a
+    // containment test. On the other plates it is not: the marks row reads
+    // `Rhystic Study 2 1 in a brew` and the buy tag `buy·$6.40 foil`, so the
+    // mark carries a card name and a price and neither string contains the
+    // other — a sweep across all five plates ran green over the same defect in
+    // two of them, which is how this comment came to be here rather than a
+    // broader loop.
+    //
+    // Those two were swept by hand and by eye on the contact sheet. This pins
+    // the one plate a machine can judge; the rest is the walk's job.
+    const { container } = render(<AboutPage seen={0} />);
+    const plate = container.querySelector('[data-specimen="availability"]')!;
+    for (const [i, cell] of [...plate.querySelectorAll(":scope > div > div")].entries()) {
+      const mark = (cell.firstElementChild?.textContent ?? "").trim();
+      const cap = (cell.lastElementChild?.textContent ?? "").trim();
+      // A mark that draws NOTHING is exempt and has to be: `free` has only its
+      // caption to say what the blank means.
+      if (mark === "") continue;
+      // Leading glyphs and counts come off — `◇ 1 in a brew` compared whole
+      // finds no overlap with `in a brew`, which IS the stutter.
+      const words = mark.replace(/^[^a-z]+/i, "").toLowerCase();
+      expect(cap.toLowerCase(), `cell ${i}: caption repeats its mark "${words}"`).not.toContain(
+        words,
+      );
+    }
   });
 
   it("draws all six statuses, each with the figure that explains it", () => {
