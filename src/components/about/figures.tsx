@@ -38,6 +38,7 @@ import { DECK_GROUPING_LABELS } from "../../lib/copy/deck-sort";
 import { BrowseFigureBody } from "./browse-figure";
 import {
   ImportFigureBody,
+  CardDetailFigureBody,
   ImportIssuesFigureBody,
   PostImportFigureBody,
 } from "./ch01-figures";
@@ -120,21 +121,24 @@ function AvailabilityFigure({ width }: { width: AboutWidth }) {
 
 /** The four claims a buy tag makes, which are not four ways of saying "cost". */
 function BuyTagFigure({ width }: { width: AboutWidth }) {
-  // An inset frame is capped at 300px, which gives a four-column grid about
-  // 55px a cell — `$2.10 foil` wraps, and the annotation under it wraps twice.
-  const Layout = width === "inset" ? SpecimenRows : SpecimenGrid;
+  // §3 draws these as a COLUMN with the caption on the tag's own line, not as
+  // a grid of cells with the caption beneath. The grid was this page's own
+  // arrangement and it cost the figure its readability: four tags stacked with
+  // a wrapped annotation under each reads as four paragraphs, where the drawing
+  // reads as one list of four claims.
   const caption: Record<string, string> = {
-    priced: "a figure — stocked today",
-    foilOnly: "the only copies stocked are the shiny ones",
-    soldOut: "stocked, none today",
-    absent: "no price in the feed",
+    priced: "a price we have",
+    foilOnly: "foil only",
+    soldOut: "stocked, none left",
+    absent: "no figure at all",
   };
   const newest = PRICES[0].fact.asOf;
   return (
     <Specimen label="buy-tag" width={width}>
-      <Layout>
+      <div className="flex flex-col gap-[9px]">
         {PRICES.map(({ state, fact }) => (
-          <SpecimenCell key={state} caption={caption[state]}>
+          <div key={state} className="flex items-center gap-[8px]">
+            {/* The route's own tag, not the canvas's drawing of one. */}
             <BuyTag
               variant="row"
               price={fact}
@@ -144,9 +148,12 @@ function BuyTagFigure({ width }: { width: AboutWidth }) {
               newestAsOf={state === "soldOut" ? new Date(newest.getTime() + 86_400_000) : newest}
               density="full"
             />
-          </SpecimenCell>
+            <span className="font-mono text-[10px] text-[color:var(--fg-faint)]">
+              {caption[state]}
+            </span>
+          </div>
         ))}
-      </Layout>
+      </div>
     </Specimen>
   );
 }
@@ -463,24 +470,7 @@ function ImportIssuesFigure({ width }: { width: AboutWidth }) {
 function CardDetailFigure({ width }: { width: AboutWidth }) {
   return (
     <Specimen label="card-detail" width={width}>
-      <SpecimenGrid>
-        <SpecimenCell caption="the printing you picked">
-          <span className="font-mono text-[12px] text-[color:var(--accent)]">✓</span>
-        </SpecimenCell>
-        <SpecimenCell caption="the one being shown now">
-          <span className="font-mono text-[12px] text-[color:var(--fg-faint)]">◇</span>
-        </SpecimenCell>
-        <SpecimenCell caption="two faces, and the back is castable">
-          <TwoFacedMark layout="transform" />
-        </SpecimenCell>
-        {/* `allFaces`, because the entry's subject is a card that prints TWO
-            costs — a modal DFC's back face is castable and the modal is the one
-            surface drawing both. The default draws the front alone, which is
-            the right pips for the wrong card. */}
-        <SpecimenCell caption="both halves, when a card prints two">
-          <CostPips cost={COSTS.twoFaced} allFaces size={COST_PIP_SIZE} />
-        </SpecimenCell>
-      </SpecimenGrid>
+      <CardDetailFigureBody />
     </Specimen>
   );
 }

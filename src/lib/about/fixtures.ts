@@ -294,3 +294,19 @@ export const REPLACE_ROWS: {
 
 /** The four doors a collection arrives through, in §3's order. */
 export const IMPORT_SOURCES = ["Moxfield", "Archidekt", "Deckbox", "ManaBox"];
+
+/**
+ * The three printings §3 draws, with the collector numbers it draws them with.
+ *
+ * The MARKS are the app's, not the canvas's. §3 labels the filled diamond "the
+ * printing you own"; the picker has never meant that — `printing-region.tsx`
+ * draws ✓ for `Your pick` and ◇ for `Shown now`, which #653 already established
+ * when sixteen captions were corrected against the app. The canvas's layout is
+ * right and its legend is stale, so the layout transfers and the meaning does
+ * not.
+ */
+export const PRINTING_ROWS: { set: string; collector: string; state: "picked" | "shown" | "plain" }[] = [
+  { set: "Commander Masters", collector: "0412", state: "picked" },
+  { set: "Double Masters", collector: "0332", state: "shown" },
+  { set: "Ravnica Allegiance", collector: "0176", state: "plain" },
+];

@@ -5,7 +5,10 @@ import { ABOUT_VERSION, aboutCopy, aboutEntries } from "../../lib/copy/about";
 import { FIGURES } from "./figures";
 import { availabilityCopy } from "../../lib/copy/availability";
 import { cardAssignmentsCopy } from "../../lib/copy/card-assignments";
+import { printingPickerCopy } from "../../lib/copy/collection";
 import {
+  IMPORT_SOURCES,
+  PRINTING_ROWS,
   ISSUE_PARSE_ERROR,
   ISSUE_UNMATCHED,
   REPLACE_ROWS,
@@ -605,11 +608,29 @@ describe("what each chapter 01 figure actually draws", () => {
     expect(el.textContent).toMatch(/grid/i);
   });
 
-  it("import: the doors, and the fact that decides whether you lose anything", () => {
+  it("import: the drop target and its two doors, as drawn", () => {
     const el = plate("import");
-    expect(el.textContent).toContain("Moxfield");
-    expect(el.textContent).toContain("ManaBox");
-    expect(el.textContent).toContain("replaces");
+    // TRANSCRIBED from §3. The figure used to list four source names as pills
+    // and repeat the entry's own replace sentence in a warning band — neither
+    // of which Design drew, and the sentence is the caption directly above it.
+    expect(el.textContent).toContain("Drop a CSV export");
+    for (const source of IMPORT_SOURCES) {
+      expect(el.textContent).toContain(source);
+    }
+    expect(el.textContent).toContain("Upload a CSV");
+    expect(el.textContent).toContain("Paste a list");
+
+    // The primary door is an INVERSION — `--fg` on `--bg`, the only one in
+    // chapter 01 — and it is what makes one of the two read as the default.
+    // Both doors present with identical skins would pass every check above.
+    const primary = [...el.querySelectorAll("span")].find(
+      (n) => n.textContent === "Upload a CSV",
+    );
+    expect(primary?.className).toContain("bg-[color:var(--fg)]");
+    expect(primary?.className).toContain("text-[color:var(--bg)]");
+
+    // And the figure must NOT restate the caption's sentence.
+    expect(el.textContent).not.toContain("replaces what is there");
   });
 
   // The figure used to print the summary's three section HEADINGS as mono
@@ -665,19 +686,22 @@ describe("what each chapter 01 figure actually draws", () => {
     expect(warned.length).toBeGreaterThan(0);
   });
 
-  it("card-detail: the pick, the preview, and BOTH printed costs", () => {
+  it("card-detail: the printings list, with the app's marks", () => {
     const el = plate("card-detail");
+    expect(el.textContent).toContain("Printings");
+    for (const row of PRINTING_ROWS) {
+      expect(el.textContent).toContain(row.set);
+      expect(el.textContent).toContain(row.collector);
+    }
+
+    // §3's legend calls the filled diamond "the printing you own". The picker
+    // has never meant that — ✓ is `Your pick`, ◇ is `Shown now` — and #653
+    // already corrected that exact claim in this entry's caption. The layout
+    // transfers from the drawing; the meaning comes from the app.
     expect(el.textContent).toContain("✓");
     expect(el.textContent).toContain("◇");
-    // Scoped to the COST cell. The plate also draws a two-faced mark, whose
-    // glyph is `//` — so a sweep of the plate's text is satisfied by the wrong
-    // element and passes with the cost drawing its front face alone, which is
-    // the right pips for the wrong card.
-    const costCell = [...el.querySelectorAll(":scope > div > div")].find((c) =>
-      (c.lastElementChild?.textContent ?? "").includes("both halves"),
-    );
-    expect(costCell, "no cell captions the two-cost case").toBeTruthy();
-    expect(costCell!.firstElementChild?.textContent).toContain("//");
+    expect(el.textContent).toContain(printingPickerCopy.printing.badgePicked);
+    expect(el.textContent).toContain(printingPickerCopy.printing.badgeShownNow);
   });
 });
 

@@ -18,10 +18,12 @@ import {
   IMPORT_SOURCES,
   ISSUE_PARSE_ERROR,
   ISSUE_UNMATCHED,
+  PRINTING_ROWS,
   REPLACE_ROWS,
   REPLACE_SUMMARY,
 } from "../../lib/about/fixtures";
 import { cardAssignmentsCopy } from "../../lib/copy/card-assignments";
+import { printingPickerCopy } from "../../lib/copy/collection";
 import { ReceiptRow } from "../collection/arrivals-summary";
 import { issueInspectorCopy } from "../../lib/copy/issue-inspector";
 import {
@@ -32,37 +34,37 @@ import { KeyNumeral } from "./numeral";
 
 const fmt = (n: number) => n.toLocaleString("en-US");
 
-/**
- * The four doors, and the one fact that decides whether a reader is about to
- * lose something: an import REPLACES. The old figure was four mono lines and a
- * warning string; §3 draws the sources as a row of plates with the replace
- * sentence beneath, because "these are the four things you can bring" is a
- * shape rather than a list.
- */
 export function ImportFigureBody() {
   return (
-    <div className="flex flex-col gap-[10px]">
-      <div className="flex flex-wrap items-center gap-[6px]">
-        {IMPORT_SOURCES.map((source) => (
-          <span
-            key={source}
-            className="rounded-[7px] border border-solid border-[color:var(--border-strong)] bg-[color:var(--elevated)] px-[9px] py-[5px] text-[11.5px] text-[color:var(--fg-body)]"
-          >
-            {source}
-          </span>
-        ))}
-        <span className="font-mono text-[10.5px] text-[color:var(--fg-faint)]">
-          · CSV or a pasted list
+    // TRANSCRIBED from §3, not interpreted. Every value is read off the
+    // canvas's own inline styles: the dashed target, its two lines, and two
+    // 30px controls at `flex:1` each.
+    //
+    // What this replaces drew the four sources as pill plates and gave the
+    // replace sentence a warning band. Design drew neither. The sentence is
+    // the ENTRY'S CAPTION — a figure repeating it is the stutter the close-out
+    // already recorded once — and the drop target plus its two doors is what
+    // the reader will actually meet on `/collection/replace`.
+    <div className="flex flex-col gap-[9px]">
+      <div className="rounded-[8px] border border-dashed border-[color:var(--border-dashed)] px-[12px] py-[14px] text-center">
+        <div className="mb-[3px] text-[12.5px] text-[color:var(--fg-body)]">
+          Drop a CSV export
+        </div>
+        <div className="font-mono text-[10px] text-[color:var(--fg-faint)]">
+          {IMPORT_SOURCES.join(" · ")}
+        </div>
+      </div>
+      <div className="flex gap-[6px]">
+        {/* `--fg` on `--bg` — an inversion, and the only one in chapter 01. It
+            is what makes `Upload a CSV` the default door and `Paste a list`
+            the other one. */}
+        <span className="flex h-[30px] flex-1 items-center justify-center rounded-[8px] bg-[color:var(--fg)] text-[11.5px] font-semibold text-[color:var(--bg)]">
+          Upload a CSV
+        </span>
+        <span className="flex h-[30px] flex-1 items-center justify-center rounded-[8px] border border-solid border-[color:var(--border-strong)] text-[11.5px] text-[color:var(--fg-body)]">
+          Paste a list
         </span>
       </div>
-
-      {/* The warning is a BAND, not a mono line in the stack. It is the one
-          thing on this figure a reader cannot afford to skim, and it earned
-          its own edge in the drawing for that reason. */}
-      <p className="rounded-[7px] border-l-[3px] border-solid border-l-[color:var(--warning)] bg-[color:var(--surface)] px-[10px] py-[7px] text-[11.5px] text-[color:var(--fg-body)]">
-        An import <strong className="text-[color:var(--fg)]">replaces</strong> what is there
-        rather than adding to it — and you see a preview before anything is written.
-      </p>
     </div>
   );
 }
@@ -153,6 +155,69 @@ export function ImportIssuesFigureBody() {
         </span>
         <ParseErrorRowView row={ISSUE_PARSE_ERROR} query="" />
       </div>
+    </div>
+  );
+}
+
+/**
+ * The printings list, TRANSCRIBED from §3: an uppercase mono heading, then a
+ * row per printing carrying a mark, the set name and the collector number, the
+ * current row on `--elevated`.
+ *
+ * What it replaces was four legend cells of glyphs — a tick, a hollow diamond,
+ * a two-faced mark and a cost — which taught the marks without ever showing
+ * the list they live in.
+ *
+ * The MARKS are the app's. §3's legend calls the filled diamond "the printing
+ * you own"; the picker has never meant that, and #653 already corrected that
+ * exact claim in the caption. ✓ is `Your pick`, ◇ is `Shown now`.
+ */
+export function CardDetailFigureBody() {
+  return (
+    <div className="flex flex-col gap-[7px]">
+      <div className="font-mono text-[9.5px] tracking-[0.14em] text-[color:var(--fg-faint)] uppercase">
+        Printings
+      </div>
+      {PRINTING_ROWS.map((row) => {
+        const current = row.state !== "plain";
+        return (
+          <div
+            key={row.set}
+            className={`flex items-center gap-[8px] rounded-[6px] px-[8px] py-[6px] ${
+              row.state === "picked" ? "bg-[color:var(--elevated)]" : ""
+            }`}
+          >
+            <span
+              aria-hidden
+              className={`flex-none font-mono text-[11px] ${
+                current ? "text-[color:var(--accent)]" : "text-[color:var(--fg-faint)]"
+              }`}
+            >
+              {row.state === "picked" ? "✓" : row.state === "shown" ? "◇" : " "}
+            </span>
+            <span
+              className={`min-w-0 flex-1 truncate text-[11.5px] ${
+                row.state === "picked" ? "text-[color:var(--fg)]" : "text-[color:var(--fg-muted)]"
+              }`}
+            >
+              {row.set}
+            </span>
+            {/* The state is SPOKEN, never left to the glyph: a screen reader
+                gets `Your pick` and `Shown now`, which is what the picker's own
+                badges say. */}
+            {current && (
+              <span className="sr-only">
+                {row.state === "picked"
+                  ? printingPickerCopy.printing.badgePicked
+                  : printingPickerCopy.printing.badgeShownNow}
+              </span>
+            )}
+            <span className="flex-none font-mono text-[10px] text-[color:var(--fg-faint)]">
+              {row.collector}
+            </span>
+          </div>
+        );
+      })}
     </div>
   );
 }
