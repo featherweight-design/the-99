@@ -13,6 +13,8 @@ import { useEffect, useId, useRef, useState } from "react";
 import { explainedCopy } from "../../lib/copy/commander-explained";
 import type { RoleCard } from "../../lib/recs/score";
 
+import { availabilityState } from "../../lib/decks/availability";
+
 const { coverageSort: copy } = explainedCopy;
 
 export type CoverageSortKey = "played" | "availability";
@@ -23,20 +25,41 @@ export const COVERAGE_SORT_LABELS: Record<CoverageSortKey, string> = {
 };
 
 /**
- * Free cards first, then the ones a deck already holds.
+ * Free first, then by how hard the card is to get: free, wanted by a brew, in
+ * use, over-committed.
  *
- * Stable within each group, so "Availability" is the shipped order partitioned
- * rather than a second ranking: a card does not change position relative to its
- * neighbours of the same availability. `Most played` is the incoming order and
- * so needs no branch here — including where every figure is null and the
- * incoming order is pool order.
+ * FOUR buckets where this shipped two. The old partition read `committedTo`,
+ * which cannot tell a brew's soft want from a finished deck's sleeved claim, so
+ * two readings the marker draws differently sorted the same.
+ *
+ * The order keeps the shipped promise — free first — and ranks the rest by
+ * severity, which is the order `availabilityState` itself is written in.
+ *
+ * Stable within each bucket, so this stays the shipped order partitioned rather
+ * than a second ranking: a card does not move relative to its neighbours of the
+ * same availability. `Most played` is the incoming order and needs no branch,
+ * including where every figure is null and the incoming order is pool order.
+ *
+ * A card with no availability row sorts as free. Null is NO ROW, not "unowned" —
+ * and on a panel built from the owned pool, a card with no claim row has no
+ * claim to rank.
  */
+const AVAILABILITY_RANK = { free: 0, soft: 1, hard: 2, over: 3 } as const;
+
+function availabilityRank(card: RoleCard): number {
+  if (!card.availability) return AVAILABILITY_RANK.free;
+  return AVAILABILITY_RANK[availabilityState(card.availability)];
+}
+
 export function sortRoleCards(cards: RoleCard[], key: CoverageSortKey): RoleCard[] {
   if (key === "played") return cards;
-  return [
-    ...cards.filter((c) => c.committedTo === null),
-    ...cards.filter((c) => c.committedTo !== null),
-  ];
+  // Index carried so the sort is stable on every engine, rather than relying on
+  // one: two cards in the same bucket keep the incoming order, which is what
+  // makes this a partition of `Most played` and not a re-rank.
+  return cards
+    .map((card, i) => ({ card, i }))
+    .sort((a, b) => availabilityRank(a.card) - availabilityRank(b.card) || a.i - b.i)
+    .map(({ card }) => card);
 }
 
 export function CoverageSortMenu({

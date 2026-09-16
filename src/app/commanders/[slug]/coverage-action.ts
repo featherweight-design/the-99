@@ -4,6 +4,8 @@ import { requireUserId } from "../../../lib/auth";
 import { scoreOneCommander } from "../../../lib/recs/recommend";
 import { resolveCommanderSlug } from "../../../lib/discovery/resolve-slug";
 import type { RoleCard, RoleName } from "../../../lib/recs/score";
+import { loadAvailability } from "../../../lib/decks/availability-query";
+import { withAvailability } from "../../../lib/decks/availability";
 
 /** A1: one retry for the whole section. Re-resolves EDHREC and hands back only
     the role cards — the four panels read one payload, so there is one action,
@@ -31,5 +33,34 @@ export async function retryCoverageFigures(
   // commander EDHREC has no data on. Both non-ok states leave the note in place.
   if (scored.synergyState !== "ok") return null;
 
-  return scored.roleCards;
+  // RE-STAMP THE CLAIM PICTURE, and only now — after the guard above has decided
+  // this payload is going back at all. Run before it, the read fired on every
+  // still-degraded retry and threw its result away.
+  //
+  // `scoreOneCommander` leaves `availability` null on every card, exactly as it
+  // leaves `committedTo` null, and the section REPLACES its client-owned state
+  // with whatever this returns — so the bare scored cards erase every marker on
+  // a SUCCESSFUL retry, flip the key to its free form, and make the Availability
+  // sort read every recovered card as free. `router.refresh()` does not undo it.
+  //
+  // DELIBERATELY NOT CAUGHT, unlike the page's copy of this read. An empty map
+  // is a safe fallback on first render, where there is nothing to lose; here it
+  // would stamp every card null and destroy exactly the markers this re-stamp
+  // exists to preserve. Letting it reject makes the whole retry a no-op —
+  // `handleRetry` swallows it, the state stands, the note stays and the button
+  // comes back — which is the right outcome: the figures are still there to
+  // recover on the next press.
+  const roleCardIds = Object.values(scored.roleCards)
+    .flat()
+    .map((c) => c.oracleId);
+  const availability = await loadAvailability(userId, {
+    oracleIds: [...new Set(roleCardIds)],
+  });
+
+  return Object.fromEntries(
+    Object.entries(scored.roleCards).map(([role, cards]) => [
+      role,
+      withAvailability(cards, availability),
+    ]),
+  ) as Record<RoleName, RoleCard[]>;
 }

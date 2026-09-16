@@ -18,11 +18,18 @@ import type { RoleCard } from "../../lib/recs/score";
 import type { RoleName } from "../../lib/recs/score";
 import { explainedCopy } from "../../lib/copy/commander-explained";
 import { recommendationsCopy } from "../../lib/copy/recommendations";
+import { avail } from "./availability-fixture";
 
 // ── Helpers ────────────────────────────────────────────────────────────────────
 
 function makeCard(n: number, pct: number | null = 50): RoleCard {
-  return { oracleId: `oracle-${n}`, name: `Card ${n}`, inclusionPct: pct, committedTo: null };
+  return {
+    oracleId: `oracle-${n}`,
+    name: `Card ${n}`,
+    inclusionPct: pct,
+    committedTo: null,
+    availability: null,
+  };
 }
 
 function makeCards(count: number, pct: number | null = 50): RoleCard[] {
@@ -513,9 +520,9 @@ describe("degraded state preserves pool order", () => {
     // Alphabetical order: Mana Vault, Swords to Plowshares, Zombie Infestation
     // The two orderings differ, so a sort introduced by the component is detectable.
     const poolOrderedCards: RoleCard[] = [
-      { oracleId: "oracle-z", name: "Zombie Infestation", inclusionPct: null, committedTo: null },
-      { oracleId: "oracle-m", name: "Mana Vault", inclusionPct: null, committedTo: null },
-      { oracleId: "oracle-s", name: "Swords to Plowshares", inclusionPct: null, committedTo: null },
+      { oracleId: "oracle-z", name: "Zombie Infestation", inclusionPct: null, committedTo: null, availability: null },
+      { oracleId: "oracle-m", name: "Mana Vault", inclusionPct: null, committedTo: null, availability: null },
+      { oracleId: "oracle-s", name: "Swords to Plowshares", inclusionPct: null, committedTo: null, availability: null },
     ];
 
     renderSection({
@@ -604,8 +611,14 @@ describe("edge count: 41+ cards (beyond expansion cap)", () => {
 });
 
 describe("the dot key", () => {
-  const committed = (n: number, deck: string): RoleCard => ({ ...makeCard(n), committedTo: deck });
-  const KEY = [explainedCopy.committed.dotFree, explainedCopy.committed.dotCommitted].join(" ");
+  // A card with something to say. The deck name is gone from the signature: the
+  // key is a statement about the DOT, and the dot no longer knows which deck.
+  const committed = (n: number, _deck: string): RoleCard => ({
+    ...makeCard(n),
+    availability: avail("hard"),
+  });
+  // One entry, two forms. `KEY` is the form drawn once any marker is on screen.
+  const KEY = explainedCopy.committed.dotOwned;
 
   // One key above four panels, not one footnote under each.
   it("draws the key once for the whole section", () => {
@@ -619,17 +632,29 @@ describe("the dot key", () => {
 
   // The key sits above every panel, so it reads every card rather than the ones
   // a cap happens to be showing — otherwise expanding a panel adds a key entry.
-  it("names the committed dot for a card the resting cap is hiding", () => {
+  it("takes the marker form for a card the resting cap is hiding", () => {
     const cards = [...makeCards(19).slice(1), committed(20, "Atraxa")];
     renderSection({ roleCards: { ...EMPTY_ROLE_CARDS, ramp: cards }, roleCounts: { ...BASE_ROLE_COUNTS, ramp: 20 } });
     expect(screen.queryByRole("button", { name: /View details for Card 20/ })).toBeNull();
     expect(screen.getByText(KEY)).toBeInTheDocument();
   });
 
-  it("names only the free dot when no card is in a deck", () => {
+  // The free form, byte-identical to what shipped. This is the round's one
+  // unusual constraint: a player whose collection covers their decks must see
+  // nothing changed, and this key is the sentence that would give it away.
+  it("keeps the shipped free string when no card draws a marker", () => {
     renderSection({ roleCards: { ...EMPTY_ROLE_CARDS, ramp: makeCards(3) }, roleCounts: { ...BASE_ROLE_COUNTS, ramp: 3 } });
-    expect(screen.getByText(explainedCopy.committed.dotFree)).toBeInTheDocument();
-    expect(screen.queryByText(/already in a deck/i)).toBeNull();
+    expect(screen.getByText("Owned and available.")).toBeInTheDocument();
+    expect(screen.queryByText(explainedCopy.committed.dotOwned)).toBeNull();
+  });
+
+  // A soft claim is a marker too, so the key moves for it. Under the old
+  // `anyCommitted` read this case drew the free string over a panel with a
+  // marker on it.
+  it("takes the marker form for a soft claim, not only a hard one", () => {
+    const cards = [{ ...makeCard(1), availability: avail("soft") }, ...makeCards(3).slice(1)];
+    renderSection({ roleCards: { ...EMPTY_ROLE_CARDS, ramp: cards }, roleCounts: { ...BASE_ROLE_COUNTS, ramp: 3 } });
+    expect(screen.getByText(explainedCopy.committed.dotOwned)).toBeInTheDocument();
   });
 
   it("draws no key at all when the section has no cards", () => {
@@ -645,7 +670,10 @@ describe("the dot key", () => {
 });
 
 describe("the Role Coverage sort", () => {
-  const committed = (n: number, deck: string): RoleCard => ({ ...makeCard(n), committedTo: deck });
+  const committed = (n: number, _deck: string): RoleCard => ({
+    ...makeCard(n),
+    availability: avail("hard"),
+  });
 
   const chooseAvailability = () => {
     fireEvent.click(screen.getByRole("button", { name: explainedCopy.coverageSort.triggerAria }));
@@ -673,7 +701,7 @@ describe("the Role Coverage sort", () => {
   // The cap slices the order on screen, so sorting can pull a card into view
   // that the shipped order had hidden — and push one out.
   it("slices the cap after the sort, not before it", () => {
-    const cards = [...makeCards(12).map((c) => ({ ...c, committedTo: "Atraxa" })), makeCard(13)];
+    const cards = [...makeCards(12).map((c) => ({ ...c, availability: avail("hard") })), makeCard(13)];
     renderSection({
       roleCards: { ...EMPTY_ROLE_CARDS, ramp: cards },
       roleCounts: { ...BASE_ROLE_COUNTS, ramp: 13 },

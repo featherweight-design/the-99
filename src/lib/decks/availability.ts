@@ -168,6 +168,22 @@ export type Availability = {
   claims: DeckClaim[];
 };
 
+/**
+ * Stamp a list of cards with the claim picture `loadAvailability` returned for each.
+ *
+ * Generic over the card for the same reason `withCommitted` is: a role card and a
+ * synergy card share nothing but an oracle id, and the stamp means the same on both.
+ *
+ * **An absent entry becomes `null`, which means NO ROW and never "unowned."** See
+ * `RoleCard.availability` for why the difference is load-bearing.
+ */
+export function withAvailability<T extends { oracleId: string }>(
+  cards: T[],
+  byCard: Map<string, Availability>,
+): (T & { availability: Availability | null })[] {
+  return cards.map((card) => ({ ...card, availability: byCard.get(card.oracleId) ?? null }));
+}
+
 export type AvailabilityState = "free" | "soft" | "hard" | "over";
 
 /**

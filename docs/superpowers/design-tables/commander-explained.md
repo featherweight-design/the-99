@@ -598,8 +598,9 @@ rendered surfaces.
 | State | Triggering condition | Component rendered | Key props required |
 |---|---|---|---|
 | Role chip, not owned | — | not drawn; role lists are owned cards only | — |
-| Role chip, owned free | in a role list, not in any deck | desktop `CoverageChip` 6px dot: `--success` fill, `color-mix(--success 40%, --bg)` border. Phone `CoverageRow` 7px dot: `--success` fill, `1px --border` | `committed: false` on `RoleCard` |
-| Role chip, owned committed | in a role list **and** in ≥1 deck | desktop: `--avail-hard-fg` fill, `color-mix(--avail-hard 40%, --bg)` border. Phone: `--avail-hard-fg` fill, `1px color-mix(--avail-hard 40%, --bg)` | `committed: true` + first deck name |
+| Role chip, owned free | `availabilityState` reads `free` — a spare copy remains, whatever else claims one. `owned 4 · hard 3 · free 1` is this row, not the next | desktop `CoverageChip` 6px dot: `--success` fill, `color-mix(--success 40%, --bg)` border. Phone `CoverageRow` 7px dot: `--success` fill, `1px --border`. **No marker** | `availability` reading `free`, or null |
+| Role chip, soft or hard | a brew wants a copy, or no copy is free | dot **unchanged** — `--success` at every reading, because severity moved to the marker. Count-only `AvailabilityMarker density="row" nameless`, joined to the name at 6px: mono 10.5/600/0.02em on the chip, 11.5 on the phone row. Borders unchanged | `availability` reading `soft` or `hard` |
+| Role chip, over | finished decks want more copies than exist | as above, plus the **only** border tint: `color-mix(--danger 40%, --bg)` on both geometries | `availability` reading `over` |
 | Synergy row, not owned | not in the collection | hollow 7px dot, `1px` stroke `--fg-locked` — shipped, untouched | `owned: false` |
 | Synergy row, owned free | owned, not in a deck | 7px dot `--success` fill | `owned: true`, `committed: false` |
 | Synergy row, owned committed | owned and in ≥1 deck | 7px dot `--avail-hard-fg` fill | `committed: true` |
@@ -609,10 +610,12 @@ rendered surfaces.
 | Legend not rendered | no **visible** marked chip (even if a hidden one is marked) | — | — |
 | Legend not rendered | panel is empty | — | — |
 | Synergy legend | synergy panel, mark present | names all three dot states in one line | — |
-| aria branch 1 | `showFigures` and a figure exists | shipped name + `" Already in {deck}."` | first deck name |
-| aria branch 2 | `showFigures`, no figure | shipped "No EDHREC figure." name + suffix | first deck name |
-| aria branch 3 | `showFigures === false` | `cardDetailCopy.triggerAria(name)` + suffix | first deck name |
-| Data prerequisite | — | one aggregate over deck membership → set of oracle ids + one deck name each; one new field on `RoleCard` and on the synergy card. **Ships in slice B** | new read on the route |
+| aria branch 1 | `showFigures` and a figure exists | shipped name + `" {markerAria(a)}."` | `availability` |
+| aria branch 2 | `showFigures`, no figure | shipped "No EDHREC figure." name + the same clause | `availability` |
+| aria branch 3 | `showFigures === false` | `cardDetailCopy.triggerAria(name)` + the same clause | `availability` |
+| aria, free | `markerAria` returns `null` | the shipped name, **byte-identical** — no clause, no trailing space | — |
+| aria, count-only vs spoken | always | the DRAWN label is `nameless`; the accessible name is `markerAria` **name-bearing**. Two calls, two argument sets — which is not what the count-only contract forbids: it rules out one call drawing a count and speaking a name | — |
+| Data prerequisite | — | one `loadAvailability(userId, {oracleIds})` on the route, off-decklist vantage, never cached, narrowed to the cards the page draws. `RoleCard.availability` — **null means NO ROW, never "unowned"** | new read on the route |
 
 ## State Coverage — Role Coverage sort
 
@@ -622,8 +625,8 @@ Section-level, one value for four panels, local state, not URL-mirrored.
 |---|---|---|---|
 | Most played (default) | initial mount | selected; order is the incoming order (inclusion desc, nulls last, then name — `score.ts:144`); sub-line "Highest EDHREC inclusion first. The order that ships." | — |
 | Most played, no figures | `showFigures === false` on the commander | same selection, sub-line swaps to "No EDHREC figures on this commander. The list is in collection order."; **not disabled** | `showFigures` |
-| Availability, selectable | slice B has landed | option present; order is free-before-committed then the incoming order; sub-line "Free to use first, then the ones already in a deck." | `committed` per card |
-| Availability, absent | before slice B | option **absent**, not disabled — which is why the whole control ships with slice B | — |
+| Availability, selectable | always — the option has shipped since #131 | option present; order ranks **four** buckets, free → soft → hard → over, stable within each; sub-line "Free to use first, then wanted by a brew, then in use, then over-committed." | `availability` per card |
+| Availability, a card with no claim row | `availability` is null | ranks as `free`. Null is NO ROW — an unowned card, a basic, or a read that could not reach — and on a panel built from the owned pool that is nothing to report | — |
 | Sorted | an option is chosen | chip/row order inside each of the four panels changes; which cards fall inside `COVERAGE_CAP` (12 desktop / 6 phone) changes; expanded list re-orders; one live-region message | sort value |
 | Untouched by a sort | any sort | panel order, `roleCounts`, baseline clauses, sub-caption, expansion state, the score, the legend, the paragraph, the synergy panel | — |
 | Persistence | — | not a state — fresh on every arrival, never in the URL | — |

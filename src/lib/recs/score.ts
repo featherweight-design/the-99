@@ -1,3 +1,4 @@
+import type { Availability } from "../decks/availability";
 import { frontFaceOracle, frontFaceTypeLine } from "./faces";
 import { classifyRoles, ROLE_TARGETS } from "./roles";
 
@@ -22,6 +23,20 @@ export type RoleCard = {
       ranked list has no card rows to mark, and the mark costs a query. The
       commander page fills it in through `withCommitted`. */
   committedTo: string | null;
+  /**
+   * This card's claim picture, or null.
+   *
+   * **Null means NO ROW, never "unowned."** `loadAvailability`'s outer select is
+   * driven by its `owned` CTE and basics are excluded from the model entirely, so
+   * an unowned card, a basic land and a read that could not reach all arrive here
+   * the same way. Nothing may branch on null to mean the player lacks the card —
+   * Role Coverage is built from the owned pool and has no unowned row anyway.
+   *
+   * Scoring leaves it null for the same reason it leaves `committedTo` null: the
+   * ranked list draws no card rows and the read costs a query. The commander page
+   * fills it in through `withAvailability`.
+   */
+  availability: Availability | null;
 };
 
 export type CommanderScore = {
@@ -222,6 +237,7 @@ export function scoreCommander(args: {
           name: c.name,
           inclusionPct: inclusionOf(c.name),
           committedTo: null,
+          availability: null,
         });
       }
     }
