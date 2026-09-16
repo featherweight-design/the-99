@@ -112,11 +112,12 @@ export function CommitSheet({
   // is not visible to the next click in the same tick, so two presses in one tick
   // would start two commits. This ref covers that window and nothing else.
   const inFlightRef = useRef(false);
-  // The longer guard, and it is STATE rather than a ref because the button has to
-  // SAY so: a latch the control does not reflect is a button that looks live and
-  // swallows every press, and a commit that threw is exactly when a reader tries
-  // again. An unknown outcome is the one state a second commit must not start
-  // from, so the offer is withheld until the re-read settles it.
+  // The longer guard, and it is STATE rather than a ref because the control is what
+  // enforces it: an unknown outcome is the one state a second commit must not start
+  // from, and a latch the button does not reflect is a button that looks live and
+  // swallows every press — which is exactly what a reader tries after a commit
+  // throws. So the offer is WITHHELD until the re-read settles it, and the handler
+  // needs no clause of its own: a disabled button fires nothing.
   const [unresolved, setUnresolved] = useState(false);
 
   // The region has to be in the document before any text reaches it, and this
@@ -322,7 +323,7 @@ export function CommitSheet({
             disabled={pending || commitDisabled || unresolved}
             className={`${BAR_BUTTON} min-h-[48px] md:min-h-0 md:py-[11px] md:px-[20px] text-[14px]`}
             onClick={() => {
-              if (inFlightRef.current || unresolved) return;
+              if (inFlightRef.current) return;
               inFlightRef.current = true;
               setError(null);
               // Before the transition, not inside it: the host has to know in

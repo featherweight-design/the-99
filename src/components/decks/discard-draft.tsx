@@ -199,11 +199,12 @@ export function DiscardConfirm({
   // request carries the same expected version, so a commit landing between the
   // two is the one case where the guard passes for a discard nobody asked for.
   const inFlightRef = useRef(false);
-  // The unknown outcome the ref is held for, in state as well, because the answer
-  // has to SAY it cannot be pressed. `PendingBanner` passes no `disabled` and no
-  // `onWriteState`, so without this the destructive button there sits enabled over
-  // a latch that eats every press — which reads as a broken control on the one
-  // surface with nothing else to explain it.
+  // An unknown outcome, held in state because the ANSWER is what enforces it: a
+  // second destructive write must not start against a draft that may already be
+  // gone, and a latch the button does not reflect is a control that eats presses.
+  // `PendingBanner` passes no `disabled` and no `onWriteState`, so on that surface
+  // this is the whole guard. The handler needs no clause of its own — a disabled
+  // button fires nothing.
   const [unresolved, setUnresolved] = useState(false);
 
   // The question took the host's body with it, so the focus the trigger held is
@@ -293,7 +294,7 @@ export function DiscardConfirm({
           disabled={pending || disabled || unresolved}
           aria-describedby={whyId}
           onClick={() => {
-            if (inFlightRef.current || unresolved) return;
+            if (inFlightRef.current) return;
             inFlightRef.current = true;
             // Same tick as the click, beside the ref that already guards this
             // component against its own second press.
