@@ -118,7 +118,9 @@ export default async function HomePage() {
     loadShoppingRollup(userId),
   ]);
 
-  const ready = readySlice(ranked.items);
+  // `new Date()` here rather than inside the slice: the boundary is a fact about
+  // this render, and a helper reading the clock itself could not be tested.
+  const ready = readySlice(ranked.items, { userId, now: new Date() });
 
   // One availability read between the in-use clause and the Commitments card.
   // Fail soft, the same way src/app/commanders/page.tsx does: losing
