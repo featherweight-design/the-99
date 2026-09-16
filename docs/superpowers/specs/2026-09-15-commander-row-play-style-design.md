@@ -136,6 +136,43 @@ actually do, so no amount of tribal noise in the novelty ranking can reach it.
 Every input is in the `/discover` payload today. The row can print Fit with no additional
 read, which is what makes the three-surfaces-one-number ruling affordable.
 
+### But parity is NOT proved, and PR 1 must prove it before the probe can assert it
+
+The arithmetic being free does not make the two surfaces agree, and an earlier revision of
+this spec asserted that they would without checking — the structural claim §10b of `pr-review`
+exists to stop. **The two `fitSynergy` inputs come from different computations over different
+data paths:**
+
+| | `/discover` row | Commander Details |
+|---|---|---|
+| numerator | `count(distinct csc.oracle_id)` — an **`oracle_id` join** over `commander_support_cards` (`candidates.ts:310`) | `edhrecOverlap(topCards, pool).names.length` — a **name match** over the live EDHREC array, with a front-face fallback for DFCs (`score.ts:252`) |
+| denominator | `commander_support.edhrec_total`, a stored column | `args.edhrecTopCards.length`, the fetched array |
+
+**The lanes themselves cannot disagree, because their populations are disjoint** — `/commanders`
+scores `collection.filter(isCommanderCandidate)`, the commanders the reader owns, and
+`/discover` lists the ones they do not, so no commander appears on both and `commander_scores`
+holds no row for a discovery row. **Commander Details is where parity bites**, because
+`page.tsx:76` calls `scoreOneCommander` for *every* commander, owned or not — so a `/discover`
+row and the detail page it links to would print the same commander's Fit by two different
+routes. That is precisely the reported defect, reintroduced by its own fix.
+
+**The denominators are measured and agree:** `edhrec_total` equals the `commander_support_cards`
+row count for **3,340 of 3,342** commanders, differing by 1 on two of them. Both sides read the
+same underlying EDHREC list, which is what makes agreement plausible.
+
+**The numerators are not measured, and that is the half that can differ** — one resolves by id,
+the other by name, and flavor names, DFCs and names the index never resolved are exactly where
+those two part company (see #467's matching precedence). So:
+
+- **PR 1 carries a named task: measure numerator agreement** across the catalog against a real
+  collection, before anything prints a figure.
+- **If they agree, the ruling stands as written.** If they disagree on any row, the resolution
+  is to make Commander Details read the same stored counts the row does — not to teach the row
+  the name match, which would cost a per-row EDHREC read and is the thing `rankFree` already
+  refuses to do (`free-ranking.ts:105–112`).
+- **The parity probe cannot be written until this is settled**, since it would be asserting the
+  thing under question.
+
 `fitSynergy` is `null` where `edhrecTotal` is, and the score is **not** rescaled to fill the
 gap — a commander with no synergy read tops out at 40, and `measurableTotal` is 40 rather
 than 100. The row must print the denominator it was given, never a bare `40/100`.
@@ -291,9 +328,11 @@ must not print an empty clause.
   has to be asserted somewhere that runs, against a catalog-sized row count rather than one
   collection's.
 - **Probe** — `/discover` and `/commanders` at both widths: the sentence renders, the gap
-  line names no creature type, the Fit figure equals the one Commander Details prints for
-  the same commander, and the row's height is identical under both `/discover` sorts. The
-  last of those is the ruling that cannot be read off a diff.
+  line names no creature type, and the row's height is identical under both `/discover`
+  sorts. That last one is the ruling that cannot be read off a diff. **The Fit-parity clause
+  is deliberately not listed here**: it cannot be written until PR 1's numerator measurement
+  settles whether the two figures agree, and a probe asserting the thing under question would
+  report a pass by measuring nothing.
 - **Contact sheet** — both lanes at both widths, per `feature-acceptance`. The row appears
   on two routes and the point of the change is that they stop differing.
 - **Fixture** — `pnpm db:copy:prose` against local-dev before any browser walk.
@@ -314,9 +353,24 @@ must not print an empty clause.
 Named here rather than discovered during implementation, per the ~20-file / ~800-line split
 rule. No stacking — each merges to `main` before the next opens.
 
-1. **Data and arithmetic, no UI.** The tag classifier and its tests, `prose` added to both
-   lane queries, Fit computed for discovery rows, the payload shape change and its byte
-   guard. Nothing user-visible moves.
+1. **Data and arithmetic, no UI.** The tag classifier and its generator, `prose` added to both
+   lane queries, the `GapSlot` builder, Fit computed for discovery rows, the payload shape
+   change and its byte guard. Nothing user-visible moves. Three things this PR must carry that
+   are easy to miss:
+   - **The numerator-parity measurement above**, before any figure is printed.
+   - **Both cache versions bump.** There are two, in different modules, and each is dropped
+     independently: `PAYLOAD_VERSION` in `src/lib/discovery/list.ts:224` (currently 2, feeding
+     `discoveryKey`) and `PAYLOAD_VERSION` in `src/lib/commanders/rankings.ts:56` (currently
+     3). Both payloads change what they *say* for unchanged rows, which is exactly the
+     condition those constants document, and a warm entry would otherwise serve prose-less
+     rows for up to the hour ceiling to any reader who writes nothing.
+   - **The owned lane needs two fields it does not have.** `CommanderListItem`
+     (`recommend.ts:38–62`) carries no `deckCount` and no price, so the shared row's
+     popularity and price figures have no source on `/commanders` today. `deck_count` is a
+     column on `commander_support` and the price comes from `loadPrices` — which
+     `/discover` already uses and which must be reused rather than re-derived, since a
+     hand-rolled price CTE was already replaced wholesale once for getting foil, staleness
+     and stock semantics wrong.
 2. **The unified row.** `rec-card.tsx` and `discovery-row.tsx` collapse into one component;
    both lanes adopt it; the five states are drawn; retired copy is deleted and the property
    tables quoting it are corrected.
