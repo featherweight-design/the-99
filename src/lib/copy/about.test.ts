@@ -1,3 +1,4 @@
+import { readFile } from "node:fs/promises";
 // The guard on /about's content. Four pins, and the reason each exists is the
 // same: this page is the one place in the app whose job is telling a reader
 // what exists and where, so a wrong line here is worse than a wrong line
@@ -172,4 +173,52 @@ describe("every entry is drawn, not just described", () => {
     // real figure was twenty-nine.
     expect(drawn + NOT_YET_DRAWN.size).toBe(aboutEntries.length);
   });
+
+  // The close-out states three totals in prose — how many entries, how many
+  // figures, and how the figures split between the two chassis. All three went
+  // stale twice inside one PR: once written without counting, once by an entry
+  // landing on `main` mid-review. A number a reader is asked to trust should
+  // fail when it stops being true, so these read the document and compare it
+  // to the source rather than restating either.
+  it("keeps the close-out's stated totals true", async () => {
+    const { FIGURES } = await import("../../components/about/figures");
+    const doc = await readFile(
+      join(process.cwd(), "docs/superpowers/close-out-about-page.md"),
+      "utf8",
+    );
+
+    expect(doc).toContain(`**${aboutEntries.length} entries, ${Object.keys(FIGURES).length} figures.**`);
+
+    // Which chassis a figure is rooted in is a fact about its component, so it
+    // is read from the module's own source rather than by rendering: a render
+    // would report the chassis a figure COMPOSES as readily as the one it is.
+    const source = await readFile(
+      join(process.cwd(), "src/components/about/figures.tsx"),
+      "utf8",
+    );
+    const roots = [...source.matchAll(/^  "?([a-z0-9-]+)"?: (\w+),/gm)].map(([, , fn]) => {
+      const at = source.indexOf(`function ${fn}`);
+      const root = source.slice(at).match(/<(Specimen|Legend[A-Za-z]*)/);
+      return root?.[1] === "Specimen" ? "specimen" : "legend";
+    });
+    const specimens = roots.filter((r) => r === "specimen").length;
+    expect(roots.length).toBe(aboutEntries.length);
+    expect(doc).toContain(
+      `**${WORDS[specimens]} are \`Specimen\`-rooted and ${WORDS[roots.length - specimens]?.toLowerCase()} are \`Legend\`-rooted.**`,
+    );
+  });
 });
+
+// The close-out spells its counts, so the check has to as well. Only the range
+// the page can plausibly reach is listed; a total outside it fails loudly on
+// the undefined rather than passing on a lenient match.
+const WORDS: Record<number, string> = {
+  15: "Fifteen",
+  16: "Sixteen",
+  17: "Seventeen",
+  18: "Eighteen",
+  19: "Nineteen",
+  20: "Twenty",
+  21: "Twenty-one",
+  22: "Twenty-two",
+};
