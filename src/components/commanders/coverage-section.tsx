@@ -7,7 +7,8 @@ import { useState, useTransition, useId, type JSX } from "react";
 import { useRouter } from "next/navigation";
 import { CoverageChip, CoverageRow, CoverageDisclosure, COVERAGE_CAP, COVERAGE_EXPANDED_CAP } from "./coverage-chip";
 import { explainedCopy } from "../../lib/copy/commander-explained";
-import { LegendPip } from "../ui/ownership-dot";
+import { OwnershipDot } from "../ui/ownership-dot";
+import { availabilityState } from "../../lib/decks/availability";
 import {
   CoverageSortMenu,
   COVERAGE_SORT_LABELS,
@@ -54,6 +55,27 @@ const ROLE_NOUNS: Record<RoleName, string> = {
  * Role Coverage is built from the owned pool. Committed is not: with no deck
  * holding any of these cards there is no second colour on screen to explain.
  */
+/**
+ * The key's dot, at 6px, carrying the inline offsets `LegendPip` used to hold: a
+ * 6px circle sits visually low against 10.5px mono, and the sentence's own word
+ * spacing should not have to carry it.
+ *
+ * `LegendPip` itself retires with the three-state dot it wrapped. Design flagged
+ * this baseline as unverified (their gap 4), so the offsets are reproduced
+ * exactly rather than re-derived — the key sits where it has always sat.
+ */
+function KeyPip() {
+  return (
+    <span
+      aria-hidden="true"
+      className="inline-flex items-center"
+      style={{ marginRight: 5, verticalAlign: "baseline", position: "relative", top: -0.5 }}
+    >
+      <OwnershipDot owned size={6} className="block" />
+    </span>
+  );
+}
+
 function DotKey({
   roleCards,
   isDesktop,
@@ -63,22 +85,33 @@ function DotKey({
 }): JSX.Element | null {
   const all = ROLE_ORDER.flatMap((role) => roleCards[role]);
   if (all.length === 0) return null;
-  const anyCommitted = all.some((c) => c.committedTo !== null);
+  // Any card with anything to say — i.e. any marker on screen. Replaces
+  // `anyCommitted` one line for one line; the mechanism is the shipped one.
+  //
+  // Still read across ALL FOUR panels rather than the chips a cap happens to
+  // show, so expanding a panel cannot change the key under the reader.
+  const anyMarker = all.some(
+    (c) => c.availability !== null && availabilityState(c.availability) !== "free",
+  );
 
   return (
     <p
       className="font-mono text-fg-locked m-0"
       style={{ fontSize: 10.5, marginTop: isDesktop ? 8 : 10, lineHeight: 1.4 }}
     >
-      <LegendPip state="free" />
-      {explainedCopy.committed.dotFree}
-      {anyCommitted && (
-        <>
-          {" "}
-          <LegendPip state="committed" />
-          {explainedCopy.committed.dotCommitted}
-        </>
-      )}
+      {/* One entry, two forms. Four of the five readings print glyph + number +
+          word and legend themselves; the dot is the only mark here that is a
+          colour with no word beside it, so it is the only thing left to key.
+
+          The free form is kept BYTE-IDENTICAL rather than reworded. `Owned.` is
+          the honest word for an ownership-only dot, but shipping it
+          unconditionally would repaint a free player's page for no gain — and a
+          player whose collection covers their decks seeing nothing changed is
+          this round's one unusual constraint. */}
+      <KeyPip />
+      {anyMarker
+        ? explainedCopy.committed.dotOwned
+        : explainedCopy.committed.dotFree}
     </p>
   );
 }

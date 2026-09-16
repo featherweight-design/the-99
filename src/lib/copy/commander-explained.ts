@@ -243,7 +243,15 @@ export const explainedCopy = {
         NO COUNTS. These replaced a per-panel line that also carried "3 of the 5 shown", which
         only worked as a footnote under the chips it counted. A key that sits above four panels
         cannot count for any one of them, and a key is what this is. */
+    /** Drawn while NO marker is anywhere in the four panels. Kept byte-identical
+        to what shipped: `dotOwned` is the honest word once a marker is on screen,
+        but repainting a free player's page to say it would break the one thing
+        this round promised — that a collection covering its decks looks
+        untouched. */
     dotFree: "Owned and available.",
+    /** Drawn once ANY marker is on screen, because "and available" is then false
+        of a neighbouring chip. */
+    dotOwned: "Owned.",
     dotCommitted: "Owned, already in a deck.",
     dotUnowned: "Not owned.",
 
@@ -293,11 +301,14 @@ export const explainedCopy = {
 
     availability: {
       label: "Availability",
-      sub: "Free to use first, then the ones already in a deck.",
-      /** Availability needs the committed flag, which is slice B (README decision 6b). Until
-          that read lands the option is not drawn at all — an option whose ordering key the
-          page cannot compute is worse than an absent one, and unlike "Inclusion figure" there
-          is no honest reason-line for it that does not describe an unbuilt feature. */
+      /** FOUR buckets, in the severity order the sort runs in, using the four nouns
+          the availability vocabulary already ships. The two-bucket sentence this
+          replaces was true of a partition on `committedTo`, which could not tell a
+          brew's want from a sleeved claim.
+
+          No counts, per the standing rule: a sub-line above four panels cannot
+          count for any one of them. */
+      sub: "Free to use first, then wanted by a brew, then in use, then over-committed.",
     },
 
     /** One live-region message per settle, on CoverageSection's OWN aria-live="polite" node.

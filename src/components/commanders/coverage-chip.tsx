@@ -20,7 +20,9 @@ import type { RoleCard } from "../../lib/recs/score";
 import { CardDetailTrigger, cardDetailCopy } from "../cards/card-detail-provider";
 import { recommendationsCopy } from "../../lib/copy/recommendations";
 import { explainedCopy } from "../../lib/copy/commander-explained";
-import { AvailabilityDot, availabilityDotState } from "../ui/ownership-dot";
+import { OwnershipDot } from "../ui/ownership-dot";
+import { AvailabilityMarker, markerAria } from "../ui/availability-marker";
+import { availabilityState } from "../../lib/decks/availability";
 import type { JSX } from "react";
 
 export const COVERAGE_CAP = { desktop: 12, phone: 6 } as const;
@@ -31,11 +33,40 @@ export const COVERAGE_EXPANDED_CAP = 40;
 // fill, swapped rather than joined by anything new, so a marked chip is exactly
 // as wide as an unmarked one.
 
-/** The chip's border, which tints on both states because the chip has no other. */
-function chipBorder(committedTo: string | null): string {
-  return committedTo === null
-    ? "border-[color-mix(in_srgb,var(--success)_40%,var(--bg))]"
-    : "border-[color-mix(in_srgb,var(--avail-hard)_40%,var(--bg))]";
+/**
+ * Whether this card draws a marker at all — i.e. whether anything about it is
+ * worth saying. Free renders nothing, which is the feature and not an
+ * optimisation: a player whose collection covers their decks sees nothing new.
+ *
+ * A null `availability` is NO ROW, never "unowned" — see `RoleCard.availability`.
+ * It reads as free here, which is right: Role Coverage is built from the owned
+ * pool, so a card with no claim row has no claim to report.
+ */
+function markerState(card: RoleCard) {
+  if (!card.availability) return null;
+  const state = availabilityState(card.availability);
+  return state === "free" ? null : state;
+}
+
+/**
+ * The chip's border.
+ *
+ * The committed branch is gone with `committedTo` (ruling 4): the marker is the
+ * channel now, and a tinted border beside it said one thing twice. What replaces
+ * it is narrower — `over` alone tints, because it is the one severity loud enough
+ * to touch a container.
+ *
+ * Written as a `color-mix` over a token rather than the literal the handoff
+ * quotes (readiness erratum 3). That value is the ratified one in
+ * `card-availability.md` rows 4.5 and 4.10, but it predates the six-theme system
+ * and ships nowhere in `src/`: a frozen literal is correct in one palette and
+ * wrong in five. This is the free branch's own form with `--danger` in place of
+ * `--success`.
+ */
+function chipBorder(card: RoleCard): string {
+  return markerState(card) === "over"
+    ? "border-[color-mix(in_srgb,var(--danger)_40%,var(--bg))]"
+    : "border-[color-mix(in_srgb,var(--success)_40%,var(--bg))]";
 }
 
 /**
@@ -43,13 +74,13 @@ function chipBorder(committedTo: string | null): string {
  *
  * A free row keeps the neutral border it ships with. The row is a full-width
  * surface rather than a pill, so tinting it green would make ordinary ownership
- * the loudest thing on the panel; the committed tint is worth the exception
- * because it is the state the reader is looking for.
+ * the loudest thing on the panel; the over tint is worth the exception for the
+ * same reason the chip's is.
  */
-function rowBorder(committedTo: string | null): string {
-  return committedTo === null
-    ? "border-border"
-    : "border-[color-mix(in_srgb,var(--avail-hard)_40%,var(--bg))]";
+function rowBorder(card: RoleCard): string {
+  return markerState(card) === "over"
+    ? "border-[color-mix(in_srgb,var(--danger)_40%,var(--bg))]"
+    : "border-border";
 }
 
 /**
@@ -67,9 +98,18 @@ function chipAria(card: RoleCard, hasFigure: boolean, showFigures: boolean): str
     : showFigures
       ? recommendationsCopy.coverage.chipAriaNoFigure(card.name)
       : undefined;
-  if (card.committedTo === null) return shipped;
+  // NAME-BEARING here while the drawn marker is `nameless`. Two calls with two
+  // explicit argument sets, which is not what `card-availability.md` forbids:
+  // what the coupling rules out is ONE call drawing a count and speaking a name,
+  // because then an edit to the drawn form silently reshapes the spoken one.
+  // The deck name has always ridden this label rather than the marker, and it
+  // still does.
+  const claim = card.availability ? markerAria(card.availability) : null;
+  // `markerAria` returns null at free, so a free card produces the shipped name
+  // byte for byte. That is the round's one unusual constraint, enforced here.
+  if (claim === null) return shipped;
   const base = shipped ?? `${cardDetailCopy.triggerAria(card.name)}.`;
-  return `${base}${explainedCopy.committed.ariaSuffix({ name: card.committedTo })}`;
+  return `${base} ${claim}.`;
 }
 
 // ── Chip ─────────────────────────────────────────────────────────────────────
@@ -96,14 +136,43 @@ export function CoverageChip({
       name={card.name}
       siblings={siblings}
       ariaLabel={ariaLabel}
-      className={`group inline-flex items-center rounded-full h-[28px] border ${chipBorder(card.committedTo)} bg-surface-raised hover:border-accent`}
+      className={`group inline-flex items-center rounded-full h-[28px] border ${chipBorder(card)} bg-surface-raised hover:border-accent`}
       style={{ gap: 8, padding: hasFigure ? "0 4px 0 10px" : "0 10px" }}
     >
-      {/* Dot — 6px, --success when free, --avail-hard-fg when already in a deck. */}
-      <AvailabilityDot state={availabilityDotState(card)} size={6} />
-      {/* Name */}
-      <span className="font-mono text-[11.5px] text-fg-body group-hover:text-fg">
-        {card.name}
+      {/* Dot — 6px. TWO states now: the marker carries severity, so the dot is
+          ownership and nothing else (ruling 2). */}
+      <OwnershipDot owned size={6} className="block" />
+      {/* Name and marker are ONE group, joined at 6px inside the chip's own 8px.
+          The marker is a fact about this card, not a sibling of the figure plate. */}
+      <span className="inline-flex items-center" style={{ gap: 6, minWidth: 0 }}>
+        {/* `whitespace-nowrap` is load-bearing and was the round's one drawn
+            defect. This span shipped bare, and the chip declares `h-[28px]` with
+            no floor — so once the marker added its measured 69-89px, a long name
+            wrapped and broke the pill. The marker is already `flex-none
+            whitespace-pre` and stays whole; the name is what had to stop
+            wrapping. No `max-w` floor: the worst case measures ~350px, which fits
+            the narrowest desktop this chip renders at, and the phone draws
+            `CoverageRow` instead, which truncates. */}
+        <span className="font-mono text-[11.5px] text-fg-body group-hover:text-fg whitespace-nowrap">
+          {card.name}
+        </span>
+        {card.availability && markerState(card) && (
+          <AvailabilityMarker
+            availability={card.availability}
+            nameless
+            spoken={false}
+            // A TOKEN, never the handoff's resolved hex (readiness erratum 2):
+            // the seam is the join between the over glyph's doubled diamonds, and
+            // a frozen literal paints a hairline crack in five of six themes.
+            seam="var(--surface-raised)"
+            // The marker sets no size of its own — §3.4 rules that density rides
+            // the meta line, and a chip has no meta line. It has a FIGURE, and the
+            // marker is the same class of thing, so it takes the figure's size a
+            // step up in weight: the plate has a filled ground for presence and
+            // the marker has none.
+            className="flex-none font-mono text-[10.5px] font-[600] tracking-[0.02em]"
+          />
+        )}
       </span>
       {/* Figure plate / absent dash / nothing */}
       {hasFigure ? (
@@ -151,17 +220,26 @@ export function CoverageRow({
       name={card.name}
       siblings={siblings}
       ariaLabel={ariaLabel}
-      className={`flex w-full items-center rounded-[8px] border ${rowBorder(card.committedTo)} bg-surface`}
+      className={`flex w-full items-center rounded-[8px] border ${rowBorder(card)} bg-surface`}
       style={{ minHeight: "44px", padding: "0 12px", gap: 9 }}
     >
-      {/* Dot — 7px, --success when free, --avail-hard-fg when already in a deck. */}
-      <AvailabilityDot state={availabilityDotState(card)} size={7} />
+      {/* Dot — 7px, two states. See the chip. */}
+      <OwnershipDot owned size={7} className="block" />
       {/* Name — ellipsed. `min-w-0` is load-bearing beside `flex-1`: a flex item's
           default min-width is its content, so without it the span refuses to
           shrink and a long name overflows the row instead of ellipsing. */}
       <span className="flex-1 min-w-0 truncate text-[13.5px] text-fg text-left">
         {card.name}
       </span>
+      {card.availability && markerState(card) && (
+        <AvailabilityMarker
+          availability={card.availability}
+          nameless
+          spoken={false}
+          seam="var(--surface)"
+          className="flex-none font-mono text-[11.5px] font-[600] tracking-[0.02em]"
+        />
+      )}
       {/* Figure / absent dash / nothing */}
       {hasFigure ? (
         <span

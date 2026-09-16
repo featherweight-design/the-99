@@ -8,6 +8,9 @@ import { getRankedList } from "../../../lib/recs/ranked-list";
 import { CommanderDetail } from "../../../components/commanders/detail";
 import { readCommanderProse } from "../../../lib/prose/read";
 import { readSynergyCards } from "./synergy-read";
+import { loadAvailability } from "../../../lib/decks/availability-query";
+import { withAvailability } from "../../../lib/decks/availability";
+import type { RoleName, RoleCard } from "../../../lib/recs/score";
 
 export default async function CommanderDetailPage({
   params,
@@ -92,9 +95,36 @@ export default async function CommanderDetailPage({
     readCommanderProse(commander.oracleId),
   ]);
 
+  // ONE claim read for the whole page, narrowed to the cards it draws, and with
+  // no `excludeDeckId` — there is no current deck here to exclude, so every
+  // figure is the off-decklist vantage.
+  //
+  // Never cached, and not for want of a key: a claim is point-in-time by
+  // contract. Another deck can commit between this read and the reader's next
+  // click, which is why nothing on this page authorizes a write.
+  //
+  // Both surfaces' ids go in together. The synergy panel does not consume the
+  // result yet; it will, and one read is what the brief rules rather than a
+  // second query growing quietly beside this one.
+  const availability = await loadAvailability(userId, {
+    oracleIds: [
+      ...new Set([...coveredOracleIds, ...synergyCards.map((c) => c.oracleId)]),
+    ],
+  });
+
+  const withClaims = {
+    ...commander,
+    roleCards: Object.fromEntries(
+      Object.entries(commander.roleCards).map(([role, cards]) => [
+        role,
+        withAvailability(cards, availability),
+      ]),
+    ) as Record<RoleName, RoleCard[]>,
+  };
+
   return (
     <CommanderDetail
-      commander={commander}
+      commander={withClaims}
       rank={found.rank}
       isBestFit={found.rank === 1}
       avail={avail}

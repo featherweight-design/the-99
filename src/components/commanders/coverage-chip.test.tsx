@@ -8,19 +8,27 @@ import type { BrowseCard } from "../../lib/collection/browse";
 import { CardDetailProvider } from "../cards/card-detail-provider";
 import { CoverageChip, CoverageDisclosure, CoverageRow } from "./coverage-chip";
 import type { RoleCard } from "../../lib/recs/score";
+import { avail, heldBy } from "./availability-fixture";
+import { availabilityCopy } from "../../lib/copy/availability";
+
+/** What `markerAria` says for a hard claim naming one deck. Read from the copy
+    module so an edit there does not leave this file asserting a dead sentence. */
+const heldClaim = (name: string) => availabilityCopy.marker.hardAria(name);
 
 // Stub fetch used by CardDetailProvider in all tests.
 function renderInProvider(ui: React.ReactNode) {
   const fetchCard = vi.fn<(id: string) => Promise<BrowseCard | null>>().mockResolvedValue(null);
-  render(<CardDetailProvider fetchCard={fetchCard}>{ui}</CardDetailProvider>);
-  return { fetchCard };
+  const rendered = render(<CardDetailProvider fetchCard={fetchCard}>{ui}</CardDetailProvider>);
+  return { fetchCard, ...rendered };
 }
+
 
 const card = (overrides: Partial<RoleCard> = {}): RoleCard => ({
   oracleId: "oracle-sol",
   name: "Sol Ring",
   inclusionPct: 82,
   committedTo: null,
+  availability: null,
   ...overrides,
 });
 
@@ -77,38 +85,108 @@ describe("CoverageChip", () => {
     expect(screen.queryByText("—")).toBeNull();
   });
 
-  // The mark swaps the ownership dot's fill rather than adding anything, so a
-  // marked chip has to occupy exactly the same width as an unmarked one.
-  it("swaps the dot's fill and the border for a card already in a deck", () => {
-    const { container } = render(
+  // The dot is OWNERSHIP now and nothing else — it no longer moves with
+  // severity, whatever the marker beside it says. Asserted at the loudest
+  // reading, because that is the one the old three-state dot repainted.
+  it("keeps the owned dot at every reading, severity included", () => {
+    for (const reading of ["free", "soft", "hard", "over"] as const) {
+      const { container, unmount } = render(
+        <CardDetailProvider fetchCard={vi.fn().mockResolvedValue(null)}>
+          <CoverageChip card={card({ availability: avail(reading) })} siblings={siblings} showFigures />
+        </CardDetailProvider>,
+      );
+      expect(dotOf(container).className).toContain("bg-[color:var(--success)]");
+      expect(dotOf(container).className).not.toContain("--avail-hard-fg");
+      unmount();
+    }
+  });
+
+  // Three readings draw a marker; free draws nothing at all. The absence is the
+  // feature — a player whose collection covers their decks sees nothing new.
+  it("draws the marker at soft, hard and over, and nothing at free", () => {
+    const expected = {
+      soft: availabilityCopy.marker.soft(1),
+      hard: availabilityCopy.marker.hard,
+      over: availabilityCopy.marker.over(1),
+    };
+    for (const [reading, label] of Object.entries(expected)) {
+      const { unmount } = renderInProvider(
+        <CoverageChip
+          card={card({ availability: avail(reading as "soft" | "hard" | "over") })}
+          siblings={siblings}
+          showFigures
+        />,
+      );
+      expect(screen.getByText(label)).toBeInTheDocument();
+      unmount();
+    }
+    renderInProvider(<CoverageChip card={card({ availability: avail("free") })} siblings={siblings} showFigures />);
+    expect(screen.queryByText(availabilityCopy.marker.hard)).toBeNull();
+  });
+
+  // The count-only contract: never a deck name in the DRAWN label, on either
+  // geometry. The name still rides the accessible name below.
+  it("never draws a deck name", () => {
+    renderInProvider(
+      <CoverageChip
+        card={card({ availability: heldBy("Atraxa") })}
+        siblings={siblings}
+        showFigures
+      />,
+    );
+    expect(screen.queryByText(/Atraxa/)).toBeNull();
+  });
+
+  // The chip's border tints on ONE reading. The committed branch is gone with
+  // `committedTo`; free keeps exactly the border it ships with.
+  it("tints the border at over only, and leaves the free border alone", () => {
+    const { container: over } = render(
       <CardDetailProvider fetchCard={vi.fn().mockResolvedValue(null)}>
-        <CoverageChip card={card({ committedTo: "Atraxa" })} siblings={siblings} showFigures />
+        <CoverageChip card={card({ availability: avail("over") })} siblings={siblings} showFigures />
       </CardDetailProvider>,
     );
-    expect(dotOf(container).className).toContain("bg-[color:var(--avail-hard-fg)]");
-    expect(screen.getByRole("button", { name: /Sol Ring/i }).className).toMatch(
-      /var\(--avail-hard\)/,
+    expect(over.querySelector("button")!.className).toMatch(/var\(--danger\)/);
+    for (const reading of ["free", "soft", "hard"] as const) {
+      const { container, unmount } = render(
+        <CardDetailProvider fetchCard={vi.fn().mockResolvedValue(null)}>
+          <CoverageChip card={card({ availability: avail(reading) })} siblings={siblings} showFigures />
+        </CardDetailProvider>,
+      );
+      expect(container.querySelector("button")!.className).toMatch(/var\(--success\)/);
+      unmount();
+    }
+  });
+
+  // D1, the round's one drawn defect. The chip declares a fixed 28px with no
+  // floor, and this span shipped bare — so the marker's 69-89px made a long name
+  // wrap and break the pill. jsdom lays nothing out, so what a unit test CAN
+  // assert is the rule that prevents it.
+  it("never lets the name wrap", () => {
+    renderInProvider(
+      <CoverageChip
+        card={card({ name: "Asmoranomardicadaistinaculdacar", availability: avail("over") })}
+        siblings={siblings}
+        showFigures
+      />,
+    );
+    expect(screen.getByText("Asmoranomardicadaistinaculdacar").className).toContain(
+      "whitespace-nowrap",
     );
   });
 
-  it("keeps the green dot for a card no deck has claimed", () => {
-    const { container } = render(
-      <CardDetailProvider fetchCard={vi.fn().mockResolvedValue(null)}>
-        <CoverageChip card={card()} siblings={siblings} showFigures />
-      </CardDetailProvider>,
-    );
-    expect(dotOf(container).className).toContain("bg-[color:var(--success)]");
-  });
-
-  // R2 rewrote this name wholesale once and lost "View details for". The deck
+  // R2 rewrote this name wholesale once and lost "View details for". The claim
   // clause is a suffix on whichever branch the shipped name took.
   it("appends the deck to the accessible name it already had", () => {
     renderInProvider(
-      <CoverageChip card={card({ committedTo: "Atraxa" })} siblings={siblings} showFigures />,
+      <CoverageChip
+        card={card({ availability: heldBy("Atraxa") })}
+        siblings={siblings}
+        showFigures
+      />,
     );
     expect(
       screen.getByRole("button", {
-        name: "View details for Sol Ring. In 82% of decks. Already in Atraxa.",
+        name: `View details for Sol Ring. In 82% of decks. ${heldClaim("Atraxa")}.`,
       }),
     ).toBeInTheDocument();
   });
@@ -118,13 +196,13 @@ describe("CoverageChip", () => {
   it("still names the trigger when figures are hidden", () => {
     renderInProvider(
       <CoverageChip
-        card={card({ committedTo: "Atraxa" })}
+        card={card({ availability: heldBy("Atraxa") })}
         siblings={siblings}
         showFigures={false}
       />,
     );
     expect(
-      screen.getByRole("button", { name: "View details for Sol Ring. Already in Atraxa." }),
+      screen.getByRole("button", { name: `View details for Sol Ring. ${heldClaim("Atraxa")}.` }),
     ).toBeInTheDocument();
   });
 
@@ -179,16 +257,21 @@ describe("CoverageRow", () => {
     expect(screen.queryByText("—")).toBeNull();
   });
 
-  it("carries the same mark and the same deck clause as the desktop chip", () => {
+  it("carries the same marker and the same claim clause as the desktop chip", () => {
     const { container } = render(
       <CardDetailProvider fetchCard={vi.fn().mockResolvedValue(null)}>
-        <CoverageRow card={card({ committedTo: "Atraxa" })} siblings={siblings} showFigures />
+        <CoverageRow card={card({ availability: heldBy("Atraxa") })} siblings={siblings} showFigures />
       </CardDetailProvider>,
     );
-    expect(dotOf(container).className).toContain("bg-[color:var(--avail-hard-fg)]");
+    // Ownership only, as on the chip.
+    expect(dotOf(container).className).toContain("bg-[color:var(--success)]");
+    // Count-only in the drawn label...
+    expect(screen.getByText(availabilityCopy.marker.hard)).toBeInTheDocument();
+    expect(screen.queryByText(/Atraxa/)).toBeNull();
+    // ...and the deck named in the accessible name, exactly as the chip does it.
     expect(
       screen.getByRole("button", {
-        name: "View details for Sol Ring. In 82% of decks. Already in Atraxa.",
+        name: `View details for Sol Ring. In 82% of decks. ${heldClaim("Atraxa")}.`,
       }),
     ).toBeInTheDocument();
   });

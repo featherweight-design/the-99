@@ -288,7 +288,7 @@ describe("roleCards", () => {
     // `committedTo` is null out of scoring by design: the ranked list draws no
     // card rows, so it does not pay for the deck-membership query.
     expect(s.roleCards.ramp).toEqual([
-      { oracleId: "a", name: "Sol Ring", inclusionPct: 82, committedTo: null },
+      { oracleId: "a", name: "Sol Ring", inclusionPct: 82, committedTo: null, availability: null },
     ]);
   });
 
