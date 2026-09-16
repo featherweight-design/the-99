@@ -183,6 +183,12 @@ export async function persistScores(
    * which must compare equal to itself rather than being read as "no opinion".
    * Collapsing those onto one value is how a guard comes to skip the case it was
    * written for.
+   *
+   * NO PRODUCTION CALLER OMITS IT, and the omitted path cannot be closed by
+   * making the parameter required, because what still reaches it is a PREVIOUS
+   * DEPLOYMENT running code that has no fourth argument to pass. That window is
+   * closed by `SCORE_WRITER_CURRENT`, which version 4 bumps for this reason
+   * alone: rows an unguarded writer leaves behind announce 3 and are refused.
    */
   indexGen?: number | null,
 ): Promise<void> {

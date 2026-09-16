@@ -586,8 +586,19 @@ export const RANK_SCORE_UNWRITTEN = -1;
  * row looks stale. `probe:fit-parity` measured the two sources disagreeing on 20
  * of 95 commanders, which is how far a warm version-2 set would have been out.
  * The deployment window argument applies unchanged.
+ *
+ * Version 4 is the first writer that takes `SCORE_INDEX_LOCK` and checks the
+ * index generation, and it is bumped for the DEPLOYMENT WINDOW alone — the two
+ * writers read synergy from the same place and produce identical rows. A
+ * version-3 writer calls `persistScores` with three arguments, so it takes no
+ * lock and compares no fingerprint: during this rollout it can insert after a
+ * rebuild's clear and mark those rows 3, and a version-3 row written safely
+ * before the rollout is indistinguishable from one written into that gap. So
+ * the whole version is refused rather than the unsafe subset, which is the only
+ * distinction the column can draw. The cost is one recompute per reader, which
+ * is what every bump here costs.
  */
-export const SCORE_WRITER_CURRENT = 3;
+export const SCORE_WRITER_CURRENT = 4;
 
 export const commanderScores = pgTable("commander_scores", {
   userId: text("user_id").notNull(),

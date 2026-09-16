@@ -16,6 +16,12 @@ import {
 import type { RankedCommander } from "./recommend";
 import { RANK_SCORE_UNWRITTEN, SCORE_WRITER_CURRENT } from "../../db/schema";
 
+// The last writer that took no `SCORE_INDEX_LOCK` and compared no index
+// generation — #681's, which is live and calls `persistScores` with three
+// arguments. Every row it leaves behind has to be refused, so the current
+// version must sit above it.
+const LAST_UNGUARDED_WRITER = 3;
+
 const ranked = (over: Partial<RankedCommander> = {}): RankedCommander => ({
   oracleId: "11111111-1111-1111-1111-111111111111",
   name: "Atraxa, Praetors' Voice",
@@ -393,6 +399,19 @@ describe("persistScores generation guard", () => {
     expect(announced).toContain("set_config");
     expect(announced).toContain("app.writer_version");
     expect(announced).toContain(String(SCORE_WRITER_CURRENT));
+  });
+
+  // THE LOCK AND THE VERSION ARE ONE FIX, and this is the half no other case
+  // states. `persistScores` still has an unchecked three-argument path, and it
+  // cannot be closed by making the argument required: what reaches it is a
+  // PREVIOUS DEPLOYMENT, running code with no fourth argument to pass, which can
+  // insert after a rebuild's clear and announce the version it knows. Unless the
+  // version moves with the guard, those rows read as current for ever.
+  //
+  // Pinned as an inequality against the guard's arrival rather than as the
+  // literal 4, so the next bump does not have to edit this case to keep it true.
+  it("announces a writer version above the last unguarded one", () => {
+    expect(SCORE_WRITER_CURRENT).toBeGreaterThan(LAST_UNGUARDED_WRITER);
   });
 
   it("drops the write when the first-ever confirm lands mid-compute", async () => {
