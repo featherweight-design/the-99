@@ -61,10 +61,15 @@ describe("the generated classification", () => {
     expect(CREATURE_TYPE_LABELS).toContain(label);
   });
 
-  // These reduce from the plain trailing-`s` rule. Kept as cases because they
-  // must stay classified whichever rule gets them there; `Faeries` is
-  // load-bearing for a second reason, reaching the mechanic side if the
-  // generator forgets that `Kindred` type lines carry creature types.
+  // These reduce from the plain trailing-`s` rule, and are classification
+  // guards rather than proofs of any parser branch.
+  //
+  // `Faeries` was described here as load-bearing for the `Kindred` clause. It
+  // is not, and has not been since the vocabulary became a union: Scryfall's
+  // catalog supplies `faerie` directly, so removing that clause no longer moves
+  // this label. The clause is covered in `tag-kinds.test.ts` instead, which is
+  // the only place it can be. Same stale claim as the generator comment, left
+  // in a sibling after the original was withdrawn.
   it.each(["Faeries", "Horses", "Humans", "Zombies"])(
     "%s reduces from the plain trailing-s rule and is still a creature type",
     (label) => {
@@ -128,7 +133,13 @@ describe("the generated classification", () => {
     expect(isMechanic("Modified Creatures")).toBe(true);
   });
 
+  // One direct assertion per rule, including the two whose only other coverage
+  // is a generator invariant — and the generator is not executed by `pnpm test`,
+  // so without these a rule could be removed and the suite would stay green
+  // over the stale checked-in artifact.
   it("offers every singular a plural could reduce to", () => {
+    expect(singularForms("Foxes")).toContain("fox"); // -(sh|ch|s|x|z)es
+    expect(singularForms("Caves")).toContain("cafe"); // -ves, over-reducing
     expect(singularForms("Wolves")).toContain("wolf");
     expect(singularForms("Werewolves")).toContain("werewolf");
     expect(singularForms("Cybermen")).toContain("cyberman");
@@ -148,8 +159,9 @@ describe("the generated classification", () => {
   //
   // BUT THEY ARE REGRESSION GUARDS, NOT PROOFS THAT A RULE IS SAFE. Over-
   // reduction only misclassifies when the reduced form happens to be a real
-  // creature type, and none of these reduces to one (`caves` gives `cave`,
-  // `curses` gives `curse`), so no tweak to those rules can pull them across.
+  // creature type, and none of these reduces to one (`caves` gives `caf`,
+  // `cafe` and `cave`; `curses` gives `curs` and `curse`), so no tweak to those
+  // rules can pull them across.
   // The real protection is the pinned counts above: any label changing bucket
   // moves 260/134/7 and fails, anticipated or not.
   //

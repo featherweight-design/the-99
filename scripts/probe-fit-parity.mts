@@ -154,7 +154,11 @@ for (const c of population) {
 
 const scored = rows.filter((r) => r.liveTotal != null);
 const zeroTotals = rows.filter((r) => r.storedTotal === 0).length;
-const withOverlap = rows.filter((r) => r.storedOwned > 0).length;
+// Counted from `scored`, not `rows`: a warm row whose cache holds no parsed
+// top-card list is never compared, and one such row with a stored overlap
+// could otherwise satisfy this guard while every COMPARED row had zero. Same
+// mistake as the floor above, in the same expression's sibling.
+const withOverlap = scored.filter((r) => r.storedOwned > 0).length;
 console.log(
   `compared ${rows.length} — ${scored.length} scored live, ${withOverlap} with a ` +
     `non-zero stored overlap, ${zeroTotals} with a stored total of 0\n`,
@@ -171,7 +175,7 @@ if (scored.length < MIN_COMPARED) {
 }
 if (withOverlap === 0) {
   throw new Error(
-    `all ${rows.length} compared candidates have a stored overlap of 0 — the ` +
+    `all ${scored.length} compared candidates have a stored overlap of 0 — the ` +
       "comparison is vacuous. Use an account with a larger collection.",
   );
 }

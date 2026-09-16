@@ -162,15 +162,17 @@ same underlying EDHREC list, which is what makes agreement plausible.
 
 ### Measured 2026-09-15: parity FAILS, and the cause is drift
 
-`pnpm probe:fit-parity` calls the real `loadCandidates` and the real
-`scoreOneCommander` for the same commanders and compares. Over 60 candidates with a non-zero
-stored overlap:
+`pnpm probe:fit-parity` calls the real `loadCandidates` and the real `scoreOneCommander` for
+the same commanders and compares. It samples nothing: the population is every discovery
+candidate whose EDHREC cache row is already fresh, which on the fixture account is **95**. (An
+earlier, sampled version of the probe read 15 of 60 — the same answer from a narrower and
+non-deterministic window.)
 
 | | disagree |
 |---|---|
-| numerator — owned support | **40 / 60** |
-| denominator — EDHREC total | **39 / 60** |
-| **the resulting `fitSynergy`** | **15 / 60** |
+| numerator — owned support | **57 / 95** |
+| denominator — EDHREC total | **56 / 95** |
+| **the resulting `fitSynergy`** | **20 / 95** |
 
 Mostly by one point; `Faceless One` reads **23 stored against 18 live**. **The divergence runs
 in both directions** — stored above live and live above stored, on different commanders — so

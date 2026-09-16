@@ -24,12 +24,19 @@ describe("creatureSubtypesFromTypeLines", () => {
   });
 
   // The reason the `Kindred`/`Tribal` words are in the predicate at all. On the
-  // shipped vocabulary this clause changes no answer, because Scryfall's
-  // catalog already holds `faerie` — so this is the only place it is provable.
-  it("reads a Kindred face, which bears creature types without being a creature", () => {
-    const got = creatureSubtypesFromTypeLines(["Tribal Enchantment — Faerie Aura"], none);
-    expect(got.has("faerie")).toBe(true);
-  });
+  // shipped vocabulary this clause changes no answer, because Scryfall's catalog
+  // already holds `faerie` — so this is the only place it is provable.
+  //
+  // Parameterised over BOTH words: the predicate has two alternatives and a
+  // fixture using only `Tribal` left `kindred` uncovered, so removing it kept
+  // this suite green and the artifact unchanged.
+  it.each(["Tribal Enchantment — Faerie Aura", "Kindred Enchantment — Faerie Aura"])(
+    "reads %s, which bears creature types without being a creature",
+    (typeLine) => {
+      const got = creatureSubtypesFromTypeLines([typeLine], none);
+      expect(got.has("faerie")).toBe(true);
+    },
+  );
 
   it("reads both halves of a split type line", () => {
     const got = creatureSubtypesFromTypeLines(
@@ -83,9 +90,11 @@ describe("classifyLabels", () => {
     expect(got.creature).toEqual([]);
   });
 
-  // The fallback direction is the whole safety argument: an unknown label is a
-  // mechanic, which the generator then allowlists. That is why a MISclassified
-  // tribe is shown rather than hidden, and why the counts are pinned.
+  // The fallback is the DANGEROUS direction, not the safe one. An unknown label
+  // becomes a mechanic, which the generator then allowlists and the row shows —
+  // so a misclassified tribe reaches the reader. Hidden-by-default protects only
+  // labels absent from the generated set. What catches a misclassification is
+  // the pinned counts and the invariants, never this branch.
   it("falls back to mechanic for a label it cannot place", () => {
     const got = classifyLabels(["Some Theme Added Last Tuesday"], new Set(["frog"]));
     expect(got.mechanic).toEqual(["Some Theme Added Last Tuesday"]);

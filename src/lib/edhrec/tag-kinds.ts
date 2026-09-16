@@ -65,7 +65,7 @@ export const FORMAT_LABELS: readonly string[] = [
  *
  * | rule | mechanic label that fires it | reduces to |
  * |---|---|---|
- * | `-ves` | `Caves` | `cavef`, `cavefe`, `cave` |
+ * | `-ves` | `Caves` | `caf`, `cafe`, `cave` |
  * | `-ice` | `Sacrifice` | `sacrifouse` |
  * | `-ies` | `Activated Abilities` | `activated ability` |
  * | `-(sh\|ch\|s\|x\|z)es` | `Curses` | `curs`, `curse` |
