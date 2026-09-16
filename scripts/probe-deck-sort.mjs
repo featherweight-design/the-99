@@ -354,10 +354,17 @@ async function run() {
         if (!row) return null;
         return Math.round(row.getBoundingClientRect().right - well.getBoundingClientRect().right);
       });
+      // Non-negative as well as small: `row.right - well.right` goes NEGATIVE
+      // when the well overflows past the row's edge, and a bare `<= 1` calls
+      // that flush.
       failures += !report(
         `the view well sits flush right at ${width}`,
-        wellRight !== null && wellRight <= 1,
-        wellRight === null ? "no view well on the page" : `${wellRight}px of slack past it`,
+        wellRight !== null && wellRight >= 0 && wellRight <= 1,
+        wellRight === null
+          ? "no view well on the page"
+          : wellRight < 0
+            ? `${-wellRight}px PAST the row's right edge`
+            : `${wellRight}px of slack past it`,
       );
 
       // And the gap BEFORE it is the row's own, not a hole. This is the clause
@@ -407,36 +414,55 @@ async function run() {
       // And under SHOPPING, where the well is absent by design: its spacer must
       // go with it, or the cluster is pushed off the right edge by a gap holding
       // nothing — 330px of it at 620px.
+      // A missing pill FAILS rather than skipping: a conditional here lets the
+      // whole Shopping layout go unexercised, and lets the pill's disappearance
+      // read as a pass.
       const shopping = onPageRole(page, "button", /^Shopping \d+$/).first();
-      if (await shopping.count() > 0) {
+      if (await shopping.count() === 0) {
+        failures += !report(`the toolbar draws a Shopping pill at ${width}`, false, "no pill");
+      } else {
         await shopping.click().catch(() => {});
         await page.waitForTimeout(1_200);
         const shoppingGap = await page.evaluate(() => {
           const byRole = [...document.querySelectorAll("main button")].find(
             (e) => e.textContent.trim() === "By role",
           );
-          if (!byRole) return null;
-          const cluster = byRole.parentElement;
-          let row = cluster;
-          while (row && !/flex-wrap/.test(row.className || "")) row = row.parentElement;
-          if (!row) return null;
+          const cluster = byRole?.parentElement;
+          if (!cluster) return null;
+          // Measured INSIDE the cluster, against its own last control — not
+          // against the row, whose right edge is far from a short final line and
+          // says nothing about this. What must not survive the well's absence is
+          // space held open within the cluster: its spacer, or its own growth.
+          const rightmost = [...cluster.querySelectorAll("button")]
+            .map((el) => el.getBoundingClientRect())
+            .filter((r) => r.width > 0)
+            .sort((a, z) => z.right - a.right)[0];
           const wellGone = !document.querySelector(
             "main button[aria-label='Card view'], main button[aria-label='List view']",
           );
           return {
             wellGone,
-            gap: Math.round(row.getBoundingClientRect().right - cluster.getBoundingClientRect().right),
+            gap: rightmost
+              ? Math.round(cluster.getBoundingClientRect().right - rightmost.right)
+              : null,
           };
         });
         failures += !report(
           `Shopping leaves no gap where the well was at ${width}`,
-          shoppingGap !== null && shoppingGap.wellGone && shoppingGap.gap <= 1,
+          shoppingGap !== null
+            && shoppingGap.wellGone
+            && shoppingGap.gap !== null
+            && shoppingGap.gap >= 0
+            && shoppingGap.gap <= 1,
           shoppingGap === null
-            ? "no cluster to measure"
-            : `well ${shoppingGap.wellGone ? "absent" : "STILL DRAWN"}, ${shoppingGap.gap}px past the cluster`,
+            ? "no row to measure"
+            : `well ${shoppingGap.wellGone ? "absent" : "STILL DRAWN"},`
+              + ` ${shoppingGap.gap}px held open inside the cluster past its last control`,
         );
         const allPill = onPageRole(page, "button", /^All \d+$/).first();
-        if (await allPill.count() > 0) {
+        if (await allPill.count() === 0) {
+          failures += !report(`the toolbar draws an All pill at ${width}`, false, "no pill");
+        } else {
           await allPill.click().catch(() => {});
           await page.waitForTimeout(1_200);
         }

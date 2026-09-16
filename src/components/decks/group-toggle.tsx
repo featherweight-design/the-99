@@ -254,7 +254,17 @@ export function GroupToggle({
 
             `flex-none` is `md:` only for the same reason it has to be: it
             compiles to `flex: none`, which zeroes the grow this needs. */}
-        <div className="grow md:grow-0 md:flex-none flex items-center gap-[7px] md:gap-[10px]">
+        <div
+          className={[
+            "flex items-center gap-[7px] md:gap-[10px] md:grow-0 md:flex-none",
+            // Growing is the phone's push of the view well to the right edge,
+            // and NOTHING else — so it happens only when the well is drawn.
+            // Under Shopping the well is absent and a growing cluster would
+            // stretch past its own last control, leaving space inside it that
+            // holds nothing.
+            filter === "all" ? "grow" : "",
+          ].join(" ")}
+        >
         {/* By type — active: dark pill with border | idle: plain muted text */}
         {/* Mobile active: px-10 py-4; Desktop active: px-13 py-5              */}
         {/* Mobile idle:   px-6 py-4 no border; Desktop idle: px-13 py-5 border */}
