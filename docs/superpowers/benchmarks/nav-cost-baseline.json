@@ -1,0 +1,92 @@
+{
+  "takenAt": "2026-09-16",
+  "mainCommit": "e5db9fb4",
+  "deck": "/decks/47eb032a-4a19-43c9-86be-c45203365ed1",
+  "conditions": {
+    "build": "production (pnpm build && pnpm start)",
+    "warmed": "every route, including the deck page and /, loaded exactly twice by document navigation before recording; deck discovery reads the first pass rather than adding a load",
+    "account": "E2E_AUDIT_USER_EMAIL fixture — 2733 collection_items rows. FEWER than Hugh’s 3239, so these figures are tied to the fixture and are NOT an upper bound",
+    "deck": "/decks/[id] measures the deck named above — its own cards and suggestions. The probe pins it from this field so a later run compares like with like; PROBE_DECK overrides",
+    "responseMs": "PerformanceResourceTiming.duration for the slowest RSC response in the step: wall clock from fetch start to response end. NOT server compute — it includes scheduling and transfer, and swings run to run (/collection read 302ms and 738ms on runs of one build). Treat tens of ms as noise",
+    "rsc": "navigation payload fetches only — speculative prefetches counted separately and excluded",
+    "document": "document loads during a step. Always 0: every step is a client-side transition, and any document load means the router fell back to a full page load"
+  },
+  "widths": {
+    "390": {
+      "/": {
+        "rsc": 1,
+        "decodedKB": 29.5,
+        "responseMs": 534,
+        "document": 0
+      },
+      "/collection": {
+        "rsc": 1,
+        "decodedKB": 1595.8,
+        "responseMs": 268,
+        "document": 0
+      },
+      "/discover": {
+        "rsc": 1,
+        "decodedKB": 951.3,
+        "responseMs": 72,
+        "document": 0
+      },
+      "/commanders": {
+        "rsc": 1,
+        "decodedKB": 158,
+        "responseMs": 72,
+        "document": 0
+      },
+      "/decks": {
+        "rsc": 1,
+        "decodedKB": 28.3,
+        "responseMs": 366,
+        "document": 0
+      },
+      "/decks/[id]": {
+        "rsc": 1,
+        "decodedKB": 553.7,
+        "responseMs": 682,
+        "document": 0
+      }
+    },
+    "1300": {
+      "/": {
+        "rsc": 1,
+        "decodedKB": 29.5,
+        "responseMs": 544,
+        "document": 0
+      },
+      "/collection": {
+        "rsc": 1,
+        "decodedKB": 1595.8,
+        "responseMs": 287,
+        "document": 0
+      },
+      "/discover": {
+        "rsc": 1,
+        "decodedKB": 951.3,
+        "responseMs": 80,
+        "document": 0
+      },
+      "/commanders": {
+        "rsc": 1,
+        "decodedKB": 158,
+        "responseMs": 74,
+        "document": 0
+      },
+      "/decks": {
+        "rsc": 1,
+        "decodedKB": 28.3,
+        "responseMs": 411,
+        "document": 0
+      },
+      "/decks/[id]": {
+        "rsc": 1,
+        "decodedKB": 553.7,
+        "responseMs": 658,
+        "document": 0
+      }
+    }
+  }
+}
