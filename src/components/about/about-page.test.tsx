@@ -246,58 +246,51 @@ describe("the figures", () => {
   it("draws the four availability states, including the one that draws nothing", () => {
     const { container } = render(<AboutPage seen={0} />);
     const plate = figures(container)["availability"];
-    // Asserted on the MARKERS, not on the plate's text. The captions beside
-    // each cell repeat the same words, so a textContent sweep stays green with
-    // every AvailabilityMarker deleted — which is the third round running that
-    // an assertion here measured this page's annotation instead of the app's
-    // output.
-    const cells = [...plate.querySelectorAll(":scope > div > div")];
-    expect(cells).toHaveLength(4);
-    // The content box always holds the marker's typography wrapper, so its
-    // child COUNT is 1 either way — what separates the states is whether the
-    // marker inside it drew any text.
-    const drawn = cells.map((cell) => (cell.firstElementChild?.textContent ?? "").trim());
-    expect(drawn[0], "free draws nothing, and that IS the state").toBe("");
-    expect(drawn.filter((t) => t.length > 0)).toHaveLength(3);
+
+    // FOUR ROWS, as §3 draws them — a numeral and the marker beside it. The
+    // figure was a four-column grid with a caption under every cell, which
+    // forced each caption to say something the marker already said.
+    const rows = [...plate.querySelectorAll(":scope > div > div")];
+    expect(rows).toHaveLength(4);
+
+    // Asserted on the MARKERS, never on the plate's text: three rounds running,
+    // an assertion here measured this page's own annotation instead of the
+    // app's output and stayed green with every AvailabilityMarker deleted.
+    //
+    // The numeral is the row's first child, so the marker is the second.
+    const drawn = rows.map((row) => (row.children[1]?.textContent ?? "").trim());
+    expect(drawn[0], "free draws no diamond, and that IS the state").toBe("no diamond at all");
+    expect(drawn.slice(1).filter((t) => t.length > 0)).toHaveLength(3);
     expect(drawn.join(" ")).toContain("in a brew");
     expect(drawn.join(" ")).toContain("short 2");
 
-    // The no-echo rule is swept across every plate below rather than checked
-    // here — fixing it in this one plate and pinning it in this one test was
-    // the instance, not the class, and the marks and buy-tag plates were still
-    // doing it.
+    // Every row carries its numeral. "Annotation is a numeral and a line" is
+    // the handoff's grammar, and a numeral with nothing to point at is a
+    // bullet — which is what the four key lines below were before this.
+    const numerals = rows.map((row) => row.firstElementChild?.textContent);
+    expect(numerals).toEqual(["1", "2", "3", "4"]);
   });
 
-  it("lets no availability caption repeat the mark it sits under", () => {
+  it("gives an availability row no caption to echo its mark with", () => {
     // The close-out contact sheet's finding: a cell drew `◆ none free` with
     // the words `none free` directly beneath it. Both halves individually
     // correct, which is why every other assertion in this file passed over it.
     //
-    // SCOPED TO THIS PLATE, deliberately, and the scope is the honest part.
-    // Here the mark IS the whole label, so "does the caption repeat it" is a
-    // containment test. On the other plates it is not: the marks row reads
-    // `Rhystic Study 2 1 in a brew` and the buy tag `buy·$6.40 foil`, so the
-    // mark carries a card name and a price and neither string contains the
-    // other — a sweep across all five plates ran green over the same defect in
-    // two of them, which is how this comment came to be here rather than a
-    // broader loop.
+    // That was fixed by rewording the captions. §3 removes the cause instead:
+    // its rows carry a numeral and the marker and NOTHING ELSE, and the
+    // explanation lives in the numbered lines below the figure. A row with no
+    // caption cannot echo one, so this asserts the structure rather than
+    // comparing two strings — the version it replaces stayed green whenever a
+    // caption was reworded rather than removed.
     //
-    // Those two were swept by hand and by eye on the contact sheet. This pins
-    // the one plate a machine can judge; the rest is the walk's job.
+    // `free` is the single exception and states it: the marker draws nothing,
+    // so the row has words of its own or it reads as a figure that failed.
     const { container } = render(<AboutPage seen={0} />);
     const plate = container.querySelector('[data-specimen="availability"]')!;
-    for (const [i, cell] of [...plate.querySelectorAll(":scope > div > div")].entries()) {
-      const mark = (cell.firstElementChild?.textContent ?? "").trim();
-      const cap = (cell.lastElementChild?.textContent ?? "").trim();
-      // A mark that draws NOTHING is exempt and has to be: `free` has only its
-      // caption to say what the blank means.
-      if (mark === "") continue;
-      // Leading glyphs and counts come off — `◇ 1 in a brew` compared whole
-      // finds no overlap with `in a brew`, which IS the stutter.
-      const words = mark.replace(/^[^a-z]+/i, "").toLowerCase();
-      expect(cap.toLowerCase(), `cell ${i}: caption repeats its mark "${words}"`).not.toContain(
-        words,
-      );
+    const rows = [...plate.querySelectorAll(":scope > div > div")];
+    expect(rows.length).toBeGreaterThan(0);
+    for (const [i, row] of rows.entries()) {
+      expect(row.children, `row ${i + 1} is a numeral and a mark, nothing else`).toHaveLength(2);
     }
   });
 

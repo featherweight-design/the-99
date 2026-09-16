@@ -81,42 +81,50 @@ import {
 
 /** The four availability states, including the one that draws nothing. */
 function AvailabilityFigure({ width }: { width: AboutWidth }) {
-  // The caption ANNOTATES; it never repeats the mark. The marker already draws
-  // its own words — `1 in a brew`, `none free`, `short 2` — so a caption
-  // echoing them reads as a stutter, which is what the close-out contact sheet
-  // showed: `◆ none free` sitting directly above the words `none free`.
-  //
-  // `free` is the exception and has to be: it draws nothing at all, so its cell
-  // would be blank without a caption saying what the blank means.
-  const caption: Record<string, string> = {
-    free: "nothing claims it — and free carries no mark anywhere",
-    soft: "a deck you have never committed wants it",
-    hard: "a committed deck holds every copy",
-    over: "more copies are asked for than you own",
-  };
   return (
     <Specimen label="availability" width={width}>
-      {/* Rows below the wide stop: `none free` and `short 2` are the longest
-          labels on the page, and a two-column grid at 390px wraps both. */}
-      <SpecimenResponsive>
-        {AVAILABILITY.map(({ key, a }) => (
-          <SpecimenCell key={key} caption={caption[key]}>
-            {/* free renders null, and that IS the state — the cell keeps its
-                height so the absence reads as one of the four rather than as a
-                figure that failed to draw. */}
-            {/* `seam` is the hairline joining the two over-diamonds and only
-                reads as a seam while it matches what is BEHIND it. It defaults
-                to `--bg`; the plate is `--surface-sunken`. */}
-            {/* `density="row"` leaves the font to the caller, and the real
-                decklist row supplies these two classes. Without them the
-                marker inherits this page's body type and shows a treatment
-                the reader will never meet. */}
-            <span className="font-mono text-[11px] min-[1000px]:text-[11.5px]">
-              <AvailabilityMarker availability={a} density="row" seam="var(--surface-sunken)" />
-            </span>
-          </SpecimenCell>
+      {/* TRANSCRIBED from §3: FOUR ROWS, each a numeral and the marker beside
+          it, not a four-column grid with a caption under every cell. The grid
+          was this page's own arrangement, and it forced a caption per cell —
+          which then had to say something the marker already says. The drawing
+          has no per-row caption at all: the numbered lines below the figure
+          carry the explanation, which is the annotation grammar the rest of
+          the page follows.
+
+          `free` is the one row that needs words of its own, because it draws
+          NOTHING and a blank row would read as a figure that failed rather
+          than as one of the four states. */}
+      <div className="flex flex-col gap-[11px]">
+        {AVAILABILITY.map(({ key, a }, i) => (
+          <div key={key} className="flex items-center gap-[10px]">
+            <KeyNumeral n={i + 1} />
+            {key === "free" ? (
+              <span className="inline-flex items-center gap-[6px]">
+                <span aria-hidden className="h-[6px] w-[6px] flex-none" />
+                <span className="text-[12px] text-[color:var(--fg-body)]">
+                  no diamond at all
+                </span>
+              </span>
+            ) : (
+              /* `density="row"` leaves the font to the caller, and the real
+                 decklist row supplies these classes. Without them the marker
+                 inherits this page's body type and shows a treatment the
+                 reader will never meet.
+
+                 `seam` joins the two over-diamonds and only reads as a seam
+                 while it matches what is BEHIND it. It defaults to `--bg`;
+                 the plate is `--surface-sunken`. */
+              <span className="font-mono text-[11px] min-[1000px]:text-[11.5px]">
+                <AvailabilityMarker
+                  availability={a}
+                  density="row"
+                  seam="var(--surface-sunken)"
+                />
+              </span>
+            )}
+          </div>
         ))}
-      </SpecimenResponsive>
+      </div>
     </Specimen>
   );
 }
