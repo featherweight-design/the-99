@@ -564,8 +564,19 @@ export function CardModal({
         // printing is injected instead, and prices itself or nothing.
         : !pairAmbiguous && matchesPreference(p, at);
     const known = card.printings.some(isTarget);
+    // The row the caller's id names, first — whether it was already owned or has just been
+    // injected. Resolution matches a preference on the (set, collector number) PAIR, and the
+    // pair is not unique, so a sibling that happens to sort first wins it and the modal
+    // draws, prices and turns that sibling under the identity the reader clicked. An id is
+    // the one thing that settles which row is meant; without one there is nothing to put in
+    // front, and the ambiguous cases below are deliberate about preferring the owned row.
+    const idFirst = (rows: BrowsePrinting[]) =>
+      at.scryfallId === undefined
+        ? rows
+        : [...rows].sort((x, y) =>
+          Number(y.scryfallId === at.scryfallId) - Number(x.scryfallId === at.scryfallId));
     const printings = known
-      ? card.printings.map((p) => {
+      ? idFirst(card.printings.map((p) => {
           if (!isTarget(p)) return p;
           // The caller's id names the printing exactly, and travels whether or not it
           // also handed over art: the row's own id may be absent, or dropped because
@@ -593,7 +604,7 @@ export function CardModal({
             ...(at.backImageUri ? { backImageUri: at.backImageUri } : {}),
             flavorName: at.imageUri === p.imageUri ? p.flavorName : null,
           };
-        })
+        }))
       : (() => {
         const injected = {
       setCode: at.setCode,
@@ -629,8 +640,13 @@ export function CardModal({
         // cases the owned row keeps the picture, and its price, name and back stay with it
         // — one printing named by all four — which is what the ambiguous-pair cases in
         // `card-modal-price.test.tsx` pin.
+        // Same rule as the owned branch, with one extra condition: this row has no art of
+        // its own unless the caller sent some, and a row with no picture cannot be the one
+        // being shown. With either half missing it goes last and loses, deliberately — no
+        // id and the art could be the sibling's, no art and there is nothing to draw with.
+        // Both are pinned by the ambiguous-pair cases in `card-modal-price.test.tsx`.
         return at.imageUri && at.scryfallId
-          ? [injected, ...card.printings]
+          ? idFirst([injected, ...card.printings])
           : [...card.printings, injected];
       })();
     // The title follows the art. `printedName` is a CARD-level field, set from whichever

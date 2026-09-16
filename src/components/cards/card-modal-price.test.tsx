@@ -335,6 +335,39 @@ describe("a card opened at a printing", () => {
       .toContain("exact.jpg");
   });
 
+  // The same rule on the OWNED path: the reader already holds the clicked printing, so
+  // nothing is injected — and the sibling sharing its pair could still win the pair match
+  // and be drawn and priced under the clicked cell's identity.
+  it("prefers the owned row the caller's id names over its pair sibling", () => {
+    render(
+      <CardModal
+        card={card({
+          printings: [
+            printing({ scryfallId: "s-twin", imageUri: "https://img/twin.jpg" }),
+            printing({ scryfallId: "s-exact", imageUri: "https://img/exact.jpg" }),
+          ],
+          prices: indexPriceRows([
+            priceRow({ scryfall_id: "s-twin", price_cents: 100 }),
+            priceRow({ scryfall_id: "s-exact", price_cents: 1500 }),
+          ]),
+        })}
+        position={1}
+        total={1}
+        onClose={() => {}}
+        onPrev={null}
+        onNext={null}
+        openAtPrinting={{
+          setCode: "RVR", collectorNumber: "12",
+          scryfallId: "s-exact", imageUri: "https://img/exact.jpg",
+        }}
+      />,
+    );
+
+    expect(screen.getByTestId("modal-price-desktop")).toHaveTextContent("$15.00");
+    expect(screen.getByTestId("modal-art-desktop").getAttribute("style"))
+      .toContain("exact.jpg");
+  });
+
   it("will not read an id-less holding as the target when the pair names two printings", () => {
     // The holding names no printing of its own, and the catalog gives this pair to
     // two. Treating it as the opened printing would put `s-exact`'s figure under a
