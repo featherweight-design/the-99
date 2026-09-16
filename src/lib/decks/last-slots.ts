@@ -1,6 +1,4 @@
 import type { SynergyCard } from "../commanders/synergy-cards";
-import type { Availability } from "./availability";
-import type { PriceFact } from "./price";
 
 /** A candidate row as the top-off list draws it.
  *
@@ -14,10 +12,16 @@ import type { PriceFact } from "./price";
  *  state: for `price`, either the card was never priced or the read failed; for
  *  `availability`, either the card is unowned or the read failed. Both render
  *  as the absent case, which is what the design draws for a degraded read. */
-export type TopOffCandidate = SynergyCard & {
-  price: PriceFact | null;
-  availability: Availability | null;
-};
+/**
+ * A card the top-off list can offer.
+ *
+ * Nothing added: `price` and `availability` moved onto `SynergyCard` itself when
+ * the commander page's synergy panel needed the same two facts, and a second
+ * shape carrying them would have been the same pair drifting in two places. The
+ * alias stays because the name says which surface is asking, and because every
+ * call site here reads better for it.
+ */
+export type TopOffCandidate = SynergyCard;
 
 /** Every card the list can offer, in rank order and uncapped.
  *

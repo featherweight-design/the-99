@@ -67,14 +67,44 @@ export const synergyCopy = {
     // The row's accessible name carries both figures and the ownership, because
     // all three are aria-hidden visual marks. Four branches, because a null in
     // either figure has to say 'no figure' rather than fall silent.
-    rowAria: (name: string, owned: string, synergy: string, inclusion: string) =>
-      `${name}. ${owned}. Synergy ${synergy}. In ${inclusion} of decks.`,
+    rowAria: (
+      name: string,
+      owned: string,
+      synergy: string,
+      inclusion: string,
+      /** The slot's clause — a claim for an owned row, a price for an unowned
+          one, and empty when the slot draws nothing. Lands LAST, so the three
+          shipped clauses keep their order and a free owned card produces the
+          string this has always produced. */
+      slot = '',
+    ) =>
+      `${name}. ${owned}. Synergy ${synergy}. In ${inclusion} of decks.` +
+      (slot ? ` ${slot}.` : ''),
     ariaOwned: 'Owned',
     ariaUnowned: 'Not in your collection',
     ariaSynergyPlus: (pts: string) => `plus ${pts} points`,
     ariaSynergyMinus: (pts: string) => `minus ${pts} points`,
     ariaSynergyNone: 'no EDHREC figure',
     ariaInclusionNone: 'an unknown share',
+
+    // ── §4.7 · what the row's own label has to say about the slot ──────────
+    //
+    // The <li> carries an authored aria-label, which REPLACES everything beneath
+    // it — so the slot's buy tag and its price are drawn and never spoken unless
+    // they are composed in here. The readiness audit reopened this after the R1
+    // handoff answered it with `markerAria` alone, which covers the three marker
+    // readings and returns null for an unowned card, the one reading that draws
+    // a price.
+    //
+    // Clauses, not sentences: `rowAria` joins them.
+    ariaBuy: (figure: string) => `buy for ${figure}`,
+    /** No figure to quote — never stocked, or the feed was silent. The tag draws
+        a bare `buy`, and this is that, spoken. */
+    ariaBuyNoPrice: 'available to buy',
+    /** `BuyTag` draws `sold out` in the figure's slot; the label says the same.
+        Distinct from the absent case: this card HAS a price history and no live
+        printing, which is a different fact from never having been stocked. */
+    ariaSoldOut: 'sold out',
   },
 
   // ── Surface A · facets ────────────────────────────────────────────────

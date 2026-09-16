@@ -10,6 +10,7 @@ import { readCommanderProse } from "../../../lib/prose/read";
 import { readSynergyCards } from "./synergy-read";
 import { loadAvailability } from "../../../lib/decks/availability-query";
 import { withAvailability, type Availability } from "../../../lib/decks/availability";
+import { loadPrices } from "../../../lib/decks/price-query";
 import type { RoleName, RoleCard } from "../../../lib/recs/score";
 
 export default async function CommanderDetailPage({
@@ -95,28 +96,44 @@ export default async function CommanderDetailPage({
     readCommanderProse(commander.oracleId),
   ]);
 
-  // ONE claim read for the whole page, narrowed to the cards it draws, and with
-  // no `excludeDeckId` — there is no current deck here to exclude, so every
-  // figure is the off-decklist vantage.
+  // ONE claim read for the whole page, off-decklist vantage — there is no
+  // current deck here to exclude, so every figure is the unexcluded one — and
+  // narrowed to the cards the page draws. Both surfaces read it: Role Coverage's
+  // chips and the synergy panel's slot.
   //
   // Never cached, and not for want of a key: a claim is point-in-time by
   // contract. Another deck can commit between this read and the reader's next
   // click, which is why nothing on this page authorizes a write.
   //
-  // Both surfaces' ids go in together. The synergy panel does not consume the
-  // result yet; it will, and one read is what the brief rules rather than a
-  // second query growing quietly beside this one.
+  // TWO INDEPENDENT READS, TOGETHER. Neither needs the other's answer, and run
+  // in sequence they added a database round trip to every commander response —
+  // the deck page already pairs the same two.
   //
-  // FAIL-SOFT, like every other availability-bearing route: `/collection` and
-  // the deck page both `.catch(() => null)` this read. A claim read is an
-  // enrichment, and a transient database blip must not take a commander's page
-  // down with it — an empty map means every card reads null, which is already
-  // the no-marker path.
-  const availability = await loadAvailability(userId, {
-    oracleIds: [
-      ...new Set([...coveredOracleIds, ...synergyCards.map((c) => c.oracleId)]),
-    ],
-  }).catch(() => new Map<string, Availability>());
+  // Both FAIL-SOFT, as every other availability-bearing route is: `/collection`
+  // and the deck page both catch this claim read. Enrichment must not take a
+  // commander's page down with it — an empty map means every card reads null,
+  // which is already the no-marker path, and an absent price draws a bare `buy`,
+  // which `BuyTag` already handles.
+  //
+  // The price read is narrowed to UNOWNED synergy ids: Role Coverage is built
+  // from the owned pool and has nothing to buy (ruling 6). `loadPrices` rather
+  // than a hand-rolled join, because it already encodes foil-only, sold-out and
+  // never-stocked, and a second expression of those rules would drift from it
+  // one round at a time.
+  const [availability, { prices, newestAsOf }] = await Promise.all([
+    loadAvailability(userId, {
+      oracleIds: [...new Set([...coveredOracleIds, ...synergyCards.map((c) => c.oracleId)])],
+    }).catch(() => new Map<string, Availability>()),
+    loadPrices(synergyCards.filter((c) => !c.owned).map((c) => c.oracleId)).catch(() => ({
+      prices: new Map(),
+      newestAsOf: null,
+    })),
+  ]);
+
+  const synergyWithClaims = withAvailability(synergyCards, availability).map((c) => ({
+    ...c,
+    price: prices.get(c.oracleId) ?? null,
+  }));
 
   const withClaims = {
     ...commander,
@@ -134,7 +151,8 @@ export default async function CommanderDetailPage({
       rank={found.rank}
       isBestFit={found.rank === 1}
       avail={avail}
-      synergyCards={synergyCards}
+      synergyCards={synergyWithClaims}
+      newestAsOf={newestAsOf}
       prose={prose}
     />
   );

@@ -262,11 +262,26 @@ export function SelectableSynergyPanel({
   ownedCount,
   edhrecTotal,
   width,
+  newestAsOf,
 }: {
   cards: SynergyCard[];
   ownedCount: number;
   edhrecTotal: number;
   width: "desktop" | "phone";
+  /**
+   * REQUIRED, with no default, on purpose.
+   *
+   * It defaulted to null and one of the two call sites in `detail.tsx` was never
+   * given it — so the desktop panel priced nothing at all: `priceState(price,
+   * null)` is `absent`, every row drew a bare `buy`, and the accessible name said
+   * "available to buy" over a card with a live figure. The phone was correct, so
+   * a diff review saw a threaded prop and the component tests, which hand it
+   * straight to `SynergyRow`, never rendered the wiring that was missing.
+   *
+   * A default turns a missing prop into a wrong price. No default turns it into
+   * a type error.
+   */
+  newestAsOf: Date | null;
 }) {
   const { selected, toggle } = useSynergySelection();
   return (
@@ -277,6 +292,7 @@ export function SelectableSynergyPanel({
       selected={selected}
       onToggle={toggle}
       width={width}
+      newestAsOf={newestAsOf}
     />
   );
 }

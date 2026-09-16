@@ -31,7 +31,7 @@
 // changes. about.test.ts pins a content hash, so a change forces either a
 // deliberate bump or a deliberate re-pin.
 
-export const ABOUT_VERSION = 2;
+export const ABOUT_VERSION = 3;
 
 export type AboutChapter = '01' | '02' | '03' | '04';
 export type AboutWidth = 'inset' | 'plate';
@@ -279,9 +279,25 @@ export const aboutEntries: readonly AboutEntry[] = [
     opens: 'opens a commander',
     width: 'inset',
     caption:
-      'The cards you already own that would go in, grouped by the job they do, and how each role measures against its baseline — so a 1/3 on board wipes tells you what to fix before you commit to building anything. Each group can be read in the shipped order or with free cards first, which puts the copies no committed deck is holding at the top.',
+      'The cards you already own that would go in, grouped by the job they do, and how each role measures against its baseline — so a 1/3 on board wipes tells you what to fix before you commit to building anything. Each group can be read in the shipped order or by availability, which runs free copies first, then the ones a brew wants, then the ones in use, then anything over-committed.',
     keys: [],
     since: 1,
+  },
+  {
+    id: 'commander-availability',
+    chapter: '02',
+    title: "When a card you own isn't free",
+    route: '/commanders',
+    opens: 'opens a commander',
+    width: 'plate',
+    caption:
+      "Owning a card and being able to use it are different things, and this page now says which. A green dot means the card is yours; the note beside it says what is claiming it — one in a brew, none free, or short by however many copies your committed decks want past what you own. A card with a spare copy says nothing at all, because there is nothing to report.",
+    keys: [
+      'the dot is ownership and only that — it no longer changes colour when a deck holds the card.',
+      'the note counts copies, never names a deck; the card itself names every deck holding it.',
+      'the synergy list prices what you do not own, so a card you would have to buy says so before you plan around it.',
+    ],
+    since: 3,
   },
   {
     id: 'partners',

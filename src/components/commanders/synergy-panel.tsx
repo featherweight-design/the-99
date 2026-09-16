@@ -17,7 +17,7 @@ import type { CardFacet } from "../../lib/cards/facet";
 import type { SynergyCard } from "../../lib/commanders/synergy-cards";
 import { facetCounts } from "../../lib/commanders/synergy-cards";
 import { explainedCopy } from "../../lib/copy/commander-explained";
-import { LegendPip } from "../ui/ownership-dot";
+import { KeyPip } from "../ui/ownership-dot";
 import { synergyCopy } from "../../lib/copy/synergy-discovery";
 import { FacetStrip } from "./facet-strip";
 import { SynergyRow } from "./synergy-row";
@@ -44,6 +44,7 @@ export function SynergyPanel({
   selected,
   onToggle,
   width,
+  newestAsOf,
 }: {
   cards: SynergyCard[];
   ownedCount: number;
@@ -51,6 +52,10 @@ export function SynergyPanel({
   selected: Set<string>;
   onToggle: (oracleId: string) => void;
   width: "desktop" | "phone";
+  /** The price table's newest `as_of`, for the rows' buy tags. One per panel:
+      liveness is the table's property, not a card's. Required — see
+      `SelectableSynergyPanel` for what a default costs. */
+  newestAsOf: Date | null;
 }) {
   const isPhone = width === "phone";
   const restingCap = isPhone ? RESTING_CAP_PHONE : RESTING_CAP_DESKTOP;
@@ -240,13 +245,26 @@ export function SynergyPanel({
         {isPhone ? synergyCopy.panel.legendRestMobile : synergyCopy.panel.legendRest}
       </p>
 
-      {/* The dot legend. This is the only surface where all three dot states can
-          appear at once, so it labels all three rather than just the committed
-          one — and, like the role panels, only where a row on screen carries the
-          mark. Each clause is preceded by the dot it describes, drawn by the same
-          component the rows use, so no clause has to name a colour. */}
-      {visibleCards.some((c) => c.committedTo !== null) && (
-        <p
+      {/* The dot legend, drawn ALWAYS (handoff K.4).
+      
+          It was conditional on a visible committed row, because the mark it
+          explained was the committed dot and that dot was often absent.
+      
+          Unconditional is Design's ruling (K.4), and it is a claim about the
+          PANEL rather than about any one render: this is the only list in the app
+          that mixes owned and unowned rows, so both dots are what it is for. A
+          render where every visible row happens to be owned still prints
+          `Not owned.` — the key describes the list's vocabulary, not its current
+          contents. The alternative reads the visible slice and changes the key
+          under a reader who scrolls, which is what the role panels' own key
+          deliberately avoids by reading all four panels rather than the capped
+          slice.
+      
+          Each clause is preceded by the dot it describes, drawn by the same
+          component the rows use, so no clause has to name a colour. That matters
+          more than it did: Canopy now overrides --success, so a legend naming a
+          hex would be wrong in one of six themes. */}
+      <p
           className="m-0 font-mono"
           style={{
             fontSize: 10,
@@ -256,14 +274,18 @@ export function SynergyPanel({
             lineHeight: 1.4,
           }}
         >
-          <LegendPip state="free" />
-          {explainedCopy.committed.dotFree}{" "}
-          <LegendPip state="committed" />
-          {explainedCopy.committed.dotCommitted}{" "}
-          <LegendPip state="unowned" />
+          {/* TWO entries, not three. The committed dot is gone with the
+              three-state dot it named: the marker beside each row carries
+              severity now, and this panel's dot is ownership alone.
+
+              Unlike Role Coverage's key, both entries are unconditional — this
+              is the only panel that can draw an unowned row, so both states are
+              always reachable and neither needs a condition. */}
+          <KeyPip owned />
+          {explainedCopy.committed.dotOwned}{" "}
+          <KeyPip owned={false} />
           {explainedCopy.committed.dotUnowned}
-        </p>
-      )}
+      </p>
 
       {/* Column header row — desktop only; 9.5px mono uppercase 0.14em tracking */}
       {!isPhone && (
@@ -306,6 +328,11 @@ export function SynergyPanel({
             {synergyCopy.panel.colDecks}
           </span>
           {/* Spacer for toggle button */}
+          {/* Spacer for the availability slot. Without it the header's columns
+              stop lining up with the rows beneath them: the toggle spacer lands
+              where the slot starts, and every heading to its left reads against
+              the wrong column. */}
+          <span style={{ width: 88, flexShrink: 0 }} />
           <span style={{ width: 34, flexShrink: 0 }} />
         </div>
       )}
@@ -349,6 +376,7 @@ export function SynergyPanel({
               siblings={siblings}
               width={width}
               facet={facet}
+              newestAsOf={newestAsOf}
             />
           ))}
         </ul>

@@ -978,11 +978,64 @@ function ProxiesFigure({ width }: { width: AboutWidth }) {
  */
 // `Partial`, because it IS partial: a plain Record tells TypeScript every
 // entry id has a renderer, which makes `FIGURES[id]` look non-nullable and
+/**
+ * The commander page's own reading of a claim: a dot that says only whether you
+ * own the card, and a marker beside it that says what is claiming it.
+ *
+ * The pairing is the point, so both are drawn together on every row. Before this
+ * feature the dot carried both facts and said the wrong one — a card with three
+ * spare copies read the same as a card sleeved into a finished deck — and a
+ * figure showing the marker alone would teach the half that was never broken.
+ *
+ * Real components, real fixtures: `OwnershipDot` and `AvailabilityMarker` are
+ * the ones the panel mounts, so a change to either lands here on the next
+ * render rather than leaving this page quietly out of date.
+ */
+function CommanderAvailabilityFigure({ width }: { width: AboutWidth }) {
+  // The caption annotates; it never repeats the mark. `free` is the exception
+  // for the reason `AvailabilityFigure` gives: it draws nothing, so its cell
+  // would be blank without a caption saying the blank is the state.
+  const caption: Record<string, string> = {
+    free: "owned, with a copy to spare — and a spare copy is drawn as silence",
+    soft: "owned, and a deck you have not committed wants it",
+    hard: "owned, and every copy is in a committed deck",
+    over: "your committed decks want more copies than you own",
+  };
+  return (
+    <Specimen label="owned, and what is claiming it" width={width}>
+      <SpecimenResponsive>
+        {AVAILABILITY.map(({ key, a }) => (
+          <SpecimenCell key={key} caption={caption[key]}>
+            <span className="inline-flex items-center" style={{ gap: 6 }}>
+              {/* The dot is the same at all four readings. That IS the change:
+                  it is ownership and nothing else now, so the four cells differ
+                  only in what the marker beside it says. */}
+              <OwnershipDot owned size={6} className="block" />
+              {/* The chip's own type, not this page's: 10.5px mono is what the
+                  Role Coverage chip supplies, and without it the marker would
+                  show a treatment the reader never meets. */}
+              <span className="font-mono text-[10.5px] font-[600] tracking-[0.02em]">
+                <AvailabilityMarker
+                  availability={a}
+                  nameless
+                  spoken={false}
+                  seam="var(--surface-sunken)"
+                />
+              </span>
+            </span>
+          </SpecimenCell>
+        ))}
+      </SpecimenResponsive>
+    </Specimen>
+  );
+}
+
 // would let a caller invoke a missing one with no type error.
 export const FIGURES: Partial<
   Record<string, (props: { width: AboutWidth }) => React.JSX.Element>
 > = {
   availability: AvailabilityFigure,
+  "commander-availability": CommanderAvailabilityFigure,
   "buy-tag": BuyTagFigure,
   statuses: StatusFigure,
   "fit-score": FitFigure,

@@ -1,4 +1,6 @@
 import type { CardFacet } from "../cards/facet";
+import type { Availability } from "../decks/availability";
+import type { PriceFact } from "../decks/price";
 
 /** One row of the commander's synergy ranking, as the panel draws it.
  *
@@ -18,8 +20,36 @@ export type SynergyCard = {
   inclusionPct: number | null;
   synergyPts: number | null;
   owned: boolean;
-  /** The deck this card already sits in, or null. */
+  /**
+   * The deck this card already sits in, or null.
+   *
+   * NOTHING ON THIS SURFACE DRAWS IT any more — the dot is ownership and the
+   * marker carries the claim, both read from `availability` below. It is kept
+   * because the read that fills it is `cache()`d and already made for
+   * `committedSupport`, so it costs no query, and because removing it is a sweep
+   * across both card types rather than a line. Do not add a reader: a card can
+   * sit in a deck and still have a spare copy, which is the false certainty this
+   * round was filed about.
+   */
   committedTo: string | null;
+  /**
+   * This card's claim picture, or null.
+   *
+   * **Null means NO ROW, never "unowned."** `loadAvailability` is driven by its
+   * `owned` CTE and excludes basics model-wide, so an unowned card, a basic and
+   * an unreachable read all arrive the same way. The buy branch reads `owned`
+   * above — never this being null — or a basic land renders as a purchase.
+   */
+  availability: Availability | null;
+  /**
+   * What one copy costs, or null. Joined by whichever surface draws the card.
+   *
+   * `newestAsOf` is deliberately NOT here: liveness is a property of the price
+   * table, not of a card, so it rides one prop per list — the shape
+   * `top-off-list.tsx` already uses. `BuyTag` owns every reading of the pair,
+   * so nothing here decides what a missing figure means.
+   */
+  price: PriceFact | null;
   /** Scryfall's cost string ("{2}{U}"), carried whole rather than as a mana
    *  value: `CostPips` draws hybrid and Phyrexian symbols from their halves,
    *  and an integer cannot be taken back apart into them. */

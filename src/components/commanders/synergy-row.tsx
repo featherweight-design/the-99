@@ -10,10 +10,14 @@
 import type { CardFacet } from "../../lib/cards/facet";
 import { FACET_TYPE_LABEL } from "../../lib/cards/facet";
 import type { SynergyCard } from "../../lib/commanders/synergy-cards";
-import { explainedCopy } from "../../lib/copy/commander-explained";
+import type { PriceFact } from "../../lib/decks/price";
 import { synergyCopy, synergySignedDisplay } from "../../lib/copy/synergy-discovery";
 import { CardDetailTrigger } from "../cards/card-detail-provider";
-import { AvailabilityDot, availabilityDotState } from "../ui/ownership-dot";
+import { OwnershipDot } from "../ui/ownership-dot";
+import { AvailabilityMarker, markerAria } from "../ui/availability-marker";
+import { availabilityState } from "../../lib/decks/availability";
+import { BuyTag } from "../decks/buy-tag";
+import { formatPriceFigure, priceState } from "../../lib/decks/price";
 import { ROW_GAP_PX, ROW_RADIUS_PX } from "../ui/row-shell";
 
 // ── Figure formatters ────────────────────────────────────────────────────────
@@ -21,6 +25,71 @@ import { ROW_GAP_PX, ROW_RADIUS_PX } from "../ui/row-shell";
 function formatSynergyAria(pts: number): string {
   if (pts < 0) return synergyCopy.figure.ariaSynergyMinus(String(Math.abs(pts)));
   return synergyCopy.figure.ariaSynergyPlus(String(pts));
+}
+
+/**
+ * The slot's clause for an UNOWNED row, spoken.
+ *
+ * Reads `priceState` rather than the figure, so the four feed readings the tag
+ * draws are the four this speaks — and one function decides them, not two.
+ */
+function priceClauseAria(price: PriceFact | null, newestAsOf: Date | null): string {
+  const state = priceState(price, newestAsOf);
+  if (state === "soldOut") return synergyCopy.figure.ariaSoldOut;
+  if (price === null || state === "absent") return synergyCopy.figure.ariaBuyNoPrice;
+  const figure = formatPriceFigure(price, state);
+  return figure ? synergyCopy.figure.ariaBuy(figure) : synergyCopy.figure.ariaBuyNoPrice;
+}
+
+/**
+ * The availability slot, before the toggle.
+ *
+ * ONE slot, three occupants, sized to the widest rather than to its content: a
+ * column that resized per row would walk the toggle up and down the list as the
+ * reader scans it.
+ *
+ * The fixed width is THIS surface's, not a borrowed one. `update-diff-row`'s
+ * slot sets no width and returns `null` outright, which it can afford because it
+ * sits before a column that holds its own shape; here the slot is the last thing
+ * before the toggle, so nothing downstream would hold the line for it.
+ *
+ * The gate is `owned`, NOT "has a free copy". The two shipped surfaces disagree
+ * here — the diff row buys whenever nothing is free, the deck tile draws the
+ * marker whenever the card is owned — and the handoff chose the tile's reading
+ * for this surface. It is right for a page being browsed: the useful fact about
+ * an owned card with no free copy is that you have one and where it went, not
+ * what a second copy would cost.
+ */
+function AvailabilitySlot({
+  card,
+  newestAsOf,
+  selected,
+}: {
+  card: SynergyCard;
+  newestAsOf: Date | null;
+  selected: boolean;
+}) {
+  const state = card.availability ? availabilityState(card.availability) : "free";
+  return (
+    <span
+      style={{ width: 88, flexShrink: 0, display: "flex", justifyContent: "flex-end" }}
+    >
+      {!card.owned ? (
+        <BuyTag variant="row" price={card.price} newestAsOf={newestAsOf} reserveSlot />
+      ) : card.availability && state !== "free" ? (
+        <AvailabilityMarker
+          availability={card.availability}
+          nameless
+          spoken={false}
+          // A TOKEN, never a resolved hex: the seam joins the over glyph's two
+          // diamonds, and a literal cracks in five of six themes. A selected row
+          // sits on a different ground, so it names a different token.
+          seam={selected ? "var(--elevated-hover)" : "var(--surface)"}
+          className="flex-none font-mono text-[11px]"
+        />
+      ) : null}
+    </span>
+  );
 }
 
 // ── The row ──────────────────────────────────────────────────────────────────
@@ -32,6 +101,7 @@ export function SynergyRow({
   siblings,
   width,
   facet,
+  newestAsOf,
 }: {
   card: SynergyCard;
   selected: boolean;
@@ -39,8 +109,23 @@ export function SynergyRow({
   siblings: string[];
   width: "desktop" | "phone";
   facet: CardFacet | "all";
+  /**
+   * The price table's newest `as_of`. One per panel — see `SynergyPanel`.
+   *
+   * REQUIRED, completing the chain: `detail.tsx` → `SelectableSynergyPanel` →
+   * `SynergyPanel` → here. A default at any link turns a missed integration into
+   * a wrong price rather than a type error, which is exactly what shipped — the
+   * page passed it to one of two panels and every desktop row read `absent`.
+   *
+   * The `decks/` components still take it optional. Those are pre-existing and
+   * this feature does not touch them; sweeping them is a separate change with
+   * its own blast radius, not a line to slip into this one.
+   */
+  newestAsOf: Date | null;
 }) {
   const isPhone = width === "phone";
+  const isOver =
+    card.owned && card.availability !== null && availabilityState(card.availability) === "over";
 
   // Type column content: under a single facet, print the real type line.
   // Under "all", print the bucket label only.
@@ -77,11 +162,26 @@ export function SynergyRow({
   // Appended, not substituted: the shipped name carries the ownership word and
   // both figures, and the deck is a further fact about the card rather than a
   // different one.
-  const rowAria =
-    synergyCopy.figure.rowAria(card.name, ownedAria, synergyAria, inclusionAria) +
-    (card.committedTo !== null
-      ? explainedCopy.committed.ariaSuffix({ name: card.committedTo })
-      : "");
+  // §4.7 — what the SLOT contributes to the row's own label.
+  //
+  // The <li>'s aria-label replaces everything beneath it, so neither the marker
+  // nor the buy tag is spoken on its own. `markerAria` covers the three owned
+  // readings and returns null at free; the unowned reading draws a price and
+  // `markerAria` has nothing to say about it, which is the gap the readiness
+  // audit reopened.
+  const slotAria = !card.owned
+    ? priceClauseAria(card.price, newestAsOf)
+    : card.availability
+      ? (markerAria(card.availability) ?? "")
+      : "";
+
+  const rowAria = synergyCopy.figure.rowAria(
+    card.name,
+    ownedAria,
+    synergyAria,
+    inclusionAria,
+    slotAria,
+  );
 
   const toggleAria = selected
     ? synergyCopy.select.removeAria(card.name)
@@ -100,14 +200,23 @@ export function SynergyRow({
         minHeight: isPhone ? 52 : 44,
         borderRadius: ROW_RADIUS_PX,
         background: selected ? "var(--elevated-hover)" : "var(--surface)",
+        // `over` tints the container, on this row as on Role Coverage's — STATES
+        // gives it to all four geometries, and it is the one severity loud enough
+        // to touch a container. Selection still wins: a row the reader has picked
+        // says so first, and its marker is still carrying the shortfall.
+        //
+        // A token expression rather than the literal the handoff quotes: that
+        // value predates the six-theme system and ships nowhere in `src/`.
         border: selected
           ? "1px solid var(--accent-shadow)"
-          : "1px solid var(--border)",
+          : isOver
+            ? "1px solid color-mix(in srgb, var(--danger) 40%, var(--bg))"
+            : "1px solid var(--border)",
         listStyle: "none",
       }}
     >
-      {/* Slot 1: ownership dot */}
-      <AvailabilityDot state={availabilityDotState(card)} size={7} />
+      {/* Slot 1: ownership dot. TWO states — severity moved to the marker. */}
+      <OwnershipDot owned={card.owned} size={7} className="block" />
 
       {/* Slot 2: name + phone meta line — flex column gap 2px on phone */}
       <div
@@ -172,6 +281,35 @@ export function SynergyRow({
             >
               {inclusionMobileDisplay}
             </span>
+            {/* The slot's third home. No second line and no new row: 52px stays
+                52px, and the clause joins the figures it belongs beside. */}
+            {!card.owned ? (
+              <>
+                <span aria-hidden="true" style={{ color: "var(--fg-locked)" }}>·</span>
+                {/* FULL density, not `collapsed`. Collapsed draws a bare `$`
+                    and moves the figure to `sr-only` — which is right on a list
+                    being scanned, and wrong here: the whole point of this slot on
+                    the phone is that a card you would have to buy says what it
+                    costs before you plan around it. Hiding the amount from the
+                    reader who can see would leave the About entry's own key line
+                    false at the width most people read on. */}
+                <BuyTag variant="row" price={card.price} newestAsOf={newestAsOf} />
+              </>
+            ) : card.availability && availabilityState(card.availability) !== "free" ? (
+              <>
+                <span aria-hidden="true" style={{ color: "var(--fg-locked)" }}>·</span>
+                <AvailabilityMarker
+                  availability={card.availability}
+                  nameless
+                  spoken={false}
+                  seam={selected ? "var(--elevated-hover)" : "var(--surface)"}
+                  // The meta line's own 10px. It inherited before, which happened
+                  // to be right and was not stated — and the probe could not
+                  // measure a size nothing declared.
+                  className="flex-none font-mono text-[10px]"
+                />
+              </>
+            ) : null}
           </div>
         )}
       </div>
@@ -233,6 +371,12 @@ export function SynergyRow({
         >
           {inclusionDisplay}
         </span>
+      )}
+
+      {/* Slot 5b: availability — desktop only. On the phone it rides the meta
+          line under the name, where a 52px row has no second column to give. */}
+      {!isPhone && (
+        <AvailabilitySlot card={card} newestAsOf={newestAsOf} selected={selected} />
       )}
 
       {/* Slot 6: toggle button */}

@@ -7,7 +7,7 @@ import { useState, useTransition, useId, type JSX } from "react";
 import { useRouter } from "next/navigation";
 import { CoverageChip, CoverageRow, CoverageDisclosure, COVERAGE_CAP, COVERAGE_EXPANDED_CAP } from "./coverage-chip";
 import { explainedCopy } from "../../lib/copy/commander-explained";
-import { OwnershipDot } from "../ui/ownership-dot";
+import { KeyPip } from "../ui/ownership-dot";
 import { availabilityState } from "../../lib/decks/availability";
 import {
   CoverageSortMenu,
@@ -55,29 +55,6 @@ const ROLE_NOUNS: Record<RoleName, string> = {
  * Role Coverage is built from the owned pool. Committed is not: with no deck
  * holding any of these cards there is no second colour on screen to explain.
  */
-/**
- * The key's dot, at 6px, carrying the inline offsets `LegendPip` used to hold: a
- * 6px circle sits visually low against 10.5px mono, and the sentence's own word
- * spacing should not have to carry it.
- *
- * `LegendPip` is still exported and still rendered by `synergy-panel.tsx`, which
- * has not moved yet; it retires with that panel in the next PR, and this key
- * stops importing it now rather than waiting. Design flagged this baseline as
- * unverified (their gap 4), so the offsets are reproduced exactly rather than
- * re-derived — the key sits where it has always sat.
- */
-function KeyPip() {
-  return (
-    <span
-      aria-hidden="true"
-      className="inline-flex items-center"
-      style={{ marginRight: 5, verticalAlign: "baseline", position: "relative", top: -0.5 }}
-    >
-      <OwnershipDot owned size={6} className="block" />
-    </span>
-  );
-}
-
 function DotKey({
   roleCards,
   isDesktop,
@@ -87,11 +64,26 @@ function DotKey({
 }): JSX.Element | null {
   const all = ROLE_ORDER.flatMap((role) => roleCards[role]);
   if (all.length === 0) return null;
-  // Any card with anything to say — i.e. any marker on screen. Replaces
-  // `anyCommitted` one line for one line; the mechanism is the shipped one.
+  // Any card with anything to say — i.e. any marker in the ROLE PANELS.
+  // Replaces `anyCommitted` one line for one line; the mechanism is the shipped
+  // one.
   //
-  // Still read across ALL FOUR panels rather than the chips a cap happens to
-  // show, so expanding a panel cannot change the key under the reader.
+  // Read across ALL FOUR panels rather than the chips a cap happens to show, so
+  // expanding a panel cannot change the key under the reader.
+  //
+  // SCOPE, stated because it is not obvious: this reads the role panels and
+  // nothing else. The synergy panel below now draws markers of its own, so a
+  // commander whose only marked card is a synergy row prints
+  // `Owned and available.` here while a marker is on screen further down — and
+  // the synergy panel's own key says `Owned.` for the same green dot. Two words
+  // for one mark on one page.
+  //
+  // Not resolved here, deliberately. Design's K.1/K.2 define this condition as
+  // "no marker anywhere in the four panels", and widening it to a panel Design
+  // scoped it away from is a ruling about what the key MEANS, which is theirs to
+  // make. Flagged to them; the alternative is that `dotFree` stops being
+  // conditional at all, which costs the byte-identical free state this round
+  // promised.
   const anyMarker = all.some(
     (c) => c.availability !== null && availabilityState(c.availability) !== "free",
   );
@@ -115,7 +107,7 @@ function DotKey({
           unconditionally would repaint a free player's page for no gain — and a
           player whose collection covers their decks seeing nothing changed is
           this round's one unusual constraint. */}
-      <KeyPip />
+      <KeyPip owned />
       {anyMarker
         ? explainedCopy.committed.dotOwned
         : explainedCopy.committed.dotFree}

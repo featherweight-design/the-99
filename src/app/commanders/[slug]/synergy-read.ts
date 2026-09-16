@@ -97,6 +97,11 @@ export async function readSynergyCards(
     synergyPts: r.synergy == null ? null : Math.round(r.synergy * 100),
     owned: r.ownedQuantity > 0,
     committedTo: committed.get(r.oracleId)?.name ?? null,
+    // Stamped by the page, which owns the one claim read and the one price read
+    // for the whole surface. Null here is "not yet joined", and the page's join
+    // is what makes it mean anything.
+    availability: null,
+    price: null,
   }));
 
   return orderBySynergy(excludeCoveredRoleCards(shaped, new Set(coveredOracleIds)));

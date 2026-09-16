@@ -3,6 +3,7 @@ import { describe, expect, it, vi } from "vitest";
 import { AboutPage } from "./about-page";
 import { ABOUT_VERSION, aboutCopy, aboutEntries } from "../../lib/copy/about";
 import { FIGURES } from "./figures";
+import { availabilityCopy } from "../../lib/copy/availability";
 
 // The action is a server function; the page only needs it to exist as a form
 // target, and importing it for real drags a database client into jsdom.
@@ -689,6 +690,37 @@ describe("what each legend must hold", () => {
       const dds = el.querySelectorAll("dd").length;
       expect(dts, `${label} has no rows`).toBeGreaterThan(1);
       expect(dds, `${label} has ${dts} marks and ${dds} meanings`).toBe(dts);
+    }
+  });
+});
+
+// ── The commander-availability figure draws its four readings ─────────────
+//
+// The generic gates — "a figure is registered", "no entry ships undrawn" — stay
+// green over a specimen that renders an empty box or somebody else's marks. This
+// asserts the thing the entry claims: four readings, the marker count-only, and
+// the dot the same at every one of them, which is the change the entry describes.
+describe("the commander-availability figure", () => {
+  it("draws all four readings, count-only, with one dot treatment", async () => {
+    const { FIGURES } = await import("./figures");
+    const Figure = FIGURES["commander-availability"]!;
+    expect(Figure).toBeDefined();
+    const { container } = render(<Figure width="plate" />);
+
+    // Three readings print a label; `free` prints none, and that absence is the
+    // fourth. Read from the copy module rather than pinned here.
+    expect(screen.getByText(availabilityCopy.marker.soft(1))).toBeInTheDocument();
+    expect(screen.getByText(availabilityCopy.marker.hard)).toBeInTheDocument();
+    expect(screen.getByText(availabilityCopy.marker.over(2))).toBeInTheDocument();
+
+    // Count-only: no deck name anywhere in the figure.
+    expect(container.textContent).not.toMatch(/in [A-Z]/);
+
+    // One dot treatment across all four cells — the feature's whole claim.
+    const dots = container.querySelectorAll('[class*="rounded-full"][style*="width: 6px"]');
+    expect(dots.length).toBe(4);
+    for (const d of dots) {
+      expect(d.className).toContain("bg-[color:var(--success)]");
     }
   });
 });

@@ -22,7 +22,7 @@ const synergyCard = (id: string): SynergyCard => ({
   inclusionPct: null,
   synergyPts: null,
   owned: true,
-  committedTo: null,
+  committedTo: null, availability: null, price: null,
   manaCost: null,
 });
 const synergyCards = (n: number): SynergyCard[] =>
@@ -192,6 +192,7 @@ describe("SelectableLiveAnnouncer — placement in CommanderDetail", () => {
         rank={1}
         isBestFit
         synergyCards={synergyCards(3)}
+        newestAsOf={null}
       />,
     );
     // The SelectableLiveAnnouncer renders a <span>; other providers in the tree
