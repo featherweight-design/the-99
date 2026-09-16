@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { chroma, contrast, deltaEOk, parseHex, relativeLuminance } from "./color";
+import { chroma, contrast, deltaEOk, hueGap, hueOk, parseHex, relativeLuminance } from "./color";
 
 describe("parseHex", () => {
   it("reads a six-digit hex, case-insensitively", () => {
@@ -64,5 +64,42 @@ describe("deltaEOk", () => {
 
   it("separates the Low Sun warning from its accent", () => {
     expect(deltaEOk("#DEAA29", "#CF8745")).toBeCloseTo(0.1009, 3);
+  });
+});
+
+describe("hueOk / hueGap", () => {
+  // A known hue, so a regression in the OKLCH conversion itself is visible
+  // rather than absorbed by a relative comparison.
+  it("reads the hue of a known colour", () => {
+    // Canopy's --g, the pip the --success override was cut away from.
+    expect(hueOk("#4B7A46")).toBeCloseTo(142.0, 0);
+    expect(hueOk("#5EA990")).toBeCloseTo(170.1, 0);
+  });
+
+  it("measures the gap between two hues", () => {
+    expect(hueGap("#4B7A46", "#5EA990")).toBeCloseTo(28.1, 0);
+  });
+
+  // THE WRAP. `Math.abs(a - b)` alone reports 350° for a pair 10° apart across
+  // the 0/360 seam, which would read as the safest separation in the palette
+  // while being the tightest. The shortest-arc branch exists for this and
+  // nothing else exercised it — the one pair under test sits at 142° and 170°,
+  // nowhere near the boundary, so the branch could have been wrong and green.
+  it("takes the shortest arc across the 0/360 boundary", () => {
+    const near0 = "#640A2E"; // 4.22°
+    const near355 = "#640A3A"; // 354.99° — 9.23° away the short way
+    const a = hueOk(near0);
+    const b = hueOk(near355);
+    // Guard the fixture: if these drift off either side of the seam the test
+    // stops measuring a wrap and silently becomes an ordinary gap.
+    expect(Math.abs(a - b)).toBeGreaterThan(180);
+    expect(hueGap(near0, near355)).toBeLessThan(180);
+    expect(hueGap(near0, near355)).toBeCloseTo(360 - Math.abs(a - b), 6);
+    // And the value itself, so a wrap that merely stays under 180 is not enough.
+    expect(hueGap(near0, near355)).toBeCloseTo(9.23, 1);
+  });
+
+  it("is symmetric", () => {
+    expect(hueGap("#4B7A46", "#5EA990")).toBeCloseTo(hueGap("#5EA990", "#4B7A46"), 9);
   });
 });

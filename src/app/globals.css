@@ -123,9 +123,44 @@
   --font-display-face: var(--font-chakra-petch);
 }
 
-/* Theme: ixalan — "Canopy". Jungle daylight; the yellow-green accent is the
-   third green in its own palette, so --success and --g are the two tokens with
-   the least room here. Both clear the 0.10 ΔE floor, but only just. */
+/* Theme: ixalan — "Canopy". Jungle daylight, and the only palette that overrides
+   --success.
+
+   The accent is the third green here, and the problem was never the ΔE floor:
+   shipped, every pair cleared it (--success vs --accent 0.128, vs --g 0.132, vs
+   --avail-hard-fg 0.144). What collided was HUE. --success sat at 141.5° and --g
+   at 142.0° — half a degree apart, the same green at two lightnesses — which is
+   exactly the ownership-dot-beside-a-cost-pip reading, where lightness alone is
+   not a difference a reader can see.
+
+   The override is hue-borne rather than lightness-borne: 170.1°, 28° off --g and
+   47° off the accent, min ΔE 0.149, and 6.11:1 on --surface — better than the
+   value it replaces on all eight Canopy grounds, so it still clears 4.5:1
+   everywhere --success is drawn as text.
+
+   WHAT IS NOT FIXED, and is deliberately left: the same half-degree gap between
+   --success and --g exists in amonkhet, kamigawa, eldraine and kaldheim, which
+   share both hex values. Canopy was the reported clash because its ACCENT is a
+   third green (47.5° from --success, against 80-160° in the others), so three
+   greens share one surface rather than two. Whether a dot beside a pip reads in
+   the other four is a design question nobody has asked yet, and re-cutting them
+   on this finding alone would be an eng decision about someone else's palette.
+
+   Why the suite passed this the whole time, precisely: contract.test.ts compares
+   every semantic and pip to --accent, and every pip to every other pip. It never
+   compares a SEMANTIC to a PIP, so --success against --g — the pair that
+   collided — was measured by nobody. The figures quoted above were taken by hand
+   for this change, not read off a green suite.
+
+   ΔE would not have caught it either: that pair measures 0.132, comfortably
+   over the floor. Hue is the axis that sees it, so contract.test.ts now holds
+   CANOPY ALONE to a 20° floor between --success and --g. The other four themes
+   are deliberately exempt — see the test.
+
+   --g stays SHARED, deliberately. The phyrexia precedent moved --g because that
+   theme's accent sat ΔE 0.09 from it; here accent versus --g is 0.251, the healthiest
+   of the three pairs. Moving it would fix nothing and cost a WUBRG pip its
+   cross-theme consistency. Ratified by Design 2026-09-15. */
 [data-theme="ixalan"] {
   --bg: #0E1310;
   --surface: #171E19;
@@ -150,7 +185,7 @@
   --accent-shadow: #3E5220;
   --accent-dim: #3E5220;
   --accent-mid: #85A22F;
-  --success: #6FA368;
+  --success: #5EA990;
   --warning: #E0913C;
   --danger: #C6533F;
   --avail-soft: var(--fg-muted);
