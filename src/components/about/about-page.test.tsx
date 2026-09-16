@@ -455,6 +455,10 @@ describe("the contents rail", () => {
     expect(rail.className).toContain("sticky");
     expect(rail.className).toContain("hidden");
     expect(rail.className).toContain("min-[1000px]:block");
+    // 216px is the drawn width, and it reached the build as 220px — the width
+    // is the whole of what the rail contributes to the page's measure, so it
+    // is asserted here rather than left to a reader of the class list.
+    expect(rail.className).toContain("w-[216px]");
   });
 
   it("marks where the reader is, for a screen reader as well as an eye", () => {
@@ -746,11 +750,45 @@ describe("the page's own type, against the design table", () => {
     for (const h2 of screen.getAllByRole("heading", { level: 2 })) {
       expect(h2.className).toContain("font-bold");
       expect(h2.className).toContain("text-[16px]");
+      expect(h2.className).toContain("min-[1000px]:text-[21px]");
     }
     for (const h3 of screen.getAllByRole("heading", { level: 3 })) {
       // Tailwind's preflight gives an h3 the body weight, so the class is what
       // produces the 600 the table specifies — not decoration on top of it.
       expect(h3.className, "the entry title carries its own weight").toContain("font-semibold");
+      expect(h3.className).toContain("text-[15px]");
+      expect(h3.className).toContain("min-[1000px]:text-[15.5px]");
+    }
+  });
+
+  // Both of the rows above were corrected on the desktop step alone in an
+  // earlier pass, so a check that reads only the phone value certifies half a
+  // fix. Every row here therefore asserts BOTH values — and these three
+  // elements are reached structurally rather than by class, because a query
+  // written from the class list can only find what it already describes.
+  it("sizes the route link and the key line at both widths", () => {
+    const { container } = render(<AboutPage seen={0} />);
+
+    // The route sits beside its own entry title, so the title's next sibling
+    // is the link — no class in the selector.
+    const titles = screen.getAllByRole("heading", { level: 3 });
+    expect(titles.length).toBeGreaterThan(0);
+    for (const title of titles) {
+      const route = title.nextElementSibling;
+      expect(route?.tagName).toBe("A");
+      expect(route?.className).toContain("text-[11px]");
+      expect(route?.className).toContain("min-[1000px]:text-[11.5px]");
+    }
+
+    // A key line is the text cell of a numbered key — the second child of an
+    // `li` whose first child is the numeral. One size at both widths.
+    const keyLines = [...container.querySelectorAll("ol > li > span[aria-hidden]")].map(
+      (numeral) => numeral.nextElementSibling,
+    );
+    expect(keyLines.length).toBeGreaterThan(0);
+    for (const line of keyLines) {
+      expect(line?.className).toContain("text-[10.5px]");
+      expect(line?.className).not.toContain("min-[1000px]:text-[");
     }
   });
 
