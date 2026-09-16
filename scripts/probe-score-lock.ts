@@ -19,6 +19,11 @@
 // all. Those are facts about what two real connections did to each other, which
 // is what this script is for.
 //
+// IT SYNCHRONISES ON `pg_locks`, NEVER ON A SLEEP. A fixed delay cannot
+// establish that the side under test has reached its lock, and a delay that
+// expires early does not fail — it passes, having measured nothing. See
+// `waitForLockWaiter`.
+//
 // WHICH SIDE IS REAL DIFFERS BY CASE, deliberately. Case 1 needs a writer that
 // holds its transaction open across the clear, and `persistScores` commits on
 // its own, so that side is the SQL it issues while the CLEAR is the real
@@ -40,7 +45,7 @@ import { Pool, neonConfig } from "@neondatabase/serverless";
 import { drizzle } from "drizzle-orm/neon-serverless";
 import { sql } from "drizzle-orm";
 import ws from "ws";
-import { persistScores } from "../src/lib/recs/store";
+import { persistScores, SCORE_INDEX_LOCK } from "../src/lib/recs/store";
 import { buildCommanderIndex } from "../src/lib/edhrec/seed-index";
 import type { RankedCommander } from "../src/lib/recs/recommend";
 
@@ -59,6 +64,54 @@ const check = (label: string, actual: unknown, expected: unknown) => {
 };
 const note = (line: string) => console.log(`\n${line}`);
 const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
+
+/**
+ * Blocks until someone is WAITING on `SCORE_INDEX_LOCK`, read out of `pg_locks`.
+ *
+ * A FIXED SLEEP CANNOT ESTABLISH THIS, and that is a false-green rather than
+ * flakiness. Case 1 sleeps and then asserts the sentinel survives: if the build
+ * has not yet reached the lock, the sentinel is present for a trivial reason —
+ * so the check passes WITH THE EXCLUSIVE LOCK REMOVED, and the zero-row check
+ * after it passes too, because the clear still runs once the writer commits.
+ * Case 3 has the mirror hole: if `persistScores` has not reached its lock query,
+ * the rebuilder commits first and the writer reads the new generation unaided,
+ * passing without the shared lock ever mattering. Both mutations do fail today,
+ * on this machine, which is exactly the kind of evidence a sleep gives you.
+ *
+ * An advisory lock taken as `pg_advisory_xact_lock(bigint)` is reported with the
+ * key split across two 32-bit halves — `classid` high, `objid` low, `objsubid`
+ * 1 — so the halves are recomputed here from the same `hashtextextended` call
+ * the application makes rather than being hardcoded.
+ *
+ * A TIMEOUT THROWS. Falling back to "carry on anyway" would reinstate the hole
+ * this replaces, with extra steps.
+ */
+const WAITER_TIMEOUT_MS = 20_000;
+const waitForLockWaiter = async (label: string): Promise<void> => {
+  const started = Date.now();
+  for (;;) {
+    const { rows } = await fixture.execute<{ waiters: number }>(sql`
+      with k as (select hashtextextended(${SCORE_INDEX_LOCK}, 0) as key)
+      select count(l.pid)::int as waiters
+        from k
+        left join pg_locks l
+          on l.locktype = 'advisory'
+         and l.objsubid = 1
+         and not l.granted
+         and l.classid = ((k.key >> 32) & 4294967295)::oid
+         and l.objid = (k.key & 4294967295)::oid
+    `);
+    if ((rows[0]?.waiters ?? 0) > 0) return;
+    if (Date.now() - started > WAITER_TIMEOUT_MS) {
+      throw new Error(
+        `${label}: nothing ever waited on the index lock within ` +
+          `${WAITER_TIMEOUT_MS}ms. Either the side under test takes no lock, or ` +
+          `it failed before reaching one — both are findings, not timing.`,
+      );
+    }
+    await sleep(100);
+  }
+};
 
 const scoreRows = async () => {
   const { rows } = await fixture.execute<{ n: number }>(
@@ -188,14 +241,14 @@ try {
   try {
     await writer.query("begin");
     await writer.query("select pg_advisory_xact_lock_shared(hashtextextended($1, 0))", [
-      "commander-scores:commander-index",
+      SCORE_INDEX_LOCK,
     ]);
     await insertScore(writer, other.oracle_id, "in-flight");
 
     // Deliberately not awaited: it blocks on the exclusive key, and the writer
     // has to commit while it waits or there is no race to observe.
     const building = buildWithRealClear(subject.oracle_id, subject.name);
-    await sleep(2500);
+    await waitForLockWaiter("the clear");
     check("a committed row survives while the writer holds the lock", await scoreRows(), 1);
 
     await writer.query("commit");
@@ -240,7 +293,7 @@ try {
   try {
     await rebuilder.query("begin");
     await rebuilder.query("select pg_advisory_xact_lock(hashtextextended($1, 0))", [
-      "commander-scores:commander-index",
+      SCORE_INDEX_LOCK,
     ]);
     supportFixture = support.oracle_id;
     // `edhrec_total` is non-null iff `synergy_state` is 'ok'
@@ -256,7 +309,7 @@ try {
     );
 
     const writing = persistScores(USER, [ranked(subject.oracle_id)], null, captured);
-    await sleep(2500);
+    await waitForLockWaiter("the score write");
     await rebuilder.query("commit");
     await writing;
     check("the write is abandoned", await scoreRows(), 0);
