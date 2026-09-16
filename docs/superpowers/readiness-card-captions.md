@@ -12,10 +12,12 @@ and after seeing it on real decks, and each overturns something the handoff call
 shipped and awaiting Design's **ratification** rather than Design's decision; the tracker row is ⚖️
 rather than 🟢.
 
-Erratum 5 was added after the brief's own review round; the other five came from the audit.
+Errata 1–4 and 6 came from the audit itself; erratum 5 was added after the brief's own review
+round, 7 and 9 from reviews of the work, 8 is a note on where the handoff lived, and 10–12 are
+Hugh's post-ship rulings.
 
 **Audited against `origin/main` at `f5745d11` on 2026-09-15.** Every claim below was read on that
-commit. The handoff was drawn against an earlier tree, and three of the five errata are merges
+commit. The handoff was drawn against an earlier tree, and three of those errata are merges
 that landed after it was drawn.
 
 **Handoff:** `design/design_handoff_the99_card_captions/`.

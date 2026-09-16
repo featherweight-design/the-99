@@ -10,7 +10,10 @@
 // two-line clamped name it needs to keep a shelf of tiles in alignment, none of
 // which a decklist tile has any use for.
 //
-// NOTHING IS DRAWN OVER THE ART. The four marks that used to hold its corners —
+// NOTHING IS DRAWN OVER THE ART, with one exception named below: the draft's
+// accent rule crosses it deliberately (erratum 10), because a mark confined to
+// the caption was the thing that went unnoticed. The four marks that used to
+// hold the art's corners —
 // the availability chip, the collapsed `$`, the proxy `P` and the `×N` badge —
 // are on the caption's meta line, and the bottom wash deleted with them. The one
 // exception is a tile with NO art, whose plate prints no cost of its own and so

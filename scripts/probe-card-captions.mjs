@@ -184,20 +184,32 @@ const DRAFT = ({ page }) => {
   document.body.appendChild(probe);
   const accentRgb = getComputedStyle(probe).color;
   probe.remove();
-  const edged = [...document.querySelectorAll(`${page} span`)].filter(
-    (el) => bg(el) === accentRgb && el.getBoundingClientRect().width <= 4,
-  );
+  // WIDTH AND SIDE, not just "narrow". `width <= 4` alone accepts a ZERO-width
+  // strip, which paints nothing and is the cheapest way to pass this check
+  // while shipping the defect it exists for.
+  const edged = [...document.querySelectorAll(`${page} span`)].filter((el) => {
+    if (bg(el) !== accentRgb) return false;
+    const r = el.getBoundingClientRect();
+    return r.width >= 1.5 && r.width <= 4;
+  });
   return {
     edges: edged.length,
     accentRgb,
     // The strip has to REACH THE ART, which is the whole point of erratum 10 and
     // the thing the previous check could not see. Its height against its tile's.
+    // Against the TILE, found by walking out to the rounded plate rather than
+    // trusting the immediate parent — and on the LEFT edge, since a rule pinned
+    // right covers just as much height while marking the wrong side.
     coversArt: edged.filter((el) => {
-      const shell = el.parentElement;
+      let shell = el.parentElement;
+      while (shell && !/rounded-\[(9|10)px\]/.test(shell.className ?? "")) {
+        shell = shell.parentElement;
+      }
       if (!shell) return false;
       const r = el.getBoundingClientRect();
       const s = shell.getBoundingClientRect();
-      return s.height > 0 && r.height / s.height > 0.9;
+      if (s.height <= 0) return false;
+      return r.height / s.height > 0.9 && Math.abs(r.left - s.left) <= 2;
     }).length,
     // SCOPED TO A CAPTION. Unscoped, this read the deck header's own `+1`
     // pending-count chip and passed with the tile's figure deleted outright —
@@ -470,9 +482,9 @@ async function run() {
         // caption. Zero would mean the card view still photographs a dirty draft
         // as a clean one, which is the state this whole call exists to end.
         failures += !report(
-          // REACHING THE ART is the assertion. Which element holds the style is
-          // not, and is what both previous versions asked while passing a build
-          // whose rule was painted under the picture.
+          // A 2px rule ON THE LEFT, tall enough to cross the art. Which element
+          // holds the style is NOT the assertion, and is what both previous
+          // versions asked while passing a build painted under the picture.
           `${width}px · draft · one accent rule, covering the tile`,
           draft.edges === 1 && draft.coversArt === 1,
           `${draft.edges} rules, ${draft.coversArt} reaching the art`,

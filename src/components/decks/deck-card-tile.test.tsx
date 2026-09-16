@@ -437,9 +437,21 @@ describe("DeckCardTile — the draft touched this card", () => {
     ).toBeInTheDocument();
   });
 
-  it("leaves a clean draft alone", () => {
-    renderWithDraft([["some-other-card", { from: 1, to: 2 }]], { ...card, quantity: 2 });
+  it("leaves a clean draft alone — no figure AND no rule", () => {
+    const { container } = render(
+      <CardDetailProvider fetchCard={vi.fn().mockResolvedValue(null)}>
+        <PendingChangeProvider value={{ moves: new Map([["some-other-card", { from: 1, to: 2 }]]) }}>
+          <DeckCardTile deckId="d1" card={{ ...card, quantity: 2 } as DeckDetailCard} />
+        </PendingChangeProvider>
+      </CardDetailProvider>,
+    );
 
+    // The absence half. Without it an UNCONDITIONAL strip passes the whole
+    // suite: every other case here renders a touched card, so a rule that
+    // ignored `pendingMove` would be indistinguishable from one that read it.
+    expect(
+      container.querySelectorAll('span[class*="bg-[color:var(--accent)]"]'),
+    ).toHaveLength(0);
     expect(screen.getByText(addPanelCopy.row.quantity(2))).toBeInTheDocument();
     expect(screen.queryByText(deckVersioningCopy.pending.tilePair(1, 2))).not.toBeInTheDocument();
   });

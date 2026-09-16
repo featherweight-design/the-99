@@ -1,7 +1,7 @@
 # Plan — Card captions
 
 **Handoff:** `design/design_handoff_the99_card_captions/` (R1).
-**Readiness:** `docs/superpowers/readiness-card-captions.md` — 🟢 Green, five errata.
+**Readiness:** `docs/superpowers/readiness-card-captions.md` — 🟢 Green; **twelve errata as of 2026-09-15**, of which 10–12 are post-ship rulings awaiting Design's ratification (⚖️). See the banner below.
 **Brief:** `docs/superpowers/design-briefs/2026-09-14-modifiers-below-the-card.md`.
 
 Both card views move their modifiers off the art and into a two-line caption. The art keeps
