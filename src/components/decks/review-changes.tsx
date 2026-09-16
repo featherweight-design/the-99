@@ -551,6 +551,14 @@ export function ReviewChanges({
   // What the commit sheet and the discard question report. `settled` is a claim
   // about THEIR write, not about the page: an unknown outcome outlives the
   // component that failed to learn it, so only fresh rows clear that.
+  //
+  // That rule is also why neither child hands anything back on unmount. Both keep
+  // their own way out disabled while their write is pending, so a reader cannot
+  // dismiss one mid-write; the only state they can be dismissed in is over an
+  // unresolved message, where `unknown` has already been reported — and the rule
+  // below then ignores the `settled` an unmount cleanup would send. A cleanup
+  // that cleared the guard outright is exactly the defect: it made dismissing a
+  // message the same act as learning the answer.
   const reportWrite = useCallback(
     (next: "writing" | "settled" | "unknown") => {
       if (next === "settled") {

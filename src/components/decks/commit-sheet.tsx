@@ -122,12 +122,6 @@ export function CommitSheet({
     draftAnnouncer();
   }, []);
 
-  // On unmount only, and it says `settled` rather than clearing the host's guard
-  // outright: cancelling after a throw is the reader dismissing a message, not
-  // the write becoming known. The host holds an unknown outcome until the server
-  // sends rows built on what actually happened.
-  useEffect(() => () => onWriteState?.("settled"), [onWriteState]);
-
   const version = (state.version?.number ?? 0) + 1;
   // Copies, not rows — `3 → 1` releases two. See `releasedCopies`.
   //

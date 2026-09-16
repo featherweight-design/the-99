@@ -211,11 +211,6 @@ export function DiscardConfirm({
     draftAnnouncer();
   }, []);
 
-  // On unmount only, and `settled` rather than a clear: dismissing the question
-  // after a throw is the reader acknowledging a message, never the write becoming
-  // known. What an unknown outcome means for the page is the host's to hold.
-  useEffect(() => () => onWriteState?.("settled"), [onWriteState]);
-
   // The caller withholds the offer on a brew; this is the type narrowing for the
   // same fact.
   if (state.version === null) return null;
