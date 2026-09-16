@@ -328,6 +328,11 @@ export function SynergyPanel({
             {synergyCopy.panel.colDecks}
           </span>
           {/* Spacer for toggle button */}
+          {/* Spacer for the availability slot. Without it the header's columns
+              stop lining up with the rows beneath them: the toggle spacer lands
+              where the slot starts, and every heading to its left reads against
+              the wrong column. */}
+          <span style={{ width: 88, flexShrink: 0 }} />
           <span style={{ width: 34, flexShrink: 0 }} />
         </div>
       )}

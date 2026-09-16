@@ -1,22 +1,11 @@
-// Pips never overlap, on any surface that draws a cost, at either width.
-//
-// They did, and by design: the cost track was 40px, which cannot hold three 12px pips at a
-// 3px gap, so every pip past the second stepped 5px into its neighbour. Five fitted exactly
-// and were unreadable — a reader could not tell two black pips from one, which on this app's
-// rows is the difference between a two-drop and a four-drop.
-//
-// jsdom lays nothing out, so the unit tests can assert the absence of a negative margin and
-// nothing more: whether two discs actually overlap on screen is a question for a layout
-// engine. This walks every row surface that draws a cost and measures the horizontal gap
-// between each neighbouring pair.
-//
-// `/collection` is visited with `?view=rows` explicitly: its desktop default is the grid,
-// which draws no pips, and a run that measured the default would report a clean sweep of
-// nothing at the one width the defect was reported on.
+// Commander availability — the rulings only a layout engine can answer.
 //
 // Run by hand, and not part of `pnpm test`:
-//   node scripts/probe-pip-gap.mjs
-//   PROBE_BASE=http://localhost:3600 PROBE_DECK=<uuid> node scripts/probe-pip-gap.mjs
+//   node scripts/probe-commander-availability.mjs
+//   PROBE_BASE=http://localhost:3600 PROBE_SLUG=<slug> node scripts/probe-commander-availability.mjs
+//
+// Read-only: it visits one commander page and writes nothing. Point it at
+// `local-dev`.
 import { clerkSetup, setupClerkTestingToken } from "@clerk/testing/playwright";
 import { chromium } from "playwright";
 import { requireEnv } from "./lib/env.mjs";

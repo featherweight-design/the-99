@@ -1,7 +1,7 @@
 import { describe, it, expect, vi } from "vitest";
 import { fireEvent, render, screen } from "@testing-library/react";
 import { SynergyRow } from "./synergy-row";
-import { heldBy } from "./availability-fixture";
+import { avail, heldBy } from "./availability-fixture";
 import { availabilityCopy } from "../../lib/copy/availability";
 import { synergyCopy } from "../../lib/copy/synergy-discovery";
 import type { SynergyCard } from "../../lib/commanders/synergy-cards";
@@ -149,6 +149,55 @@ describe("the availability slot (§4.6, §4.7)", () => {
     mount({ card: { ...base, owned: true, availability: heldBy("Atraxa") } });
     expect(screen.getByText(availabilityCopy.marker.hard)).toBeInTheDocument();
     expect(screen.queryByText(/buy/i)).toBeNull();
+  });
+
+  // STATES gives the over tint to all four geometries, this row included. It is
+  // the one severity loud enough to touch a container, and the marker alone
+  // would leave an over-committed synergy card quieter than the same card on a
+  // Role Coverage chip.
+  it("tints the container at over, and leaves the other readings alone", () => {
+    const over = { ...avail("over") };
+    const { container: o } = mount({ card: { ...base, availability: over } });
+    expect((o.querySelector("li") as HTMLElement).style.border).toContain("--danger");
+
+    for (const reading of ["free", "soft", "hard"] as const) {
+      const { container } = mount({ card: { ...base, availability: avail(reading) } });
+      expect((container.querySelector("li") as HTMLElement).style.border).not.toContain("--danger");
+    }
+  });
+
+  // Selection is the louder statement: the reader chose this row, and its marker
+  // is still carrying the shortfall.
+  it("lets selection win over the over tint", () => {
+    const { container } = mount({ card: { ...base, availability: avail("over") }, selected: true });
+    expect((container.querySelector("li") as HTMLElement).style.border).toContain("--accent-shadow");
+  });
+
+  // The figure has to be VISIBLE, not only spoken: `density="collapsed"` draws a
+  // bare `$` and moves the amount to sr-only, which is the wrong trade on the
+  // one surface whose job is to say what a card costs.
+  it("shows the price on the phone rather than collapsing it to a glyph", () => {
+    mount({
+      width: "phone",
+      card: {
+        ...base,
+        owned: false,
+        price: { cents: 450, foilCents: null, etchedCents: null, asOf: new Date("2026-09-15") },
+      },
+      newestAsOf: new Date("2026-09-15"),
+    });
+    // The discriminator is the GLYPH, not the figure. Collapsed draws an
+    // `aria-hidden` `$` and moves `buy $4.50` into `sr-only`, so a query for the
+    // figure finds it either way and passes on the collapsed build — which is
+    // exactly what the first version of this test did.
+    const glyphOnly = screen
+      .queryAllByText("$", { selector: '[aria-hidden="true"]' })
+      .filter((el) => el.textContent === "$");
+    expect(glyphOnly).toHaveLength(0);
+
+    // And the figure is reachable without a screen reader.
+    const sr = screen.getAllByText(/\$4\.50/).every((el) => el.closest(".sr-only") !== null);
+    expect(sr).toBe(false);
   });
 
   it("prices an unowned card", () => {

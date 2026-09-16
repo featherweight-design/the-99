@@ -113,6 +113,8 @@ export function SynergyRow({
   newestAsOf?: Date | null;
 }) {
   const isPhone = width === "phone";
+  const isOver =
+    card.owned && card.availability !== null && availabilityState(card.availability) === "over";
 
   // Type column content: under a single facet, print the real type line.
   // Under "all", print the bucket label only.
@@ -187,9 +189,18 @@ export function SynergyRow({
         minHeight: isPhone ? 52 : 44,
         borderRadius: ROW_RADIUS_PX,
         background: selected ? "var(--elevated-hover)" : "var(--surface)",
+        // `over` tints the container, on this row as on Role Coverage's — STATES
+        // gives it to all four geometries, and it is the one severity loud enough
+        // to touch a container. Selection still wins: a row the reader has picked
+        // says so first, and its marker is still carrying the shortfall.
+        //
+        // A token expression rather than the literal the handoff quotes: that
+        // value predates the six-theme system and ships nowhere in `src/`.
         border: selected
           ? "1px solid var(--accent-shadow)"
-          : "1px solid var(--border)",
+          : isOver
+            ? "1px solid color-mix(in srgb, var(--danger) 40%, var(--bg))"
+            : "1px solid var(--border)",
         listStyle: "none",
       }}
     >
@@ -264,12 +275,14 @@ export function SynergyRow({
             {!card.owned ? (
               <>
                 <span aria-hidden="true" style={{ color: "var(--fg-locked)" }}>·</span>
-                <BuyTag
-                  variant="row"
-                  price={card.price}
-                  newestAsOf={newestAsOf}
-                  density="collapsed"
-                />
+                {/* FULL density, not `collapsed`. Collapsed draws a bare `$`
+                    and moves the figure to `sr-only` — which is right on a list
+                    being scanned, and wrong here: the whole point of this slot on
+                    the phone is that a card you would have to buy says what it
+                    costs before you plan around it. Hiding the amount from the
+                    reader who can see would leave the About entry's own key line
+                    false at the width most people read on. */}
+                <BuyTag variant="row" price={card.price} newestAsOf={newestAsOf} />
               </>
             ) : card.availability && availabilityState(card.availability) !== "free" ? (
               <>
