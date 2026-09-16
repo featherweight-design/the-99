@@ -289,8 +289,16 @@ export function assembleDiscovery(input: {
  * thinks to check. If that trade ever looks wrong, the honest fix is to bump
  * this one when PR 3 changes the payload's shape, not to leave the pair
  * mismatched now.
+ *
+ * 4 — and this is that bump, taken for the reason version 3 named in advance.
+ * The row's SHAPE moved: `prose`, `gapSlot`, `score` and `measurableTotal` are
+ * new, and the encoder carries a `gapKinds` order beside `keys` and `roles`. A
+ * warm version-3 entry decodes into items with no sentence, no gap slot and no
+ * headline figure — every field the redesigned row is built to draw — so this
+ * is the strongest kind of bump rather than the weakest: the old entry cannot
+ * render the new row at all.
  */
-const PAYLOAD_VERSION = 3;
+const PAYLOAD_VERSION = 4;
 
 /** The cache key a discovery payload is filed under: its sort, and the version
     of the code that produced it. */

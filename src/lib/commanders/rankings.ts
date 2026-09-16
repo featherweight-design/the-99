@@ -16,9 +16,31 @@ import { rankFree } from "../recs/free-ranking";
 import { getRankedList } from "../recs/ranked-list";
 import { loadCollectionPool } from "../recs/recommend";
 import type { CommanderListItem } from "../recs/recommend";
+import { loadSupportMeta } from "../edhrec/support-read";
+import { gapSlotFor, type GapSlot } from "../edhrec/gap-slot";
+import { loadPlayedTags } from "../discovery/novelty";
+import { loadPrices, slotFor, type PriceSlot } from "../discovery/price";
+
+/**
+ * A list item plus the four things the shared row draws that the SCORE does not
+ * carry.
+ *
+ * All four are commander-level rather than per-reader, which is why they are
+ * joined on here instead of stored on `commander_scores`: one sentence and one
+ * tag list serve every player, and a per-user copy would be rewritten on every
+ * upload. `gapSlot` is the exception that proves the rule — it is decided from
+ * commander-level tags against THIS reader's built decks, so it is computed
+ * here, once, rather than being re-derived by the row.
+ */
+export type CommanderRowItem = CommanderListItem & {
+  prose: string | null;
+  gapSlot: GapSlot;
+  deckCount: number | null;
+  price: PriceSlot;
+};
 
 export type CommanderRankings = {
-  items: CommanderListItem[];
+  items: CommanderRowItem[];
   degraded: boolean;
   uniqueCardsRead: number;
   candidateCount: number;
@@ -75,8 +97,21 @@ export type CommanderRankings = {
  * the list. Same trigger as 5, one step on: the ROWS behind a warm entry are refused by
  * `SCORE_WRITER_CURRENT` 5, and a cache hit never reaches that check — so without this a
  * reader who writes nothing keeps being served the old order for up to the hour ceiling.
+ *
+ * 7 — the owned lane's rows now carry the play-style sentence, the gap slot and
+ * the two figures the row prints, so a warm version-6 entry is missing every
+ * field the redesigned row draws. Bumped in the same release as its sibling in
+ * `discovery/list.ts`, which is the discipline version 3 of THAT constant asked
+ * for: the two caches are dropped independently, and a pair bumped half-way is
+ * the state nobody thinks to check.
+ *
+ * 6 AND 7 ARE TWO RELEASES, not one renumbered. #702 took 6 while this branch
+ * was in review and both had claimed it; taking 6 here would have left every
+ * reader whose entry was written by #702 being served a payload with no
+ * sentence, no gap slot and no headline figure, because the key would have
+ * matched.
  */
-const PAYLOAD_VERSION = 6;
+const PAYLOAD_VERSION = 7;
 
 /** The cache key this payload is filed under, version included. */
 export const commanderRankingsKey = ["commander-rankings", `v${PAYLOAD_VERSION}`];
@@ -88,8 +123,11 @@ export async function loadCommanderRankings(userId: string): Promise<CommanderRa
   // what follows. The pool query is the expensive one and is skipped rather
   // than made and discarded.
   if (candidateCount === 0) {
+    // `items` is empty here, so it satisfies the row type without enrichment —
+    // and the three reads below are skipped rather than made against an empty
+    // id list.
     return {
-      items, degraded, uniqueCardsRead, candidateCount,
+      items: [], degraded, uniqueCardsRead, candidateCount,
       receipts: [], freeRanking: null, availOk: true,
     };
   }
@@ -129,5 +167,37 @@ export async function loadCommanderRankings(userId: string): Promise<CommanderRa
     if (!freeRanking) availOk = false;
   }
 
-  return { items, degraded, uniqueCardsRead, candidateCount, receipts, freeRanking, availOk };
+  // The row's four commander-level fields, read AFTER the free ranking so the
+  // ranking work is done against the shape it was written for. `rankFree` and
+  // `toFreeDelta` key on scores and indices and read none of these, so
+  // enriching before them would only widen what they copy.
+  //
+  // Three reads in parallel, all REUSED rather than re-derived — `loadPrices`
+  // and `loadPlayedTags` are the discover lane's own, and a second spelling of
+  // either would be free to disagree with the lane it was copied from.
+  const oracleIds = items.map((i) => i.oracleId);
+  const [meta, playedTags, prices] = await Promise.all([
+    loadSupportMeta(oracleIds),
+    loadPlayedTags(userId),
+    loadPrices(oracleIds),
+  ]);
+  const played = new Set(playedTags.flatMap((d) => [...d.slugs]));
+
+  const rows: CommanderRowItem[] = items.map((item) => {
+    // A commander with no `commander_support` row is scored but unindexed. Its
+    // gap slot is `noMechanics` — decided by `gapSlotFor` from an empty tag
+    // list rather than spelled out here, so the three states keep one author.
+    const m = meta.get(item.oracleId);
+    return {
+      ...item,
+      prose: m?.prose ?? null,
+      gapSlot: gapSlotFor(m?.tags ?? [], m?.deckCount ?? null, played),
+      deckCount: m?.deckCount ?? null,
+      price: slotFor(prices.get(item.oracleId)),
+    };
+  });
+
+  return {
+    items: rows, degraded, uniqueCardsRead, candidateCount, receipts, freeRanking, availOk,
+  };
 }

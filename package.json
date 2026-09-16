@@ -40,6 +40,7 @@
     "probe:folders": "tsx scripts/probe-folders.ts",
     "probe:folder-flash": "node scripts/probe-folder-flash.mjs",
     "probe:stats": "tsx scripts/probe-deck-stats.ts",
+    "probe:payload": "tsx scripts/probe-payload-size.mts",
     "probe:score-lock": "tsx scripts/probe-score-lock.ts",
     "probe:writer-version": "node scripts/probe-writer-version.mjs",
     "probe:draft": "tsx scripts/probe-draft-state.ts",
