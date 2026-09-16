@@ -201,6 +201,46 @@ for (const label of labels) {
   else mechanic.push(label);
 }
 
+/**
+ * Mechanic labels that LOOK like an unreduced creature plural, printed for a
+ * human to read on every regeneration.
+ *
+ * THE SCOPE DECISION, after three review rounds landed on this file. There is no
+ * lexical guarantee available here and it is worth being plain about why. The
+ * allowlist's safe default only protects labels the generator never saw; a label
+ * it sees and misclassifies is actively added to the mechanic list and SHOWN,
+ * which is what happened to `Mice`, `Werewolves`, `Cybermen` and `Pegasi`. Nor
+ * can a bidirectional check help: pluralising the catalog uses the inverse of
+ * the same rules, so it cannot find a pattern those rules do not encode.
+ *
+ * So the rule set is CLOSED, and the guarantees are empirical instead:
+ *   1. the pinned counts in `gap-slot.test.ts` — any movement is a visible diff
+ *   2. one invariant per plural rule, each proved by its own mutation
+ *   3. this report, which a person reads
+ *
+ * It is deliberately not fatal. It found `Cybermen` and `Pegasi` — two tribes a
+ * review round had missed — and it also flags a dozen genuine mechanics whose
+ * first letters happen to match a creature type, so failing on it would train
+ * whoever runs this to append to an exceptions list without looking.
+ */
+function reportNearMisses(mechanicLabels: string[], creatures: Set<string>): void {
+  const flagged: string[] = [];
+  for (const label of mechanicLabels) {
+    const low = label.toLowerCase();
+    for (const c of creatures) {
+      if (c.length < 4 || low === c) continue;
+      if (low.startsWith(c.slice(0, 4)) && Math.abs(low.length - c.length) <= 3) {
+        flagged.push(`${label} ~ ${c}`);
+        break;
+      }
+    }
+  }
+  if (flagged.length === 0) return;
+  console.log(`\n${flagged.length} mechanic label(s) resemble a creature type — read these:`);
+  for (const f of flagged) console.log(`  ${f}`);
+  console.log("  (most are genuine mechanics; two real tribes were found this way)\n");
+}
+
 const problems: string[] = [];
 for (const l of MUST_BE_MECHANIC) {
   if (!mechanic.includes(l)) problems.push(`${l} should be a mechanic, is not`);
@@ -244,5 +284,6 @@ console.log(
   `tag-kinds: ${labels.length} labels — ${mechanic.length} mechanic, ` +
     `${creature.length} creature, ${format.length} format`,
 );
+reportNearMisses(mechanic, creatureVocabulary);
 console.log(`wrote ${OUT.pathname}`);
 process.exit(0);
