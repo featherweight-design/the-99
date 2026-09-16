@@ -114,6 +114,92 @@ export function measurableTotalFor(fitSynergy: number | null): number {
   return POOL_WEIGHT + ROLES_WEIGHT + (fitSynergy == null ? 0 : SYNERGY_WEIGHT);
 }
 
+/** What Fit is computed FROM. Four figures, and nothing that has to be read. */
+export type FitInputs = {
+  /** Cards in the collection legal under this commander's identity, the
+      commander's own card excluded — `commanderPool`'s length. */
+  poolSize: number;
+  roleCounts: Record<RoleName, number>;
+  /** Support cards the reader owns AND can legally play. An unrestricted count
+      is a different figure and makes the two surfaces disagree — see
+      `IDENTITY_RESTRICTION` in `discovery/candidates.ts`. */
+  ownedSupport: number;
+  /** The support list's size. Null OR non-positive means no synergy reading. */
+  edhrecTotal: number | null;
+};
+
+export type Fit = {
+  fitPool: number;
+  fitRoles: number;
+  fitSynergy: number | null;
+  score: number;
+  measurableTotal: number;
+  rankScore: number;
+};
+
+/**
+ * Fit, from four figures.
+ *
+ * EXTRACTED SO THERE IS ONE IMPLEMENTATION, not two agreeing ones. Ruling D
+ * says the row, the lane and Commander Details print one number; the row can
+ * compute it without reading anything, and a second spelling of these five
+ * roundings in `discovery/list.ts` would be free to drift from this one a
+ * constant at a time. `scoreCommander` calls it too, so there is no "the real
+ * one" and "the row's one".
+ *
+ * A NON-POSITIVE `edhrecTotal` IS NO READING, not a zero ratio, which is what
+ * `scoreCommander`'s `total != null && total > 0` guard has always said. The
+ * distinction is invisible in `score` — both give `fitSynergy` no points — and
+ * decides `measurableTotal`, so a commander with an empty support list is
+ * scored out of 40 rather than being told it managed 0 of 60.
+ *
+ * The ratio is DELIBERATELY UNCLAMPED, for parity rather than for taste.
+ * `edhrec_total` and the child-row count disagree by 1 on 2 of 3,342
+ * commanders, so a reader owning every support card can read a hair over 60 —
+ * and `scoreCommander` has the same exposure through the same data, because its
+ * overlap is bounded by the child rows while its denominator is the stored
+ * column. Clamping here alone would make the two surfaces differ on exactly
+ * the rows this shared function exists to keep identical.
+ */
+export function computeFit(i: FitInputs): Fit {
+  const total = i.edhrecTotal != null && i.edhrecTotal > 0 ? i.edhrecTotal : null;
+  const overlapRatio = total ? i.ownedSupport / total : 0;
+  const roleCoverage =
+    (Object.keys(ROLE_TARGETS) as (keyof typeof ROLE_TARGETS)[])
+      .reduce((sum, r) => sum + Math.min(i.roleCounts[r], ROLE_TARGETS[r]) / ROLE_TARGETS[r], 0) /
+    Object.keys(ROLE_TARGETS).length;
+  const poolFactor = Math.min(i.poolSize / POOL_FULL_AT, 1);
+
+  // Integers, not tenths. The hero's legend prints "Pool 12/15 · Roles 20/25 ·
+  // Synergy 42/60" and the headline has to be 74 — auditable by addition. A tenth
+  // in each segment is invisible in the legend and visible in the sum.
+  const fitPool = Math.round(poolFactor * POOL_WEIGHT);
+  const fitRoles = Math.round(roleCoverage * ROLES_WEIGHT);
+  const fitSynergy = total == null ? null : Math.round(overlapRatio * SYNERGY_WEIGHT);
+  const measurableTotal = measurableTotalFor(fitSynergy);
+  const score = fitPool + fitRoles + (fitSynergy ?? 0);
+  // ORDERED BY THE SAME FIGURE THAT IS PRINTED (#702, and it landed on main while
+  // this extraction was in review). #385 took the rescale off the printed score
+  // and left it on the rank, arguing a commander is no worse a suggestion for
+  // EDHREC having no page for it. What that missed: the weights are 15 + 25 + 60,
+  // so the rescale touches UNTRACKED commanders alone and multiplies them by 2.5
+  // — and one nobody has written a page about took rank 1 with a perfect 40/40
+  // beside a note reading "fit comes from pool and roles alone".
+  //
+  // Unrescaled, such a commander tops out at 40, which is what pool and roles
+  // alone are worth. It can still beat a tracked commander scoring below 40; what
+  // it can no longer do is beat one that scores above it on a measurement we
+  // actually have.
+  //
+  // THE RULE HAD TO MOVE IN HERE RATHER THAN STAY AT THE CALL SITE. Resolving the
+  // rebase the other way — keeping this function's own `Math.round((100 * score)
+  // / measurableTotal)` — would have reverted #702 silently, and given the
+  // discovery row the defect it had just fixed.
+  const rankScore = score;
+
+  return { fitPool, fitRoles, fitSynergy, score, measurableTotal, rankScore };
+}
+
 export const COMPLETENESS_THRESHOLDS = { high: 90, mid: 75 } as const;
 
 /**
@@ -280,19 +366,6 @@ export function scoreCommander(args: {
     edhrecOwnedCount = overlapOwned.length;
   }
 
-  const overlapRatio = edhrecTotal ? edhrecOwnedCount! / edhrecTotal : 0;
-  const roleCoverage =
-    (Object.keys(ROLE_TARGETS) as (keyof typeof ROLE_TARGETS)[])
-      .reduce((sum, r) => sum + Math.min(roleCounts[r], ROLE_TARGETS[r]) / ROLE_TARGETS[r], 0) /
-    Object.keys(ROLE_TARGETS).length;
-  const poolFactor = Math.min(args.collection.length ? pool.length / POOL_FULL_AT : 0, 1);
-
-  // Integers, not tenths. The hero's legend prints "Pool 12/15 · Roles 20/25 ·
-  // Synergy 42/60" and the headline has to be 74 — auditable by addition. A tenth
-  // in each segment is invisible in the legend and visible in the sum.
-  const fitPool = Math.round(poolFactor * POOL_WEIGHT);
-  const fitRoles = Math.round(roleCoverage * ROLES_WEIGHT);
-  const fitSynergy = edhrecTotal == null ? null : Math.round(overlapRatio * SYNERGY_WEIGHT);
   // One denominator for every commander. Rescaling pool+roles from their 40-point
   // maximum back up to 100 whenever synergy data was unavailable let a commander
   // with no synergy read print 100/100 — the highest figure the UI can show,
@@ -301,25 +374,23 @@ export function scoreCommander(args: {
   // roles alone". Unscaled, such a commander tops out at 40, which is what pool
   // and roles alone are worth.
   //
-  // "Unavailable", not "untracked": this branch is every reason `edhrecTotal` came
+  // "Unavailable", not "untracked": that branch is every reason `edhrecTotal` came
   // back null, a live EDHREC outage included. `synergyState` is what tells those
   // apart, and it does so for the card's note and its Retry button rather than for
   // the arithmetic — a score is no more certain for the gap being temporary.
   // `fitSynergy` stays null either way: the component is absent, not 0.
-  const measurableTotal = measurableTotalFor(fitSynergy);
-  const score = fitPool + fitRoles + (fitSynergy ?? 0);
-  // ORDERED BY THE SAME FIGURE THAT IS PRINTED. #385 took the rescale off the printed
-  // score and left it on the rank, on the argument that a commander is no worse a
-  // suggestion for EDHREC having no page for it. What that missed: the weights are
-  // 15 + 25 + 60, so the rescale touches untracked commanders alone and multiplies them
-  // by 2.5. A commander nobody has written a page about therefore took rank 1 with a
-  // perfect 40/40 beside a note reading "fit comes from pool and roles alone".
   //
-  // Unrescaled, such a commander tops out at 40 — which is what pool and roles alone are
-  // worth, and the same sentence #385 wrote about the printed figure. It can still beat a
-  // tracked commander that scores below 40; what it can no longer do is beat one that
-  // scores above it on a measurement we actually have.
-  const rankScore = score;
+  // The arithmetic itself is `computeFit`, shared with the discovery row so the
+  // two surfaces cannot drift. `pool.length` is the pool size it wants: an empty
+  // collection makes an empty pool, so the `collection.length ? … : 0` guard this
+  // replaced was a second spelling of `0 / 200`.
+  const fit = computeFit({
+    poolSize: pool.length,
+    roleCounts,
+    ownedSupport: edhrecOwnedCount ?? 0,
+    edhrecTotal,
+  });
+  const { fitPool, fitRoles, fitSynergy, score, measurableTotal, rankScore } = fit;
 
   return {
     oracleId: args.commander.oracleId,

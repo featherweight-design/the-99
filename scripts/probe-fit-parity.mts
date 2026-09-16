@@ -177,6 +177,10 @@ type Row = {
   name: string;
   sqlOwned: number;
   tsOwned: number | null;
+  /** What the LANE QUERY projects — `loadCandidates.ownedSupport`, the figure
+      the row itself computes Fit from. The third side of the comparison, and
+      the one the reader actually sees. */
+  laneOwned: number;
   storedTotal: number;
   tsTotal: number | null;
   sqlSynergy: number | null;
@@ -209,6 +213,7 @@ const rows: Row[] = population.map((c) => {
   return {
     name: c.name,
     sqlOwned: owned,
+    laneOwned: c.ownedSupport,
     tsOwned: scored.edhrecOwnedCount,
     storedTotal: c.edhrecTotal!,
     tsTotal: scored.edhrecTotal,
@@ -257,6 +262,17 @@ console.log(`denominator  one column, read twice — ${rows.length} identical, a
 
 const numeratorDiffs = rows.filter((r) => r.sqlOwned !== r.tsOwned);
 const synergyDiffs = rows.filter((r) => r.sqlSynergy !== r.tsSynergy);
+// THE THIRD SIDE, and the one this script used to step around. Its own SQL was
+// written because `loadCandidates.ownedSupport` omitted the identity
+// restriction, so for as long as that was true the probe could prove the two
+// SCORING paths agreed while the figure on the ROW came from a third
+// computation that agreed with neither. The row is the surface the ruling is
+// about, so it is compared rather than worked around.
+//
+// Three clauses have to match, not one: identity subset, the commander's own
+// card excluded, and commander-legal only. A fix that adds the first and stops
+// leaves the other two to be found by a reader noticing two numbers.
+const laneDiffs = rows.filter((r) => r.laneOwned !== r.sqlOwned);
 
 const report = (label: string, bad: Row[], pick: (r: Row) => string) => {
   const verdict = bad.length === 0 ? "AGREE" : `DIFFER on ${bad.length}/${rows.length}`;
@@ -266,13 +282,14 @@ const report = (label: string, bad: Row[], pick: (r: Row) => string) => {
 };
 
 report("numerator", numeratorDiffs, (r) => `sql ${r.sqlOwned} vs ts ${r.tsOwned}`);
+report("lane numerator", laneDiffs, (r) => `lane ${r.laneOwned} vs sql ${r.sqlOwned}`);
 report("fitSynergy", synergyDiffs, (r) => `sql ${r.sqlSynergy} vs ts ${r.tsSynergy}`);
 
 console.log();
 // BOTH. `fitSynergy` is the numerator rounded onto a 0-60 scale, so a one-card
 // drift can leave it unchanged — gating on the figure alone would print a
 // numerator disagreement and exit 0.
-if (numeratorDiffs.length === 0 && synergyDiffs.length === 0) {
+if (numeratorDiffs.length === 0 && synergyDiffs.length === 0 && laneDiffs.length === 0) {
   console.log(
     `PARITY HOLDS over ${rows.length} commanders — the row may print the stored figure.\n` +
       "Scope: the allocation expressions only. `scoreOneCommander`'s assembly is unit-tested.",
@@ -280,7 +297,8 @@ if (numeratorDiffs.length === 0 && synergyDiffs.length === 0) {
   process.exit(0);
 }
 console.log(
-  `PARITY FAILS — ${numeratorDiffs.length} numerator(s) and ${synergyDiffs.length} Fit ` +
+  `PARITY FAILS — ${numeratorDiffs.length} numerator(s), ${laneDiffs.length} lane ` +
+    `numerator(s) and ${synergyDiffs.length} Fit ` +
     "figure(s) disagree.\nThe SQL a row's payload is built from and the TypeScript the score " +
     "runs have come apart.\nCheck the identity restriction, the commander's own card and the " +
     "commander-legal\nfilter first: those are the three clauses the two can differ on.",
