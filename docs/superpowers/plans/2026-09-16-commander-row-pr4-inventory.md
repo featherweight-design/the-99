@@ -46,15 +46,17 @@ rather than editing twenty-four sections row by row. The property tables ARE the
 implements from, so a table half-describing two compositions is worse than either. The
 sections that still hold — row shell, art wash, pips, price slot — are kept verbatim.
 
-## Size consequence, stated before opening
+## Size consequence, and where this rewrite actually lands
 
-PR 4 was already going to be large, and this is ~200 more lines of prose churn on top. It is
-**prose, which the size gate excludes from its runtime-line count** — so it will not push the
-gate over on its own, but it is real review surface and real time.
+**The table rewrite goes in its own doc-only PR, not in PR 4.** Superseding this section's
+earlier conclusion, which assumed it rode along: doc-only PRs merge in one round by policy, so
+moving ~200 lines of prose out of PR 4 buys a smaller review surface for one cheap round. A
+property table is a spec, so it legitimately precedes the code it specifies — and correcting a
+table early is safe, because `check:copy-drift` only fails on tables quoting strings the code
+has STOPPED emitting, never on tables describing code not yet written.
 
-This does not change the decision to merge 4a and 4b: the deletions are what make the
-additions reviewable. It does mean PR 4 should open with its own size accounting in the body,
-so the reviewer knows the shape before reading.
+That is consistent with, not contrary to, the decision to build the row as ONE PR rather than
+4a + 4b. Two separate calls: the row's CODE is not split, and the TABLE is not part of it.
 
 ## Two strings that are NOT retired, and were nearly assumed to be
 

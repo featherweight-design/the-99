@@ -60,9 +60,14 @@ are pinned in `src/lib/commanders/rankings.test.ts`; PR 4 changes the payload sh
 - **`FitBar` is not dead code** — `about/figures.tsx` renders it. `RoleChips` does lose every
   caller.
 
-## The 11 retired string groups
+## The 13 retired keys
 
-All verified by grep to have **zero consumers outside the row**. One `describe` block in
+Counted as KEYS, not groups: the handoff's retirement list folds
+`.distanceNear/.distanceNone/.distanceLabel/.distanceAria` into one entry and
+`.floorNote/.floorNoteShort` into another, which is how "11 groups" and "13 keys" describe the
+same list. Delete against the key count.
+
+All 13 verified by grep to have **zero consumers outside the row**. One `describe` block in
 `src/lib/discovery/novelty.test.ts` tests `justify.sharedList` and goes with it.
 
 `discoverCopy.row.notOwned` · `.novelty` · `.supportOwned` · `discoveryCopy.justify.tagList` ·
@@ -75,6 +80,12 @@ keeps them; the code says the plane never used them.
 
 **`discoveryCopy.untagged` SURVIVES** and becomes the gap slot's third occupant. Nearly assumed
 retired; it is in the reuse manifest.
+
+**Three mobile short-copy keys are NOT on the handoff's retirement list** and must not be
+deleted on the strength of this document: `ownedShort` ("I own"), `unownedShort` ("not yours")
+and `overlapShort`. `discovery-rows.md`'s copy-key mapping names them under the row's
+`Mobile short copy` section, so the TABLE rows describing them go — but whether the strings
+themselves have another caller is a grep PR 4 must run, not a claim this file makes.
 
 ## Process notes that cost this run time
 
