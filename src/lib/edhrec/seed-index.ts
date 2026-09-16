@@ -184,6 +184,25 @@ export async function buildCommanderIndex(
   // whole. Clearing the table leaves every reader with a full set or none, and
   // a miss costs one recompute.
   //
+  // WHAT THIS DOES NOT REACH, stated because it is a real window rather than an
+  // oversight. `/commanders` wraps its payload in `cacheForUser`, so a warm
+  // account can keep receiving the pre-rebuild Fit for up to that cache's hour
+  // ceiling while Commander Details reads the new index. This delete only
+  // guarantees that a cache MISS recomputes correctly.
+  //
+  // Accepted rather than closed, on the precedent already in the code: the
+  // rankings cache carries the same hour of staleness after a DEPLOY, and
+  // `rankings.ts` says so in as many words — "survives the deploy for up to the
+  // hour ceiling for every reader who does not write". An index rebuild is the
+  // same class of event on a monthly cadence, so the exposure is one hour a
+  // month against a figure that is itself a monthly snapshot.
+  //
+  // Closing it needs an index-generation token in the cache key, which costs a
+  // read on every request to that route, or a revalidation call this workflow
+  // cannot make — it runs as a script with no Next request context, which is
+  // why nothing here calls `revalidateUserLists`. Both are larger than the
+  // window they would close.
+  //
   // Only when the run actually wrote something: a run that failed every
   // commander has changed no input, and throwing away every reader's scores for
   // it would be a self-inflicted cold start.

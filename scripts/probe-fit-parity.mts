@@ -253,18 +253,36 @@ console.log(
   `compared ${rows.length} — ${scored.length} scored live, ${withOverlap} with a ` +
     `non-zero stored overlap, ${zeroTotals} with a stored total of 0\n`,
 );
-// The floor belongs on what was actually COMPARED, not on what looked warm.
+// EVERY POPULATION ROW MUST SCORE. Not "enough of them did".
 //
-// `scored` keys on a non-null `liveTotal`, and since Ruling D that comes from
-// `commander_support.edhrec_total` — so a row dropped here is one the INDEX has
-// no usable total for, not one whose EDHREC cache is cold. Warming the cache
-// cannot add any of them; building the index can. The remedy said the opposite
-// until the source moved under it.
+// `population` is already restricted to candidates carrying a stored
+// `edhrec_total`, and since Ruling D that column is exactly what
+// `scoreCommander` reports back as `edhrecTotal` — so a correctly wired read
+// produces a non-null figure for every one of them. A row dropping out means
+// the support read returned nothing for a commander the index has, which is the
+// failure this probe exists to catch.
+//
+// It used to filter those rows out and then check a floor, which let a broken or
+// partial support read quietly shrink a 95-row run to 20 and still pass — a
+// probe reporting a green over a population it had lost, while its own header
+// promised every warm candidate.
+const unscored = rows.filter((r) => r.liveTotal == null);
+if (unscored.length > 0) {
+  for (const r of unscored.slice(0, 8)) console.log(`   ${r.name}: no live total`);
+  throw new Error(
+    `${unscored.length} of ${population.length} candidates have a stored total but ` +
+      "scored no live one. The support read is returning nothing for commanders the " +
+      "index holds.",
+  );
+}
+
+// The floor is now only about having enough population to be worth trusting,
+// which is a question about the fixture rather than about the code.
 if (scored.length < MIN_COMPARED) {
   throw new Error(
-    `only ${scored.length} of ${population.length} compared candidates have a stored ` +
-      `synergy total, need ${MIN_COMPARED}. Run \`pnpm db:build:index\` against this ` +
-      "branch, or point at one whose commander index is built.",
+    `only ${scored.length} candidates compared, need ${MIN_COMPARED}. Run ` +
+      "`pnpm db:build:index` against this branch, or point at one whose commander " +
+      "index is built.",
   );
 }
 if (withOverlap === 0) {
@@ -308,7 +326,12 @@ report("numerator", numeratorDiffs, (r) => `stored ${r.storedOwned} vs live ${r.
 report("fitSynergy", synergyDiffs, (r) => `stored ${r.storedSynergy} vs live ${r.liveSynergy}`);
 
 console.log();
-if (synergyDiffs.length === 0) {
+// BOTH, not just the derived figure. `fitSynergy` is the numerator rounded onto
+// a 0-60 scale, so a one-card allocation drift can leave it unchanged — and this
+// command would then print a numerator disagreement and exit 0. The acceptance
+// contract is that the two independent expressions agree, which is the numerator
+// as much as the figure.
+if (synergyDiffs.length === 0 && numeratorDiffs.length === 0) {
   console.log(
     `PARITY HOLDS over ${scored.length} DISCOVERY commanders — a row may print the ` +
       "stored figure. The owned lane and Home are not covered here; see the header.",
@@ -316,7 +339,9 @@ if (synergyDiffs.length === 0) {
   process.exit(0);
 }
 console.log(
-  "PARITY FAILS. The SQL a row's payload is built from and the TypeScript the\n" +
+  `PARITY FAILS — ${numeratorDiffs.length} numerator(s) and ${synergyDiffs.length} ` +
+    "Fit figure(s) disagree.\n" +
+    "The SQL a row's payload is built from and the TypeScript the\n" +
     "score runs disagree, so the row and the detail page it links to would print\n" +
     "different figures for the same commander — the defect the commander row\n" +
     "exists to remove. Check the identity restriction and the commander's own\n" +

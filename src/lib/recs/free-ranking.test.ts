@@ -1,4 +1,4 @@
-import { describe, it, expect, vi } from "vitest";
+import { beforeEach, describe, it, expect, vi } from "vitest";
 import { carryCanonicalSlugs, freePool, loadFreePool, rankFree } from "./free-ranking";
 import type { CommanderListItem } from "./recommend";
 import type { PoolCard } from "./score";
@@ -11,10 +11,17 @@ vi.mock("./recommend", async (orig) => ({
 }));
 vi.mock("../decks/availability-query", () => ({ loadAvailability }));
 vi.mock("../edhrec/client", () => ({ readEdhrecCache: async () => new Map() }));
-// Ruling D: the score's synergy comes from the stored index, so the loader has
-// to be mocked alongside the live cache. An empty map is no synergy reading,
-// which is what every case here already assumed from an empty cache.
-vi.mock("../edhrec/support-read", () => ({ loadSupportLists: async () => new Map() }));
+// Ruling D: the score's synergy comes from the stored index, so the loader is
+// mocked alongside the live cache. ARMABLE rather than always empty — every
+// case here used to take an empty map, which meant nothing verified that
+// `rankFree` passes the support list through at all: dropping the lookup would
+// have made every free Fit unmeasured with the whole suite still green.
+const supportLists = vi.hoisted(() => ({
+  value: new Map<string, { total: number | null; oracleIds: string[] }>(),
+}));
+vi.mock("../edhrec/support-read", () => ({
+  loadSupportLists: async () => supportLists.value,
+}));
 
 const card = (oracleId: string): PoolCard => ({
   oracleId,
@@ -92,6 +99,10 @@ describe("carryCanonicalSlugs", () => {
   });
 });
 
+beforeEach(() => {
+  supportLists.value = new Map();
+});
+
 describe("rankFree with preloaded reads", () => {
   const item = (oracleId: string): CommanderListItem => ({
     oracleId,
@@ -154,6 +165,59 @@ describe("loadFreePool", () => {
 // you can build today, and the mode that promises "free cards only" was the one
 // surface still exempting it. The exemption is what made a commander sitting in
 // another deck's 99 read as available here.
+// Ruling D's wiring, which nothing verified while every case armed an empty
+// support map: dropping the `support:` argument would leave every free Fit
+// unmeasured — `fitSynergy` null, a 40-point ceiling — with the whole suite
+// still green, because an empty map produces exactly that by design.
+describe("rankFree reads the stored support list", () => {
+  const item = (oracleId: string): CommanderListItem => ({
+    oracleId, slug: oracleId, name: oracleId,
+    typeLine: "Legendary Creature", colorIdentity: [],
+    colorPoolSize: 1, roleCounts: { ramp: 0, draw: 0, removal: 0, wipes: 0 },
+    edhrecOwnedCount: 0, edhrecTotal: 0, receipts: "",
+    fitPool: 0, fitRoles: 0, fitSynergy: null, synergyState: "absent",
+    score: 10, rankScore: 25, measurableTotal: 40,
+    imageUri: null, artCropUri: null,
+  });
+
+  it("scores synergy from it, and names the owned support cards", async () => {
+    const commander = { ...card("cmd"), typeLine: "Legendary Creature" };
+    const owned = card("sup");
+    // Four listed, one of them owned and in the pool: 1/4 of a 60-point
+    // segment is 15.
+    supportLists.value = new Map([["cmd", { total: 4, oracleIds: ["sup", "x", "y", "z"] }]]);
+
+    const out = await rankFree("user", [item("cmd")], {
+      collection: [commander, owned],
+      availability: new Map(),
+    });
+
+    expect(out.ok).toBe(true);
+    const scored = out.items[0];
+    expect(scored.edhrecTotal).toBe(4);
+    expect(scored.edhrecOwnedCount).toBe(1);
+    expect(scored.fitSynergy).toBe(15);
+    expect(scored.measurableTotal).toBe(100);
+  });
+
+  // The contrast that makes the case above load-bearing: with no list, the
+  // same commander and pool score out of 40 with a null synergy. That is what
+  // every other case in this file was silently asserting.
+  it("leaves synergy unmeasured when the index holds no list", async () => {
+    const commander = { ...card("cmd"), typeLine: "Legendary Creature" };
+    supportLists.value = new Map();
+
+    const out = await rankFree("user", [item("cmd")], {
+      collection: [commander, card("sup")],
+      availability: new Map(),
+    });
+
+    const scored = out.items[0];
+    expect(scored.fitSynergy).toBeNull();
+    expect(scored.measurableTotal).toBe(40);
+  });
+});
+
 describe("rankFree membership", () => {
   const legend = (oracleId: string): PoolCard => ({
     ...card(oracleId),
