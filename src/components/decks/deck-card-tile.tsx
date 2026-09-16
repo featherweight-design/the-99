@@ -174,8 +174,8 @@ export function DeckCardTile({
       >
         {/* A DRAWN ELEMENT, not an inset shadow on the shell. An inset shadow
             paints above the element's own background and BELOW its descendants,
-            and this shell's first child is the full-bleed art — opaque, starting
-            at x=0 — so a shadow was covered for the whole height of the art and
+            and the art below is full-bleed and opaque from x=0 — so a shadow on
+            the shell was covered for the whole height of the picture and
             showed only across the caption strip. That is the reach the move was
             made to escape, and `onShell` would have reported it fixed.
             `decklist-row.tsx` gets away with a shadow because a row has no
@@ -330,12 +330,11 @@ export function DeckCardTile({
                   covers this deck's whole ask for the card and takes no quantity
                   (proxies ruling 5), so a count here would claim a number the
                   state does not have. */}
-              {/* The draft's figure TAKES the count's position rather than
-                  sitting beside it, which is what resolves the double statement
-                  the row resolves by suppressing `×N` beside the name. The row
-                  suppresses on a recount only, because an add there has no
-                  figure to put in the name's place; here both cases displace the
-                  count, because both have one. */}
+              {/* A RECOUNT's pair takes the count's position, which is what
+                  resolves the double statement the row resolves by suppressing
+                  `×N` beside the name. An add has no figure at all since erratum
+                  11 — `+1` restated the count — so it falls through to the count
+                  itself, which is exactly what the row does. */}
               {draftFigure ? (
                 <span aria-hidden className="flex-none" style={{ color: "var(--accent)" }}>
                   {draftFigure}

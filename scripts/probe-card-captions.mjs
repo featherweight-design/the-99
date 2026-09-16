@@ -168,18 +168,15 @@ const ART = (page) =>
  * The draft's treatment on the tiles: the accent edge, and the figure standing
  * in the count's position.
  *
- * `boxShadow` rather than a class, because the edge is an inline style and the
- * question is which ELEMENT carries it — the shell, never the caption alone.
- * It ran the caption until erratum 10; over 46px that was easy to miss, and the
- * row had already shipped both the accent rule and the over-committed ring on
- * one element without them fighting.
+ * A PAINTED STRIP's geometry, not a style holder. Two earlier versions asked
+ * which element carried an inline `boxShadow`, and neither could see the defect
+ * that mattered: an inset shadow on the shell paints below the opaque art, so
+ * the rule was invisible across the picture while sitting on exactly the element
+ * the check wanted. What it reads now is the strip's height against its tile's.
  */
 const DRAFT = ({ page }) => {
-  // The accent RULE, as a drawn box rather than a style holder. It was read off
-  // `boxShadow` and that check could not see the defect it existed for: an inset
-  // shadow on the shell paints below the opaque art, so the edge was invisible
-  // across the picture while the element carrying it was exactly where the check
-  // wanted it. What matters is the painted strip's geometry — see `edgeBox`.
+  // Found by its painted background at the accent colour, in a box no wider than
+  // 4px — the rule, whatever element happens to draw it.
   const bg = (el) => getComputedStyle(el).backgroundColor;
   const accent = getComputedStyle(document.documentElement).getPropertyValue("--accent").trim();
   const probe = document.createElement("span");
@@ -473,8 +470,9 @@ async function run() {
         // caption. Zero would mean the card view still photographs a dirty draft
         // as a clean one, which is the state this whole call exists to end.
         failures += !report(
-          // Reaching the ART is the assertion; which element holds the style is
-          // not, and was what the previous version asked.
+          // REACHING THE ART is the assertion. Which element holds the style is
+          // not, and is what both previous versions asked while passing a build
+          // whose rule was painted under the picture.
           `${width}px · draft · one accent rule, covering the tile`,
           draft.edges === 1 && draft.coversArt === 1,
           `${draft.edges} rules, ${draft.coversArt} reaching the art`,

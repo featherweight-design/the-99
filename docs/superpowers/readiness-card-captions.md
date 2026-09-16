@@ -1,9 +1,16 @@
 # READINESS — Card captions (R1 audit)
 
-**Verdict: 🟢 Green, with twelve errata (10–12 are Hugh's post-ship rulings, awaiting Design's ratification) — one withdrawing a claim this audit made, and one recording
-that Design then overturned the withdrawal with a better argument.** All four calls the brief left open are called, every
-named state is drawn, and nothing here waits on a design decision. The errata below are
-eng-resolvable under the handoff's own tie-break rule and do not return to Design.
+**Verdict: 🟢 Green, with twelve errata.** All four calls the brief left open are called and every
+named state is drawn.
+
+**Errata 1–9 are eng-resolvable** under the handoff's own tie-break rule and did not return to
+Design — one withdraws a claim this audit made, and one records that Design then overturned the
+withdrawal with a better argument.
+
+**Errata 10–12 are a different kind.** They are Hugh's own rulings, taken after the feature shipped
+and after seeing it on real decks, and each overturns something the handoff called. They are
+shipped and awaiting Design's **ratification** rather than Design's decision; the tracker row is ⚖️
+rather than 🟢.
 
 Erratum 5 was added after the brief's own review round; the other five came from the audit.
 
@@ -93,6 +100,9 @@ are not the same box now, and no two of them agree:
 | collapsed `$` (tile) | `9px`, flat | `py-[1px]` | inset `boxShadow` — no layout | `buy-tag.tsx:42`, `:213`, `:34` |
 | `P` (band) | `9px`, flat | `py-[1px]` | `outline` at `-1px` — no layout | `proxy-tag.tsx:46`, `:87`, `:41` |
 
+> These are the three boxes AS AUDITED, which is what the erratum is about. The unified caption box
+> they became is `py-[3px]` since erratum 12; the row and band variants above are untouched.
+
 **Two corrections to an earlier draft of this erratum, both found by a cold review of the plan.**
 It cited `proxy-tag.tsx:44`, the **row** variant, and concluded `P` steps to 9.5px at `md:`. The
 in-scope call site is `deck-card-tile.tsx:121`, `variant="band"`, which is flat 9px. So the `$` and
@@ -143,7 +153,7 @@ see the border, since a class-list assertion reads `border` and `outline` as equ
 `TILE_ART_RATIO` from the live tile *so that a removed card leaves a hole exactly its own size*.
 
 Its caption height is hardcoded: `min-h-[44px] md:min-h-[36px]` (`:53`) — the live tile's current
-figure. The handoff takes the caption to a fixed 52/46. The receipt then sits 8px short at the
+figure. The handoff takes the caption to a fixed 52/46 (**56/50** since erratum 12). The receipt then sits 8px short at the
 phone and 10px short on desktop, and the invariant its own comment states quietly stops holding.
 
 **Resolution — eng, not Design.** The receipt's design is unchanged; only its height is wrong.
@@ -307,9 +317,9 @@ pressure will reach for exactly them:
 | 2 | `BuyTag` gains the same prop | no |
 | 3 | `collection/grid-view.tsx` — caption chassis, `repeat(auto-fill, minmax(178px, 1fr))` (erratum 5) | after 1 |
 | 4 | `deck-card-tile.tsx` — caption chassis, `✕` column, art bare, scrim deleted. **`CostPips`, `spokenManaCost` and the no-art branch all stay** (erratum 2) | after 1, 2 |
-| 5 | Caption height exported beside `TILE_SHELL`; `UndoTile` reads it (erratum 4) | after 4 |
+| 5 | Caption height exported beside `TILE_SHELL`; `UndoTile` reads it (erratum 4). The figure is **56/50** since erratum 12 | after 4 |
 | 6 | `decklist-group.tsx` — same floor as `/collection`; the stale Add-panel comment corrected (erratum 5) | after 4 |
-| 7 | `usePendingChange` second consumer; caption edge + `1 → 2` / `+N` (erratum 1 — unblocked) | after 4 |
+| 7 | `usePendingChange` second consumer; the accent rule + `1 → 2` (erratum 1 — unblocked). **Errata 10–11 moved the rule to a drawn strip down the whole tile and dropped `+N` entirely** | after 4 |
 | 8 | `ProxyTag` moves from the tile's art to the caption slot — already drawn at `deck-card-tile.tsx:121` (erratum 1) | after 4 |
 | 9 | `MarkKey` in card view — **reinstated by `ADDENDUM-the-key.md`** as 9a–9d: one new string, one optional prop, one guard becomes a branch. Samples unchanged (erratum 9) | no |
 | 10 | `×1` suppressed on `/collection` — severable, recommended | after 3 |
