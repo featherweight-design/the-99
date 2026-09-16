@@ -188,3 +188,35 @@ export const BROWSE_CHIPS: FilterChip[] = [
   },
   { key: "set", label: "The Hobbit", onRemove: () => {} },
 ];
+
+/** Role counts against their baselines — one short, one at, one over. */
+export const ROLE_COUNTS = { ramp: 12, draw: 8, removal: 8, wipes: 1 };
+
+/**
+ * Two axes at the far ends of the log: one the deck keeps winning on, one that
+ * keeps letting it down. Seven games, which clears PATTERN_MIN — below it the
+ * cell takes no colour, and a figure of two games would teach the neutral state
+ * while the caption talked about findings.
+ */
+export const GAME_AXES = [
+  { key: "card_flow" as const, worked: 1, hurt: 5, net: -4 },
+  { key: "interaction" as const, worked: 5, hurt: 1, net: 4 },
+];
+export const GAME_COUNT = 7;
+
+/** Home's three figures: one with a denominator, one that keeps its colour at
+ *  zero, and a shop trip. */
+export const COMMITMENTS = { inUse: 312, overCommitted: 4 };
+export const COMMITMENTS_TOTAL_CARDS = 1284;
+export const SHOPPING = {
+  byDeck: new Map<string, { copies: number; cents: number; pricedCopies: number }>(),
+  total: { copies: 23, cents: 12_440, pricedCopies: 21 },
+};
+
+/** The decklist's orders, paired with what each one is for. */
+export const DECK_SORT_ROWS: [string, string][] = [
+  ["By role / By type", "the list is always in sections — that is how a deck is short"],
+  ["Name", "and the order you pick applies inside them"],
+  ["Mana value", "curve up or curve down"],
+  ["Price", "offered on the shopping filter only, where money is the question"],
+];

@@ -18,6 +18,19 @@ import { BuyTag } from "../decks/buy-tag";
 import { ProxyTag } from "../decks/proxy-tag";
 import { StatusPillBadge } from "../decks/status-pill";
 import { SetCell } from "../sets/set-cell";
+import { RoleChips } from "../commanders/role-chips";
+import { GameAxisCell } from "../decks/game-axis-cell";
+import { CommitmentsCard } from "../home/commitments-card";
+import { THEMES } from "../../lib/theme/themes";
+import { discoverCopy } from "../../lib/copy/lanes";
+import { addPanelCopy, exportLinkOutCopy } from "../../lib/copy/decks-builder";
+import { recommendationsCopy } from "../../lib/copy/recommendations";
+import { deckImportCopy } from "../../lib/copy/deck-import";
+import { deckVersioningCopy } from "../../lib/copy/deck-versioning";
+import { folderCopy } from "../../lib/copy/folders";
+
+import { GAME_AXIS_KEYS } from "../../lib/decks/game-axes";
+import { DECK_SORT_ROWS } from "../../lib/about/fixtures";
 import { FilterChipPill } from "../ui/filter-chassis";
 import { collectionChassisCopy } from "../../lib/copy/collection";
 import { viewToggleCopy } from "../../lib/copy/card-surfaces";
@@ -41,6 +54,12 @@ import {
   AVAILABILITY,
   CARDS,
   BROWSE_CHIPS,
+  COMMITMENTS,
+  COMMITMENTS_TOTAL_CARDS,
+  GAME_AXES,
+  GAME_COUNT,
+  ROLE_COUNTS,
+  SHOPPING,
   SET_CELLS,
   COSTS,
   FIT_DEGRADED,
@@ -514,6 +533,401 @@ function CardDetailFigure({ width }: { width: AboutWidth }) {
 }
 
 /**
+ * The three parts of a fit score, named and measured — the legend the lane
+ * draws beside its bar, which is where the words in the entry's keys come
+ * from.
+ */
+function RoleCoverageFigure({ width }: { width: AboutWidth }) {
+  return (
+    <Specimen label="role-coverage" width={width}>
+      {/* `RoleChips` is the commander page's own, and it colours a role that
+          is SHORT of its baseline — which is the entry's subject: a 1 of 3 on
+          wipes is what tells you what to fix before you commit. */}
+      <RoleChips roleCounts={ROLE_COUNTS} />
+    </Specimen>
+  );
+}
+
+/** What the log says back once there are enough games for it to say anything. */
+function LogFindingsFigure({ width }: { width: AboutWidth }) {
+  return (
+    <Specimen label="log-findings" width={width}>
+      <div className="flex flex-col gap-[10px]">
+        {GAME_AXES.map((tally, i) => (
+          <GameAxisCell
+            key={tally.key}
+            tally={tally}
+            gameCount={GAME_COUNT}
+            // Seven games clears PATTERN_MIN, so the cells take their buckets.
+            // Below it every cell is neutral, and a figure drawn there would
+            // teach the waiting state while the caption talks about findings.
+            bucket={i === 0 ? "fix" : "keep"}
+          />
+        ))}
+      </div>
+    </Specimen>
+  );
+}
+
+/** Home's three figures, and the one that keeps its colour at nought. */
+function CommitmentsFigure({ width }: { width: AboutWidth }) {
+  return (
+    <Specimen label="commitments" width={width}>
+      <CommitmentsCard
+        commitments={COMMITMENTS}
+        shopping={SHOPPING}
+        totalCards={COMMITMENTS_TOTAL_CARDS}
+      />
+    </Specimen>
+  );
+}
+
+/** The six themes, by the name a reader picks rather than the plane. */
+function ThemesFigure({ width }: { width: AboutWidth }) {
+  return (
+    <Specimen label="themes" width={width}>
+      <div className="grid grid-cols-2 gap-[8px] min-[1000px]:grid-cols-3">
+        {THEMES.map((theme) => (
+          <div
+            key={theme.key}
+            className="flex flex-col rounded-[8px] border border-solid border-[color:var(--border)] px-[10px] py-[8px]"
+          >
+            <span className="text-[12.5px] text-[color:var(--fg)]">{theme.name}</span>
+            {/* The plane is the SUBTITLE, never the label: you pick Neon Rain,
+                not Kamigawa, and an earlier figure had them the other way up. */}
+            <span className="font-mono text-[10px] text-[color:var(--fg-faint)]">
+              {theme.plane}
+            </span>
+          </div>
+        ))}
+      </div>
+    </Specimen>
+  );
+}
+
+// ── Legends ────────────────────────────────────────────────────────────────
+//
+// Each of these composes real COPY and real leaf components rather than
+// mounting a whole page surface. That is the settled rule from the marks
+// plate: a figure that reproduces a surface becomes a second copy of it and
+// drifts an edit at a time, and the surfaces below take deck ids, mutation
+// handlers and card records a reference page has none of.
+
+/** One row of a legend: the thing, then what it means. */
+function Line({ mark, meaning }: { mark: React.ReactNode; meaning: string }) {
+  return (
+    <div className="flex items-baseline gap-[10px]">
+      <span className="flex-none font-mono text-[11px] text-[color:var(--fg-body)]">{mark}</span>
+      <span className="font-mono text-[10px] leading-[1.4] text-[color:var(--fg-faint)]">
+        {meaning}
+      </span>
+    </div>
+  );
+}
+
+function Legend({
+  label,
+  width,
+  rows,
+}: {
+  label: string;
+  width: AboutWidth;
+  rows: { mark: React.ReactNode; meaning: string }[];
+}) {
+  return (
+    <Specimen label={label} width={width}>
+      <div className="flex flex-col gap-[8px]">
+        {rows.map((row, i) => (
+          <Line key={i} mark={row.mark} meaning={row.meaning} />
+        ))}
+      </div>
+    </Specimen>
+  );
+}
+
+function ReadyToBuildFigure({ width }: { width: AboutWidth }) {
+  return (
+    <Legend
+      label="ready-to-build"
+      width={width}
+      rows={[
+        { mark: refreshCopy.home.fitLine(1615), meaning: "how much of your collection fits" },
+        { mark: refreshCopy.home.inUse(550), meaning: "and how much of that is sleeved elsewhere" },
+        {
+          mark: refreshCopy.home.moreAbove(7, 61),
+          meaning: "the nine are a rank cut — the floor moves with your collection",
+        },
+      ]}
+    />
+  );
+}
+
+function CommanderLaneFigure({ width }: { width: AboutWidth }) {
+  return (
+    <Legend
+      label="commander-lane"
+      width={width}
+      rows={[
+        { mark: commandersCopy.availability.all, meaning: "scored against everything you own" },
+        {
+          mark: commandersCopy.availability.free,
+          meaning: "scored against what no finished deck is holding",
+        },
+        {
+          mark: commandersCopy.row.fitDenominatorMeasurable(40),
+          meaning: "where a commander's most-played list could not be read",
+        },
+      ]}
+    />
+  );
+}
+
+function DiscoverFigure({ width }: { width: AboutWidth }) {
+  const o = discoverCopy.order;
+  return (
+    <Legend
+      label="discover"
+      width={width}
+      rows={[
+        { mark: o.bestFit, meaning: o.bestFitGloss },
+        { mark: o.somethingNew, meaning: o.somethingNewGloss },
+        { mark: o.popularity, meaning: o.popularityGloss },
+        { mark: o.name, meaning: o.nameGloss },
+        { mark: o.recent, meaning: o.recentGloss },
+      ]}
+    />
+  );
+}
+
+function PartnersFigure({ width }: { width: AboutWidth }) {
+  return (
+    <Legend
+      label="partners"
+      width={width}
+      rows={[
+        { mark: "99", meaning: "a single commander and the ninety-nine behind it" },
+        { mark: "98", meaning: "a pair deck is still a hundred cards, so its 99 is 98" },
+      ]}
+    />
+  );
+}
+
+function DeckPageFigure({ width }: { width: AboutWidth }) {
+  return (
+    <Legend
+      label="deck-page"
+      width={width}
+      rows={[
+        { mark: "Your deck · 99", meaning: "the list itself" },
+        { mark: "Consider · 80", meaning: "cards this commander wants that are not in it yet" },
+        { mark: "Games", meaning: "no count until one is logged — the absence is the signal" },
+        { mark: "Versions · 1", meaning: "what you committed, and when" },
+      ]}
+    />
+  );
+}
+
+function AutoFillFigure({ width }: { width: AboutWidth }) {
+  return (
+    <Legend
+      label="auto-fill"
+      width={width}
+      rows={[
+        { mark: "63 / 99", meaning: "assembled from what you own the moment you pick a commander" },
+        { mark: "Top off", meaning: "fills what is left, from your collection, in one pass" },
+        { mark: recommendationsCopy.auto.clearAll("36"), meaning: "and undoes the lot if you would rather pick yourself" },
+      ]}
+    />
+  );
+}
+
+function RolesFigure({ width }: { width: AboutWidth }) {
+  return (
+    <Specimen label="roles" width={width}>
+      <div className="flex flex-col gap-[8px]">
+        <RoleChips roleCounts={ROLE_COUNTS} />
+        <span className="font-mono text-[10px] text-[color:var(--fg-faint)]">
+          {addPanelCopy.strip.rationaleToggle}
+        </span>
+      </div>
+    </Specimen>
+  );
+}
+
+function DecklistOrderFigure({ width }: { width: AboutWidth }) {
+  return (
+    <Legend
+      label="decklist-order"
+      width={width}
+      rows={DECK_SORT_ROWS.map(([mark, meaning]) => ({ mark, meaning }))}
+    />
+  );
+}
+
+function AddCardsFigure({ width }: { width: AboutWidth }) {
+  return (
+    <Specimen label="add-cards" width={width}>
+      <div className="flex flex-col gap-[8px]">
+        <div className="flex items-center gap-[8px]">
+          <OwnershipDot owned size={7} />
+          <span className="text-[12.5px] text-[color:var(--fg)]">{CARDS.owned}</span>
+        </div>
+        <div className="flex items-center gap-[8px]">
+          <OwnershipDot owned={false} size={7} />
+          <span className="text-[12.5px] text-[color:var(--fg)]">{CARDS.proxied}</span>
+        </div>
+        <span className="font-mono text-[10px] text-[color:var(--fg-faint)]">
+          the dot is on every result, whether you own it or not
+        </span>
+      </div>
+    </Specimen>
+  );
+}
+
+function UndoRemovalFigure({ width }: { width: AboutWidth }) {
+  return (
+    <Legend
+      label="undo-removal"
+      width={width}
+      rows={[
+        { mark: addPanelCopy.undo.removed(CARDS.removed), meaning: "the row becomes its own undo" },
+        { mark: addPanelCopy.undo.action, meaning: "and the count, the total and the claim all come back together" },
+        { mark: deckVersioningCopy.restore.cta, meaning: "the same thing on the review screen, for a cut of one copy" },
+      ]}
+    />
+  );
+}
+
+function DeckImportFigure({ width }: { width: AboutWidth }) {
+  return (
+    <Legend
+      label="deck-import"
+      width={width}
+      rows={[
+        { mark: deckImportCopy.entry.modePaste, meaning: "a list from anywhere" },
+        { mark: deckImportCopy.entry.modeFile, meaning: "or the file you exported" },
+        { mark: deckImportCopy.update.entryLabel, meaning: "the same route updates a deck you already have" },
+      ]}
+    />
+  );
+}
+
+function VersionsFigure({ width }: { width: AboutWidth }) {
+  return (
+    <Legend
+      label="versions"
+      width={width}
+      rows={[
+        { mark: "draft", meaning: "every add and cut, until you commit" },
+        { mark: "v2 · current", meaning: "what the deck is sleeved as" },
+        { mark: "v1", meaning: "and what it was, with the change between them readable" },
+      ]}
+    />
+  );
+}
+
+function ExportFigure({ width }: { width: AboutWidth }) {
+  return (
+    <Legend
+      label="export"
+      width={width}
+      rows={[
+        { mark: "Decklist", meaning: "the whole 99, as text a deckbuilding site will read" },
+        { mark: "Shopping list", meaning: "or only what this deck has to buy" },
+        { mark: exportLinkOutCopy.shopping, meaning: "a link out, in a new tab, with nothing of yours attached" },
+      ]}
+    />
+  );
+}
+
+function ShoppingFigure({ width }: { width: AboutWidth }) {
+  return (
+    <Legend
+      label="shopping"
+      width={width}
+      rows={[
+        { mark: refreshCopy.decks.detailToBuy(23, "$124.40"), meaning: "across the library, not one deck at a time" },
+        { mark: "own it, still buying", meaning: "an older finished deck is holding your only copy" },
+      ]}
+    />
+  );
+}
+
+function LogAGameFigure({ width }: { width: AboutWidth }) {
+  return (
+    <Legend
+      label="log-a-game"
+      width={width}
+      rows={[
+        { mark: "win / loss", meaning: "and how big the pod was" },
+        { mark: `${GAME_AXIS_KEYS.length} axes`, meaning: "each markable as what worked or what let you down" },
+        { mark: "optional", meaning: "a result on its own is a game" },
+      ]}
+    />
+  );
+}
+
+function FoldersFigure({ width }: { width: AboutWidth }) {
+  return (
+    <Legend
+      label="folders"
+      width={width}
+      rows={[
+        { mark: folderCopy.shelves.all, meaning: "every deck, which is where you start" },
+        { mark: "a shelf", meaning: "a deck sits on one or on none" },
+        { mark: "narrows, never filters", meaning: "it spends no accent and no chip, and Clear all leaves it alone" },
+      ]}
+    />
+  );
+}
+
+function ResumeFigure({ width }: { width: AboutWidth }) {
+  const c = refreshCopy.home.touched;
+  return (
+    <Legend
+      label="resume"
+      width={width}
+      rows={[
+        { mark: c.edited("2h ago"), meaning: "you changed the draft" },
+        { mark: c.committed("yesterday"), meaning: "you cut a version" },
+        { mark: c.played("Sunday"), meaning: "you logged a game" },
+      ]}
+    />
+  );
+}
+
+function ReservationsFigure({ width }: { width: AboutWidth }) {
+  return (
+    <Legend
+      label="reservations"
+      width={width}
+      rows={[
+        { mark: "first committed", meaning: "holds the copy by default" },
+        { mark: cardAssignmentsCopy.contested.headingSpare, meaning: "and you can override that whenever you like" },
+      ]}
+    />
+  );
+}
+
+function ProxiesFigure({ width }: { width: AboutWidth }) {
+  return (
+    <Specimen label="proxies" width={width}>
+      <div className="flex flex-col gap-[8px]">
+        <div className="flex items-center gap-[8px]">
+          <ProxyTag variant="row" />
+          <span className="font-mono text-[10px] text-[color:var(--fg-faint)]">
+            leaves the buy list without joining your collection
+          </span>
+        </div>
+        <span className="font-mono text-[10px] text-[color:var(--fg-faint)]">
+          set completion does not move — a proxy is a card you can play with, not one you have
+        </span>
+      </div>
+    </Specimen>
+  );
+}
+
+/**
  * Entry id → figure. A partial map: an entry with no figure draws its caption
  * and its key lines, which is what every entry did before this PR and is still
  * a complete answer for a workflow.
@@ -535,4 +949,27 @@ export const FIGURES: Partial<
   "post-import": PostImportFigure,
   "import-issues": ImportIssuesFigure,
   "card-detail": CardDetailFigure,
+  "role-coverage": RoleCoverageFigure,
+  "log-findings": LogFindingsFigure,
+  commitments: CommitmentsFigure,
+  themes: ThemesFigure,
+  "ready-to-build": ReadyToBuildFigure,
+  "commander-lane": CommanderLaneFigure,
+  discover: DiscoverFigure,
+  partners: PartnersFigure,
+  "deck-page": DeckPageFigure,
+  "auto-fill": AutoFillFigure,
+  roles: RolesFigure,
+  "decklist-order": DecklistOrderFigure,
+  "add-cards": AddCardsFigure,
+  "undo-removal": UndoRemovalFigure,
+  "deck-import": DeckImportFigure,
+  versions: VersionsFigure,
+  export: ExportFigure,
+  shopping: ShoppingFigure,
+  "log-a-game": LogAGameFigure,
+  folders: FoldersFigure,
+  resume: ResumeFigure,
+  reservations: ReservationsFigure,
+  proxies: ProxiesFigure,
 };

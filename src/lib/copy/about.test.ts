@@ -136,17 +136,8 @@ describe("every entry is drawn, not just described", () => {
   //
   // `NOT_YET_DRAWN` is a ledger that must shrink to empty. An entry is removed
   // from it when its figure lands; nothing is ever added.
-  const NOT_YET_DRAWN = new Set<string>([
-    // 01 Your collection — every entry drawn
-    // 02 Finding a commander
-    "ready-to-build", "commander-lane", "discover", "role-coverage", "partners",
-    // 03 Building the 99
-    "deck-page", "auto-fill", "roles", "decklist-order", "add-cards",
-    "undo-removal", "deck-import", "versions", "export", "shopping",
-    // 04 Playing and tuning
-    "log-a-game", "log-findings", "folders", "resume", "commitments",
-    "reservations", "proxies", "themes",
-  ]);
+  // Empty. Every entry on the page is drawn.
+  const NOT_YET_DRAWN = new Set<string>([]);
 
   it("registers no figure under a name no entry has", async () => {
     // Without this, a typo pairs with the ledger to hide itself: `brows` in

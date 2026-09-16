@@ -371,15 +371,26 @@ describe("the figures", () => {
     expect(plate.textContent).toContain("27");
   });
 
-  it("leaves an entry with no figure complete, and gives it no empty frame", () => {
+  it("gives every entry a figure, and none of them an empty frame", () => {
+    // This assertion used to be its own inverse — that an entry with NO figure
+    // drew no frame — and it had a subject because 29 of the 34 entries had
+    // none. The ledger is empty now, so the question worth asking flipped: the
+    // page's unit is a figure with a caption, and an empty frame is the way
+    // that unit fails quietly.
     const { container } = render(<AboutPage seen={0} />);
-    const workflow = aboutEntries.find((e) => e.id === "deck-import");
-    expect(workflow).toBeTruthy();
-    const li = [...container.querySelectorAll("li")].find((el) =>
-      el.textContent?.includes(workflow!.caption),
+    const entries = [...container.querySelectorAll("li")].filter((li) =>
+      li.querySelector("h3"),
     );
-    expect(li).toBeTruthy();
-    expect(li!.querySelector("[data-specimen]")).toBeNull();
+    expect(entries).toHaveLength(aboutEntries.length);
+    for (const li of entries) {
+      const figure = li.querySelector("[data-specimen]");
+      const title = li.querySelector("h3")?.textContent ?? "";
+      expect(figure, `${title} has no figure`).toBeTruthy();
+      expect(
+        (figure as HTMLElement).childElementCount,
+        `${title} draws an empty frame`,
+      ).toBeGreaterThan(0);
+    }
   });
 });
 
