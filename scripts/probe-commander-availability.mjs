@@ -145,7 +145,18 @@ async function anyOwnedLegend(userId) {
   return rows[0]?.oracle_id ?? null;
 }
 
+/**
+ * Every check goes through here, and a FAIL counts ITSELF.
+ *
+ * The count used to live beside the checks, so each call site had to remember a
+ * separate `fail()` on the same condition it had just passed in. One that forgot
+ * printed ` FAIL ` and then `All checks passed.` over it — a probe whose own
+ * output cannot be read, and the exit code agreed with the wrong half. There is
+ * no longer a second thing to remember.
+ */
+let failures = 0;
 function report(label, ok, detail) {
+  if (!ok) failures += 1;
   console.log(`${ok ? "  ok  " : " FAIL "} ${label} — ${detail}`);
   return ok;
 }
@@ -282,9 +293,7 @@ async function findCommanderSlug(page) {
 async function run() {
   await clerkSetup();
   const browser = await chromium.launch();
-  let failures = 0;
   let heldDeckId = null;
-  const fail = () => { failures += 1; };
 
   try {
     const { slug, userId } = await (async () => {
@@ -359,7 +368,6 @@ async function run() {
         const n = await chips.count();
         if (n === 0) {
           report("chip wrap", false, "no Role Coverage chip on the page — the reading lost its subject, NOT a pass");
-          fail();
         } else {
           const boxes = await chips.evaluateAll((els) =>
             els.map((el) => {
@@ -387,7 +395,6 @@ async function run() {
           });
           const nowrap = ws === "nowrap";
           report("the chip's name is not allowed to wrap", nowrap, `white-space: ${ws}`);
-          if (!nowrap) fail();
 
           const tallest = boxes.reduce((a, b) => (b.h > a.h ? b : a));
           const ok = tallest.h <= CHIP_HEIGHT + 0.5;
@@ -397,7 +404,6 @@ async function run() {
             `${boxes.length} chips, tallest ${tallest.h}px against ${CHIP_HEIGHT}px` +
               (ok ? "" : ` — "${tallest.text}" wrapped`),
           );
-          if (!ok) fail();
 
           // A run where no chip is near the cap proves little, so say so.
           // A NOTE, not a check. It reports on the fixture's strength rather
@@ -435,7 +441,6 @@ async function run() {
           "no availability marker drawn — this account's collection covers its decks, so the" +
             " state has to be BUILT. NOT a pass: sleeve a copy into a committed deck first.",
         );
-        fail();
       } else {
         const sizes = await markers.evaluateAll((els) =>
           els.map((el) => ({
@@ -452,11 +457,9 @@ async function run() {
           `${sizes.length} markers, sizes ${[...new Set(sizes.map((s) => s.px))].join("/")}px` +
             ` against ${want}px` + (bad.length ? ` — ${bad.length} off` : ""),
         );
-        if (bad.length) fail();
 
         const mono = sizes.every((s) => /mono/i.test(s.family));
         report("marker is mono, as the figure beside it is", mono, sizes[0].family);
-        if (!mono) fail();
       }
 
       // ── 2b. the SYNERGY row's own marker type ───────────────────────────
@@ -499,7 +502,6 @@ async function run() {
           offRow.length === 0,
           `${rowSizes.length} markers, sizes ${[...new Set(rowSizes)].join("/")}px against ${wantRow}px`,
         );
-        if (offRow.length) fail();
       }
 
       // ── 3. the key's pip baseline ───────────────────────────────────────
@@ -530,16 +532,13 @@ async function run() {
         // being drawn at all.
         const sized = geom.size >= 5.5 && geom.size <= 6.5;
         report("key pip is drawn at 6px", sized, `${geom.size}px`);
-        if (!sized) fail();
         report(
           "key pip sits on the key's first line",
           sized && off <= 3,
           `dot centre ${Math.round(off * 100) / 100}px from the line's centre`,
         );
-        if (!sized || off > 3) fail();
       } else {
         report("key pip", false, "no dot key found — NOT a pass");
-        fail();
       }
 
       // ── 4. the synergy slot holds one width ─────────────────────────────
@@ -548,7 +547,6 @@ async function run() {
         const sCount = await slots.count();
         if (sCount === 0) {
           report("synergy slot", false, "no 88px slot drawn — the synergy panel did not render, NOT a pass");
-          fail();
         } else {
           const widths = await slots.evaluateAll((els) =>
             els.map((el) => Math.round(el.getBoundingClientRect().width * 100) / 100),
@@ -563,7 +561,6 @@ async function run() {
             exact,
             `${widths.length} slots, widths ${[...new Set(widths)].join("/")}px against ${SLOT_PX}px`,
           );
-          if (!exact) fail();
         }
       }
 
