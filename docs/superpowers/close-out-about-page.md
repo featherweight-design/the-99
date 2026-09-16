@@ -10,7 +10,11 @@
 | Surface | 390px | 1300px | Notes |
 |---|---|---|---|
 | `/about` — reader at version 0 | ✅ | ✅ | Every entry, nothing marked, dismiss present |
-| `/about` — the figures | ✅ | ✅ | Five specimens, all drawing |
+| `/about` — the availability plate | ✅ | ✅ | Four states, including the one that draws nothing |
+| `/about` — the buy tag | ✅ | ✅ | Four claims, `sold out` and silence among them |
+| `/about` — the fit bar | ✅ | ✅ | `73/100 FIT` and `27/40 MEASURABLE FIT` |
+| `/about` — the decklist marks | ✅ | ✅ | Five rows, `//`, `$` and `P` among them |
+| `/about` — the six statuses | ✅ | ✅ | Each with its count and its bar; Draft's track empty |
 | `/about` — arriving with a destination (`?next=`) | ✅ | ✅ | Destination printed and carried |
 | Account menu — `About The 99`, first, no badge | — | — | Not in the sheet; see below |
 
@@ -20,6 +24,12 @@ sits outside it by construction — a row for it could only be written by defeat
 exists because two probes once measured the shell while naming a page. It is covered by
 `account-menu.test.tsx` instead: the row's position, its link, the roving wrap past it, and its
 busy state.
+
+One row per figure, each reached by NAME. The first version took one scrolled shot labelled for
+all five, which is a cell that reads as coverage while photographing one of them — and when that
+was split into five, a pixel offset on the fit row silently scrolled past its own subject to the
+entries below. `scrollTo` was added to `contact-sheet.mjs` for that: an offset is an address that
+stops being true the moment the page above it changes length.
 
 ## What the walk found
 

@@ -146,6 +146,23 @@ async function run(page, steps) {
     // loading shell for the first moment, and a scroll applied then is clamped to a document
     // that has not arrived — the sheet would photograph the top of the page while its label
     // claimed the collapsed head or the foot of the column.
+    // Scroll to a NAMED element rather than a pixel offset. An offset is an
+    // address that stops being true the moment the page above it changes
+    // length, and a row whose label names a figure it no longer photographs is
+    // worse than no row at all: the sheet reads as coverage. This is how the
+    // /about inventory's five figure rows found their marks after one of them
+    // silently scrolled past its own subject.
+    //
+    // Scoped like every other verb — `[data-specimen]` is page content, and a
+    // shell that grew one would otherwise win on document order.
+    if (step.scrollTo !== undefined) {
+      const target = onPage(page, step.scrollTo).first();
+      await target.waitFor({ state: "attached", timeout: 15_000 });
+      await target.evaluate((node) => node.scrollIntoView({ block: "center" }));
+      // The shot is taken from the viewport, and `scrollIntoView` resolves
+      // before the paint that follows it.
+      await page.waitForTimeout(250);
+    }
     if (typeof step.scroll === "number") {
       await page.evaluate((y) => window.scrollTo(0, y), step.scroll);
     }
