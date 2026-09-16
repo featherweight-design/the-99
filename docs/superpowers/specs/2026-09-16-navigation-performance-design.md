@@ -152,6 +152,32 @@ commits are the figures measured today (`/collection` 1,595.8 KB, `/discover` 95
 A browser probe is this repository's standard of proof for a change of this kind, and it doubles as
 the regression gate.
 
+### Benchmark protocol — before, during, after
+
+Load times are recorded at three points, and the numbers live in the repository rather than in a
+session transcript.
+
+**Before.** PR 1 commits `docs/superpowers/benchmarks/nav-cost-baseline.json` — the full table
+measured on 2026-09-16, every route, both widths, with the conditions recorded beside it: production
+build, warmed twice, fixture account row counts, viewport. A number without its conditions cannot be
+compared against anything later.
+
+**During.** Every PR that changes rendering or payload re-runs the probe and commits its own row to
+`docs/superpowers/benchmarks/nav-cost-history.md`: date, PR number, what changed, and the per-route
+figures against the previous row. A PR that moves a figure the wrong way says so in its own body
+rather than leaving it to be discovered. This is what makes a regression attributable to one change
+instead of to the batch.
+
+**After.** The final PR re-runs the whole table and records the before/after delta per route. A
+route that did not improve is reported as such, with the reason, rather than omitted.
+
+Both widths, because the phone is where these payloads actually hurt and the desktop figure would
+hide it: 1300x900 and 390x844.
+
+The same conditions every time — production build, warm, same fixture account. A benchmark taken
+against `next dev` or a cold server is not comparable to these numbers and must not be entered in
+the history.
+
 The probe must assert its own liveness. Its first drafts reported a flawless app twice: once when
 byte capture silently returned 0, and once when an async recorder pushed rows after the settle loop
 had given up, so every count read zero. Each reading needs a clause that fails when the probe has
@@ -183,7 +209,7 @@ spec once this lands.
 
 At most ~20 files or ~800 lines each, no stacked PRs.
 
-1. Probe promoted, baseline budgets committed. No behavior change.
+1. Probe promoted, baseline benchmark and budgets committed. No behavior change.
 2. `cacheComponents` enabled, `instant = false` codemod, synchronous-IO fixes. App builds; no route
    converted.
 3. `/collection` converted, with its two-layer cache split. Measured against the baseline.
@@ -192,7 +218,7 @@ At most ~20 files or ~800 lines each, no stacked PRs.
 6. Remaining routes converted; every `instant = false` deleted.
 7. Payload composition measured, then cut.
 8. Deck query time.
-9. Filter state, and the `AGENTS.md` caching rewrite.
+9. Filter state, the `AGENTS.md` caching rewrite, and the final before/after benchmark table.
 
 ## Success criteria
 
@@ -206,3 +232,5 @@ At most ~20 files or ~800 lines each, no stacked PRs.
 - No `instant = false` remains in `src/app`.
 - `probe:scroll-lock`, `probe:review`, `probe:versions` and the rest of the browser suite pass
   unchanged.
+- The benchmark history holds a row for every PR that changed rendering or payload, and the final
+  row states the before/after delta for every route at both widths.
