@@ -184,16 +184,33 @@ rather than in a guard. What *is* worth a guard is the ceiling itself — see Ve
 130 of the 401 distinct tag labels resolve to creature types. The classifier's job is to keep
 those out of the gap line and let mechanics through.
 
-Two failure modes were found in a first attempt and both must be handled:
+**The rule was built and run rather than described, and three of its four mechanics only
+appeared once it was.** The generator's final classification of the 401-label vocabulary is
+**269 mechanic · 125 creature · 7 format**, with every case below asserted inside the
+generator so it proves its own fixes instead of claiming them.
 
-- **Non-creature subtypes share the type line.** Taking every word after the `—` from any
-  line containing `creature` swept in `Equipment`, `Treasure`, `Auras`, `Sagas`, `Food`,
-  `Clues`, `Vehicles`, `Shrines`, `Books`, `Adventures`, `Mounts`, `Toys` and `Eggs` — every
-  one of them a real mechanic tag. The vocabulary must come from the **creature half** of
-  the type line only.
-- **Irregular plurals.** `Dwarves`, `Faeries`, `Horses`, `Fungi` and `Heroes` were missed by
-  a naive singularizer and reached the mechanic side. An explicit irregular table is
-  required; a suffix rule alone is insufficient.
+- **A tribe is a creature subtype and nothing else.** Restricting the vocabulary to the
+  creature half of the type line — the obvious fix, and the one an earlier draft of this spec
+  stated — **is not sufficient, and fails on 10 of the 13 dual-role subtypes.** `Food` really
+  is a creature subtype, on `Artifact Creature — Food Golem`; so are `Treasure`, `Equipment`,
+  `Clues`, `Sagas`, `Shrines`, `Books`, `Auras`, `Adventures` and `Vehicles` on their own
+  creature-bearing cards. What separates them from `Frog` is that each is *also* a
+  non-creature subtype elsewhere, on hundreds of cards. So the generator collects both sets
+  and **subtracts**: a label qualifies as a tribe only if it appears as a creature subtype and
+  never as any other kind.
+- **`Kindred` bears creature types without being a creature.** That subtraction, applied
+  naively, sent `Faeries` to the mechanic side — MTG's `Kindred` (formerly `Tribal`) types put
+  creature types on non-creature cards, as in `Tribal Enchantment — Faerie Aura`, so every
+  Kindred tribe lands in the "other" set and is subtracted from itself. Faces whose type line
+  says `Creature`, `Kindred` **or** `Tribal` all count as creature-bearing.
+- **Irregular plurals.** `Dwarves`, `Faeries`, `Horses`, `Fungi` and `Heroes` are missed by a
+  naive singularizer. An explicit irregular table is required; a suffix rule alone is
+  insufficient.
+- **`Eggs`, `Mounts` and `Toys` are creature types, and an earlier draft of this spec was
+  wrong to call them mechanics.** All three are real subtypes — Bloomburrow's `Mount`, the
+  `Egg` type — whose EDHREC tag is genuinely ambiguous between the tribe and an archetype
+  built around it. The safety asymmetry below resolves them to the hidden side, which costs
+  three labels that might have been mildly useful and risks nothing.
 
 An **unclassifiable label is excluded** from the gap line. The asymmetry is deliberate: a
 mechanic wrongly hidden produces a thinner sentence, while a creature type wrongly shown is
@@ -259,8 +276,9 @@ must not print an empty clause.
 
 ## Verification
 
-- **Unit** — the classifier over all 401 labels, including the **thirteen** mis-sorted
-  mechanic tags and the five irregular plurals named above as explicit cases, plus the
+- **Unit** — the classifier over all 401 labels, asserting the counts it produced
+  (269 / 125 / 7), the **ten** dual-role subtypes that must read as mechanics, the five
+  irregular plurals, and `Eggs` / `Mounts` / `Toys` on the creature side — plus the
   proportional floor at a null `deck_count` and the three `GapSlot` branches. Fit arithmetic
   is already covered in `score.ts`'s tests, and **so is the row's denominator**:
   `rec-card.test.tsx:226` already asserts a null-synergy commander prints
