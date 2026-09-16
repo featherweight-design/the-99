@@ -87,7 +87,7 @@ export function ContentsRail({ chapters }: { chapters: readonly RailChapter[] })
   return (
     <nav
       aria-label={aboutCopy.contentsLabel}
-      className="sticky top-[24px] hidden w-[220px] flex-none min-[1000px]:block"
+      className="sticky top-0 hidden w-[220px] flex-none min-[1000px]:block"
     >
       <p className="font-mono text-[10.5px] tracking-[0.12em] text-[color:var(--fg-faint)] uppercase">
         {aboutCopy.contentsLabel}

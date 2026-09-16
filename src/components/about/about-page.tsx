@@ -68,7 +68,7 @@ function Entry({ entry, marked }: { entry: AboutEntry; marked: boolean }) {
         </h3>
         <Link
           href={entry.route}
-          className="font-mono text-[11px] text-[color:var(--accent)] hover:underline"
+          className="font-mono text-[11.5px] text-[color:var(--accent)] hover:underline"
         >
           {entry.route}
         </Link>
@@ -112,7 +112,7 @@ function Entry({ entry, marked }: { entry: AboutEntry; marked: boolean }) {
               >
                 {i + 1}
               </span>
-              <span className="font-mono text-[11px] leading-[1.5] text-[color:var(--fg-faint)]">
+              <span className="font-mono text-[10.5px] leading-[1.5] text-[color:var(--fg-faint)]">
                 {key}
               </span>
             </li>
@@ -171,7 +171,7 @@ export function AboutPage({ seen, next }: { seen: number; next?: string }) {
         </p>
       )}
 
-      <h1 className="font-display text-[24px] text-[color:var(--fg)] min-[1000px]:text-[30px]">
+      <h1 className="font-display text-[24px] leading-[1.2] text-[color:var(--fg)] min-[1000px]:text-[29px]">
         {aboutCopy.pageTitle}
       </h1>
       <p className="mt-[6px] text-[13.5px] leading-[1.55] text-[color:var(--fg-muted)]">

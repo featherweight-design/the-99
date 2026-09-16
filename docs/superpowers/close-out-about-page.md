@@ -1,7 +1,9 @@
 # About The 99 — feature close-out
 
-**Walked:** 2026-09-15, against `main` at `fa0397f8`, in a real browser at 390×844 and 1300×900.
-**PRs:** #653 (copy, table, guard) · #658 (page, gate, menu row) · #666 (figures, compact layout).
+**Walked:** 2026-09-15, re-walked 2026-09-16 against `main` at `0d86b953`, in a real browser at 390×844 and 1300×900.
+**PRs:** #653 (copy, table, guard) · #658 (page, gate, menu row) · #666 (five figures, compact
+layout) · #670 (close-out, caption fix) · #673 (contents rail, annotation numerals, chapter 01) ·
+#682 (the remaining 23 figures).
 **Contact sheet:** `docs/superpowers/inventories/about-page.json` →
 `node scripts/contact-sheet.mjs docs/superpowers/inventories/about-page.json`.
 
@@ -66,15 +68,28 @@ sheet's three rows all photographed the same state. The other two are covered by
 one entry marked; a future walk wanting the real thing would have to write the row and put it
 back, in the shape `probe:review` uses for its collection edits.
 
-## Still designed and not built
+## Everything is built
 
-The composition plates — the deck page header, the Discover row, the Recommended mix, and the log
-form. `FIGURES` is a partial map and those entries carry their words, which is a finished answer
-per the copy file's rule 3.
+**34 entries, 34 figures.** The ledger in `about.test.ts` is empty and fails on any entry arriving
+without one.
 
-They are held back deliberately rather than forgotten. Every figure that mounts an app component
-has cost review rounds in proportion to how much of a surface it reproduces: the marks plate alone
-drew findings in three consecutive rounds and ended as a legend rather than a replica, because
-following that class to its end is a second `DecklistRow` living on a reference page. The four
-plates above are the largest instances of exactly that, and each needs page-level fixture data the
-page has no business inventing. They want their own round with that lesson applied from the start.
+This record previously said four composition plates were outstanding. That was wrong by a factor of
+seven: the page had five figures against a handoff that drew one per entry, and the gap was
+described as its four hardest plates. The number was not checked before it was written down, and no
+artifact here would have contradicted it — the inventory photographed the figures that existed, so
+the sheet confirmed the scope back to its author.
+
+Of the 34, four mount an app component with fixture props and the rest are legends. That split is
+the settled rule rather than a shortfall: a figure reproducing a surface becomes a second copy of it
+and drifts an edit at a time, and `DecklistRow`, `DeckCard` and `RoleCounterStrip` all take deck
+ids, mutation handlers and card records a reference page has none of. Every mark in a legend comes
+from the surface's own copy module, and `figures.test.ts` fails when one duplicates a shipped
+string.
+
+## The gate that was skipped
+
+`design-review` — required by `AGENTS.md` for every UI PR — was not run on #653, #658 or #666. It
+ran on 2026-09-16 and found five measurable gaps that four review rounds, a contact sheet and this
+walk had all passed over: a 1px heading, a missing line-height, two type sizes half a pixel out,
+and a padding axis. See `gap-report-about.md`. None of those artifacts was looking at the table,
+because nobody had written one.

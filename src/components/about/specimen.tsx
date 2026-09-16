@@ -39,7 +39,7 @@ export function Specimen({
       inert
       data-specimen={label}
       data-width={width}
-      className={`pointer-events-none m-0 mt-[10px] select-none overflow-hidden rounded-[8px] border border-solid border-[color:var(--border)] bg-[color:var(--surface-sunken)] p-[14px] ${
+      className={`pointer-events-none m-0 mt-[10px] select-none overflow-hidden rounded-[8px] border border-solid border-[color:var(--border)] bg-[color:var(--surface-sunken)] px-[16px] py-[14px] ${
         width === "inset" ? "min-[1000px]:max-w-[300px]" : ""
       }`}
     >
@@ -124,7 +124,7 @@ export function LegendBox({
       data-specimen={label}
       data-width={width}
       data-legend=""
-      className={`m-0 mt-[10px] overflow-hidden rounded-[8px] border border-solid border-[color:var(--border)] bg-[color:var(--surface-sunken)] p-[14px] ${
+      className={`m-0 mt-[10px] overflow-hidden rounded-[8px] border border-solid border-[color:var(--border)] bg-[color:var(--surface-sunken)] px-[16px] py-[14px] ${
         width === "inset" ? "min-[1000px]:max-w-[300px]" : ""
       }`}
     >
