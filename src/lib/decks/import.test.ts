@@ -180,9 +180,20 @@ describe("buildDeckImport — locked decision: sideboard and maybeboard are not 
     expect(result.unresolved).toEqual([]);
   });
 
-  // The word has to be a trailing bracket of its own, not any parenthetical: a
-  // card whose NAME ends in one keeps it.
-  it("leaves a parenthetical that is not the tag alone", () => {
+  // A card whose NAME ends in a parenthetical keeps it. `Erase (Not the Urza's
+  // Legacy One)` is a real card and the shape that would break if the tag were
+  // read as "any trailing bracket" rather than these two words — the name would
+  // lose its tail and resolve against nothing.
+  it("leaves a trailing parenthetical that is part of the name", () => {
+    const erase = card({ name: "Erase (Not the Urza's Legacy One)" });
+    const result = build("1 Erase (Not the Urza's Legacy One)", [erase, SOL_RING]);
+    expect(result.declaredCommander).toBeNull();
+    expect(shape(result.cards)).toEqual([{ oracleId: erase.oracleId, quantity: 1 }]);
+    expect(result.unresolved).toEqual([]);
+  });
+
+  // And the word alone, mid-name, is not the tag either.
+  it("leaves the word alone when it is not a trailing bracket", () => {
     const partnered = card({ name: "Partner in Crime" });
     const result = build("1 Partner in Crime", [partnered, SOL_RING]);
     expect(result.declaredCommander).toBeNull();

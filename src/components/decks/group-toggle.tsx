@@ -156,8 +156,12 @@ export function GroupToggle({
           Shopping {shoppingCount}
         </button>
 
-        {/* Spacer: pushes group pills to the right on both breakpoints */}
-        <span className="flex-1" aria-hidden />
+        {/* Spacer: pushes the group pills right — from `md:` only. Below it the
+            CLUSTER grows instead (see its own note), and two growing children
+            split the free space between them: at 700px that left the sort 40px
+            short of the right edge with a hole beside it, rather than the well
+            sitting flush. Only one of the two may grow at a time. */}
+        <span className="md:flex-1" aria-hidden />
 
         {/* The auto-lifecycle cluster — the kept note, Keep all, Clear all auto.
             Absent at zero, disabled only while one of its own writes runs. Not
@@ -308,15 +312,21 @@ export function GroupToggle({
           onAnnounce={(message) => onSortAnnounce?.(message)}
         />
 
-        {/* Pushes the well to the right edge on the phone, and collapses above
-            `md:` where the cluster is `flex-none` and the row reads as one
-            statement left to right. */}
-        <span className="grow md:hidden" aria-hidden />
-
         {/* Absent under Shopping, not disabled: a shopping list is a list of
             things to buy, and there is no second way to read it. */}
         {filter === "all" && (
-          <ViewToggle options={DECK_VIEWS} value={view} onChange={onViewChange} />
+          <>
+            {/* Pushes the well to the right edge on the phone, and collapses
+                above `md:` where the cluster is `flex-none` and the row reads as
+                one statement left to right.
+
+                INSIDE the condition, with the control it pushes: left outside,
+                it is the cluster's last child under Shopping and pushes nothing
+                — 330px of trailing dead space at 620px, which is what took the
+                cluster off the right edge. */}
+            <span className="grow md:hidden" aria-hidden />
+            <ViewToggle options={DECK_VIEWS} value={view} onChange={onViewChange} />
+          </>
         )}
         </div>
       </div>
