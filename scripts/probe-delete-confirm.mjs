@@ -38,9 +38,13 @@ if (!EMAIL.includes("+clerk_test") && !PASSWORD) {
 
 const BASE = process.env.PROBE_BASE ?? "http://localhost:3000";
 
-// 390 is where the panel can leave the viewport; 1300 is the desktop the grid
-// draws its narrowest card at.
-const WIDTHS = [390, 1300];
+// 390 and 1300 both draw the 248px art band — a phone is one column and a wide
+// desktop's three columns are wide too. 900 is the band NEITHER covers: between
+// roughly 640 and 1062 the three columns fall under the tile's `@min-[330px]`
+// container query and the art box is 168px, which is the one that can clip the
+// panel hanging out of it. Copilot named that ancestor in round 2; no width here
+// reached it.
+const WIDTHS = [390, 900, 1300];
 
 // Long enough that the heading has real text to hold, short enough to stay one
 // deck among several in the grid.
@@ -255,6 +259,61 @@ async function run() {
       check(
         headingFit.scroll <= headingFit.client,
         `a ${LONG_NAME.length}-character name wraps rather than running past the panel (${headingFit.scroll} in ${headingFit.client})`,
+      );
+
+      // And the half that `break-words` does NOT answer. Wrapping a 119-character
+      // name made the pane 323px tall, and the panel hangs inside `data-deck-art`,
+      // which is `overflow-hidden` and only 168px at the 900px band. Nothing
+      // rect-based sees that: `getBoundingClientRect` reports the layout box and
+      // knows nothing about a clipping ancestor, and Playwright clicks a painted-
+      // away button happily. So intersect each element with every clipping
+      // ancestor and read what is LEFT.
+      //
+      // BOTH elements, and the heading is the one that caught it. The first
+      // version of this block measured the confirm button alone and reported a
+      // clean 32-of-32 over a build whose heading had its first lines painted
+      // away — the reader could not see which deck they were deleting, which is
+      // the entire job of the pane. A screenshot found that, not this check.
+      const visibility = await longPanel.evaluate((el) => {
+        const clipped = (node) => {
+          if (!node) return null;
+          const box = node.getBoundingClientRect();
+          let top = box.top;
+          let bottom = box.bottom;
+          for (let n = el.parentElement; n; n = n.parentElement) {
+            const overflow = getComputedStyle(n).overflow;
+            if (overflow && overflow !== "visible") {
+              const r = n.getBoundingClientRect();
+              top = Math.max(top, r.top);
+              bottom = Math.min(bottom, r.bottom);
+            }
+          }
+          return { height: Math.round(box.height), visible: Math.round(Math.max(0, bottom - top)) };
+        };
+        return {
+          heading: clipped(el.querySelector("p")),
+          confirm: clipped(
+            [...el.querySelectorAll("button")].find((b) => b.textContent.trim() === "Delete deck"),
+          ),
+          paneHeight: Math.round(el.getBoundingClientRect().height),
+        };
+      });
+      for (const [what, m] of [
+        ["heading", visibility.heading],
+        ["confirm", visibility.confirm],
+      ]) {
+        check(
+          m !== null && m.visible === m.height,
+          m === null
+            ? `the long-name pane draws no ${what} at all`
+            : `the ${what} stays unclipped under a long name (${m.visible} of ${m.height}px)`,
+        );
+      }
+      // The pane's own height is the cause the two checks above are effects of:
+      // unclamped it is 323px, and nothing the box can do makes that fit 168.
+      check(
+        visibility.paneHeight <= 220,
+        `a long name leaves the pane near its normal height (${visibility.paneHeight}px)`,
       );
       await pool.query(`delete from decks where id = $1`, [longId]);
       written.delete(longId);

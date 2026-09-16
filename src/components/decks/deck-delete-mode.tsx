@@ -77,12 +77,22 @@ export function DeleteMode({
 
   return (
     <div className="flex flex-col gap-[10px] p-[12px]">
-      {/* `break-words`, because the name is the reader's and `DECK_NAME_MAX` is
-          120 characters with no rule against an unbroken run. Normal
-          word-breaking sends such a name straight past the panel's 160px
-          content box, and the panel clips its own overflow — so the deck the
-          pane is asking about would be the one thing it failed to show. */}
-      <p className="m-0 font-display text-[14px] font-semibold break-words text-[color:var(--fg)]">
+      {/* Two rules, and the second is what the first created.
+          `break-words` because the name is the reader's and `DECK_NAME_MAX` is
+          120 characters with no rule against an unbroken run: normal
+          word-breaking sends such a name 1086px past the panel's 160px content
+          box. Wrapping it then made the pane 323px tall, and the panel hangs
+          inside `data-deck-art`, which is `overflow-hidden` and 168px at the
+          narrow-cell band. The panel's bottom sits at that box's bottom, so a
+          taller pane grows UPWARD and loses its own first lines — and the reader
+          could no longer see WHICH deck they were deleting, which is the pane's
+          whole job.
+          TWO lines, not three, and that is measured rather than chosen: three
+          leaves the pane 197px and still clips 16px of the heading at 900px,
+          while two returns it to exactly the 176px a short name draws. Two lines
+          hold about 40 characters, which names any deck a player can tell
+          apart. */}
+      <p className="m-0 line-clamp-2 font-display text-[14px] font-semibold break-words text-[color:var(--fg)]">
         {c.heading(deckName)}
       </p>
       <p className="m-0 text-[12.5px] leading-[1.5] text-[color:var(--fg-body)]">{c.body}</p>
