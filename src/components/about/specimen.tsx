@@ -39,8 +39,12 @@ export function Specimen({
       inert
       data-specimen={label}
       data-width={width}
-      className={`pointer-events-none m-0 mt-[10px] select-none overflow-hidden rounded-[8px] border border-solid border-[color:var(--border)] bg-[color:var(--surface-sunken)] px-[16px] py-[14px] ${
-        width === "inset" ? "min-[1000px]:max-w-[300px]" : ""
+      className={`pointer-events-none m-0 mt-[10px] select-none overflow-hidden rounded-[8px] border border-solid border-[color:var(--border)] bg-[color:var(--surface-sunken)] ${
+        // The canvas draws the two widths differently: a plate is 14px 16px,
+        // an inset 12px all round. One blanket value was applied to both and
+        // the table collapsed the variants into a single row, which is how the
+        // gap was read as one padding axis rather than two treatments.
+        width === "inset" ? "p-[12px] min-[1000px]:max-w-[300px]" : "px-[16px] py-[14px]"
       }`}
     >
       {children}
@@ -124,8 +128,8 @@ export function LegendBox({
       data-specimen={label}
       data-width={width}
       data-legend=""
-      className={`m-0 mt-[10px] overflow-hidden rounded-[8px] border border-solid border-[color:var(--border)] bg-[color:var(--surface-sunken)] px-[16px] py-[14px] ${
-        width === "inset" ? "min-[1000px]:max-w-[300px]" : ""
+      className={`m-0 mt-[10px] overflow-hidden rounded-[8px] border border-solid border-[color:var(--border)] bg-[color:var(--surface-sunken)] ${
+        width === "inset" ? "p-[12px] min-[1000px]:max-w-[300px]" : "px-[16px] py-[14px]"
       }`}
     >
       <dl className="m-0 flex flex-col gap-[8px]">{children}</dl>

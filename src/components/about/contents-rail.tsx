@@ -87,7 +87,14 @@ export function ContentsRail({ chapters }: { chapters: readonly RailChapter[] })
   return (
     <nav
       aria-label={aboutCopy.contentsLabel}
-      className="sticky top-0 hidden w-[220px] flex-none min-[1000px]:block"
+      // 216px is the drawn width. `top-[24px]` is NOT the canvas's `top:0` and
+      // that is deliberate: in the mock the sticky rail sits inside a frame
+      // with 30px of padding, so it is drawn clear of the edge and never
+      // actually sticks. In the app there is no top chrome at this width, so
+      // `top:0` puts the Contents label against the viewport edge the moment
+      // the page scrolls. The drawn CLEARANCE is what transfers, not the
+      // property that produced it.
+      className="sticky top-[24px] hidden w-[216px] flex-none min-[1000px]:block"
     >
       <p className="font-mono text-[10.5px] tracking-[0.12em] text-[color:var(--fg-faint)] uppercase">
         {aboutCopy.contentsLabel}

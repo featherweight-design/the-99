@@ -731,11 +731,43 @@ describe("the page's own type, against the design table", () => {
   // so `font-display` alone rendered them at 400 while the table said 700 and
   // the verification pass that wrote the table read past it. A row a machine
   // can check should not be left to a reader who has just written it down.
-  it("gives both headings the weight the table specifies", () => {
+  it("gives every heading the weight and size the table specifies", () => {
+    // Asserting `className` contains `font-bold` restates the change rather
+    // than the property — and it covered two headings while the same preflight
+    // default was left on the third. The entry title is an h3 with
+    // `font-display` and no weight, which §3 draws at 600.
     render(<AboutPage seen={0} />);
     const h1 = screen.getByRole("heading", { level: 1 });
     expect(h1.className).toContain("font-bold");
-    const [h2] = screen.getAllByRole("heading", { level: 2 });
-    expect(h2.className).toContain("font-bold");
+    expect(h1.className).toContain("leading-[1.2]");
+    expect(h1.className).toContain("text-[23px]");
+    expect(h1.className).toContain("min-[1000px]:text-[29px]");
+
+    for (const h2 of screen.getAllByRole("heading", { level: 2 })) {
+      expect(h2.className).toContain("font-bold");
+      expect(h2.className).toContain("text-[16px]");
+    }
+    for (const h3 of screen.getAllByRole("heading", { level: 3 })) {
+      expect(h3.className, "an h3 inherits the body weight without one").toContain(
+        "font-semibold",
+      );
+    }
+  });
+
+  it("separates the intro from the h1 by the drawn 10px", () => {
+    const { container } = render(<AboutPage seen={0} />);
+    const intro = container.querySelector("h1 + p");
+    expect(intro?.className).toContain("mt-[10px]");
+  });
+
+  it("gives a plate and an inset their own padding", () => {
+    // Two treatments in the canvas — 14px 16px and 12px — collapsed into one
+    // row of the first table and then one blanket value in the code.
+    const { container } = render(<AboutPage seen={0} />);
+    const plate = container.querySelector('[data-width="plate"]');
+    const inset = container.querySelector('[data-width="inset"]');
+    expect(plate?.className).toContain("px-[16px]");
+    expect(plate?.className).toContain("py-[14px]");
+    expect(inset?.className).toContain("p-[12px]");
   });
 });

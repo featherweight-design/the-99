@@ -1,70 +1,75 @@
 # Gap report — /about
 
-Verified against `docs/superpowers/design-tables/about.md`, row by row, after that table was
-committed. Five visual gaps, three states reachable.
+Verified against `docs/superpowers/design-tables/about.md`.
 
-## Why this ran late
+## This report is the second version, and the first was wrong
+
+The first run reported five gaps. It found six, and it found them against a table whose **phone
+column was the shipped code rather than the canvas** — so every phone row agreed by construction
+and certified the build instead of the design. The cold-eyes pass caught that by recomputing each
+row from §5, which is the one thing my verification pass could not do, having just written the
+table.
+
+What follows is the real enumeration.
+
+## Why the gate ran late at all
 
 `AGENTS.md` requires every UI PR to pass `design-review` before `gh pr create`. It was not run on
-#653, #658 or #666 — the three PRs that built this page. `pr-review` and `feature-acceptance` both
-ran on all three; this one was simply skipped, and it is the gate whose entire job is comparing the
-build to the handoff property by property.
+#653, #658 or #666 — the three PRs that built this page. `pr-review` and `feature-acceptance` ran on
+all three; this one was skipped, and it is the gate whose whole job is comparing the build to the
+handoff property by property.
 
-The cost is measurable. The page shipped with **five figures against a handoff that drew
-thirty-four**, and the five gaps below sat through four review rounds, a contact sheet and a
-close-out walk. Not one of those artifacts can catch a 1px type size or a missing padding axis —
-they are not looking at the table, because nobody had written it.
+## Gaps
 
-## Visual gaps
+| # | Element | Property | Design | Was | Found by |
+|---|---|---|---|---|---|
+| 1 | h1 | font-size (desktop) | 29px | 30px | pass 1 |
+| 2 | h1 | line-height | 1.2 | unset | pass 1 |
+| 3 | key line | font-size | 10.5px | 11px | pass 1 |
+| 4 | contents rail | width | 216px | 220px | cold-eyes |
+| 5 | h1 | font-size (phone) | 23px | 24px | cold-eyes |
+| 6 | h2 | font-size (phone) | 16px | 19px | cold-eyes |
+| 7 | h3 entry title | font-weight | 600 | 400 (preflight) | cold-eyes |
+| 8 | h3 entry title | font-size (desktop) | 15.5px | 16px | cold-eyes |
+| 9 | h1 / h2 | font-weight | 700 | 400 (preflight) | review |
+| 10 | h1 → intro | separation | 10px | 6px | review |
+| 11 | route link | font-size | 11px / 11.5px | 11px flat, then 11.5px flat | cold-eyes |
+| 12 | specimen frame | padding | plate 14/16, **inset 12** | one blanket value | cold-eyes |
 
-| # | File | Element | Property | Design | Was | Now |
-|---|---|---|---|---|---|---|
-| 1 | `about-page.tsx` | h1 | font-size (desktop) | 29px | 30px | 29px |
-| 2 | `about-page.tsx` | h1 | line-height | 1.2 | unset | 1.2 |
-| 3 | `about-page.tsx` | route link | font-size | 11.5px | 11px | 11.5px |
-| 4 | `about-page.tsx` | key line | font-size | 10.5px | 11px | 10.5px |
-| 5 | `specimen.tsx` | frame | padding | 14px 16px | 14px | 14px 16px |
-| 6 | `contents-rail.tsx` | rail | top | 0 | 24px | 0 |
-| 7 | `about-page.tsx` | h1 | font-weight | 700 | 400 (preflight) | `font-bold` |
-| 8 | `about-page.tsx` | h2 | font-weight | 700 | 400 (preflight) | `font-bold` |
-| 9 | `about-page.tsx` | h1 → intro | separation | 10px | 6px | 10px |
+**Three of my own fixes were wrong.** Row 11: the first pass moved the route link to 11.5px at every
+width, which fixed desktop and broke phone. Row 12: the table collapsed two drawn treatments into
+one row, so the fix applied one value to both — 17 frames in §3 are `padding:12px` and 12 are
+`14px 16px`. Row 4 I had recorded as 220px, which is what the code said.
 
-Rows 7–9 were found by REVIEW, not by this pass, and that is the finding worth keeping. The table
-records weight 700 on both headings; the verification pass wrote that row and then read past it,
-and Tailwind's preflight gives an `h1` and an `h2` the body weight, so `font-display` alone
-rendered them at 400 while the table above claimed 700.
+Every row a machine can check is now checked by one. `about-page.test.tsx` asserts the sizes, the
+weights, the separation and both padding treatments, and each reverts to failure.
 
-That is exactly the attention drift the skill's three-agent split exists to prevent, happening in
-the way it predicts when one reader enumerates and verifies in sequence. The method note at the top
-of the property table says the protection was lost; this is what it cost. A row a machine can check
-is now checked by one — `about-page.test.tsx` asserts both weights, and dropping either fails.
+## Deliberate departures
 
-## Not gaps, and worth recording
+**`top` on the rail is not the canvas's `top:0`.** §3 draws the sticky rail inside a static frame
+with `padding:30px 30px 34px`, so it sits 30px clear of the edge and never sticks in the mock. The
+app has no top chrome at that width, so `top:0` puts the Contents label against the viewport edge
+the moment the page scrolls. The drawn clearance transfers; the property that produced it does not.
 
-**The display face is not Cinzel — it is per theme.** `--font-display-face` is Cinzel on Amonkhet,
-Chakra Petch on Kamigawa, Trirong on Ixalan and so on (`globals.css:80, 123, 203…`). The canvas
-drew Cinzel because it was rendered in the Amonkhet palette. A screenshot of the app in Neon Rain
-therefore shows a sans display face against the canvas's serif, and that is the theme system
-working rather than a divergence. `font-display` resolves correctly in all six.
+**The code has 34 entries and the canvas drew 33.** The extra is `decklist-order`, added after #642
+shipped the decklist's sort control, which the canvas predates. Earlier text here said "a handoff
+that drew thirty-four" — it drew thirty-three.
 
-**The sticky index is drawn in the canvas and was cut in Design's own readiness note.** It was
-declined twice on the strength of that note and then built after Hugh overruled it. The table
-records what the canvas draws, which is the rail.
+## Not gaps
 
-## State reachability
+**The display face is per theme.** `--font-display-face` is Cinzel on Amonkhet, Chakra Petch on
+Kamigawa, Trirong on Ixalan. The canvas drew Cinzel because it rendered in Amonkhet, so a screenshot
+in Neon Rain showing sans against the canvas's serif is the theme system working.
 
-| State | Trigger | Verdict |
-|---|---|---|
-| Version 0 | `seen === 0` | ✅ every entry, nothing marked, dismiss present |
-| Behind | `0 < seen < ABOUT_VERSION` | ✅ eyebrow, marks, dismiss — pinned in `about-page.test.tsx` with a version-2 page |
-| Current | `seen >= ABOUT_VERSION` | ✅ no eyebrow, no marks, no dismiss |
+**One theme will not render weight 700 at all.** `globals.css:487` pins `font-synthesis-weight: none`
+on `[data-theme="kaldheim"] .font-display`, and that face ships a single weight — so under First
+Frost the headings stay at 400 with `font-bold` applied. That is a property of the theme rather than
+of this page, it is true of every `font-display` heading in the app, and it is recorded here because
+the table's unconditional "700" would otherwise read as a promise.
 
-All three are reachable and asserted. Only the first is photographable on one account, because the
-acknowledged version lives in `user_prefs` — recorded in the close-out.
+## What this skill cannot see
 
-## What this does not cover
-
-`design-review` compares a build to a handoff file by file. It cannot see a route that never got
-the component, a phone that diverged from its desktop, or a surface reimplementing what another
-route already has — `feature-acceptance` owns those, and its contact sheet is what found the
-caption stutter and the server/client crash this skill would have walked straight past.
+It compares a build to a handoff file by file. A route that never got the component, a phone that
+diverged from its desktop, a surface reimplementing another — `feature-acceptance` owns those, and
+its contact sheet is what found the caption stutter and the server/client crash that this pass
+walked straight past twice.

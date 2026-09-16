@@ -62,13 +62,13 @@ function Entry({ entry, marked }: { entry: AboutEntry; marked: boolean }) {
           — rather than a footnote under its keys. It wraps below the title on a
           phone instead of squeezing both. */}
       <div className="flex flex-wrap items-baseline gap-x-[10px] gap-y-[2px]">
-        <h3 className="font-display text-[15px] text-[color:var(--fg)] min-[1000px]:text-[16px]">
+        <h3 className="font-display text-[15px] font-semibold text-[color:var(--fg)] min-[1000px]:text-[15.5px]">
           {entry.title}
           {marked && <NewMark />}
         </h3>
         <Link
           href={entry.route}
-          className="font-mono text-[11.5px] text-[color:var(--accent)] hover:underline"
+          className="font-mono text-[11px] text-[color:var(--accent)] hover:underline min-[1000px]:text-[11.5px]"
         >
           {entry.route}
         </Link>
@@ -171,7 +171,7 @@ export function AboutPage({ seen, next }: { seen: number; next?: string }) {
         </p>
       )}
 
-      <h1 className="font-display text-[24px] leading-[1.2] font-bold text-[color:var(--fg)] min-[1000px]:text-[29px]">
+      <h1 className="font-display text-[23px] leading-[1.2] font-bold text-[color:var(--fg)] min-[1000px]:text-[29px]">
         {aboutCopy.pageTitle}
       </h1>
       <p className="mt-[10px] text-[13.5px] leading-[1.55] text-[color:var(--fg-muted)]">
@@ -186,7 +186,7 @@ export function AboutPage({ seen, next }: { seen: number; next?: string }) {
           id={`chapter-${n}`}
           className="mt-[28px] border-t border-solid border-[color:var(--border)] pt-[18px] scroll-mt-[20px]"
         >
-          <h2 className="font-display text-[19px] font-bold text-[color:var(--fg)] min-[1000px]:text-[21px]">
+          <h2 className="font-display text-[16px] font-bold text-[color:var(--fg)] min-[1000px]:text-[21px]">
             <span className="font-mono text-[12px]">
               {n}
             </span>{" "}
