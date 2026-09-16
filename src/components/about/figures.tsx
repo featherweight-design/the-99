@@ -36,6 +36,10 @@ import { GAME_AXIS_KEYS } from "../../lib/decks/game-axes";
 import { deckSortLabel } from "../../lib/about/sort-labels";
 import { DECK_GROUPING_LABELS } from "../../lib/copy/deck-sort";
 import { BrowseFigureBody } from "./browse-figure";
+import { KeyNumeral } from "./numeral";
+import { setFilterCopy, setPageCopy } from "../../lib/copy/set-collections";
+import { PIP_ORDER } from "../../lib/copy/filter-chassis";
+import { PIP_SRC } from "../ui/colour-pips";
 import {
   ImportFigureBody,
   CardDetailFigureBody,
@@ -53,9 +57,7 @@ import {
   LegendBox,
   Specimen,
   SpecimenCell,
-  SpecimenGrid,
   SpecimenResponsive,
-  SpecimenRows,
 } from "./specimen";
 import type { AboutWidth } from "../../lib/copy/about";
 import {
@@ -68,6 +70,7 @@ import {
   ROLE_COUNTS,
   SHOPPING,
   SET_CELLS,
+  SET_HEAD,
   COSTS,
   FIT_DEGRADED,
   FIT_DEGRADED_SCORE,
@@ -378,39 +381,108 @@ function MarksFigure({ width }: { width: AboutWidth }) {
  * it one of the few whole surfaces this page can show rather than legend.
  */
 function SetsFigure({ width }: { width: AboutWidth }) {
-  const caption = [
-    "owned",
-    "matched by name, not by printing",
-    "your only copy is foil",
-    "missing — dimmed, dashed, and carrying a price",
-  ];
+  const h = SET_HEAD;
   const newest = PRICES[0].fact.asOf;
   return (
     <Specimen label="sets" width={width}>
-      {/* The header first: the completion figure is read against the BASE RUN
-          while the cell count includes the extras, and the entry's key line is
-          about exactly that disagreement. Four cells alone cannot teach it. */}
-      <div className="mb-[12px] flex flex-wrap items-baseline gap-x-[12px] gap-y-[4px]">
-        <span className="font-mono text-[12px] text-[color:var(--fg)]">162 / 208 · 78%</span>
-        <span className="font-mono text-[10.5px] text-[color:var(--fg-faint)]">
-          321 cells · 171 yours, 150 missing
+      {/* TRANSCRIBED from §3. What this replaces was a completion ratio, a cell
+          count and four cells — which showed the marks and none of the page
+          they live on. The entry's three key lines are about the cost strip's
+          coverage, the dashed cell, and the base run being counted apart from
+          the extras; two of those had nothing on the figure to point at. */}
+      <div className="font-mono text-[9.5px] text-[color:var(--fg-faint)]">
+        Collection / Sets / {h.code}
+      </div>
+      <div className="mt-[8px] mb-[4px] flex flex-wrap items-baseline gap-[10px]">
+        <span className="font-display text-[17px] font-bold text-[color:var(--fg)]">{h.name}</span>
+        <span className="font-mono text-[11px] text-[color:var(--fg-muted)]">
+          {h.have} / {h.base} · {h.percent}%
         </span>
       </div>
-      <SpecimenGrid>
+      <div className="mb-[11px] font-mono text-[9.5px] leading-[1.6] text-[color:var(--fg-faint)]">
+        {setPageCopy.head.meta(h.code, h.released, h.base, h.extras)}
+        <br />
+        {setPageCopy.head.ratioNote}
+      </div>
+
+      {/* The cost strip. Key line 2 is about its COVERAGE — the figure counts
+          the cards ManaPool stocks, and one that has never been stocked is
+          named and left out rather than priced at zero. */}
+      <div className="mb-[12px] flex items-center gap-[14px] rounded-[9px] border border-solid border-[color:var(--border)] bg-[color:var(--bg)] px-[14px] py-[12px]">
+        <div className="min-w-0 flex-1">
+          <div className="mb-[5px] font-mono text-[9.5px] tracking-[0.1em] text-[color:var(--fg-faint)] uppercase">
+            {setPageCopy.cost.label}
+          </div>
+          <div className="flex flex-wrap items-baseline gap-[8px]">
+            <span className="font-mono text-[17px] text-[color:var(--accent)]">{h.cost}</span>
+            <span className="text-[11.5px] text-[color:var(--fg-body)]">
+              {setPageCopy.cost.line(h.costPriced, h.costMissing)}
+            </span>
+            <KeyNumeral n={2} />
+          </div>
+          <div className="mt-[4px] font-mono text-[9.5px] text-[color:var(--fg-faint)]">
+            {setPageCopy.cost.unpriced(h.costUnpriced)}
+          </div>
+        </div>
+        <span className="flex h-[30px] flex-none items-center rounded-[8px] bg-[color:var(--fg)] px-[13px] text-[12px] font-semibold text-[color:var(--bg)]">
+          {setPageCopy.cost.send(h.sendCount)}
+        </span>
+      </div>
+
+      {/* The filter row, and the line under it that says what the denominator
+          counts. Both are drawn, because key line 3 is about exactly that
+          disagreement: 162 of 208 and 321 cells are both true. */}
+      <div className="mb-[9px] flex flex-wrap items-center gap-[8px]">
+        <span className="flex h-[28px] min-w-[140px] flex-1 items-center rounded-[8px] border border-solid border-[color:var(--border-strong)] bg-[color:var(--bg)] px-[10px] text-[11px] text-[color:var(--fg-locked)]">
+          {setFilterCopy.search.placeholder}
+        </span>
+        <span aria-hidden className="flex flex-none gap-[4px]">
+          {PIP_ORDER.map((code) => (
+            <span
+              key={code}
+              className="h-[16px] w-[16px] rounded-full"
+              style={{ background: `center / contain no-repeat url(${PIP_SRC[code]})` }}
+            />
+          ))}
+        </span>
+        <span className="flex h-[26px] items-center gap-[6px] rounded-[7px] border border-solid border-[color:var(--border-strong)] bg-[color:var(--elevated)] px-[9px] text-[11px] text-[color:var(--fg-muted)]">
+          {setFilterCopy.rarity.all}
+          <span aria-hidden className="text-[color:var(--fg-faint)]">▾</span>
+        </span>
+        <span className="flex h-[26px] items-center rounded-[7px] border border-solid border-[color:var(--border-strong)] px-[10px] text-[11px] text-[color:var(--fg-muted)]">
+          {setFilterCopy.missingOnly.label}
+        </span>
+      </div>
+      <div className="mb-[10px] font-mono text-[10px] text-[color:var(--fg-faint)]">
+        {h.cells} cells · {h.yours} yours, {h.missing} missing
+      </div>
+
+      <div className="mb-[9px] flex items-baseline gap-[9px]">
+        <span className="font-display text-[13px] font-bold text-[color:var(--fg)]">Base run</span>
+        <span className="font-mono text-[10.5px] text-[color:var(--fg-muted)]">
+          {h.have} / {h.base}
+        </span>
+        <KeyNumeral n={3} />
+      </div>
+
+      {/* SIX across, as drawn, and the route's own `SetCell` for every one.
+          The price is passed to every cell and the COMPONENT decides: it
+          renders the tag only for `!cell.owned`, because "a price tag is a
+          thing only a missing cell has" is the route's rule, not this page's.
+          Gating it here as well would look like a guard while guarding
+          nothing. */}
+      <div className="grid grid-cols-3 gap-[10px] min-[1000px]:grid-cols-6">
         {SET_CELLS.map((cell, i) => (
-          <SpecimenCell key={cell.scryfallId} caption={caption[i]}>
-            <div className="w-[88px]">
-              <SetCell
-                cell={cell}
-                // Only the missing cell is priced: an owned one never carries a
-                // figure, which is half of what tells the two apart.
-                price={cell.owned ? null : PRICES[0].fact}
-                newestAsOf={cell.owned ? null : newest}
-              />
-            </div>
-          </SpecimenCell>
+          <div key={cell.scryfallId} className="relative">
+            {i === 4 && <KeyNumeral n={1} className="absolute top-[5px] left-[5px] z-10" />}
+            <SetCell
+              cell={cell}
+              price={PRICES[0].fact}
+              newestAsOf={newest}
+            />
+          </div>
         ))}
-      </SpecimenGrid>
+      </div>
     </Specimen>
   );
 }

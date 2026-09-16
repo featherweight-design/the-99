@@ -6,9 +6,12 @@ import { FIGURES } from "./figures";
 import { availabilityCopy } from "../../lib/copy/availability";
 import { cardAssignmentsCopy } from "../../lib/copy/card-assignments";
 import { printingPickerCopy } from "../../lib/copy/collection";
+import { setPageCopy } from "../../lib/copy/set-collections";
 import {
   CONTESTED_ARRIVAL,
   IMPORT_SOURCES,
+  SET_CELLS,
+  SET_HEAD,
   PRINTING_ROWS,
   ISSUE_PARSE_ERROR,
   ISSUE_UNMATCHED,
@@ -589,13 +592,42 @@ describe("what each chapter 01 figure actually draws", () => {
     return el as HTMLElement;
   };
 
-  it("sets: four cells, and only the missing one carries a price", () => {
+  it("sets: the set page, not a strip of cells", () => {
     const el = plate("sets");
-    // The completion figure and the cell count disagree on purpose — base run
-    // versus extras — and the entry's key line is about exactly that.
-    expect(el.textContent).toContain("162 / 208");
-    expect(el.textContent).toContain("321 cells");
-    expect(el.querySelectorAll("button").length).toBe(4);
+    const h = SET_HEAD;
+
+    // The head. Two ratios that disagree ON PURPOSE — `162 / 208` counts the
+    // base run, `321 cells` counts the extras too — which is key line 3's
+    // whole subject and had nothing on the figure to point at before.
+    expect(el.textContent).toContain(h.name);
+    expect(el.textContent).toContain(`${h.have} / ${h.base}`);
+    expect(el.textContent).toContain(`${h.cells} cells`);
+    expect(el.textContent).toContain(setPageCopy.head.ratioNote);
+
+    // The cost strip, which key line 2 is about: the figure covers what
+    // ManaPool stocks, and the card that never has is NAMED and left out
+    // rather than priced at zero.
+    expect(el.textContent).toContain(setPageCopy.cost.label);
+    expect(el.textContent).toContain(h.cost);
+    expect(el.textContent).toContain(setPageCopy.cost.line(h.costPriced, h.costMissing));
+    expect(el.textContent).toContain(setPageCopy.cost.unpriced(h.costUnpriced));
+    expect(el.textContent).toContain(setPageCopy.cost.send(h.sendCount));
+
+    // Six cells as drawn, and only a missing one shows a price. This is an
+    // INVARIANCE over the route's rule rather than a guard on this figure:
+    // `SetCell` renders the tag on `!cell.owned` itself, so the figure passes
+    // a price to every cell and cannot break it. It is asserted because it is
+    // what the reader must see, and it fails if the figure ever stops using
+    // the route's cell — which is the thing that could actually regress.
+    // Scoped to the GRID. Swept over the whole plate the cost strip's own
+    // `$188.66` counts as a cell price, so the check read 3 where the rule is
+    // 2 — and a figure pricing every cell would have passed a looser form.
+    const grid = el.querySelector('[class*="grid-cols-3"]');
+    expect(grid, "the cell grid").not.toBeNull();
+    const priced = [...grid!.querySelectorAll("*")].filter(
+      (n) => n.children.length === 0 && /^\$[0-9.,]+$/.test(n.textContent ?? ""),
+    );
+    expect(priced).toHaveLength(SET_CELLS.filter((c) => !c.owned).length);
   });
 
   it("browse: a chip per narrowing, a count, and the reading choice", () => {

@@ -82,6 +82,11 @@ export function SpecimenCell({
  * `md` a 768–999px reader gets the desktop grid while every other surface
  * around it is still compact.
  */
+// UNUSED as of chapter 01's transcription — `sets` and `buy-tag` were the last
+// two callers and both now draw the arrangement §3 actually gives them. Kept
+// rather than deleted while chapters 02-04 are still being transcribed: if none
+// of them wants a cell grid either, this and `SpecimenRows` go with the last of
+// them, and the deletion is one commit instead of three re-additions.
 export function SpecimenGrid({ children }: { children: React.ReactNode }) {
   return <div className="grid grid-cols-2 gap-[14px] min-[1000px]:grid-cols-4">{children}</div>;
 }
