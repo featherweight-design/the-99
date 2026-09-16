@@ -146,23 +146,33 @@ async function sleeveEveryCopy(userId, oracleId, commanderOracleId, onDeck) {
  * in Commander, so one deck can claim one copy; a card owned three times would
  * need three decks to read hard, and sleeving three into one would be a state the
  * app refuses. One copy owned means one deck claims the whole supply.
+ *
+ * NEVER A BASIC LAND. `loadAvailability` omits basics from its owned CTE by
+ * design, so a basic has NO availability row at all — sleeving one would claim
+ * nothing, the row would draw no marker, and the check below would report a
+ * failure against a perfectly healthy build. A false failure is worse than the
+ * silent pass this whole PR exists to remove, because it sends the next reader
+ * looking for a defect in the component.
  */
 async function resolveOwnedCard(userId, name) {
   const { rows: catalog } = await pool.query(
-    `select oracle_id from cards where name = $1`,
+    `select oracle_id, type_line, color_identity from cards where name = $1`,
     [name],
   );
-  if (catalog.length !== 1) return { card: null, ambiguous: catalog.length > 1 };
+  if (catalog.length !== 1) return { card: null, ambiguous: catalog.length > 1, basic: false };
+  if (/\bBasic\b/.test(catalog[0].type_line)) {
+    return { card: null, ambiguous: false, basic: true };
+  }
   const { rows } = await pool.query(
-    `select c.oracle_id, sum(ci.quantity)::int as owned
+    `select c.oracle_id, c.color_identity, sum(ci.quantity)::int as owned
        from cards c
        join collection_items ci on ci.oracle_id = c.oracle_id and ci.user_id = $1
       where c.oracle_id = $2
-      group by c.oracle_id
+      group by c.oracle_id, c.color_identity
       having sum(ci.quantity) = 1`,
     [userId, catalog[0].oracle_id],
   );
-  return { card: rows[0] ?? null, ambiguous: false };
+  return { card: rows[0] ?? null, ambiguous: false, basic: false };
 }
 
 /**
@@ -182,6 +192,12 @@ async function resolveOwnedCard(userId, name) {
  *   it does not — that filter runs over the rendered lists and has no bearing on
  *   this query — so it is excluded here, by the name the page itself printed.
  *
+ *   A COMMANDER WHOSE IDENTITY CANNOT HOLD THE CARD. A deck's cards must fit its
+ *   commander's colour identity, so a leader picked without that test builds an
+ *   illegal deck. The claim model does not read identity, so this changes no
+ *   figure measured here — it keeps the fixture to decks the app would accept,
+ *   which is the same rule that took `filled` and the singleton quantity out.
+ *
  *   A CARD THAT CANNOT LEAD. `createDeck` refuses anything that is not
  *   `commanderLegal` and `isCommanderCandidate`, and this script inserts past
  *   that action. The candidacy half is the app's own function, imported: it reads
@@ -194,19 +210,25 @@ async function resolveOwnedCard(userId, name) {
  * commander at all while the account owned several, and the fixture would skip
  * itself for no reason a reader could see.
  */
-async function anyOwnedLegend(userId, excludeOracleId, excludeName) {
+async function anyOwnedLegend(userId, excludeOracleId, excludeName, needsIdentity) {
   const { rows } = await pool.query(
-    `select c.oracle_id, c.type_line, c.oracle_text
+    `select c.oracle_id, c.type_line, c.oracle_text, c.color_identity
        from cards c
        join collection_items ci on ci.oracle_id = c.oracle_id and ci.user_id = $1
       where c.commander_legal = true
         and c.oracle_id <> $2
         and c.name <> $3
+        and c.color_identity @> $4::text[]
         and ((c.type_line ilike '%legendary%' and c.type_line ilike '%creature%')
              or c.oracle_text ilike '%can be your commander%')
       limit 200`,
-    [userId, excludeOracleId, excludeName ?? ""],
+    [userId, excludeOracleId, excludeName ?? "", needsIdentity ?? []],
   );
+  // The SQL only NARROWS; this decides. Its predicate reads the joined type line,
+  // so a back-face-only DFC reaches here — and is then refused, because the
+  // imported rule reads the front face alone. That is the split on purpose: a
+  // loose prefilter costs a row of JavaScript, a loose final test ships a deck
+  // the app would not have made.
   const ok = rows.find((r) =>
     isCommanderCandidate({ typeLine: r.type_line, oracleText: r.oracle_text }),
   );
@@ -427,7 +449,9 @@ async function run() {
       : { card: null, ambiguous: false };
     const held = resolved.card;
     const leader = held
-      ? await anyOwnedLegend(userId, held.oracle_id, page0.commanderName)
+      ? await anyOwnedLegend(
+          userId, held.oracle_id, page0.commanderName, held.color_identity ?? [],
+        )
       : null;
 
     // ONE EXPLICIT STATE, not an inference from `heldDeckId`. The marker check
@@ -451,7 +475,10 @@ async function run() {
       // and sends the next reader to change PROBE_SLUG when the fixture is fine.
       fixture.why = !heldName
         ? "the page drew no owned synergy row to claim"
-        : resolved.ambiguous
+        : resolved.basic
+          ? `"${heldName}" is a basic land, and \`loadAvailability\` omits basics from its` +
+            " owned CTE — sleeving one would claim nothing and the row would draw no marker"
+          : resolved.ambiguous
           ? `"${heldName}" names more than one card in the catalog, and sleeving the wrong` +
             " one would measure the wrong row"
           : !held
