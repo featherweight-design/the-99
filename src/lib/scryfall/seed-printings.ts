@@ -151,6 +151,7 @@ export async function seedPrintings(): Promise<SeedPrintingsResult> {
         collectorNumber: sql`excluded.collector_number`,
         imageUri: sql`excluded.image_uri`,
         imageUriSmall: sql`excluded.image_uri_small`,
+        backImageUri: sql`excluded.back_image_uri`,
         finishes: sql`excluded.finishes`,
         isVariant: sql`excluded.is_variant`,
         flavorName: sql`excluded.flavor_name`,

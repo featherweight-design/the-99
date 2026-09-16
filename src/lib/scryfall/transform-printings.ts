@@ -7,6 +7,13 @@ export type PrintingRow = {
   collectorNumber: string;
   imageUri: string | null;
   imageUriSmall: string | null;
+  /**
+   * This printing's second face, which is what a flip has to swap to. Asked of the face
+   * rather than of the layout, exactly as the cards transform does: split, flip and
+   * adventure cards are `card_faces` arrays too and carry one image between them, so they
+   * answer null here without this needing to name them.
+   */
+  backImageUri: string | null;
   finishes: string[];
   isVariant: boolean;
   /**
@@ -114,6 +121,7 @@ export function classifyPrinting(raw: Raw): PrintingClassification {
       collectorNumber: requiredString(raw, "collector_number"),
       imageUri,
       imageUriSmall,
+      backImageUri: faces?.[1]?.image_uris?.normal ?? null,
       finishes: Array.isArray(raw.finishes) && raw.finishes.length > 0
         ? raw.finishes
         : ["nonfoil"],

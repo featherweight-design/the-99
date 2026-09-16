@@ -49,6 +49,7 @@ const printing = (over: Partial<CatalogPrintingRow> = {}): CatalogPrintingRow =>
   scryfallId: "s-other",
   setCode: "c21",
   setName: "Commander 2021",
+  backImageUri: null,
   collectorNumber: "263",
   releasedAt: "2021-04-23",
   imageUri: "https://img/c21-263.jpg",
@@ -98,6 +99,26 @@ describe("catalogCard", () => {
   it("falls a printing with no art back to the oracle-level image", () => {
     const c = catalogCard(card(), [printing({ imageUri: null })]);
     expect(c.printings[0].imageUri).toBe("https://img/oracle.jpg");
+  });
+
+  // A card nobody owns is still flipped in the modal, and the printing the reader is
+  // looking at owns its own back.
+  it("carries each printing's own back face", () => {
+    const c = catalogCard(card(), [
+      printing({ setCode: "isd", imageUri: "https://img/isd.jpg", backImageUri: "https://img/isd-back.jpg" }),
+      printing({ scryfallId: "s-2", setCode: "sld", imageUri: "https://img/sld.jpg", backImageUri: "https://img/sld-back.jpg" }),
+    ]);
+    expect(c.printings.map((p) => p.backImageUri))
+      .toEqual(["https://img/isd-back.jpg", "https://img/sld-back.jpg"]);
+  });
+
+  // The state every printing is in until the catalog is re-seeded against the new column.
+  it("falls a printing with no back of its own to the oracle-level one", () => {
+    const c = catalogCard(
+      { ...card(), backImageUri: "https://img/oracle-back.jpg" },
+      [printing({ imageUri: "https://img/isd.jpg" })],
+    );
+    expect(c.printings[0].backImageUri).toBe("https://img/oracle-back.jpg");
   });
 
   // The tile that opened this modal draws the oracle-level image, so the modal has to

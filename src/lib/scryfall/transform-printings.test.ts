@@ -29,7 +29,8 @@ const asPrinting = (raw: Record<string, unknown>): PrintingRow => {
 
 const printing = (over: Partial<PrintingRow>): PrintingRow => ({
   scryfallId: "id", oracleId: "o", setCode: "ecl", collectorNumber: "1",
-  imageUri: null, imageUriSmall: null, finishes: ["nonfoil"], isVariant: false,
+  imageUri: null, imageUriSmall: null, backImageUri: null,
+  finishes: ["nonfoil"], isVariant: false,
   flavorName: null, booster: false, rarity: "common", ...over,
 });
 
@@ -38,6 +39,7 @@ describe("classifyPrinting", () => {
     expect(asPrinting(plains)).toEqual({
       scryfallId: "aaaaaaaa-0000-0000-0000-000000000001",
       oracleId: "bbbbbbbb-0000-0000-0000-000000000001",
+      backImageUri: null,
       setCode: "ecl",
       collectorNumber: "269",
       imageUri: "https://cards.scryfall.io/normal/plains.jpg",
@@ -76,7 +78,23 @@ describe("classifyPrinting", () => {
     expect(asPrinting(dfc)).toMatchObject({
       imageUri: "https://x/front.jpg",
       imageUriSmall: "https://x/front-s.jpg",
+      // This printing's own second side, which is what makes a flip show the art of the
+      // printing the reader picked rather than whichever one the oracle row was built from.
+      backImageUri: "https://x/back.jpg",
     });
+  });
+
+  // Split, flip and adventure cards are `card_faces` arrays too, and they print both halves
+  // on one piece of stock — so the second face carries no image and there is nothing to
+  // turn to. Asking the face rather than the layout is what keeps this list of names out
+  // of the transform.
+  it("gives a one-sided layout no back face, however many faces it lists", () => {
+    const split = {
+      ...plains, layout: "split",
+      card_faces: [{ name: "Fire" }, { name: "Ice" }],
+    };
+    expect(asPrinting(split).backImageUri).toBeNull();
+    expect(asPrinting({ ...plains, card_faces: undefined }).backImageUri).toBeNull();
   });
 
   it("uses the first face that carries an image", () => {

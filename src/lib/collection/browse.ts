@@ -47,6 +47,21 @@ export type BrowsePrinting = {
   finishes: Partial<Record<Finish, number>>;
   imageUri: string | null;
   /**
+   * THIS printing's back face, for the layouts that have one — and null for every layout
+   * that does not.
+   *
+   * Printing-level, not oracle-level, for the same reason `flavorName` is: a treatment
+   * redraws both faces, so a flip on a picked printing used to turn to a back belonging to
+   * another printing entirely. Falls through the same tiers as the front art, and null
+   * where they all miss — a row ingested before the column existed included, which is what
+   * makes the oracle-level fallback the reader keeps.
+   *
+   * Optional rather than `| null` required, for the reason `scryfallId` is: fixtures and
+   * tests across nineteen files build `BrowsePrinting` literals that never touch the
+   * catalog, and absent means exactly what null does here — fall back to the card's.
+   */
+  backImageUri?: string | null;
+  /**
    * The name printed on THIS printing when it differs from the oracle card's —
    * `printings.flavor_name`, populated for Secret Lair and similar renames
    * (#467). Null on the overwhelming majority of printings, which print the
@@ -282,6 +297,10 @@ export type RawCollectionRow = {
   flavorName: string | null;
   /** Tier 2's printed name. `resolveFlavorName` takes whichever tier the art came from. */
   representativeFlavorName: string | null;
+  /** Tier 1's back face — the exact printing's own second side, or null. */
+  exactBackImageUri: string | null;
+  /** Tier 2's back face. `resolveBackImageUri` takes whichever tier the art came from. */
+  representativeBackImageUri: string | null;
 };
 
 /**
@@ -319,6 +338,29 @@ export function resolveFlavorName(r: {
   if (r.exactImageUri !== null) return r.flavorName;
   if (r.representativeImageUri !== null) return r.representativeFlavorName;
   return null;
+}
+
+/**
+ * The back face of whichever printing `resolveImageUri` just took the front from.
+ *
+ * Both faces come off one printing or the card turns into a different printing's back —
+ * the same rule, and the same three tiers in step, as `resolveFlavorName`. Tier 3 is the
+ * oracle-level `cards.back_image_uri`, which belongs to no printing and is where every
+ * flip stood before this column existed: a printing row written by an older ingest carries
+ * a null back and falls through to it rather than losing its second face.
+ */
+export function resolveBackImageUri(r: {
+  exactImageUri: string | null;
+  representativeImageUri: string | null;
+  exactBackImageUri: string | null;
+  representativeBackImageUri: string | null;
+  backImageUri: string | null;
+}): string | null {
+  if (r.exactImageUri !== null && r.exactBackImageUri !== null) return r.exactBackImageUri;
+  if (r.representativeImageUri !== null && r.representativeBackImageUri !== null) {
+    return r.representativeBackImageUri;
+  }
+  return r.backImageUri;
 }
 
 /**
@@ -377,6 +419,7 @@ export function aggregateCollection(rows: RawCollectionRow[]): BrowseCard[] {
       quantity: r.quantity,
       finishes: { [r.finish]: r.quantity },
       imageUri: resolveImageUri(r),
+      backImageUri: resolveBackImageUri(r),
       flavorName: resolveFlavorName(r),
     };
     const existing = byOracle.get(r.oracleId);
@@ -425,6 +468,7 @@ export function aggregateCollection(rows: RawCollectionRow[]): BrowseCard[] {
       // coalesce a null onto the same value — belt and braces, in the spirit of
       // the image line above.
       seen.flavorName ??= printing.flavorName;
+      seen.backImageUri ??= printing.backImageUri;
       // NOT `??=`, unlike the two lines above. Two finishes of one printing normally
       // share a catalog id, but the import path already records that they can
       // disagree and rules that null is the honest answer when they do
@@ -726,8 +770,10 @@ export async function selectCollectionRows(
       // — the printing the player physically owns, and the only one whose printed
       // name is theirs to show.
       flavorName: exact.flavorName,
+      exactBackImageUri: exact.backImageUri,
       representativeImageUri: representative.imageUri,
       representativeFlavorName: representative.flavorName,
+      representativeBackImageUri: representative.backImageUri,
       cardImageUri: cards.imageUri,
     })
     .from(collectionItems)

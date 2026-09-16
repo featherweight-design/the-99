@@ -10,6 +10,7 @@ import {
   coerceRarity,
   comparePrintings,
   resolveImageUri,
+  resolveBackImageUri,
   resolvedPrinting,
   selectCollectionRows,
 } from "./browse";
@@ -40,6 +41,8 @@ export type CatalogPrintingRow = {
   collectorNumber: string;
   releasedAt: string | null;
   imageUri: string | null;
+  /** This printing's own second face, null on every single-faced one. */
+  backImageUri: string | null;
   flavorName: string | null;
 };
 
@@ -71,6 +74,16 @@ export function catalogCard(
           exactImageUri: p.imageUri,
           representativeImageUri: null,
           cardImageUri: card.imageUri,
+        }),
+        // Same shape, one tier shorter: this row IS the exact printing, so the
+        // representative tier could only repeat it, and the oracle-level back is the
+        // fallback a printing ingested before the column existed keeps.
+        backImageUri: resolveBackImageUri({
+          exactImageUri: p.imageUri,
+          representativeImageUri: null,
+          exactBackImageUri: p.backImageUri,
+          representativeBackImageUri: null,
+          backImageUri: card.backImageUri,
         }),
         flavorName: p.flavorName,
       } satisfies BrowsePrinting,
@@ -250,6 +263,7 @@ export const loadCardDetail = cache(async function loadCardDetail(
       collectorNumber: printings.collectorNumber,
       releasedAt: sets.releasedAt,
       imageUri: printings.imageUri,
+      backImageUri: printings.backImageUri,
       flavorName: printings.flavorName,
     })
     .from(printings)

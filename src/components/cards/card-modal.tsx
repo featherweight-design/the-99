@@ -794,7 +794,8 @@ export function CardModal({
   // not an afterthought: a `transform` row seeded before the back-face column
   // existed carries the layout and no art, and a control that turns to a
   // colour-identity gradient is the lie the layout gate exists to prevent.
-  const twoFaced = isTwoFaced(card.layout) && Boolean(card.backImageUri);
+  const backImage = resolved?.backImageUri ?? card.backImageUri ?? null;
+  const twoFaced = isTwoFaced(card.layout) && Boolean(backImage);
   // The faces of the name on screen, which is the printed one when the copy in
   // hand carries a printed name. The title above and this announcement must
   // name the same card.
@@ -853,18 +854,18 @@ export function CardModal({
   // Art follows the resolved printing, not the card-level image: they are the same value
   // today, but an optimistic pick updates `resolved` a revalidate earlier.
   //
-  // The back face has no such per-printing form: it is stored once per oracle id,
-  // so a flip on a card whose front is a picked printing can show a back from a
-  // different one. Known limitation — closing it means a `back_image_uri` on
-  // `printings` and the art-tier subqueries reading it.
+  // The back face follows it, through `printings.back_image_uri`. Both faces come off one
+  // printing or a flip turns to another printing's back — which is what it used to do, the
+  // column having been oracle-level. A printing ingested before that column existed carries
+  // null and falls back to the card's, which is where every flip stood before.
   // The two faces are drawn from their own images rather than from `faceImage`,
   // which follows `flipped`: a turning card shows both at once, and a box whose
   // background swapped mid-turn would be the swap this amendment exists to replace.
   const frontStyle: React.CSSProperties = resolved?.imageUri
     ? { backgroundImage: cssUrl(resolved.imageUri), backgroundSize: "cover", backgroundPosition: "center" }
     : { background: identityGradient(card.colorIdentity) };
-  const backStyle: React.CSSProperties = card.backImageUri
-    ? { backgroundImage: cssUrl(card.backImageUri), backgroundSize: "cover", backgroundPosition: "center" }
+  const backStyle: React.CSSProperties = backImage
+    ? { backgroundImage: cssUrl(backImage), backgroundSize: "cover", backgroundPosition: "center" }
     : { background: identityGradient(card.colorIdentity) };
 
   // `set · code · collector number`, and the field AND its separator go when the
@@ -879,7 +880,7 @@ export function CardModal({
     // The zoom draws the card and no line rather than a line with nothing in it.
     : null;
 
-  const faceImage = flipped ? card.backImageUri : resolved?.imageUri;
+  const faceImage = flipped ? backImage : resolved?.imageUri;
   const artStyle: React.CSSProperties = faceImage
     ? { backgroundImage: cssUrl(faceImage), backgroundSize: "cover", backgroundPosition: "center" }
     : { background: identityGradient(card.colorIdentity) };

@@ -1,0 +1,1 @@
+ALTER TABLE "printings" ADD COLUMN "back_image_uri" text;

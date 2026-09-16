@@ -74,6 +74,16 @@ export const printings = pgTable("printings", {
   // Stored, not constructed: Scryfall's docs forbid building image URLs.
   imageUri: text("image_uri"),
   imageUriSmall: text("image_uri_small"),
+  /**
+   * THIS printing's back face, for the layouts that have one. `cards.back_image_uri` is the
+   * same art stored once per oracle id, which is why a flip on a picked printing used to
+   * show a back belonging to another printing entirely — Secret Lair and the borderless
+   * treatments redraw both faces.
+   *
+   * Null on every single-faced printing, and on a row written before this column existed:
+   * the reader falls back to the oracle-level image, which is where it stood before.
+   */
+  backImageUri: text("back_image_uri"),
   finishes: text("finishes").array().notNull(),          // nonfoil | foil | etched
   isVariant: boolean("is_variant").notNull().default(false),
   // Computed by a post-load pass (see setRepresentativePrintings) so reads are a plain
