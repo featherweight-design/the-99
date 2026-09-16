@@ -186,8 +186,10 @@ export function UploadEntry({
   }
 
   return (
-    // Desktop content area — §Desktop Content Area: padding 44px 48px, max-width 760px
-    <div className="md:max-w-[760px] md:p-[44px_48px]">
+    // Desktop content area — §Desktop Content Area: padding 44px 48px, max-width 760px.
+    // CENTRED: the cap is the handoff's, the alignment was never stated, and left-pinned it left
+    // two thirds of a desktop body empty beside it.
+    <div className="md:mx-auto md:w-full md:max-w-[760px] md:p-[44px_48px]">
       {/* Warning banner — §Warning Banner (Replace Warning): bg --elevated-hover, border 1px --border-strong, border-left 3px --warning, radius 8/10px, padding 12/16px, gap 10/12px, margin-top 20px desktop */}
       <div
         className="flex items-start gap-[10px] md:gap-[12px] rounded-lg md:rounded-[10px] p-[12px_14px] md:p-[16px_18px] md:mt-[20px]"

@@ -144,7 +144,15 @@ async function main() {
       arrived: 3,
       left: 1,
       issues: { unmatched: 2, parseErrors: 1 },
-      cleared: [{ deckId: DECK_A, oracleId: cleared.oracle_id, copies: 1 }],
+      cleared: [
+        { deckId: DECK_A, oracleId: cleared.oracle_id, copies: 1 },
+        // THE CONTESTED CARD, CLEARED TOO — the state a real import produces and the fixture did
+        // not: seniority hands the arrival to one deck, so that deck's buy row clears while the
+        // chooser below is still asking which deck gets it. `withoutUndecided` takes this row
+        // back out at the read; without it the fixture photographs a receipt that contradicts
+        // its own chooser, which is exactly what the first real walkthrough found.
+        { deckId: DECK_A, oracleId: contested.oracle_id, copies: 1 },
+      ],
       still: [
         { deckId: DECK_B, oracleId: still.oracle_id, owed: 1, reason: { kind: "partly", arrived: 1, wanted: 2 } },
         { deckId: DECK_A, oracleId: contested.oracle_id, owed: 1, reason: { kind: "gone" } },

@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { buildArrivalsSummary, summaryIsEmpty, type ArrivalsInput } from "./arrivals";
+import { buildArrivalsSummary, summaryIsEmpty, withoutUndecided, type ArrivalsInput } from "./arrivals";
 
 const CARD = "11111111-1111-1111-1111-111111111111";
 const OTHER = "22222222-2222-2222-2222-222222222222";
@@ -240,5 +240,49 @@ describe("arrivals — the empty receipt", () => {
       claims: { [CARD]: { owned: 1, hard: 2, committedDecks: 2 } },
     }));
     expect(summaryIsEmpty(s)).toBe(false);
+  });
+});
+
+describe("withoutUndecided", () => {
+  // The receipt listed a card under `No longer to buy` against whichever deck seniority favoured
+  // while the chooser below was still asking which deck gets it, so picking the other deck
+  // falsified the line above without touching it.
+  const summary = () => buildArrivalsSummary(input({
+    ownedBefore: {},
+    ownedAfter: { [CARD]: 1, [OTHER]: 1 },
+    buyBefore: [
+      { deckId: DECK_A, oracleId: CARD, quantity: 1 },
+      { deckId: DECK_A, oracleId: OTHER, quantity: 1 },
+      { deckId: DECK_B, oracleId: CARD, quantity: 2 },
+    ],
+    buyAfter: [{ deckId: DECK_B, oracleId: CARD, quantity: 1 }],
+    claims: { [CARD]: { owned: 1, hard: 2, committedDecks: 2 } },
+  }));
+
+  it("takes an undecided card out of both money sections", () => {
+    const s = withoutUndecided(summary(), [CARD]);
+    expect(s.cleared.map((r) => r.oracleId)).toEqual([OTHER]);
+    expect(s.still.map((r) => r.oracleId)).not.toContain(CARD);
+  });
+
+  it("leaves every other row where it was, so this is an exclusion and not a silence", () => {
+    const before = summary();
+    const after = withoutUndecided(before, [CARD]);
+    expect(after.cleared.length).toBe(before.cleared.length - 1);
+    expect(after.arrived).toBe(before.arrived);
+    expect(after.contested).toEqual(before.contested);
+    // The names map is untouched, so the chooser can still title the card it took.
+    expect(after.names.cards[CARD]).toBe("Brushland");
+  });
+
+  it("returns the summary itself when nothing is undecided", () => {
+    const before = summary();
+    expect(withoutUndecided(before, [])).toBe(before);
+  });
+
+  it("keys on the LIVE list, so a card whose contention resolved comes back", () => {
+    // `summary.contested` still names the card; the caller passes what the claim read says NOW.
+    const s = withoutUndecided(summary(), []);
+    expect(s.cleared.map((r) => r.oracleId)).toContain(CARD);
   });
 });

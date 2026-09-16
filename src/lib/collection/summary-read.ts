@@ -19,7 +19,7 @@ import { and, eq, inArray } from "drizzle-orm";
 import { db } from "../../db";
 import { cards, csvUploads } from "../../db/schema";
 import { loadAvailability } from "../decks/availability-query";
-import type { ArrivalsSummary } from "./arrivals";
+import { withoutUndecided, type ArrivalsSummary } from "./arrivals";
 import type { Availability } from "../decks/availability";
 import { allocate } from "../decks/allocate";
 
@@ -233,7 +233,10 @@ export async function loadSummaryView(uploadId: string, userId: string): Promise
     filename: upload.filename,
     createdAt: upload.createdAt,
     confirmedAt: upload.confirmedAt,
-    summary,
+    // The money sections lose whatever the chooser below is still deciding — see
+    // `withoutUndecided`. Keyed on the LIVE list above, not the payload's, so a card whose
+    // contention has resolved leaves the chooser and returns to the money sections together.
+    summary: summary ? withoutUndecided(summary, contested.map((c) => c.oracleId)) : null,
     contested,
   };
 }

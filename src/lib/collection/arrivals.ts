@@ -258,3 +258,30 @@ export function buildArrivalsSummary(input: ArrivalsInput): ArrivalsSummary {
 export function summaryIsEmpty(s: ArrivalsSummary): boolean {
   return s.cleared.length === 0 && s.still.length === 0 && s.contested.length === 0;
 }
+
+/**
+ * The money sections with every still-undecided card taken out of them.
+ *
+ * A CONTESTED CARD IS REPORTED ONCE, in the section that decides it. The frozen payload and the
+ * live contested read are computed from different questions, so one card reached both: the
+ * receipt listed `Skyclave Relic` under `No longer to buy` against whichever deck seniority
+ * favoured, while the chooser below was still asking which deck gets it. Picking the other deck
+ * falsified the line above without touching it.
+ *
+ * AT THE READ, not at the write. The payload is a record of what one import did and stays
+ * faithful to it; what changes is which of its rows a surface draws beside a live chooser. Doing
+ * it here also repairs receipts written before this rule existed, which a write-time filter
+ * could not reach — the payload is frozen the moment the confirm lands.
+ *
+ * `oracleIds` is the LIVE contested list, so a card whose contention has since resolved leaves
+ * the chooser and returns to the money sections in the same pass, which is the honest reading.
+ */
+export function withoutUndecided(summary: ArrivalsSummary, oracleIds: string[]): ArrivalsSummary {
+  if (oracleIds.length === 0) return summary;
+  const undecided = new Set(oracleIds);
+  return {
+    ...summary,
+    cleared: summary.cleared.filter((r) => !undecided.has(r.oracleId)),
+    still: summary.still.filter((r) => !undecided.has(r.oracleId)),
+  };
+}

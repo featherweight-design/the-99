@@ -21,7 +21,10 @@ export default async function ReplacePage() {
         <a href="/collection" aria-label="Back to Collection" className="text-[20px] text-[color:var(--accent)]">‹</a>
         <h1 className="font-display font-semibold text-[19px]" style={{ color: "var(--fg)" }}>Replace collection</h1>
       </div>
-      <div className="hidden md:block md:p-[28px_34px_0]">
+      {/* The same 760px column the entry below sits in, centred with it — a heading pinned to the
+          left of a centred body reads as two different pages. Its inset matches the entry's own
+          padding so the title starts on the dropzone's left edge rather than near it. */}
+      <div className="hidden md:block md:mx-auto md:w-full md:max-w-[760px] md:p-[28px_48px_0]">
         <a href="/collection" className="font-mono text-[11px] tracking-[0.06em] text-[color:var(--fg-faint)]">‹ Collection</a>
         <h1 className="font-display font-bold text-[30px] mt-[8px]" style={{ color: "var(--fg)" }}>Replace collection</h1>
       </div>

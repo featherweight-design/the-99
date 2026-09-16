@@ -311,6 +311,38 @@ of which the chooser's commit stamp and its ordering need; they ship in PR 1 bes
 `commanderCopies`. The handoff's flag against `review.bucketFreeNote` is stale — that string is
 retired. The `review.lede` finding stands and is fixed in PR 4.
 
+## Amendments, 2026-09-16 — from the first real walkthrough
+
+Hugh ran the feature against his own collection and two of his own committed decks. Four changes,
+all of them his calls, and two of them diverge from what the R2 handoff drew. The handoff is not
+edited — it is the record of what Design decided — so the divergence is stated here instead.
+
+1. **The undo hint is retired.** The handoff gave the chooser a footer reading
+   `Tap <deck> again to undo this.` beside a `Back to first committed` control, and called it the
+   feature's only non-colour carrier of authorship. It draws under *any* authored pick, including
+   a pick of the deck that already held the card by seniority — where it offers to undo something
+   that changed nothing and to go back to where you already are. Hugh's ruling: the accent row is
+   the authorship, and re-tapping a chosen deck already clears it, so the control was describing a
+   gesture the row affords anyway. Both strings are gone.
+
+2. **A contested card is reported once, in the section that decides it.** The money sections and
+   the contested read are computed independently, so one card reached both: `No longer to buy`
+   listed it against whichever deck seniority favoured while the chooser below was still asking
+   which deck gets it, and picking the other deck falsified that line without touching it. The
+   handoff's answer was a cross-reference — `Also above, under Still to buy — these answer
+   different questions` — which explains the duplication rather than removing it. Contested oracle
+   ids are now excluded from both `cleared` and `still`, and the cross-reference is retired with
+   the duplication it described. Nothing goes unreported: the chooser names the losing deck's
+   outcome on its own row.
+
+3. **The footer note beside `Done` is gone and the button names its destination**:
+   `View your collection`. The note existed to say that nothing was being saved, which a button
+   that names where it goes does not need.
+
+4. **Both surfaces centre their content column.** The 760px cap is the handoff's and is unchanged;
+   what the handoff never stated was where that column sits in a wider body, and left-pinned it
+   read as a strip against two thirds of empty ground at desktop widths.
+
 ## Settled
 
 - **The before/after reads are not one serialized snapshot, deliberately.** Review asked for
