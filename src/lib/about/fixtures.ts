@@ -213,3 +213,31 @@ export const SHOPPING = {
 // `DECK_SORT_LABELS` — retyping "Name", "Mana value" and "Price" here gave this
 // page its own copy of the sort vocabulary, and a rename would have left the
 // figure stale while every test passed.
+
+/**
+ * The five cards the `browse` figure draws, taken from the R4 canvas so the
+ * specimen and the drawing agree card for card. One of each of the three
+ * rarities the canvas shows, and the copy counts are what make the `×N` badge
+ * mean something — a grid where every cell reads `×1` says nothing about the
+ * badge being a count.
+ *
+ * `HOB` is the set the figure's own `The Hobbit` chip filters to, which is the
+ * point: the chip above and the captions below have to describe the same
+ * result or the figure is showing an unfiltered grid under a filter.
+ */
+export const BROWSE_CELLS: {
+  name: string;
+  copies: number;
+  rarity: string;
+  /** Feeds the route's own `identityGradient`; these five are mono-green. */
+  colorIdentity: string[];
+}[] = [
+  { name: "Attercop", copies: 4, rarity: "common", colorIdentity: ["G"] },
+  { name: "Beorn the Fierce", copies: 1, rarity: "mythic", colorIdentity: ["G"] },
+  { name: "Beorn, Reluctant Host", copies: 5, rarity: "common", colorIdentity: ["G"] },
+  { name: "Beorn's Hospitality", copies: 1, rarity: "uncommon", colorIdentity: ["G"] },
+  { name: "Boughside Wanderers", copies: 4, rarity: "common", colorIdentity: ["G"] },
+];
+
+/** The set code those five share, drawn in every caption beside the rarity. */
+export const BROWSE_SET_CODE = "HOB";

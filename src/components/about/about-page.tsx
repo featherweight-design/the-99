@@ -17,6 +17,7 @@ import { PrimaryButton } from "../ui/button";
 import { dismissAbout } from "../../app/about/actions";
 import { safeNext } from "../../lib/about/gate";
 import { FIGURES } from "./figures";
+import { KeyNumeral } from "./numeral";
 import { ContentsList, ContentsRail } from "./contents-rail";
 import {
   ABOUT_VERSION,
@@ -121,12 +122,7 @@ function Entry({ entry, marked }: { entry: AboutEntry; marked: boolean }) {
         <ol className="mt-[8px] list-none space-y-[5px] p-0">
           {entry.keys.map((key, i) => (
             <li key={key} className="flex items-start gap-[8px]">
-              <span
-                aria-hidden
-                className="mt-[1px] flex h-[14px] w-[14px] flex-none items-center justify-center rounded-full border border-solid border-[color:var(--accent)] font-mono text-[9px] text-[color:var(--accent)]"
-              >
-                {i + 1}
-              </span>
+              <KeyNumeral n={i + 1} className="mt-[1px]" />
               <span className="font-mono text-[10.5px] leading-[1.5] text-[color:var(--fg-faint)]">
                 {key}
               </span>

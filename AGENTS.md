@@ -117,6 +117,49 @@ Package manager is **pnpm** (pinned via `packageManager` in package.json) — ne
   "transcribed verbatim from the handoff" — is invisible to any string matcher; four of those
   were found by grepping for the claim instead, and no check covers them.
 
+- `pnpm check:tokens` fails when a component reads a CSS custom property that no theme
+  declares. It reads every `var(--x)` in `src/**` — including the interpolated
+  `var(--${a ? "b" : "c"})` form, where it resolves each string literal in the expression —
+  and compares them against every `--x:` in `globals.css`, plus the tokens components declare
+  for their own subtrees (`--row-bg`, `--zoom-w`) and the ones `next/font` declares as
+  `variable: "--font-plex-mono"`. Static, no browser, about a second.
+
+  An unset custom property **fails silently by design** — that is what CSS does with no
+  fallback — which is the whole hazard. `browse-figure.tsx` built a card-art wash from
+  `--surface-2` and `--surface-3`; the palette has never had either (they are
+  `--surface-raised`, `--elevated`, `--surface-sunken`), so five card tiles rendered as VOIDS
+  with a count badge floating over empty space. TypeScript does not read class strings, the
+  linter does not resolve CSS variables, and jsdom computes no styles, so typecheck, lint and
+  6,676 tests all passed. A screenshot is what found it, which does not scale to 35 figures.
+
+  Its first run across all 482 source files found `--base` in `review-changes.tsx` and
+  `commit-sheet.tsx`, declared by no theme: the phone's sticky action bar on
+  `/decks/[id]/changes` had no background at all and content scrolled visibly under it. Three
+  design-table rows still specified the dead token and were swept in the same pass — nothing
+  else catches a table that spells a token the code stopped reading, because `check:copy-drift`
+  compares copy strings and this one reads `src/**`.
+
+  Tests are skipped outright rather than exempted from reads only: a token declared in a test
+  fixture is not declared for the app, so a component reading one must still be reported.
+
+  **What it is about is SILENCE**, and two rules follow from that — both of which the first
+  version got wrong, and review caught. A read carrying a FALLBACK is a parameter with a
+  default, not a miss: `var(--bob-duration, 3s)` is `.anim-bob` letting a caller tune it, and a
+  typo inside a fallback renders visibly at the fallback rather than invisibly at nothing. And
+  a token a component sets on its own element is declared for THAT FILE'S subtree only — the
+  first version unioned every file's declarations, so any component could read `--row-bg` with
+  the property unset in its subtree and still pass.
+
+  `globals.css` is scanned too, and is the one asymmetry: it may resolve against any
+  component's declaration, because a rule selects by class and the element carrying that class
+  is drawn by a component — `art-wash.tsx` sets `--art-wash-reduced-opacity` inline and the
+  stylesheet reads it back under `prefers-reduced-transparency`. The reverse does not hold.
+  Its own misspellings are still reported.
+
+  `scripts/lib/tokens.test.mts` pins one case per failure path, each written as the shape that
+  defeated an earlier version — because every failure mode here is a SILENT PASS, the same
+  hazard as the bug it catches.
+
 - `pnpm check:collection-routes` fails when a route renders a figure read out of
   `collection_items` and the collection replace does not invalidate it. It walks every
   `page.tsx`, follows its imports through `src/`, and compares what it finds against

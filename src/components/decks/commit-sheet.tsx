@@ -36,7 +36,7 @@ const copy = deckVersioningCopy.commit;
  *  at that width — the blocks stand on the screen itself. */
 const BLOCK =
   "flex-1 rounded-[10px] p-[13px_14px] md:p-[14px_16px] " +
-  "bg-[color:var(--surface)] md:bg-[color:var(--base)]";
+  "bg-[color:var(--surface)] md:bg-[color:var(--bg)]";
 
 /** Mono, tight-tracked, uppercase — the label every figure in this feature wears. */
 const BLOCK_LABEL =
@@ -173,7 +173,7 @@ export function CommitSheet({
             id={noteId}
             value={note}
             onChange={(e) => setNote(e.target.value)}
-            className="block w-full rounded-[8px] p-[11px_12px] md:p-[11px_13px] min-h-[76px] md:min-h-[70px] mb-[14px] md:mb-0 text-[13.5px] leading-[1.55] bg-[color:var(--surface)] md:bg-[color:var(--base)] text-[color:var(--fg)] [border:1px_solid_var(--border-strong)]"
+            className="block w-full rounded-[8px] p-[11px_12px] md:p-[11px_13px] min-h-[76px] md:min-h-[70px] mb-[14px] md:mb-0 text-[13.5px] leading-[1.55] bg-[color:var(--surface)] md:bg-[color:var(--bg)] text-[color:var(--fg)] [border:1px_solid_var(--border-strong)]"
           />
           {/* Desktop only — at 390px the apply bar is the next thing under the
               field and a second sentence there pushes the commit off screen.

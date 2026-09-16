@@ -35,9 +35,7 @@ import { folderCopy } from "../../lib/copy/folders";
 import { GAME_AXIS_KEYS } from "../../lib/decks/game-axes";
 import { deckSortLabel } from "../../lib/about/sort-labels";
 import { DECK_GROUPING_LABELS } from "../../lib/copy/deck-sort";
-import { BrowseChips } from "./browse-chips";
-import { collectionChassisCopy } from "../../lib/copy/collection";
-import { viewToggleCopy } from "../../lib/copy/card-surfaces";
+import { BrowseFigureBody } from "./browse-figure";
 import { cardAssignmentsCopy } from "../../lib/copy/card-assignments";
 import { issueInspectorCopy } from "../../lib/copy/issue-inspector";
 import { statusBarStyle } from "../../lib/decks/status-style";
@@ -415,31 +413,7 @@ function SetsFigure({ width }: { width: AboutWidth }) {
 function BrowseFigure({ width }: { width: AboutWidth }) {
   return (
     <Specimen label="browse" width={width}>
-      <div className="flex flex-col gap-[10px]">
-        <BrowseChips />
-        <div className="flex flex-wrap items-center justify-between gap-[10px]">
-          <span className="font-mono text-[11px] text-[color:var(--fg-faint)]">
-            {collectionChassisCopy.result(34, 2805, 4120, true)}
-          </span>
-          {/* The reading choice is the entry's third key line and was missing:
-              two chips and a count say what was narrowed and nothing about how
-              the result is read. */}
-          <span className="flex items-center gap-[6px]">
-            {[viewToggleCopy.collection.rows, viewToggleCopy.collection.grid].map((label, i) => (
-              <span
-                key={label}
-                className={`rounded-[6px] border border-solid px-[8px] py-[3px] font-mono text-[10.5px] ${
-                  i === 1
-                    ? "border-[color:var(--accent)] text-[color:var(--accent)]"
-                    : "border-[color:var(--border)] text-[color:var(--fg-faint)]"
-                }`}
-              >
-                {label}
-              </span>
-            ))}
-          </span>
-        </div>
-      </div>
+      <BrowseFigureBody />
     </Specimen>
   );
 }

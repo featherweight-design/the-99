@@ -940,7 +940,7 @@ export function ReviewChanges({
             // under the columns. The figures read first on the phone and last
             // above it, which is the only difference between the two: one
             // element, ordered twice.
-            <div className="flex flex-col items-stretch md:flex-row md:items-center md:flex-wrap gap-[8px] md:gap-[12px] mt-[13px] md:mt-[24px] px-[14px] pt-[11px] pb-[16px] md:p-0 md:pt-[18px] bg-[color:var(--base)] md:bg-transparent [border-top:1px_solid_var(--border-strong)]">
+            <div className="flex flex-col items-stretch md:flex-row md:items-center md:flex-wrap gap-[8px] md:gap-[12px] mt-[13px] md:mt-[24px] px-[14px] pt-[11px] pb-[16px] md:p-0 md:pt-[18px] bg-[color:var(--bg)] md:bg-transparent [border-top:1px_solid_var(--border-strong)]">
               {discard.confirming ? (
                 // The question takes the bar's own body, exactly as it takes the
                 // banner's on the deck page — the same two lines and the same two
