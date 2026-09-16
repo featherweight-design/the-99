@@ -5,10 +5,14 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 const loadScores = vi.fn<(userId: string) => Promise<unknown>>();
-const persistScores = vi.fn<(userId: string, ranked: unknown[], gen: number | null) => Promise<void>>(
+const persistScores = vi.fn<(userId: string, ranked: unknown[], gen: number | null, indexGen?: number | null) => Promise<void>>(
   async () => {},
 );
 const collectionGeneration = vi.fn<(userId: string) => Promise<number>>(async () => 1);
+// The commander-index fingerprint, alongside the collection's: `persistScores`
+// drops a write whose index moved mid-compute, and `getRankedList` captures
+// both before the read they describe.
+const indexGeneration = vi.fn<() => Promise<number>>(async () => 42);
 const recommendCommanders = vi.fn<(userId: string) => Promise<unknown>>();
 const getCollectionStats = vi.fn<(userId: string) => Promise<{ uniqueCards: number }>>(async () => ({
   uniqueCards: 10,
@@ -17,7 +21,7 @@ const loadBuiltCommanderIds = vi.fn<(userId: string) => Promise<Set<string>>>(
   async () => new Set<string>(),
 );
 
-vi.mock("./store", () => ({ loadScores, persistScores, collectionGeneration }));
+vi.mock("./store", () => ({ loadScores, persistScores, collectionGeneration, indexGeneration }));
 vi.mock("./recommend", async (importOriginal) => ({
   ...(await importOriginal<typeof import("./recommend")>()),
   recommendCommanders,
@@ -99,6 +103,47 @@ describe("getRankedList", () => {
     await getRankedList("user_1");
 
     expect(persistScores.mock.calls[0]?.[1]).toHaveLength(2);
+  });
+
+  // Both fingerprints have to REACH the write, and neither is visible in its
+  // result: `persistScores` drops a stale write silently, so threading either
+  // one wrong looks exactly like nothing being wrong.
+  it("hands both the collection and index fingerprints to the write", async () => {
+    loadScores.mockResolvedValue({ items: [], degradedOracleIds: [] });
+    recommendCommanders.mockResolvedValue({
+      results: [item("a", 90)],
+      degraded: false,
+      uniqueCardsRead: 10,
+      candidateCount: 1,
+    });
+    loadBuiltCommanderIds.mockResolvedValue(new Set());
+
+    await getRankedList("user_1");
+
+    const call = persistScores.mock.calls[0];
+    expect(call?.[2]).toBe(1); // collectionGeneration's value
+    expect(call?.[3]).toBe(42); // indexGeneration's value
+  });
+
+  // And both are captured BEFORE the compute reads what they fingerprint. Taken
+  // after, each would describe the state the compute finished in and match
+  // itself however much moved underneath — the guard would be inert and look
+  // healthy. Order is the whole property, so order is what is asserted.
+  it("captures both fingerprints before the compute reads anything", async () => {
+    const order: string[] = [];
+    collectionGeneration.mockImplementation(async () => { order.push("collection"); return 1; });
+    indexGeneration.mockImplementation(async () => { order.push("index"); return 42; });
+    loadScores.mockResolvedValue({ items: [], degradedOracleIds: [] });
+    recommendCommanders.mockImplementation(async () => {
+      order.push("compute");
+      return { results: [item("a", 90)], degraded: false, uniqueCardsRead: 1, candidateCount: 1 };
+    });
+    loadBuiltCommanderIds.mockResolvedValue(new Set());
+
+    await getRankedList("user_1");
+
+    expect(order.indexOf("compute")).toBeGreaterThan(order.indexOf("collection"));
+    expect(order.indexOf("compute")).toBeGreaterThan(order.indexOf("index"));
   });
 
   // A degraded row the list does not show is a row nobody is looking at. Left in

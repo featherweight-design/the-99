@@ -121,7 +121,7 @@ describe("rowToListItem", () => {
  * Fake transaction exposing only what persistScores touches. `confirmedAt` is what
  * the in-transaction generation re-read observes.
  */
-function fakeDb(confirmedAt: Date | null) {
+function fakeDb(confirmedAt: Date | null, indexAt: Date | null = null) {
   const inserted: unknown[][] = [];
   let deleted = false;
   let conflictSet: Record<string, unknown> | null = null;
@@ -130,7 +130,16 @@ function fakeDb(confirmedAt: Date | null) {
     execute: async (q: unknown) => {
       executed.push(JSON.stringify(q));
     },
-    select: () => ({ from: () => ({ where: async () => [{ at: confirmedAt }] }) }),
+    // Two call shapes, two answers. The collection fingerprint ends at
+    // `.where()`; the index fingerprint has no predicate and awaits `.from()`
+    // directly, so `from` is both thenable and carries a `where`. Returning one
+    // value for both would have the index guard read the collection's clock.
+    select: () => ({
+      from: () =>
+        Object.assign(Promise.resolve([{ at: indexAt }]), {
+          where: async () => [{ at: confirmedAt }],
+        }),
+    }),
     delete: () => ({ where: async () => { deleted = true; } }),
     insert: () => ({
       values: (rows: unknown[]) => ({
@@ -177,6 +186,77 @@ describe("persistScores generation guard", () => {
     await persistScores("user_1", [ranked()], null);
 
     expect(fake.wrote()).toEqual({ deleted: true, insertedRows: 1 });
+  });
+
+  // THE REBUILD RACE. `buildCommanderIndex` deletes this table when it
+  // finishes, which handles the ordinary case; what it cannot handle is a
+  // compute that read support BEFORE the delete and upserts after it. Those
+  // rows are writer-version-current, so nothing downstream can tell — which is
+  // why the write has to be dropped here.
+  it("drops the write when the commander index was rebuilt mid-compute", async () => {
+    const collection = new Date("2026-07-24T12:00:00Z");
+    const fake = fakeDb(collection, new Date("2026-09-03T04:10:00Z"));
+    stub.db.transaction = fake.db.transaction;
+
+    // Captured before the rebuild committed.
+    await persistScores(
+      "user_1",
+      [ranked()],
+      collection.getTime(),
+      new Date("2026-08-03T04:10:00Z").getTime(),
+    );
+
+    expect(fake.wrote()).toEqual({ deleted: false, insertedRows: 0 });
+  });
+
+  it("writes when the commander index is unchanged", async () => {
+    const collection = new Date("2026-07-24T12:00:00Z");
+    const index = new Date("2026-09-03T04:10:00Z");
+    const fake = fakeDb(collection, index);
+    stub.db.transaction = fake.db.transaction;
+
+    await persistScores("user_1", [ranked()], collection.getTime(), index.getTime());
+
+    expect(fake.wrote()).toEqual({ deleted: true, insertedRows: 1 });
+  });
+
+  // A caller that cannot know the generation must still be able to write. Every
+  // caller behaved this way before the parameter existed, and defaulting to a
+  // check would have turned them into callers that never write. OMITTED, which
+  // is a different value from `null` — see the case below.
+  it("skips the index check when the caller omits the argument", async () => {
+    const collection = new Date("2026-07-24T12:00:00Z");
+    const fake = fakeDb(collection, new Date("2026-09-03T04:10:00Z"));
+    stub.db.transaction = fake.db.transaction;
+
+    await persistScores("user_1", [ranked()], collection.getTime());
+
+    expect(fake.wrote()).toEqual({ deleted: true, insertedRows: 1 });
+  });
+
+  // An empty index has no generation, and that is a REAL reading rather than a
+  // missing one: `null` must compare equal to itself and let the write through,
+  // which is why omitting the argument is a third value and not a synonym.
+  it("writes when both sides read an empty index", async () => {
+    const collection = new Date("2026-07-24T12:00:00Z");
+    const fake = fakeDb(collection, null);
+    stub.db.transaction = fake.db.transaction;
+
+    await persistScores("user_1", [ranked()], collection.getTime(), null);
+
+    expect(fake.wrote()).toEqual({ deleted: true, insertedRows: 1 });
+  });
+
+  // And the asymmetry that proves `null` is compared rather than ignored: the
+  // caller read an empty index, the index has since been built.
+  it("drops the write when the index was built after an empty reading", async () => {
+    const collection = new Date("2026-07-24T12:00:00Z");
+    const fake = fakeDb(collection, new Date("2026-09-03T04:10:00Z"));
+    stub.db.transaction = fake.db.transaction;
+
+    await persistScores("user_1", [ranked()], collection.getTime(), null);
+
+    expect(fake.wrote()).toEqual({ deleted: false, insertedRows: 0 });
   });
 
   // Most of a set's rows already exist, so the conflict path is the one that

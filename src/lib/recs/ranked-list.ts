@@ -2,7 +2,7 @@ import { cache } from "react";
 import { loadBuiltCommanderIds } from "../discovery/candidates";
 import { getCollectionStats } from "../home/summary";
 import { recommendCommanders, toListItem, type CommanderListItem } from "./recommend";
-import { collectionGeneration, loadScores, persistScores } from "./store";
+import { collectionGeneration, indexGeneration, loadScores, persistScores } from "./store";
 
 export type RankedList = {
   items: CommanderListItem[];
@@ -98,14 +98,19 @@ async function assemble(
     };
   }
 
-  // Captured before the pool read so persistScores can drop the write if an upload
-  // replaces the collection while this compute is in flight.
-  const generation = await collectionGeneration(userId);
+  // Both captured before the reads they fingerprint, so persistScores can drop
+  // the write if either input moves while this compute is in flight — an upload
+  // replacing the collection, or the monthly rebuild replacing the commander
+  // index that every synergy figure now comes from.
+  const [generation, indexGen] = await Promise.all([
+    collectionGeneration(userId),
+    indexGeneration(),
+  ]);
   const recs = await recommendCommanders(userId);
   // The computed list is already correct; persisting is only an optimisation for
   // the next request, so a transient write failure must not fail this render.
   try {
-    await persistScores(userId, recs.results, generation);
+    await persistScores(userId, recs.results, generation, indexGen);
   } catch {
     // Next load recomputes.
   }
