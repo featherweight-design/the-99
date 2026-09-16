@@ -66,6 +66,19 @@
           "settle": 3500
         }
       ]
+    },
+    {
+      "id": "about-entry",
+      "label": "/about \u2014 the new entry and its figure",
+      "view": "src/components/about/figures.tsx",
+      "steps": [
+        {
+          "goto": "/about",
+          "wait": "li[id=\"commander-availability\"]",
+          "scrollTo": "li[id=\"commander-availability\"]",
+          "settle": 2500
+        }
+      ]
     }
   ]
 }

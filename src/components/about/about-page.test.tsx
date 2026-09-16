@@ -829,3 +829,27 @@ describe("the page's own type, against the design table", () => {
     expect(kinds.legendPlate + kinds.legendInset).toBeGreaterThan(0);
   });
 });
+
+// ── Every entry is addressable ─────────────────────────────────────────────
+//
+// Chapters have carried an id since #673 and entries carried none, so nothing
+// could address one: no deep link, and no acceptance cell, because
+// `contact-sheet.mjs` waits on a selector and an entry below the fold offered
+// nothing to wait for. Every feature ships an entry, so every inventory hit it.
+describe("entry anchors", () => {
+  it("gives every entry its own id, matching the entry's own key", () => {
+    const { container } = render(<AboutPage seen={ABOUT_VERSION} />);
+    const ids = [...container.querySelectorAll("li[id]")].map((el) => el.id);
+    for (const e of aboutEntries) {
+      expect(ids, `${e.id} has no anchor`).toContain(e.id);
+    }
+  });
+
+  it("holds the anchor clear of the overlaying header", () => {
+    const { container } = render(<AboutPage seen={ABOUT_VERSION} />);
+    const first = container.querySelector(`li[id="${aboutEntries[0].id}"]`) as HTMLElement;
+    // Without this the anchor lands the entry underneath the header, which reads
+    // as a broken link rather than as a missing rule.
+    expect(first.className).toContain("scroll-mt-");
+  });
+});
