@@ -31,7 +31,7 @@
     "db:build:prose": "tsx scripts/generate-commander-prose.ts",
     "db:copy:prose": "tsx scripts/copy-commander-prose.ts",
     "probe:card-captions": "node scripts/probe-card-captions.mjs",
-    "probe:commander-availability": "node scripts/probe-commander-availability.mjs",
+    "probe:commander-availability": "tsx scripts/probe-commander-availability.mjs",
     "probe:fit-parity": "tsx scripts/probe-fit-parity.mts",
     "probe:claims": "tsx scripts/probe-claim-model.ts",
     "probe:proxies": "tsx scripts/probe-proxies.ts",

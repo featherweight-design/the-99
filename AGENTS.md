@@ -430,6 +430,34 @@ Package manager is **pnpm** (pinned via `packageManager` in package.json) — ne
 
   It writes three decks under the account it signs in as and deletes them in a `finally`;
   point it at `local-dev` or a scratch Neon branch, **never production**.
+- `pnpm probe:commander-availability` walks the two panels on `/commanders/[slug]` that
+  draw a card's claim — Role Coverage and the synergy panel — at 1300x900 and 390x844,
+  because their rulings are resolved styles rather than markup: the chip's 28px against a
+  name that must not wrap, each marker's resolved size and family, the dot key's 6px pip
+  on the key's first line, and the synergy slot's fixed 88px.
+
+  Its fixture is the point. The slot's marker only draws for a card that is owned with no
+  free copy, and on the dev account every claim is SOFT — brews claim softly by design —
+  so no row ever reached a marker, the check counted zero, printed a note and passed. It
+  had measured nothing for its whole life. The probe now reads an owned synergy card's
+  name OFF THE PAGE, sleeves every copy into a committed deck, and deletes that deck in a
+  `finally`. By name rather than by re-deriving the commander from its slug: slug
+  resolution spans three rankings, and a second copy of it in SQL drifts from the real one
+  a round at a time, which is what `probe:build-from` took three rounds to stop doing. The
+  deck is led by any owned legend, deliberately neither the card under test nor the page's
+  own commander — the deck exists only to hold a claim, and either of those would change
+  what is being measured.
+
+  Zero markers is a FAILURE once the fixture has built the claim, and a `note` only when
+  the account owns no claimable support for that commander. The run says which.
+
+  One rule it learned the hard way, and the reason `report()` counts its own failures:
+  the count used to live at each call site, so a check that forgot it printed ` FAIL ` and
+  then `All checks passed.` over the top, with the exit code agreeing with the wrong half.
+  A probe whose own output cannot be read is worse than no probe. Point it at `local-dev`
+  or a scratch Neon branch, **never production** — and confirm the port you pass is
+  serving YOUR worktree, since a mutation run against another one reports a pass.
+
 - `pnpm probe:colour-box` measures the colour control's box on `/commanders` and `/discover` at
   1300x900 — the gap between the box's border and its outermost contents, either side. The pips
   and the `Any` / `Exactly` modifier share one wrapper whose `px-[10px]` pays both sides, and the

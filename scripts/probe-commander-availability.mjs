@@ -1,17 +1,38 @@
 // Commander availability — the rulings only a layout engine can answer.
 //
 // Run by hand, and not part of `pnpm test`:
-//   node scripts/probe-commander-availability.mjs
-//   PROBE_BASE=http://localhost:3600 PROBE_SLUG=<slug> node scripts/probe-commander-availability.mjs
+//   pnpm probe:commander-availability
+//   PROBE_BASE=http://localhost:3600 PROBE_SLUG=<slug> pnpm probe:commander-availability
 //
-// Read-only: it visits one commander page and writes nothing. Point it at
-// `local-dev`.
+// IT WRITES. The slot's marker only draws for a card that is owned with no free
+// copy, and no such claim exists on the dev account — every claim there is soft —
+// so the state has to be BUILT: one deck, its `deck_cards`, and a committed
+// version, deleted in a `finally`. Point it at `local-dev` or a scratch Neon
+// branch, **never production**. It creates nothing else and deletes nothing it
+// did not create.
+//
+// Run through `tsx`, not bare `node`, so it can import the application's own
+// commander-candidacy rule rather than keeping a second copy of it in SQL.
 import { clerkSetup, setupClerkTestingToken } from "@clerk/testing/playwright";
 import { chromium } from "playwright";
 import { requireEnv } from "./lib/env.mjs";
+import { Pool, neonConfig } from "@neondatabase/serverless";
+import ws from "ws";
 import { onPage, onPageRole } from "./lib/surface.mjs";
+// The APPLICATION'S rule, imported rather than restated. `/decks` refuses a
+// commander that fails this, so a fixture deck led by one would be a claim state
+// no reader can produce — and a second copy of the rule written here drifts from
+// it a round at a time, which is the whole argument against re-deriving the
+// commander from its slug a few lines below.
+import { isCommanderCandidate } from "../src/lib/recs/score";
 
-const { E2E_AUDIT_USER_EMAIL: EMAIL } = requireEnv(["E2E_AUDIT_USER_EMAIL", "CLERK_SECRET_KEY"]);
+const { E2E_AUDIT_USER_EMAIL: EMAIL, DATABASE_URL } = requireEnv([
+  "E2E_AUDIT_USER_EMAIL",
+  "CLERK_SECRET_KEY",
+  "DATABASE_URL",
+]);
+neonConfig.webSocketConstructor = ws;
+const pool = new Pool({ connectionString: DATABASE_URL });
 const BASE = process.env.PROBE_BASE ?? "http://localhost:3000";
 const PASSWORD = process.env.E2E_AUDIT_USER_PASSWORD;
 if (!EMAIL.includes("+clerk_test") && !PASSWORD) throw new Error("Set E2E_AUDIT_USER_PASSWORD.");
@@ -46,9 +67,199 @@ async function signIn(page) {
     [EMAIL, PASSWORD ?? ""],
   );
   if (failure) throw new Error(`Clerk sign-in failed: ${failure}`);
+  const userId = await page.evaluate(() => window.Clerk.user?.id ?? null);
+  if (!userId) throw new Error("Signed in but Clerk reports no user.");
+  return userId;
 }
 
+/**
+ * THE CLAIM FIXTURE, and the reason this probe needed one.
+ *
+ * Every claim on the dev account is SOFT — a brew claims softly by design — so
+ * the slot's marker states simply do not occur, and the run reported a `note`
+ * saying it measured nothing. A `note` is honest and it is still not a check.
+ *
+ * `hard` is SLEEVED rather than full: a deck with a committed version claims
+ * whatever its size (`availability-query.ts`, `mature` is `cd.sleeved`), so this
+ * needs no 99-row body. Holding every copy the account owns takes the card's
+ * free count to zero, which is the `hard` reading.
+ *
+ * `onDeck` is called the instant the deck row exists, before the rows that hang
+ * off it — a helper returning only at the end would strand a half-built deck
+ * whenever a later insert threw, because the call site's assignment never runs
+ * and the `finally` deletes nothing. `probe-build-from` learned that first.
+ */
+async function sleeveEveryCopy(userId, oracleId, commanderOracleId, onDeck) {
+  // `filled` LEFT AT ITS DEFAULT. The column means a fill run has happened, and
+  // this deck holds one hand-inserted card — writing true would be a deck state
+  // the app never produces, and a concurrent reader would draw fill-complete UI
+  // over it. The claim does not need it: a hard claim is a COMMITTED VERSION, and
+  // that is what the rows below build.
+  const { rows } = await pool.query(
+    `insert into decks (user_id, name, commander_oracle_id)
+       values ($1, $2, $3) returning id`,
+    [userId, "probe · commander availability", commanderOracleId],
+  );
+  const deckId = rows[0].id;
+  onDeck(deckId);
+  // ONE COPY, because a non-basic is a singleton in Commander and the app
+  // enforces it — a repeat add is a no-op in `decks/actions.ts`. A fixture
+  // sleeving four would be a deck no reader can build, measuring a claim state
+  // that does not occur. The card is chosen with exactly one copy owned instead,
+  // so this single row still claims the whole supply.
+  await pool.query(
+    `insert into deck_cards (deck_id, oracle_id, quantity, auto) values ($1, $2, 1, false)`,
+    [deckId, oracleId],
+  );
+  const version = await pool.query(
+    `insert into deck_versions (deck_id, number, commander_oracle_id)
+       values ($1, 1, $2) returning id`,
+    [deckId, commanderOracleId],
+  );
+  await pool.query(
+    `insert into deck_version_cards (version_id, oracle_id, quantity) values ($1, $2, 1)`,
+    [version.rows[0].id, oracleId],
+  );
+  return deckId;
+}
+
+/**
+ * Resolve a card the PAGE is showing, by the name it drew.
+ *
+ * By name rather than by re-deriving the commander from its slug: slug
+ * resolution spans three rankings (`resolve-slug.ts`), and a second copy of it
+ * written in SQL here would drift from the real one a round at a time. That is
+ * the mistake `probe-build-from` took three review rounds to stop making. The
+ * page already knows which cards it is drawing; this only asks the database how
+ * many of one the account holds.
+ *
+ * A NAME IS NOT A KEY, and the ambiguity test runs against the CATALOG rather
+ * than the collection. Two different cards can carry one name — the catalog holds
+ * them and `card-search-row.tsx` exists because of it. Testing only the owned
+ * rows misses the case that matters: the account owns one of the two, the page
+ * drew the OTHER, and a lookup narrowed to the collection sees a single row and
+ * calls it unambiguous. So the count is over `cards`, and an ambiguous name is
+ * REFUSED rather than guessed — the caller treats that as "no fixture", which is
+ * an honest skip instead of a silent mismeasurement.
+ *
+ * EXACTLY ONE COPY OWNED, not "between one and four". A non-basic is a singleton
+ * in Commander, so one deck can claim one copy; a card owned three times would
+ * need three decks to read hard, and sleeving three into one would be a state the
+ * app refuses. One copy owned means one deck claims the whole supply.
+ *
+ * NEVER A BASIC LAND. `loadAvailability` omits basics from its owned CTE by
+ * design, so a basic has NO availability row at all — sleeving one would claim
+ * nothing, the row would draw no marker, and the check below would report a
+ * failure against a perfectly healthy build. A false failure is worse than the
+ * silent pass this whole PR exists to remove, because it sends the next reader
+ * looking for a defect in the component.
+ */
+async function resolveOwnedCard(userId, name) {
+  const { rows: catalog } = await pool.query(
+    `select oracle_id, type_line, color_identity from cards where name = $1`,
+    [name],
+  );
+  if (catalog.length !== 1) return { card: null, ambiguous: catalog.length > 1, basic: false };
+  if (/\bBasic\b/.test(catalog[0].type_line)) {
+    return { card: null, ambiguous: false, basic: true };
+  }
+  const { rows } = await pool.query(
+    `select c.oracle_id, c.color_identity, sum(ci.quantity)::int as owned
+       from cards c
+       join collection_items ci on ci.oracle_id = c.oracle_id and ci.user_id = $1
+      where c.oracle_id = $2
+      group by c.oracle_id, c.color_identity
+      having sum(ci.quantity) = 1`,
+    [userId, catalog[0].oracle_id],
+  );
+  return { card: rows[0] ?? null, ambiguous: false, basic: false };
+}
+
+/**
+ * A commander the account owns that could actually lead the fixture deck.
+ *
+ * The deck exists ONLY to hold a hard claim on the card under test, so which
+ * commander leads it is immaterial — but it is not arbitrary. Three exclusions,
+ * each of which would otherwise measure something the app cannot produce:
+ *
+ *   THE HELD CARD ITSELF. A legendary support card chosen as leader would be
+ *   recorded BOTH as the deck's commander and as a list row, so its claim folds
+ *   to a different quantity than the single held copy this fixture is for.
+ *
+ *   THE COMMANDER WHOSE PAGE IS UNDER TEST. Leading the fixture deck with it
+ *   makes that commander built, which changes what the page under measurement
+ *   draws. An earlier revision claimed the page excluded it through `notBuiltBy`;
+ *   it does not — that filter runs over the rendered lists and has no bearing on
+ *   this query — so it is excluded here, by the name the page itself printed.
+ *
+ *   A COMMANDER WHOSE IDENTITY CANNOT HOLD THE CARD. A deck's cards must fit its
+ *   commander's colour identity, so a leader picked without that test builds an
+ *   illegal deck. The claim model does not read identity, so this changes no
+ *   figure measured here — it keeps the fixture to decks the app would accept,
+ *   which is the same rule that took `filled` and the singleton quantity out.
+ *
+ *   A CARD THAT CANNOT LEAD. `createDeck` refuses anything that is not
+ *   `commanderLegal` and `isCommanderCandidate`, and this script inserts past
+ *   that action. The candidacy half is the app's own function, imported: it reads
+ *   the FRONT FACE only, which is why Westvale Abbey is not a commander despite
+ *   its back face (#79), and no SQL written here would have remembered that.
+ *
+ * The SQL narrows to plausible leaders before limiting, and the imported rule
+ * then decides. Limiting first was the defect: a collection holds far more than
+ * 200 format-legal cards that lead nothing, so the first 200 could contain no
+ * commander at all while the account owned several, and the fixture would skip
+ * itself for no reason a reader could see.
+ */
+async function anyOwnedLegend(userId, excludeOracleId, excludeName, needsIdentity) {
+  const { rows } = await pool.query(
+    `select c.oracle_id, c.type_line, c.oracle_text, c.color_identity
+       from cards c
+       join collection_items ci on ci.oracle_id = c.oracle_id and ci.user_id = $1
+      where c.commander_legal = true
+        and c.oracle_id <> $2
+        and c.name <> $3
+        and c.color_identity @> $4::text[]
+        and ((c.type_line ilike '%legendary%' and c.type_line ilike '%creature%')
+             or c.oracle_text ilike '%can be your commander%')
+      limit 200`,
+    [userId, excludeOracleId, excludeName ?? "", needsIdentity ?? []],
+  );
+  // The SQL only NARROWS; this decides. Its predicate reads the joined type line,
+  // so a back-face-only DFC reaches here — and is then refused, because the
+  // imported rule reads the front face alone. That is the split on purpose: a
+  // loose prefilter costs a row of JavaScript, a loose final test ships a deck
+  // the app would not have made.
+  const ok = rows.find((r) =>
+    isCommanderCandidate({ typeLine: r.type_line, oracleText: r.oracle_text }),
+  );
+  return ok?.oracle_id ?? null;
+}
+
+/**
+ * Every check goes through here, and a FAIL counts ITSELF.
+ *
+ * The count used to live beside the checks, so each call site had to remember a
+ * separate `fail()` on the same condition it had just passed in. One that forgot
+ * printed ` FAIL ` and then `All checks passed.` over it — a probe whose own
+ * output cannot be read, and the exit code agreed with the wrong half. There is
+ * no longer a second thing to remember.
+ */
+let failures = 0;
+
+/**
+ * The fixture deck, reachable from a SIGNAL handler as well as from `finally`.
+ *
+ * A `finally` covers a throw. It does not cover Ctrl-C, which is how a probe that
+ * takes half a minute over a browser actually gets stopped — and the process
+ * exits with the deck still on a SHARED fixture account, where it goes on
+ * claiming a card and quietly changing every availability reading taken
+ * afterwards, including the next run of this script. A write-enabled probe has to
+ * clean up on the way out the door it is most likely to leave by.
+ */
+let fixtureDeckId = null;
+
 function report(label, ok, detail) {
+  if (!ok) failures += 1;
   console.log(`${ok ? "  ok  " : " FAIL "} ${label} — ${detail}`);
   return ok;
 }
@@ -72,10 +283,11 @@ function report(label, ok, detail) {
  *   4. THE SYNERGY SLOT holding its width, so the toggle column does not walk
  *      up and down the list as a reader scans it.
  *
- * Read-only: it visits a commander page and writes nothing.
+ * It WRITES one deck to build the claim check 2b needs — see the file header for
+ * what and why. `local-dev` or a scratch branch, never production.
  *
- *   node scripts/probe-commander-availability.mjs
- *   PROBE_BASE=http://localhost:3600 PROBE_SLUG=<slug> node scripts/probe-commander-availability.mjs
+ *   pnpm probe:commander-availability
+ *   PROBE_BASE=http://localhost:3600 PROBE_SLUG=<slug> pnpm probe:commander-availability
  */
 
 const WIDTHS = [
@@ -127,7 +339,13 @@ async function goto(page, path) {
 const CHIP = 'button[class*="h-[28px]"]';
 
 /** The synergy slot, by the width it declares. */
-const SLOT = 'li span[style*="width: 88px"]';
+// `88px`, not `width: 88px`. React serialises an inline style without spaces in
+// server-rendered markup (`width:7px;height:7px`) and the CSSOM re-serialises it
+// WITH one after hydration, so a selector naming either spelling matches for only
+// part of the page's life — which is how this check reported ten slots on one run
+// and none on the next against an unchanged build. Nothing else on a synergy row
+// carries an inline 88px.
+const SLOT = 'li span[style*="88px"]';
 
 /**
  * A commander whose Role Coverage actually draws chips.
@@ -185,19 +403,94 @@ async function findCommanderSlug(page) {
 async function run() {
   await clerkSetup();
   const browser = await chromium.launch();
-  let failures = 0;
-  const fail = () => { failures += 1; };
+  let heldDeckId = null;
 
   try {
-    const slug = await (async () => {
+    const { slug, userId } = await (async () => {
+      const c = await browser.newContext({ viewport: WIDTHS[0].viewport });
+      const p = await c.newPage();
+      const uid = await signIn(p);
+      const s = await findCommanderSlug(p);
+      await c.close();
+      return { slug: s, userId: uid };
+    })();
+    console.log(`fixture: /commanders/${slug}`);
+
+    // Force a HARD claim so the slot's marker states are reachable at all. The
+    // dev account's claims are all soft, so without this the marker reading is
+    // skipped and the run says so — honest, and still not a check.
+    const page0 = await (async () => {
       const c = await browser.newContext({ viewport: WIDTHS[0].viewport });
       const p = await c.newPage();
       await signIn(p);
-      const s = await findCommanderSlug(p);
+      await goto(p, `/commanders/${slug}`);
+      await onPage(p, SLOT).first().waitFor({ state: "attached", timeout: 15_000 }).catch(() => {});
+      // The commander this page is about, so the fixture deck is not led by it.
+      const commanderName = await onPage(p, "h1").first().innerText().catch(() => null);
+      // An OWNED synergy row: the ones drawing a buy tag are unowned, and a card
+      // nobody owns cannot be claimed into a deck.
+      const name = await onPage(p, "li:has(button[aria-pressed])")
+        .evaluateAll((rows) => {
+          for (const r of rows) {
+            if (r.querySelector('[class*="rounded-\\[4px\\]"]')) continue; // a buy tag — unowned
+            const t = r.querySelector("button:not([aria-pressed])");
+            if (t?.textContent) return t.textContent.trim();
+          }
+          return null;
+        })
+        .catch(() => null);
       await c.close();
-      return s;
+      return { name, commanderName: commanderName?.trim() ?? null };
     })();
-    console.log(`fixture: /commanders/${slug}\n`);
+    const heldName = page0.name;
+
+    const resolved = heldName
+      ? await resolveOwnedCard(userId, heldName)
+      : { card: null, ambiguous: false };
+    const held = resolved.card;
+    const leader = held
+      ? await anyOwnedLegend(
+          userId, held.oracle_id, page0.commanderName, held.color_identity ?? [],
+        )
+      : null;
+
+    // ONE EXPLICIT STATE, not an inference from `heldDeckId`. The marker check
+    // below needs to know whether a claim was built AND on which card, and
+    // reading that off the deck id conflated two different runs: a fixture that
+    // was never built reported "no owned synergy card" whatever the actual
+    // reason, and a row that already carried a marker of its own could satisfy
+    // the check while the fixture had done nothing. `fixture.card` is set only
+    // when this run put the claim there.
+    const fixture = { card: null, why: null };
+    if (held && leader) {
+      await sleeveEveryCopy(userId, held.oracle_id, leader, (id) => {
+        heldDeckId = id;
+        fixtureDeckId = id;
+      });
+      fixture.card = heldName;
+      console.log(`fixture: sleeved the only copy of "${heldName}" into a committed deck`);
+    } else {
+      // EACH REASON SAYS ITSELF. One note covering all four read every failure as
+      // "you own no support for this commander", which is wrong for three of them
+      // and sends the next reader to change PROBE_SLUG when the fixture is fine.
+      fixture.why = !heldName
+        ? "the page drew no owned synergy row to claim"
+        : resolved.basic
+          ? `"${heldName}" is a basic land, and \`loadAvailability\` omits basics from its` +
+            " owned CTE — sleeving one would claim nothing and the row would draw no marker"
+          : resolved.ambiguous
+          ? `"${heldName}" names more than one card in the catalog, and sleeving the wrong` +
+            " one would measure the wrong row"
+          : !held
+            ? `the collection does not hold exactly one copy of "${heldName}", and a non-basic` +
+              " is a singleton, so one deck could not claim every copy"
+            : "this account owns no card that could legally lead the fixture deck";
+      console.log(
+        `  note  no claim was built — ${fixture.why}. The slot's marker reading is skipped on` +
+          " this run. Pass PROBE_SLUG for a commander whose support this account owns.",
+      );
+    }
+    console.log("");
 
     for (const { name, viewport } of WIDTHS) {
       console.log(`── ${name} ${viewport.width}x${viewport.height} ──`);
@@ -222,7 +515,6 @@ async function run() {
         const n = await chips.count();
         if (n === 0) {
           report("chip wrap", false, "no Role Coverage chip on the page — the reading lost its subject, NOT a pass");
-          fail();
         } else {
           const boxes = await chips.evaluateAll((els) =>
             els.map((el) => {
@@ -250,7 +542,6 @@ async function run() {
           });
           const nowrap = ws === "nowrap";
           report("the chip's name is not allowed to wrap", nowrap, `white-space: ${ws}`);
-          if (!nowrap) fail();
 
           const tallest = boxes.reduce((a, b) => (b.h > a.h ? b : a));
           const ok = tallest.h <= CHIP_HEIGHT + 0.5;
@@ -260,7 +551,6 @@ async function run() {
             `${boxes.length} chips, tallest ${tallest.h}px against ${CHIP_HEIGHT}px` +
               (ok ? "" : ` — "${tallest.text}" wrapped`),
           );
-          if (!ok) fail();
 
           // A run where no chip is near the cap proves little, so say so.
           // A NOTE, not a check. It reports on the fixture's strength rather
@@ -298,7 +588,6 @@ async function run() {
           "no availability marker drawn — this account's collection covers its decks, so the" +
             " state has to be BUILT. NOT a pass: sleeve a copy into a committed deck first.",
         );
-        fail();
       } else {
         const sizes = await markers.evaluateAll((els) =>
           els.map((el) => ({
@@ -315,11 +604,9 @@ async function run() {
           `${sizes.length} markers, sizes ${[...new Set(sizes.map((s) => s.px))].join("/")}px` +
             ` against ${want}px` + (bad.length ? ` — ${bad.length} off` : ""),
         );
-        if (bad.length) fail();
 
         const mono = sizes.every((s) => /mono/i.test(s.family));
         report("marker is mono, as the figure beside it is", mono, sizes[0].family);
-        if (!mono) fail();
       }
 
       // ── 2b. the SYNERGY row's own marker type ───────────────────────────
@@ -335,16 +622,34 @@ async function run() {
       // was correct and simply absent, because every synergy row on this fixture
       // is unowned.
       const rowMarkerClass = name === "desktop" ? "text-[11px]" : "text-[10px]";
+      // SCOPED TO THE ROW THE FIXTURE HELD, not to every synergy row. Counting all
+      // of them proves only that SOME row draws a marker — and other rows carry
+      // pre-existing soft claims, so the held card could lose its marker entirely
+      // while the count stayed above zero and the check reported OK. `heldName` is
+      // the card this run sleeved; the row that names it is the only subject.
+      //
+      // Playwright quotes the name, so an apostrophe in a card name is safe.
+      const rowScope = fixture.card
+        ? `li:has(button[aria-pressed]):has(button:text-is(${JSON.stringify(fixture.card)}))`
+        : "li:has(button[aria-pressed])";
       const rowMarkers = onPage(
         page,
-        `li:has(button[aria-pressed]) [class*="${rowMarkerClass}"][class*="flex-none"]:visible`,
+        `${rowScope} [class*="${rowMarkerClass}"][class*="flex-none"]:visible`,
       );
       const rowCount = await rowMarkers.count();
-      if (rowCount === 0) {
+      if (!fixture.card) {
         console.log(
-          "  note  no synergy marker on this fixture — every owned synergy card has a spare" +
-            " copy, or every row is unowned and drawing a buy tag instead. The slot's marker" +
-            " type is not measured on this run.",
+          `  note  no claim was built (${fixture.why}), so no row can reach a marker. The` +
+            " slot's marker type is not measured on this run.",
+        );
+      } else if (rowCount === 0) {
+        // The fixture sleeved every copy of a card this page lists, so exactly one row
+        // must read hard. No marker means the reading lost its subject — a silent pass
+        // here is how this check spent its whole life measuring nothing.
+        report(
+          "synergy marker takes the slot's size",
+          false,
+          `markers: 0 on the row for "${fixture.card}", whose only copy this run sleeved`,
         );
       } else {
         const wantRow = name === "desktop" ? 11 : 10;
@@ -357,7 +662,6 @@ async function run() {
           offRow.length === 0,
           `${rowSizes.length} markers, sizes ${[...new Set(rowSizes)].join("/")}px against ${wantRow}px`,
         );
-        if (offRow.length) fail();
       }
 
       // ── 3. the key's pip baseline ───────────────────────────────────────
@@ -388,25 +692,26 @@ async function run() {
         // being drawn at all.
         const sized = geom.size >= 5.5 && geom.size <= 6.5;
         report("key pip is drawn at 6px", sized, `${geom.size}px`);
-        if (!sized) fail();
         report(
           "key pip sits on the key's first line",
           sized && off <= 3,
           `dot centre ${Math.round(off * 100) / 100}px from the line's centre`,
         );
-        if (!sized || off > 3) fail();
       } else {
         report("key pip", false, "no dot key found — NOT a pass");
-        fail();
       }
 
       // ── 4. the synergy slot holds one width ─────────────────────────────
       if (name === "desktop") {
+        // WAIT FOR IT. The row takes `isPhone` as a prop and the shell settles its
+        // width after mount, so the desktop slot is genuinely absent for the first
+        // frames — a bare count races that and reads 0 on a healthy page. A real
+        // absence still fails, one timeout later rather than instantly.
         const slots = onPage(page, SLOT);
+        await slots.first().waitFor({ state: "attached", timeout: 10_000 }).catch(() => {});
         const sCount = await slots.count();
         if (sCount === 0) {
           report("synergy slot", false, "no 88px slot drawn — the synergy panel did not render, NOT a pass");
-          fail();
         } else {
           const widths = await slots.evaluateAll((els) =>
             els.map((el) => Math.round(el.getBoundingClientRect().width * 100) / 100),
@@ -421,18 +726,75 @@ async function run() {
             exact,
             `${widths.length} slots, widths ${[...new Set(widths)].join("/")}px against ${SLOT_PX}px`,
           );
-          if (!exact) fail();
         }
       }
 
       await context.close();
     }
   } finally {
-    await browser.close();
+    // The deck goes whatever happened above; versions and version cards cascade.
+    // Attempted independently of the browser shutdown, so one failing does not
+    // strand the other — and the deck is a write on a shared account, which is
+    // the one thing here that must not survive the run.
+    try {
+      if (heldDeckId) await pool.query(`delete from decks where id = $1`, [heldDeckId]);
+      fixtureDeckId = null;
+    } finally {
+      try {
+        await browser.close();
+      } finally {
+        await pool.end();
+      }
+    }
   }
 
   console.log(failures === 0 ? "\nAll checks passed." : `\n${failures} check(s) failed.`);
   process.exitCode = failures === 0 ? 0 : 1;
 }
+
+/**
+ * Delete the fixture deck on the way out, whichever door is used.
+ *
+ * `once`, because a second signal while the delete is in flight would start a
+ * second delete and then exit under it. The handler re-raises with the
+ * conventional 128 + signal code rather than swallowing the interrupt — a script
+ * that ignores Ctrl-C is worse than one that leaves a row behind.
+ *
+ * `beforeExit` covers the remaining case: a normal return whose `finally` was
+ * skipped because something above it called `process.exit`. Nothing here does
+ * today, and `probe:score-lock` learned what it costs when something does.
+ *
+ * MEASURED, and narrower than it looks. Interrupting mid-run with a browser
+ * operation in flight already cleaned up before this existed: Playwright installs
+ * its own SIGINT handling, the pending operation rejects, and the `finally` runs
+ * normally — removing these handlers and repeating the interrupt still left no
+ * deck behind. What they cover is the window with NO browser call pending, which
+ * on this script is the fixture setup itself: the deck row is written, then three
+ * more inserts, and an interrupt in there exits with the claim standing on a
+ * shared account. Small window, and the cost of losing it is a row that silently
+ * changes every availability reading taken afterwards.
+ */
+async function sweepFixture() {
+  if (!fixtureDeckId) return;
+  const id = fixtureDeckId;
+  fixtureDeckId = null;
+  try {
+    await pool.query(`delete from decks where id = $1`, [id]);
+    console.log(`\n  cleaned up the fixture deck (${id})`);
+  } catch (err) {
+    // Say so loudly: an undeleted deck on a shared account is a claim that
+    // silently changes every later reading, and the next person to run this
+    // needs the id to remove it by hand.
+    console.error(`\n  COULD NOT DELETE the fixture deck ${id} — remove it by hand:`, err);
+  }
+}
+
+for (const signal of ["SIGINT", "SIGTERM", "SIGHUP"]) {
+  process.once(signal, async () => {
+    await sweepFixture();
+    process.exit(signal === "SIGINT" ? 130 : signal === "SIGTERM" ? 143 : 129);
+  });
+}
+process.once("beforeExit", sweepFixture);
 
 run();
