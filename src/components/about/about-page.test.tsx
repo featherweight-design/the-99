@@ -829,3 +829,32 @@ describe("the page's own type, against the design table", () => {
     expect(kinds.legendPlate + kinds.legendInset).toBeGreaterThan(0);
   });
 });
+
+// ── Every entry is addressable ─────────────────────────────────────────────
+//
+// Chapters have carried an id since #673 and entries carried none, so nothing
+// could address one: no deep link, and no acceptance cell, because
+// `contact-sheet.mjs` waits on a selector and an entry below the fold offered
+// nothing to wait for. Every feature ships an entry, so every inventory hit it.
+describe("entry anchors", () => {
+  // EQUALITY, not membership. Set membership passes with the ids attached to the
+  // wrong entries, or with an extra anchored `li` the page never declared — and
+  // the claim here is that each entry gets its OWN key, in order.
+  it("gives every entry its own id, in order, and no others", () => {
+    const { container } = render(<AboutPage seen={ABOUT_VERSION} />);
+    const ids = [...container.querySelectorAll("li[id]")].map((el) => el.id);
+    expect(ids).toEqual(aboutEntries.map((e) => e.id));
+  });
+
+  // The pairing, which order alone does not prove: an anchor is only useful if
+  // it sits on the element carrying that entry's own title.
+  it("puts each id on the element that holds that entry's title", () => {
+    const { container } = render(<AboutPage seen={ABOUT_VERSION} />);
+    for (const e of aboutEntries) {
+      const li = container.querySelector(`li[id="${e.id}"]`);
+      expect(li, `${e.id} has no anchor`).not.toBeNull();
+      expect(li!.textContent, `${e.id} anchors the wrong entry`).toContain(e.title);
+    }
+  });
+
+});

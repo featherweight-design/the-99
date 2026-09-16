@@ -56,7 +56,22 @@ function Entry({ entry, marked }: { entry: AboutEntry; marked: boolean }) {
   return (
     // No per-entry rule below the wide stop — a rule per entry turns a chapter
     // into a table. The chapter's own hairline stays at both widths.
-    <li className="pt-[14px] min-[1000px]:border-t min-[1000px]:border-solid min-[1000px]:border-[color:var(--border)]">
+    <li
+      // The entry's own anchor. Chapters have had one since #673; entries had
+      // none, so nothing could address a single entry — no deep link, and no
+      // acceptance cell, because `contact-sheet.mjs` waits on a selector and an
+      // entry below the fold offered nothing to wait for. Every feature ships an
+      // entry, so every inventory hit that wall.
+      //
+      // NO SCROLL MARGIN. The first version carried `scroll-mt-[80px]` on the
+      // theory that the shell's header overlays the page. It does not:
+      // `MobileHeader` is in flow (`shell/nav.tsx:303-308`), the desktop rail is
+      // sticky on the LEFT, and the tab bar is fixed to the BOTTOM. Nothing sits
+      // over the top of an entry at either width, so the margin bought nothing
+      // and left an 80px gap above every anchor navigation.
+      id={entry.id}
+      className="pt-[14px] min-[1000px]:border-t min-[1000px]:border-solid min-[1000px]:border-[color:var(--border)]"
+    >
       {/* Title and route on ONE line, which is where the handoff puts them: the
           route is part of the entry's name — "Browse what you own /collection"
           — rather than a footnote under its keys. It wraps below the title on a
