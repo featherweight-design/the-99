@@ -22,9 +22,16 @@ Pure code and one probe. No surface reads any of it, no payload changes, no figu
 | 6. `scripts/probe-fit-parity.mts` + `pnpm probe:fit-parity` | done |
 | 7. Spec updated with the parity answer and Ruling D; boundaries revised | done |
 
-**The generator's failure paths were run** before its green was believed: dropping the `Kindred`
-clause fails on `Faeries`, dropping the dual-role exclusion fails the mechanic assertions,
-removing a load-bearing irregular plural fails on `Dwarves`.
+**The generator's failure paths were run** before its green was believed: dropping the dual-role
+exclusion fails the mechanic assertions, and removing any one plural rule fails its own case —
+`-ice` on `Mice`, `-men` on `Cybermen`, `-ies` on `Allies`, `-es` on `Foxes`.
+
+**One claim did not survive a later change, and review caught it.** While the vocabulary was
+card-derived alone, dropping the `Kindred`/`Tribal` clause sent `Faeries` to the mechanic side
+and a mutation run showed it. After the union landed it changes no answer, because `faerie` is
+in Scryfall's catalog — and the claim was carried forward across the change that invalidated it.
+The clause stays, as the correct reading of a type line rather than as a proved guard; the claim
+is withdrawn.
 
 **Six measured corrections, four of them found only by running it.** The vocabulary is now
 Scryfall's six subtype catalogs unioned with the card-derived one, because neither is sufficient

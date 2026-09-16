@@ -254,8 +254,8 @@ rather than in a guard. What *is* worth a guard is the ceiling itself — see Ve
 
 ### The tag classifier
 
-130 of the 401 distinct tag labels resolve to creature types. The classifier's job is to keep
-those out of the gap line and let mechanics through.
+**134** of the 401 distinct tag labels resolve to creature types. The classifier's job is to
+keep those out of the gap line and let mechanics through.
 
 **The rule was built and run rather than described, and it took six measured corrections.** The
 generator's final classification of the 401-label vocabulary is **260 mechanic · 134 creature ·
@@ -289,8 +289,13 @@ as a mechanic. The card-derived half covers that gap, which is why both are kept
 Two more corrections, both recorded because each was a tribe reaching the reader:
 
 - **`Kindred` bears creature types without being a creature.** `Tribal Enchantment — Faerie
-  Aura` sent `Faeries` to the mechanic side of the card-derived half. Faces whose type line says
-  `Creature`, `Kindred` **or** `Tribal` all count as creature-bearing.
+  Aura` sent `Faeries` to the mechanic side of the card-derived half, so faces whose type line
+  says `Creature`, `Kindred` **or** `Tribal` all count as creature-bearing. **That clause is no
+  longer provable by mutation and is kept anyway:** the union put `faerie` in reach of Scryfall's
+  catalog, so dropping the two words changes no answer today. It was proved by mutation before
+  the union, the claim was then carried across the change that invalidated it, and review caught
+  that. It stays because it is the correct reading of a type line — it fires the first time
+  Scryfall's catalog lags a Kindred-only tribe — not because anything currently demonstrates it.
 - **`Eggs`, `Mounts` and `Toys` are creature types**, and an earlier revision of this spec was
   wrong to call them mechanics. All three are real subtypes — Bloomburrow's `Mount`, the `Egg`
   type — whose EDHREC tag is genuinely ambiguous between the tribe and an archetype built around

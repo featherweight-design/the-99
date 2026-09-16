@@ -120,6 +120,17 @@ async function creatureVocabularyFor(): Promise<Set<string>> {
       const [types, subs] = face.split("—");
       // `Kindred` (formerly `Tribal`) bears creature types without being a
       // creature: `Tribal Enchantment — Faerie Aura`.
+      //
+      // NOT PROVABLE BY MUTATION, and kept anyway. While the vocabulary was
+      // card-derived alone, dropping these two words sent `Faeries` to the
+      // mechanic side and a mutation run showed it. Since the union landed it
+      // changes no answer — `faerie` is in Scryfall's catalog, so the
+      // card-derived half no longer decides that label — and an earlier
+      // revision of this comment went on claiming the mutation anyway, which
+      // was a stale claim carried across a change that invalidated it. It stays
+      // because it is the correct reading of a type line, not a guard against a
+      // case that cannot arise: it fires the first time Scryfall's catalog lags
+      // a Kindred-only tribe.
       if (!subs || !/creature|kindred|tribal/i.test(types)) continue;
       for (const word of subs.trim().split(/\s+/)) {
         const w = word.toLowerCase();
@@ -154,13 +165,17 @@ const MUST_BE_MECHANIC = [
 ];
 const MUST_BE_CREATURE = [
   "Bears", "Crocodiles", "Frogs", // the reported row
-  // One per irregular-plural RULE, so a rule deleted is a case failed. Four of
-  // these were missing while the rules were a hand table of known words.
+  // ONE CASE PER PLURAL RULE, so deleting a rule fails a case. Four of these
+  // were missing while the rules were a hand table of known words, and two more
+  // rules were unexercised until review pointed out that the claim above was
+  // wider than the list below.
   "Wolves", "Elves", "Dwarves", "Werewolves", // -ves -> -f / -fe
   "Cybermen", // -men -> -man
   "Fungi", "Pegasi", // -i -> -us
   "Mice", // -ice -> -ouse
   "Heroes", // -oes
+  "Allies", // -ies -> -y
+  "Foxes", // -(sh|ch|s|x|z)es
   "Faeries", "Horses", "Humans", "Zombies", // the plain trailing -s
   "Eggs", "Mounts", "Toys", // real creature types whose EDHREC tag is ambiguous
   "Servos", // TOKEN-ONLY: absent from `cards` entirely, since tokens are dropped
@@ -168,6 +183,10 @@ const MUST_BE_CREATURE = [
   "Dinosaurs", // 231 creature printings and one non-creature line, which an
   // unconditional subtraction deleted
   "Cephalids", // in NO Scryfall subtype catalog; only the card-derived half has it
+  // Asserted in gap-slot.test.ts as card-derived corrections, and invariants
+  // here too: a list the tests pin but the generator does not can be
+  // regenerated out from under them without anything going red.
+  "Daleks", "Specters",
 ];
 
 const creatureVocabulary = await creatureVocabularyFor();
