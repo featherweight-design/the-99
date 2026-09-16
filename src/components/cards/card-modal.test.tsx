@@ -4,7 +4,7 @@
 // pill is deliberately absent rather than guessed.
 import { describe, expect, it, vi } from "vitest";
 import { act, fireEvent, render, screen, within } from "@testing-library/react";
-import type { Availability } from "../../lib/decks/availability";
+import type { Availability, DeckClaim } from "../../lib/decks/availability";
 import type { BrowseCard, CardArt } from "../../lib/collection/browse";
 import { availabilityCopy } from "../../lib/copy/availability";
 import { printedNameCopy } from "../../lib/copy/card-surfaces";
@@ -122,7 +122,9 @@ describe("CardModal availability detail", () => {
 // them, so a player owning seventeen and seeing "1 in a brew" had no way to
 // learn where the other sixteen went. These assert the receipt reconciles.
 describe("CardModal allocation receipt", () => {
-  const claim = (id: string, name: string, quantity: number, mature: boolean) => ({
+  const claim = (
+    id: string, name: string, quantity: number, mature: boolean,
+  ): DeckClaim => ({
     id, name, quantity, mature, pending: false, commander: false, senior: true,
   });
   // Built term by term rather than through `avail`, because the whole point of
@@ -216,6 +218,105 @@ describe("CardModal allocation receipt", () => {
     });
     expect(screen.getByText(c.detailClaimHolds(1))).toBeInTheDocument();
     expect(screen.getByText(c.detailClaimWants(1))).toBeInTheDocument();
+  });
+
+  // THE BUG: every finished list read `holds 1` against a single owned copy and the block
+  // said nothing about which of them the copy actually goes to. `holds` / `wants` is commit
+  // status and stays that way (card assignments R2, vocabulary ruling 4); the allocation is
+  // the third axis and takes that ruling's own third pair.
+  it("names the list that gets the copy and the ones that buy one", () => {
+    mount({
+      ...card,
+      quantity: 1,
+      availability: withClaims(1, [
+        { ...claim("d1", "Prismari Artistry", 1, true), since: 1_000 },
+        { ...claim("d2", "Avatar Aang", 1, true), since: 2_000 },
+        { ...claim("d3", "Gods", 1, true), since: 3_000 },
+      ]),
+    });
+    // Every finished list still HOLDS the card: that word is commit status, unchanged.
+    const rows = screen.getAllByRole("listitem");
+    const textOf = (deck: string) => rows.find((r) => r.textContent!.includes(deck))!.textContent!;
+    // The copy goes to the list that sleeved it first, not the one that sorts first.
+    expect(textOf("Prismari Artistry")).toContain(c.detailClaimGets);
+    expect(textOf("Avatar Aang")).toContain(c.detailClaimBuys);
+    expect(textOf("Gods")).toContain(c.detailClaimBuys);
+    for (const deck of ["Prismari Artistry", "Avatar Aang", "Gods"]) {
+      expect(textOf(deck)).toContain(c.detailClaimHolds(1));
+    }
+  });
+
+  // With copies enough for everyone there is nothing to decide, and a word per row saying
+  // so is a word per row saying nothing.
+  it("says nothing about allocation when the card is not contested", () => {
+    mount({
+      ...card,
+      quantity: 4,
+      availability: withClaims(4, [
+        { ...claim("d1", "Prismari Artistry", 1, true), since: 1_000 },
+        { ...claim("d2", "Avatar Aang", 1, true), since: 2_000 },
+      ]),
+    });
+    expect(screen.queryByText(new RegExp(c.detailClaimGets))).toBeNull();
+    expect(screen.queryByText(new RegExp(c.detailClaimBuys))).toBeNull();
+  });
+
+  // A reservation is the player's own allocation and outranks seniority, which is the one
+  // rule a verb read off `mature` could never express.
+  it("gives the copy to the list the player reserved it for", () => {
+    mount({
+      ...card,
+      quantity: 1,
+      availability: withClaims(1, [
+        { ...claim("d1", "Prismari Artistry", 1, true), since: 1_000 },
+        { ...claim("d2", "Avatar Aang", 1, true), since: 2_000, granted: 1 },
+      ]),
+    });
+    const rows = screen.getAllByRole("listitem");
+    const textOf = (deck: string) => rows.find((r) => r.textContent!.includes(deck))!.textContent!;
+    expect(textOf("Avatar Aang")).toContain(c.detailClaimGets);
+    expect(textOf("Prismari Artistry")).toContain(c.detailClaimBuys);
+  });
+
+  // A bare `gets it` would claim the whole ask was covered, and `buys it` that none of it
+  // was. Neither is true of a list that got one of the three it asked for.
+  it("names how much of the ask a part-covered list got", () => {
+    mount({
+      ...card,
+      quantity: 2,
+      availability: withClaims(2, [
+        { ...claim("d1", "Prismari Artistry", 1, true), since: 1_000 },
+        { ...claim("d2", "Avatar Aang", 3, true), since: 2_000 },
+      ]),
+    });
+    expect(screen.getByText(new RegExp(c.detailClaimGetsPartial(1, 3)))).toBeInTheDocument();
+  });
+
+  // `short N` counts finished lists only, deliberately. A reader looking at three lists
+  // wanting one card cannot tell that from a miscount unless the block says so.
+  it("says how many unfinished lists the figures leave out", () => {
+    mount({
+      ...card,
+      quantity: 1,
+      availability: withClaims(1, [
+        { ...claim("d1", "Prismari Artistry", 1, true), since: 1_000 },
+        { ...claim("d2", "Avatar Aang", 1, true), since: 2_000 },
+        { ...claim("d3", "Sketchbook", 1, false) },
+      ]),
+    });
+    expect(screen.getByText(c.detailBrewsUncounted(1))).toBeInTheDocument();
+  });
+
+  // In the soft state every claimant is a brew and `detailSoftNote` is the whole story,
+  // so this line would be the same fact twice.
+  it("leaves the line out when no finished list is involved", () => {
+    mount({
+      ...card,
+      quantity: 1,
+      availability: withClaims(1, [claim("d1", "Sketchbook", 1, false)]),
+    });
+    expect(screen.queryByText(c.detailBrewsUncounted(1))).toBeNull();
+    expect(screen.getByText(c.detailSoftNote(1))).toBeInTheDocument();
   });
 
   it("states an over-commitment as a comparison rather than a negative", () => {

@@ -20,8 +20,9 @@ import {
 } from "../../lib/collection/browse";
 import { identityGradient } from "../../lib/collection/gradients";
 import { printingPickerCopy } from "../../lib/copy/collection";
-import { availabilityState } from "../../lib/decks/availability";
+import { availabilityState, type DeckClaim } from "../../lib/decks/availability";
 import { availabilityCopy } from "../../lib/copy/availability";
+import { allocateClaims } from "../../lib/decks/allocate";
 import { AvailabilityMarker } from "../ui/availability-marker";
 import { clearCardArtPreference, setCardArtPreference } from "../../app/collection/actions";
 import { ManaCost } from "./mana-pips";
@@ -181,6 +182,33 @@ function ProxyDetail({ card }: { card: BrowseCard }) {
   );
 }
 
+/**
+ * A claim's line: what this list asked for, and — when one copy cannot cover them all — which
+ * list actually gets it.
+ *
+ * TWO AXES, NEVER ONE. `holds` / `wants` is commit status and stays that way: the card
+ * assignments handoff (R2, vocabulary ruling 4) considered keying them on allocation and
+ * rejected it, because `wants 1` would then mean "committed but lost the copy" on one row and
+ * "not committed at all" on the next. Allocation is the third axis and takes the third pair
+ * the same ruling defined, `gets it` / `buys it`, which is what `/decks/[id]/changes` already
+ * draws for this exact question.
+ *
+ * The allocation half prints only while the card is contested. With copies enough for
+ * everyone every finished list gets its ask, and `gets it` on every row is a word per row
+ * saying nothing.
+ */
+function claimLabel(claim: DeckClaim, allocated: number, contested: boolean): string {
+  const c = availabilityCopy.collection;
+  if (!claim.mature) return c.detailClaimWants(claim.quantity);
+  const holds = c.detailClaimHolds(claim.quantity);
+  if (!contested) return holds;
+  if (allocated === 0) return `${holds} · ${c.detailClaimBuys}`;
+  if (allocated < claim.quantity) {
+    return `${holds} · ${c.detailClaimGetsPartial(allocated, claim.quantity)}`;
+  }
+  return `${holds} · ${c.detailClaimGets}`;
+}
+
 function AvailabilityDetail({ card }: { card: BrowseCard }) {
   const a = card.availability;
   if (!a) return null;
@@ -190,6 +218,17 @@ function AvailabilityDetail({ card }: { card: BrowseCard }) {
   // so the receipt renders on claims, not on state.
   if (state === "free" && a.claims.length === 0) return null;
   const c = availabilityCopy.collection;
+  // Who actually gets each copy, from the one implementation of that arithmetic — the same
+  // call the arrivals receipt and the chooser's preview make. A row's verb is this and not
+  // `claim.mature`: a finished list that came second to the only copy owned holds nothing.
+  const allocation = allocateClaims(a);
+  const allocated = new Map(allocation.map((cl) => [cl.deckId, cl.allocated]));
+  // Contested means a finished list asked for a copy the supply could not give it. Only then
+  // does saying who gets it tell the reader anything.
+  const contested = allocation.some((cl) => cl.allocated < cl.quantity);
+  // The brews, which no figure in this block counts. Named where a finished list is already
+  // in play; in the soft state every claimant is one and `detailSoftNote` says so already.
+  const brews = a.claims.filter((cl) => !cl.mature).length;
   const note =
     state === "hard" ? c.detailHardNote
     : state === "soft" ? c.detailSoftNote(a.claims.filter((cl) => !cl.mature).length)
@@ -257,9 +296,7 @@ function AvailabilityDetail({ card }: { card: BrowseCard }) {
                   {claim.name}
                 </Link>
                 <span className="shrink-0 font-mono text-[12px]" style={{ color: "var(--fg-muted)" }}>
-                  {claim.mature
-                    ? c.detailClaimHolds(claim.quantity)
-                    : c.detailClaimWants(claim.quantity)}
+                  {claimLabel(claim, allocated.get(claim.id) ?? 0, contested)}
                 </span>
               </li>
             ))}
@@ -270,6 +307,14 @@ function AvailabilityDetail({ card }: { card: BrowseCard }) {
           >
             {a.free < 0 ? c.detailSplitOver(a.hard, a.owned) : c.detailSplit(a.hard, a.free)}
           </div>
+          {brews > 0 && state !== "soft" && (
+            <p
+              className="m-0 mt-[6px] text-[12.5px] leading-[1.5]"
+              style={{ color: "var(--fg-muted)" }}
+            >
+              {c.detailBrewsUncounted(brews)}
+            </p>
+          )}
         </>
       )}
       {note && (

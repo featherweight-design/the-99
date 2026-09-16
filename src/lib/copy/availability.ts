@@ -282,6 +282,21 @@ export const availabilityCopy = {
     detailClaimsHeading: "On your lists",
     detailClaimHolds: (n: number) => `holds ${n}`,
     detailClaimWants: (n: number) => `wants ${n}`,
+    // ALLOCATION IS A THIRD AXIS AND TAKES A THIRD PAIR — the card assignments
+    // handoff's vocabulary ruling 4, verbatim: keying `holds` / `wants` on who
+    // got the copy would make `wants 1` mean "committed but lost the copy" on one
+    // row and "not committed at all" on the next. These two words are the ones
+    // `/decks/[id]/changes` already draws for this question, borrowed rather than
+    // re-coined so one axis has one vocabulary.
+    //
+    // Drawn only while the card is contested: with copies enough for everyone,
+    // `gets it` on every row is a word per row saying nothing.
+    detailClaimGets: "gets it",
+    detailClaimBuys: "buys it",
+    // The folded case: some of the ask covered, the rest bought. A bare `gets it`
+    // would claim the whole ask was covered, and `buys it` that none of it was.
+    detailClaimGetsPartial: (allocated: number, wanted: number) =>
+      `gets ${allocated} of ${wanted}`,
     // Reads under the deck rows and must reconcile with the ×N above it:
     // `inUse + free === owned` off-decklist, which is the only place this
     // renders. Both halves always print, zeroes included — the line is an
@@ -289,8 +304,13 @@ export const availabilityCopy = {
     detailSplit: (inUse: number, free: number) => `${inUse} in use · ${free} free`,
     // Over-committed: the split above would have to print a negative, so the
     // arithmetic is stated as the comparison it actually is.
+    //
+    // `by finished lists` was cut on 2026-09-16. It qualified the figure against
+    // the brews in the rows above, and `detailBrewsUncounted` now says exactly
+    // that one line below in a sentence, so the qualifier restated the next
+    // line. With no brew in the list there is nothing for it to disambiguate.
     detailSplitOver: (wanted: number, owned: number) =>
-      `${wanted} wanted by finished lists · you own ${owned}`,
+      `${wanted} wanted · you own ${owned}`,
     // THE NOTES DO NO ARITHMETIC (#355). The split line above them already
     // accounts for every copy, and the note's job is the consequence. The soft
     // note used to read "A copy is free — the other is on a list you haven't
@@ -318,6 +338,19 @@ export const availabilityCopy = {
         : "Nothing to sort out yet. The lists that want it aren’t finished. Whichever you sleeve first gets it.",
     detailOverNote:
       "More finished lists want it than you own. Nothing’s broken. It’s a shopping decision.",
+    // Why the shortfall above is smaller than the rows suggest. `short N` counts
+    // finished lists only, deliberately — nothing is sleeved in a brew, so no copy
+    // has gone anywhere — and a reader looking at five lists wanting one card has
+    // no way to tell that from a miscount. This says which lists were left out and
+    // why, and prints no figure of its own beyond the count of them.
+    //
+    // Drawn only where a finished list is already involved. In the soft state
+    // every claimant is a brew and `detailSoftNote` is the whole story, so this
+    // would repeat it.
+    detailBrewsUncounted: (brewCount: number) =>
+      brewCount === 1
+        ? "The unfinished list isn’t counted: nothing is sleeved in it yet."
+        : `The ${brewCount} unfinished lists aren’t counted: nothing is sleeved in them yet.`,
   },
 
   // ── Deck detail roll-up (addendum 2) ─────────────────────────────

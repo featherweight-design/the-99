@@ -21,7 +21,7 @@ import { cards, csvUploads } from "../../db/schema";
 import { loadAvailability } from "../decks/availability-query";
 import { withoutUndecided, type ArrivalsSummary } from "./arrivals";
 import type { Availability } from "../decks/availability";
-import { allocate } from "../decks/allocate";
+import { allocateClaims } from "../decks/allocate";
 
 /** One committed deck's place in a contested card's queue. */
 export type ContestedClaimant = {
@@ -152,21 +152,6 @@ function buildContestedCard(
   a: Availability,
   frozen: { arrived: number; ownedBefore: number; fromImport: boolean },
 ): ContestedCard {
-  const committed = a.claims
-    .filter((c) => c.mature)
-    .map((c) => ({
-      deckId: c.id,
-      deckName: c.name,
-      quantity: c.quantity,
-      commanderCopies: c.commanderCopies ?? (c.commander ? 1 : 0),
-      granted: c.granted ?? 0,
-      since: c.since ?? null,
-      versionNumber: c.versionNumber ?? null,
-    }))
-    // Commit order, per card. `claims` arrives ordered by deck NAME, which is the wrong order
-    // here: the queue is the explanation of the default, so it has to be the order the model
-    // uses. A null `since` cannot occur on a mature claim, and sorts last if it ever does.
-    .sort((x, y) => (x.since ?? Infinity) - (y.since ?? Infinity) || x.deckId.localeCompare(y.deckId));
   return {
     oracleId,
     cardName,
@@ -174,7 +159,7 @@ function buildContestedCard(
     ownedBefore: frozen.ownedBefore,
     fromImport: frozen.fromImport,
     owned: a.owned,
-    claimants: allocate(a.owned, committed),
+    claimants: allocateClaims(a),
     brewNames: a.claims.filter((c) => !c.mature).map((c) => c.name),
   };
 }
