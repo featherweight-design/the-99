@@ -27,11 +27,13 @@ import { addPanelCopy, exportLinkOutCopy } from "../../lib/copy/decks-builder";
 import { recommendationsCopy } from "../../lib/copy/recommendations";
 import { deckImportCopy } from "../../lib/copy/deck-import";
 import { deckVersioningCopy } from "../../lib/copy/deck-versioning";
+import { gameLogCopy } from "../../lib/copy/game-log";
+import { topOffCopy } from "../../lib/copy/top-off";
 import { folderCopy } from "../../lib/copy/folders";
 
 import { GAME_AXIS_KEYS } from "../../lib/decks/game-axes";
-import { DECK_SORT_ROWS } from "../../lib/about/fixtures";
-import { FilterChipPill } from "../ui/filter-chassis";
+import { deckSortLabel, groupToggleCopy } from "../../lib/about/sort-labels";
+import { BrowseChips } from "./browse-chips";
 import { collectionChassisCopy } from "../../lib/copy/collection";
 import { viewToggleCopy } from "../../lib/copy/card-surfaces";
 import { cardAssignmentsCopy } from "../../lib/copy/card-assignments";
@@ -53,7 +55,6 @@ import type { AboutWidth } from "../../lib/copy/about";
 import {
   AVAILABILITY,
   CARDS,
-  BROWSE_CHIPS,
   COMMITMENTS,
   COMMITMENTS_TOTAL_CARDS,
   GAME_AXES,
@@ -412,11 +413,7 @@ function BrowseFigure({ width }: { width: AboutWidth }) {
   return (
     <Specimen label="browse" width={width}>
       <div className="flex flex-col gap-[10px]">
-        <div className="flex flex-wrap items-center gap-[8px]">
-          {BROWSE_CHIPS.map((chip) => (
-            <FilterChipPill key={chip.key} chip={chip} />
-          ))}
-        </div>
+        <BrowseChips />
         <div className="flex flex-wrap items-center justify-between gap-[10px]">
           <span className="font-mono text-[11px] text-[color:var(--fg-faint)]">
             {collectionChassisCopy.result(34, 2805, 4120, true)}
@@ -590,13 +587,29 @@ function ThemesFigure({ width }: { width: AboutWidth }) {
         {THEMES.map((theme) => (
           <div
             key={theme.key}
-            className="flex flex-col rounded-[8px] border border-solid border-[color:var(--border)] px-[10px] py-[8px]"
+            className="flex flex-col gap-[4px] rounded-[8px] border border-solid border-[color:var(--border)] px-[10px] py-[8px]"
+            data-theme={theme.key}
           >
+            {/* The swatch is the entry's subject — a theme changes the palette
+                and nothing else — and a grid of names alone does not show it.
+                `data-theme` puts each tile in its own theme's tokens, which is
+                the same mechanism the app uses. */}
+            <span className="flex gap-[3px]">
+              {["--accent", "--success", "--danger"].map((token) => (
+                <span
+                  key={token}
+                  className="h-[8px] w-[14px] rounded-[2px]"
+                  style={{ background: `var(${token})` }}
+                />
+              ))}
+            </span>
             <span className="text-[12.5px] text-[color:var(--fg)]">{theme.name}</span>
             {/* The plane is the SUBTITLE, never the label: you pick Neon Rain,
                 not Kamigawa, and an earlier figure had them the other way up. */}
+            {/* `short`, which is what the picker draws — the full plane name
+                is "Kamigawa: Neon Dynasty" where the app says "Kamigawa". */}
             <span className="font-mono text-[10px] text-[color:var(--fg-faint)]">
-              {theme.plane}
+              {theme.short}
             </span>
           </div>
         ))}
@@ -718,10 +731,10 @@ function DeckPageFigure({ width }: { width: AboutWidth }) {
       label="deck-page"
       width={width}
       rows={[
-        { mark: "Your deck · 99", meaning: "the list itself" },
-        { mark: "Consider · 80", meaning: "cards this commander wants that are not in it yet" },
-        { mark: "Games", meaning: "no count until one is logged — the absence is the signal" },
-        { mark: "Versions · 1", meaning: "what you committed, and when" },
+        { mark: `${addPanelCopy.tabs.deck} · 99`, meaning: "the list itself" },
+        { mark: `${addPanelCopy.tabs.consider} · 80`, meaning: "cards this commander wants that are not in it yet" },
+        { mark: gameLogCopy.tab.label, meaning: "no count until one is logged — the absence is the signal" },
+        { mark: `${deckVersioningCopy.history.tab} · 1`, meaning: "what you committed, and when" },
       ]}
     />
   );
@@ -734,7 +747,7 @@ function AutoFillFigure({ width }: { width: AboutWidth }) {
       width={width}
       rows={[
         { mark: "63 / 99", meaning: "assembled from what you own the moment you pick a commander" },
-        { mark: "Top off", meaning: "fills what is left, from your collection, in one pass" },
+        { mark: topOffCopy.strip.open("36"), meaning: "fills what is left, from your collection, in one pass" },
         { mark: recommendationsCopy.auto.clearAll("36"), meaning: "and undoes the lot if you would rather pick yourself" },
       ]}
     />
@@ -759,7 +772,21 @@ function DecklistOrderFigure({ width }: { width: AboutWidth }) {
     <Legend
       label="decklist-order"
       width={width}
-      rows={DECK_SORT_ROWS.map(([mark, meaning]) => ({ mark, meaning }))}
+      rows={[
+        {
+          mark: `${groupToggleCopy.byRole} / ${groupToggleCopy.byType}`,
+          meaning: "the list is always in sections — that is how a deck is short",
+        },
+        {
+          mark: deckSortLabel("name"),
+          meaning: "and the order you pick applies inside them",
+        },
+        { mark: deckSortLabel("mana"), meaning: "curve up, or curve down" },
+        {
+          mark: deckSortLabel("price"),
+          meaning: "offered on the shopping filter only, where money is the question",
+        },
+      ]}
     />
   );
 }
@@ -819,7 +846,7 @@ function VersionsFigure({ width }: { width: AboutWidth }) {
       width={width}
       rows={[
         { mark: "draft", meaning: "every add and cut, until you commit" },
-        { mark: "v2 · current", meaning: "what the deck is sleeved as" },
+        { mark: `v2 · ${deckVersioningCopy.history.current}`, meaning: "what the deck is sleeved as" },
         { mark: "v1", meaning: "and what it was, with the change between them readable" },
       ]}
     />
@@ -890,7 +917,7 @@ function ResumeFigure({ width }: { width: AboutWidth }) {
       rows={[
         { mark: c.edited("2h ago"), meaning: "you changed the draft" },
         { mark: c.committed("yesterday"), meaning: "you cut a version" },
-        { mark: c.played("Sunday"), meaning: "you logged a game" },
+        { mark: c.played("2 days ago"), meaning: "you logged a game" },
       ]}
     />
   );

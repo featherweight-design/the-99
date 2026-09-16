@@ -8,9 +8,12 @@
 //  - `aria-hidden` IN FULL. A figure repeats what the caption and the key lines
 //    already say; announced, it would read every mark twice and name controls
 //    that cannot be pressed.
-//  - Inert. A specimen is not a control: nothing here navigates, submits or
-//    focuses, and `pointer-events: none` is what makes that true of a real
-//    component mounted with fixture props rather than merely intended.
+//  - Inert, and `inert` is the attribute that means it. `aria-hidden` hides a
+//    node from the accessibility tree and `pointer-events: none` stops a
+//    pointer, and NEITHER removes anything from the tab order — so a keyboard
+//    reader was landing on `CommitmentsCard`'s link and `SetCell`'s button
+//    inside figures, where Enter navigated away from the page. The claim that
+//    nothing here focuses was false on two figures before this.
 
 export function Specimen({
   children,
@@ -33,6 +36,7 @@ export function Specimen({
   return (
     <figure
       aria-hidden
+      inert
       data-specimen={label}
       data-width={width}
       className={`pointer-events-none m-0 mt-[10px] select-none overflow-hidden rounded-[8px] border border-solid border-[color:var(--border)] bg-[color:var(--surface-sunken)] p-[14px] ${

@@ -1,6 +1,6 @@
 {
   "feature": "About The 99 \u2014 the reference page, its gate and its figures",
-  "note": "One route, and the close-out's job is the page a reader actually gets rather than the route existing. Seven rows, and they are ONE reader state rather than three. The page draws differently for a reader at version 0, one who is behind and one who is current, but the acknowledged version lives in `user_prefs` \u2014 no URL reaches those states, and `?next=` sets only the dismiss destination. The fixture account is in exactly one of them, so these rows differ in what they photograph (the head, the figures, the destination clause) and not in who is reading. The other two states are held by `about-page.test.tsx`, which renders `seen={0}`, `seen={ABOUT_VERSION}` and a version-2 page with one entry marked; a walk wanting the real thing would write the row and put it back, in the shape `probe:review` uses for its collection edits. The account menu row is deliberately NOT here. It is the page's permanent entry point and the one surface outside `/about` this feature changed, but every verb in this script reaches page content through `onPage`, which scopes to `<main>` \u2014 and the shell's account trigger sits outside it by construction. A row for it could only be written by defeating that scope, which is the rule that stopped two probes measuring the shell while naming a page. It is covered instead by `account-menu.test.tsx`, which asserts the row's position, its link, the roving wrap past it and its busy state, and by the close-out walk. No `shares` block: every figure mounts an app component in ONE place, so there is no second route to be the same as \u2014 the sameness question this feature has is whether a figure matches the surface it documents, which is what `figures.tsx` asserts per figure and what this sheet shows in a glance. A figure per row rather than one shot of 'the figures', each reached by NAME rather than by a pixel offset: the five specimens are spread across a page about nine screens long, so a single scrolled shot photographs one of them while its label names five \u2014 which is what the first version of this inventory did, and what the close-out table then repeated as though all five had been seen. The last row scrolls to the foot, because the destination clause and the dismiss are the only things down there and they are what `?next=` changes. The offsets came first and one of them overshot \u2014 the row labelled for the fit bar photographed the commander entries below it, which is the same overstatement in a different costume, so `scrollTo` was added to the shared script.",
+  "note": "Every figure gets its own row, addressed by NAME. Thirty-four entries now carry thirty-four figures, and the sheet's job is the one a test cannot do: show that each frame holds something, at both widths, in one glance. Two rows either side photograph the page head and the destination state. The account-menu row is deliberately absent \u2014 every verb here reaches page content through `onPage`, which scopes to `<main>`, and the shell's account trigger sits outside it by construction; `account-menu.test.tsx` covers it instead.",
   "rows": [
     {
       "id": "about-first-run",
@@ -15,67 +15,444 @@
       ]
     },
     {
-      "id": "about-fig-availability",
-      "label": "/about \u2014 the availability plate: four states, including the one that draws nothing",
+      "id": "fig-browse",
+      "label": "/about \u2014 the browse figure",
+      "view": "src/components/about/figures.tsx",
+      "steps": [
+        {
+          "goto": "/about",
+          "wait": "[data-specimen='browse']",
+          "settle": 1200,
+          "scrollTo": "[data-specimen='browse']"
+        }
+      ]
+    },
+    {
+      "id": "fig-import",
+      "label": "/about \u2014 the import figure",
+      "view": "src/components/about/figures.tsx",
+      "steps": [
+        {
+          "goto": "/about",
+          "wait": "[data-specimen='import']",
+          "settle": 1200,
+          "scrollTo": "[data-specimen='import']"
+        }
+      ]
+    },
+    {
+      "id": "fig-post-import",
+      "label": "/about \u2014 the post-import figure",
+      "view": "src/components/about/figures.tsx",
+      "steps": [
+        {
+          "goto": "/about",
+          "wait": "[data-specimen='post-import']",
+          "settle": 1200,
+          "scrollTo": "[data-specimen='post-import']"
+        }
+      ]
+    },
+    {
+      "id": "fig-import-issues",
+      "label": "/about \u2014 the import-issues figure",
+      "view": "src/components/about/figures.tsx",
+      "steps": [
+        {
+          "goto": "/about",
+          "wait": "[data-specimen='import-issues']",
+          "settle": 1200,
+          "scrollTo": "[data-specimen='import-issues']"
+        }
+      ]
+    },
+    {
+      "id": "fig-availability",
+      "label": "/about \u2014 the availability figure",
       "view": "src/components/about/figures.tsx",
       "steps": [
         {
           "goto": "/about",
           "wait": "[data-specimen='availability']",
-          "settle": 2000,
+          "settle": 1200,
           "scrollTo": "[data-specimen='availability']"
         }
       ]
     },
     {
-      "id": "about-fig-buy",
-      "label": "/about \u2014 the buy tag's four claims",
+      "id": "fig-sets",
+      "label": "/about \u2014 the sets figure",
+      "view": "src/components/about/figures.tsx",
+      "steps": [
+        {
+          "goto": "/about",
+          "wait": "[data-specimen='sets']",
+          "settle": 1200,
+          "scrollTo": "[data-specimen='sets']"
+        }
+      ]
+    },
+    {
+      "id": "fig-buy-tag",
+      "label": "/about \u2014 the buy-tag figure",
       "view": "src/components/about/figures.tsx",
       "steps": [
         {
           "goto": "/about",
           "wait": "[data-specimen='buy-tag']",
-          "settle": 2000,
+          "settle": 1200,
           "scrollTo": "[data-specimen='buy-tag']"
         }
       ]
     },
     {
-      "id": "about-fig-fit",
-      "label": "/about \u2014 the fit bar at 100 and at 40",
+      "id": "fig-card-detail",
+      "label": "/about \u2014 the card-detail figure",
+      "view": "src/components/about/figures.tsx",
+      "steps": [
+        {
+          "goto": "/about",
+          "wait": "[data-specimen='card-detail']",
+          "settle": 1200,
+          "scrollTo": "[data-specimen='card-detail']"
+        }
+      ]
+    },
+    {
+      "id": "fig-ready-to-build",
+      "label": "/about \u2014 the ready-to-build figure",
+      "view": "src/components/about/figures.tsx",
+      "steps": [
+        {
+          "goto": "/about",
+          "wait": "[data-specimen='ready-to-build']",
+          "settle": 1200,
+          "scrollTo": "[data-specimen='ready-to-build']"
+        }
+      ]
+    },
+    {
+      "id": "fig-fit",
+      "label": "/about \u2014 the fit figure",
       "view": "src/components/about/figures.tsx",
       "steps": [
         {
           "goto": "/about",
           "wait": "[data-specimen='fit']",
-          "settle": 2000,
+          "settle": 1200,
           "scrollTo": "[data-specimen='fit']"
         }
       ]
     },
     {
-      "id": "about-fig-marks",
-      "label": "/about \u2014 the decklist marks, as a legend",
+      "id": "fig-commander-lane",
+      "label": "/about \u2014 the commander-lane figure",
+      "view": "src/components/about/figures.tsx",
+      "steps": [
+        {
+          "goto": "/about",
+          "wait": "[data-specimen='commander-lane']",
+          "settle": 1200,
+          "scrollTo": "[data-specimen='commander-lane']"
+        }
+      ]
+    },
+    {
+      "id": "fig-discover",
+      "label": "/about \u2014 the discover figure",
+      "view": "src/components/about/figures.tsx",
+      "steps": [
+        {
+          "goto": "/about",
+          "wait": "[data-specimen='discover']",
+          "settle": 1200,
+          "scrollTo": "[data-specimen='discover']"
+        }
+      ]
+    },
+    {
+      "id": "fig-role-coverage",
+      "label": "/about \u2014 the role-coverage figure",
+      "view": "src/components/about/figures.tsx",
+      "steps": [
+        {
+          "goto": "/about",
+          "wait": "[data-specimen='role-coverage']",
+          "settle": 1200,
+          "scrollTo": "[data-specimen='role-coverage']"
+        }
+      ]
+    },
+    {
+      "id": "fig-partners",
+      "label": "/about \u2014 the partners figure",
+      "view": "src/components/about/figures.tsx",
+      "steps": [
+        {
+          "goto": "/about",
+          "wait": "[data-specimen='partners']",
+          "settle": 1200,
+          "scrollTo": "[data-specimen='partners']"
+        }
+      ]
+    },
+    {
+      "id": "fig-deck-page",
+      "label": "/about \u2014 the deck-page figure",
+      "view": "src/components/about/figures.tsx",
+      "steps": [
+        {
+          "goto": "/about",
+          "wait": "[data-specimen='deck-page']",
+          "settle": 1200,
+          "scrollTo": "[data-specimen='deck-page']"
+        }
+      ]
+    },
+    {
+      "id": "fig-auto-fill",
+      "label": "/about \u2014 the auto-fill figure",
+      "view": "src/components/about/figures.tsx",
+      "steps": [
+        {
+          "goto": "/about",
+          "wait": "[data-specimen='auto-fill']",
+          "settle": 1200,
+          "scrollTo": "[data-specimen='auto-fill']"
+        }
+      ]
+    },
+    {
+      "id": "fig-marks",
+      "label": "/about \u2014 the marks figure",
       "view": "src/components/about/figures.tsx",
       "steps": [
         {
           "goto": "/about",
           "wait": "[data-specimen='marks']",
-          "settle": 2000,
+          "settle": 1200,
           "scrollTo": "[data-specimen='marks']"
         }
       ]
     },
     {
-      "id": "about-fig-status",
-      "label": "/about \u2014 all six statuses, each with its count and bar",
+      "id": "fig-roles",
+      "label": "/about \u2014 the roles figure",
+      "view": "src/components/about/figures.tsx",
+      "steps": [
+        {
+          "goto": "/about",
+          "wait": "[data-specimen='roles']",
+          "settle": 1200,
+          "scrollTo": "[data-specimen='roles']"
+        }
+      ]
+    },
+    {
+      "id": "fig-decklist-order",
+      "label": "/about \u2014 the decklist-order figure",
+      "view": "src/components/about/figures.tsx",
+      "steps": [
+        {
+          "goto": "/about",
+          "wait": "[data-specimen='decklist-order']",
+          "settle": 1200,
+          "scrollTo": "[data-specimen='decklist-order']"
+        }
+      ]
+    },
+    {
+      "id": "fig-add-cards",
+      "label": "/about \u2014 the add-cards figure",
+      "view": "src/components/about/figures.tsx",
+      "steps": [
+        {
+          "goto": "/about",
+          "wait": "[data-specimen='add-cards']",
+          "settle": 1200,
+          "scrollTo": "[data-specimen='add-cards']"
+        }
+      ]
+    },
+    {
+      "id": "fig-undo-removal",
+      "label": "/about \u2014 the undo-removal figure",
+      "view": "src/components/about/figures.tsx",
+      "steps": [
+        {
+          "goto": "/about",
+          "wait": "[data-specimen='undo-removal']",
+          "settle": 1200,
+          "scrollTo": "[data-specimen='undo-removal']"
+        }
+      ]
+    },
+    {
+      "id": "fig-deck-import",
+      "label": "/about \u2014 the deck-import figure",
+      "view": "src/components/about/figures.tsx",
+      "steps": [
+        {
+          "goto": "/about",
+          "wait": "[data-specimen='deck-import']",
+          "settle": 1200,
+          "scrollTo": "[data-specimen='deck-import']"
+        }
+      ]
+    },
+    {
+      "id": "fig-versions",
+      "label": "/about \u2014 the versions figure",
+      "view": "src/components/about/figures.tsx",
+      "steps": [
+        {
+          "goto": "/about",
+          "wait": "[data-specimen='versions']",
+          "settle": 1200,
+          "scrollTo": "[data-specimen='versions']"
+        }
+      ]
+    },
+    {
+      "id": "fig-export",
+      "label": "/about \u2014 the export figure",
+      "view": "src/components/about/figures.tsx",
+      "steps": [
+        {
+          "goto": "/about",
+          "wait": "[data-specimen='export']",
+          "settle": 1200,
+          "scrollTo": "[data-specimen='export']"
+        }
+      ]
+    },
+    {
+      "id": "fig-shopping",
+      "label": "/about \u2014 the shopping figure",
+      "view": "src/components/about/figures.tsx",
+      "steps": [
+        {
+          "goto": "/about",
+          "wait": "[data-specimen='shopping']",
+          "settle": 1200,
+          "scrollTo": "[data-specimen='shopping']"
+        }
+      ]
+    },
+    {
+      "id": "fig-log-a-game",
+      "label": "/about \u2014 the log-a-game figure",
+      "view": "src/components/about/figures.tsx",
+      "steps": [
+        {
+          "goto": "/about",
+          "wait": "[data-specimen='log-a-game']",
+          "settle": 1200,
+          "scrollTo": "[data-specimen='log-a-game']"
+        }
+      ]
+    },
+    {
+      "id": "fig-log-findings",
+      "label": "/about \u2014 the log-findings figure",
+      "view": "src/components/about/figures.tsx",
+      "steps": [
+        {
+          "goto": "/about",
+          "wait": "[data-specimen='log-findings']",
+          "settle": 1200,
+          "scrollTo": "[data-specimen='log-findings']"
+        }
+      ]
+    },
+    {
+      "id": "fig-status",
+      "label": "/about \u2014 the status figure",
       "view": "src/components/about/figures.tsx",
       "steps": [
         {
           "goto": "/about",
           "wait": "[data-specimen='status']",
-          "settle": 2000,
+          "settle": 1200,
           "scrollTo": "[data-specimen='status']"
+        }
+      ]
+    },
+    {
+      "id": "fig-folders",
+      "label": "/about \u2014 the folders figure",
+      "view": "src/components/about/figures.tsx",
+      "steps": [
+        {
+          "goto": "/about",
+          "wait": "[data-specimen='folders']",
+          "settle": 1200,
+          "scrollTo": "[data-specimen='folders']"
+        }
+      ]
+    },
+    {
+      "id": "fig-resume",
+      "label": "/about \u2014 the resume figure",
+      "view": "src/components/about/figures.tsx",
+      "steps": [
+        {
+          "goto": "/about",
+          "wait": "[data-specimen='resume']",
+          "settle": 1200,
+          "scrollTo": "[data-specimen='resume']"
+        }
+      ]
+    },
+    {
+      "id": "fig-commitments",
+      "label": "/about \u2014 the commitments figure",
+      "view": "src/components/about/figures.tsx",
+      "steps": [
+        {
+          "goto": "/about",
+          "wait": "[data-specimen='commitments']",
+          "settle": 1200,
+          "scrollTo": "[data-specimen='commitments']"
+        }
+      ]
+    },
+    {
+      "id": "fig-reservations",
+      "label": "/about \u2014 the reservations figure",
+      "view": "src/components/about/figures.tsx",
+      "steps": [
+        {
+          "goto": "/about",
+          "wait": "[data-specimen='reservations']",
+          "settle": 1200,
+          "scrollTo": "[data-specimen='reservations']"
+        }
+      ]
+    },
+    {
+      "id": "fig-proxies",
+      "label": "/about \u2014 the proxies figure",
+      "view": "src/components/about/figures.tsx",
+      "steps": [
+        {
+          "goto": "/about",
+          "wait": "[data-specimen='proxies']",
+          "settle": 1200,
+          "scrollTo": "[data-specimen='proxies']"
+        }
+      ]
+    },
+    {
+      "id": "fig-themes",
+      "label": "/about \u2014 the themes figure",
+      "view": "src/components/about/figures.tsx",
+      "steps": [
+        {
+          "goto": "/about",
+          "wait": "[data-specimen='themes']",
+          "settle": 1200,
+          "scrollTo": "[data-specimen='themes']"
         }
       ]
     },

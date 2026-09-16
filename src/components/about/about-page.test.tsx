@@ -386,10 +386,15 @@ describe("the figures", () => {
       const figure = li.querySelector("[data-specimen]");
       const title = li.querySelector("h3")?.textContent ?? "";
       expect(figure, `${title} has no figure`).toBeTruthy();
-      expect(
-        (figure as HTMLElement).childElementCount,
-        `${title} draws an empty frame`,
-      ).toBeGreaterThan(0);
+      // NOT `childElementCount`, and not "has a leaf" either. Every Specimen
+      // wraps its content in one div, so the count is 1 whatever that div
+      // holds — and an EMPTY div is itself a leaf, so counting leaves passed
+      // over the same emptiness one attempt later. What a drawn figure has is
+      // words or drawn art: text, or an svg or img.
+      const el = figure as HTMLElement;
+      const text = (el.textContent ?? "").trim();
+      const art = el.querySelector("svg, img");
+      expect(text.length > 0 || art !== null, `${title} draws an empty frame`).toBe(true);
     }
   });
 });

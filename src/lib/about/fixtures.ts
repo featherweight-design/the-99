@@ -15,8 +15,8 @@ import type { PriceFact, PriceState } from "../decks/price";
 import { fitSegments } from "../recs/format";
 import type { StatusPill } from "../decks/status";
 import type { Cell } from "../sets/completion";
-import type { FilterChip } from "../../components/ui/filter-chassis";
-import { collectionChassisCopy } from "../copy/collection";
+
+
 
 /** The four availability states, in the order the plate draws them. */
 export const AVAILABILITY: { key: string; a: Availability }[] = [
@@ -172,25 +172,17 @@ export const SET_CELLS: Cell[] = [
   },
 ];
 
-/** Two narrowings, one of which collapsed several values into a count. */
-export const BROWSE_CHIPS: FilterChip[] = [
-  // `onRemove` is required by the chip and is a no-op here: a specimen is
-  // inert, and the figure's subject is that the control EXISTS and is
-  // per-dimension, not what pressing it does.
-  {
-    key: "colour",
-    // From the collection's own derivation, not retyped: a rename in
-    // `collectionFilterCopy` must reach this figure, and a literal here would
-    // leave the specimen stale while still mounting the real chip.
-    label: collectionChassisCopy.chip.colours(1),
-    dots: ["var(--success)"],
-    onRemove: () => {},
-  },
-  { key: "set", label: "The Hobbit", onRemove: () => {} },
-];
+// The browse figure's chips live in `components/about/browse-chips.tsx`, not
+// here. `FilterChip` requires an `onRemove` handler and the chip is a client
+// component, so a fixture built in this module would hand a function across the
+// server/client boundary — which React refuses, and which no unit test in this
+// repository can see.
 
 /** Role counts against their baselines — one short, one at, one over. */
-export const ROLE_COUNTS = { ramp: 12, draw: 8, removal: 8, wipes: 1 };
+// Against ROLE_TARGETS { ramp: 10, draw: 10, removal: 8, wipes: 3 }: ramp over,
+// draw and removal at, wipes short. ONE gap, because the entry's line is "a 1/3
+// on board wipes tells you what to fix" — two gaps teach a different sentence.
+export const ROLE_COUNTS = { ramp: 12, draw: 10, removal: 8, wipes: 1 };
 
 /**
  * Two axes at the far ends of the log: one the deck keeps winning on, one that
@@ -206,17 +198,18 @@ export const GAME_COUNT = 7;
 
 /** Home's three figures: one with a denominator, one that keeps its colour at
  *  zero, and a shop trip. */
-export const COMMITMENTS = { inUse: 312, overCommitted: 4 };
+// `overCommitted: 0` deliberately. The entry's caption is about exactly this:
+// "the middle figure keeps its colour at zero — it is the row that would be red
+// if it were not nought". A figure of 4 draws the red and never shows the state
+// the sentence describes.
+export const COMMITMENTS = { inUse: 312, overCommitted: 0 };
 export const COMMITMENTS_TOTAL_CARDS = 1284;
 export const SHOPPING = {
   byDeck: new Map<string, { copies: number; cents: number; pricedCopies: number }>(),
   total: { copies: 23, cents: 12_440, pricedCopies: 21 },
 };
 
-/** The decklist's orders, paired with what each one is for. */
-export const DECK_SORT_ROWS: [string, string][] = [
-  ["By role / By type", "the list is always in sections — that is how a deck is short"],
-  ["Name", "and the order you pick applies inside them"],
-  ["Mana value", "curve up or curve down"],
-  ["Price", "offered on the shopping filter only, where money is the question"],
-];
+// The decklist's orders live in `components/about/figures.tsx`, built from
+// `DECK_SORT_LABELS` — retyping "Name", "Mana value" and "Price" here gave this
+// page its own copy of the sort vocabulary, and a rename would have left the
+// figure stale while every test passed.
