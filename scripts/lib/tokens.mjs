@@ -65,7 +65,12 @@ export function localTokens(source) {
  * A read with a fallback is excluded — see the note above; it has a default and
  * cannot fail silently.
  */
-export function usedTokens(source) {
+export function usedTokens(raw) {
+  // Comments are stripped here for the same reason `declarationsIn` strips
+  // them, and leaving one side unswept was the instance-not-class mistake:
+  // CSS never evaluates a comment, so `// var(--does-not-exist)` in a note
+  // explaining this very guard would have FAILED CI over prose.
+  const source = stripComments(raw);
   const used = [];
   // Every `var(` is matched on its own rather than as a whole balanced
   // expression, which is what makes nesting fall out for free:

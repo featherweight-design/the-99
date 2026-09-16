@@ -17,6 +17,7 @@ import { PIP_SRC } from "../ui/colour-pips";
 import { setPageCopy } from "../../lib/copy/set-collections";
 import { sortOrderLabel } from "../../lib/collection/sort-options";
 import { CardTileCaption } from "../ui/card-tile-caption";
+import { identityGradient } from "../../lib/collection/gradients";
 import { viewToggleCopy } from "../../lib/copy/card-surfaces";
 import { BROWSE_CELLS, BROWSE_SET_CODE } from "../../lib/about/fixtures";
 import { FilterChipPill, type FilterChip } from "../ui/filter-chassis";
@@ -67,28 +68,55 @@ function Trigger({ label, active = false }: { label: string; active?: boolean })
  * §I's floor and the reason the cell is sized by aspect rather than height:
  * three across on a phone must not squash it.
  */
-function Cell({ name, copies, rarity }: { name: string; copies: number; rarity: string }) {
+function Cell({
+  name,
+  copies,
+  rarity,
+  colorIdentity,
+}: {
+  name: string;
+  copies: number;
+  rarity: string;
+  colorIdentity: string[];
+}) {
   return (
     <div className="min-w-0">
-      {/* The canvas's own wash, value for value:
-          `linear-gradient(150deg, var(--g), var(--surface))`. The first pass
-          substituted a neutral `--elevated`/`--surface-sunken` ramp and called
-          it a judgment about not fetching art on a reference page — but §3
-          states the value, so that was a divergence wearing a decision's
-          clothes. These five are green cards and the wash carries their
-          identity. Still no image request: it is a gradient. */}
-      <div className="relative aspect-[63/88] overflow-hidden rounded-[8px] bg-[linear-gradient(150deg,var(--g),var(--surface))]">
-        <span className="absolute top-[6px] right-[6px] rounded-[5px] bg-[color:var(--accent)] px-[5px] py-[1px] font-mono text-[9px] text-[color:var(--bg)]">
-          ×{copies}
-        </span>
-      </div>
-      {/* The ROUTE's caption, not a second one. `CardTileCaption` is pure
-          presentation — ReactNode slots, no handlers — so a figure can mount it
-          as-is, which is what §G3 asks and what keeps the truncation, the
-          metrics and the meta line from drifting away from `/collection`. The
-          grid around it is still the figure's own, because §I rules on the
-          column count and the route does not. */}
-      <CardTileCaption name={name} metaTrail={`${BROWSE_SET_CODE} · ${rarity}`} />
+      {/* The ROUTE's own art placeholder, via `identityGradient`. The canvas
+          draws `linear-gradient(150deg, var(--g), var(--surface))`, and for one
+          round this figure drew that — but `/collection` has never drawn it: a
+          missing-art tile there is the three-stop mono ramp this helper
+          returns. Where the drawing and the surface disagree about something
+          the SURFACE owns, the surface wins, or the reference page teaches a
+          card art nobody will ever see. */}
+      <div
+        className="overflow-hidden rounded-[8px]"
+        data-identity={colorIdentity.join(",")}
+        style={{ aspectRatio: "63/88", background: identityGradient(colorIdentity) }}
+      />
+      {/* The route's caption, with the route's own contents. Nothing sits on
+          the art: `GridView` moved every modifier onto the meta line, and the
+          count is ABSENT at one copy — on a collection one copy is the ordinary
+          case, so `×1` is the one figure there that tells a reader nothing.
+          The figure drew a `×N` badge over the art on every cell, which is a
+          result `/collection` stopped drawing. */}
+      <CardTileCaption
+        meta={
+          copies > 1 ? (
+            <span aria-hidden className="flex-none" style={{ color: "var(--fg-body)" }}>
+              ×{copies}
+            </span>
+          ) : undefined
+        }
+        metaTrail={
+          <span style={{ color: "var(--fg-faint)" }}>
+            <span className="md:hidden">{BROWSE_SET_CODE}</span>
+            <span className="hidden md:inline">
+              {BROWSE_SET_CODE} · {rarity}
+            </span>
+          </span>
+        }
+        name={name}
+      />
     </div>
   );
 }
@@ -103,7 +131,12 @@ export function BrowseFigureBody() {
           wide bar to a phone reader would show them four controls their phone
           does not have. */}
       <div className="flex items-center gap-[8px]">
-        <span className="min-w-0 flex-1 truncate rounded-[8px] border border-solid border-[color:var(--border)] px-[10px] py-[7px] text-[12px] text-[color:var(--fg-faint)]">
+        {/* §3's own geometry, value for value: 30px tall, `flex:1` over a
+            150px floor, `--bg` fill inside a `border-strong` edge, 11px
+            `--fg-locked`. The first version was a bare bordered span with no
+            fill and no floor, so it collapsed below the canvas's minimum at
+            narrow plate widths. */}
+        <span className="flex h-[30px] min-w-[150px] flex-1 items-center truncate rounded-[8px] border border-solid border-[color:var(--border-strong)] bg-[color:var(--bg)] px-[11px] text-[11px] text-[color:var(--fg-locked)]">
           {/* 768, not 1000. The route runs on TWO breakpoints: the chassis
               switches the pips and the panels at 1000, and `useIsDesktop` (768)
               governs this field alone. Forking both at 1000 made the figure
@@ -179,7 +212,7 @@ export function BrowseFigureBody() {
               <span
                 key={seg.label}
                 title={seg.label}
-                className={`flex h-[24px] w-[28px] items-center justify-center rounded-[6px] text-[12px] ${
+                className={`flex h-[22px] w-[24px] items-center justify-center rounded-[5px] text-[11px] ${
                   seg.on
                     ? "bg-[color:var(--elevated)] text-[color:var(--fg)]"
                     : "text-[color:var(--fg-faint)]"

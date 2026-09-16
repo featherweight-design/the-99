@@ -225,12 +225,18 @@ export const SHOPPING = {
  * point: the chip above and the captions below have to describe the same
  * result or the figure is showing an unfiltered grid under a filter.
  */
-export const BROWSE_CELLS: { name: string; copies: number; rarity: string }[] = [
-  { name: "Attercop", copies: 4, rarity: "common" },
-  { name: "Beorn the Fierce", copies: 1, rarity: "mythic" },
-  { name: "Beorn, Reluctant Host", copies: 5, rarity: "common" },
-  { name: "Beorn's Hospitality", copies: 1, rarity: "uncommon" },
-  { name: "Boughside Wanderers", copies: 4, rarity: "common" },
+export const BROWSE_CELLS: {
+  name: string;
+  copies: number;
+  rarity: string;
+  /** Feeds the route's own `identityGradient`; these five are mono-green. */
+  colorIdentity: string[];
+}[] = [
+  { name: "Attercop", copies: 4, rarity: "common", colorIdentity: ["G"] },
+  { name: "Beorn the Fierce", copies: 1, rarity: "mythic", colorIdentity: ["G"] },
+  { name: "Beorn, Reluctant Host", copies: 5, rarity: "common", colorIdentity: ["G"] },
+  { name: "Beorn's Hospitality", copies: 1, rarity: "uncommon", colorIdentity: ["G"] },
+  { name: "Boughside Wanderers", copies: 4, rarity: "common", colorIdentity: ["G"] },
 ];
 
 /** The set code those five share, drawn in every caption beside the rarity. */

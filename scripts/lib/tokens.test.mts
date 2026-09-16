@@ -27,6 +27,15 @@ describe("usedTokens", () => {
     expect(usedTokens("color: var(--primary, var(--fallback));")).toEqual(["--fallback"]);
   });
 
+  it("does not read a token out of a comment either", () => {
+    // The declaration side was swept first and the read side was left, which
+    // is the instance-not-class mistake: CSS never evaluates a comment, so a
+    // note explaining this guard — `// var(--does-not-exist)` — would have
+    // failed CI over prose.
+    expect(usedTokens("// var(--does-not-exist)\ncolor: var(--fg);")).toEqual(["--fg"]);
+    expect(usedTokens("/* var(--gone) */")).toEqual([]);
+  });
+
   it("resolves both branches of an interpolated read", () => {
     // The first version's regex stopped at the `$` and produced the stem `--`,
     // which was then filtered away as noise — so `top-off-list.tsx` named two

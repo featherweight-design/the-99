@@ -2,6 +2,7 @@ import { render, screen } from "@testing-library/react";
 import { describe, expect, it } from "vitest";
 
 import { BROWSE_CELLS, BROWSE_SET_CODE } from "../../lib/about/fixtures";
+import { identityGradient } from "../../lib/collection/gradients";
 import { collectionChassisCopy, collectionFilterCopy } from "../../lib/copy/collection";
 import { chassisCopy, PIP_ORDER } from "../../lib/copy/filter-chassis";
 import { setPageCopy } from "../../lib/copy/set-collections";
@@ -33,17 +34,36 @@ describe("the browse figure", () => {
       .filter((el) => el.children.length === 0 && wanted.includes(el.textContent ?? ""))
       .map((el) => el.textContent);
     expect(captions.sort()).toEqual([...wanted].sort());
-    const badges = [...container.querySelectorAll("span")].filter((s) =>
-      /^×\d+$/.test(s.textContent ?? ""),
-    );
-    expect(badges.map((b) => b.textContent)).toEqual(
-      BROWSE_CELLS.map((c) => `×${c.copies}`),
+    // The count sits in the caption's meta line and is ABSENT at one copy,
+    // which is what `GridView` draws — `×1` on a collection is the one figure
+    // that tells a reader nothing. The figure drew a badge over the art on
+    // every cell, including the `×1`s, which is a result the route stopped
+    // drawing. So the assertion is the route's rule, not a badge count.
+    const counts = [...container.querySelectorAll("span")]
+      .map((el) => el.textContent)
+      .filter((text) => /^×\d+$/.test(text ?? ""));
+    expect(counts.sort()).toEqual(
+      BROWSE_CELLS.filter((c) => c.copies > 1)
+        .map((c) => `×${c.copies}`)
+        .sort(),
     );
 
     // §I's floor. Three across on a phone must not squash the cell, which is
-    // why it is sized by ratio and not by a height.
-    const art = container.querySelector('[class*="aspect-[63/88]"]');
-    expect(art, "the cell is sized by the 63/88 ratio").not.toBeNull();
+    // why it is sized by ratio and not by a height — and the art is the
+    // ROUTE's own `identityGradient`, not a wash this figure invented.
+    const art = [...container.querySelectorAll("div")].filter(
+      (el) => el.style.aspectRatio === "63/88",
+    );
+    expect(art).toHaveLength(BROWSE_CELLS.length);
+    for (const cell of art) {
+      // jsdom normalises hex to `rgb()`, so the two are compared through the
+      // same normalisation rather than as strings — asserting the raw helper
+      // output would fail on a correct build.
+      const probe = document.createElement("div");
+      probe.style.background = identityGradient(cell.dataset.identity?.split(",") ?? ["G"]);
+      expect(cell.style.background).toBe(probe.style.background);
+      expect(cell.textContent, "nothing sits on the art").toBe("");
+    }
   });
 
   it("carries the numeral onto the part each line describes", () => {
