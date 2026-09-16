@@ -356,10 +356,14 @@ export function resolveBackImageUri(r: {
   representativeBackImageUri: string | null;
   backImageUri: string | null;
 }): string | null {
-  if (r.exactImageUri !== null && r.exactBackImageUri !== null) return r.exactBackImageUri;
-  if (r.representativeImageUri !== null && r.representativeBackImageUri !== null) {
-    return r.representativeBackImageUri;
-  }
+  // WHICHEVER TIER THE FRONT CAME FROM, AND THEN THE ORACLE — never the tier below.
+  // A first pass fell through to the representative printing's back when the exact
+  // printing had none, which pairs one printing's front with another's back: the very
+  // defect this column closes, reached from the other side. A printing with no back of
+  // its own is one an older ingest wrote, and the honest answer for it is the
+  // oracle-level image every flip used before the column existed.
+  if (r.exactImageUri !== null) return r.exactBackImageUri ?? r.backImageUri;
+  if (r.representativeImageUri !== null) return r.representativeBackImageUri ?? r.backImageUri;
   return r.backImageUri;
 }
 

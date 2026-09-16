@@ -110,6 +110,15 @@ describe("resolveBackImageUri — the back follows the art, tier for tier", () =
                                  representativeBackImageUri: "rep-back.png" }))
       .toBe("rep-back.png");
   });
+  // The direction the first pass got wrong: the exact printing supplied the front and had
+  // no back of its own, so the representative's back was borrowed — one printing's front
+  // against another's back, which is this column's own defect reached from the far side.
+  it("never borrows a lower tier's back for a higher tier's front", () => {
+    expect(resolveBackImageUri({ ...base, exactImageUri: "exact.png",
+                                 representativeImageUri: "rep.png",
+                                 representativeBackImageUri: "rep-back.png" }))
+      .toBe("oracle-back.png");
+  });
   it("never turns fallback art to the exact printing's back", () => {
     // The exact row joined but carries no image, so the front fell to tier 2. Its back
     // must not travel without it — that pairing is two printings on one card.

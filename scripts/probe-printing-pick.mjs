@@ -17,9 +17,12 @@
 //   counts document loads and main-frame navigations across the whole press and requires
 //   the count to be unchanged — a check no assertion about the DOM can make.
 //
-// It WRITES a card art preference for the account it signs in as, and restores the previous
-// one in a `finally` — captured before the write, not returned by it, so a throw part-way
-// through cannot strand the preference on a printing the reader never chose. Point it at
+// It WRITES a card art preference for the account it signs in as and clears it in a
+// `finally`, through the modal's own `Use the default again` control. THAT CONTROL IS
+// ASSERTED, not attempted: a cleanup that cannot find its button and says nothing leaves a
+// pick on the fixture account and reports a clean run, which is how the first version of
+// this file behaved. A card that already carried a pick before the run is refused as a
+// fixture rather than overwritten, since clearing is not restoring. Point it at
 // `local-dev`, never production.
 //
 //   node scripts/probe-printing-pick.mjs
@@ -38,10 +41,13 @@ if (!EMAIL.includes("+clerk_test") && !PASSWORD) throw new Error("Set E2E_AUDIT_
  * What a write's reply may carry, in bytes.
  *
  * Set above the card-detail read's own reply (~15 KB here, and it grows with the card) and
- * two orders of magnitude below a re-rendered `/collection`, which measured 1,665,949 bytes.
+ * an order of magnitude below a re-rendered `/collection`, which measured 1,665,949 bytes.
  * Anything in between is a page payload nobody asked for.
  */
 const PAYLOAD_CEILING = 120_000;
+
+/** The printing region's reset control, by the label it ships (`printingPickerCopy.printing.resetAria`). */
+const RESET_ARIA = "Stop using your pick and go back to the automatic art";
 
 let failures = 0;
 function report(label, ok, detail) {
@@ -123,6 +129,9 @@ async function run() {
       if (many) { tile = tiles.nth(i); chosen = i; break; }
     }
     if (tile === null) {
+      // `failures` is what the exit code is taken from in `finally`, so this reports and
+      // falls through rather than returning: an early `return` from inside the `try` skips
+      // the line that sets it, and the run exits 0 while printing FAIL.
       report("a card owned in two printings", false,
         `none among the first ${Math.min(total, 25)} tiles. NOT a pass: this account cannot`
         + " exercise the pick. Point the probe at a collection that owns one card twice.");
@@ -163,8 +172,16 @@ async function run() {
       report("a printing other than the one shown", false, `${count} radios, none selectable`);
       return;
     }
-    // Captured before the click, so the restore is the state this run found rather than one
-    // it inferred afterwards.
+    // A card that already carries a pick is refused outright: this run's cleanup CLEARS the
+    // preference, which would silently discard a choice the account's owner made. The reset
+    // control is drawn only when a pick exists, so its absence is the test.
+    if (await page.getByRole("button", { name: RESET_ARIA }).count() > 0) {
+      report("a card with no pick on it already", false,
+        "the card this run chose already carries an art preference, and this probe's cleanup"
+        + " would clear it. Pick a different fixture, or clear it deliberately first.");
+      return;
+    }
+    // Set before the write it covers, so a throw part-way through still reaches the cleanup.
     restore = { tileIndex: chosen };
     await options.nth(target).click();
     await page.waitForTimeout(1_500);
@@ -196,7 +213,7 @@ async function run() {
       `${String(reloaded).slice(0, 60)}`);
   } finally {
     // Back to no preference at all, which is the state a fixture account is in until this
-    // probe runs. `Forget this printing` is the modal's own control for it, so the restore
+    // probe runs. `Use the default again` is the region's own control for it, so the restore
     // goes through the same path a reader would.
     if (restore) {
       try {
@@ -206,22 +223,28 @@ async function run() {
         await page.waitForTimeout(1_200);
         await page.getByRole("button", { name: /printings owned\./ }).first().click();
         await page.waitForTimeout(800);
-        const forget = page.getByRole("button", { name: /forget this printing/i }).first();
-        if (await forget.count()) {
-          await forget.click();
-          await page.waitForTimeout(1_500);
-        }
+        // The region's own reset, by the label it actually carries. A `count()` guard here
+        // is what let the first version of this file miss the control entirely and print
+        // "restored" over a pick it had left on the account, so the absence is a FAILURE.
+        const reset = page.getByRole("button", { name: RESET_ARIA }).first();
+        if (await reset.count() === 0) throw new Error("the region drew no reset control");
+        await reset.click();
+        await page.waitForTimeout(1_500);
+        // Read back rather than assumed: the control is gone once there is no pick to drop.
+        const still = await page.getByRole("button", { name: RESET_ARIA }).count();
+        if (still > 0) throw new Error("the pick is still on the card");
         console.log("  --   restored: the card's art preference was cleared");
       } catch (error) {
-        console.log(` FAIL  restore failed — clear the preference by hand: ${error}`);
+        console.log(` FAIL  restore failed — clear the pick by hand on the fixture account: ${error}`);
         failures += 1;
       }
     }
     await browser.close();
+    // IN `finally`, because two checks above report a failure and `return` — an exit code set
+    // after the try block is never reached by either, so the run printed FAIL and exited 0.
+    console.log(failures === 0 ? "\nAll checks passed." : `\n${failures} check(s) failed.`);
+    process.exitCode = failures === 0 ? 0 : 1;
   }
-
-  console.log(failures === 0 ? "\nAll checks passed." : `\n${failures} check(s) failed.`);
-  process.exitCode = failures === 0 ? 0 : 1;
 }
 
 run();

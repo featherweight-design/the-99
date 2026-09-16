@@ -477,8 +477,14 @@ Package manager is **pnpm** (pinned via `packageManager` in package.json) — ne
   card owned in more than one printing — and fails rather than passing when the account has
   none among the first 25 tiles. It picks a printing that is NOT the one on screen, since
   picking the one already shown writes a preference and moves no art, which would pass every
-  check here while proving nothing. It WRITES an art preference for the account it signs in
-  as and clears it in a `finally`, through the modal's own `Forget this printing`. Point it
+  check here while proving nothing.
+
+  It WRITES an art preference for the account it signs in as and clears it in a `finally`,
+  through the region's own `Use the default again`. That control is ASSERTED rather than
+  attempted, and the reset is read back afterwards: the first version guarded the click with
+  a `count()` and named a control that does not exist, so it left a pick on the fixture
+  account and printed "restored" over it. A card that ALREADY carries a pick is refused as a
+  fixture for the same reason — this cleanup clears, and clearing is not restoring. Point it
   at `local-dev`, **never production**.
 
 - `pnpm probe:build-from` proves that `/commanders` free mode LISTS from the free pool, not
