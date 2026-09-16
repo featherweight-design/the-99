@@ -140,21 +140,48 @@ async function run() {
       );
 
       const box = await panel.boundingBox();
-      check(Math.round(box.width) === 248, `panel is 248px wide while confirming (${Math.round(box.width)})`);
-      // `right-0` anchoring means the extra 62px is taken off the LEFT edge.
+      // The panel keeps its own 186px in every mode. The pane was ported from the
+      // folder menu, which the folders handoff specifies inside a 248px panel, and
+      // widening for it looked necessary: two side-by-side buttons in 162px of
+      // content box is ~75px each, which reads as too little for `Delete deck`.
+      // Measurement says otherwise — 75px holds both labels on one line, and the
+      // paragraph settles at 176px tall — so the mode-dependent width was dropped
+      // rather than shipped on an estimate. This check pins that: a panel that
+      // changes width when it changes mode has regained the mechanism.
+      check(
+        Math.round(box.width) === 186,
+        `panel keeps its 186px while confirming (${Math.round(box.width)})`,
+      );
       check(box.x >= 0, `panel stays inside the viewport (left edge ${Math.round(box.x)})`);
       check(box.x + box.width <= width + 1, "panel does not overflow right");
+      // The pane is a paragraph, and a narrow panel makes it a tall one. A
+      // panel taller than the viewport cannot be finished — the confirm button
+      // is its last row, and the panel is absolutely positioned, so nothing
+      // scrolls it into reach.
+      check(box.height <= 900, `pane fits the viewport (${Math.round(box.height)}px tall)`);
 
       for (const label of ["Keep it", "Delete deck"]) {
         const button = panel.getByRole("button", { name: label, exact: true });
         const fit = await button.evaluate((el) => ({
           scroll: el.scrollWidth,
           client: el.clientWidth,
+          scrollH: el.scrollHeight,
+          clientH: el.clientHeight,
+          lines: el.getClientRects().length,
         }));
-        // `scrollWidth <= clientWidth` is the whole question: the labels are in
+        // Two overflows, and the SECOND is the one that bites. The labels are in
         // `innerText` whether or not they are painted, so any assertion on the
-        // text passes over a button showing half a word.
+        // text passes over a button showing half a word — hence the width check.
+        // But a button too narrow for its label WRAPS rather than clipping, and a
+        // wrapped label overflows a fixed 32px button VERTICALLY while its
+        // `scrollWidth` stays exactly its `clientWidth`. Measured: at the menu's
+        // own 186px both labels report "not clipped" at 75px while `Delete deck`
+        // is on two lines. Width alone reports a clean pane over a broken one.
         check(fit.scroll <= fit.client, `“${label}” is not clipped (${fit.scroll} in ${fit.client})`);
+        check(
+          fit.scrollH <= fit.clientH,
+          `“${label}” stays on one line (content ${fit.scrollH} in ${fit.clientH})`,
+        );
         check(fit.client >= 60, `“${label}” has real width (${fit.client})`);
       }
 
@@ -171,7 +198,7 @@ async function run() {
       const menuBox = await panel.boundingBox();
       check(
         Math.round(menuBox.width) === 186,
-        `panel returns to 186px in menu mode (${Math.round(menuBox.width)})`,
+        `panel is still 186px back in menu mode (${Math.round(menuBox.width)})`,
       );
       const kept = await pool.query(`select 1 from decks where id = $1`, [deckId]);
       check(kept.rows.length === 1, "Keep it keeps the deck");

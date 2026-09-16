@@ -241,14 +241,7 @@ export function DeckCardOverflow({
       {open && (
         <div
           id={panelId}
-          className={`absolute right-0 top-full z-20 mt-[6px] overflow-hidden rounded-[10px] border border-solid border-[color:var(--border-strong)] bg-[color:var(--surface)] shadow-[0_22px_50px_rgba(0,0,0,0.6)] sm:mt-[4px] ${
-            // The confirm pane is the folder pane, and the folders handoff
-            // specifies it inside a 248px panel. At the menu's own 186px its
-            // two side-by-side buttons get ~77px each, which is under what
-            // `del.confirm` needs. The panel takes the pane's width while it
-            // draws the pane, and nothing else changes width.
-            mode === "delete" ? "w-[248px]" : "w-[186px]"
-          }`}
+          className="absolute right-0 top-full z-20 mt-[6px] w-[186px] overflow-hidden rounded-[10px] border border-solid border-[color:var(--border-strong)] bg-[color:var(--surface)] shadow-[0_22px_50px_rgba(0,0,0,0.6)] sm:mt-[4px]"
           // Propagation only: the deck-card Link overlay beneath fires on
           // bubbling, so stopping the bubble is the whole fix. preventDefault
           // here would also cancel the browser default for clicks inside the
