@@ -66,8 +66,7 @@ export default async function CommandersPage({
     listRecentDecks(userId, 1),
   ]);
 
-  const { items, degraded, uniqueCardsRead, candidateCount, freeRanking, availOk, priceOk } =
-    rankings;
+  const { items, degraded, uniqueCardsRead, candidateCount, freeRanking, availOk } = rankings;
 
   // No commander candidates in the collection.
   if (candidateCount === 0) {
@@ -218,7 +217,6 @@ export default async function CommandersPage({
         firstRun={firstRun}
         freeRanking={freeRanking}
         availOk={availOk}
-        priceOk={priceOk}
       />
     </section>
   );

@@ -12,20 +12,11 @@ const baseItem: DiscoveryItem = {
   releasedAt: "2016-11-11",
   deckCount: 41_233,
   rank: 1,
-  ownedSupport: 120,
-  edhrecTotal: 400,
-  colorPoolSize: 900,
-  roleCounts: { ramp: 12, draw: 9, removal: 7, wipes: 3 },
   price: { kind: "priced", cents: 1499 },
   prose: "Atraxa decks tend to grind value out of counters.",
   gapSlot: { kind: "unplayed", labels: ["Counters", "Proliferate"] },
   score: 58,
   measurableTotal: 100,
-  tagTotal: 6,
-  unplayedLabels: ["Counters", "Proliferate"],
-  unplayedCount: 2,
-  nearestDeck: { deckName: "Superfriends", sharedLabels: ["Counters"], extraShared: 2 },
-  supportPct: 30,
 };
 
 function listOf(items: DiscoveryItem[]): DiscoveryList {
@@ -73,27 +64,13 @@ describe("encodeDiscovery", () => {
     expect(roundTrip(list)).toEqual(list);
   });
 
-  it("round-trips a null nearest deck", () => {
-    const list = listOf([{ ...baseItem, nearestDeck: null }]);
-    expect(roundTrip(list)).toEqual(list);
-  });
-
-  it("round-trips an empty label list", () => {
-    const list = listOf([{ ...baseItem, unplayedLabels: [], unplayedCount: 0 }]);
-    expect(roundTrip(list)).toEqual(list);
-  });
-
-  it("round-trips zero in every role slot", () => {
-    const list = listOf([
-      { ...baseItem, roleCounts: { ramp: 0, draw: 0, removal: 0, wipes: 0 } },
-    ]);
-    expect(roundTrip(list)).toEqual(list);
-  });
+  // The nearest deck, the label list and the role tuple all left the item with
+  // the composition that drew them, and their round-trip cases with them. The
+  // gap slot's own three members are covered above, which is the encoder's only
+  // remaining nested shape.
 
   it("round-trips null figures", () => {
-    const list = listOf([
-      { ...baseItem, releasedAt: null, deckCount: null, edhrecTotal: null, supportPct: null },
-    ]);
+    const list = listOf([{ ...baseItem, releasedAt: null, deckCount: null }]);
     expect(roundTrip(list)).toEqual(list);
   });
 
@@ -115,8 +92,12 @@ describe("encodeDiscovery", () => {
     const twin = { ...baseItem, slug: "twin", name: "Twin" };
     const encoded = encodeDiscovery(listOf([baseItem, twin]));
 
-    expect(encoded.strings.filter((s) => s === "Counters")).toHaveLength(1);
-    expect(encoded.strings.filter((s) => s === "Superfriends")).toHaveLength(1);
+    // The GAP SLOT's labels are the dictionary's only source now: the tag list
+    // and the nearest deck's shared list left with the composition. Two rows
+    // naming the same mechanic file it once, which is the whole point of the
+    // table.
+    expect(encoded.strings.filter((x) => x === "Counters")).toHaveLength(1);
+    expect(encoded.strings.filter((x) => x === "Proliferate")).toHaveLength(1);
     expect(roundTrip(listOf([baseItem, twin]))).toEqual(listOf([baseItem, twin]));
   });
 

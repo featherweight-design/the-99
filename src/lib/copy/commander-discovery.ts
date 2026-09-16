@@ -114,27 +114,24 @@ export const discoveryCopy = {
   // became the mechanic gap line, and the floor note went because the lane
   // header states the floor once rather than every row claiming to clear it.
   //
-  // Seventeen keys, where the handoff's retirement list named nine. The extra
-  // six were the slot's own labels and units — `overlapLabel`,
-  // `overlapShort`, `figureLabelFit`, `figureUnitFit`, `figureLabelNew`,
-  // `figureUnitNew` — plus `ownedShort` and `unownedShort` below. Found by
-  // grepping for callers rather than by reading the list, which is the only way
-  // a deletion sweep finds its own tail.
+  // Fifteen keys in this block alone, and twenty-one across the PR — counted off
+  // the diff rather than by eye, after two attempts here said eleven and then
+  // seventeen. The handoff's list named nine; the rest were this slot's own
+  // labels and units plus the ownership block below. Grep finds the callers, but
+  // only the diff counts the keys.
 
-  // ── Ownership on the row (§7.3) ───────────────────────────────────────
-  // The clause always renders, so row height never changes between two rows or
-  // two players. The pip is the glyph; these are the words beside it. A fact,
-  // not a nudge.
+  // ── Ownership on the row is GONE (§7.3) ───────────────────────────────
+  // The whole block went with the composition. D1: nothing on the row may be
+  // read off ownership, because one component now serves a lane of commanders
+  // the reader owns and a lane of commanders they do not — so `not in your
+  // collection` distinguished nothing, and the pip's two readings and the
+  // accessible name's leading clause went with it.
   //
-  // The owned wordings ruling 2 wrote are gone: discover lists only commanders
-  // the player does not own, so the row that would have used them is on
-  // `/commanders` instead.
-  ownership: {
-    unowned: "not in your collection",
-    unownedShort: "not yours",
-    // Leads the row's accessible name, before any figure.
-    unownedAria: "not in your collection",
-  },
+  // Three keys, missed by the first sweep of this file and found by the pre-open
+  // review: `unowned`, `unownedShort`, `unownedAria`. An earlier comment here
+  // claimed `ownedShort` and `unownedShort` were among the deleted — `ownedShort`
+  // belongs to `scope` and is live, and `unownedShort` was still sitting three
+  // lines below the claim.
 
   // ── Price and stock (§7.4, #288) ──────────────────────────────────────
   // `null` price renders NOTHING — no string exists for it, on purpose, so a

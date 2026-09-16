@@ -73,7 +73,6 @@ function results(n: number, colorIdentity: string[] = ["R"]): CommanderRowItem[]
     prose: `General ${i} decks grind value out of counters.`,
     gapSlot: { kind: "unplayed" as const, labels: ["Counters Matter"] },
     deckCount: 1209,
-    price: { kind: "absent" as const },
   }));
 }
 
@@ -112,7 +111,6 @@ function el(list: CommanderRowItem[], over: Over = {}) {
       // assertion below therefore also asserts the round-trip.
       freeRanking={freeItems ? toFreeDelta(list, freeItems) : null}
       availOk={availOk}
-      priceOk={true}
     />
   );
 }

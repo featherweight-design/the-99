@@ -169,8 +169,10 @@ paraphrase was a spoken restatement of a sentence that is now read aloud as writ
 
 ### Retired with this composition
 
-`check:copy-drift` fails on any table still quoting these. All eleven have **zero consumers
-outside the row**, verified by grep.
+These are KEY NAMES, which `check:copy-drift` does not read — it compares quoted STRINGS, so a
+table naming a deleted key passes it. `docs/superpowers/design-tables/commanders-discover.md`
+was found still naming two of them by review, not by the tool. All twenty-one have **zero consumers outside the row**, verified by grep; the count itself
+comes off the diff.
 
 `discoverCopy.row.notOwned` · `discoverCopy.row.novelty` · `discoverCopy.row.supportOwned` ·
 `discoveryCopy.justify.tagList` · `.distanceNear` · `.distanceNone` · `.distanceLabel` ·
@@ -181,120 +183,27 @@ outside the row**, verified by grep.
 own copy test were its only consumers, so after this PR it has none. The handoff says the plane
 keeps them; the code says the plane never used them.
 
-### Price slot — wrapper
+### Price slot, the untagged note and row-level motion — SUPERSEDED
 
-| Property | Mobile | Desktop |
-|----------|--------|---------|
-| display | flex | flex |
-| align-items | center | center |
-| gap | 7px | 7px |
-| margin-top | — | 4px **[C1 divergence: not set]** |
-| padding-top | 9px | 10px **[C1 divergence: not set]** |
-| border-top (the hairline) | `1px solid var(--border)` `#2B241B` | `1px solid var(--border)` `#2B241B` **[C1 divergence: not drawn]** |
-| Conditional rendering | wrapper **and its `border-top` unmount together** when absent or owned | same |
+These sections were carried over verbatim from `RecCard` and specified a row the shipped
+component does not draw. Found by the pre-open review, which is the only reason they are not
+still here reading as the spec:
 
-> STATES doc: "**The hairline belongs to the slot.** The `1px --border` rule above the price is drawn by the price, not by the column, so states 4 and 5 leave no orphaned divider."
+| The old rows said | The row draws |
+|---|---|
+| Price wrapper: `gap 7px`, `margin-top 4px`, `padding-top 9/10px`, `border-top 1px solid var(--border)` — "the hairline belongs to the slot" | `flex items-center gap-[6px]`, no padding, no margin, **no hairline** — the foot line is one row of figures, so a rule above the price would divide it from the deck count beside it |
+| Price figure: `11.5px` mobile, `12.5px` desktop | `12.5px` at both widths |
+| A `manapool` provenance word at 9.5/10px, `margin-left: auto` | **not drawn.** `discoveryCopy.price.source` has no caller on the row: `margin-left: auto` pushed it to the end of a column the row no longer has |
+| Untagged note: bordered box, `--elevated-hover` ground, 2px left border, radius 7px, 13px `⚠`, heading joined by ` — ` at `--fg-body`/600 | a plain `<p>`, heading at `--fg-muted` joined by a space. It shares the gap slot with two sentences, so a plated box would make one of three states look like a warning |
+| `Row hover: —`, `transition: — ("Motion: none")` | `transition-colors hover:bg-[color:var(--elevated-hover)]` on the row shell |
+| Row shell: `grid-template-columns 40px 100px 1fr 236px`, radius 11/12px, full `1px solid var(--border)`, `background var(--surface)` | `borderBottom` only, no radius, no grid, no ground — the row is a band and a block, not a card |
 
-### Price slot — dot
+**The row shell's own table above is in the same position** and is left as the record of what
+the retired card was, not as a specification of this one. A verify pass should read the
+component, not these rows.
 
-| Property | Mobile | Desktop |
-|----------|--------|---------|
-| width | 6px | 6px |
-| height | 6px | 6px |
-| border-radius | **999px** (a circle — unlike the ownership pip's rotated square) | **999px** |
-| transform | — (no rotation) | — |
-| flex | none | none |
-| Priced — background | `var(--success)` `#6FA368` | `var(--success)` `#6FA368` |
-| Priced — border | — | — |
-| Not stocked — background | transparent | transparent |
-| Not stocked — border-width / style / color | `1.5px solid var(--fg-locked)` `#6E6654` | `1.5px solid var(--fg-locked)` `#6E6654` |
-
-### Price slot — figure
-
-| Property | Mobile | Desktop |
-|----------|--------|---------|
-| font-family | `'IBM Plex Mono', monospace` | `'IBM Plex Mono', monospace` |
-| font-size | 11.5px | 12.5px **[C1 divergence: 12px]** |
-| font-weight | 400 | 400 |
-| color — priced, two figures (`< $100`) | `var(--fg-body)` `#C0B8A6` | `var(--fg-body)` `#C0B8A6` |
-| color — priced, three figures (`≥ $100`) | `var(--fg)` `#EDE6D8` | `var(--fg)` `#EDE6D8` |
-| color — not stocked | `var(--fg-faint)` `#8B8270` | `var(--fg-faint)` `#8B8270` |
-| background / border / border-radius | — (no chip, no bar, no brass) | — |
-
-> The three-figure brightness step is the **only** magnitude-driven change. STATES doc: "Same hue family, one step of emphasis, no semantics."
-
-### Price slot — provenance
-
-| Property | Mobile | Desktop |
-|----------|--------|---------|
-| font-family | `'IBM Plex Mono', monospace` | `'IBM Plex Mono', monospace` |
-| font-size | 9.5px | 10px |
-| color | `var(--fg-locked)` `#6E6654` | `var(--fg-locked)` `#6E6654` |
-| margin-left | auto (right-aligned in the slot) | auto (right-aligned in the slot) |
-| Rendered under `notStocked` | yes (frame A3 draws `manapool` beside `not stocked`) | yes **[C1 divergence: omitted on all five list rows]** |
-
-### Price slot — hover / interactive
-
-| Property | Mobile | Desktop |
-|----------|--------|---------|
-| hover | — (no hover state drawn; the slot is not interactive and carries no buy link) | — |
-| transition | — | — |
-
----
-
-### Untagged note
-
-| Property | Mobile | Desktop |
-|----------|--------|---------|
-| Drawn on canvas | — (**not drawn at 390px** — see finding below) | yes (frame C1, row 5) |
-| Position | inside the tile, after the receipt line (inferred) | last child of the evidence column, after the receipt line |
-| display | flex | flex |
-| align-items | center | center |
-| gap | 9px | 9px |
-| padding | `9px 13px` | `9px 13px` |
-| background | `var(--elevated-hover)` `#201C17` | `var(--elevated-hover)` `#201C17` |
-| border-width / style / color | `1px solid var(--border-strong)` `#3A3229` | `1px solid var(--border-strong)` `#3A3229` |
-| border-left | `2px solid var(--fg-faint)` `#8B8270` | `2px solid var(--fg-faint)` `#8B8270` |
-| border-radius | 7px | 7px |
-| Retry affordance | — (**none, by rule**) | — (**none, by rule**) |
-
-### Untagged note — icon
-
-| Property | Mobile | Desktop |
-|----------|--------|---------|
-| glyph | `⚠` (`&#9888;`) | `⚠` (`&#9888;`) |
-| font-size | 13px | 13px |
-| color | `var(--fg-faint)` `#8B8270` | `var(--fg-faint)` `#8B8270` |
-| fill / stroke | — (text glyph, not SVG) | — |
-
-### Untagged note — body
-
-| Property | Mobile | Desktop |
-|----------|--------|---------|
-| font-family | `'IBM Plex Sans', sans-serif` | `'IBM Plex Sans', sans-serif` |
-| font-size | 12.5px | 12.5px |
-| line-height | 1.45 | 1.45 |
-| color | `var(--fg-muted)` `#A59C89` | `var(--fg-muted)` `#A59C89` |
-| Heading — element | inline `<b>` lead-in, not a block heading | inline `<b>` lead-in, not a block heading |
-| Heading — color / weight | `var(--fg-body)` `#C0B8A6` / 600 | `var(--fg-body)` `#C0B8A6` / 600 |
-| Heading ↔ body join | ` — ` (em dash) inside the same text node | ` — ` (em dash) inside the same text node |
-
-> **Finding:** README component-notes calls `No tag data` a "Heading"; the canvas draws it as an inline bold lead-in inside the body paragraph, em-dash-joined. Implement as drawn (inline), which is also what the shipped `absent` variant does.
-> **Finding:** the untagged note is absent from both 390px tiles. Its mobile geometry is unspecified; the safe read is the same box at the same values inside the tile. Worth one line to Design rather than a round-trip.
-
----
-
-### Row-level hover / interactive / motion
-
-| Property | Mobile | Desktop |
-|----------|--------|---------|
-| Row hover | — (no hover treatment drawn for the discovery row; the shipped `RecCard` stretched-link hover is unchanged) | — |
-| Justification / figure / pip / price hover | — | — |
-| transition | — (**"Motion: none"** — both flips re-render in place; no transition, no dimmed list, no skeleton) | — |
-| transform | only the two `rotate(45deg)` glyphs | only the two `rotate(45deg)` glyphs |
-| focus-visible | global, 2px brass at +2px offset, unoverridden | global, 2px brass at +2px offset, unoverridden |
-
----
+**MOTION: still none inside the row.** The hover tint is on the shell and was on the retired
+one too; nothing in the sentence, gap or figure slots transitions, which is what D10 forbids.
 
 ## State Coverage — CommanderRow
 
@@ -332,10 +241,20 @@ The delta is worth naming because the handoff's cut list does not: a "was 74, no
 | Row link accessible name | `explainedCopy.score.scoreAria` | `(score: number, total: number)` |
 | The sentence | `commander_support.prose` | the database |
 
-**Seventeen keys retired**, where the handoff's list named nine. The six the list missed were the
-justification slot's own labels and units — `justify.overlapLabel`, `.overlapShort`,
-`.figureLabelFit`, `.figureUnitFit`, `.figureLabelNew`, `.figureUnitNew` — plus `ownership.ownedShort`
-and `.unownedShort`. Found by grepping for callers rather than by reading the list.
+**Twenty-one keys**, counted off the diff rather than by eye — the handoff's
+retirement list named nine, and two attempts to correct it here said eleven and then
+seventeen, both wrong in count and in membership. Two whole blocks went
+(`discoveryCopy.justify`, fifteen keys, and `discoveryCopy.ownership`, three) plus three
+from `discoverCopy.row`:
+
+`justify.overlapLabel` · `.overlap` · `.overlapShort` · `.figureLabelFit` · `.figureUnitFit` ·
+`.distanceLabel` · `.tagList` · `.sharedList` · `.distanceNone` · `.distanceNear` ·
+`.distanceAria` · `.figureLabelNew` · `.figureUnitNew` · `.floorNote` · `.floorNoteShort` ·
+`ownership.unowned` · `.unownedShort` · `.unownedAria` ·
+`discoverCopy.row.notOwned` · `.novelty` · `.supportOwned`
+
+`scope.ownedShort` is LIVE and was wrongly listed as deleted twice — it belongs to the lane
+header, not the row. `commandersCopy.row.action` was already retired before this PR.
 
 **`planeCopy.overflow.*` is kept** per the handoff, and has no caller after this PR: the row and
 its own copy test were the only ones. **`RoleChips` and `FitBar` are both kept** — the handoff's
@@ -434,9 +353,21 @@ Token contract, from the E2 frame:
 
 ## Open items for the verify pass
 
-1. **`NEW TAGS` at 390px drops the denominator**, contradicting the copy module's own load-bearing rule and `justify.figureUnitNew`. Needs a Design ruling or an implementation that uppercases the keyed string.
-2. **`+2` at 390px** has no copy key; `tagList` emits only `— and N more`.
-3. **M bolding in the fit sentence** — README says N and M both `--fg` 600; frame C1 and the mobile tile bold N only. README + frame A1 win.
-4. **Untagged note has no 390px drawing.** Same box assumed.
-5. **The ownership diamond renders twice per row** (rank column + receipt-line lead glyph) in all eight drawn rows, though the README prose describes only the rank-column instance. Ship both.
-6. **Justification track width** is 120px in the anatomy frame and 110px in the list frame; README states the range "110–120×6px" without picking one. Pick one and hold it — the verify pass cannot check a range.
+The six items that stood here were every one about a retired surface — the `NEW TAGS`
+denominator, `tagList`'s `+2`, M-bolding in the fit sentence, the untagged note's phone
+drawing, the ownership diamond drawn twice, and the justification track's 110-vs-120px width.
+All six left with the composition. What remains:
+
+1. **`labelAtPx` is 56 and only the inequality is pinned.** `probe:commander-row` asserts the
+   scrim reaches full opacity above the tallest marked ink — measured 152px against ink at
+   168px desktop and 176px phone — so every value from about 40 up passes. The margin over the
+   requirement is a judgement about a name that wraps, not a measurement.
+2. **The phone draws the longest sentence in exactly four lines**, at the clamp's limit with
+   zero overflow. The next sentence longer than 190 characters clips. Nothing regenerates prose
+   per-commander, so this moves only when the generator's prompt does — and the handoff's
+   ruling if it ever clips is to widen the measure, never to add a fifth line.
+3. **`planeCopy.overflow.*` has no caller.** Kept per the handoff, which says the plane keeps
+   them; the code says the row and its own copy test were the only consumers there ever were.
+4. **`discoveryCopy.price.source`** — the `manapool` provenance word — has no caller on the row.
+   It is still drawn by the deck surfaces, so it is not dead; it is simply not part of this
+   composition, and the retired table specified it as though it were.

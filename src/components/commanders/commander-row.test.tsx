@@ -6,6 +6,8 @@ import { commanderRowCopy } from "../../lib/copy/commander-row";
 import { commandersCopy, discoverCopy } from "../../lib/copy/lanes";
 import { discoveryCopy } from "../../lib/copy/commander-discovery";
 
+const { price: priceCopy } = discoveryCopy;
+
 // The handoff's five states, and the independence that makes them five branches
 // rather than a matrix: no slot reads another, so the sentence, the gap line and
 // the figures are asserted separately.
@@ -42,12 +44,17 @@ describe("CommanderRow · state 1, full", () => {
     expect(screen.getByText("$3.40")).toBeInTheDocument();
   });
 
-  // The link's name carries the reading, so the chip's figure and denominator
-  // are `aria-hidden` and nothing restates them.
-  it("names the link with the score and its denominator", () => {
+  // THE NAME IS THE HALF THAT MATTERED. This link is an empty stretched box, so
+  // its label is its whole accessible name — and the first version asserted
+  // only `/58.*100/`, which passes on "58 out of 100 points" with no commander
+  // in it. A screen reader got twenty-five links distinguished by score alone.
+  it("names the link with the commander first, then the score", () => {
     row();
 
-    expect(screen.getByRole("link").getAttribute("aria-label")).toMatch(/58.*100/);
+    const label = screen.getByRole("link").getAttribute("aria-label") ?? "";
+    expect(label).toContain("Atraxa, Praetors' Voice");
+    expect(label).toMatch(/58.*100/);
+    expect(label.indexOf("Atraxa")).toBeLessThan(label.indexOf("58"));
   });
 });
 
@@ -105,10 +112,22 @@ describe("CommanderRow · the gap slot is never empty", () => {
 describe("CommanderRow · state 5, unpriced", () => {
   // The figure UNMOUNTS. No dash, no zero, no reason given — and the deck count
   // stays, because it is a different reading.
-  it("omits the price and keeps the deck count", () => {
+  // `not.toContain("$")` ALONE IS NOT ENOUGH, and that was the first version:
+  // drop the `absent` guard and the slot renders the hollow dot, `not stocked`
+  // and its sr-only reading — no `$` anywhere, test still green, while the row
+  // claims the feed has never carried the printing. That is the exact claim D3
+  // forbids, so the absent state is asserted by the STRINGS it must not say and
+  // by the separator that would orphan beside it.
+  it("omits the price entirely and keeps the deck count", () => {
     const { container } = row({ price: { kind: "absent" } });
 
     expect(container.textContent).not.toContain("$");
+    expect(container.textContent).not.toContain(priceCopy.notStocked);
+    expect(screen.queryByText(priceCopy.notStockedAria)).not.toBeInTheDocument();
+    // Two figures left, so exactly one separator between them.
+    expect(
+      container.textContent?.split(commanderRowCopy.figures.separator).length,
+    ).toBe(2);
     expect(screen.getByText(discoverCopy.row.popularity(24_012))).toBeInTheDocument();
   });
 
@@ -119,6 +138,10 @@ describe("CommanderRow · state 5, unpriced", () => {
     const { container } = row({ priceOk: false, price: { kind: "priced", cents: 1840 } });
 
     expect(container.textContent).not.toContain("$18.40");
+    expect(container.textContent).not.toContain(priceCopy.notStocked);
+    expect(
+      container.textContent?.split(commanderRowCopy.figures.separator).length,
+    ).toBe(2);
   });
 
   it("draws the price when the read succeeded", () => {

@@ -18,7 +18,6 @@ import type { CommanderListItem } from "../recs/recommend";
 import { loadSupportMeta } from "../edhrec/support-read";
 import { gapSlotFor, type GapSlot } from "../edhrec/gap-slot";
 import { loadPlayedTags } from "../discovery/novelty";
-import { readPrices, slotFor, type PriceSlot } from "../discovery/price";
 
 /**
  * A list item plus the four things the shared row draws that the SCORE does not
@@ -35,8 +34,21 @@ export type CommanderRowItem = CommanderListItem & {
   prose: string | null;
   gapSlot: GapSlot;
   deckCount: number | null;
-  price: PriceSlot;
 };
+
+/**
+ * NO PRICE ON THIS LANE, and it is a deleted query rather than an omitted field.
+ *
+ * §7.4 row 5 of the price matrix: the slot and its hairline unmount together
+ * when the printing is absent OR the commander is owned. `/commanders` lists
+ * commanders the reader OWNS, so every row here is row 5 — there was never a
+ * figure to draw, and reading the feed to compute one would have been work
+ * spent on a slot that unmounts.
+ *
+ * The plan asked for "price from `loadPrices` — reused, never re-derived",
+ * which was right about the reuse and wrong about the lane. `/discover` is the
+ * lane with unowned commanders and the only one with a price to print.
+ */
 
 export type CommanderRankings = {
   items: CommanderRowItem[];
@@ -45,11 +57,6 @@ export type CommanderRankings = {
   candidateCount: number;
   freeRanking: FreeRankingDelta | null;
   availOk: boolean;
-  /** False when the price read failed — see `readPrices`. The rows still carry
-      an `absent` slot, and the surface must omit the figure rather than draw
-      it: `absent` means the feed has never carried the printing, which a lost
-      read has no standing to say. */
-  priceOk: boolean;
 };
 
 /**
@@ -105,10 +112,14 @@ export type CommanderRankings = {
  * for: the two caches are dropped independently, and a pair bumped half-way is
  * the state nobody thinks to check.
  *
- * 8 — the shared row ships, and `priceOk` rides with it. A warm version-7 entry
- * has no such field, so a failed price read would decode as `undefined` and the
- * row would draw `absent` — the claim that the feed has never carried the
- * printing, which is exactly what this release stops it saying.
+ * 8 — the shared row ships, and this payload LOSES two fields to it: `receipts`,
+ * whose line D1 cut, and `priceOk`, because every commander on this lane is
+ * owned and §7.4 row 5 unmounts the price slot. A warm version-7 entry carries
+ * both and a reader served one gets receipt counts nothing draws.
+ *
+ * `priceOk` is not the reason in the direction an earlier version of this
+ * comment gave: it shipped in #700, so a v7 entry HAS it. What changed is that
+ * this lane stopped having a price to report on at all.
  *
  * 6 AND 7 ARE TWO RELEASES, not one renumbered. #702 took 6 while this branch
  * was in review and both had claimed it; taking 6 here would have left every
@@ -133,7 +144,7 @@ export async function loadCommanderRankings(userId: string): Promise<CommanderRa
     // id list.
     return {
       items: [], degraded, uniqueCardsRead, candidateCount,
-      freeRanking: null, availOk: true, priceOk: true,
+      freeRanking: null, availOk: true,
     };
   }
 
@@ -178,26 +189,17 @@ export async function loadCommanderRankings(userId: string): Promise<CommanderRa
   // `toFreeDelta` key on scores and indices and read none of these, so
   // enriching before them would only widen what they copy.
   //
-  // Three reads in parallel, all REUSED rather than re-derived — the price and
-  // played-tag reads are the discover lane's own, and a second spelling of
-  // either would be free to disagree with the lane it was copied from.
+  // Two reads in parallel. `loadPlayedTags` is the discover lane's own, reused
+  // rather than respelled — a second spelling would be free to disagree with
+  // the lane it was copied from.
   //
-  // The price read is the SOFT one. `readPrices` reports a transient feed or
-  // database failure instead of throwing, because every row already draws
-  // without a price and nothing else here does: taking the whole
-  // recommendations page down over the cheapest figure on it would be the wrong
-  // trade. What it does NOT do is hide the failure — `priceOk` rides in the
-  // payload so the surface omits the figure rather than drawing `absent`, which
-  // would be a claim that the feed has never carried the printing.
-  //
-  // The other two are hard: without the tag sets the gap line would claim the
-  // reader plays nothing, and without the metadata every row loses its
-  // sentence.
+  // Both are HARD: without the tag sets the gap line would claim the reader
+  // plays nothing, and without the metadata every row loses its sentence.
+  // There is no third, soft read here — see the note on the price above.
   const oracleIds = items.map((i) => i.oracleId);
-  const [meta, playedTags, priceRead] = await Promise.all([
+  const [meta, playedTags] = await Promise.all([
     loadSupportMeta(oracleIds),
     loadPlayedTags(userId),
-    readPrices(oracleIds),
   ]);
   const played = new Set(playedTags.flatMap((d) => [...d.slugs]));
 
@@ -211,12 +213,10 @@ export async function loadCommanderRankings(userId: string): Promise<CommanderRa
       prose: m?.prose ?? null,
       gapSlot: gapSlotFor(m?.tags ?? [], m?.deckCount ?? null, played),
       deckCount: m?.deckCount ?? null,
-      price: slotFor(priceRead.prices.get(item.oracleId)),
     };
   });
 
   return {
     items: rows, degraded, uniqueCardsRead, candidateCount, freeRanking, availOk,
-    priceOk: priceRead.ok,
   };
 }

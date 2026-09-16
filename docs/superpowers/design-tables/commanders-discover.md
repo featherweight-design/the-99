@@ -945,7 +945,7 @@ Shares art bleed, rank, name, identity pips and role chips with the owned row. D
 | label letter-spacing | .08em | — |
 | label color | #8E8269 | #8E8269 |
 | label text-transform | uppercase | uppercase |
-| copy key | `discoverCopy.row.supportOwned(own, top)` | same |
+| copy key | **retired** — `discoverCopy.row.supportOwned` was deleted with the row's count chip. See `discovery-rows.md`. |
 
 ### Ratio bar
 
@@ -1274,8 +1274,8 @@ Shares art bleed, rank, name, identity pips and role chips with the owned row. D
 
 | State | Triggering condition | What renders | Key requirements |
 |---|---|---|---|
-| Owned lane, any state | Route `/commanders` | Search · pips · colour match · Build from · Order; rows print fit /100, delta, three-segment ramp, availability line and receipts | Scope control is **absent**, not greyed — the lane is the scope. |
-| Discover lane, any state | Route `/discover` | Scope (leading) · search · pips · colour match · Order; rows print support-of-top, ratio bar, deck count and novelty count | Availability is **absent**, not greyed. Discovery does not blend, so there is no 0–100 score and no delta. |
+| Owned lane, any state | Route `/commanders` | Search · pips · colour match · Build from · Order; rows print the play-style sentence, the mechanic gap line, then Fit and the deck count. **No price** — every commander here is owned, and §7.4 row 5 unmounts the slot. | Scope control is **absent**, not greyed — the lane is the scope. The delta, the three-segment ramp, the availability line and the receipts all retired with `RecCard`. |
+| Discover lane, any state | Route `/discover` | Scope (leading) · search · pips · colour match · Order; rows print the play-style sentence, the mechanic gap line, then Fit, the deck count and the price | Availability is **absent**, not greyed. The two lanes now draw ONE row component, so the old "discovery does not blend" note is gone with it: both print Fit, and it is the same figure Commander Details prints. |
 | Any state, either lane | — | No printing thumbnail at rest at either breakpoint; the art bleed is the card image | I3 applies only if a printing is ever named. |
 | Any state, either lane | — | No header CTA; the row is the action | `Clear` and the zero state's correction are the only buttons around the list. |
 | Filtered row vs unfiltered row | Any filter active | Identical figure set | Filtering never trims a row to fit. |

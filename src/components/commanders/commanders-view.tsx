@@ -82,10 +82,6 @@ export type CommandersViewProps = {
       failed, or the ranking itself came back unusable. Either way `What's free`
       is unavailable, and `freeRanking` is null alongside it. */
   availOk: boolean;
-  /** One price read serves the whole list, so a failed one omits the figure on
-      every row rather than on some. */
-  priceOk: boolean;
-  /** Receipt clause counts by oracleId, for both modes. */
 };
 
 export function CommandersView({
@@ -96,7 +92,6 @@ export function CommandersView({
   firstRun,
   freeRanking,
   availOk,
-  priceOk,
 }: CommandersViewProps) {
   const search = useSearchParams();
 
@@ -589,8 +584,11 @@ export function CommandersView({
                       score: r.score,
                       measurableTotal: r.measurableTotal,
                       deckCount: r.deckCount,
-                      price: r.price,
-                      priceOk,
+                      // EVERY ROW HERE IS OWNED, so §7.4 row 5 applies to all
+                      // of them: the slot unmounts. Passed as a literal rather
+                      // than read, because the lane has no price to read.
+                      price: { kind: "absent" },
+                      priceOk: true,
                       href: commanderDetailHref(r.slug, avail),
                     }}
                   />

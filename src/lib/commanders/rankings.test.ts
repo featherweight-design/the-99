@@ -16,10 +16,6 @@ vi.mock("../decks/availability-query", () => ({ loadAvailability: vi.fn() }));
 vi.mock("../recs/free-ranking", () => ({ rankFree: vi.fn() }));
 vi.mock("../edhrec/support-read", () => ({ loadSupportMeta: vi.fn() }));
 vi.mock("../discovery/novelty", () => ({ loadPlayedTags: vi.fn() }));
-vi.mock("../discovery/price", async (orig) => ({
-  ...(await orig<typeof import("../discovery/price")>()),
-  readPrices: vi.fn(),
-}));
 
 import { commanderRankingsKey, loadCommanderRankings } from "./rankings";
 import { discoveryKey } from "../discovery/list";
@@ -29,7 +25,6 @@ import { loadAvailability } from "../decks/availability-query";
 import { rankFree } from "../recs/free-ranking";
 import { loadSupportMeta } from "../edhrec/support-read";
 import { loadPlayedTags } from "../discovery/novelty";
-import { readPrices } from "../discovery/price";
 
 const item = (oracleId: string, over: Record<string, unknown> = {}) => ({
   oracleId, slug: oracleId, name: oracleId.toUpperCase(),
@@ -58,7 +53,6 @@ describe("loadCommanderRankings · the row's four joined fields", () => {
     vi.mocked(loadPlayedTags).mockResolvedValue([
       { deckName: "Zur", colorIdentity: ["W"], slugs: new Set(["blink"]) },
     ]);
-    vi.mocked(readPrices).mockResolvedValue({ prices: new Map(), ok: true });
     vi.mocked(loadSupportMeta).mockResolvedValue(new Map());
   });
 
@@ -105,38 +99,16 @@ describe("loadCommanderRankings · the row's four joined fields", () => {
     expect(items[0].gapSlot).toEqual({ kind: "allPlayed" });
   });
 
-  // PRICEOK IS THE WHOLE POINT OF THE SOFT READ. Without it a failed read is
-  // cached for up to the hour ceiling as `absent`, which means the feed has
-  // never carried the printing — a claim about the market that a lost read has
-  // no standing to make. Every other mock here returns ok:true, so a wiring
-  // change that dropped the flag would leave the suite green.
-  it("reports a failed price read in the payload", async () => {
-    vi.mocked(readPrices).mockResolvedValue({ prices: new Map(), ok: false });
-
-    const { items, priceOk } = await loadCommanderRankings("user_1");
-
-    expect(priceOk).toBe(false);
-    // The rows still carry a slot; it is the SURFACE that must omit it. A row
-    // with no slot at all would be a second way to say the same thing.
-    expect(items[0].price.kind).toBe("absent");
-  });
-
-  it("reports a healthy price read too, so the flag is not a constant", async () => {
-    const { priceOk } = await loadCommanderRankings("user_1");
-
-    expect(priceOk).toBe(true);
-  });
-
-  it("slots the price per commander, and absent where the feed has none", async () => {
-    vi.mocked(readPrices).mockResolvedValue({
-      prices: new Map([["a", { oracleId: "a", liveCents: 1499, everPriced: true, live: true }]]),
-      ok: true,
-    } as never);
-
+  // NO PRICE ON THIS LANE AT ALL. §7.4 row 5 unmounts the slot for an owned
+  // commander, and every row here is owned by construction — so the payload
+  // carries no price field and the lane reads no feed. The cases that asserted
+  // a per-commander slot and a `priceOk` flag went with it; the row component's
+  // own tests cover the slot, on the lane that has one.
+  it("carries no price field, because every commander here is owned", async () => {
     const { items } = await loadCommanderRankings("user_1");
 
-    expect(items[0].price.kind).toBe("priced");
-    expect(items[1].price.kind).toBe("absent");
+    expect(items[0]).not.toHaveProperty("price");
+    expect(items[0]).not.toHaveProperty("priceOk");
   });
 
   // Every read is keyed on the listed commanders, so a list of two must not ask
@@ -145,7 +117,6 @@ describe("loadCommanderRankings · the row's four joined fields", () => {
     await loadCommanderRankings("user_1");
 
     expect(vi.mocked(loadSupportMeta)).toHaveBeenCalledWith(["a", "b"]);
-    expect(vi.mocked(readPrices)).toHaveBeenCalledWith(["a", "b"]);
   });
 
   // No candidates means the page draws its empty state, and the three reads are
@@ -160,7 +131,6 @@ describe("loadCommanderRankings · the row's four joined fields", () => {
 
     expect(items).toEqual([]);
     expect(vi.mocked(loadSupportMeta)).not.toHaveBeenCalled();
-    expect(vi.mocked(readPrices)).not.toHaveBeenCalled();
   });
 });
 

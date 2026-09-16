@@ -79,6 +79,15 @@ export type CommanderRowView = {
       Printed as given — never rescaled, and never asserted as a bound. */
   measurableTotal: number;
   deckCount: number | null;
+  /**
+   * The price slot, which is `absent` for every commander the reader OWNS.
+   *
+   * §7.4 row 5: the wrapper and its hairline unmount together when absent or
+   * owned. `/commanders` lists commanders the reader owns, so its rows always
+   * pass `absent` and the lane reads no prices at all — a query deleted rather
+   * than a branch added. `/discover` lists what they do not own, which is the
+   * only lane with a figure to draw.
+   */
   price: PriceSlotValue;
   /** False when the price read FAILED. The figure is omitted rather than drawn
       as `absent`, which would claim the feed has never carried the printing. */
@@ -176,9 +185,16 @@ export function CommanderRow({ item }: { item: CommanderRowView }) {
     >
       {/* Stretched link keeps the whole row clickable. The row has no other
           control on it, so nothing has to sit above this. */}
+      {/* THE NAME COMES FIRST, and the figure after it. This link is an empty
+          stretched box, so its `aria-label` IS its whole accessible name — a
+          label of `scoreAria` alone gave a screen reader twenty-five links
+          called "58 out of 100 points" with no commander anywhere in the list.
+          The retired row used `home.cardAria(name)`; the table specifies
+          `{name} · Fit {score} of {measurableTotal}`, and that is what this
+          composes. */}
       <Link
         href={item.href}
-        aria-label={explainedCopy.score.scoreAria(item.score, item.measurableTotal)}
+        aria-label={`${item.name} · ${explainedCopy.score.scoreAria(item.score, item.measurableTotal)}`}
         className="absolute inset-0 z-[1]"
       />
 

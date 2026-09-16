@@ -33,7 +33,7 @@
     {
       "id": "commanders",
       "label": "/commanders — the owned lane's rows",
-      "view": "src/components/commanders/rec-card.tsx",
+      "view": "src/components/commanders/commander-row.tsx",
       "steps": [
         {
           "goto": "/commanders",
@@ -45,7 +45,7 @@
     {
       "id": "discover",
       "label": "/discover — the discovery rows",
-      "view": "src/components/commanders/discovery-row.tsx",
+      "view": "src/components/commanders/commander-row.tsx",
       "steps": [
         {
           "goto": "/discover",
