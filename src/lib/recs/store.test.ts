@@ -112,7 +112,9 @@ describe("rowToListItem", () => {
   it("maps a degraded row to a null fitSynergy list item", () => {
     const item = rowToListItem({
       oracleId: "22222222-2222-2222-2222-222222222222",
-      slug: "x", score: 16, rankScore: 40, fitPool: 10, fitRoles: 6, fitSynergy: null,
+      // `rankScore` equals `score` for every row writer 5 emits, degraded included: the
+      // rescale that made a no-synergy row read 40 against a score of 16 is retired.
+      slug: "x", score: 16, rankScore: 16, fitPool: 10, fitRoles: 6, fitSynergy: null,
       synergyState: "degraded", edhrecOwnedCount: null, edhrecTotal: null,
       receipts: "", colorPoolSize: 100,
       roleCounts: { ramp: 1, draw: 1, removal: 1, wipes: 0 },

@@ -10,7 +10,6 @@ import {
   scoreCommander,
   type PoolCard,
 } from "./score";
-import { byScoreThenOracleId } from "./recommend";
 import type { SupportList } from "../edhrec/support-overlap";
 import { ROLE_TARGETS } from "./roles";
 
@@ -167,10 +166,11 @@ describe("scoreCommander", () => {
   });
 
   // THE LIST IS ORDERED BY THE FIGURE IT PRINTS. #385 took the rescale off the printed
-  // score and left it on the rank, meaning a commander not to be demoted for a gap in OUR
-  // data. Because the weights are 15 + 25 + 60 that rescale reaches untracked commanders
-  // and nobody else, multiplying them by 2.5 — so one took rank 1 with a perfect 40/40
-  // beside a note saying fit came from pool and roles alone. Ruled 2026-09-16.
+  // score and left it on the rank, so that a commander would not be demoted for a gap in
+  // OUR data. Because the weights are 15 + 25 + 60, that rescale reaches untracked
+  // commanders and nobody else, multiplying them by 2.5 — so one took rank 1 with a
+  // perfect 40/40 beside a note saying fit came from pool and roles alone. Ruled
+  // 2026-09-16.
   it("ranks an unindexed commander by the score it prints", () => {
     const unindexed = scoreCommander({ commander, collection, support: support(null), inclusionByName: null });
     expect(unindexed.rankScore).toBe(unindexed.score);
@@ -186,12 +186,16 @@ describe("scoreCommander", () => {
     expect(indexed.rankScore).toBe(indexed.score);
   });
 
-  // The defect as reported, and it needs the MAXED pool: on an ordinary fixture the
-  // rescale lifts a small score to another small score, and the comparison below passes
-  // over the broken build. A commander that measures perfectly is the one the rescale
-  // sends to rank 1, which is where it was found — 40/40, top of the list, under a note
-  // reading "EDHREC doesn't track this commander".
-  it("cannot outrank a tracked commander when it measured perfectly", () => {
+  // The defect as reported, and it needs the MAXED pool: on an ordinary fixture the rescale
+  // lifts a small score to another small score, and the ceiling below passes over the broken
+  // build. A commander that measures perfectly is the one the rescale sent to rank 1, which
+  // is where it was found — 40/40, top of the list, under a note reading "EDHREC doesn't
+  // track this commander".
+  //
+  // The ORDERING that follows from this ceiling is asserted in `recommend.test.ts`, beside
+  // the comparator: importing it here would pull `recommend.ts` and the database client it
+  // reaches at module load into a test file that otherwise touches neither.
+  it("ranks no higher than pool and roles when it measured perfectly", () => {
     const role = (text: string, n: number) =>
       Array.from({ length: n }, () => card({ oracleText: text }));
     const maxed: PoolCard[] = [
@@ -204,13 +208,9 @@ describe("scoreCommander", () => {
 
     const untracked = scoreCommander({ commander, collection: maxed, support: support(null), inclusionByName: null });
     expect(untracked.score).toBe(POOL_WEIGHT + ROLES_WEIGHT);
-    // One point past what pool and roles are worth, which is the least a tracked
-    // commander can score and still be ahead on something we measured.
-    const justAhead = POOL_WEIGHT + ROLES_WEIGHT + 1;
-    expect(byScoreThenOracleId(
-      { rankScore: untracked.rankScore, oracleId: "a" },
-      { rankScore: justAhead, oracleId: "b" },
-    )).toBeGreaterThan(0);
+    // Under the rescale this read 100 — the highest rank the list can award, given to the
+    // commander it knows least about.
+    expect(untracked.rankScore).toBe(POOL_WEIGHT + ROLES_WEIGHT);
   });
 
   it("passes commander colorIdentity and imageUri through onto the score", () => {

@@ -220,9 +220,11 @@ describe("RecCard score delta", () => {
 });
 
 describe("RecCard score and denominator", () => {
-  // The card prints the score, not the bar's fill. 32 of 40 fills 80% of the
-  // track, and an 80 here against a 32 on the detail page is the same commander
-  // wearing two numbers.
+  // The card prints the score, not the bar's fill. 32 of 40 fills 80% of the track, and
+  // printing that 80 against a 32 on the detail page would be the same commander wearing
+  // two numbers. The fixture's `rankScore` is 32 because that is what the writer emits
+  // now — the 80 it used to carry here was the retired rescale, and this case never
+  // depended on the two differing.
   it("prints the score with the denominator that measured it", () => {
     card({ commander: { ...noSynergy("absent"), fitPool: 20, fitRoles: 12, score: 32, rankScore: 32 } });
     expect(screen.getAllByText("32")).toHaveLength(2);

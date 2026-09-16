@@ -64,6 +64,21 @@ describe("byScoreThenOracleId", () => {
     ]);
   });
 
+  // The ordering that follows from the 40-point ceiling `score.test.ts` pins: a commander
+  // that measured perfectly and has no synergy read still sits below a tracked one scoring
+  // a single point past what pool and roles are worth. Asserted here rather than there
+  // because the comparator lives in this module, which reaches the database client.
+  it("keeps a perfect no-synergy commander below a tracked one that scored past 40", () => {
+    const rows = [
+      { rankScore: 41, oracleId: "tracked", score: 41 },
+      { rankScore: 40, oracleId: "measured-perfectly", score: 40 },
+    ];
+    expect([...rows].sort(byScoreThenOracleId).map((r) => r.oracleId)).toEqual([
+      "tracked",
+      "measured-perfectly",
+    ]);
+  });
+
   it("breaks score ties by ascending oracleId regardless of input order", () => {
     const rows = [
       { rankScore: 7, oracleId: "00000000-0000-0000-0000-00000000000c" },
