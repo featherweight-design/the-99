@@ -460,7 +460,7 @@ describe("the phone Shopping row is 52px and prints the EDHREC figure on its met
           announceUndo: vi.fn(), reportRemoveFailure: vi.fn(),
           resolveRow: vi.fn(), deleteRow: vi.fn(), keep: vi.fn(),
         }}>
-          <DecklistRow deckId="d1" card={rampUnowned} shoppingFigure={42} />
+          <DecklistRow deckId="d1" card={rampUnowned} shoppingFigure={42}  newestAsOf={null}/>
         </AddOptimisticCardProvider>
       </CardDetailProvider>,
     );
@@ -476,7 +476,7 @@ describe("the phone Shopping row is 52px and prints the EDHREC figure on its met
           announceUndo: vi.fn(), reportRemoveFailure: vi.fn(),
           resolveRow: vi.fn(), deleteRow: vi.fn(), keep: vi.fn(),
         }}>
-          <DecklistRow deckId="d1" card={rampUnowned} shoppingFigure={42} />
+          <DecklistRow deckId="d1" card={rampUnowned} shoppingFigure={42}  newestAsOf={null}/>
         </AddOptimisticCardProvider>
       </CardDetailProvider>,
     );
@@ -497,7 +497,7 @@ describe("the phone Shopping row is 52px and prints the EDHREC figure on its met
           announceUndo: vi.fn(), reportRemoveFailure: vi.fn(),
           resolveRow: vi.fn(), deleteRow: vi.fn(), keep: vi.fn(),
         }}>
-          <DecklistRow deckId="d1" card={{ ...rampUnowned, quantity: 4 }} shoppingFigure={42} />
+          <DecklistRow deckId="d1" card={{ ...rampUnowned, quantity: 4 }} shoppingFigure={42}  newestAsOf={null}/>
         </AddOptimisticCardProvider>
       </CardDetailProvider>,
     );
@@ -518,7 +518,7 @@ describe("the phone All row stays 44px and prints no figure", () => {
           announceUndo: vi.fn(), reportRemoveFailure: vi.fn(),
           resolveRow: vi.fn(), deleteRow: vi.fn(), keep: vi.fn(),
         }}>
-          <DecklistRow deckId="d1" card={rampUnowned} />
+          <DecklistRow deckId="d1" card={rampUnowned}  newestAsOf={null}/>
         </AddOptimisticCardProvider>
       </CardDetailProvider>,
     );

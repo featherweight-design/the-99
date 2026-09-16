@@ -79,7 +79,7 @@ async function shell(candidates: TopOffCandidate[] = []) {
         commanderIdentity={["B", "R", "G"]}
         arrivedFromImport={false}
         candidates={candidates}
-      />,
+       newestAsOf={null}/>,
     );
   });
 }

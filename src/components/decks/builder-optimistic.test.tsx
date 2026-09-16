@@ -105,7 +105,7 @@ function renderBuilder() {
       firstRun={false}
       commanderIdentity={["B", "R", "G"]}
       arrivedFromImport={false}
-    />,
+     newestAsOf={null}/>,
   );
 }
 
@@ -169,7 +169,7 @@ describe("optimistic deck list", () => {
         firstRun={false}
         commanderIdentity={["B", "R", "G"]}
         arrivedFromImport={false}
-      />,
+       newestAsOf={null}/>,
     );
     await act(async () => {
       // A stack says which of the two outcomes the ✕ has (#179).

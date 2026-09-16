@@ -22,7 +22,7 @@ const plate = (c: HTMLElement) => c.querySelector("button > span") as HTMLElemen
 
 describe("SetCell — the dim", () => {
   it("dims the art and dashes the edge on a missing cell", () => {
-    const { container } = render(<SetCell cell={cell({})} />);
+    const { container } = render(<SetCell cell={cell({})}  newestAsOf={null}/>);
     expect(art(container).style.opacity).toBe("0.28");
     expect(art(container).style.filter).toBe("saturate(.55)");
     expect(plate(container).style.border).toContain("dashed");
@@ -31,25 +31,25 @@ describe("SetCell — the dim", () => {
   it("uses --fg-locked for the dashed edge, never --border-dashed", () => {
     // --border-dashed measures 1.46:1 to 1.97:1 against --surface-sunken and fails the
     // 3:1 non-text floor in all six themes.
-    const { container } = render(<SetCell cell={cell({})} />);
+    const { container } = render(<SetCell cell={cell({})}  newestAsOf={null}/>);
     expect(plate(container).style.border).toContain("var(--fg-locked)");
     expect(plate(container).style.border).not.toContain("--border-dashed");
   });
 
   it("leaves an owned cell's art at full strength", () => {
-    const { container } = render(<SetCell cell={cell({ owned: true })} />);
+    const { container } = render(<SetCell cell={cell({ owned: true })}  newestAsOf={null}/>);
     expect(art(container).style.opacity).toBe("1");
     expect(plate(container).style.border).toContain("solid");
   });
 
   it("keeps the name at full strength on a missing cell — the dim is on the art only", () => {
-    render(<SetCell cell={cell({})} />);
+    render(<SetCell cell={cell({})}  newestAsOf={null}/>);
     expect(screen.getByText("Faller's Faithful")).toHaveStyle({ color: "var(--fg-body)" });
   });
 
   it("gives owned and missing cells identical geometry so the grid never reflows", () => {
-    const { container: a } = render(<SetCell cell={cell({ owned: true })} />);
-    const { container: b } = render(<SetCell cell={cell({ owned: false })} />);
+    const { container: a } = render(<SetCell cell={cell({ owned: true })}  newestAsOf={null}/>);
+    const { container: b } = render(<SetCell cell={cell({ owned: false })}  newestAsOf={null}/>);
     const box = (c: HTMLElement) => {
       const s = plate(c).style;
       return { width: s.width, height: s.height, borderRadius: s.borderRadius };
@@ -60,24 +60,24 @@ describe("SetCell — the dim", () => {
 
 describe("SetCell — marks", () => {
   it("marks a foil-only holding", () => {
-    render(<SetCell cell={cell({ owned: true, foilOnly: true })} />);
+    render(<SetCell cell={cell({ owned: true, foilOnly: true })}  newestAsOf={null}/>);
     expect(screen.getByText("◆ FOIL")).toBeInTheDocument();
   });
 
   it("marks a fill that was matched by name", () => {
-    render(<SetCell cell={cell({ owned: true, byName: true })} />);
+    render(<SetCell cell={cell({ owned: true, byName: true })}  newestAsOf={null}/>);
     expect(screen.getByText("BY NAME")).toBeInTheDocument();
   });
 
   it("never marks a missing cell by name — only a filled cell was matched to anything", () => {
-    render(<SetCell cell={cell({ owned: false, byName: true })} />);
+    render(<SetCell cell={cell({ owned: false, byName: true })}  newestAsOf={null}/>);
     expect(screen.queryByText("BY NAME")).toBeNull();
   });
 });
 
 describe("SetCell — caption and price", () => {
   it("captions the collector number and rarity in the shipped tile's format", () => {
-    render(<SetCell cell={cell({})} />);
+    render(<SetCell cell={cell({})}  newestAsOf={null}/>);
     expect(screen.getByText("042")).toBeInTheDocument();
     expect(screen.getByText("· uncommon")).toBeInTheDocument();
   });
@@ -85,7 +85,7 @@ describe("SetCell — caption and price", () => {
   // Addendum R2 §27: at a 174px phone cell the caption holds three things, so the format
   // stops varying by width. The hiding was a consequence of the old 108px cell.
   it("keeps rarity at every width", () => {
-    render(<SetCell cell={cell({})} />);
+    render(<SetCell cell={cell({})}  newestAsOf={null}/>);
     expect(screen.getByText("· uncommon").className).not.toContain("hidden");
   });
 
@@ -125,20 +125,20 @@ describe("SetCell — caption and price", () => {
 
 describe("SetCell — the target", () => {
   it("is one target and holds no control of its own", () => {
-    const { container } = render(<SetCell cell={cell({})} />);
+    const { container } = render(<SetCell cell={cell({})}  newestAsOf={null}/>);
     expect(container.querySelectorAll("button")).toHaveLength(1);
     expect(screen.queryByRole("checkbox")).toBeNull();
   });
 
   it("opens the card it names", () => {
     const onOpen = vi.fn();
-    render(<SetCell cell={cell({ oracleId: "o-42" })} onOpen={onOpen} />);
+    render(<SetCell cell={cell({ oracleId: "o-42" })} onOpen={onOpen}  newestAsOf={null}/>);
     fireEvent.click(screen.getByRole("button"));
     expect(onOpen).toHaveBeenCalledWith("o-42");
   });
 
   it("says whether the card is yours in its accessible name", () => {
-    render(<SetCell cell={cell({ owned: true })} />);
+    render(<SetCell cell={cell({ owned: true })}  newestAsOf={null}/>);
     expect(screen.getByRole("button", {
       name: "Faller's Faithful, 042, in your collection",
     })).toBeInTheDocument();
@@ -188,12 +188,12 @@ describe("SetCell — the accessible name carries the state the tag shows", () =
   });
 
   it("says an owned copy is foil", () => {
-    render(<SetCell cell={cell({ owned: true, foilOnly: true })} />);
+    render(<SetCell cell={cell({ owned: true, foilOnly: true })}  newestAsOf={null}/>);
     expect(screen.getByRole("button", { name: /You hold this in foil/ })).toBeInTheDocument();
   });
 
   it("explains a by-name match and what to do about it", () => {
-    render(<SetCell cell={cell({ owned: true, byName: true })} />);
+    render(<SetCell cell={cell({ owned: true, byName: true })}  newestAsOf={null}/>);
     expect(screen.getByRole("button", { name: /matched to this set by name/ }))
       .toBeInTheDocument();
   });
@@ -217,7 +217,7 @@ describe("SetCell — no size literal at any width", () => {
     /(?:^|\s)(?:[a-z0-9.]+:)*[wh]-(?:\[[^\]]*\]|px|\d+(?:\.\d+)?|\d+\/\d+)(?=\s|$)/;
 
   it("carries no width or height literal on any element it renders", () => {
-    const { container } = render(<SetCell cell={cell({ owned: true, byName: true, foilOnly: true })} />);
+    const { container } = render(<SetCell cell={cell({ owned: true, byName: true, foilOnly: true })}  newestAsOf={null}/>);
     const offenders = [...container.querySelectorAll<HTMLElement>("*")]
       .map((el) => el.className)
       .filter((c) => typeof c === "string" && sizeLiteral.test(c));
@@ -227,7 +227,7 @@ describe("SetCell — no size literal at any width", () => {
   // Inline styles too, and scoped to the two elements the ruling is about: the by-name
   // marker inside the plate carries a deliberate 7px box, which is a glyph and not the cell.
   it("sizes neither the cell nor its plate from an inline style", () => {
-    const { container } = render(<SetCell cell={cell({ owned: true, byName: true })} />);
+    const { container } = render(<SetCell cell={cell({ owned: true, byName: true })}  newestAsOf={null}/>);
     const button = container.querySelector("button") as HTMLElement;
     const plate = container.querySelector(".aspect-\\[63\\/88\\]") as HTMLElement;
     for (const el of [button, plate]) {
@@ -248,13 +248,13 @@ describe("SetCell — no size literal at any width", () => {
   });
 
   it("sizes the art by aspect ratio instead", () => {
-    const { container } = render(<SetCell cell={cell({})} />);
+    const { container } = render(<SetCell cell={cell({})}  newestAsOf={null}/>);
     expect(container.querySelector(".aspect-\\[63\\/88\\]")).not.toBeNull();
   });
 
   it("gives owned and missing cells the same classes bar the art's own", () => {
-    const { container: owned } = render(<SetCell cell={cell({ owned: true })} />);
-    const { container: missing } = render(<SetCell cell={cell({ owned: false })} />);
+    const { container: owned } = render(<SetCell cell={cell({ owned: true })}  newestAsOf={null}/>);
+    const { container: missing } = render(<SetCell cell={cell({ owned: false })}  newestAsOf={null}/>);
     const shape = (root: HTMLElement) =>
       (root.querySelector("button") as HTMLElement).className;
     expect(shape(owned)).toBe(shape(missing));

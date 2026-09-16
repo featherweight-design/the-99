@@ -38,6 +38,7 @@ function renderDecklist(props: Partial<React.ComponentProps<typeof Decklist>> = 
       <Decklist
         deckId="d1"
         commanderOracleId="cmdr"
+        newestAsOf={null}
         deckOracleIds={[]}
         cards={[card()]}
         unresolvedRows={[row()]}

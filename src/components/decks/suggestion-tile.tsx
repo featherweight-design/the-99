@@ -130,15 +130,26 @@ interface SuggestionTileProps {
       label instead of staying silent, so players know a null is no data, not
       last rank. Absent on all other shelves. */
   showNoSynergy?: boolean;
-  /** The newest `as_of` in `printing_prices`; the tag's liveness comparison. */
-  newestAsOf?: Date | null;
+  /**
+   * The newest `as_of` in the price table, for measuring a row's liveness.
+   *
+   * REQUIRED, with no default. A component that does not receive it reads every
+   * live price as `absent` and draws a bare `buy` with no figure — a wrong price
+   * rather than a missing prop, and silent. That shipped once: the commander
+   * page threaded it to one of two synergy panels and every desktop row lost its
+   * figure, while the phone was correct and every component test passed.
+   *
+   * Pass `null` explicitly where there is no price feed to measure against. The
+   * point is that the caller states it.
+   */
+  newestAsOf: Date | null;
   /** Server-built provenance, spoken in the tile's accessible name. */
   provenance?: ProvenanceForm | null;
 }
 
 export function SuggestionTile({
   suggestion, deckId, inDeck, selfClaimed, siblings, commanderShortName, showNoSynergy,
-  newestAsOf = null, provenance = null,
+  newestAsOf, provenance = null,
 }: SuggestionTileProps) {
   const { applied, isPending, error, run } = useDeckMutation(inDeck, DECK_ADD_FALLBACK_MESSAGE);
   const addOptimisticCard = useAddOptimisticCard();

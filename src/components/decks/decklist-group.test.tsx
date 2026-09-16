@@ -23,7 +23,7 @@ const cards = [
 function renderGroup(view: "list" | "card") {
   render(
     <CardDetailProvider fetchCard={vi.fn().mockResolvedValue(null)}>
-      <DecklistGroup deckId="d1" label="Artifacts" cards={cards} view={view} />
+      <DecklistGroup deckId="d1" label="Artifacts" cards={cards} view={view}  newestAsOf={null}/>
     </CardDetailProvider>,
   );
 }

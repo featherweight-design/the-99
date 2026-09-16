@@ -87,7 +87,7 @@ describe("coverage cell arrival", () => {
         firstRun={false}
         commanderIdentity={["B", "R", "G"]}
         arrivedFromImport={false}
-      />,
+       newestAsOf={null}/>,
     );
 
     fireEvent.click(

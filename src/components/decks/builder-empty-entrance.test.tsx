@@ -64,7 +64,7 @@ describe("empty builder", () => {
         firstRun={false}
         commanderIdentity={["B", "R", "G"]}
         arrivedFromImport={false}
-      />,
+       newestAsOf={null}/>,
     );
 
   it("keeps both entrances: the Consider tab and the quick-add bar", () => {
@@ -95,7 +95,7 @@ describe("swept-empty branch", () => {
         firstRun={false}
         commanderIdentity={["B", "R", "G"]}
         arrivedFromImport={false}
-      />,
+       newestAsOf={null}/>,
     );
 
   const renderNeverFilled = () =>
@@ -107,7 +107,7 @@ describe("swept-empty branch", () => {
         firstRun={false}
         commanderIdentity={["B", "R", "G"]}
         arrivedFromImport={false}
-      />,
+       newestAsOf={null}/>,
     );
 
   it("an empty deck that was filled takes the swept copy", () => {
@@ -156,7 +156,7 @@ describe("fill-failed banner on an empty deck", () => {
         firstRun={false}
         commanderIdentity={["B", "R", "G"]}
         arrivedFromImport={false}
-      />,
+       newestAsOf={null}/>,
     );
 
   it("offers the retry when nothing came over", () => {

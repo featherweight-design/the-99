@@ -66,7 +66,7 @@ async function mount(initialView: BuilderView) {
         commanderIdentity={["B", "R", "G"]}
         arrivedFromImport={false}
         initialView={initialView}
-      />,
+       newestAsOf={null}/>,
     );
   });
 }
