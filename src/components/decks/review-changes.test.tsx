@@ -1266,6 +1266,35 @@ describe("ReviewChanges", () => {
       });
     });
 
+    // The destructive half of the same mirror. A discard already in flight used to
+    // leave Put back live, and the two serialize on the deck lock: the discard
+    // wins and the restore lands as a fresh draft on a deck that just went back
+    // to its version.
+    it("shuts Put back while the discard question's own write is in flight", async () => {
+      let answer: ((value: unknown) => void) | null = null;
+      discardDeckDraft.mockImplementation(() => new Promise((resolve) => { answer = resolve; }));
+      mount({ in: [], out: [cut()] });
+      await act(async () => {
+        fireEvent.click(
+          screen.getByRole("button", { name: deckVersioningCopy.pending.discardCta }),
+        );
+      });
+      await act(async () => {
+        // By pattern: the count is the fixture's whole change set, and naming a
+        // figure here would pin the case to that fixture rather than to the rule.
+        fireEvent.click(screen.getByRole("button", { name: /^Discard \d+ changes?$/ }));
+      });
+      expect(discardDeckDraft).toHaveBeenCalledTimes(1);
+
+      await act(async () => {
+        fireEvent.click(putBack());
+      });
+      expect(addCardToDeck).not.toHaveBeenCalled();
+      await act(async () => {
+        answer?.({ ok: true });
+      });
+    });
+
     // A throw can be a version that was WRITTEN and lost its reply, so the
     // outcome is unknown rather than failed — and dismissing the sheet is the
     // reader acknowledging a message, never the write becoming known. Only rows

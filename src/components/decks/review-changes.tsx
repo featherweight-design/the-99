@@ -562,6 +562,12 @@ export function ReviewChanges({
   const reportWrite = useCallback(
     (next: "writing" | "settled" | "unknown") => {
       if (next === "settled") {
+        // The asymmetry is the whole rule, and it is deliberately kept even though
+        // no child can reach it today: a `settled` only ever follows that child's
+        // own refusal, and a refusal cannot follow the throw that made the page
+        // uncertain. Written as a rule about the PAGE rather than a fact about
+        // today's children, because the version that read it as a fact — clearing
+        // the guard on whatever a child last said — is the defect this fixes.
         if (writeRef.current !== "unknown") setWrite("idle");
         return;
       }
