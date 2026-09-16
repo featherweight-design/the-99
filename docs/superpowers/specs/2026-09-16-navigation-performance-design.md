@@ -52,9 +52,11 @@ worth recording: the instrument agreed with the build being perfect, and it was 
 2. **Payload size is the multiplier.** 1.6 MB per `/collection` visit is roughly 600 bytes per owned
    card. On a desk that is 290ms. On a phone away from wifi it is not.
 
-3. **`/decks/[id]` and `/decks` are slow for a different reason** — 550–790ms of server time behind
-   a 28–553 KB payload. That is database work per request, and no client cache reaches a first
-   visit.
+3. **Three routes are slow for a different reason — server time, not bytes.** `/decks/[id]` spends
+   **550–790ms**, `/decks` **345–512ms**, and `/` **~525ms**, behind payloads of 553.7 KB, 28.3 KB
+   and 29.5 KB respectively. `/decks` and `/` are the clearest cases: tens of kilobytes costing
+   half a second says the time is database work, not transport. No client cache reaches a first
+   visit, so this is the one finding that client-side work cannot fix.
 
 4. **Filter state does not survive a round trip.** Leaving `/collection?c=W` and returning lands on
    bare `/collection`.
@@ -116,9 +118,17 @@ Per-reader data gets a **two-layer** model, not a replacement:
 Per-segment `prefetch` config replaces the global knob the old rule objected to: `'force-disabled'`
 on heavy, rarely-visited routes, `'partial'` where prefetching pays.
 
-Only two files use `unstable_cache` (`src/lib/cache/user-lists.ts`,
-`src/lib/decks/suggestions-read.ts`) and one route sets `dynamic` (`src/app/api/health/route.ts`),
-so the migration's blast radius is the rendering model, not the data layer.
+`unstable_cache` is called in exactly one place — `src/lib/cache/user-lists.ts`, inside
+`cacheForUser`. (`src/lib/decks/suggestions-read.ts` names it only in a comment; its payload is
+cached by its caller.) But **eight modules call `cacheForUser`** — `src/app/collection/page.tsx`,
+`collection/sets/page.tsx`, `collection/sets/[code]/page.tsx`, `commanders/page.tsx`,
+`discover/page.tsx`, `decks/[id]/page.tsx`, `src/lib/sets/read.ts`, `src/lib/edhrec/seed-index.ts` —
+so while the migration touches one implementation, it is observed at eight call sites, and two of
+those (`sets/read.ts`, `seed-index.ts`) are not page components at all. Only one route sets `dynamic`
+(`src/app/api/health/route.ts`).
+
+That is a narrow data layer with a wide readership, not a narrow blast radius: a change in
+`cacheForUser`'s semantics has to be checked against all eight.
 
 ### §2 Payload size
 
@@ -129,12 +139,17 @@ card, owned-set metadata, stats. Measure which fields carry the weight, then cut
 PPR streams the list behind a shell and improves *perceived* speed. It moves **no bytes**. Those two
 claims stay separate; streaming is not permitted to stand in for a reduction.
 
-### §3 Deck page server time
+### §3 Server time — `/decks/[id]`, `/decks`, `/`
 
 `/decks/[id]` runs `getDeckDetail`, then `loadVersionShape`, then prices and availability, and some
 of that sequencing is deliberate and commented as such. Order of work: instrument per-query timings
 first, then choose between query and index changes, parallelising only where the existing comments
 do not forbid it, and streaming non-critical panels behind Suspense.
+
+`/decks` (345–512ms) and `/` (~525ms) get the same treatment and are named here rather than left
+implicit: both ship under 30 KB, so neither has a payload problem to hide behind, and `/` is the
+route every session starts on. They are cheaper to instrument than the deck page and may well share
+a cause with it.
 
 ### §4 Filter state
 
@@ -157,10 +172,14 @@ the regression gate.
 Load times are recorded at three points, and the numbers live in the repository rather than in a
 session transcript.
 
-**Before.** PR 1 commits `docs/superpowers/benchmarks/nav-cost-baseline.json` — the full table
-measured on 2026-09-16, every route, both widths, with the conditions recorded beside it: production
-build, warmed twice, fixture account row counts, viewport. A number without its conditions cannot be
-compared against anything later.
+**Before.** PR 1 commits `docs/superpowers/benchmarks/nav-cost-baseline.json` with the conditions
+recorded beside every figure: production build, warmed twice, fixture account row counts, viewport.
+A number without its conditions cannot be compared against anything later.
+
+**The figures quoted in this document are desktop (1300x900) only** — that is all that was measured
+on 2026-09-16. PR 1 therefore takes the 390x844 run before committing the baseline, and the phone
+column starts empty rather than being back-filled by assumption. The desktop ceilings are today's
+measured values; the phone ceilings are whatever that run returns.
 
 **During.** Every PR that changes rendering or payload re-runs the probe and commits its own row to
 `docs/superpowers/benchmarks/nav-cost-history.md`: date, PR number, what changed, and the per-route
@@ -171,8 +190,8 @@ instead of to the batch.
 **After.** The final PR re-runs the whole table and records the before/after delta per route. A
 route that did not improve is reported as such, with the reason, rather than omitted.
 
-Both widths, because the phone is where these payloads actually hurt and the desktop figure would
-hide it: 1300x900 and 390x844.
+Both widths thereafter, because the phone is where these payloads actually hurt and the desktop
+figure would hide it: 1300x900 and 390x844.
 
 The same conditions every time — production build, warm, same fixture account. A benchmark taken
 against `next dev` or a cold server is not comparable to these numbers and must not be entered in
@@ -209,7 +228,8 @@ spec once this lands.
 
 At most ~20 files or ~800 lines each, no stacked PRs.
 
-1. Probe promoted, baseline benchmark and budgets committed. No behavior change.
+1. Probe promoted; the 390x844 run taken; baseline benchmark and budgets committed for both
+   widths. No behavior change.
 2. `cacheComponents` enabled, `instant = false` codemod, synchronous-IO fixes. App builds; no route
    converted.
 3. `/collection` converted, with its two-layer cache split. Measured against the baseline.
