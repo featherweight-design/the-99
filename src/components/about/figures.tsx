@@ -5,11 +5,11 @@
 // size or glyph changes in its own component changes here on the next render,
 // where a screenshot or a hand-drawn copy would quietly start lying.
 //
-// EVERY entry gets one. That is the handoff's unit and the reason it exists:
+// EVERY entry has one. That is the handoff's unit and the reason it exists:
 // R2's pivot away from R1 was Design saying a page of paragraphs cannot teach
-// a fit score, a doubled diamond or a dashed cell. The map is incomplete today
-// and `about.test.ts` holds the ledger of what is missing; the page draws the
-// caption alone for those, which is a gap rather than a design.
+// a fit score, a doubled diamond or a dashed cell. `about.test.ts` holds a
+// ledger of entries with no figure and it is EMPTY — an entry arriving without
+// one fails there, which is the invariant this file now keeps.
 
 import { AvailabilityMarker } from "../ui/availability-marker";
 import { OwnershipDot } from "../ui/ownership-dot";
@@ -32,7 +32,8 @@ import { topOffCopy } from "../../lib/copy/top-off";
 import { folderCopy } from "../../lib/copy/folders";
 
 import { GAME_AXIS_KEYS } from "../../lib/decks/game-axes";
-import { deckSortLabel, groupToggleCopy } from "../../lib/about/sort-labels";
+import { deckSortLabel } from "../../lib/about/sort-labels";
+import { DECK_GROUPING_LABELS } from "../../lib/copy/deck-sort";
 import { BrowseChips } from "./browse-chips";
 import { collectionChassisCopy } from "../../lib/copy/collection";
 import { viewToggleCopy } from "../../lib/copy/card-surfaces";
@@ -531,9 +532,10 @@ function CardDetailFigure({ width }: { width: AboutWidth }) {
 }
 
 /**
- * The three parts of a fit score, named and measured — the legend the lane
- * draws beside its bar, which is where the words in the entry's keys come
- * from.
+ * The four roles a deck is measured on, each against its own baseline — which
+ * is what the entry is about: a short role is the one thing on the page that
+ * names what to do next, and the fixture is short on wipes alone so the figure
+ * teaches one gap rather than a list of them.
  */
 function RoleCoverageFigure({ width }: { width: AboutWidth }) {
   return (
@@ -783,7 +785,7 @@ function DecklistOrderFigure({ width }: { width: AboutWidth }) {
       width={width}
       rows={[
         {
-          mark: `${groupToggleCopy.byRole} / ${groupToggleCopy.byType}`,
+          mark: `${DECK_GROUPING_LABELS.role} / ${DECK_GROUPING_LABELS.type}`,
           meaning: "the list is always in sections — that is how a deck is short",
         },
         {
@@ -964,9 +966,12 @@ function ProxiesFigure({ width }: { width: AboutWidth }) {
 }
 
 /**
- * Entry id → figure. A partial map: an entry with no figure draws its caption
- * and its key lines, which is what every entry did before this PR and is still
- * a complete answer for a workflow.
+ * Entry id → figure. Total: every entry in `aboutEntries` has one, and
+ * `about.test.ts` fails on any that does not.
+ *
+ * `Partial` is kept for the LOOKUP rather than to license a gap — `FIGURES[id]`
+ * on an arbitrary string is legitimately `undefined`, and a plain Record would
+ * tell TypeScript otherwise.
  */
 // `Partial`, because it IS partial: a plain Record tells TypeScript every
 // entry id has a renderer, which makes `FIGURES[id]` look non-nullable and

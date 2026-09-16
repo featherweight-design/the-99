@@ -13,6 +13,7 @@ import {
   nextDeckSortState,
   type DeckSortDirection,
   type DeckSortKey,
+  DECK_GROUPING_LABELS,
 } from "../../lib/copy/deck-sort";
 import { PriceStrip } from "./price-strip";
 import type { PriceSummary, ProvenanceForm } from "../../lib/decks/price";
@@ -277,7 +278,7 @@ export function GroupToggle({
               : "font-sans transition-[filter] hover:brightness-125 text-[11.5px] md:text-[12.5px] rounded-full px-[6px] py-[4px] md:px-[13px] md:py-[5px] border-0 md:border md:border-solid md:border-[color:var(--border)] font-medium text-[color:var(--fg-faint)] bg-transparent"
           }
         >
-          By type
+          {DECK_GROUPING_LABELS.type}
         </button>
 
         {/* By role — idle: no border mobile, 1px solid var(--border) desktop */}
@@ -290,7 +291,7 @@ export function GroupToggle({
               : "font-sans transition-[filter] hover:brightness-125 text-[11.5px] md:text-[12.5px] rounded-full px-[6px] py-[4px] md:px-[13px] md:py-[5px] border-0 md:border md:border-solid md:border-[color:var(--border)] font-medium text-[color:var(--fg-faint)] bg-transparent"
           }
         >
-          By role
+          {DECK_GROUPING_LABELS.role}
         </button>
 
         {/* The order the rows inside those sections take. One mount of the

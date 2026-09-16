@@ -16,5 +16,6 @@ export function deckSortLabel(key: DeckSortKey): string {
   return deckSortOrderLabel(key, "asc").split(" · ")[0];
 }
 
-/** The grouping the decklist is always in, one or the other. */
-export const groupToggleCopy = { byType: "By type", byRole: "By role" } as const;
+// The grouping labels are `DECK_GROUPING_LABELS` in `copy/deck-sort.ts`, read
+// by the toggle and by the figure. They were a second copy here first, which
+// is the same defect this module exists to fix one line further up.
