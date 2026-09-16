@@ -19,6 +19,14 @@
 // all. Those are facts about what two real connections did to each other, which
 // is what this script is for.
 //
+// WHICH SIDE IS REAL DIFFERS BY CASE, deliberately. Case 1 needs a writer that
+// holds its transaction open across the clear, and `persistScores` commits on
+// its own, so that side is the SQL it issues while the CLEAR is the real
+// function. Case 3 is the mirror: the real `persistScores`, against a rebuilder
+// whose lock and support write are raw SQL. Between them each lock is proved
+// through the code that ships it — removing the exclusive one fails both of
+// case 1's checks, removing the shared one fails case 3's.
+//
 // Writes under a per-run user id and one additive `commander_support` row, and
 // deletes both in a `finally`. Point it at local-dev or a scratch Neon branch,
 // NEVER production — the clear under test deletes `commander_scores` WHOLESALE,

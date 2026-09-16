@@ -324,6 +324,10 @@ describe("persistScores generation guard", () => {
     await persistScores("user_1", [ranked()], at.getTime(), at.getTime());
 
     const t = fake.trace();
+    // Membership first, and not as belt-and-braces: `indexOf` returns -1 for an
+    // absent entry and -1 is less than every index, so the comparison below
+    // PASSES when the lock is not taken at all. Found by removing it.
+    expect(t).toContain("lock:user");
     expect(t.indexOf("lock:user")).toBeLessThan(t.indexOf("read:collection"));
     // The per-user key is `replaceCollection`'s own, which is what makes the
     // collection comparison atomic with the writes below it.
