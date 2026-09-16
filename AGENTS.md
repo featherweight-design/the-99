@@ -322,6 +322,37 @@ Package manager is **pnpm** (pinned via `packageManager` in package.json) — ne
   Same fixture discipline as `probe:claims`, and stricter about the target than most: the clear
   under test deletes `commander_scores` **wholesale, for every user** in the database it is
   given. `local-dev` or a scratch branch, **never production**.
+- `pnpm probe:commander-row` measures the two figures on the shared commander row that cannot
+  be derived, at 1300x900 and 390x844 on `/commanders` and `/discover`.
+
+  **`labelAtPx`** tells the art wash where its ramp tops out. The two retired rows carried 56
+  and 63, arrived at by adding up padding, glyph and gap heights — which is how the top of a
+  rank ended up on a rising gradient once already. The probe asserts the PROPERTY instead: the
+  scrim reaches full opacity above the tallest marked ink. Read off the painted gradient, never
+  the constant — a first version printed both figures and asserted neither, and a second
+  imported the constant, which only ever agrees with itself. Measured: full opacity at 152px,
+  ink starts at 168px desktop and 176px phone.
+
+  **The sentence clamp.** The longest stored sentence is 190 characters against a budget derived
+  from a 190-character estimate, which is zero margin on a proxy — characters do not wrap, glyphs
+  do. `innerText` reads back WHOLE on a clamped element, so every text assertion in the unit
+  suite passes over a sentence the reader sees cut; only `scrollHeight` against `clientHeight`
+  tells them apart. It draws 2 lines at 1300 and 4 at 390, with no overflow at either.
+
+  **It searches the long sentence onto the screen, and fails if it did not.** The list is
+  windowed, so the first screen is whatever ranked highest: the first version passed on a
+  145-character worst case and proved nothing about the clamp it exists for. The assertion is
+  ONCE PER WIDTH rather than per route, because the lanes are disjoint by construction —
+  `/commanders` lists what the reader owns and `/discover` what they do not — so no commander
+  appears on both, and the per-route form failed on the lane that cannot hold it. The search box
+  is cleared again when a lane does not hold the commander, or the run is left with no rows.
+
+  Three defects in the probe itself, each found by running it: `process.exit` in a `finally`
+  **swallowed a throw** and reported "all checks passed" after one check — the THIRD time that
+  trap has been written here, after `probe:score-lock` and `probe:payload`; matching the scrim on
+  `"180deg"` found nothing across 50 nodes, because 180deg is CSS's default direction and
+  computed style drops it; and a `*` sweep of the band's descendants found no gradient at all,
+  because the wash mounts its own wrapper. It makes no writes. Point it at `local-dev`.
 - `pnpm probe:draft` proves the draft readers against a real Postgres by calling the real
   `loadDraftState` and `loadDraftRows` — a brew has no version rather than an empty change
   list, a draft identical to its version is clean, a basics-only edit is a NAMED row carrying
