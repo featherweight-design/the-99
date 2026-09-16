@@ -33,10 +33,6 @@ describe("discoverCopy", () => {
     expect("colour" in discoverCopy.order).toBe(false);
   });
 
-  it("splits the support figure from its label so the row can size them apart", () => {
-    expect(discoverCopy.row.supportOwned(84, 236)).toEqual(["84", "OF TOP 236 OWNED"]);
-  });
-
   it("names the lane boundary in the zero state", () => {
     expect(discoverCopy.empty.body("jodah", 3301)).toContain("it's on your commanders instead");
   });

@@ -8,7 +8,6 @@
 // indexing a list it was not computed against does not fail loudly: it renames
 // rows. One entry, one snapshot.
 
-import { receiptCountsByCommander, type ReceiptCounts } from "./in-use";
 import type { Availability } from "../decks/availability";
 import { loadAvailability } from "../decks/availability-query";
 import { toFreeDelta, type FreeRankingDelta } from "../recs/free-delta";
@@ -44,10 +43,6 @@ export type CommanderRankings = {
   degraded: boolean;
   uniqueCardsRead: number;
   candidateCount: number;
-  /** `receiptCountsByCommander`'s map as entries: the cache stores its payload
-      as JSON, and a Map comes back from that as `{}`. The page rebuilds the map
-      before handing it to the view. */
-  receipts: [string, ReceiptCounts][];
   freeRanking: FreeRankingDelta | null;
   availOk: boolean;
   /** False when the price read failed — see `readPrices`. The rows still carry
@@ -110,13 +105,18 @@ export type CommanderRankings = {
  * for: the two caches are dropped independently, and a pair bumped half-way is
  * the state nobody thinks to check.
  *
+ * 8 — the shared row ships, and `priceOk` rides with it. A warm version-7 entry
+ * has no such field, so a failed price read would decode as `undefined` and the
+ * row would draw `absent` — the claim that the feed has never carried the
+ * printing, which is exactly what this release stops it saying.
+ *
  * 6 AND 7 ARE TWO RELEASES, not one renumbered. #702 took 6 while this branch
  * was in review and both had claimed it; taking 6 here would have left every
  * reader whose entry was written by #702 being served a payload with no
  * sentence, no gap slot and no headline figure, because the key would have
  * matched.
  */
-const PAYLOAD_VERSION = 7;
+const PAYLOAD_VERSION = 8;
 
 /** The cache key this payload is filed under, version included. */
 export const commanderRankingsKey = ["commander-rankings", `v${PAYLOAD_VERSION}`];
@@ -133,23 +133,24 @@ export async function loadCommanderRankings(userId: string): Promise<CommanderRa
     // id list.
     return {
       items: [], degraded, uniqueCardsRead, candidateCount,
-      receipts: [], freeRanking: null, availOk: true, priceOk: true,
+      freeRanking: null, availOk: true, priceOk: true,
     };
   }
 
-  // The receipt's second clause renders in BOTH ranking modes, so this read is
-  // unconditional — gating it on `?avail=free` would strip the clause from the
-  // default view, which is the one most players never leave. One rollup for the
-  // whole page, shared across every commander.
+  // THE RECEIPT COUNTS LEFT WITH THE ROW. `ReceiptLine` drew them, and D1 cut
+  // it: a claim about which decks hold a commander's cards is read off
+  // ownership, and one component now serves an owned lane and an unowned one.
+  // `receiptCountsByCommander` itself stays — Home still calls it.
+  //
+  // The availability read does NOT leave with them: `rankFree` needs it, which
+  // is why this is still unconditional and why `availOk` still means something.
   const { collection } = await loadCollectionPool(userId);
-  let receipts: [string, ReceiptCounts][] = [];
   let availability: Map<string, Availability> | null = null;
   let availOk = true;
   try {
     availability = await loadAvailability(userId, {
       oracleIds: collection.map((c) => c.oracleId),
     });
-    receipts = [...receiptCountsByCommander(items, collection, availability)];
   } catch {
     // Fail soft: the list, the scores and the ranking are all unaffected. Only
     // the clause and `What's free` are lost, and the toggle says so itself.
@@ -215,7 +216,7 @@ export async function loadCommanderRankings(userId: string): Promise<CommanderRa
   });
 
   return {
-    items: rows, degraded, uniqueCardsRead, candidateCount, receipts, freeRanking, availOk,
+    items: rows, degraded, uniqueCardsRead, candidateCount, freeRanking, availOk,
     priceOk: priceRead.ok,
   };
 }

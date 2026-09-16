@@ -190,14 +190,14 @@ describe("loadCommanderRankings · the row's four joined fields", () => {
 // sentence, no gap slot and no headline figure.
 describe("the list caches' payload versions", () => {
   it("pins both, so a pair bumped half-way fails", () => {
-    expect(commanderRankingsKey).toEqual(["commander-rankings", "v7"]);
-    expect(discoveryKey("fit")).toEqual(["discovery", "fit", "v4"]);
+    expect(commanderRankingsKey).toEqual(["commander-rankings", "v8"]);
+    expect(discoveryKey("fit")).toEqual(["discovery", "fit", "v5"]);
   });
 
   // The sort rides in the key beside the version, so two sorts cannot share an
   // entry — a property of the key's shape rather than of either number.
   it("keeps the two discovery sorts apart at the same version", () => {
     expect(discoveryKey("new")).not.toEqual(discoveryKey("fit"));
-    expect(discoveryKey("new")).toContain("v4");
+    expect(discoveryKey("new")).toContain("v5");
   });
 });

@@ -306,7 +306,14 @@ export function assembleDiscovery(input: {
  * this one when PR 3 changes the payload's shape, not to leave the pair
  * mismatched now.
  *
- * 4 — and this is that bump, taken for the reason version 3 named in advance.
+ * 5 — the row's shape again, and this time by SUBTRACTION: the justification
+ * slot's fields leave the payload with the composition that drew them. A warm
+ * version-4 entry carries them and the new row reads none, which costs nothing
+ * to serve — but `priceOk` arrived in the same release, and a v4 entry has no
+ * such field, so a failed price read would decode as `undefined` and draw every
+ * figure as though the read had succeeded.
+ *
+ * 4 — taken for the reason version 3 named in advance.
  * The row's SHAPE moved: `prose`, `gapSlot`, `score` and `measurableTotal` are
  * new, and the encoder carries a `gapKinds` order beside `keys` and `roles`. A
  * warm version-3 entry decodes into items with no sentence, no gap slot and no
@@ -314,7 +321,7 @@ export function assembleDiscovery(input: {
  * is the strongest kind of bump rather than the weakest: the old entry cannot
  * render the new row at all.
  */
-const PAYLOAD_VERSION = 4;
+const PAYLOAD_VERSION = 5;
 
 /** The cache key a discovery payload is filed under: its sort, and the version
     of the code that produced it. */

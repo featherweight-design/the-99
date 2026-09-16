@@ -108,64 +108,18 @@ export const discoveryCopy = {
       } · ${count === 1 ? "1 commander" : `${n(count)} commanders`}`,
   },
 
-  // ── The justification slot (§7.1) ─────────────────────────────────────
-  // ONE slot, contents chosen by the sort key. The accent marks the sort key and
-  // nothing else, so `overlap` brasses its bar and `distance` brasses its tags.
-  justify: {
-    // §5's correction, at two lengths. Both print M.
-    overlapLabel: "Overlap",
-    overlap: (owned: number, total: number) =>
-      `you own ${n(owned)} of the ${n(total)} cards EDHREC lists for this commander`,
-    overlapShort: (owned: number, total: number) =>
-      `own ${n(owned)} of ${n(total)} EDHREC lists`,
-
-    // Column label + figure unit. "Support" is a noun for the list, not a claim.
-    figureLabelFit: "Support owned",
-    figureUnitFit: (total: number) => `of ${n(total)}`,
-
-    // Novelty. Up to three tag names, then a count — a fourth name buys nothing.
-    distanceLabel: "New to you",
-    tagList: (tags: string[], extra: number) =>
-      extra > 0 ? `${tags.join(" · ")}, and ${n(extra)} more` : tags.join(" · "),
-    // What the nearest deck shares, from the labels and the count of the rest.
-    // Two names then a number, for the same reason `tagList` stops at three: a
-    // third name reads as a list and the clause is a summary.
-    sharedList: (labels: string[], extra: number) =>
-      extra > 0
-        ? `${labels[0]}, ${labels[1]} and ${n(extra)} more`
-        : labels.length === 2
-          ? `${labels[0]} and ${labels[1]}`
-          : labels[0],
-    // Nothing built plays any of them. Plain, and it does not congratulate.
-    distanceNone: "Nothing you have built plays these.",
-    // Partial: name the nearest deck, and say what it shares. One deck, never a
-    // count — severity, not inventory, matching the availability receipt's rule.
-    // The deck is the yardstick and the sentence ends on newness, because this
-    // clause only ever renders under the novelty sort (`discovery-row.tsx`
-    // computes `const tags = fit ? null : tagSentence(item)`), and ending on the
-    // one archetype the player already plays sold the row on its overlap.
-    // No count of "the rest": unplayed archetypes and the nearest deck's shared
-    // ones are disjoint sets, and the figure the row needs is already printed
-    // beside this sentence by `figureUnitNew`.
-    distanceNear: (deckName: string, shared: string) =>
-      `Your closest build, ${deckName}, plays ${shared}. The rest are new.`,
-    distanceAria: (unplayed: number, total: number) =>
-      `${n(unplayed)} of its ${n(total)} archetypes are ones you have never built`,
-
-    figureLabelNew: "Unplayed tags",
-    figureUnitNew: (total: number) => `of ${n(total)} tags`,
-    // Ruling 4's floor, stated as a qualifying fact. It explains PRESENCE, never
-    // position — the percentage is never added to the figure above it.
-    // Both take the threshold as well as the row's own figure: the floor is a
-    // function of the pool, so a row claiming to clear it without naming it
-    // would be a figure without its denominator. `floorNote` is the DESKTOP note
-    // (`discovery-row.tsx:542`, inside `<Emphasised>`) and `floorNoteShort` the
-    // mobile one (`:401`).
-    floorNote: (floorPct: number, pct: number) =>
-      `clears the ${floorPct}% floor: you own ${pct}% of its support list`,
-    floorNoteShort: (floorPct: number, pct: number) =>
-      `clears the ${floorPct}% floor: you own ${pct}% of its list`,
-  },
+  // ── The justification slot is GONE (§7.1) ─────────────────────────────
+  // Every string that drew it retired with the composition: the overlap
+  // sentence and its bar became Fit, the tag list and the nearest-deck clause
+  // became the mechanic gap line, and the floor note went because the lane
+  // header states the floor once rather than every row claiming to clear it.
+  //
+  // Seventeen keys, where the handoff's retirement list named nine. The extra
+  // six were the slot's own labels and units — `overlapLabel`,
+  // `overlapShort`, `figureLabelFit`, `figureUnitFit`, `figureLabelNew`,
+  // `figureUnitNew` — plus `ownedShort` and `unownedShort` below. Found by
+  // grepping for callers rather than by reading the list, which is the only way
+  // a deletion sweep finds its own tail.
 
   // ── Ownership on the row (§7.3) ───────────────────────────────────────
   // The clause always renders, so row height never changes between two rows or

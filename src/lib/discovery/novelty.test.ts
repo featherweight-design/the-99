@@ -1,5 +1,4 @@
 import { describe, expect, it } from "vitest";
-import { discoveryCopy } from "../copy/commander-discovery";
 import { byFit, byNovelty, clearsFloor, commanderIdsIn, floorPct, nearestDeck, orderDeckSets, toDeckTagSets, unplayedTags } from "./novelty";
 
 const tag = (slug: string, count = 1) => ({ slug, label: slug.toUpperCase(), count });
@@ -107,18 +106,10 @@ describe("orderDeckSets", () => {
   });
 });
 
-describe("discoveryCopy.justify.sharedList", () => {
-  const { sharedList } = discoveryCopy.justify;
-
-  it("reads two names with a conjunction", () =>
-    expect(sharedList(["Blink", "Counters"], 0)).toBe("Blink and Counters"));
-
-  it("reads one name alone", () =>
-    expect(sharedList(["Sacrifice"], 0)).toBe("Sacrifice"));
-
-  it("counts the rest past two", () =>
-    expect(sharedList(["A", "B"], 2)).toBe("A, B and 2 more"));
-});
+// `discoveryCopy.justify.sharedList` was tested here and retired with the row's
+// justification slot: the nearest-deck clause it formatted is gone, cut because
+// the sentence is the commander's and the gap line is the reader's, and neither
+// may borrow the other's subject.
 
 const r = (oracleId: string, ownedSupport: number, unplayedCount: number) =>
   ({ oracleId, ownedSupport, unplayedCount });

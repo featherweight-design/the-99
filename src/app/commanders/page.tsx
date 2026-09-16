@@ -66,7 +66,8 @@ export default async function CommandersPage({
     listRecentDecks(userId, 1),
   ]);
 
-  const { items, degraded, uniqueCardsRead, candidateCount, freeRanking, availOk } = rankings;
+  const { items, degraded, uniqueCardsRead, candidateCount, freeRanking, availOk, priceOk } =
+    rankings;
 
   // No commander candidates in the collection.
   if (candidateCount === 0) {
@@ -191,7 +192,6 @@ export default async function CommandersPage({
   // guided-flow condition: decks.length === 0 after collection upload).
   const firstRun = decks.length === 0;
 
-  const receiptCounts = new Map(rankings.receipts);
 
   // The mode is NOT stated here. `?avail=free` is a request, not a promise, and
   // the view is the one place that can answer it: it reads the same `?a=`
@@ -218,7 +218,7 @@ export default async function CommandersPage({
         firstRun={firstRun}
         freeRanking={freeRanking}
         availOk={availOk}
-        receiptCounts={receiptCounts}
+        priceOk={priceOk}
       />
     </section>
   );

@@ -29,9 +29,12 @@
 
 ---
 
-## Component: RecCard (discovery arm)
+## Component: CommanderRow — the row shell
 
-### Container context — row shell (shipped, unchanged; recorded because the slots inherit from it)
+`RecCard` and `DiscoveryRow` are DELETED; this
+shell is what survived them, and both lanes inherit it.
+
+### Container context — row shell (shipped, unchanged)
 
 | Property | Mobile | Desktop |
 |----------|--------|---------|
@@ -45,310 +48,138 @@
 | border-width / style / color | `1px solid var(--border)` `#2B241B` | `1px solid var(--border)` `#2B241B` |
 | border-radius | 11px | 12px |
 
-### Container context — evidence column (grid col 3)
-
-| Property | Mobile | Desktop |
-|----------|--------|---------|
-| display | flex | flex |
-| flex-direction | column | column |
-| gap | 9px (tile gap) | 13px **[C1 divergence: 9px]** |
-| min-width | 0 | 0 |
-
-> README decision 1: the justification occupies "the same y and the same 13px leading" as the shipped Synergy line — the 13px is this flex gap.
-
-### Container context — fit column (grid col 4)
-
-| Property | Mobile | Desktop |
-|----------|--------|---------|
-| display | flex (header-row cluster) | flex |
-| flex-direction | column | column |
-| justify-content | — | center **[C1 divergence: not set]** |
-| align-items | center | stretch (default) |
-| gap | — | 10px **[C1 divergence: 8px]** |
-| flex | none | — |
-| border-left | — | `1px solid var(--border)` `#2B241B` |
-| padding-left | — | 20px |
-
----
-
-### Justification slot — sort = "fit" (wrapper)
-
-| Property | Mobile | Desktop |
-|----------|--------|---------|
-| display | block (`<p>`; the track is hoisted out — see next table) | flex |
-| align-items | — | center |
-| gap | — | 10px |
-| margin | 0 | 0 |
-
-### Justification slot (fit) — label
-
-| Property | Mobile | Desktop |
-|----------|--------|---------|
-| Rendered | — (not drawn at 390px) | yes |
-| font-family | — | `'IBM Plex Mono', monospace` |
-| font-size | — | 10px |
-| font-weight | — | 400 (inherited) |
-| letter-spacing | — | 0.12em |
-| text-transform | — | uppercase |
-| color | — | `var(--fg-faint)` `#8B8270` |
-
-**[C1 divergence]** the label is not drawn on the five list rows either; only frame A1 draws it. README component-notes specifies it, so it ships.
-
-### Justification slot (fit) — overlap track
-
-| Property | Mobile | Desktop |
-|----------|--------|---------|
-| Position in row | full-width bar directly under the header row, above the role chips | inline, between label and sentence |
-| display | block (`<span>` sized) | block (`<span>` sized), `flex: none` |
-| width | 100% | **120px** (frame A1) · **110px** (frame C1). README: "110–120×6px" |
-| height | 6px | 6px |
-| border-radius | 999px | 999px |
-| background | `var(--elevated)` `#29241F` | `var(--elevated)` `#29241F` |
-| overflow | hidden | hidden |
-| border | — | — |
-
-### Justification slot (fit) — overlap track fill
-
-| Property | Mobile | Desktop |
-|----------|--------|---------|
-| display | block | block |
-| width | `owned / total` as % (canvas: 48%) | `owned / total` as % (canvas: 48%, 47%, 41%, 40%, 40%) |
-| height | 100% | 100% |
-| background | `var(--accent)` `#CF8745` | `var(--accent)` `#CF8745` |
-| border-radius | — (clipped by parent `overflow:hidden`) | — |
-
-> This bar plus the `Support owned` label are the **only** brass in the row under `sort = "fit"` (README decision 1).
-
-### Justification slot (fit) — sentence
-
-| Property | Mobile | Desktop |
-|----------|--------|---------|
-| font-family | `'IBM Plex Mono', monospace` | `'IBM Plex Mono', monospace` |
-| font-size | 10.5px | 12px |
-| font-weight | 400 | 400 |
-| line-height | 1.55 | normal (unset) |
-| color | `var(--fg-body)` `#C0B8A6` | `var(--fg-body)` `#C0B8A6` |
-| margin | 0 | 0 |
-| N (`owned`) — color / weight | `var(--fg)` `#EDE6D8` / 600 | `var(--fg)` `#EDE6D8` / 600 |
-| M (`total`) — color / weight | `var(--fg-body)` `#C0B8A6` / 400 (canvas draws M unemphasised at 390px) | `var(--fg)` `#EDE6D8` / 600 **[C1 divergence: M drawn plain `#C0B8A6`/400]** |
-
-> README component-notes is explicit: "sentence mono 12px `--fg-body`, N **and M** in `--fg` 600". Frame A1 matches; the five C1 rows and the mobile tile bold N only. Implement per README + A1.
-
----
-
-### Justification slot — sort = "new" (wrapper)
-
-| Property | Mobile | Desktop |
-|----------|--------|---------|
-| display | block (`<p>`) | flex |
-| align-items | — | **baseline** (differs from the fit wrapper's `center`) |
-| gap | — | 10px |
-| margin | 0 | 0 |
-
-### Justification slot (novelty) — label
-
-| Property | Mobile | Desktop |
-|----------|--------|---------|
-| Rendered | — (not drawn at 390px) | yes |
-| font-family | — | `'IBM Plex Mono', monospace` |
-| font-size | — | 10px |
-| letter-spacing | — | 0.12em |
-| text-transform | — | uppercase |
-| color | — | `var(--fg-faint)` `#8B8270` |
-| flex | — | none |
-
-### Justification slot (novelty) — sentence
-
-| Property | Mobile | Desktop |
-|----------|--------|---------|
-| font-family | `'IBM Plex Sans', sans-serif` (no mono override — differs from the fit sentence) | `'IBM Plex Sans', sans-serif` |
-| font-size | 12.5px | 13.5px |
-| line-height | 1.5 | 1.5 |
-| color | `var(--fg-body)` `#C0B8A6` | `var(--fg-body)` `#C0B8A6` |
-| margin | 0 | 0 |
-| Tag names — color / weight | `var(--accent)` `#CF8745` / 600 | `var(--accent)` `#CF8745` / 600 |
-| Tag names — element | single `<b>` wrapping all three names + their `·` separators | single `<b>` wrapping all three names + their `·` separators |
-| Overflow / extra-tag form | `+2` appended after the bold run | `— and two more` appended after the bold run |
-| Tail sentence — color / weight | inherits `#C0B8A6` / 400 | inherits `#C0B8A6` / 400 |
-| Track / bar | — (**none by rule**) | — (**none by rule**) |
-
-> README decision 1: "**Under novelty there is no bar.** A count of unplayed tags is not a proportion, and a track drawn under it would invent a denominator."
-> **Finding:** the mobile `+2` form has no copy key — `justify.tagList(tags, extra)` only emits `— and ${extra} more`. Either the mobile tile uses the same long form, or the copy module needs a short variant. Flag for Design/eng ruling; do not invent a string.
-
----
-
-### Ranking figure (fit) — numerator
-
-| Property | Mobile | Desktop |
-|----------|--------|---------|
-| font-family | `'IBM Plex Mono', monospace` | `'IBM Plex Mono', monospace` |
-| font-size | 20px | **34px** (frame A1) · **30px** (frame C1). README: "30–34px" |
-| font-weight | 600 | 600 |
-| line-height | 1 | 1 |
-| color | `var(--fg)` `#EDE6D8` | `var(--fg)` `#EDE6D8` |
-
-### Ranking figure (fit) — unit / denominator
-
-| Property | Mobile | Desktop |
-|----------|--------|---------|
-| font-family | `'IBM Plex Mono', monospace` | `'IBM Plex Mono', monospace` |
-| font-size | 9px | 13px (A1) · 12.5px (C1) |
-| letter-spacing | 0.12em | — |
-| text-transform | uppercase (canvas prints `OF 264`) | none (canvas prints `of 264`) |
-| color | `var(--fg-faint)` `#8B8270` | `var(--fg-faint)` `#8B8270` |
-
-### Ranking figure (fit) — figure row layout
-
-| Property | Mobile | Desktop |
-|----------|--------|---------|
-| display | flex | flex |
-| flex-direction | column | row |
-| align-items | center | baseline |
-| gap | 0 | 6px |
-| flex | none | — |
-
-### Ranking figure (fit) — column label
-
-| Property | Mobile | Desktop |
-|----------|--------|---------|
-| Rendered | — (not drawn at 390px) | yes |
-| font-family | — | `'IBM Plex Mono', monospace` |
-| font-size | — | 10px |
-| letter-spacing | — | 0.16em |
-| text-transform | — | uppercase |
-| color | — | `var(--accent)` `#CF8745` |
-
-**[C1 divergence]** not drawn on the five list rows; frame A1 + README component-notes carry it.
-
-### Ranking figure (fit) — full-width track
-
-| Property | Mobile | Desktop |
-|----------|--------|---------|
-| Position | the same single full-width bar under the header row (mobile has one track, not two) | in the fit column, below the `Support owned` label |
-| width | 100% | 100% |
-| height | 6px | 6px |
-| border-radius | 999px | 999px |
-| background | `var(--elevated)` `#29241F` | `var(--elevated)` `#29241F` |
-| overflow | hidden | hidden |
-| fill — width / height / background | 48% / 100% / `var(--accent)` `#CF8745` | 48% / 100% / `var(--accent)` `#CF8745` |
-
-**[C1 divergence]** absent from the five list rows.
-
----
-
-### Ranking figure (novelty) — numerator
-
-| Property | Mobile | Desktop |
-|----------|--------|---------|
-| font-family | `'IBM Plex Mono', monospace` | `'IBM Plex Mono', monospace` |
-| font-size | 20px | 34px |
-| font-weight | 600 | 600 |
-| line-height | 1 | 1 |
-| color | `var(--fg)` `#EDE6D8` | `var(--fg)` `#EDE6D8` |
-
-### Ranking figure (novelty) — unit
-
-| Property | Mobile | Desktop |
-|----------|--------|---------|
-| font-family | `'IBM Plex Mono', monospace` | `'IBM Plex Mono', monospace` |
-| font-size | 9px | 13px |
-| letter-spacing | 0.12em | — |
-| text-transform | uppercase | none |
-| color | `var(--fg-faint)` `#8B8270` | `var(--fg-faint)` `#8B8270` |
-| Content shape | canvas prints `NEW TAGS` — **no denominator** | `of 5 tags` — denominator present |
-
-> **Finding (blocking for mobile):** the copy module's header states "EVERY FIGURE PRINTS ITS DENOMINATOR. There is no string below that renders N without M, at any width", and `justify.figureUnitNew(total)` returns `of ${total} tags`. The 390px canvas draws `NEW TAGS`, which drops M and matches no key. The fit tile's `OF 264` keeps M but also matches no key (`figureUnitFit` returns lowercase `of ${total}`, so `text-transform: uppercase` reconciles it). Implement mobile novelty as the uppercased `figureUnitNew`, or get a Design ruling. Do not ship `NEW TAGS` as a literal.
-
-### Ranking figure (novelty) — track
-
-| Property | Mobile | Desktop |
-|----------|--------|---------|
-| Rendered | — (**none by rule**) | — (**none by rule**) |
-
-### Ranking figure (novelty) — floor note
-
-| Property | Mobile | Desktop |
-|----------|--------|---------|
-| Rendered | yes (last line of tile) | yes (last line of fit column) |
-| font-family | `'IBM Plex Mono', monospace` | `'IBM Plex Mono', monospace` |
-| font-size | 10.5px | 11.5px |
-| line-height | normal (unset) | 1.5 |
-| color | `var(--fg-faint)` `#8B8270` | `var(--fg-faint)` `#8B8270` |
-| margin | 0 | 0 |
-| percentage — color / weight | inherits `#8B8270` / 400 (no `<b>` at 390px) | `var(--fg-body)` `#C0B8A6` / 600 |
-
-> Eng note: the note names two percentages, the threshold and the row's own, and **both** take
-> `--fg-body`. The drawing predates the threshold being printed at all; marking only the row's own
-> figure is not implementable, because a row clearing the floor exactly prints the same string
-> twice and the mark cannot tell the two apart.
-
-> README component-notes: "then the floor line: mono 11.5px `--fg-faint`, percentage in `--fg-body`." Canvas note: "the floor is stated as a qualifying fact in `--fg-faint` beneath the figure, **never added to it**. It explains presence, not position."
-
----
-
-### Ownership pip
-
-| Property | Mobile | Desktop |
-|----------|--------|---------|
-| Position | title row, **between the rank numeral and the truncated name** | rank column (grid col 1), **under the numeral** |
-| width | 6px | 6px |
-| height | 6px | 6px |
-| transform | `rotate(45deg)` | `rotate(45deg)` |
-| border-radius | — (square, rotated — never a circle) | — |
-| flex | none | — |
-| display | inline block-level span | inline block-level span |
-| Owned — background | `var(--accent)` `#CF8745` | `var(--accent)` `#CF8745` |
-| Owned — border | — | — |
-| Unowned — background | transparent | transparent |
-| Unowned — border-width / style / color | `1.5px solid var(--fg-locked)` `#6E6654` | `1.5px solid var(--fg-locked)` `#6E6654` |
-| Container gap (numeral ↔ pip) | 6px (title row) | 7px (rank column, `flex-direction: column`) |
-| Container align-items / justify-content | center / — | center / center **[C1 divergence: `justify-content` not set]** |
-| aria | `aria-hidden` | `aria-hidden` |
-| transition | — | — |
-
-Rank numeral it sits with (context, shipped): Cinzel 800, **17px** mobile / **26px** desktop, `var(--fg-faint)` `#8B8270`, `line-height: 1`; mobile adds `min-width: 16px; text-align: center`.
-
-> README §7.3: "Replaces the decorative `--border-strong` diamond." Colour is never the only signal — the clause below says it in words and the accessible name repeats it.
-
----
-
-### Ownership clause (first clause of the shipped receipt line)
-
-Receipt line container:
-
-| Property | Mobile | Desktop |
-|----------|--------|---------|
-| element | `<p>` | `<p>` |
-| margin | 0 | 0 |
-| font-family | `'IBM Plex Mono', monospace` | `'IBM Plex Mono', monospace` |
-| font-size | 10.5px | 12.5px **[C1 divergence: 12px]** |
-| line-height | 1.55 | normal (unset) |
-| color (base) | `var(--fg-faint)` `#8B8270` | `var(--fg-faint)` `#8B8270` |
-| display | flex | flex |
-| align-items | center | center |
-| gap | 5px | 6px |
-| flex-wrap | wrap | wrap **[C1 divergence: not set]** |
-
-Clause parts:
-
-| Property | Mobile | Desktop |
-|----------|--------|---------|
-| Leading glyph — size / transform | 6px × 6px / `rotate(45deg)` | 6px × 6px / `rotate(45deg)` |
-| Leading glyph — owned | background `var(--accent)` `#CF8745`, `flex: none` | background `var(--accent)` `#CF8745`, `flex: none` |
-| Leading glyph — unowned | `border: 1.5px solid var(--fg-locked)` `#6E6654`, background transparent, `flex: none` | same |
-| Clause text — owned color | `var(--avail-hard-fg)` `#D9975C` | `var(--avail-hard-fg)` `#D9975C` |
-| Clause text — unowned color | `var(--fg-faint)` `#8B8270` | `var(--fg-faint)` `#8B8270` |
-| Clause text — font-weight | 400 | 400 |
-| Separator `·` — color | `var(--border-strong)` `#3A3229` | `var(--border-strong)` `#3A3229` |
-| Conditional rendering | **always rendered**, both branches | **always rendered**, both branches |
-
-Sibling clauses on the same line (shipped, unchanged — recorded because they share the flex container): `N of your cards fit` at base `#8B8270`; the `N already in use` clause keeps its own filled 6px `rotate(45deg)` `#CF8745` diamond and `var(--avail-hard-fg)` `#D9975C` text.
-
-> **Note the doubled glyph.** The canvas draws the ownership diamond twice per row — once in the rank column and once as the receipt line's leading glyph. The README describes the rank-column pip as the glyph and the clause as "a word", but every drawn frame (A1, A2, C1 ×5, both mobile tiles) renders the inline glyph as well. Implement both; it is consistent across all eight drawn rows.
-
-> README §7.3: "**Both clauses always render**, so row height never changes between two rows or two players."
-
----
+## Component: CommanderRow (both lanes)
+
+**Supersedes** the `RecCard (discovery arm)` sections and `rec-card.tsx`'s owned arm. One
+component, two populations — **nothing on the row may be read off ownership** (handoff D1),
+which is what cut `not in your collection`: once both lanes share a row, every `/discover` row
+is unowned and every `/commanders` row is owned, so the line never distinguished anything.
+
+**No `"use client"`.** The disclosure trigger retired with the tag list, so the row has no
+control on it and nothing to announce.
+
+### The five states
+
+| # | State | Condition | Sentence slot | Gap slot | Figures slot |
+|---|---|---|---|---|---|
+| 1 | **Full** | `prose` present, `gapSlot.kind === "unplayed"` | the stored sentence | `None of your decks play {a}, {b} or {c}.` | Fit chip · deck count · price |
+| 2 | **No sentence** | `prose === null` | **unmounts** — no placeholder, no reserved height, nothing synthesised and nothing truncated into the gap | unchanged | unchanged |
+| 3 | **No tags** | `gapSlot.kind === "noMechanics"` | unchanged | `discoveryCopy.untagged` heading + body, in the slot the line would occupy | unchanged |
+| 4 | **Nothing new** | `gapSlot.kind === "allPlayed"` | unchanged | `You already play every mechanic this commander leans on.` | unchanged |
+| 5 | **Unpriced** | `price.kind === "absent"` **or** `priceOk === false` | unchanged | unchanged | the price figure **unmounts**; the deck count stays; no dash, no zero, no reason given |
+
+**State 5 carries a condition the handoff did not have.** `priceOk` is the payload's record of a
+failed price read, added in PR 3b (#700) after review found that a swallowed failure was cached
+for up to an hour as `absent` — which this codebase defines as *the feed has never carried this
+printing*. Omitting on a lost read rather than drawing `absent` is **ruling D3 applied to the
+reading**: a figure with no reading is omitted, never zeroed. It needs no new drawn state, which
+is why it folds into state 5 rather than becoming a sixth.
+
+### The slots are independent, so the states multiply — and all of it is drawn
+
+| | Full gap | Nothing new | No tag data |
+|---|---|---|---|
+| **sentence present** | 1 | 4 | 3 |
+| **sentence absent** | 2 | 2 + 4 | 2 + 3 |
+
+× `Unpriced`, which removes one figure from the foot line in all six. **No combination needs a
+ruling**, because no slot reads another: the sentence is the commander's, the gap line is the
+reader's, the figures are the catalogue's.
+
+### Gap slot — the line
+
+| Property | Mobile (390px) | Desktop (1280px) | Source |
+|---|---|---|---|
+| Copy, three names | `None of your decks play {a}, {b} or {c}.` | same | `commanderRowCopy.gap.unplayed` |
+| Copy, two names | `None of your decks play {a} or {b}.` | same | same |
+| Copy, one name | `None of your decks play {a}.` | same | same |
+| Copy, nothing new | `You already play every mechanic this commander leans on.` | same | `commanderRowCopy.gap.allPlayed` |
+| Copy, no mechanic tags | `discoveryCopy.untagged.heading` + `.body` | same | shipped, unchanged |
+| Name cap | 3 | 3 | `GAP_NAME_CAP` |
+| Aria | read as written, in all three forms | same | — |
+
+**Three names is the normal form, not the generous one.** Measured over all 3,279 indexed
+commanders with the real classifier and the real 0.5% floor: **93.1%** have three or more
+eligible mechanic tags; 1.5% have one and 1.8% have two. The handoff's amber B worried about the
+opposite case. `GAP_NAME_CAP` binds on nine rows in ten.
+
+**The slot is never empty** (D2) — one of three occupants, always. Row height varies with the
+sentence and with nothing else (D9).
+
+**No creature type reaches the reader** (D5). The classifier decides, never `tags.length`: a
+commander whose every tag is a creature type draws `noMechanics`, not `allPlayed`, because
+`allPlayed` would assert something about a commander with nothing on file.
+
+### Sentence slot
+
+| Property | Mobile (390px) | Desktop (1280px) | Source |
+|---|---|---|---|
+| Content | `commander_support.prose`, verbatim | same | the database |
+| Null | the slot unmounts | same | — |
+| Aria | read as written; **not** `aria-hidden` | same | — |
+
+**Measured sentence lengths** (production, 3,341 of 3,342 rows): longest **190**, mean 148,
+p95 171. The handoff drew 2 lines at a 760px measure (≈190 characters) and 4 lines at 330px
+(≈176). So the desktop budget is met **with zero margin** — the longest sentence in the
+catalogue is exactly the budget — and **75 commanders (2.2%) exceed the phone estimate.**
+
+Characters are a proxy for a measure that depends on glyph widths, so the desktop figure is not
+proof. The handoff's own instruction governs if either clips: *the measure moves, not the design
+— widen to the row's full `1fr` before adding a third line.* To be settled by browser
+measurement against the three real 190-character sentences, not by character count.
+
+The clamp stays regardless: a sentence overflowing its block silently is worse than one visibly
+cut, and `-webkit-line-clamp` forces an atomic box — so nothing may be placed after the sentence
+inside the same element.
+
+### Figures slot — the foot line
+
+| Property | Mobile (390px) | Desktop (1280px) | Source |
+|---|---|---|---|
+| Fit | `{score}` + `commandersCopy.row.fitDenominator` | same | reused unchanged |
+| Fit, unmeasurable synergy | `commandersCopy.row.fitDenominatorMeasurable` | same | reused unchanged — `40/40` needs no new string |
+| Deck count | `discoverCopy.row.popularity` | same | reused unchanged |
+| Deck count, null | omitted | omitted | D3 |
+| Price | `discoveryCopy.price.*` | same | reused unchanged |
+| Separator | `·`, `aria-hidden` | same | `commanderRowCopy.figures.separator` |
+| Fit chip aria | figure and denominator `aria-hidden`; the link's name carries the reading | same | unchanged |
+
+**The row prints the denominator it was given** (D4) — never a bare `40/100`. And `score` is
+normally `0..measurableTotal` but **that is not an invariant**: the synergy ratio is deliberately
+unclamped, and `edhrec_total` sits one below the child-row count on 2 of 3,342 commanders, so a
+reader owning every support card can read a point or two over. Print it; never assert a bound on
+it.
+
+### What does NOT change
+
+| Surface | Ruling |
+|---|---|
+| `ArtWash` / the band | Unchanged. `labelAtPx` drops to **one value** — one row, one block. The figure is browser-measured, not derived; it is not recorded here until a probe has it. |
+| The Fit chip | Unchanged, both sizes, both denominator forms |
+| `IdentityPips` | Unchanged |
+| `PriceSlot` | Unchanged — its dot, its source label, its absent rule |
+| Commander Details | **Untouched.** It already prints this sentence and this figure; the row is catching up to it |
+| The lane filters, orders and result lines | Unchanged. The row stops printing the floor note; the header still states the floor once |
+
+### Row link aria
+
+`{name} · Fit {score} of {measurableTotal}` — `explainedCopy.score.scoreAria`, unchanged. Both
+of the old trailing clauses go: `not in your collection` is cut by D1, and the justification
+paraphrase was a spoken restatement of a sentence that is now read aloud as written.
+
+### Retired with this composition
+
+`check:copy-drift` fails on any table still quoting these. All eleven have **zero consumers
+outside the row**, verified by grep.
+
+`discoverCopy.row.notOwned` · `discoverCopy.row.novelty` · `discoverCopy.row.supportOwned` ·
+`discoveryCopy.justify.tagList` · `.distanceNear` · `.distanceNone` · `.distanceLabel` ·
+`.distanceAria` · `.sharedList` · `.floorNote` · `.floorNoteShort` · `.overlap` ·
+`commandersCopy.row.action`
+
+`planeCopy.overflow.*` is **kept**, per the handoff — but recorded as an erratum: the row and its
+own copy test were its only consumers, so after this PR it has none. The handoff says the plane
+keeps them; the code says the plane never used them.
 
 ### Price slot — wrapper
 
@@ -465,76 +296,50 @@ Sibling clauses on the same line (shipped, unchanged — recorded because they s
 
 ---
 
-## State Coverage — RecCard discovery arm
+## State Coverage — CommanderRow
 
-| State | Triggering condition | What renders | Key props required |
+Supersedes the `RecCard discovery arm` matrix. Five states, and the price rows below them, which
+are unchanged.
+
+| State | Triggering condition | What renders | Key props |
 |---|---|---|---|
-| **Fit justification** | `sort === "fit"` | Label `Overlap` + 110–120×6px track (fill = `owned/total`) + overlap sentence. Brass = track + `Support owned` label only. | `sort`, `owned`, `edhrecTotal` |
-| **Novelty justification** | `sort === "new"` | Label `New to you` + tag sentence, tag names in `--accent` 600. **No track at all.** | `sort`, `tags[]`, `tagTotal`, `nearestDeckName?`, `sharedTag?` |
-| **Fit ranking figure** | `sort === "fit"` | `{N}` 30–34px + `of {M}` + `Support owned` label + full-width 6px track | `owned`, `edhrecTotal` |
-| **Novelty ranking figure** | `sort === "new"` | `{N}` 34px + `of {M} tags` + `Unplayed tags` label + floor note. **No track.** | `unplayedTags`, `tagTotal`, `floorPct` |
-| **Figure suppressed** | `edhrecTotal === null` | **Neither figure prints.** Row falls back to the receipt line alone. | `edhrecTotal` |
-| **Novelty tail — none built** | player's built-tag set ∩ commander tags = ∅ | `distanceNone` sentence after the tag list | `sharedTag === null` |
-| **Novelty tail — partial** | at least one tag overlaps a built deck | `distanceNear(deckName, shared)` after the tag list | `nearestDeckName`, `sharedTag` |
-| **Tag overflow** | `tags.length > 3` | first three names joined by ` · `, then `— and {extra} more` (desktop) | `tags[]`, `extra` |
-| **Ownership — owned** | commander in collection (`owned === true`) | Filled `--accent` pip (rank column + receipt-line glyph) · clause `in your collection, never built` in `--avail-hard-fg` | `owned` |
-| **Ownership — unowned** | `owned === false` | Hollow `1.5px --fg-locked` pip (both places) · clause `not in your collection` in `--fg-faint` | `owned` |
-| **Price 1 — priced** | `price.kind === "priced"` && `price.cents < 10000` && `owned === false` | Hairline + filled `--success` dot + figure `--fg-body` + `manapool` | `price`, `owned` |
-| **Price 2 — priced, three figures** | `price.kind === "priced"` && `price.cents >= 10000` && `owned === false` | Identical, figure at `--fg` | `price`, `owned` |
-| **Price 3 — notStocked** | row present in `printing_prices` but its `as_of` is behind the newest `as_of` in the table; `owned === false` | Hairline + hollow `1.5px --fg-locked` dot + `not stocked` in `--fg-faint` + `manapool` | `price` |
-| **Price 4 — absent** | `price.kind === "absent"` (no `printing_prices` row for any of the commander's `scryfall_id`s) | **Nothing** — no dot, no dash, no hairline, no reserved height | `price` |
-| **Price 5 — suppressed by ownership** | `owned === true`, any `price` | **Nothing** — same treatment as state 4, different reason | `owned` |
-| **Price 6 — live but priceless** | row is live but `price_cents === null` | **Treated as state 4** (absent) | `price` |
-| **Untagged note** | `tagTotal === 0` (equivalently `tags` absent) — only reachable under `sort === "fit"`, since ruling 5 excludes untagged commanders from `sort === "new"` | `⚠` + `No tag data` lead-in + body, no Retry | `tagTotal`/`tags` |
-| **Mobile short copy** | viewport `< 640px` | `overlapShort`, `ownedShort`/`unownedShort`, `floorNoteShort` | — |
-| **Score delta** | any discovery row | **Never renders** — `ScoreDelta` is null under discovery's first release | `scoreDelta === null` |
-| **`score /100 FIT` stack** | any discovery row | **Never renders** under discovery (ruling 3) | `sort` |
+| **Full** | `prose` present, `gapSlot.kind === "unplayed"` | the stored sentence, the gap line naming up to three mechanics, Fit · deck count · price | `prose`, `gapSlot`, `score`, `measurableTotal`, `deckCount`, `price` |
+| **No sentence** | `prose === null` | the sentence slot **unmounts** — no placeholder, no reserved height | `prose` |
+| **No tags** | `gapSlot.kind === "noMechanics"` | `discoveryCopy.untagged` heading + body in the gap slot | `gapSlot` |
+| **Nothing new** | `gapSlot.kind === "allPlayed"` | `commanderRowCopy.gap.allPlayed` | `gapSlot` |
+| **Unpriced** | `price.kind === "absent"` OR `priceOk === false` | the price figure **unmounts**; the deck count stays | `price`, `priceOk` |
+| **Unmeasured Fit** | `measurableTotal < 100` | the chip prints `fitDenominatorMeasurable(measurableTotal)` — never a bare `/100` | `measurableTotal` |
+| **No deck count** | `deckCount === null` | the figure is omitted, never zeroed | `deckCount` |
 
----
+**Every state that used to be read off ownership is gone**, and D1 is why: one component serves a
+lane of owned commanders and a lane of unowned ones, so `owned` distinguishes nothing. The
+ownership pip's two readings, the receipt clause and the free-mode score delta all left with it.
+The delta is worth naming because the handoff's cut list does not: a "was 74, now 58" note under
+`Free cards only` is a figure read off availability.
 
 ## Copy key map
 
-Module: `discoveryCopy` in `src/lib/copy/commander-discovery.ts`. Enumerated as structure only — key + arguments. Wording is out of scope.
-
 | Element | Copy key | Arguments |
 |---|---|---|
-| Justification label (fit) | `justify.overlapLabel` | — |
-| Justification sentence (fit, ≥640px) | `justify.overlap` | `(owned: number, total: number)` |
-| Justification sentence (fit, 390px) | `justify.overlapShort` | `(owned: number, total: number)` |
-| Justification accessible name (fit) | `justify.overlapAria` | `(owned: number, total: number, name: string)` |
-| Fit column label | `justify.figureLabelFit` | — |
-| Fit column unit | `justify.figureUnitFit` | `(total: number)` |
-| Justification label (novelty) | `justify.distanceLabel` | — |
-| Tag list (novelty) | `justify.tagList` | `(tags: string[], extra: number)` |
-| Novelty tail — nothing shared | `justify.distanceNone` | — |
-| Novelty tail — partial overlap | `justify.distanceNear` | `(deckName: string, shared: string)` |
-| Justification accessible name (novelty) | `justify.distanceAria` | `(unplayed: number, total: number)` |
-| Novelty column label | `justify.figureLabelNew` | — |
-| Novelty column unit | `justify.figureUnitNew` | `(total: number)` |
-| Floor note (≥640px) | `justify.floorNote` | `(pct: number)` |
-| Floor note (390px) | `justify.floorNoteShort` | `(pct: number)` |
-| Ownership clause, owned (≥640px) | `ownership.owned` | — |
-| Ownership clause, unowned (≥640px) | `ownership.unowned` | — |
-| Ownership clause, owned (390px) | `ownership.ownedShort` | — |
-| Ownership clause, unowned (390px) | `ownership.unownedShort` | — |
-| Ownership accessible name, owned | `ownership.ownedAria` | — (leads the row's accessible name, before any figure) |
-| Ownership accessible name, unowned | `ownership.unownedAria` | — |
-| Price provenance | `price.source` | — |
-| Price, not stocked | `price.notStocked` | — |
-| Price accessible name, priced | `price.aria` | `(formatted: string)` |
-| Price accessible name, not stocked | `price.notStockedAria` | — |
-| Price figure itself | **no key** — caller-formatted currency | — |
-| Price absent / owned-suppressed | **no key exists, by design** ("so a future edit cannot accidentally give absence a label") | — |
-| Untagged note heading | `untagged.heading` | — |
-| Untagged note body | `untagged.body` | — |
-| Receipt line's other clauses, degraded strings, `Build from` labels | **not in this module** — reused **by reference**; the receipt and degraded strings from `availability.ts`, the control's own labels from `commandersCopy.availability` in `lanes.ts`. `discoveryCopy` edits neither | — |
+| Gap line, 1–3 names | `commanderRowCopy.gap.unplayed` | `(labels: string[])` |
+| Gap line, nothing new | `commanderRowCopy.gap.allPlayed` | — |
+| Gap line, no mechanic tags | `discoveryCopy.untagged.heading` / `.body` | — |
+| Foot-line separator | `commanderRowCopy.figures.separator` | — |
+| Fit denominator | `commandersCopy.row.fitDenominator` | — |
+| Fit denominator, unmeasured | `commandersCopy.row.fitDenominatorMeasurable` | `(total: number)` |
+| Deck count | `discoverCopy.row.popularity` | `(decks: number)` |
+| Price figure / dot / provenance | `discoveryCopy.price.*` | unchanged |
+| Row link accessible name | `explainedCopy.score.scoreAria` | `(score: number, total: number)` |
+| The sentence | `commander_support.prose` | the database |
 
-**Copy-key gaps found (structure, not wording):**
-1. Mobile novelty overflow is drawn as `+2`; `justify.tagList` only emits the long `— and N more` form. No short key exists.
-2. Mobile novelty unit is drawn as `NEW TAGS`, dropping M; `justify.figureUnitNew(total)` always prints M, and the module header states no string renders N without M at any width. Uppercasing `figureUnitFit`/`figureUnitNew` via `text-transform` reconciles the fit tile (`OF 264`) but not the novelty tile.
-3. All counts on this surface pass through `n = (v) => v.toLocaleString("en-US")` inside the module. The row's own N/M are **not** wrapped (they are sub-1,000 by construction); do not add locale formatting to the row figures.
+**Seventeen keys retired**, where the handoff's list named nine. The six the list missed were the
+justification slot's own labels and units — `justify.overlapLabel`, `.overlapShort`,
+`.figureLabelFit`, `.figureUnitFit`, `.figureLabelNew`, `.figureUnitNew` — plus `ownership.ownedShort`
+and `.unownedShort`. Found by grepping for callers rather than by reading the list.
 
----
+**`planeCopy.overflow.*` is kept** per the handoff, and has no caller after this PR: the row and
+its own copy test were the only ones. **`RoleChips` and `FitBar` are both kept** — the handoff's
+erratum said only `FitBar` survives, and `src/components/about/figures.tsx` imports both.
 
 ## Numbered rules touching this phase
 
@@ -613,7 +418,13 @@ Token contract, from the E2 frame:
 
 > **No new token, no new hex, no new motion class, no new component.** … the ownership pip is `RecCard`'s own diamond; the price dot is the availability dot.
 
-> **Ownership and stock are never colour alone.** Filled vs. hollow is a shape difference, the receipt line says the word, and the row's accessible name carries *"in your collection"* or *"not in your collection"* before the figures. Price reads as *"$18.40, in stock at ManaPool"*, and is `aria-hidden` never.
+> **Stock is never colour alone.** Price reads as *"$18.40, in stock at ManaPool"*, and is
+> `aria-hidden` never.
+>
+> The OWNERSHIP half of this rule retired with the composition: the pip's two readings, the
+> receipt clause and the accessible name's *"in your collection"* / *"not in your collection"*
+> are all gone under D1, because one component serves an owned lane and an unowned one. The
+> row's accessible name is now `explainedCopy.score.scoreAria` — the commander and its Fit.
 
 > **Contrast.** Every figure that carries meaning sits at `--fg` or `--fg-body` on `--surface`. `--fg-locked` is used only for the disabled sort option and the dimmer of the two reveal lines — *(note: the row also uses `--fg-locked` for the hollow pip's border, the hollow price dot's border, and the `manapool` provenance word; the contrast sentence is about text carrying meaning, and none of those three do)*.
 
