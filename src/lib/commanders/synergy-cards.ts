@@ -1,4 +1,6 @@
 import type { CardFacet } from "../cards/facet";
+import type { Availability } from "../decks/availability";
+import type { PriceFact } from "../decks/price";
 
 /** One row of the commander's synergy ranking, as the panel draws it.
  *
@@ -20,6 +22,24 @@ export type SynergyCard = {
   owned: boolean;
   /** The deck this card already sits in, or null. */
   committedTo: string | null;
+  /**
+   * This card's claim picture, or null.
+   *
+   * **Null means NO ROW, never "unowned."** `loadAvailability` is driven by its
+   * `owned` CTE and excludes basics model-wide, so an unowned card, a basic and
+   * an unreachable read all arrive the same way. The buy branch reads `owned`
+   * above — never this being null — or a basic land renders as a purchase.
+   */
+  availability: Availability | null;
+  /**
+   * What one copy costs, or null. Joined by whichever surface draws the card.
+   *
+   * `newestAsOf` is deliberately NOT here: liveness is a property of the price
+   * table, not of a card, so it rides one prop per list — the shape
+   * `top-off-list.tsx` already uses. `BuyTag` owns every reading of the pair,
+   * so nothing here decides what a missing figure means.
+   */
+  price: PriceFact | null;
   /** Scryfall's cost string ("{2}{U}"), carried whole rather than as a mana
    *  value: `CostPips` draws hybrid and Phyrexian symbols from their halves,
    *  and an integer cannot be taken back apart into them. */

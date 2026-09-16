@@ -10,6 +10,7 @@ import { readCommanderProse } from "../../../lib/prose/read";
 import { readSynergyCards } from "./synergy-read";
 import { loadAvailability } from "../../../lib/decks/availability-query";
 import { withAvailability, type Availability } from "../../../lib/decks/availability";
+import { loadPrices } from "../../../lib/decks/price-query";
 import type { RoleName, RoleCard } from "../../../lib/recs/score";
 
 export default async function CommanderDetailPage({
@@ -118,6 +119,23 @@ export default async function CommanderDetailPage({
     ],
   }).catch(() => new Map<string, Availability>());
 
+  // The price read, for the synergy panel's unowned rows alone. Role Coverage is
+  // built from the owned pool and has nothing to buy (ruling 6), so this is
+  // narrowed to the synergy ids rather than the page's whole set.
+  //
+  // `loadPrices` rather than a hand-rolled join: it already encodes foil-only,
+  // sold-out and never-stocked, and a second expression of those rules would
+  // drift from it one round at a time. Fail-soft for the same reason the claim
+  // read is — an absent price draws a bare `buy`, which `BuyTag` already handles.
+  const { prices, newestAsOf } = await loadPrices(
+    synergyCards.filter((c) => !c.owned).map((c) => c.oracleId),
+  ).catch(() => ({ prices: new Map(), newestAsOf: null }));
+
+  const synergyWithClaims = withAvailability(synergyCards, availability).map((c) => ({
+    ...c,
+    price: prices.get(c.oracleId) ?? null,
+  }));
+
   const withClaims = {
     ...commander,
     roleCards: Object.fromEntries(
@@ -134,7 +152,8 @@ export default async function CommanderDetailPage({
       rank={found.rank}
       isBestFit={found.rank === 1}
       avail={avail}
-      synergyCards={synergyCards}
+      synergyCards={synergyWithClaims}
+      newestAsOf={newestAsOf}
       prose={prose}
     />
   );

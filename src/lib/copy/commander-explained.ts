@@ -252,21 +252,7 @@ export const explainedCopy = {
     /** Drawn once ANY marker is on screen, because "and available" is then false
         of a neighbouring chip. */
     dotOwned: "Owned.",
-    dotCommitted: "Owned, already in a deck.",
     dotUnowned: "Not owned.",
-
-    /** Appended to the chip's existing accessible name — NOT a replacement.
-
-        The shipped names are recommendations.ts:32-35:
-          with figure:  `View details for ${name}. In ${pct}% of decks.`
-          no figure:    `View details for ${name}. No EDHREC figure.`
-          showFigures=false: undefined, falling through to cardDetailCopy.triggerAria(name).
-
-        R2 quoted the shipped name as "Sol Ring, 94% inclusion" and rewrote the whole string,
-        which dropped "View details for" — the only thing telling a screen-reader user the chip
-        opens something. These keys are a SUFFIX applied to whichever of the three the chip
-        already computed, so all three branches keep their affordance and their figure clause. */
-    ariaSuffix: (deck: Deck) => ` Already in ${deck.name}.`,
   },
 
   // ── §5.2 / #347 The Role Coverage sort ────────────────────────────────

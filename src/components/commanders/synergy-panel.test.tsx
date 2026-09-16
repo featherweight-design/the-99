@@ -9,7 +9,7 @@ import { CardDetailProvider } from "../cards/card-detail-provider";
 function make(n: number, facet: SynergyCard["facet"] = "creature"): SynergyCard[] {
   return Array.from({ length: n }, (_, i) => ({
     oracleId: `id-${facet}-${i}`, name: `${facet} ${i}`, typeLine: "Creature — Human",
-    facet, inclusionPct: 50, synergyPts: 100 - i, owned: i % 2 === 0, committedTo: null, manaCost: null,
+    facet, inclusionPct: 50, synergyPts: 100 - i, owned: i % 2 === 0, committedTo: null, availability: null, price: null, manaCost: null,
   }));
 }
 
@@ -41,34 +41,28 @@ describe("SynergyPanel", () => {
   // The three clauses share one paragraph with the three pips, which render no
   // text, so the paragraph reads as the clauses joined by spaces.
   const SYNERGY_LEGEND = [
-    explainedCopy.committed.dotFree,
-    explainedCopy.committed.dotCommitted,
+    explainedCopy.committed.dotOwned,
     explainedCopy.committed.dotUnowned,
   ].join(" ");
 
-  // The one surface where all three dot states can share a list, so the line
-  // labels all three. Drawn only where a row on screen carries the mark, the
-  // same condition the role panels use. The clauses share one paragraph with
-  // the three pips, so each is asserted rather than the line as a whole.
-  it("labels all three dot states once a visible row is committed", () => {
-    const cards = make(3);
-    cards[0] = { ...cards[0], committedTo: "Atraxa" };
+  // TWO states, always. The legend was conditional on a visible committed row,
+  // because the mark it explained was the committed dot; the dot is ownership
+  // now and this is the only panel that can draw an unowned row, so both states
+  // are reachable on every render.
+  it("labels both dot states", () => {
+    wrap(<SynergyPanel {...props} cards={make(3)} width="desktop" />);
+    expect(screen.getByText(SYNERGY_LEGEND)).toBeInTheDocument();
+  });
+
+  it("draws the legend even when every visible row is owned and free", () => {
+    const cards = make(3).map((c) => ({ ...c, owned: true, availability: null }));
     wrap(<SynergyPanel {...props} cards={cards} width="desktop" />);
     expect(screen.getByText(SYNERGY_LEGEND)).toBeInTheDocument();
   });
 
-  it("draws no dot legend when nothing on screen is committed", () => {
+  it("names no retired committed state", () => {
     wrap(<SynergyPanel {...props} cards={make(3)} width="desktop" />);
-    expect(screen.queryByText(SYNERGY_LEGEND)).toBeNull();
-  });
-
-  // Resting on six rows at phone width, a card committed beyond the cap is not
-  // on screen, so its legend would explain a dot the reader cannot see.
-  it("ignores a committed card the resting cap is hiding", () => {
-    const cards = make(30);
-    cards[20] = { ...cards[20], committedTo: "Atraxa" };
-    wrap(<SynergyPanel {...props} cards={cards} width="phone" />);
-    expect(screen.queryByText(SYNERGY_LEGEND)).toBeNull();
+    expect(screen.queryByText(/already in a deck/i)).toBeNull();
   });
 
   it("rests on six rows at phone width", () => {

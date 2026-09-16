@@ -15,7 +15,7 @@ function card(over: Partial<SynergyCard> & { oracleId: string }): SynergyCard {
     synergyPts: null,
     owned: false,
     manaCost: null,
-    committedTo: null,
+    committedTo: null, availability: null, price: null,
     ...over,
   };
 }

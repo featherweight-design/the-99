@@ -1,10 +1,8 @@
 import { render } from "@testing-library/react";
 import { describe, expect, it } from "vitest";
 import {
-  AvailabilityDot,
-  LegendPip,
+  KeyPip,
   OwnershipDot,
-  availabilityDotState,
 } from "./ownership-dot";
 
 function renderDot(ui: React.ReactElement) {
@@ -79,51 +77,36 @@ describe("OwnershipDot", () => {
   });
 });
 
-describe("availabilityDotState", () => {
-  it("reads unowned before it reads the commitment", () => {
-    expect(availabilityDotState({ owned: false, committedTo: "Atraxa" })).toBe("unowned");
-  });
-
-  it("is free with no deck and committed with one", () => {
-    expect(availabilityDotState({ owned: true, committedTo: null })).toBe("free");
-    expect(availabilityDotState({ owned: true, committedTo: "Atraxa" })).toBe("committed");
-  });
-
-  // The commander payloads omit `owned` where every card is owned by
-  // construction, and an absent flag must not read as unowned.
-  it("treats an absent owned flag as owned", () => {
-    expect(availabilityDotState({ committedTo: null })).toBe("free");
-  });
-});
-
-describe("AvailabilityDot", () => {
-  it("draws unowned dashed, not as a solid hollow ring", () => {
-    const el = renderDot(<AvailabilityDot state="unowned" size={7} />);
-    expect(el.className).toContain("[border:1px_dashed_var(--fg-locked)]");
-    expect(el.className).toContain("bg-transparent");
-  });
-
-  it("draws committed at the availability token", () => {
-    const el = renderDot(<AvailabilityDot state="committed" size={7} />);
-    expect(el.className).toContain("bg-[color:var(--avail-hard-fg)]");
-  });
-
-  it("is decorative, because the row states availability in words beside it", () => {
-    expect(renderDot(<AvailabilityDot state="free" size={6} />).getAttribute("aria-hidden")).toBe(
-      "true",
-    );
-  });
-});
-
-describe("LegendPip", () => {
-  // The legend renders the dot rather than naming its colour, because
-  // `--avail-hard-fg` is redefined by all six themes.
-  it("renders the shared dot and stays hidden from assistive tech", () => {
-    const { container } = render(<LegendPip state="committed" />);
+describe("KeyPip", () => {
+  // The key renders the dot rather than naming a colour: `--success` is now
+  // redefined by Canopy, so a test naming a hex would be true in five themes.
+  //
+  // Two states, not three. The committed pip retired with the three-state dot —
+  // severity is the marker's job, and the key no longer has a word for it.
+  it("renders the owned dot and stays hidden from assistive tech", () => {
+    const { container } = render(<KeyPip owned />);
     const wrapper = container.firstElementChild as HTMLElement;
     expect(wrapper.getAttribute("aria-hidden")).toBe("true");
     expect((wrapper.firstElementChild as HTMLElement).className).toContain(
-      "bg-[color:var(--avail-hard-fg)]",
+      "bg-[color:var(--success)]",
     );
+  });
+
+  it("renders the unowned dot dashed and hollow", () => {
+    const { container } = render(<KeyPip owned={false} />);
+    const dot = container.firstElementChild!.firstElementChild as HTMLElement;
+    expect(dot.className).toContain("bg-transparent");
+    expect(dot.className).toContain("border:1px_dashed_var(--fg-locked)");
+  });
+
+  // The offsets `LegendPip` carried, reproduced rather than re-derived: a 6px
+  // circle sits low against 10.5px mono, and Design flagged this baseline as
+  // unverified, so drift here is drift nobody measured.
+  it("keeps the inline offsets the legend has always had", () => {
+    const { container } = render(<KeyPip owned />);
+    const wrapper = container.firstElementChild as HTMLElement;
+    expect(wrapper.style.marginRight).toBe("5px");
+    expect(wrapper.style.top).toBe("-0.5px");
+    expect(wrapper.style.verticalAlign).toBe("baseline");
   });
 });

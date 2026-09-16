@@ -205,6 +205,13 @@ export type CommanderDetailProps = {
   /** Which pool the score and the rank above were computed against. */
   avail?: "all" | "free";
   synergyCards: SynergyCard[];
+  /**
+   * The newest `as_of` in the price table, for the synergy panel's buy tags.
+   *
+   * ONE per surface rather than one per card: liveness is a property of the
+   * table, not of a row, and `top-off-list.tsx` already threads it this way.
+   */
+  newestAsOf?: Date | null;
   /** The stored sentence, or null when none has been accepted for this commander. */
   prose?: string | null;
 };
@@ -215,6 +222,7 @@ export function CommanderDetail({
   isBestFit,
   avail = "all",
   synergyCards,
+  newestAsOf = null,
   prose = null,
 }: CommanderDetailProps) {
   const gradient = commanderGradient(c.colorIdentity);
@@ -447,6 +455,7 @@ export function CommanderDetail({
             <SelectableSynergyPanel
               width="phone"
               cards={synergyCards}
+              newestAsOf={newestAsOf}
               ownedCount={c.edhrecOwnedCount ?? 0}
               edhrecTotal={c.edhrecTotal}
             />

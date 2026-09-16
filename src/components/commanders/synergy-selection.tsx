@@ -262,11 +262,13 @@ export function SelectableSynergyPanel({
   ownedCount,
   edhrecTotal,
   width,
+  newestAsOf = null,
 }: {
   cards: SynergyCard[];
   ownedCount: number;
   edhrecTotal: number;
   width: "desktop" | "phone";
+  newestAsOf?: Date | null;
 }) {
   const { selected, toggle } = useSynergySelection();
   return (
@@ -277,6 +279,7 @@ export function SelectableSynergyPanel({
       selected={selected}
       onToggle={toggle}
       width={width}
+      newestAsOf={newestAsOf}
     />
   );
 }

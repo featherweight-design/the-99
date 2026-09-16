@@ -7,7 +7,7 @@ import { useState, useTransition, useId, type JSX } from "react";
 import { useRouter } from "next/navigation";
 import { CoverageChip, CoverageRow, CoverageDisclosure, COVERAGE_CAP, COVERAGE_EXPANDED_CAP } from "./coverage-chip";
 import { explainedCopy } from "../../lib/copy/commander-explained";
-import { OwnershipDot } from "../ui/ownership-dot";
+import { KeyPip } from "../ui/ownership-dot";
 import { availabilityState } from "../../lib/decks/availability";
 import {
   CoverageSortMenu,
@@ -55,29 +55,6 @@ const ROLE_NOUNS: Record<RoleName, string> = {
  * Role Coverage is built from the owned pool. Committed is not: with no deck
  * holding any of these cards there is no second colour on screen to explain.
  */
-/**
- * The key's dot, at 6px, carrying the inline offsets `LegendPip` used to hold: a
- * 6px circle sits visually low against 10.5px mono, and the sentence's own word
- * spacing should not have to carry it.
- *
- * `LegendPip` is still exported and still rendered by `synergy-panel.tsx`, which
- * has not moved yet; it retires with that panel in the next PR, and this key
- * stops importing it now rather than waiting. Design flagged this baseline as
- * unverified (their gap 4), so the offsets are reproduced exactly rather than
- * re-derived — the key sits where it has always sat.
- */
-function KeyPip() {
-  return (
-    <span
-      aria-hidden="true"
-      className="inline-flex items-center"
-      style={{ marginRight: 5, verticalAlign: "baseline", position: "relative", top: -0.5 }}
-    >
-      <OwnershipDot owned size={6} className="block" />
-    </span>
-  );
-}
-
 function DotKey({
   roleCards,
   isDesktop,
@@ -115,7 +92,7 @@ function DotKey({
           unconditionally would repaint a free player's page for no gain — and a
           player whose collection covers their decks seeing nothing changed is
           this round's one unusual constraint. */}
-      <KeyPip />
+      <KeyPip owned />
       {anyMarker
         ? explainedCopy.committed.dotOwned
         : explainedCopy.committed.dotFree}

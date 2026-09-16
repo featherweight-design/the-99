@@ -58,56 +58,26 @@ export function OwnershipDot({
 }
 
 /**
- * The commander panels' three-way reading of the same dot.
+ * A dot inline in a legend sentence.
  *
- * Distinct from `lib/decks/availability`, whose `AvailabilityState` is a deck's
- * four-way headroom and shares the member name `free` with this one: hence the
- * `Dot` in these names, so a wrong auto-import cannot typecheck.
- */
-export type AvailabilityDotState = "free" | "committed" | "unowned";
-
-export function availabilityDotState(card: {
-  owned?: boolean;
-  committedTo: string | null;
-}): AvailabilityDotState {
-  if (card.owned === false) return "unowned";
-  return card.committedTo === null ? "free" : "committed";
-}
-
-export function AvailabilityDot({
-  state,
-  size,
-}: {
-  state: AvailabilityDotState;
-  size: number;
-}): JSX.Element {
-  return (
-    <OwnershipDot
-      owned={state !== "unowned"}
-      committed={state === "committed"}
-      size={size}
-      className="block"
-    />
-  );
-}
-
-/**
- * A dot inline in a sentence. Nudged up half a pixel because a 6px circle sits
- * visually low against 10px mono, and given its own margin so the sentence's
- * word spacing does not have to carry it.
+ * Nudged up half a pixel because a 6px circle sits visually low against 10.5px
+ * mono, and given its own right margin so the sentence's word spacing does not
+ * have to carry it. Both offsets are `LegendPip`'s, reproduced rather than
+ * re-derived — Design flagged this baseline as unverified, so the key sits
+ * exactly where it has always sat.
  *
- * The legend renders the dot rather than naming its colour: the legends used to
- * call the committed colour "Amber", which is only true of the first theme,
- * because `--avail-hard-fg` is redefined by each of the six.
+ * Replaces `LegendPip`, which wrapped the retired three-state dot and named its
+ * states. The dot is ownership now, so this takes a boolean and the marker
+ * beside each row carries severity.
  */
-export function LegendPip({ state }: { state: AvailabilityDotState }): JSX.Element {
+export function KeyPip({ owned }: { owned: boolean }): JSX.Element {
   return (
     <span
       aria-hidden="true"
       className="inline-flex items-center"
       style={{ marginRight: 5, verticalAlign: "baseline", position: "relative", top: -0.5 }}
     >
-      <AvailabilityDot state={state} size={6} />
+      <OwnershipDot owned={owned} size={6} className="block" />
     </span>
   );
 }

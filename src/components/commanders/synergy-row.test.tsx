@@ -1,6 +1,8 @@
 import { describe, it, expect, vi } from "vitest";
 import { fireEvent, render, screen } from "@testing-library/react";
 import { SynergyRow } from "./synergy-row";
+import { heldBy } from "./availability-fixture";
+import { availabilityCopy } from "../../lib/copy/availability";
 import { synergyCopy } from "../../lib/copy/synergy-discovery";
 import type { SynergyCard } from "../../lib/commanders/synergy-cards";
 import type { CardFacet } from "../../lib/cards/facet";
@@ -8,7 +10,7 @@ import { CardDetailProvider } from "../cards/card-detail-provider";
 
 const base: SynergyCard = {
   oracleId: "a", name: "Command Tower", typeLine: "Land — Gate",
-  facet: "land", inclusionPct: 82, synergyPts: 1, owned: true, committedTo: null,
+  facet: "land", inclusionPct: 82, synergyPts: 1, owned: true, committedTo: null, availability: null, price: null,
   manaCost: null,
 };
 
@@ -19,6 +21,7 @@ type MountProps = {
   siblings?: string[];
   width?: "desktop" | "phone";
   facet?: CardFacet | "all";
+  newestAsOf?: Date | null;
 };
 
 function mount(props: MountProps = {}) {
@@ -29,10 +32,11 @@ function mount(props: MountProps = {}) {
     siblings = ["a"],
     width = "desktop",
     facet = "land",
+    newestAsOf = null,
   } = props;
   return render(
     <CardDetailProvider fetchCard={vi.fn().mockResolvedValue(null)}>
-      <SynergyRow card={card} selected={selected} onToggle={onToggle} siblings={siblings} width={width} facet={facet} />
+      <SynergyRow card={card} selected={selected} onToggle={onToggle} siblings={siblings} width={width} facet={facet} newestAsOf={newestAsOf} />
     </CardDetailProvider>,
   );
 }
@@ -75,18 +79,29 @@ describe("SynergyRow", () => {
   });
 
   // Three states in one dot, and the third must not cost the row any width.
-  it("paints the dot with the committed fill for a card already in a deck, and names the deck", () => {
-    const { container } = mount({ card: { ...base, committedTo: "Atraxa" } });
+  // The dot no longer moves for a claim — severity is the marker's. `committedTo`
+  // is set here ON PURPOSE: left null, the retired three-state dot would also
+  // paint --success and this assertion would pass against the code it replaces.
+  it("keeps the owned fill for a card a deck is holding, and marks it instead", () => {
+    const { container } = mount({
+      card: { ...base, committedTo: "Atraxa", availability: heldBy("Atraxa") },
+    });
     const dot = container.querySelector("li > span[aria-hidden]") as HTMLElement;
-    expect(dot.className).toContain("bg-[color:var(--avail-hard-fg)]");
+    expect(dot.className).toContain("bg-[color:var(--success)]");
+    expect(dot.className).not.toContain("--avail-hard-fg");
     expect(dot.style.width).toBe("7px");
-    expect(screen.getByRole("listitem", { name: /Already in Atraxa\./ })).toBeInTheDocument();
+    // Count-only in the drawn label, deck named in the row's own name.
+    expect(screen.getByText(availabilityCopy.marker.hard)).toBeInTheDocument();
+    expect(
+      screen.getByRole("listitem", { name: new RegExp(availabilityCopy.marker.hardAria("Atraxa")) }),
+    ).toBeInTheDocument();
   });
 
-  it("keeps the green dot for an owned card no deck has claimed", () => {
+  it("keeps the green dot for an owned card no deck has claimed, and says nothing", () => {
     const { container } = mount();
     const dot = container.querySelector("li > span[aria-hidden]") as HTMLElement;
     expect(dot.className).toContain("bg-[color:var(--success)]");
+    expect(screen.queryByText(availabilityCopy.marker.hard)).toBeNull();
     expect(screen.queryByRole("listitem", { name: /Already in/ })).toBeNull();
   });
 
@@ -120,5 +135,78 @@ describe("SynergyRow", () => {
     mount({ width: "phone" });
     expect(screen.queryByText("Land — Gate")).not.toBeInTheDocument();
     expect(screen.getByText(/edhrec 82%/)).toBeInTheDocument();
+  });
+});
+
+describe("the availability slot (§4.6, §4.7)", () => {
+  // ── The availability slot (§4.6, §4.7) ─────────────────────────────────
+
+  // The gate is `owned`, NOT "has a free copy". The two shipped surfaces
+  // disagree — the diff row buys whenever nothing is free — and this surface
+  // takes the deck tile's reading, because the useful fact about an owned card
+  // with no free copy is that you have one, not what a second would cost.
+  it("marks an owned card with no free copy rather than pricing it", () => {
+    mount({ card: { ...base, owned: true, availability: heldBy("Atraxa") } });
+    expect(screen.getByText(availabilityCopy.marker.hard)).toBeInTheDocument();
+    expect(screen.queryByText(/buy/i)).toBeNull();
+  });
+
+  it("prices an unowned card", () => {
+    mount({
+      card: {
+        ...base,
+        owned: false,
+        price: { cents: 450, foilCents: null, etchedCents: null, asOf: new Date("2026-09-15") },
+      },
+      newestAsOf: new Date("2026-09-15"),
+    });
+    expect(screen.getByText(/\$4\.50/)).toBeInTheDocument();
+  });
+
+  // §4.7 — the <li>'s aria-label REPLACES its descendants, so the tag's own
+  // text is drawn and never spoken. The clause has to be composed into the row
+  // name or the price reaches nobody using a screen reader.
+  it("speaks the price in the row's own name", () => {
+    mount({
+      card: {
+        ...base,
+        owned: false,
+        price: { cents: 450, foilCents: null, etchedCents: null, asOf: new Date("2026-09-15") },
+      },
+      newestAsOf: new Date("2026-09-15"),
+    });
+    expect(
+      screen.getByRole("listitem", { name: /buy for \$4\.50/ }),
+    ).toBeInTheDocument();
+  });
+
+  // A price history with no live printing is a different fact from never having
+  // been stocked, and the row says which.
+  it("speaks sold out rather than a price when no printing is live", () => {
+    mount({
+      card: {
+        ...base,
+        owned: false,
+        price: { cents: 450, foilCents: null, etchedCents: null, asOf: new Date("2026-09-01") },
+      },
+      newestAsOf: new Date("2026-09-15"),
+    });
+    expect(screen.getByRole("listitem", { name: /sold out/ })).toBeInTheDocument();
+  });
+
+  it("speaks a bare buy when the feed has never stocked the card", () => {
+    mount({ card: { ...base, owned: false, price: null }, newestAsOf: new Date("2026-09-15") });
+    expect(screen.getByRole("listitem", { name: /available to buy/ })).toBeInTheDocument();
+  });
+
+  // Free owned cards produce the string this row has always produced — the
+  // round's one unusual constraint, and the slot is where it would break. The
+  // assertion is the ABSENCE of a trailing clause, not a rebuilt sentence:
+  // rebuilding it here would pass whatever `rowAria` did.
+  it("adds no clause for a free owned card", () => {
+    mount();
+    const label = screen.getByRole("listitem").getAttribute("aria-label")!;
+    expect(label.endsWith("of decks.")).toBe(true);
+    expect(label).not.toMatch(/buy|sold out|free|brew/i);
   });
 });
