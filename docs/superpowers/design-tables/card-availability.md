@@ -55,9 +55,34 @@ Four derived availability tokens (RM:226–231, A2RM:176–178 — Addendum 2 ad
 | `--avail-over-fg` | **#E9917A** | shipped `--danger` lifted for text; `--danger` itself is never text | RM:226–231, RM:238–239 |
 
 **Undeclared literals.** Grepping `globals.css` proves none of these exist as tokens today; the canvases use them raw. Declare them or inline them, but do not assume they resolve:
-`#E8CE93` · `#E9917A` · `#6B3226` (over-committed container border tint) · `#5A4A28` (Building status-pill border) · `#33502F` (Complete status-pill border).
+`#E8CE93` · `#E9917A` · **`color-mix(in srgb, var(--danger) 40%, var(--bg))`** (over-committed container border tint — see the erratum below) · `#5A4A28` (Building status-pill border) · `#33502F` (Complete status-pill border).
 
 ---
+
+### Erratum 2026-09-16 — the over tint is a token expression, not a literal
+
+Three rows above specified `#6B3226` for the over-committed container border.
+**That value ships nowhere in `src/`,** and has not since the six-theme system
+landed: `availability-marker.tsx` draws the over state's edge as `var(--danger)`,
+and the commander surfaces added in #671/#683 write their borders as
+`color-mix(in srgb, var(--danger) 40%, var(--bg))` — the free branch's own form
+with the danger token in place of success.
+
+The literal is not wrong so much as pre-theme. It was measured against one
+palette, and a frozen hex is correct in that one and wrong in the other five —
+which is the exact change the six-theme system made when it replaced fixed darks
+with token expressions. `CHIP_SKIN`'s own comment in `availability-marker.tsx`
+records that reasoning.
+
+**Why this needed an erratum rather than a check.** `pnpm check:copy-drift`
+compares QUOTED COPY against shipped strings; a colour value is neither, so it
+reports clean over all three rows and always would. The readiness audit for
+commander availability (`docs/superpowers/readiness-commander-availability.md`,
+erratum 3) caught it by reading, and the R1 handoff had already cited the stale
+value in good faith — which is what a spec someone implements from will do.
+
+No design round: the code made this call when the themes landed, and this is the
+table catching up to it.
 
 ## 1 · The four availability states
 
@@ -157,7 +182,7 @@ Self-exclusion applies here (§1.1). Three of five rows in the canvas carry no m
 | 4.2 | Meta line — phone | shipped mono | shipped | marker appended after `×${qty} owned` | no height change | seam over `#14110E` | CV:717–795 |
 | 4.3 | Meta line — desktop | shipped mono | shipped | same append | no height change | seam over `#100D0A` | CV:797–830 |
 | 4.4 | free row | — | — | — | — | renders exactly the shipped row, byte-identical | RM:79–84 |
-| 4.5 | over row | — | container border tints `#6B3226` | — | — | only state that touches the container | RM:98–118 |
+| 4.5 | over row | — | container border tints `color-mix(in srgb, var(--danger) 40%, var(--bg))` | — | — | only state that touches the container | RM:98–118, **erratum 2026-09-16** |
 | 4.6 | over copy in own deck | — | `#E9917A` | — | — | **count-only** — `marker.over`, a bare `short 1`, in BOTH the All and Shopping views. Superseded by 4.10 (#354) | CP:46, A2RM:141–172, superseded #354 |
 
 ### 4.1 Named states
@@ -167,7 +192,7 @@ Self-exclusion applies here (§1.1). Three of five rows in the canvas carry no m
 | 4.7 | **Silent (free)** | `(owned − ownClaim) − (hard − ownHardClaim) > 0`, no soft | nothing rendered | RM:79–84 |
 | 4.8 | Soft | a sub-99 deck other than this one claims a copy | hollow glyph + `N in a brew` | RM:85–96 |
 | 4.9 | Hard | **unreachable inside a finished deck** — self-exclusion removes this deck's own claim | — | A2RM:141–172, RD2:47–76 |
-| 4.10 | Over-committed | supply short after exclusion | doubled red glyph + `short N`, container border `#6B3226`. Spoken as `marker.overAriaCountOnly` | RM:98–118, CP:46, **amended #354** |
+| 4.10 | Over-committed | supply short after exclusion | doubled red glyph + `short N`, container border `color-mix(in srgb, var(--danger) 40%, var(--bg))`. Spoken as `marker.overAriaCountOnly` | RM:98–118, CP:46, **amended #354**, **erratum 2026-09-16** |
 | 4.11 | Not owned | `owned === 0` | nothing — the guard precedes the states | RM:221–225 |
 
 **Row count: 6 elements + 5 states.**
