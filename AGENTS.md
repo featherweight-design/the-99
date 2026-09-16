@@ -33,8 +33,12 @@ Package manager is **pnpm** (pinned via `packageManager` in package.json) — ne
   warn v1 "is subject to change without notice" and the ingest is weekly, so a silent shape change
   would otherwise sit unnoticed for days.
 - `pnpm db:seed:prices` refreshes `printing_prices` from ManaPool. The `Price refresh` workflow runs
-  it 09:00 UTC every Monday; it needs the `PRICE_REFRESH_ENABLED` repository variable set to `'true'`
-  to fire on schedule. The feed omits out-of-stock cards rather than listing them at zero, so a
+  it 09:00 UTC every Monday against **both** `catalog-staging` and `catalog-production`; it needs
+  the `PRICE_REFRESH_ENABLED` repository variable set to `'true'` to fire on schedule, and a manual
+  dispatch prices only the environment it names. The fan-out is a `plan` job feeding a matrix for
+  the same reason `Catalog refresh` uses one: routing on an expression on `environment` sends every
+  scheduled run to production alone, which left staging's newest `as_of` 9 days behind
+  production's. The feed omits out-of-stock cards rather than listing them at zero, so a
   printing absent from `printing_prices` has never been stocked in any run so far, and a row with
   a null `price_cents` but a set `price_cents_foil` is stocked in foil only — neither is "free" or
   "unknown". The ingest upserts and never deletes, so presence is not the same as being stocked

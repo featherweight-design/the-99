@@ -39,7 +39,7 @@ jobs:
         env:
           # Read through the environment rather than interpolating into the script body, so the
           # input cannot inject shell. The `case` re-validates what the `choice` type already
-          # constrains, because `github.event.inputs` is unset — not defaulted — off schedule.
+          # constrains, because `github.event.inputs` is unset — not defaulted — off dispatch.
           TARGET: ${{ github.event.inputs.target }}
         run: |
           case "$TARGET" in
