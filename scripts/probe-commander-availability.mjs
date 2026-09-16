@@ -223,6 +223,19 @@ async function anyOwnedLegend(userId, excludeOracleId, excludeName) {
  * no longer a second thing to remember.
  */
 let failures = 0;
+
+/**
+ * The fixture deck, reachable from a SIGNAL handler as well as from `finally`.
+ *
+ * A `finally` covers a throw. It does not cover Ctrl-C, which is how a probe that
+ * takes half a minute over a browser actually gets stopped — and the process
+ * exits with the deck still on a SHARED fixture account, where it goes on
+ * claiming a card and quietly changing every availability reading taken
+ * afterwards, including the next run of this script. A write-enabled probe has to
+ * clean up on the way out the door it is most likely to leave by.
+ */
+let fixtureDeckId = null;
+
 function report(label, ok, detail) {
   if (!ok) failures += 1;
   console.log(`${ok ? "  ok  " : " FAIL "} ${label} — ${detail}`);
@@ -426,7 +439,10 @@ async function run() {
     // when this run put the claim there.
     const fixture = { card: null, why: null };
     if (held && leader) {
-      await sleeveEveryCopy(userId, held.oracle_id, leader, (id) => { heldDeckId = id; });
+      await sleeveEveryCopy(userId, held.oracle_id, leader, (id) => {
+        heldDeckId = id;
+        fixtureDeckId = id;
+      });
       fixture.card = heldName;
       console.log(`fixture: sleeved the only copy of "${heldName}" into a committed deck`);
     } else {
@@ -695,6 +711,7 @@ async function run() {
     // the one thing here that must not survive the run.
     try {
       if (heldDeckId) await pool.query(`delete from decks where id = $1`, [heldDeckId]);
+      fixtureDeckId = null;
     } finally {
       try {
         await browser.close();
@@ -707,5 +724,40 @@ async function run() {
   console.log(failures === 0 ? "\nAll checks passed." : `\n${failures} check(s) failed.`);
   process.exitCode = failures === 0 ? 0 : 1;
 }
+
+/**
+ * Delete the fixture deck on the way out, whichever door is used.
+ *
+ * `once`, because a second signal while the delete is in flight would start a
+ * second delete and then exit under it. The handler re-raises with the
+ * conventional 128 + signal code rather than swallowing the interrupt — a script
+ * that ignores Ctrl-C is worse than one that leaves a row behind.
+ *
+ * `beforeExit` covers the remaining case: a normal return whose `finally` was
+ * skipped because something above it called `process.exit`. Nothing here does
+ * today, and `probe:score-lock` learned what it costs when something does.
+ */
+async function sweepFixture() {
+  if (!fixtureDeckId) return;
+  const id = fixtureDeckId;
+  fixtureDeckId = null;
+  try {
+    await pool.query(`delete from decks where id = $1`, [id]);
+    console.log(`\n  cleaned up the fixture deck (${id})`);
+  } catch (err) {
+    // Say so loudly: an undeleted deck on a shared account is a claim that
+    // silently changes every later reading, and the next person to run this
+    // needs the id to remove it by hand.
+    console.error(`\n  COULD NOT DELETE the fixture deck ${id} — remove it by hand:`, err);
+  }
+}
+
+for (const signal of ["SIGINT", "SIGTERM", "SIGHUP"]) {
+  process.once(signal, async () => {
+    await sweepFixture();
+    process.exit(signal === "SIGINT" ? 130 : signal === "SIGTERM" ? 143 : 129);
+  });
+}
+process.once("beforeExit", sweepFixture);
 
 run();
