@@ -33,6 +33,22 @@ export type CandidateSqlRow = {
       The discover row prints it, and the `Popularity` order ranks on it. */
   deckCount: number | null;
   tags: EdhrecTag[];
+  /**
+   * The one accepted sentence about how this commander's decks tend to play, or
+   * null where none has been generated.
+   *
+   * It costs this query NOTHING — `commander_support` is already the driving
+   * table, so the sentence is one more column on a row being read anyway. That
+   * is the whole reason the row can carry it: 3,342 model calls per collection
+   * change would not be affordable, and none are made, because the sentence is
+   * identical for every player and so is generated once per commander.
+   *
+   * A null renders as NO PARAGRAPH rather than as a placeholder. 501 of
+   * local-dev's 3,279 rows are null, against 1 of production's 3,342 — a
+   * fixture gap that reads exactly like a bug, so run `pnpm db:copy:prose`
+   * before judging a local walk.
+   */
+  prose: string | null;
   ownedSupport: number;
   /** The same count over the player's whole collection rather than over the
       pool being ranked. Equal to `ownedSupport` unless the ranking is scoped to
@@ -98,6 +114,7 @@ export async function loadCandidates(
       edhrecTotal: commanderSupport.edhrecTotal,
       deckCount: commanderSupport.deckCount,
       tags: commanderSupport.tags,
+      prose: commanderSupport.prose,
       ownedSupport: ownedSupportColumn(),
       collectionSupport: collectionSupportColumn(collectionOracleIds != null),
     })
@@ -316,9 +333,44 @@ function ownedSupportTable(ownedOracleIds: string[], commanderIds?: string[]) {
                 from ${commanderSupportCards} csc
                 join unnest(${owned}::uuid[]) as owned(oracle_id)
                   on owned.oracle_id = csc.oracle_id
+                ${IDENTITY_RESTRICTION}
                ${commanderScope(commanderIds)}
                group by csc.commander_oracle_id) as osc`;
 }
+
+/**
+ * Only support cards the commander can legally play.
+ *
+ * WITHOUT THIS THE COUNT IS NOT THE ONE THE DETAIL PAGE PRINTS, which is the
+ * whole of Ruling D. `scoreCommander` takes its numerator from
+ * `supportOverlap(support, commanderPool(commander, collection))`, and
+ * `commanderPool` filters the collection to the commander's colour identity —
+ * so a figure counted without that filter is a different figure, and the row
+ * and the detail page it links to disagree about the same commander.
+ *
+ * The effect is CONCENTRATED rather than spread, which is why it survived this
+ * long: EDHREC's list for a coloured commander is already identity-legal, so
+ * the predicate removes almost nothing there. Measured on local-dev, it takes
+ * ~81 rows of ~257,700 across all 3,279 commanders — and 26 of those belong to
+ * `Faceless One` alone, whose identity is empty and which read 122 owned
+ * against 96 playable. A 27% overcount, on precisely the commanders whose Fit
+ * would look too good.
+ *
+ * `<@` IS ALREADY CORRECT FOR A COLOURLESS COMMANDER and needs no special case:
+ * `{} <@ {}` is true and `{R} <@ {}` is false. `withinColorIdentity` exists
+ * because Drizzle's `arrayContained` throws on an empty JS array — a
+ * client-side limitation of a constant, not a property of the operator — and
+ * both sides here are columns.
+ *
+ * It also reaches `supportPct`, and so the novelty floor: a commander now
+ * clears 30% on what the reader can actually build rather than on cards their
+ * identity forbids. That is the same correction one layer out, not a side
+ * effect to be undone.
+ */
+const IDENTITY_RESTRICTION = sql`
+  join ${cards} sc on sc.oracle_id = csc.oracle_id
+  join ${cards} cm on cm.oracle_id = csc.commander_oracle_id
+   and sc.color_identity <@ cm.color_identity`;
 
 /**
  * Narrows an aggregate to the commanders the caller will actually project.
@@ -354,6 +406,7 @@ function collectionSupportTable(collectionOracleIds: string[], commanderIds?: st
                 from ${commanderSupportCards} csc
                 join unnest(${owned}::uuid[]) as owned(oracle_id)
                   on owned.oracle_id = csc.oracle_id
+                ${IDENTITY_RESTRICTION}
                ${commanderScope(commanderIds)}
                group by csc.commander_oracle_id) as csa`;
 }

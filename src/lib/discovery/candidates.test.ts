@@ -7,7 +7,7 @@ const row = (over: Partial<CandidateSqlRow>): CandidateSqlRow => ({
   oracleId: "a", name: "Atraxa",
   colorIdentity: ["W", "U", "B", "G"], imageUri: null, artCropUri: null, releasedAt: "2021-02-05",
   edhrecTotal: 99, deckCount: 1209, tags: [{ slug: "counters", label: "Counters", count: 5 }],
-  ownedSupport: 40, collectionSupport: 40, ...over,
+  prose: null, ownedSupport: 40, collectionSupport: 40, ...over,
 });
 
 // Thin by design: `shapeCandidate` is a spread, so these pin the contract rather
