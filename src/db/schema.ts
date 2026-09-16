@@ -608,9 +608,11 @@ export const RANK_SCORE_UNWRITTEN = -1;
  * distinction the column can draw. The cost is one recompute per reader, which
  * is what every bump here costs.
  *
- * Version 5 is the first writer that orders by the printed figure. Versions 1-4 stored a
- * `rank_score` that rescaled a no-synergy score from 40 back to 100, which put untracked
- * commanders at the top of every list; version 5 stores `score` itself. The rows are the
+ * Version 5 is the first writer that orders by the printed figure. Version 4 — the only one
+ * that ever wrote a meaningful `rank_score`, since migration 0017 added the column after
+ * versions 1-3 and they can only have left its sentinel — rescaled a no-synergy score from
+ * 40 back to 100, which put untracked commanders at the top of every list. Version 5 stores
+ * `score` itself. The rows are the
  * same shape and one column's MEANING moved, so a version-4 row looks perfectly current
  * while sorting an untracked commander above everything — exactly the blindness this
  * mechanism exists for. The deployment-window argument applies unchanged.
