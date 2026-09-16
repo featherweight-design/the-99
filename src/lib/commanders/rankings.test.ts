@@ -180,11 +180,17 @@ describe("loadCommanderRankings · the row's four joined fields", () => {
 // and has to decide about both.
 //
 // This is a CHANGE DETECTOR on purpose, of the same kind as `about.test.ts`'s
-// content hash: there is no invariant relating 4 to 6, and the value of the case
-// is that a bump cannot be incidental.
+// content hash: there is no invariant relating these two numbers, and the value
+// of the case is that a bump cannot be incidental.
+//
+// IT HAS ALREADY EARNED ITSELF. #702 took `commanderRankingsKey` to v6 while
+// this branch was in review, and this case is what forced the collision to be
+// noticed and resolved as v7 — rather than both releases sharing a key, which
+// would have served every reader whose entry #702 wrote a payload with no
+// sentence, no gap slot and no headline figure.
 describe("the list caches' payload versions", () => {
   it("pins both, so a pair bumped half-way fails", () => {
-    expect(commanderRankingsKey).toEqual(["commander-rankings", "v6"]);
+    expect(commanderRankingsKey).toEqual(["commander-rankings", "v7"]);
     expect(discoveryKey("fit")).toEqual(["discovery", "fit", "v4"]);
   });
 

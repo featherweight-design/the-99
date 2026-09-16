@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { computeFit, POOL_FULL_AT, ROLES_WEIGHT, SYNERGY_WEIGHT } from "./score";
+import { computeFit, POOL_FULL_AT, POOL_WEIGHT, ROLES_WEIGHT, SYNERGY_WEIGHT } from "./score";
 import { ROLE_TARGETS } from "./roles";
 
 // THE TWO CONTRACTS THIS FUNCTION DOCUMENTS ARE UNREACHABLE FROM ITS OTHER
@@ -45,13 +45,36 @@ describe("computeFit · a non-positive total is NO READING, not a zero ratio", (
     expect(fit.measurableTotal).toBe(100);
   });
 
-  // `rankScore` divides by `measurableTotal`, so the null branch must not reach
-  // it as a 0 — that would be a division by zero printed as NaN.
-  it("keeps rankScore finite on the unmeasurable branch", () => {
+  // AN UNTRACKED COMMANDER TOPS OUT AT 40 AND DOES NOT TAKE THE TOP OF THE LIST.
+  //
+  // This case used to assert `rankScore` was 100 here, on the reasoning that the
+  // rescale must not divide by zero. #702 removed the rescale outright while this
+  // branch was in review: the weights are 15 + 25 + 60, so rescaling a 40 back to
+  // 100 touched untracked commanders alone and multiplied them by 2.5, and one
+  // nobody has written a page about took rank 1 with a perfect 40/40 beside a
+  // note reading "fit comes from pool and roles alone".
+  //
+  // So the property is no longer about finiteness — there is no division left —
+  // and asserting 100 would now assert the defect. It is the ORDER that matters:
+  // the rank is the printed figure, and pool and roles alone are worth 40.
+  it("ranks an unmeasurable commander on the figure it prints, not a rescale", () => {
     const fit = computeFit({ poolSize: 400, roleCounts: full, ownedSupport: 9, edhrecTotal: null });
 
-    expect(Number.isFinite(fit.rankScore)).toBe(true);
-    expect(fit.rankScore).toBe(100);
+    expect(fit.score).toBe(POOL_WEIGHT + ROLES_WEIGHT);
+    expect(fit.rankScore).toBe(fit.score);
+  });
+
+  // The mirror, so the case above is not passing on a constant: a tracked
+  // commander scoring above 40 must out-rank it.
+  it("lets a tracked commander above 40 out-rank an untracked one", () => {
+    const untracked = computeFit({
+      poolSize: 400, roleCounts: full, ownedSupport: 9, edhrecTotal: null,
+    });
+    const tracked = computeFit({
+      poolSize: 400, roleCounts: full, ownedSupport: 50, edhrecTotal: 100,
+    });
+
+    expect(tracked.rankScore).toBeGreaterThan(untracked.rankScore);
   });
 });
 
