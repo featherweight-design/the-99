@@ -8,7 +8,7 @@ Citation scheme — `RM:<line>` = `README.md`; `ARM:<line>` = `ADDENDUM-README.m
 
 **Post-implementation note, 2026-09-01.** Two copy strings were changed after the build, and the rows below record the superseded forms: `0 free` now reads `none free` (rows 1.9, 1.10, 1.11) and the over clause is unified on `also in`, replacing `${deckCount} decks want it` (rows 1.15, 1.20, 6.4). The reasoning is in `ADDENDUM-2-READINESS.md` item 8. This table is a frozen pre-implementation artefact and is deliberately **not** rewritten — a future gate run reading these rows should treat the copy file as authoritative on wording and this table as authoritative on everything else.
 
-This table was derived from the design artefacts only. **No application source was read** with a single exception: `src/app/globals.css`, read solely to build the token-name → hex map below. No component, route, action, query or test file was opened, so nothing here is a description of what the code currently does — it is a description of what the built UI must look like.
+This table was derived from the design artefacts only. **No application source was read** with a single exception: `src/app/globals.css`, read solely to build the token-name → hex map below. (True of the table's ORIGINAL derivation. The erratum dated 2026-09-16 below is the one part written from implementation evidence, and says so — it exists precisely because a value here had stopped matching what ships.) No component, route, action, query or test file was opened, so nothing here is a description of what the code currently does — it is a description of what the built UI must look like.
 
 **All card names, deck names, quantities, counts, scores, percentages and set codes in the canvases are fabricated mock data** (RM:250–252, A2CV:685–705). `Kykar`, `Lathril`, `Muldrotha`, `Teferi's Protection`, `Smothering Tithe`, `1,418`, `1,186 / 168 / 61 / 3`, `↓21`, `34 of your cards fit` — none of these are fixtures, expected values, or assertions. Reproduce the *shape* of the string, never the value.
 
@@ -55,9 +55,37 @@ Four derived availability tokens (RM:226–231, A2RM:176–178 — Addendum 2 ad
 | `--avail-over-fg` | **#E9917A** | shipped `--danger` lifted for text; `--danger` itself is never text | RM:226–231, RM:238–239 |
 
 **Undeclared literals.** Grepping `globals.css` proves none of these exist as tokens today; the canvases use them raw. Declare them or inline them, but do not assume they resolve:
-`#E8CE93` · `#E9917A` · `#6B3226` (over-committed container border tint) · `#5A4A28` (Building status-pill border) · `#33502F` (Complete status-pill border).
+`#E8CE93` · `#E9917A` · **`var(--avail-over-border)`** (over-committed container border tint — see the erratum below; the literal this replaced was `#6B3226`, which is not that token's value in any theme) · `#5A4A28` (Building status-pill border) · `#33502F` (Complete status-pill border).
 
 ---
+
+### Erratum 2026-09-16 — the over tint is a token, not a literal
+
+Rows 4.5 and 4.10 specified `#6B3226` for the over-committed container border.
+**That value ships nowhere in `src/`,** and it is not any token's value: the
+decklist row draws `inset 0 0 0 1px var(--avail-over-border)`
+(`decklist-row.tsx:269`), which resolves to `#752619`.
+
+The literal is pre-theme. It was measured against one palette before the
+six-theme system replaced fixed darks with tokens, so it is now wrong in all six
+rather than right in one.
+
+**Scope, because the first draft of this erratum got it wrong.** Both rows sit
+under §4, the DECKLIST row, so both take `var(--avail-over-border)`. The commander
+surfaces added in #671/#683 draw their own over border as
+`color-mix(in srgb, var(--danger) 40%, var(--bg))` — a different expression on a
+different surface — and writing that into these rows, as this erratum first did,
+would have told a future decklist implementation to diverge from the token it
+already uses.
+
+**Why an erratum rather than a check.** `pnpm check:copy-drift` compares quoted
+COPY against shipped strings. A colour value is neither, so it reports clean over
+both rows and always would. The readiness audit for commander availability caught
+it by reading, and Design's R1 handoff had already cited the stale value in good
+faith — which is what a spec someone implements from will do.
+
+No design round: the code made this call when the themes landed, and this is the
+table catching up.
 
 ## 1 · The four availability states
 
@@ -157,7 +185,7 @@ Self-exclusion applies here (§1.1). Three of five rows in the canvas carry no m
 | 4.2 | Meta line — phone | shipped mono | shipped | marker appended after `×${qty} owned` | no height change | seam over `#14110E` | CV:717–795 |
 | 4.3 | Meta line — desktop | shipped mono | shipped | same append | no height change | seam over `#100D0A` | CV:797–830 |
 | 4.4 | free row | — | — | — | — | renders exactly the shipped row, byte-identical | RM:79–84 |
-| 4.5 | over row | — | container border tints `#6B3226` | — | — | only state that touches the container | RM:98–118 |
+| 4.5 | over row | — | container border tints `var(--avail-over-border)` | — | — | only state that touches the container | RM:98–118, **erratum 2026-09-16** |
 | 4.6 | over copy in own deck | — | `#E9917A` | — | — | **count-only** — `marker.over`, a bare `short 1`, in BOTH the All and Shopping views. Superseded by 4.10 (#354) | CP:46, A2RM:141–172, superseded #354 |
 
 ### 4.1 Named states
@@ -167,7 +195,7 @@ Self-exclusion applies here (§1.1). Three of five rows in the canvas carry no m
 | 4.7 | **Silent (free)** | `(owned − ownClaim) − (hard − ownHardClaim) > 0`, no soft | nothing rendered | RM:79–84 |
 | 4.8 | Soft | a sub-99 deck other than this one claims a copy | hollow glyph + `N in a brew` | RM:85–96 |
 | 4.9 | Hard | **unreachable inside a finished deck** — self-exclusion removes this deck's own claim | — | A2RM:141–172, RD2:47–76 |
-| 4.10 | Over-committed | supply short after exclusion | doubled red glyph + `short N`, container border `#6B3226`. Spoken as `marker.overAriaCountOnly` | RM:98–118, CP:46, **amended #354** |
+| 4.10 | Over-committed | supply short after exclusion | doubled red glyph + `short N`, container border `var(--avail-over-border)`. Spoken as `marker.overAriaCountOnly` | RM:98–118, CP:46, **amended #354**, **erratum 2026-09-16** |
 | 4.11 | Not owned | `owned === 0` | nothing — the guard precedes the states | RM:221–225 |
 
 **Row count: 6 elements + 5 states.**
