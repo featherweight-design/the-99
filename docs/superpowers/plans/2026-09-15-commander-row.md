@@ -51,11 +51,24 @@ The parity fix. It changes a figure on every surface that prints one, which is w
    serves the card lists, so an EDHREC outage still has to be describable. A scoring path that
    can no longer be degraded is a simplification to consider separately, not to smuggle in here.
 
-**Risk to watch.** `edhrec_total` is documented as counting names *before* unresolvable ones are
-dropped (`synergy-read.ts`), yet it equals the support-card row count on 3,340 of 3,342
-commanders. Those two statements are in tension. Resolve it before choosing the denominator —
-if the stored total ever exceeds the rows held, the ratio is over a denominator the numerator
-can never reach.
+**The denominator question is settled, and it makes PR 2 simpler than feared.**
+`index-build.ts:74` sets `edhrecTotal = d!.topCards.length` — the RAW name count — and
+unresolvable names are deliberately dropped from `commander_support_cards` while staying
+counted in the total, because (`:95–97`) "a missing name reduces measured overlap rather than
+silently shrinking the denominator and inflating every user's completeness." The commander's
+own card is skipped from the child table too (`:99`).
+
+So the stored total is always ≥ the rows held, by design, and the two measured equal on 3,340
+of 3,342 only because resolution is near-perfect — the two that differ by 1 are most likely
+the commanders that appear in their own top-cards list.
+
+**What this means for the ruling: the stored and live denominators are the same quantity.**
+Both are `topCards.length`; one was recorded on the 3rd and one is read now. The denominator
+drift is therefore purely staleness, not a difference in definition, and PR 2 can take
+`edhrec_total` as the denominator and the support-card join as the numerator without changing
+what either figure MEANS — only when it was measured. That is also why the deliberate
+under-count of the numerator survives the change: dropping an unresolvable name from the
+overlap is the existing intent, stated in the code, not a side effect of the new source.
 
 ## PR 3 — the payload and the lane reads
 
