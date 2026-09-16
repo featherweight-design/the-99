@@ -60,9 +60,11 @@ const ROLE_NOUNS: Record<RoleName, string> = {
  * 6px circle sits visually low against 10.5px mono, and the sentence's own word
  * spacing should not have to carry it.
  *
- * `LegendPip` itself retires with the three-state dot it wrapped. Design flagged
- * this baseline as unverified (their gap 4), so the offsets are reproduced
- * exactly rather than re-derived — the key sits where it has always sat.
+ * `LegendPip` is still exported and still rendered by `synergy-panel.tsx`, which
+ * has not moved yet; it retires with that panel in the next PR, and this key
+ * stops importing it now rather than waiting. Design flagged this baseline as
+ * unverified (their gap 4), so the offsets are reproduced exactly rather than
+ * re-derived — the key sits where it has always sat.
  */
 function KeyPip() {
   return (

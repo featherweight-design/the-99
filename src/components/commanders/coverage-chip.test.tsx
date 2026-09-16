@@ -88,11 +88,20 @@ describe("CoverageChip", () => {
   // The dot is OWNERSHIP now and nothing else — it no longer moves with
   // severity, whatever the marker beside it says. Asserted at the loudest
   // reading, because that is the one the old three-state dot repainted.
+  // `committedTo` is set on PURPOSE and is what makes this measure anything.
+  // Left null, the retired `availabilityDotState` also returns "free" and paints
+  // `--success`, so every assertion below passes with the old three-state dot
+  // restored — verified, and it did. A deck name here is the one input that
+  // makes the old code and the new code disagree.
   it("keeps the owned dot at every reading, severity included", () => {
     for (const reading of ["free", "soft", "hard", "over"] as const) {
       const { container, unmount } = render(
         <CardDetailProvider fetchCard={vi.fn().mockResolvedValue(null)}>
-          <CoverageChip card={card({ availability: avail(reading) })} siblings={siblings} showFigures />
+          <CoverageChip
+            card={card({ committedTo: "Atraxa", availability: avail(reading) })}
+            siblings={siblings}
+            showFigures
+          />
         </CardDetailProvider>,
       );
       expect(dotOf(container).className).toContain("bg-[color:var(--success)]");
@@ -260,7 +269,11 @@ describe("CoverageRow", () => {
   it("carries the same marker and the same claim clause as the desktop chip", () => {
     const { container } = render(
       <CardDetailProvider fetchCard={vi.fn().mockResolvedValue(null)}>
-        <CoverageRow card={card({ availability: heldBy("Atraxa") })} siblings={siblings} showFigures />
+        <CoverageRow
+          card={card({ committedTo: "Atraxa", availability: heldBy("Atraxa") })}
+          siblings={siblings}
+          showFigures
+        />
       </CardDetailProvider>,
     );
     // Ownership only, as on the chip.

@@ -28,10 +28,14 @@ import type { JSX } from "react";
 export const COVERAGE_CAP = { desktop: 12, phone: 6 } as const;
 export const COVERAGE_EXPANDED_CAP = 40;
 
-// ── The committed mark ───────────────────────────────────────────────────────
-// A card already in one of the player's decks. The mark is the ownership dot's
-// fill, swapped rather than joined by anything new, so a marked chip is exactly
-// as wide as an unmarked one.
+// ── The availability mark ────────────────────────────────────────────────────
+// What a card's claim picture is worth saying. The dot no longer carries it: it
+// is ownership and nothing else, and the marker beside the name says the rest.
+//
+// A marked chip is therefore WIDER than an unmarked one, by a measured 69-89px
+// depending on the reading — a change from the swapped-fill mark this replaced,
+// and the reason the name had to stop wrapping. A free chip is untouched and
+// stays exactly the width it shipped at.
 
 /**
  * Whether this card draws a marker at all — i.e. whether anything about it is
