@@ -36,8 +36,16 @@ import { GAME_AXIS_KEYS } from "../../lib/decks/game-axes";
 import { deckSortLabel } from "../../lib/about/sort-labels";
 import { DECK_GROUPING_LABELS } from "../../lib/copy/deck-sort";
 import { BrowseFigureBody } from "./browse-figure";
+import { KeyNumeral } from "./numeral";
+import { setFilterCopy, setPageCopy } from "../../lib/copy/set-collections";
+import { PIP_ORDER, PIP_SRC } from "../../lib/copy/filter-chassis";
+import {
+  ImportFigureBody,
+  CardDetailFigureBody,
+  ImportIssuesFigureBody,
+  PostImportFigureBody,
+} from "./ch01-figures";
 import { cardAssignmentsCopy } from "../../lib/copy/card-assignments";
-import { issueInspectorCopy } from "../../lib/copy/issue-inspector";
 import { statusBarStyle } from "../../lib/decks/status-style";
 import type { StatusPill } from "../../lib/decks/status";
 import { refreshCopy } from "../../lib/copy/refresh";
@@ -48,9 +56,7 @@ import {
   LegendBox,
   Specimen,
   SpecimenCell,
-  SpecimenGrid,
   SpecimenResponsive,
-  SpecimenRows,
 } from "./specimen";
 import type { AboutWidth } from "../../lib/copy/about";
 import {
@@ -63,6 +69,7 @@ import {
   ROLE_COUNTS,
   SHOPPING,
   SET_CELLS,
+  SET_HEAD,
   COSTS,
   FIT_DEGRADED,
   FIT_DEGRADED_SCORE,
@@ -74,63 +81,74 @@ import {
 
 /** The four availability states, including the one that draws nothing. */
 function AvailabilityFigure({ width }: { width: AboutWidth }) {
-  // The caption ANNOTATES; it never repeats the mark. The marker already draws
-  // its own words — `1 in a brew`, `none free`, `short 2` — so a caption
-  // echoing them reads as a stutter, which is what the close-out contact sheet
-  // showed: `◆ none free` sitting directly above the words `none free`.
-  //
-  // `free` is the exception and has to be: it draws nothing at all, so its cell
-  // would be blank without a caption saying what the blank means.
-  const caption: Record<string, string> = {
-    free: "nothing claims it — and free carries no mark anywhere",
-    soft: "a deck you have never committed wants it",
-    hard: "a committed deck holds every copy",
-    over: "more copies are asked for than you own",
-  };
   return (
     <Specimen label="availability" width={width}>
-      {/* Rows below the wide stop: `none free` and `short 2` are the longest
-          labels on the page, and a two-column grid at 390px wraps both. */}
-      <SpecimenResponsive>
-        {AVAILABILITY.map(({ key, a }) => (
-          <SpecimenCell key={key} caption={caption[key]}>
-            {/* free renders null, and that IS the state — the cell keeps its
-                height so the absence reads as one of the four rather than as a
-                figure that failed to draw. */}
-            {/* `seam` is the hairline joining the two over-diamonds and only
-                reads as a seam while it matches what is BEHIND it. It defaults
-                to `--bg`; the plate is `--surface-sunken`. */}
-            {/* `density="row"` leaves the font to the caller, and the real
-                decklist row supplies these two classes. Without them the
-                marker inherits this page's body type and shows a treatment
-                the reader will never meet. */}
-            <span className="font-mono text-[11px] min-[1000px]:text-[11.5px]">
-              <AvailabilityMarker availability={a} density="row" seam="var(--surface-sunken)" />
-            </span>
-          </SpecimenCell>
+      {/* TRANSCRIBED from §3: FOUR ROWS, each a numeral and the marker beside
+          it, not a four-column grid with a caption under every cell. The grid
+          was this page's own arrangement, and it forced a caption per cell —
+          which then had to say something the marker already says. The drawing
+          has no per-row caption at all: the numbered lines below the figure
+          carry the explanation, which is the annotation grammar the rest of
+          the page follows.
+
+          `free` is the one row that needs words of its own, because it draws
+          NOTHING and a blank row would read as a figure that failed rather
+          than as one of the four states. */}
+      <div className="flex flex-col gap-[11px]">
+        {AVAILABILITY.map(({ key, a }, i) => (
+          <div key={key} className="flex items-center gap-[10px]">
+            <KeyNumeral n={i + 1} />
+            {key === "free" ? (
+              <span className="inline-flex items-center gap-[6px]">
+                <span aria-hidden className="h-[6px] w-[6px] flex-none" />
+                <span className="text-[12px] text-[color:var(--fg-body)]">
+                  no diamond at all
+                </span>
+              </span>
+            ) : (
+              /* `density="row"` leaves the font to the caller, and the real
+                 decklist row supplies these classes. Without them the marker
+                 inherits this page's body type and shows a treatment the
+                 reader will never meet.
+
+                 `seam` joins the two over-diamonds and only reads as a seam
+                 while it matches what is BEHIND it. It defaults to `--bg`;
+                 the plate is `--surface-sunken`. */
+              <span className="font-mono text-[11px] min-[1000px]:text-[11.5px]">
+                <AvailabilityMarker
+                  availability={a}
+                  density="row"
+                  seam="var(--surface-sunken)"
+                />
+              </span>
+            )}
+          </div>
         ))}
-      </SpecimenResponsive>
+      </div>
     </Specimen>
   );
 }
 
 /** The four claims a buy tag makes, which are not four ways of saying "cost". */
 function BuyTagFigure({ width }: { width: AboutWidth }) {
-  // An inset frame is capped at 300px, which gives a four-column grid about
-  // 55px a cell — `$2.10 foil` wraps, and the annotation under it wraps twice.
-  const Layout = width === "inset" ? SpecimenRows : SpecimenGrid;
+  // §3 draws these as a COLUMN with the caption on the tag's own line, not as
+  // a grid of cells with the caption beneath. The grid was this page's own
+  // arrangement and it cost the figure its readability: four tags stacked with
+  // a wrapped annotation under each reads as four paragraphs, where the drawing
+  // reads as one list of four claims.
   const caption: Record<string, string> = {
-    priced: "a figure — stocked today",
-    foilOnly: "the only copies stocked are the shiny ones",
-    soldOut: "stocked, none today",
-    absent: "no price in the feed",
+    priced: "a price we have",
+    foilOnly: "foil only",
+    soldOut: "stocked, none left",
+    absent: "no figure at all",
   };
   const newest = PRICES[0].fact.asOf;
   return (
     <Specimen label="buy-tag" width={width}>
-      <Layout>
+      <div className="flex flex-col gap-[9px]">
         {PRICES.map(({ state, fact }) => (
-          <SpecimenCell key={state} caption={caption[state]}>
+          <div key={state} className="flex items-center gap-[8px]">
+            {/* The route's own tag, not the canvas's drawing of one. */}
             <BuyTag
               variant="row"
               price={fact}
@@ -140,9 +158,12 @@ function BuyTagFigure({ width }: { width: AboutWidth }) {
               newestAsOf={state === "soldOut" ? new Date(newest.getTime() + 86_400_000) : newest}
               density="full"
             />
-          </SpecimenCell>
+            <span className="font-mono text-[10px] text-[color:var(--fg-faint)]">
+              {caption[state]}
+            </span>
+          </div>
         ))}
-      </Layout>
+      </div>
     </Specimen>
   );
 }
@@ -367,39 +388,108 @@ function MarksFigure({ width }: { width: AboutWidth }) {
  * it one of the few whole surfaces this page can show rather than legend.
  */
 function SetsFigure({ width }: { width: AboutWidth }) {
-  const caption = [
-    "owned",
-    "matched by name, not by printing",
-    "your only copy is foil",
-    "missing — dimmed, dashed, and carrying a price",
-  ];
+  const h = SET_HEAD;
   const newest = PRICES[0].fact.asOf;
   return (
     <Specimen label="sets" width={width}>
-      {/* The header first: the completion figure is read against the BASE RUN
-          while the cell count includes the extras, and the entry's key line is
-          about exactly that disagreement. Four cells alone cannot teach it. */}
-      <div className="mb-[12px] flex flex-wrap items-baseline gap-x-[12px] gap-y-[4px]">
-        <span className="font-mono text-[12px] text-[color:var(--fg)]">162 / 208 · 78%</span>
-        <span className="font-mono text-[10.5px] text-[color:var(--fg-faint)]">
-          321 cells · 171 yours, 150 missing
+      {/* TRANSCRIBED from §3. What this replaces was a completion ratio, a cell
+          count and four cells — which showed the marks and none of the page
+          they live on. The entry's three key lines are about the cost strip's
+          coverage, the dashed cell, and the base run being counted apart from
+          the extras; two of those had nothing on the figure to point at. */}
+      <div className="font-mono text-[9.5px] text-[color:var(--fg-faint)]">
+        Collection / Sets / {h.code}
+      </div>
+      <div className="mt-[8px] mb-[4px] flex flex-wrap items-baseline gap-[10px]">
+        <span className="font-display text-[17px] font-bold text-[color:var(--fg)]">{h.name}</span>
+        <span className="font-mono text-[11px] text-[color:var(--fg-muted)]">
+          {h.have} / {h.base} · {h.percent}%
         </span>
       </div>
-      <SpecimenGrid>
+      <div className="mb-[11px] font-mono text-[9.5px] leading-[1.6] text-[color:var(--fg-faint)]">
+        {setPageCopy.head.meta(h.code, h.released, h.base, h.extras)}
+        <br />
+        {setPageCopy.head.ratioNote}
+      </div>
+
+      {/* The cost strip. Key line 2 is about its COVERAGE — the figure counts
+          the cards ManaPool stocks, and one that has never been stocked is
+          named and left out rather than priced at zero. */}
+      <div className="mb-[12px] flex items-center gap-[14px] rounded-[9px] border border-solid border-[color:var(--border)] bg-[color:var(--bg)] px-[14px] py-[12px]">
+        <div className="min-w-0 flex-1">
+          <div className="mb-[5px] font-mono text-[9.5px] tracking-[0.1em] text-[color:var(--fg-faint)] uppercase">
+            {setPageCopy.cost.label}
+          </div>
+          <div className="flex flex-wrap items-baseline gap-[8px]">
+            <span className="font-mono text-[17px] text-[color:var(--accent)]">{h.cost}</span>
+            <span className="text-[11.5px] text-[color:var(--fg-body)]">
+              {setPageCopy.cost.line(h.costPriced, h.costMissing)}
+            </span>
+            <KeyNumeral n={2} />
+          </div>
+          <div className="mt-[4px] font-mono text-[9.5px] text-[color:var(--fg-faint)]">
+            {setPageCopy.cost.unpriced(h.costUnpriced)}
+          </div>
+        </div>
+        <span className="flex h-[30px] flex-none items-center rounded-[8px] bg-[color:var(--fg)] px-[13px] text-[12px] font-semibold text-[color:var(--bg)]">
+          {setPageCopy.cost.send(h.sendCount)}
+        </span>
+      </div>
+
+      {/* The filter row, and the line under it that says what the denominator
+          counts. Both are drawn, because key line 3 is about exactly that
+          disagreement: 162 of 208 and 321 cells are both true. */}
+      <div className="mb-[9px] flex flex-wrap items-center gap-[8px]">
+        <span className="flex h-[28px] min-w-[140px] flex-1 items-center rounded-[8px] border border-solid border-[color:var(--border-strong)] bg-[color:var(--bg)] px-[10px] text-[11px] text-[color:var(--fg-locked)]">
+          {setFilterCopy.search.placeholder}
+        </span>
+        <span aria-hidden className="flex flex-none gap-[4px]">
+          {PIP_ORDER.map((code) => (
+            <span
+              key={code}
+              className="h-[16px] w-[16px] rounded-full"
+              style={{ background: `center / contain no-repeat url(${PIP_SRC[code]})` }}
+            />
+          ))}
+        </span>
+        <span className="flex h-[26px] items-center gap-[6px] rounded-[7px] border border-solid border-[color:var(--border-strong)] bg-[color:var(--elevated)] px-[9px] text-[11px] text-[color:var(--fg-muted)]">
+          {setFilterCopy.rarity.all}
+          <span aria-hidden className="text-[color:var(--fg-faint)]">▾</span>
+        </span>
+        <span className="flex h-[26px] items-center rounded-[7px] border border-solid border-[color:var(--border-strong)] px-[10px] text-[11px] text-[color:var(--fg-muted)]">
+          {setFilterCopy.missingOnly.label}
+        </span>
+      </div>
+      <div className="mb-[10px] font-mono text-[10px] text-[color:var(--fg-faint)]">
+        {h.cells} cells · {h.yours} yours, {h.missing} missing
+      </div>
+
+      <div className="mb-[9px] flex items-baseline gap-[9px]">
+        <span className="font-display text-[13px] font-bold text-[color:var(--fg)]">Base run</span>
+        <span className="font-mono text-[10.5px] text-[color:var(--fg-muted)]">
+          {h.have} / {h.base}
+        </span>
+        <KeyNumeral n={3} />
+      </div>
+
+      {/* SIX across, as drawn, and the route's own `SetCell` for every one.
+          The price is passed to every cell and the COMPONENT decides: it
+          renders the tag only for `!cell.owned`, because "a price tag is a
+          thing only a missing cell has" is the route's rule, not this page's.
+          Gating it here as well would look like a guard while guarding
+          nothing. */}
+      <div className="grid grid-cols-3 gap-[10px] min-[1000px]:grid-cols-6">
         {SET_CELLS.map((cell, i) => (
-          <SpecimenCell key={cell.scryfallId} caption={caption[i]}>
-            <div className="w-[88px]">
-              <SetCell
-                cell={cell}
-                // Only the missing cell is priced: an owned one never carries a
-                // figure, which is half of what tells the two apart.
-                price={cell.owned ? null : PRICES[0].fact}
-                newestAsOf={cell.owned ? null : newest}
-              />
-            </div>
-          </SpecimenCell>
+          <div key={cell.scryfallId} className="relative">
+            {i === 4 && <KeyNumeral n={1} className="absolute top-[5px] left-[5px] z-10" />}
+            <SetCell
+              cell={cell}
+              price={PRICES[0].fact}
+              newestAsOf={newest}
+            />
+          </div>
         ))}
-      </SpecimenGrid>
+      </div>
     </Specimen>
   );
 }
@@ -425,16 +515,7 @@ function BrowseFigure({ width }: { width: AboutWidth }) {
 function ImportFigure({ width }: { width: AboutWidth }) {
   return (
     <Specimen label="import" width={width}>
-      <div className="flex flex-col gap-[8px]">
-        {["Moxfield", "Archidekt", "Deckbox", "ManaBox"].map((source) => (
-          <span key={source} className="font-mono text-[11px] text-[color:var(--fg-body)]">
-            {source} · CSV
-          </span>
-        ))}
-        <span className="mt-[4px] font-mono text-[11px] text-[color:var(--warning)]">
-          replaces — never adds
-        </span>
-      </div>
+      <ImportFigureBody />
     </Specimen>
   );
 }
@@ -444,16 +525,9 @@ function ImportFigure({ width }: { width: AboutWidth }) {
  * moves between them; no deck is edited.
  */
 function PostImportFigure({ width }: { width: AboutWidth }) {
-  const c = cardAssignmentsCopy.summary;
   return (
     <Specimen label="post-import" width={width}>
-      <div className="flex flex-col gap-[8px]">
-        {[c.sectionCleared(61), c.sectionStill(12), c.sectionShort(2)].map((heading) => (
-          <span key={heading} className="font-mono text-[11px] text-[color:var(--fg-body)]">
-            {heading}
-          </span>
-        ))}
-      </div>
+      <PostImportFigureBody />
     </Specimen>
   );
 }
@@ -462,16 +536,7 @@ function PostImportFigure({ width }: { width: AboutWidth }) {
 function ImportIssuesFigure({ width }: { width: AboutWidth }) {
   return (
     <Specimen label="import-issues" width={width}>
-      <div className="flex flex-wrap items-center gap-[10px]">
-        {[issueInspectorCopy.tabs.unmatched, issueInspectorCopy.tabs.parseErrors].map((tab) => (
-          <span
-            key={tab}
-            className="rounded-[6px] border border-solid border-[color:var(--border-strong)] px-[9px] py-[4px] font-mono text-[11px] text-[color:var(--fg-body)]"
-          >
-            {tab}
-          </span>
-        ))}
-      </div>
+      <ImportIssuesFigureBody />
     </Specimen>
   );
 }
@@ -484,24 +549,7 @@ function ImportIssuesFigure({ width }: { width: AboutWidth }) {
 function CardDetailFigure({ width }: { width: AboutWidth }) {
   return (
     <Specimen label="card-detail" width={width}>
-      <SpecimenGrid>
-        <SpecimenCell caption="the printing you picked">
-          <span className="font-mono text-[12px] text-[color:var(--accent)]">✓</span>
-        </SpecimenCell>
-        <SpecimenCell caption="the one being shown now">
-          <span className="font-mono text-[12px] text-[color:var(--fg-faint)]">◇</span>
-        </SpecimenCell>
-        <SpecimenCell caption="two faces, and the back is castable">
-          <TwoFacedMark layout="transform" />
-        </SpecimenCell>
-        {/* `allFaces`, because the entry's subject is a card that prints TWO
-            costs — a modal DFC's back face is castable and the modal is the one
-            surface drawing both. The default draws the front alone, which is
-            the right pips for the wrong card. */}
-        <SpecimenCell caption="both halves, when a card prints two">
-          <CostPips cost={COSTS.twoFaced} allFaces size={COST_PIP_SIZE} />
-        </SpecimenCell>
-      </SpecimenGrid>
+      <CardDetailFigureBody />
     </Specimen>
   );
 }

@@ -4,6 +4,23 @@ import { AboutPage } from "./about-page";
 import { ABOUT_VERSION, aboutCopy, aboutEntries } from "../../lib/copy/about";
 import { FIGURES } from "./figures";
 import { availabilityCopy } from "../../lib/copy/availability";
+import { cardAssignmentsCopy } from "../../lib/copy/card-assignments";
+import { collectionChassisCopy, printingPickerCopy } from "../../lib/copy/collection";
+import { spokenFullManaCost, twoFacedCopy } from "../../lib/copy/card-surfaces";
+import { COSTS } from "../../lib/about/fixtures";
+import { setPageCopy } from "../../lib/copy/set-collections";
+import { PIP_ORDER } from "../../lib/copy/filter-chassis";
+import {
+  CONTESTED_ARRIVAL,
+  IMPORT_SOURCES,
+  SET_CELLS,
+  SET_HEAD,
+  PRINTING_ROWS,
+  ISSUE_PARSE_ERROR,
+  ISSUE_UNMATCHED,
+  REPLACE_ROWS,
+  REPLACE_SUMMARY,
+} from "../../lib/about/fixtures";
 
 // The action is a server function; the page only needs it to exist as a form
 // target, and importing it for real drags a database client into jsdom.
@@ -231,58 +248,51 @@ describe("the figures", () => {
   it("draws the four availability states, including the one that draws nothing", () => {
     const { container } = render(<AboutPage seen={0} />);
     const plate = figures(container)["availability"];
-    // Asserted on the MARKERS, not on the plate's text. The captions beside
-    // each cell repeat the same words, so a textContent sweep stays green with
-    // every AvailabilityMarker deleted — which is the third round running that
-    // an assertion here measured this page's annotation instead of the app's
-    // output.
-    const cells = [...plate.querySelectorAll(":scope > div > div")];
-    expect(cells).toHaveLength(4);
-    // The content box always holds the marker's typography wrapper, so its
-    // child COUNT is 1 either way — what separates the states is whether the
-    // marker inside it drew any text.
-    const drawn = cells.map((cell) => (cell.firstElementChild?.textContent ?? "").trim());
-    expect(drawn[0], "free draws nothing, and that IS the state").toBe("");
-    expect(drawn.filter((t) => t.length > 0)).toHaveLength(3);
+
+    // FOUR ROWS, as §3 draws them — a numeral and the marker beside it. The
+    // figure was a four-column grid with a caption under every cell, which
+    // forced each caption to say something the marker already said.
+    const rows = [...plate.querySelectorAll(":scope > div > div")];
+    expect(rows).toHaveLength(4);
+
+    // Asserted on the MARKERS, never on the plate's text: three rounds running,
+    // an assertion here measured this page's own annotation instead of the
+    // app's output and stayed green with every AvailabilityMarker deleted.
+    //
+    // The numeral is the row's first child, so the marker is the second.
+    const drawn = rows.map((row) => (row.children[1]?.textContent ?? "").trim());
+    expect(drawn[0], "free draws no diamond, and that IS the state").toBe("no diamond at all");
+    expect(drawn.slice(1).filter((t) => t.length > 0)).toHaveLength(3);
     expect(drawn.join(" ")).toContain("in a brew");
     expect(drawn.join(" ")).toContain("short 2");
 
-    // The no-echo rule is swept across every plate below rather than checked
-    // here — fixing it in this one plate and pinning it in this one test was
-    // the instance, not the class, and the marks and buy-tag plates were still
-    // doing it.
+    // Every row carries its numeral. "Annotation is a numeral and a line" is
+    // the handoff's grammar, and a numeral with nothing to point at is a
+    // bullet — which is what the four key lines below were before this.
+    const numerals = rows.map((row) => row.firstElementChild?.textContent);
+    expect(numerals).toEqual(["1", "2", "3", "4"]);
   });
 
-  it("lets no availability caption repeat the mark it sits under", () => {
+  it("gives an availability row no caption to echo its mark with", () => {
     // The close-out contact sheet's finding: a cell drew `◆ none free` with
     // the words `none free` directly beneath it. Both halves individually
     // correct, which is why every other assertion in this file passed over it.
     //
-    // SCOPED TO THIS PLATE, deliberately, and the scope is the honest part.
-    // Here the mark IS the whole label, so "does the caption repeat it" is a
-    // containment test. On the other plates it is not: the marks row reads
-    // `Rhystic Study 2 1 in a brew` and the buy tag `buy·$6.40 foil`, so the
-    // mark carries a card name and a price and neither string contains the
-    // other — a sweep across all five plates ran green over the same defect in
-    // two of them, which is how this comment came to be here rather than a
-    // broader loop.
+    // That was fixed by rewording the captions. §3 removes the cause instead:
+    // its rows carry a numeral and the marker and NOTHING ELSE, and the
+    // explanation lives in the numbered lines below the figure. A row with no
+    // caption cannot echo one, so this asserts the structure rather than
+    // comparing two strings — the version it replaces stayed green whenever a
+    // caption was reworded rather than removed.
     //
-    // Those two were swept by hand and by eye on the contact sheet. This pins
-    // the one plate a machine can judge; the rest is the walk's job.
+    // `free` is the single exception and states it: the marker draws nothing,
+    // so the row has words of its own or it reads as a figure that failed.
     const { container } = render(<AboutPage seen={0} />);
     const plate = container.querySelector('[data-specimen="availability"]')!;
-    for (const [i, cell] of [...plate.querySelectorAll(":scope > div > div")].entries()) {
-      const mark = (cell.firstElementChild?.textContent ?? "").trim();
-      const cap = (cell.lastElementChild?.textContent ?? "").trim();
-      // A mark that draws NOTHING is exempt and has to be: `free` has only its
-      // caption to say what the blank means.
-      if (mark === "") continue;
-      // Leading glyphs and counts come off — `◇ 1 in a brew` compared whole
-      // finds no overlap with `in a brew`, which IS the stutter.
-      const words = mark.replace(/^[^a-z]+/i, "").toLowerCase();
-      expect(cap.toLowerCase(), `cell ${i}: caption repeats its mark "${words}"`).not.toContain(
-        words,
-      );
+    const rows = [...plate.querySelectorAll(":scope > div > div")];
+    expect(rows.length).toBeGreaterThan(0);
+    for (const [i, row] of rows.entries()) {
+      expect(row.children, `row ${i + 1} is a numeral and a mark, nothing else`).toHaveLength(2);
     }
   });
 
@@ -578,13 +588,64 @@ describe("what each chapter 01 figure actually draws", () => {
     return el as HTMLElement;
   };
 
-  it("sets: four cells, and only the missing one carries a price", () => {
+  it("sets: the set page, not a strip of cells", () => {
     const el = plate("sets");
-    // The completion figure and the cell count disagree on purpose — base run
-    // versus extras — and the entry's key line is about exactly that.
-    expect(el.textContent).toContain("162 / 208");
-    expect(el.textContent).toContain("321 cells");
-    expect(el.querySelectorAll("button").length).toBe(4);
+    const h = SET_HEAD;
+
+    // The head. Two ratios that disagree ON PURPOSE — `162 / 208` counts the
+    // base run, `321 cells` counts the extras too — which is key line 3's
+    // whole subject and had nothing on the figure to point at before.
+    expect(el.textContent).toContain(h.name);
+    expect(el.textContent).toContain(`${h.have} / ${h.base}`);
+    expect(el.textContent).toContain(`${h.cells} cells`);
+    expect(el.textContent).toContain(setPageCopy.head.ratioNote);
+
+    // The cost strip, which key line 2 is about: the figure covers what
+    // ManaPool stocks, and the card that never has is NAMED and left out
+    // rather than priced at zero.
+    expect(el.textContent).toContain(setPageCopy.cost.label);
+    expect(el.textContent).toContain(h.cost);
+    expect(el.textContent).toContain(setPageCopy.cost.line(h.costPriced, h.costMissing));
+    expect(el.textContent).toContain(setPageCopy.cost.unpriced(h.costUnpriced));
+    expect(el.textContent).toContain(setPageCopy.cost.send(h.sendCount));
+
+    // THE PIPS RESOLVE. They rendered as five 16px boxes with
+    // `background: url(undefined)` — no error, no failing test, nothing on
+    // screen — because `PIP_SRC` lived in a `"use client"` module and a SERVER
+    // component importing it gets a client reference rather than the value.
+    // The browse figure was unaffected only because it is itself a client
+    // module, which is exactly what made the difference invisible.
+    //
+    // Asserted on the emitted URL, not on the element count: five boxes are
+    // present either way.
+    const pips = [...el.querySelectorAll("span")].filter((n) =>
+      (n.getAttribute("style") ?? "").includes("/mana/"),
+    );
+    expect(pips).toHaveLength(PIP_ORDER.length);
+    for (const pip of pips) {
+      expect(pip.getAttribute("style")).not.toContain("undefined");
+    }
+
+    // Six cells as drawn, and only a missing one shows a price. This is an
+    // INVARIANCE over the route's rule rather than a guard on this figure:
+    // `SetCell` renders the tag on `!cell.owned` itself, so the figure passes
+    // a price to every cell and cannot break it. It is asserted because it is
+    // what the reader must see, and it fails if the figure ever stops using
+    // the route's cell — which is the thing that could actually regress.
+    // Scoped to the GRID. Swept over the whole plate the cost strip's own
+    // `$188.66` counts as a cell price, so the check read 3 where the rule is
+    // 2 — and a figure pricing every cell would have passed a looser form.
+    const grid = el.querySelector('[class*="grid-cols-3"]');
+    expect(grid, "the cell grid").not.toBeNull();
+    // The COUNT first. Asserting only the priced descendants left the four
+    // owned cells unprotected: dropping any one of them keeps both price tags
+    // and every other assertion here intact, so "six cells as drawn" was a
+    // claim the test did not make.
+    expect(grid!.children).toHaveLength(SET_CELLS.length);
+    const priced = [...grid!.querySelectorAll("*")].filter(
+      (n) => n.children.length === 0 && /^\$[0-9.,]+$/.test(n.textContent ?? ""),
+    );
+    expect(priced).toHaveLength(SET_CELLS.filter((c) => !c.owned).length);
   });
 
   it("browse: a chip per narrowing, a count, and the reading choice", () => {
@@ -598,39 +659,136 @@ describe("what each chapter 01 figure actually draws", () => {
     expect(el.textContent).toMatch(/grid/i);
   });
 
-  it("import: the doors, and the fact that decides whether you lose anything", () => {
+  it("import: the drop target and its two doors, as drawn", () => {
     const el = plate("import");
-    expect(el.textContent).toContain("Moxfield");
-    expect(el.textContent).toContain("ManaBox");
-    expect(el.textContent).toContain("replaces");
+    // TRANSCRIBED from §3. The figure used to list four source names as pills
+    // and repeat the entry's own replace sentence in a warning band — neither
+    // of which Design drew, and the sentence is the caption directly above it.
+    // The ROUTE's words, read from the copy module. §3's labels — `Drop a CSV
+    // export`, `Upload a CSV`, `Paste a list` — are none of them what
+    // `UploadEntry` says, and a reference page naming controls the app does
+    // not have is the one failure this page cannot afford. Both forms are
+    // asserted because the route forks them at `md`.
+    expect(el.textContent).toContain(collectionChassisCopy.upload.dropCompact);
+    expect(el.textContent).toContain(collectionChassisCopy.upload.dropWide);
+    for (const source of IMPORT_SOURCES) {
+      expect(el.textContent).toContain(source);
+    }
+    expect(el.textContent).toContain(collectionChassisCopy.upload.browse);
+    expect(el.textContent).toContain(collectionChassisCopy.upload.paste);
+
+    // The primary door is an INVERSION — `--fg` on `--bg`, the only one in
+    // chapter 01 — and it is what makes one of the two read as the default.
+    // Both doors present with identical skins would pass every check above.
+    const primary = [...el.querySelectorAll("span")].find(
+      (n) => n.textContent === collectionChassisCopy.upload.browse,
+    );
+    expect(primary?.className).toContain("bg-[color:var(--fg)]");
+    expect(primary?.className).toContain("text-[color:var(--bg)]");
+
+    // And the figure must NOT restate the caption's sentence.
+    expect(el.textContent).not.toContain("replaces what is there");
   });
 
-  it("post-import: the three sections, in the app's own words", () => {
+  // The figure used to print the summary's three section HEADINGS as mono
+  // strings. §3 draws the thing the entry's key lines are actually about, and
+  // this asserts that instead: both figures, a line per deck that felt the
+  // replace, and a COUNT of the decks that did not.
+  it("post-import: both figures, the decks that felt it, the count that did not", () => {
     const el = plate("post-import");
-    expect(el.textContent).toContain("No longer to buy");
-    expect(el.textContent).toContain("Still to buy");
-    expect(el.textContent).toContain("Still short");
+    expect(el.textContent).toContain(cardAssignmentsCopy.summary.eyebrow);
+
+    // Key 1 — BEFORE and AFTER, so the change is checkable rather than
+    // asserted. One figure alone would satisfy a looser assertion and say
+    // nothing about the rule.
+    expect(el.textContent).toContain("4,910");
+    expect(el.textContent).toContain("5,132");
+
+    // Keys 2 and 3 — THREE SECTIONS, and a row that is a card carrying the
+    // deck that wanted it. The first rebuild of this figure followed the R4
+    // canvas, which draws deck rows with a per-deck count — and it then
+    // contradicted the three captions printed directly beneath it on the page.
+    // A screenshot caught that; no assertion here could have.
+    for (const head of [
+      cardAssignmentsCopy.summary.sectionCleared(61),
+      cardAssignmentsCopy.summary.sectionStill(12),
+      cardAssignmentsCopy.summary.sectionShort(2),
+    ]) {
+      expect(el.textContent).toContain(head);
+    }
+    for (const row of REPLACE_ROWS) {
+      expect(el.textContent).toContain(row.card);
+      expect(el.textContent).toContain(row.deck);
+    }
+
+    // Both figures of the eyebrow line survive the section rewrite.
+    expect(el.textContent).toContain(`${REPLACE_SUMMARY.noLongerOwned} no longer owned`);
+    expect(el.textContent).toContain(`${REPLACE_SUMMARY.unaffectedDecks} other decks unaffected`);
+
+    // THE CHOOSER. It was missing entirely, and it is the only thing on the
+    // summary a reader can act on. Both committed decks are named, because a
+    // chooser with one option is not a choice — the receipt's own test is at
+    // least two committed claimants.
+    for (const claimant of CONTESTED_ARRIVAL.claimants) {
+      expect(el.textContent).toContain(claimant.deckName);
+    }
+    expect(el.textContent).toContain(CONTESTED_ARRIVAL.cardName);
+    // A CONTROL, not just text: the chooser's subject is that you can act, and
+    // the money sections above carry none. One radio per committed claimant —
+    // the row draws `role="radio"` list items, so a count of buttons finds
+    // nothing and passes for the wrong reason.
+    expect(el.querySelectorAll('[role="radio"]')).toHaveLength(
+      CONTESTED_ARRIVAL.claimants.length,
+    );
   });
 
-  it("import-issues: both tabs, because they are different failures", () => {
+  // The old figure drew the two TAB LABELS as pills, which says the inspector
+  // has two tabs and nothing about the entry's subject — that a misspelling and
+  // a line we could not read are different failures, labelled differently. It
+  // mounts the route's own two row views now, so the difference is the thing on
+  // screen rather than a claim about it.
+  it("import-issues: one row of each KIND, drawn by the route", () => {
     const el = plate("import-issues");
-    expect(el.textContent).toContain("Unmatched");
-    expect(el.textContent).toContain("Parse errors");
+    expect(el.textContent).toContain(ISSUE_UNMATCHED.name);
+    expect(el.textContent).toContain(ISSUE_PARSE_ERROR.reason);
+
+    // The unmatched row carries the warning edge the route gives it. Two rows
+    // of the same kind would satisfy every text assertion above.
+    const warned = [...el.querySelectorAll("div")].filter((d) =>
+      d.getAttribute("style")?.includes("var(--warning)"),
+    );
+    expect(warned.length).toBeGreaterThan(0);
   });
 
-  it("card-detail: the pick, the preview, and BOTH printed costs", () => {
+  it("card-detail: the printings list, with the app's marks", () => {
     const el = plate("card-detail");
+    expect(el.textContent).toContain("Printings");
+    for (const row of PRINTING_ROWS) {
+      expect(el.textContent).toContain(row.set);
+      expect(el.textContent).toContain(row.collector);
+    }
+
+    // §3's legend calls the filled diamond "the printing you own". The picker
+    // has never meant that — ✓ is `Your pick`, ◇ is `Shown now` — and #653
+    // already corrected that exact claim in this entry's caption. The layout
+    // transfers from the drawing; the meaning comes from the app.
     expect(el.textContent).toContain("✓");
     expect(el.textContent).toContain("◇");
-    // Scoped to the COST cell. The plate also draws a two-faced mark, whose
-    // glyph is `//` — so a sweep of the plate's text is satisfied by the wrong
-    // element and passes with the cost drawing its front face alone, which is
-    // the right pips for the wrong card.
-    const costCell = [...el.querySelectorAll(":scope > div > div")].find((c) =>
-      (c.lastElementChild?.textContent ?? "").includes("both halves"),
-    );
-    expect(costCell, "no cell captions the two-cost case").toBeTruthy();
-    expect(costCell!.firstElementChild?.textContent).toContain("//");
+    expect(el.textContent).toContain(printingPickerCopy.printing.badgePicked);
+    expect(el.textContent).toContain(printingPickerCopy.printing.badgeShownNow);
+
+    // The caption promises the cost and the back face; the printings list
+    // alone substantiates neither, and the first rebuild dropped both for it.
+    //
+    // ASSERTED APART, because BOTH draw the glyph `//` — a sweep of the
+    // plate's text is satisfied by whichever survives, and dropping either one
+    // left the run green. The test this replaced carried a comment warning of
+    // exactly that, and deleting it is how the trap was walked into again.
+    //
+    // The cost is read through its SPOKEN form, which states both faces; the
+    // mark through its own sr-only name.
+    expect(el.textContent).toContain(twoFacedCopy.markAria);
+    expect(el.textContent).toContain(spokenFullManaCost(COSTS.twoFaced));
   });
 });
 

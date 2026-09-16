@@ -150,4 +150,24 @@ export const deckChassisCopy = {
  */
 export const PIP_ORDER = ["W", "U", "B", "R", "G"] as const;
 
+/**
+ * The five hues' art, beside the order rather than beside the component.
+ *
+ * It lived in `colour-pips.tsx`, which is `"use client"` — so a SERVER
+ * component importing it received a client reference and every lookup came
+ * back `undefined`. `/about`'s set figure rendered five 16px boxes with
+ * `background: url(undefined)`: no error, no failing test, nothing on screen.
+ * The browse figure was unaffected only because it is itself a client module,
+ * which is what made the difference invisible.
+ *
+ * Nothing here is client-only, so nothing here needs to be in a client module.
+ */
+export const PIP_SRC: Record<PipCode, string> = {
+  W: "/mana/W.svg",
+  U: "/mana/U.svg",
+  B: "/mana/B.svg",
+  R: "/mana/R.svg",
+  G: "/mana/G.svg",
+};
+
 export type PipCode = (typeof PIP_ORDER)[number];

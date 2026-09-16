@@ -3,6 +3,7 @@
 // The interim inline preview UI from earlier is gone; the parent ReplaceFlow
 // component now owns steps 2 (review) and 3 (type-to-confirm).
 
+import { collectionChassisCopy } from "../../lib/copy/collection";
 import { useMemo, useRef, useState, useTransition } from "react";
 import { previewUpload, previewPaste, type UploadPreview } from "../../app/collection/actions";
 import { refreshCopy } from "../../lib/copy/refresh";
@@ -258,8 +259,8 @@ export function UploadEntry({
           <div>
             {/* Upload title — §Upload Title: 15/17px 600 --fg */}
             <div className="text-[15px] md:text-[17px] font-semibold" style={{ color: "var(--fg)" }}>
-              <span className="md:hidden">Drop your new CSV</span>
-              <span className="hidden md:inline">Drop your new collection CSV here</span>
+              <span className="md:hidden">{collectionChassisCopy.upload.dropCompact}</span>
+              <span className="hidden md:inline">{collectionChassisCopy.upload.dropWide}</span>
             </div>
             {/* Formats — §Upload Subtitle: mono 10/11px --fg-faint, letter-spacing 0.06em, margin-top 6px */}
             <div
@@ -276,7 +277,7 @@ export function UploadEntry({
               disabled={pending}
               className="text-[13px] md:text-[14px] mt-[16px] md:mt-[14px] md:mb-[14px] px-[20px] md:px-[22px] py-[11px] md:whitespace-nowrap disabled:opacity-60 disabled:cursor-wait"
             >
-              {pending ? "Uploading…" : "Browse files"}
+              {pending ? "Uploading…" : collectionChassisCopy.upload.browse}
             </PrimaryButton>
             {/* Helper — §Helper Text: 12/13px --fg-faint, margin-top 14px mobile */}
             <p
@@ -286,7 +287,7 @@ export function UploadEntry({
               <span className="md:hidden">
                 Only a Name and Quantity column are required.{" "}
                 <button type="button" onClick={(e) => { e.preventDefault(); setMode("paste"); }} className="text-[color:var(--accent)]">
-                  Paste a list instead
+                  {collectionChassisCopy.upload.paste}
                 </button>
               </span>
               <span className="hidden md:inline">
@@ -306,7 +307,7 @@ export function UploadEntry({
           onClick={() => setMode("paste")}
           className="hidden md:inline-block mt-[14px] text-[13px] whitespace-nowrap text-[color:var(--accent)]"
         >
-          Paste a list instead →
+          {collectionChassisCopy.upload.paste} →
         </button>
       )}
 

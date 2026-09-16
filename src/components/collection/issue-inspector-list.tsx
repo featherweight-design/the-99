@@ -87,7 +87,7 @@ export function IssueInspectorList(props: Props) {
   );
 }
 
-function UnmatchedRowView({ row, query }: { row: UnmatchedRow; query: string }) {
+export function UnmatchedRowView({ row, query }: { row: UnmatchedRow; query: string }) {
   return (
     <div
       // §Unmatched row: bg --surface, 1px --border (the table draws it at
@@ -130,7 +130,7 @@ function UnmatchedRowView({ row, query }: { row: UnmatchedRow; query: string }) 
   );
 }
 
-function ParseErrorRowView({ row, query }: { row: ParseErrorRow; query: string }) {
+export function ParseErrorRowView({ row, query }: { row: ParseErrorRow; query: string }) {
   return (
     <div
       // §Parse-error row: same shell, 3px left border --danger. Leading L####

@@ -39,7 +39,7 @@ function SectionHead({ label, note }: { label: string; note: string }) {
 }
 
 /** One money row: the card, the deck, and — on a still-owed row — why it is still owed. */
-function ReceiptRow({
+export function ReceiptRow({
   cardName,
   deckName,
   reason,

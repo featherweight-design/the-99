@@ -130,7 +130,8 @@ export const aboutEntries: readonly AboutEntry[] = [
     keys: [
       'before and after, both printed, so the change is checkable rather than asserted.',
       'a row is a card, not a deck: it carries the decks that wanted it underneath, in the order the claim model puts them.',
-      'three sections, and each is a different answer — no longer to buy, still to buy, still short.',
+      'three money sections, and each is a different answer — no longer to buy, still to buy, still short.',
+      'and one choice: when two committed decks want the copy that arrived, the first to sleeve it keeps it unless you say otherwise.',
     ],
     // ⚠ R4: strings inside this figure are FIXTURES, not read from source.
     // #639/#643 landed after the last read of main; the structure is the
@@ -151,7 +152,12 @@ export const aboutEntries: readonly AboutEntry[] = [
     title: 'Rows the import could not place',
     route: '/collection/replace',
     opens: 'opens the issue inspector',
-    width: 'inset',
+    // A ROW figure, so it takes the full plate. The route's own issue rows carry
+    // a name, a line number, a set code and a reason on one line; at the inset's
+    // 300px cap `no Oracle match` wrapped and the copy count collided with it —
+    // a figure demonstrating the route's row while showing a shape the route
+    // never produces.
+    width: 'plate',
     caption:
       'Every line we could not put a card to, with the reason beside it, split into names we could not match and lines we could not read. Neither is a buy list, and neither stops the rest of the import. A pasted list carries no set or collector number, which is why a pasted collection cannot drive set completion.',
     keys: [],

@@ -1,3 +1,4 @@
+import { identityGradient } from "../collection/gradients";
 // The props every /about specimen is fed.
 //
 // One module, because the handoff's rule for a new entry is "add a fixture
@@ -111,14 +112,53 @@ export const CARDS = {
  * four a reader has to tell apart on a set page, and the reason that grid is
  * worth a figure at all — the gaps ARE the page.
  */
+/**
+ * §3 draws SIX cells of the base run, in collector order: four owned and two
+ * missing. Six is the drawn count and it is load-bearing — the figure's whole
+ * subject is that a missing card is DASHED AND DIMMED RATHER THAN HIDDEN, and
+ * a strip that is half missing reads as a gap rather than as a run with holes
+ * in it.
+ *
+ * Identities vary so the art placeholders differ; a mono-coloured strip would
+ * say the gradient is decoration rather than the card's identity.
+ */
+/**
+ * Stand-in art for a set cell, as an inline SVG data URI.
+ *
+ * `SetCell` renders `imageUriSmall` and draws NOTHING when it is null — on the
+ * real page that field is always populated, so a null fixture makes six empty
+ * boxes and reads as a broken figure rather than as a set. A reference page
+ * must not fetch six card images to illustrate a completion ratio, so the
+ * fixture supplies the identity gradient the collection grid already uses for
+ * a card with no art.
+ *
+ * Fed through `imageUriSmall` rather than painted behind the cell, because the
+ * cell's own art box is `--surface-sunken` and would cover anything behind it —
+ * and because going through the route's own path means a missing cell dims and
+ * desaturates this exactly as it would dim real art.
+ */
+export function cellArt(identity: string[]): string {
+  const g = identityGradient(identity);
+  const stops = [...g.matchAll(/(#[0-9a-f]{6})\s*(\d+%)?/gi)].map(([, hex, at], i, all) => ({
+    hex,
+    at: at ?? (i === 0 ? "0%" : i === all.length - 1 ? "100%" : "50%"),
+  }));
+  const svg =
+    `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 63 88" preserveAspectRatio="none">` +
+    `<defs><linearGradient id="g" x1="0" y1="0" x2="0.62" y2="1">` +
+    stops.map((s) => `<stop offset="${s.at}" stop-color="${s.hex}"/>`).join("") +
+    `</linearGradient></defs><rect width="63" height="88" fill="url(#g)"/></svg>`;
+  return `data:image/svg+xml,${encodeURIComponent(svg)}`;
+}
+
 export const SET_CELLS: Cell[] = [
   {
     scryfallId: "f0000000-0000-4000-8000-000000000001",
     oracleId: "a0000000-0000-4000-8000-000000000001",
-    collectorNumber: "12",
-    name: "Attercop",
-    imageUriSmall: null,
-    colorIdentity: [],
+    collectorNumber: "1",
+    name: "Long-Bodied Grey Dog",
+    imageUriSmall: cellArt(["W"]),
+    colorIdentity: ["W"],
     rarity: "common",
     booster: true,
     isVariant: false,
@@ -129,41 +169,67 @@ export const SET_CELLS: Cell[] = [
   {
     scryfallId: "f0000000-0000-4000-8000-000000000002",
     oracleId: "a0000000-0000-4000-8000-000000000002",
-    collectorNumber: "13",
-    name: "Beorn the Fierce",
-    imageUriSmall: null,
-    colorIdentity: [],
-    rarity: "common",
-    booster: true,
-    isVariant: false,
-    owned: true,
-    byName: true,
-    foilOnly: false,
-  },
-  {
-    scryfallId: "f0000000-0000-4000-8000-000000000003",
-    oracleId: "a0000000-0000-4000-8000-000000000003",
-    collectorNumber: "14",
-    name: "Beorn, Reluctant Host",
-    imageUriSmall: null,
-    colorIdentity: [],
+    collectorNumber: "2",
+    name: "Old Thrush",
+    imageUriSmall: cellArt(["U"]),
+    colorIdentity: ["U"],
     rarity: "common",
     booster: true,
     isVariant: false,
     owned: true,
     byName: false,
-    foilOnly: true,
+    foilOnly: false,
   },
   {
-    // The one the entry is about: not owned, so it draws dashed and dimmed and
-    // carries a price an owned cell never does.
+    scryfallId: "f0000000-0000-4000-8000-000000000003",
+    oracleId: "a0000000-0000-4000-8000-000000000003",
+    collectorNumber: "3",
+    name: "Troop of Ponies",
+    imageUriSmall: cellArt(["G"]),
+    colorIdentity: ["G"],
+    rarity: "uncommon",
+    booster: true,
+    isVariant: false,
+    owned: true,
+    byName: false,
+    foilOnly: false,
+  },
+  {
     scryfallId: "f0000000-0000-4000-8000-000000000004",
     oracleId: "a0000000-0000-4000-8000-000000000004",
-    collectorNumber: "15",
-    name: "Case of the Filched Falcon",
-    imageUriSmall: null,
-    colorIdentity: [],
-    rarity: "common",
+    collectorNumber: "4",
+    name: "Belladonna Took",
+    imageUriSmall: cellArt(["W"]),
+    colorIdentity: ["W"],
+    rarity: "rare",
+    booster: true,
+    isVariant: false,
+    owned: true,
+    byName: false,
+    foilOnly: false,
+  },
+  {
+    scryfallId: "f0000000-0000-4000-8000-000000000005",
+    oracleId: "a0000000-0000-4000-8000-000000000005",
+    collectorNumber: "5",
+    name: "Bilbo's Gambit",
+    imageUriSmall: cellArt(["U"]),
+    colorIdentity: ["U"],
+    rarity: "rare",
+    booster: true,
+    isVariant: false,
+    owned: false,
+    byName: false,
+    foilOnly: false,
+  },
+  {
+    scryfallId: "f0000000-0000-4000-8000-000000000006",
+    oracleId: "a0000000-0000-4000-8000-000000000006",
+    collectorNumber: "6",
+    name: "Bofur, Reliable Guardian",
+    imageUriSmall: cellArt(["W"]),
+    colorIdentity: ["W"],
+    rarity: "uncommon",
     booster: true,
     isVariant: false,
     owned: false,
@@ -171,6 +237,7 @@ export const SET_CELLS: Cell[] = [
     foilOnly: false,
   },
 ];
+
 
 // The browse figure's chips live in `components/about/browse-chips.tsx`, not
 // here. `FilterChip` requires an `onRemove` handler and the chip is a client
@@ -241,3 +308,149 @@ export const BROWSE_CELLS: {
 
 /** The set code those five share, drawn in every caption beside the rarity. */
 export const BROWSE_SET_CODE = "HOB";
+
+/**
+ * The two rows §3 draws for the issue inspector, one of each KIND — a name we
+ * could not match, and a line we could not read. The entry's whole point is
+ * that those read differently and are labelled differently, so a fixture of
+ * two unmatched rows would illustrate the opposite.
+ *
+ * `Mox Dimaond` is the canvas's own misspelling and is deliberate: it is what
+ * makes the row a misspelling rather than a printing nobody stocks.
+ */
+export const ISSUE_UNMATCHED = { name: "Mox Dimaond", setCode: "VMA", line: 907, quantity: 1 };
+export const ISSUE_PARSE_ERROR = { line: 412, reason: "no printing" };
+
+/**
+ * The replace summary's own figures, from §3. Before and after are BOTH
+ * printed, which is key line 1 — a change you can check rather than one you
+ * are asked to believe.
+ */
+export const REPLACE_SUMMARY = {
+  before: 4910,
+  after: 5132,
+  noLongerOwned: 61,
+  unaffectedDecks: 11,
+};
+
+/**
+ * One row per SECTION of the replace summary, because the entry's key lines
+ * say what the sections are and that a row is a CARD carrying the deck that
+ * wanted it — not a deck carrying a count.
+ *
+ * The R4 canvas draws deck rows with per-deck lines, and this deliberately
+ * does not follow it: the shipped summary has three sections of card rows, the
+ * entry's own captions describe THAT, and a figure built from the drawing
+ * contradicted the three lines printed directly beneath it. Where the canvas
+ * and the surface disagree about something the surface owns, the surface wins.
+ *
+ * One row per section rather than several, because what the figure has to
+ * teach is that the three sections are different ANSWERS — a fourth row in any
+ * one of them adds length and no meaning.
+ */
+export const REPLACE_ROWS: {
+  section: "cleared" | "still" | "short";
+  card: string;
+  deck: string;
+  reason?: string;
+}[] = [
+  { section: "cleared", card: "Cultivate", deck: "Kinnan Ramp" },
+  { section: "still", card: "Smothering Tithe", deck: "Atraxa Counters", reason: "not in the new list" },
+  { section: "short", card: "Arcane Signet", deck: "Preston Tokens", reason: "2 decks want 1 copy" },
+];
+
+/** The four doors a collection arrives through, in §3's order. */
+export const IMPORT_SOURCES = ["Moxfield", "Archidekt", "Deckbox", "ManaBox"];
+
+/**
+ * The three printings §3 draws, with the collector numbers it draws them with.
+ *
+ * The MARKS are the app's, not the canvas's. §3 labels the filled diamond "the
+ * printing you own"; the picker has never meant that — `printing-region.tsx`
+ * draws ✓ for `Your pick` and ◇ for `Shown now`, which #653 already established
+ * when sixteen captions were corrected against the app. The canvas's layout is
+ * right and its legend is stale, so the layout transfers and the meaning does
+ * not.
+ */
+export const PRINTING_ROWS: { set: string; collector: string; state: "picked" | "shown" | "plain" }[] = [
+  { set: "Commander Masters", collector: "0412", state: "picked" },
+  { set: "Double Masters", collector: "0332", state: "shown" },
+  { set: "Ravnica Allegiance", collector: "0176", state: "plain" },
+];
+
+/**
+ * One contested arrival: two committed decks, one copy between them.
+ *
+ * This is the part of the replace summary the About figure was missing
+ * entirely. §3 predates the surface — `about.ts` already carries Design's own
+ * ⚠ note that #639/#643 landed after their last read of `main` — so the
+ * drawing has deck rows where the shipped summary has three money sections
+ * plus THIS, the one control on the page a reader can act on.
+ *
+ * The two tests the receipt itself applies: demand above supply, and at least
+ * two committed claimants. A shortage with one claimant is a purchase, not a
+ * choice, so a fixture with one deck would draw no chooser at all.
+ *
+ * `since` is what orders the queue and what the row stamps, so the two decks
+ * carry different ones — equal stamps would make the seniority rule invisible.
+ */
+export const CONTESTED_ARRIVAL = {
+  oracleId: "about-contested",
+  // Deliberately NOT a name used by REPLACE_ROWS above. The first version
+  // reused `Smothering Tithe` and both deck names, so every assertion about
+  // this row was satisfied by the money sections and passed with the chooser
+  // deleted.
+  cardName: "Dockside Extortionist",
+  arrived: 1,
+  fromImport: true,
+  ownedBefore: 0,
+  owned: 1,
+  claimants: [
+    {
+      deckId: "about-deck-atraxa",
+      deckName: "Muldrotha Value",
+      quantity: 1,
+      commanderCopies: 0,
+      // ZERO. `ContestedCardRow` reads `granted > 0` as an AUTHORED
+      // selection and draws the deck checked and accented — which would show
+      // a reservation the player made, where this figure's subject is the
+      // DEFAULT the seniority rule produces before anyone chooses.
+      granted: 0,
+      since: Date.UTC(2026, 2, 14),
+      versionNumber: 3,
+      // The senior deck holds the one copy that arrived; the other gets none.
+      // Both at 1 would draw no contention for the chooser to resolve.
+      allocated: 1,
+    },
+    {
+      deckId: "about-deck-kinnan",
+      deckName: "Yuriko Ninjas",
+      quantity: 1,
+      commanderCopies: 0,
+      granted: 0,
+      since: Date.UTC(2026, 7, 2),
+      versionNumber: 1,
+      allocated: 0,
+    },
+  ],
+  brewNames: [],
+};
+
+/** §3's own figures for the set head and its cost strip. */
+export const SET_HEAD = {
+  code: "HOB",
+  name: "The Hobbit",
+  released: "2026-08-14",
+  have: 162,
+  base: 208,
+  percent: 78,
+  extras: 113,
+  cells: 321,
+  yours: 171,
+  missing: 150,
+  costPriced: 45,
+  costMissing: 46,
+  costUnpriced: 1,
+  cost: "$188.66",
+  sendCount: 46,
+};
