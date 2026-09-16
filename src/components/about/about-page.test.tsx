@@ -155,11 +155,33 @@ describe("the figures", () => {
     expect(drawn).toBe(registered);
   });
 
-  it("hides every specimen from the reading order and from the pointer", () => {
+  it("hides a MOUNTED specimen from the reading order, and reads a legend aloud", () => {
+    // Two figure kinds, two rules, and the difference is where the information
+    // lives. A mounted component repeats what the caption and keys already
+    // say, so announcing it reads every mark twice and names controls that
+    // cannot be pressed. A legend's content exists NOWHERE else — Discover's
+    // five orders and their glosses are drawn there and in no caption — so
+    // hiding it hid the entry's whole subject from the readers least able to
+    // recover it elsewhere.
     const { container } = render(<AboutPage seen={0} />);
-    for (const [name, figure] of Object.entries(figures(container))) {
+    const all = Object.entries(figures(container));
+    const legends = all.filter(([, el]) => el.hasAttribute("data-legend"));
+    const mounted = all.filter(([, el]) => !el.hasAttribute("data-legend"));
+    expect(legends.length).toBeGreaterThan(0);
+    expect(mounted.length).toBeGreaterThan(0);
+
+    for (const [name, figure] of mounted) {
       expect(figure, name).toHaveAttribute("aria-hidden", "true");
+      expect(figure, name).toHaveAttribute("inert");
       expect(figure.className, name).toContain("pointer-events-none");
+    }
+    for (const [name, figure] of legends) {
+      // Readable, and structured: a mark and its meaning are a pair, so they
+      // are a `dt` and a `dd` rather than two spans a reader must infer.
+      expect(figure.hasAttribute("aria-hidden"), name).toBe(false);
+      expect(figure.hasAttribute("inert"), name).toBe(false);
+      expect(figure.querySelector("dl"), name).toBeTruthy();
+      expect(figure.querySelectorAll("dt").length, name).toBeGreaterThan(0);
     }
   });
 
@@ -371,15 +393,35 @@ describe("the figures", () => {
     expect(plate.textContent).toContain("27");
   });
 
-  it("leaves an entry with no figure complete, and gives it no empty frame", () => {
+  it("gives every entry a figure, and none of them an empty frame", () => {
+    // This assertion used to be its own inverse — that an entry with NO figure
+    // drew no frame — and it had a subject because 29 of the 34 entries had
+    // none. The ledger is empty now, so the question worth asking flipped: the
+    // page's unit is a figure with a caption, and an empty frame is the way
+    // that unit fails quietly.
     const { container } = render(<AboutPage seen={0} />);
-    const workflow = aboutEntries.find((e) => e.id === "deck-import");
-    expect(workflow).toBeTruthy();
-    const li = [...container.querySelectorAll("li")].find((el) =>
-      el.textContent?.includes(workflow!.caption),
+    const entries = [...container.querySelectorAll("li")].filter((li) =>
+      li.querySelector("h3"),
     );
-    expect(li).toBeTruthy();
-    expect(li!.querySelector("[data-specimen]")).toBeNull();
+    expect(entries).toHaveLength(aboutEntries.length);
+    for (const li of entries) {
+      const figure = li.querySelector("[data-specimen]");
+      const title = li.querySelector("h3")?.textContent ?? "";
+      expect(figure, `${title} has no figure`).toBeTruthy();
+      // NOT `childElementCount`, not "has a leaf", and not raw `textContent`.
+      // Every Specimen wraps its content in one div, so the count is 1 whatever
+      // it holds; an EMPTY div is itself a leaf; and `textContent` includes
+      // sr-only descendants, so a figure whose only words are hidden would
+      // satisfy the very check meant to catch a blank one. Three attempts,
+      // each passing over the emptiness the last one missed.
+      const el = figure as HTMLElement;
+      const visible = [...el.querySelectorAll("*")]
+        .filter((n) => n.childElementCount === 0 && n.closest(".sr-only") === null)
+        .map((n) => (n.textContent ?? "").trim())
+        .join("");
+      const art = el.querySelector("svg, img");
+      expect(visible.length > 0 || art !== null, `${title} draws an empty frame`).toBe(true);
+    }
   });
 });
 
@@ -584,5 +626,69 @@ describe("what each chapter 01 figure actually draws", () => {
     );
     expect(costCell, "no cell captions the two-cost case").toBeTruthy();
     expect(costCell!.firstElementChild?.textContent).toContain("//");
+  });
+});
+
+describe("the themes figure", () => {
+  it("draws each theme's palette, not just its name", () => {
+    // The generic empty-frame check cannot see this: remove all eighteen
+    // swatches and the six names keep the frame non-empty, so the figure whose
+    // whole subject is "a theme changes the palette" goes green while showing
+    // no palette at all.
+    const { container } = render(<AboutPage seen={0} />);
+    const plate = container.querySelector('[data-specimen="themes"]');
+    expect(plate).toBeTruthy();
+    const tiles = [...plate!.querySelectorAll("[data-theme]")];
+    expect(tiles).toHaveLength(6);
+    for (const tile of tiles) {
+      const swatches = [...tile.querySelectorAll("span")].filter(
+        (el) => (el as HTMLElement).style.background !== "",
+      );
+      expect(swatches, `${tile.getAttribute("data-theme")} draws no palette`).toHaveLength(3);
+    }
+  });
+});
+
+describe("what each legend must hold", () => {
+  // The empty-frame gate is a floor, not coverage: a legend dropping a row —
+  // Discover drawing four of its five orders — clears it, and those rows ARE
+  // the entry. Where an entry's caption states a count, the figure is held to
+  // it here rather than left to a photograph.
+  const rows = (container: HTMLElement, label: string) => {
+    const el = container.querySelector(`[data-specimen="${label}"]`);
+    expect(el, `${label} drew no figure`).toBeTruthy();
+    return [...el!.querySelectorAll("dt")];
+  };
+
+  it("gives Discover all five of its orders", () => {
+    // "two of them change which commanders the list holds" only means anything
+    // beside the other three.
+    const { container } = render(<AboutPage seen={0} />);
+    expect(rows(container, "discover")).toHaveLength(5);
+  });
+
+  it("gives the deck page all four of its tabs", () => {
+    const { container } = render(<AboutPage seen={0} />);
+    expect(rows(container, "deck-page")).toHaveLength(4);
+  });
+
+  it("gives the resume rows all three verbs", () => {
+    // edited, committed, played — the entry's line is that each row says which
+    // event put it there, which two verbs cannot demonstrate.
+    const { container } = render(<AboutPage seen={0} />);
+    expect(rows(container, "resume")).toHaveLength(3);
+  });
+
+  it("pairs every legend mark with a meaning", () => {
+    // A `dt` with no `dd` is a mark nobody explained, and the pairing is the
+    // whole reason a legend is a description list.
+    const { container } = render(<AboutPage seen={0} />);
+    for (const el of container.querySelectorAll("[data-legend]")) {
+      const label = el.getAttribute("data-specimen");
+      const dts = el.querySelectorAll("dt").length;
+      const dds = el.querySelectorAll("dd").length;
+      expect(dts, `${label} has no rows`).toBeGreaterThan(1);
+      expect(dds, `${label} has ${dts} marks and ${dds} meanings`).toBe(dts);
+    }
   });
 });

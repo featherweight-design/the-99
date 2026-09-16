@@ -8,9 +8,12 @@
 //  - `aria-hidden` IN FULL. A figure repeats what the caption and the key lines
 //    already say; announced, it would read every mark twice and name controls
 //    that cannot be pressed.
-//  - Inert. A specimen is not a control: nothing here navigates, submits or
-//    focuses, and `pointer-events: none` is what makes that true of a real
-//    component mounted with fixture props rather than merely intended.
+//  - Inert, and `inert` is the attribute that means it. `aria-hidden` hides a
+//    node from the accessibility tree and `pointer-events: none` stops a
+//    pointer, and NEITHER removes anything from the tab order — so a keyboard
+//    reader was landing on `CommitmentsCard`'s link and `SetCell`'s button
+//    inside figures, where Enter navigated away from the page. The claim that
+//    nothing here focuses was false on two figures before this.
 
 export function Specimen({
   children,
@@ -33,6 +36,7 @@ export function Specimen({
   return (
     <figure
       aria-hidden
+      inert
       data-specimen={label}
       data-width={width}
       className={`pointer-events-none m-0 mt-[10px] select-none overflow-hidden rounded-[8px] border border-solid border-[color:var(--border)] bg-[color:var(--surface-sunken)] p-[14px] ${
@@ -89,5 +93,42 @@ export function SpecimenResponsive({ children }: { children: React.ReactNode }) 
     <div className="grid grid-cols-1 gap-[12px] min-[1000px]:grid-cols-4 min-[1000px]:gap-[14px]">
       {children}
     </div>
+  );
+}
+
+/**
+ * A legend's frame — and the one figure kind that is NOT inert.
+ *
+ * `Specimen` is `aria-hidden` because a mounted component repeats what the
+ * caption and the key lines already say: announced, it reads every mark twice.
+ * A legend is the opposite case. Its content exists nowhere else on the page —
+ * Discover's five orders and their glosses are drawn here and in no caption —
+ * so hiding it from the accessibility tree hides the entry's whole subject from
+ * the readers least able to recover it elsewhere.
+ *
+ * So a legend is a description list, read normally, in the same frame. The
+ * hairline still says "this is a specimen of the app"; the difference is
+ * whether the thing inside is a picture of information or the information.
+ */
+export function LegendBox({
+  children,
+  label,
+  width = "plate",
+}: {
+  children: React.ReactNode;
+  label?: string;
+  width?: "inset" | "plate";
+}) {
+  return (
+    <figure
+      data-specimen={label}
+      data-width={width}
+      data-legend=""
+      className={`m-0 mt-[10px] overflow-hidden rounded-[8px] border border-solid border-[color:var(--border)] bg-[color:var(--surface-sunken)] p-[14px] ${
+        width === "inset" ? "min-[1000px]:max-w-[300px]" : ""
+      }`}
+    >
+      <dl className="m-0 flex flex-col gap-[8px]">{children}</dl>
+    </figure>
   );
 }

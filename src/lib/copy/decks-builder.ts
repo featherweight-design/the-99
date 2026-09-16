@@ -468,6 +468,14 @@ export function builtFragment(built: number, bodySize: number): string {
  *  "these" is the list rendered above the link on both surfaces, so it never
  *  reads as an offer to buy the whole deck — and since both surfaces now render
  *  the same list, one string across both is right rather than duplicated. */
+/**
+ * The export dialog's two tabs. Here rather than as literals in the dialog
+ * because a second reader appeared — the /about figure documenting this
+ * control — and two literals in two files is how a figure goes stale on a
+ * rename while every test passes.
+ */
+export const exportTabCopy = { decklist: "Decklist", shopping: "Shopping list" } as const;
+
 export const exportLinkOutCopy = {
   shopping: "Buy these at Mana Pool",
 } as const;

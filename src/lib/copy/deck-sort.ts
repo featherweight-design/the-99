@@ -236,3 +236,13 @@ export const deckSortCopy: FilterPanelCopy = {
 // here as well; two constants for one key is how the exported name and the key
 // actually written come to disagree, so this module keeps the copy and the
 // helpers and nothing else.
+
+/**
+ * The decklist's two groupings, as the toggle draws them.
+ *
+ * Here rather than inline in `group-toggle.tsx` because a second reader
+ * appeared: the /about figure that documents this control. Two literals in two
+ * files is how a figure goes stale on a rename while every test passes, which
+ * is exactly what the sort labels below were moved out of.
+ */
+export const DECK_GROUPING_LABELS = { type: "By type", role: "By role" } as const;
