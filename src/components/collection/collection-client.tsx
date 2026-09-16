@@ -14,7 +14,7 @@
 // The patched values come from the same resolver the server used, so the next server read
 // agrees with what is already on screen rather than correcting it.
 
-import { useCallback, useMemo, useRef, useState } from "react";
+import { useCallback, useMemo, useState } from "react";
 import { CardDetailProvider } from "../cards/card-detail-provider";
 import { CollectionBrowser } from "./browser";
 import type { BrowseListCard, CardArt } from "../../lib/collection/browse";
@@ -43,9 +43,13 @@ export function CollectionClient({
   // route, or a refresh after the collection changed. Whatever it says about a card's art
   // is newer than a patch made against the payload before it, and the patch may now be
   // describing a printing the reader no longer owns.
-  const served = useRef(cards);
-  if (served.current !== cards) {
-    served.current = cards;
+  // STATE, not a ref: `react-hooks/refs` forbids reading or writing a ref during render, and
+  // this comparison has to happen there — an effect would let the stale art paint once
+  // before being corrected. Holding the last payload in state is React's own form of
+  // "adjust state when a prop changes", and it is what `useDiscoveryCache` does too.
+  const [served, setServed] = useState(cards);
+  if (served !== cards) {
+    setServed(cards);
     if (picks.size > 0) setPicks(new Map());
   }
 
