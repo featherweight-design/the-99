@@ -19,7 +19,6 @@ import type { RoleName } from "../../lib/recs/score";
 import { explainedCopy } from "../../lib/copy/commander-explained";
 import { recommendationsCopy } from "../../lib/copy/recommendations";
 import { avail } from "./availability-fixture";
-import { drawsMarker } from "../../lib/decks/availability";
 
 // ── Helpers ────────────────────────────────────────────────────────────────────
 
