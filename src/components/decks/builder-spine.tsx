@@ -126,7 +126,14 @@ function RollupBands({
   ) : null;
 
   return (
-    <section aria-label={rollup.regionAria} style={{ borderBottom: "1px solid var(--border)" }}>
+    // The gap above is the band's own: it reads as a claim about the deck
+    // rather than as the next row of the head it sits under, and without it the
+    // red edge butts straight against the Update / Export controls.
+    <section
+      aria-label={rollup.regionAria}
+      className="mt-[14px] md:mt-[18px]"
+      style={{ borderBottom: "1px solid var(--border)" }}
+    >
       {/* Phone — full-bleed bands, heading over body */}
       <div className="md:hidden">
         {overCommitted > 0 && (

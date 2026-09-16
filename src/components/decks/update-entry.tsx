@@ -239,7 +239,7 @@ export function UpdateEntry({ deckId, deckName }: { deckId: string; deckName: st
   const canSubmit = mode === "paste" ? pasteText.trim().length > 0 : file !== null;
 
   return (
-    <div className="p-[16px_18px_24px] md:max-w-[760px] md:p-[44px_48px]">
+    <div className="p-[16px_18px_24px] md:mx-auto md:max-w-[760px] md:p-[44px_48px]">
       <h2 className="font-display font-bold text-[20px] md:text-[28px] m-0 text-[color:var(--fg)]">
         {copy.update.list.heading(deckName)}
       </h2>

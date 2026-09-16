@@ -128,14 +128,21 @@ const SET_CODE_RE = /\s+\([A-Za-z0-9]{2,6}\)(\s+[A-Za-z0-9★†★-]+)?$/;
  * name — the deck's own commander arrives as a line we cannot name, which is
  * exactly what an update diff should never say about it.
  *
- * Narrow on purpose: this word in full, and only in a trailing bracket. Any
+ * `(Partner)` reads the same way and means the same thing here: a partner IS
+ * the deck's second commander, so the line declares one. Exporters write it on
+ * the second of a pair — `Atreus, Impulsive Son (SLD) 2212 (Partner)` — and
+ * without it that line arrives as a card we cannot name, on a deck whose own
+ * commander it is.
+ *
+ * Narrow on purpose: these words in full, and only in a trailing bracket. Any
  * parenthetical is a card name's business, and a two-to-six-character one is
  * already a set code — which is exactly why `(CMDR)` is not read here. The
  * abbreviation fits the set-code shape, so claiming it would take a printing
- * identity away from SET_CODE_RE. The asterisk spelling of the abbreviation is
- * unambiguous and is still read, by ANNOTATION_RE.
+ * identity away from SET_CODE_RE. `partner` is seven characters and cannot be
+ * mistaken for one. The asterisk spelling of the abbreviation is unambiguous
+ * and is still read, by ANNOTATION_RE.
  */
-const COMMANDER_TAG_RE = /\s+\(commander\)$/i;
+const COMMANDER_TAG_RE = /\s+\((?:commander|partner)\)$/i;
 
 /**
  * Reduces a candidate header to the bare word the markers match.

@@ -113,7 +113,7 @@ export function Dashboard(props: DashboardProps) {
           from a reader at either width the handoff draws. The PADDING moves with
           the split rather than staying at `sm`: left behind, it gave 640–1179 a
           third layout, one column wide with desktop padding. */}
-      <div className="flex min-h-0 flex-auto flex-col gap-[12px] px-[16px] pt-[14px] pb-0 min-[1180px]:flex-row min-[1180px]:gap-[20px] min-[1180px]:p-[20px_26px_26px]">
+      <div className="flex min-h-0 flex-auto flex-col gap-[12px] px-[16px] pt-[14px] pb-[16px] min-[1180px]:flex-row min-[1180px]:gap-[20px] min-[1180px]:p-[20px_26px_26px]">
         <div className="flex min-w-0 flex-col gap-[12px] min-[1180px]:flex-auto min-[1180px]:gap-[11px]">
           <ReadyToBuild ready={props.ready} inUse={props.inUse} />
           {/* Sliced here rather than inside the section, so the section draws

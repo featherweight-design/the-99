@@ -236,7 +236,16 @@ export function GroupToggle({
         {/* A `div`, not a `span`: this cluster holds `FilterPanel`, whose root
             is a block element, and `<span><div/></span>` is invalid markup that
             React warns about at runtime. */}
-        <div className="flex-none flex items-center gap-[7px] md:gap-[10px]">
+        {/* `grow` on the phone only. This cluster wraps onto its own line at
+            390px, and the view well is the one control a thumb reaches for
+            without reading — so it goes to the right edge, where the thumb is,
+            while the grouping pills and the sort stay left. Above `md:` the row
+            does not wrap and the outer spacer already places this cluster, so
+            growing here would fight it for the leftover space.
+
+            `flex-none` is `md:` only for the same reason it has to be: it
+            compiles to `flex: none`, which zeroes the grow this needs. */}
+        <div className="grow md:grow-0 md:flex-none flex items-center gap-[7px] md:gap-[10px]">
         {/* By type — active: dark pill with border | idle: plain muted text */}
         {/* Mobile active: px-10 py-4; Desktop active: px-13 py-5              */}
         {/* Mobile idle:   px-6 py-4 no border; Desktop idle: px-13 py-5 border */}
@@ -298,6 +307,11 @@ export function GroupToggle({
           onClear={() => {}}
           onAnnounce={(message) => onSortAnnounce?.(message)}
         />
+
+        {/* Pushes the well to the right edge on the phone, and collapses above
+            `md:` where the cluster is `flex-none` and the row reads as one
+            statement left to right. */}
+        <span className="grow md:hidden" aria-hidden />
 
         {/* Absent under Shopping, not disabled: a shopping list is a list of
             things to buy, and there is no second way to read it. */}

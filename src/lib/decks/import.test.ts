@@ -163,6 +163,32 @@ describe("buildDeckImport — locked decision: sideboard and maybeboard are not 
     expect(result.unresolved).toEqual([]);
   });
 
+  it("reads a trailing (Partner) tag as the declaration", () => {
+    // A partner IS the deck's second commander, so the line declares one.
+    // Exporters write it on the second of a pair — undetected, the tag stays
+    // glued to the name and the deck's own commander arrives as a line we
+    // cannot name, which is exactly what `(Commander)` above exists to stop.
+    const result = build("1 Atraxa, Praetors' Voice (2X2) 145 (Partner)\n1 Sol Ring (LTC) 284");
+    expect(result.declaredCommander?.oracleId).toBe(ATRAXA.oracleId);
+    expect(shape(result.cards)).toEqual([{ oracleId: SOL_RING.oracleId, quantity: 1 }]);
+    expect(result.unresolved).toEqual([]);
+  });
+
+  it("reads (Partner) in either case, as the other tag is read", () => {
+    const result = build("1 Atraxa, Praetors' Voice (2X2) 145 (PARTNER)\n1 Sol Ring (LTC) 284");
+    expect(result.declaredCommander?.oracleId).toBe(ATRAXA.oracleId);
+    expect(result.unresolved).toEqual([]);
+  });
+
+  // The word has to be a trailing bracket of its own, not any parenthetical: a
+  // card whose NAME ends in one keeps it.
+  it("leaves a parenthetical that is not the tag alone", () => {
+    const partnered = card({ name: "Partner in Crime" });
+    const result = build("1 Partner in Crime", [partnered, SOL_RING]);
+    expect(result.declaredCommander).toBeNull();
+    expect(shape(result.cards)).toEqual([{ oracleId: partnered.oracleId, quantity: 1 }]);
+  });
+
   it("leaves a bracketed (CMDR) to the set-code path", () => {
     // The abbreviation fits the set-code shape, so reading it as a declaration
     // would take a printing identity away from a line that meant one.
