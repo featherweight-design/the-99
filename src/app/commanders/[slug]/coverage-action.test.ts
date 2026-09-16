@@ -145,12 +145,17 @@ describe("retryCoverageFigures", () => {
     expect(scoreOneCommander).toHaveBeenCalledWith("user_1", "korvold", "korvold", undefined);
   });
 
-  // A failed free-pool read is the page's own fallback, not a failed retry: it
-  // scores against the collection rather than refusing figures it has.
-  it("falls back to the collection when the free pool read fails", async () => {
+  // A failed free-pool read ABANDONS the retry rather than scoring against the
+  // collection. The section replaces its client state with whatever comes back
+  // and `router.refresh()` keeps client state, so a collection-scored payload
+  // would leave all-owned cards on screen under a free URL — this action's own
+  // defect, reached through the outage path. Both halves are asserted: that the
+  // rescore never happens, and that the caller gets the same null every other
+  // failed retry returns.
+  it("abandons the retry when the free pool read fails, rather than scoring the collection", async () => {
     scoreOneCommander.mockResolvedValue({ synergyState: "ok", roleCards });
     loadFreePool.mockResolvedValue(null);
-    await retryCoverageFigures("korvold", "free");
-    expect(scoreOneCommander).toHaveBeenCalledWith("user_1", "korvold", "korvold", undefined);
+    await expect(retryCoverageFigures("korvold", "free")).resolves.toBeNull();
+    expect(scoreOneCommander).not.toHaveBeenCalled();
   });
 });

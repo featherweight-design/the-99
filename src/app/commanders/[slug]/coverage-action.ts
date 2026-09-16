@@ -54,10 +54,27 @@ export async function retryCoverageFigures(
   // scored against a pool the reader did not ask for, which is the defect this
   // fixes.
   //
-  // `?? undefined` rather than passing null: a null free pool means the read
-  // failed, and `scoreOneCommander` reads undefined as "score against the
-  // collection" — the same fallback the page takes on that outage.
-  const pool = avail === "free" ? ((await loadFreePool(userId)) ?? undefined) : undefined;
+  // A FAILED POOL READ ABANDONS THE RETRY. It does not fall through to the
+  // collection, which is what an earlier revision did by passing `?? undefined`:
+  // `scoreOneCommander` reads undefined as "score against everything owned", so a
+  // transient read failure handed back the all-owned panel while the mounted
+  // section still had `avail === "free"`. The section REPLACES its client-owned
+  // `roleCards` with whatever comes back and `router.refresh()` preserves client
+  // state, so those cards then stayed on screen under a free URL — the very
+  // defect this action's `avail` parameter exists to prevent, reached through the
+  // outage path instead of the missing-parameter one.
+  //
+  // The page may fall back that way on FIRST RENDER, where there is nothing to
+  // lose and the mode is settled in the same pass. A retry is not that: the
+  // reader is already looking at free mode, and a no-op leaves the note in place
+  // with the button ready for another press. Same ruling, and for the same
+  // reason, as the availability re-stamp below.
+  let pool: NonNullable<Awaited<ReturnType<typeof loadFreePool>>> | undefined;
+  if (avail === "free") {
+    const free = await loadFreePool(userId);
+    if (!free) return null;
+    pool = free;
+  }
 
   const scored = await scoreOneCommander(userId, found.oracleId, slug, pool);
   if (!scored) return null;
