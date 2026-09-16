@@ -55,6 +55,15 @@ describe("FirstRunChecklist", () => {
     );
   });
 
+  it("draws no Replace collection heading inside its own step-1 card", () => {
+    // The replace route's desktop heading lives in `ReplaceFlow` so it can sit in the entry's
+    // own column — see the note there. Unconditional, it gave this surface a second title and a
+    // `‹ Collection` link back to a route the reader has not been to.
+    render(<FirstRunChecklist />);
+    expect(screen.queryByRole("heading", { name: "Replace collection" })).toBeNull();
+    expect(screen.queryByText("‹ Collection")).toBeNull();
+  });
+
   it("hides the card fan from the accessibility tree", () => {
     const { container } = render(<FirstRunChecklist />);
     expect(container.querySelector("[aria-hidden='true']")).toBeInTheDocument();
