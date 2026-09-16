@@ -148,6 +148,16 @@ const MUST_BE_MECHANIC = [
   // cases that proved the derived vocabulary wrong.
   "Adventures", "Auras", "Books", "Clues", "Equipment", "Food",
   "Sagas", "Shrines", "Treasure", "Vehicles",
+  // NEGATIVE cases for the plural rules: each of these FIRES the rule beside it
+  // and must still come out a mechanic, so a rule that over-reduces into the
+  // creature vocabulary fails here rather than in the tests alone.
+  "Caves", // -ves
+  "Sacrifice", // -ice
+  "Activated Abilities", // -ies
+  "Curses", // -(sh|ch|s|x|z)es
+  "Artifacts", // -s
+  // `-men`, `-oes` and `-i` have no negative case because no mechanic label in
+  // the vocabulary ends that way.
 ];
 const MUST_BE_CREATURE = [
   "Bears", "Crocodiles", "Frogs", // the reported row

@@ -31,6 +31,14 @@
 // assumed: a run that reaches too little of the catalog fails instead of
 // printing a green over a handful of rows.
 //
+// WHAT IT DOES NOT COVER. `loadCandidates` is the discovery query, so it excludes
+// commanders the reader owns or has built — this proves parity for DISCOVERY
+// rows and says nothing about the `/commanders` or Home populations, which
+// Ruling D also covers. Those score through `getRankedList` / `rankFree` rather
+// than through this path, and proving them is PR 2's job, in the PR that makes
+// the change. Stated here rather than left implied, because a green run would
+// otherwise read as a wider acceptance than it is.
+//
 // Run: `pnpm probe:fit-parity`  ·  `USER_ID=…` to pick the account
 //
 // First, and on its own line: src/db reads DATABASE_URL at module scope.
@@ -49,8 +57,30 @@ import { SYNERGY_WEIGHT } from "../src/lib/recs/score";
     would start fetching — the behaviour this script exists without. */
 const TTL_MS = 30 * 24 * 60 * 60 * 1000;
 
-/** Below this many comparable commanders a run proves too little to trust. */
+/** Freshness is required with an hour to spare.
+ *
+ *  The filter below takes ONE `Date.now()` snapshot while `resolveEdhrecData`
+ *  re-checks the clock on every call, so a row sitting just inside the TTL here
+ *  could expire before its turn in a serial loop — and that means an upstream
+ *  fetch and an `edhrec_cache` upsert, in a script whose contract is neither.
+ *  An hour is far more than the loop can take. */
+const TTL_SLACK_MS = 60 * 60 * 1000;
+
+/** Below this many COMPARED commanders a run proves too little to trust. */
 const MIN_COMPARED = 20;
+
+/** A hand-run script may not grind the whole catalog.
+ *
+ *  `scoreOneCommander` is the real detail-page path, which is why it is used
+ *  rather than a second scorer written here — two expressions of one figure
+ *  drifting apart is the defect this probe exists to detect. The cost is that
+ *  each call re-reads the collection, the committed decks and one cache row, so
+ *  the population is capped by COUNT rather than by sampling: the order is
+ *  deterministic, so the cap takes a stable prefix rather than an arbitrary
+ *  subset. Raise it with `MAX_COMPARED` when a fuller answer is worth the
+ *  queries. A batch scorer would remove the cap and is a follow-up, not a
+ *  round-6 addition. */
+const MAX_COMPARED = Number(process.env.MAX_COMPARED ?? 150);
 
 const owner =
   process.env.USER_ID ??
@@ -81,20 +111,16 @@ const now = Date.now();
 const warm = withStoredTotal
   .filter((c) => {
     const row = cache.get(c.oracleId);
-    return row != null && now - row.fetchedAt.getTime() < TTL_MS;
+    return row != null && now - row.fetchedAt.getTime() < TTL_MS - TTL_SLACK_MS;
   })
   .sort((a, b) => a.oracleId.localeCompare(b.oracleId));
+const population = warm.slice(0, MAX_COMPARED);
 
 console.log(
   `${candidates.length} candidates · ${withStoredTotal.length} with a stored total · ` +
-    `${warm.length} with a fresh EDHREC cache row`,
+    `${warm.length} with a fresh EDHREC cache row · comparing ${population.length}` +
+    (warm.length > population.length ? ` (capped at MAX_COMPARED=${MAX_COMPARED})` : ""),
 );
-if (warm.length < MIN_COMPARED) {
-  throw new Error(
-    `only ${warm.length} candidates have a fresh cache row, need ${MIN_COMPARED}. ` +
-      "Load /commanders and /discover once to warm the cache, then re-run.",
-  );
-}
 
 type Row = {
   name: string;
@@ -113,7 +139,7 @@ const synergyOf = (owned: number, total: number): number | null =>
   total > 0 ? Math.round((owned / total) * SYNERGY_WEIGHT) : null;
 
 const rows: Row[] = [];
-for (const c of warm) {
+for (const c of population) {
   const detail = await scoreOneCommander(owner, c.oracleId, c.name);
   rows.push({
     name: c.name,
@@ -133,8 +159,15 @@ console.log(
   `compared ${rows.length} — ${scored.length} scored live, ${withOverlap} with a ` +
     `non-zero stored overlap, ${zeroTotals} with a stored total of 0\n`,
 );
-if (scored.length === 0) {
-  throw new Error("no candidate scored live — EDHREC returned nothing, so nothing was compared");
+// The floor belongs on what was actually COMPARED, not on what looked warm: a
+// fresh cache row can hold no parsed top-card list, so 20 warm rows can yield
+// fewer than 20 comparisons.
+if (scored.length < MIN_COMPARED) {
+  throw new Error(
+    `only ${scored.length} of ${population.length} compared candidates scored live, ` +
+      `need ${MIN_COMPARED}. Load /commanders and /discover once to warm the cache, ` +
+      "then re-run.",
+  );
 }
 if (withOverlap === 0) {
   throw new Error(
@@ -160,7 +193,10 @@ report("fitSynergy", synergyDiffs, (r) => `stored ${r.storedSynergy} vs live ${r
 
 console.log();
 if (synergyDiffs.length === 0) {
-  console.log(`PARITY HOLDS over ${scored.length} commanders — a row may print the stored figure.`);
+  console.log(
+    `PARITY HOLDS over ${scored.length} DISCOVERY commanders — a row may print the ` +
+      "stored figure. The owned lane and Home are not covered here; see the header.",
+  );
   process.exit(0);
 }
 console.log(

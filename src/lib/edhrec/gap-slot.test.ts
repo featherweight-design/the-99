@@ -141,11 +141,36 @@ describe("the generated classification", () => {
     expect(singularForms("Faeries")).toContain("faerie");
   });
 
-  // The rules over-reduce on purpose — a form matching no creature type costs
-  // nothing — but they must not pull a real mechanic across. These four end in
-  // the letters the irregular rules fire on.
+  // Mechanic labels that each FIRE a plural rule and must still come out
+  // mechanics. Unlike the four below, these exercise the rules — an earlier
+  // revision used only those four, which end in `g`, `l`, `n` and `r`, fire no
+  // rule at all, and so passed with any rule removed.
+  //
+  // BUT THEY ARE REGRESSION GUARDS, NOT PROOFS THAT A RULE IS SAFE. Over-
+  // reduction only misclassifies when the reduced form happens to be a real
+  // creature type, and none of these reduces to one (`caves` gives `cave`,
+  // `curses` gives `curse`), so no tweak to those rules can pull them across.
+  // The real protection is the pinned counts above: any label changing bucket
+  // moves 260/134/7 and fails, anticipated or not.
+  //
+  // `-men`, `-oes` and `-i` have no case because no mechanic label in the
+  // vocabulary ends that way — those rules have nothing to pull across.
+  it.each([
+    ["Caves", "-ves"],
+    ["Sacrifice", "-ice"],
+    ["Activated Abilities", "-ies"],
+    ["Curses", "-(sh|ch|s|x|z)es"],
+    ["Artifacts", "-s"],
+  ])("%s fires the %s rule and stays a mechanic", (label) => {
+    expect(isMechanic(label)).toBe(true);
+    expect(CREATURE_TYPE_LABELS).not.toContain(label);
+  });
+
+  // Kept separately, and honestly labelled: these resemble a creature type by
+  // PREFIX, which is what the generator's near-miss report flags. They exercise
+  // no rule and are a regression guard on the classification, not on the rules.
   it.each(["Cycling", "Surveil", "Prison", "Spellslinger"])(
-    "%s stays a mechanic despite resembling a creature type",
+    "%s resembles a creature type by prefix and is still a mechanic",
     (label) => {
       expect(isMechanic(label)).toBe(true);
     },

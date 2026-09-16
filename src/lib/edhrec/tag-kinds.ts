@@ -56,8 +56,39 @@ export const FORMAT_LABELS: readonly string[] = [
  * | `-s` | *(drop 1)* | `frogs`, `faeries`, `horses`, `humans`, `zombies` |
  *
  * Over-reduction is safe and deliberate: a form that matches no creature type
- * costs nothing, and the generator's own `MUST_BE_MECHANIC` assertions catch a
- * rule that pulls a real mechanic across.
+ * costs nothing. What would NOT be safe is a rule pulling a real mechanic
+ * across, and it is worth being exact about how much the negative cases prove,
+ * because two earlier revisions of this comment overstated it.
+ *
+ * These five mechanic labels each FIRE the rule beside them, and are asserted in
+ * both the generator and `gap-slot.test.ts`:
+ *
+ * | rule | mechanic label that fires it | reduces to |
+ * |---|---|---|
+ * | `-ves` | `Caves` | `cavef`, `cavefe`, `cave` |
+ * | `-ice` | `Sacrifice` | `sacrifouse` |
+ * | `-ies` | `Activated Abilities` | `activated ability` |
+ * | `-(sh\|ch\|s\|x\|z)es` | `Curses` | `curs`, `curse` |
+ * | `-s` | `Artifacts` | `artifact` |
+ *
+ * **They are regression guards on the classification, NOT proofs that a rule
+ * cannot over-reach.** Over-reduction only misclassifies when the reduced form
+ * happens to be a real creature type, and none of the forms in that third column
+ * is one — so no tweak to those rules can pull these five across, and a mutation
+ * run confirms the cases survive one. What they do catch is a label changing
+ * bucket for any reason, which is the thing that would reach a reader.
+ *
+ * The real protection against over-reach is the PINNED COUNTS in
+ * `gap-slot.test.ts`: any label moving between buckets changes 260/134/7 and
+ * fails, whether or not anyone anticipated the label.
+ *
+ * `-men`, `-oes` and `-i` have no case at all, because no label in the mechanic
+ * vocabulary ends that way — those three rules have nothing to pull across.
+ *
+ * An earlier revision claimed `Cycling`, `Surveil`, `Prison` and `Spellslinger`
+ * as sentinels. They end in `g`, `l`, `n` and `r`, fire no rule, and proved
+ * nothing; they came off a prefix-similarity sweep rather than off the rule
+ * endings, and they are kept in the tests as what they actually are.
  *
  * `thieves` is deliberately absent from the table above even though `-ves`
  * would handle it: `Thief` is not a creature type in Scryfall's taxonomy and

@@ -320,10 +320,19 @@ word, a rule fixes the next set's tribe too.
 | `-(sh\|ch\|s\|x\|z)es` | *drop 2* | `foxes` |
 | `-s` | *drop 1* | `frogs`, `faeries`, `horses`, `humans`, `zombies` |
 
-Over-reduction is safe and deliberate — a form matching no creature type costs nothing — and
-the generator's `MUST_BE_MECHANIC` cases catch a rule that pulls a real mechanic across.
-`Cycling`, `Surveil`, `Prison` and `Spellslinger` are pinned for exactly that, since each ends
-in letters one of these rules fires on.
+Over-reduction is safe and deliberate — a form matching no creature type costs nothing. What
+would not be safe is a rule pulling a real mechanic across, and it is worth stating exactly how
+much is proved about that, since two revisions of this spec overstated it. Five mechanic labels
+that each FIRE a rule are pinned in both the generator and the tests — `Caves` for `-ves`,
+`Sacrifice` for `-ice`, `Activated Abilities` for `-ies`, `Curses` for `-es`, `Artifacts` for
+`-s`. **They are regression guards, not proofs:** over-reduction misclassifies only when the
+reduced form happens to be a real creature type, and none of theirs is, so no tweak to those
+rules can pull them across. `-men`, `-oes` and `-i` have no case at all, because no mechanic
+label ends that way.
+
+**The real protection is the pinned counts.** Any label changing bucket moves 260/134/7 and
+fails, whether or not anyone anticipated that label — which is the only guard here that does not
+depend on having thought of the case in advance.
 
 **One residual gap, stated rather than papered over:** a multi-word subtype that Scryfall omits
 would be split into words by the card-derived half and missed. No such case exists in the
