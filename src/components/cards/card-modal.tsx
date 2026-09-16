@@ -14,6 +14,8 @@ import {
   printingCaption,
   matchesPreference,
   resolvedPrinting,
+  cardArt,
+  type CardArt,
   WUBRG_COLOR,
 } from "../../lib/collection/browse";
 import { identityGradient } from "../../lib/collection/gradients";
@@ -332,8 +334,13 @@ export function CardModal({
    * once as the write starts, and once when it lands. A card re-read during the overlap
    * answers with the preference the write has not replaced yet, so dropping the entry
    * only up front would let that pre-write answer be filed as the current one.
+   *
+   * It carries the art the card should now draw, resolved through the same tiers the
+   * server uses, so a list behind the modal can patch its own copy rather than refetch a
+   * payload measured in megabytes. Null when the card names no printing to resolve — a
+   * caller that only wants the nudge ignores the argument, as the set grid does.
    */
-  onArtChange?: () => void;
+  onArtChange?: (art: CardArt | null) => void;
   /**
    * The printing this card was opened AT, when the surface that opened it was showing one
    * in particular. The set grid's cells each ARE a printing, so clicking the dashed #239
@@ -437,6 +444,14 @@ export function CardModal({
   const serverPick = useRef<PreferredPrinting | null>(card.preferredPrinting);
   const writes = useRef(0);
   const settled = useRef(0);
+  /**
+   * The pick currently on screen, for the art reported to `onArtChange`.
+   *
+   * A ref rather than `pick` read through a closure: a write settles in a callback created
+   * when it STARTED, so a reader who picked again while it ran would have the older render's
+   * pick reported as current and watch the list revert to a printing they had replaced.
+   */
+  const livePick = useRef<PreferredPrinting | null>(card.preferredPrinting);
 
   useEffect(() => {
     arrived.current = card;
@@ -458,9 +473,7 @@ export function CardModal({
       // pick just replaced, so the art and caption moved while both headings did not.
       if (!picked) return next;
       const shown = resolvedPrinting(next);
-      const renamed =
-        shown?.flavorName != null && shown.flavorName !== card.name ? shown.flavorName : null;
-      return { ...next, printedName: renamed };
+      return { ...next, printedName: shown ? cardArt(card.name, shown).printedName : null };
     }
     // For an OWNED card `card.printings` is what the reader owns, and a holding matched by
     // name carries no collector number — so the printing the caller is showing is often
@@ -551,6 +564,20 @@ export function CardModal({
     return { ...card, printings, preferredPrinting: at, printedName: renamed };
   }, [card, pick, picked, openAtPrinting]);
   const resolved = resolvedPrinting(preview);
+  /**
+   * The art a list behind this modal should draw once `next` is the card's preference.
+   *
+   * Resolved through `resolvedPrinting` rather than off the picked tile directly, because a
+   * cleared pick falls back through the same tiers the server does — and because the pick
+   * wins even when its own image is null, which only that resolver knows.
+   */
+  const artFor = useCallback(
+    (next: PreferredPrinting | null): CardArt | null => {
+      const shown = resolvedPrinting({ ...card, preferredPrinting: next });
+      return shown ? cardArt(card.name, shown) : null;
+    },
+    [card],
+  );
   // The picker is about the printings you OWN — every string it renders says so, and picking
   // one only decides which of your copies represents the card. `card.printings` is not that
   // list for an unowned card: `catalogCard` fills it with the whole catalog at quantity 0, so
@@ -685,15 +712,21 @@ export function CardModal({
     settled.current++;
     setSeeded(arrived.current);
     if (wrote) serverPick.current = written;
-    else if (generation === writes.current) setPick(serverPick.current);
-    onArtChange?.();
+    else if (generation === writes.current) {
+      setPick(serverPick.current);
+      livePick.current = serverPick.current;
+    }
+    // Whatever stands now, which for an older write settling under a newer pick is that
+    // newer pick — untouched by this settlement and still the thing on screen.
+    onArtChange?.(artFor(livePick.current));
   }
 
   function onPick(p: { setCode: string; collectorNumber: string }) {
     const written = { setCode: p.setCode, collectorNumber: p.collectorNumber };
     setPick(written);
+    livePick.current = written;
     setPicked(true);
-    onArtChange?.();
+    onArtChange?.(artFor(written));
     const generation = ++writes.current;
     startWrite(async () => {
       let wrote = false;
@@ -708,8 +741,9 @@ export function CardModal({
 
   function onClearPick() {
     setPick(null);
+    livePick.current = null;
     setPicked(true);
-    onArtChange?.();
+    onArtChange?.(artFor(null));
     const generation = ++writes.current;
     startWrite(async () => {
       let wrote = false;

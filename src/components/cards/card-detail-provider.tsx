@@ -10,7 +10,7 @@ import {
   createContext, useCallback, useContext, useEffect, useMemo, useRef, useState, type ReactNode,
 } from "react";
 import { twMerge } from "tailwind-merge";
-import type { BrowseCard, PreferredPrinting } from "../../lib/collection/browse";
+import type { BrowseCard, CardArt, PreferredPrinting } from "../../lib/collection/browse";
 import { getCardDetail } from "../../app/card-detail-action";
 import { CardModal } from "./card-modal";
 
@@ -187,9 +187,12 @@ export function CardDetailProvider({
    * It exists because a surface whose data depends on WHICH printing is owned cannot see
    * the write otherwise: `revalidatePath` does not refresh a mounted client route, and a
    * reader who closes the modal before the action returns leaves nothing else to notice.
-   * Every other consumer ignores it.
+   *
+   * `art` is what the card should draw now, resolved through the same tiers the server
+   * uses — so a list can patch its own copy of that one card instead of refetching. Null
+   * when the card names no printing; a caller wanting only the nudge ignores it.
    */
-  onArtChange?: (oracleId: string) => void;
+  onArtChange?: (oracleId: string, art: CardArt | null) => void;
 }) {
   const [card, setCard] = useState<BrowseCard | null>(null);
   const [siblings, setSiblings] = useState<string[]>([]);
@@ -481,7 +484,7 @@ export function CardDetailProvider({
           deckHolds={(deckOracleIds ?? EMPTY_IDS).has(card.oracleId)}
           onProxyWrite={() => evict(card.oracleId)}
           openAtPrinting={openAtPrinting}
-          onArtChange={() => { evict(card.oracleId); onArtChange?.(card.oracleId); }}
+          onArtChange={(art) => { evict(card.oracleId); onArtChange?.(card.oracleId, art); }}
           position={paging ? index + 1 : 1}
           total={paging ? siblings.length : 1}
           onClose={close}

@@ -464,17 +464,7 @@ export function aggregateCollection(rows: RawCollectionRow[]): BrowseCard[] {
     card.setCodes.sort();
     // Every card here was built from at least one collection row, so a primary always exists.
     const primary = primaryPrinting(card.printings, card.preferredPrinting);
-    if (primary) {
-      card.primarySetCode = primary.setCode;
-      card.imageUri = primary.imageUri;
-      // Exact equality, verbatim, per spec: a printing whose flavor name IS the
-      // oracle name has not renamed anything, and normalising would silently
-      // change which cards count as renamed.
-      card.printedName =
-        primary.flavorName !== null && primary.flavorName !== card.name
-          ? primary.flavorName
-          : null;
-    }
+    if (primary) Object.assign(card, cardArt(card.name, primary));
   }
   return [...byOracle.values()];
 }
@@ -506,6 +496,32 @@ function primaryPrinting(
   // A pick the user no longer owns is absent here, so it falls through to the normal
   // resolver — silently, per decision 5. The dormant tile is the picker's business, not this.
   return preferred ?? printings.find((p) => p.imageUri !== null) ?? printings[0];
+}
+
+/**
+ * The three card-level fields a resolved printing decides: the art, the set code the
+ * caption states, and the printed name.
+ *
+ * Extracted because a pick has to move them on the CLIENT too. `loadBrowseCards`
+ * resolves them on the server, and until a route re-renders the reader's own pick is
+ * invisible on the list behind the modal — `revalidatePath` does not refresh a mounted
+ * client route. The list patches its own copy from this instead of refetching a payload
+ * measured in megabytes, and the two answers cannot disagree because there is one rule.
+ */
+export type CardArt = Pick<BrowseCard, "imageUri" | "printedName" | "primarySetCode">;
+
+export function cardArt(cardName: string, printing: BrowsePrinting): CardArt {
+  return {
+    primarySetCode: printing.setCode,
+    imageUri: printing.imageUri,
+    // Exact equality, verbatim, per spec: a printing whose flavor name IS the
+    // oracle name has not renamed anything, and normalising would silently
+    // change which cards count as renamed.
+    printedName:
+      printing.flavorName !== null && printing.flavorName !== cardName
+        ? printing.flavorName
+        : null,
+  };
 }
 
 /**

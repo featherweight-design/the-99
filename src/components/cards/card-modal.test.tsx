@@ -5,7 +5,7 @@
 import { describe, expect, it, vi } from "vitest";
 import { act, fireEvent, render, screen, within } from "@testing-library/react";
 import type { Availability } from "../../lib/decks/availability";
-import type { BrowseCard } from "../../lib/collection/browse";
+import type { BrowseCard, CardArt } from "../../lib/collection/browse";
 import { availabilityCopy } from "../../lib/copy/availability";
 import { printedNameCopy } from "../../lib/copy/card-surfaces";
 import { printingPickerCopy } from "../../lib/copy/collection";
@@ -384,6 +384,108 @@ describe("CardModal printing picker scope", () => {
       <CardModal card={{ ...owned }} position={1} total={1} onClose={() => {}} onPrev={null} onNext={null} />,
     );
     expect(screen.getAllByText(/2 printings you own/).length).toBeGreaterThan(0);
+  });
+
+  // The list behind the modal patches its own copy of the card from this payload rather
+  // than refetching the route, so what it carries has to be the art the server would
+  // resolve for the same pick — set code and printed name included, not just the image.
+  it("reports the picked printing's art to onArtChange", async () => {
+    const owned = {
+      ...card,
+      quantity: 3,
+      printings: [
+        {
+          ...catalogPrinting("RVR", "24"),
+          quantity: 1,
+          finishes: { nonfoil: 1 },
+          imageUri: "https://cards.scryfall.io/normal/rvr.jpg",
+        },
+        {
+          ...catalogPrinting("ELD", "8"),
+          quantity: 2,
+          finishes: { nonfoil: 2 },
+          imageUri: "https://cards.scryfall.io/normal/eld.jpg",
+          flavorName: "Tithe of the Wilds",
+        },
+      ],
+    };
+    const seen: (CardArt | null)[] = [];
+    render(
+      <CardModal
+        card={owned}
+        position={1}
+        total={1}
+        onClose={() => {}}
+        onPrev={null}
+        onNext={null}
+        onArtChange={(art) => seen.push(art)}
+      />,
+    );
+    await act(async () => {
+      fireEvent.click(screen.getAllByRole("button", {
+        name: printingPickerCopy.printing.triggerAria(2, "RVR · 24 +1 more"),
+      })[0]);
+    });
+    await act(async () => {
+      fireEvent.click(screen.getAllByRole("radio", { name: /ELD/ })[0]);
+    });
+    // Twice — optimistically, then on settlement — and both name the printing picked.
+    expect(seen.length).toBeGreaterThanOrEqual(2);
+    for (const art of seen) {
+      expect(art).toEqual({
+        primarySetCode: "ELD",
+        imageUri: "https://cards.scryfall.io/normal/eld.jpg",
+        printedName: "Tithe of the Wilds",
+      });
+    }
+  });
+
+  // A refused write rolls the modal back, and the list has to roll back with it: the
+  // settlement's payload is what the server still holds, not the pick that failed.
+  it("reports the printing the server kept when the write is refused", async () => {
+    const actions = await import("../../app/collection/actions");
+    vi.mocked(actions.setCardArtPreference).mockResolvedValueOnce(false);
+    const owned = {
+      ...card,
+      quantity: 3,
+      printings: [
+        {
+          ...catalogPrinting("RVR", "24"),
+          quantity: 1,
+          finishes: { nonfoil: 1 },
+          imageUri: "https://cards.scryfall.io/normal/rvr.jpg",
+        },
+        {
+          ...catalogPrinting("ELD", "8"),
+          quantity: 2,
+          finishes: { nonfoil: 2 },
+          imageUri: "https://cards.scryfall.io/normal/eld.jpg",
+        },
+      ],
+    };
+    const seen: (CardArt | null)[] = [];
+    render(
+      <CardModal
+        card={owned}
+        position={1}
+        total={1}
+        onClose={() => {}}
+        onPrev={null}
+        onNext={null}
+        onArtChange={(art) => seen.push(art)}
+      />,
+    );
+    await act(async () => {
+      fireEvent.click(screen.getAllByRole("button", {
+        name: printingPickerCopy.printing.triggerAria(2, "RVR · 24 +1 more"),
+      })[0]);
+    });
+    await act(async () => {
+      fireEvent.click(screen.getAllByRole("radio", { name: /ELD/ })[0]);
+    });
+    expect(seen[0]?.primarySetCode).toBe("ELD");
+    // The last word is the printing that was there before the pick.
+    expect(seen[seen.length - 1]?.primarySetCode).toBe("RVR");
   });
 
   // The eviction a pick fires starts a read straight away, and that read can answer before
