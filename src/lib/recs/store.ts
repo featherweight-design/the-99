@@ -198,6 +198,27 @@ export async function persistScores(
     await tx.execute(
       sql`select set_config('app.writer_version', ${String(SCORE_WRITER_CURRENT)}, true)`,
     );
+
+    // BOTH LOCKS COME BEFORE EITHER FINGERPRINT READ, and that ordering is the
+    // whole point rather than tidiness. A lock taken after a comparison means
+    // the transaction can PARK on the lock while the very thing it just
+    // compared moves underneath it: round 2 found that the index lock below,
+    // placed after the collection read, let a rebuild hold this write long
+    // enough for an upload to commit, delete this user's scores, and be
+    // followed by these pre-upload rows landing anyway.
+    //
+    // The per-user key is `replaceCollection`'s own (`collection/import`), so
+    // the collection comparison is atomic with the writes for the same reason
+    // the index one is. Nothing takes these two in the opposite order — the
+    // clear takes the index key alone, the replace takes the user key alone —
+    // so the fixed order here cannot cycle.
+    await tx.execute(sql`select pg_advisory_xact_lock(hashtextextended(${userId}, 0))`);
+    if (indexGen !== undefined) {
+      await tx.execute(
+        sql`select pg_advisory_xact_lock_shared(hashtextextended(${SCORE_INDEX_LOCK}, 0))`,
+      );
+    }
+
     const [gen] = await tx
       .select({ at: sql<Date | null>`max(${csvUploads.confirmedAt})` })
       .from(csvUploads)
@@ -216,16 +237,13 @@ export async function persistScores(
     // not moved at the instant it ran, not at COMMIT: the rebuild could commit
     // its support writes and its `clearScores()` in the gap between this check
     // and the inserts below, and those pre-rebuild rows would then survive the
-    // clear. `pg_advisory_xact_lock_shared` closes it from both sides —
-    // either this transaction holds the lock and the clear waits until the rows
-    // it must delete exist, or the clear holds it and this read happens
-    // afterwards and sees the new generation. Shared rather than exclusive
-    // because score writes have no reason to serialise against EACH OTHER; the
-    // one exclusive taker is the rebuild.
+    // clear. The shared lock taken above closes it from both sides — either
+    // this transaction holds it and the clear waits until the rows it must
+    // delete exist, or the clear holds it and this read happens afterwards and
+    // sees the new generation. Shared rather than exclusive because score
+    // writes have no reason to serialise against EACH OTHER; the one exclusive
+    // taker is the rebuild.
     if (indexGen !== undefined) {
-      await tx.execute(
-        sql`select pg_advisory_xact_lock_shared(hashtextextended(${SCORE_INDEX_LOCK}, 0))`,
-      );
       const [ig] = await tx
         .select({ at: sql<Date | null>`max(${commanderSupport.computedAt})` })
         .from(commanderSupport);

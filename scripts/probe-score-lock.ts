@@ -1,0 +1,284 @@
+// Proves `SCORE_INDEX_LOCK` against a real Postgres.
+//
+// `commander_scores` is a cache rebuilt from the collection and scored against
+// the commander index, and a rebuild of that index invalidates every synergy
+// figure in it. Two halves keep it honest: the index build deletes the table,
+// and `persistScores` re-reads `max(commander_support.computed_at)` inside its
+// own transaction and abandons a write whose fingerprint has moved.
+//
+// NEITHER HALF IS SUFFICIENT AND THE COMPARISON ALONE IS NOT EITHER. A read
+// proves the index had not moved at the instant it ran, not at COMMIT: the
+// clear can land in the gap between that check and the inserts, and the
+// pre-rebuild rows it was supposed to delete survive it. What closes that is an
+// advisory lock — taken shared by the writer, exclusive by the clear.
+//
+// A lock is invisible in every value these functions return, so the unit tests
+// can only read back the statements a stubbed transaction executed. That says
+// the right text was issued; it cannot say the lock was taken on the same
+// connection as the delete, or held across it, or that it blocks anything at
+// all. Those are facts about what two real connections did to each other, which
+// is what this script is for.
+//
+// Writes under a per-run user id and one additive `commander_support` row, and
+// deletes both in a `finally`. Point it at local-dev or a scratch Neon branch,
+// NEVER production — the clear under test deletes `commander_scores` WHOLESALE,
+// for every user in the database it is given.
+//
+//   pnpm probe:score-lock
+import { randomUUID } from "node:crypto";
+// .env has to be loaded before the import below reaches it.
+import { requireEnv } from "./lib/env.mjs";
+import { Pool, neonConfig } from "@neondatabase/serverless";
+import { drizzle } from "drizzle-orm/neon-serverless";
+import { sql } from "drizzle-orm";
+import ws from "ws";
+import { persistScores } from "../src/lib/recs/store";
+import { buildCommanderIndex } from "../src/lib/edhrec/seed-index";
+import type { RankedCommander } from "../src/lib/recs/recommend";
+
+neonConfig.webSocketConstructor = ws;
+
+const { DATABASE_URL } = requireEnv(["DATABASE_URL"]);
+const pool = new Pool({ connectionString: DATABASE_URL });
+const fixture = drizzle(pool);
+const USER = `probe-score-lock-${randomUUID()}`;
+
+let failures = 0;
+const check = (label: string, actual: unknown, expected: unknown) => {
+  const ok = actual === expected;
+  if (!ok) failures += 1;
+  console.log(`${ok ? "PASS" : "FAIL"}  ${label} — got ${actual}, expected ${expected}`);
+};
+const note = (line: string) => console.log(`\n${line}`);
+const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
+
+const scoreRows = async () => {
+  const { rows } = await fixture.execute<{ n: number }>(
+    sql`select count(*)::int as n from commander_scores where user_id = ${USER}`,
+  );
+  return rows[0]?.n ?? 0;
+};
+const indexGen = async () => {
+  const { rows } = await fixture.execute<{ at: Date | null }>(
+    sql`select max(computed_at) as at from commander_support`,
+  );
+  return rows[0]?.at ? new Date(rows[0].at).getTime() : null;
+};
+
+// A ROLLBACK BEFORE EVERY RELEASE. A client handed back to the pool while its
+// transaction is aborted stays broken, and the next caller to draw it — here,
+// the `finally`'s own cleanup — fails with `25P02` and leaves the fixture
+// behind. Cost one run's cleanup to a missing `::uuid[]` cast.
+const release = async (client: { query: (q: string) => Promise<unknown>; release: () => void }) => {
+  await client.query("rollback").catch(() => {});
+  client.release();
+};
+
+const insertScore = (
+  client: { query: (q: string, v: unknown[]) => Promise<unknown> },
+  oracleId: string,
+  slug: string,
+) =>
+  client.query(
+    `insert into commander_scores
+       (user_id, oracle_id, slug, score, rank_score, fit_pool, fit_roles, fit_synergy,
+        synergy_state, receipts, color_pool_size, role_counts)
+     values ($1, $2, $3, 50, 50, 0, 0, 0, 'ok', '', 1,
+             '{"ramp":0,"draw":0,"removal":0,"wipes":0}'::jsonb)`,
+    [USER, oracleId, slug],
+  );
+
+// The one commander the injected build "rebuilds". Nothing is fetched and
+// nothing is written — `write` is a no-op — because what is under test is the
+// clear the loop reaches afterwards, not the loop.
+const buildWithRealClear = (oracleId: string, name: string) =>
+  buildCommanderIndex({
+    loadCommanders: async () => [
+      { oracleId, name, colorIdentity: [], typeLine: "Legendary Creature", oracleText: "" },
+    ],
+    loadNameIndex: async () => [],
+    fetch: async () => ({
+      data: {
+        topCards: ["Sol Ring"],
+        inclusionByName: {},
+        synergyByName: {},
+        tags: [],
+        bracketCounts: {},
+        budgetCounts: {},
+        similarNames: [],
+        deckCount: 1000,
+        rank: 5,
+        saltScore: 1.2,
+      },
+      unreachable: false,
+    }),
+    write: async () => {},
+    delayMs: 0,
+  });
+
+let supportFixture: string | null = null;
+
+// A `main()` rather than top-level await: tsx compiles these scripts to CJS,
+// which has none. Same shape as `probe-draft-state.ts`.
+async function main() {
+try {
+  const { rows: cardRows } = await fixture.execute<{ oracle_id: string; name: string }>(sql`
+    select oracle_id, name from cards
+    where oracle_id not in (select commander_oracle_id from commander_support)
+    limit 3
+  `);
+  if (cardRows.length < 3) throw new Error("need three cards outside commander_support — seed first");
+  // Three distinct cards: the sentinel and the in-flight row would collide on
+  // `(user_id, oracle_id)` if they shared one, and the support fixture must be a
+  // row `commander_support` does not already hold.
+  const [subject, other, support] = cardRows;
+
+  const ranked = (oracleId: string): RankedCommander => ({
+    oracleId,
+    name: "probe",
+    colorIdentity: [],
+    imageUri: null,
+    artCropUri: null,
+    typeLine: "Legendary Creature",
+    oracleText: "",
+    manaCost: null,
+    colorPoolSize: 1,
+    edhrecOwnedCount: 0,
+    edhrecTotal: 1,
+    roleCounts: { ramp: 0, draw: 0, removal: 0, wipes: 0 },
+    roleGaps: [],
+    roleCards: { ramp: [], draw: [], removal: [], wipes: [] },
+    overlapOwned: [],
+    overlapOwnedIds: [],
+    fitPool: 0,
+    fitRoles: 0,
+    fitSynergy: 0,
+    score: 0,
+    measurableTotal: 1,
+    rankScore: 0,
+    slug: "probe",
+    synergyState: "ok",
+  });
+
+  // ── 1 · the clear waits for an in-flight score write ───────────────────
+  //
+  // The writer holds the shared key and has inserted but not committed. The
+  // clear wants the exclusive key, so it cannot run until the rows it is
+  // supposed to delete exist.
+  //
+  // WHAT PROVES THE CLEAR IS BLOCKED IS A COMMITTED SENTINEL, not the writer's
+  // own row. A first version read the count while the writer held the lock and
+  // expected to see its insert: that read runs on another connection, which
+  // cannot see an uncommitted row whether or not anything is blocked, so it
+  // reported 0 on a working build. The sentinel is committed before the race
+  // starts, so it is visible to every connection — and an unblocked clear would
+  // already have deleted it.
+  note("1 · a clear racing an in-flight score write");
+  // On the pool itself, so it autocommits and every connection can see it.
+  await insertScore(pool, subject.oracle_id, "sentinel");
+  const writer = await pool.connect();
+  try {
+    await writer.query("begin");
+    await writer.query("select pg_advisory_xact_lock_shared(hashtextextended($1, 0))", [
+      "commander-scores:commander-index",
+    ]);
+    await insertScore(writer, other.oracle_id, "in-flight");
+
+    // Deliberately not awaited: it blocks on the exclusive key, and the writer
+    // has to commit while it waits or there is no race to observe.
+    const building = buildWithRealClear(subject.oracle_id, subject.name);
+    await sleep(2500);
+    check("a committed row survives while the writer holds the lock", await scoreRows(), 1);
+
+    await writer.query("commit");
+    await building;
+    // Both rows gone: the clear waited until the in-flight one existed, which is
+    // the whole property — a pre-rebuild row does not outlive the rebuild.
+    check("…and the clear takes both once the writer commits", await scoreRows(), 0);
+  } finally {
+    await release(writer);
+  }
+
+  // ── 2 · the same interleaving with no lock on the writer ───────────────
+  //
+  // THE COUNTERFACTUAL, and the reason case 1 measures anything. Unlocked, the
+  // clear runs immediately, sees nothing — the insert is uncommitted and
+  // invisible to it — and the writer's pre-rebuild row commits AFTER the delete
+  // and survives the rebuild indefinitely, marked `writer_version`-current and
+  // indistinguishable from a fresh set.
+  note("2 · the interleaving the lock closes");
+  const unlocked = await pool.connect();
+  try {
+    await unlocked.query("begin");
+    await insertScore(unlocked, subject.oracle_id, "in-flight");
+    await buildWithRealClear(subject.oracle_id, subject.name);
+    await unlocked.query("commit");
+    check("a pre-rebuild row survives a clear it did not wait for", await scoreRows(), 1);
+  } finally {
+    await release(unlocked);
+  }
+  await fixture.execute(sql`delete from commander_scores where user_id = ${USER}`);
+
+  // ── 3 · the writer abandons an index that moved while it waited ────────
+  //
+  // The other direction, and the half the lock exists to make reachable. The
+  // rebuild holds the exclusive key and commits a support row stamped later
+  // than anything else in the table; `persistScores`, holding a fingerprint
+  // captured before that, blocks on the shared key and re-reads afterwards.
+  // Without the lock it would read the OLD maximum, match, and write.
+  note("3 · a score write whose index moved while it waited");
+  const captured = await indexGen();
+  const rebuilder = await pool.connect();
+  try {
+    await rebuilder.query("begin");
+    await rebuilder.query("select pg_advisory_xact_lock(hashtextextended($1, 0))", [
+      "commander-scores:commander-index",
+    ]);
+    supportFixture = support.oracle_id;
+    // `edhrec_total` is non-null iff `synergy_state` is 'ok'
+    // (commander_support_total_null_check), and `computed_at` is stamped an hour
+    // ahead so it is the table's maximum whatever else the index holds.
+    await rebuilder.query(
+      `insert into commander_support
+         (commander_oracle_id, synergy_state, edhrec_total, tags, bracket_counts,
+          budget_counts, similar_oracle_ids, computed_at)
+       values ($1, 'ok', 1, '[]'::jsonb, '{}'::jsonb, '{}'::jsonb, '{}'::uuid[],
+               now() + interval '1 hour')`,
+      [support.oracle_id],
+    );
+
+    const writing = persistScores(USER, [ranked(subject.oracle_id)], null, captured);
+    await sleep(2500);
+    await rebuilder.query("commit");
+    await writing;
+    check("the write is abandoned", await scoreRows(), 0);
+  } finally {
+    await release(rebuilder);
+  }
+
+  // And the same call against the fingerprint the index now carries does write,
+  // so case 3 is measuring the comparison rather than a writer that never
+  // writes at all.
+  await persistScores(USER, [ranked(subject.oracle_id)], null, await indexGen());
+  check("the same write lands against the current fingerprint", await scoreRows(), 1);
+} catch (err) {
+  // A `process.exit` in the `finally` below swallows whatever threw — the first
+  // version of this script reported "all checks passed" over a case that never
+  // ran a single check, because the exception reached the exit before it
+  // reached `main().catch`. Anything thrown is a failed run, loudly.
+  failures += 1;
+  console.error("\nthrew:", err);
+} finally {
+  await fixture.execute(sql`delete from commander_scores where user_id = ${USER}`);
+  if (supportFixture) {
+    await fixture.execute(
+      sql`delete from commander_support where commander_oracle_id = ${supportFixture}`,
+    );
+  }
+  await pool.end();
+  console.log(failures === 0 ? "\nall checks passed" : `\n${failures} check(s) failed`);
+  process.exit(failures === 0 ? 0 : 1);
+}
+}
+
+main().catch((err) => { console.error(err); process.exit(1); });

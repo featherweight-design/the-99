@@ -126,19 +126,41 @@ function fakeDb(confirmedAt: Date | null, indexAt: Date | null = null) {
   let deleted = false;
   let conflictSet: Record<string, unknown> | null = null;
   const executed: string[] = [];
+  // ONE ORDERED TRACE ACROSS BOTH KINDS OF CALL, because the property under
+  // test is an ORDERING and `executed` cannot express one: a trace of
+  // statements alone says a lock was taken somewhere in the transaction, and a
+  // regression that moves it after the fingerprint read it protects passes
+  // every assertion built on that. Reads are recorded where they are AWAITED
+  // rather than where the thenable is built, or the index read would appear in
+  // every case including the ones that never ask for it.
+  const trace: string[] = [];
   const tx = {
     execute: async (q: unknown) => {
-      executed.push(JSON.stringify(q));
+      const text = JSON.stringify(q);
+      executed.push(text);
+      trace.push(
+        text.includes("pg_advisory_xact_lock_shared")
+          ? "lock:index-shared"
+          : text.includes("pg_advisory_xact_lock")
+            ? "lock:user"
+            : "execute",
+      );
     },
     // Two call shapes, two answers. The collection fingerprint ends at
     // `.where()`; the index fingerprint has no predicate and awaits `.from()`
     // directly, so `from` is both thenable and carries a `where`. Returning one
     // value for both would have the index guard read the collection's clock.
     select: () => ({
-      from: () =>
-        Object.assign(Promise.resolve([{ at: indexAt }]), {
-          where: async () => [{ at: confirmedAt }],
-        }),
+      from: () => ({
+        then: (resolve: (rows: { at: Date | null }[]) => void) => {
+          trace.push("read:index");
+          resolve([{ at: indexAt }]);
+        },
+        where: async () => {
+          trace.push("read:collection");
+          return [{ at: confirmedAt }];
+        },
+      }),
     }),
     delete: () => ({ where: async () => { deleted = true; } }),
     insert: () => ({
@@ -155,6 +177,7 @@ function fakeDb(confirmedAt: Date | null, indexAt: Date | null = null) {
     wrote: () => ({ deleted, insertedRows: inserted.flat().length }),
     conflictSet: () => conflictSet,
     executed: () => executed,
+    trace: () => trace,
   };
 }
 
@@ -268,18 +291,57 @@ describe("persistScores generation guard", () => {
   // index had not moved at the instant it ran and not at COMMIT: a rebuild
   // could commit its support writes and its clear in the gap before the
   // inserts, and those pre-rebuild rows would survive.
-  it("takes the index lock shared, and before reading the generation", async () => {
+  it("takes both locks before either fingerprint read", async () => {
     const at = new Date("2026-07-24T12:00:00Z");
     const fake = fakeDb(at, at);
     stub.db.transaction = fake.db.transaction;
 
     await persistScores("user_1", [ranked()], at.getTime(), at.getTime());
 
-    const statements = fake.executed().join(" ");
-    expect(statements).toContain("pg_advisory_xact_lock_shared");
-    // Shared, never exclusive: score writes have no reason to serialise
-    // against each other, and the one exclusive taker is the rebuild.
-    expect(statements).not.toMatch(/pg_advisory_xact_lock\b(?!_shared)/);
+    // Asserted as the whole sequence rather than as two `indexOf` comparisons,
+    // because what makes this write safe is that NOTHING is read before the
+    // locks are held — and a pair of "before" checks passes over a third read
+    // that slipped between them.
+    expect(fake.trace()).toEqual([
+      "execute", // the writer-version stamp
+      "lock:user",
+      "lock:index-shared",
+      "read:collection",
+      "read:index",
+    ]);
+  });
+
+  // A LOCK AFTER THE COMPARISON IS NOT A LOCK. This transaction can park on
+  // either key, and while it is parked the thing it just compared moves: with
+  // the index lock taken after the collection read, a rebuild holding that key
+  // held this write long enough for an upload to commit, delete this user's
+  // scores, and be followed by these pre-upload rows landing anyway. Round 2.
+  it("takes the user lock before reading the collection generation", async () => {
+    const at = new Date("2026-07-24T12:00:00Z");
+    const fake = fakeDb(at, at);
+    stub.db.transaction = fake.db.transaction;
+
+    await persistScores("user_1", [ranked()], at.getTime(), at.getTime());
+
+    const t = fake.trace();
+    expect(t.indexOf("lock:user")).toBeLessThan(t.indexOf("read:collection"));
+    // The per-user key is `replaceCollection`'s own, which is what makes the
+    // collection comparison atomic with the writes below it.
+    expect(fake.executed().join(" ")).toContain("hashtextextended");
+  });
+
+  it("takes the index lock shared, never exclusive", async () => {
+    const at = new Date("2026-07-24T12:00:00Z");
+    const fake = fakeDb(at, at);
+    stub.db.transaction = fake.db.transaction;
+
+    await persistScores("user_1", [ranked()], at.getTime(), at.getTime());
+
+    // Shared on the index key: score writes have no reason to serialise
+    // against each other, and the one exclusive taker is the rebuild. Read
+    // off the trace, since the per-user lock IS exclusive and a substring
+    // sweep of the raw statements cannot tell the two keys apart.
+    expect(fake.trace()).toContain("lock:index-shared");
   });
 
   // No index generation means no check, so there is nothing for a lock to
@@ -292,7 +354,10 @@ describe("persistScores generation guard", () => {
 
     await persistScores("user_1", [ranked()], at.getTime());
 
-    expect(fake.executed().join(" ")).not.toContain("pg_advisory");
+    // The per-user lock is unconditional — the collection guard always runs —
+    // so what an omitted index generation must skip is the INDEX key and its
+    // read, not every lock in the transaction.
+    expect(fake.trace()).toEqual(["execute", "lock:user", "read:collection"]);
   });
 
   // Most of a set's rows already exist, so the conflict path is the one that
