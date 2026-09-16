@@ -71,9 +71,13 @@ describe("retryCoverageFigures", () => {
     expect(loadAvailability).toHaveBeenCalledWith("user_1", { oracleIds: ["sol"] });
   });
 
-  // The claim read is an enrichment. A blip in it must not turn a retry that
-  // DID recover the figures into a failure.
-  it("still hands back the figures when the claim read fails", async () => {
+  // A claim-read failure REJECTS rather than returning null-stamped cards, and
+  // that is the whole point. The section replaces its state with whatever comes
+  // back, so handing it cards stamped null would erase the markers this
+  // re-stamp exists to preserve — the same regression, arriving by the fallback
+  // instead of by the omission. A rejection is a no-op: `handleRetry` swallows
+  // it, the state stands, and the reader can press Retry again.
+  it("rejects rather than handing back null-stamped cards when the claim read fails", async () => {
     const cards: Record<RoleName, RoleCard[]> = {
       ...roleCards,
       ramp: [{ oracleId: "sol", name: "Sol Ring", inclusionPct: 82, committedTo: null, availability: null }],
@@ -81,9 +85,15 @@ describe("retryCoverageFigures", () => {
     scoreOneCommander.mockResolvedValue({ synergyState: "ok", roleCards: cards });
     loadAvailability.mockRejectedValue(new Error("claim read down"));
 
-    const out = await retryCoverageFigures("korvold");
-    expect(out!.ramp[0].name).toBe("Sol Ring");
-    expect(out!.ramp[0].availability).toBeNull();
+    await expect(retryCoverageFigures("korvold")).rejects.toThrow("claim read down");
+  });
+
+  // The read is expensive and its result is discarded for any non-ok state, so
+  // it must sit AFTER the guard rather than before it.
+  it("does not read claims at all when the retry is still degraded", async () => {
+    scoreOneCommander.mockResolvedValue({ synergyState: "degraded", roleCards });
+    await expect(retryCoverageFigures("korvold")).resolves.toBeNull();
+    expect(loadAvailability).not.toHaveBeenCalled();
   });
 
   it("withholds figures when the retry is still degraded", async () => {
