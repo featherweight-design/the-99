@@ -203,10 +203,32 @@ export async function buildCommanderIndex(
   // why nothing here calls `revalidateUserLists`. Both are larger than the
   // window they would close.
   //
-  // Only when the run actually wrote something: a run that failed every
-  // commander has changed no input, and throwing away every reader's scores for
-  // it would be a self-inflicted cold start.
-  if (r.commanders > 0) {
+  // NOR IS THIS A BARRIER AGAINST A CONCURRENT SCORE WRITE, and that one is a
+  // race rather than a staleness window. A request can read the support data
+  // before this delete, finish its fanout after it, and upsert a set computed
+  // against the old index — and `rankableScoreRows` has no generation check, so
+  // those rows are current-writer rows and are served as warm until something
+  // else invalidates them.
+  //
+  // The window is seconds, once a month, for one reader. Closing it properly
+  // needs a generation stamped by `persistScores` and compared by the reader,
+  // which is a migration plus a writer plus a reader — a mechanism, at the
+  // fourth round of a PR about where one figure comes from. It is a NAMED TASK
+  // in PR 3 of the plan rather than a vague follow-up, because PR 3 is where the
+  // row begins reading these figures and is the coherent place to harden them.
+  //
+  // Only when the index could actually have moved. A run that failed every
+  // commander changed no input, and throwing away every reader's scores for it
+  // would be a self-inflicted cold start.
+  //
+  // `skipped` is in the condition because of the RESUME path. `r.commanders`
+  // counts this invocation's writes only, and `alreadyComputedSince` exists so
+  // an interrupted build can be dispatched again to finish — so a resume whose
+  // remaining commanders were all written by the aborted attempt writes nothing,
+  // skips thousands, and would have left every score computed against the
+  // previous index. The workflow supports that path explicitly, which is what
+  // makes gating on writes alone wrong rather than merely narrow.
+  if (r.commanders > 0 || r.skipped > 0) {
     await clearScores();
     console.log("commander-index: cleared persisted commander scores");
   }

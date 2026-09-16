@@ -131,6 +131,17 @@ overlap is the existing intent, stated in the code, not a side effect of the new
 
 ## PR 3 — the payload and the lane reads
 
+**First, a correctness task carried from PR 2's fourth round.** Clearing `commander_scores` when
+the index rebuilds is not a barrier against a concurrent score write: a request can read the
+support data before the clear, finish its fanout after it, and upsert a set computed against the
+old index — and `rankableScoreRows` has no generation check, so those rows are current-writer
+rows served as warm until something else invalidates them. The window is seconds, once a month,
+for one reader. Close it with a generation: a value the index build advances, stamped by
+`persistScores` and compared by `rankableScoreRows` — the same shape as `SCORE_WRITER_CURRENT`
+but data rather than code. It belongs here because this is the PR where the row starts reading
+these figures.
+
+
 1. `prose` into both lane queries (`candidates.ts`, and the owned lane's ranked read).
 2. `GapSlot` onto the row payload; `loadPlayedTags` added to the owned lane, which has no such
    read today.

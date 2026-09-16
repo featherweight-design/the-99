@@ -178,3 +178,35 @@ it("leaves persisted scores alone when the run wrote nothing", async () => {
   });
   expect(cleared).toBe(0);
 });
+
+// THE RESUME PATH. `alreadyComputedSince` exists so an interrupted build can be
+// dispatched again to finish, and `r.commanders` counts only THIS invocation's
+// writes — so a resume whose remaining commanders were all written by the
+// aborted attempt writes nothing, skips everything, and would leave every score
+// computed against the previous index if the clear were gated on writes alone.
+it("clears persisted scores on a resume that wrote nothing but skipped work", async () => {
+  await buildCommanderIndex({
+    loadCommanders: async () => [commander("A", "a"), commander("B", "b")],
+    loadNameIndex: async () => [],
+    loadAlreadyComputed: async () => new Set(["a", "b"]),
+    fetch: async () => { throw new Error("should not fetch a computed commander"); },
+    write: async () => { throw new Error("should not write"); },
+    clearScores: async () => { cleared++; },
+    delayMs: 0,
+  });
+  expect(cleared).toBe(1);
+});
+
+// And the boundary the condition must not cross: nothing written, nothing
+// skipped, everything failed. The index did not move, so the scores stand.
+it("leaves scores alone when every commander failed and none was skipped", async () => {
+  await buildCommanderIndex({
+    loadCommanders: async () => [commander("A", "a")],
+    loadNameIndex: async () => [],
+    fetch: async () => { throw new Error("boom"); },
+    write: async () => {},
+    clearScores: async () => { cleared++; },
+    delayMs: 0,
+  });
+  expect(cleared).toBe(0);
+});
