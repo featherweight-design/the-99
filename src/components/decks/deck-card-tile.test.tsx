@@ -382,7 +382,7 @@ describe("DeckCardTile — the draft touched this card", () => {
     expect(screen.getByText(addPanelCopy.row.quantity(3))).toBeInTheDocument();
   });
 
-  it("draws the accent edge down the shell, not just the caption", () => {
+  it("draws the accent rule as an element, tall enough to reach the art", () => {
     const { container } = render(
       <CardDetailProvider fetchCard={vi.fn().mockResolvedValue(null)}>
         <PendingChangeProvider value={{ moves: new Map([[card.oracleId, { from: 1, to: 2 }]]) }}>
@@ -391,14 +391,23 @@ describe("DeckCardTile — the draft touched this card", () => {
       </CardDetailProvider>,
     );
 
-    // On the SHELL, which is what `decklist-row.tsx:268-269` does — it stacks
-    // the accent rule and the over-committed ring on one element and a row that
-    // is both reads fine. Over 46px of caption the accent was easy to miss.
-    const edged = [...container.querySelectorAll<HTMLElement>("*")].filter((el) =>
-      el.style.boxShadow.includes("var(--accent)"),
+    // A DRAWN STRIP, not an inset shadow. An inset shadow on the shell paints
+    // below the opaque full-bleed art, so it showed only across the caption —
+    // invisible exactly where the move was made to reach. jsdom lays nothing
+    // out, so this asserts the cause: an absolutely positioned element spanning
+    // top to bottom, above the art in the stack.
+    const rules = [...container.querySelectorAll<HTMLElement>("span")].filter((el) =>
+      el.className.includes("bg-[color:var(--accent)]"),
     );
-    expect(edged).toHaveLength(1);
-    expect(edged[0].className).toContain("rounded-[9px]");
+    expect(rules).toHaveLength(1);
+    for (const c of ["absolute", "top-0", "bottom-0", "z-20"]) {
+      expect(rules[0].className).toContain(c);
+    }
+    expect(
+      [...container.querySelectorAll<HTMLElement>("*")].filter((el) =>
+        el.style.boxShadow.includes("var(--accent)"),
+      ),
+    ).toHaveLength(0);
   });
 
   it("associates the spoken state with the trigger, not just the DOM", () => {

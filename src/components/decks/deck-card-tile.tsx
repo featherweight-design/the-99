@@ -166,13 +166,26 @@ export function DeckCardTile({
            both reads fine — the chip carries the shortfall, the edge carries the
            draft. Over 46px of caption the accent was easy to miss; over a whole
            tile it is not, and the two views now say it the same way. */
-        style={pendingMove ? { boxShadow: "inset 2px 0 0 0 var(--accent)" } : undefined}
-        className={`${TILE_SHELL} bg-[color:var(--surface)] ${
+        className={`${TILE_SHELL} relative bg-[color:var(--surface)] ${
           availState === "over"
             ? "[border:1px_solid_var(--avail-over-border)]"
             : "[border:1px_solid_var(--border)] md:hover:[border:1px_solid_var(--border-strong)]"
         }`}
       >
+        {/* A DRAWN ELEMENT, not an inset shadow on the shell. An inset shadow
+            paints above the element's own background and BELOW its descendants,
+            and this shell's first child is the full-bleed art — opaque, starting
+            at x=0 — so a shadow was covered for the whole height of the art and
+            showed only across the caption strip. That is the reach the move was
+            made to escape, and `onShell` would have reported it fixed.
+            `decklist-row.tsx` gets away with a shadow because a row has no
+            opaque full-width child. */}
+        {pendingMove && (
+          <span
+            aria-hidden
+            className="absolute left-0 top-0 bottom-0 w-[2px] z-20 pointer-events-none bg-[color:var(--accent)]"
+          />
+        )}
         <div className="relative">
           <CardDetailTrigger
             oracleId={card.oracleId}

@@ -110,8 +110,9 @@ none of them as shipped.
 
 **Resolution — eng, not Design.** The handoff's component tie-break cannot settle a three-way
 disagreement *between* components, so the handoff's own figure is the ruling: the unified box is
-`9px` desktop / `8.5px` phone, `px-[5px] py-[1px]`, radius 4, **and the chip's border becomes an
-outline** so the three boxes are the same height. Normalizing is the entire point of the call.
+`9px` desktop / `8.5px` phone, `px-[5px] py-[3px]` (`py-[1px]` as first ruled — **erratum 12 grew
+it**), radius 4, **and the chip's border becomes an outline** so the three boxes are the same
+height. Normalizing is the entire point of the call.
 
 **The containment boundary is a variant, not a call site.** None of the three variants involved is
 exclusive to these two routes:
@@ -249,7 +250,13 @@ redraws a box. The figures in that table are struck rather than implemented.
 All three overturn something the handoff called. Recorded here for Design to ratify; the tracker
 row moves to ⚖️.
 
-**10 · The draft edge runs the whole left edge of the tile, not the caption.** Call B put it on the
+**10 · The draft edge runs the whole left edge of the tile, not the caption.** It is a DRAWN 2px
+strip, not an inset shadow on the shell: an inset shadow paints above the element's background and
+below its descendants, and the tile's first child is the full-bleed opaque art — so a shadow was
+covered for the whole height of the picture and showed only across the caption, which is the reach
+the move was made to escape. The row gets away with a shadow because a row has no opaque full-width
+child.
+ Call B put it on the
 caption because the shell's border already carries over-committed and "the two facts are
 orthogonal". `decklist-row.tsx:268-269` had already settled that the other way and shipped it — the
 row stacks `inset 2px 0 0 0 --accent` and `inset 0 0 0 1px --avail-over-border` on ONE element, and

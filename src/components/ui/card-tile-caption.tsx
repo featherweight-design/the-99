@@ -37,8 +37,8 @@ export const CARD_TILE_CAPTION_H = "min-h-[56px] md:min-h-[50px]";
  * happens to fall, which measured 49px on some tiles and 50px on others. A
  * floor that content always exceeds is not a fixed height; it is a minimum that
  * never binds, and the ragged grid it produces is the one failure this design
- * cannot survive. Phone: 8 + 13 + 3 + 20 + 8 = 52. Desktop: 6 + 14 + 3 + 17 + 6
- * = 46.
+ * cannot survive. Phone: 8 + 17 + 3 + 20 + 8 = 56. Desktop: 6 + 18 + 3 + 17 + 6
+ * = 50.
  */
 const META_LINE = "h-[17px] md:h-[18px]";
 const NAME_LINE = "h-[20px] md:h-[17px]";

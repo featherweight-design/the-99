@@ -169,18 +169,39 @@ const ART = (page) =>
  * in the count's position.
  *
  * `boxShadow` rather than a class, because the edge is an inline style and the
- * question is which ELEMENT carries it — the caption, never the shell, whose
- * border already carries over-committed.
+ * question is which ELEMENT carries it — the shell, never the caption alone.
+ * It ran the caption until erratum 10; over 46px that was easy to miss, and the
+ * row had already shipped both the accent rule and the over-committed ring on
+ * one element without them fighting.
  */
 const DRAFT = ({ page }) => {
-  const edged = [...document.querySelectorAll(`${page} *`)].filter((el) =>
-    (el.style.boxShadow ?? "").includes("var(--accent)"),
+  // The accent RULE, as a drawn box rather than a style holder. It was read off
+  // `boxShadow` and that check could not see the defect it existed for: an inset
+  // shadow on the shell paints below the opaque art, so the edge was invisible
+  // across the picture while the element carrying it was exactly where the check
+  // wanted it. What matters is the painted strip's geometry — see `edgeBox`.
+  const bg = (el) => getComputedStyle(el).backgroundColor;
+  const accent = getComputedStyle(document.documentElement).getPropertyValue("--accent").trim();
+  const probe = document.createElement("span");
+  probe.style.color = accent;
+  document.body.appendChild(probe);
+  const accentRgb = getComputedStyle(probe).color;
+  probe.remove();
+  const edged = [...document.querySelectorAll(`${page} span`)].filter(
+    (el) => bg(el) === accentRgb && el.getBoundingClientRect().width <= 4,
   );
   return {
     edges: edged.length,
-    // On the SHELL — the rounded plate — rather than the caption row inside it.
-    // If the edge ever migrates back, this is what says so.
-    onShell: edged.filter((el) => /rounded-\[(9|10)px\]/.test(el.className)).length,
+    accentRgb,
+    // The strip has to REACH THE ART, which is the whole point of erratum 10 and
+    // the thing the previous check could not see. Its height against its tile's.
+    coversArt: edged.filter((el) => {
+      const shell = el.parentElement;
+      if (!shell) return false;
+      const r = el.getBoundingClientRect();
+      const s = shell.getBoundingClientRect();
+      return s.height > 0 && r.height / s.height > 0.9;
+    }).length,
     // SCOPED TO A CAPTION. Unscoped, this read the deck header's own `+1`
     // pending-count chip and passed with the tile's figure deleted outright —
     // the check existed and measured nothing. The caption is the only place the
@@ -195,9 +216,9 @@ const DRAFT = ({ page }) => {
 
 /** Every caption's height, and every slot box's height, on the page. */
 const CAPTIONS = (page) => {
-  // BOTH halves of the pair. `decklist-row`'s meta shell is also `min-h-[52px]`
-  // — and the caption's phone figure was 52 until the chip padding grew it to 56
-  // — with `md:min-h-[34px]` — so matching the phone figure alone measured the
+  // BOTH halves of the pair. The caption's phone figure was 52 until the chip
+  // padding grew it to 56 (erratum 12), and `decklist-row`'s meta shell is
+  // `min-h-[52px] md:min-h-[34px]` — so matching one figure alone measured the
   // LIST's rows and reported a tidy single height of 34 for them.
   const caps = [...document.querySelectorAll(
     `${page} [class*="min-h-[56px]"][class*="min-h-[50px]"]`,
@@ -452,9 +473,11 @@ async function run() {
         // caption. Zero would mean the card view still photographs a dirty draft
         // as a clean one, which is the state this whole call exists to end.
         failures += !report(
-          `${width}px · draft · one accent edge, down the shell`,
-          draft.edges === 1 && draft.onShell === 1,
-          `${draft.edges} edges, ${draft.onShell} on a shell`,
+          // Reaching the ART is the assertion; which element holds the style is
+          // not, and was what the previous version asked.
+          `${width}px · draft · one accent rule, covering the tile`,
+          draft.edges === 1 && draft.coversArt === 1,
+          `${draft.edges} rules, ${draft.coversArt} reaching the art`,
         );
         // NO `+1`. A single-copy add prints no figure at all now — the edge says
         // the draft touched it and the count says nothing it could not assume.

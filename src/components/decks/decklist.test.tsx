@@ -960,10 +960,10 @@ describe("the pending-change notes follow the mark, which both views now draw", 
     // `{ from: 0, to: 1 }`, and since erratum 11 a single-copy add prints no
     // figure at all — `+1` restated the count beside it. The edge runs the whole
     // tile (erratum 10), which is what the caption above is pointing at.
-    const edged = [...document.querySelectorAll<HTMLElement>("*")].filter((el) =>
-      el.style.boxShadow.includes("var(--accent)"),
+    const rules = [...document.querySelectorAll<HTMLElement>("span")].filter((el) =>
+      el.className.includes("bg-[color:var(--accent)]"),
     );
-    expect(edged).toHaveLength(1);
+    expect(rules).toHaveLength(1);
   });
 });
 
