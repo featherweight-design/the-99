@@ -27,6 +27,7 @@ import { sql } from "drizzle-orm";
 import ws from "ws";
 import { loadDiscovery } from "../src/lib/discovery/list";
 import { encodeDiscovery } from "../src/lib/discovery/encode";
+import { loadCommanderRankings } from "../src/lib/commanders/rankings";
 
 neonConfig.webSocketConstructor = ws;
 
@@ -88,6 +89,43 @@ async function main() {
       // nothing, and this route has had an empty-payload regression before.
       check(`${sort} returned rows`, list.items.length > 0, `${list.items.length} rows`);
     }
+
+    // THE OWNED LANE IS CACHED THROUGH THE SAME DATA CACHE and now carries the
+    // same sentence, so guarding only `/discover` would be a one-sided sweep by
+    // construction. It is the smaller list — every row is a commander the
+    // reader owns — which is a reason to expect it to pass, not a reason not to
+    // measure it. It ships unencoded, so there is no compression ratio to
+    // assert; the total is the whole reading.
+    const rankings = await loadCommanderRankings(subject.user_id);
+    const rankBytes = Buffer.byteLength(JSON.stringify(rankings));
+    const rankProse = rankings.items.filter((i) => i.prose).length;
+    console.log(
+      `\ncommanders: ${rankings.items.length} rows · ${rankProse} with a sentence · ` +
+        `${(rankBytes / 1e6).toFixed(3)} MB`,
+    );
+    check(
+      "the owned lane is inside the budget",
+      rankBytes <= BUDGET_BYTES,
+      `${(rankBytes / 1e6).toFixed(3)} MB, ${((rankBytes / CEILING_BYTES) * 100).toFixed(1)}% ` +
+        `of the 2 MB ceiling`,
+    );
+    check(
+      "the owned lane returned rows",
+      rankings.items.length > 0,
+      `${rankings.items.length} rows`,
+    );
+  } catch (err) {
+    // A `process.exit` in the `finally` below swallows whatever threw: the
+    // `finally` runs first, sees `failures === 0`, prints "all checks passed"
+    // and exits 0 before `main().catch` is ever reached. So a database with no
+    // `collection_items` rows — the throw at the top of this function — would
+    // have reported a clean run having measured nothing.
+    //
+    // THE SAME TRAP AGENTS.md ALREADY RECORDS against `probe:score-lock`,
+    // reintroduced here in the same session that documented it. Fixing an
+    // instance is not fixing the class.
+    failures += 1;
+    console.error("\nthrew:", err);
   } finally {
     await pool.end();
     console.log(failures === 0 ? "\nall checks passed" : `\n${failures} check(s) failed`);

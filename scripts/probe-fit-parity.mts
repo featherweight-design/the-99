@@ -269,9 +269,27 @@ const synergyDiffs = rows.filter((r) => r.sqlSynergy !== r.tsSynergy);
 // computation that agreed with neither. The row is the surface the ruling is
 // about, so it is compared rather than worked around.
 //
-// Three clauses have to match, not one: identity subset, the commander's own
-// card excluded, and commander-legal only. A fix that adds the first and stops
-// leaves the other two to be found by a reader noticing two numbers.
+// WHAT THIS ACTUALLY EXERCISES IS THE IDENTITY SUBSET, and saying more than
+// that would be this script overclaiming about itself. `commanderPool` applies
+// three restrictions and only one of them is reachable here:
+//
+//   • identity subset   — exercised. Reverting `IDENTITY_RESTRICTION` fails
+//                         this check on 2 rows while both assertions above
+//                         still read AGREE.
+//   • the commander's own card — UNREACHABLE on this lane. `loadCandidates`
+//                         lists only commanders the reader does not own, so the
+//                         commander's own id is never in the owned array the
+//                         support aggregate unnests. Deleting that clause from
+//                         `storedNumerators` leaves this check at 0 — measured,
+//                         not assumed. It stays because this function mirrors
+//                         `commanderPool`, and a mirror with a piece missing
+//                         invites the next reader to add it to the lane too.
+//   • commander-legal   — satisfied UPSTREAM rather than here. Both sides take
+//                         their ids from `loadCollectionPool`, which filters on
+//                         `commanderLegal` before either sees them.
+//
+// So a lane that grew to include owned commanders would need this check
+// re-thought, not merely re-run.
 const laneDiffs = rows.filter((r) => r.laneOwned !== r.sqlOwned);
 
 const report = (label: string, bad: Row[], pick: (r: Row) => string) => {
