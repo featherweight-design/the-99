@@ -844,9 +844,10 @@ describe("ReviewChanges", () => {
      *  finish. A promise left unsettled keeps its transition pending for the
      *  rest of the file, and every test after it stops re-rendering. */
     function hold() {
-      // Every resolver, not the last one: the concurrent-restore test starts two
-      // writes, and releasing only the second would leave the first pending and
-      // its transition open for the rest of the file.
+      // Every resolver, not the last one. Nothing here starts two adds any more —
+      // the latch ignores the second press — but a held write that is never
+      // resolved keeps its transition pending for the rest of the FILE, so the
+      // release collects whatever was actually issued rather than assuming one.
       const answers: Array<(r: { ok: boolean }) => void> = [];
       addCardToDeck.mockImplementation(
         () => new Promise((resolve) => { answers.push(resolve); }),
@@ -1224,10 +1225,12 @@ describe("ReviewChanges", () => {
       await held.release();
     });
 
-    // The receipt is counted where the write LANDS rather than predicted at the
-    // click. The figures are asserted by value, not by absence: a sentence that
-    // merely avoids saying "nothing going out" would pass with the count off by
-    // one, which is exactly the defect this replaces.
+    // The receipt's figures, by value rather than by absence: a sentence that
+    // merely avoided saying "nothing going out" would pass with the count off by
+    // one, which is the defect this replaces. It pins the sentence rather than the
+    // fix — with one write in the air the retired code computed the same string,
+    // and what makes the figures trustworthy is the serialisation the case above
+    // asserts.
     it("counts the receipt off what the write actually left behind", async () => {
       mount({ in: [row()], out: [cut(), cut({ oracleId: "o3", name: "Chrome Mox" })] });
       await act(async () => {

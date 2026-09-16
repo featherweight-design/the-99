@@ -199,6 +199,12 @@ export function DiscardConfirm({
   // request carries the same expected version, so a commit landing between the
   // two is the one case where the guard passes for a discard nobody asked for.
   const inFlightRef = useRef(false);
+  // The unknown outcome the ref is held for, in state as well, because the answer
+  // has to SAY it cannot be pressed. `PendingBanner` passes no `disabled` and no
+  // `onWriteState`, so without this the destructive button there sits enabled over
+  // a latch that eats every press — which reads as a broken control on the one
+  // surface with nothing else to explain it.
+  const [unresolved, setUnresolved] = useState(false);
 
   // The question took the host's body with it, so the focus the trigger held is
   // gone from the document. It goes to the way out, never to the destructive
@@ -210,6 +216,17 @@ export function DiscardConfirm({
     safeRef.current?.focus();
     draftAnnouncer();
   }, []);
+
+  // The re-read landing: a new `state` was built by the server after whatever did
+  // or did not happen, and it is the only thing that can settle an outcome nobody
+  // here learned. Adjusted during RENDER, as `useDiscardConfirm` does with the same
+  // prop: an effect would paint the withheld answer once over a draft that has
+  // already settled it.
+  const [seenState, setSeenState] = useState(state);
+  if (seenState !== state) {
+    setSeenState(state);
+    if (unresolved) setUnresolved(false);
+  }
 
   // The caller withholds the offer on a brew; this is the type narrowing for the
   // same fact.
@@ -273,10 +290,10 @@ export function DiscardConfirm({
           type="button"
           // The destructive half only. The way out stays live: a reader who
           // cannot discard right now should still be able to stop asking.
-          disabled={pending || disabled}
+          disabled={pending || disabled || unresolved}
           aria-describedby={whyId}
           onClick={() => {
-            if (inFlightRef.current) return;
+            if (inFlightRef.current || unresolved) return;
             inFlightRef.current = true;
             // Same tick as the click, beside the ref that already guards this
             // component against its own second press.
@@ -284,7 +301,6 @@ export function DiscardConfirm({
             setError(null);
             startTransition(async () => {
               let result: DeckMutationResult;
-              let outcomeUnknown = false;
               // `finally`, not a `.catch`: a synchronous throw would escape a
               // promise-level catch and leave the latch stuck, killing the
               // control for the rest of the page's life.
@@ -303,18 +319,22 @@ export function DiscardConfirm({
                 // also closes this question, because `useDiscardConfirm` drops it
                 // the moment the refreshed state has no changes left.
                 //
-                // The latch is held shut for the same reason, and that matters
-                // most for `PendingBanner`, which passes no `onWriteState`: there
-                // this ref is the only thing between the reader and a second
-                // destructive write against a draft that may already be gone. It
-                // opens when the question is dismissed, which unmounts this.
-                outcomeUnknown = true;
+                // `unresolved` is what holds the answer shut afterwards, and it
+                // matters most for `PendingBanner`: that caller passes no
+                // `onWriteState`, so nothing else there stands between the reader
+                // and a second destructive write against a draft that may already
+                // be gone.
                 onWriteState?.("unknown");
+                setUnresolved(true);
                 setError(copy.unresolved);
                 router.refresh();
                 return;
               } finally {
-                if (!outcomeUnknown) inFlightRef.current = false;
+                // The same-tick window only. What holds the answer shut through an
+                // UNKNOWN outcome is `unresolved`, which the button is disabled by
+                // as well: a latch the control does not reflect is a button that
+                // eats presses with nothing on screen to explain it.
+                inFlightRef.current = false;
               }
               if (!result.ok) {
                 // A refusal IS settled: the server declined before it wrote, so

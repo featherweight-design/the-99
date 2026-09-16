@@ -108,12 +108,16 @@ export function CommitSheet({
   const [pending, startTransition] = useTransition();
   const [note, setNote] = useState("");
   const [error, setError] = useState<string | null>(null);
-  // Synchronous, as the discard question's is: `pending` is a transition update
-  // and is not visible to the next click in the same tick, so two presses would
-  // start two commits. Held shut through an unknown outcome — that is the last
-  // state a second commit should be startable from — and cleared on a refusal,
-  // which the server declined before it wrote.
+  // Synchronous, as the discard question's is: `pending` is a transition update and
+  // is not visible to the next click in the same tick, so two presses in one tick
+  // would start two commits. This ref covers that window and nothing else.
   const inFlightRef = useRef(false);
+  // The longer guard, and it is STATE rather than a ref because the button has to
+  // SAY so: a latch the control does not reflect is a button that looks live and
+  // swallows every press, and a commit that threw is exactly when a reader tries
+  // again. An unknown outcome is the one state a second commit must not start
+  // from, so the offer is withheld until the re-read settles it.
+  const [unresolved, setUnresolved] = useState(false);
 
   // The region has to be in the document before any text reaches it, and this
   // sheet cannot rely on a row having put it there: a first commit, a draft that
@@ -121,6 +125,18 @@ export function CommitSheet({
   useEffect(() => {
     draftAnnouncer();
   }, []);
+
+  // The refresh a lost reply asked for, landing. New props are a state and rows the
+  // server built after the fact, which is the only thing that can settle an outcome
+  // nobody here learned — so this is where the latch reopens and the offer comes
+  // back. Adjusted during RENDER rather than in an effect, the way
+  // `useDiscardConfirm` tracks the same kind of prop change: an effect paints the
+  // withheld offer once over rows that have already settled it.
+  const [seen, setSeen] = useState({ state, rows });
+  if (seen.state !== state || seen.rows !== rows) {
+    setSeen({ state, rows });
+    if (unresolved) setUnresolved(false);
+  }
 
   const version = (state.version?.number ?? 0) + 1;
   // Copies, not rows — `3 → 1` releases two. See `releasedCopies`.
@@ -303,10 +319,10 @@ export function CommitSheet({
               `--fg` on `--bg` are those two colours. Its hover and its disabled
               appearance come with it rather than being restated here. */}
           <PrimaryButton
-            disabled={pending || commitDisabled}
+            disabled={pending || commitDisabled || unresolved}
             className={`${BAR_BUTTON} min-h-[48px] md:min-h-0 md:py-[11px] md:px-[20px] text-[14px]`}
             onClick={() => {
-              if (inFlightRef.current) return;
+              if (inFlightRef.current || unresolved) return;
               inFlightRef.current = true;
               setError(null);
               // Before the transition, not inside it: the host has to know in
@@ -328,7 +344,9 @@ export function CommitSheet({
                   // The latch and the host's guard both stay shut. An unknown
                   // outcome is the one state a second write to this draft must
                   // not start from, and dismissing this sheet does not settle it.
+                  inFlightRef.current = false;
                   onWriteState?.("unknown");
+                  setUnresolved(true);
                   setError(copy.unresolved);
                   router.refresh();
                   return;

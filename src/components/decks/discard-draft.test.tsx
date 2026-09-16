@@ -315,6 +315,34 @@ describe("the discard confirm", () => {
     expect(discardDeckDraft).toHaveBeenCalledTimes(1);
   });
 
+  // The latch is held through an unknown outcome, and the answer has to say so.
+  // `PendingBanner` — this suite's own host shape — passes no `disabled` and no
+  // `onWriteState`, so a button left enabled over that latch is a control that
+  // eats every press with nothing on screen to explain it. The re-read is what
+  // gives the answer back.
+  it("withholds the destructive answer while the outcome is unknown, and restores it on the re-read", async () => {
+    vi.mocked(discardDeckDraft).mockRejectedValue(new Error("offline"));
+    const view = discard();
+    act(raise);
+    await act(async () => {
+      screen.getByRole("button", { name: copy.confirm(36) }).click();
+    });
+    expect(screen.getByRole("alert").textContent).toBe(copy.unresolved);
+    expect(screen.getByRole("button", { name: copy.confirm(36) })).toBeDisabled();
+
+    // The refresh landing: a state the server built after the fact.
+    vi.mocked(discardDeckDraft).mockResolvedValue({ ok: true });
+    await act(async () => {
+      view.rerender(<Host onDiscarded={vi.fn()} state={{ ...STATE_36 }} />);
+    });
+    const retry = screen.getByRole("button", { name: copy.confirm(36) });
+    expect(retry).toBeEnabled();
+    await act(async () => {
+      retry.click();
+    });
+    expect(discardDeckDraft).toHaveBeenCalledTimes(2);
+  });
+
   // The host is told, in the same tick as the click, so a write it owns cannot
   // start against this one. `settled` is reported on a REFUSAL — the server
   // declined before it wrote — and never after a throw.

@@ -716,18 +716,24 @@ export function ReviewChanges({
           setRestoreErrors((current) => ({ ...current, [card.oracleId]: result.message }));
           return;
         }
-        // The write LANDED, so the latch opens — and the two figures below are
-        // read here rather than at the click for the same reason. A prediction
-        // made at the click had to guess what every other write in the air would
-        // leave behind, and the guess was wrong for whichever of them settled
-        // second: it had been told one more row was going out than was still
-        // true, and said so out loud. Nothing else can have moved this column
-        // between the press and this line — the latch held every other door
-        // shut — so this is arithmetic rather than a forecast.
+        // The write LANDED, so the latch opens — and the two figures are exact,
+        // which they were not before. Both are still this render's snapshot: the
+        // closure captured them at the click and moving the expressions below the
+        // `await` does not re-read a prop. What changed is that the snapshot can
+        // no longer be WRONG. A receipt used to guess what every other write in
+        // the air would leave behind, and the guess failed for whichever of them
+        // settled second: it had been told one more row was going out than was
+        // still true, and said so out loud. The latch means no other write to this
+        // draft can have moved the column since the press, so the snapshot is the
+        // answer. (A revalidation from some other surface still could, and this
+        // deliberately does not model that — a receipt is a sentence about one
+        // act, not a live figure.)
         //
-        // Copies, not rows, and the subtraction `releasedCopies` does: a row
-        // here is a whole removal, so `from - to` is `from`, but written as the
-        // subtraction the two cannot drift.
+        // Copies, not rows, and written as the subtraction `releasedCopies` does
+        // rather than as `from`: every row offered a control is a cut of exactly
+        // one copy — `restorable` is `from - to === 1` — so a `5 → 4` basic has a
+        // `from` of five and releases one, and the two figures must not be
+        // confused.
         setWrite("idle");
         const outAfter = outCount - 1;
         const cardsAfter = liveCardCount + ((restoredRow?.from ?? 1) - (restoredRow?.to ?? 0));

@@ -333,6 +333,39 @@ describe("CommitSheet", () => {
     expect(screen.getByRole("status").textContent).toBe("");
   });
 
+  // The latch is held through an unknown outcome, so the offer has to be withheld
+  // with it: a sheet whose button stayed enabled over a shut latch would look live
+  // and swallow every press — and a commit that threw is precisely when a reader
+  // tries again. The re-read is what gives the offer back.
+  it("withholds the offer while the outcome is unknown, and restores it on the re-read", async () => {
+    vi.mocked(commitDeckVersion).mockRejectedValue(new Error("offline"));
+    const view = sheet();
+    await act(async () => {
+      screen.getByRole("button", { name: copy.cta(3) }).click();
+    });
+    expect(screen.getByText(copy.unresolved)).toBeTruthy();
+    expect(screen.getByRole("button", { name: copy.cta(3) })).toBeDisabled();
+
+    // The refresh landing: a new state object is the server's answer.
+    vi.mocked(commitDeckVersion).mockResolvedValue({
+      ok: true, number: 3, cardCount: CARD_COUNT, buy: [], pull: [],
+    });
+    await act(async () => {
+      view.rerender(
+        <CommitSheet
+          deckId="d" state={{ ...STATE_36 }} rows={ROWS_36} cardCount={CARD_COUNT} onCancel={vi.fn()}
+        />,
+      );
+    });
+    const retry = screen.getByRole("button", { name: copy.cta(3) });
+    expect(retry).toBeEnabled();
+    await act(async () => {
+      retry.click();
+    });
+    // Not swallowed by a latch nobody reopened.
+    expect(commitDeckVersion).toHaveBeenCalledTimes(2);
+  });
+
   // A transition update is not visible to the next click in the same tick, so
   // `disabled={pending}` lands a render too late. Two presses used to send two
   // commits, and the first one's refusal would then open the host's controls
