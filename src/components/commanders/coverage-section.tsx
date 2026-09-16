@@ -101,9 +101,14 @@ function DotKey({
       className="font-mono text-fg-locked m-0"
       style={{ fontSize: 10.5, marginTop: isDesktop ? 8 : 10, lineHeight: 1.4 }}
     >
-      {/* One entry, two forms. Four of the five readings print glyph + number +
-          word and legend themselves; the dot is the only mark here that is a
-          colour with no word beside it, so it is the only thing left to key.
+      {/* One entry, two forms, picked by `anyMarker` — which is an availability
+          question now, not a membership one. A SOFT claim with no committed deck
+          selects `dotOwned`, where the retired `committedTo` read would have left
+          the free form standing over a panel that was already drawing a marker.
+
+          Four of the five readings print glyph + number + word and legend
+          themselves; the dot is the only mark here that is a colour with no word
+          beside it, so it is the only thing left to key.
 
           The free form is kept BYTE-IDENTICAL rather than reworded. `Owned.` is
           the honest word for an ownership-only dot, but shipping it

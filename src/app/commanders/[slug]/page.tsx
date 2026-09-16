@@ -9,7 +9,7 @@ import { CommanderDetail } from "../../../components/commanders/detail";
 import { readCommanderProse } from "../../../lib/prose/read";
 import { readSynergyCards } from "./synergy-read";
 import { loadAvailability } from "../../../lib/decks/availability-query";
-import { withAvailability } from "../../../lib/decks/availability";
+import { withAvailability, type Availability } from "../../../lib/decks/availability";
 import type { RoleName, RoleCard } from "../../../lib/recs/score";
 
 export default async function CommanderDetailPage({
@@ -106,11 +106,17 @@ export default async function CommanderDetailPage({
   // Both surfaces' ids go in together. The synergy panel does not consume the
   // result yet; it will, and one read is what the brief rules rather than a
   // second query growing quietly beside this one.
+  //
+  // FAIL-SOFT, like every other availability-bearing route: `/collection` and
+  // the deck page both `.catch(() => null)` this read. A claim read is an
+  // enrichment, and a transient database blip must not take a commander's page
+  // down with it — an empty map means every card reads null, which is already
+  // the no-marker path.
   const availability = await loadAvailability(userId, {
     oracleIds: [
       ...new Set([...coveredOracleIds, ...synergyCards.map((c) => c.oracleId)]),
     ],
-  });
+  }).catch(() => new Map<string, Availability>());
 
   const withClaims = {
     ...commander,

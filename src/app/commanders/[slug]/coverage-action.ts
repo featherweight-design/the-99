@@ -4,6 +4,8 @@ import { requireUserId } from "../../../lib/auth";
 import { scoreOneCommander } from "../../../lib/recs/recommend";
 import { resolveCommanderSlug } from "../../../lib/discovery/resolve-slug";
 import type { RoleCard, RoleName } from "../../../lib/recs/score";
+import { loadAvailability } from "../../../lib/decks/availability-query";
+import { withAvailability, type Availability } from "../../../lib/decks/availability";
 
 /** A1: one retry for the whole section. Re-resolves EDHREC and hands back only
     the role cards — the four panels read one payload, so there is one action,
@@ -22,6 +24,24 @@ export async function retryCoverageFigures(
   const scored = await scoreOneCommander(userId, found.oracleId, slug);
   if (!scored) return null;
 
+  // RE-STAMP THE CLAIM PICTURE. `scoreOneCommander` leaves `availability` null
+  // on every card, exactly as it leaves `committedTo` null, and the section
+  // REPLACES its local state with whatever this returns — so handing back the
+  // bare scored cards erases every marker on a SUCCESSFUL retry, flips the key
+  // back to its free form, and makes the Availability sort read every recovered
+  // card as free. `router.refresh()` does not undo it: the section's state is
+  // client-owned and a fresh server payload does not reinitialise it.
+  //
+  // Same read the page does, narrowed to the cards this payload carries, and
+  // fail-soft for the same reason: a retry that recovers the figures should not
+  // fail because the claim read blipped.
+  const roleCardIds = Object.values(scored.roleCards)
+    .flat()
+    .map((c) => c.oracleId);
+  const availability = await loadAvailability(userId, {
+    oracleIds: [...new Set(roleCardIds)],
+  }).catch(() => new Map<string, Availability>());
+
   // Return only roleCards — the section owns the state update.
   //
   // Only "ok" carries figures. A retry that comes back "absent" has reached
@@ -31,5 +51,10 @@ export async function retryCoverageFigures(
   // commander EDHREC has no data on. Both non-ok states leave the note in place.
   if (scored.synergyState !== "ok") return null;
 
-  return scored.roleCards;
+  return Object.fromEntries(
+    Object.entries(scored.roleCards).map(([role, cards]) => [
+      role,
+      withAvailability(cards, availability),
+    ]),
+  ) as Record<RoleName, RoleCard[]>;
 }
