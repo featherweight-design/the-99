@@ -360,6 +360,50 @@ async function run() {
         wellRight === null ? "no view well on the page" : `${wellRight}px of slack past it`,
       );
 
+      // And the gap BEFORE it is the row's own, not a hole. This is the clause
+      // that catches the spacer war: with the row's spacer and the cluster both
+      // growing, the cluster is still the last child and still ends flush right
+      // — the free space they split opens up INSIDE it, between the sort and
+      // the well, which the flush-right reading above cannot see. Measured at
+      // 700px on the reported build: 80px.
+      const beforeWell = await page.evaluate(() => {
+        const anyBtn = document.querySelector(
+          "main button[aria-label='Card view'], main button[aria-label='List view']",
+        );
+        if (!anyBtn) return null;
+        let well = anyBtn.parentElement;
+        while (well && well.querySelectorAll("button[aria-label$='view']").length < 2) {
+          well = well.parentElement;
+        }
+        const w = well.getBoundingClientRect();
+        // The nearest drawn control to its left ON THE SAME LINE.
+        const left = [...document.querySelectorAll("main button")]
+          .map((el) => el.getBoundingClientRect())
+          .filter((r) => r.width > 0 && Math.abs(r.top - w.top) < 12 && r.right <= w.left)
+          .sort((a, z) => z.right - a.right)[0];
+        return left ? Math.round(w.left - left.right) : null;
+      });
+      // FROM `md:` ONLY, where the cluster reads as one statement left to right
+      // and the row's own 10px is the whole gap. Below it a gap here is the
+      // POINT — the well is pushed to the thumb's edge — so asserting its
+      // absence would assert against the feature.
+      //
+      // What this does NOT cover: the spacer war itself, which needs the pills
+      // and the cluster sharing one line below `md:`, and this fixture's auto
+      // cluster makes them wrap apart at every width under it. Reproducing it
+      // wants a deck with no auto, no kept note and no draft note — a second
+      // fixture, and a follow-up rather than this round's work. The mechanism is
+      // held by the classes instead: exactly one child grows at any width.
+      if (width >= 768) {
+        failures += !report(
+          `no hole between the sort and the view well at ${width}`,
+          beforeWell !== null && beforeWell <= 24,
+          beforeWell === null
+            ? "nothing drawn to the well's left on its line"
+            : `${beforeWell}px before it`,
+        );
+      }
+
       // And under SHOPPING, where the well is absent by design: its spacer must
       // go with it, or the cluster is pushed off the right edge by a gap holding
       // nothing — 330px of it at 620px.
