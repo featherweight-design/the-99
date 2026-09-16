@@ -118,6 +118,20 @@ async function signIn(page) {
       set about_version_seen = greatest(user_prefs.about_version_seen, ${version})`;
 }
 
+/**
+ * How a clipped-name failure reads. Capped at three names and a count: every tile on the
+ * page shares one rule, so a regression cuts all 113 of them and an uncapped list buries
+ * the rest of the run's output under one finding.
+ */
+function nameDetail(names, cut) {
+  if (names.length === 0) return "no drawn name carries a descender — this run proves nothing";
+  const slack = Math.min(...names.map((n) => Math.min(n.above, n.below)));
+  if (cut.length === 0) return `${names.length} names, least slack ${slack}px`;
+  const shown = cut.slice(0, 3).map((n) => `${n.text} ${n.above}/${n.below}`).join(", ");
+  return `${names.length} names, least slack ${slack}px, ${cut.length} CUT: ${shown}`
+    + (cut.length > 3 ? ", …" : "");
+}
+
 function report(label, ok, detail) {
   console.log(`${ok ? "  ok  " : " FAIL "} ${label} — ${detail}`);
   return ok;
@@ -460,10 +474,7 @@ async function run() {
         failures += !report(
           `${width}px · ${label} · descenders inside the clip box`,
           names.length > 0 && cut.length === 0,
-          names.length === 0
-            ? "no drawn name carries a descender — this run proves nothing"
-            : `${names.length} names, least slack ${Math.min(...names.map((n) => Math.min(n.above, n.below)))}px`
-              + (cut.length ? `, CUT: ${cut.map((n) => `${n.text} ${n.above}/${n.below}`).join(", ")}` : ""),
+          nameDetail(names, cut),
         );
         // And the slack is not paid for out of the layout. The row the name sits in is
         // still 20px on a phone and 17px on desktop, and the span costs that row exactly
@@ -623,13 +634,7 @@ async function run() {
         failures += !report(
           `${width}px · /collection · descenders survive the fallback face`,
           bareNames.length > 0 && bareCut.length === 0,
-          bareNames.length === 0
-            ? "no drawn name carries a descender — this run proves nothing"
-            : `${bareNames.length} names, least slack `
-              + `${Math.min(...bareNames.map((n) => Math.min(n.above, n.below)))}px`
-              + (bareCut.length
-                ? `, CUT: ${bareCut.map((n) => `${n.text} ${n.above}/${n.below}`).join(", ")}`
-                : ""),
+          nameDetail(bareNames, bareCut),
         );
       } finally {
         await bare.close();
