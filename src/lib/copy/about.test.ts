@@ -189,6 +189,17 @@ describe("every entry is drawn, not just described", () => {
 
     expect(doc).toContain(`**${aboutEntries.length} entries, ${Object.keys(FIGURES).length} figures.**`);
 
+    // Two other documents state the same count in their own words. Pinning one
+    // and leaving those two is fixing the instance rather than the class —
+    // which is how this number came back stale a second time.
+    for (const other of [
+      "docs/superpowers/design-tables/about.md",
+      "docs/superpowers/gap-report-about.md",
+    ]) {
+      const text = await readFile(join(process.cwd(), other), "utf8");
+      expect(text, other).toContain(`The code has ${aboutEntries.length}`);
+    }
+
     // Which chassis a figure is rooted in is a fact about its component, so it
     // is read from the module's own source rather than by rendering: a render
     // would report the chassis a figure COMPOSES as readily as the one it is.

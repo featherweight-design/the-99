@@ -51,9 +51,11 @@ with `padding:30px 30px 34px`, so it sits 30px clear of the edge and never stick
 app has no top chrome at that width, so `top:0` puts the Contents label against the viewport edge
 the moment the page scrolls. The drawn clearance transfers; the property that produced it does not.
 
-**The code has 34 entries and the canvas drew 33.** The extra is `decklist-order`, added after #642
-shipped the decklist's sort control, which the canvas predates. Earlier text here said "a handoff
-that drew thirty-four" — it drew thirty-three.
+**The code has 35 entries and the canvas drew 33.** The two extras are `decklist-order`, added
+after #642 shipped the decklist's sort control, and `commander-availability`, added by #683 — both
+after the canvas was drawn. Earlier text here said "a handoff that drew thirty-four" — it drew
+thirty-three, and the code's own figure has moved twice while this PR was in review, which is why
+`about.test.ts` now pins it rather than leaving it to be re-read.
 
 ## Not gaps
 

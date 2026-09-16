@@ -151,15 +151,18 @@ export function AboutPage({ seen, next }: { seen: number; next?: string }) {
     // landmarks and leave a screen reader with no single "skip to content".
     // Two columns from the wide stop: the reading column, and the rail beside
     // it. Below it the rail is gone and the in-flow list carries the same four
-    // links, because at 390px a 220px rail is a third of the screen.
+    // links, because at 390px a 216px rail is more than half the screen.
     // `justify-center` matters below the wide stop, where the rail is
     // `display:none`: without it the article sits at flex-start inside a
     // 1060px container and a 1000px window leaves ~200px of dead space on the
     // right, where the page used to be centred by its own `mx-auto`.
     //
     // The container is 1088 rather than 1060 so the reading column can actually
-    // reach 760: 1088 − 68 padding − 220 rail − 40 gap = 760. At 1060 the cap
-    // was unreachable and the column silently topped out at 732.
+    // reach its 760 cap: 1088 − 68 padding − 216 rail − 40 gap = 764, four to
+    // spare. At 1060 the cap was unreachable and the column silently topped out
+    // at 732. The rail was 220px when this was written, which made the sum
+    // exactly 760 — the arithmetic has to be re-done when either number moves,
+    // and it did.
     <div className="mx-auto flex w-full max-w-[1088px] items-start justify-center gap-[40px] px-[16px] py-[20px] min-[1000px]:px-[34px] min-[1000px]:py-[28px]">
       <article className="min-w-0 max-w-[760px] flex-1">
       {/* The eyebrow exists ONLY when the reader is behind: it is the reason
