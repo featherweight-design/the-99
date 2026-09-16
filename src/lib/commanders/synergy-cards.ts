@@ -20,7 +20,17 @@ export type SynergyCard = {
   inclusionPct: number | null;
   synergyPts: number | null;
   owned: boolean;
-  /** The deck this card already sits in, or null. */
+  /**
+   * The deck this card already sits in, or null.
+   *
+   * NOTHING ON THIS SURFACE DRAWS IT any more — the dot is ownership and the
+   * marker carries the claim, both read from `availability` below. It is kept
+   * because the read that fills it is `cache()`d and already made for
+   * `committedSupport`, so it costs no query, and because removing it is a sweep
+   * across both card types rather than a line. Do not add a reader: a card can
+   * sit in a deck and still have a spare copy, which is the false certainty this
+   * round was filed about.
+   */
   committedTo: string | null;
   /**
    * This card's claim picture, or null.

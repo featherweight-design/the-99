@@ -44,9 +44,14 @@ function priceClauseAria(price: PriceFact | null, newestAsOf: Date | null): stri
 /**
  * The availability slot, before the toggle.
  *
- * ONE slot, three occupants, sized to the widest rather than to its content:
- * a column that resized per row would walk the toggle up and down the list as
- * the reader scans it. That is `update-diff-row.tsx:225`'s own rule, reused.
+ * ONE slot, three occupants, sized to the widest rather than to its content: a
+ * column that resized per row would walk the toggle up and down the list as the
+ * reader scans it.
+ *
+ * The fixed width is THIS surface's, not a borrowed one. `update-diff-row`'s
+ * slot sets no width and returns `null` outright, which it can afford because it
+ * sits before a column that holds its own shape; here the slot is the last thing
+ * before the toggle, so nothing downstream would hold the line for it.
  *
  * The gate is `owned`, NOT "has a free copy". The two shipped surfaces disagree
  * here — the diff row buys whenever nothing is free, the deck tile draws the

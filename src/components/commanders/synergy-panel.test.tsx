@@ -18,6 +18,7 @@ const props = {
   edhrecTotal: 258,
   selected: new Set<string>(),
   onToggle: () => {},
+  newestAsOf: null,
 };
 
 function wrap(ui: React.ReactElement) {
@@ -60,8 +61,15 @@ describe("SynergyPanel", () => {
     expect(screen.getByText(SYNERGY_LEGEND)).toBeInTheDocument();
   });
 
+  // `committedTo` is set ON PURPOSE. Left unset, the retired code drew no legend
+  // at all — it was gated on a visible committed row — so this assertion passed
+  // against the version it exists to rule out. The card has to be one the old
+  // condition would have fired on.
   it("names no retired committed state", () => {
-    wrap(<SynergyPanel {...props} cards={make(3)} width="desktop" />);
+    const cards = make(3);
+    cards[0] = { ...cards[0], committedTo: "Atraxa" };
+    wrap(<SynergyPanel {...props} cards={cards} width="desktop" />);
+    expect(screen.getByText(SYNERGY_LEGEND)).toBeInTheDocument();
     expect(screen.queryByText(/already in a deck/i)).toBeNull();
   });
 

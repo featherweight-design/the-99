@@ -692,6 +692,7 @@ export function CommanderDetail({
               <SelectableSynergyPanel
                 width="desktop"
                 cards={synergyCards}
+                newestAsOf={newestAsOf}
                 ownedCount={c.edhrecOwnedCount ?? 0}
                 edhrecTotal={c.edhrecTotal}
               />

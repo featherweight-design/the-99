@@ -422,3 +422,47 @@ describe("commander detail — the art header band", () => {
     expect(Number.parseInt(block.style.paddingRight, 10)).toBeGreaterThanOrEqual(40);
   });
 });
+
+// ── The price reaches BOTH panels ──────────────────────────────────────────
+//
+// This exists because it did not. `newestAsOf` was threaded to the phone panel
+// and not the desktop one, so above the breakpoint `priceState(price, null)`
+// read `absent`: every unowned row drew a bare `buy` with no figure and spoke
+// "available to buy" over a card with a live price. The phone was correct, which
+// is what made it invisible — a diff review sees the prop threaded, and every
+// `SynergyRow` test hands it in directly, so nothing rendered the wiring.
+//
+// The prop is required now, so this case is belt to that braces: it fails if the
+// value stops ARRIVING, where the type only catches it not being passed.
+describe("the price reaches both panels", () => {
+  const priced: SynergyCard[] = [
+    {
+      oracleId: "oracle-unowned",
+      name: "Rhystic Study",
+      typeLine: "Enchantment",
+      facet: "enchantment",
+      inclusionPct: 44,
+      synergyPts: 60,
+      owned: false,
+      committedTo: null,
+      availability: null,
+      price: { cents: 450, foilCents: null, etchedCents: null, asOf: new Date("2026-09-15") },
+      manaCost: null,
+    },
+  ];
+
+  it("quotes the figure at both widths, not just the phone", () => {
+    render(
+      <CommanderDetail
+        commander={commander()}
+        rank={1}
+        isBestFit
+        synergyCards={priced}
+        newestAsOf={new Date("2026-09-15")}
+      />,
+    );
+    // Both panels are in the document at once — one per width — so a price that
+    // reached only one of them shows up as a count of 1.
+    expect(screen.getAllByText(/\$4\.50/).length).toBeGreaterThanOrEqual(2);
+  });
+});

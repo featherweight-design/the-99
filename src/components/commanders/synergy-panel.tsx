@@ -44,7 +44,7 @@ export function SynergyPanel({
   selected,
   onToggle,
   width,
-  newestAsOf = null,
+  newestAsOf,
 }: {
   cards: SynergyCard[];
   ownedCount: number;
@@ -53,8 +53,9 @@ export function SynergyPanel({
   onToggle: (oracleId: string) => void;
   width: "desktop" | "phone";
   /** The price table's newest `as_of`, for the rows' buy tags. One per panel:
-      liveness is the table's property, not a card's. */
-  newestAsOf?: Date | null;
+      liveness is the table's property, not a card's. Required — see
+      `SelectableSynergyPanel` for what a default cost. */
+  newestAsOf: Date | null;
 }) {
   const isPhone = width === "phone";
   const restingCap = isPhone ? RESTING_CAP_PHONE : RESTING_CAP_DESKTOP;
@@ -247,11 +248,17 @@ export function SynergyPanel({
       {/* The dot legend, drawn ALWAYS (handoff K.4).
       
           It was conditional on a visible committed row, because the mark it
-          explained was the committed dot and that dot was often absent. Both
-          halves of that are gone: the dot is ownership, and this is the only
-          panel in the app that can draw an unowned row — so both states are
-          reachable on every render and neither is worth a condition that reads
-          a field this round retires.
+          explained was the committed dot and that dot was often absent.
+      
+          Unconditional is Design's ruling (K.4), and it is a claim about the
+          PANEL rather than about any one render: this is the only list in the app
+          that mixes owned and unowned rows, so both dots are what it is for. A
+          render where every visible row happens to be owned still prints
+          `Not owned.` — the key describes the list's vocabulary, not its current
+          contents. The alternative reads the visible slice and changes the key
+          under a reader who scrolls, which is what the role panels' own key
+          deliberately avoids by reading all four panels rather than the capped
+          slice.
       
           Each clause is preceded by the dot it describes, drawn by the same
           component the rows use, so no clause has to name a colour. That matters

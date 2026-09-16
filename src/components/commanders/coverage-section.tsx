@@ -64,11 +64,26 @@ function DotKey({
 }): JSX.Element | null {
   const all = ROLE_ORDER.flatMap((role) => roleCards[role]);
   if (all.length === 0) return null;
-  // Any card with anything to say — i.e. any marker on screen. Replaces
-  // `anyCommitted` one line for one line; the mechanism is the shipped one.
+  // Any card with anything to say — i.e. any marker in the ROLE PANELS.
+  // Replaces `anyCommitted` one line for one line; the mechanism is the shipped
+  // one.
   //
-  // Still read across ALL FOUR panels rather than the chips a cap happens to
-  // show, so expanding a panel cannot change the key under the reader.
+  // Read across ALL FOUR panels rather than the chips a cap happens to show, so
+  // expanding a panel cannot change the key under the reader.
+  //
+  // SCOPE, stated because it is not obvious: this reads the role panels and
+  // nothing else. The synergy panel below now draws markers of its own, so a
+  // commander whose only marked card is a synergy row prints
+  // `Owned and available.` here while a marker is on screen further down — and
+  // the synergy panel's own key says `Owned.` for the same green dot. Two words
+  // for one mark on one page.
+  //
+  // Not resolved here, deliberately. Design's K.1/K.2 define this condition as
+  // "no marker anywhere in the four panels", and widening it to a panel Design
+  // scoped it away from is a ruling about what the key MEANS, which is theirs to
+  // make. Flagged to them; the alternative is that `dotFree` stops being
+  // conditional at all, which costs the byte-identical free state this round
+  // promised.
   const anyMarker = all.some(
     (c) => c.availability !== null && availabilityState(c.availability) !== "free",
   );
