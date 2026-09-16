@@ -1,3 +1,6 @@
+import type { CommanderListItem } from "../recs/recommend";
+import type { ReadySlice } from "../recs/ready-to-build";
+import type { ReceiptCounts } from "../commanders/in-use";
 import { identityGradient } from "../collection/gradients";
 // The props every /about specimen is fed.
 //
@@ -454,3 +457,84 @@ export const SET_HEAD = {
   cost: "$188.66",
   sendCount: 46,
 };
+
+/**
+ * The two commanders §3 draws on Home's `Ready to build`, and the slice around
+ * them.
+ *
+ * Built as real `CommanderListItem`s so `ReadyToBuild` can be mounted whole —
+ * it draws the heading, the card pair, the more-above line and the route to
+ * the lane, which is the entry's whole composition. The figure it replaces was
+ * three mark-and-meaning rows that named the two figures and showed neither.
+ *
+ * `artCropUri` is null on purpose. A reference page must not fetch commander
+ * art, and `HeroCommander` falls back to the identity gradient — which is what
+ * the canvas draws for these two anyway.
+ *
+ * The pair is deliberately UNLIKE: one three-colour, one two, and different
+ * scores, because a pair of near-identical cards teaches nothing about what
+ * the figures on them mean.
+ */
+function readyCommander(
+  name: string,
+  slug: string,
+  typeLine: string,
+  colorIdentity: string[],
+  score: number,
+  pool: number,
+): CommanderListItem {
+  return {
+    oracleId: `about-${slug}`,
+    slug,
+    name,
+    typeLine,
+    colorIdentity,
+    colorPoolSize: pool,
+    roleCounts: ROLE_COUNTS,
+    edhrecOwnedCount: 61,
+    edhrecTotal: 99,
+    fitPool: 15,
+    fitRoles: 25,
+    fitSynergy: 33,
+    synergyState: "ok",
+    score,
+    rankScore: score,
+    measurableTotal: 100,
+    imageUri: null,
+    artCropUri: null,
+    receipts: "",
+  };
+}
+
+export const READY_SLICE: ReadySlice<CommanderListItem> = {
+  shown: [
+    readyCommander(
+      "Preston Garvey, Minuteman",
+      "preston-garvey-minuteman",
+      "Legendary Creature — Human Soldier",
+      ["G", "R", "W"],
+      73,
+      1615,
+    ),
+    readyCommander(
+      "Kotis, Sibsig Champion",
+      "kotis-sibsig-champion",
+      "Legendary Creature — Zombie Warrior",
+      ["U", "B"],
+      71,
+      1204,
+    ),
+  ],
+  // The floor is the lowest score actually SHOWN behind the pair, so the count
+  // is checkable against the lane — key line 3's whole subject.
+  moreCount: 7,
+  floor: 68,
+};
+
+/** Fitting cards a finished deck already sleeves, per commander. */
+export const READY_IN_USE = new Map<string, ReceiptCounts>([
+  ["about-preston-garvey-minuteman", { inUse: 620, wantedByBrew: 0 }],
+  // ZERO, and that is the point: the second clause is ABSENT at zero, which is
+  // key line 2. A pair where both cards carry it cannot show the absence.
+  ["about-kotis-sibsig-champion", { inUse: 0, wantedByBrew: 0 }],
+]);

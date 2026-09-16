@@ -37,6 +37,7 @@ import { deckSortLabel } from "../../lib/about/sort-labels";
 import { DECK_GROUPING_LABELS } from "../../lib/copy/deck-sort";
 import { BrowseFigureBody } from "./browse-figure";
 import { KeyNumeral } from "./numeral";
+import { ReadyToBuild } from "../home/ready-to-build";
 import { setFilterCopy, setPageCopy } from "../../lib/copy/set-collections";
 import { PIP_ORDER, PIP_SRC } from "../../lib/copy/filter-chassis";
 import {
@@ -68,6 +69,8 @@ import {
   GAME_COUNT,
   ROLE_COUNTS,
   SHOPPING,
+  READY_IN_USE,
+  READY_SLICE,
   SET_CELLS,
   SET_HEAD,
   COSTS,
@@ -685,18 +688,15 @@ function Legend({
 
 function ReadyToBuildFigure({ width }: { width: AboutWidth }) {
   return (
-    <Legend
-      label="ready-to-build"
-      width={width}
-      rows={[
-        { mark: refreshCopy.home.fitLine(1615), meaning: "how much of your collection fits" },
-        { mark: refreshCopy.home.inUse(550), meaning: "and how much of that is sleeved elsewhere" },
-        {
-          mark: refreshCopy.home.moreAbove(7, 61),
-          meaning: "the nine are a rank cut — the floor moves with your collection",
-        },
-      ]}
-    />
+    <Specimen label="ready-to-build" width={width}>
+      {/* The ROUTE's own block, mounted whole. §3 draws Home's `Ready to
+          build` — the heading, the pair of commander cards with their art,
+          identity pips, fit figures and `See the pool`, then the more-above
+          line and the way to the lane. The figure it replaces was three
+          mark-and-meaning rows that NAMED two of those figures and showed
+          neither, so the entry's three key lines had nothing to point at. */}
+      <ReadyToBuild ready={READY_SLICE} inUse={READY_IN_USE} />
+    </Specimen>
   );
 }
 

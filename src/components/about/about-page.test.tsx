@@ -4,6 +4,7 @@ import { AboutPage } from "./about-page";
 import { ABOUT_VERSION, aboutCopy, aboutEntries } from "../../lib/copy/about";
 import { FIGURES } from "./figures";
 import { availabilityCopy } from "../../lib/copy/availability";
+import { refreshCopy } from "../../lib/copy/refresh";
 import { cardAssignmentsCopy } from "../../lib/copy/card-assignments";
 import { collectionChassisCopy, printingPickerCopy } from "../../lib/copy/collection";
 import { spokenFullManaCost, twoFacedCopy } from "../../lib/copy/card-surfaces";
@@ -13,6 +14,7 @@ import { PIP_ORDER } from "../../lib/copy/filter-chassis";
 import {
   CONTESTED_ARRIVAL,
   IMPORT_SOURCES,
+  READY_SLICE,
   SET_CELLS,
   SET_HEAD,
   PRINTING_ROWS,
@@ -657,6 +659,37 @@ describe("what each chapter 01 figure actually draws", () => {
     // of this figure left out entirely.
     expect(el.textContent).toMatch(/rows/i);
     expect(el.textContent).toMatch(/grid/i);
+  });
+
+  it("ready-to-build: Home's own block, both cards, and the absence at zero", () => {
+    const el = plate("ready-to-build");
+    const c = refreshCopy.home;
+
+    // Both commanders, and they are deliberately unlike — a pair of
+    // near-identical cards teaches nothing about what the figures mean.
+    for (const item of READY_SLICE.shown) {
+      expect(el.textContent).toContain(item.name);
+    }
+
+    // Key line 2: cards that fit, THEN how many are already committed — and
+    // the second clause is ABSENT at zero. The fixture gives one card 620 and
+    // the other none, so a figure printing the clause unconditionally fails
+    // here. A pair where both carried it could not show the absence at all.
+    expect(el.textContent).toContain(c.fitLine(READY_SLICE.shown[0].colorPoolSize));
+    expect(el.textContent).toContain(c.inUse(620));
+    // COUNTED, not searched for by absence. `not.toContain(c.inUse(0))` looks
+    // right and is a substring trap: `620 in use` contains `0 in use`, so it
+    // failed against a correct build. Exactly one card carries the clause.
+    const clauses = [...el.querySelectorAll("*")].filter(
+      (n) => n.children.length === 0 && /^\d+ in use$/.test(n.textContent ?? ""),
+    );
+    expect(clauses).toHaveLength(1);
+
+    // Key line 3: the floor is the lowest score actually shown, so the count
+    // is checkable against the lane.
+    expect(el.textContent).toContain(
+      c.moreAbove(READY_SLICE.moreCount, READY_SLICE.floor!),
+    );
   });
 
   it("import: the drop target and its two doors, as drawn", () => {
