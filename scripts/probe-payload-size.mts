@@ -193,7 +193,10 @@ async function main() {
     let worstOwned = { bytes: 0, rows: 0, prose: 0 };
     for (const account of accounts) {
       const rankings = await loadCommanderRankings(account.user_id);
-      assertHealthy("the owned lane for one account", rankings.priceOk, rankings.availOk);
+      // AVAILABILITY ONLY. The owned lane reads no prices — every commander on
+      // it is owned, and §7.4 row 5 unmounts the slot — so there is no
+      // `priceOk` to check and passing `true` would be asserting a constant.
+      assertHealthy("the owned lane for one account", true, rankings.availOk);
       const bytes = Buffer.byteLength(JSON.stringify(rankings));
       if (bytes > worstOwned.bytes) {
         worstOwned = {

@@ -182,11 +182,13 @@ export const discoverCopy = {
   },
 
   row: {
-    // Counts only — discovery does not blend, so there is no 0–100 score and no delta here.
-    supportOwned: (own: number, top: number) => [`${own}`, `OF TOP ${top} OWNED`] as const,
+    // The ONE figure the shared row keeps from this block. `supportOwned`,
+    // `novelty` and `notOwned` retired with the composition that drew them:
+    // the count chip and its ratio bar became Fit, the novelty count became the
+    // mechanic gap line, and `not in your collection` was cut by ruling D1 —
+    // once both lanes share a row, every discover row is unowned and every
+    // commanders row is owned, so the line distinguished nothing.
     popularity: (decks: number) => `${n(decks)} decks tracked`,
-    novelty: (count: number) => `${count} of its top cards new to you`,
-    notOwned: "not in your collection",
   },
 
   empty: {

@@ -108,79 +108,30 @@ export const discoveryCopy = {
       } · ${count === 1 ? "1 commander" : `${n(count)} commanders`}`,
   },
 
-  // ── The justification slot (§7.1) ─────────────────────────────────────
-  // ONE slot, contents chosen by the sort key. The accent marks the sort key and
-  // nothing else, so `overlap` brasses its bar and `distance` brasses its tags.
-  justify: {
-    // §5's correction, at two lengths. Both print M.
-    overlapLabel: "Overlap",
-    overlap: (owned: number, total: number) =>
-      `you own ${n(owned)} of the ${n(total)} cards EDHREC lists for this commander`,
-    overlapShort: (owned: number, total: number) =>
-      `own ${n(owned)} of ${n(total)} EDHREC lists`,
-
-    // Column label + figure unit. "Support" is a noun for the list, not a claim.
-    figureLabelFit: "Support owned",
-    figureUnitFit: (total: number) => `of ${n(total)}`,
-
-    // Novelty. Up to three tag names, then a count — a fourth name buys nothing.
-    distanceLabel: "New to you",
-    tagList: (tags: string[], extra: number) =>
-      extra > 0 ? `${tags.join(" · ")}, and ${n(extra)} more` : tags.join(" · "),
-    // What the nearest deck shares, from the labels and the count of the rest.
-    // Two names then a number, for the same reason `tagList` stops at three: a
-    // third name reads as a list and the clause is a summary.
-    sharedList: (labels: string[], extra: number) =>
-      extra > 0
-        ? `${labels[0]}, ${labels[1]} and ${n(extra)} more`
-        : labels.length === 2
-          ? `${labels[0]} and ${labels[1]}`
-          : labels[0],
-    // Nothing built plays any of them. Plain, and it does not congratulate.
-    distanceNone: "Nothing you have built plays these.",
-    // Partial: name the nearest deck, and say what it shares. One deck, never a
-    // count — severity, not inventory, matching the availability receipt's rule.
-    // The deck is the yardstick and the sentence ends on newness, because this
-    // clause only ever renders under the novelty sort (`discovery-row.tsx`
-    // computes `const tags = fit ? null : tagSentence(item)`), and ending on the
-    // one archetype the player already plays sold the row on its overlap.
-    // No count of "the rest": unplayed archetypes and the nearest deck's shared
-    // ones are disjoint sets, and the figure the row needs is already printed
-    // beside this sentence by `figureUnitNew`.
-    distanceNear: (deckName: string, shared: string) =>
-      `Your closest build, ${deckName}, plays ${shared}. The rest are new.`,
-    distanceAria: (unplayed: number, total: number) =>
-      `${n(unplayed)} of its ${n(total)} archetypes are ones you have never built`,
-
-    figureLabelNew: "Unplayed tags",
-    figureUnitNew: (total: number) => `of ${n(total)} tags`,
-    // Ruling 4's floor, stated as a qualifying fact. It explains PRESENCE, never
-    // position — the percentage is never added to the figure above it.
-    // Both take the threshold as well as the row's own figure: the floor is a
-    // function of the pool, so a row claiming to clear it without naming it
-    // would be a figure without its denominator. `floorNote` is the DESKTOP note
-    // (`discovery-row.tsx:542`, inside `<Emphasised>`) and `floorNoteShort` the
-    // mobile one (`:401`).
-    floorNote: (floorPct: number, pct: number) =>
-      `clears the ${floorPct}% floor: you own ${pct}% of its support list`,
-    floorNoteShort: (floorPct: number, pct: number) =>
-      `clears the ${floorPct}% floor: you own ${pct}% of its list`,
-  },
-
-  // ── Ownership on the row (§7.3) ───────────────────────────────────────
-  // The clause always renders, so row height never changes between two rows or
-  // two players. The pip is the glyph; these are the words beside it. A fact,
-  // not a nudge.
+  // ── The justification slot is GONE (§7.1) ─────────────────────────────
+  // Every string that drew it retired with the composition: the overlap
+  // sentence and its bar became Fit, the tag list and the nearest-deck clause
+  // became the mechanic gap line, and the floor note went because the lane
+  // header states the floor once rather than every row claiming to clear it.
   //
-  // The owned wordings ruling 2 wrote are gone: discover lists only commanders
-  // the player does not own, so the row that would have used them is on
-  // `/commanders` instead.
-  ownership: {
-    unowned: "not in your collection",
-    unownedShort: "not yours",
-    // Leads the row's accessible name, before any figure.
-    unownedAria: "not in your collection",
-  },
+  // Fifteen keys in this block alone, and twenty-one across the PR — counted off
+  // the diff rather than by eye, after two attempts here said eleven and then
+  // seventeen. The handoff's list named nine; the rest were this slot's own
+  // labels and units plus the ownership block below. Grep finds the callers, but
+  // only the diff counts the keys.
+
+  // ── Ownership on the row is GONE (§7.3) ───────────────────────────────
+  // The whole block went with the composition. D1: nothing on the row may be
+  // read off ownership, because one component now serves a lane of commanders
+  // the reader owns and a lane of commanders they do not — so `not in your
+  // collection` distinguished nothing, and the pip's two readings and the
+  // accessible name's leading clause went with it.
+  //
+  // Three keys, missed by the first sweep of this file and found by the pre-open
+  // review: `unowned`, `unownedShort`, `unownedAria`. An earlier comment here
+  // claimed `ownedShort` and `unownedShort` were among the deleted — `ownedShort`
+  // belongs to `scope` and is live, and `unownedShort` was still sitting three
+  // lines below the claim.
 
   // ── Price and stock (§7.4, #288) ──────────────────────────────────────
   // `null` price renders NOTHING — no string exists for it, on purpose, so a
@@ -201,10 +152,17 @@ export const discoveryCopy = {
   // The shipped `absent` note with one word changed, and NO retry: EDHREC not
   // tagging a commander is settled, and a button that cannot change anything is
   // worse than a sentence that explains it.
+  // The gap slot's third occupant, drawn by the SHARED row on both lanes — so
+  // the body may not name a sort only one of them has. It used to end "so it
+  // cannot appear under Something new", which is true on /discover and false on
+  // /commanders, where such a commander is listed normally. Named by review.
+  //
+  // The novelty sort's exclusions are still explained, by `planeCopy.exclusion.*`
+  // on the lane that has them, which is where a claim about a sort belongs.
   untagged: {
     heading: "No tag data",
     body:
-      "EDHREC lists cards for this commander but no archetypes, so it cannot appear under Something new.",
+      "EDHREC lists cards for this commander but no archetypes, so there is nothing to measure against your decks.",
   },
 
   // ── The three empty states (§6.8, §7.6) ───────────────────────────────

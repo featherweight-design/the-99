@@ -38,8 +38,10 @@ describe("planeCopy", () => {
   // Every string that claims the floor prints the threshold. A row that says it cleared a bar
   // without naming the bar is a figure without its denominator.
   it("prints the threshold at every site that claims the floor", () => {
-    expect(discoveryCopy.justify.floorNote(30, 41)).toContain("30%");
-    expect(discoveryCopy.justify.floorNoteShort(30, 41)).toContain("30%");
+    // The row's two floor notes retired with its justification slot — the lane
+    // header states the floor once rather than every row claiming to clear it.
+    // Every REMAINING site still has to print the threshold, which is what this
+    // case is about.
     expect(planeCopy.exclusion.floor(12, 30)).toContain("30%");
     expect(planeCopy.exclusion.floorWithUnmeasured(12, 3, 30)).toContain("30%");
     expect(planeCopy.exclusion.floorAlone(12, 30, 29)).toContain("30%");

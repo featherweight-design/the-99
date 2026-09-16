@@ -10,7 +10,7 @@ import {
 } from "react";
 import { useSearchParams } from "next/navigation";
 import { useLiveQuery } from "../../lib/commanders/live-query";
-import type { CommanderListItem } from "../../lib/recs/recommend";
+import type { CommanderRowItem } from "../../lib/commanders/rankings";
 import { fromFreeDelta, type FreeRankingDelta } from "../../lib/recs/free-delta";
 import { filterByColors } from "../../lib/commanders/filter";
 import {
@@ -23,9 +23,9 @@ import {
 import { rankMap } from "../../lib/commanders/rank-maps";
 import { nearestFix } from "../../lib/commanders/nearest-fix";
 import { filterCopy } from "../../lib/copy/lanes";
-import type { ReceiptCounts } from "../../lib/commanders/in-use";
 import { availabilityCopy } from "../../lib/copy/availability";
-import { RecCard, type ScoreDelta } from "./rec-card";
+import { CommanderRow } from "./commander-row";
+import { commanderDetailHref } from "./list-nav";
 import { FilterRack } from "./rack/filter-rack";
 import { GuidedBanner } from "./guided-banner";
 import { PageHeader } from "./page-header";
@@ -40,7 +40,6 @@ export type AvailMode = "all" | "free";
 // A commander whose whole pool is free. Shared rather than allocated per row,
 // and the fallback for the degraded read, where the page has no counts at all:
 // zero claims renders the receipt's first clause alone, which stays true.
-const NO_CLAIMS: ReceiptCounts = { inUse: 0, wantedByBrew: 0 };
 
 // `filterByColors` matches against `colorIdentity`, which is upper-case
 // throughout the catalog; `lane-params` writes the URL in lower case. The lift
@@ -71,7 +70,7 @@ function matchesQuery(name: string, q: string): boolean {
 // ── Component ─────────────────────────────────────────────────────────────────
 
 export type CommandersViewProps = {
-  results: CommanderListItem[];
+  results: CommanderRowItem[];
   degraded: boolean;
   uniqueCardsRead: number;
   candidateCount: number;
@@ -83,8 +82,6 @@ export type CommandersViewProps = {
       failed, or the ranking itself came back unusable. Either way `What's free`
       is unavailable, and `freeRanking` is null alongside it. */
   availOk: boolean;
-  /** Receipt clause counts by oracleId, for both modes. */
-  receiptCounts: Map<string, ReceiptCounts>;
 };
 
 export function CommandersView({
@@ -95,7 +92,6 @@ export function CommandersView({
   firstRun,
   freeRanking,
   availOk,
-  receiptCounts,
 }: CommandersViewProps) {
   const search = useSearchParams();
 
@@ -325,26 +321,17 @@ export function CommandersView({
   const rankBySlug =
     avail === "free" && rankFreeBySlug ? rankFreeBySlug : rankAll;
 
-  // The all-mode score for each commander, joined on oracleId. Both arrays are
-  // already on the client, so the delta is a join and not a fetch.
-  const allByOracleId = useMemo(
-    () => new Map(results.map((r) => [r.oracleId, r])),
-    [results],
-  );
-
-  // §9.2: free mode only, and only where the score actually moved. It compares a
-  // commander to its OWN other score, never to another row, so it is correct at
-  // rank 3 and at rank 200 whether or not either is revealed.
-  const deltaFor = useCallback(
-    (r: CommanderListItem): ScoreDelta | null => {
-      if (avail !== "free") return null;
-      const was = allByOracleId.get(r.oracleId)?.score;
-      if (was === undefined) return null;
-      const drop = Math.round(was) - Math.round(r.score);
-      return drop > 0 ? { drop, was: Math.round(was) } : null;
-    },
-    [avail, allByOracleId],
-  );
+  // THE FREE-MODE SCORE DELTA IS GONE, and by ruling rather than by oversight.
+  // §9.2 drew a "was 74, now 58" note when a commander's score fell under `Free
+  // cards only`, which is a figure read off AVAILABILITY — and D1 says nothing
+  // on the row may be read off ownership, because one component serves a lane of
+  // owned commanders and a lane of unowned ones. The handoff's cut list does not
+  // name it; the ruling that cut `not in your collection` takes it too.
+  //
+  // `allByOracleId` went with it. An earlier version of this comment claimed it
+  // survived because the free ranking needed the canonical scores; it does not —
+  // `fromFreeDelta` indexes into `results` directly, and lint is what caught the
+  // claim.
 
   // ── Windowing (#52) ────────────────────────────────────────────────────────
   // The window belongs to the current result set, not the session, so every
@@ -581,12 +568,29 @@ export function CommandersView({
                       : undefined
                   }
                 >
-                  <RecCard
-                    commander={r}
-                    rank={rankBySlug.get(r.slug) ?? 0}
-                    avail={avail}
-                    counts={receiptCounts.get(r.oracleId) ?? NO_CLAIMS}
-                    delta={deltaFor(r)}
+                  {/* The SAME component the discover lane draws. Nothing here
+                      is read off ownership (D1), so the receipt counts, the
+                      delta and the availability mode no longer reach the row —
+                      they belong to surfaces that survived it. */}
+                  <CommanderRow
+                    item={{
+                      slug: r.slug,
+                      name: r.name,
+                      colorIdentity: r.colorIdentity,
+                      artCropUri: r.artCropUri,
+                      rank: rankBySlug.get(r.slug) ?? 0,
+                      prose: r.prose,
+                      gapSlot: r.gapSlot,
+                      score: r.score,
+                      measurableTotal: r.measurableTotal,
+                      deckCount: r.deckCount,
+                      // EVERY ROW HERE IS OWNED, so §7.4 row 5 applies to all
+                      // of them: the slot unmounts. Passed as a literal rather
+                      // than read, because the lane has no price to read.
+                      price: { kind: "absent" },
+                      priceOk: true,
+                      href: commanderDetailHref(r.slug, avail),
+                    }}
                   />
                 </li>
               ))}

@@ -1,7 +1,7 @@
 import { act, fireEvent, render, screen, within } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { availabilityCopy } from "../../lib/copy/availability";
-import type { CommanderListItem } from "../../lib/recs/recommend";
+import type { CommanderRowItem } from "../../lib/commanders/rankings";
 import { toFreeDelta } from "../../lib/recs/free-delta";
 import { CommandersView, type AvailMode } from "./commanders-view";
 import { REVEAL_STEP } from "./reveal-control";
@@ -47,7 +47,7 @@ const urls = () => replaceState.mock.calls.map((c) => c[2]);
 
 vi.mock("../../app/commanders/actions", () => ({ retryRecs: vi.fn() }));
 
-function results(n: number, colorIdentity: string[] = ["R"]): CommanderListItem[] {
+function results(n: number, colorIdentity: string[] = ["R"]): CommanderRowItem[] {
   return Array.from({ length: n }, (_, i) => ({
     oracleId: `oracle-${i}`,
     slug: `general-${i}`,
@@ -68,19 +68,24 @@ function results(n: number, colorIdentity: string[] = ["R"]): CommanderListItem[
     imageUri: null,
     artCropUri: null,
     synergyState: "ok" as const,
+    // The four the shared row draws, plus the price. Every row carries them now
+    // — the owned lane joins them on in `loadCommanderRankings`.
+    prose: `General ${i} decks grind value out of counters.`,
+    gapSlot: { kind: "unplayed" as const, labels: ["Counters Matter"] },
+    deckCount: 1209,
   }));
 }
 
 type Over = {
   avail?: AvailMode;
-  freeItems?: CommanderListItem[] | null;
+  freeItems?: CommanderRowItem[] | null;
   availOk?: boolean;
   degraded?: boolean;
 };
 
 // The mode is the URL's alone now, so a test that opens in `free` says so by
 // setting the parameter the reader's own flip would have written.
-function el(list: CommanderListItem[], over: Over = {}) {
+function el(list: CommanderRowItem[], over: Over = {}) {
   const { avail = "all", freeItems = null, availOk = true, degraded = false } = over;
   // Through the URL, because that is where the view reads the lane from: it
   // compares against `window.location` and uses the hook only to re-render.
@@ -106,18 +111,17 @@ function el(list: CommanderListItem[], over: Over = {}) {
       // assertion below therefore also asserts the round-trip.
       freeRanking={freeItems ? toFreeDelta(list, freeItems) : null}
       availOk={availOk}
-      receiptCounts={new Map()}
     />
   );
 }
 
 // `again` re-renders the SAME instance, so a test can move a prop the way the
 // server does rather than mounting twice and missing the transition.
-function view(list: CommanderListItem[], over: Over = {}) {
+function view(list: CommanderRowItem[], over: Over = {}) {
   const r = render(el(list, over));
   return {
     ...r,
-    again: (next: CommanderListItem[], nextOver: Over = {}) =>
+    again: (next: CommanderRowItem[], nextOver: Over = {}) =>
       r.rerender(el(next, nextOver)),
   };
 }

@@ -32,7 +32,8 @@ import type { DiscoveryItem } from "../../lib/discovery/list";
 import { decodeDiscovery, type EncodedDiscovery } from "../../lib/discovery/encode";
 import { FilterRack } from "./rack/filter-rack";
 import { PageHeader } from "./page-header";
-import { RecCard } from "./rec-card";
+import { CommanderRow } from "./commander-row";
+import { commanderDetailHref } from "./list-nav";
 import { useDiscoveryCache } from "./discovery-cache";
 import { laneHref, useRerankAnnouncement } from "./list-nav";
 // Imported, never redeclared: it is 25, and the reveal band only lines up with
@@ -729,7 +730,29 @@ export function DiscoveryView({ encoded }: { encoded: EncodedDiscovery }) {
                   {/* `item.rank`, not the map index: the server ranked every item
                       this list carries, so a colour filter narrows what is shown
                       without renumbering what it leaves behind. */}
-                  <RecCard discovery={item} rank={item.rank} sort={discovery.sort} />
+                  {/* `item.rank`, not the map index — see above. `priceOk` is a
+                      LIST-level fact: one read serves every row, so a failed one
+                      omits the figure on all of them rather than on some. */}
+                  <CommanderRow
+                    item={{
+                      slug: item.slug,
+                      name: item.name,
+                      colorIdentity: item.colorIdentity,
+                      artCropUri: item.artCropUri,
+                      rank: item.rank,
+                      prose: item.prose,
+                      gapSlot: item.gapSlot,
+                      score: item.score,
+                      measurableTotal: item.measurableTotal,
+                      deckCount: item.deckCount,
+                      price: item.price,
+                      priceOk: discovery.priceOk,
+                      // This lane has no availability control, so the detail
+                      // link carries the default scope rather than a mode this
+                      // surface cannot be in.
+                      href: commanderDetailHref(item.slug, "all"),
+                    }}
+                  />
                 </li>
               ))}
 

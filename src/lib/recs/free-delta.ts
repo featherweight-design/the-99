@@ -63,10 +63,22 @@ export function toFreeDelta(
 }
 
 /** Rebuilds the free ranking on the client. The inverse of `toFreeDelta`. */
-export function fromFreeDelta(
-  canonical: CommanderListItem[],
+/**
+ * GENERIC over the row type, so a caller whose rows carry more than
+ * `CommanderListItem` gets those fields back.
+ *
+ * Not cosmetic: `/commanders` rows now also carry the play-style sentence, the
+ * gap slot, the deck count and the price. Typed to `CommanderListItem` this
+ * returned rows the shared row component could not draw — free mode would have
+ * lost the sentence and the gap line, while the default ranking kept them. The
+ * VALUES always survived (the spread only ever adds scoring keys, and an
+ * unchanged row is returned as the same object); it was the type that dropped
+ * them.
+ */
+export function fromFreeDelta<T extends CommanderListItem>(
+  canonical: T[],
   delta: FreeRankingDelta,
-): CommanderListItem[] {
+): T[] {
   return delta.order.map((index, position) => {
     const change = delta.changes[position];
     // The canonical row itself where nothing moved, not a copy of it: the view

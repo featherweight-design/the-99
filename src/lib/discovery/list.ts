@@ -2,7 +2,6 @@ import type { Availability } from "../decks/availability";
 import { loadAvailability } from "../decks/availability-query";
 import { loadCollectionPool } from "../recs/recommend";
 import { buildPoolRollup, rollupFor, type PoolRollup } from "../recs/pool-rollup";
-import type { RoleName } from "../recs/score";
 import { loadCandidates, type CandidateRow } from "./candidates";
 import { readPrices, slotFor, type PriceAggRow, type PriceSlot } from "./price";
 import { computeFit } from "../recs/score";
@@ -31,15 +30,7 @@ export type DiscoveryItem = {
       a position in `candidateCount`: under `new`, the untagged and the
       below-floor are already gone, and `floorExcluded` counts the second group. */
   rank: number;
-  ownedSupport: number;
-  edhrecTotal: number | null;
-  colorPoolSize: number;
-  roleCounts: Record<RoleName, number>;
   price: PriceSlot;
-  tagTotal: number;
-  unplayedLabels: string[];
-  unplayedCount: number;
-  nearestDeck: { deckName: string; sharedLabels: string[]; extraShared: number } | null;
   /**
    * The one stored sentence about how this commander's decks tend to play, or
    * null where none has been generated — which renders as NO PARAGRAPH rather
@@ -78,11 +69,6 @@ export type DiscoveryItem = {
   /** What `score` is out of: 100, or 40 where synergy could not be measured —
       never rescaled (#333), so the row prints the denominator it was given. */
   measurableTotal: number;
-  /** This commander's own support percentage — `ownedSupport` over
-      `edhrecTotal`. Named for what it measures rather than for the threshold it
-      is measured against: `floorPct` is the threshold, and the two figures
-      appear in the same sentence. */
-  supportPct: number | null;
 };
 
 export type DiscoveryList = {
@@ -172,8 +158,14 @@ export function assembleDiscovery(input: {
       artCropUri: c.artCropUri,
       releasedAt: c.releasedAt,
       deckCount: c.deckCount,
-      ownedSupport: c.ownedSupport,
       collectionSupport: c.collectionSupport,
+      // SERVER-SIDE ONLY, and that is the distinction this map now draws. The
+      // floor reads `collectionSupport`, `byFit` sorts on `ownedSupport` and
+      // `computeFit` divides by `edhrecTotal` — none of which the row prints, so
+      // they live on the enriched row and never reach `items`. Removing them
+      // from HERE rather than from the projection is how a first attempt broke
+      // the floor and both sorts at once.
+      ownedSupport: c.ownedSupport,
       edhrecTotal: c.edhrecTotal,
       price: slotFor(input.prices.get(c.oracleId)),
       tagTotal: c.tags.length,
@@ -251,20 +243,11 @@ export function assembleDiscovery(input: {
       releasedAt: c.releasedAt,
       deckCount: c.deckCount,
       rank: i + 1,
-      ownedSupport: c.ownedSupport,
-      edhrecTotal: c.edhrecTotal,
-      colorPoolSize: c.colorPoolSize,
-      roleCounts: c.roleCounts,
       price: c.price,
       prose: c.prose,
       gapSlot: c.gapSlot,
       score: c.score,
       measurableTotal: c.measurableTotal,
-      tagTotal: c.tagTotal,
-      unplayedLabels: c.unplayedLabels,
-      unplayedCount: c.unplayedCount,
-      nearestDeck: c.nearestDeck,
-      supportPct: c.supportPct,
     })),
     candidateCount: input.candidates.length,
     cardsRead: input.cardsRead,
@@ -306,7 +289,21 @@ export function assembleDiscovery(input: {
  * this one when PR 3 changes the payload's shape, not to leave the pair
  * mismatched now.
  *
- * 4 — and this is that bump, taken for the reason version 3 named in advance.
+ * 5 — the row's shape again, and this time by SUBTRACTION: nine fields leave the
+ * payload with the composition that drew them, and `roles` with `roleCounts`.
+ *
+ * A warm version-4 entry is the hazard, not those absences. It carries `keys`
+ * naming fields this decoder still has cases for and rows positioned against
+ * that older `keys` order — which decodes without crashing, into items whose
+ * `score` and `gapSlot` sit at the wrong indices. The encoder ships `keys` with
+ * the payload precisely so a decoder reads the order it was written with, and
+ * that is exactly why a warm entry must never be read by new code: the order is
+ * self-describing, the FIELD SET is not.
+ *
+ * `priceOk` is NOT the reason, and an earlier version of this comment said it
+ * was. It shipped in #700, so a v4 entry already has it.
+ *
+ * 4 — taken for the reason version 3 named in advance.
  * The row's SHAPE moved: `prose`, `gapSlot`, `score` and `measurableTotal` are
  * new, and the encoder carries a `gapKinds` order beside `keys` and `roles`. A
  * warm version-3 entry decodes into items with no sentence, no gap slot and no
@@ -314,7 +311,7 @@ export function assembleDiscovery(input: {
  * is the strongest kind of bump rather than the weakest: the old entry cannot
  * render the new row at all.
  */
-const PAYLOAD_VERSION = 4;
+const PAYLOAD_VERSION = 5;
 
 /** The cache key a discovery payload is filed under: its sort, and the version
     of the code that produced it. */
