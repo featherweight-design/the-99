@@ -43,6 +43,12 @@ try {
 
   // A writer that announces itself. `set_config(..., true)` is transaction-local,
   // so this mirrors exactly what `persistScores` does inside its transaction.
+  //
+  // The '2' is AN announced version, not the current one — what is under test is
+  // that the trigger keeps whatever a writer announces and stamps a silent
+  // writer with the default. `SCORE_WRITER_CURRENT` has since moved to 3 (Ruling
+  // D) and will move again; this probe stays correct across those bumps because
+  // it never asserts the constant's value.
   await sql.transaction([
     sql`select set_config('app.writer_version', '2', true)`,
     sql`insert into commander_scores

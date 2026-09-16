@@ -44,6 +44,15 @@ vi.mock("../edhrec/client", () => ({
   resolveEdhrecData: vi.fn(async () => ({ data: null, unreachable: false })),
 }));
 
+// Ruling D: the score's synergy comes from the stored index. Mocked at the
+// loader rather than through the `db` chain above, which ends at `.where` and
+// would have to grow an `.orderBy` — and the ordering is this module's own
+// concern, covered in `support-overlap.test.ts`. An empty map is no synergy
+// reading, which is what these cases already assumed from a null live payload.
+vi.mock("../edhrec/support-read", () => ({
+  loadSupportLists: vi.fn(async () => new Map()),
+}));
+
 const { recommendCommanders } = await import("./recommend");
 
 describe("recommendCommanders — what the persisted store is written from", () => {

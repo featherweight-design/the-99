@@ -11,6 +11,7 @@
 
 import { cache } from "react";
 import { readEdhrecCache } from "../edhrec/client";
+import { loadSupportLists } from "../edhrec/support-read";
 import { parseEdhrecPayload } from "../edhrec/parse";
 import { type Availability } from "../decks/availability";
 import { loadAvailability } from "../decks/availability-query";
@@ -219,18 +220,24 @@ export async function rankFree(
   const freeOracleIds = new Set(pool.map((c) => c.oracleId));
   const buildable = candidates.filter(({ card }) => freeOracleIds.has(card.oracleId));
 
-  const edhrecCache = await readEdhrecCache(buildable.map((c) => c.card.oracleId));
+  // Both reads, for the same split as canonical: the index scores, the live
+  // cache supplies `inclusionByName` for the role chips. Ruling D.
+  const [edhrecCache, supportLists] = await Promise.all([
+    readEdhrecCache(buildable.map((c) => c.card.oracleId)),
+    loadSupportLists(buildable.map((c) => c.card.oracleId)),
+  ]);
   const scored = buildable.map(({ card: commander, canon }) => {
     // The row holds unparsed JSON, so it has to go through parseEdhrecPayload
-    // before it has topCards. An unexpected shape degrades to an empty list,
-    // which scoreCommander reads as a null fitSynergy.
+    // before it has `inclusionByName`. An unexpected shape degrades to nulls,
+    // which only costs the role chips their figures — the score comes from the
+    // index and is unaffected by a malformed cache row.
     const cached = edhrecCache.get(commander.oracleId);
     const parsed = cached ? parseEdhrecPayload(cached.payload) : null;
     return {
       ...scoreCommander({
         commander,
         collection: pool,
-        edhrecTopCards: parsed?.topCards ?? null,
+        support: supportLists.get(commander.oracleId) ?? null,
         inclusionByName: parsed?.inclusionByName ?? null,
       }),
       // CARRIED from canonical, never recomputed — the same rule as slugs, and

@@ -220,8 +220,20 @@ export function assembleDiscovery(input: {
  * 2 — the candidate query now excludes a deck's PARTNER as well as its
  * commander, so a payload assembled by version 1 can still be offering a
  * commander the player has already built around.
+ *
+ * 3 — bumped for a WEAKER reason than its sibling in `commanders/rankings.ts`,
+ * and the difference is worth stating rather than blurring. Ruling D moved every
+ * Fit's synergy to the stored index, which changes what that payload SAYS. It
+ * does not change this one: `ownedSupport` and `supportPct` come from
+ * `loadCandidates`, which already counted `commander_support_cards` and is
+ * untouched, and no other field moved either. So every warm entry is dropped
+ * for no content difference — a deliberate cost, taken because the two caches
+ * are dropped independently and a pair bumped half-way is the state nobody
+ * thinks to check. If that trade ever looks wrong, the honest fix is to bump
+ * this one when PR 3 changes the payload's shape, not to leave the pair
+ * mismatched now.
  */
-const PAYLOAD_VERSION = 2;
+const PAYLOAD_VERSION = 3;
 
 /** The cache key a discovery payload is filed under: its sort, and the version
     of the code that produced it. */

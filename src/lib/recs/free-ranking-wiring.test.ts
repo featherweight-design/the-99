@@ -48,6 +48,8 @@ vi.mock("../edhrec/client", () => ({
   readEdhrecCache: vi.fn(async () => new Map()),
   resolveEdhrecData: vi.fn(async () => ({ data: null, unreachable: false })),
 }));
+// Ruling D: the stored index is where the score's synergy comes from now.
+vi.mock("../edhrec/support-read", () => ({ loadSupportLists: async () => new Map() }));
 
 const { rankFree } = await import("./free-ranking");
 

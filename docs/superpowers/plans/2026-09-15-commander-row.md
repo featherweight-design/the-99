@@ -44,7 +44,50 @@ reading: a runtime format guard that could never fire, a multi-word guard in
 `isCreatureTypeLabel` that changed no answer, and four irregular-plural entries the trailing-`s`
 rule already handled.
 
-## PR 2 — one source of truth for Fit (Ruling D)
+## PR 2 — one source of truth for Fit (Ruling D) · SHIPPED
+
+`probe:fit-parity` is **green**: numerator, denominator and `fitSynergy` all agree across 95
+commanders, with the numerator computed independently in SQL against the TypeScript
+`scoreCommander` runs. Before the change the same run found 57, 56 and 20 disagreeing.
+
+**What it cost, and what it found.**
+
+- `scoreCommander` takes a `SupportList` instead of `edhrecTopCards`. `inclusionByName` stays
+  live — it feeds role-chip percentages, not the score, and nothing compares it across
+  surfaces, so it keeps the fresher reading.
+- **`client-bundle-safety.test.ts` caught a real regression**: putting the loader and the pure
+  overlap in one file made `score.ts` reach `src/db`, which drags the neon driver into the
+  client bundle through `components/commanders/fit-legend.tsx`. Split into
+  `support-overlap.ts` (pure, imported by `score.ts`) and `support-read.ts` (the query).
+- **`edhrecOverlap` is deleted.** Its name matching — full name plus front face, for DFCs EDHREC
+  lists by their front — is what the id intersection replaces. No caller, no test; a second way
+  to resolve a card to an id is exactly what drifted from the first.
+- **A total of 0 still means NO READING**, preserved verbatim from the live payload's empty
+  `topCards`. Ruling D moves the source; deciding an empty list now scores 0 of 60 would be a
+  second change riding along. Unreachable in any event — all 3,342 indexed commanders carry a
+  positive total.
+- **`SCORE_WRITER_CURRENT` bumped to 3**, and this is the case the mechanism was built for and
+  the least visible: version-2 rows are the same SHAPE and a different MEANING, so nothing about
+  one looks stale, and a warm set would have been out by what the probe measured. **Both cache
+  versions bumped too** — `rankings.ts` to 4, `discovery/list.ts` to 3 — together rather than
+  leaving the discovery one for PR 3, because the two are dropped independently and a
+  half-bumped pair is the state nobody would think to check.
+
+### The finding PR 3 must not miss
+
+**`loadCandidates.ownedSupport` is the WRONG numerator for Fit**, and the spec's claim that all
+four inputs were already in the payload was wrong about this one. That figure counts support
+cards the reader owns with **no colour-identity restriction**; the score counts the ones legal in
+the commander's identity, and excludes the commander's own card. The two disagreed on
+`Faceless One` — colourless, 83 off-identity cards out of 322, reading **122 owned against 96
+playable**.
+
+Fit measures what could actually be played, so the pool's restriction is the correct one. PR 3
+must build the row's numerator the way `probe:fit-parity`'s SQL does: support cards ∩ owned, with
+`sup.color_identity <@ cmd.color_identity` and `sup.oracle_id <> cmd.oracle_id`. The probe holds
+that expression already and is the guard that the two do not drift.
+
+## PR 2 — the original task list
 
 The parity fix. It changes a figure on every surface that prints one, which is why it is alone.
 
@@ -87,6 +130,17 @@ under-count of the numerator survives the change: dropping an unresolvable name 
 overlap is the existing intent, stated in the code, not a side effect of the new source.
 
 ## PR 3 — the payload and the lane reads
+
+**First, a correctness task carried from PR 2's fourth round.** Clearing `commander_scores` when
+the index rebuilds is not a barrier against a concurrent score write: a request can read the
+support data before the clear, finish its fanout after it, and upsert a set computed against the
+old index — and `rankableScoreRows` has no generation check, so those rows are current-writer
+rows served as warm until something else invalidates them. The window is seconds, once a month,
+for one reader. Close it with a generation: a value the index build advances, stamped by
+`persistScores` and compared by `rankableScoreRows` — the same shape as `SCORE_WRITER_CURRENT`
+but data rather than code. It belongs here because this is the PR where the row starts reading
+these figures.
+
 
 1. `prose` into both lane queries (`candidates.ts`, and the owned lane's ranked read).
 2. `GapSlot` onto the row payload; `loadPlayedTags` added to the owned lane, which has no such

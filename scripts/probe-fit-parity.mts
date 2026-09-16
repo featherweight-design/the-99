@@ -1,86 +1,59 @@
-// Does a commander row's Fit equal the Fit its own detail page prints?
+// Do the two expressions of the synergy allocation agree?
 //
-// The row would compute `fitSynergy` from STORED counts — `edhrec_total` and an
-// `oracle_id` join over `commander_support_cards` (candidates.ts:310). Commander
-// Details computes it from the LIVE EDHREC payload, by NAME, with a front-face
-// fallback for DFCs (`edhrecOverlap`, score.ts:151, reaching `fitSynergy` at
-// score.ts:288, via scoreOneCommander). Two computations over two data paths,
-// and `page.tsx` calls `scoreOneCommander` for every commander, owned or not —
-// so every row links to a page that recomputes the same number a different way.
+// Ruling D put every Fit's synergy on the stored commander index. Two pieces of
+// code now compute the same overlap from it: the SQL a row's payload is built
+// from, written below, and the TypeScript `scoreCommander` runs
+// (`loadSupportLists` then `supportOverlap`). Two expressions of one allocation
+// drifting apart is how the deck page and its receipt came to disagree once
+// already, which is why `loadDeckBuyRows` is asserted beside `loadAvailability`
+// rather than assumed to match it.
 //
-// This script is the acceptance test for Ruling D, and it must go GREEN before
-// any surface prints a Fit derived from the stored counts.
+// Before Ruling D this compared the stored counts against a LIVE EDHREC name
+// match and found 57 numerators and 20 Fit figures disagreeing over 95
+// commanders. That comparison is retired: `edhrecOverlap`, the name matcher, is
+// gone.
 //
-// IT COMPARES EVERY WARM CANDIDATE AND SAMPLES NOTHING. Three review rounds
-// landed on an earlier version's sampling: it took only the highest stored
-// overlaps, so it could not see a stored 0 against a live positive; its order
-// was unspecified, so two runs compared different commanders; and it dropped a
-// stored total of 0, which is a real reading the index writes rather than a
-// missing one. Every one of those was a property of the SAMPLE, so the sample is
-// gone rather than patched a fourth time.
+// IT COMPARES EVERY CANDIDATE, AND THAT IS THE SCOPE DECISION. Three review
+// rounds landed on an earlier version's POPULATION: it sampled the highest
+// overlaps and so could not see a stored 0 against a live positive; its order
+// was unspecified, so two runs compared different commanders; it dropped a
+// stored total of 0; it capped the count for cost; and it filtered out rows that
+// failed to score and then checked a floor, which let a broken read shrink a
+// 95-row run to 20 and still pass. Every one of those was a question about WHICH
+// commanders to compare, so the answer is to stop choosing.
 //
-// The population is instead "every candidate whose EDHREC cache row is already
-// fresh". That is deterministic, complete over what it can reach, and — the
-// reason it replaced a cap — MAKES NO WRITES AND NO UPSTREAM REQUESTS.
-// `resolveEdhrecData` serves a cached row only inside a 30-day TTL and otherwise
-// fetches EDHREC and upserts `edhrec_cache` (client.ts:54-74), so filtering to
-// fresh rows first means `scoreOneCommander` always hits the cache. An earlier
-// header claimed this script made no writes while it was doing exactly that.
+// The earlier version called `scoreOneCommander`, the detail page's entry point,
+// which reads live EDHREC for `inclusionByName` — so it had to filter to warm
+// cache rows to stay side-effect-free, and every population question followed
+// from that filter. Since Ruling D the live read cannot touch the figure, so
+// this calls `scoreCommander` directly with the list `loadSupportLists`
+// returns: the whole allocation path and nothing else. No cache, no TTL, no
+// fetch, no writes, no cap — and the population is every candidate the index has
+// a total for, which is thousands rather than 95.
 //
-// Coverage is therefore a function of cache warmth, and is REPORTED rather than
-// assumed: a run that reaches too little of the catalog fails instead of
-// printing a green over a handful of rows.
-//
-// WHAT IT DOES NOT COVER. `loadCandidates` is the discovery query, so it excludes
-// commanders the reader owns or has built — this proves parity for DISCOVERY
-// rows and says nothing about the `/commanders` or Home populations, which
-// Ruling D also covers. Those score through `getRankedList` / `rankFree` rather
-// than through this path, and proving them is PR 2's job, in the PR that makes
-// the change. Stated here rather than left implied, because a green run would
-// otherwise read as a wider acceptance than it is.
+// What the decomposition gives up, stated rather than hidden:
+// `scoreOneCommander`'s ASSEMBLY — which commander it looks up, which pool it
+// passes — is not exercised here. That is unit-tested in
+// `recommend-detail.test.ts`, it is not an allocation expression, and it was
+// never what the two sides could disagree about.
 //
 // Run: `pnpm probe:fit-parity`  ·  `USER_ID=…` to pick the account
 //
 // First, and on its own line: src/db reads DATABASE_URL at module scope.
 import { requireEnv } from "./lib/env.mjs";
 requireEnv(["DATABASE_URL"]);
-import { sql } from "drizzle-orm";
+import { and, eq, inArray, sql } from "drizzle-orm";
+import { alias } from "drizzle-orm/pg-core";
 import { db } from "../src/db";
-import { collectionItems } from "../src/db/schema";
+import { cards, collectionItems, commanderSupportCards } from "../src/db/schema";
 import { loadCandidates } from "../src/lib/discovery/candidates";
-import { readEdhrecCache } from "../src/lib/edhrec/client";
-import { loadCollectionPool, scoreOneCommander } from "../src/lib/recs/recommend";
-import { SYNERGY_WEIGHT } from "../src/lib/recs/score";
+import { loadSupportLists } from "../src/lib/edhrec/support-read";
+import { loadCollectionPool } from "../src/lib/recs/recommend";
+import { SYNERGY_WEIGHT, scoreCommander, type PoolCard } from "../src/lib/recs/score";
 
-/** The same 30-day window `resolveEdhrecData` uses to decide a cache row is
-    still good. Restated rather than exported, because a probe that widened it
-    would start fetching — the behaviour this script exists without. */
-const TTL_MS = 30 * 24 * 60 * 60 * 1000;
-
-/** Freshness is required with an hour to spare.
- *
- *  The filter below takes ONE `Date.now()` snapshot while `resolveEdhrecData`
- *  re-checks the clock on every call, so a row sitting just inside the TTL here
- *  could expire before its turn in a serial loop — and that means an upstream
- *  fetch and an `edhrec_cache` upsert, in a script whose contract is neither.
- *  An hour is far more than the loop can take. */
-const TTL_SLACK_MS = 60 * 60 * 1000;
-
-/** Below this many COMPARED commanders a run proves too little to trust. */
+/** Below this many compared commanders a run proves too little to trust. A
+    question about the fixture, never about the code. */
 const MIN_COMPARED = 20;
-
-/** A hand-run script may not grind the whole catalog.
- *
- *  `scoreOneCommander` is the real detail-page path, which is why it is used
- *  rather than a second scorer written here — two expressions of one figure
- *  drifting apart is the defect this probe exists to detect. The cost is that
- *  each call re-reads the collection, the committed decks and one cache row, so
- *  the population is capped by COUNT rather than by sampling: the order is
- *  deterministic, so the cap takes a stable prefix rather than an arbitrary
- *  subset. Raise it with `MAX_COMPARED` when a fuller answer is worth the
- *  queries. A batch scorer would remove the cap and is a follow-up, not a
- *  round-6 addition. */
-const MAX_COMPARED = Number(process.env.MAX_COMPARED ?? 150);
 
 const owner =
   process.env.USER_ID ??
@@ -104,109 +77,212 @@ const candidates = await loadCandidates(
 );
 if (candidates.length === 0) throw new Error("no discovery candidates for this account");
 
-// A stored total of null means the index never scored it; 0 is a real reading.
-const withStoredTotal = candidates.filter((c) => c.edhrecTotal != null);
-const cache = await readEdhrecCache(withStoredTotal.map((c) => c.oracleId));
-const now = Date.now();
-const warm = withStoredTotal
-  .filter((c) => {
-    const row = cache.get(c.oracleId);
-    return row != null && now - row.fetchedAt.getTime() < TTL_MS - TTL_SLACK_MS;
-  })
-  .sort((a, b) => a.oracleId.localeCompare(b.oracleId));
-const population = warm.slice(0, MAX_COMPARED);
+/**
+ * The row's numerator, in SQL: support cards this reader owns whose colour
+ * identity is a subset of the commander's.
+ *
+ * Written here rather than reusing `loadCandidates.ownedSupport`, which omits
+ * the identity restriction — the two disagreed on `Faceless One`, a colourless
+ * commander whose stored list holds 83 off-identity cards of 322, reading 122
+ * owned against 96 playable. And written in SQL rather than reusing
+ * `supportOverlap`, because a second expression of the same allocation is the
+ * entire point: sharing the implementation would compare a function with itself.
+ *
+ * Three clauses, each mirroring one the TypeScript side applies:
+ *   • identity subset   — `commanderPool`'s filter
+ *   • not the commander — `commanderPool` excludes its own card
+ *   • commander-legal   — `loadCollectionPool` filters the collection before
+ *                         `scoreCommander` ever sees it (`recommend.ts:188`)
+ */
+async function storedNumerators(
+  userId: string,
+  commanderIds: string[],
+): Promise<Map<string, number>> {
+  if (commanderIds.length === 0) return new Map();
+  const cmd = alias(cards, "cmd");
+  const sup = alias(cards, "sup");
+  const owned = db
+    .selectDistinct({ oracleId: collectionItems.oracleId })
+    .from(collectionItems)
+    .where(eq(collectionItems.userId, userId))
+    .as("own");
 
-console.log(
-  `${candidates.length} candidates · ${withStoredTotal.length} with a stored total · ` +
-    `${warm.length} with a fresh EDHREC cache row · comparing ${population.length}` +
-    (warm.length > population.length ? ` (capped at MAX_COMPARED=${MAX_COMPARED})` : ""),
-);
+  const rows = await db
+    .select({
+      commanderOracleId: commanderSupportCards.commanderOracleId,
+      owned: sql<number>`count(distinct ${commanderSupportCards.oracleId})::int`,
+    })
+    .from(commanderSupportCards)
+    .innerJoin(cmd, eq(cmd.oracleId, commanderSupportCards.commanderOracleId))
+    .innerJoin(sup, eq(sup.oracleId, commanderSupportCards.oracleId))
+    .innerJoin(owned, eq(owned.oracleId, commanderSupportCards.oracleId))
+    .where(
+      and(
+        inArray(commanderSupportCards.commanderOracleId, commanderIds),
+        sql`${sup.colorIdentity} <@ ${cmd.colorIdentity}`,
+        sql`${sup.oracleId} <> ${cmd.oracleId}`,
+        sql`${sup.commanderLegal}`,
+      ),
+    )
+    .groupBy(commanderSupportCards.commanderOracleId);
+
+  return new Map(rows.map((r) => [r.commanderOracleId, r.owned]));
+}
+
+// EVERY candidate with a stored total. A null total is the index having no
+// usable reading, which both sides score as nothing — there is no allocation to
+// compare there.
+const population = candidates
+  .filter((c) => c.edhrecTotal != null)
+  .sort((a, b) => a.oracleId.localeCompare(b.oracleId));
+
+const ids = population.map((c) => c.oracleId);
+
+/**
+ * Each commander's own `PoolCard`, which `scoreCommander` needs and a candidate
+ * row does not carry.
+ *
+ * Read from `cards` rather than from the collection, because discovery
+ * candidates are by definition commanders the reader does NOT own — an earlier
+ * revision looked them up in the collection and compared nothing at all, which
+ * is the mistake `scoreOneCommander` avoids with its own `loadPoolCard`
+ * fallback. One bulk query rather than that per-id lookup: the whole point of
+ * this rewrite is that nothing is paid per row.
+ */
+const poolCards = await db
+  .select({
+    oracleId: cards.oracleId, name: cards.name, typeLine: cards.typeLine,
+    oracleText: cards.oracleText, keywords: cards.keywords,
+    colorIdentity: cards.colorIdentity, imageUri: cards.imageUri,
+    artCropUri: cards.artCropUri, manaCost: cards.manaCost,
+  })
+  .from(cards)
+  .where(inArray(cards.oracleId, ids));
+const byOracleId = new Map<string, PoolCard>(poolCards.map((c) => [c.oracleId, c]));
+const [supportLists, sqlOwned] = await Promise.all([
+  loadSupportLists(ids),
+  storedNumerators(owner, ids),
+]);
+
+console.log(`${candidates.length} candidates · comparing ${population.length} with a stored total`);
+if (population.length < MIN_COMPARED) {
+  throw new Error(
+    `only ${population.length} candidates have a stored total, need ${MIN_COMPARED}. ` +
+      "Run `pnpm db:build:index` against this branch, or point at one whose commander " +
+      "index is built.",
+  );
+}
 
 type Row = {
   name: string;
-  storedOwned: number;
-  liveOwned: number | null;
+  sqlOwned: number;
+  tsOwned: number | null;
   storedTotal: number;
-  liveTotal: number | null;
-  storedSynergy: number | null;
-  liveSynergy: number | null;
+  tsTotal: number | null;
+  sqlSynergy: number | null;
+  tsSynergy: number | null;
 };
 
-/** Null where the stored side has no ratio to offer, mirroring `scoreCommander`,
-    which leaves `fitSynergy` null rather than zeroing it. A stored null against
-    a live number is a disagreement and is counted as one. */
+/** Null where there is no ratio to offer, mirroring `scoreCommander`, which
+    leaves `fitSynergy` null rather than zeroing it. */
 const synergyOf = (owned: number, total: number): number | null =>
   total > 0 ? Math.round((owned / total) * SYNERGY_WEIGHT) : null;
 
-const rows: Row[] = [];
-for (const c of population) {
-  const detail = await scoreOneCommander(owner, c.oracleId, c.name);
-  rows.push({
-    name: c.name,
-    storedOwned: c.ownedSupport,
-    liveOwned: detail?.edhrecOwnedCount ?? null,
-    storedTotal: c.edhrecTotal!,
-    liveTotal: detail?.edhrecTotal ?? null,
-    storedSynergy: synergyOf(c.ownedSupport, c.edhrecTotal!),
-    liveSynergy: detail?.fitSynergy ?? null,
-  });
-}
-
-const scored = rows.filter((r) => r.liveTotal != null);
-const zeroTotals = rows.filter((r) => r.storedTotal === 0).length;
-// Counted from `scored`, not `rows`: a warm row whose cache holds no parsed
-// top-card list is never compared, and one such row with a stored overlap
-// could otherwise satisfy this guard while every COMPARED row had zero. Same
-// mistake as the floor above, in the same expression's sibling.
-const withOverlap = scored.filter((r) => r.storedOwned > 0).length;
-console.log(
-  `compared ${rows.length} — ${scored.length} scored live, ${withOverlap} with a ` +
-    `non-zero stored overlap, ${zeroTotals} with a stored total of 0\n`,
-);
-// The floor belongs on what was actually COMPARED, not on what looked warm: a
-// fresh cache row can hold no parsed top-card list, so 20 warm rows can yield
-// fewer than 20 comparisons.
-if (scored.length < MIN_COMPARED) {
+const missingCard = population.filter((c) => !byOracleId.has(c.oracleId));
+if (missingCard.length > 0) {
   throw new Error(
-    `only ${scored.length} of ${population.length} compared candidates scored live, ` +
-      `need ${MIN_COMPARED}. Load /commanders and /discover once to warm the cache, ` +
-      "then re-run.",
+    `${missingCard.length} candidates have no row in \`cards\`, which cannot happen — ` +
+      "`loadCandidates` joins that table.",
   );
 }
+
+const rows: Row[] = population.map((c) => {
+  const commander = byOracleId.get(c.oracleId)!;
+  const scored = scoreCommander({
+    commander,
+    collection,
+    support: supportLists.get(c.oracleId) ?? null,
+    // Not read by the allocation. The synergy figure is the whole subject here.
+    inclusionByName: null,
+  });
+  const owned = sqlOwned.get(c.oracleId) ?? 0;
+  return {
+    name: c.name,
+    sqlOwned: owned,
+    tsOwned: scored.edhrecOwnedCount,
+    storedTotal: c.edhrecTotal!,
+    tsTotal: scored.edhrecTotal,
+    sqlSynergy: synergyOf(owned, c.edhrecTotal!),
+    tsSynergy: scored.fitSynergy,
+  };
+});
+
+// EVERY ROW MUST SCORE. The population carries a stored total and that column is
+// exactly what `scoreCommander` reports back, so a null here means
+// `loadSupportLists` returned nothing for a commander the index holds — the
+// failure this script exists to catch. Never a reason to compare fewer.
+const unscored = rows.filter((r) => r.tsTotal == null);
+if (unscored.length > 0) {
+  for (const r of unscored.slice(0, 8)) console.log(`   ${r.name}: no scored total`);
+  throw new Error(
+    `${unscored.length} of ${rows.length} candidates have a stored total but scored ` +
+      "none. `loadSupportLists` is returning nothing for commanders the index holds.",
+  );
+}
+
+const withOverlap = rows.filter((r) => r.sqlOwned > 0).length;
+console.log(`compared ${rows.length} — ${withOverlap} with a non-zero stored overlap\n`);
 if (withOverlap === 0) {
   throw new Error(
-    `all ${scored.length} compared candidates have a stored overlap of 0 — the ` +
-      "comparison is vacuous. Use an account with a larger collection.",
+    `all ${rows.length} compared candidates have an overlap of 0 — the comparison is ` +
+      "vacuous. Use an account with a larger collection.",
   );
 }
 
-const numeratorDiffs = scored.filter((r) => r.storedOwned !== r.liveOwned);
-const denominatorDiffs = scored.filter((r) => r.storedTotal !== r.liveTotal);
-const synergyDiffs = scored.filter((r) => r.storedSynergy !== r.liveSynergy);
+// THE DENOMINATOR IS NOT A COMPARISON and is not reported as one: both sides read
+// `commander_support.edhrec_total`. An "AGREE" would be one column read twice and
+// would hold with `supportOverlap` or the identity filter broken. It is an
+// invariant — if these differ, one of the two reads has changed source.
+const denominatorDiffs = rows.filter((r) => r.storedTotal !== r.tsTotal);
+if (denominatorDiffs.length > 0) {
+  for (const r of denominatorDiffs.slice(0, 5)) {
+    console.log(`   ${r.name}: stored ${r.storedTotal} vs scored ${r.tsTotal}`);
+  }
+  throw new Error(
+    `${denominatorDiffs.length} of ${rows.length} denominators differ, which should be ` +
+      "impossible: both sides read commander_support.edhrec_total.",
+  );
+}
+console.log(`denominator  one column, read twice — ${rows.length} identical, as required\n`);
+
+const numeratorDiffs = rows.filter((r) => r.sqlOwned !== r.tsOwned);
+const synergyDiffs = rows.filter((r) => r.sqlSynergy !== r.tsSynergy);
 
 const report = (label: string, bad: Row[], pick: (r: Row) => string) => {
-  const verdict = bad.length === 0 ? "AGREE" : `DIFFER on ${bad.length}/${scored.length}`;
+  const verdict = bad.length === 0 ? "AGREE" : `DIFFER on ${bad.length}/${rows.length}`;
   console.log(`${label.padEnd(12)} ${verdict}`);
   for (const r of bad.slice(0, 12)) console.log(`   ${r.name}: ${pick(r)}`);
   if (bad.length > 12) console.log(`   ... and ${bad.length - 12} more`);
 };
 
-report("numerator", numeratorDiffs, (r) => `stored ${r.storedOwned} vs live ${r.liveOwned}`);
-report("denominator", denominatorDiffs, (r) => `stored ${r.storedTotal} vs live ${r.liveTotal}`);
-report("fitSynergy", synergyDiffs, (r) => `stored ${r.storedSynergy} vs live ${r.liveSynergy}`);
+report("numerator", numeratorDiffs, (r) => `sql ${r.sqlOwned} vs ts ${r.tsOwned}`);
+report("fitSynergy", synergyDiffs, (r) => `sql ${r.sqlSynergy} vs ts ${r.tsSynergy}`);
 
 console.log();
-if (synergyDiffs.length === 0) {
+// BOTH. `fitSynergy` is the numerator rounded onto a 0-60 scale, so a one-card
+// drift can leave it unchanged — gating on the figure alone would print a
+// numerator disagreement and exit 0.
+if (numeratorDiffs.length === 0 && synergyDiffs.length === 0) {
   console.log(
-    `PARITY HOLDS over ${scored.length} DISCOVERY commanders — a row may print the ` +
-      "stored figure. The owned lane and Home are not covered here; see the header.",
+    `PARITY HOLDS over ${rows.length} commanders — the row may print the stored figure.\n` +
+      "Scope: the allocation expressions only. `scoreOneCommander`'s assembly is unit-tested.",
   );
   process.exit(0);
 }
 console.log(
-  "PARITY FAILS. The row must NOT print a Fit derived from the stored counts.\n" +
-    "The resolution is Ruling D: Commander Details reads the same stored counts,\n" +
-    "not the row learning the name match — a per-row EDHREC read is what rankFree\n" +
-    "already refuses to do (free-ranking.ts:105-112).",
+  `PARITY FAILS — ${numeratorDiffs.length} numerator(s) and ${synergyDiffs.length} Fit ` +
+    "figure(s) disagree.\nThe SQL a row's payload is built from and the TypeScript the score " +
+    "runs have come apart.\nCheck the identity restriction, the commander's own card and the " +
+    "commander-legal\nfilter first: those are the three clauses the two can differ on.",
 );
 process.exit(1);

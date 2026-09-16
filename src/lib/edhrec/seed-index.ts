@@ -1,6 +1,6 @@
 import { eq, sql } from "drizzle-orm";
 import { db } from "../../db";
-import { cards, commanderSupport, commanderSupportCards } from "../../db/schema";
+import { cards, commanderScores, commanderSupport, commanderSupportCards } from "../../db/schema";
 import { isCommanderCandidate } from "../recs/score";
 import { fetchEdhrecUncached, type EdhrecFetchResult } from "./client";
 import {
@@ -20,6 +20,9 @@ export type BuildIndexOptions = {
   loadAlreadyComputed?: () => Promise<Set<string>>;
   fetch?: (name: string) => Promise<EdhrecFetchResult>;
   write?: (header: SupportHeader, cards: SupportCard[]) => Promise<void>;
+  /** Injectable for the same reason as `write`: the build is unit-tested
+      without a database, and this is the run's last write. */
+  clearScores?: () => Promise<void>;
   delayMs?: number;
   sleep?: (ms: number) => Promise<void>;
 };
@@ -84,6 +87,16 @@ async function writeToDb(header: SupportHeader, cardRows: SupportCard[]): Promis
 }
 
 /**
+ * Throws away every persisted commander score.
+ *
+ * Separate from `writeToDb` because it is not per-commander: it runs once, after
+ * the whole rebuild, and the reasoning for that is at the call site.
+ */
+async function clearPersistedScores(): Promise<void> {
+  await db.delete(commanderScores);
+}
+
+/**
  * Rebuilds `commander_support` and `commander_support_cards` for every card that
  * can legally be a commander.
  *
@@ -104,6 +117,7 @@ export async function buildCommanderIndex(
     (() => db.select({ oracleId: cards.oracleId, name: cards.name }).from(cards));
   const fetchOne = opts.fetch ?? fetchEdhrecUncached;
   const write = opts.write ?? writeToDb;
+  const clearScores = opts.clearScores ?? clearPersistedScores;
   const sleep = opts.sleep ?? defaultSleep;
   const delayMs = opts.delayMs ?? DEFAULT_DELAY_MS;
 
@@ -152,6 +166,73 @@ export async function buildCommanderIndex(
       console.error(`commander-index: ${commander.name} failed`, err);
     }
   }
+
+  // EVERY PERSISTED SCORE IS NOW STALE, so every one goes.
+  //
+  // Ruling D made `commander_scores.fit_synergy` a function of this table. A
+  // rebuild therefore invalidates scores the way a deployment does — except the
+  // writer version cannot express it, being a code constant that this workflow
+  // does not change. Without this, `loadScores` keeps serving the old Fit from a
+  // warm set while Commander Details scores from the new index, which is exactly
+  // the cross-surface disagreement Ruling D exists to remove, reintroduced
+  // monthly.
+  //
+  // ALL ROWS, not the rebuilt commanders' rows. `loadScores` detects a set with
+  // a stale SENTINEL and cannot detect one with rows DELETED out of it — that
+  // blindness is why `SCORE_WRITER_CURRENT` was invented (see its note in
+  // `schema.ts`). Deleting per commander would leave partial sets served as
+  // whole. Clearing the table leaves every reader with a full set or none, and
+  // a miss costs one recompute.
+  //
+  // WHAT THIS DOES NOT REACH, stated because it is a real window rather than an
+  // oversight. `/commanders` wraps its payload in `cacheForUser`, so a warm
+  // account can keep receiving the pre-rebuild Fit for up to that cache's hour
+  // ceiling while Commander Details reads the new index. This delete only
+  // guarantees that a cache MISS recomputes correctly.
+  //
+  // Accepted rather than closed, on the precedent already in the code: the
+  // rankings cache carries the same hour of staleness after a DEPLOY, and
+  // `rankings.ts` says so in as many words — "survives the deploy for up to the
+  // hour ceiling for every reader who does not write". An index rebuild is the
+  // same class of event on a monthly cadence, so the exposure is one hour a
+  // month against a figure that is itself a monthly snapshot.
+  //
+  // Closing it needs an index-generation token in the cache key, which costs a
+  // read on every request to that route, or a revalidation call this workflow
+  // cannot make — it runs as a script with no Next request context, which is
+  // why nothing here calls `revalidateUserLists`. Both are larger than the
+  // window they would close.
+  //
+  // NOR IS THIS A BARRIER AGAINST A CONCURRENT SCORE WRITE, and that one is a
+  // race rather than a staleness window. A request can read the support data
+  // before this delete, finish its fanout after it, and upsert a set computed
+  // against the old index — and `rankableScoreRows` has no generation check, so
+  // those rows are current-writer rows and are served as warm until something
+  // else invalidates them.
+  //
+  // The window is seconds, once a month, for one reader. Closing it properly
+  // needs a generation stamped by `persistScores` and compared by the reader,
+  // which is a migration plus a writer plus a reader — a mechanism, at the
+  // fourth round of a PR about where one figure comes from. It is a NAMED TASK
+  // in PR 3 of the plan rather than a vague follow-up, because PR 3 is where the
+  // row begins reading these figures and is the coherent place to harden them.
+  //
+  // Only when the index could actually have moved. A run that failed every
+  // commander changed no input, and throwing away every reader's scores for it
+  // would be a self-inflicted cold start.
+  //
+  // `skipped` is in the condition because of the RESUME path. `r.commanders`
+  // counts this invocation's writes only, and `alreadyComputedSince` exists so
+  // an interrupted build can be dispatched again to finish — so a resume whose
+  // remaining commanders were all written by the aborted attempt writes nothing,
+  // skips thousands, and would have left every score computed against the
+  // previous index. The workflow supports that path explicitly, which is what
+  // makes gating on writes alone wrong rather than merely narrow.
+  if (r.commanders > 0 || r.skipped > 0) {
+    await clearScores();
+    console.log("commander-index: cleared persisted commander scores");
+  }
+
   return r;
 }
 

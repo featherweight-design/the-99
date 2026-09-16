@@ -5,11 +5,12 @@ import { cards, collectionItems } from "../../db/schema";
 import { ownedCardsWhere } from "../collection/owned-cards";
 import { commanderSlug } from "../edhrec/slug";
 import { readEdhrecCache, resolveEdhrecData } from "../edhrec/client";
-import { synergyStateFrom, type SynergyState } from "./synergy-state";
+import { supportOverlap } from "../edhrec/support-overlap";
+import { loadSupportLists } from "../edhrec/support-read";
+import { scoringSynergyState, type SynergyState } from "./synergy-state";
 import { committedSupport, readCommittedDecks, withCommitted } from "../decks/committed";
 import {
   commanderPool,
-  edhrecOverlap,
   isCommanderCandidate,
   scoreCommander,
   type CommanderScore,
@@ -231,12 +232,17 @@ export async function recommendCommanders(
 
   // One cache read for the whole fanout — a per-commander SELECT here meant
   // ~196 round-trips on every compute, warm or cold.
-  const edhrecCache = await readEdhrecCache(candidates.map((c) => c.oracleId));
+  // The live read still happens, for `inclusionByName` and for `synergyState`:
+  // the role chips keep the fresher figures, and an EDHREC outage still has to
+  // be describable. What moved to the index is the SCORE — Ruling D.
+  const [edhrecCache, supportLists] = await Promise.all([
+    readEdhrecCache(candidates.map((c) => c.oracleId)),
+    loadSupportLists(candidates.map((c) => c.oracleId)),
+  ]);
 
   // Fetch EDHREC data with bounded concurrency: sequential awaits would make
   // cold loads with dozens of candidates exceed the page's time budget.
   const CONCURRENCY = 5;
-  let degraded = false;
   const results: (CommanderScore & { synergyState: SynergyState })[] = [];
   for (let i = 0; i < candidates.length; i += CONCURRENCY) {
     const scored = await Promise.all(
@@ -244,23 +250,37 @@ export async function recommendCommanders(
         const result = await resolveEdhrecData(
           commander.oracleId, commander.name, edhrecCache.get(commander.oracleId),
         );
-        // `unreachable` only flips true on real service outage (5xx/network/timeout
-        // with no cache). 4xx (commander not on EDHREC) is a per-commander data
-        // absence, not a service issue — data === null but unreachable === false.
-        if (result.unreachable) degraded = true;
+        const support = supportLists.get(commander.oracleId) ?? null;
+        const scored = scoreCommander({
+          commander, collection,
+          support,
+          inclusionByName: result.data?.inclusionByName ?? null,
+        });
         return {
-          ...scoreCommander({
-            commander, collection,
-            edhrecTopCards: result.data?.topCards ?? null,
-            inclusionByName: result.data?.inclusionByName ?? null,
-          }),
-          synergyState: synergyStateFrom(result),
+          ...scored,
+          // Keyed off the FIGURE, not off a second reading of the index, so the
+          // pair `commander_scores` constrains cannot come apart however
+          // `scoreCommander` decides a total is usable.
+          synergyState: scoringSynergyState(result, scored.fitSynergy !== null),
         };
       }),
     );
     results.push(...scored);
   }
   results.sort(byScoreThenOracleId);
+
+  // DERIVED FROM THE ROWS, by the same rule `loadScores` uses
+  // (`store.ts:243` — rows whose `synergyState` is "degraded"), so the cold
+  // response and the warm one cannot describe the same list differently.
+  //
+  // It used to be set on any `result.unreachable` during the fanout, and after
+  // Ruling D that became a lie: an outage no longer costs an indexed commander
+  // its synergy, because the figure comes from the stored index. A cold load
+  // during an outage would raise the banner — "receipts are hidden, this score
+  // is out of 40" — over rows that scored out of 100 and carry receipts, and
+  // then the banner would vanish once the set persisted, because `loadScores`
+  // asks the rows. One rule, asked in one place, cannot do that.
+  const degraded = results.some((r) => r.synergyState === "degraded");
 
   const finalized = finalizeRecommendations(results, uniqueCardsRead, candidates.length);
   return { ...finalized, degraded };
@@ -299,14 +319,18 @@ export async function scoreOneCommander(
     collection.find((c) => c.oracleId === oracleId) ?? (await loadPoolCard(oracleId));
   if (!commander) return null;
 
-  const edhrecCache = await readEdhrecCache([oracleId]);
+  const [edhrecCache, supportLists] = await Promise.all([
+    readEdhrecCache([oracleId]),
+    loadSupportLists([oracleId]),
+  ]);
+  const support = supportLists.get(oracleId) ?? null;
   const [result, committed] = await Promise.all([
     resolveEdhrecData(oracleId, commander.name, edhrecCache.get(oracleId)),
     readCommittedDecks(userId),
   ]);
   const scored = scoreCommander({
     commander, collection: pool ?? collection,
-    edhrecTopCards: result.data?.topCards ?? null,
+    support,
     inclusionByName: result.data?.inclusionByName ?? null,
   });
 
@@ -321,15 +345,15 @@ export async function scoreOneCommander(
   // sleeved into a finished deck is exactly what that pool leaves out — asking
   // it which decks hold these cards could only ever answer "none".
   const ownedOverlapIds =
-    pool && result.data?.topCards
-      ? edhrecOverlap(result.data.topCards, commanderPool(commander, collection)).oracleIds
+    pool && support
+      ? supportOverlap(support, commanderPool(commander, collection)).oracleIds
       : scored.overlapOwnedIds;
 
   return {
     ...scored,
     roleCards,
     slug,
-    synergyState: synergyStateFrom(result),
+    synergyState: scoringSynergyState(result, scored.fitSynergy !== null),
     committedSupport: committedSupport(ownedOverlapIds, committed),
   };
 }

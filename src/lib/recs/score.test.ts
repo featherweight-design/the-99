@@ -10,14 +10,44 @@ import {
   scoreCommander,
   type PoolCard,
 } from "./score";
+import type { SupportList } from "../edhrec/support-overlap";
 import { ROLE_TARGETS } from "./roles";
 
-const card = (over: Partial<PoolCard> & { oracleId?: string; name?: string }): PoolCard => ({
-  oracleId: over.oracleId ?? randomUUID(),
-  name: "X", typeLine: "Creature", oracleText: "", keywords: [], colorIdentity: [],
-  imageUri: null, artCropUri: null, manaCost: null,
-  ...over,
-});
+/** Every card any fixture has made, so `support` can resolve a name to the id
+    the index would have resolved it to. */
+const madeCards: PoolCard[] = [];
+
+const card = (over: Partial<PoolCard> & { oracleId?: string; name?: string }): PoolCard => {
+  const made: PoolCard = {
+    oracleId: over.oracleId ?? randomUUID(),
+    name: "X", typeLine: "Creature", oracleText: "", keywords: [], colorIdentity: [],
+    imageUri: null, artCropUri: null, manaCost: null,
+    ...over,
+  };
+  madeCards.push(made);
+  return made;
+};
+
+/**
+ * The stored support list a set of EDHREC card names would produce.
+ *
+ * Mirrors `index-build.ts` exactly, which is the point: `total` counts the NAMES
+ * upstream listed, while `oracleIds` holds only the ones the catalog could
+ * resolve. A name no fixture card carries is therefore counted in the
+ * denominator and absent from the overlap — the same deliberate under-count the
+ * index ships, and the reason these cases still read the way they did when this
+ * suite passed live `topCards`.
+ */
+const support = (names: string[] | null): SupportList | null =>
+  names === null
+    ? null
+    : {
+        total: names.length,
+        oracleIds: names.flatMap((n) => {
+          const hit = madeCards.find((c) => c.name === n);
+          return hit ? [hit.oracleId] : [];
+        }),
+      };
 
 describe("isCommanderCandidate", () => {
   it("accepts legendary creatures", () => {
@@ -73,30 +103,30 @@ describe("scoreCommander", () => {
   ];
 
   it("counts only color-legal cards in the pool", () => {
-    const s = scoreCommander({ commander, collection, edhrecTopCards: ["Sol Ring", "Cultivate"], inclusionByName: null });
+    const s = scoreCommander({ commander, collection, support: support(["Sol Ring", "Cultivate"]), inclusionByName: null });
     expect(s.colorPoolSize).toBe(3); // Bolt excluded
   });
 
-  it("counts owned EDHREC top cards (color-legal only)", () => {
-    const s = scoreCommander({ commander, collection, edhrecTopCards: ["Sol Ring", "Lightning Bolt", "Craterhoof Behemoth"], inclusionByName: null });
+  it("counts owned stored support cards (color-legal only)", () => {
+    const s = scoreCommander({ commander, collection, support: support(["Sol Ring", "Lightning Bolt", "Craterhoof Behemoth"]), inclusionByName: null });
     expect(s.edhrecOwnedCount).toBe(1);
     expect(s.edhrecTotal).toBe(3);
   });
 
   it("reports role counts and gaps against targets", () => {
-    const s = scoreCommander({ commander, collection, edhrecTopCards: null, inclusionByName: null });
+    const s = scoreCommander({ commander, collection, support: support(null), inclusionByName: null });
     expect(s.roleCounts).toEqual({ ramp: 2, draw: 1, removal: 0, wipes: 0 });
     expect(s.roleGaps).toEqual(["ramp", "draw", "removal", "wipes"]);
   });
 
   it("degrades: null edhrec fields but still scores by pool+roles", () => {
-    const s = scoreCommander({ commander, collection, edhrecTopCards: null, inclusionByName: null });
+    const s = scoreCommander({ commander, collection, support: support(null), inclusionByName: null });
     expect(s.edhrecOwnedCount).toBeNull();
     expect(s.score).toBeGreaterThan(0);
   });
 
-  it("treats an empty EDHREC top-cards list as no synergy data", () => {
-    const s = scoreCommander({ commander, collection, edhrecTopCards: [], inclusionByName: null });
+  it("treats an empty stored support list as no synergy data", () => {
+    const s = scoreCommander({ commander, collection, support: support([]), inclusionByName: null });
     expect(s.edhrecTotal).toBeNull();
     expect(s.edhrecOwnedCount).toBeNull();
     expect(s.fitSynergy).toBeNull();
@@ -104,8 +134,8 @@ describe("scoreCommander", () => {
   });
 
   it("ranks a commander with more EDHREC overlap higher, all else equal", () => {
-    const low = scoreCommander({ commander, collection, edhrecTopCards: ["Craterhoof Behemoth"], inclusionByName: null });
-    const high = scoreCommander({ commander, collection, edhrecTopCards: ["Sol Ring", "Cultivate", "Read the Bones"], inclusionByName: null });
+    const low = scoreCommander({ commander, collection, support: support(["Craterhoof Behemoth"]), inclusionByName: null });
+    const high = scoreCommander({ commander, collection, support: support(["Sol Ring", "Cultivate", "Read the Bones"]), inclusionByName: null });
     expect(high.score).toBeGreaterThan(low.score);
   });
 
@@ -115,7 +145,7 @@ describe("scoreCommander", () => {
   // rather than its own rounding.
   it("segments are integers and add up to the printed score", () => {
     for (const topCards of [null, [], ["Sol Ring"], ["Sol Ring", "Cultivate", "Craterhoof Behemoth"]]) {
-      const s = scoreCommander({ commander, collection, edhrecTopCards: topCards, inclusionByName: null });
+      const s = scoreCommander({ commander, collection, support: support(topCards), inclusionByName: null });
       expect(Number.isInteger(s.fitPool)).toBe(true);
       expect(Number.isInteger(s.fitRoles)).toBe(true);
       if (s.fitSynergy !== null) expect(Number.isInteger(s.fitSynergy)).toBe(true);
@@ -124,14 +154,14 @@ describe("scoreCommander", () => {
   });
 
   it("scores a commander EDHREC does not index out of pool and roles alone", () => {
-    const s = scoreCommander({ commander, collection, edhrecTopCards: null, inclusionByName: null });
+    const s = scoreCommander({ commander, collection, support: support(null), inclusionByName: null });
     expect(s.fitSynergy).toBeNull();
     expect(s.measurableTotal).toBe(POOL_WEIGHT + ROLES_WEIGHT);
     expect(s.score).toBeLessThanOrEqual(s.measurableTotal);
   });
 
   it("scores a commander with a synergy read out of the full scale", () => {
-    const s = scoreCommander({ commander, collection, edhrecTopCards: ["Sol Ring"], inclusionByName: null });
+    const s = scoreCommander({ commander, collection, support: support(["Sol Ring"]), inclusionByName: null });
     expect(s.measurableTotal).toBe(POOL_WEIGHT + ROLES_WEIGHT + SYNERGY_WEIGHT);
   });
 
@@ -140,7 +170,7 @@ describe("scoreCommander", () => {
   // rather than a gap in their fit. rankScore is what puts the two scales back
   // on speaking terms; it is never printed.
   it("puts both scales on one axis for ordering", () => {
-    const unindexed = scoreCommander({ commander, collection, edhrecTopCards: null, inclusionByName: null });
+    const unindexed = scoreCommander({ commander, collection, support: support(null), inclusionByName: null });
     expect(unindexed.rankScore).toBe(
       Math.round((100 * unindexed.score) / unindexed.measurableTotal),
     );
@@ -148,14 +178,14 @@ describe("scoreCommander", () => {
   });
 
   it("passes commander colorIdentity and imageUri through onto the score", () => {
-    const s = scoreCommander({ commander, collection, edhrecTopCards: null, inclusionByName: null });
+    const s = scoreCommander({ commander, collection, support: support(null), inclusionByName: null });
     expect(s.colorIdentity).toEqual(["B", "G"]);
     expect(s.imageUri).toBe("https://cards.example/golgari.jpg");
   });
 
   // Task 2: roleCards
   it("roleCards.ramp contains a ramp card name", () => {
-    const s = scoreCommander({ commander, collection, edhrecTopCards: null, inclusionByName: null });
+    const s = scoreCommander({ commander, collection, support: support(null), inclusionByName: null });
     // Sol Ring and Cultivate are both ramp
     expect(s.roleCards.ramp.map((c) => c.name)).toContain("Sol Ring");
     expect(s.roleCards.ramp.map((c) => c.name)).toContain("Cultivate");
@@ -164,7 +194,7 @@ describe("scoreCommander", () => {
   // The chips on the commander detail page open card detail, which takes an
   // oracle id and nothing else — a name-only role list cannot be clicked.
   it("carries each role card's oracle id alongside its name", () => {
-    const s = scoreCommander({ commander, collection, edhrecTopCards: null, inclusionByName: null });
+    const s = scoreCommander({ commander, collection, support: support(null), inclusionByName: null });
     const solRing = s.roleCards.ramp.find((c) => c.name === "Sol Ring");
     expect(solRing?.oracleId).toBe(
       collection.find((c) => c.name === "Sol Ring")!.oracleId,
@@ -184,33 +214,48 @@ describe("scoreCommander", () => {
       typeLine: "Legendary Creature",
       colorIdentity: ["W", "U", "B", "G"],
     });
-    const s = scoreCommander({ commander: commanderW, collection: colWithWrath, edhrecTopCards: null, inclusionByName: null });
+    const s = scoreCommander({ commander: commanderW, collection: colWithWrath, support: support(null), inclusionByName: null });
     expect(s.roleCards.wipes.map((c) => c.name)).toContain("Wrath of God");
     expect(s.roleCards.removal.map((c) => c.name)).not.toContain("Wrath of God");
   });
 
-  // Task 2: overlapOwned
-  it("overlapOwned preserves EDHREC casing and order, excluding missing cards", () => {
-    // Sol Ring is in pool (colorIdentity []); Rhystic Study is not in collection
+  // Task 2: overlapOwned.
+  //
+  // Retitled and rebuilt. It used to claim EDHREC casing, order and exclusion,
+  // and after the source moved it measured none of the three: the `support`
+  // helper drops a name no fixture card carries, so the exclusion happened in
+  // the fixture rather than in the function; casing now comes from the pool
+  // card; and one surviving element holds under any ordering.
+  //
+  // What it asserts instead is what the function now decides — which pool cards
+  // a stored list names, IN THE LIST'S ORDER, since `overlapOwned` feeds
+  // `receiptsPreview` and that prints the first three.
+  it("overlapOwned holds the pool's support cards in the support list's order", () => {
     const s = scoreCommander({
       commander,
       collection,
-      edhrecTopCards: ["Sol Ring", "Rhystic Study"],
+      // Read the Bones and Cultivate are both in the pool, listed in that order;
+      // Lightning Bolt is in the collection but outside the commander's
+      // identity, so the pool excludes it and the overlap must too.
+      support: support(["Read the Bones", "Cultivate", "Lightning Bolt"]),
       inclusionByName: null,
     });
-    expect(s.overlapOwned).toEqual(["Sol Ring"]);
+    expect(s.overlapOwned).toEqual(["Read the Bones", "Cultivate"]);
+    expect(s.edhrecOwnedCount).toBe(2);
+    // The denominator still counts the name the pool excluded.
+    expect(s.edhrecTotal).toBe(3);
     expect(s).not.toHaveProperty("overlapMissing");
   });
 
-  it("overlapOwned is [] when edhrecTopCards is null", () => {
-    const s = scoreCommander({ commander, collection, edhrecTopCards: null, inclusionByName: null });
+  it("overlapOwned is [] when there is no stored support list", () => {
+    const s = scoreCommander({ commander, collection, support: support(null), inclusionByName: null });
     expect(s.overlapOwned).toEqual([]);
     expect(s).not.toHaveProperty("overlapMissing");
   });
 
   // #333: no synergy data is NOT rescaled back up to a 100-point denominator.
-  it("fitSynergy is null when edhrecTopCards is null, and the score is not rescaled", () => {
-    const s = scoreCommander({ commander, collection, edhrecTopCards: null, inclusionByName: null });
+  it("fitSynergy is null with no stored support list, and the score is not rescaled", () => {
+    const s = scoreCommander({ commander, collection, support: support(null), inclusionByName: null });
     expect(s.fitSynergy).toBeNull();
     expect(s.fitPool).toBeLessThanOrEqual(15);
     expect(s.fitRoles).toBeLessThanOrEqual(25);
@@ -234,7 +279,7 @@ describe("scoreCommander", () => {
     ];
     while (maxed.length < 200) maxed.push(card({}));
 
-    const s = scoreCommander({ commander, collection: maxed, edhrecTopCards: null, inclusionByName: null });
+    const s = scoreCommander({ commander, collection: maxed, support: support(null), inclusionByName: null });
     expect(s.fitSynergy).toBeNull();
     expect(s.fitPool).toBe(15);
     expect(s.fitRoles).toBe(25);
@@ -243,11 +288,11 @@ describe("scoreCommander", () => {
 
   // The ranking consequence the issue's acceptance criteria asks for.
   it("ranks a measured commander above an unmeasured one with the same pool and roles", () => {
-    const unmeasured = scoreCommander({ commander, collection, edhrecTopCards: null, inclusionByName: null });
+    const unmeasured = scoreCommander({ commander, collection, support: support(null), inclusionByName: null });
     const measured = scoreCommander({
       commander,
       collection,
-      edhrecTopCards: ["Sol Ring", "Cultivate", "Read the Bones"],
+      support: support(["Sol Ring", "Cultivate", "Read the Bones"]),
       inclusionByName: null,
     });
     expect(measured.score).toBeGreaterThan(unmeasured.score);
@@ -258,7 +303,7 @@ describe("scoreCommander", () => {
     const s = scoreCommander({
       commander,
       collection,
-      edhrecTopCards: ["Sol Ring", "Cultivate", "Read the Bones"],
+      support: support(["Sol Ring", "Cultivate", "Read the Bones"]),
       inclusionByName: null,
     });
     expect(s.fitSynergy).not.toBeNull();
@@ -283,7 +328,7 @@ describe("roleCards", () => {
   it("carries oracle id, name, and the EDHREC figure", () => {
     const s = scoreCommander({
       commander, collection: [rampA],
-      edhrecTopCards: null, inclusionByName: { "sol ring": 82 },
+      support: support(null), inclusionByName: { "sol ring": 82 },
     });
     // `committedTo` is null out of scoring by design: the ranked list draws no
     // card rows, so it does not pay for the deck-membership query.
@@ -295,7 +340,7 @@ describe("roleCards", () => {
   it("orders by inclusion descending with absent figures last", () => {
     const s = scoreCommander({
       commander, collection: [rampB, rampA, rampC],
-      edhrecTopCards: null, inclusionByName: { "sol ring": 82, "arcane signet": 61 },
+      support: support(null), inclusionByName: { "sol ring": 82, "arcane signet": 61 },
     });
     expect(s.roleCards.ramp.map((c) => c.name)).toEqual(["Sol Ring", "Arcane Signet", "Fellwar Stone"]);
   });
@@ -312,21 +357,21 @@ describe("roleCards", () => {
     });
     const s = scoreCommander({
       commander, collection: [dfc],
-      edhrecTopCards: null, inclusionByName: { "jace, vryn's prodigy": 44 },
+      support: support(null), inclusionByName: { "jace, vryn's prodigy": 44 },
     });
     expect(s.roleCards.draw[0]?.inclusionPct).toBe(44);
   });
 
   it("leaves every figure null when there is no inclusion map", () => {
     const s = scoreCommander({
-      commander, collection: [rampA], edhrecTopCards: null, inclusionByName: null,
+      commander, collection: [rampA], support: support(null), inclusionByName: null,
     });
     expect(s.roleCards.ramp[0]?.inclusionPct).toBeNull();
   });
 
   it("keeps pool order when there is no inclusion map at all", () => {
     const s = scoreCommander({
-      commander, collection: [rampC, rampA, rampB], edhrecTopCards: null, inclusionByName: null,
+      commander, collection: [rampC, rampA, rampB], support: support(null), inclusionByName: null,
     });
     expect(s.roleCards.ramp.map((c) => c.name))
       .toEqual(["Fellwar Stone", "Sol Ring", "Arcane Signet"]);
@@ -338,7 +383,7 @@ describe("roleCards", () => {
     // null, and sorting would present the panel alphabetically as though the
     // order meant something.
     const s = scoreCommander({
-      commander, collection: [rampC, rampA, rampB], edhrecTopCards: null, inclusionByName: {},
+      commander, collection: [rampC, rampA, rampB], support: support(null), inclusionByName: {},
     });
     expect(s.roleCards.ramp.map((c) => c.name))
       .toEqual(["Fellwar Stone", "Sol Ring", "Arcane Signet"]);
@@ -347,7 +392,7 @@ describe("roleCards", () => {
   it("keeps pool order when the map holds no figure for any card in the pool", () => {
     const s = scoreCommander({
       commander, collection: [rampC, rampA, rampB],
-      edhrecTopCards: null, inclusionByName: { "some other card": 70 },
+      support: support(null), inclusionByName: { "some other card": 70 },
     });
     expect(s.roleCards.ramp.map((c) => c.name))
       .toEqual(["Fellwar Stone", "Sol Ring", "Arcane Signet"]);
@@ -367,7 +412,7 @@ describe("roleCards", () => {
     });
     const s = scoreCommander({
       commander, collection: [rampC, rampA, drawA, drawB],
-      edhrecTopCards: null, inclusionByName: { "sol ring": 82 },
+      support: support(null), inclusionByName: { "sol ring": 82 },
     });
     expect(s.roleCards.ramp.map((c) => c.name)).toEqual(["Sol Ring", "Fellwar Stone"]);
     expect(s.roleCards.draw.map((c) => c.name))
@@ -377,7 +422,7 @@ describe("roleCards", () => {
   it("breaks an inclusion tie on name so the order is stable", () => {
     const s = scoreCommander({
       commander, collection: [rampC, rampB],
-      edhrecTopCards: null, inclusionByName: { "arcane signet": 50, "fellwar stone": 50 },
+      support: support(null), inclusionByName: { "arcane signet": 50, "fellwar stone": 50 },
     });
     expect(s.roleCards.ramp.map((c) => c.name)).toEqual(["Arcane Signet", "Fellwar Stone"]);
   });
