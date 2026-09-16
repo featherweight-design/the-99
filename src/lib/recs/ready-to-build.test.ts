@@ -171,6 +171,31 @@ describe("readySlice — the rotation", () => {
     expect(seqFor("user-a")).not.toBe(seqFor("user-b"));
   });
 
+  // THE SHUFFLE'S QUALITY, which every other test here is blind to. The order is
+  // built by Fisher-Yates over a seeded PRNG, and swapping that PRNG for a
+  // modulus-2^32 LCG passes all of them: per-step marginals stay uniform, the
+  // rotation still rotates, adjacency is still broken. What collapses is the
+  // reachable permutation space, because `state % (i + 1)` reads an LCG's LOW
+  // bits and those have period 2^k — so accounts silently share an order.
+  // Measured over these 5,000 seeds: 4,430 distinct tours from the LCG against
+  // 4,977 from xorshift32, out of 9! = 362,880 possible. The floor sits between.
+  it("gives accounts their own order rather than a handful of shared ones", () => {
+    const tours = new Set<string>();
+    for (let u = 0; u < 5_000; u += 1) {
+      // Five days is a full tour of nine at two a day, so the sequence names the
+      // permutation — read through the public surface rather than by exporting
+      // the shuffle, because the order accounts actually GET is the claim.
+      const tour: string[] = [];
+      for (let d = 1; d <= 5; d += 1) {
+        for (const c of slice(nine, on(`2026-10-0${d}T09:00:00Z`, `acct-${u}`)).shown) {
+          tour.push(c.id);
+        }
+      }
+      tours.add(tour.join(","));
+    }
+    expect(tours.size).toBeGreaterThan(4_700);
+  });
+
   // A set of two is both cards every day, so there is nothing to rotate between —
   // and swapping which side they sit on would be motion carrying no information.
   it("leaves a set it cannot rotate exactly where it is", () => {
