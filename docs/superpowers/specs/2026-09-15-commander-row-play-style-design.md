@@ -248,8 +248,157 @@ rule. No stacking — each merges to `main` before the next opens.
    tables quoting it are corrected.
 3. **Acceptance.** About entry and version bump, probe extensions, contact sheet.
 
-## Open
+---
 
-- The `Nothing new` state's treatment — Design's call.
-- Whether a second stored sentence earns its ~3,300 one-off calls. Revisit after the row has
-  shipped, not before.
+# R1 handoff, and the errata this spec now carries
+
+`design/design_handoff_the99_commander_row/` (R1) landed 2026-09-15 and was audited the same
+day. **Verdict: Green, with errata.** Design self-assessed green on the call and amber on three
+figures; the audit measured all three, and two of them came back differently from how they were
+drawn. Nothing here needs a second canvas round.
+
+The handoff's own documents win over this spec's §What the row becomes wherever they are more
+specific — its `STATES-commander-row.md` is the states matrix of record and its
+`commander-row · copy strings.ts` is the string list of record. The rulings below win over both.
+
+## The `Nothing new` ruling, accepted
+
+`Nothing new` is a copy swap in the gap line's own slot, asserting the overlap rather than a
+gap: **`You already play every mechanic this commander leans on.`** Same slot, ink, measure and
+line count, so the locked "row height never varies" decision survives a fifth state.
+
+Design also found a flaw in this spec's condition and fixed it. `every mechanic tag already
+played` is silently true of a commander with **no mechanic tags at all**, so the state is
+decided on the **classifier's output** rather than on `tags.length`:
+
+- mechanic set empty → the shipped `No tag data` note, whose condition is **redefined** from
+  `tags` empty to *mechanic* tags empty
+- mechanic set non-empty and fully played → the new line
+
+Measured: **9 commanders** in the catalog have every tag resolve to a creature type, so the
+redefined branch is real and reachable.
+
+## Ruling A — the gap line names the three most-built mechanics
+
+**Order the unplayed mechanic labels by EDHREC deck count, descending, and name the first
+three.** Neither this spec nor R1 specified an ordering, and 90.8% of commanders have four or
+more mechanic tags after classification, so the ordering decides what almost every row says.
+
+Ordering by novelty — the current `unplayedLabels` order — is disqualified by measurement, not
+by preference. With creature types stripped it yields, against a real 2,733-card collection:
+
+- Glarb → `None of your decks play Aikido, All Spells or Convoke.`
+- Kenrith → `None of your decks play Banding, Color Hack or Enrage.`
+
+Every one of those labels has an EDHREC count of **1** — one deck out of Glarb's 24,012. That is
+the reported defect one layer down: the novelty sort rewards obscurity, so removing creature
+types merely promotes the next-rarest accident.
+
+Deck count instead yields `Lands Matter, Reanimator or Control` (898 / 766 / 351 decks) and
+`Group Hug, Politics or Reanimator` (614 / 406 / 370). It also matches how the sentence beside it
+is built — `buildProsePrompt` takes the top eight themes by deck count — so both halves of the
+row describe the same deck.
+
+**Repetition was checked and is not a problem:** 2,586 distinct triples across 3,076 rows, worst
+collision 11 rows. No overflow count is added; the cap stays at three names silently, because
+the row just deleted four such counts.
+
+## Ruling B — the classifier excludes formats as well as creature types
+
+Creature-type removal alone leaves `cEDH` in Glarb's line, and *"None of your decks play cEDH"*
+is a category error rather than a claim. **Seven labels are excluded as formats or non-card
+contexts:**
+
+`cEDH` · `European Highlander` · `Premodern` · `Old School` · `Planechase` · `Value Vintage` ·
+`Custom Cards`
+
+**Broad strategy labels are deliberately kept** — `Aggro`, `Midrange`, `Control`, `Combo`,
+`Good Stuff`, `Legends`, `Tokens` — as are the Legacy/Modern archetype names EDHREC's vocabulary
+carries (`Blue Moon`, `Stoneblade`, `Delver`, `Tron`, `Rock`, `Turbo`, `Paradigm`, `Opus`,
+`Repartee`, `Glass Cannon`, `Rube Goldberg`). Excluding those was considered and rejected: it
+needs a ~20-label judgment list with genuine borderline cases (`Aristocrats`, `Voltron`, `Stax`)
+where the format list needs seven obvious ones.
+
+**The asymmetry in maintenance is the reason the two lists are different in kind.** Creature
+types are *derived* from the catalog's own type lines, so a new creature type arrives in the
+weekly refresh and is caught for free. No catalog knows that `cEDH` is a power level and
+`Proliferate` is a mechanic, so the format list is hand-maintained and will drift as EDHREC's
+vocabulary grows. A computed substitute was tested and does not exist: excluding labels by how
+many commanders carry them cannot separate these two classes, because `cEDH` sits on 1,504
+commanders and `Reanimator` on 1,519.
+
+## Erratum 1 — the handoff's worked commander is the wrong one
+
+INDEX §D states that Glarb's *"every one of its tags is a creature type, so the mechanic set is
+empty."* Measured: **172 tags → 133 mechanic, 39 creature-type**, the mechanic set including
+`Lands Matter`, `Reanimator`, `Combo`, `Graveyard`, `Mill`, `Landfall` and `Self-Mill`.
+
+**Glarb is a `Full`-state commander**, and `STATES-commander-row.md` names it as the commander
+throughout. The ruling is unaffected — the redefined branch has 9 real members — but any
+document illustrating `No tags` must draw one of those 9 rather than Glarb.
+
+Why Glarb's shipped row led with `Frogs · Crocodiles · Bears` despite 133 mechanic tags is
+Ruling A: nothing chose them, the novelty order did.
+
+## Erratum 2 — amber B is inverted
+
+R1 drew the gap line at one, two and three names against a worry that commanders might commonly
+land on **one** mechanic tag. The distribution over 3,279 commanders:
+
+| mechanic tags after classification | commanders | share |
+|---|---|---|
+| exactly 1 | 51 | 1.6% |
+| exactly 2 | 63 | 1.9% |
+| exactly 3 | 70 | 2.1% |
+| **4 or more** | **2,977** | **90.8%** |
+| tags empty upstream | 109 | — |
+
+The three-name form is the near-universal case and the one-name form is the rarity. No geometry
+moves, exactly as R1 predicted; what changes is that the cap is load-bearing, which is what
+makes Ruling A necessary rather than a nicety.
+
+## Erratum 3 — amber A is green on desktop and amber on the phone
+
+Production, 3,341 stored sentences: mean **148**, p95 **171**, max **190**.
+
+- **0** exceed R1's desktop two-line allowance of ~190 characters at a 760px measure.
+- **75 (2.2%)** exceed the phone's four-line allowance of ~176 at 330px.
+
+R1's stated remedy stands unchanged: widen to the row's full `1fr` before adding a line. Not
+blocking.
+
+## Erratum 4 — amber C closes benignly, with a caveat about the fixture
+
+`Nothing new` is **2.6%** of rows against a 2,733-card collection (`Full` 93.8%, `No tag data`
+3.6%). The calm treatment is right at any frequency, which R1 had already argued. The caveat is
+that this account plays only **43 distinct tag slugs** across its decks, so a reader with many
+decks in many archetypes will see the state considerably more often; the figure is a floor, not
+an estimate.
+
+## Erratum 5 — `FitBar` is not dead code
+
+INDEX's *"`FitBar`, `RoleChips`, `ReceiptLine`, `OverlapTrack`, `TagSentence` and the `show
+fewer` trigger lose their last caller on these rows"* is precise, but it reads as a delete list.
+**`src/components/about/figures.tsx` renders `FitBar`** and must keep it. `RoleChips` does lose
+every caller and can go.
+
+## Verified against the tree
+
+- All seven reuse-manifest strings exist at the paths named; `commandersCopy.row.action` is
+  retired as stated; `explainedCopy.score.scoreAria` and `home.cardAria` are both real.
+- `labelAtPx → 56` is correctly derived. The owned band's 63 measured a type line, and cutting
+  that type line is right: `rec-card.tsx` draws it at both widths (`:205`, `:295`) and
+  `discovery-row.tsx` draws none, so one lane loses nothing. **This is an addition to this
+  spec's cut list** and is accepted.
+- The `"use client"` claim holds for the file — `rec-card.tsx` carries no directive and no
+  hooks, and `discovery-row.tsx`'s only client need is the retired disclosure. Immaterial to the
+  bundle, since `commanders-view.tsx` is `"use client"` and the row ships to the client either
+  way.
+
+## Still open
+
+- Whether a second stored sentence (`how it wins`) earns its ~3,300 one-off calls. Revisit after
+  the row has shipped. R1 records that the composition has room for it in the sentence block
+  without a height change.
+- The format exclusion list will drift as EDHREC's vocabulary grows, and nothing detects that.
+  Worth a line in the commander-index runbook rather than a check.
