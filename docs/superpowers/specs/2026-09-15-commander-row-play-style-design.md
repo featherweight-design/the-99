@@ -278,30 +278,79 @@ decided on the **classifier's output** rather than on `tags.length`:
 Measured: **9 commanders** in the catalog have every tag resolve to a creature type, so the
 redefined branch is real and reachable.
 
-## Ruling A — the gap line names the three most-built mechanics
+## Ruling A — the ordering is already right, and was never the defect
 
-**Order the unplayed mechanic labels by EDHREC deck count, descending, and name the first
-three.** Neither this spec nor R1 specified an ordering, and 90.8% of commanders have four or
-more mechanic tags after classification, so the ordering decides what almost every row says.
+**`unplayedTags` already sorts by `b.count - a.count` (`src/lib/discovery/novelty.ts:44–48`), so
+the shipped order is EDHREC deck count descending and needs no change.** It also already matches
+how the sentence beside it is built — `buildProsePrompt` takes the top eight themes by deck count
+— so both halves of the row describe the same deck.
 
-Ordering by novelty — the current `unplayedLabels` order — is disqualified by measurement, not
-by preference. With creature types stripped it yields, against a real 2,733-card collection:
+This is recorded as a ruling because the ordering is the obvious suspect and it is innocent.
+Reading `Frogs · Crocodiles · Bears` invites the conclusion that something ranked obscurity
+first. Nothing did. Glarb's actual tag counts, against 24,054 tracked decks:
 
-- Glarb → `None of your decks play Aikido, All Spells or Convoke.`
-- Kenrith → `None of your decks play Banding, Color Hack or Enrage.`
+| tag | decks |
+|---|---|
+| Lands Matter | 897 |
+| Reanimator | 761 |
+| **Frogs** | **598** |
+| cEDH | 513 |
+| Crocodiles | 2 |
+| Bears | 1 |
 
-Every one of those labels has an EDHREC count of **1** — one deck out of Glarb's 24,012. That is
-the reported defect one layer down: the novelty sort rewards obscurity, so removing creature
-types merely promotes the next-rarest accident.
+`Frogs` is Glarb's **third-largest theme**, and it led the reported row because the reader
+already plays Lands Matter, Reanimator and cEDH. `Crocodiles` and `Bears` followed at counts of
+2 and 1 because the descending list had run out of real themes and continued into the tail.
 
-Deck count instead yields `Lands Matter, Reanimator or Control` (898 / 766 / 351 decks) and
-`Group Hug, Politics or Reanimator` (614 / 406 / 370). It also matches how the sentence beside it
-is built — `buildProsePrompt` takes the top eight themes by deck count — so both halves of the
-row describe the same deck.
+**So the report has two causes, and they need two different rules.** 48% of Glarb's 172 tags sit
+at a count of 3 or fewer out of 24,054 decks:
 
-**Repetition was checked and is not a problem:** 2,586 distinct triples across 3,076 rows, worst
-collision 11 rows. No overflow count is added; the cap stays at three names silently, because
-the row just deleted four such counts.
+- **`Frogs` is not noise** — it is a genuine Glarb archetype that the reader does not find useful,
+  which is why the creature-type classifier (Ruling B) is the rule that removes it. Named
+  explicitly in the report: *"You don't have a frog tribal"* as the example of an unhelpful line.
+- **`Crocodiles` and `Bears` are noise** — statistical accidents that no classifier is needed to
+  remove and that would recur among mechanics the moment a reader plays a commander's real
+  themes. That is Ruling C.
+
+**Repetition under this ordering was checked and is not a problem:** 2,586 distinct triples
+across 3,076 rows, worst collision 11 rows. No overflow count is added; the cap stays at three
+names silently, because the row just deleted four such counts.
+
+## Ruling C — a theme must be one deck in 200
+
+**A tag is eligible for the gap line only if its count is at least 0.5% of the commander's own
+`deck_count`.** Without it, every reader who plays a commander's substantial themes falls into
+the tail, and the classifier does nothing to stop them — the mechanic tail is as long as the
+tribal one.
+
+Measured across the catalog, mechanic tags surviving each candidate floor:
+
+| floor | median tags | mean | zero-tag commanders | 1–2 tags |
+|---|---|---|---|---|
+| none | 33 | 38 | 118 | 114 |
+| 0.25% | 14 | 14 | 118 | 114 |
+| **0.50%** | **9** | **9** | **118** | **120** |
+| 1.00% | 5 | 6 | 121 | 232 |
+| 2.00% | 3 | 3 | 173 | 1,012 |
+
+**2% is disqualified by a case, not by the aggregate.** Kenrith's largest theme — `Group Hug` at
+614 — is under 2% of its 31,481 tracked decks, so at that floor a commander with 31,481 decks on
+file has no theme at all. **1% costs 118 commanders their three-name form** for no gain in tail
+removal. **0.5% cuts Glarb from 132 eligible mechanic tags to 13 and leaves the zero-tag
+population exactly where it was**, which is the whole test: the floor should delete accidents,
+not states.
+
+A median of 9 is comfortably clear of the 3 names the line needs, so the cap in Ruling A stays
+the binding constraint for almost every row rather than the floor.
+
+**Where `deck_count` is null the floor does not apply** and the classifier alone governs. A floor
+is a proportion, and there is nothing to take a proportion of; inventing an absolute minimum for
+those rows would be a second rule with no evidence behind it.
+
+One consequence worth stating, because it makes a state honest rather than merely reachable: with
+the floor in place, the reader who reported this sees `Nothing new` on Glarb — and *"You already
+play every mechanic this commander leans on"* is then **true**, which it would not have been
+while `Crocodiles` counted as a mechanic they had never played.
 
 ## Ruling B — the classifier excludes formats as well as creature types
 
@@ -338,7 +387,9 @@ throughout. The ruling is unaffected — the redefined branch has 9 real members
 document illustrating `No tags` must draw one of those 9 rather than Glarb.
 
 Why Glarb's shipped row led with `Frogs · Crocodiles · Bears` despite 133 mechanic tags is
-Ruling A: nothing chose them, the novelty order did.
+Ruling A, and it is not what it looks like: the order was already deck count descending, the
+reader already played every Glarb theme above `Frogs`, and the two names after it were tail
+accidents at counts of 2 and 1.
 
 ## Erratum 2 — amber B is inverted
 
@@ -354,8 +405,10 @@ land on **one** mechanic tag. The distribution over 3,279 commanders:
 | tags empty upstream | 109 | — |
 
 The three-name form is the near-universal case and the one-name form is the rarity. No geometry
-moves, exactly as R1 predicted; what changes is that the cap is load-bearing, which is what
-makes Ruling A necessary rather than a nicety.
+moves, exactly as R1 predicted. What changes is that the three-name cap is **load-bearing rather
+than a ceiling rarely reached**, which is why the tail has to be cut by Ruling C: with 33 median
+eligible tags and no floor, three names are drawn from a pool that is mostly accidents. Under
+Ruling C the median falls to 9 and the cap binds against real themes.
 
 ## Erratum 3 — amber A is green on desktop and amber on the phone
 
