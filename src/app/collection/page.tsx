@@ -9,8 +9,7 @@ import { requireUserId } from "../../lib/auth";
 import { getCollectionLastUpdated, getCollectionStats } from "../../lib/home/summary";
 import { formatLastUpdated, loadBrowseCards, loadOwnedSetMeta } from "../../lib/collection/browse";
 import { CardFan } from "../../components/marks";
-import { CollectionBrowser } from "../../components/collection/browser";
-import { CardDetailProvider } from "../../components/cards/card-detail-provider";
+import { CollectionClient } from "../../components/collection/collection-client";
 import { cacheForUser } from "../../lib/cache/user-lists";
 import { loadAvailability } from "../../lib/decks/availability-query";
 import {
@@ -152,14 +151,12 @@ export default async function CollectionPage() {
 
       {/* The browse list carries no printings or oracle text — the modal fetches the
           one card it is opening, the same way every deck surface does. */}
-      <CardDetailProvider>
-        <CollectionBrowser
-          cards={cardsWithAvailability}
-          ownedSets={ownedSets}
-          availabilityOk={availability !== null}
-          hasCollection={stats.totalCards > 0}
-        />
-      </CardDetailProvider>
+      <CollectionClient
+        cards={cardsWithAvailability}
+        ownedSets={ownedSets}
+        availabilityOk={availability !== null}
+        hasCollection={stats.totalCards > 0}
+      />
     </section>
   );
 }

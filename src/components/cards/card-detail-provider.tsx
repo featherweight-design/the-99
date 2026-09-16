@@ -10,7 +10,7 @@ import {
   createContext, useCallback, useContext, useEffect, useMemo, useRef, useState, type ReactNode,
 } from "react";
 import { twMerge } from "tailwind-merge";
-import type { BrowseCard, PreferredPrinting } from "../../lib/collection/browse";
+import type { BrowseCard, CardArt, PreferredPrinting } from "../../lib/collection/browse";
 import { getCardDetail } from "../../app/card-detail-action";
 import { CardModal } from "./card-modal";
 
@@ -54,7 +54,7 @@ type CardDetailContextValue = {
   open: (
     oracleId: string,
     siblings?: string[],
-    atPrinting?: (PreferredPrinting & { imageUri?: string | null; scryfallId?: string }) | null,
+    atPrinting?: (PreferredPrinting & { imageUri?: string | null; backImageUri?: string | null; scryfallId?: string }) | null,
   ) => void;
   /** The id whose fetch is in flight, so its trigger can show the click landed. */
   pendingOracleId: string | null;
@@ -187,9 +187,12 @@ export function CardDetailProvider({
    * It exists because a surface whose data depends on WHICH printing is owned cannot see
    * the write otherwise: `revalidatePath` does not refresh a mounted client route, and a
    * reader who closes the modal before the action returns leaves nothing else to notice.
-   * Every other consumer ignores it.
+   *
+   * `art` is what the card should draw now, resolved through the same tiers the server
+   * uses — so a list can patch its own copy of that one card instead of refetching. Null
+   * when the card names no printing; a caller wanting only the nudge ignores it.
    */
-  onArtChange?: (oracleId: string) => void;
+  onArtChange?: (oracleId: string, art: CardArt | null) => void;
 }) {
   const [card, setCard] = useState<BrowseCard | null>(null);
   const [siblings, setSiblings] = useState<string[]>([]);
@@ -208,7 +211,7 @@ export function CardDetailProvider({
   // go".
   const [openAt, setOpenAt] = useState<{
     oracleId: string;
-    printing: PreferredPrinting & { imageUri?: string | null };
+    printing: PreferredPrinting & { imageUri?: string | null; backImageUri?: string | null };
   } | null>(null);
   /**
    * The printing an `open` asked for, before the card it describes has arrived. A ref, not
@@ -217,7 +220,7 @@ export function CardDetailProvider({
    */
   const pendingAt = useRef<{
     oracleId: string;
-    printing: (PreferredPrinting & { imageUri?: string | null }) | null;
+    printing: (PreferredPrinting & { imageUri?: string | null; backImageUri?: string | null }) | null;
   } | null>(null);
   const [pendingOracleId, setPendingOracleId] = useState<string | null>(null);
   const [failed, setFailed] = useState(false);
@@ -298,7 +301,7 @@ export function CardDetailProvider({
     async (
       oracleId: string,
       list?: string[],
-      at?: (PreferredPrinting & { imageUri?: string | null }) | null,
+      at?: (PreferredPrinting & { imageUri?: string | null; backImageUri?: string | null }) | null,
     ) => {
       const request = ++latest.current;
       // EVERY read decides the pending printing, including the reads that have none: paging,
@@ -398,7 +401,7 @@ export function CardDetailProvider({
     (
       oracleId: string,
       list?: string[],
-      atPrinting?: (PreferredPrinting & { imageUri?: string | null; scryfallId?: string }) | null,
+      atPrinting?: (PreferredPrinting & { imageUri?: string | null; backImageUri?: string | null; scryfallId?: string }) | null,
     ) => {
       // PENDING, not committed. A second open while the first card is still painted must
       // not take the first card's printing away from it: the read may fail, and `load`
@@ -427,7 +430,14 @@ export function CardDetailProvider({
   }, [show]);
 
   const evict = useCallback(
-    (oracleId: string) => {
+    /**
+     * `reread: false` drops the entry and stops there, for a caller whose write has not
+     * started yet. The re-read below is only sound AFTER a write — before one it fetches
+     * the state the write is about to replace, which is filed by nothing and paid for by
+     * everyone: an art pick fired two reads of the card, and the first was guaranteed
+     * stale by construction.
+     */
+    (oracleId: string, { reread = true }: { reread?: boolean } = {}) => {
       cache.current.delete(oracleId);
       evictions.current.set(oracleId, (evictions.current.get(oracleId) ?? 0) + 1);
       // Dropping the entry is not enough when the evicted card is the one on screen. A read
@@ -436,6 +446,7 @@ export function CardDetailProvider({
       // filed and painted as the current answer, and the reader sits on the printing they
       // replaced until they close and reopen. Re-reading here is what ends that window —
       // the read it starts is from after the write, by construction.
+      if (!reread) return;
       if (inFlight.current === oracleId) return;
       if (openRef.current === oracleId) void load(oracleId);
       else if (shownRef.current === oracleId) owed.current = oracleId;
@@ -481,7 +492,13 @@ export function CardDetailProvider({
           deckHolds={(deckOracleIds ?? EMPTY_IDS).has(card.oracleId)}
           onProxyWrite={() => evict(card.oracleId)}
           openAtPrinting={openAtPrinting}
-          onArtChange={() => { evict(card.oracleId); onArtChange?.(card.oracleId); }}
+          onArtChange={(art, settled) => {
+            // Dropped on both calls, re-read on the settled one alone: the optimistic call
+            // precedes the write, so a read started there answers with the preference the
+            // write has not replaced yet.
+            evict(card.oracleId, { reread: settled });
+            onArtChange?.(card.oracleId, art);
+          }}
           position={paging ? index + 1 : 1}
           total={paging ? siblings.length : 1}
           onClose={close}

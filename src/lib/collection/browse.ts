@@ -47,6 +47,21 @@ export type BrowsePrinting = {
   finishes: Partial<Record<Finish, number>>;
   imageUri: string | null;
   /**
+   * THIS printing's back face, for the layouts that have one — and null for every layout
+   * that does not.
+   *
+   * Printing-level, not oracle-level, for the same reason `flavorName` is: a treatment
+   * redraws both faces, so a flip on a picked printing used to turn to a back belonging to
+   * another printing entirely. Falls through the same tiers as the front art, and null
+   * where they all miss — a row ingested before the column existed included, which is what
+   * makes the oracle-level fallback the reader keeps.
+   *
+   * Optional rather than `| null` required, for the reason `scryfallId` is: fixtures and
+   * tests across nineteen files build `BrowsePrinting` literals that never touch the
+   * catalog, and absent means exactly what null does here — fall back to the card's.
+   */
+  backImageUri?: string | null;
+  /**
    * The name printed on THIS printing when it differs from the oracle card's —
    * `printings.flavor_name`, populated for Secret Lair and similar renames
    * (#467). Null on the overwhelming majority of printings, which print the
@@ -282,6 +297,10 @@ export type RawCollectionRow = {
   flavorName: string | null;
   /** Tier 2's printed name. `resolveFlavorName` takes whichever tier the art came from. */
   representativeFlavorName: string | null;
+  /** Tier 1's back face — the exact printing's own second side, or null. */
+  exactBackImageUri: string | null;
+  /** Tier 2's back face. `resolveBackImageUri` takes whichever tier the art came from. */
+  representativeBackImageUri: string | null;
 };
 
 /**
@@ -319,6 +338,33 @@ export function resolveFlavorName(r: {
   if (r.exactImageUri !== null) return r.flavorName;
   if (r.representativeImageUri !== null) return r.representativeFlavorName;
   return null;
+}
+
+/**
+ * The back face of whichever printing `resolveImageUri` just took the front from.
+ *
+ * Both faces come off one printing or the card turns into a different printing's back —
+ * the same rule, and the same three tiers in step, as `resolveFlavorName`. Tier 3 is the
+ * oracle-level `cards.back_image_uri`, which belongs to no printing and is where every
+ * flip stood before this column existed: a printing row written by an older ingest carries
+ * a null back and falls through to it rather than losing its second face.
+ */
+export function resolveBackImageUri(r: {
+  exactImageUri: string | null;
+  representativeImageUri: string | null;
+  exactBackImageUri: string | null;
+  representativeBackImageUri: string | null;
+  backImageUri: string | null;
+}): string | null {
+  // WHICHEVER TIER THE FRONT CAME FROM, AND THEN THE ORACLE — never the tier below.
+  // A first pass fell through to the representative printing's back when the exact
+  // printing had none, which pairs one printing's front with another's back: the very
+  // defect this column closes, reached from the other side. A printing with no back of
+  // its own is one an older ingest wrote, and the honest answer for it is the
+  // oracle-level image every flip used before the column existed.
+  if (r.exactImageUri !== null) return r.exactBackImageUri ?? r.backImageUri;
+  if (r.representativeImageUri !== null) return r.representativeBackImageUri ?? r.backImageUri;
+  return r.backImageUri;
 }
 
 /**
@@ -377,6 +423,7 @@ export function aggregateCollection(rows: RawCollectionRow[]): BrowseCard[] {
       quantity: r.quantity,
       finishes: { [r.finish]: r.quantity },
       imageUri: resolveImageUri(r),
+      backImageUri: resolveBackImageUri(r),
       flavorName: resolveFlavorName(r),
     };
     const existing = byOracle.get(r.oracleId);
@@ -425,6 +472,7 @@ export function aggregateCollection(rows: RawCollectionRow[]): BrowseCard[] {
       // coalesce a null onto the same value — belt and braces, in the spirit of
       // the image line above.
       seen.flavorName ??= printing.flavorName;
+      seen.backImageUri ??= printing.backImageUri;
       // NOT `??=`, unlike the two lines above. Two finishes of one printing normally
       // share a catalog id, but the import path already records that they can
       // disagree and rules that null is the honest answer when they do
@@ -464,17 +512,7 @@ export function aggregateCollection(rows: RawCollectionRow[]): BrowseCard[] {
     card.setCodes.sort();
     // Every card here was built from at least one collection row, so a primary always exists.
     const primary = primaryPrinting(card.printings, card.preferredPrinting);
-    if (primary) {
-      card.primarySetCode = primary.setCode;
-      card.imageUri = primary.imageUri;
-      // Exact equality, verbatim, per spec: a printing whose flavor name IS the
-      // oracle name has not renamed anything, and normalising would silently
-      // change which cards count as renamed.
-      card.printedName =
-        primary.flavorName !== null && primary.flavorName !== card.name
-          ? primary.flavorName
-          : null;
-    }
+    if (primary) Object.assign(card, cardArt(card.name, primary));
   }
   return [...byOracle.values()];
 }
@@ -506,6 +544,32 @@ function primaryPrinting(
   // A pick the user no longer owns is absent here, so it falls through to the normal
   // resolver — silently, per decision 5. The dormant tile is the picker's business, not this.
   return preferred ?? printings.find((p) => p.imageUri !== null) ?? printings[0];
+}
+
+/**
+ * The three card-level fields a resolved printing decides: the art, the set code the
+ * caption states, and the printed name.
+ *
+ * Extracted because a pick has to move them on the CLIENT too. `loadBrowseCards`
+ * resolves them on the server, and until a route re-renders the reader's own pick is
+ * invisible on the list behind the modal — `revalidatePath` does not refresh a mounted
+ * client route. The list patches its own copy from this instead of refetching a payload
+ * measured in megabytes, and the two answers cannot disagree because there is one rule.
+ */
+export type CardArt = Pick<BrowseCard, "imageUri" | "printedName" | "primarySetCode">;
+
+export function cardArt(cardName: string, printing: BrowsePrinting): CardArt {
+  return {
+    primarySetCode: printing.setCode,
+    imageUri: printing.imageUri,
+    // Exact equality, verbatim, per spec: a printing whose flavor name IS the
+    // oracle name has not renamed anything, and normalising would silently
+    // change which cards count as renamed.
+    printedName:
+      printing.flavorName !== null && printing.flavorName !== cardName
+        ? printing.flavorName
+        : null,
+  };
 }
 
 /**
@@ -710,8 +774,10 @@ export async function selectCollectionRows(
       // — the printing the player physically owns, and the only one whose printed
       // name is theirs to show.
       flavorName: exact.flavorName,
+      exactBackImageUri: exact.backImageUri,
       representativeImageUri: representative.imageUri,
       representativeFlavorName: representative.flavorName,
+      representativeBackImageUri: representative.backImageUri,
       cardImageUri: cards.imageUri,
     })
     .from(collectionItems)

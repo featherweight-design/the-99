@@ -36,11 +36,13 @@ export default async function SetGridPage({
 }) {
   const { code } = await params;
   const userId = await requireUserId();
-  // `-2`: the payload gained each printing's full-size art so a cell can open the modal at
-  // its own printing. Same convention as `browse-2` — an entry written before a shape change
-  // is not stale, it is a different shape, and it would otherwise be served for up to the
-  // hour-long ceiling with the field simply absent.
-  const grid = await cacheForUser(userId, ["set-grid-2", code.toLowerCase()], () =>
+  // `-3`: the payload gained each printing's BACK face, so a cell can open the modal at its
+  // own printing on both sides. `-2` gained the full-size front, for the front half of the
+  // same job. Same convention as `browse-2` — an entry written before a shape change is not
+  // stale, it is a different shape, and it would otherwise be served for up to the hour-long
+  // ceiling with the field simply absent: here that means a warm grid keeps handing the
+  // modal a front with no back, which is exactly the printing mismatch this shape closes.
+  const grid = await cacheForUser(userId, ["set-grid-3", code.toLowerCase()], () =>
     loadSetGrid(userId, code));
 
   if (!grid) {

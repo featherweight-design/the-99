@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import {
+  resolveBackImageUri,
   aggregateCollection,
   cssUrl,
   filterCards,
@@ -48,6 +49,7 @@ const raw = (over: Partial<RawCollectionRow> = {}): RawCollectionRow => ({
   oracleId: "o-1", quantity: 1, setCode: "c21", collectorNumber: "263", finish: "nonfoil",
   setName: "Commander 2021", releasedAt: "2021-04-23",
   preferredSetCode: null, preferredCollectorNumber: null,
+  exactBackImageUri: null, representativeBackImageUri: null,
   name: "Sol Ring", typeLine: "Artifact", manaCost: "{1}", cmc: 2, oracleText: null,
   keywords: [], rarity: "uncommon", colorIdentity: [],
   layout: "normal", backImageUri: null,
@@ -83,6 +85,56 @@ describe("resolveFlavorName — the name follows the art, tier for tier", () => 
     expect(resolveFlavorName({ exactImageUri: null, representativeImageUri: null,
                                flavorName: "Battle of Olympus",
                                representativeFlavorName: "Battle of Olympus" }))
+      .toBeNull();
+  });
+});
+
+// Both faces off one printing, or a flip turns to another printing's back — the failure
+// this tier order exists to close.
+describe("resolveBackImageUri — the back follows the art, tier for tier", () => {
+  const base = {
+    exactImageUri: null, representativeImageUri: null,
+    exactBackImageUri: null, representativeBackImageUri: null,
+    backImageUri: "oracle-back.png",
+  };
+  it("tier 1: takes the exact printing's back when the exact art was used", () => {
+    expect(resolveBackImageUri({ ...base, exactImageUri: "exact.png",
+                                 representativeImageUri: "rep.png",
+                                 exactBackImageUri: "exact-back.png",
+                                 representativeBackImageUri: "rep-back.png" }))
+      .toBe("exact-back.png");
+  });
+  it("tier 2: takes the representative printing's back when its art was used", () => {
+    expect(resolveBackImageUri({ ...base, representativeImageUri: "rep.png",
+                                 exactBackImageUri: "exact-back.png",
+                                 representativeBackImageUri: "rep-back.png" }))
+      .toBe("rep-back.png");
+  });
+  // The direction the first pass got wrong: the exact printing supplied the front and had
+  // no back of its own, so the representative's back was borrowed — one printing's front
+  // against another's back, which is this column's own defect reached from the far side.
+  it("never borrows a lower tier's back for a higher tier's front", () => {
+    expect(resolveBackImageUri({ ...base, exactImageUri: "exact.png",
+                                 representativeImageUri: "rep.png",
+                                 representativeBackImageUri: "rep-back.png" }))
+      .toBe("oracle-back.png");
+  });
+  it("never turns fallback art to the exact printing's back", () => {
+    // The exact row joined but carries no image, so the front fell to tier 2. Its back
+    // must not travel without it — that pairing is two printings on one card.
+    expect(resolveBackImageUri({ ...base, representativeImageUri: "rep.png",
+                                 exactBackImageUri: "exact-back.png" }))
+      .toBe("oracle-back.png");
+  });
+  // The state every printing is in until the catalog is re-seeded against the new column:
+  // the front resolves off a real printing row whose back is null, and the flip has to go
+  // on working exactly as it did before.
+  it("falls back to the oracle-level back when the printing carries none", () => {
+    expect(resolveBackImageUri({ ...base, exactImageUri: "exact.png" }))
+      .toBe("oracle-back.png");
+  });
+  it("is null for a single-faced card, which has no back anywhere", () => {
+    expect(resolveBackImageUri({ ...base, exactImageUri: "exact.png", backImageUri: null }))
       .toBeNull();
   });
 });
@@ -125,6 +177,23 @@ describe("aggregateCollection", () => {
     const [agg] = aggregateCollection([raw({ scryfallId: "s-263" })]);
 
     expect(agg.printings[0].scryfallId).toBe("s-263");
+  });
+
+  // Each entry is one printing and carries that printing's own back, so the modal can turn
+  // a picked printing to its own second side rather than to the oracle row's.
+  it("carries each printing's own back face", () => {
+    const [agg] = aggregateCollection([
+      raw({
+        setCode: "isd", collectorNumber: "51",
+        exactImageUri: "isd-front.png", exactBackImageUri: "isd-back.png",
+      }),
+      raw({
+        setCode: "sld", collectorNumber: "7",
+        exactImageUri: "sld-front.png", exactBackImageUri: "sld-back.png",
+      }),
+    ]);
+
+    expect(agg.printings.map((p) => p.backImageUri)).toEqual(["isd-back.png", "sld-back.png"]);
   });
 
   it("leaves the id absent where the holding names none", () => {

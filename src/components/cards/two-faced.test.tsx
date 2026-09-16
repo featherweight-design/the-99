@@ -31,12 +31,12 @@ const delver: BrowseCard = {
   imageUri: FRONT,
   printedName: null,
   quantity: 1,
-  // The front art resolves through the printing, which is the whole point of the
-  // back's known limitation: the back has no per-printing form to resolve through.
+  // Both faces resolve through the printing, which is what makes a flip on a picked
+  // printing turn to that printing's own back rather than to the oracle row's.
   printings: [{
     setCode: "ISD", setName: "Innistrad", collectorNumber: "51",
     releasedAt: "2011-09-30", quantity: 1, finishes: { nonfoil: 1 }, imageUri: FRONT,
-    flavorName: null,
+    backImageUri: BACK, flavorName: null,
   }],
   setCodes: ["ISD"],
   primarySetCode: "ISD",
@@ -121,7 +121,90 @@ describe("CardModal flip control", () => {
   it("offers no control when the layout says two faces but no back art was stored", () => {
     // A row seeded before the back-face column existed. The layout alone would
     // turn the art to a colour-identity gradient — the lie the gate prevents.
-    mount({ ...delver, backImageUri: null });
+    mount({ ...delver, backImageUri: null, printings: [{ ...delver.printings[0], backImageUri: null }] });
     expect(flipTo("Insectile Aberration")).toHaveLength(0);
+  });
+
+  // The defect this column was added for: a treatment redraws BOTH faces, so a flip on a
+  // picked printing showed the front of one printing and the back of another.
+  it("turns to the back of the printing being shown", () => {
+    const ALT_FRONT = "https://x/sld-front.jpg";
+    const ALT_BACK = "https://x/sld-back.jpg";
+    mount({
+      ...delver,
+      quantity: 2,
+      printings: [
+        delver.printings[0],
+        {
+          setCode: "SLD", setName: "Secret Lair Drop", collectorNumber: "7",
+          releasedAt: "2023-01-01", quantity: 1, finishes: { nonfoil: 1 },
+          imageUri: ALT_FRONT, backImageUri: ALT_BACK, flavorName: null,
+        },
+      ],
+      preferredPrinting: { setCode: "SLD", collectorNumber: "7" },
+    });
+    expect(wash().style.backgroundImage).toContain(ALT_FRONT);
+    fireEvent.click(flipTo("Insectile Aberration")[0]);
+    expect(wash().style.backgroundImage).toContain(ALT_BACK);
+    expect(wash().style.backgroundImage).not.toContain(BACK);
+  });
+
+  // A set cell is a printing the reader often does not own, so the modal injects it as a row
+  // of its own. A row with no back reads as "this printing has no second face", and the flip
+  // then draws this printing's front against the ORACLE row's back — the same two-printing
+  // pairing, reached through the door that injects rather than the one that resolves.
+  it("turns to the back of a printing it was opened at but does not own", () => {
+    const CELL_FRONT = "https://x/cell-front.jpg";
+    const CELL_BACK = "https://x/cell-back.jpg";
+    render(
+      <CardModal
+        card={delver}
+        position={1}
+        total={1}
+        onClose={() => {}}
+        onPrev={null}
+        onNext={null}
+        openAtPrinting={{
+          setCode: "SLD", collectorNumber: "7",
+          imageUri: CELL_FRONT, backImageUri: CELL_BACK,
+        }}
+      />,
+    );
+    expect(wash().style.backgroundImage).toContain(CELL_FRONT);
+    fireEvent.click(flipTo("Insectile Aberration")[0]);
+    expect(wash().style.backgroundImage).toContain(CELL_BACK);
+    expect(wash().style.backgroundImage).not.toContain(BACK);
+  });
+
+  // The same door, on a card the reader DOES own: the row is repointed rather than injected,
+  // and a repointing that moved the front and left the back is the same mismatch.
+  it("repoints both faces when the opened printing is one it owns", () => {
+    const CELL_FRONT = "https://x/owned-front.jpg";
+    const CELL_BACK = "https://x/owned-back.jpg";
+    render(
+      <CardModal
+        card={delver}
+        position={1}
+        total={1}
+        onClose={() => {}}
+        onPrev={null}
+        onNext={null}
+        openAtPrinting={{
+          setCode: "ISD", collectorNumber: "51",
+          imageUri: CELL_FRONT, backImageUri: CELL_BACK,
+        }}
+      />,
+    );
+    expect(wash().style.backgroundImage).toContain(CELL_FRONT);
+    fireEvent.click(flipTo("Insectile Aberration")[0]);
+    expect(wash().style.backgroundImage).toContain(CELL_BACK);
+  });
+
+  // Until the catalog is re-seeded against the new column every printing row carries a null
+  // back, and the flip has to go on working exactly as it did before.
+  it("keeps the oracle-level back when the printing carries none", () => {
+    mount({ ...delver, printings: [{ ...delver.printings[0], backImageUri: null }] });
+    fireEvent.click(flipTo("Insectile Aberration")[0]);
+    expect(wash().style.backgroundImage).toContain(BACK);
   });
 });

@@ -696,6 +696,11 @@ describe("CardDetailProvider card cache", () => {
     // The write reached the provider: the entry it held is gone, and the card on screen is
     // being re-read rather than left on the printing the reader just replaced.
     await waitFor(() => expect(fetchCard.mock.calls.length).toBeGreaterThan(1));
+
+    // ONE re-read, not two. The modal reports a pick twice — optimistically, then on
+    // settlement — and the optimistic call precedes the write, so a read started there
+    // answers with the preference the write is about to replace: work nobody can file.
+    expect(fetchCard.mock.calls).toHaveLength(2);
   });
 });
 

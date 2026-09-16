@@ -1538,7 +1538,10 @@ function Section({
   onOpenCard: (
     oracleId: string,
     siblings?: string[],
-    atPrinting?: { setCode: string; collectorNumber: string; imageUri?: string | null; scryfallId?: string },
+    atPrinting?: {
+      setCode: string; collectorNumber: string;
+      imageUri?: string | null; backImageUri?: string | null; scryfallId?: string;
+    },
   ) => void;
 }) {
   return (
@@ -1572,6 +1575,10 @@ function Section({
               setCode,
               collectorNumber: c.collectorNumber,
               imageUri: c.imageUri ?? null,
+              // The back with the front: a cell opened at an unowned printing is injected
+              // into the modal as its own row, and a row with no back falls to the
+              // oracle-level image — this printing's front, another printing's back.
+              backImageUri: c.backImageUri ?? null,
               // The cell IS this catalog row, so the exact id travels with it. Two
               // printings can share a (set, collector number) pair — `printings` puts
               // no uniqueness on it — and without the id the modal's price would have

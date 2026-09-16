@@ -9,6 +9,10 @@ const stub = vi.hoisted(() => {
     conflict: null as Record<string, unknown> | null,
     deleted: false,
     revalidated: [] as string[],
+    // `after` callbacks, when `hold` is set. The point of the pair is that the timing of the
+    // revalidation is the fix, so one case has to be able to look between the two moments.
+    deferred: [] as (() => void)[],
+    hold: false,
   };
   const db = {
     select: () => ({
@@ -41,13 +45,20 @@ vi.mock("next/cache", () => ({
   },
   updateTag: () => {},
 }));
-vi.mock("next/server", () => ({ after: (fn: () => void) => fn() }));
+vi.mock("next/server", () => ({
+  after: (fn: () => void) => {
+    if (stub.calls.hold) stub.calls.deferred.push(fn);
+    else fn();
+  },
+}));
 
 import { clearCardArtPreference, setCardArtPreference } from "./actions";
 
 const ORACLE = "11111111-1111-1111-1111-111111111111";
 
 beforeEach(() => {
+  stub.calls.hold = false;
+  stub.calls.deferred.length = 0;
   stub.calls.owned.length = 0;
   stub.calls.insertValues = null;
   stub.calls.conflict = null;
@@ -88,9 +99,33 @@ describe("setCardArtPreference", () => {
     stub.calls.owned.push({ one: 1 });
     await setCardArtPreference(ORACLE, "ZNR", "12");
     expect(stub.calls.conflict).toMatchObject({ set: { setCode: "znr", collectorNumber: "12" } });
-    // The set page too: a pick is keyed (user_id, oracle_id), so it moves the fill
-    // between two cells there and the swap would otherwise happen invisibly.
+  });
+
+  // REVALIDATES FROM INSIDE `after`, never during the run. A Server Action that revalidates
+  // during its own run re-renders the route it was called from into its own response, and
+  // this one is called from `/collection`: 1,665,949 bytes of reply inline, 122 deferred.
+  //
+  // The mock at the top runs `after` inline, so this asserts the paths; what pins the timing
+  // is `deferred` below, which holds the callback instead of running it.
+  it("drops the browse route and the set page", async () => {
+    stub.calls.owned.push({ one: 1 });
+    await setCardArtPreference(ORACLE, "ZNR", "12");
     expect(stub.calls.revalidated).toEqual(["/collection", "/collection/sets/[code]"]);
+  });
+
+  it("revalidates nothing until the response is out", async () => {
+    stub.calls.owned.push({ one: 1 });
+    stub.calls.deferred.length = 0;
+    stub.calls.hold = true;
+    try {
+      await setCardArtPreference(ORACLE, "ZNR", "12");
+      expect(stub.calls.revalidated).toEqual([]);
+      expect(stub.calls.deferred).toHaveLength(1);
+      stub.calls.deferred[0]();
+      expect(stub.calls.revalidated).toEqual(["/collection", "/collection/sets/[code]"]);
+    } finally {
+      stub.calls.hold = false;
+    }
   });
 
   it("accepts the empty collector number a bare Name,Qty import carries", async () => {
@@ -101,11 +136,18 @@ describe("setCardArtPreference", () => {
 });
 
 describe("clearCardArtPreference", () => {
-  it("deletes the row and revalidates", async () => {
-    await clearCardArtPreference(ORACLE);
-    expect(stub.calls.deleted).toBe(true);
-    // The set page too: a pick is keyed (user_id, oracle_id), so it moves the fill
-    // between two cells there and the swap would otherwise happen invisibly.
-    expect(stub.calls.revalidated).toEqual(["/collection", "/collection/sets/[code]"]);
+  it("deletes the row and drops the same caches, also after the response", async () => {
+    stub.calls.deferred.length = 0;
+    stub.calls.hold = true;
+    try {
+      await clearCardArtPreference(ORACLE);
+      expect(stub.calls.deleted).toBe(true);
+      expect(stub.calls.revalidated).toEqual([]);
+      stub.calls.deferred[0]();
+      // The set page too: clearing a pick moves the fill back between the same two cells.
+      expect(stub.calls.revalidated).toEqual(["/collection", "/collection/sets/[code]"]);
+    } finally {
+      stub.calls.hold = false;
+    }
   });
 });

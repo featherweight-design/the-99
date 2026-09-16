@@ -305,6 +305,69 @@ describe("a card opened at a printing", () => {
     expect(screen.getByTestId("modal-price-desktop")).toHaveTextContent("$1.00");
   });
 
+  // The pair is shared and the caller named the printing both ways — id AND art. The
+  // injected row has to WIN the pair match, or the owned sibling that happens to sort first
+  // is drawn and priced under the identity the reader clicked.
+  it("draws and prices the clicked printing when the pair is shared", () => {
+    render(
+      <CardModal
+        card={card({
+          printings: [printing({ scryfallId: "s-owned", imageUri: "https://img/owned.jpg" })],
+          prices: indexPriceRows([
+            priceRow({ scryfall_id: "s-owned", price_cents: 100 }),
+            priceRow({ scryfall_id: "s-exact", price_cents: 1500 }),
+          ]),
+        })}
+        position={1}
+        total={1}
+        onClose={() => {}}
+        onPrev={null}
+        onNext={null}
+        openAtPrinting={{
+          setCode: "RVR", collectorNumber: "12",
+          scryfallId: "s-exact", imageUri: "https://img/exact.jpg",
+        }}
+      />,
+    );
+
+    expect(screen.getByTestId("modal-price-desktop")).toHaveTextContent("$15.00");
+    expect(screen.getByTestId("modal-art-desktop").getAttribute("style"))
+      .toContain("exact.jpg");
+  });
+
+  // The same rule on the OWNED path: the reader already holds the clicked printing, so
+  // nothing is injected — and the sibling sharing its pair could still win the pair match
+  // and be drawn and priced under the clicked cell's identity.
+  it("prefers the owned row the caller's id names over its pair sibling", () => {
+    render(
+      <CardModal
+        card={card({
+          printings: [
+            printing({ scryfallId: "s-twin", imageUri: "https://img/twin.jpg" }),
+            printing({ scryfallId: "s-exact", imageUri: "https://img/exact.jpg" }),
+          ],
+          prices: indexPriceRows([
+            priceRow({ scryfall_id: "s-twin", price_cents: 100 }),
+            priceRow({ scryfall_id: "s-exact", price_cents: 1500 }),
+          ]),
+        })}
+        position={1}
+        total={1}
+        onClose={() => {}}
+        onPrev={null}
+        onNext={null}
+        openAtPrinting={{
+          setCode: "RVR", collectorNumber: "12",
+          scryfallId: "s-exact", imageUri: "https://img/exact.jpg",
+        }}
+      />,
+    );
+
+    expect(screen.getByTestId("modal-price-desktop")).toHaveTextContent("$15.00");
+    expect(screen.getByTestId("modal-art-desktop").getAttribute("style"))
+      .toContain("exact.jpg");
+  });
+
   it("will not read an id-less holding as the target when the pair names two printings", () => {
     // The holding names no printing of its own, and the catalog gives this pair to
     // two. Treating it as the opened printing would put `s-exact`'s figure under a

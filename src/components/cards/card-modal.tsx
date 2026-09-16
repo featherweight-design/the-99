@@ -14,12 +14,15 @@ import {
   printingCaption,
   matchesPreference,
   resolvedPrinting,
+  cardArt,
+  type CardArt,
   WUBRG_COLOR,
 } from "../../lib/collection/browse";
 import { identityGradient } from "../../lib/collection/gradients";
 import { printingPickerCopy } from "../../lib/copy/collection";
-import { availabilityState } from "../../lib/decks/availability";
+import { availabilityState, type DeckClaim } from "../../lib/decks/availability";
 import { availabilityCopy } from "../../lib/copy/availability";
+import { allocateClaims } from "../../lib/decks/allocate";
 import { AvailabilityMarker } from "../ui/availability-marker";
 import { clearCardArtPreference, setCardArtPreference } from "../../app/collection/actions";
 import { ManaCost } from "./mana-pips";
@@ -179,6 +182,33 @@ function ProxyDetail({ card }: { card: BrowseCard }) {
   );
 }
 
+/**
+ * A claim's line: what this list asked for, and — when one copy cannot cover them all — which
+ * list actually gets it.
+ *
+ * TWO AXES, NEVER ONE. `holds` / `wants` is commit status and stays that way: the card
+ * assignments handoff (R2, vocabulary ruling 4) considered keying them on allocation and
+ * rejected it, because `wants 1` would then mean "committed but lost the copy" on one row and
+ * "not committed at all" on the next. Allocation is the third axis and takes the third pair
+ * the same ruling defined, `gets it` / `buys it`, which is what `/decks/[id]/changes` already
+ * draws for this exact question.
+ *
+ * The allocation half prints only while the card is contested. With copies enough for
+ * everyone every finished list gets its ask, and `gets it` on every row is a word per row
+ * saying nothing.
+ */
+function claimLabel(claim: DeckClaim, allocated: number, contested: boolean): string {
+  const c = availabilityCopy.collection;
+  if (!claim.mature) return c.detailClaimWants(claim.quantity);
+  const holds = c.detailClaimHolds(claim.quantity);
+  if (!contested) return holds;
+  if (allocated === 0) return `${holds} · ${c.detailClaimBuys}`;
+  if (allocated < claim.quantity) {
+    return `${holds} · ${c.detailClaimGetsPartial(allocated, claim.quantity)}`;
+  }
+  return `${holds} · ${c.detailClaimGets}`;
+}
+
 function AvailabilityDetail({ card }: { card: BrowseCard }) {
   const a = card.availability;
   if (!a) return null;
@@ -188,6 +218,17 @@ function AvailabilityDetail({ card }: { card: BrowseCard }) {
   // so the receipt renders on claims, not on state.
   if (state === "free" && a.claims.length === 0) return null;
   const c = availabilityCopy.collection;
+  // Who actually gets each copy, from the one implementation of that arithmetic — the same
+  // call the arrivals receipt and the chooser's preview make. A row's verb is this and not
+  // `claim.mature`: a finished list that came second to the only copy owned holds nothing.
+  const allocation = allocateClaims(a);
+  const allocated = new Map(allocation.map((cl) => [cl.deckId, cl.allocated]));
+  // Contested means a finished list asked for a copy the supply could not give it. Only then
+  // does saying who gets it tell the reader anything.
+  const contested = allocation.some((cl) => cl.allocated < cl.quantity);
+  // The brews, which no figure in this block counts. Named where a finished list is already
+  // in play; in the soft state every claimant is one and `detailSoftNote` says so already.
+  const brews = a.claims.filter((cl) => !cl.mature).length;
   const note =
     state === "hard" ? c.detailHardNote
     : state === "soft" ? c.detailSoftNote(a.claims.filter((cl) => !cl.mature).length)
@@ -255,9 +296,7 @@ function AvailabilityDetail({ card }: { card: BrowseCard }) {
                   {claim.name}
                 </Link>
                 <span className="shrink-0 font-mono text-[12px]" style={{ color: "var(--fg-muted)" }}>
-                  {claim.mature
-                    ? c.detailClaimHolds(claim.quantity)
-                    : c.detailClaimWants(claim.quantity)}
+                  {claimLabel(claim, allocated.get(claim.id) ?? 0, contested)}
                 </span>
               </li>
             ))}
@@ -268,6 +307,14 @@ function AvailabilityDetail({ card }: { card: BrowseCard }) {
           >
             {a.free < 0 ? c.detailSplitOver(a.hard, a.owned) : c.detailSplit(a.hard, a.free)}
           </div>
+          {brews > 0 && state !== "soft" && (
+            <p
+              className="m-0 mt-[6px] text-[12.5px] leading-[1.5]"
+              style={{ color: "var(--fg-muted)" }}
+            >
+              {c.detailBrewsUncounted(brews)}
+            </p>
+          )}
         </>
       )}
       {note && (
@@ -332,8 +379,18 @@ export function CardModal({
    * once as the write starts, and once when it lands. A card re-read during the overlap
    * answers with the preference the write has not replaced yet, so dropping the entry
    * only up front would let that pre-write answer be filed as the current one.
+   *
+   * It carries the art the card should now draw, resolved through the same tiers the
+   * server uses, so a list behind the modal can patch its own copy rather than refetch a
+   * payload measured in megabytes. Null when the card names no printing to resolve — a
+   * caller that only wants the nudge ignores the argument, as the set grid does.
+   *
+   * `settled` says which of the two calls this is. The optimistic one is a nudge about a
+   * write that has not started; only the settled one can say the server holds anything, so
+   * a caller that re-READS on this signal must wait for it or spend a round trip fetching
+   * the state the write is about to replace.
    */
-  onArtChange?: () => void;
+  onArtChange?: (art: CardArt | null, settled: boolean) => void;
   /**
    * The printing this card was opened AT, when the surface that opened it was showing one
    * in particular. The set grid's cells each ARE a printing, so clicking the dashed #239
@@ -344,7 +401,14 @@ export function CardModal({
    * and nothing is written by looking. The moment the reader picks something in this modal,
    * their choice takes over.
    */
-  openAtPrinting?: (PreferredPrinting & { imageUri?: string | null; scryfallId?: string }) | null;
+  openAtPrinting?: (PreferredPrinting & {
+    imageUri?: string | null;
+    /** The target printing's own back face. Both faces travel together or a flip on a cell
+     *  opened at an unowned printing draws this printing's front against the oracle row's
+     *  back — the mismatch `printings.back_image_uri` exists to close. */
+    backImageUri?: string | null;
+    scryfallId?: string;
+  }) | null;
 }) {
   const dialogRef = useRef<HTMLDivElement>(null);
   // One trigger per breakpoint tree; only one has layout at a time, and focus() on the
@@ -437,6 +501,14 @@ export function CardModal({
   const serverPick = useRef<PreferredPrinting | null>(card.preferredPrinting);
   const writes = useRef(0);
   const settled = useRef(0);
+  /**
+   * The pick currently on screen, for the art reported to `onArtChange`.
+   *
+   * A ref rather than `pick` read through a closure: a write settles in a callback created
+   * when it STARTED, so a reader who picked again while it ran would have the older render's
+   * pick reported as current and watch the list revert to a printing they had replaced.
+   */
+  const livePick = useRef<PreferredPrinting | null>(card.preferredPrinting);
 
   useEffect(() => {
     arrived.current = card;
@@ -458,9 +530,7 @@ export function CardModal({
       // pick just replaced, so the art and caption moved while both headings did not.
       if (!picked) return next;
       const shown = resolvedPrinting(next);
-      const renamed =
-        shown?.flavorName != null && shown.flavorName !== card.name ? shown.flavorName : null;
-      return { ...next, printedName: renamed };
+      return { ...next, printedName: shown ? cardArt(card.name, shown).printedName : null };
     }
     // For an OWNED card `card.printings` is what the reader owns, and a holding matched by
     // name carries no collector number — so the printing the caller is showing is often
@@ -494,8 +564,19 @@ export function CardModal({
         // printing is injected instead, and prices itself or nothing.
         : !pairAmbiguous && matchesPreference(p, at);
     const known = card.printings.some(isTarget);
+    // The row the caller's id names, first — whether it was already owned or has just been
+    // injected. Resolution matches a preference on the (set, collector number) PAIR, and the
+    // pair is not unique, so a sibling that happens to sort first wins it and the modal
+    // draws, prices and turns that sibling under the identity the reader clicked. An id is
+    // the one thing that settles which row is meant; without one there is nothing to put in
+    // front, and the ambiguous cases below are deliberate about preferring the owned row.
+    const idFirst = (rows: BrowsePrinting[]) =>
+      at.scryfallId === undefined
+        ? rows
+        : [...rows].sort((x, y) =>
+          Number(y.scryfallId === at.scryfallId) - Number(x.scryfallId === at.scryfallId));
     const printings = known
-      ? card.printings.map((p) => {
+      ? idFirst(card.printings.map((p) => {
           if (!isTarget(p)) return p;
           // The caller's id names the printing exactly, and travels whether or not it
           // also handed over art: the row's own id may be absent, or dropped because
@@ -511,10 +592,21 @@ export function CardModal({
           return {
             ...withId,
             imageUri: at.imageUri,
+            // The back moves with the front, on the same condition: this row is being
+            // repointed at the printing the caller named, and half a repointing is the
+            // two-printing pairing the column exists to prevent.
+            //
+            // A NULL FROM THE CALLER IS NOT AN OVERRIDE. Every printing row carries null
+            // there until the catalog is re-seeded against the new column, and this row's
+            // own back has already fallen through the tiers to the oracle-level image —
+            // so writing the null over it would take the second face off a card that has
+            // one, on exactly the printings the column has not reached yet.
+            ...(at.backImageUri ? { backImageUri: at.backImageUri } : {}),
             flavorName: at.imageUri === p.imageUri ? p.flavorName : null,
           };
-        })
-      : [...card.printings, {
+        }))
+      : (() => {
+        const injected = {
       setCode: at.setCode,
       setName: at.setCode,
       scryfallId: at.scryfallId,
@@ -526,8 +618,37 @@ export function CardModal({
       // full-size art the catalog does not hold would otherwise open on the identity
       // gradient, where the modal used to show the card's own image.
       imageUri: at.imageUri ?? card.imageUri,
+      backImageUri: at.backImageUri ?? card.backImageUri ?? null,
+      // The card-level back is the same fallback `imageUri` takes above, and the same one a
+      // printing ingested before the column existed falls to. What it must not do is stay
+      // absent: an injected row with no back reads as "this printing has no second face",
+      // and `resolved?.backImageUri ?? card.backImageUri` would then pair this printing's
+      // front with the oracle row's back without either of them saying so.
       flavorName: null,
-    }];
+        };
+        // ORDER DECIDES WHICH ROW RESOLUTION FINDS, because a preference matches on the
+        // (set, collector number) PAIR and the pair is not unique — which is the very case
+        // this row is injected for. An owned sibling sharing the pair matches too, and
+        // `find` returns whichever comes first.
+        //
+        // It goes first only when the caller named the printing BOTH ways — an id and its
+        // art. Then this row is the one being shown and must win the pair match, or the
+        // sibling that happens to sort first is drawn under the clicked cell's identity.
+        //
+        // With either half missing it is appended and loses, deliberately. No id and the
+        // art could be the sibling's; no art and there is nothing to draw with. In both
+        // cases the owned row keeps the picture, and its price, name and back stay with it
+        // — one printing named by all four — which is what the ambiguous-pair cases in
+        // `card-modal-price.test.tsx` pin.
+        // Same rule as the owned branch, with one extra condition: this row has no art of
+        // its own unless the caller sent some, and a row with no picture cannot be the one
+        // being shown. With either half missing it goes last and loses, deliberately — no
+        // id and the art could be the sibling's, no art and there is nothing to draw with.
+        // Both are pinned by the ambiguous-pair cases in `card-modal-price.test.tsx`.
+        return at.imageUri && at.scryfallId
+          ? idFirst([injected, ...card.printings])
+          : [...card.printings, injected];
+      })();
     // The title follows the art. `printedName` is a CARD-level field, set from whichever
     // printing the collection resolved to — so left alone it would print the owned
     // holding's flavour name over the printing the cell actually opened at, which is the
@@ -551,6 +672,20 @@ export function CardModal({
     return { ...card, printings, preferredPrinting: at, printedName: renamed };
   }, [card, pick, picked, openAtPrinting]);
   const resolved = resolvedPrinting(preview);
+  /**
+   * The art a list behind this modal should draw once `next` is the card's preference.
+   *
+   * Resolved through `resolvedPrinting` rather than off the picked tile directly, because a
+   * cleared pick falls back through the same tiers the server does — and because the pick
+   * wins even when its own image is null, which only that resolver knows.
+   */
+  const artFor = useCallback(
+    (next: PreferredPrinting | null): CardArt | null => {
+      const shown = resolvedPrinting({ ...card, preferredPrinting: next });
+      return shown ? cardArt(card.name, shown) : null;
+    },
+    [card],
+  );
   // The picker is about the printings you OWN — every string it renders says so, and picking
   // one only decides which of your copies represents the card. `card.printings` is not that
   // list for an unowned card: `catalogCard` fills it with the whole catalog at quantity 0, so
@@ -685,15 +820,21 @@ export function CardModal({
     settled.current++;
     setSeeded(arrived.current);
     if (wrote) serverPick.current = written;
-    else if (generation === writes.current) setPick(serverPick.current);
-    onArtChange?.();
+    else if (generation === writes.current) {
+      setPick(serverPick.current);
+      livePick.current = serverPick.current;
+    }
+    // Whatever stands now, which for an older write settling under a newer pick is that
+    // newer pick — untouched by this settlement and still the thing on screen.
+    onArtChange?.(artFor(livePick.current), true);
   }
 
   function onPick(p: { setCode: string; collectorNumber: string }) {
     const written = { setCode: p.setCode, collectorNumber: p.collectorNumber };
     setPick(written);
+    livePick.current = written;
     setPicked(true);
-    onArtChange?.();
+    onArtChange?.(artFor(written), false);
     const generation = ++writes.current;
     startWrite(async () => {
       let wrote = false;
@@ -708,8 +849,9 @@ export function CardModal({
 
   function onClearPick() {
     setPick(null);
+    livePick.current = null;
     setPicked(true);
-    onArtChange?.();
+    onArtChange?.(artFor(null), false);
     const generation = ++writes.current;
     startWrite(async () => {
       let wrote = false;
@@ -760,7 +902,8 @@ export function CardModal({
   // not an afterthought: a `transform` row seeded before the back-face column
   // existed carries the layout and no art, and a control that turns to a
   // colour-identity gradient is the lie the layout gate exists to prevent.
-  const twoFaced = isTwoFaced(card.layout) && Boolean(card.backImageUri);
+  const backImage = resolved?.backImageUri ?? card.backImageUri ?? null;
+  const twoFaced = isTwoFaced(card.layout) && Boolean(backImage);
   // The faces of the name on screen, which is the printed one when the copy in
   // hand carries a printed name. The title above and this announcement must
   // name the same card.
@@ -819,18 +962,18 @@ export function CardModal({
   // Art follows the resolved printing, not the card-level image: they are the same value
   // today, but an optimistic pick updates `resolved` a revalidate earlier.
   //
-  // The back face has no such per-printing form: it is stored once per oracle id,
-  // so a flip on a card whose front is a picked printing can show a back from a
-  // different one. Known limitation — closing it means a `back_image_uri` on
-  // `printings` and the art-tier subqueries reading it.
+  // The back face follows it, through `printings.back_image_uri`. Both faces come off one
+  // printing or a flip turns to another printing's back — which is what it used to do, the
+  // column having been oracle-level. A printing ingested before that column existed carries
+  // null and falls back to the card's, which is where every flip stood before.
   // The two faces are drawn from their own images rather than from `faceImage`,
   // which follows `flipped`: a turning card shows both at once, and a box whose
   // background swapped mid-turn would be the swap this amendment exists to replace.
   const frontStyle: React.CSSProperties = resolved?.imageUri
     ? { backgroundImage: cssUrl(resolved.imageUri), backgroundSize: "cover", backgroundPosition: "center" }
     : { background: identityGradient(card.colorIdentity) };
-  const backStyle: React.CSSProperties = card.backImageUri
-    ? { backgroundImage: cssUrl(card.backImageUri), backgroundSize: "cover", backgroundPosition: "center" }
+  const backStyle: React.CSSProperties = backImage
+    ? { backgroundImage: cssUrl(backImage), backgroundSize: "cover", backgroundPosition: "center" }
     : { background: identityGradient(card.colorIdentity) };
 
   // `set · code · collector number`, and the field AND its separator go when the
@@ -845,7 +988,7 @@ export function CardModal({
     // The zoom draws the card and no line rather than a line with nothing in it.
     : null;
 
-  const faceImage = flipped ? card.backImageUri : resolved?.imageUri;
+  const faceImage = flipped ? backImage : resolved?.imageUri;
   const artStyle: React.CSSProperties = faceImage
     ? { backgroundImage: cssUrl(faceImage), backgroundSize: "cover", backgroundPosition: "center" }
     : { background: identityGradient(card.colorIdentity) };

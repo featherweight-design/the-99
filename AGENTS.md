@@ -481,6 +481,40 @@ Package manager is **pnpm** (pinned via `packageManager` in package.json) — ne
   desktop default is the grid, which draws no pips, and a run that took the default would
   sweep nothing clean at the width the defect was reported on. Point it at `local-dev`.
 
+- `pnpm probe:printing-pick` presses a printing pick on `/collection` and answers two
+  questions no component test can. THE ART MOVED: the patch is a client-side state write, so
+  what proves it is a painted `background-image` on the tile, read after the modal is gone.
+  AND NOTHING WAS REFETCHED: a `router.refresh()` here would look identical on screen while
+  re-reading the largest payload in the app, so the probe reads the SIZE of the write's own
+  reply rather than counting navigations.
+
+  That size is the whole finding. A Server Action that revalidates during its own run
+  re-renders the route it was called from into its response: picking a printing returned
+  **1,665,949 bytes** against **122** with the revalidation deferred into `after()`. Cutting
+  only `revalidatePath("/collection")` and keeping the other two measured the same 1.6 MB —
+  ONE revalidation of any path re-renders the current route — so the fix is the timing and
+  never the path list. `after` is also the only option that keeps `updateTag`: a route
+  handler throws on it, and `revalidateTag` serves one stale read of the very list the write
+  just changed.
+
+  Navigations are deliberately NOT the measure: the modal mirrors the open card into the URL
+  with `history.replaceState`, which fires `framenavigated` three times over one press and
+  fetches nothing.
+
+  It finds its own fixture by ASKING THE MODAL — the picker's trigger is drawn only for a
+  card owned in more than one printing — and fails rather than passing when the account has
+  none among the first 25 tiles. It picks a printing that is NOT the one on screen, since
+  picking the one already shown writes a preference and moves no art, which would pass every
+  check here while proving nothing.
+
+  It WRITES an art preference for the account it signs in as and clears it in a `finally`,
+  through the region's own `Use the default again`. That control is ASSERTED rather than
+  attempted, and the reset is read back afterwards: the first version guarded the click with
+  a `count()` and named a control that does not exist, so it left a pick on the fixture
+  account and printed "restored" over it. A card that ALREADY carries a pick is refused as a
+  fixture for the same reason — this cleanup clears, and clearing is not restoring. Point it
+  at `local-dev`, **never production**.
+
 - `pnpm probe:build-from` proves that `/commanders` free mode LISTS from the free pool, not
   just scores against it. The rule is decided in `rankFree` and unit-tested there; what only a
   browser can answer is whether a commander the reader can see actually leaves the list once a

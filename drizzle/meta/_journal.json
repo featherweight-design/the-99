@@ -253,6 +253,13 @@
       "when": 1789498363513,
       "tag": "0035_supreme_the_order",
       "breakpoints": true
+    },
+    {
+      "idx": 36,
+      "version": "7",
+      "when": 1789575690703,
+      "tag": "0036_gifted_hobgoblin",
+      "breakpoints": true
     }
   ]
 }

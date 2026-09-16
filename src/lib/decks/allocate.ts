@@ -1,4 +1,5 @@
 import type { ContestedClaimant } from "../collection/summary-read";
+import type { Availability } from "./availability";
 
 /**
  * Who holds each copy of a contested card, given what the player owns and what each committed
@@ -29,4 +30,34 @@ export function allocate(
     left -= fromQueue;
     return { ...c, allocated: c.granted + fromQueue };
   });
+}
+
+/**
+ * Who holds each copy, read straight off an availability.
+ *
+ * The committed claims in seniority order with `allocate` applied, which is the pair every
+ * caller wants and the pair that has to stay together: `allocate` is documented as taking its
+ * claimants in `(since, deckId)` order, and `claims` arrives ordered by deck NAME. A caller
+ * that forgot the sort would get a plausible allocation in the wrong queue order, which is
+ * the quietest possible way to hand the copy to the wrong deck.
+ *
+ * Brews are excluded because a brew cannot be given a copy: nothing is sleeved, so there is
+ * nothing to hold. They are named separately wherever a surface wants to say they exist.
+ */
+export function allocateClaims(a: Pick<Availability, "owned" | "claims">): ContestedClaimant[] {
+  const committed = a.claims
+    .filter((c) => c.mature)
+    .map((c) => ({
+      deckId: c.id,
+      deckName: c.name,
+      quantity: c.quantity,
+      commanderCopies: c.commanderCopies ?? (c.commander ? 1 : 0),
+      granted: c.granted ?? 0,
+      since: c.since ?? null,
+      versionNumber: c.versionNumber ?? null,
+    }))
+    // Commit order, per card. A null `since` cannot occur on a mature claim, and sorts last
+    // if it ever does.
+    .sort((x, y) => (x.since ?? Infinity) - (y.since ?? Infinity) || x.deckId.localeCompare(y.deckId));
+  return allocate(a.owned, committed);
 }

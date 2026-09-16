@@ -155,6 +155,7 @@ Absolutely positioned over card art. **Top-left** — top-right is occupied by t
 
 **The seam is not a fixed colour.** RM:243–245 warns it must be repointed to whatever sits behind the marker. Observed values across the canvases: `#0B0907` (chip scrim), `#100D0A` (page bg / desktop decklist row), `#14110E` (phone decklist meta), `#1E1A15` (deck summary strip, collection rows, phone collection chip), `#211C15` (roll-up red line), `#2A241D` (filter menu row, desktop filter chip). Build it as a prop, not a constant.
 
+
 **Row count: 7 elements.**
 
 ---
@@ -438,9 +439,18 @@ One region, **max two lines**, **red above muted, always** — the order is fixe
 | 14.4 | Card detail marker | — | per state | — | — | **count-only** — renders whenever the state is not `free`, so `marker.soft`, `marker.hard` or `marker.over`. Never `hardIn`, never `hardMulti`: `nameless` short-circuits both the naming and the deck COUNT, because counting claimants is the receipt’s job below and a marker that also counted them would print the same figure twice. Superseded by 14.7 (#353): the claim list below names every deck, so the marker naming one of them duplicated a link and made "first by name" look like a choice. The row's intent — card detail is where the deck gets named — is carried by 14.7 | A2RM:62–75, superseded #353 |
 | 14.5 | Card detail status pill | — | — | — | — | **ships WITHOUT the status pill the canvas draws** — ratified R5 §3; the pill would be inferred from `hard > 0` rather than read. `hardDeckNames` stays names only, never `{ name, pill }[]` | RD2:78–84, R5RM:102–116 |
 | 14.6 | Detail copy | shipped | shipped | — | — | `collection.detailHeading`, `detailHardNote`, `detailSoftNote`, `detailOverNote` | CP:195–227 |
-| 14.7 | Card detail allocation receipt | eyebrow `font-mono 10px / 0.1em / uppercase`; rows `13px`; figures + split `font-mono 12px` | eyebrow + figures + split `var(--fg-faint)` / `var(--fg-muted)`; rows `var(--fg-body)` | claims eyebrow `mt-[14px]`; list `mt-[6px]`; row `py-[2px]`; split `mt-[8px]`; total line `mt-[8px]`, `gap-[8px]`; row gap `gap-[12px]` (arbitrary px, not the Tailwind scale) | hugs | renders whenever `claims` is non-empty — **including when the state is `free`**, which is the case #353 was filed on. One row per claiming deck: name as a link to `/decks/<id>`, then `holds N` (mature) or `wants N`. Split line reconciles to the total above: `in use · free`, or the `wanted / owned` comparison when `free < 0` | **NEW — #353/#355, not yet ratified by Design** |
+| 14.7 | Card detail allocation receipt | eyebrow `font-mono 10px / 0.1em / uppercase`; rows `13px`; figures + split `font-mono 12px` | eyebrow + figures + split `var(--fg-faint)` / `var(--fg-muted)`; rows `var(--fg-body)` | claims eyebrow `mt-[14px]`; list `mt-[6px]`; row `py-[2px]`; split `mt-[8px]`; total line `mt-[8px]`, `gap-[8px]`; row gap `gap-[12px]` (arbitrary px, not the Tailwind scale) | hugs | renders whenever `claims` is non-empty — **including when the state is `free`**, which is the case #353 was filed on. One row per claiming deck: name as a link to `/decks/<id>`, then `holds N` (mature) or `wants N`, and — **only while the card is contested** — the allocation after it: `· gets it`, `· buys it`, or `· gets N of M` where part of the ask was covered. Split line reconciles to the total above: `in use · free`, or the `wanted / owned` comparison when `free < 0` | **NEW — #353/#355, not yet ratified by Design** |
+| 14.8 | Allocation on a receipt row | rows `13px`, figure `font-mono 12px` (14.7's) | `var(--fg-muted)` (14.7's) | inline after the figure, ` · ` separated | hugs | **Who actually gets the copy**, drawn on committed rows only and only while some committed list asked for a copy the supply could not give it. `collection.detailClaimGets` / `detailClaimBuys` / `detailClaimGetsPartial`, the pair card assignments R2 vocabulary ruling 4 defined for this axis. `holds` / `wants` stays commit status: that same ruling rejected keying it on allocation, because `wants 1` would then mean "committed but lost the copy" on one row and "not committed at all" on the next | **NEW 2026-09-16 — not yet ratified by Design** |
+| 14.9 | Brews left out of the figures | `12.5px / leading-1.5` | `var(--fg-muted)` | `mt-[6px]`, under the split line | hugs | `collection.detailBrewsUncounted`, drawn when a brew claims the card **and the state is not `soft`**. `short N` and the split line count committed lists only, so a reader seeing four lists want one card cannot tell the figure from a miscount; this names the ones left out and why. Withheld in the soft state, where every claimant is a brew and `detailSoftNote` is already the whole story | **NEW 2026-09-16 — not yet ratified by Design** |
 
-**Row count: 7 elements.**
+**Row count: 9 elements.**
+
+**14.8 exists because commit status is not possession.** Four finished lists each reading
+`holds 1` against a single owned copy told the reader three lists hold a card that is in the
+fourth one's box. The figures were right throughout — `short N` counted correctly — but nothing
+on the block said which list the copy goes to, which is the question a reader with three decks
+wanting the same land is actually asking. The allocation comes from `allocateClaims`, the one
+implementation of that arithmetic, shared with the arrivals receipt and the chooser's preview.
 
 **14.4 / 14.7 are one decision.** The card-detail block was the only surface allowed to name a
 deck, and 14.4 gave that job to the marker because the marker was the only thing on the line. The
@@ -574,9 +584,9 @@ Structural rules:
 | 11 · Commander-detail disclosure | 9 |
 | 12 · Deck-detail roll-up | 15 |
 | 13 · `/collection` row view | 8 |
-| 14 · `/collection` tile + detail | 6 |
+| 14 · `/collection` tile + detail | 9 |
 | 15 · Availability filter panel | 15 |
 | 16 · Disagreements | 11 |
 | 17 · Accessibility | 25 |
 | 18 · Unspecified states | 5 |
-| **Total** | **187** |
+| **Total** | **190** |
