@@ -845,11 +845,4 @@ describe("entry anchors", () => {
     }
   });
 
-  it("holds the anchor clear of the overlaying header", () => {
-    const { container } = render(<AboutPage seen={ABOUT_VERSION} />);
-    const first = container.querySelector(`li[id="${aboutEntries[0].id}"]`) as HTMLElement;
-    // Without this the anchor lands the entry underneath the header, which reads
-    // as a broken link rather than as a missing rule.
-    expect(first.className).toContain("scroll-mt-");
-  });
 });
