@@ -225,7 +225,7 @@ export const aboutEntries: readonly AboutEntry[] = [
     keys: [
       'the nine are a rank cut, never a score cut — the floor moves with your collection rather than sitting at a fixed number.',
       'cards that fit, then how many are already in a committed deck. The second clause is absent at zero.',
-      'the pair changes at midnight UTC and shares no commander with the day before, so all nine come up within five days.',
+      'the pair changes at midnight UTC, and while nine are ranked it shares no commander with the day before — so all nine come up within five days.',
       "the floor is the ninth commander's own score, so the count is checkable against the lane.",
     ],
     since: 1,

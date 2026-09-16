@@ -134,6 +134,37 @@ describe("readySlice — the rotation", () => {
     expect(nonAdjacent).toBeGreaterThan(15);
   });
 
+  // The rotation block above is pinned to a set of NINE, which is what a stocked
+  // collection has. Every size between is reachable — `readySlice` truncates the
+  // set — and the guarantee is not the same at all of them, so sweep it.
+  it("draws two distinct cards at every set size it rotates", () => {
+    for (let size = 3; size <= READY_COUNT; size += 1) {
+      const set = list(...Array.from({ length: size }, (_, i) => 100 - i));
+      for (let d = 1; d <= 20; d += 1) {
+        const s = slice(set, on(`2026-10-${String(d).padStart(2, "0")}T09:00:00Z`));
+        expect(s.shown).toHaveLength(READY_SHOWN);
+        expect(new Set(s.shown.map((c) => c.id)).size).toBe(READY_SHOWN);
+      }
+    }
+  });
+
+  // THE EXCEPTION, pinned rather than papered over. Consecutive days are disjoint
+  // only while `2 * READY_SHOWN <= size`, so a set of three repeats exactly one
+  // card a day — two out of three, twice, cannot avoid it. Asserted as `1` and not
+  // as `<= 1`, because a set of three drawing the SAME PAIR two days running would
+  // be a real regression and `<=` would pass it.
+  it("repeats exactly one card a day at three, and none from four up", () => {
+    for (let size = 3; size <= READY_COUNT; size += 1) {
+      const set = list(...Array.from({ length: size }, (_, i) => 100 - i));
+      for (let d = 1; d < 20; d += 1) {
+        const today = slice(set, on(`2026-10-${String(d).padStart(2, "0")}T09:00:00Z`));
+        const next = slice(set, on(`2026-10-${String(d + 1).padStart(2, "0")}T09:00:00Z`));
+        const shared = today.shown.filter((c) => next.shown.some((o) => o.id === c.id)).length;
+        expect(shared).toBe(size === 3 ? 1 : 0);
+      }
+    }
+  });
+
   it("seeds on the account, so two readers are not locked to one sequence", () => {
     const days = ["2026-10-01", "2026-10-02", "2026-10-03", "2026-10-04"];
     const seqFor = (userId: string) => days.map((d) => ids(on(`${d}T09:00:00Z`, userId))).join("|");

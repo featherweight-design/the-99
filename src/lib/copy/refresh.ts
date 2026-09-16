@@ -37,7 +37,9 @@ export const refreshCopy = {
     inUse: (n: number) => `${n} in use`,
     startDeck: 'Start this deck',
     seePool: 'See the pool',
-    // Threshold is the lowest score actually rendered, never a rounder number.
+    // Threshold is the ninth commander's own score, never a rounder number. Not
+    // the lowest of the two CARDS: those rotate daily within the nine and
+    // routinely exclude the commander this figure comes from.
     moreAbove: (n: number, floor: number) => `${n} more scored ${floor} or better`,
     allCommanders: 'All commanders',
 

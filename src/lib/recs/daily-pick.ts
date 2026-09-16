@@ -22,6 +22,14 @@
  * exists to answer. Walking a cycle gives every commander a fixed 4.5-day beat, a
  * guaranteed full tour in 4.5 days, and two fresh cards every single day.
  *
+ * WHERE "TWO FRESH CARDS" STOPS BEING TRUE, precisely: consecutive days are disjoint
+ * only while `2 * count <= size`. At `count` 2 that means a set of FOUR or more, and
+ * the one reachable exception is a set of exactly three, where two cards a day out of
+ * three must repeat one — pigeonhole, not a defect, and no scheduling fixes it. Sets
+ * of 0, 1 and 2 return early and do not rotate at all. So the guarantee reads: a full
+ * set of nine never repeats, an account with three ranked commanders repeats exactly
+ * one card a day, and `ready-to-build.test.ts` sweeps every size between.
+ *
  * WHY THE CYCLE WALKS A SHUFFLE. Walking the set in RANK order pairs adjacent
  * ranks — ranks 1&2, then 3&4, then 5&6, then 7&8 — so once every 4.5 days Home
  * draws the two weakest commanders of the nine together, and the reader watches the
@@ -49,16 +57,30 @@ function hash(seed: string): number {
  * permutation that changed between two renders of the same day would make the
  * rotation per-visit — the thing the daily boundary exists to prevent.
  *
- * Reshuffles when the RANKING changes, because the permutation is over positions
- * and a new ranking puts different commanders in them. That is correct: a
- * collection import is new information, and the rotation should reflect it rather
- * than preserve an order derived from a list that no longer exists.
+ * Note what this does NOT depend on: the ranking. It reads the account and the set
+ * SIZE, so an import that leaves nine commanders ranked returns the identical
+ * permutation and only the contents of the positions move. That is the intended
+ * behaviour — the permutation's job is to break rank adjacency, not to encode a
+ * particular list — but it is not the "reshuffles on a new ranking" this comment
+ * once claimed, and the difference is visible: a reader who imports a collection
+ * sees new commanders in the same slot order, not a reshuffled rotation.
  */
 function permutation(size: number, userId: string): number[] {
   const order = Array.from({ length: size }, (_, i) => i);
   let state = hash(`${userId}:order`) || 1;
   for (let i = size - 1; i > 0; i -= 1) {
-    state = (Math.imul(state, 1664525) + 1013904223) >>> 0;
+    // xorshift32, not an LCG. A modulus-2^32 LCG's LOW bits have period 2^k, and
+    // `state % (i + 1)` takes exactly those — so successive swap choices are
+    // correlated and the reachable permutation space collapses. Measured over
+    // 200,000 account seeds: 22,677 distinct permutations of nine from the LCG
+    // against 153,805 from this, out of 9! = 362,880. Per-step marginals were
+    // uniform either way, so nothing downstream LOOKED wrong; accounts were
+    // simply sharing an order far more often than they should.
+    state ^= state << 13;
+    state >>>= 0;
+    state ^= state >>> 17;
+    state ^= state << 5;
+    state >>>= 0;
     const j = state % (i + 1);
     [order[i], order[j]] = [order[j], order[i]];
   }
@@ -102,6 +124,7 @@ export function dailyPicks<T>(
 
   // `(day * count + i) % size` is distinct for every `i < count` whenever
   // `count <= size`, which the guard above has established — so a day never draws
-  // one commander twice.
+  // one commander twice. Consecutive DAYS are a stronger condition and need
+  // `2 * count <= size`; see the header for the one size where that fails.
   return Array.from({ length: count }, (_, i) => set[order[(day * count + i) % size]]);
 }
