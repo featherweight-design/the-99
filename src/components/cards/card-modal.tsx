@@ -583,13 +583,19 @@ export function CardModal({
             imageUri: at.imageUri,
             // The back moves with the front, on the same condition: this row is being
             // repointed at the printing the caller named, and half a repointing is the
-            // two-printing pairing the column exists to prevent. `undefined` leaves the
-            // row's own back alone, which is the honest answer when the caller sent none.
-            ...(at.backImageUri === undefined ? {} : { backImageUri: at.backImageUri }),
+            // two-printing pairing the column exists to prevent.
+            //
+            // A NULL FROM THE CALLER IS NOT AN OVERRIDE. Every printing row carries null
+            // there until the catalog is re-seeded against the new column, and this row's
+            // own back has already fallen through the tiers to the oracle-level image —
+            // so writing the null over it would take the second face off a card that has
+            // one, on exactly the printings the column has not reached yet.
+            ...(at.backImageUri ? { backImageUri: at.backImageUri } : {}),
             flavorName: at.imageUri === p.imageUri ? p.flavorName : null,
           };
         })
-      : [...card.printings, {
+      : (() => {
+        const injected = {
       setCode: at.setCode,
       setName: at.setCode,
       scryfallId: at.scryfallId,
@@ -608,7 +614,25 @@ export function CardModal({
       // and `resolved?.backImageUri ?? card.backImageUri` would then pair this printing's
       // front with the oracle row's back without either of them saying so.
       flavorName: null,
-    }];
+        };
+        // ORDER DECIDES WHICH ROW RESOLUTION FINDS, because a preference matches on the
+        // (set, collector number) PAIR and the pair is not unique — which is the very case
+        // this row is injected for. An owned sibling sharing the pair matches too, and
+        // `find` returns whichever comes first.
+        //
+        // It goes first only when the caller named the printing BOTH ways — an id and its
+        // art. Then this row is the one being shown and must win the pair match, or the
+        // sibling that happens to sort first is drawn under the clicked cell's identity.
+        //
+        // With either half missing it is appended and loses, deliberately. No id and the
+        // art could be the sibling's; no art and there is nothing to draw with. In both
+        // cases the owned row keeps the picture, and its price, name and back stay with it
+        // — one printing named by all four — which is what the ambiguous-pair cases in
+        // `card-modal-price.test.tsx` pin.
+        return at.imageUri && at.scryfallId
+          ? [injected, ...card.printings]
+          : [...card.printings, injected];
+      })();
     // The title follows the art. `printedName` is a CARD-level field, set from whichever
     // printing the collection resolved to — so left alone it would print the owned
     // holding's flavour name over the printing the cell actually opened at, which is the

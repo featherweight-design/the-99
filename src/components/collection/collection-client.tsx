@@ -14,7 +14,7 @@
 // The patched values come from the same resolver the server used, so the next server read
 // agrees with what is already on screen rather than correcting it.
 
-import { useCallback, useMemo, useState } from "react";
+import { useCallback, useMemo, useRef, useState } from "react";
 import { CardDetailProvider } from "../cards/card-detail-provider";
 import { CollectionBrowser } from "./browser";
 import type { BrowseListCard, CardArt } from "../../lib/collection/browse";
@@ -33,6 +33,21 @@ export function CollectionClient({
 }) {
   // Keyed by oracle id, and only ever holding cards the reader picked for in this visit.
   const [picks, setPicks] = useState<ReadonlyMap<string, CardArt>>(() => new Map());
+
+  // A FRESH SERVER PAYLOAD ALWAYS WINS, and is dropped on its way past — the convention
+  // `AGENTS.md` states for every cache of a list a reader flips between, applied during
+  // render rather than in an effect so the stale art never paints once before being
+  // corrected.
+  //
+  // A new `cards` identity is a new read of the collection: a navigation back to this
+  // route, or a refresh after the collection changed. Whatever it says about a card's art
+  // is newer than a patch made against the payload before it, and the patch may now be
+  // describing a printing the reader no longer owns.
+  const served = useRef(cards);
+  if (served.current !== cards) {
+    served.current = cards;
+    if (picks.size > 0) setPicks(new Map());
+  }
 
   const onArtChange = useCallback((oracleId: string, art: CardArt | null) => {
     // Null means the card names no printing to resolve, which is not a statement that its

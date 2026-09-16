@@ -55,10 +55,10 @@ const card = (oracleId: string, name: string): BrowseListCard => ({
   preferredPrinting: null,
 });
 
-function mount() {
+function mount(cards?: BrowseListCard[]) {
   return render(
     <CollectionClient
-      cards={[card("o1", "Smothering Tithe"), card("o2", "Sol Ring")]}
+      cards={cards ?? [card("o1", "Smothering Tithe"), card("o2", "Sol Ring")]}
       ownedSets={[]}
       availabilityOk
       hasCollection
@@ -107,6 +107,53 @@ describe("CollectionClient", () => {
     expect(screen.getByTestId("o1").textContent).toBe(
       "M10 · Smothering Tithe · https://cards.scryfall.io/normal/m10.jpg",
     );
+  });
+
+  // A new `cards` identity is a new read of the collection, and it knows more than a patch
+  // made against the payload before it — which may be describing a printing the reader has
+  // since stopped owning.
+  it("drops its patches when a fresh server payload arrives", () => {
+    const view = mount();
+    act(() => {
+      fireArtChange?.("o1", {
+        primarySetCode: "ELD",
+        imageUri: "https://cards.scryfall.io/normal/eld.jpg",
+        printedName: null,
+      });
+    });
+    expect(screen.getByTestId("o1").textContent).toContain("ELD");
+
+    // Same VALUES, new array: this is what a re-read of the route hands the boundary, and
+    // the patch has to retire on it rather than on the content having changed.
+    view.rerender(
+      <CollectionClient
+        cards={[card("o1", "Smothering Tithe"), card("o2", "Sol Ring")]}
+        ownedSets={[]}
+        availabilityOk
+        hasCollection
+      />,
+    );
+    expect(screen.getByTestId("o1").textContent).toBe(
+      "RVR · Smothering Tithe · https://cards.scryfall.io/normal/rvr.jpg",
+    );
+  });
+
+  // The same array, re-rendered, is not a new read. Retiring on that would throw the pick
+  // away on any parent render between the write and the server catching up.
+  it("keeps its patches when the same payload re-renders", () => {
+    const cards = [card("o1", "Smothering Tithe"), card("o2", "Sol Ring")];
+    const view = mount(cards);
+    act(() => {
+      fireArtChange?.("o1", {
+        primarySetCode: "ELD",
+        imageUri: "https://cards.scryfall.io/normal/eld.jpg",
+        printedName: null,
+      });
+    });
+    view.rerender(
+      <CollectionClient cards={cards} ownedSets={[]} availabilityOk hasCollection />,
+    );
+    expect(screen.getByTestId("o1").textContent).toContain("ELD");
   });
 
   // Null is "this card names no printing to resolve", which says nothing about whether the
