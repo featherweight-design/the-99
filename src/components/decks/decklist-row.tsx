@@ -89,8 +89,19 @@ interface DecklistRowProps {
    * amendment 5 adds — at the moment the list is least explicable.
    */
   inShopping?: boolean;
-  /** The newest `as_of` in `printing_prices`; the tag's liveness comparison. */
-  newestAsOf?: Date | null;
+  /**
+   * The newest `as_of` in the price table, for measuring a row's liveness.
+   *
+   * REQUIRED, with no default. A component that does not receive it reads every
+   * live price as `absent` and draws a bare `buy` with no figure — a wrong price
+   * rather than a missing prop, and silent. That shipped once: the commander
+   * page threaded it to one of two synergy panels and every desktop row lost its
+   * figure, while the phone was correct and every component test passed.
+   *
+   * Pass `null` explicitly where there is no price feed to measure against. The
+   * point is that the caller states it.
+   */
+  newestAsOf: Date | null;
 }
 
 export function DecklistRow({
@@ -100,7 +111,7 @@ export function DecklistRow({
   spent = false,
   shoppingFigure,
   inShopping = false,
-  newestAsOf = null,
+  newestAsOf,
 }: DecklistRowProps) {
   const { open } = useCardDetail();
 

@@ -63,7 +63,7 @@ async function mount(detail: DeckDetail) {
         commanderIdentity={["B", "R", "G"]}
         arrivedFromImport={false}
         initialView="deck"
-      />,
+       newestAsOf={null}/>,
     );
   });
 }

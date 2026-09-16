@@ -59,6 +59,7 @@ function Harness(props: Partial<React.ComponentProps<typeof ConsiderPanel>>) {
       commanderShortName="Korvold"
       commanderOracleId="cmd-korvold"
       degraded={false}
+      newestAsOf={null}
       sort={sort}
       onSortChange={setSort}
       {...props}

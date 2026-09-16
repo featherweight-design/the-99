@@ -34,12 +34,26 @@ import type { Cell } from "../../lib/sets/completion";
 export function SetCell({
   cell,
   price = null,
-  newestAsOf = null,
+  newestAsOf,
   onOpen,
 }: {
   cell: Cell;
   price?: PriceFact | null;
-  newestAsOf?: Date | null;
+  /**
+   * The newest `as_of` in the price table, for measuring a row's liveness.
+   *
+   * REQUIRED, with no default. A component that does not receive it reads every
+   * live price as `absent`, and here that draws `no stock` — this cell's tag is
+   * `PriceTag`, not `BuyTag`, so the failure reads as a printing nobody carries
+   * rather than as a missing figure. Wrong in a more convincing way than a blank
+   * would be, and just as silent. The same omission shipped once elsewhere: the
+   * commander page threaded this to one of two synergy panels, every desktop row
+   * lost its figure, the phone was correct, and every component test passed.
+   *
+   * Pass `null` explicitly where there is no price feed to measure against. The
+   * point is that the caller states it.
+   */
+  newestAsOf: Date | null;
   onOpen?: (oracleId: string) => void;
 }) {
   const num = cell.collectorNumber;

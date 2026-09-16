@@ -528,7 +528,7 @@ function shell(cards: DeckDetailCard[]) {
       firstRun={false}
       commanderIdentity={["B", "R", "G"]}
       arrivedFromImport={false}
-    />
+     newestAsOf={null}/>
   );
 }
 

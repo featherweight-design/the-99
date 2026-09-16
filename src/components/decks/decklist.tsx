@@ -103,9 +103,19 @@ type DecklistProps = {
    * Threaded from getDeckSuggestions via BuilderShell.
    */
   shoppingFigures?: Record<string, number> | null;
-  /** The newest `as_of` in `printing_prices` — the one scalar every price's
-      liveness is compared against. Null leaves every tag bare. */
-  newestAsOf?: Date | null;
+  /**
+   * The newest `as_of` in the price table, for measuring a row's liveness.
+   *
+   * REQUIRED, with no default. A component that does not receive it reads every
+   * live price as `absent` and draws a bare `buy` with no figure — a wrong price
+   * rather than a missing prop, and silent. That shipped once: the commander
+   * page threaded it to one of two synergy panels and every desktop row lost its
+   * figure, while the phone was correct and every component test passed.
+   *
+   * Pass `null` explicitly where there is no price feed to measure against. The
+   * point is that the caller states it.
+   */
+  newestAsOf: Date | null;
   /** Built on the server; see BuilderShell. */
   provenance?: ProvenanceForm | null;
   /**
@@ -152,7 +162,7 @@ export function Decklist({
   autoControls,
   onRestoreAuto,
   shoppingFigures = {},
-  newestAsOf = null,
+  newestAsOf,
   provenance = null,
   pendingChanges = EMPTY_PENDING_CHANGES,
   pendingVersion = null,

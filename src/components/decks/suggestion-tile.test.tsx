@@ -37,6 +37,7 @@ function mount(availability: Availability | null, selfClaimed = false) {
         suggestion={suggestion(availability)}
         deckId="d1"
         inDeck={false}
+        newestAsOf={null}
         siblings={["o-sol"]}
         commanderShortName="Muldrotha"
         selfClaimed={selfClaimed}
@@ -82,6 +83,7 @@ function mountTile(
         siblings={["o-test"]}
         commanderShortName="Muldrotha"
         selfClaimed={false}
+        newestAsOf={null}
         {...tileProps}
       />
     </CardDetailProvider>,

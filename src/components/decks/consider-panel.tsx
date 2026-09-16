@@ -269,15 +269,23 @@ interface ConsiderPanelProps {
   /** Owned by the shell: the desktop toolbar rides the tab row, outside this panel. */
   sort: SortKey;
   onSortChange: (sort: SortKey) => void;
-  /** The newest `as_of` in `printing_prices`; the tags' liveness comparison. */
-  newestAsOf?: Date | null;
+  /**
+   * The newest `as_of` in `printing_prices`; the tags' liveness comparison.
+   *
+   * REQUIRED, with no default. This is the BOUNDARY: `SuggestionTile` below it is
+   * required, so making only the tile required left the hole one level up — a
+   * caller could omit it here, compile, and render every live suggestion price as
+   * `absent`. That is the same silent bare-buy failure this sweep exists to
+   * prevent, reached through the parent instead of the child.
+   */
+  newestAsOf: Date | null;
   /** Server-built provenance, spoken in each priced tile's accessible name. */
   provenance?: ProvenanceForm | null;
 }
 
 export function ConsiderPanel({
   deckId, suggestions, deckCards, deckOracleIds, commanderOracleId, commanderShortName, degraded,
-  sort, onSortChange, newestAsOf = null, provenance = null,
+  sort, onSortChange, newestAsOf, provenance = null,
 }: ConsiderPanelProps) {
   const router = useRouter();
   const inDeckIds = useMemo(() => new Set(deckOracleIds), [deckOracleIds]);

@@ -83,7 +83,7 @@ async function mount(deck: DeckDetail, fillPasses: FillPassSummary[] = []) {
         commanderIdentity={["B", "R", "G"]}
         arrivedFromImport={false}
         fillPasses={fillPasses}
-      />,
+       newestAsOf={null}/>,
     );
   });
   return view;
@@ -167,7 +167,7 @@ describe("BuilderShell — the mark", () => {
           commanderIdentity={["B", "R", "G"]}
           arrivedFromImport={false}
           fillPasses={[makePass("p2", 2, ["card-1"])]}
-        />,
+         newestAsOf={null}/>,
       );
     });
     expect(screen.queryByText(ledger.markedRow(ledger.passLabel("1")))).not.toBeInTheDocument();

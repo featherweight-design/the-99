@@ -68,7 +68,7 @@ describe("deck card-detail triggers", () => {
         grouping="type"
         onFilterChange={vi.fn()}
         onGroupingChange={vi.fn()}
-      />,
+       newestAsOf={null}/>,
     );
     await clickTrigger("Arcane Signet");
     expect(fetchCard).toHaveBeenCalledWith("o-signet");
@@ -89,7 +89,7 @@ describe("deck card-detail triggers", () => {
         grouping="type"
         onFilterChange={vi.fn()}
         onGroupingChange={vi.fn()}
-      />,
+       newestAsOf={null}/>,
     );
     expect(screen.getByText("×3")).toBeInTheDocument();
     expect(screen.getAllByRole("button", { name: cardDetailCopy.triggerAria("Forest") })).toHaveLength(1);
@@ -111,7 +111,7 @@ describe("deck card-detail triggers", () => {
         siblings={["o-sol"]}
         commanderShortName="Muldrotha"
         selfClaimed={false}
-      />,
+       newestAsOf={null}/>,
     );
     // The tile names the card twice, art and label, and both are triggers.
     const triggers = screen.getAllByRole("button", {
@@ -203,7 +203,7 @@ describe("deck card-detail triggers", () => {
         grouping="type"
         onFilterChange={vi.fn()}
         onGroupingChange={vi.fn()}
-      />,
+       newestAsOf={null}/>,
     );
     // Creatures precede Artifacts in group order, and names sort within a group.
     fetchCard.mockResolvedValue({

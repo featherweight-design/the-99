@@ -87,7 +87,7 @@ async function mount(deck: DeckDetail, draft: DraftState | null) {
         commanderIdentity={["B", "R", "G"]}
         arrivedFromImport={false}
         draft={draft}
-      />,
+       newestAsOf={null}/>,
     );
   });
 }

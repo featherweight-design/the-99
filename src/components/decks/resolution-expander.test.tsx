@@ -112,7 +112,7 @@ function Harness({
           onFilterChange={vi.fn()}
           onGroupingChange={vi.fn()}
           onUnresolvedExpandedChange={setExpanded}
-        />
+         newestAsOf={null}/>
       </AddOptimisticCardProvider>
     </CardDetailProvider>
   );

@@ -104,11 +104,19 @@ interface BuilderShellProps {
       Cards with no EDHREC figure are absent from the map — never stored as 0.
       Null when EDHREC was unreachable, which is not the same claim. */
   shoppingFigures?: Record<string, number> | null;
-  /** The newest `as_of` in `printing_prices`. Every price's liveness is a
-      comparison against this one scalar, so it travels rather than a per-card
-      flag. Null when the read failed or the table is empty — every tag stays
-      bare. */
-  newestAsOf?: Date | null;
+  /**
+   * The newest `as_of` in the price table, for measuring a row's liveness.
+   *
+   * REQUIRED, with no default. A component that does not receive it reads every
+   * live price as `absent` and draws a bare `buy` with no figure — a wrong price
+   * rather than a missing prop, and silent. That shipped once: the commander
+   * page threaded it to one of two synergy panels and every desktop row lost its
+   * figure, while the phone was correct and every component test passed.
+   *
+   * Pass `null` explicitly where there is no price feed to measure against. The
+   * point is that the caller states it.
+   */
+  newestAsOf: Date | null;
   /** Built on the server by `provenanceForm`, never in the browser: it compares
       against a clock, and a second call could flip `behind` at hydration. */
   provenance?: ProvenanceForm | null;
@@ -167,7 +175,7 @@ export function BuilderShell({
   arrivedFromImport,
   updateArrival = null,
   shoppingFigures = {},
-  newestAsOf = null,
+  newestAsOf,
   provenance = null,
   candidates = [],
   fillPasses = [],

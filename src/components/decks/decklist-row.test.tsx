@@ -94,7 +94,7 @@ describe("DecklistRow", () => {
     const pending = deferred<void>();
     removeCardFromDeck.mockReturnValue(pending.promise);
 
-    renderRow(<DecklistRow deckId="d1" card={{ ...card, quantity: 9 }} />);
+    renderRow(<DecklistRow deckId="d1" card={{ ...card, quantity: 9 }}  newestAsOf={null}/>);
     await clickRemove(addPanelCopy.row.removeCopyAria("Sol Ring", 9));
 
     expect(screen.getByText("Sol Ring")).toBeInTheDocument();
@@ -109,7 +109,7 @@ describe("DecklistRow", () => {
   it("brings the card back and explains when the removal fails", async () => {
     removeCardFromDeck.mockRejectedValue(new Error("boom"));
 
-    renderRow(<DecklistRow deckId="d1" card={card} />);
+    renderRow(<DecklistRow deckId="d1" card={card}  newestAsOf={null}/>);
     await clickRemove();
 
     expect(screen.getByText("Sol Ring")).toBeInTheDocument();
@@ -124,7 +124,7 @@ describe("DecklistRow", () => {
 // md:block`. The glyph is unchanged; the target is the padding around it.
 describe("DecklistRow remove control (#179)", () => {
   it("renders the ✕ at phone width with a 44px hit box", () => {
-    renderRow(<DecklistRow deckId="d1" card={card} />);
+    renderRow(<DecklistRow deckId="d1" card={card}  newestAsOf={null}/>);
 
     const remove = screen.getByRole("button", { name: addPanelCopy.row.removeAria("Sol Ring") });
     expect(remove.className).not.toContain("hidden");
@@ -136,7 +136,7 @@ describe("DecklistRow remove control (#179)", () => {
   });
 
   it("says which of the two outcomes a multi-copy remove has", () => {
-    renderRow(<DecklistRow deckId="d1" card={{ ...card, quantity: 8 }} />);
+    renderRow(<DecklistRow deckId="d1" card={{ ...card, quantity: 8 }}  newestAsOf={null}/>);
 
     expect(
       screen.getByRole("button", { name: "Remove one copy of Sol Ring, 8 in deck" }),
@@ -147,7 +147,7 @@ describe("DecklistRow remove control (#179)", () => {
   // second "+N more" row, which the desktop two-column grid could flow into the
   // other column, away from the card it describes.
   it("carries the count on the card's own row", () => {
-    renderRow(<DecklistRow deckId="d1" card={{ ...card, quantity: 37 }} />);
+    renderRow(<DecklistRow deckId="d1" card={{ ...card, quantity: 37 }}  newestAsOf={null}/>);
 
     expect(screen.getByText("×37")).toBeInTheDocument();
     expect(screen.queryByText(/more$/)).not.toBeInTheDocument();
@@ -166,7 +166,7 @@ describe("DecklistRow remove control (#179)", () => {
       <DecklistRow
         deckId="d1"
         card={{ ...card, quantity: 37, manaCost: null, cardTypeGroup } as DeckDetailCard}
-      />,
+       newestAsOf={null}/>,
     );
 
     const count = screen.getByText("×37");
@@ -179,13 +179,13 @@ describe("DecklistRow remove control (#179)", () => {
   // The ✕'s aria already says "37 in deck", so a reader that also voiced the
   // glyph would say the number twice.
   it("keeps the count out of the accessible name", () => {
-    renderRow(<DecklistRow deckId="d1" card={{ ...card, quantity: 37 }} />);
+    renderRow(<DecklistRow deckId="d1" card={{ ...card, quantity: 37 }}  newestAsOf={null}/>);
 
     expect(screen.getByText("×37")).toHaveAttribute("aria-hidden");
   });
 
   it("draws no count on a single copy", () => {
-    renderRow(<DecklistRow deckId="d1" card={card} />);
+    renderRow(<DecklistRow deckId="d1" card={card}  newestAsOf={null}/>);
 
     expect(screen.queryByText(/^×/)).not.toBeInTheDocument();
   });
@@ -197,7 +197,7 @@ describe("DecklistRow undo row (#185)", () => {
     const pending = deferred<DeckMutationResult>();
     addCardToDeck.mockReturnValue(pending.promise);
 
-    renderRow(<DecklistRow deckId="d1" card={card} spent />);
+    renderRow(<DecklistRow deckId="d1" card={card} spent  newestAsOf={null}/>);
     await act(async () => {
       screen.getByRole("button", { name: addPanelCopy.undo.actionAria("Sol Ring") }).click();
     });
@@ -225,7 +225,7 @@ describe("DecklistRow availability marker (#43)", () => {
   });
 
   it("carries no marker when the card is free", () => {
-    renderRow(<DecklistRow deckId="d1" card={{ ...card, availability: avail(2) }} />);
+    renderRow(<DecklistRow deckId="d1" card={{ ...card, availability: avail(2) }}  newestAsOf={null}/>);
 
     expect(screen.queryByText(/free|in a brew|short/)).toBeNull();
   });
@@ -236,7 +236,7 @@ describe("DecklistRow availability marker (#43)", () => {
   // card modal's allocation receipt, not by this row.
   it("carries the marker when another finished list wants the same copy", () => {
     renderRow(
-      <DecklistRow deckId="d1" card={{ ...card, availability: avail(-1, ["Atraxa"]) }} />,
+      <DecklistRow deckId="d1" card={{ ...card, availability: avail(-1, ["Atraxa"]) }}  newestAsOf={null}/>,
     );
 
     expect(screen.getByText("short 1")).toBeInTheDocument();
@@ -245,7 +245,7 @@ describe("DecklistRow availability marker (#43)", () => {
 
   // The quiet-failure half of the degraded ruling.
   it("renders exactly like the free state when the availability read failed", () => {
-    renderRow(<DecklistRow deckId="d1" card={{ ...card, availability: null }} />);
+    renderRow(<DecklistRow deckId="d1" card={{ ...card, availability: null }}  newestAsOf={null}/>);
 
     expect(screen.queryByText(/free|in a brew|short/)).toBeNull();
   });
@@ -255,7 +255,7 @@ describe("DecklistRow availability marker (#43)", () => {
   // as the drawn shorthand, which is written for the eye.
   it("speaks the sentence rather than the shorthand", () => {
     renderRow(
-      <DecklistRow deckId="d1" card={{ ...card, availability: avail(-1, ["Atraxa"]) }} />,
+      <DecklistRow deckId="d1" card={{ ...card, availability: avail(-1, ["Atraxa"]) }}  newestAsOf={null}/>,
     );
 
     expect(
@@ -265,7 +265,7 @@ describe("DecklistRow availability marker (#43)", () => {
 
   it("hides the drawn label from assistive tech, so it is not read twice", () => {
     renderRow(
-      <DecklistRow deckId="d1" card={{ ...card, availability: avail(-1, ["Atraxa"]) }} />,
+      <DecklistRow deckId="d1" card={{ ...card, availability: avail(-1, ["Atraxa"]) }}  newestAsOf={null}/>,
     );
 
     expect(screen.getByText("short 1")).toHaveAttribute("aria-hidden", "true");
@@ -274,7 +274,7 @@ describe("DecklistRow availability marker (#43)", () => {
   // Nothing on this surface is ever gated on availability.
   it("still offers the remove control on an over-committed row", () => {
     renderRow(
-      <DecklistRow deckId="d1" card={{ ...card, availability: avail(-1, ["Atraxa"]) }} />,
+      <DecklistRow deckId="d1" card={{ ...card, availability: avail(-1, ["Atraxa"]) }}  newestAsOf={null}/>,
     );
 
     const remove = screen.getByRole("button", {
@@ -345,7 +345,7 @@ function shell(cards?: DeckDetailCard[]) {
       firstRun={false}
       commanderIdentity={["B", "R", "G"]}
       arrivedFromImport={false}
-    />
+     newestAsOf={null}/>
   );
 }
 
@@ -537,7 +537,7 @@ describe("undo row lifetime (#185)", () => {
 // #130 — the auto tag is the keep control.
 describe("DecklistRow auto tag (#130)", () => {
   it("a row with auto=true renders the auto tag between the buy tag and the remove button", () => {
-    renderRow(<DecklistRow deckId="d1" card={{ ...card, auto: true }} />);
+    renderRow(<DecklistRow deckId="d1" card={{ ...card, auto: true }}  newestAsOf={null}/>);
     // The tag renders as a button whose accessible name is the keep aria label
     expect(
       screen.getByRole("button", { name: /Keep Sol Ring in this deck/ }),
@@ -545,14 +545,14 @@ describe("DecklistRow auto tag (#130)", () => {
   });
 
   it("a row with auto=false renders no auto tag", () => {
-    renderRow(<DecklistRow deckId="d1" card={{ ...card, auto: false }} />);
+    renderRow(<DecklistRow deckId="d1" card={{ ...card, auto: false }}  newestAsOf={null}/>);
     expect(
       screen.queryByRole("button", { name: /Keep Sol Ring in this deck/ }),
     ).not.toBeInTheDocument();
   });
 
   it("a multi-copy stack renders one auto tag, not one per copy", () => {
-    renderRow(<DecklistRow deckId="d1" card={{ ...card, auto: true, quantity: 4 }} />);
+    renderRow(<DecklistRow deckId="d1" card={{ ...card, auto: true, quantity: 4 }}  newestAsOf={null}/>);
     expect(
       screen.getAllByRole("button", { name: /Keep Sol Ring in this deck/ }),
     ).toHaveLength(1);
@@ -565,7 +565,7 @@ describe("DecklistRow cost pips (#350)", () => {
   const rowShell = () => document.querySelector(".group")!;
 
   it("draws the cost in two runs, one per width, so it is spoken once", () => {
-    renderRow(<DecklistRow deckId="d1" card={withCost} />);
+    renderRow(<DecklistRow deckId="d1" card={withCost}  newestAsOf={null}/>);
     const spoken = screen.getAllByText(spokenManaCost("{2}{U}{B}"));
     expect(spoken).toHaveLength(2);
     // `hidden` is display:none, so the run that is not drawn is not in the
@@ -577,7 +577,7 @@ describe("DecklistRow cost pips (#350)", () => {
   });
 
   it("grows the phone row to 52px for the meta line it now carries", () => {
-    renderRow(<DecklistRow deckId="d1" card={withCost} />);
+    renderRow(<DecklistRow deckId="d1" card={withCost}  newestAsOf={null}/>);
     expect(rowShell().className).toContain("min-h-[52px]");
   });
 
@@ -586,7 +586,7 @@ describe("DecklistRow cost pips (#350)", () => {
       <DecklistRow
         deckId="d1"
         card={{ ...card, manaCost: null, cardTypeGroup: "Lands" } as DeckDetailCard}
-      />,
+       newestAsOf={null}/>,
     );
     expect(rowShell().className).toContain("min-h-[44px]");
   });
@@ -599,7 +599,7 @@ describe("DecklistRow cost pips (#350)", () => {
       <DecklistRow
         deckId="d1"
         card={{ ...card, manaCost: null, cardTypeGroup: "Sorceries" } as DeckDetailCard}
-      />,
+       newestAsOf={null}/>,
     );
     expect(rowShell().className).toContain("min-h-[52px]");
     // No pips, though — the row has the line, and nothing to put on it.
@@ -607,17 +607,17 @@ describe("DecklistRow cost pips (#350)", () => {
   });
 
   it("holds the desktop track at a fixed width whatever the cost costs", () => {
-    renderRow(<DecklistRow deckId="d1" card={withCost} />);
+    renderRow(<DecklistRow deckId="d1" card={withCost}  newestAsOf={null}/>);
     const track = document.querySelector(".hidden.md\\:flex > span")!;
     expect(track).toHaveStyle({ width: `${COST_TRACK}px` });
   });
 
   it("puts the cost alone on the All tab's meta line, and before the figure in Shopping", () => {
-    renderRow(<DecklistRow deckId="d1" card={{ ...withCost, owned: false }} />);
+    renderRow(<DecklistRow deckId="d1" card={{ ...withCost, owned: false }}  newestAsOf={null}/>);
     expect(screen.queryByText(/edhrec/)).toBeNull();
     cleanup();
     renderRow(
-      <DecklistRow deckId="d1" card={{ ...withCost, owned: false }} shoppingFigure={24} inShopping />,
+      <DecklistRow deckId="d1" card={{ ...withCost, owned: false }} shoppingFigure={24} inShopping  newestAsOf={null}/>,
     );
     const line = screen.getByText(/edhrec/).closest("span.md\\:hidden")!;
     expect(line.textContent).toContain("edhrec");
@@ -630,7 +630,7 @@ describe("DecklistRow buy tag density (#350)", () => {
   // One slot, one mark. The row draws the buy tag off `deckRowTag` now, so a
   // printed card cannot also be told to buy itself — the state nobody drew.
   it("draws the proxy mark instead of the buy tag on a printed card", () => {
-    renderRow(<DecklistRow deckId="d1" card={{ ...card, owned: false, proxied: true }} />);
+    renderRow(<DecklistRow deckId="d1" card={{ ...card, owned: false, proxied: true }}  newestAsOf={null}/>);
 
     expect(screen.getByText(proxyCopy.tag.aria)).toBeInTheDocument();
     expect(screen.queryByText(addPanelCopy.unowned.tag)).not.toBeInTheDocument();
@@ -651,7 +651,7 @@ describe("DecklistRow buy tag density (#350)", () => {
     expect(marker).toBeTruthy();
 
     renderRow(
-      <DecklistRow deckId="d1" card={{ ...card, owned: true, proxied: true, availability }} />,
+      <DecklistRow deckId="d1" card={{ ...card, owned: true, proxied: true, availability }}  newestAsOf={null}/>,
     );
 
     expect(screen.getByText(proxyCopy.tag.aria)).toBeInTheDocument();
@@ -659,20 +659,20 @@ describe("DecklistRow buy tag density (#350)", () => {
   });
 
   it("keeps the buy tag on an unowned card that is not printed", () => {
-    renderRow(<DecklistRow deckId="d1" card={{ ...card, owned: false }} />);
+    renderRow(<DecklistRow deckId="d1" card={{ ...card, owned: false }}  newestAsOf={null}/>);
 
     expect(screen.queryByText(proxyCopy.tag.aria)).not.toBeInTheDocument();
     expect(screen.getByText(addPanelCopy.unowned.tag)).toBeInTheDocument();
   });
 
   it("collapses to $ on the All tab", () => {
-    renderRow(<DecklistRow deckId="d1" card={{ ...card, owned: false }} />);
+    renderRow(<DecklistRow deckId="d1" card={{ ...card, owned: false }}  newestAsOf={null}/>);
     expect(screen.getByText("$")).toBeInTheDocument();
   });
 
   it("keeps the word on the Shopping list, which is being paid from", () => {
     renderRow(
-      <DecklistRow deckId="d1" card={{ ...card, owned: false }} shoppingFigure={24} inShopping />,
+      <DecklistRow deckId="d1" card={{ ...card, owned: false }} shoppingFigure={24} inShopping  newestAsOf={null}/>,
     );
     expect(screen.queryByText("$")).toBeNull();
   });
@@ -688,14 +688,14 @@ describe("DecklistRow printed name", () => {
   } as DeckDetailCard;
 
   it("names the card by the printing the player owns", () => {
-    renderRow(<DecklistRow deckId="d1" card={renamed} />);
+    renderRow(<DecklistRow deckId="d1" card={renamed}  newestAsOf={null}/>);
     expect(screen.getByText("Battle of Olympus")).toBeInTheDocument();
     expect(screen.queryByText("World at War")).not.toBeInTheDocument();
   });
 
   it("names it on the Lands branch too, which is the other render site", () => {
     renderRow(
-      <DecklistRow deckId="d1" card={{ ...renamed, cardTypeGroup: "Lands" } as DeckDetailCard} />,
+      <DecklistRow deckId="d1" card={{ ...renamed, cardTypeGroup: "Lands" } as DeckDetailCard}  newestAsOf={null}/>,
     );
     expect(screen.getByText("Battle of Olympus")).toBeInTheDocument();
   });
@@ -707,7 +707,7 @@ describe("DecklistRow printed name", () => {
           deckId="d1"
           card={{ ...renamed, printedName: "Battle of Olympus // Aftermath",
                   layout: "transform" } as DeckDetailCard}
-        />
+         newestAsOf={null}/>
       </CardDetailProvider>,
     );
     // Visible: the front face alone, single line. Spoken: the whole string.
@@ -722,7 +722,7 @@ describe("DecklistRow printed name", () => {
 
   it("leaves an ordinary card on its oracle name, byte for byte", () => {
     renderRow(
-      <DecklistRow deckId="d1" card={{ ...card, name: "Fire // Ice" } as DeckDetailCard} />,
+      <DecklistRow deckId="d1" card={{ ...card, name: "Fire // Ice" } as DeckDetailCard}  newestAsOf={null}/>,
     );
     expect(screen.getByText("Fire // Ice")).toBeInTheDocument();
   });
@@ -737,7 +737,7 @@ describe("DecklistRow ownership (§Errata)", () => {
   it("leaves the dot decorative and says the word through the name", () => {
     const { container } = render(
       <CardDetailProvider fetchCard={vi.fn().mockResolvedValue(null)}>
-        <DecklistRow deckId="d1" card={card} />
+        <DecklistRow deckId="d1" card={card}  newestAsOf={null}/>
       </CardDetailProvider>,
     );
     // No labelled dot anywhere: the shape is decoration now.
@@ -749,7 +749,7 @@ describe("DecklistRow ownership (§Errata)", () => {
   });
 
   it("says the other word on a card the player does not own", () => {
-    renderRow(<DecklistRow deckId="d1" card={{ ...card, owned: false } as DeckDetailCard} />);
+    renderRow(<DecklistRow deckId="d1" card={{ ...card, owned: false } as DeckDetailCard}  newestAsOf={null}/>);
     expect(
       screen.getByRole("button", { name: cardDetailCopy.triggerAria("Sol Ring") }),
     ).toHaveAccessibleDescription(/Not owned/);
@@ -769,7 +769,7 @@ describe("DecklistRow pending change (#389)", () => {
   it("prints the pair on a row whose count moved", () => {
     withMoves(
       [["sol-ring", { from: 1, to: 2 }]],
-      <DecklistRow deckId="d1" card={{ ...card, quantity: 2 } as DeckDetailCard} />,
+      <DecklistRow deckId="d1" card={{ ...card, quantity: 2 } as DeckDetailCard}  newestAsOf={null}/>,
     );
     expect(
       screen.getByText(deckImportCopy.update.diff.recountedItem("Sol Ring", "1", "2")),
@@ -781,7 +781,7 @@ describe("DecklistRow pending change (#389)", () => {
   it("leaves a card the version never held on its bare name", () => {
     withMoves(
       [["sol-ring", { from: 0, to: 1 }]],
-      <DecklistRow deckId="d1" card={card} />,
+      <DecklistRow deckId="d1" card={card}  newestAsOf={null}/>,
     );
     expect(screen.getByText("Sol Ring")).toBeInTheDocument();
     expect(screen.queryByText(/→/)).toBeNull();
@@ -790,7 +790,7 @@ describe("DecklistRow pending change (#389)", () => {
   it("keeps the accessible name on the card, not on the pair", () => {
     withMoves(
       [["sol-ring", { from: 1, to: 3 }]],
-      <DecklistRow deckId="d1" card={{ ...card, quantity: 3 } as DeckDetailCard} />,
+      <DecklistRow deckId="d1" card={{ ...card, quantity: 3 } as DeckDetailCard}  newestAsOf={null}/>,
     );
     expect(
       screen.getByRole("button", { name: cardDetailCopy.triggerAria("Sol Ring") }),
@@ -802,7 +802,7 @@ describe("DecklistRow pending change (#389)", () => {
   it("speaks the pair through the name's description", () => {
     withMoves(
       [["sol-ring", { from: 1, to: 3 }]],
-      <DecklistRow deckId="d1" card={{ ...card, quantity: 3 } as DeckDetailCard} />,
+      <DecklistRow deckId="d1" card={{ ...card, quantity: 3 } as DeckDetailCard}  newestAsOf={null}/>,
     );
     expect(
       screen.getByRole("button", { name: cardDetailCopy.triggerAria("Sol Ring") }),
@@ -815,7 +815,7 @@ describe("DecklistRow pending change (#389)", () => {
   // as an add, and it cannot borrow the add's word — the card is in the version,
   // at a count the version does not have.
   it("prints the pair and says `cut` on a row whose count came down", () => {
-    withMoves([["sol-ring", { from: 3, to: 1 }]], <DecklistRow deckId="d1" card={card} />);
+    withMoves([["sol-ring", { from: 3, to: 1 }]], <DecklistRow deckId="d1" card={card}  newestAsOf={null}/>);
     expect(
       screen.getByText(deckImportCopy.update.diff.recountedItem("Sol Ring", "3", "1")),
     ).toBeInTheDocument();
@@ -827,14 +827,14 @@ describe("DecklistRow pending change (#389)", () => {
   });
 
   it("says only the word on a card the version never held", () => {
-    withMoves([["sol-ring", { from: 0, to: 1 }]], <DecklistRow deckId="d1" card={card} />);
+    withMoves([["sol-ring", { from: 0, to: 1 }]], <DecklistRow deckId="d1" card={card}  newestAsOf={null}/>);
     expect(
       screen.getByRole("button", { name: cardDetailCopy.triggerAria("Sol Ring") }),
     ).toHaveAccessibleDescription(new RegExp(deckVersioningCopy.pending.addMarkA11y));
   });
 
   it("says nothing about a draft on a row the draft did not touch", () => {
-    withMoves([["other-card", { from: 1, to: 2 }]], <DecklistRow deckId="d1" card={card} />);
+    withMoves([["other-card", { from: 1, to: 2 }]], <DecklistRow deckId="d1" card={card}  newestAsOf={null}/>);
     expect(screen.getByText("Sol Ring")).toBeInTheDocument();
     expect(
       screen.getByRole("button", { name: cardDetailCopy.triggerAria("Sol Ring") }),
@@ -851,7 +851,7 @@ describe("DecklistRow — the row is the click target", () => {
   it("opens the card when the press lands beside the name, not on it", () => {
     const { container } = render(
       <CardDetailProvider fetchCard={vi.fn().mockResolvedValue(null)}>
-        <DecklistRow deckId="d1" card={card} />
+        <DecklistRow deckId="d1" card={card}  newestAsOf={null}/>
       </CardDetailProvider>,
     );
     // The ownership dot: inside the row, part of no control, and exactly the kind of place a
@@ -867,8 +867,8 @@ describe("DecklistRow — the row is the click target", () => {
   it("still opens when the selection belongs to another row", () => {
     const { container } = render(
       <CardDetailProvider fetchCard={vi.fn().mockResolvedValue(null)}>
-        <DecklistRow deckId="d1" card={card} />
-        <DecklistRow deckId="d1" card={{ ...card, oracleId: "mox", name: "Mox Diamond" }} />
+        <DecklistRow deckId="d1" card={card}  newestAsOf={null}/>
+        <DecklistRow deckId="d1" card={{ ...card, oracleId: "mox", name: "Mox Diamond" }}  newestAsOf={null}/>
       </CardDetailProvider>,
     );
     const [first, second] = [...container.querySelectorAll("div.group")];
@@ -886,7 +886,7 @@ describe("DecklistRow — the row is the click target", () => {
   it("leaves the row's own controls to do their own job", () => {
     render(
       <CardDetailProvider fetchCard={vi.fn().mockResolvedValue(null)}>
-        <DecklistRow deckId="d1" card={card} />
+        <DecklistRow deckId="d1" card={card}  newestAsOf={null}/>
       </CardDetailProvider>,
     );
     const trigger = screen.getByRole("button", { name: cardDetailCopy.triggerAria("Sol Ring") });
@@ -911,7 +911,7 @@ describe("the undo receipt names the player's own copy", () => {
           name: "Wolfbitten Captive",
           printedName: "Alpha Strike",
         } as DeckDetailCard}
-      />,
+       newestAsOf={null}/>,
     );
 
     expect(screen.getByText(addPanelCopy.undo.removed("Alpha Strike"))).toBeInTheDocument();
@@ -931,7 +931,7 @@ describe("the receipt's action and announcement name the same card", () => {
         deckId="d1"
         spent
         card={{ ...card, name: "Wolfbitten Captive", printedName: "Alpha Strike" } as DeckDetailCard}
-      />,
+       newestAsOf={null}/>,
     );
     expect(
       screen.getByRole("button", { name: addPanelCopy.undo.actionAria("Alpha Strike") }),
@@ -943,7 +943,7 @@ describe("the receipt's action and announcement name the same card", () => {
       <DecklistRow
         deckId="d1"
         card={{ ...card, name: "Wolfbitten Captive", printedName: "Alpha Strike" } as DeckDetailCard}
-      />,
+       newestAsOf={null}/>,
     );
     expect(
       screen.getByRole("button", { name: addPanelCopy.row.removeAria("Alpha Strike") }),
@@ -965,7 +965,7 @@ describe("a stack's remove control names the printed card too", () => {
           name: "Wolfbitten Captive",
           printedName: "Alpha Strike",
         } as DeckDetailCard}
-      />,
+       newestAsOf={null}/>,
     );
     expect(
       screen.getByRole("button", { name: addPanelCopy.row.removeCopyAria("Alpha Strike", 4) }),
@@ -983,7 +983,7 @@ describe("DecklistRow — an owned card this deck prints", () => {
   it("draws a hollow dot beside the mark", () => {
     const { container } = render(
       <CardDetailProvider fetchCard={vi.fn().mockResolvedValue(null)}>
-        <DecklistRow deckId="d1" card={printed} />
+        <DecklistRow deckId="d1" card={printed}  newestAsOf={null}/>
       </CardDetailProvider>,
     );
 
@@ -1001,7 +1001,7 @@ describe("DecklistRow — an owned card this deck prints", () => {
   });
 
   it("does not tell a reader the deck owns it", () => {
-    renderRow(<DecklistRow deckId="d1" card={printed} />);
+    renderRow(<DecklistRow deckId="d1" card={printed}  newestAsOf={null}/>);
 
     // The failure this closes: a reader who cannot see the dot was told `Owned`
     // about a card the deck is printing.
@@ -1010,7 +1010,7 @@ describe("DecklistRow — an owned card this deck prints", () => {
   });
 
   it("still says Owned for a card the deck is not printing", () => {
-    renderRow(<DecklistRow deckId="d1" card={{ ...card, owned: true }} />);
+    renderRow(<DecklistRow deckId="d1" card={{ ...card, owned: true }}  newestAsOf={null}/>);
 
     expect(screen.getByText("Owned")).toBeInTheDocument();
   });

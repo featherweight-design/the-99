@@ -97,7 +97,7 @@ async function mount(draft: DraftState) {
         commanderIdentity={["B", "R", "G"]}
         arrivedFromImport={false}
         draft={draft}
-      />,
+       newestAsOf={null}/>,
     );
   });
 }

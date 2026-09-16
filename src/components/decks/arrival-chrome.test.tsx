@@ -83,7 +83,7 @@ function renderBuilder(deck: DeckDetail, arrivedFromImport = false) {
       firstRun={false}
       commanderIdentity={["B", "R", "G"]}
       arrivedFromImport={arrivedFromImport}
-    />,
+     newestAsOf={null}/>,
   );
 }
 
