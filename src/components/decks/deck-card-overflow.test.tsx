@@ -224,7 +224,7 @@ describe("DeckCardOverflow — the delete confirm", () => {
     open();
     fireEvent.click(screen.getByRole("button", { name: "Keep it" }));
     await waitFor(() =>
-      expect(screen.getByRole("button", { name: "Delete", exact: true })).toHaveFocus(),
+      expect(screen.getByRole("button", { name: "Delete" })).toHaveFocus(),
     );
   });
 
