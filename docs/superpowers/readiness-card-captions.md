@@ -101,7 +101,9 @@ are not the same box now, and no two of them agree:
 | `P` (band) | `9px`, flat | `py-[1px]` | `outline` at `-1px` — no layout | `proxy-tag.tsx:46`, `:87`, `:41` |
 
 > These are the three boxes AS AUDITED, which is what the erratum is about. The unified caption box
-> they became is `py-[3px]` since erratum 12; the row and band variants above are untouched.
+> they became is `py-[3px]` since erratum 12 — and the `P` above is the tile's own
+> `variant="band" plate={false}` call, so that reading moved with it. What is untouched is each
+> variant's PLATED form: the row's, and the band's on the commander spine.
 
 **Two corrections to an earlier draft of this erratum, both found by a cold review of the plan.**
 It cited `proxy-tag.tsx:44`, the **row** variant, and concluded `P` steps to 9.5px at `md:`. The
@@ -153,12 +155,17 @@ see the border, since a class-list assertion reads `border` and `outline` as equ
 `TILE_ART_RATIO` from the live tile *so that a removed card leaves a hole exactly its own size*.
 
 Its caption height is hardcoded: `min-h-[44px] md:min-h-[36px]` (`:53`) — the live tile's current
-figure. The handoff takes the caption to a fixed 52/46 (**56/50** since erratum 12). The receipt then sits 8px short at the
-phone and 10px short on desktop, and the invariant its own comment states quietly stops holding.
+figure. The handoff took the caption to a fixed 52/46, which left the receipt 8px short at the phone and
+10px short on desktop — the invariant its own comment states, quietly stopping.
 
 **Resolution — eng, not Design.** The receipt's design is unchanged; only its height is wrong.
 Export the caption height beside `TILE_SHELL` and have both read it, exactly as they already share
 the shell and the ratio. Ledger gains an item.
+
+**Fixed, and it stayed fixed through erratum 12.** `deck-card-undo-tile.tsx` reads
+`CARD_TILE_CAPTION_H` rather than restating a figure, so when the chip's padding took the caption to
+56/50 the receipt moved with it. That is the whole reason the constant exists, and this branch is
+where it first paid.
 
 ## Erratum 5 — the grid is a tile floor, not a column count
 

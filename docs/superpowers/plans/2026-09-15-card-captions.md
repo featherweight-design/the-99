@@ -11,6 +11,18 @@ Written against `origin/main` at `f5745d11`.
 
 ---
 
+> **Superseded in three places, 2026-09-15.** This plan is the record of what was built; three of
+> its rulings were overturned after the feature shipped and are carried as errata 10–12 of
+> `docs/superpowers/readiness-card-captions.md`:
+>
+> - the draft's accent rule is a **drawn 2px strip down the whole tile**, not a `draftEdge` shadow
+>   on the caption — an inset shadow paints under the opaque art and was invisible across it;
+> - a single-copy add prints **no figure**, where this plan specifies `+N`;
+> - the slot box is `py-[3px]`, taking the meta line to 17/18 and the caption to **56/50**, where
+>   this plan specifies `py-[1px]` and 52/46.
+>
+> Read the verdict for what ships.
+
 ## PR boundaries, named before implementation
 
 Three PRs. §10's size gate is ~20 files / ~800 lines.

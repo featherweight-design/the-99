@@ -101,9 +101,9 @@ export const deckVersioningCopy = {
     // rendered visually.
     addMarkA11y: "pending add",
     /**
-     * The card view's two DRAWN figures, which the list has no use for.
+     * The card view's ONE drawn figure, which the list has no use for.
      *
-     * A tile's count has a line of its own, so the draft's figure takes that
+     * A tile's count has a line of its own, so a recount's pair takes that
      * position rather than the name's — where the row must put it, because the
      * row's count lives beside the name. The pair is therefore bare here: the
      * name is already on the line below, and `deckImportCopy.update.diff
