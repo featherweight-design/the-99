@@ -57,6 +57,24 @@ export function chroma(hex: string): number {
   return Math.hypot(a, b);
 }
 
+/**
+ * Hue angle in OKLCH degrees.
+ *
+ * Exists because ΔE alone cannot see the failure Canopy shipped: `--success` and
+ * `--g` sat 0.5° apart at two lightnesses, which measures a comfortable 0.132
+ * and reads as one green when a dot sits beside a pip.
+ */
+export function hueOk(hex: string): number {
+  const { a, b } = oklab(hex);
+  return ((Math.atan2(b, a) * 180) / Math.PI + 360) % 360;
+}
+
+/** The smaller of the two arcs between two hues, in degrees. */
+export function hueGap(a: string, b: string): number {
+  const d = Math.abs(hueOk(a) - hueOk(b)) % 360;
+  return Math.min(d, 360 - d);
+}
+
 export function deltaEOk(a: string, b: string): number {
   const x = oklab(a);
   const y = oklab(b);

@@ -146,12 +146,19 @@
    the other four is a design question nobody has asked yet, and re-cutting them
    on this finding alone would be an eng decision about someone else's palette.
 
-   The contract test measures ΔE and has no hue floor, which is why it passed
-   this the whole time — every Canopy pair cleared 0.10. A hue floor would fail
-   four themes on contact, so it is not added here.
+   Why the suite passed this the whole time, precisely: contract.test.ts compares
+   every semantic and pip to --accent, and every pip to every other pip. It never
+   compares a SEMANTIC to a PIP, so --success against --g — the pair that
+   collided — was measured by nobody. The figures quoted above were taken by hand
+   for this change, not read off a green suite.
+
+   ΔE would not have caught it either: that pair measures 0.132, comfortably
+   over the floor. Hue is the axis that sees it, so contract.test.ts now holds
+   CANOPY ALONE to a 20° floor between --success and --g. The other four themes
+   are deliberately exempt — see the test.
 
    --g stays SHARED, deliberately. The phyrexia precedent moved --g because that
-   theme's accent sat ΔE 0.09 from it; here accent-vs---g is 0.251, the healthiest
+   theme's accent sat ΔE 0.09 from it; here accent versus --g is 0.251, the healthiest
    of the three pairs. Moving it would fix nothing and cost a WUBRG pip its
    cross-theme consistency. Ratified by Design 2026-09-15. */
 [data-theme="ixalan"] {

@@ -2,7 +2,7 @@ import { readFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { describe, expect, it } from "vitest";
-import { chroma, contrast, deltaEOk } from "./color";
+import { chroma, contrast, deltaEOk, hueGap } from "./color";
 import { parseThemeBlocks } from "./parse-css";
 
 // import.meta.url, not __dirname: Vitest runs tests as ESM.
@@ -149,6 +149,28 @@ describe("theme contract", () => {
       for (const key of [...PIPS, ...SEMANTICS]) {
         expect(deltaEOk(hex(key), hex("accent"))).toBeGreaterThanOrEqual(0.1);
       }
+    });
+
+    // CANOPY ONLY, and deliberately so.
+    //
+    // ΔE cannot see this failure: shipped, Canopy's --success measured 0.132
+    // from --g and passed every assertion in this file — because the suite
+    // compares semantics to --accent and pips to each other, and never compares
+    // a semantic to a pip. The two greens sat 0.5° apart at two lightnesses,
+    // which reads as ONE green wherever an ownership dot sits beside a cost pip.
+    //
+    // The same 0.5° gap is still true of amonkhet, kamigawa, eldraine and
+    // kaldheim, which share both hex values. They are NOT held to this floor:
+    // Canopy was the reported clash because its accent is a third green, so
+    // three greens share one surface rather than two, and whether the other four
+    // read badly is a design question nobody has asked. Widening this to every
+    // theme would fail four of them on contact.
+    //
+    // Pinning the property rather than the hex: reverting --success to the
+    // shared value left all 1089 assertions green before this existed.
+    it("separates Canopy's --success from its green pip by hue, not lightness", () => {
+      if (name !== "ixalan") return;
+      expect(hueGap(hex("success"), hex("g"))).toBeGreaterThanOrEqual(20);
     });
 
     it("separates every pip from every other pip by 0.10 delta-E", () => {
