@@ -180,6 +180,26 @@ describe("buildDeckImport — locked decision: sideboard and maybeboard are not 
     expect(result.unresolved).toEqual([]);
   });
 
+  // The pair, which is what the tag is FOR: a primary declaration and a
+  // `(Partner)` second. Asserting only `declaredCommander` on a lone tagged
+  // line would pass a regression that stripped the tag and then imported that
+  // card into the 99 — the partner would be a body card and the deck would
+  // lead with one commander.
+  it("reads a (Partner) line as the second commander beside a declared first", () => {
+    const partner = card({ name: "Tana, the Bloodsower", typeLine: "Legendary Creature — Human" });
+    const result = build(
+      "1 Atraxa, Praetors' Voice (2X2) 145 (Commander)\n"
+        + "1 Tana, the Bloodsower (C16) 30 (Partner)\n"
+        + "1 Sol Ring (LTC) 284",
+      [ATRAXA, partner, SOL_RING],
+    );
+    expect(result.declaredCommander?.oracleId).toBe(ATRAXA.oracleId);
+    expect(result.declaredPartner?.oracleId).toBe(partner.oracleId);
+    // Neither leads the deck AND fills a slot in it.
+    expect(shape(result.cards)).toEqual([{ oracleId: SOL_RING.oracleId, quantity: 1 }]);
+    expect(result.unresolved).toEqual([]);
+  });
+
   // A card whose NAME ends in a parenthetical keeps it. `Erase (Not the Urza's
   // Legacy One)` is a real card and the shape that would break if the tag were
   // read as "any trailing bracket" rather than these two words — the name would

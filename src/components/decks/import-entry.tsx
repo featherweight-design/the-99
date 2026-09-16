@@ -234,7 +234,7 @@ export function ImportEntry() {
   }
 
   return (
-    <div className="p-[16px_18px_24px] md:mx-auto md:max-w-[760px] md:p-[44px_48px]">
+    <div className="p-[16px_18px_24px] md:mx-auto md:w-full md:max-w-[760px] md:p-[44px_48px]">
       <h2 className="font-display font-bold text-[20px] md:text-[28px] m-0 text-[color:var(--fg)]">
         {copy.entry.heading}
       </h2>

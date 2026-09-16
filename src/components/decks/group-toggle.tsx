@@ -160,8 +160,13 @@ export function GroupToggle({
             CLUSTER grows instead (see its own note), and two growing children
             split the free space between them: at 700px that left the sort 40px
             short of the right edge with a hole beside it, rather than the well
-            sitting flush. Only one of the two may grow at a time. */}
-        <span className="md:flex-1" aria-hidden />
+            sitting flush. Only one of the two may grow at a time.
+
+            HIDDEN below `md:`, not merely un-grown: a zero-width span is still
+            a flex item, so the row's `gap-[7px]` would reserve 7px on each side
+            of it — a 14px hole between the pills and the cluster, and one more
+            item for the wrap to reason about. */}
+        <span className="hidden md:block md:flex-1" aria-hidden />
 
         {/* The auto-lifecycle cluster — the kept note, Keep all, Clear all auto.
             Absent at zero, disabled only while one of its own writes runs. Not
