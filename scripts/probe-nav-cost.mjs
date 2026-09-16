@@ -217,8 +217,11 @@ async function main() {
       log.push(rec);
     });
     const finish = (r) => {
-      if (!r.__rec || r.__rec.done) return;
-      r.__rec.done = true;
+      if (!r.__rec || r.__rec.done || r.__rec.settling) return;
+      // `settling`, not `done`: the settle loop waits on `done`, and marking it
+      // before the response promise resolves let a step be evaluated while
+      // `status` was still null — which the failure filter accepts.
+      r.__rec.settling = true;
       r.__rec.ms = Date.now() - r.__rec.t0;
       // STATUS MATTERS. A 500 still has a body, still lands on the expected
       // pathname and can still come in under the ceiling, so a gate that reads
@@ -246,6 +249,7 @@ async function main() {
         // timeline that cannot be matched to the step's requests by path, and a
         // 0-byte RSC response.
         if (!text.includes("ERR_ABORTED")) r.__rec.failed = text;
+        r.__rec.done = true;
         return;
       }
       const resp = r.response?.();
@@ -259,7 +263,12 @@ async function main() {
           })
           .catch((err) => {
             r.__rec.failed = `response unavailable: ${err?.message ?? err}`;
+          })
+          .finally(() => {
+            r.__rec.done = true;
           });
+      } else {
+        r.__rec.done = true;
       }
     };
     page.on("requestfinished", finish);
@@ -365,19 +374,17 @@ async function main() {
       }
       // BY PATH, not by count. Two entries for P and none for Q satisfies a
       // cardinality test while Q's bytes are missing entirely.
-      const wanted = [...paths].sort();
-      const got = timings.map((t) => t.path).sort();
+      // BY PATH SET, not by count. A resource-timing entry carries no headers,
+      // so a speculative prefetch of the same URL is indistinguishable from the
+      // navigation fetch — comparing counts fails a healthy run whenever both
+      // land in one step. Each requested path must appear at least once, and the
+      // largest entry per path is taken as the navigation payload.
+      const wanted = [...new Set(paths)].sort();
+      const got = [...new Set(timings.map((t) => t.path))].sort();
       if (wanted.length !== got.length || wanted.some((w, i) => w !== got[i])) {
         throw new Error(
           `step "${label}" requested ${JSON.stringify(wanted)} but the resource timeline returned ` +
-            `${JSON.stringify(got)} — the payload cannot be attributed request by request`,
-        );
-      }
-      if (timings.length !== rsc.length) {
-        throw new Error(
-          `step "${label}" made ${rsc.length} RSC request(s) but the resource timeline returned ` +
-            `${timings.length} entr${timings.length === 1 ? "y" : "ies"} — the measurement is ` +
-            `incomplete, which an undercounted KB row would hide`,
+            `${JSON.stringify(got)} — the payload cannot be attributed to the requests`,
         );
       }
       const landed = new URL(page.url());
@@ -390,7 +397,13 @@ async function main() {
         prefetch: all.filter((r) => r.kind === "prefetch").length,
         action: all.filter((r) => r.kind === "action").length,
         document: all.filter((r) => r.kind === "document").length,
-        decodedKB: +(timings.reduce((a, b) => a + b.decoded, 0) / 1024).toFixed(1),
+        decodedKB: +(
+          wanted.reduce(
+            (sum, path) =>
+              sum + Math.max(...timings.filter((t) => t.path === path).map((t) => t.decoded)),
+            0,
+          ) / 1024
+        ).toFixed(1),
         responseMs: timings.reduce((a, b) => Math.max(a, b.ms), 0),
       };
       steps.push(row);
@@ -585,6 +598,17 @@ async function main() {
     }
 
     const out = args.get("out");
+    if (out && baselinePath === "none") {
+      // A recorder that classified nothing writes an all-zero baseline, and every
+      // later run then passes against it. Even a fully converted app still
+      // PREFETCHES, so requiring one or the other still holds after PRs 3-6.
+      if (!steps.some((st) => st.rsc > 0 || st.prefetch > 0)) {
+        throw new Error(
+          "refusing to write a baseline from a run that recorded no RSC and no prefetch requests — " +
+            "the recorder measured nothing",
+        );
+      }
+    }
     if (out) {
       // The deck is part of the conditions: /decks/[id]'s payload is that deck's
       // cards and suggestions, and the list is ordered by mutable data, so a
