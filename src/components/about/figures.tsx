@@ -45,6 +45,7 @@ import { commandersCopy } from "../../lib/copy/lanes";
 import { FitBar } from "../commanders/fit-bar";
 import { TwoFacedMark } from "../cards/two-faced-mark";
 import {
+  LegendBox,
   Specimen,
   SpecimenCell,
   SpecimenGrid,
@@ -626,14 +627,15 @@ function ThemesFigure({ width }: { width: AboutWidth }) {
 // drifts an edit at a time, and the surfaces below take deck ids, mutation
 // handlers and card records a reference page has none of.
 
-/** One row of a legend: the thing, then what it means. */
+/** One row of a legend: the thing, then what it means. A `dt`/`dd` pair,
+ *  because that is the relationship and a screen reader can then say it. */
 function Line({ mark, meaning }: { mark: React.ReactNode; meaning: string }) {
   return (
     <div className="flex items-baseline gap-[10px]">
-      <span className="flex-none font-mono text-[11px] text-[color:var(--fg-body)]">{mark}</span>
-      <span className="font-mono text-[10px] leading-[1.4] text-[color:var(--fg-faint)]">
+      <dt className="flex-none font-mono text-[11px] text-[color:var(--fg-body)]">{mark}</dt>
+      <dd className="m-0 font-mono text-[10px] leading-[1.4] text-[color:var(--fg-faint)]">
         {meaning}
-      </span>
+      </dd>
     </div>
   );
 }
@@ -648,13 +650,11 @@ function Legend({
   rows: { mark: React.ReactNode; meaning: string }[];
 }) {
   return (
-    <Specimen label={label} width={width}>
-      <div className="flex flex-col gap-[8px]">
-        {rows.map((row, i) => (
-          <Line key={i} mark={row.mark} meaning={row.meaning} />
-        ))}
-      </div>
-    </Specimen>
+    <LegendBox label={label} width={width}>
+      {rows.map((row, i) => (
+        <Line key={i} mark={row.mark} meaning={row.meaning} />
+      ))}
+    </LegendBox>
   );
 }
 
@@ -755,15 +755,24 @@ function AutoFillFigure({ width }: { width: AboutWidth }) {
 }
 
 function RolesFigure({ width }: { width: AboutWidth }) {
+  // A LEGEND, not `RoleChips`. That component is the commander page's own
+  // (role-chips.tsx:1-3) and this entry is about the DECK page, which draws
+  // `RoleCounterStrip` — five cells including Land, and the rationale as a real
+  // disclosure button. Mounting the commander chips here taught a surface the
+  // deck page never draws, and mounting the strip would need a deck.
   return (
-    <Specimen label="roles" width={width}>
-      <div className="flex flex-col gap-[8px]">
-        <RoleChips roleCounts={ROLE_COUNTS} />
-        <span className="font-mono text-[10px] text-[color:var(--fg-faint)]">
-          {addPanelCopy.strip.rationaleToggle}
-        </span>
-      </div>
-    </Specimen>
+    <Legend
+      label="roles"
+      width={width}
+      rows={[
+        { mark: "Ramp · 12 of 10", meaning: "a surplus, not an error — nothing here is capped" },
+        { mark: "Board wipes · 1 of 3", meaning: "a short role is the one thing that names what to do next" },
+        {
+          mark: addPanelCopy.strip.rationaleToggle,
+          meaning: "and the baselines are the format's, not this commander's",
+        },
+      ]}
+    />
   );
 }
 
@@ -886,7 +895,7 @@ function LogAGameFigure({ width }: { width: AboutWidth }) {
       label="log-a-game"
       width={width}
       rows={[
-        { mark: "win / loss", meaning: "and how big the pod was" },
+        { mark: `${gameLogCopy.form.won} / ${gameLogCopy.form.lost} / ${gameLogCopy.form.draw}`, meaning: "and how big the pod was" },
         { mark: `${GAME_AXIS_KEYS.length} axes`, meaning: "each markable as what worked or what let you down" },
         { mark: "optional", meaning: "a result on its own is a game" },
       ]}
@@ -915,9 +924,9 @@ function ResumeFigure({ width }: { width: AboutWidth }) {
       label="resume"
       width={width}
       rows={[
-        { mark: c.edited("2h ago"), meaning: "you changed the draft" },
-        { mark: c.committed("yesterday"), meaning: "you cut a version" },
-        { mark: c.played("2 days ago"), meaning: "you logged a game" },
+        { mark: c.edited(refreshCopy.home.elapsed.hours(2)), meaning: "you changed the draft" },
+        { mark: c.committed(refreshCopy.home.elapsed.yesterday), meaning: "you cut a version" },
+        { mark: c.played(refreshCopy.home.elapsed.days(2)), meaning: "you logged a game" },
       ]}
     />
   );

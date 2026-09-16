@@ -155,11 +155,33 @@ describe("the figures", () => {
     expect(drawn).toBe(registered);
   });
 
-  it("hides every specimen from the reading order and from the pointer", () => {
+  it("hides a MOUNTED specimen from the reading order, and reads a legend aloud", () => {
+    // Two figure kinds, two rules, and the difference is where the information
+    // lives. A mounted component repeats what the caption and keys already
+    // say, so announcing it reads every mark twice and names controls that
+    // cannot be pressed. A legend's content exists NOWHERE else — Discover's
+    // five orders and their glosses are drawn there and in no caption — so
+    // hiding it hid the entry's whole subject from the readers least able to
+    // recover it elsewhere.
     const { container } = render(<AboutPage seen={0} />);
-    for (const [name, figure] of Object.entries(figures(container))) {
+    const all = Object.entries(figures(container));
+    const legends = all.filter(([, el]) => el.hasAttribute("data-legend"));
+    const mounted = all.filter(([, el]) => !el.hasAttribute("data-legend"));
+    expect(legends.length).toBeGreaterThan(0);
+    expect(mounted.length).toBeGreaterThan(0);
+
+    for (const [name, figure] of mounted) {
       expect(figure, name).toHaveAttribute("aria-hidden", "true");
+      expect(figure, name).toHaveAttribute("inert");
       expect(figure.className, name).toContain("pointer-events-none");
+    }
+    for (const [name, figure] of legends) {
+      // Readable, and structured: a mark and its meaning are a pair, so they
+      // are a `dt` and a `dd` rather than two spans a reader must infer.
+      expect(figure.hasAttribute("aria-hidden"), name).toBe(false);
+      expect(figure.hasAttribute("inert"), name).toBe(false);
+      expect(figure.querySelector("dl"), name).toBeTruthy();
+      expect(figure.querySelectorAll("dt").length, name).toBeGreaterThan(0);
     }
   });
 
