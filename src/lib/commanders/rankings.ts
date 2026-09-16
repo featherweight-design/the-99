@@ -59,8 +59,18 @@ export type CommanderRankings = {
  * commanders. A warm version-3 entry would keep printing the live-derived score
  * beside a detail page printing the index-derived one, which is the exact
  * disagreement the change removes.
+ *
+ * 5 — `SCORE_WRITER_CURRENT` moved to 4, so rows a version-3 writer left behind
+ * are now refused. THE ROWS DID NOT CHANGE AND THE VERDICT ON THEM DID, which
+ * is this version's own trigger read literally: a warm entry assembled by the
+ * previous deployment was built from rows this deployment will not rank, and
+ * `loadScores`' `< 4` check is exactly the thing a cache hit never reaches. The
+ * writer bump alone therefore protects database misses only — during the
+ * rollout a version-3 deployment can cache a payload built from a write that
+ * landed after a rebuild's clear, and the new deployment would go on serving it
+ * for up to the hour ceiling to every reader who writes nothing.
  */
-const PAYLOAD_VERSION = 4;
+const PAYLOAD_VERSION = 5;
 
 /** The cache key this payload is filed under, version included. */
 export const commanderRankingsKey = ["commander-rankings", `v${PAYLOAD_VERSION}`];

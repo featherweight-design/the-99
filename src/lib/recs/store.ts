@@ -1,7 +1,7 @@
 import { and, desc, eq, notInArray, sql } from "drizzle-orm";
 import { db } from "../../db";
 import {
-  cards, commanderScores, csvUploads, SCORE_WRITER_CURRENT, type RoleCounts,
+  cards, commanderScores, commanderSupport, csvUploads, SCORE_WRITER_CURRENT, type RoleCounts,
 } from "../../db/schema";
 import { receiptsPreview } from "./format";
 import { measurableTotalFor } from "./score";
@@ -105,6 +105,46 @@ export async function collectionGeneration(userId: string): Promise<number | nul
 }
 
 /**
+ * The advisory-lock key that coordinates score writes with an index rebuild.
+ *
+ * Not per-user, unlike the collection replace's: what it serialises is every
+ * score write against the ONE rebuild, so the key names the resource rather
+ * than a reader. `hashtextextended` because `pg_advisory_xact_lock` takes a
+ * bigint and this repo already reaches for that pairing in `collection/import`
+ * and `decks/assign`.
+ */
+export const SCORE_INDEX_LOCK = "commander-scores:commander-index";
+
+/**
+ * Fingerprint of the commander index a score compute is about to read.
+ *
+ * The same idea as `collectionGeneration` and for a sharper reason. Ruling D
+ * made `fit_synergy` a function of `commander_support`, so a rebuild invalidates
+ * a persisted score — and `buildCommanderIndex` deletes this table when it
+ * finishes, which handles the ordinary case. What it cannot handle is the RACE:
+ * a request reads support before that delete, finishes its fanout after it, and
+ * upserts a set computed against the old index. Those rows are
+ * writer-version-current, so nothing downstream can tell.
+ *
+ * `writer_version` cannot express this. It says which CODE wrote a row, and the
+ * rebuild changes the DATA under identical code.
+ *
+ * Read as the newest `computed_at` rather than a counter, exactly as the
+ * collection's is read from `max(confirmed_at)`: the index build stamps that
+ * column in the same transaction as each write, so the newest one identifies
+ * the generation without a table to maintain.
+ *
+ * Callers capture it BEFORE reading support and hand it to `persistScores`,
+ * which re-reads it inside its own transaction and drops the write if it moved.
+ */
+export async function indexGeneration(): Promise<number | null> {
+  const [row] = await db
+    .select({ at: sql<Date | null>`max(${commanderSupport.computedAt})` })
+    .from(commanderSupport);
+  return row?.at ? new Date(row.at).getTime() : null;
+}
+
+/**
  * Upsert rather than delete-then-insert: the after() warm and an inline compute
  * from a concurrent page load can run at once, and under READ COMMITTED a second
  * transaction's DELETE cannot see the first's uncommitted rows — its INSERT would
@@ -132,6 +172,25 @@ export async function persistScores(
   userId: string,
   ranked: RankedCommander[],
   generation: number | null,
+  /**
+   * The commander-index generation the caller read its support data at. A write
+   * whose index has moved since is dropped, which closes the rebuild race — see
+   * `indexGeneration`.
+   *
+   * THREE VALUES, NOT TWO, because `null` already means something here.
+   * `undefined` — omitted — is "do not check", the behaviour every caller had
+   * before this existed. `null` is a real reading: an index with no rows at all,
+   * which must compare equal to itself rather than being read as "no opinion".
+   * Collapsing those onto one value is how a guard comes to skip the case it was
+   * written for.
+   *
+   * NO PRODUCTION CALLER OMITS IT, and the omitted path cannot be closed by
+   * making the parameter required, because what still reaches it is a PREVIOUS
+   * DEPLOYMENT running code that has no fourth argument to pass. That window is
+   * closed by `SCORE_WRITER_CURRENT`, which version 4 bumps for this reason
+   * alone: rows an unguarded writer leaves behind announce 3 and are refused.
+   */
+  indexGen?: number | null,
 ): Promise<void> {
   const rows = ranked.map((r) => toScoreRow(userId, r));
   const keep = rows.map((r) => r.oracleId);
@@ -145,12 +204,58 @@ export async function persistScores(
     await tx.execute(
       sql`select set_config('app.writer_version', ${String(SCORE_WRITER_CURRENT)}, true)`,
     );
+
+    // BOTH LOCKS COME BEFORE EITHER FINGERPRINT READ, and that ordering is the
+    // whole point rather than tidiness. A lock taken after a comparison means
+    // the transaction can PARK on the lock while the very thing it just
+    // compared moves underneath it: round 2 found that the index lock below,
+    // placed after the collection read, let a rebuild hold this write long
+    // enough for an upload to commit, delete this user's scores, and be
+    // followed by these pre-upload rows landing anyway.
+    //
+    // The per-user key is `replaceCollection`'s own (`collection/import`), so
+    // the collection comparison is atomic with the writes for the same reason
+    // the index one is. Nothing takes these two in the opposite order — the
+    // clear takes the index key alone, the replace takes the user key alone —
+    // so the fixed order here cannot cycle.
+    await tx.execute(sql`select pg_advisory_xact_lock(hashtextextended(${userId}, 0))`);
+    if (indexGen !== undefined) {
+      await tx.execute(
+        sql`select pg_advisory_xact_lock_shared(hashtextextended(${SCORE_INDEX_LOCK}, 0))`,
+      );
+    }
+
     const [gen] = await tx
       .select({ at: sql<Date | null>`max(${csvUploads.confirmedAt})` })
       .from(csvUploads)
       .where(eq(csvUploads.userId, userId));
     const current = gen?.at ? new Date(gen.at).getTime() : null;
     if (current !== generation) return;
+
+    // The same guard for the index, in the same transaction and for the same
+    // reason: the compute that produced these rows read support some seconds
+    // ago, and a rebuild committing in between makes every synergy figure in
+    // them stale. Skipped when the caller passed nothing, so this cannot turn
+    // an un-checked caller into one that never writes.
+    //
+    // THE LOCK IS WHAT MAKES THE COMPARISON MEAN ANYTHING, and a first version
+    // of this guard had only the comparison. A read alone proves the index had
+    // not moved at the instant it ran, not at COMMIT: the rebuild could commit
+    // its support writes and its `clearScores()` in the gap between this check
+    // and the inserts below, and those pre-rebuild rows would then survive the
+    // clear. The shared lock taken above closes it from both sides — either
+    // this transaction holds it and the clear waits until the rows it must
+    // delete exist, or the clear holds it and this read happens afterwards and
+    // sees the new generation. Shared rather than exclusive because score
+    // writes have no reason to serialise against EACH OTHER; the one exclusive
+    // taker is the rebuild.
+    if (indexGen !== undefined) {
+      const [ig] = await tx
+        .select({ at: sql<Date | null>`max(${commanderSupport.computedAt})` })
+        .from(commanderSupport);
+      const currentIndex = ig?.at ? new Date(ig.at).getTime() : null;
+      if (currentIndex !== indexGen) return;
+    }
     await tx.delete(commanderScores).where(
       keep.length === 0
         ? eq(commanderScores.userId, userId)

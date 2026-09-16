@@ -1,6 +1,7 @@
 import { eq, sql } from "drizzle-orm";
 import { db } from "../../db";
 import { cards, commanderScores, commanderSupport, commanderSupportCards } from "../../db/schema";
+import { SCORE_INDEX_LOCK } from "../recs/store";
 import { isCommanderCandidate } from "../recs/score";
 import { fetchEdhrecUncached, type EdhrecFetchResult } from "./client";
 import {
@@ -93,7 +94,17 @@ async function writeToDb(header: SupportHeader, cardRows: SupportCard[]): Promis
  * the whole rebuild, and the reasoning for that is at the call site.
  */
 async function clearPersistedScores(): Promise<void> {
-  await db.delete(commanderScores);
+  await db.transaction(async (tx) => {
+    // EXCLUSIVE against every in-flight score write — see `SCORE_INDEX_LOCK`.
+    // Without it the delete can land between a writer's generation check and
+    // its inserts, and those pre-rebuild rows survive the clear. In a
+    // transaction because `pg_advisory_xact_lock` is released at commit, and a
+    // bare statement would hold it for no span at all.
+    await tx.execute(
+      sql`select pg_advisory_xact_lock(hashtextextended(${SCORE_INDEX_LOCK}, 0))`,
+    );
+    await tx.delete(commanderScores);
+  });
 }
 
 /**
@@ -203,19 +214,25 @@ export async function buildCommanderIndex(
   // why nothing here calls `revalidateUserLists`. Both are larger than the
   // window they would close.
   //
-  // NOR IS THIS A BARRIER AGAINST A CONCURRENT SCORE WRITE, and that one is a
-  // race rather than a staleness window. A request can read the support data
-  // before this delete, finish its fanout after it, and upsert a set computed
-  // against the old index — and `rankableScoreRows` has no generation check, so
-  // those rows are current-writer rows and are served as warm until something
-  // else invalidates them.
+  // NOR IS THIS A BARRIER AGAINST A CONCURRENT SCORE WRITE on its own, and that
+  // one is a race rather than a staleness window: a request can read the support
+  // data before this delete, finish its fanout after it, and upsert a set
+  // computed against the old index.
   //
-  // The window is seconds, once a month, for one reader. Closing it properly
-  // needs a generation stamped by `persistScores` and compared by the reader,
-  // which is a migration plus a writer plus a reader — a mechanism, at the
-  // fourth round of a PR about where one figure comes from. It is a NAMED TASK
-  // in PR 3 of the plan rather than a vague follow-up, because PR 3 is where the
-  // row begins reading these figures and is the coherent place to harden them.
+  // THAT RACE IS CLOSED, on the other side and with a lock. `persistScores`
+  // takes `SCORE_INDEX_LOCK` shared, then re-reads
+  // `max(commander_support.computed_at)` and abandons the write if it moved
+  // since the caller captured it; the clear below takes the same lock
+  // exclusively. The comparison alone was not enough — it proves the index had
+  // not moved at the instant it ran, not at commit — so a delete landing
+  // between a writer's check and its inserts would leave pre-rebuild rows
+  // behind. This delete handles the ordinary case, that guard handles the raced
+  // one, and neither is sufficient alone.
+  //
+  // An earlier revision of this comment described the race as open and named a
+  // migration plus a reader-side check as the fix. Neither was built: the guard
+  // reuses the shape the collection generation already had, which costs no
+  // migration and no read-path query. The claim outlived the change by one PR.
   //
   // Only when the index could actually have moved. A run that failed every
   // commander changed no input, and throwing away every reader's scores for it

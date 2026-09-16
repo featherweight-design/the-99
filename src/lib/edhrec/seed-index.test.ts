@@ -210,3 +210,45 @@ it("leaves scores alone when every commander failed and none was skipped", async
   });
   expect(cleared).toBe(0);
 });
+
+// The exclusive half of `SCORE_INDEX_LOCK`. Every other case here injects
+// `clearScores`, which is what makes the DEFAULT implementation untested — so
+// this one exercises it against the db stub and reads the statements it ran.
+// Without the lock the delete can land between a score writer's generation
+// check and its inserts, and those pre-rebuild rows survive the clear.
+it("clears scores under an exclusive index lock, in a transaction", async () => {
+  // ONE ORDERED TRACE ACROSS BOTH CALLS. A separate `executed` list and a
+  // `deleted` flag say a lock statement happened and a delete happened, in no
+  // particular order — so moving `tx.delete` ahead of the lock passed, and the
+  // lock covering the delete is the entire property.
+  const trace: string[] = [];
+  let exclusive = false;
+  const tx = {
+    execute: async (q: unknown) => {
+      const text = JSON.stringify(q);
+      if (text.includes("pg_advisory_xact_lock")) {
+        trace.push("lock");
+        exclusive = !text.includes("pg_advisory_xact_lock_shared");
+      } else {
+        trace.push("execute");
+      }
+    },
+    delete: async () => { trace.push("delete"); },
+  };
+  stub.db.transaction = (cb: (t: typeof tx) => Promise<void>) => cb(tx);
+
+  await buildCommanderIndex({
+    loadCommanders: async () => [commander("A", "a")],
+    loadNameIndex: async () => [],
+    fetch: async () => okResult(["Sol Ring"]),
+    write: async () => {},
+    delayMs: 0,
+  });
+
+  expect(trace).toEqual(["lock", "delete"]);
+  // Exclusive, not shared: this one has to wait for every in-flight writer.
+  // Read off the raw statement, since the trace deliberately collapses both
+  // lock modes onto one label so the ORDER assertion above is about position
+  // rather than mode.
+  expect(exclusive).toBe(true);
+});

@@ -243,6 +243,38 @@ Package manager is **pnpm** (pinned via `packageManager` in package.json) — ne
   one, and an older deployment's UPDATE would otherwise leave its truncated set marked current.
   A trigger is unreachable from any unit test, so this script is the only proof it behaves. Same
   rules as `probe:claims`: per-run `user_id`, deleted in a `finally`, **never production**.
+- `pnpm probe:score-lock` proves the advisory lock that coordinates score writes with a
+  commander-index rebuild. `commander_scores` is scored against that index, so a rebuild
+  invalidates every synergy figure in it: the build deletes the table, and `persistScores`
+  re-reads `max(commander_support.computed_at)` inside its own transaction and abandons a write
+  whose fingerprint has moved. **The comparison alone is not enough** — it proves the index had
+  not moved when it ran, not at COMMIT, so the clear can land between that check and the inserts
+  and leave the pre-rebuild rows it meant to delete behind, marked `writer_version`-current and
+  indistinguishable from a fresh set.
+
+  A lock is invisible in every value these functions return, so a unit test can only read back
+  the statements a stubbed transaction executed. That says the right text was issued; it cannot
+  say the lock was taken on the same connection as the delete, held across it, or that it blocks
+  anything. Two connections can. Its second case is the COUNTERFACTUAL — the same interleaving
+  with no lock, where the pre-rebuild row survives — and without it the first case proves only
+  that a delete deletes.
+
+  **Which side is real differs by case, deliberately.** Case 1 needs a writer that holds its
+  transaction open across the clear and `persistScores` commits on its own, so there the CLEAR is
+  the real function and the writer is the SQL it issues; case 3 is the mirror. Removing the
+  exclusive lock fails both of case 1's checks, removing the shared one fails case 3's.
+
+  Three defects in the probe itself, each found by running it, and each a trap for the next one
+  of these: a cross-connection read **cannot see an uncommitted row**, so expecting the writer's
+  own insert reads 0 on a working build and a COMMITTED sentinel is what proves a clear is
+  blocked; a client released while its transaction is aborted **stays broken**, and the next
+  caller to draw it from the pool was the cleanup, which then left the fixture behind; and
+  `process.exit` in a `finally` **swallows the exception**, so the run printed "all checks
+  passed" over a case that never ran a check.
+
+  Same fixture discipline as `probe:claims`, and stricter about the target than most: the clear
+  under test deletes `commander_scores` **wholesale, for every user** in the database it is
+  given. `local-dev` or a scratch branch, **never production**.
 - `pnpm probe:draft` proves the draft readers against a real Postgres by calling the real
   `loadDraftState` and `loadDraftRows` — a brew has no version rather than an empty change
   list, a draft identical to its version is clean, a basics-only edit is a NAMED row carrying

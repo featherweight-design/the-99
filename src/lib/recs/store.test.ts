@@ -16,6 +16,12 @@ import {
 import type { RankedCommander } from "./recommend";
 import { RANK_SCORE_UNWRITTEN, SCORE_WRITER_CURRENT } from "../../db/schema";
 
+// The last writer that took no `SCORE_INDEX_LOCK` and compared no index
+// generation — #681's, which is live and calls `persistScores` with three
+// arguments. Every row it leaves behind has to be refused, so the current
+// version must sit above it.
+const LAST_UNGUARDED_WRITER = 3;
+
 const ranked = (over: Partial<RankedCommander> = {}): RankedCommander => ({
   oracleId: "11111111-1111-1111-1111-111111111111",
   name: "Atraxa, Praetors' Voice",
@@ -121,16 +127,47 @@ describe("rowToListItem", () => {
  * Fake transaction exposing only what persistScores touches. `confirmedAt` is what
  * the in-transaction generation re-read observes.
  */
-function fakeDb(confirmedAt: Date | null) {
+function fakeDb(confirmedAt: Date | null, indexAt: Date | null = null) {
   const inserted: unknown[][] = [];
   let deleted = false;
   let conflictSet: Record<string, unknown> | null = null;
   const executed: string[] = [];
+  // ONE ORDERED TRACE ACROSS BOTH KINDS OF CALL, because the property under
+  // test is an ORDERING and `executed` cannot express one: a trace of
+  // statements alone says a lock was taken somewhere in the transaction, and a
+  // regression that moves it after the fingerprint read it protects passes
+  // every assertion built on that. Reads are recorded where they are AWAITED
+  // rather than where the thenable is built, or the index read would appear in
+  // every case including the ones that never ask for it.
+  const trace: string[] = [];
   const tx = {
     execute: async (q: unknown) => {
-      executed.push(JSON.stringify(q));
+      const text = JSON.stringify(q);
+      executed.push(text);
+      trace.push(
+        text.includes("pg_advisory_xact_lock_shared")
+          ? "lock:index-shared"
+          : text.includes("pg_advisory_xact_lock")
+            ? "lock:user"
+            : "execute",
+      );
     },
-    select: () => ({ from: () => ({ where: async () => [{ at: confirmedAt }] }) }),
+    // Two call shapes, two answers. The collection fingerprint ends at
+    // `.where()`; the index fingerprint has no predicate and awaits `.from()`
+    // directly, so `from` is both thenable and carries a `where`. Returning one
+    // value for both would have the index guard read the collection's clock.
+    select: () => ({
+      from: () => ({
+        then: (resolve: (rows: { at: Date | null }[]) => void) => {
+          trace.push("read:index");
+          resolve([{ at: indexAt }]);
+        },
+        where: async () => {
+          trace.push("read:collection");
+          return [{ at: confirmedAt }];
+        },
+      }),
+    }),
     delete: () => ({ where: async () => { deleted = true; } }),
     insert: () => ({
       values: (rows: unknown[]) => ({
@@ -146,6 +183,7 @@ function fakeDb(confirmedAt: Date | null) {
     wrote: () => ({ deleted, insertedRows: inserted.flat().length }),
     conflictSet: () => conflictSet,
     executed: () => executed,
+    trace: () => trace,
   };
 }
 
@@ -179,6 +217,159 @@ describe("persistScores generation guard", () => {
     expect(fake.wrote()).toEqual({ deleted: true, insertedRows: 1 });
   });
 
+  // THE REBUILD RACE. `buildCommanderIndex` deletes this table when it
+  // finishes, which handles the ordinary case; what it cannot handle is a
+  // compute that read support BEFORE the delete and upserts after it. Those
+  // rows are writer-version-current, so nothing downstream can tell — which is
+  // why the write has to be dropped here.
+  it("drops the write when the commander index was rebuilt mid-compute", async () => {
+    const collection = new Date("2026-07-24T12:00:00Z");
+    const fake = fakeDb(collection, new Date("2026-09-03T04:10:00Z"));
+    stub.db.transaction = fake.db.transaction;
+
+    // Captured before the rebuild committed.
+    await persistScores(
+      "user_1",
+      [ranked()],
+      collection.getTime(),
+      new Date("2026-08-03T04:10:00Z").getTime(),
+    );
+
+    expect(fake.wrote()).toEqual({ deleted: false, insertedRows: 0 });
+  });
+
+  it("writes when the commander index is unchanged", async () => {
+    const collection = new Date("2026-07-24T12:00:00Z");
+    const index = new Date("2026-09-03T04:10:00Z");
+    const fake = fakeDb(collection, index);
+    stub.db.transaction = fake.db.transaction;
+
+    await persistScores("user_1", [ranked()], collection.getTime(), index.getTime());
+
+    expect(fake.wrote()).toEqual({ deleted: true, insertedRows: 1 });
+  });
+
+  // A caller that cannot know the generation must still be able to write. Every
+  // caller behaved this way before the parameter existed, and defaulting to a
+  // check would have turned them into callers that never write. OMITTED, which
+  // is a different value from `null` — see the case below.
+  it("skips the index check when the caller omits the argument", async () => {
+    const collection = new Date("2026-07-24T12:00:00Z");
+    const fake = fakeDb(collection, new Date("2026-09-03T04:10:00Z"));
+    stub.db.transaction = fake.db.transaction;
+
+    await persistScores("user_1", [ranked()], collection.getTime());
+
+    expect(fake.wrote()).toEqual({ deleted: true, insertedRows: 1 });
+  });
+
+  // An empty index has no generation, and that is a REAL reading rather than a
+  // missing one: `null` must compare equal to itself and let the write through,
+  // which is why omitting the argument is a third value and not a synonym.
+  it("writes when both sides read an empty index", async () => {
+    const collection = new Date("2026-07-24T12:00:00Z");
+    const fake = fakeDb(collection, null);
+    stub.db.transaction = fake.db.transaction;
+
+    await persistScores("user_1", [ranked()], collection.getTime(), null);
+
+    expect(fake.wrote()).toEqual({ deleted: true, insertedRows: 1 });
+  });
+
+  // And the asymmetry that proves `null` is compared rather than ignored: the
+  // caller read an empty index, the index has since been built.
+  it("drops the write when the index was built after an empty reading", async () => {
+    const collection = new Date("2026-07-24T12:00:00Z");
+    const fake = fakeDb(collection, new Date("2026-09-03T04:10:00Z"));
+    stub.db.transaction = fake.db.transaction;
+
+    await persistScores("user_1", [ranked()], collection.getTime(), null);
+
+    expect(fake.wrote()).toEqual({ deleted: false, insertedRows: 0 });
+  });
+
+  // THE LOCK IS WHAT MAKES THE COMPARISON MEAN ANYTHING, and it is invisible in
+  // every result this function produces — a write with the lock and a write
+  // without one look identical. So it is asserted from the statements the
+  // transaction executed.
+  //
+  // A first version of the guard had only the comparison, which proves the
+  // index had not moved at the instant it ran and not at COMMIT: a rebuild
+  // could commit its support writes and its clear in the gap before the
+  // inserts, and those pre-rebuild rows would survive.
+  it("takes both locks before either fingerprint read", async () => {
+    const at = new Date("2026-07-24T12:00:00Z");
+    const fake = fakeDb(at, at);
+    stub.db.transaction = fake.db.transaction;
+
+    await persistScores("user_1", [ranked()], at.getTime(), at.getTime());
+
+    // Asserted as the whole sequence rather than as two `indexOf` comparisons,
+    // because what makes this write safe is that NOTHING is read before the
+    // locks are held — and a pair of "before" checks passes over a third read
+    // that slipped between them.
+    expect(fake.trace()).toEqual([
+      "execute", // the writer-version stamp
+      "lock:user",
+      "lock:index-shared",
+      "read:collection",
+      "read:index",
+    ]);
+  });
+
+  // A LOCK AFTER THE COMPARISON IS NOT A LOCK. This transaction can park on
+  // either key, and while it is parked the thing it just compared moves: with
+  // the index lock taken after the collection read, a rebuild holding that key
+  // held this write long enough for an upload to commit, delete this user's
+  // scores, and be followed by these pre-upload rows landing anyway. Round 2.
+  it("takes the user lock before reading the collection generation", async () => {
+    const at = new Date("2026-07-24T12:00:00Z");
+    const fake = fakeDb(at, at);
+    stub.db.transaction = fake.db.transaction;
+
+    await persistScores("user_1", [ranked()], at.getTime(), at.getTime());
+
+    const t = fake.trace();
+    // Membership first, and not as belt-and-braces: `indexOf` returns -1 for an
+    // absent entry and -1 is less than every index, so the comparison below
+    // PASSES when the lock is not taken at all. Found by removing it.
+    expect(t).toContain("lock:user");
+    expect(t.indexOf("lock:user")).toBeLessThan(t.indexOf("read:collection"));
+    // The per-user key is `replaceCollection`'s own, which is what makes the
+    // collection comparison atomic with the writes below it.
+    expect(fake.executed().join(" ")).toContain("hashtextextended");
+  });
+
+  it("takes the index lock shared, never exclusive", async () => {
+    const at = new Date("2026-07-24T12:00:00Z");
+    const fake = fakeDb(at, at);
+    stub.db.transaction = fake.db.transaction;
+
+    await persistScores("user_1", [ranked()], at.getTime(), at.getTime());
+
+    // Shared on the index key: score writes have no reason to serialise
+    // against each other, and the one exclusive taker is the rebuild. Read
+    // off the trace, since the per-user lock IS exclusive and a substring
+    // sweep of the raw statements cannot tell the two keys apart.
+    expect(fake.trace()).toContain("lock:index-shared");
+  });
+
+  // No index generation means no check, so there is nothing for a lock to
+  // protect and taking one would serialise every caller that predates this
+  // parameter against a rebuild for no reason.
+  it("takes no lock when the caller omits the index generation", async () => {
+    const at = new Date("2026-07-24T12:00:00Z");
+    const fake = fakeDb(at, at);
+    stub.db.transaction = fake.db.transaction;
+
+    await persistScores("user_1", [ranked()], at.getTime());
+
+    // The per-user lock is unconditional — the collection guard always runs —
+    // so what an omitted index generation must skip is the INDEX key and its
+    // read, not every lock in the transaction.
+    expect(fake.trace()).toEqual(["execute", "lock:user", "read:collection"]);
+  });
+
   // Most of a set's rows already exist, so the conflict path is the one that
   // runs. A version left out of it survives the recompute meant to heal it, and
   // `loadScores` condemns the set again on the very next read — a recompute on
@@ -208,6 +399,19 @@ describe("persistScores generation guard", () => {
     expect(announced).toContain("set_config");
     expect(announced).toContain("app.writer_version");
     expect(announced).toContain(String(SCORE_WRITER_CURRENT));
+  });
+
+  // THE LOCK AND THE VERSION ARE ONE FIX, and this is the half no other case
+  // states. `persistScores` still has an unchecked three-argument path, and it
+  // cannot be closed by making the argument required: what reaches it is a
+  // PREVIOUS DEPLOYMENT, running code with no fourth argument to pass, which can
+  // insert after a rebuild's clear and announce the version it knows. Unless the
+  // version moves with the guard, those rows read as current for ever.
+  //
+  // Pinned as an inequality against the guard's arrival rather than as the
+  // literal 4, so the next bump does not have to edit this case to keep it true.
+  it("announces a writer version above the last unguarded one", () => {
+    expect(SCORE_WRITER_CURRENT).toBeGreaterThan(LAST_UNGUARDED_WRITER);
   });
 
   it("drops the write when the first-ever confirm lands mid-compute", async () => {
