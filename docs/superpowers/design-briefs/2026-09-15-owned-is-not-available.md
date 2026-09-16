@@ -235,6 +235,37 @@ ships **ahead of and separately from** this design round and needs no handoff su
 
 ---
 
+### §5.1 When a palette needs a `--success` of its own
+
+Design's diagnosis, ratified 2026-09-16, recorded as a rule so the next palette
+review is a one-line check rather than a re-derivation:
+
+> **Three greens on one surface is the trigger. Two greens separated by ΔL ≥ 0.12
+> is fine.**
+
+Why it holds. `--success` and `--g` are 0.5° apart in five of the six themes and
+that is NOT a defect on its own: at L 0.664 against L 0.532 they read as a clean
+light/dark pair of one semantic family, and the lightness carries the separation
+the hue does not. Canopy broke because its accent landed a **third** green
+between them, so the ladder stopped being a two-step and the dot lost its anchor.
+
+Two consequences worth stating:
+
+- **`--g` is never the token to re-cut.** It is a WUBRG identity pip: its value
+  means the same thing in every theme by design, and `--success` matching it in
+  five palettes is a coincidence of two greens rather than a system. The phyrexia
+  `--g` override exists for an unrelated reason (its oil-teal accent sat ΔE 0.09
+  from green) and is not a precedent for this.
+- **The hue floor in `contract.test.ts` stays scoped to Canopy.** Widening it
+  would fail four palettes over a reading nobody has reported and whose cause is
+  now named as absent from them.
+
+Measured afterwards and recorded here: **phyrexia is clear on this defect** —
+`--success` vs `--g` is 11.4° apart at ΔL 0.157, the largest lightness separation
+of the six. Its tightest pair is a different one, `accent` vs `--success` at
+ΔE 0.117, which is the ownership dot against the accent rather than against a
+pip. Unreported, unacted on, and open with Design.
+
 ## §6 Out of scope
 
 - The `/commanders` list row and `/discover` (ruling 8).

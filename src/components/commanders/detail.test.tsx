@@ -9,6 +9,7 @@ import { synergyCopy } from "../../lib/copy/synergy-discovery";
 import type { CommanderDetailScore } from "../../lib/recs/recommend";
 import type { SynergyState } from "../../lib/recs/synergy-state";
 import { CommanderDetail } from "./detail";
+import { explainedCopy } from "../../lib/copy/commander-explained";
 import type { SynergyCard } from "../../lib/commanders/synergy-cards";
 
 const noSynergyCards: SynergyCard[] = [];
@@ -464,5 +465,56 @@ describe("the price reaches both panels", () => {
     // Both panels are in the document at once — one per width — so a price that
     // reached only one of them shows up as a count of 1.
     expect(screen.getAllByText(/\$4\.50/).length).toBeGreaterThanOrEqual(2);
+  });
+});
+
+// ── The key's page-level half is actually wired ────────────────────────────
+//
+// `coverage-section.test.tsx` proves the INVARIANT by injecting `markerElsewhere`
+// directly, which is the right shape for that test and means it never touches
+// this computation or either call site. A regression dropping
+// `synergyCards.some(drawsMarker)` — or passing it to one panel and not the
+// other, which is how the price bug shipped — would stay green there.
+describe("the dot key reads the synergy panel too", () => {
+  const freeRoleCard = {
+    oracleId: "o-free", name: "Sol Ring", inclusionPct: 80, committedTo: null,
+    availability: { owned: 2, hard: 0, soft: 0, free: 2, claims: [] },
+  };
+  const contendedSynergy: SynergyCard = {
+    oracleId: "o-held", name: "Rhystic Study", typeLine: "Enchantment",
+    facet: "enchantment", inclusionPct: 44, synergyPts: 60,
+    owned: true, committedTo: null,
+    availability: { owned: 1, hard: 1, soft: 0, free: 0, claims: [] },
+    price: null, manaCost: null,
+  };
+
+  it("drops the availability claim when only a synergy row is marked", () => {
+    const c = commander();
+    render(
+      <CommanderDetail
+        commander={{ ...c, roleCards: { ...c.roleCards, ramp: [freeRoleCard] } }}
+        rank={1}
+        isBestFit
+        synergyCards={[contendedSynergy]}
+        newestAsOf={null}
+      />,
+    );
+    // Role Coverage is entirely free; the marker is in the panel below it.
+    expect(screen.getAllByText(explainedCopy.committed.dotOwned).length).toBeGreaterThan(0);
+    expect(screen.queryByText("Owned and available.")).toBeNull();
+  });
+
+  it("keeps the claim when nothing anywhere is marked", () => {
+    const c = commander();
+    render(
+      <CommanderDetail
+        commander={{ ...c, roleCards: { ...c.roleCards, ramp: [freeRoleCard] } }}
+        rank={1}
+        isBestFit
+        synergyCards={[{ ...contendedSynergy, availability: null }]}
+        newestAsOf={null}
+      />,
+    );
+    expect(screen.getAllByText("Owned and available.").length).toBeGreaterThan(0);
   });
 });

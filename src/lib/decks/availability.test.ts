@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { availabilityState } from "./availability";
+import { availabilityState, drawsMarker, type Availability } from "./availability";
 
 describe("availabilityState", () => {
   it("is free when nothing claims the card", () => {
@@ -88,5 +88,45 @@ describe("availabilityState, on a deck's own decklist (selfExcluded)", () => {
     for (const r of rows) {
       expect(availabilityState(r, self), r.name).toBe(r.expected);
     }
+  });
+});
+
+describe("drawsMarker", () => {
+  // The shared predicate behind three renderers — the chip, the synergy slot and
+  // the dot key that has to know whether either is saying anything. Pinned here
+  // because the components exercise their own composition of it, not the
+  // partition itself, and a drift would show up as two surfaces disagreeing
+  // about one card rather than as a failing test.
+  const a = (over: Partial<Availability> = {}): Availability => ({
+    owned: 2, hard: 0, soft: 0, free: 2, claims: [], ...over,
+  });
+
+  it("says nothing for a free card — the round's whole point", () => {
+    expect(drawsMarker({ availability: a() })).toBe(false);
+  });
+
+  it("speaks for soft, hard and over", () => {
+    expect(drawsMarker({ availability: a({ soft: 1 }) })).toBe(true);
+    expect(drawsMarker({ availability: a({ hard: 2, free: 0 }) })).toBe(true);
+    expect(drawsMarker({ availability: a({ hard: 3, free: -1 }) })).toBe(true);
+  });
+
+  // NO ROW is not "unowned" — an unowned card, a basic, or a read that could not
+  // reach all arrive as null, and none of them has a claim to report.
+  it("says nothing when there is no availability row", () => {
+    expect(drawsMarker({ availability: null })).toBe(false);
+  });
+
+  // An unowned card draws a BUY TAG instead. The slot is one column with two
+  // occupants, so a card you do not own is never also carrying a marker — and
+  // without this guard the dot key would count a priced row as a marker.
+  it("says nothing for an unowned card, whatever its claim picture", () => {
+    expect(drawsMarker({ owned: false, availability: a({ hard: 2, free: 0 }) })).toBe(false);
+  });
+
+  // Absent means owned: Role Coverage is built from the owned pool and its cards
+  // carry no `owned` field at all.
+  it("treats an absent owned flag as owned", () => {
+    expect(drawsMarker({ availability: a({ hard: 2, free: 0 }) })).toBe(true);
   });
 });

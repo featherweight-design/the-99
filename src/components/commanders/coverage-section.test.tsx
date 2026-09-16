@@ -50,6 +50,7 @@ function renderSection(
     roleCards?: Record<RoleName, RoleCard[]>;
     roleCounts?: Record<RoleName, number>;
     synergyState?: "ok" | "absent" | "degraded";
+    markerElsewhere?: boolean;
     retryCoverageFigures?: () => Promise<Record<RoleName, RoleCard[]> | null>;
   } = {},
 ) {
@@ -59,6 +60,11 @@ function renderSection(
     roleCards = EMPTY_ROLE_CARDS,
     roleCounts = BASE_ROLE_COUNTS,
     synergyState = "ok",
+    // Defaults to what the ROLE panels alone would say, which is what this
+    // condition used to read — so every case written before the key went
+    // page-wide keeps its meaning. The cases that prove the new behaviour pass
+    // it explicitly.
+    markerElsewhere = false,
     retryCoverageFigures = vi.fn<() => Promise<Record<RoleName, RoleCard[]> | null>>().mockResolvedValue(null),
   } = overrides;
 
@@ -71,7 +77,7 @@ function renderSection(
         roleCounts={roleCounts}
         synergyState={synergyState}
         retryCoverageFigures={retryCoverageFigures}
-      />
+       markerElsewhere={markerElsewhere}/>
     </CardDetailProvider>,
   );
 }
@@ -215,6 +221,7 @@ describe("absent vs degraded note rendering", () => {
           roleCounts={BASE_ROLE_COUNTS}
           synergyState="degraded"
           retryCoverageFigures={vi.fn<() => Promise<Record<RoleName, RoleCard[]> | null>>().mockResolvedValue(null)}
+          markerElsewhere={false}
         />
       </CardDetailProvider>,
     );
@@ -232,6 +239,7 @@ describe("absent vs degraded note rendering", () => {
           roleCounts={BASE_ROLE_COUNTS}
           synergyState="absent"
           retryCoverageFigures={vi.fn<() => Promise<Record<RoleName, RoleCard[]> | null>>().mockResolvedValue(null)}
+          markerElsewhere={false}
         />
       </CardDetailProvider>,
     );
@@ -613,16 +621,13 @@ describe("edge count: 41+ cards (beyond expansion cap)", () => {
 describe("the dot key", () => {
   // A card with something to say. The deck name is gone from the signature: the
   // key is a statement about the DOT, and the dot no longer knows which deck.
-  const committed = (n: number, _deck: string): RoleCard => ({
-    ...makeCard(n),
-    availability: avail("hard"),
-  });
+  const committed = (n: number): RoleCard => ({ ...makeCard(n), availability: avail("hard") });
   // One entry, two forms. `KEY` is the form drawn once any marker is on screen.
   const KEY = explainedCopy.committed.dotOwned;
 
   // One key above four panels, not one footnote under each.
   it("draws the key once for the whole section", () => {
-    const cards = [committed(1, "Atraxa"), ...makeCards(3).slice(1)];
+    const cards = [committed(1), ...makeCards(3).slice(1)];
     renderSection({
       roleCards: { ...EMPTY_ROLE_CARDS, ramp: cards, draw: cards },
       roleCounts: { ...BASE_ROLE_COUNTS, ramp: 3, draw: 3 },
@@ -633,7 +638,7 @@ describe("the dot key", () => {
   // The key sits above every panel, so it reads every card rather than the ones
   // a cap happens to be showing — otherwise expanding a panel adds a key entry.
   it("takes the marker form for a card the resting cap is hiding", () => {
-    const cards = [...makeCards(19).slice(1), committed(20, "Atraxa")];
+    const cards = [...makeCards(19).slice(1), committed(20)];
     renderSection({ roleCards: { ...EMPTY_ROLE_CARDS, ramp: cards }, roleCounts: { ...BASE_ROLE_COUNTS, ramp: 20 } });
     expect(screen.queryByRole("button", { name: /View details for Card 20/ })).toBeNull();
     expect(screen.getByText(KEY)).toBeInTheDocument();
@@ -646,6 +651,40 @@ describe("the dot key", () => {
     renderSection({ roleCards: { ...EMPTY_ROLE_CARDS, ramp: makeCards(3) }, roleCounts: { ...BASE_ROLE_COUNTS, ramp: 3 } });
     expect(screen.getByText("Owned and available.")).toBeInTheDocument();
     expect(screen.queryByText(explainedCopy.committed.dotOwned)).toBeNull();
+  });
+
+  // ── THE INVARIANT, stated as a sentence ────────────────────────────────
+  //
+  // *No key asserts availability while a marker is on screen.*
+  //
+  // Written this way on Design's instruction, and the wording is the reason:
+  // `dotFree` says "Owned and available.", which is a claim about the COMMANDER
+  // rather than about the list beneath the key — so it cannot be computed from
+  // one panel's cards. A test that counted the role panels would pass the day a
+  // third panel starts drawing markers, which is exactly how this broke: the
+  // condition was written when four panels were the whole surface.
+  it("never asserts availability while a marker is on screen elsewhere", () => {
+    // Role Coverage itself is entirely free — every card here has a spare copy —
+    // so the panel-level answer is "no marker" and the retired condition would
+    // have printed the availability claim.
+    renderSection({
+      roleCards: { ...EMPTY_ROLE_CARDS, ramp: makeCards(3) },
+      roleCounts: { ...BASE_ROLE_COUNTS, ramp: 3 },
+      markerElsewhere: true, // ...but something on the page is marked.
+    });
+    expect(screen.getByText(explainedCopy.committed.dotOwned)).toBeInTheDocument();
+    expect(screen.queryByText("Owned and available.")).toBeNull();
+  });
+
+  // The other half of the same sentence: with nothing marked anywhere, the
+  // claim is true and the shipped string stands byte for byte.
+  it("keeps the availability claim when no marker is on screen at all", () => {
+    renderSection({
+      roleCards: { ...EMPTY_ROLE_CARDS, ramp: makeCards(3) },
+      roleCounts: { ...BASE_ROLE_COUNTS, ramp: 3 },
+      markerElsewhere: false,
+    });
+    expect(screen.getByText("Owned and available.")).toBeInTheDocument();
   });
 
   // A soft claim is a marker too, so the key moves for it. Under the old
@@ -663,17 +702,14 @@ describe("the dot key", () => {
   });
 
   it("draws the same key at phone width", () => {
-    const cards = [committed(1, "Atraxa"), ...makeCards(3).slice(1)];
+    const cards = [committed(1), ...makeCards(3).slice(1)];
     renderSection({ width: "phone", roleCards: { ...EMPTY_ROLE_CARDS, ramp: cards }, roleCounts: { ...BASE_ROLE_COUNTS, ramp: 3 } });
     expect(screen.getByText(KEY)).toBeInTheDocument();
   });
 });
 
 describe("the Role Coverage sort", () => {
-  const committed = (n: number, _deck: string): RoleCard => ({
-    ...makeCard(n),
-    availability: avail("hard"),
-  });
+  const committed = (n: number): RoleCard => ({ ...makeCard(n), availability: avail("hard") });
 
   const chooseAvailability = () => {
     fireEvent.click(screen.getByRole("button", { name: explainedCopy.coverageSort.triggerAria }));
@@ -681,7 +717,7 @@ describe("the Role Coverage sort", () => {
   };
 
   it("reorders the chips inside every panel from one control", () => {
-    const cards = [committed(1, "Atraxa"), makeCard(2)];
+    const cards = [committed(1), makeCard(2)];
     renderSection({
       roleCards: { ...EMPTY_ROLE_CARDS, ramp: cards, draw: cards },
       roleCounts: { ...BASE_ROLE_COUNTS, ramp: 2, draw: 2 },
@@ -714,7 +750,7 @@ describe("the Role Coverage sort", () => {
 
   it("leaves the owned count alone — a reorder is not a recount", () => {
     renderSection({
-      roleCards: { ...EMPTY_ROLE_CARDS, ramp: [committed(1, "Atraxa"), makeCard(2)] },
+      roleCards: { ...EMPTY_ROLE_CARDS, ramp: [committed(1), makeCard(2)] },
       roleCounts: { ...BASE_ROLE_COUNTS, ramp: 2 },
     });
     chooseAvailability();
@@ -723,7 +759,7 @@ describe("the Role Coverage sort", () => {
 
   it("announces the new order in the section's own live region", () => {
     renderSection({
-      roleCards: { ...EMPTY_ROLE_CARDS, ramp: [committed(1, "Atraxa"), makeCard(2)] },
+      roleCards: { ...EMPTY_ROLE_CARDS, ramp: [committed(1), makeCard(2)] },
       roleCounts: { ...BASE_ROLE_COUNTS, ramp: 2 },
     });
     const region = document.querySelector('[aria-live="polite"]') as HTMLElement;
