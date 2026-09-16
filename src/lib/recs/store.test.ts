@@ -259,6 +259,42 @@ describe("persistScores generation guard", () => {
     expect(fake.wrote()).toEqual({ deleted: false, insertedRows: 0 });
   });
 
+  // THE LOCK IS WHAT MAKES THE COMPARISON MEAN ANYTHING, and it is invisible in
+  // every result this function produces — a write with the lock and a write
+  // without one look identical. So it is asserted from the statements the
+  // transaction executed.
+  //
+  // A first version of the guard had only the comparison, which proves the
+  // index had not moved at the instant it ran and not at COMMIT: a rebuild
+  // could commit its support writes and its clear in the gap before the
+  // inserts, and those pre-rebuild rows would survive.
+  it("takes the index lock shared, and before reading the generation", async () => {
+    const at = new Date("2026-07-24T12:00:00Z");
+    const fake = fakeDb(at, at);
+    stub.db.transaction = fake.db.transaction;
+
+    await persistScores("user_1", [ranked()], at.getTime(), at.getTime());
+
+    const statements = fake.executed().join(" ");
+    expect(statements).toContain("pg_advisory_xact_lock_shared");
+    // Shared, never exclusive: score writes have no reason to serialise
+    // against each other, and the one exclusive taker is the rebuild.
+    expect(statements).not.toMatch(/pg_advisory_xact_lock\b(?!_shared)/);
+  });
+
+  // No index generation means no check, so there is nothing for a lock to
+  // protect and taking one would serialise every caller that predates this
+  // parameter against a rebuild for no reason.
+  it("takes no lock when the caller omits the index generation", async () => {
+    const at = new Date("2026-07-24T12:00:00Z");
+    const fake = fakeDb(at, at);
+    stub.db.transaction = fake.db.transaction;
+
+    await persistScores("user_1", [ranked()], at.getTime());
+
+    expect(fake.executed().join(" ")).not.toContain("pg_advisory");
+  });
+
   // Most of a set's rows already exist, so the conflict path is the one that
   // runs. A version left out of it survives the recompute meant to heal it, and
   // `loadScores` condemns the set again on the very next read — a recompute on

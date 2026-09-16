@@ -1,6 +1,7 @@
 import { eq, sql } from "drizzle-orm";
 import { db } from "../../db";
 import { cards, commanderScores, commanderSupport, commanderSupportCards } from "../../db/schema";
+import { SCORE_INDEX_LOCK } from "../recs/store";
 import { isCommanderCandidate } from "../recs/score";
 import { fetchEdhrecUncached, type EdhrecFetchResult } from "./client";
 import {
@@ -93,7 +94,17 @@ async function writeToDb(header: SupportHeader, cardRows: SupportCard[]): Promis
  * the whole rebuild, and the reasoning for that is at the call site.
  */
 async function clearPersistedScores(): Promise<void> {
-  await db.delete(commanderScores);
+  await db.transaction(async (tx) => {
+    // EXCLUSIVE against every in-flight score write — see `SCORE_INDEX_LOCK`.
+    // Without it the delete can land between a writer's generation check and
+    // its inserts, and those pre-rebuild rows survive the clear. In a
+    // transaction because `pg_advisory_xact_lock` is released at commit, and a
+    // bare statement would hold it for no span at all.
+    await tx.execute(
+      sql`select pg_advisory_xact_lock(hashtextextended(${SCORE_INDEX_LOCK}, 0))`,
+    );
+    await tx.delete(commanderScores);
+  });
 }
 
 /**
@@ -208,11 +219,15 @@ export async function buildCommanderIndex(
   // data before this delete, finish its fanout after it, and upsert a set
   // computed against the old index.
   //
-  // THAT RACE IS CLOSED, on the other side. `persistScores` re-reads
-  // `max(commander_support.computed_at)` inside its own transaction and
-  // abandons the write if it has moved since the caller captured it — see
-  // `indexGeneration` in `store.ts`. So this delete handles the ordinary case
-  // and that guard handles the raced one, and neither is sufficient alone.
+  // THAT RACE IS CLOSED, on the other side and with a lock. `persistScores`
+  // takes `SCORE_INDEX_LOCK` shared, then re-reads
+  // `max(commander_support.computed_at)` and abandons the write if it moved
+  // since the caller captured it; the clear below takes the same lock
+  // exclusively. The comparison alone was not enough — it proves the index had
+  // not moved at the instant it ran, not at commit — so a delete landing
+  // between a writer's check and its inserts would leave pre-rebuild rows
+  // behind. This delete handles the ordinary case, that guard handles the raced
+  // one, and neither is sufficient alone.
   //
   // An earlier revision of this comment described the race as open and named a
   // migration plus a reader-side check as the fix. Neither was built: the guard

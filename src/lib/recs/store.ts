@@ -105,6 +105,17 @@ export async function collectionGeneration(userId: string): Promise<number | nul
 }
 
 /**
+ * The advisory-lock key that coordinates score writes with an index rebuild.
+ *
+ * Not per-user, unlike the collection replace's: what it serialises is every
+ * score write against the ONE rebuild, so the key names the resource rather
+ * than a reader. `hashtextextended` because `pg_advisory_xact_lock` takes a
+ * bigint and this repo already reaches for that pairing in `collection/import`
+ * and `decks/assign`.
+ */
+export const SCORE_INDEX_LOCK = "commander-scores:commander-index";
+
+/**
  * Fingerprint of the commander index a score compute is about to read.
  *
  * The same idea as `collectionGeneration` and for a sharper reason. Ruling D
@@ -199,7 +210,22 @@ export async function persistScores(
     // ago, and a rebuild committing in between makes every synergy figure in
     // them stale. Skipped when the caller passed nothing, so this cannot turn
     // an un-checked caller into one that never writes.
+    //
+    // THE LOCK IS WHAT MAKES THE COMPARISON MEAN ANYTHING, and a first version
+    // of this guard had only the comparison. A read alone proves the index had
+    // not moved at the instant it ran, not at COMMIT: the rebuild could commit
+    // its support writes and its `clearScores()` in the gap between this check
+    // and the inserts below, and those pre-rebuild rows would then survive the
+    // clear. `pg_advisory_xact_lock_shared` closes it from both sides —
+    // either this transaction holds the lock and the clear waits until the rows
+    // it must delete exist, or the clear holds it and this read happens
+    // afterwards and sees the new generation. Shared rather than exclusive
+    // because score writes have no reason to serialise against EACH OTHER; the
+    // one exclusive taker is the rebuild.
     if (indexGen !== undefined) {
+      await tx.execute(
+        sql`select pg_advisory_xact_lock_shared(hashtextextended(${SCORE_INDEX_LOCK}, 0))`,
+      );
       const [ig] = await tx
         .select({ at: sql<Date | null>`max(${commanderSupport.computedAt})` })
         .from(commanderSupport);
