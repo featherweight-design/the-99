@@ -3,6 +3,7 @@
 import { requireUserId } from "../../../lib/auth";
 import { scoreOneCommander } from "../../../lib/recs/recommend";
 import { resolveCommanderSlug } from "../../../lib/discovery/resolve-slug";
+import { loadFreePool } from "../../../lib/recs/free-ranking";
 import type { RoleCard, RoleName } from "../../../lib/recs/score";
 import { loadAvailability } from "../../../lib/decks/availability-query";
 import { withAvailability } from "../../../lib/decks/availability";
@@ -12,6 +13,24 @@ import { withAvailability } from "../../../lib/decks/availability";
     not one per panel. Null means it failed again and the note stays put. */
 export async function retryCoverageFigures(
   slug: string,
+  /**
+   * The mode the page is drawing, carried from the URL the reader is on.
+   *
+   * WITHOUT IT THE RETRY CHANGES THE POOL. `/commanders/[slug]?avail=free` scores
+   * against the free pool — the cards no committed deck is holding — and this
+   * action scored against everything owned, because it passed no pool at all. So
+   * a successful retry in free mode handed back cards the free list deliberately
+   * excludes, and Role Coverage silently became the all-owned panel while the URL
+   * still said free.
+   *
+   * REQUIRED, with no default. A default is what let this break in the first
+   * place — the action scored against the collection because nothing made it
+   * say otherwise — and `CoverageSectionProps.avail` is required, so a default
+   * here would leave the chain required at one link and defaultable at the
+   * other. A future `retryCoverageFigures(slug)` should be a type error, not a
+   * silent all-owned panel behind a free URL.
+   */
+  avail: "all" | "free",
 ): Promise<Record<RoleName, RoleCard[]> | null> {
   const userId = await requireUserId();
 
@@ -21,7 +40,26 @@ export async function retryCoverageFigures(
   const found = await resolveCommanderSlug(userId, slug);
   if (!found) return null;
 
-  const scored = await scoreOneCommander(userId, found.oracleId, slug);
+  // The same pool the page scored with — and it is NOT free to ask for.
+  //
+  // `loadFreePool` is `cache()`d, but `cache()` is per-REQUEST and a Server
+  // Action runs in its own POST: nothing the page's render memoised is reachable
+  // from here. So a free-mode retry pays a full `loadAvailability` rollup over
+  // the whole collection for the pool, on top of the narrowed one below for the
+  // re-stamp. An earlier version of this comment claimed it was a map read; it
+  // is not, and the difference is the most expensive query on this path.
+  //
+  // Accepted rather than optimised: a retry is rare and user-initiated — it
+  // exists for a degraded EDHREC — and the alternative is handing back cards
+  // scored against a pool the reader did not ask for, which is the defect this
+  // fixes.
+  //
+  // `?? undefined` rather than passing null: a null free pool means the read
+  // failed, and `scoreOneCommander` reads undefined as "score against the
+  // collection" — the same fallback the page takes on that outage.
+  const pool = avail === "free" ? ((await loadFreePool(userId)) ?? undefined) : undefined;
+
+  const scored = await scoreOneCommander(userId, found.oracleId, slug, pool);
   if (!scored) return null;
 
   // Return only roleCards — the section owns the state update.
