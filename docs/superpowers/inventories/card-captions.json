@@ -14,7 +14,7 @@
       "steps": [
         {
           "goto": "/collection?view=grid",
-          "wait": "[class*=\"min-h-[46px]\"]",
+          "wait": "[class*=\"min-h-[50px]\"]",
           "settle": 3500
         }
       ]
@@ -35,7 +35,7 @@
           "settle": 500
         },
         {
-          "wait": "[class*=\"min-h-[46px]\"]",
+          "wait": "[class*=\"min-h-[50px]\"]",
           "settle": 2000
         }
       ]

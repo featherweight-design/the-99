@@ -101,20 +101,24 @@ export const deckVersioningCopy = {
     // rendered visually.
     addMarkA11y: "pending add",
     /**
-     * The card view's two DRAWN figures, which the list has no use for.
+     * The card view's ONE drawn figure, which the list has no use for.
      *
-     * A tile's count has a line of its own, so the draft's figure takes that
+     * A tile's count has a line of its own, so a recount's pair takes that
      * position rather than the name's — where the row must put it, because the
      * row's count lives beside the name. The pair is therefore bare here: the
      * name is already on the line below, and `deckImportCopy.update.diff
      * .recountedItem` would repeat it.
      *
-     * `tileAdded` is signed because it is a DELTA and not a count. The row has
-     * no shape for it at all — a row the version did not hold has no count to
-     * move — which is the one thing the tile says that the list cannot.
+     * There is no `tileAdded`. It existed, printing `+N` for a card the draft
+     * added, and was RETIRED on 2026-09-15 (readiness erratum 11): it restated
+     * the count beside it, and in a singleton format nearly every add is `+1`.
+     * An add falls through to the ordinary count instead, which is what the row
+     * already does — `decklist-row.tsx` prints its glyph on
+     * `quantity > 1 && !recounted`, so an added singleton is a bare name there
+     * too. A pair is different and stays: `6 → 8` is a move, and no count says
+     * that.
      */
     tilePair: (from: number, to: number) => `${from} → ${to}`,
-    tileAdded: (n: number) => `+${n}`,
     // A recounted row prints `Sol Ring 1 → 2` beside the name, but the name's
     // accessible label is the card's whole printed name and carries no count, so
     // the pair would never be spoken. It rides the same description as the word.

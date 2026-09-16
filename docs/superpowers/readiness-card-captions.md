@@ -1,14 +1,23 @@
 # READINESS — Card captions (R1 audit)
 
-**Verdict: 🟢 Green, with nine errata — one withdrawing a claim this audit made, and one recording
-that Design then overturned the withdrawal with a better argument.** All four calls the brief left open are called, every
-named state is drawn, and nothing here waits on a design decision. The errata below are
-eng-resolvable under the handoff's own tie-break rule and do not return to Design.
+**Verdict: 🟢 Green, with twelve errata.** All four calls the brief left open are called and every
+named state is drawn.
 
-Erratum 5 was added after the brief's own review round; the other five came from the audit.
+**Errata 1–9 are eng-resolvable** under the handoff's own tie-break rule and did not return to
+Design — one withdraws a claim this audit made, and one records that Design then overturned the
+withdrawal with a better argument.
+
+**Errata 10–12 are a different kind.** They are Hugh's own rulings, taken after the feature shipped
+and after seeing it on real decks, and each overturns something the handoff called. They are
+shipped and awaiting Design's **ratification** rather than Design's decision; the tracker row is ⚖️
+rather than 🟢.
+
+Errata 1–4 and 6 came from the audit itself; erratum 5 was added after the brief's own review
+round, 7 and 9 from reviews of the work, 8 is a note on where the handoff lived, and 10–12 are
+Hugh's post-ship rulings.
 
 **Audited against `origin/main` at `f5745d11` on 2026-09-15.** Every claim below was read on that
-commit. The handoff was drawn against an earlier tree, and three of the five errata are merges
+commit. The handoff was drawn against an earlier tree, and three of those errata are merges
 that landed after it was drawn.
 
 **Handoff:** `design/design_handoff_the99_card_captions/`.
@@ -93,6 +102,11 @@ are not the same box now, and no two of them agree:
 | collapsed `$` (tile) | `9px`, flat | `py-[1px]` | inset `boxShadow` — no layout | `buy-tag.tsx:42`, `:213`, `:34` |
 | `P` (band) | `9px`, flat | `py-[1px]` | `outline` at `-1px` — no layout | `proxy-tag.tsx:46`, `:87`, `:41` |
 
+> These are the three boxes AS AUDITED, which is what the erratum is about. The unified caption box
+> they became is `py-[3px]` since erratum 12 — and the `P` above is the tile's own
+> `variant="band" plate={false}` call, so that reading moved with it. What is untouched is each
+> variant's PLATED form: the row's, and the band's on the commander spine.
+
 **Two corrections to an earlier draft of this erratum, both found by a cold review of the plan.**
 It cited `proxy-tag.tsx:44`, the **row** variant, and concluded `P` steps to 9.5px at `md:`. The
 in-scope call site is `deck-card-tile.tsx:121`, `variant="band"`, which is flat 9px. So the `$` and
@@ -110,8 +124,9 @@ none of them as shipped.
 
 **Resolution — eng, not Design.** The handoff's component tie-break cannot settle a three-way
 disagreement *between* components, so the handoff's own figure is the ruling: the unified box is
-`9px` desktop / `8.5px` phone, `px-[5px] py-[1px]`, radius 4, **and the chip's border becomes an
-outline** so the three boxes are the same height. Normalizing is the entire point of the call.
+`9px` desktop / `8.5px` phone, `px-[5px] py-[3px]` (`py-[1px]` as first ruled — **erratum 12 grew
+it**), radius 4, **and the chip's border becomes an outline** so the three boxes are the same
+height. Normalizing is the entire point of the call.
 
 **The containment boundary is a variant, not a call site.** None of the three variants involved is
 exclusive to these two routes:
@@ -142,12 +157,17 @@ see the border, since a class-list assertion reads `border` and `outline` as equ
 `TILE_ART_RATIO` from the live tile *so that a removed card leaves a hole exactly its own size*.
 
 Its caption height is hardcoded: `min-h-[44px] md:min-h-[36px]` (`:53`) — the live tile's current
-figure. The handoff takes the caption to a fixed 52/46. The receipt then sits 8px short at the
-phone and 10px short on desktop, and the invariant its own comment states quietly stops holding.
+figure. The handoff took the caption to a fixed 52/46, which left the receipt 8px short at the phone and
+10px short on desktop — the invariant its own comment states, quietly stopping.
 
 **Resolution — eng, not Design.** The receipt's design is unchanged; only its height is wrong.
 Export the caption height beside `TILE_SHELL` and have both read it, exactly as they already share
 the shell and the ratio. Ledger gains an item.
+
+**Fixed, and it stayed fixed through erratum 12.** `deck-card-undo-tile.tsx` reads
+`CARD_TILE_CAPTION_H` rather than restating a figure, so when the chip's padding took the caption to
+56/50 the receipt moved with it. That is the whole reason the constant exists, and this branch is
+where it first paid.
 
 ## Erratum 5 — the grid is a tile floor, not a column count
 
@@ -244,6 +264,38 @@ other**, not to the row's box.
 key keeps rendering the row variant exactly as it does today, on both instances, and nothing here
 redraws a box. The figures in that table are struck rather than implemented.
 
+## Errata 10–12 — three rulings from Hugh, 2026-09-15, after seeing it on real decks
+
+All three overturn something the handoff called. Recorded here for Design to ratify; the tracker
+row moves to ⚖️.
+
+**10 · The draft edge runs the whole left edge of the tile, not the caption.** It is a DRAWN 2px
+strip, not an inset shadow on the shell: an inset shadow paints above the element's background and
+below its descendants, and the tile's first child is the full-bleed opaque art — so a shadow was
+covered for the whole height of the picture and showed only across the caption, which is the reach
+the move was made to escape. The row gets away with a shadow because a row has no opaque full-width
+child.
+ Call B put it on the
+caption because the shell's border already carries over-committed and "the two facts are
+orthogonal". `decklist-row.tsx:268-269` had already settled that the other way and shipped it — the
+row stacks `inset 2px 0 0 0 --accent` and `inset 0 0 0 1px --avail-over-border` on ONE element, and
+a row that is both reads fine because the chip carries the shortfall while the edge carries the
+draft. Hugh's evidence was a tile that is both: the red `short 1` chip stays obvious under the
+accent edge. Over 46px of caption the edge was easy to miss; over a whole tile it is not, and the
+two views now say it the same way.
+
+**11 · A single-copy add prints no figure.** Call B specified `+N` for an add. It restated the count
+beside it, and in a singleton format nearly every add is `+1`. Dropped — an add now falls through
+to the ordinary count, which is what the list already does (`decklist-row.tsx` prints its glyph on
+`quantity > 1 && !recounted`, so an added singleton is a bare name there too). **Recount pairs are
+unchanged**: `6 → 8` is a move and says something a count cannot.
+
+**12 · The slot box gains vertical padding, and the caption grows with it.** `py-[1px]` around 9px
+of text read as pinched on every chip — most visibly the proxy `P` and `1 in a brew`. Now
+`py-[3px]`, which takes the box from 10.5px to 14.5px. The meta line grows 13/14 → 17/18 or the box
+clips, and the caption 52/46 → **56/50** or the height stops being fixed, which erratum 3's whole
+argument depends on. The figures in `design-tables/collection.md` move with it.
+
 ## Erratum 8 — the handoff is not on `main`
 
 It was delivered as an untracked drop inside `.worktrees/about-r3-audit/`, on branch
@@ -274,9 +326,9 @@ pressure will reach for exactly them:
 | 2 | `BuyTag` gains the same prop | no |
 | 3 | `collection/grid-view.tsx` — caption chassis, `repeat(auto-fill, minmax(178px, 1fr))` (erratum 5) | after 1 |
 | 4 | `deck-card-tile.tsx` — caption chassis, `✕` column, art bare, scrim deleted. **`CostPips`, `spokenManaCost` and the no-art branch all stay** (erratum 2) | after 1, 2 |
-| 5 | Caption height exported beside `TILE_SHELL`; `UndoTile` reads it (erratum 4) | after 4 |
+| 5 | Caption height exported beside `TILE_SHELL`; `UndoTile` reads it (erratum 4). The figure is **56/50** since erratum 12 | after 4 |
 | 6 | `decklist-group.tsx` — same floor as `/collection`; the stale Add-panel comment corrected (erratum 5) | after 4 |
-| 7 | `usePendingChange` second consumer; caption edge + `1 → 2` / `+N` (erratum 1 — unblocked) | after 4 |
+| 7 | `usePendingChange` second consumer; the accent rule + `1 → 2` (erratum 1 — unblocked). **Errata 10–11 moved the rule to a drawn strip down the whole tile and dropped `+N` entirely** | after 4 |
 | 8 | `ProxyTag` moves from the tile's art to the caption slot — already drawn at `deck-card-tile.tsx:121` (erratum 1) | after 4 |
 | 9 | `MarkKey` in card view — **reinstated by `ADDENDUM-the-key.md`** as 9a–9d: one new string, one optional prop, one guard becomes a branch. Samples unchanged (erratum 9) | no |
 | 10 | `×1` suppressed on `/collection` — severable, recommended | after 3 |

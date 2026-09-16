@@ -168,25 +168,55 @@ const ART = (page) =>
  * The draft's treatment on the tiles: the accent edge, and the figure standing
  * in the count's position.
  *
- * `boxShadow` rather than a class, because the edge is an inline style and the
- * question is which ELEMENT carries it — the caption, never the shell, whose
- * border already carries over-committed.
+ * A PAINTED STRIP's geometry, not a style holder. Two earlier versions asked
+ * which element carried an inline `boxShadow`, and neither could see the defect
+ * that mattered: an inset shadow on the shell paints below the opaque art, so
+ * the rule was invisible across the picture while sitting on exactly the element
+ * the check wanted. What it reads now is the strip's height against its tile's.
  */
 const DRAFT = ({ page }) => {
-  const edged = [...document.querySelectorAll(`${page} *`)].filter((el) =>
-    (el.style.boxShadow ?? "").includes("var(--accent)"),
-  );
+  // Found by its painted background at the accent colour, in a box no wider than
+  // 4px — the rule, whatever element happens to draw it.
+  const bg = (el) => getComputedStyle(el).backgroundColor;
+  const accent = getComputedStyle(document.documentElement).getPropertyValue("--accent").trim();
+  const probe = document.createElement("span");
+  probe.style.color = accent;
+  document.body.appendChild(probe);
+  const accentRgb = getComputedStyle(probe).color;
+  probe.remove();
+  // WIDTH AND SIDE, not just "narrow". `width <= 4` alone accepts a ZERO-width
+  // strip, which paints nothing and is the cheapest way to pass this check
+  // while shipping the defect it exists for.
+  const edged = [...document.querySelectorAll(`${page} span`)].filter((el) => {
+    if (bg(el) !== accentRgb) return false;
+    const r = el.getBoundingClientRect();
+    return r.width >= 1.5 && r.width <= 4;
+  });
   return {
     edges: edged.length,
-    // The caption is the flex row; the shell is the rounded plate above it. If
-    // the edge ever migrates, this is what says so.
-    onCaption: edged.filter((el) => el.className.includes("items-stretch")).length,
+    accentRgb,
+    // The strip has to REACH THE ART, which is the whole point of erratum 10 and
+    // the thing the previous check could not see. Its height against its tile's.
+    // Against the TILE, found by walking out to the rounded plate rather than
+    // trusting the immediate parent — and on the LEFT edge, since a rule pinned
+    // right covers just as much height while marking the wrong side.
+    coversArt: edged.filter((el) => {
+      let shell = el.parentElement;
+      while (shell && !/rounded-\[(9|10)px\]/.test(shell.className ?? "")) {
+        shell = shell.parentElement;
+      }
+      if (!shell) return false;
+      const r = el.getBoundingClientRect();
+      const s = shell.getBoundingClientRect();
+      if (s.height <= 0) return false;
+      return r.height / s.height > 0.9 && Math.abs(r.left - s.left) <= 2;
+    }).length,
     // SCOPED TO A CAPTION. Unscoped, this read the deck header's own `+1`
     // pending-count chip and passed with the tile's figure deleted outright —
     // the check existed and measured nothing. The caption is the only place the
     // tile's figure can legitimately be.
     figures: [...document.querySelectorAll(
-      `${page} [class*="min-h-[52px]"][class*="min-h-[46px]"] span`,
+      `${page} [class*="min-h-[56px]"][class*="min-h-[50px]"] span`,
     )]
       .filter((el) => /^(\+\d+|\d+ → \d+)$/.test((el.textContent ?? "").trim()))
       .map((el) => el.textContent.trim()),
@@ -195,11 +225,12 @@ const DRAFT = ({ page }) => {
 
 /** Every caption's height, and every slot box's height, on the page. */
 const CAPTIONS = (page) => {
-  // BOTH halves of the pair. `decklist-row`'s meta shell is also `min-h-[52px]`
-  // — with `md:min-h-[34px]` — so matching the phone figure alone measured the
+  // BOTH halves of the pair. The caption's phone figure was 52 until the chip
+  // padding grew it to 56 (erratum 12), and `decklist-row`'s meta shell is
+  // `min-h-[52px] md:min-h-[34px]` — so matching one figure alone measured the
   // LIST's rows and reported a tidy single height of 34 for them.
   const caps = [...document.querySelectorAll(
-    `${page} [class*="min-h-[52px]"][class*="min-h-[46px]"]`,
+    `${page} [class*="min-h-[56px]"][class*="min-h-[50px]"]`,
   )];
   const heights = [...new Set(caps.map((c) => Math.round(c.getBoundingClientRect().height)))];
   // The slot's occupants: the one box, whoever is in it. Found by the geometry they share —
@@ -237,7 +268,7 @@ const GRID = ({ page }) => {
   const grids = [...document.querySelectorAll(`${page} *`)].filter((el) => {
     const s = getComputedStyle(el);
     if (!s.display.includes("grid")) return false;
-    return el.querySelector('[class*="min-h-[52px]"][class*="min-h-[46px]"]') !== null;
+    return el.querySelector('[class*="min-h-[56px]"][class*="min-h-[50px]"]') !== null;
   });
   if (!grids.length) return null;
   const tracks = getComputedStyle(grids[0]).gridTemplateColumns.split(" ").filter(Boolean);
@@ -451,13 +482,18 @@ async function run() {
         // caption. Zero would mean the card view still photographs a dirty draft
         // as a clean one, which is the state this whole call exists to end.
         failures += !report(
-          `${width}px · draft · one accent edge, on the caption`,
-          draft.edges === 1 && draft.onCaption === 1,
-          `${draft.edges} edges, ${draft.onCaption} on a caption`,
+          // A 2px rule ON THE LEFT, tall enough to cross the art. Which element
+          // holds the style is NOT the assertion, and is what both previous
+          // versions asked while passing a build painted under the picture.
+          `${width}px · draft · one accent rule, covering the tile`,
+          draft.edges === 1 && draft.coversArt === 1,
+          `${draft.edges} rules, ${draft.coversArt} reaching the art`,
         );
+        // NO `+1`. A single-copy add prints no figure at all now — the edge says
+        // the draft touched it and the count says nothing it could not assume.
         failures += !report(
-          `${width}px · draft · a signed figure in the count's position`,
-          draft.figures.includes("+1"),
+          `${width}px · draft · a single-copy add prints no figure`,
+          draft.figures.length === 0,
           `figures ${draft.figures.join(" / ") || "none"}`,
         );
       }

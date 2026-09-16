@@ -366,16 +366,23 @@ describe("DeckCardTile — the draft touched this card", () => {
     ).toBeInTheDocument();
   });
 
-  it("prints a signed delta for a card the draft added", () => {
-    // The list view has no shape for this at all: a row the version did not hold
-    // has no count to move. It is the one thing the tile says that the row cannot.
+  it("prints no figure for a single-copy add, only the edge", () => {
+    // `+1` restated the row beside it, and in a singleton format nearly every
+    // add is `+1`. The list does the same — an added singleton is a bare name
+    // there — and the draft is still said by the edge and spoken in full.
     renderWithDraft([[card.oracleId, { from: 0, to: 1 }]], card);
 
-    expect(screen.getByText(deckVersioningCopy.pending.tileAdded(1))).toBeInTheDocument();
+    expect(screen.queryByText("+1")).not.toBeInTheDocument();
     expect(screen.getByText(deckVersioningCopy.pending.addMarkA11y)).toBeInTheDocument();
   });
 
-  it("draws the accent edge on the caption, never the shell", () => {
+  it("still counts a multi-copy add, which is a number nobody could assume", () => {
+    renderWithDraft([[card.oracleId, { from: 0, to: 3 }]], { ...card, quantity: 3 });
+
+    expect(screen.getByText(addPanelCopy.row.quantity(3))).toBeInTheDocument();
+  });
+
+  it("draws the accent rule as an element, tall enough to reach the art", () => {
     const { container } = render(
       <CardDetailProvider fetchCard={vi.fn().mockResolvedValue(null)}>
         <PendingChangeProvider value={{ moves: new Map([[card.oracleId, { from: 1, to: 2 }]]) }}>
@@ -384,14 +391,23 @@ describe("DeckCardTile — the draft touched this card", () => {
       </CardDetailProvider>,
     );
 
-    // The shell's border already carries over-committed, and both are true at
-    // once often enough to matter. An accent ring 1px inside that tint would be
-    // two unrelated facts on one edge.
-    const edged = [...container.querySelectorAll<HTMLElement>("*")].filter((el) =>
-      el.style.boxShadow.includes("var(--accent)"),
+    // A DRAWN STRIP, not an inset shadow. An inset shadow on the shell paints
+    // below the opaque full-bleed art, so it showed only across the caption —
+    // invisible exactly where the move was made to reach. jsdom lays nothing
+    // out, so this asserts the cause: an absolutely positioned element spanning
+    // top to bottom, above the art in the stack.
+    const rules = [...container.querySelectorAll<HTMLElement>("span")].filter((el) =>
+      el.className.includes("bg-[color:var(--accent)]"),
     );
-    expect(edged).toHaveLength(1);
-    expect(edged[0].className).toContain("items-stretch");
+    expect(rules).toHaveLength(1);
+    for (const c of ["absolute", "top-0", "bottom-0", "z-20"]) {
+      expect(rules[0].className).toContain(c);
+    }
+    expect(
+      [...container.querySelectorAll<HTMLElement>("*")].filter((el) =>
+        el.style.boxShadow.includes("var(--accent)"),
+      ),
+    ).toHaveLength(0);
   });
 
   it("associates the spoken state with the trigger, not just the DOM", () => {
@@ -421,9 +437,21 @@ describe("DeckCardTile — the draft touched this card", () => {
     ).toBeInTheDocument();
   });
 
-  it("leaves a clean draft alone", () => {
-    renderWithDraft([["some-other-card", { from: 1, to: 2 }]], { ...card, quantity: 2 });
+  it("leaves a clean draft alone — no figure AND no rule", () => {
+    const { container } = render(
+      <CardDetailProvider fetchCard={vi.fn().mockResolvedValue(null)}>
+        <PendingChangeProvider value={{ moves: new Map([["some-other-card", { from: 1, to: 2 }]]) }}>
+          <DeckCardTile deckId="d1" card={{ ...card, quantity: 2 } as DeckDetailCard} />
+        </PendingChangeProvider>
+      </CardDetailProvider>,
+    );
 
+    // The absence half. Without it an UNCONDITIONAL strip passes the whole
+    // suite: every other case here renders a touched card, so a rule that
+    // ignored `pendingMove` would be indistinguishable from one that read it.
+    expect(
+      container.querySelectorAll('span[class*="bg-[color:var(--accent)]"]'),
+    ).toHaveLength(0);
     expect(screen.getByText(addPanelCopy.row.quantity(2))).toBeInTheDocument();
     expect(screen.queryByText(deckVersioningCopy.pending.tilePair(1, 2))).not.toBeInTheDocument();
   });

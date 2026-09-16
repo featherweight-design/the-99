@@ -26,7 +26,7 @@ import type { ReactNode } from "react";
  * degrades to taller rather than clipped if a future string is longer than any
  * that exists today.
  */
-export const CARD_TILE_CAPTION_H = "min-h-[52px] md:min-h-[46px]";
+export const CARD_TILE_CAPTION_H = "min-h-[56px] md:min-h-[50px]";
 
 /**
  * Both lines carry an EXPLICIT box height, and the caption's padding is chosen
@@ -37,10 +37,10 @@ export const CARD_TILE_CAPTION_H = "min-h-[52px] md:min-h-[46px]";
  * happens to fall, which measured 49px on some tiles and 50px on others. A
  * floor that content always exceeds is not a fixed height; it is a minimum that
  * never binds, and the ragged grid it produces is the one failure this design
- * cannot survive. Phone: 8 + 13 + 3 + 20 + 8 = 52. Desktop: 6 + 14 + 3 + 17 + 6
- * = 46.
+ * cannot survive. Phone: 8 + 17 + 3 + 20 + 8 = 56. Desktop: 6 + 18 + 3 + 17 + 6
+ * = 50.
  */
-const META_LINE = "h-[13px] md:h-[14px]";
+const META_LINE = "h-[17px] md:h-[18px]";
 const NAME_LINE = "h-[20px] md:h-[17px]";
 
 /**
@@ -61,7 +61,7 @@ const NAME_LINE = "h-[20px] md:h-[17px]";
  * occupying space and, unlike a box-shadow, can still be dashed.
  */
 export const CARD_TILE_SLOT_BOX =
-  "inline-flex items-center gap-[4px] flex-none rounded-[4px] px-[5px] py-[1px] " +
+  "inline-flex items-center gap-[4px] flex-none rounded-[4px] px-[5px] py-[3px] " +
   "font-mono font-semibold text-[8.5px] md:text-[9px]";
 
 /** Draws an occupant's edge inside its box instead of around it. */
@@ -80,7 +80,6 @@ export function CardTileCaption({
   nameSpoken,
   nameTrail,
   trailing,
-  draftTouched = false,
 }: {
   /** The meta line's left group, in order: dot, slot, count. */
   meta?: ReactNode;
@@ -99,18 +98,13 @@ export function CardTileCaption({
   nameTrail?: ReactNode;
   /** The full-height right column. The deck tile's `✕`. */
   trailing?: ReactNode;
-  /**
-   * The draft touched this card. Draws a 2px accent edge on the caption — not
-   * on the shell, whose border already carries over-committed. The two facts
-   * are orthogonal and are simultaneously true often enough to matter.
-   */
-  draftTouched?: boolean;
 }) {
   return (
-    <div
-      className={`flex items-stretch ${CARD_TILE_CAPTION_H}`}
-      style={draftTouched ? { boxShadow: "inset 2px 0 0 0 var(--accent)" } : undefined}
-    >
+    /* The draft's accent edge is NOT here. It was, and it ran only the
+       caption's 46px, where it was easy to miss; the deck tile draws it down
+       the whole shell now, the way `decklist-row.tsx` draws it down a whole
+       row. `/collection` has no draft at all, so nothing here needs the prop. */
+    <div className={`flex items-stretch ${CARD_TILE_CAPTION_H}`}>
       <div
         className={`flex-auto min-w-0 flex flex-col justify-center gap-[3px] py-[8px] md:py-[6px] pl-[9px] md:pl-[10px] ${
           trailing ? "pr-[3px]" : "pr-[9px] md:pr-[10px]"

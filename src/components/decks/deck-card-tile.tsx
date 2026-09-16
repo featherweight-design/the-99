@@ -10,7 +10,10 @@
 // two-line clamped name it needs to keep a shelf of tiles in alignment, none of
 // which a decklist tile has any use for.
 //
-// NOTHING IS DRAWN OVER THE ART. The four marks that used to hold its corners —
+// NOTHING IS DRAWN OVER THE ART, with one exception named below: the draft's
+// accent rule crosses it deliberately (erratum 10), because a mark confined to
+// the caption was the thing that went unnoticed. The four marks that used to
+// hold the art's corners —
 // the availability chip, the collapsed `$`, the proxy `P` and the `×N` badge —
 // are on the caption's meta line, and the bottom wash deleted with them. The one
 // exception is a tile with NO art, whose plate prints no cost of its own and so
@@ -102,11 +105,16 @@ export function DeckCardTile({
   // The SPOKEN form is unaffected and still rendered: the draft touched this
   // card either way, and gating the description on `proxied` would leave the
   // trigger's `aria-describedby` pointing at nothing.
+  // ONLY A RECOUNT PRINTS A FIGURE. A pair says something the count cannot —
+  // `6 → 8` is a move — where `+1` restated what the row beside it already
+  // showed, and in a singleton format nearly every add is `+1`. An add falls
+  // through to the ordinary count instead, which is exactly what the list does:
+  // `decklist-row.tsx` prints its glyph on `quantity > 1 && !recounted`, so an
+  // added singleton is a bare name there too. More than one copy still shows,
+  // because that is a number the reader could not have assumed.
   const draftFigure =
-    pendingMove && !proxied
-      ? pendingMove.from > 0
-        ? deckVersioningCopy.pending.tilePair(pendingMove.from, pendingMove.to)
-        : deckVersioningCopy.pending.tileAdded(pendingMove.to)
+    pendingMove && !proxied && pendingMove.from > 0
+      ? deckVersioningCopy.pending.tilePair(pendingMove.from, pendingMove.to)
       : null;
   // Spoken separately: the figure is drawn in the count's position with no words
   // around it, and an edge colour is not something a reader can be asked to
@@ -152,12 +160,35 @@ export function DeckCardTile({
   return (
     <li className="flex flex-col">
       <div
-        className={`${TILE_SHELL} bg-[color:var(--surface)] ${
+        /* THE WHOLE LEFT EDGE, art included. It was on the caption, on call B's
+           reasoning that the shell's border already carries over-committed and
+           two unrelated facts should not share one edge.
+           `decklist-row.tsx:268-269` had already settled that the other way and
+           shipped it: the row stacks `inset 2px 0 0 0 --accent` and
+           `inset 0 0 0 1px --avail-over-border` on one element, and a row that is
+           both reads fine — the chip carries the shortfall, the edge carries the
+           draft. Over 46px of caption the accent was easy to miss; over a whole
+           tile it is not, and the two views now say it the same way. */
+        className={`${TILE_SHELL} relative bg-[color:var(--surface)] ${
           availState === "over"
             ? "[border:1px_solid_var(--avail-over-border)]"
             : "[border:1px_solid_var(--border)] md:hover:[border:1px_solid_var(--border-strong)]"
         }`}
       >
+        {/* A DRAWN ELEMENT, not an inset shadow on the shell. An inset shadow
+            paints above the element's own background and BELOW its descendants,
+            and the art below is full-bleed and opaque from x=0 — so a shadow on
+            the shell was covered for the whole height of the picture and
+            showed only across the caption strip. That is the reach the move was
+            made to escape, and `onShell` would have reported it fixed.
+            `decklist-row.tsx` gets away with a shadow because a row has no
+            opaque full-width child. */}
+        {pendingMove && (
+          <span
+            aria-hidden
+            className="absolute left-0 top-0 bottom-0 w-[2px] z-20 pointer-events-none bg-[color:var(--accent)]"
+          />
+        )}
         <div className="relative">
           <CardDetailTrigger
             oracleId={card.oracleId}
@@ -302,12 +333,11 @@ export function DeckCardTile({
                   covers this deck's whole ask for the card and takes no quantity
                   (proxies ruling 5), so a count here would claim a number the
                   state does not have. */}
-              {/* The draft's figure TAKES the count's position rather than
-                  sitting beside it, which is what resolves the double statement
-                  the row resolves by suppressing `×N` beside the name. The row
-                  suppresses on a recount only, because an add there has no
-                  figure to put in the name's place; here both cases displace the
-                  count, because both have one. */}
+              {/* A RECOUNT's pair takes the count's position, which is what
+                  resolves the double statement the row resolves by suppressing
+                  `×N` beside the name. An add has no figure at all since erratum
+                  11 — `+1` restated the count — so it falls through to the count
+                  itself, which is exactly what the row does. */}
               {draftFigure ? (
                 <span aria-hidden className="flex-none" style={{ color: "var(--accent)" }}>
                   {draftFigure}
@@ -338,7 +368,6 @@ export function DeckCardTile({
              testing-library query and reach no screen reader. The full name's
              home is the trigger above, which is a real `<button>` and is the
              tile's largest target. */
-          draftTouched={pendingMove !== undefined}
           name={displayName}
           nameTrail={<TwoFacedMark layout={card.layout} />}
           trailing={

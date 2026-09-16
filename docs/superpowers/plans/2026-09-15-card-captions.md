@@ -1,7 +1,7 @@
 # Plan — Card captions
 
 **Handoff:** `design/design_handoff_the99_card_captions/` (R1).
-**Readiness:** `docs/superpowers/readiness-card-captions.md` — 🟢 Green, five errata.
+**Readiness:** `docs/superpowers/readiness-card-captions.md` — 🟢 Green; **twelve errata as of 2026-09-15**, of which 10–12 are post-ship rulings awaiting Design's ratification (⚖️). See the banner below.
 **Brief:** `docs/superpowers/design-briefs/2026-09-14-modifiers-below-the-card.md`.
 
 Both card views move their modifiers off the art and into a two-line caption. The art keeps
@@ -10,6 +10,18 @@ nothing but its 1px inner edge. Grids standardize on a 178px tile.
 Written against `origin/main` at `f5745d11`.
 
 ---
+
+> **Superseded in three places, 2026-09-15.** This plan is the record of what was built; three of
+> its rulings were overturned after the feature shipped and are carried as errata 10–12 of
+> `docs/superpowers/readiness-card-captions.md`:
+>
+> - the draft's accent rule is a **drawn 2px strip down the whole tile**, not a `draftEdge` shadow
+>   on the caption — an inset shadow paints under the opaque art and was invisible across it;
+> - a single-copy add prints **no figure**, where this plan specifies `+N`;
+> - the slot box is `py-[3px]`, taking the meta line to 17/18 and the caption to **56/50**, where
+>   this plan specifies `py-[1px]` and 52/46.
+>
+> Read the verdict for what ships.
 
 ## PR boundaries, named before implementation
 

@@ -62,20 +62,6 @@ describe("CardTileCaption — the shape both card views share", () => {
     ).not.toHaveAttribute("aria-hidden");
   });
 
-  it("draws the draft edge on the caption and nothing when the draft is clean", () => {
-    const { container: touched } = render(
-      <CardTileCaption name="Sol Ring" draftTouched />,
-    );
-    const { container: clean } = render(<CardTileCaption name="Sol Ring" />);
-
-    // On the CAPTION, never the shell: the shell's border already carries
-    // over-committed, and the two facts are true at once often enough to matter.
-    expect(touched.firstElementChild).toHaveStyle({
-      boxShadow: "inset 2px 0 0 0 var(--accent)",
-    });
-    expect((clean.firstElementChild as HTMLElement).style.boxShadow).toBe("");
-  });
-
   it("gives the trailing column the caption's full height", () => {
     render(<CardTileCaption name="Sol Ring" trailing={<button type="button">×</button>} />);
 
