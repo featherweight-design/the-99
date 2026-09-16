@@ -109,8 +109,17 @@ function chipAria(card: RoleCard, hasFigure: boolean, showFigures: boolean): str
   // The deck name has always ridden this label rather than the marker, and it
   // still does.
   const claim = card.availability ? markerAria(card.availability) : null;
-  // `markerAria` returns null at free, so a free card produces the shipped name
-  // byte for byte. That is the round's one unusual constraint, enforced here.
+  // `markerAria` returns null at free, so a free card takes the shipped name
+  // with no clause on it.
+  //
+  // ONE CASE IS NOT BYTE-IDENTICAL, and it is deliberate rather than an
+  // oversight: a card with spare copies that ALSO sits in a finished deck used
+  // to end `Already in Atraxa.`, because the retired suffix read `committedTo`,
+  // which is deck membership and not a claim. That card is free — a copy is
+  // there to use — and the suffix was the same false certainty this round was
+  // filed about, spoken instead of drawn. It goes with `ariaSuffix` (ledger 6).
+  //
+  // Every card with no committed deck at all keeps its shipped name exactly.
   if (claim === null) return shipped;
   const base = shipped ?? `${cardDetailCopy.triggerAria(card.name)}.`;
   return `${base} ${claim}.`;
