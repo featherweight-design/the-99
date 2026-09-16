@@ -142,6 +142,24 @@ Package manager is **pnpm** (pinned via `packageManager` in package.json) — ne
   Tests are skipped outright rather than exempted from reads only: a token declared in a test
   fixture is not declared for the app, so a component reading one must still be reported.
 
+  **What it is about is SILENCE**, and two rules follow from that — both of which the first
+  version got wrong, and review caught. A read carrying a FALLBACK is a parameter with a
+  default, not a miss: `var(--bob-duration, 3s)` is `.anim-bob` letting a caller tune it, and a
+  typo inside a fallback renders visibly at the fallback rather than invisibly at nothing. And
+  a token a component sets on its own element is declared for THAT FILE'S subtree only — the
+  first version unioned every file's declarations, so any component could read `--row-bg` with
+  the property unset in its subtree and still pass.
+
+  `globals.css` is scanned too, and is the one asymmetry: it may resolve against any
+  component's declaration, because a rule selects by class and the element carrying that class
+  is drawn by a component — `art-wash.tsx` sets `--art-wash-reduced-opacity` inline and the
+  stylesheet reads it back under `prefers-reduced-transparency`. The reverse does not hold.
+  Its own misspellings are still reported.
+
+  `scripts/lib/tokens.test.mts` pins one case per failure path, each written as the shape that
+  defeated an earlier version — because every failure mode here is a SILENT PASS, the same
+  hazard as the bug it catches.
+
 - `pnpm check:collection-routes` fails when a route renders a figure read out of
   `collection_items` and the collection replace does not invalidate it. It walks every
   `page.tsx`, follows its imports through `src/`, and compares what it finds against
