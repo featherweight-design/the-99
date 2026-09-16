@@ -20,6 +20,7 @@ import { StatusPillBadge } from "../decks/status-pill";
 import { SetCell } from "../sets/set-cell";
 import { FilterChipPill } from "../ui/filter-chassis";
 import { collectionChassisCopy } from "../../lib/copy/collection";
+import { viewToggleCopy } from "../../lib/copy/card-surfaces";
 import { cardAssignmentsCopy } from "../../lib/copy/card-assignments";
 import { issueInspectorCopy } from "../../lib/copy/issue-inspector";
 import { statusBarStyle } from "../../lib/decks/status-style";
@@ -354,6 +355,15 @@ function SetsFigure({ width }: { width: AboutWidth }) {
   const newest = PRICES[0].fact.asOf;
   return (
     <Specimen label="sets" width={width}>
+      {/* The header first: the completion figure is read against the BASE RUN
+          while the cell count includes the extras, and the entry's key line is
+          about exactly that disagreement. Four cells alone cannot teach it. */}
+      <div className="mb-[12px] flex flex-wrap items-baseline gap-x-[12px] gap-y-[4px]">
+        <span className="font-mono text-[12px] text-[color:var(--fg)]">162 / 208 · 78%</span>
+        <span className="font-mono text-[10.5px] text-[color:var(--fg-faint)]">
+          321 cells · 171 yours, 150 missing
+        </span>
+      </div>
       <SpecimenGrid>
         {SET_CELLS.map((cell, i) => (
           <SpecimenCell key={cell.scryfallId} caption={caption[i]}>
@@ -388,9 +398,28 @@ function BrowseFigure({ width }: { width: AboutWidth }) {
             <FilterChipPill key={chip.key} chip={chip} />
           ))}
         </div>
-        <span className="font-mono text-[11px] text-[color:var(--fg-faint)]">
-          {collectionChassisCopy.result(34, 2805, 4120, true)}
-        </span>
+        <div className="flex flex-wrap items-center justify-between gap-[10px]">
+          <span className="font-mono text-[11px] text-[color:var(--fg-faint)]">
+            {collectionChassisCopy.result(34, 2805, 4120, true)}
+          </span>
+          {/* The reading choice is the entry's third key line and was missing:
+              two chips and a count say what was narrowed and nothing about how
+              the result is read. */}
+          <span className="flex items-center gap-[6px]">
+            {[viewToggleCopy.collection.rows, viewToggleCopy.collection.grid].map((label, i) => (
+              <span
+                key={label}
+                className={`rounded-[6px] border border-solid px-[8px] py-[3px] font-mono text-[10.5px] ${
+                  i === 1
+                    ? "border-[color:var(--accent)] text-[color:var(--accent)]"
+                    : "border-[color:var(--border)] text-[color:var(--fg-faint)]"
+                }`}
+              >
+                {label}
+              </span>
+            ))}
+          </span>
+        </div>
       </div>
     </Specimen>
   );
@@ -472,8 +501,12 @@ function CardDetailFigure({ width }: { width: AboutWidth }) {
         <SpecimenCell caption="two faces, and the back is castable">
           <TwoFacedMark layout="transform" />
         </SpecimenCell>
-        <SpecimenCell caption="its printed cost, at the row's own track">
-          <CostPips cost={COSTS.crowded} size={COST_PIP_SIZE} track={COST_TRACK} cap={COST_PIP_CAP} />
+        {/* `allFaces`, because the entry's subject is a card that prints TWO
+            costs — a modal DFC's back face is castable and the modal is the one
+            surface drawing both. The default draws the front alone, which is
+            the right pips for the wrong card. */}
+        <SpecimenCell caption="both halves, when a card prints two">
+          <CostPips cost={COSTS.twoFaced} allFaces size={COST_PIP_SIZE} />
         </SpecimenCell>
       </SpecimenGrid>
     </Specimen>

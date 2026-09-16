@@ -16,6 +16,7 @@ import { fitSegments } from "../recs/format";
 import type { StatusPill } from "../decks/status";
 import type { Cell } from "../sets/completion";
 import type { FilterChip } from "../../components/ui/filter-chassis";
+import { collectionChassisCopy } from "../copy/collection";
 
 /** The four availability states, in the order the plate draws them. */
 export const AVAILABILITY: { key: string; a: Availability }[] = [
@@ -93,6 +94,9 @@ export const COSTS = {
   simple: "{1}{G}",
   /** Costless: the one card that draws the marker box on a decklist row. */
   none: null,
+  /** Two printed costs on one piece of stock — a modal DFC, where the back
+   *  face is castable and the modal is the only surface drawing both. */
+  twoFaced: "{2}{B} // {B}",
 };
 
 export const CARDS = {
@@ -173,6 +177,14 @@ export const BROWSE_CHIPS: FilterChip[] = [
   // `onRemove` is required by the chip and is a no-op here: a specimen is
   // inert, and the figure's subject is that the control EXISTS and is
   // per-dimension, not what pressing it does.
-  { key: "colour", label: "1 colour", dots: ["var(--success)"], onRemove: () => {} },
+  {
+    key: "colour",
+    // From the collection's own derivation, not retyped: a rename in
+    // `collectionFilterCopy` must reach this figure, and a literal here would
+    // leave the specimen stale while still mounting the real chip.
+    label: collectionChassisCopy.chip.colours(1),
+    dots: ["var(--success)"],
+    onRemove: () => {},
+  },
   { key: "set", label: "The Hobbit", onRemove: () => {} },
 ];

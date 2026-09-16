@@ -1,19 +1,18 @@
 "use client";
 
-// The sticky contents rail — desktop only, and the page's only interactive part.
+// The contents navigation, in two placements that share one rule.
 //
-// It exists because thirty-four entries run about nine screens: an in-flow list
-// at the top answers "what is here" once and then scrolls away, and the reader
-// spends the rest of the page with no way to tell where they are or to jump.
-// Design drew this rail and then offered it as a cut in their own cost note; it
-// was taken, twice, and that was the wrong call to make from a note about
-// effort.
+// Thirty-four entries run about nine screens: a list at the top answers "what
+// is here" once and then scrolls away, and the reader spends the rest of the
+// page with no way to tell where they are or to jump. Design drew the rail and
+// then offered it as a cut in their own cost note; it was taken, twice, and
+// that was the wrong call to make from a note about effort.
 //
-// A client component, and it has to be: "which chapter am I in" is a fact about
-// scroll position. It takes everything else as props — the counts are computed
-// on the server where `seen` is known, and importing the copy module here would
-// pull all thirty-four captions and their key lines into the client bundle to
-// read four array lengths.
+// `useCurrentChapter` lives here rather than in either component because both
+// need it. The rail had it and the compact list did not, which made
+// `aria-current` desktop-only — a screen-reader user on a phone got four links
+// and no answer to which chapter they were in, on the width where the page is
+// longest. Two observers over four elements is cheaper than a provider.
 
 import { useEffect, useRef, useState } from "react";
 import { aboutCopy, type AboutChapter } from "../../lib/copy/about";
@@ -21,12 +20,12 @@ import { aboutCopy, type AboutChapter } from "../../lib/copy/about";
 export type RailChapter = {
   id: AboutChapter;
   title: string;
-  /** Entries in the chapter, or the count of new ones when there are any. */
   count: number;
   newCount: number;
 };
 
-export function ContentsRail({ chapters }: { chapters: readonly RailChapter[] }) {
+/** Which chapter the reader is in, or the first before anything has scrolled. */
+function useCurrentChapter(chapters: readonly RailChapter[]): AboutChapter | null {
   const [current, setCurrent] = useState<AboutChapter | null>(chapters[0]?.id ?? null);
   // Which sections are on screen, ACCUMULATED across callbacks. The observer
   // hands over only the entries whose state CHANGED, never the full set — so
@@ -37,9 +36,9 @@ export function ContentsRail({ chapters }: { chapters: readonly RailChapter[] })
   const onScreen = useRef(new Map<string, boolean>());
 
   useEffect(() => {
-    // Guarded rather than assumed. Without an observer the rail still draws
-    // every link and still marks the first chapter — a page that cannot say
-    // where you are is a smaller loss than a page that throws.
+    // Guarded rather than assumed. Without an observer the navigation still
+    // draws every link and still marks the first chapter — a page that cannot
+    // say where you are is a smaller loss than a page that throws.
     if (typeof IntersectionObserver === "undefined") return;
 
     const ids = chapters.map((c) => c.id);
@@ -69,6 +68,22 @@ export function ContentsRail({ chapters }: { chapters: readonly RailChapter[] })
     return () => observer.disconnect();
   }, [chapters]);
 
+  return current;
+}
+
+function Figure({ chapter }: { chapter: RailChapter }) {
+  return (
+    <span className="flex-none font-mono text-[10.5px] text-[color:var(--fg-faint)]">
+      {chapter.newCount > 0
+        ? aboutCopy.newInChapter(chapter.newCount)
+        : aboutCopy.entriesInChapter(chapter.count)}
+    </span>
+  );
+}
+
+/** Sticky beside the reading column, from the app's wide stop up. */
+export function ContentsRail({ chapters }: { chapters: readonly RailChapter[] }) {
+  const current = useCurrentChapter(chapters);
   return (
     <nav
       aria-label={aboutCopy.contentsLabel}
@@ -100,13 +115,44 @@ export function ContentsRail({ chapters }: { chapters: readonly RailChapter[] })
                   </span>{" "}
                   {chapter.title}
                 </span>
-                <span className="flex-none font-mono text-[10.5px] text-[color:var(--fg-faint)]">
-                  {chapter.newCount > 0 ? aboutCopy.newInChapter(chapter.newCount) : chapter.count}
-                </span>
+                <Figure chapter={chapter} />
               </a>
             </li>
           );
         })}
+      </ol>
+    </nav>
+  );
+}
+
+/** In flow, below the wide stop, where it is the only navigation there is. */
+export function ContentsList({ chapters }: { chapters: readonly RailChapter[] }) {
+  const current = useCurrentChapter(chapters);
+  return (
+    <nav aria-label={aboutCopy.contentsLabel} className="mt-[18px] min-[1000px]:hidden">
+      <p className="font-mono text-[11px] text-[color:var(--fg-faint)]">
+        {aboutCopy.contentsLabel}
+      </p>
+      <ol className="mt-[6px] list-none p-0">
+        {chapters.map((chapter) => (
+          <li key={chapter.id}>
+            <a
+              href={`#chapter-${chapter.id}`}
+              aria-current={chapter.id === current ? "true" : undefined}
+              // 44px at every width: a contents row is one of four things a
+              // thumb aims at here, and the others are links inside prose.
+              className="flex min-h-[44px] items-center justify-between gap-[12px] border-b border-solid border-[color:var(--border)] text-[14px] text-[color:var(--accent)]"
+            >
+              <span>
+                <span className="font-mono text-[11px] text-[color:var(--fg-faint)]">
+                  {chapter.id}
+                </span>{" "}
+                {chapter.title}
+              </span>
+              <Figure chapter={chapter} />
+            </a>
+          </li>
+        ))}
       </ol>
     </nav>
   );

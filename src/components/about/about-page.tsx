@@ -17,7 +17,7 @@ import { PrimaryButton } from "../ui/button";
 import { dismissAbout } from "../../app/about/actions";
 import { safeNext } from "../../lib/about/gate";
 import { FIGURES } from "./figures";
-import { ContentsRail } from "./contents-rail";
+import { ContentsList, ContentsRail } from "./contents-rail";
 import {
   ABOUT_VERSION,
   aboutCopy,
@@ -178,44 +178,7 @@ export function AboutPage({ seen, next }: { seen: number; next?: string }) {
         {aboutCopy.pageIntro}
       </p>
 
-      {/* IN FLOW at compact width only. Above the wide stop the same list is
-          the sticky rail beside the column — see `AboutPage`. The rail was
-          declined twice on the strength of Design's own cost note offering it
-          as a cut; that was a call about the reader's experience taken from a
-          note about effort, and thirty-four entries over nine screens is
-          exactly the page that needs to say where you are. */}
-      <nav
-        aria-label={aboutCopy.contentsLabel}
-        className="mt-[18px] min-[1000px]:hidden"
-      >
-        <p className="font-mono text-[11px] text-[color:var(--fg-faint)]">
-          {aboutCopy.contentsLabel}
-        </p>
-        <ol className="mt-[6px] list-none p-0">
-          {CHAPTERS.map((n) => {
-            const entries = aboutEntries.filter((e) => e.chapter === n);
-            const chapterNew = entries.filter((e) => isNew(e, seen)).length;
-            return (
-              <li key={n}>
-                <a
-                  href={`#chapter-${n}`}
-                  className="flex min-h-[44px] items-center justify-between gap-[12px] border-b border-solid border-[color:var(--border)] text-[14px] text-[color:var(--accent)]"
-                >
-                  <span>
-                    <span className="font-mono text-[11px] text-[color:var(--fg-faint)]">{n}</span>{" "}
-                    {aboutCopy.chapters[n].title}
-                  </span>
-                  <span className="flex-none font-mono text-[10.5px] text-[color:var(--fg-faint)]">
-                    {chapterNew > 0
-                      ? aboutCopy.newInChapter(chapterNew)
-                      : aboutCopy.entriesInChapter(entries.length)}
-                  </span>
-                </a>
-              </li>
-            );
-          })}
-        </ol>
-      </nav>
+      <ContentsList chapters={railChapters} />
 
       {CHAPTERS.map((n) => (
         <section

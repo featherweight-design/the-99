@@ -148,6 +148,15 @@ describe("every entry is drawn, not just described", () => {
     "reservations", "proxies", "themes",
   ]);
 
+  it("registers no figure under a name no entry has", async () => {
+    // Without this, a typo pairs with the ledger to hide itself: `brows` in
+    // FIGURES and `browse` on the ledger satisfies both the count and the
+    // undrawn check, and the entry stays wordless.
+    const { FIGURES } = await import("../../components/about/figures");
+    const ids = new Set(aboutEntries.map((e) => e.id));
+    expect(Object.keys(FIGURES).filter((k) => !ids.has(k))).toEqual([]);
+  });
+
   it("has a figure for every entry, or names it in the ledger", async () => {
     const { FIGURES } = await import("../../components/about/figures");
     const undrawn = aboutEntries.filter((e) => !(e.id in FIGURES)).map((e) => e.id);
