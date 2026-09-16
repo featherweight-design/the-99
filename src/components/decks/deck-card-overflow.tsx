@@ -1,12 +1,12 @@
 "use client";
 
-import { useEffect, useId, useRef, useState, useTransition } from "react";
+import { useEffect, useId, useRef, useState } from "react";
 import Link from "next/link";
-import { deleteDeck } from "../../app/decks/actions";
 import { deckImportCopy } from "../../lib/copy/deck-import";
 import { refreshCopy } from "../../lib/copy/refresh";
 import { RenameForm } from "./rename-form";
 import { MoveMode } from "./deck-move-mode";
+import { DeleteMode } from "./deck-delete-mode";
 import { folderCopy } from "../../lib/copy/folders";
 
 /** One menu row. The same geometry `DeckSortMenu` draws, which is the only
@@ -77,8 +77,14 @@ export function DeckCardOverflow({
   closeAfterCreate,
 }: DeckCardOverflowProps) {
   const [open, setOpen] = useState(false);
-  const [mode, setMode] = useState<"menu" | "rename" | "move">("menu");
-  const [isPending, startTransition] = useTransition();
+  const [mode, setMode] = useState<"menu" | "rename" | "move" | "delete">("menu");
+  // Raised by the delete pane while its action is in flight. The pane's own
+  // guards die with the pane, and the ⋯ trigger sits OUTSIDE the panel and stays
+  // reachable by Shift+Tab and by pointer: without this, toggling the panel
+  // unmounts the pane mid-request, resets its guard, and a reopened menu can
+  // submit the same delete again. `ShelfMenu` holds the same fact for the same
+  // reason.
+  const [busy, setBusy] = useState(false);
   const buttonRef = useRef<HTMLButtonElement>(null);
   // Every deck card renders one of these, so the id has to be per-instance.
   const panelId = useId();
@@ -86,6 +92,7 @@ export function DeckCardOverflow({
   function handleToggle(e: React.MouseEvent) {
     e.preventDefault();
     e.stopPropagation();
+    if (busy) return;
     setOpen((o) => !o);
     setMode("menu");
   }
@@ -105,10 +112,7 @@ export function DeckCardOverflow({
   function handleDelete(e: React.MouseEvent) {
     e.preventDefault();
     e.stopPropagation();
-    if (!confirm(`Delete "${deckName}"? This cannot be undone.`)) return;
-    startTransition(async () => {
-      await deleteDeck(deckId);
-    });
+    setMode("delete");
   }
 
   // Optimistic, because the tile's own menu is the only place the fact is
@@ -122,6 +126,11 @@ export function DeckCardOverflow({
   // consumes it — the cascading render this repo's lint rejects.
   const wantsMoveRowFocus = useRef(false);
   const moveRow = useRef<HTMLButtonElement>(null);
+  // The same one-shot instruction for the delete pane's cancel, which unmounts
+  // holding focus. Its own ref rather than a shared flag, because the two modes
+  // return to different rows.
+  const wantsDeleteRowFocus = useRef(false);
+  const deleteRow = useRef<HTMLButtonElement>(null);
   // The optimistic receipt EXPIRES ON THE FIRST CHANGED SERVER PROP, whether it
   // agrees or not. Clearing only on agreement left it standing forever when the
   // destination was deleted or the deck moved elsewhere before the refresh
@@ -181,7 +190,14 @@ export function DeckCardOverflow({
     moveRow.current?.focus();
   }, [mode]);
 
+  useEffect(() => {
+    if (mode !== "menu" || !wantsDeleteRowFocus.current) return;
+    wantsDeleteRowFocus.current = false;
+    deleteRow.current?.focus();
+  }, [mode]);
+
   function handleClose() {
+    if (busy) return;
     setOpen(false);
     setMode("menu");
     buttonRef.current?.focus();
@@ -294,13 +310,12 @@ export function DeckCardOverflow({
                 </span>
               </button>
               <button
+                ref={deleteRow}
                 type="button"
                 onClick={handleDelete}
-                disabled={isPending}
-                className={`${ITEM} bg-transparent text-[color:var(--danger)]`}
-                style={{ cursor: isPending ? "default" : "pointer" }}
+                className={`${ITEM} cursor-pointer bg-transparent text-[color:var(--danger)]`}
               >
-                {isPending ? "Deleting…" : refreshCopy.decks.menu.delete}
+                {refreshCopy.decks.menu.delete}
               </button>
             </div>
           ) : mode === "move" ? (
@@ -346,6 +361,22 @@ export function DeckCardOverflow({
                 // the grid and every figure above it is stale.
                 onMoved({ refused: false });
               }}
+            />
+          ) : mode === "delete" ? (
+            <DeleteMode
+              deckId={deckId}
+              deckName={deckName}
+              // Back to the menu, not closed: a reader who declines has not
+              // finished with the card, and the folder pane's own cancel does
+              // the same. Focus is returned EXPLICITLY — the pane unmounts with
+              // focus on its own cancel button, and nothing puts it anywhere
+              // afterwards, so without this the reader is dropped on the body.
+              // The Delete row, because that is where they pressed.
+              onCancel={() => {
+                wantsDeleteRowFocus.current = true;
+                setMode("menu");
+              }}
+              onBusy={setBusy}
             />
           ) : (
             <div className="p-[12px]">

@@ -1,5 +1,6 @@
 import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
+import { redirect } from "next/navigation";
 
 const { deleteDeck, renameDeck } = vi.hoisted(() => ({
   deleteDeck: vi.fn(),
@@ -138,5 +139,179 @@ describe("DeckCardOverflow — THE PLATE on phone", () => {
     expect(plate.className).toContain("bg-[color:var(--bg)]");
     expect(plate.className).toContain("border-[color:var(--border-strong)]");
     expect(plate.textContent).toBe("…");
+  });
+});
+
+// Matched by prefix on both carriers, for the reason `create-deck-redirect.test.tsx`
+// gives: Next has moved the redirect target between `message` and `digest` across
+// versions, so an exact-equality check would stop matching on the next move and
+// fail this file for the wrong reason.
+function isRedirect(value: unknown) {
+  if (!(value instanceof Error)) return false;
+  const digest = (value as { digest?: unknown }).digest;
+  return (
+    value.message.startsWith("NEXT_REDIRECT") ||
+    (typeof digest === "string" && digest.startsWith("NEXT_REDIRECT"))
+  );
+}
+
+// Rethrowing is the behaviour under test, and the rethrow escapes the transition:
+// in the app Next's router catches it and navigates, but nothing here does, so
+// jsdom reports it as an uncaught error and vitest fails the file. Swallow it —
+// the assertion below is about what the pane painted, not about who catches it.
+function swallowRedirect(event: ErrorEvent | PromiseRejectionEvent) {
+  const value = "reason" in event ? event.reason : event.error;
+  if (isRedirect(value)) event.preventDefault();
+}
+
+describe("DeckCardOverflow — the delete confirm", () => {
+  function open(name = "Atraxa") {
+    render(
+      <DeckCardOverflow
+        deckId="d1"
+        deckName={name}
+        built={99}
+        folders={[]}
+        folderId={null}
+        folderName={null}
+        onCreateFolder={() => {}}
+        say={() => {}}
+        onMoved={() => {}}
+        keepsFocus
+        closeAfterCreate={null}
+      />,
+    );
+    fireEvent.click(trigger(name));
+    fireEvent.click(screen.getByRole("button", { name: "Delete" }));
+  }
+
+  // The whole point of the change: the destructive act is now described before
+  // it happens, in the app's own chrome, rather than by a browser string.
+  it("asks in the panel and deletes nothing yet", () => {
+    deleteDeck.mockReset();
+    open();
+    expect(screen.getByText("Delete “Atraxa”?")).toBeInTheDocument();
+    expect(
+      screen.getByText(
+        "Its list, its versions and its game log go with it. Nothing leaves your collection.",
+      ),
+    ).toBeInTheDocument();
+    expect(deleteDeck).not.toHaveBeenCalled();
+  });
+
+  it("returns to the menu on Keep it, having deleted nothing", () => {
+    deleteDeck.mockReset();
+    open();
+    fireEvent.click(screen.getByRole("button", { name: "Keep it" }));
+    expect(screen.getByRole("button", { name: "Rename" })).toBeInTheDocument();
+    expect(screen.queryByText("Delete “Atraxa”?")).toBeNull();
+    expect(deleteDeck).not.toHaveBeenCalled();
+  });
+
+  // Entering the mode replaces the focused menu row, and this panel is not a
+  // `dialog` and traps nothing — so a reader dropped on <body> here resumes at
+  // the top of the DOCUMENT, with both buttons reachable only by tabbing the
+  // whole page. `deck-move-mode.tsx` solves the same case the same way.
+  it("puts focus in the pane, on the button that changes nothing", () => {
+    deleteDeck.mockReset();
+    open();
+    expect(screen.getByRole("button", { name: "Keep it" })).toHaveFocus();
+  });
+
+  // And hands it back, because the pane unmounts holding it.
+  it("returns focus to the row that was pressed", async () => {
+    deleteDeck.mockReset();
+    open();
+    fireEvent.click(screen.getByRole("button", { name: "Keep it" }));
+    await waitFor(() =>
+      expect(screen.getByRole("button", { name: "Delete" })).toHaveFocus(),
+    );
+  });
+
+  it("deletes the deck it named on Delete deck", async () => {
+    deleteDeck.mockReset();
+    deleteDeck.mockResolvedValue(undefined);
+    open();
+    fireEvent.click(screen.getByRole("button", { name: "Delete deck" }));
+    await waitFor(() => expect(deleteDeck).toHaveBeenCalledWith("d1"));
+  });
+
+  // `window.confirm` had no error path at all: a throwing `deleteDeck` left the
+  // menu sitting there having reported nothing.
+  it("names an outage rather than reporting nothing", async () => {
+    deleteDeck.mockReset();
+    deleteDeck.mockRejectedValue(new Error("boom"));
+    open();
+    fireEvent.click(screen.getByRole("button", { name: "Delete deck" }));
+    const alert = await screen.findByRole("alert");
+    expect(alert).toHaveTextContent("Could not delete that deck. Try again.");
+    // Re-enabled, because the reader's only move is to try again. Awaited rather
+    // than read in the alert's own tick: `setError` runs inside the transition,
+    // so the alert can commit while `pending` is still true — and while it is,
+    // this button is labelled `Deleting…` and the query throws rather than
+    // asserting.
+    await waitFor(() =>
+      expect(screen.getByRole("button", { name: "Delete deck" })).not.toBeDisabled(),
+    );
+  });
+
+  // The pane's `pending` and `inFlight` guard the PANE, and a pane that has been
+  // unmounted guards nothing. The ⋯ trigger sits outside the panel and stays
+  // reachable by Shift+Tab and by pointer, so without a busy flag held ABOVE the
+  // pane, toggling the panel mid-request resets the guard and a reopened menu
+  // submits the same delete a second time.
+  it("refuses to close the panel while a delete is in flight", async () => {
+    deleteDeck.mockReset();
+    // Never settles: the window under test is exactly the time the action is
+    // outstanding, so a resolved mock would close it before the assertion.
+    deleteDeck.mockImplementation(() => new Promise(() => {}));
+    open();
+    fireEvent.click(screen.getByRole("button", { name: "Delete deck" }));
+    await waitFor(() => expect(deleteDeck).toHaveBeenCalledTimes(1));
+
+    fireEvent.click(trigger());
+    // Still the pane, not the menu and not a closed panel.
+    expect(screen.getByText("Delete “Atraxa”?")).toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "Rename" })).toBeNull();
+
+    // And the second submit a reopened menu would have offered never happens:
+    // pressing the trigger twice more leaves the pane standing, so the Delete
+    // row that would start a second request is never on screen to press.
+    fireEvent.click(trigger());
+    fireEvent.click(trigger());
+    expect(screen.getByText("Delete “Atraxa”?")).toBeInTheDocument();
+    expect(deleteDeck).toHaveBeenCalledTimes(1);
+  });
+
+  // THE TRAP. `deleteDeck` ends in `redirect()`, which signals BY THROWING, and
+  // the throw arrives in the pane's catch before the router navigates. A bare
+  // catch reports a failure over a deletion that succeeded.
+  it("does not report a failure when the action redirects", async () => {
+    deleteDeck.mockReset();
+    // Next's own error, caught from its own `redirect`, never a hand-built one:
+    // `unstable_rethrow` matches on the digest's internal shape, and a synthetic
+    // `NEXT_REDIRECT;/decks` is NOT recognised — the first version of this test
+    // used one, and it failed, which is the only reason the fixture is real.
+    let thrown: unknown;
+    try {
+      redirect("/decks");
+    } catch (err) {
+      thrown = err;
+    }
+    deleteDeck.mockRejectedValue(thrown);
+    window.addEventListener("unhandledrejection", swallowRedirect);
+    window.addEventListener("error", swallowRedirect);
+    try {
+      open();
+      fireEvent.click(screen.getByRole("button", { name: "Delete deck" }));
+      await waitFor(() => expect(deleteDeck).toHaveBeenCalledWith("d1"));
+      // Settle the rejection before asserting the absence, or the assertion runs
+      // before the catch it is about.
+      await new Promise((r) => setTimeout(r, 0));
+      expect(screen.queryByRole("alert")).toBeNull();
+    } finally {
+      window.removeEventListener("unhandledrejection", swallowRedirect);
+      window.removeEventListener("error", swallowRedirect);
+    }
   });
 });
