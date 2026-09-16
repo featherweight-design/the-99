@@ -87,7 +87,10 @@ describe("where the dismiss sends them", () => {
 describe("the contents", () => {
   it("links every chapter that has entries", () => {
     render(<AboutPage seen={0} />);
-    const nav = screen.getByRole("navigation", { name: aboutCopy.contentsLabel });
+    // TWO navigations carry this label now — the in-flow list below the wide
+    // stop and the sticky rail above it — so the compact one is taken by
+    // position rather than by name alone.
+    const [nav] = screen.getAllByRole("navigation", { name: aboutCopy.contentsLabel });
     for (const n of ["01", "02", "03", "04"] as const) {
       const link = within(nav).getByRole("link", {
         name: new RegExp(escape(aboutCopy.chapters[n].title)),
@@ -385,8 +388,49 @@ describe("the contents", () => {
     // A row that carried a count only when something was new would be blank
     // for every reader at launch, which is everyone.
     render(<AboutPage seen={0} />);
-    const nav = screen.getByRole("navigation", { name: aboutCopy.contentsLabel });
+    const [nav] = screen.getAllByRole("navigation", { name: aboutCopy.contentsLabel });
     const counts = within(nav).getAllByText(/\d+ (entries|entry|new)/);
     expect(counts).toHaveLength(4);
+  });
+});
+
+describe("the contents rail", () => {
+  it("draws beside the column at the wide stop and not below it", () => {
+    // The page is about nine screens long. An in-flow list answers "what is
+    // here" once and scrolls away; the rail is what says where you ARE, which
+    // is the reason it was wrong to take Design's offer to cut it.
+    const navs = screen.queryAllByRole("navigation", { name: aboutCopy.contentsLabel });
+    expect(navs).toHaveLength(0);
+
+    render(<AboutPage seen={0} />);
+    const [inFlow, rail] = screen.getAllByRole("navigation", {
+      name: aboutCopy.contentsLabel,
+    });
+    // Each is present at exactly one width, and the pair is what makes the
+    // links reachable at both.
+    expect(inFlow.className).toContain("min-[1000px]:hidden");
+    expect(rail.className).toContain("sticky");
+    expect(rail.className).toContain("hidden");
+    expect(rail.className).toContain("min-[1000px]:block");
+  });
+
+  it("marks where the reader is, for a screen reader as well as an eye", () => {
+    render(<AboutPage seen={0} />);
+    const [, rail] = screen.getAllByRole("navigation", { name: aboutCopy.contentsLabel });
+    const current = within(rail).getAllByRole("link").filter((a) => a.getAttribute("aria-current"));
+    // Exactly one, and it is the first chapter before any scrolling has
+    // happened — jsdom has no IntersectionObserver, which is the state the
+    // component guards for rather than throwing in.
+    expect(current).toHaveLength(1);
+    expect(current[0]).toHaveAttribute("href", "#chapter-01");
+  });
+
+  it("links every chapter from the rail", () => {
+    render(<AboutPage seen={0} />);
+    const [, rail] = screen.getAllByRole("navigation", { name: aboutCopy.contentsLabel });
+    for (const n of ["01", "02", "03", "04"] as const) {
+      expect(within(rail).getByRole("link", { name: new RegExp(escape(aboutCopy.chapters[n].title)) }))
+        .toHaveAttribute("href", `#chapter-${n}`);
+    }
   });
 });

@@ -17,6 +17,7 @@ import { PrimaryButton } from "../ui/button";
 import { dismissAbout } from "../../app/about/actions";
 import { safeNext } from "../../lib/about/gate";
 import { FIGURES } from "./figures";
+import { ContentsRail } from "./contents-rail";
 import {
   ABOUT_VERSION,
   aboutCopy,
@@ -51,62 +52,73 @@ function NewMark() {
 
 function Entry({ entry, marked }: { entry: AboutEntry; marked: boolean }) {
   const Figure = FIGURES[entry.id];
-  // An inset runs beside its prose at the wide stop — that is what makes it an
-  // inset rather than a narrow plate. Both collapse to one column below it:
-  // at 390px there is no room for a figure beside anything.
   const inset = entry.width === "inset" && Figure;
   return (
     // No per-entry rule below the wide stop — a rule per entry turns a chapter
-    // into a table. The chapter's OWN hairline stays at both widths and is
-    // drawn on the section, not here: removing this border without putting one
-    // there left the compact page with no rules at all.
+    // into a table. The chapter's own hairline stays at both widths.
     <li className="pt-[14px] min-[1000px]:border-t min-[1000px]:border-solid min-[1000px]:border-[color:var(--border)]">
-      <h3 className="font-display text-[15px] min-[1000px]:text-[16px]" style={{ color: "var(--fg)" }}>
-        {entry.title}
-        {marked && <NewMark />}
-      </h3>
+      {/* Title and route on ONE line, which is where the handoff puts them: the
+          route is part of the entry's name — "Browse what you own /collection"
+          — rather than a footnote under its keys. It wraps below the title on a
+          phone instead of squeezing both. */}
+      <div className="flex flex-wrap items-baseline gap-x-[10px] gap-y-[2px]">
+        <h3 className="font-display text-[15px] text-[color:var(--fg)] min-[1000px]:text-[16px]">
+          {entry.title}
+          {marked && <NewMark />}
+        </h3>
+        <Link
+          href={entry.route}
+          className="font-mono text-[11px] text-[color:var(--accent)] hover:underline"
+        >
+          {entry.route}
+        </Link>
+        {entry.opens && (
+          <span className="font-mono text-[11px] text-[color:var(--fg-faint)]">{entry.opens}</span>
+        )}
+      </div>
 
       {inset ? (
         <div className="mt-[6px] flex flex-col gap-[10px] min-[1000px]:flex-row min-[1000px]:items-start min-[1000px]:gap-[20px]">
           <div className="order-2 min-w-0 flex-1 min-[1000px]:order-2">
-            <p className="text-[13.5px] leading-[1.55]" style={{ color: "var(--fg-body)" }}>
+            <p className="text-[13.5px] leading-[1.55] text-[color:var(--fg-body)]">
               {entry.caption}
             </p>
           </div>
-          {/* Figure column first at the wide stop, caption beside it; both
-                collapse to figure-above-caption below. */}
           <div className="order-1 min-[1000px]:order-1 min-[1000px]:w-[300px] min-[1000px]:flex-none">
             <Figure width={entry.width} />
           </div>
         </div>
       ) : (
-        <p className="mt-[6px] text-[13.5px] leading-[1.55]" style={{ color: "var(--fg-body)" }}>
+        <p className="mt-[6px] text-[13.5px] leading-[1.55] text-[color:var(--fg-body)]">
           {entry.caption}
         </p>
       )}
 
       {Figure && !inset && <Figure width={entry.width} />}
 
+      {/* NUMBERED keys. "Annotation is a numeral and a line" is the handoff's
+          grammar, and the lines shipped without the numerals — which is the
+          half that ties a line to the part of the figure it describes. The
+          numeral is drawn here whether or not the figure carries its twin yet;
+          an entry with no figure still reads as an ordered key rather than a
+          loose stack of mono sentences. */}
       {entry.keys.length > 0 && (
-        <ul className="mt-[8px] list-none space-y-[4px] p-0">
-          {entry.keys.map((key) => (
-            <li
-              key={key}
-              className="font-mono text-[11px] leading-[1.5]"
-              style={{ color: "var(--fg-faint)" }}
-            >
-              {key}
+        <ol className="mt-[8px] list-none space-y-[5px] p-0">
+          {entry.keys.map((key, i) => (
+            <li key={key} className="flex items-start gap-[8px]">
+              <span
+                aria-hidden
+                className="mt-[1px] flex h-[14px] w-[14px] flex-none items-center justify-center rounded-full border border-solid border-[color:var(--accent)] font-mono text-[9px] text-[color:var(--accent)]"
+              >
+                {i + 1}
+              </span>
+              <span className="font-mono text-[11px] leading-[1.5] text-[color:var(--fg-faint)]">
+                {key}
+              </span>
             </li>
           ))}
-        </ul>
+        </ol>
       )}
-
-      <p className="mt-[8px] font-mono text-[11px]" style={{ color: "var(--fg-faint)" }}>
-        <Link href={entry.route} className="text-[color:var(--accent)] underline">
-          {entry.route}
-        </Link>
-        {entry.opens ? ` · ${entry.opens}` : ""}
-      </p>
     </li>
   );
 }
@@ -117,6 +129,11 @@ export function AboutPage({ seen, next }: { seen: number; next?: string }) {
   // Validated here as well as in the action: the page PRINTS the destination,
   // and printing an unvalidated value is its own small problem.
   const destination = safeNext(next);
+  // Counted here, where `seen` is known — the rail is a client component and
+  // has no business reading the reader's acknowledged version.
+  const newPerChapter = Object.fromEntries(
+    CHAPTERS.map((n) => [n, aboutEntries.filter((e) => e.chapter === n && isNew(e, seen)).length]),
+  );
   const destinationClause =
     destination === "/"
       ? aboutCopy.dismissDestinationHome
@@ -126,7 +143,11 @@ export function AboutPage({ seen, next }: { seen: number; next?: string }) {
     // Not a <main>: the shell already opens one (shell.tsx:43) and /about
     // always renders inside it, so a second would give the document two main
     // landmarks and leave a screen reader with no single "skip to content".
-    <article className="mx-auto w-full max-w-[760px] px-[16px] py-[20px] min-[1000px]:px-[34px] min-[1000px]:py-[28px]">
+    // Two columns from the wide stop: the reading column, and the rail beside
+    // it. Below it the rail is gone and the in-flow list carries the same four
+    // links, because at 390px a 220px rail is a third of the screen.
+    <div className="mx-auto flex w-full max-w-[1060px] items-start gap-[40px] px-[16px] py-[20px] min-[1000px]:px-[34px] min-[1000px]:py-[28px]">
+      <article className="min-w-0 flex-1 max-w-[760px]">
       {/* The eyebrow exists ONLY when the reader is behind: it is the reason
           they are looking at this page instead of the one they asked for, so
           it is a count and not an apology. */}
@@ -143,36 +164,33 @@ export function AboutPage({ seen, next }: { seen: number; next?: string }) {
         {aboutCopy.pageIntro}
       </p>
 
-      <nav aria-label={aboutCopy.contentsLabel} className="mt-[18px]">
+      {/* IN FLOW at compact width only. Above the wide stop the same list is
+          the sticky rail beside the column — see `AboutPage`. The rail was
+          declined twice on the strength of Design's own cost note offering it
+          as a cut; that was a call about the reader's experience taken from a
+          note about effort, and thirty-four entries over nine screens is
+          exactly the page that needs to say where you are. */}
+      <nav
+        aria-label={aboutCopy.contentsLabel}
+        className="mt-[18px] min-[1000px]:hidden"
+      >
         <p className="font-mono text-[11px] text-[color:var(--fg-faint)]">
           {aboutCopy.contentsLabel}
         </p>
-        {/* In flow at BOTH widths. The handoff drew a 216px sticky rail on
-            desktop and then cut it in its own readiness note, unchanged from
-            R2 through R4: it is the only behaviour in the design and the only
-            thing on the page a pointer can touch, and the in-flow list is
-            complete without it. */}
         <ol className="mt-[6px] list-none p-0">
           {CHAPTERS.map((n) => {
             const entries = aboutEntries.filter((e) => e.chapter === n);
             const chapterNew = entries.filter((e) => isNew(e, seen)).length;
             return (
               <li key={n}>
-                {/* 44px at every width. A contents row is one of four things a
-                    thumb aims at on this page, and the other three are links
-                    inside running prose. */}
                 <a
                   href={`#chapter-${n}`}
-                  className="flex min-h-[44px] items-center justify-between gap-[12px] border-b border-solid border-[color:var(--border)] text-[14px] text-[color:var(--accent)] min-[1000px]:min-h-0 min-[1000px]:border-0 min-[1000px]:py-[3px] min-[1000px]:text-[13px]"
+                  className="flex min-h-[44px] items-center justify-between gap-[12px] border-b border-solid border-[color:var(--border)] text-[14px] text-[color:var(--accent)]"
                 >
                   <span>
                     <span className="font-mono text-[11px] text-[color:var(--fg-faint)]">{n}</span>{" "}
                     {aboutCopy.chapters[n].title}
                   </span>
-                  {/* A figure either way: `N new` when there is something new
-                      in the chapter, the entry count otherwise. A row that
-                      carried a count only when something was new would be
-                      blank for every reader at launch. */}
                   <span className="flex-none font-mono text-[10.5px] text-[color:var(--fg-faint)]">
                     {chapterNew > 0
                       ? aboutCopy.newInChapter(chapterNew)
@@ -240,6 +258,9 @@ export function AboutPage({ seen, next }: { seen: number; next?: string }) {
           </span>
         </form>
       )}
-    </article>
+      </article>
+
+      <ContentsRail chapters={CHAPTERS} newPerChapter={newPerChapter} />
+    </div>
   );
 }
