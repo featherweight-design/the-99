@@ -175,8 +175,10 @@ async function findCommanderSlug(page) {
     }
   }
   throw new Error(
-    `None of the first ${Math.min(8, slugs.length)} commanders draws a Role Coverage chip — ` +
-      `this account owns nothing in their roles. Pass PROBE_SLUG for one it does.`,
+    `None of the first ${Math.min(8, slugs.length)} commanders draws BOTH a Role Coverage ` +
+      `chip AND a synergy slot. Either this account owns nothing in their roles (Role Coverage ` +
+      `is built from the owned pool) or EDHREC does not index them (no synergy rows). Both are ` +
+      `fixture facts, not build facts. Pass PROBE_SLUG for a commander with both.`,
   );
 }
 
@@ -282,6 +284,11 @@ async function run() {
       // the hidden desktop chips' 10.5px markers beside the phone's own 11.5px
       // rows and reports 17 of 25 "off" on a build where every visible marker is
       // correct.
+      //
+      // SCOPED TO ROLE COVERAGE. `tracking-[0.02em]` is the coverage marker's
+      // class and the synergy row's markers do not carry it — so this locator
+      // measured one panel and reported for both, and a synergy regression could
+      // pass on a healthy chip. The synergy rows are measured separately below.
       const markers = onPage(page, '[class*="tracking-[0.02em]"]:visible');
       const mCount = await markers.count();
       if (mCount === 0) {
@@ -313,6 +320,44 @@ async function run() {
         const mono = sizes.every((s) => /mono/i.test(s.family));
         report("marker is mono, as the figure beside it is", mono, sizes[0].family);
         if (!mono) fail();
+      }
+
+      // ── 2b. the SYNERGY row's own marker type ───────────────────────────
+      //
+      // A separate reading because it is a separate ruling: the slot's marker is
+      // 11px on desktop and rides the meta line's 10px on the phone, neither of
+      // which is the chip's size. Measured through the row, so a coverage marker
+      // cannot stand in for it.
+      // The marker by the SIZE CLASS the row sets on it, which is the thing
+      // under test — not by `flex-none font-mono`, which `BuyTag`'s row variant
+      // also carries. That first version matched the tags instead and reported
+      // `9.5px against 11px`: the tag's own size, on a build where every marker
+      // was correct and simply absent, because every synergy row on this fixture
+      // is unowned.
+      const rowMarkerClass = name === "desktop" ? "text-[11px]" : "text-[10px]";
+      const rowMarkers = onPage(
+        page,
+        `li:has(button[aria-pressed]) [class*="${rowMarkerClass}"][class*="flex-none"]:visible`,
+      );
+      const rowCount = await rowMarkers.count();
+      if (rowCount === 0) {
+        console.log(
+          "  note  no synergy marker on this fixture — every owned synergy card has a spare" +
+            " copy, or every row is unowned and drawing a buy tag instead. The slot's marker" +
+            " type is not measured on this run.",
+        );
+      } else {
+        const wantRow = name === "desktop" ? 11 : 10;
+        const rowSizes = await rowMarkers.evaluateAll((els) =>
+          els.map((el) => Math.round(parseFloat(getComputedStyle(el).fontSize) * 100) / 100),
+        );
+        const offRow = rowSizes.filter((px) => Math.abs(px - wantRow) > 0.6);
+        report(
+          "synergy marker takes the slot's size",
+          offRow.length === 0,
+          `${rowSizes.length} markers, sizes ${[...new Set(rowSizes)].join("/")}px against ${wantRow}px`,
+        );
+        if (offRow.length) fail();
       }
 
       // ── 3. the key's pip baseline ───────────────────────────────────────

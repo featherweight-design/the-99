@@ -303,7 +303,10 @@ export function SynergyRow({
                   nameless
                   spoken={false}
                   seam={selected ? "var(--elevated-hover)" : "var(--surface)"}
-                  className="flex-none"
+                  // The meta line's own 10px. It inherited before, which happened
+                  // to be right and was not stated — and the probe could not
+                  // measure a size nothing declared.
+                  className="flex-none font-mono text-[10px]"
                 />
               </>
             ) : null}
