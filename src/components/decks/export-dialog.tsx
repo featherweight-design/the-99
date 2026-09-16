@@ -18,7 +18,12 @@ import { ExportCopyButton } from "./export-copy-button";
 import { GhostButton } from "@/components/ui/button";
 import { ExternalLink } from "../ui/external-link";
 import { manapoolAddDeckUrl } from "../../lib/manapool/links";
-import { exportLinkOutCopy, exportShoppingCopy, overCopy } from "../../lib/copy/decks-builder";
+import {
+  exportLinkOutCopy,
+  exportShoppingCopy,
+  exportTabCopy,
+  overCopy,
+} from "../../lib/copy/decks-builder";
 import { priceCopy } from "../../lib/copy/price";
 import { deckBodySize } from "../../lib/decks/deck-size";
 
@@ -290,7 +295,7 @@ function DialogContent({
             cursor: "pointer",
           }}
         >
-          Decklist
+          {exportTabCopy.decklist}
         </button>
         {/* Shopping list tab */}
         <button
@@ -313,7 +318,7 @@ function DialogContent({
             cursor: "pointer",
           }}
         >
-          Shopping list
+          {exportTabCopy.shopping}
         </button>
       </div>
 

@@ -23,7 +23,8 @@ import { GameAxisCell } from "../decks/game-axis-cell";
 import { CommitmentsCard } from "../home/commitments-card";
 import { THEMES } from "../../lib/theme/themes";
 import { discoverCopy } from "../../lib/copy/lanes";
-import { addPanelCopy, exportLinkOutCopy } from "../../lib/copy/decks-builder";
+import { addPanelCopy, exportLinkOutCopy, exportTabCopy } from "../../lib/copy/decks-builder";
+import { RECOMMENDED_MIX } from "../../lib/decks/mix";
 import { recommendationsCopy } from "../../lib/copy/recommendations";
 import { deckImportCopy } from "../../lib/copy/deck-import";
 import { deckVersioningCopy } from "../../lib/copy/deck-versioning";
@@ -767,8 +768,8 @@ function RolesFigure({ width }: { width: AboutWidth }) {
       label="roles"
       width={width}
       rows={[
-        { mark: "Ramp · 12 of 10", meaning: "a surplus, not an error — nothing here is capped" },
-        { mark: "Board wipes · 1 of 3", meaning: "a short role is the one thing that names what to do next" },
+        { mark: `${RECOMMENDED_MIX.ramp.label} · 12 of ${RECOMMENDED_MIX.ramp.target}`, meaning: "a surplus, not an error — nothing here is capped" },
+        { mark: `${RECOMMENDED_MIX.wipes.label} · 1 of ${RECOMMENDED_MIX.wipes.target}`, meaning: "a short role is the one thing that names what to do next" },
         {
           mark: addPanelCopy.strip.rationaleToggle,
           meaning: "and the baselines are the format's, not this commander's",
@@ -870,8 +871,8 @@ function ExportFigure({ width }: { width: AboutWidth }) {
       label="export"
       width={width}
       rows={[
-        { mark: "Decklist", meaning: "the whole 99, as text a deckbuilding site will read" },
-        { mark: "Shopping list", meaning: "or only what this deck has to buy" },
+        { mark: exportTabCopy.decklist, meaning: "the whole 99, as text a deckbuilding site will read" },
+        { mark: exportTabCopy.shopping, meaning: "or only what this deck has to buy" },
         { mark: exportLinkOutCopy.shopping, meaning: "a link out, in a new tab, with nothing of yours attached" },
       ]}
     />
@@ -899,7 +900,9 @@ function LogAGameFigure({ width }: { width: AboutWidth }) {
       rows={[
         { mark: `${gameLogCopy.form.won} / ${gameLogCopy.form.lost} / ${gameLogCopy.form.draw}`, meaning: "and how big the pod was" },
         { mark: `${GAME_AXIS_KEYS.length} axes`, meaning: "each markable as what worked or what let you down" },
-        { mark: "optional", meaning: "a result on its own is a game" },
+        // The form says this itself, in one line, so the figure says it in the
+        // form's own words rather than a paraphrase of them.
+        { mark: gameLogCopy.form.optionalNote, meaning: "the form says so, under the axes" },
       ]}
     />
   );

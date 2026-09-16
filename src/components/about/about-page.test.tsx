@@ -624,3 +624,23 @@ describe("what each chapter 01 figure actually draws", () => {
     expect(costCell!.firstElementChild?.textContent).toContain("//");
   });
 });
+
+describe("the themes figure", () => {
+  it("draws each theme's palette, not just its name", () => {
+    // The generic empty-frame check cannot see this: remove all eighteen
+    // swatches and the six names keep the frame non-empty, so the figure whose
+    // whole subject is "a theme changes the palette" goes green while showing
+    // no palette at all.
+    const { container } = render(<AboutPage seen={0} />);
+    const plate = container.querySelector('[data-specimen="themes"]');
+    expect(plate).toBeTruthy();
+    const tiles = [...plate!.querySelectorAll("[data-theme]")];
+    expect(tiles).toHaveLength(6);
+    for (const tile of tiles) {
+      const swatches = [...tile.querySelectorAll("span")].filter(
+        (el) => (el as HTMLElement).style.background !== "",
+      );
+      expect(swatches, `${tile.getAttribute("data-theme")} draws no palette`).toHaveLength(3);
+    }
+  });
+});
