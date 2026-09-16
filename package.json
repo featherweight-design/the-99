@@ -57,7 +57,8 @@
     "check:collection-routes": "node scripts/check-collection-routes.mjs",
     "seed:summary": "tsx scripts/seed-summary-fixture.ts",
     "probe:mana-symbols": "node scripts/probe-mana-symbols.mjs",
-    "fetch:mana": "tsx scripts/fetch-mana-symbols.ts"
+    "fetch:mana": "tsx scripts/fetch-mana-symbols.ts",
+    "probe:nav-cost": "node scripts/probe-nav-cost.mjs"
   },
   "dependencies": {
     "@clerk/nextjs": "^7.5.20",
