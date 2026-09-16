@@ -5,6 +5,8 @@ import { buildPoolRollup, rollupFor, type PoolRollup } from "../recs/pool-rollup
 import type { RoleName } from "../recs/score";
 import { loadCandidates, type CandidateRow } from "./candidates";
 import { loadPrices, slotFor, type PriceAggRow, type PriceSlot } from "./price";
+import { computeFit } from "../recs/score";
+import { gapSlotFor, type GapSlot } from "../edhrec/gap-slot";
 import { assignDiscoverySlugs } from "./slugs";
 import {
   byFit, byNovelty, clearsFloor, floorPct, loadPlayedTags, nearestDeck, orderDeckSets,
@@ -38,6 +40,36 @@ export type DiscoveryItem = {
   unplayedLabels: string[];
   unplayedCount: number;
   nearestDeck: { deckName: string; sharedLabels: string[]; extraShared: number } | null;
+  /**
+   * The one stored sentence about how this commander's decks tend to play, or
+   * null where none has been generated — which renders as NO PARAGRAPH rather
+   * than as a placeholder.
+   *
+   * The largest single addition to this payload and the reason its byte guard
+   * exists: every sentence is distinct, so the dictionary cannot fold them the
+   * way it folds theme labels.
+   */
+  prose: string | null;
+  /**
+   * Which mechanics the reader has never built, decided on the SERVER as one
+   * tagged union — never `labels.length === 0` re-read per surface. Both lanes
+   * draw what they are given, which is what keeps the three states from being
+   * re-derived and what gives the "decide on the classifier's output, not on
+   * `tags.length`" ruling exactly one home.
+   */
+  gapSlot: GapSlot;
+  /**
+   * Fit, 0–`measurableTotal`. The row's headline, and the same figure
+   * `/commanders` and Commander Details print — Ruling D.
+   *
+   * Computed here by `computeFit` rather than shipped as its four inputs and
+   * assembled on the client: one number is smaller than four, and a client that
+   * assembles it is a second implementation of the arithmetic by definition.
+   */
+  score: number;
+  /** What `score` is out of: 100, or 40 where synergy could not be measured —
+      never rescaled (#333), so the row prints the denominator it was given. */
+  measurableTotal: number;
   /** This commander's own support percentage — `ownedSupport` over
       `edhrecTotal`. Named for what it measures rather than for the threshold it
       is measured against: `floorPct` is the threshold, and the two figures
@@ -87,6 +119,14 @@ export type DiscoveryList = {
   sort: "fit" | "new";
 };
 
+/** `computeFit` returns the three components too, and the row prints none of
+    them — they belong to the detail page's legend. Taking two keys explicitly
+    keeps four fields off 3,000 rows. */
+const pick = (fit: ReturnType<typeof computeFit>) => ({
+  score: fit.score,
+  measurableTotal: fit.measurableTotal,
+});
+
 export function assembleDiscovery(input: {
   candidates: CandidateRow[];
   playedTags: DeckTagSet[];
@@ -126,6 +166,19 @@ export function assembleDiscovery(input: {
       unplayedCount: unplayed.length,
       nearestDeck: nearestDeck(c.tags, orderedDecks),
       supportPct: floorPct(c),
+      prose: c.prose,
+      // `played` holds tag slugs from every built deck, which is the same set
+      // `unplayedTags` above is given — so the line and the list it came from
+      // cannot order or filter the same tags differently.
+      gapSlot: gapSlotFor(c.tags, c.deckCount, played),
+      // Every input is already here: the rollup's two figures, and the
+      // candidate's identity-restricted overlap against its stored total.
+      ...pick(computeFit({
+        poolSize: rollup.colorPoolSize,
+        roleCounts: rollup.roleCounts,
+        ownedSupport: c.ownedSupport,
+        edhrecTotal: c.edhrecTotal,
+      })),
     };
   });
 
@@ -188,6 +241,10 @@ export function assembleDiscovery(input: {
       colorPoolSize: c.colorPoolSize,
       roleCounts: c.roleCounts,
       price: c.price,
+      prose: c.prose,
+      gapSlot: c.gapSlot,
+      score: c.score,
+      measurableTotal: c.measurableTotal,
       tagTotal: c.tagTotal,
       unplayedLabels: c.unplayedLabels,
       unplayedCount: c.unplayedCount,

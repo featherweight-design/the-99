@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 
 import { decodeDiscovery, encodeDiscovery } from "./encode";
+import type { GapSlot } from "../edhrec/gap-slot";
 import type { DiscoveryItem, DiscoveryList } from "./list";
 
 const baseItem: DiscoveryItem = {
@@ -16,6 +17,10 @@ const baseItem: DiscoveryItem = {
   colorPoolSize: 900,
   roleCounts: { ramp: 12, draw: 9, removal: 7, wipes: 3 },
   price: { kind: "priced", cents: 1499 },
+  prose: "Atraxa decks tend to grind value out of counters.",
+  gapSlot: { kind: "unplayed", labels: ["Counters", "Proliferate"] },
+  score: 58,
+  measurableTotal: 100,
   tagTotal: 6,
   unplayedLabels: ["Counters", "Proliferate"],
   unplayedCount: 2,
@@ -112,6 +117,73 @@ describe("encodeDiscovery", () => {
     expect(encoded.strings.filter((s) => s === "Counters")).toHaveLength(1);
     expect(encoded.strings.filter((s) => s === "Superfriends")).toHaveLength(1);
     expect(roundTrip(listOf([baseItem, twin]))).toEqual(listOf([baseItem, twin]));
+  });
+
+  // ALL THREE MEMBERS, because the two label-less ones encode as a one-element
+  // tuple and the round trip has to rebuild them WITHOUT a `labels` key rather
+  // than with an empty array. `toEqual` treats a missing key and `undefined`
+  // alike, so each is also read for its own shape.
+  it.each<GapSlot>([
+    { kind: "unplayed", labels: ["Counters", "Proliferate"] },
+    { kind: "allPlayed" },
+    { kind: "noMechanics" },
+  ])("round-trips the $kind gap slot", (gapSlot) => {
+    const list = listOf([{ ...baseItem, gapSlot }]);
+
+    const back = roundTrip(list).items[0].gapSlot;
+    expect(back).toEqual(gapSlot);
+    expect(Object.hasOwn(back, "labels")).toBe(gapSlot.kind === "unplayed");
+  });
+
+  // The labels come from the same theme vocabulary the rest of the payload
+  // draws on, so a gap label already filed by another field costs an index.
+  it("files a gap label into the shared dictionary", () => {
+    const encoded = encodeDiscovery(
+      listOf([{ ...baseItem, gapSlot: { kind: "unplayed", labels: ["Counters"] } }]),
+    );
+
+    expect(encoded.strings.filter((x) => x === "Counters")).toHaveLength(1);
+    const row = encoded.rows[0] as unknown[];
+    const [, labels] = row[encoded.keys.indexOf("gapSlot")] as [number, number[]];
+    expect(labels).toEqual([encoded.strings.indexOf("Counters")]);
+  });
+
+  // The sentence is deliberately NOT filed: every one is distinct, so a
+  // dictionary would hold 3,000 entries referenced once each and add the
+  // indices on top of the same bytes.
+  it("leaves the play-style sentence out of the dictionary", () => {
+    const prose = "Atraxa decks tend to grind value out of counters.";
+    const encoded = encodeDiscovery(listOf([{ ...baseItem, prose }]));
+
+    expect(encoded.strings).not.toContain(prose);
+    const row = encoded.rows[0] as unknown[];
+    expect(row[encoded.keys.indexOf("prose")]).toBe(prose);
+  });
+
+  // A decoder reads the order the payload was written with, never this module's
+  // current constant — the same rule `keys` and `roles` follow. Written as a
+  // payload whose kinds are REVERSED: read against `GAP_KINDS` it would decode
+  // as `unplayed`, which is a different state the row draws differently.
+  //
+  // `noMechanics` SPECIFICALLY, never the middle member. Reversing a
+  // three-element array leaves index 1 where it was, so an `allPlayed` fixture
+  // decodes correctly whichever array is consulted — the first version of this
+  // case used it and PASSED the mutation it exists to catch.
+  it("decodes a gap slot against the payload's own kind order", () => {
+    const encoded = encodeDiscovery(listOf([{ ...baseItem, gapSlot: { kind: "noMechanics" } }]));
+    const at = encoded.keys.indexOf("gapSlot");
+    const reordered = {
+      ...encoded,
+      gapKinds: [...encoded.gapKinds].reverse(),
+      rows: encoded.rows.map((row) => {
+        const copy = [...row];
+        const [kindAt] = copy[at] as [number];
+        copy[at] = [encoded.gapKinds.length - 1 - kindAt];
+        return copy;
+      }),
+    };
+
+    expect(decodeDiscovery(reordered).items[0].gapSlot).toEqual({ kind: "noMechanics" });
   });
 
   it("drops the art host from a Scryfall crop", () => {

@@ -17,6 +17,7 @@
 // reads the order that payload was written with.
 
 import type { RoleName } from "../recs/score";
+import type { GapSlot } from "../edhrec/gap-slot";
 import type { DiscoveryItem, DiscoveryList } from "./list";
 
 const ART_STEM = "https://cards.scryfall.io/art_crop/front/";
@@ -30,13 +31,30 @@ const ROW_KEYS = [
   "slug", "name", "colorIdentity", "artCropUri", "releasedAt", "deckCount",
   "rank", "ownedSupport", "edhrecTotal", "colorPoolSize", "roleCounts", "price",
   "tagTotal", "unplayedLabels", "unplayedCount", "nearestDeck", "supportPct",
+  "prose", "gapSlot", "score", "measurableTotal",
 ] satisfies (keyof DiscoveryItem)[];
+
+/**
+ * The gap slot, as a tag and its label indices.
+ *
+ * The labels go through the dictionary because they are drawn from the same
+ * ~399-word theme vocabulary `unplayedLabels` is, and the gap line names at
+ * most three of them — so on 3,000 rows they cost indices rather than words.
+ *
+ * `prose` deliberately does NOT go through the dictionary: every sentence is
+ * distinct, so filing them would build a 3,000-entry table each referenced
+ * once, adding the indices to the same bytes. It is the payload's largest
+ * single addition and the reason the byte guard exists.
+ */
+const GAP_KINDS = ["unplayed", "allPlayed", "noMechanics"] as const;
 
 export type EncodedDiscovery = Omit<DiscoveryList, "items"> & {
   /** Field names, in the order every row tuple carries its values. */
   keys: (keyof DiscoveryItem)[];
   /** Role names, in the order every `roleCounts` tuple carries its counts. */
   roles: RoleName[];
+  /** Gap-slot kinds, in the order every `gapSlot` tuple's tag indexes into. */
+  gapKinds: GapSlot["kind"][];
   /** Every label and deck name, filed once. Rows carry indices into this. */
   strings: string[];
   rows: unknown[][];
@@ -72,6 +90,18 @@ function encodeValue(
       return ROLES.map((role) => item.roleCounts[role]);
     case "unplayedLabels":
       return item.unplayedLabels.map((label) => dict.file(label));
+    // A tag index and, for the one member that carries them, label indices.
+    // The kind travels as its position in `GAP_KINDS` rather than as a string,
+    // and `GAP_KINDS` rides in the payload for the same reason `keys` and
+    // `roles` do: a decoder reading an older payload reads the order that
+    // payload was written with.
+    case "gapSlot":
+      return item.gapSlot.kind === "unplayed"
+        ? [
+            GAP_KINDS.indexOf("unplayed"),
+            item.gapSlot.labels.map((label) => dict.file(label)),
+          ]
+        : [GAP_KINDS.indexOf(item.gapSlot.kind)];
     case "nearestDeck":
       return item.nearestDeck
         ? [
@@ -90,6 +120,7 @@ function decodeValue(
   value: unknown,
   roles: RoleName[],
   strings: string[],
+  gapKinds: readonly GapSlot["kind"][],
 ): unknown {
   switch (key) {
     // The encoder either stripped the stem, leaving a relative path, or left an
@@ -106,6 +137,13 @@ function decodeValue(
     }
     case "unplayedLabels":
       return (value as number[]).map((i) => strings[i]);
+    case "gapSlot": {
+      const [kindAt, labels] = value as [number, number[] | undefined];
+      const kind = gapKinds[kindAt];
+      return kind === "unplayed"
+        ? { kind, labels: (labels ?? []).map((i) => strings[i]) }
+        : { kind };
+    }
     case "nearestDeck": {
       if (!value) return null;
       const [name, shared, extraShared] = value as [number, number[], number];
@@ -125,19 +163,26 @@ export function encodeDiscovery(list: DiscoveryList): EncodedDiscovery {
   const dict = new Dictionary();
   const rows = items.map((item) => ROW_KEYS.map((key) => encodeValue(key, item, dict)));
 
-  return { ...meta, keys: [...ROW_KEYS], roles: [...ROLES], strings: dict.strings, rows };
+  return {
+    ...meta,
+    keys: [...ROW_KEYS],
+    roles: [...ROLES],
+    gapKinds: [...GAP_KINDS],
+    strings: dict.strings,
+    rows,
+  };
 }
 
 /** The inverse of `encodeDiscovery`. */
 export function decodeDiscovery(encoded: EncodedDiscovery): DiscoveryList {
-  const { keys, roles, strings, rows, ...meta } = encoded;
+  const { keys, roles, gapKinds, strings, rows, ...meta } = encoded;
 
   return {
     ...meta,
     items: rows.map(
       (row) =>
         Object.fromEntries(
-          keys.map((key, i) => [key, decodeValue(key, row[i], roles, strings)]),
+          keys.map((key, i) => [key, decodeValue(key, row[i], roles, strings, gapKinds)]),
         ) as DiscoveryItem,
     ),
   };
