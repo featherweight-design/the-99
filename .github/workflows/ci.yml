@@ -33,6 +33,9 @@ jobs:
       - name: Copy drift
         run: pnpm check:copy-drift
 
+      - name: CSS tokens
+        run: pnpm check:tokens
+
       - name: Test
         run: pnpm test
 

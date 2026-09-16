@@ -1,0 +1,91 @@
+import { render, screen } from "@testing-library/react";
+import { describe, expect, it } from "vitest";
+
+import { BROWSE_CELLS, BROWSE_SET_CODE } from "../../lib/about/fixtures";
+import { collectionChassisCopy, collectionFilterCopy } from "../../lib/copy/collection";
+import { chassisCopy, PIP_ORDER } from "../../lib/copy/filter-chassis";
+import { setPageCopy } from "../../lib/copy/set-collections";
+import { BrowseFigureBody } from "./browse-figure";
+
+// This figure was a chip row, a count and two text pills — about a fifth of
+// what the canvas draws — and every check on the page passed over it, because
+// they all asked whether a figure EXISTED. The entry's three key lines are each
+// about what happens to a result, and there was no result drawn at all.
+describe("the browse figure", () => {
+  it("draws the result the three key lines are about", () => {
+    const { container } = render(<BrowseFigureBody />);
+
+    // A cell per fixture card, each with its own copy count — a grid where
+    // every badge read the same number would say nothing about it being one.
+    for (const cell of BROWSE_CELLS) {
+      expect(screen.getByText(cell.name)).toBeInTheDocument();
+    }
+    // Three of the five are `common`, so each caption is counted rather than
+    // found: `getByText` throws on the duplicates, and taking the first would
+    // pass over a figure that drew one caption five times.
+    const captions = [...container.querySelectorAll("p")]
+      .map((el) => el.textContent)
+      .filter((text) => text?.startsWith(`${BROWSE_SET_CODE} · `));
+    expect(captions.sort()).toEqual(
+      BROWSE_CELLS.map((c) => `${BROWSE_SET_CODE} · ${c.rarity}`).sort(),
+    );
+    const badges = [...container.querySelectorAll("span")].filter((s) =>
+      /^×\d+$/.test(s.textContent ?? ""),
+    );
+    expect(badges.map((b) => b.textContent)).toEqual(
+      BROWSE_CELLS.map((c) => `×${c.copies}`),
+    );
+
+    // §I's floor. Three across on a phone must not squash the cell, which is
+    // why it is sized by ratio and not by a height.
+    const art = container.querySelector('[class*="aspect-[63/88]"]');
+    expect(art, "the cell is sized by the 63/88 ratio").not.toBeNull();
+  });
+
+  it("carries the numeral onto the part each line describes", () => {
+    const { container } = render(<BrowseFigureBody />);
+    // Three lines, three marks. The page shipped with the numerals on the
+    // LINES only, which makes them bullets: a numeral needs something to point
+    // at or the annotation grammar is half-drawn.
+    const marks = [...container.querySelectorAll("span")].filter(
+      (s) => s.getAttribute("aria-hidden") === "true" && /^[123]$/.test(s.textContent ?? ""),
+    );
+    expect(marks.map((m) => m.textContent)).toEqual(["1", "2", "3"]);
+  });
+
+  it("draws both forms of the row the route itself forks", () => {
+    render(<BrowseFigureBody />);
+
+    // The route puts the pips and the four panels behind one trigger below
+    // 1000px and keeps a shorter placeholder. Drawing the wide bar to a phone
+    // reader would show them controls their phone does not have — so BOTH
+    // forms are in the markup, each hidden at the other width.
+    expect(screen.getByText("Search your cards…")).toBeInTheDocument();
+    expect(screen.getByText("Search by card name…")).toBeInTheDocument();
+    expect(screen.getByText(collectionChassisCopy.sheet.trigger)).toBeInTheDocument();
+
+    // The wide form's own controls, read from the route's copy so a rename
+    // reaches the figure without anyone editing it.
+    expect(screen.getByText(collectionFilterCopy.type.triggerLabel)).toBeInTheDocument();
+    expect(screen.getByText(collectionFilterCopy.set.triggerOne("The Hobbit"))).toBeInTheDocument();
+    expect(screen.getByText(chassisCopy.chips.clearAll)).toBeInTheDocument();
+    expect(screen.getByText(setPageCopy.entryPoint.label)).toBeInTheDocument();
+
+    // Both count lines, for the same reason: the long one has room beside two
+    // controls on the wide bar and does not at 390px.
+    expect(screen.getByText(collectionChassisCopy.resultCompact(34))).toBeInTheDocument();
+    expect(
+      screen.getByText(collectionChassisCopy.result(34, 2805, 4120, true)),
+    ).toBeInTheDocument();
+  });
+
+  it("draws the route's own five hues, not five discs that look like them", () => {
+    const { container } = render(<BrowseFigureBody />);
+    const pips = [...container.querySelectorAll("span")].filter((s) =>
+      (s.getAttribute("style") ?? "").includes("/mana/"),
+    );
+    // Keyed to PIP_ORDER's length rather than to 5: a hue added to the route's
+    // control has to reach this figure by itself.
+    expect(pips).toHaveLength(PIP_ORDER.length);
+  });
+});

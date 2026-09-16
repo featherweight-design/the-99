@@ -27,7 +27,7 @@ import { chassisCopy, PIP_ORDER, type PipCode } from "../../lib/copy/filter-chas
  * line below. Decision 7 rules on how an available filter is drawn; a filter
  * with nothing to match is not one.
  */
-const PIP_SRC: Record<PipCode, string> = {
+export const PIP_SRC: Record<PipCode, string> = {
   W: "/mana/W.svg", U: "/mana/U.svg", B: "/mana/B.svg", R: "/mana/R.svg", G: "/mana/G.svg",
 };
 

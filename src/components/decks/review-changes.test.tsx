@@ -549,7 +549,7 @@ describe("ReviewChanges", () => {
     const bar = note.parentElement as HTMLElement;
     expect(bar.contains(cta)).toBe(true);
     expect(bar.className).toContain("[border-top:1px_solid_var(--border-strong)]");
-    expect(bar.className).toContain("bg-[color:var(--base)]");
+    expect(bar.className).toContain("bg-[color:var(--bg)]");
     // One element ordered twice rather than two subtrees: the note reads first on
     // the phone and last above it, and the DOM holds it once either way.
     expect(note.className).toContain("order-first md:order-last");
