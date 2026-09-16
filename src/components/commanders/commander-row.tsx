@@ -13,7 +13,7 @@
 // does, the second is what the reader's collection has never done, and
 // everything else waits for Commander Details.
 
-import { Fragment, type ReactNode } from "react";
+import { type ReactNode } from "react";
 import Link from "next/link";
 import { formatCents } from "../../lib/decks/price";
 import { commanderRowCopy } from "../../lib/copy/commander-row";
@@ -348,14 +348,21 @@ export function CommanderRow({ item }: { item: CommanderRowView }) {
           style={{ marginTop: 2 }}
         >
           {figures.map((figure, i) => (
-            <Fragment key={figure.key}>
+            // THE SEPARATOR TRAVELS WITH THE FIGURE IT PRECEDES, in one flex
+            // item. As two siblings in a wrapping row they split at the break:
+            // the contact sheet showed `1,179 decks tracked ·` ending a line with
+            // the price on the next, which is the dangling separator round 1
+            // reported — reachable by WRAPPING rather than by a null field, which
+            // is why the null-field reading of it was wrong and the fix is still
+            // owed. Found by looking at the sheet.
+            <span key={figure.key} className="flex items-center gap-x-[10px]">
               {i > 0 && (
                 <span aria-hidden="true" style={{ fontSize: 11, color: "var(--fg-locked)" }}>
                   {commanderRowCopy.figures.separator}
                 </span>
               )}
               {figure.node}
-            </Fragment>
+            </span>
           ))}
         </div>
       </div>

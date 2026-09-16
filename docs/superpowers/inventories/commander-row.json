@@ -1,0 +1,64 @@
+{
+  "feature": "One commander row — the play-style sentence, the mechanic gap, one Fit",
+  "note": "Written at close-out. Four cells: both lanes at both widths, because the row is ONE component serving two populations and the whole ruling (D1) is that nothing on it may be read off ownership — so a sheet showing only one lane would photograph the ruling's easy half. `/discover` is where the price draws and `/commanders` is where it never does: every commander there is owned, and §7.4 row 5 unmounts the slot. The three gap-slot occupants cannot be forced by a step, so the sheet shows whichever the fixture's top rows carry; `unplayed` and `allPlayed` both appear on this account, and `noMechanics` is 3.5% of the catalogue and may not. What the sheet CANNOT show is the states matrix — that is `commander-row.test.tsx`'s job, 28 cases — nor the two browser-measured figures, which are `probe:commander-row`'s. A picture proves the row rendered on the route; it does not prove a state.",
+  "shares": {
+    "module": "src/components/commanders/commander-row.tsx",
+    "binding": "CommanderRow",
+    "why": "The point of the feature. Two routes, one row, and `check:shared` is what proves they converged rather than each growing a copy — which is exactly what `rec-card.tsx` and `discovery-row.tsx` were before this round."
+  },
+  "rows": [
+    {
+      "id": "commanders-lane",
+      "label": "/commanders — owned commanders, no price (owned unmounts the slot)",
+      "view": "src/components/commanders/commanders-view.tsx",
+      "steps": [
+        {
+          "goto": "/commanders",
+          "settle": 2500,
+          "wait": "a[href^='/commanders/']"
+        }
+      ]
+    },
+    {
+      "id": "discover-lane",
+      "label": "/discover — unowned commanders, price drawn",
+      "view": "src/components/commanders/discovery-view.tsx",
+      "steps": [
+        {
+          "goto": "/discover",
+          "settle": 2500,
+          "wait": "a[href^='/commanders/']"
+        }
+      ]
+    },
+    {
+      "id": "discover-novelty",
+      "label": "/discover under Something new — the sort the gap line was reported against",
+      "view": "src/components/commanders/discovery-view.tsx",
+      "steps": [
+        {
+          "goto": "/discover?sort=new",
+          "settle": 2500,
+          "wait": "a[href^='/commanders/']"
+        }
+      ]
+    },
+    {
+      "id": "long-sentence",
+      "label": "/discover searched to the catalogue's longest sentence (190 chars, 2 lines desktop / 4 phone)",
+      "view": "src/components/commanders/discovery-view.tsx",
+      "steps": [
+        {
+          "goto": "/discover",
+          "settle": 1500,
+          "wait": "a[href^='/commanders/']"
+        },
+        {
+          "fill": "input[placeholder]",
+          "text": "Deadpool",
+          "settle": 2000
+        }
+      ]
+    }
+  ]
+}
