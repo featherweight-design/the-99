@@ -1077,3 +1077,28 @@ describe("CardModal title under an opened-at printing", () => {
     expect(screen.getByRole("heading", { name: card.name })).toBeInTheDocument();
   });
 });
+
+// The header row wraps, so a wide cost takes its own line rather than squeezing
+// the name into two. jsdom lays nothing out, so what is asserted here is the
+// RULE — the row is allowed to wrap and the name block is free to size to its
+// content — and `probe:mana-symbols` measures whether it actually does.
+describe("CardModal header — the cost may take its own line", () => {
+  it("lets the header row wrap", () => {
+    mount(card);
+
+    const row = screen.getByTestId("modal-mana-cost").parentElement;
+    expect(row?.className).toContain("flex-wrap");
+  });
+
+  // `flex-initial` is what makes the rule fall out of the name's own width: flex
+  // wraps on an item's hypothetical size, which for this block is its one-line
+  // content width. A `flex-1` here would give it a zero basis and the row would
+  // never wrap — it would shrink the name instead, which is the defect.
+  it("leaves the name block sizing to its content", () => {
+    mount(card);
+
+    const nameBlock = screen.getByText(card.typeLine).parentElement;
+    expect(nameBlock?.className).not.toContain("flex-1");
+    expect(nameBlock?.className).not.toContain("basis-");
+  });
+});
