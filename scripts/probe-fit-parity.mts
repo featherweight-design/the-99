@@ -3,19 +3,26 @@
 // The row would compute `fitSynergy` from STORED counts — `edhrec_total` and an
 // `oracle_id` join over `commander_support_cards` (candidates.ts:310). Commander
 // Details computes it from the LIVE EDHREC payload, by NAME, with a front-face
-// fallback for DFCs (score.ts:252, via scoreOneCommander). Two computations over
-// two data paths, and `page.tsx` calls `scoreOneCommander` for every commander,
-// owned or not — so every row links to a page that recomputes the same number a
-// different way.
+// fallback for DFCs (`edhrecOverlap`, score.ts:151, reaching `fitSynergy` at
+// score.ts:288, via scoreOneCommander). Two computations over two data paths, and
+// `page.tsx` calls `scoreOneCommander` for every commander, owned or not — so
+// every row links to a page that recomputes the same number a different way.
 //
 // The whole "three surfaces, one number" ruling rests on them agreeing, and
 // nothing proved they do. This script is that proof, and it must pass before any
 // surface prints a Fit derived from the stored counts.
 //
-// It makes NO writes and needs no fixture: it reads whatever collection the
-// account already has. Point it at local-dev or a scratch branch.
+// IT WRITES, AND IT REACHES UPSTREAM. No fixture — it reads whatever collection
+// the account already has and creates no deck — but the live half of the
+// comparison goes through `resolveEdhrecData`, which serves a cached row only
+// inside a 30-day TTL and otherwise FETCHES EDHREC and upserts `edhrec_cache`
+// (client.ts:54-74). Discovery candidates are by definition commanders the
+// reader does not own, so their cache rows are the least likely to be warm: a
+// cold run costs up to `SAMPLE` live EDHREC requests and that many cache
+// upserts. Keep the sample modest, do not loop it, and point it at local-dev or
+// a scratch branch — never production.
 //
-// Run: `pnpm probe:fit-parity`
+// Run: `pnpm probe:fit-parity`  ·  `SAMPLE=n` to widen it
 //
 // First, and on its own line: src/db reads DATABASE_URL at module scope.
 import { requireEnv } from "./lib/env.mjs";
@@ -27,7 +34,9 @@ import { loadCandidates } from "../src/lib/discovery/candidates";
 import { loadCollectionPool, scoreOneCommander } from "../src/lib/recs/recommend";
 import { SYNERGY_WEIGHT } from "../src/lib/recs/score";
 
-/** How many commanders to compare. Each one costs an EDHREC cache read. */
+/** How many commanders to compare. Each one may cost a live EDHREC request and
+    a cache upsert — see the header. 40 was enough to settle the question
+    decisively (15 of 60 disagreed at the widest run). */
 const SAMPLE = Number(process.env.SAMPLE ?? 40);
 
 const owner = await db
@@ -92,7 +101,10 @@ const unscored = rows.filter((r) => r.liveTotal == null);
 const scored = rows.filter((r) => r.liveTotal != null);
 console.log(`  ${scored.length} scored live, ${unscored.length} with no live synergy read\n`);
 if (scored.length === 0) {
-  throw new Error("no candidate scored live — the EDHREC cache is cold, so nothing was compared");
+  // Not a cold cache — a cold row is fetched, not skipped. A null live total
+  // means EDHREC had no page for these commanders or the fetch failed, and
+  // either way nothing was compared.
+  throw new Error("no candidate scored live — EDHREC returned nothing, so nothing was compared");
 }
 
 const numeratorDiffs = scored.filter((r) => r.storedOwned !== r.liveOwned);

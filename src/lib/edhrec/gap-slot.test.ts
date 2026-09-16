@@ -44,10 +44,25 @@ describe("the generated classification", () => {
     expect(isMechanic(label)).toBe(false);
   });
 
-  // Irregular plurals. Every one of these reached the mechanic side of a first
-  // attempt, and `Faeries` reached it a second time through `Kindred`.
-  it.each(["Dwarves", "Faeries", "Fungi", "Heroes", "Horses"])(
-    "%s is recognised as a creature type despite its plural",
+  // The plurals no suffix rule can reach: `dwarves` reduces to `dwarve`,
+  // `heroes` to `heroe`, and `fungi` carries no plural suffix at all. These are
+  // the entries the irregular table exists for.
+  it.each(["Dwarves", "Fungi", "Heroes", "Elves", "Wolves"])(
+    "%s needs the irregular table to reduce to its singular",
+    (label) => {
+      expect(isMechanic(label)).toBe(false);
+      expect(CREATURE_TYPE_LABELS).toContain(label);
+    },
+  );
+
+  // These reduce correctly from the trailing-`s` rule alone, which is why they
+  // are NOT in the irregular table — four such entries were there and were
+  // removed as dead weight. Kept as cases because they must stay classified
+  // whichever rule gets them there. `Faeries` is load-bearing for a different
+  // reason: it reaches the mechanic side if the generator forgets that
+  // `Kindred` type lines carry creature types.
+  it.each(["Faeries", "Horses", "Humans", "Zombies"])(
+    "%s reduces from the generic rule and is still a creature type",
     (label) => {
       expect(isMechanic(label)).toBe(false);
       expect(CREATURE_TYPE_LABELS).toContain(label);
@@ -75,19 +90,28 @@ describe("the generated classification", () => {
     expect(isMechanic("Some Theme EDHREC Added Last Tuesday")).toBe(false);
   });
 
-  it("does not mistake a multi-word label containing a creature word", () => {
-    const subtypes = new Set(["creature", "sea"]);
+  // A property of `singularForms`, not of a guard: it yields whole-label forms
+  // only, so a space-bearing label cannot match a single-word subtype. An
+  // explicit multi-word guard was written and deleted after a mutation run
+  // showed it changed no answer. This asserts the behaviour, which a future
+  // `singularForms` that split words would break silently.
+  it("cannot match a multi-word label against a single-word subtype", () => {
+    const subtypes = new Set(["creature", "sea", "modified"]);
+    expect(singularForms("Sea Creatures").every((f) => f.includes(" "))).toBe(true);
     expect(isCreatureTypeLabel("Sea Creatures", subtypes)).toBe(false);
     expect(isMechanic("Sea Creatures")).toBe(true);
     expect(isMechanic("Modified Creatures")).toBe(true);
   });
 
   it("offers every singular a plural could reduce to", () => {
-    expect(singularForms("Faeries")).toContain("faerie");
+    // From the irregular table — no suffix rule reaches these.
     expect(singularForms("Wolves")).toContain("wolf");
+    expect(singularForms("Heroes")).toContain("hero");
+    expect(singularForms("Fungi")).toContain("fungus");
+    // From the suffix rules alone.
     expect(singularForms("Frogs")).toContain("frog");
-    // "ies" -> "y" for a regular one, without the irregular table.
     expect(singularForms("Allies")).toContain("ally");
+    expect(singularForms("Faeries")).toContain("faerie");
   });
 });
 

@@ -25,21 +25,22 @@ export const FORMAT_LABELS: readonly string[] = [
 ];
 
 /**
- * Plurals a suffix rule gets wrong. Each one reached the mechanic side of a
- * first attempt at this, which is a tribe on screen — the defect the classifier
- * exists to prevent.
+ * Plurals the suffix rules below cannot reach.
+ *
+ * Six entries, not ten. `faeries`, `horses`, `humans` and `zombies` were here
+ * and are gone: the trailing-`s` rule already yields `faerie`, `horse`, `human`
+ * and `zombie`, so those entries could never change an answer — the same dead
+ * -weight class as the format guard `gap-slot.ts` describes. What the six have
+ * in common is that no suffix rule produces their singular: `dwarves` reduces
+ * to `dwarve`, `heroes` to `heroe`, and `fungi` has no plural suffix at all.
  */
 const IRREGULAR_PLURALS: Readonly<Record<string, string>> = {
   dwarves: "dwarf",
   elves: "elf",
-  faeries: "faerie",
   fungi: "fungus",
   heroes: "hero",
-  horses: "horse",
-  humans: "human",
   thieves: "thief",
   wolves: "wolf",
-  zombies: "zombie",
 };
 
 /** Every singular a label could be, most specific first. */
@@ -58,11 +59,18 @@ export function singularForms(label: string): string[] {
  * Whether a label names a creature type, against a vocabulary of subtypes that
  * ONLY ever name creatures.
  *
- * Multi-word labels are never a bare subtype: `Modified Creatures`,
- * `Sea Creatures` and `Commander Matters` all contain a creature word and none
- * of them is a tribe.
+ * Multi-word labels — `Modified Creatures`, `Sea Creatures`, `Commander
+ * Matters` — fall out as mechanics without a guard, and an explicit
+ * `if (/\s/.test(label)) return false` was written here and removed: the
+ * vocabulary is built by splitting type lines on whitespace, so every member is
+ * one word, and `singularForms` only ever yields whole-label forms. A
+ * space-bearing label therefore cannot match any entry, and a mutation run
+ * confirmed the guard changed no answer in the 43-case suite.
+ *
+ * The behaviour is still asserted in the tests, because it is a property of
+ * `singularForms` rather than of this function — a future `singularForms` that
+ * split words would break it silently.
  */
 export function isCreatureTypeLabel(label: string, creatureOnlySubtypes: Set<string>): boolean {
-  if (/\s/.test(label)) return false;
   return singularForms(label).some((form) => creatureOnlySubtypes.has(form));
 }
