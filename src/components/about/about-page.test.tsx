@@ -455,6 +455,10 @@ describe("the contents rail", () => {
     expect(rail.className).toContain("sticky");
     expect(rail.className).toContain("hidden");
     expect(rail.className).toContain("min-[1000px]:block");
+    // 216px is the drawn width, and it reached the build as 220px — the width
+    // is the whole of what the rail contributes to the page's measure, so it
+    // is asserted here rather than left to a reader of the class list.
+    expect(rail.className).toContain("w-[216px]");
   });
 
   it("marks where the reader is, for a screen reader as well as an eye", () => {
@@ -722,5 +726,106 @@ describe("the commander-availability figure", () => {
     for (const d of dots) {
       expect(d.className).toContain("bg-[color:var(--success)]");
     }
+  });
+});
+
+describe("the page's own type, against the design table", () => {
+  // `docs/superpowers/design-tables/about.md` states weight 700 on both
+  // headings, and Tailwind's preflight gives an h1 and an h2 the BODY weight —
+  // so `font-display` alone rendered them at 400 while the table said 700 and
+  // the verification pass that wrote the table read past it. A row a machine
+  // can check should not be left to a reader who has just written it down.
+  it("gives every heading the weight and size the table specifies", () => {
+    // Asserting `className` contains `font-bold` restates the change rather
+    // than the property — and it covered two headings while the same preflight
+    // default was left on the third. The entry title is an h3 with
+    // `font-display` and no weight, which §3 draws at 600.
+    render(<AboutPage seen={0} />);
+    const h1 = screen.getByRole("heading", { level: 1 });
+    expect(h1.className).toContain("font-bold");
+    expect(h1.className).toContain("leading-[1.2]");
+    expect(h1.className).toContain("text-[23px]");
+    expect(h1.className).toContain("min-[1000px]:text-[29px]");
+
+    for (const h2 of screen.getAllByRole("heading", { level: 2 })) {
+      expect(h2.className).toContain("font-bold");
+      expect(h2.className).toContain("text-[16px]");
+      expect(h2.className).toContain("min-[1000px]:text-[21px]");
+    }
+    for (const h3 of screen.getAllByRole("heading", { level: 3 })) {
+      // Tailwind's preflight gives an h3 the body weight, so the class is what
+      // produces the 600 the table specifies — not decoration on top of it.
+      expect(h3.className, "the entry title carries its own weight").toContain("font-semibold");
+      expect(h3.className).toContain("text-[15px]");
+      expect(h3.className).toContain("min-[1000px]:text-[15.5px]");
+    }
+  });
+
+  // Both of the rows above were corrected on the desktop step alone in an
+  // earlier pass, so a check that reads only the phone value certifies half a
+  // fix. Every row here therefore asserts BOTH values — and these three
+  // elements are reached structurally rather than by class, because a query
+  // written from the class list can only find what it already describes.
+  it("sizes the route link and the key line at both widths", () => {
+    const { container } = render(<AboutPage seen={0} />);
+
+    // The route sits beside its own entry title, so the title's next sibling
+    // is the link — no class in the selector.
+    const titles = screen.getAllByRole("heading", { level: 3 });
+    expect(titles.length).toBeGreaterThan(0);
+    for (const title of titles) {
+      const route = title.nextElementSibling;
+      expect(route?.tagName).toBe("A");
+      expect(route?.className).toContain("text-[11px]");
+      expect(route?.className).toContain("min-[1000px]:text-[11.5px]");
+    }
+
+    // A key line is the text cell of a numbered key — the second child of an
+    // `li` whose first child is the numeral. One size at both widths.
+    const keyLines = [...container.querySelectorAll("ol > li > span[aria-hidden]")].map(
+      (numeral) => numeral.nextElementSibling,
+    );
+    expect(keyLines.length).toBeGreaterThan(0);
+    for (const line of keyLines) {
+      expect(line?.className).toContain("text-[10.5px]");
+      expect(line?.className).not.toContain("min-[1000px]:text-[");
+    }
+  });
+
+  it("separates the intro from the h1 by the drawn 10px", () => {
+    const { container } = render(<AboutPage seen={0} />);
+    const intro = container.querySelector("h1 + p");
+    expect(intro?.className).toContain("mt-[10px]");
+  });
+
+  it("gives every plate and every inset its own padding, in both chassis", () => {
+    // Two treatments in the canvas — 14px 16px and 12px — collapsed into one
+    // row of the first table and then one blanket value in the code.
+    //
+    // EVERY frame, and both chassis. `Specimen` and `LegendBox` each carry
+    // their own padding branch, so checking the first plate and the first
+    // inset tested `Specimen` twice and `LegendBox` never — reverting the
+    // legend's branch to the old blanket value left the suite green.
+    const { container } = render(<AboutPage seen={0} />);
+    const frames = [...container.querySelectorAll("[data-width]")];
+    expect(frames.length).toBeGreaterThan(30);
+
+    const kinds = { mountedPlate: 0, mountedInset: 0, legendPlate: 0, legendInset: 0 };
+    for (const frame of frames) {
+      const label = frame.getAttribute("data-specimen");
+      const inset = frame.getAttribute("data-width") === "inset";
+      const legend = frame.hasAttribute("data-legend");
+      if (inset) {
+        expect(frame.className, `${label} inset padding`).toContain("p-[12px]");
+      } else {
+        expect(frame.className, `${label} plate padding`).toContain("px-[16px]");
+        expect(frame.className, `${label} plate padding`).toContain("py-[14px]");
+      }
+      kinds[legend ? (inset ? "legendInset" : "legendPlate") : inset ? "mountedInset" : "mountedPlate"] += 1;
+    }
+    // Both chassis must actually be represented, or the loop above is checking
+    // one implementation twice.
+    expect(kinds.mountedPlate + kinds.mountedInset).toBeGreaterThan(0);
+    expect(kinds.legendPlate + kinds.legendInset).toBeGreaterThan(0);
   });
 });
