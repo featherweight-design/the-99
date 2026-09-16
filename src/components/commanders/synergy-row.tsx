@@ -101,7 +101,7 @@ export function SynergyRow({
   siblings,
   width,
   facet,
-  newestAsOf = null,
+  newestAsOf,
 }: {
   card: SynergyCard;
   selected: boolean;
@@ -109,8 +109,19 @@ export function SynergyRow({
   siblings: string[];
   width: "desktop" | "phone";
   facet: CardFacet | "all";
-  /** The price table's newest `as_of`. One per panel — see `SynergyPanel`. */
-  newestAsOf?: Date | null;
+  /**
+   * The price table's newest `as_of`. One per panel — see `SynergyPanel`.
+   *
+   * REQUIRED, completing the chain: `detail.tsx` → `SelectableSynergyPanel` →
+   * `SynergyPanel` → here. A default at any link turns a missed integration into
+   * a wrong price rather than a type error, which is exactly what shipped — the
+   * page passed it to one of two panels and every desktop row read `absent`.
+   *
+   * The `decks/` components still take it optional. Those are pre-existing and
+   * this feature does not touch them; sweeping them is a separate change with
+   * its own blast radius, not a line to slip into this one.
+   */
+  newestAsOf: Date | null;
 }) {
   const isPhone = width === "phone";
   const isOver =

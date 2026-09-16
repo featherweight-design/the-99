@@ -126,6 +126,9 @@ async function goto(page, path) {
 /** The chip, by the geometry it declares rather than by a composed class list. */
 const CHIP = 'button[class*="h-[28px]"]';
 
+/** The synergy slot, by the width it declares. */
+const SLOT = 'li span[style*="width: 88px"]';
+
 /**
  * A commander whose Role Coverage actually draws chips.
  *
@@ -159,8 +162,13 @@ async function findCommanderSlug(page) {
     // WAIT for a chip rather than counting immediately: the panels paint after
     // the heading, so an instant count returns 0 on a page that has 48 of them
     // and the loop walks past a perfectly good fixture.
+    // BOTH panels, not just the chips. A commander EDHREC does not index draws
+    // Role Coverage and an empty synergy list, and this probe measures the slot
+    // as well — so a chips-only fixture reports "the synergy panel did not
+    // render" and blames the build for what the fixture chose.
     try {
       await onPage(page, CHIP).first().waitFor({ state: "attached", timeout: 8_000 });
+      await onPage(page, SLOT).first().waitFor({ state: "attached", timeout: 8_000 });
       return slug;
     } catch {
       continue;
@@ -253,12 +261,17 @@ async function run() {
           if (!ok) fail();
 
           // A run where no chip is near the cap proves little, so say so.
+          // A NOTE, not a check. It reports on the fixture's strength rather
+          // than on the build, so it must not print `FAIL` — a run that ends
+          // "All checks passed." after a FAIL line is a probe whose own output
+          // cannot be read. `report` is not used here for that reason.
           const widest = boxes.reduce((a, b) => (b.text.length > a.text.length ? b : a));
-          report(
-            "the fixture has a name long enough to matter",
-            widest.text.length >= 12,
-            `longest chip name is "${widest.text}" (${widest.text.length} chars) — under 12 and this` +
-              ` reading is weak; pass PROBE_SLUG for a commander with longer staples`,
+          console.log(
+            `  note  longest chip name is "${widest.text}" (${widest.text.length} chars)` +
+              (widest.text.length >= 12
+                ? ""
+                : " — under 12, so the height reading above is weak; pass PROBE_SLUG for a" +
+                  " commander with longer staples"),
           );
         }
       }
@@ -344,7 +357,7 @@ async function run() {
 
       // ── 4. the synergy slot holds one width ─────────────────────────────
       if (name === "desktop") {
-        const slots = onPage(page, 'li span[style*="width: 88px"]');
+        const slots = onPage(page, SLOT);
         const sCount = await slots.count();
         if (sCount === 0) {
           report("synergy slot", false, "no 88px slot drawn — the synergy panel did not render, NOT a pass");

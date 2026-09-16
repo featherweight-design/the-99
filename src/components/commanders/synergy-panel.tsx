@@ -54,7 +54,7 @@ export function SynergyPanel({
   width: "desktop" | "phone";
   /** The price table's newest `as_of`, for the rows' buy tags. One per panel:
       liveness is the table's property, not a card's. Required — see
-      `SelectableSynergyPanel` for what a default cost. */
+      `SelectableSynergyPanel` for what a default costs. */
   newestAsOf: Date | null;
 }) {
   const isPhone = width === "phone";
