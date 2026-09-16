@@ -13,6 +13,7 @@
 // does, the second is what the reader's collection has never done, and
 // everything else waits for Commander Details.
 
+import { Fragment, type ReactNode } from "react";
 import Link from "next/link";
 import { formatCents } from "../../lib/decks/price";
 import { commanderRowCopy } from "../../lib/copy/commander-row";
@@ -178,6 +179,47 @@ export function CommanderRow({ item }: { item: CommanderRowView }) {
       ? commandersCopy.row.fitDenominator
       : commandersCopy.row.fitDenominatorMeasurable(item.measurableTotal);
 
+  // Fit is unconditional; the other two drop out when they have no reading.
+  const priceDrawn = item.priceOk && item.price.kind !== "absent";
+  const figures: { key: string; node: ReactNode }[] = [
+    {
+      key: "fit",
+      node: (
+        <span className="flex items-baseline gap-[4px]">
+          <span
+            aria-hidden="true"
+            className="font-mono font-[600]"
+            style={{ fontSize: 15, color: "var(--fg)", fontVariantNumeric: "tabular-nums" }}
+          >
+            {item.score}
+          </span>
+          <span
+            aria-hidden="true"
+            className="font-mono"
+            style={{ fontSize: 10.5, color: "var(--fg-faint)", letterSpacing: "0.04em" }}
+          >
+            {fitUnit}
+          </span>
+        </span>
+      ),
+    },
+    ...(item.deckCount !== null
+      ? [
+          {
+            key: "decks",
+            node: (
+              <span className="font-mono" style={{ fontSize: 11.5, color: "var(--fg-faint)" }}>
+                {discoverCopy.row.popularity(item.deckCount)}
+              </span>
+            ),
+          },
+        ]
+      : []),
+    ...(priceDrawn
+      ? [{ key: "price", node: <PriceFigure price={item.price} priceOk={item.priceOk} /> }]
+      : []),
+  ];
+
   return (
     <div
       className="relative group transition-colors hover:bg-[color:var(--elevated-hover)]"
@@ -250,19 +292,22 @@ export function CommanderRow({ item }: { item: CommanderRowView }) {
             nothing synthesised and nothing truncated into the gap. */}
         {item.prose !== null && (
           <p
-            className="font-sans"
+            // FOUR LINES ON THE PHONE, TWO FROM `sm` UP — the two budgets the
+            // handoff drew (2 at a 760px measure, 4 at 330px), not one value for
+            // both. A flat 4 let a long sentence take three or four lines on
+            // desktop where the drawing allows two, and the handoff's own
+            // remedy for a clip there is to WIDEN THE MEASURE rather than add a
+            // third line. Named by review.
+            //
+            // `line-clamp` forces an ATOMIC box, so nothing may be placed after
+            // this text inside the same element. The clamp stays at both widths
+            // regardless: a sentence overflowing silently is worse than one
+            // visibly cut.
+            className="font-sans line-clamp-4 sm:line-clamp-2"
             style={{
               fontSize: 13.5,
               lineHeight: 1.5,
               color: "var(--fg-body)",
-              // `-webkit-line-clamp` forces an ATOMIC box, so nothing may be
-              // placed after this text inside the same element. The clamp stays
-              // regardless of the measure: a sentence overflowing silently is
-              // worse than one visibly cut.
-              display: "-webkit-box",
-              WebkitBoxOrient: "vertical",
-              WebkitLineClamp: 4,
-              overflow: "hidden",
             }}
           >
             {item.prose}
@@ -271,46 +316,32 @@ export function CommanderRow({ item }: { item: CommanderRowView }) {
 
         <GapLine slot={item.gapSlot} />
 
+        {/* ONE LIST, JOINED — never a separator whose condition is spelled
+            beside the figure's. The previous form rendered the price's separator
+            under its own copy of `priceOk && kind !== "absent"`, which is the
+            same predicate `PriceFigure` applies: two spellings of one rule, free
+            to drift the moment either moves. Review asked for the list, having
+            read the duplication as an orphaned separator — the orphan was not
+            reachable, because the Fit chip is unconditional and always precedes,
+            but the duplication was real.
+
+            A figure with no reading is omitted, never zeroed (D3): an absent
+            deck count and a lost price read both drop out of the list, and the
+            separators fall out with them rather than being suppressed. */}
         <div
           className="flex flex-wrap items-center gap-x-[10px] gap-y-[6px]"
           style={{ marginTop: 2 }}
         >
-          <span className="flex items-baseline gap-[4px]">
-            <span
-              aria-hidden="true"
-              className="font-mono font-[600]"
-              style={{ fontSize: 15, color: "var(--fg)", fontVariantNumeric: "tabular-nums" }}
-            >
-              {item.score}
-            </span>
-            <span
-              aria-hidden="true"
-              className="font-mono"
-              style={{ fontSize: 10.5, color: "var(--fg-faint)", letterSpacing: "0.04em" }}
-            >
-              {fitUnit}
-            </span>
-          </span>
-
-          {/* A figure with no reading is omitted, never zeroed (D3). Nobody has
-              built it is a claim an absent deck count cannot make. */}
-          {item.deckCount !== null && (
-            <>
-              <span aria-hidden="true" style={{ fontSize: 11, color: "var(--fg-locked)" }}>
-                {commanderRowCopy.figures.separator}
-              </span>
-              <span className="font-mono" style={{ fontSize: 11.5, color: "var(--fg-faint)" }}>
-                {discoverCopy.row.popularity(item.deckCount)}
-              </span>
-            </>
-          )}
-
-          {(item.priceOk && item.price.kind !== "absent") && (
-            <span aria-hidden="true" style={{ fontSize: 11, color: "var(--fg-locked)" }}>
-              {commanderRowCopy.figures.separator}
-            </span>
-          )}
-          <PriceFigure price={item.price} priceOk={item.priceOk} />
+          {figures.map((figure, i) => (
+            <Fragment key={figure.key}>
+              {i > 0 && (
+                <span aria-hidden="true" style={{ fontSize: 11, color: "var(--fg-locked)" }}>
+                  {commanderRowCopy.figures.separator}
+                </span>
+              )}
+              {figure.node}
+            </Fragment>
+          ))}
         </div>
       </div>
     </div>

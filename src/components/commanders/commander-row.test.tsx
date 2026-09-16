@@ -152,6 +152,24 @@ describe("CommanderRow · state 5, unpriced", () => {
 });
 
 describe("CommanderRow · figures", () => {
+  // THE SEPARATORS FALL OUT WITH THEIR FIGURES. One list joined by them, so a
+  // figure with no reading takes its separator with it rather than leaving one
+  // beside nothing. Fit is unconditional, so the count is always figures - 1.
+  it.each([
+    { over: {}, figures: 3 },
+    { over: { deckCount: null }, figures: 2 },
+    { over: { price: { kind: "absent" as const } }, figures: 2 },
+    { over: { deckCount: null, price: { kind: "absent" as const } }, figures: 1 },
+    { over: { priceOk: false }, figures: 2 },
+    { over: { deckCount: null, priceOk: false }, figures: 1 },
+  ])("draws $figures figure(s) and one separator fewer", ({ over, figures }) => {
+    const { container } = row(over);
+
+    const seps =
+      (container.textContent?.split(commanderRowCopy.figures.separator).length ?? 1) - 1;
+    expect(seps).toBe(figures - 1);
+  });
+
   // The row prints the denominator it was GIVEN (D4) — never a bare `40/100`.
   it("prints the measurable denominator when synergy was not measured", () => {
     row({ score: 32, measurableTotal: 40 });
