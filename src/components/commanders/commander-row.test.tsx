@@ -106,6 +106,10 @@ describe("CommanderRow · the gap slot is never empty", () => {
 
     expect(screen.getByText(discoveryCopy.untagged.heading)).toBeInTheDocument();
     expect(container.textContent).not.toContain(commanderRowCopy.gap.allPlayed);
+    // LANE-NEUTRAL. The shared row draws this on both lanes, so the body may not
+    // name a sort only one of them has: it used to end "cannot appear under
+    // Something new", which is false on /commanders.
+    expect(container.textContent).not.toContain("Something new");
   });
 });
 
@@ -148,6 +152,21 @@ describe("CommanderRow · state 5, unpriced", () => {
     row({ priceOk: true, price: { kind: "priced", cents: 1840 } });
 
     expect(screen.getByText("$18.40")).toBeInTheDocument();
+  });
+
+  // §C names PriceSlot unchanged — "its dot, its source label, its absent rule".
+  // The row dropped the source word once, with a layout detail standing in for a
+  // ruling.
+  it("keeps the ManaPool source stamp beside the figure", () => {
+    row({ priceOk: true, price: { kind: "priced", cents: 1840 } });
+
+    expect(screen.getByText(priceCopy.source)).toBeInTheDocument();
+  });
+
+  it("takes the source stamp with the figure when there is none", () => {
+    row({ price: { kind: "absent" } });
+
+    expect(screen.queryByText(priceCopy.source)).not.toBeInTheDocument();
   });
 });
 

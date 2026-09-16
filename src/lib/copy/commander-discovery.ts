@@ -152,10 +152,17 @@ export const discoveryCopy = {
   // The shipped `absent` note with one word changed, and NO retry: EDHREC not
   // tagging a commander is settled, and a button that cannot change anything is
   // worse than a sentence that explains it.
+  // The gap slot's third occupant, drawn by the SHARED row on both lanes — so
+  // the body may not name a sort only one of them has. It used to end "so it
+  // cannot appear under Something new", which is true on /discover and false on
+  // /commanders, where such a commander is listed normally. Named by review.
+  //
+  // The novelty sort's exclusions are still explained, by `planeCopy.exclusion.*`
+  // on the lane that has them, which is where a claim about a sort belongs.
   untagged: {
     heading: "No tag data",
     body:
-      "EDHREC lists cards for this commander but no archetypes, so it cannot appear under Something new.",
+      "EDHREC lists cards for this commander but no archetypes, so there is nothing to measure against your decks.",
   },
 
   // ── The three empty states (§6.8, §7.6) ───────────────────────────────

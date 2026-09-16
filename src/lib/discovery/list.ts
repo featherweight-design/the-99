@@ -243,8 +243,6 @@ export function assembleDiscovery(input: {
       releasedAt: c.releasedAt,
       deckCount: c.deckCount,
       rank: i + 1,
-      ownedSupport: c.ownedSupport,
-      edhrecTotal: c.edhrecTotal,
       price: c.price,
       prose: c.prose,
       gapSlot: c.gapSlot,

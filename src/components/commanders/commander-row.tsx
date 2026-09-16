@@ -162,6 +162,21 @@ function PriceFigure({ price, priceOk }: { price: PriceSlotValue; priceOk: boole
       <span className="sr-only">
         {priced ? priceCopy.aria(formatted) : priceCopy.notStockedAria}
       </span>
+      {/* THE SOURCE LABEL IS PART OF THE PRICE, not of the column the retired row
+          put it in. §C names `PriceSlot` unchanged — "its dot, its source label,
+          its absent rule" — and an earlier version of this row dropped the word
+          and wrote a justification into the property table: that the retired
+          `margin-left: auto` pushed it to the end of a column this row no longer
+          has. That was a layout detail standing in for a ruling. The figure is
+          decorative and the sr-only sentence above carries the reading, so this
+          is `aria-hidden` and adds nothing spoken. */}
+      <span
+        aria-hidden="true"
+        className="font-mono"
+        style={{ fontSize: 10, color: "var(--fg-locked)" }}
+      >
+        {priceCopy.source}
+      </span>
     </span>
   );
 }
