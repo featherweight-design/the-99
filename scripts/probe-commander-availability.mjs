@@ -9,9 +9,17 @@
 import { clerkSetup, setupClerkTestingToken } from "@clerk/testing/playwright";
 import { chromium } from "playwright";
 import { requireEnv } from "./lib/env.mjs";
+import { Pool, neonConfig } from "@neondatabase/serverless";
+import ws from "ws";
 import { onPage, onPageRole } from "./lib/surface.mjs";
 
-const { E2E_AUDIT_USER_EMAIL: EMAIL } = requireEnv(["E2E_AUDIT_USER_EMAIL", "CLERK_SECRET_KEY"]);
+const { E2E_AUDIT_USER_EMAIL: EMAIL, DATABASE_URL } = requireEnv([
+  "E2E_AUDIT_USER_EMAIL",
+  "CLERK_SECRET_KEY",
+  "DATABASE_URL",
+]);
+neonConfig.webSocketConstructor = ws;
+const pool = new Pool({ connectionString: DATABASE_URL });
 const BASE = process.env.PROBE_BASE ?? "http://localhost:3000";
 const PASSWORD = process.env.E2E_AUDIT_USER_PASSWORD;
 if (!EMAIL.includes("+clerk_test") && !PASSWORD) throw new Error("Set E2E_AUDIT_USER_PASSWORD.");
@@ -46,6 +54,95 @@ async function signIn(page) {
     [EMAIL, PASSWORD ?? ""],
   );
   if (failure) throw new Error(`Clerk sign-in failed: ${failure}`);
+  const userId = await page.evaluate(() => window.Clerk.user?.id ?? null);
+  if (!userId) throw new Error("Signed in but Clerk reports no user.");
+  return userId;
+}
+
+/**
+ * THE CLAIM FIXTURE, and the reason this probe needed one.
+ *
+ * Every claim on the dev account is SOFT — a brew claims softly by design — so
+ * the slot's marker states simply do not occur, and the run reported a `note`
+ * saying it measured nothing. A `note` is honest and it is still not a check.
+ *
+ * `hard` is SLEEVED rather than full: a deck with a committed version claims
+ * whatever its size (`availability-query.ts`, `mature` is `cd.sleeved`), so this
+ * needs no 99-row body. Holding every copy the account owns takes the card's
+ * free count to zero, which is the `hard` reading.
+ *
+ * `onDeck` is called the instant the deck row exists, before the rows that hang
+ * off it — a helper returning only at the end would strand a half-built deck
+ * whenever a later insert threw, because the call site's assignment never runs
+ * and the `finally` deletes nothing. `probe-build-from` learned that first.
+ */
+async function sleeveEveryCopy(userId, oracleId, quantity, commanderOracleId, onDeck) {
+  const { rows } = await pool.query(
+    `insert into decks (user_id, name, commander_oracle_id, filled)
+       values ($1, $2, $3, true) returning id`,
+    [userId, "probe · commander availability", commanderOracleId],
+  );
+  const deckId = rows[0].id;
+  onDeck(deckId);
+  await pool.query(
+    `insert into deck_cards (deck_id, oracle_id, quantity, auto) values ($1, $2, $3, false)`,
+    [deckId, oracleId, quantity],
+  );
+  const version = await pool.query(
+    `insert into deck_versions (deck_id, number, commander_oracle_id)
+       values ($1, 1, $2) returning id`,
+    [deckId, commanderOracleId],
+  );
+  await pool.query(
+    `insert into deck_version_cards (version_id, oracle_id, quantity) values ($1, $2, $3)`,
+    [version.rows[0].id, oracleId, quantity],
+  );
+  return deckId;
+}
+
+/**
+ * Resolve a card the PAGE is showing, by the name it drew.
+ *
+ * By name rather than by re-deriving the commander from its slug: slug
+ * resolution spans three rankings (`resolve-slug.ts`), and a second copy of it
+ * written in SQL here would drift from the real one a round at a time. That is
+ * the mistake `probe-build-from` took three review rounds to stop making. The
+ * page already knows which cards it is drawing; this only asks the database how
+ * many of one the account holds.
+ */
+async function resolveOwnedCard(userId, name) {
+  const { rows } = await pool.query(
+    `select c.oracle_id, sum(ci.quantity)::int as owned
+       from cards c
+       join collection_items ci on ci.oracle_id = c.oracle_id and ci.user_id = $1
+      where c.name = $2
+      group by c.oracle_id
+      having sum(ci.quantity) between 1 and 4
+      limit 1`,
+    [userId, name],
+  );
+  return rows[0] ?? null;
+}
+
+/**
+ * Any legendary creature the account owns, to fill the deck's commander column.
+ *
+ * The deck exists ONLY to hold a hard claim on the card under test, so which
+ * commander leads it is immaterial — it just has to satisfy the foreign key. Not
+ * the card being claimed, and not the commander whose page is under test: the
+ * first would change what is being measured, the second is what `probe-build-from`
+ * had to learn is a different fixture question.
+ */
+async function anyOwnedLegend(userId) {
+  const { rows } = await pool.query(
+    `select c.oracle_id
+       from cards c
+       join collection_items ci on ci.oracle_id = c.oracle_id and ci.user_id = $1
+      where c.type_line ilike '%legendary%creature%'
+      limit 1`,
+    [userId],
+  );
+  return rows[0]?.oracle_id ?? null;
 }
 
 function report(label, ok, detail) {
@@ -186,18 +283,58 @@ async function run() {
   await clerkSetup();
   const browser = await chromium.launch();
   let failures = 0;
+  let heldDeckId = null;
   const fail = () => { failures += 1; };
 
   try {
-    const slug = await (async () => {
+    const { slug, userId } = await (async () => {
+      const c = await browser.newContext({ viewport: WIDTHS[0].viewport });
+      const p = await c.newPage();
+      const uid = await signIn(p);
+      const s = await findCommanderSlug(p);
+      await c.close();
+      return { slug: s, userId: uid };
+    })();
+    console.log(`fixture: /commanders/${slug}`);
+
+    // Force a HARD claim so the slot's marker states are reachable at all. The
+    // dev account's claims are all soft, so without this the marker reading is
+    // skipped and the run says so — honest, and still not a check.
+    const heldName = await (async () => {
       const c = await browser.newContext({ viewport: WIDTHS[0].viewport });
       const p = await c.newPage();
       await signIn(p);
-      const s = await findCommanderSlug(p);
+      await goto(p, `/commanders/${slug}`);
+      await onPage(p, SLOT).first().waitFor({ state: "attached", timeout: 15_000 }).catch(() => {});
+      // An OWNED synergy row: the ones drawing a buy tag are unowned, and a card
+      // nobody owns cannot be claimed into a deck.
+      const name = await onPage(p, "li:has(button[aria-pressed])")
+        .evaluateAll((rows) => {
+          for (const r of rows) {
+            if (r.querySelector('[class*="rounded-\\[4px\\]"]')) continue; // a buy tag — unowned
+            const t = r.querySelector("button:not([aria-pressed])");
+            if (t?.textContent) return t.textContent.trim();
+          }
+          return null;
+        })
+        .catch(() => null);
       await c.close();
-      return s;
+      return name;
     })();
-    console.log(`fixture: /commanders/${slug}\n`);
+
+    const held = heldName ? await resolveOwnedCard(userId, heldName) : null;
+    const leader = held ? await anyOwnedLegend(userId) : null;
+    if (held && leader) {
+      await sleeveEveryCopy(userId, held.oracle_id, held.owned, leader, (id) => { heldDeckId = id; });
+      console.log(`fixture: sleeved all ${held.owned} of "${heldName}" into a committed deck`);
+    } else {
+      console.log(
+        `  note  no owned synergy card to sleeve here${heldName ? ` ("${heldName}" is not in the` +
+          ` collection at a claimable quantity)` : ""} — the slot's marker reading will be` +
+          " skipped. Pass PROBE_SLUG for a commander whose support you own.",
+      );
+    }
+    console.log("");
 
     for (const { name, viewport } of WIDTHS) {
       console.log(`── ${name} ${viewport.width}x${viewport.height} ──`);
@@ -340,12 +477,17 @@ async function run() {
         `li:has(button[aria-pressed]) [class*="${rowMarkerClass}"][class*="flex-none"]:visible`,
       );
       const rowCount = await rowMarkers.count();
-      if (rowCount === 0) {
+      if (rowCount === 0 && !heldDeckId) {
         console.log(
-          "  note  no synergy marker on this fixture — every owned synergy card has a spare" +
-            " copy, or every row is unowned and drawing a buy tag instead. The slot's marker" +
-            " type is not measured on this run.",
+          "  note  the fixture found no owned synergy card to claim here, so no row can" +
+            " reach a marker. The slot's marker type is not measured on this run. Pass" +
+            " PROBE_SLUG for a commander whose support this account owns.",
         );
+      } else if (rowCount === 0) {
+        // The fixture sleeved every copy of a card this page lists, so exactly one row
+        // must read hard. No marker means the reading lost its subject — a silent pass
+        // here is how this check spent its whole life measuring nothing.
+        report("synergy marker takes the slot's size", false, "markers: 0 against a held card");
       } else {
         const wantRow = name === "desktop" ? 11 : 10;
         const rowSizes = await rowMarkers.evaluateAll((els) =>
@@ -428,7 +570,19 @@ async function run() {
       await context.close();
     }
   } finally {
-    await browser.close();
+    // The deck goes whatever happened above; versions and version cards cascade.
+    // Attempted independently of the browser shutdown, so one failing does not
+    // strand the other — and the deck is a write on a shared account, which is
+    // the one thing here that must not survive the run.
+    try {
+      if (heldDeckId) await pool.query(`delete from decks where id = $1`, [heldDeckId]);
+    } finally {
+      try {
+        await browser.close();
+      } finally {
+        await pool.end();
+      }
+    }
   }
 
   console.log(failures === 0 ? "\nAll checks passed." : `\n${failures} check(s) failed.`);
