@@ -165,10 +165,13 @@ export async function previewDeckUpdate(input: UpdateDeckInput): Promise<DeckUpd
   });
 
   if ("listCommander" in plan) {
+    // The deck's own half that the declaration disagrees with, not always the
+    // primary: a list naming a different PARTNER is refused over the partner,
+    // and naming the primary here would describe the wrong disagreement.
     const [commander] = await db
       .select({ name: cards.name })
       .from(cards)
-      .where(eq(cards.oracleId, deck.commanderOracleId));
+      .where(eq(cards.oracleId, plan.deckOracleId));
     return {
       ok: false,
       reason: "commanderConflict",

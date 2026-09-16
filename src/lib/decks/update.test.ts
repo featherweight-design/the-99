@@ -177,7 +177,7 @@ describe("planDeckUpdate", () => {
       deckUnresolved: [],
       cardFor,
     });
-    expect(result).toEqual({ listCommander: "Atraxa, Praetors' Voice" });
+    expect(result).toEqual({ listCommander: "Atraxa, Praetors' Voice", deckOracleId: KORVOLD });
   });
 
   // A shortlist is not a declaration. Refusing on it would break every deck
@@ -318,7 +318,9 @@ describe("planDeckUpdate — the pair's second half", () => {
       cardFor,
     });
 
-    expect(result).toEqual({ listCommander: "Tana, the Bloodsower" });
+    // The deck's own PARTNER is named on the other side of the banner, not its
+    // primary: the disagreement being refused is about the pair's second half.
+    expect(result).toEqual({ listCommander: "Tana, the Bloodsower", deckOracleId: PARTNER });
   });
 
   // A deck with no partner is not a pair, so any declared one changes what the
@@ -335,7 +337,8 @@ describe("planDeckUpdate — the pair's second half", () => {
       cardFor,
     });
 
-    expect(result).toEqual({ listCommander: "Tana, the Bloodsower" });
+    // No partner to name, so the primary stands for what this deck is.
+    expect(result).toEqual({ listCommander: "Tana, the Bloodsower", deckOracleId: KORVOLD });
   });
 
   it("plans normally when the declared partner is this deck's own", () => {

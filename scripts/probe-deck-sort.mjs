@@ -261,7 +261,11 @@ async function run() {
 
     await buildFixture(userId, (id) => { deckId = id; });
 
-    for (const width of [1300, 390]) {
+    // 620, 700 and 767 are not decoration: the toolbar's spacers were tuned at
+    // 390 and 1300 alone, and the widths BETWEEN are where two growing children
+    // split the free space and took the view well off the right edge. The
+    // manual measurement that found it is not a check anyone re-runs.
+    for (const width of [1300, 767, 700, 620, 390]) {
       await page.setViewportSize({ width, height: 900 });
       await page.goto(`${BASE}/decks/${deckId}`, { waitUntil: "networkidle" });
       await page.waitForTimeout(2_500);
@@ -331,6 +335,68 @@ async function run() {
         all.triggerAria.startsWith("Sort the deck list,") && /·/.test(all.triggerAria),
         JSON.stringify(all.triggerAria),
       );
+
+      // The view well sits at the right edge of its row, at EVERY width. The
+      // spacer arithmetic behind that is width-dependent — the row's own spacer
+      // grows from `md:` and the cluster grows below it — so one width proves
+      // nothing about another.
+      const wellRight = await page.evaluate(() => {
+        const anyBtn = document.querySelector(
+          "main button[aria-label='Card view'], main button[aria-label='List view']",
+        );
+        if (!anyBtn) return null;
+        let well = anyBtn.parentElement;
+        while (well && well.querySelectorAll("button[aria-label$='view']").length < 2) {
+          well = well.parentElement;
+        }
+        let row = well;
+        while (row && !/flex-wrap/.test(row.className || "")) row = row.parentElement;
+        if (!row) return null;
+        return Math.round(row.getBoundingClientRect().right - well.getBoundingClientRect().right);
+      });
+      failures += !report(
+        `the view well sits flush right at ${width}`,
+        wellRight !== null && wellRight <= 1,
+        wellRight === null ? "no view well on the page" : `${wellRight}px of slack past it`,
+      );
+
+      // And under SHOPPING, where the well is absent by design: its spacer must
+      // go with it, or the cluster is pushed off the right edge by a gap holding
+      // nothing — 330px of it at 620px.
+      const shopping = onPageRole(page, "button", /^Shopping \d+$/).first();
+      if (await shopping.count() > 0) {
+        await shopping.click().catch(() => {});
+        await page.waitForTimeout(1_200);
+        const shoppingGap = await page.evaluate(() => {
+          const byRole = [...document.querySelectorAll("main button")].find(
+            (e) => e.textContent.trim() === "By role",
+          );
+          if (!byRole) return null;
+          const cluster = byRole.parentElement;
+          let row = cluster;
+          while (row && !/flex-wrap/.test(row.className || "")) row = row.parentElement;
+          if (!row) return null;
+          const wellGone = !document.querySelector(
+            "main button[aria-label='Card view'], main button[aria-label='List view']",
+          );
+          return {
+            wellGone,
+            gap: Math.round(row.getBoundingClientRect().right - cluster.getBoundingClientRect().right),
+          };
+        });
+        failures += !report(
+          `Shopping leaves no gap where the well was at ${width}`,
+          shoppingGap !== null && shoppingGap.wellGone && shoppingGap.gap <= 1,
+          shoppingGap === null
+            ? "no cluster to measure"
+            : `well ${shoppingGap.wellGone ? "absent" : "STILL DRAWN"}, ${shoppingGap.gap}px past the cluster`,
+        );
+        const allPill = onPageRole(page, "button", /^All \d+$/).first();
+        if (await allPill.count() > 0) {
+          await allPill.click().catch(() => {});
+          await page.waitForTimeout(1_200);
+        }
+      }
 
       // This bar's own rule: no accent ground or border on a resting control.
       failures += !report(

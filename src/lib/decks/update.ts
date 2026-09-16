@@ -68,7 +68,16 @@ export type DeckUpdatePlan = {
  *  A PARTNER is the same decision and takes the same refusal. The pair's second
  *  half decides the identity jointly, so a list naming a different one is a
  *  different deck for exactly the reason the first half is. */
-export type DeckUpdateConflict = { listCommander: string };
+export type DeckUpdateConflict = {
+  listCommander: string;
+  /** The deck's OWN half that the declaration disagrees with — the primary for a
+   *  commander mismatch, the partner for a partner one. The banner names one
+   *  card on each side, so a partner-only mismatch naming the deck's primary
+   *  would describe a disagreement that is not the one being refused. Falls back
+   *  to the primary when a declared partner meets a deck that leads alone:
+   *  there is no partner to name, and the primary IS what this deck is. */
+  deckOracleId: string;
+};
 
 /**
  * Compares a parsed list against a deck.
@@ -100,7 +109,7 @@ export function planDeckUpdate(args: {
   const { parsed, deckCards, commanderOracleId, partnerOracleId, deckUnresolved, cardFor } = args;
 
   if (parsed.declaredCommander && parsed.declaredCommander.oracleId !== commanderOracleId) {
-    return { listCommander: parsed.declaredCommander.name };
+    return { listCommander: parsed.declaredCommander.name, deckOracleId: commanderOracleId };
   }
 
   // The same refusal for the pair's second half. Without it a list naming a
@@ -109,7 +118,10 @@ export function planDeckUpdate(args: {
   // leads with. A deck with NO partner refuses any declared one for the same
   // reason: it would be a different deck.
   if (parsed.declaredPartner && parsed.declaredPartner.oracleId !== (partnerOracleId ?? null)) {
-    return { listCommander: parsed.declaredPartner.name };
+    return {
+      listCommander: parsed.declaredPartner.name,
+      deckOracleId: partnerOracleId ?? commanderOracleId,
+    };
   }
 
   // The deck's own commander appearing in the list is an export artifact, not an
