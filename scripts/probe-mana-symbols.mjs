@@ -138,21 +138,29 @@ const READ_TILES = (page) => {
   let noArtWithPips = 0;
   for (const tile of tiles) {
     const art = tile.querySelector("[style*='aspect-ratio']");
-    // The no-art pips carry their own testid, which is the whole reading: the
-    // component draws that element for a costed card with no image and for
-    // nothing else. An earlier version of this check counted round boxes in the
-    // art's bottom-left corner, which went stale the moment the ownership dot
-    // moved into the caption — it then reported every tile as unmarked and
-    // failed a build that was correct.
-    const pips = tile.querySelector('[data-testid="tile-cost-pips"]');
+    if (!art) continue;
+    const box = art.getBoundingClientRect();
+    // GEOMETRY, not a wrapper. A pip over the art is a drawn round box whose
+    // centre lies inside the art's own rect, whatever element holds it — where a
+    // testid reading can only see the wrapper the component happens to use
+    // today. `tile-cost-pips` is rendered in the NO-ART branch alone, so a
+    // counter keyed on it could never fire for an arted tile: a regression
+    // drawing pips over art under any other wrapper would report a clean run.
+    const overArt = [...tile.querySelectorAll("span.rounded-full")].filter((el) => {
+      const r = el.getBoundingClientRect();
+      if (r.width === 0 || r.height === 0) return false;
+      const cx = r.left + r.width / 2;
+      const cy = r.top + r.height / 2;
+      return cx >= box.left && cx <= box.right && cy >= box.top && cy <= box.bottom;
+    });
     // Split by whether the tile HAS art, because the rule is. A no-art tile
     // keeps its pips deliberately, and `PROBE_DECK` is any deck the account
     // owns — so a deck holding one costed card with no image would fail a check
     // that counted every tile, over a component obeying the rule exactly.
-    if (art && getComputedStyle(art).backgroundImage.includes("url(")) {
+    if (getComputedStyle(art).backgroundImage.includes("url(")) {
       arted += 1;
-      if (pips) pipsOverArt += 1;
-    } else if (pips) {
+      if (overArt.length > 0) pipsOverArt += 1;
+    } else if (overArt.length > 0) {
       noArtWithPips += 1;
     }
   }
