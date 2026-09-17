@@ -17,6 +17,9 @@ const baseItem: DiscoveryItem = {
   gapSlot: { kind: "unplayed", labels: ["Counters", "Proliferate"] },
   score: 58,
   measurableTotal: 100,
+  fitPool: 12,
+  fitRoles: 20,
+  fitSynergy: 26,
 };
 
 function listOf(items: DiscoveryItem[]): DiscoveryList {

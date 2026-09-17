@@ -22,6 +22,9 @@ const view = (over: Partial<CommanderRowView> = {}): CommanderRowView => ({
   gapSlot: { kind: "unplayed", labels: ["Counters Matter", "Proliferate", "Infect"] },
   score: 58,
   measurableTotal: 100,
+  fitPool: 12,
+  fitRoles: 20,
+  fitSynergy: 26,
   deckCount: 24_012,
   price: { kind: "priced", cents: 340 },
   priceOk: true,
@@ -212,6 +215,59 @@ describe("CommanderRow · figures", () => {
 
     expect(container.textContent).not.toContain("decks tracked");
     expect(container.textContent).not.toContain("0 decks");
+  });
+});
+
+describe("CommanderRow · the Fit bar", () => {
+  // Hugh's ruling of 2026-09-17, which OVERRIDES the spec: the ratio bar was cut
+  // and one number was meant to replace the segments. Read on the shipped row
+  // the trade went the other way.
+  //
+  // Both widths draw it — band-right from `sm` up, under the foot line on the
+  // phone — so a build that mounted only one would halve the feature silently.
+  it("draws one bar per width, and they are the same component", () => {
+    const { container } = row();
+
+    // `.rounded-full` is what makes this the TRACK. Scoping on
+    // `div.overflow-hidden` alone matched the BAND — it carries the same class —
+    // so the segment counts below were reading ArtWash's layers and the
+    // three-segment case passed for the wrong reason.
+    const bars = container.querySelectorAll("div.rounded-full.overflow-hidden");
+    expect(bars.length).toBe(2);
+  });
+
+  // THREE SEGMENTS WHEN SYNERGY WAS MEASURED, TWO WHEN IT WAS NOT. A null
+  // component is absent, not zero — a zero-width third segment would claim a
+  // reading nobody took, which is the same rule `measurableTotal` carries at 40.
+  it("splits into three segments with a synergy reading", () => {
+    const { container } = row({ fitPool: 12, fitRoles: 20, fitSynergy: 26 });
+
+    const filled = container.querySelector("div.rounded-full.overflow-hidden > div");
+    expect(filled?.children.length).toBe(3);
+  });
+
+  it("splits into two when synergy could not be measured", () => {
+    const { container } = row({
+      score: 32,
+      measurableTotal: 40,
+      fitPool: 12,
+      fitRoles: 20,
+      fitSynergy: null,
+    });
+
+    const filled = container.querySelector("div.rounded-full.overflow-hidden > div");
+    expect(filled?.children.length).toBe(2);
+  });
+
+  // The bar is decorative: the link's own name carries the figure, and the foot
+  // line prints it. A second spoken reading of one number is what `aria-hidden`
+  // is for here.
+  it("adds nothing to the accessible name", () => {
+    row();
+
+    const label = screen.getByRole("link").getAttribute("aria-label") ?? "";
+    expect(label).not.toContain("Pool");
+    expect(label).not.toContain("Synergy");
   });
 });
 

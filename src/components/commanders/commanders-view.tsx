@@ -583,6 +583,12 @@ export function CommandersView({
                       gapSlot: r.gapSlot,
                       score: r.score,
                       measurableTotal: r.measurableTotal,
+                      // Fit's three parts, for the segmented bar. The owned lane
+                      // already carried them on its score rows; the discover
+                      // lane ships them from v6 of its payload.
+                      fitPool: r.fitPool,
+                      fitRoles: r.fitRoles,
+                      fitSynergy: r.fitSynergy,
                       deckCount: r.deckCount,
                       // EVERY ROW HERE IS OWNED, so §7.4 row 5 applies to all
                       // of them: the slot unmounts. Passed as a literal rather

@@ -150,6 +150,46 @@ unclamped, and `edhrec_total` sits one below the child-row count on 2 of 3,342 c
 reader owning every support card can read a point or two over. Print it; never assert a bound on
 it.
 
+### Fit bar slot — OVERRIDES this spec, on Hugh's ruling of 2026-09-17
+
+The composition above RETIRED the segmented bar: one Fit number was to replace three
+segments, under the §6 locked ruling "two sentences, three figures, and no table", and
+§D of the plan's index recorded `FitBar` as losing its last caller on these rows.
+
+It is back on both lanes. Read on the shipped row, the trade went the other way — the
+information improved and the row got less interesting, with the band's right side empty
+where the retired four-column grid had drawn the justification and the figures. This
+section is the record of a Product decision overriding a design ruling, not of the
+design ruling being wrong when it was made.
+
+| Property | Mobile (390px) | Desktop (≥640px) | Source |
+|---|---|---|---|
+| Component | `FitBar` | `FitBar` with `legend` | reused unchanged from Commander Details |
+| Placement | below the figures slot, `margin-top 10px`, full measure | in the band, right of the name column, `self-center` | — |
+| Width | the row's measure | `480px`, `shrink-0` | — |
+| Legend (`Pool` · `Roles` · `Synergy`) | hidden — `FitBar` draws it `hidden sm:flex` | drawn | unchanged |
+| Segments, synergy measurable | three | three | `fitSegments` |
+| Segments, synergy unmeasurable | **two**, not a zero-width third | two | `fitSynergy: null` |
+| Aria | `aria-hidden` on both mounts | same | the link's own name carries Fit |
+
+**`self-center`, not the band's own `items-end`.** Bottom-aligning the bar with the
+commander's name was tried first and read as a caption under the art rather than a
+column beside it; the retired grid drew it centred in the space to the art's right,
+which is where it is again.
+
+**Phone draws it under the foot line, not in the band.** At 390px the art fills the
+band and there is no right side to use; under the figures also keeps the reading order
+sentence, gap, figure, then the figure's parts.
+
+**`fitSynergy` stays a null rather than a zero.** The component is absent, not empty —
+the same distinction `measurableTotal` carries at 40, and `fitSegments` draws two
+segments for it.
+
+**Payload cost: 28 KB** across 3,085 rows (`1.008` → `1.036 MB` encoded, 51.8% of the
+2 MB data-cache ceiling). The three components ride the dictionary+table encoding as
+plain numbers; `rankScore` is still left behind, being the list's order and not a
+figure any row prints.
+
 ### What does NOT change
 
 | Surface | Ruling |
@@ -259,6 +299,7 @@ header, not the row. `commandersCopy.row.action` was already retired before this
 **`planeCopy.overflow.*` is kept** per the handoff, and has no caller after this PR: the row and
 its own copy test were the only ones. **`RoleChips` and `FitBar` are both kept** — the handoff's
 erratum said only `FitBar` survives, and `src/components/about/figures.tsx` imports both.
+`FitBar` has a second caller again as of 2026-09-17: the row itself. See the Fit bar slot above.
 
 ## Numbered rules touching this phase
 

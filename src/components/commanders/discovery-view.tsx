@@ -744,6 +744,12 @@ export function DiscoveryView({ encoded }: { encoded: EncodedDiscovery }) {
                       gapSlot: item.gapSlot,
                       score: item.score,
                       measurableTotal: item.measurableTotal,
+                      // Fit's three parts, for the segmented bar. The owned lane
+                      // already carried them on its score rows; the discover
+                      // lane ships them from v6 of its payload.
+                      fitPool: item.fitPool,
+                      fitRoles: item.fitRoles,
+                      fitSynergy: item.fitSynergy,
                       deckCount: item.deckCount,
                       price: item.price,
                       priceOk: discovery.priceOk,

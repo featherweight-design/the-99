@@ -26,7 +26,9 @@ import { POOL_WEIGHT, ROLES_WEIGHT, SYNERGY_WEIGHT } from "../../lib/recs/score"
 // `src/db`, whose body throws when DATABASE_URL is unset. A type-only clause is
 // erased at compile time, so none of that reaches the client bundle.
 import type { PriceSlot as PriceSlotValue } from "../../lib/discovery/price";
+import { fitSegments } from "../../lib/recs/format";
 import { ArtWash, INK_SHADOW } from "../ui/art-wash";
+import { FitBar } from "./fit-bar";
 import { IdentityPips } from "./commander-art";
 
 const { price: priceCopy, untagged } = discoveryCopy;
@@ -79,6 +81,23 @@ export type CommanderRowView = {
   /** What `score` is out of: 100, or 40 where synergy could not be measured.
       Printed as given — never rescaled, and never asserted as a bound. */
   measurableTotal: number;
+  /**
+   * Fit's three components, for the segmented bar.
+   *
+   * Hugh's ruling, 2026-09-17, and it overrides the spec rather than
+   * implementing it: the ratio bar was CUT, and `FitBar` was recorded as losing
+   * its last caller on these rows, because one number was meant to replace the
+   * segments. Read on the shipped row the trade went the other way — better
+   * information, a less interesting row, and the band's right side empty where
+   * the retired four-column grid had been.
+   *
+   * `fitSynergy` null draws TWO segments, not a zero-width third: the component
+   * is absent, not empty, which is the same distinction `measurableTotal`
+   * carries at 40.
+   */
+  fitPool: number;
+  fitRoles: number;
+  fitSynergy: number | null;
   deckCount: number | null;
   /**
    * The price slot, which is `absent` for every commander the reader OWNS.
@@ -296,6 +315,34 @@ export function CommanderRow({ item }: { item: CommanderRowView }) {
             </span>
             <IdentityPips colorIdentity={item.colorIdentity} />
           </div>
+
+          {/* THE BAR LIVES IN THE BAND'S RIGHT SIDE, from `sm` up. That space is
+              where the retired four-column grid drew the justification and the
+              figures, and this composition emptied it — at 1300px the art is a
+              fixed 285px column in a ~1175px band, so the ground was three
+              quarters of the width with nothing on it.
+
+              Phone gets it under the foot line instead (below), because at 390px
+              the band is already full of art and there is no right side to use.
+
+              `aria-hidden`: the link's own name carries the reading, and
+              `FitBar` draws its legend `hidden sm:flex`, so passing `legend`
+              here is what makes the labels appear at the width that has room. */}
+          <div
+            aria-hidden="true"
+            // `self-center`: the band is `items-end`, which bottom-aligned the bar
+            // with the name. It belongs BESIDE the commander image, centred in the
+            // space to its right, which is where the retired row drew it.
+            className="hidden sm:block shrink-0 self-center"
+            // 480, not 320. The band's right side is ~920px at 1300px wide, so a
+            // 320px bar used a third of it and left the complaint standing. 480
+            // is where the legend still reads comfortably at its own 13px — a
+            // wider bar starts to look like a progress meter for the row rather
+            // than a breakdown of one figure.
+            style={{ width: 480, paddingBottom: 2 }}
+          >
+            <FitBar fit={fitSegments(item)} legend />
+          </div>
         </div>
       </div>
 
@@ -364,6 +411,14 @@ export function CommanderRow({ item }: { item: CommanderRowView }) {
               {figure.node}
             </span>
           ))}
+        </div>
+
+        {/* The phone's bar. Same component, no legend — `FitBar` hides its own
+            labels below `sm`, and there is no room for them beside a 390px
+            foot line. Under the figures rather than over them, so the reading
+            order stays sentence, gap, figure, then the figure's parts. */}
+        <div aria-hidden="true" className="sm:hidden" style={{ marginTop: 10 }}>
+          <FitBar fit={fitSegments(item)} />
         </div>
       </div>
     </div>
