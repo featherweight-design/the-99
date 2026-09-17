@@ -5,6 +5,7 @@ import { ABOUT_VERSION, aboutCopy, aboutEntries } from "../../lib/copy/about";
 import { FIGURES } from "./figures";
 import { availabilityCopy } from "../../lib/copy/availability";
 import { refreshCopy } from "../../lib/copy/refresh";
+import { commandersCopy, discoverCopy, filterCopy } from "../../lib/copy/lanes";
 import { explainedCopy } from "../../lib/copy/commander-explained";
 import { cardAssignmentsCopy } from "../../lib/copy/card-assignments";
 import { collectionChassisCopy, printingPickerCopy } from "../../lib/copy/collection";
@@ -710,6 +711,41 @@ describe("what each chapter 01 figure actually draws", () => {
     expect(el.textContent).toContain(
       c.moreAbove(READY_SLICE.moreCount, READY_SLICE.floor!),
     );
+  });
+
+  it("commander-lane: the route's own rack, carrying the chosen state", () => {
+    const el = plate("commander-lane");
+
+    // WHAT JSDOM CAN SEE, and the limit is stated rather than worked around.
+    // `FilterRack` picks its form from `useMinWidth(1000)`, which is a VIEWPORT
+    // query — jsdom answers false for every media query, so the rack is always
+    // compact here and the wide form's controls are inside a sheet no specimen
+    // can open. The inline rack is checked by screenshot instead.
+    //
+    // What survives both forms is the rack's own summary of the chosen state,
+    // and that is the fixture's job: the colours and the `Exactly` join come
+    // from `LANE_OWNED`, so a rack mounted on defaults fails here.
+    for (const colour of ["Green", "Red", "White"]) {
+      expect(el.textContent).toContain(colour);
+    }
+    expect(el.textContent).toContain(filterCopy.match.exactlyShort);
+  });
+
+  it("discover: the rack, and what each order does", () => {
+    const el = plate("discover");
+    const o = discoverCopy.order;
+    // Key line 1 is about what two orders DO, not what they are called — a
+    // dropdown cannot say that, so the glosses stay beside the control.
+    for (const [mark, gloss] of [
+      [o.bestFit, o.bestFitGloss],
+      [o.somethingNew, o.somethingNewGloss],
+      [o.popularity, o.popularityGloss],
+      [o.name, o.nameGloss],
+      [o.recent, o.recentGloss],
+    ]) {
+      expect(el.textContent).toContain(mark);
+      expect(el.textContent).toContain(gloss);
+    }
   });
 
   it("import: the drop target and its two doors, as drawn", () => {

@@ -20,6 +20,8 @@ import {
   ISSUE_UNMATCHED,
   CONTESTED_ARRIVAL,
   FIT_LEGEND,
+  LANE_DISCOVER,
+  LANE_OWNED,
   PRINTING_ROWS,
   REPLACE_ROWS,
   REPLACE_SUMMARY,
@@ -32,6 +34,8 @@ import { COST_PIP_SIZE, CostPips } from "../ui/cost-pips";
 import { TwoFacedMark } from "../cards/two-faced-mark";
 import { ContestedCardRow } from "../decks/contested-card-row";
 import { FitLegend } from "../commanders/fit-legend";
+import { FilterRack } from "../commanders/rack/filter-rack";
+import type { Lane, LaneParams } from "../../lib/commanders/lane-params";
 import { ReceiptRow } from "../collection/arrivals-summary";
 import { issueInspectorCopy } from "../../lib/copy/issue-inspector";
 import {
@@ -291,4 +295,44 @@ export function CardDetailFigureBody() {
  */
 export function FitLegendFigureBody() {
   return <FitLegend segments={FIT_LEGEND} score={73} width="desktop" defaultOpen />;
+}
+
+/**
+ * A lane's filter rack, mounted from the route.
+ *
+ * §3 draws the whole rack for both commander lanes — the search field, the
+ * five hues, `Any`/`Exactly`, and the lane's own order control. The figures
+ * these replace were mark-and-meaning legends: they named the Build from modes
+ * and the five orders and drew neither control, so a reader met a vocabulary
+ * before ever meeting the thing it belongs to.
+ *
+ * Inert like every specimen, so `onChange` is never called.
+ */
+function laneRack(params: LaneParams, lane: Lane, shown: number, total: number) {
+  return (
+    <FilterRack
+      params={params}
+      lane={lane}
+      onChange={() => {}}
+      shown={shown}
+      total={total}
+      excludedByExactly={null}
+      // The plate is ~750px inside a 1300px window, so the viewport query
+      // answers wide and the rack draws a form its container cannot hold.
+      // Pinned compact: every control stays reachable in the chips row and the
+      // result line, and nothing clips.
+      forceWide={false}
+    />
+  );
+}
+
+export function CommanderLaneFigureBody() {
+  // `avail: "free"` is the fixture's whole job — Build from is what this
+  // entry's caption is about, and a rack on the default draws the control
+  // without ever showing the choice being made.
+  return laneRack(LANE_OWNED, "owned", 34, 612);
+}
+
+export function DiscoverFigureBody() {
+  return laneRack(LANE_DISCOVER, "discover", 120, 1840);
 }

@@ -45,6 +45,7 @@ export function FilterRack({
   excludedByExactly,
   sleevedByFree,
   orderPending = false,
+  forceWide,
 }: {
   params: LaneParams;
   lane: Lane;
@@ -61,12 +62,27 @@ export function FilterRack({
       answering. Every other control, and every other order, narrows or arranges
       a list already in memory. */
   orderPending?: boolean;
+  /**
+   * Pin the rack's form instead of reading the viewport. For a caller whose
+   * container, not the window, decides what fits — `/about`'s specimens.
+   */
+  forceWide?: boolean;
 }) {
   // The chassis's breakpoint, and the only one there is. A 1024 hook used to sit
   // beside it, which would have left these two lanes compact from 1000 to 1023
   // while `/decks` was already wide — a route-specific breakpoint, which is the
   // thing one frame exists to stop. It had no callers and is retired.
-  const wide = useMinWidth(`(min-width: ${CHASSIS_WIDE_MIN_PX}px)`);
+  // `forceWide` overrides the query for a caller whose CONTAINER is the
+  // constraint rather than the viewport. The route never passes it: there the
+  // two always agree, because a wide viewport gives the lane a wide column.
+  //
+  // `/about` is the case where they do not. Its plate is about 750px inside a
+  // 1300px window, so the query answers wide and the rack draws a form its
+  // container cannot hold — the order control overlapping the join toggle and
+  // clipping at the plate's edge. A figure of a broken layout teaches a
+  // layout the reader will never meet.
+  const viewportWide = useMinWidth(`(min-width: ${CHASSIS_WIDE_MIN_PX}px)`);
+  const wide = forceWide ?? viewportWide;
 
   // Composed ONCE and handed to both forms. The rack draws it on the result line
   // and the sheet draws it in its header, and the sheet's own comment promises

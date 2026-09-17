@@ -257,7 +257,11 @@ export const aboutEntries: readonly AboutEntry[] = [
     chapter: '02',
     title: 'Commanders you can build today',
     route: '/commanders',
-    width: 'inset',
+    // A RACK figure, so it takes the full plate. `FilterRack` collapses its
+    // controls behind a `Filters` sheet below the chassis stop, and at the
+    // inset's 300px that is all a reader sees — the Build from choice this
+    // entry's caption is about would be inside a sheet no specimen can open.
+    width: 'plate',
     caption:
       "Every commander you own and have not built, ranked by fit. Build from chooses the pool the scores are read against: All my cards, or Free cards only — not spoken for by a deck you have already built. Where we could not read a commander's most-played list, the bar has two segments instead of three and the denominator drops to 40.",
     keys: [],

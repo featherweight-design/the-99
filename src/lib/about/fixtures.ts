@@ -1,3 +1,4 @@
+import type { LaneParams } from "../commanders/lane-params";
 import type { FitLegendSegment } from "../../components/commanders/fit-legend";
 import type { CommanderListItem } from "../recs/recommend";
 import type { ReadySlice } from "../recs/ready-to-build";
@@ -551,3 +552,31 @@ export const FIT_LEGEND: FitLegendSegment[] = [
   { key: "roles", points: 25, weight: 25 },
   { key: "synergy", points: 33, weight: 60 },
 ];
+
+/**
+ * The two lanes' rack state, as §3 draws each.
+ *
+ * `owned` carries `avail: "free"` — the Build from choice IS this entry's
+ * caption ("Build from chooses the pool the scores are read against"), so a
+ * rack resting on the default would draw the control and never the state that
+ * makes it mean something.
+ *
+ * Both carry a colour and `match: "exact"`, because `Any` and `Exactly` are
+ * the same control in two positions and a rack with no colours chosen shows
+ * neither as chosen.
+ */
+export const LANE_OWNED: LaneParams = {
+  q: "",
+  colors: ["g", "r", "w"],
+  match: "exactly",
+  avail: "free",
+  order: "fit",
+};
+
+export const LANE_DISCOVER: LaneParams = {
+  q: "",
+  colors: ["u", "b"],
+  match: "contains",
+  avail: "all",
+  order: "popularity",
+};

@@ -81,9 +81,9 @@ described as its four hardest plates. The number was not checked before it was w
 artifact here would have contradicted it — the inventory photographed the figures that existed, so
 the sheet confirmed the scope back to its author.
 
-**Nineteen are `Specimen`-rooted and sixteen are `Legend`-rooted.** This record said "four mount
+**Twenty-one are `Specimen`-rooted and fourteen are `Legend`-rooted.** This record said "four mount
 and the rest are legends" — wrong again, and wrong in the paragraph correcting a previous wrong
-count, which is the second time a figure here was written down without being counted. The nineteen
+count, which is the second time a figure here was written down without being counted. The twenty-one
 range from mounting a whole surface as-is (`SetCell`, `CommitmentsCard`, `GameAxisCell`,
 `RoleChips`) to composing the app's own leaf components into an arrangement this page owns (the
 marks legend, the card-detail cells, the buy-tag states).

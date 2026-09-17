@@ -44,6 +44,8 @@ import { PIP_ORDER, PIP_SRC } from "../../lib/copy/filter-chassis";
 import {
   ImportFigureBody,
   CardDetailFigureBody,
+  CommanderLaneFigureBody,
+  DiscoverFigureBody,
   FitLegendFigureBody,
   ImportIssuesFigureBody,
   PostImportFigureBody,
@@ -728,38 +730,41 @@ function ReadyToBuildFigure({ width }: { width: AboutWidth }) {
 
 function CommanderLaneFigure({ width }: { width: AboutWidth }) {
   return (
-    <Legend
-      label="commander-lane"
-      width={width}
-      rows={[
-        { mark: commandersCopy.availability.all, meaning: "scored against everything you own" },
-        {
-          mark: commandersCopy.availability.free,
-          meaning: "scored against what no finished deck is holding",
-        },
-        {
-          mark: commandersCopy.row.fitDenominatorMeasurable(40),
-          meaning: "where a commander's most-played list could not be read",
-        },
-      ]}
-    />
+    <Specimen label="commander-lane" width={width}>
+      <CommanderLaneFigureBody />
+    </Specimen>
   );
 }
 
+const ORDER_ROWS: [string, string][] = [
+  [discoverCopy.order.bestFit, discoverCopy.order.bestFitGloss],
+  [discoverCopy.order.somethingNew, discoverCopy.order.somethingNewGloss],
+  [discoverCopy.order.popularity, discoverCopy.order.popularityGloss],
+  [discoverCopy.order.name, discoverCopy.order.nameGloss],
+  [discoverCopy.order.recent, discoverCopy.order.recentGloss],
+];
+
 function DiscoverFigure({ width }: { width: AboutWidth }) {
-  const o = discoverCopy.order;
   return (
-    <Legend
-      label="discover"
-      width={width}
-      rows={[
-        { mark: o.bestFit, meaning: o.bestFitGloss },
-        { mark: o.somethingNew, meaning: o.somethingNewGloss },
-        { mark: o.popularity, meaning: o.popularityGloss },
-        { mark: o.name, meaning: o.nameGloss },
-        { mark: o.recent, meaning: o.recentGloss },
-      ]}
-    />
+    <Specimen label="discover" width={width}>
+      <DiscoverFigureBody />
+      {/* The five orders stay. The rack shows the CONTROL; the entry's first
+          key line is about what two of the orders DO — "Best fit and Something
+          new change which commanders the list holds, not just their sequence"
+          — and a dropdown cannot say that. */}
+      <div className="mt-[12px] border-t border-solid border-[color:var(--border)] pt-[10px]">
+        <dl className="m-0 grid gap-[5px]">
+          {ORDER_ROWS.map(([mark, meaning]) => (
+            <div key={mark} className="flex flex-wrap items-baseline gap-x-[8px]">
+              <dt className="font-mono text-[10.5px] text-[color:var(--fg-body)]">{mark}</dt>
+              <dd className="m-0 font-mono text-[10.5px] text-[color:var(--fg-faint)]">
+                {meaning}
+              </dd>
+            </div>
+          ))}
+        </dl>
+      </div>
+    </Specimen>
   );
 }
 
