@@ -69,6 +69,28 @@ export type DiscoveryItem = {
   /** What `score` is out of: 100, or 40 where synergy could not be measured —
       never rescaled (#333), so the row prints the denominator it was given. */
   measurableTotal: number;
+  /**
+   * Fit's three components, for the row's segmented bar.
+   *
+   * SHIPPED AGAIN after being dropped, on Hugh's ruling of 2026-09-17. The spec
+   * cut the ratio bar and INDEX §D recorded `FitBar` as losing its last caller
+   * on these rows — Fit's one number was meant to REPLACE the segments, under
+   * the stated ruling "two sentences, three figures, and no table". Read on the
+   * shipped row, the trade read the other way: the information improved and the
+   * row got less interesting, with the band's right side empty where the
+   * retired four-column grid used to be.
+   *
+   * No conflict with D1. Fit is collection arithmetic and the components are
+   * the same three on both lanes, so nothing here is read off ownership.
+   *
+   * `fitSynergy` is null where synergy could not be measured, and `fitSegments`
+   * draws two segments rather than three for it — the same distinction
+   * `measurableTotal` carries, kept as a null rather than a zero because the
+   * component is absent, not empty.
+   */
+  fitPool: number;
+  fitRoles: number;
+  fitSynergy: number | null;
 };
 
 export type DiscoveryList = {
@@ -119,12 +141,19 @@ export type DiscoveryList = {
   sort: "fit" | "new";
 };
 
-/** `computeFit` returns the three components too, and the row prints none of
-    them — they belong to the detail page's legend. Taking two keys explicitly
-    keeps four fields off 3,000 rows. */
+/**
+ * The five of `computeFit`'s figures the row draws: the headline, its
+ * denominator, and the three components the bar splits.
+ *
+ * `rankScore` is the one left behind — it is the list's ORDER, not a figure any
+ * row prints, and #702 made it equal to `score` anyway.
+ */
 const pick = (fit: ReturnType<typeof computeFit>) => ({
   score: fit.score,
   measurableTotal: fit.measurableTotal,
+  fitPool: fit.fitPool,
+  fitRoles: fit.fitRoles,
+  fitSynergy: fit.fitSynergy,
 });
 
 export function assembleDiscovery(input: {
@@ -248,6 +277,9 @@ export function assembleDiscovery(input: {
       gapSlot: c.gapSlot,
       score: c.score,
       measurableTotal: c.measurableTotal,
+      fitPool: c.fitPool,
+      fitRoles: c.fitRoles,
+      fitSynergy: c.fitSynergy,
     })),
     candidateCount: input.candidates.length,
     cardsRead: input.cardsRead,
@@ -289,6 +321,10 @@ export function assembleDiscovery(input: {
  * this one when PR 3 changes the payload's shape, not to leave the pair
  * mismatched now.
  *
+ * 6 — Fit's three components come BACK, for the row's segmented bar (Hugh's
+ * ruling, 2026-09-17). A warm version-5 entry has no `fitPool`, `fitRoles` or
+ * `fitSynergy`, so every row would draw a bar with no segments in it.
+ *
  * 5 — the row's shape again, and this time by SUBTRACTION: nine fields leave the
  * payload with the composition that drew them, and `roles` with `roleCounts`.
  *
@@ -311,7 +347,7 @@ export function assembleDiscovery(input: {
  * is the strongest kind of bump rather than the weakest: the old entry cannot
  * render the new row at all.
  */
-const PAYLOAD_VERSION = 5;
+const PAYLOAD_VERSION = 6;
 
 /** The cache key a discovery payload is filed under: its sort, and the version
     of the code that produced it. */

@@ -76,6 +76,9 @@ const item = (over: Partial<DiscoveryList["items"][number]>): DiscoveryList["ite
   gapSlot: { kind: "noMechanics" },
   score: 58,
   measurableTotal: 100,
+  fitPool: 12,
+  fitRoles: 20,
+  fitSynergy: 26,
   ...over,
 });
 

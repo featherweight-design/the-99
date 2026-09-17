@@ -38,6 +38,7 @@ const HAS_SCHEME = /^[a-z][a-z0-9+.-]*:/i;
 const ROW_KEYS = [
   "slug", "name", "colorIdentity", "artCropUri", "releasedAt", "deckCount",
   "rank", "price", "prose", "gapSlot", "score", "measurableTotal",
+  "fitPool", "fitRoles", "fitSynergy",
 ] satisfies (keyof DiscoveryItem)[];
 
 /**

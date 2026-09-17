@@ -9,6 +9,36 @@
  * are imported rather than retyped, because a second copy of a shipped string is
  * free to drift from the surface that already prints it.
  */
+/** A run of the gap sentence: plain text, or a mechanic label to emphasise. */
+export type GapPart = string | { label: string };
+
+/**
+ * The gap sentence as its runs, which is the ONE definition of it — the flat
+ * string below is derived from this, never written twice.
+ *
+ * Three names is the NORMAL form, not the generous one: measured over all 3,279
+ * indexed commanders, 93.1% have three or more eligible mechanic tags and only
+ * 3.3% land on one or two.
+ */
+function unplayedParts(labels: string[]): GapPart[] {
+  const [a, b, c] = labels;
+  if (labels.length >= 3) {
+    return [
+      "None of your decks play ",
+      { label: a! },
+      ", ",
+      { label: b! },
+      " or ",
+      { label: c! },
+      ".",
+    ];
+  }
+  if (labels.length === 2) {
+    return ["None of your decks play ", { label: a! }, " or ", { label: b! }, "."];
+  }
+  return ["None of your decks play ", { label: a! }, "."];
+}
+
 export const commanderRowCopy = {
   /**
    * The gap line. TEMPLATED, never generated: per-player generation was priced
@@ -29,12 +59,22 @@ export const commanderRowCopy = {
      * and only 3.3% land on one or two. The handoff's amber B worried about the
      * opposite case.
      */
-    unplayed: (labels: string[]) => {
-      const [a, b, c] = labels;
-      if (labels.length >= 3) return `None of your decks play ${a}, ${b} or ${c}.`;
-      if (labels.length === 2) return `None of your decks play ${a} or ${b}.`;
-      return `None of your decks play ${a}.`;
-    },
+    unplayedParts: unplayedParts,
+
+    /**
+     * The same sentence as one string, DERIVED from the parts above rather than
+     * spelled a second time.
+     *
+     * The canvas emphasises each mechanic name inside the sentence, so the row
+     * needs the labels as separate nodes — and two templates, one for the
+     * string and one for the nodes, are free to drift the moment either moves.
+     * `check:copy-drift` reads the string form, and this keeps the string it
+     * reads and the sentence the reader sees the same sentence by construction.
+     */
+    unplayed: (labels: string[]) =>
+      unplayedParts(labels)
+        .map((part) => (typeof part === "string" ? part : part.label))
+        .join(""),
 
     /**
      * Every mechanic tag on this commander is already played somewhere in the

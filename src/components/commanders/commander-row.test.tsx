@@ -22,6 +22,9 @@ const view = (over: Partial<CommanderRowView> = {}): CommanderRowView => ({
   gapSlot: { kind: "unplayed", labels: ["Counters Matter", "Proliferate", "Infect"] },
   score: 58,
   measurableTotal: 100,
+  fitPool: 12,
+  fitRoles: 20,
+  fitSynergy: 26,
   deckCount: 24_012,
   price: { kind: "priced", cents: 340 },
   priceOk: true,
@@ -31,14 +34,28 @@ const view = (over: Partial<CommanderRowView> = {}): CommanderRowView => ({
 
 const row = (over: Partial<CommanderRowView> = {}) => render(<CommanderRow item={view(over)} />);
 
+/**
+ * The gap sentence as the reader sees it: one line, mechanic names included.
+ *
+ * Each name is its own `<b>` now — the canvas emphasises them — so a
+ * whole-string `getByText` finds nothing. Reading the paragraph's
+ * `textContent` asserts the assembled sentence without asserting the runs,
+ * which is the right granularity: the marking is asserted separately.
+ */
+function gapText(container: HTMLElement): string {
+  const paragraphs = Array.from(container.querySelectorAll("p"));
+  const gap = paragraphs.find((el) => el.textContent?.includes("decks play"));
+  return gap?.textContent ?? "";
+}
+
 describe("CommanderRow · state 1, full", () => {
   it("draws both sentences and all three figures", () => {
-    row();
+    const { container } = row();
 
     expect(screen.getByText("Atraxa decks grind value out of counters.")).toBeInTheDocument();
-    expect(
-      screen.getByText("None of your decks play Counters Matter, Proliferate or Infect."),
-    ).toBeInTheDocument();
+    expect(gapText(container)).toBe(
+      "None of your decks play Counters Matter, Proliferate or Infect.",
+    );
     expect(screen.getByText("58")).toBeInTheDocument();
     expect(screen.getByText(discoverCopy.row.popularity(24_012))).toBeInTheDocument();
     expect(screen.getByText("$3.40")).toBeInTheDocument();
@@ -68,9 +85,9 @@ describe("CommanderRow · state 2, no sentence", () => {
     expect(container.textContent).not.toContain("grind value");
     // The gap line is untouched by the sentence's absence: the slots are
     // independent, which is what makes these five states and not a matrix.
-    expect(
-      screen.getByText("None of your decks play Counters Matter, Proliferate or Infect."),
-    ).toBeInTheDocument();
+    expect(gapText(container)).toBe(
+      "None of your decks play Counters Matter, Proliferate or Infect.",
+    );
     expect(container.querySelectorAll("p")).toHaveLength(1);
   });
 });
@@ -84,9 +101,19 @@ describe("CommanderRow · the gap slot is never empty", () => {
       text: "None of your decks play Aristocrats, Blink or Landfall.",
     },
   ])("prints $labels.length name(s) in the right form", ({ labels, text }) => {
-    row({ gapSlot: { kind: "unplayed", labels } });
+    const { container } = row({ gapSlot: { kind: "unplayed", labels } });
 
-    expect(screen.getByText(text)).toBeInTheDocument();
+    expect(gapText(container)).toBe(text);
+
+    // EACH NAME IS MARKED, not merely present — the emphasis is what the line
+    // is scanned for. Asserted per label, so a build that bolded the first and
+    // dropped the rest fails rather than passing on the sentence alone.
+    const marked = Array.from(container.querySelectorAll("b")).map((b) => b.textContent);
+    for (const label of labels) expect(marked).toContain(label);
+
+    // And the marking is the LABELS, nothing else: the eleven words around them
+    // stay unmarked, which a `<b>` wrapped round the whole sentence would not.
+    expect(marked).toHaveLength(labels.length);
   });
 
   // State 4. Not congratulatory: under `Something new` this same fact is why the
@@ -128,10 +155,12 @@ describe("CommanderRow · state 5, unpriced", () => {
     expect(container.textContent).not.toContain("$");
     expect(container.textContent).not.toContain(priceCopy.notStocked);
     expect(screen.queryByText(priceCopy.notStockedAria)).not.toBeInTheDocument();
-    // Two figures left, so exactly one separator between them.
+    // ONE figure left — the deck count — so no separator at all. Fit moved up
+    // to the band's chip, so the foot line no longer holds an unconditional
+    // figure for an orphaned separator to sit beside.
     expect(
       container.textContent?.split(commanderRowCopy.figures.separator).length,
-    ).toBe(2);
+    ).toBe(1);
     expect(screen.getByText(discoverCopy.row.popularity(24_012))).toBeInTheDocument();
   });
 
@@ -145,7 +174,7 @@ describe("CommanderRow · state 5, unpriced", () => {
     expect(container.textContent).not.toContain(priceCopy.notStocked);
     expect(
       container.textContent?.split(commanderRowCopy.figures.separator).length,
-    ).toBe(2);
+    ).toBe(1);
   });
 
   it("draws the price when the read succeeded", () => {
@@ -173,20 +202,27 @@ describe("CommanderRow · state 5, unpriced", () => {
 describe("CommanderRow · figures", () => {
   // THE SEPARATORS FALL OUT WITH THEIR FIGURES. One list joined by them, so a
   // figure with no reading takes its separator with it rather than leaving one
-  // beside nothing. Fit is unconditional, so the count is always figures - 1.
+  // beside nothing.
+  //
+  // TWO figures, not three: Fit is the plated chip up in the band now, per the
+  // canvas, and the foot line is the deck count and the price. Both of those
+  // are conditional, so the line can empty completely — which is state 5 on a
+  // `/commanders` row, where the price is always absent and a commander with no
+  // tracked decks draws nothing here at all.
   it.each([
-    { over: {}, figures: 3 },
-    { over: { deckCount: null }, figures: 2 },
-    { over: { price: { kind: "absent" as const } }, figures: 2 },
-    { over: { deckCount: null, price: { kind: "absent" as const } }, figures: 1 },
-    { over: { priceOk: false }, figures: 2 },
-    { over: { deckCount: null, priceOk: false }, figures: 1 },
+    { over: {}, figures: 2 },
+    { over: { deckCount: null }, figures: 1 },
+    { over: { price: { kind: "absent" as const } }, figures: 1 },
+    { over: { deckCount: null, price: { kind: "absent" as const } }, figures: 0 },
+    { over: { priceOk: false }, figures: 1 },
+    { over: { deckCount: null, priceOk: false }, figures: 0 },
   ])("draws $figures figure(s) and one separator fewer", ({ over, figures }) => {
     const { container } = row(over);
 
     const seps =
       (container.textContent?.split(commanderRowCopy.figures.separator).length ?? 1) - 1;
-    expect(seps).toBe(figures - 1);
+    // `Math.max(0, …)`: an empty line has no separator, not minus one.
+    expect(seps).toBe(Math.max(0, figures - 1));
   });
 
   // The row prints the denominator it was GIVEN (D4) — never a bare `40/100`.
@@ -212,6 +248,76 @@ describe("CommanderRow · figures", () => {
 
     expect(container.textContent).not.toContain("decks tracked");
     expect(container.textContent).not.toContain("0 decks");
+  });
+});
+
+describe("CommanderRow · the Fit bar", () => {
+  // Hugh's ruling of 2026-09-17, which OVERRIDES the spec: the ratio bar was cut
+  // and one number was meant to replace the segments. Read on the shipped row
+  // the trade went the other way.
+  //
+  // Both widths draw it — band-right from `sm` up, under the foot line on the
+  // phone — so a build that mounted only one would halve the feature silently.
+  // ONE bar, not one per width. An earlier build mounted it twice — in the band
+  // from `sm` up and under the figures below it — which drew the figure's parts
+  // beside the art at one width and beneath the figure at the other. The order
+  // is the same at both widths now: figure, then its parts under it.
+  it("mounts exactly one bar, below the figures, at every width", () => {
+    const { container } = row();
+
+    // `.rounded-full` is what makes this the TRACK. Scoping on
+    // `div.overflow-hidden` alone matched the BAND — it carries the same class —
+    // so the segment counts below were reading ArtWash's layers and the
+    // three-segment case passed for the wrong reason.
+    const bars = container.querySelectorAll("div.rounded-full.overflow-hidden");
+    expect(bars.length).toBe(1);
+
+    // No `sm:hidden` / `hidden sm:` fork on the mount, which is what a
+    // per-width pair would need. Asserted on the wrapper rather than by
+    // counting, so a second mount added without the classes still fails above.
+    const mount = bars[0]!.closest("[aria-hidden='true']");
+    expect(mount?.className).not.toMatch(/hidden/);
+
+    // BELOW the foot line in document order — the whole point of the move.
+    const figures = container.querySelector("[data-testid='row-figures']");
+    expect(figures).not.toBeNull();
+    expect(
+      figures!.compareDocumentPosition(bars[0]!) & Node.DOCUMENT_POSITION_FOLLOWING,
+    ).toBeTruthy();
+  });
+
+  // THREE SEGMENTS WHEN SYNERGY WAS MEASURED, TWO WHEN IT WAS NOT. A null
+  // component is absent, not zero — a zero-width third segment would claim a
+  // reading nobody took, which is the same rule `measurableTotal` carries at 40.
+  it("splits into three segments with a synergy reading", () => {
+    const { container } = row({ fitPool: 12, fitRoles: 20, fitSynergy: 26 });
+
+    const filled = container.querySelector("div.rounded-full.overflow-hidden > div");
+    expect(filled?.children.length).toBe(3);
+  });
+
+  it("splits into two when synergy could not be measured", () => {
+    const { container } = row({
+      score: 32,
+      measurableTotal: 40,
+      fitPool: 12,
+      fitRoles: 20,
+      fitSynergy: null,
+    });
+
+    const filled = container.querySelector("div.rounded-full.overflow-hidden > div");
+    expect(filled?.children.length).toBe(2);
+  });
+
+  // The bar is decorative: the link's own name carries the figure, and the foot
+  // line prints it. A second spoken reading of one number is what `aria-hidden`
+  // is for here.
+  it("adds nothing to the accessible name", () => {
+    row();
+
+    const label = screen.getByRole("link").getAttribute("aria-label") ?? "";
+    expect(label).not.toContain("Pool");
+    expect(label).not.toContain("Synergy");
   });
 });
 

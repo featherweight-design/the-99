@@ -16,7 +16,7 @@
 import { type ReactNode } from "react";
 import Link from "next/link";
 import { formatCents } from "../../lib/decks/price";
-import { commanderRowCopy } from "../../lib/copy/commander-row";
+import { commanderRowCopy, type GapPart } from "../../lib/copy/commander-row";
 import { commandersCopy, discoverCopy } from "../../lib/copy/lanes";
 import { discoveryCopy } from "../../lib/copy/commander-discovery";
 import { explainedCopy } from "../../lib/copy/commander-explained";
@@ -26,7 +26,9 @@ import { POOL_WEIGHT, ROLES_WEIGHT, SYNERGY_WEIGHT } from "../../lib/recs/score"
 // `src/db`, whose body throws when DATABASE_URL is unset. A type-only clause is
 // erased at compile time, so none of that reaches the client bundle.
 import type { PriceSlot as PriceSlotValue } from "../../lib/discovery/price";
+import { fitSegments } from "../../lib/recs/format";
 import { ArtWash, INK_SHADOW } from "../ui/art-wash";
+import { FitBar } from "./fit-bar";
 import { IdentityPips } from "./commander-art";
 
 const { price: priceCopy, untagged } = discoveryCopy;
@@ -79,6 +81,23 @@ export type CommanderRowView = {
   /** What `score` is out of: 100, or 40 where synergy could not be measured.
       Printed as given — never rescaled, and never asserted as a bound. */
   measurableTotal: number;
+  /**
+   * Fit's three components, for the segmented bar.
+   *
+   * Hugh's ruling, 2026-09-17, and it overrides the spec rather than
+   * implementing it: the ratio bar was CUT, and `FitBar` was recorded as losing
+   * its last caller on these rows, because one number was meant to replace the
+   * segments. Read on the shipped row the trade went the other way — better
+   * information, a less interesting row, and the band's right side empty where
+   * the retired four-column grid had been.
+   *
+   * `fitSynergy` null draws TWO segments, not a zero-width third: the component
+   * is absent, not empty, which is the same distinction `measurableTotal`
+   * carries at 40.
+   */
+  fitPool: number;
+  fitRoles: number;
+  fitSynergy: number | null;
   deckCount: number | null;
   /**
    * The price slot, which is `absent` for every commander the reader OWNS.
@@ -97,6 +116,21 @@ export type CommanderRowView = {
 };
 
 /**
+ * The Fit chip's plate. `rec-card.tsx` drew exactly this and the handoff reuses
+ * the chip UNCHANGED (INDEX: "The Fit chip, `ArtWash`, `IdentityPips` and
+ * `PriceSlot` are reused unchanged"), so the values are the retired card's and
+ * the R1 canvas draws them back. Its literals resolve to `--bg` for the ground
+ * and `--border-strong` for the edge; the hex itself is not repeated here,
+ * because `no-hex.test.ts` reads this file and a quoted colour is
+ * indistinguishable from a used one.
+ */
+const FIT_CHIP_STYLE = {
+  background: "var(--bg)",
+  border: "1px solid var(--border-strong)",
+  borderRadius: 9,
+} as const;
+
+/**
  * The gap line — never empty, one of three occupants (handoff D2).
  *
  * The union is decided on the server by `gapSlotFor`, so this switch is
@@ -113,13 +147,29 @@ function GapLine({ slot }: { slot: GapSlot }) {
       </p>
     );
   }
-  const text =
+  // THE MECHANIC NAMES ARE EMPHASISED INSIDE THE SENTENCE, per the canvas —
+  // `--fg` at 600 against the sentence's `--fg-muted`. They are what the reader
+  // scans this line for, and the sentence around them is the same eleven words
+  // on every row.
+  //
+  // Rendered from `unplayedParts`, which is the sentence's one definition;
+  // `unplayed` is derived from it, so the spoken string and the drawn runs
+  // cannot disagree. `allPlayed` names no mechanic and so has no run to mark.
+  const parts: GapPart[] =
     slot.kind === "allPlayed"
-      ? commanderRowCopy.gap.allPlayed
-      : commanderRowCopy.gap.unplayed(slot.labels);
+      ? [commanderRowCopy.gap.allPlayed]
+      : commanderRowCopy.gap.unplayedParts(slot.labels);
   return (
     <p className="font-sans" style={{ fontSize: 12.5, lineHeight: 1.45, color: "var(--fg-muted)" }}>
-      {text}
+      {parts.map((part, i) =>
+        typeof part === "string" ? (
+          part
+        ) : (
+          <b key={i} className="font-[600]" style={{ color: "var(--fg)", fontWeight: 600 }}>
+            {part.label}
+          </b>
+        ),
+      )}
     </p>
   );
 }
@@ -162,21 +212,6 @@ function PriceFigure({ price, priceOk }: { price: PriceSlotValue; priceOk: boole
       <span className="sr-only">
         {priced ? priceCopy.aria(formatted) : priceCopy.notStockedAria}
       </span>
-      {/* THE SOURCE LABEL IS PART OF THE PRICE, not of the column the retired row
-          put it in. §C names `PriceSlot` unchanged — "its dot, its source label,
-          its absent rule" — and an earlier version of this row dropped the word
-          and wrote a justification into the property table: that the retired
-          `margin-left: auto` pushed it to the end of a column this row no longer
-          has. That was a layout detail standing in for a ruling. The figure is
-          decorative and the sr-only sentence above carries the reading, so this
-          is `aria-hidden` and adds nothing spoken. */}
-      <span
-        aria-hidden="true"
-        className="font-mono"
-        style={{ fontSize: 10, color: "var(--fg-locked)" }}
-      >
-        {priceCopy.source}
-      </span>
     </span>
   );
 }
@@ -194,30 +229,12 @@ export function CommanderRow({ item }: { item: CommanderRowView }) {
       ? commandersCopy.row.fitDenominator
       : commandersCopy.row.fitDenominatorMeasurable(item.measurableTotal);
 
-  // Fit is unconditional; the other two drop out when they have no reading.
+  // THE FOOT LINE IS THE COUNT AND THE PRICE. Fit is not in it — it is the
+  // plated chip up in the band, per the canvas. Both remaining figures drop out
+  // when they have no reading (D3): omitted, never zeroed, and their separators
+  // fall out with them.
   const priceDrawn = item.priceOk && item.price.kind !== "absent";
   const figures: { key: string; node: ReactNode }[] = [
-    {
-      key: "fit",
-      node: (
-        <span className="flex items-baseline gap-[4px]">
-          <span
-            aria-hidden="true"
-            className="font-mono font-[600]"
-            style={{ fontSize: 15, color: "var(--fg)", fontVariantNumeric: "tabular-nums" }}
-          >
-            {item.score}
-          </span>
-          <span
-            aria-hidden="true"
-            className="font-mono"
-            style={{ fontSize: 10.5, color: "var(--fg-faint)", letterSpacing: "0.04em" }}
-          >
-            {fitUnit}
-          </span>
-        </span>
-      ),
-    },
     ...(item.deckCount !== null
       ? [
           {
@@ -296,6 +313,45 @@ export function CommanderRow({ item }: { item: CommanderRowView }) {
             </span>
             <IdentityPips colorIdentity={item.colorIdentity} />
           </div>
+
+          {/* THE FIT CHIP, IN THE BAND — plated, opposite the name, which is
+              where the R1 canvas draws it and where `rec-card.tsx` drew it
+              before. An earlier build of this row put the bare figure in the
+              foot line instead: that is the defect behind the reported "empty
+              space on the right", because the band's whole right side was the
+              chip's and nothing replaced it.
+
+              `items-end` on the row above puts the chip on the name's baseline,
+              as the retired card did. `sr-only` carries the reading because the
+              band has no room for the long denominator beside a 27px figure —
+              and the stretched link's own name carries it too. */}
+          <div
+            className="flex flex-col items-center shrink-0 px-[9px] py-[6px] sm:px-[11px] sm:py-[7px]"
+            style={FIT_CHIP_STYLE}
+          >
+            <span className="sr-only">
+              {explainedCopy.score.scoreAria(item.score, item.measurableTotal)}
+            </span>
+            <span
+              aria-hidden="true"
+              className="font-mono font-[600]"
+              style={{
+                fontSize: 22,
+                color: "var(--fg)",
+                lineHeight: 1,
+                fontVariantNumeric: "tabular-nums",
+              }}
+            >
+              {item.score}
+            </span>
+            <span
+              aria-hidden="true"
+              className="font-mono"
+              style={{ fontSize: 10, letterSpacing: "0.1em", color: "var(--fg-faint)" }}
+            >
+              {fitUnit}
+            </span>
+          </div>
         </div>
       </div>
 
@@ -344,6 +400,7 @@ export function CommanderRow({ item }: { item: CommanderRowView }) {
             deck count and a lost price read both drop out of the list, and the
             separators fall out with them rather than being suppressed. */}
         <div
+          data-testid="row-figures"
           className="flex flex-wrap items-center gap-x-[10px] gap-y-[6px]"
           style={{ marginTop: 2 }}
         >
@@ -364,6 +421,58 @@ export function CommanderRow({ item }: { item: CommanderRowView }) {
               {figure.node}
             </span>
           ))}
+
+          {/* THE SOURCE STAMP SITS AT THE LINE'S END — `ml-auto`, which is what
+              the R1 canvas draws (`margin-left:auto`, 10px, `--fg-locked`) and
+              what `rec-card.tsx` did before it.
+
+              It is drawn HERE rather than inside `PriceFigure`, and that is the
+              whole reason this is a separate node: an `auto` margin resolves
+              against the nearest flex container, and inside the figure it
+              resolved against the separator wrapper — a 6px nudge that reads as
+              the rule not working at all. Found by looking at the sheet.
+
+              Still the price's own label in every other sense: it draws on
+              exactly `priceDrawn`, so it unmounts with the figure and never
+              stands alone. And it keeps the shipped `manapool` string — the
+              canvas letters it `Mana Pool`, but §C names `PriceSlot` unchanged
+              ("its dot, its source label, its absent rule"), so the lettering
+              is a drawing of the slot and not a new string. Erratum, recorded
+              in the property table.
+
+              Decorative: `PriceFigure`'s sr-only sentence carries the reading. */}
+          {priceDrawn && (
+            <span
+              aria-hidden="true"
+              className="font-mono ml-auto"
+              style={{ fontSize: 10, color: "var(--fg-locked)" }}
+            >
+              {priceCopy.source}
+            </span>
+          )}
+        </div>
+
+        {/* THE FIT BAR, BELOW THE FIGURES AT BOTH WIDTHS — the figure above,
+            its parts beneath it, which is the order the retired card drew and
+            the order Hugh named on 2026-09-17. `rec-card.tsx` put the Fit
+            figure in a plated chip at the band's top right and the bar in a
+            206px column below the divider; a bar mounted in the band beside
+            the art was tried first and is wrong on both counts.
+
+            Full measure rather than 206px: there is no data-zone grid in this
+            composition to give it a column, so it takes the block's own width
+            and stops at 520px — past that the three segments read as a
+            progress meter for the row rather than a breakdown of one figure.
+
+            `aria-hidden`: the link's own name already carries Fit. The legend
+            is drawn from `sm` up by `FitBar` itself, so passing `legend`
+            unconditionally still hides the labels on a 390px foot line. */}
+        <div
+          aria-hidden="true"
+          className="w-full"
+          style={{ marginTop: 2, maxWidth: 520 }}
+        >
+          <FitBar fit={fitSegments(item)} legend />
         </div>
       </div>
     </div>
