@@ -353,6 +353,15 @@ Package manager is **pnpm** (pinned via `packageManager` in package.json) — ne
   `"180deg"` found nothing across 50 nodes, because 180deg is CSS's default direction and
   computed style drops it; and a `*` sweep of the band's descendants found no gradient at all,
   because the wash mounts its own wrapper. It makes no writes. Point it at `local-dev`.
+  Its last pair came from the CONTACT SHEET rather than from any assertion: the foot line
+  wrapped as `1,179 decks tracked ·`, separator dangling at the line end with the price below.
+  That is the same dangling separator review reported in round 1 of #708 — reachable by
+  WRAPPING rather than by a null field, which is why the null-field reading of it was wrong and
+  the fix was still owed. The separator now travels with the figure it precedes in one flex
+  item, and the probe reads it by GEOMETRY: no separator may be the last box on its line.
+  **Only `/discover` at 390 reaches that check**, because it is the only route and width where
+  the line is long enough to wrap; the other three cells pass on a broken build.
+
 - `pnpm probe:draft` proves the draft readers against a real Postgres by calling the real
   `loadDraftState` and `loadDraftRows` — a brew has no version rather than an empty change
   list, a draft identical to its version is clean, a basics-only edit is a NAMED row carrying

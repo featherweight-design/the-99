@@ -235,6 +235,44 @@ try {
         longestSeen = Math.max(longestSeen, clamp.worst.chars);
       }
 
+      // ── no separator ends a line ──────────────────────────────────────
+      //
+      // FOUND BY THE CONTACT SHEET, not by any assertion here: the foot line
+      // wrapped as "1,179 decks tracked ·" with the price on the next line. The
+      // separator and the figure it precedes were two siblings in a wrapping
+      // row, so they split at the break — which is the dangling separator review
+      // reported in round 1, reachable by WRAPPING rather than by a null field.
+      //
+      // Read by GEOMETRY rather than by class list: what matters is that no
+      // separator is the last thing on its own line, and a class assertion
+      // cannot see where a line broke.
+      //
+      // ONLY ONE OF THE FOUR CELLS REACHES IT, and that is worth saying rather
+      // than overstating the check: splitting the separator back into a sibling
+      // fails `/discover` at 390 alone, because that is the only route and width
+      // where the foot line is long enough to wrap. The other three pass on a
+      // broken build. A fixture whose prices were all short would reach none.
+      const dangling = await page.evaluate(() => {
+        const seps = [...document.querySelectorAll("main span[aria-hidden='true']")].filter(
+          (el) => el.textContent?.trim() === "·",
+        );
+        let bad = 0;
+        for (const sep of seps) {
+          const r = sep.getBoundingClientRect();
+          if (r.width === 0) continue;
+          // The figure that follows it sits in the SAME flex item, so a break
+          // between them would put the next sibling's box on a lower line.
+          const next = sep.nextElementSibling?.getBoundingClientRect();
+          if (next && next.width > 0 && next.top >= r.bottom) bad += 1;
+        }
+        return { seps: seps.length, bad };
+      });
+      note(`  ${dangling.seps} separator(s) drawn`);
+      // A run that found no separators measured nothing — every row here draws
+      // at least Fit plus one other figure.
+      check(`${route} @ ${w.name}: separators were drawn`, dangling.seps > 0, true);
+      check(`${route} @ ${w.name}: no separator ends a line`, dangling.bad, 0);
+
       // ── the row has no control on it ──────────────────────────────────
       // The disclosure went with the tag list, which is what let the row stop
       // being a client component. A button here means it came back.
