@@ -144,6 +144,15 @@ export const explainedCopy = {
   score: {
     label: "Fit for your collection",
 
+    /**
+     * The rank clause when this commander tops the reader's own pool. A
+     * literal in `detail.tsx` until the About page needed to draw this header
+     * — the same split the collection's search placeholder needed, and for the
+     * same reason: a reference page holding its own copy of a label drifts
+     * from the surface it describes at the next rename.
+     */
+    bestInPool: "Best in your pool",
+
     /** The denominator slot. `/100` when synergy was measured, `/40 measurable` when it was
         not — the same string for `absent` and `degraded`, scope-independent (§4.3). */
     denominator: "/100",

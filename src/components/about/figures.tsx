@@ -37,6 +37,7 @@ import { deckSortLabel } from "../../lib/about/sort-labels";
 import { DECK_GROUPING_LABELS } from "../../lib/copy/deck-sort";
 import { BrowseFigureBody } from "./browse-figure";
 import { KeyNumeral } from "./numeral";
+import { explainedCopy } from "../../lib/copy/commander-explained";
 import { ReadyToBuild } from "../home/ready-to-build";
 import { setFilterCopy, setPageCopy } from "../../lib/copy/set-collections";
 import { PIP_ORDER, PIP_SRC } from "../../lib/copy/filter-chassis";
@@ -251,38 +252,56 @@ function StatusFigure({ width }: { width: AboutWidth }) {
 
 /** The bar, both shapes: three segments out of 100, and two out of 40. */
 function FitFigure({ width }: { width: AboutWidth }) {
+  const e = explainedCopy.score;
   return (
     <Specimen label="fit" width={width}>
-      {/* No `legend`: FitBar draws it `hidden sm:flex`, so passing it would
-          show one to a desktop reader and nothing to a phone, and the entry's
-          key lines name the three parts for both.
+      {/* TRANSCRIBED from §3's commander-page header: the label, the score at
+          46px with its denominator and rank clause, the segmented bar, and the
+          three parts named with their own points out of their own weights.
 
-          The captions are ANNOTATION — one mono line under the thing it names,
-          which the grammar allows — not specimen strings. Prose inside the
-          frame would be this page writing sentences the app does not ship,
-          which is rule 4 of the copy file. */}
-      <div className="flex flex-col gap-[14px]">
-        {/* The headline beside each bar is the lane's OWN string — the entry's
-            key says the sum is printed and checkable, and a caption of my own
-            words would be this page inventing a figure the app renders. */}
-        <SpecimenCell caption="pool + roles + synergy, and the sum is printed">
-          <div className="w-full">
-            <FitBar fit={FIT_FULL} />
-            <p className="mt-[6px] font-mono text-[10.5px] text-[color:var(--fg-body)]">
-              {FIT_FULL_SCORE}
-              {commandersCopy.row.fitDenominator}
-            </p>
-          </div>
-        </SpecimenCell>
-        <SpecimenCell caption="synergy unmeasurable — two segments, and the denominator moves">
-          <div className="w-full">
-            <FitBar fit={FIT_DEGRADED} />
-            <p className="mt-[6px] font-mono text-[10.5px] text-[color:var(--fg-body)]">
-              {FIT_DEGRADED_SCORE}
-              {commandersCopy.row.fitDenominatorMeasurable(40)}
-            </p>
-          </div>
-        </SpecimenCell>
+          What this replaces drew two bars with a caption apiece — which showed
+          the bar and never the SUM the entry is about, and put this page's own
+          sentences inside the frame. */}
+      <div className="font-mono text-[10px] tracking-[0.14em] text-[color:var(--fg-faint)] uppercase">
+        {e.label}
+      </div>
+      <div className="mt-[8px] mb-[14px] flex flex-wrap items-baseline gap-[10px]">
+        <span className="text-[46px] leading-none font-bold text-[color:var(--fg)]">
+          {FIT_FULL_SCORE}
+        </span>
+        <span className="font-mono text-[15px] text-[color:var(--fg-faint)]">
+          {e.denominator}
+        </span>
+        <span className="text-[13.5px] font-semibold text-[color:var(--success)]">
+          {e.bestInPool}
+        </span>
+        <KeyNumeral n={2} />
+      </div>
+
+      {/* The route's own bar, and its own legend. `legend` draws the three
+          parts the entry's key lines name — passing them as captions of my own
+          would be this page inventing figures the app renders. */}
+      <FitBar fit={FIT_FULL} legend />
+
+      {/* THE OTHER DENOMINATOR. §3 draws one shape; key line 1 names two —
+          "where synergy could not be measured the score is out of 40, and it
+          is never rescaled" — and a figure showing only `/100` cannot
+          substantiate that. The caption is the app's own copy, so it wins and
+          the drawing goes back to Design.
+
+          Drawn compactly rather than as a second full header: the subject here
+          is the DENOMINATOR, not a second score to compare. */}
+      <div className="mt-[14px] border-t border-solid border-[color:var(--border)] pt-[12px]">
+        <div className="mb-[7px] flex flex-wrap items-baseline gap-[8px]">
+          <span className="text-[19px] leading-none font-bold text-[color:var(--fg)]">
+            {FIT_DEGRADED_SCORE}
+          </span>
+          <span className="font-mono text-[11px] text-[color:var(--fg-faint)]">
+            {e.denominatorMeasurable(40)}
+          </span>
+          <KeyNumeral n={1} />
+        </div>
+        <FitBar fit={FIT_DEGRADED} />
       </div>
     </Specimen>
   );

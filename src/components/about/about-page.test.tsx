@@ -5,6 +5,7 @@ import { ABOUT_VERSION, aboutCopy, aboutEntries } from "../../lib/copy/about";
 import { FIGURES } from "./figures";
 import { availabilityCopy } from "../../lib/copy/availability";
 import { refreshCopy } from "../../lib/copy/refresh";
+import { explainedCopy } from "../../lib/copy/commander-explained";
 import { cardAssignmentsCopy } from "../../lib/copy/card-assignments";
 import { collectionChassisCopy, printingPickerCopy } from "../../lib/copy/collection";
 import { spokenFullManaCost, twoFacedCopy } from "../../lib/copy/card-surfaces";
@@ -14,6 +15,8 @@ import { PIP_ORDER } from "../../lib/copy/filter-chassis";
 import {
   CONTESTED_ARRIVAL,
   IMPORT_SOURCES,
+  FIT_DEGRADED_SCORE,
+  FIT_FULL_SCORE,
   READY_SLICE,
   SET_CELLS,
   SET_HEAD,
@@ -400,10 +403,15 @@ describe("the figures", () => {
     // never sentences inside it.
     // The headline beside each bar is the lane's own string, so a reader can
     // check the sum against the figure the app would print.
-    expect(plate.textContent).toContain("/100 FIT");
-    expect(plate.textContent).toContain("/40 MEASURABLE FIT");
-    expect(plate.textContent).toContain("73");
-    expect(plate.textContent).toContain("27");
+    // BOTH denominators. §3 draws one shape; key line 1 names two — "where
+    // synergy could not be measured the score is out of 40, and it is never
+    // rescaled" — so a figure drawing only `/100` cannot substantiate the
+    // caption printed beside it.
+    expect(plate.textContent).toContain(explainedCopy.score.denominator);
+    expect(plate.textContent).toContain(explainedCopy.score.denominatorMeasurable(40));
+    expect(plate.textContent).toContain(String(FIT_FULL_SCORE));
+    expect(plate.textContent).toContain(String(FIT_DEGRADED_SCORE));
+    expect(plate.textContent).toContain(explainedCopy.score.bestInPool);
   });
 
   it("gives every entry a figure, and none of them an empty frame", () => {
