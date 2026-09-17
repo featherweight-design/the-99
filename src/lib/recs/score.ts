@@ -221,7 +221,16 @@ export function isCommanderCandidate(card: Pick<PoolCard, "typeLine" | "oracleTe
   // Only the front face can make a card eligible to be a commander. Testing the
   // joined string lets a back face qualify a card it shouldn't, which is how
   // Westvale Abbey (a Land) ended up in the candidate pool (#79).
-  if (/legendary/i.test(typeLine) && /creature/i.test(typeLine)) return true;
+  if (/legendary/i.test(typeLine)) {
+    if (/creature/i.test(typeLine)) return true;
+    // Rule 903.3a as amended for Edge of Eternities: a legendary Vehicle or
+    // Spacecraft may lead a deck. None of them says so in its text — Hearthhull,
+    // the Worldseed is a "Legendary Artifact — Spacecraft" whose only hint is
+    // Station's reminder that it becomes a creature at 8+ — so the subtype is
+    // the whole signal, and a card that never turns into a creature at all
+    // (Weatherlight, Heart of Kiran) is just as eligible.
+    if (/\b(?:vehicle|spacecraft)\b/i.test(typeLine)) return true;
+  }
   return /can be your commander/i.test(frontFaceOracle(card.oracleText));
 }
 

@@ -59,6 +59,32 @@ describe("isCommanderCandidate", () => {
       oracleText: "Teferi, Temporal Archmage can be your commander.",
     })).toBe(true);
   });
+  it("accepts a legendary Spacecraft", () => {
+    // Hearthhull, the Worldseed. Its eligibility is printed nowhere in the text:
+    // Station's reminder only says it becomes a creature at 8+.
+    expect(isCommanderCandidate({
+      typeLine: "Legendary Artifact — Spacecraft",
+      oracleText: "Station (Tap another creature you control: Put charge counters equal to its power on this Spacecraft.)",
+    })).toBe(true);
+  });
+  it("accepts a legendary Vehicle that never becomes a creature on its own", () => {
+    expect(isCommanderCandidate({
+      typeLine: "Legendary Artifact — Vehicle",
+      oracleText: "Flying, vigilance\nCrew 3",
+    })).toBe(true);
+  });
+  it("rejects a Vehicle that is not legendary", () => {
+    expect(isCommanderCandidate({
+      typeLine: "Artifact — Vehicle",
+      oracleText: "Crew 1",
+    })).toBe(false);
+  });
+  it("rejects a card whose back face is the legendary Vehicle", () => {
+    expect(isCommanderCandidate({
+      typeLine: "Artifact — Equipment // Legendary Artifact — Vehicle",
+      oracleText: "Equipped creature gets +1/+0.\n//\nCrew 2",
+    })).toBe(false);
+  });
   it("rejects ordinary cards", () => {
     expect(isCommanderCandidate({ typeLine: "Instant", oracleText: "Draw a card." })).toBe(false);
   });
