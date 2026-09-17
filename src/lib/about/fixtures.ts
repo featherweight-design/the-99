@@ -1,3 +1,4 @@
+import type { FitLegendSegment } from "../../components/commanders/fit-legend";
 import type { CommanderListItem } from "../recs/recommend";
 import type { ReadySlice } from "../recs/ready-to-build";
 import type { ReceiptCounts } from "../commanders/in-use";
@@ -538,3 +539,15 @@ export const READY_IN_USE = new Map<string, ReceiptCounts>([
   // key line 2. A pair where both cards carry it cannot show the absence.
   ["about-kotis-sibsig-champion", { inUse: 0, wantedByBrew: 0 }],
 ]);
+
+/**
+ * The three parts of a fit score, with the points and weights §3 draws:
+ * 15/15, 25/25, 33/60. Synergy carries the largest weight and is the one the
+ * fixture leaves SHORT — three full segments would draw a bar with no
+ * remainder and say nothing about what the track's empty tail means.
+ */
+export const FIT_LEGEND: FitLegendSegment[] = [
+  { key: "pool", points: 15, weight: 15 },
+  { key: "roles", points: 25, weight: 25 },
+  { key: "synergy", points: 33, weight: 60 },
+];

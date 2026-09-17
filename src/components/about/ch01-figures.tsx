@@ -19,6 +19,7 @@ import {
   ISSUE_PARSE_ERROR,
   ISSUE_UNMATCHED,
   CONTESTED_ARRIVAL,
+  FIT_LEGEND,
   PRINTING_ROWS,
   REPLACE_ROWS,
   REPLACE_SUMMARY,
@@ -30,6 +31,7 @@ import { COSTS } from "../../lib/about/fixtures";
 import { COST_PIP_SIZE, CostPips } from "../ui/cost-pips";
 import { TwoFacedMark } from "../cards/two-faced-mark";
 import { ContestedCardRow } from "../decks/contested-card-row";
+import { FitLegend } from "../commanders/fit-legend";
 import { ReceiptRow } from "../collection/arrivals-summary";
 import { issueInspectorCopy } from "../../lib/copy/issue-inspector";
 import {
@@ -275,4 +277,18 @@ export function CardDetailFigureBody() {
       </div>
     </div>
   );
+}
+
+/**
+ * The fit key, expanded. `FitLegend` draws the legend row with each part's
+ * points over its weight, the `Hide` trigger, and the three-column panel that
+ * explains Pool, Roles and Synergy — which is the entry's whole subject and
+ * was absent from the figure entirely.
+ *
+ * A client module because `FitLegend` holds `open` in state. `defaultOpen`
+ * exists for this: a specimen is inert, so the collapsed form would show the
+ * trigger and none of the three explanations.
+ */
+export function FitLegendFigureBody() {
+  return <FitLegend segments={FIT_LEGEND} score={73} width="desktop" defaultOpen />;
 }

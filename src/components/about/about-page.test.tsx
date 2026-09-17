@@ -16,6 +16,7 @@ import {
   CONTESTED_ARRIVAL,
   IMPORT_SOURCES,
   FIT_DEGRADED_SCORE,
+  FIT_LEGEND,
   FIT_FULL_SCORE,
   READY_SLICE,
   SET_CELLS,
@@ -412,6 +413,17 @@ describe("the figures", () => {
     expect(plate.textContent).toContain(String(FIT_FULL_SCORE));
     expect(plate.textContent).toContain(String(FIT_DEGRADED_SCORE));
     expect(plate.textContent).toContain(explainedCopy.score.bestInPool);
+
+    // THE KEY, EXPANDED. The entry is about the three parts, and the figure
+    // drew none of their explanations — only bars. Each part is asserted by
+    // its own points over its own weight AND by its body, because the legend
+    // row alone draws the numbers without ever saying what they mean.
+    for (const seg of FIT_LEGEND) {
+      expect(plate.textContent).toContain(`${seg.points}`);
+      expect(plate.textContent).toContain(explainedCopy.key[seg.key].weight(seg.weight));
+    }
+    expect(plate.textContent).toContain(explainedCopy.key.roles.body);
+    expect(plate.textContent).toContain(explainedCopy.key.synergy.body);
   });
 
   it("gives every entry a figure, and none of them an empty frame", () => {

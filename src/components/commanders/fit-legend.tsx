@@ -30,11 +30,18 @@ type FitLegendProps = {
   segments: FitLegendSegment[];
   score: number;
   width: "desktop" | "phone";
+  /**
+   * Start expanded. The route never passes it — a reader opens the key
+   * themselves — and `/about` does, because a specimen is inert by design and
+   * a figure of the collapsed state would show the trigger and none of the
+   * three explanations the entry is about.
+   */
+  defaultOpen?: boolean;
 };
 
-export function FitLegend({ segments, score, width }: FitLegendProps) {
+export function FitLegend({ segments, score, width, defaultOpen = false }: FitLegendProps) {
   const isPhone = width === "phone";
-  const [open, setOpen] = useState(false);
+  const [open, setOpen] = useState(defaultOpen);
   const panelId = useId();
 
   const trigger = (

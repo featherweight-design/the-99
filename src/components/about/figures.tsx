@@ -44,6 +44,7 @@ import { PIP_ORDER, PIP_SRC } from "../../lib/copy/filter-chassis";
 import {
   ImportFigureBody,
   CardDetailFigureBody,
+  FitLegendFigureBody,
   ImportIssuesFigureBody,
   PostImportFigureBody,
 } from "./ch01-figures";
@@ -281,7 +282,13 @@ function FitFigure({ width }: { width: AboutWidth }) {
       {/* The route's own bar, and its own legend. `legend` draws the three
           parts the entry's key lines name — passing them as captions of my own
           would be this page inventing figures the app renders. */}
-      <FitBar fit={FIT_FULL} legend />
+      {/* The route's own bar and its own KEY. `FitLegend` draws each part's
+          points over its weight and, expanded, the three explanations — which
+          is what the entry is about and what the figure had none of. */}
+      <FitBar fit={FIT_FULL} />
+      <div className="mt-[10px]">
+        <FitLegendFigureBody />
+      </div>
 
       {/* THE OTHER DENOMINATOR. §3 draws one shape; key line 1 names two —
           "where synergy could not be measured the score is out of 40, and it
