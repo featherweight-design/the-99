@@ -268,9 +268,19 @@ try {
         return { seps: seps.length, bad };
       });
       note(`  ${dangling.seps} separator(s) drawn`);
-      // A run that found no separators measured nothing — every row here draws
-      // at least Fit plus one other figure.
-      check(`${route} @ ${w.name}: separators were drawn`, dangling.seps > 0, true);
+      // WHETHER A SEPARATOR CAN EXIST HERE IS ROUTE-DEPENDENT, and that is a
+      // fact about the composition rather than about the fixture. Fit is the
+      // plated chip in the band now, so the foot line is the deck count and the
+      // price — and every `/commanders` row is a commander the reader OWNS, so
+      // its price is `absent` and one figure is left with nothing to separate.
+      //
+      // `/discover` lists what they do not own, so it is the lane with two
+      // figures, and a run that finds none there measured nothing.
+      if (route === "/discover") {
+        check(`${route} @ ${w.name}: separators were drawn`, dangling.seps > 0, true);
+      } else {
+        check(`${route} @ ${w.name}: one figure, so no separator`, dangling.seps, 0);
+      }
       check(`${route} @ ${w.name}: no separator ends a line`, dangling.bad, 0);
 
       // ── the row has no control on it ──────────────────────────────────

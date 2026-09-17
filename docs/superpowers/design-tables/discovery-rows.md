@@ -150,6 +150,41 @@ unclamped, and `edhrec_total` sits one below the child-row count on 2 of 3,342 c
 reader owning every support card can read a point or two over. Print it; never assert a bound on
 it.
 
+### Band and foot line — CORRECTED against the R1 canvas, 2026-09-17
+
+Everything in this section was wrong until Hugh read the shipped row against the
+drawing. **The rows here were written from `STATES-commander-row.md` alone**,
+which specifies the slots and their occupants and does not draw them; the
+geometry lives in the canvas's own markup in
+`The 99 - Commander Row (R1) - standalone.html`, and that had never been read.
+Six defects, five of them in this document as much as in the code:
+
+| The row drew | R1 draws |
+|---|---|
+| Fit as a bare `61 /100 FIT` run, first in the foot line | **the Fit chip, plated, in the band's top right** — `background #100D0A` (`--bg`), `1px solid #3A3229` (`--border-strong`), radius 9, padding `7px 11px`, a 27px/600 figure over an 11px `/100 FIT` at `0.1em`. Byte-identical to the retired `rec-card.tsx` chip, which is what INDEX means by "the Fit chip … reused unchanged" |
+| a foot line of three figures, Fit included | **two** — `<b>24,012</b> decks tracked · ● $3.40`. Fit is not in this line |
+| no rule above the foot line | **`border-top: 1px solid #2A241D` (`--border`)**, `padding-top` 10px desktop / 9px phone. The canvas's own reason for folding the price in here rather than plating it: "one line of three figures needs one rule above it, not two" |
+| the deck count at 11.5px `--fg-faint` | **12.5px, `--fg-body`, the figure itself `--fg`/600.** It is the line's first figure now that Fit has left it |
+| the source stamp inline, 6px after the price | **`margin-left: auto`** — 10px, `#6A6152` (`--fg-locked`) |
+| the gap line's mechanic names in the sentence's own `--fg-muted` | **each name `<b>` at `#EDE6D8`/600** (`--fg`). They are what the line is scanned for |
+
+**The `ml-auto` is why the stamp is a node of the line and not of the figure.**
+An `auto` margin resolves against the nearest flex container, and inside
+`PriceFigure` that is the separator wrapper — a 6px nudge that reads as the rule
+not working. It still draws on exactly `priceDrawn`, so it unmounts with the
+figure and never stands alone.
+
+**Erratum — the source label's lettering.** The canvas letters it `Mana Pool`;
+the shipped string is `manapool`. §C names `PriceSlot` unchanged, "its dot, its
+source label, its absent rule", so the lettering is read as a drawing of the
+slot rather than as a new string, and the shipped one is kept. Open for Design.
+
+**The gap sentence has one definition, not two.** Marking the names needs the
+sentence as nodes, and a second template for the string form would be free to
+drift from it. `commanderRowCopy.gap.unplayedParts` is the definition and
+`unplayed` is derived from it by joining, so the string `check:copy-drift` reads
+and the runs the reader sees are the same sentence by construction.
+
 ### Fit bar slot — OVERRIDES this spec, on Hugh's ruling of 2026-09-17
 
 The composition above RETIRED the segmented bar: one Fit number was to replace three
@@ -164,26 +199,38 @@ design ruling being wrong when it was made.
 
 | Property | Mobile (390px) | Desktop (≥640px) | Source |
 |---|---|---|---|
-| Component | `FitBar` | `FitBar` with `legend` | reused unchanged from Commander Details |
-| Placement | below the figures slot, `margin-top 10px`, full measure | in the band, right of the name column, `self-center` | — |
-| Width | the row's measure | `480px`, `shrink-0` | — |
+| Component | `FitBar` with `legend` | same | reused unchanged from Commander Details |
+| Placement | below the figures slot, at both widths | same | — |
+| Width | the block's measure | the block's measure, capped `520px` | — |
+| Offset | `margin-top 2px` | same | — |
 | Legend (`Pool` · `Roles` · `Synergy`) | hidden — `FitBar` draws it `hidden sm:flex` | drawn | unchanged |
 | Segments, synergy measurable | three | three | `fitSegments` |
 | Segments, synergy unmeasurable | **two**, not a zero-width third | two | `fitSynergy: null` |
-| Aria | `aria-hidden` on both mounts | same | the link's own name carries Fit |
+| Aria | `aria-hidden` | same | the link's own name carries Fit |
 
-**`self-center`, not the band's own `items-end`.** Bottom-aligning the bar with the
-commander's name was tried first and read as a caption under the art rather than a
-column beside it; the retired grid drew it centred in the space to the art's right,
-which is where it is again.
+**ONE mount, below the figures, at every width — the figure above, its parts
+beneath it.** This is the order the retired card drew, and reading
+`rec-card.tsx` at `d4ce9def^` is what settled it: the Fit figure sat in a plated
+chip at the band's top right (27px over its `/100 FIT`) and the bar sat in a
+206px column in the data zone below the divider. Two earlier attempts here put
+the bar IN the band — bottom-aligned with the name, then centred beside the art —
+and both were wrong, because they drew the figure's parts beside the art at one
+width and beneath the figure at the other. Hugh named the defect from the design
+canvas on 2026-09-17.
 
-**Phone draws it under the foot line, not in the band.** At 390px the art fills the
-band and there is no right side to use; under the figures also keeps the reading order
-sentence, gap, figure, then the figure's parts.
+**Full measure rather than 206px.** This composition has no data-zone grid to
+give the bar a column, so it takes the block's own width and stops at 520px;
+past that the three segments read as a progress meter for the row rather than as
+a breakdown of one figure.
 
-**`fitSynergy` stays a null rather than a zero.** The component is absent, not empty —
-the same distinction `measurableTotal` carries at 40, and `fitSegments` draws two
-segments for it.
+**`fitSynergy` stays a null rather than a zero.** The component is absent, not
+empty — the same distinction `measurableTotal` carries at 40, and `fitSegments`
+draws two segments for it.
+
+**Still cut, and not restored here:** `RoleChips` (`RAMP 166/10` and its
+siblings) and the synergy line's `own 140 of top 252`. Both are on the canvas
+beside the bar and both are live on Commander Details; only the bar was
+restored. Open for Product.
 
 **Payload cost: 28 KB** across 3,085 rows (`1.008` → `1.036 MB` encoded, 51.8% of the
 2 MB data-cache ceiling). The three components ride the dictionary+table encoding as
