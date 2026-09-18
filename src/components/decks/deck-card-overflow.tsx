@@ -85,14 +85,52 @@ export function DeckCardOverflow({
   // submit the same delete again. `ShelfMenu` holds the same fact for the same
   // reason.
   const [busy, setBusy] = useState(false);
+  /**
+   * Viewport coordinates for the panel, and the reason it is not simply
+   * `absolute`.
+   *
+   * This panel lives inside `data-deck-art`, which is `overflow-hidden` and
+   * `h-[168px]` at the three-column band (roughly 640–1062px, where each cell
+   * falls under the tile's own `@min-[330px]` query). An absolutely positioned
+   * popover inside a clipping ancestor is CUT BY IT — and the menu's last row is
+   * `Delete`, so at that band the reader could see 13px of it and reach none.
+   * Confirmed on screen 2026-09-16. A fixed box escapes every clipping ancestor;
+   * `shelf-menu.tsx` records the same trap and the same fix.
+   *
+   * Null until the panel opens, so the absolute classes below remain the
+   * fallback for the first paint and for a `place()` that finds no trigger.
+   */
+  const [at, setAt] = useState<{ top: number; left: number } | null>(null);
   const buttonRef = useRef<HTMLButtonElement>(null);
   // Every deck card renders one of these, so the id has to be per-instance.
   const panelId = useId();
+
+  /**
+   * CLAMPED TO THE VIEWPORT, the same way `shelf-menu.tsx` clamps: right-aligning
+   * to the trigger alone puts the panel's left edge off-screen where the trigger
+   * sits near the left margin, so it is placed FROM the left and pushed back
+   * inside the margin when there is not room.
+   *
+   * `top` is the trigger's bottom, NOT bottom + 6: the panel keeps its own
+   * `mt-[6px] sm:mt-[4px]`, and a fixed element's margin still offsets it. Adding
+   * the gap here as well would double it, and would flatten the 6/4 step the
+   * shipped panel draws between phone and desktop.
+   */
+  function place() {
+    const box = buttonRef.current?.getBoundingClientRect();
+    if (!box) return;
+    const width = 186;
+    const margin = 8;
+    const wanted = box.right - width;
+    const left = Math.min(Math.max(margin, wanted), window.innerWidth - width - margin);
+    setAt({ top: box.bottom, left: Math.max(margin, left) });
+  }
 
   function handleToggle(e: React.MouseEvent) {
     e.preventDefault();
     e.stopPropagation();
     if (busy) return;
+    if (!open) place();
     setOpen((o) => !o);
     setMode("menu");
   }
@@ -196,6 +234,19 @@ export function DeckCardOverflow({
     deleteRow.current?.focus();
   }, [mode]);
 
+  // A fixed box does not travel with the page, so its coordinates go stale the
+  // moment anything moves. Capture phase, because the scroll that matters may be
+  // a container's rather than the window's.
+  useEffect(() => {
+    if (!open) return;
+    window.addEventListener("scroll", place, true);
+    window.addEventListener("resize", place);
+    return () => {
+      window.removeEventListener("scroll", place, true);
+      window.removeEventListener("resize", place);
+    };
+  });
+
   function handleClose() {
     if (busy) return;
     setOpen(false);
@@ -261,7 +312,8 @@ export function DeckCardOverflow({
       {open && (
         <div
           id={panelId}
-          className="absolute right-0 top-full z-20 mt-[6px] w-[186px] overflow-hidden rounded-[10px] border border-solid border-[color:var(--border-strong)] bg-[color:var(--surface)] shadow-[0_22px_50px_rgba(0,0,0,0.6)] sm:mt-[4px]"
+          style={at ? { position: "fixed", top: at.top, left: at.left } : undefined}
+          className="absolute right-0 top-full z-50 mt-[6px] w-[186px] overflow-hidden rounded-[10px] border border-solid border-[color:var(--border-strong)] bg-[color:var(--surface)] shadow-[0_22px_50px_rgba(0,0,0,0.6)] sm:mt-[4px]"
           // Propagation only: the deck-card Link overlay beneath fires on
           // bubbling, so stopping the bubble is the whole fix. preventDefault
           // here would also cancel the browser default for clicks inside the
