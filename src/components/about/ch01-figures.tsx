@@ -47,7 +47,6 @@ import { BuilderTabs } from "../decks/builder-tabs";
 import { StatusPillBadge } from "../decks/status-pill";
 import { statusBarStyle } from "../../lib/decks/status-style";
 import { colorLabel, deckIdentity } from "../../lib/decks/format";
-import { identityGradient } from "../../lib/collection/gradients";
 import { PIP_SRC } from "../../lib/copy/filter-chassis";
 import type { PipCode } from "../../lib/copy/filter-chassis";
 import { deckImportCopy } from "../../lib/copy/deck-import";
@@ -454,107 +453,79 @@ export function CommanderAvailabilityFigureBody() {
  * key and the synergy rows carried into round 1 of chapter 02.
  */
 export function DeckPageFigureBody() {
-  // ROUTE LEAVES, CANVAS ARRANGEMENT — the pattern `browse` and `sets` already
-  // use, and the one I should have reached for first.
+  // THE RIGHT-HAND COLUMN OF THE REAL BAND, cropped rather than adapted.
   //
-  // `SpineDesktop` is a different COMPOSITION of the same information, laid
-  // out for a route-width row: at About's ~750px its art ballooned and its
-  // actions overlapped. I read that as "the header does not fit" and cut the
-  // figure down to the badge and the tabs. It fits: §3 draws a compact header
-  // at exactly this width, and what did not fit was one component's layout.
+  // The live header is two columns: art on the left, this on the right, with
+  // both actions outside the art. That needs a wider row than About's ~750px
+  // plate, and my first two attempts ADAPTED it — full-width art with the
+  // buttons moved on top, which is where §3 puts them and where the app never
+  // does. A reference page that relocates a control to make it fit is teaching
+  // the wrong page.
   //
-  // So the parts come from the route — `StatusPillBadge`, `statusBarStyle`,
-  // `identityGradient`, `BuilderTabs` — and the arrangement comes from the
-  // drawing.
+  // Hugh's call, 2026-09-18: drop the art and `Card details`, keep the column.
+  // Everything left sits exactly where the deck page puts it relative to
+  // everything else, and the part that could not fit is absent rather than
+  // rearranged. No key line names the art.
   const { deck, counts, status, version } = DECK_SPINE;
   const body = deckBodySize(deck.partner !== null);
   const identity = deckIdentity(deck.commander.colorIdentity, null);
   return (
-    <div className="overflow-hidden rounded-[10px] border border-solid border-[color:var(--border)] bg-[color:var(--bg)]">
-      {/* The art band, with the scrim §3 puts over it so the controls read
-          against any art. No fetch: the identity gradient stands in, as it
-          does on every other figure here. */}
-      <div
-        className="relative h-[96px]"
-        style={{ background: identityGradient(deck.commander.colorIdentity) }}
-      >
-        <span
-          aria-hidden
-          className="absolute inset-0"
-          style={{
-            background:
-              "linear-gradient(to top, rgb(0 0 0 / 0.8) 0%, rgb(0 0 0 / 0.12) 60%, transparent 100%)",
-          }}
-        />
-        <span className="absolute bottom-[11px] left-[11px] flex h-[26px] items-center rounded-[7px] border border-solid border-[color:var(--border-strong)] bg-[rgb(0_0_0/0.55)] px-[10px] text-[11px] text-[color:var(--fg)]">
-          <span aria-hidden className="mr-[6px] font-mono text-[10px]">⛶</span>
-          {deckHeaderCopy.cardDetails}
+    <div className="flex flex-col">
+      <div className="mb-[5px] flex items-center gap-[9px]">
+        <span className="font-display text-[17px] font-bold text-[color:var(--fg)]">
+          {deck.name}
         </span>
-        <div className="absolute right-[13px] bottom-[11px] flex items-center gap-[8px]">
-          <span className="flex h-[28px] items-center rounded-[7px] border border-solid border-[color:var(--border-strong)] bg-[rgb(0_0_0/0.55)] px-[11px] text-[11.5px] text-[color:var(--fg)]">
+        <span aria-hidden className="font-mono text-[11px] text-[color:var(--fg-faint)]">
+          ✎
+        </span>
+      </div>
+
+      <div className="mb-[9px] flex flex-wrap items-center gap-[9px]">
+        <span aria-hidden className="flex gap-[3px]">
+          {identity.map((code) => (
+            <span
+              key={code}
+              className="h-[8px] w-[8px] rounded-[2px]"
+              style={{ background: `center / contain no-repeat url(${PIP_SRC[code as PipCode]})` }}
+            />
+          ))}
+        </span>
+        <span className="font-mono text-[10.5px] text-[color:var(--fg-body)]">
+          {deck.commander.name} · {colorLabel(identity)}
+        </span>
+        <StatusPillBadge
+          status={status}
+          className="flex flex-none items-center rounded-[6px] px-[8px] py-[3px] font-mono text-[10.5px]"
+        />
+        <KeyNumeral n={1} />
+      </div>
+
+      {/* The bar and the two actions share a row, as they do on the page. */}
+      <div className="flex flex-wrap items-center gap-[10px]">
+        <span className="h-[4px] w-[200px] flex-none overflow-hidden rounded-full bg-[color:var(--elevated)]">
+          <span className="block h-full" style={statusBarStyle(status, counts.built, body)} />
+        </span>
+        <span className="font-mono text-[13px] text-[color:var(--fg)]">
+          {counts.built}
+          <span className="text-[color:var(--fg-faint)]"> / {body}</span>
+        </span>
+        <span className="ml-auto flex items-center gap-[8px]">
+          <span className="flex h-[28px] items-center rounded-[7px] border border-solid border-[color:var(--border-strong)] px-[11px] text-[11.5px] text-[color:var(--fg)]">
             {deckImportCopy.update.entryLabel}
           </span>
           <span className="flex h-[28px] items-center rounded-[7px] bg-[color:var(--fg)] px-[12px] text-[11.5px] font-semibold text-[color:var(--bg)]">
             {deckHeaderCopy.export}
           </span>
-        </div>
+        </span>
       </div>
 
-      <div className="px-[14px] pt-[12px] pb-[9px]">
-        {/* The live band puts the NAME on its own line and the commander,
-            identity and status on a second. §3 folds all of it onto one row,
-            which fits but reads as a denser header than the deck page has.
-            Two lines, as the route draws them. */}
-        <div className="mb-[5px] flex items-center gap-[9px]">
-          <span className="font-display text-[17px] font-bold text-[color:var(--fg)]">
-            {deck.name}
-          </span>
-          <span aria-hidden className="font-mono text-[11px] text-[color:var(--fg-faint)]">
-            ✎
-          </span>
-        </div>
-        <div className="mb-[9px] flex flex-wrap items-center gap-[9px]">
-          <span aria-hidden className="flex gap-[3px]">
-            {identity.map((code) => (
-              <span
-                key={code}
-                className="h-[8px] w-[8px] rounded-[2px]"
-                style={{ background: `center / contain no-repeat url(${PIP_SRC[code as PipCode]})` }}
-              />
-            ))}
-          </span>
-          <span className="font-mono text-[10.5px] text-[color:var(--fg-body)]">
-            {deck.commander.name} · {colorLabel(identity)}
-          </span>
-          <StatusPillBadge
-            status={status}
-            className="flex flex-none items-center rounded-[6px] px-[8px] py-[3px] font-mono text-[10.5px]"
-          />
-          <KeyNumeral n={1} />
-        </div>
-
-        <div className="flex items-center gap-[10px]">
-          <span className="h-[4px] w-[200px] flex-none overflow-hidden rounded-full bg-[color:var(--elevated)]">
-            <span className="block h-full" style={statusBarStyle(status, counts.built, body)} />
-          </span>
-          <span className="font-mono text-[13px] text-[color:var(--fg)]">
-            {counts.built}
-            <span className="text-[color:var(--fg-faint)]"> / {body}</span>
-          </span>
-        </div>
-      </div>
-
-      {/* The stamp is its own row under the band on the live page, divided
-          from it, rather than riding the bar's right edge as §3 draws it. */}
-      <div className="border-t border-solid border-[color:var(--border)] px-[14px] py-[8px]">
+      <div className="mt-[10px] border-t border-solid border-[color:var(--border)] pt-[8px]">
         <span className="font-mono text-[10px] text-[color:var(--fg-faint)]">{version}</span>
       </div>
 
-      <div className="px-[14px] pt-[10px] pb-[12px]">
-        <div className="flex items-center gap-[9px]">
-          <BuilderTabs tabs={DECK_TABS} view="deck" onViewChange={() => {}} />
-          <KeyNumeral n={2} />
-        </div>
+      <div className="mt-[10px] flex items-center gap-[9px]">
+        <BuilderTabs tabs={DECK_TABS} view="deck" onViewChange={() => {}} />
+        <KeyNumeral n={2} />
       </div>
     </div>
   );
