@@ -41,6 +41,18 @@ Highest-value findings on this repository have been:
   `${a.fk} = ${b.id}` becomes `where "fk" = "id"` and silently returns 0. Alias
   the inner table and qualify both sides.
 
+## A pre-open pass has already run
+
+A cold-eyes review pass runs on this repository before a PR opens, so a share of
+the mechanical defects is fixed before you see the diff. Over 16 PRs it fixed 81
+findings pre-open, 28 of which would otherwise have shipped past the author's own
+tests and probes.
+
+It is measurably unable to reach judgment calls. Three theme labels wrongly
+allowlisted as mechanics, an RSC exclusion that skipped every client navigation,
+and a double-decoded redirect parameter were all found by review and not by it.
+**That half is what your round is for.**
+
 ## Findings already settled
 
 PR bodies may carry a `## Settled` section recording a finding that was raised,
