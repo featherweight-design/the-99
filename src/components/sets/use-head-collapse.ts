@@ -27,20 +27,26 @@ function prefersReducedMotion(): boolean {
 }
 
 /**
- * How far past the reopen point the reader has to be before the head collapses. The band is
- * what stops a head one pixel either side of a single threshold flipping on every frame of a
- * slow scroll; 80 is the width the fixed 40/120 pair had.
+ * There is no hysteresis CONSTANT any more, and this note is why.
  *
- * Wider at `md`, and for a reason the phone does not have: a thumb scrolls continuously, a
- * wheel QUANTISES. A notch is ~100–120px in every major engine, so an 80px band can be
- * crossed in both directions by two consecutive notches — the flutter the band exists to
- * prevent, arriving on an input the phone cannot produce. 120 is one notch plus headroom,
- * and the failure mode of a band that is too wide is benign: the head stays open slightly
- * longer.
+ * The band is what stops a head one pixel either side of a single threshold flipping on
+ * every frame of a slow scroll, and the two thresholds already provide one: the head
+ * reopens where the reserve would start showing (`gridTop − bar`) and collapses where the
+ * open head has entirely left (`gridTop`). That is a band of exactly the bar's own height —
+ * ~57 at `md`, ~75 on the phone — and it needs no constant on top.
+ *
+ * A constant on top is what made the addendum's 120 visible as a fault. Once a bar has been
+ * measured, `reopenAt + 120` put the collapse 63px BELOW where the open head leaves, so on
+ * every collapse after the first of a visit there was a band with no head on screen at all
+ * and then the bar snapped in. On the phone the same arithmetic reads 80 − ~75 = ~5px,
+ * which is why it was never seen there. The pinned desktop head hid it too, until the head
+ * stopped being pinned while open.
+ *
+ * The wheel case the 120 was retuned for still holds without it: a notch is ~100–120px, so
+ * one notch crosses both thresholds and lands the reader in a state they scrolled to. That
+ * is a gesture answered, not flutter — flutter is a head changing state while the reader is
+ * still, which two thresholds a bar's height apart cannot produce.
  */
-function hysteresisFor(isDesktop: boolean): number {
-  return isDesktop ? 120 : 80;
-}
 
 /**
  * The collapse and the restore, in ms. §31 asks for two heights, not for a head that tracks
@@ -360,9 +366,11 @@ export function useHeadCollapse({
     // when the open head has scrolled entirely past, which is within a few pixels of where
     // the measured rule puts it once a bar exists. Only an engine that lays nothing out
     // still falls back to 120.
-    const collapseAt = bar === null || bar <= 0
-      ? (measured ? gridTop : 120)
-      : reopenAt + hysteresisFor(onDesktop);
+    // The open head has entirely left. The same expression whether or not a bar has been
+    // measured, which is the other half of what was wrong here: the first collapse of a
+    // visit ran on `gridTop` and every later one on `reopenAt + band`, so one visit had two
+    // different collapse points.
+    const collapseAt = measured ? gridTop : 120;
     // Focus inside a member the collapse HIDES holds the head open, because hiding it takes
     // the keyboard with it — the cost strip's Send, its disclosure, a chip's ×. Read at
     // decision time rather than through a `focusin`/`focusout` pair: every other input to

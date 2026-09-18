@@ -2495,6 +2495,34 @@ describe("SetGridView — the phone head collapses past a threshold", () => {
       .toBe(screen.getByRole("searchbox", { name: /Search cards/ }));
   });
 
+  // #623's rule, now at every width. A head pinned while OPEN holds itself over the grid
+  // for the whole band below the threshold — the reader scrolls a screen of cards under a
+  // header that never moves, and then it snaps. `md:sticky` exempted desktop from that
+  // while desktop could not collapse; once it could, the exemption was the same defect at a
+  // second width.
+  //
+  // Whether a pinned box actually holds is a layout question and `probe:sets` answers it at
+  // 390, 768, 1180 and 1440. What is asserted here is the rule the class expresses: no
+  // width-qualified `sticky` survives, so there is one rule rather than two.
+  it("pins the head only while it is collapsed, at every width", () => {
+    for (const wide of [true, false]) {
+      stubDesktop(wide);
+      const { container, unmount } = view([p("1"), p("2")], []);
+      const head = container.querySelector("[data-set-head]") as HTMLElement;
+      // No `sticky` in any form while open — `md:sticky` included, which is what the second
+      // clause below would say if `/sticky/` did not already match it as a substring. The
+      // classes are read as WORDS for that reason.
+      const classes = () => head.className.split(/\s+/).filter(Boolean);
+      expect(classes()).not.toContain("sticky");
+      expect(classes()).not.toContain("md:sticky");
+      scrollTo(2000);
+      expect(classes()).toContain("sticky");
+      expect(classes()).not.toContain("md:sticky");
+      unmount();
+      scrollTo(0);
+    }
+  });
+
   // The reserve is a SIBLING, not a wrapper. A sticky element sticks only within its
   // containing block, so a wrapper the height of the open head pushed the head out of the
   // viewport past that height — the feature stopped existing where it was meant to start.
@@ -2703,16 +2731,15 @@ describe("SetGridView — the phone head collapses past a threshold", () => {
     expect(prefix?.querySelector("h1")?.textContent).toBe("Duskmourn");
   });
 
-  // Addendum 2 §3: a wheel notch is ~100–120px, so an 80px band can be crossed in both
-  // directions by two consecutive notches. The phone keeps 80 because a thumb is
-  // continuous. Read against the fallback thresholds — no bar has been drawn yet, so the
-  // reopen point is 40 and the collapse point is the band past it.
-  it("takes a 120px band at desktop and keeps 80 on the phone", () => {
-    // The band is only read once a bar has been MEASURED — before that the first collapse
-    // runs on the grid's own top, and jsdom reports every box at 0 so it never gets there.
-    // Stubbed the way the crossing test stubs it: a 200px open head, a 52px bar, and a
-    // reserve whose bottom is the grid's top. Reopen is then 200 - 52 = 148, and the band
-    // is what decides the offset it collapses at again.
+  // The band between the two thresholds is the BAR's own height rather than a constant: the
+  // head reopens where the reserve would start showing (`gridTop − bar`) and collapses where
+  // the open head has entirely left (`gridTop`). Both come from measurement, so this needs a
+  // stub — jsdom reports every box at 0 and the fallback pair would answer instead.
+  //
+  // What the retired constant did, and why it went: `reopenAt + 120` put the desktop
+  // collapse 63px past the point the open head leaves, so every collapse after the first of
+  // a visit left a band with no head on screen at all and then snapped the bar in.
+  it("collapses where the open head leaves and reopens where the reserve shows", () => {
     const rect = HTMLElement.prototype.getBoundingClientRect;
     HTMLElement.prototype.getBoundingClientRect = function boxed(this: HTMLElement) {
       if (this.hasAttribute("data-set-head")) {
@@ -2725,19 +2752,27 @@ describe("SetGridView — the phone head collapses past a threshold", () => {
       return rect.call(this);
     };
     try {
-      for (const [wide, band] of [[true, 120], [false, 80]] as const) {
+      for (const wide of [true, false]) {
         stubDesktop(wide);
         const { container, unmount } = view([p("1"), p("2")], []);
-        scrollTo(400);
+        // The grid starts at 200 in this stub, so that is where the open head has gone.
+        scrollTo(199);
+        expect(isShy(container)).toBe(false);
+        scrollTo(201);
         expect(isShy(container)).toBe(true);
-        // Back above the reserve, which reopens and leaves the bar's height recorded.
-        scrollTo(100);
+        // And on the way back up it holds until the reserve would show, at 200 − 52.
+        scrollTo(149);
+        expect(isShy(container)).toBe(true);
+        scrollTo(147);
         expect(isShy(container)).toBe(false);
-        scrollTo(148 + band - 2);
-        expect(isShy(container)).toBe(false);
-        scrollTo(148 + band + 2);
+        // THE SECOND COLLAPSE, which is the only one the retired constant ever touched: the
+        // first of a visit has no bar to measure and ran on `gridTop` either way. With
+        // `reopenAt + 120` this offset left the head open to 268 — 68px of grid with no head
+        // on screen at all — and every check above passes over it.
+        scrollTo(201);
         expect(isShy(container)).toBe(true);
         unmount();
+        scrollTo(0);
       }
     } finally {
       HTMLElement.prototype.getBoundingClientRect = rect;

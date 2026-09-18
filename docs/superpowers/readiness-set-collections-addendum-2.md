@@ -105,6 +105,17 @@ own §0 says the R3 files are untouched, so honouring that claim is the whole fi
    the failure mode of a too-wide band is that the head stays open slightly longer, and the
    probe's desktop pass exercises it either way.
 
+   > **Erratum, 2026-09-18 — SUPERSEDED; there is no hysteresis constant.** "The head stays
+   > open slightly longer" was the wrong failure mode. With the open head no longer pinned,
+   > `reopenAt + 120` put the desktop collapse 63px BELOW the offset where that head leaves,
+   > so every collapse after the first of a visit crossed a strip with neither form on screen
+   > and then the bar snapped in. The two thresholds are already a band of the bar's own
+   > height — ~57 at `md`, ~75 on the phone — and `collapseAt` is now `gridTop` at both
+   > widths. That also closes a second fault this gap could not see: the first collapse of a
+   > visit ran on `gridTop` and every later one on `reopenAt + band`, so one visit had two
+   > collapse points. The wheel case still holds — one notch crosses both thresholds and
+   > lands the reader in a state they scrolled to, which is a gesture answered, not flutter.
+
 ## The two tests that invert
 
 - `set-grid-view.test.tsx:2538` — "never collapses at desktop, however far the reader scrolls"
@@ -139,6 +150,21 @@ own §0 says the R3 files are untouched, so honouring that claim is the whole fi
    figure — but §2's table is 24px optimistic about the saving, which is 81% rather than 80%.
 2. **The rarity-panel gate is not shipped.** See gap 2 above.
 3. **The crossing's settle needs suppressing too.** See the 2169 rewrite above.
+4. **The desktop head is no longer pinned while it is OPEN** — reported by Hugh against the
+   shipped build, 2026-09-18, and fixed in a follow-up.
+
+   §0 rules that "the desktop head at rest is the shipped desktop head, unchanged", and the
+   container it names is `md:sticky top-0 z-[2]`. That was true of a head with one height.
+   With two, pinning the open one reproduces the phone's own #623 defect at a second width:
+   ~300px of header held over the grid for the whole 120px band past the threshold, so the
+   reader scrolls most of a screen of cards under a header that never moves and then it
+   snaps to the bar. Measured at `top 0px` while the cards moved under it.
+
+   #623 settled the rule for the phone — sticky only while collapsed — and deliberately left
+   `md:sticky` standing, because desktop had no second state to arrive at. Addendum 2 gave it
+   one and the exemption stopped being an exemption. **The head is now pinned only while
+   collapsed at every width**, and the open head scrolls away like any other block. Nothing
+   about either form changes; what changes is which of them is held.
 
 ## About entry
 

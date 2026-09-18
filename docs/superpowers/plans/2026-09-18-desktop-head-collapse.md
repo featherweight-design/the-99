@@ -21,9 +21,11 @@ filters, and the markup without the hook is a form nothing reaches.
   figure nor re-measure. Reopening is the one action that makes the head measurable again. Its
   comment is rewritten — it no longer says desktop never collapses; it says a crossing is the one
   event that invalidates every measurement this hook holds.
-- `HYSTERESIS_PX` becomes `hysteresisFor(isDesktop)`: 80 phone, 120 at `md`. A wheel notch is
-  ~100–120px in every major engine, so an 80px band can be crossed in both directions by two
-  consecutive notches.
+- ~~`HYSTERESIS_PX` becomes `hysteresisFor(isDesktop)`: 80 phone, 120 at `md`~~ — **superseded
+  in the follow-up.** There is no hysteresis constant: `collapseAt` is `gridTop` at both
+  widths, so the band between the thresholds is the bar's own height. The 120 put the desktop
+  collapse 63px below where the open head leaves, which was invisible while that head was
+  pinned. See the verdict's gap 5 erratum.
 - ~~New parameter `panelOpen`~~ — withdrawn, see Task 2.
 - **New: the crossing's SETTLE must not animate either.** Not in the handoff, and found by the
   test that inverts. With the reopen kept, a crossing made while shy reopens the head and the
@@ -93,7 +95,10 @@ New, one per claim:
 - No collapse while focus is inside a `data-set-shy-hides` member, and the delta gate still holds
   at `md`. ~~No collapse while the rarity panel is open~~ — withdrawn with the gate in Task 2; the
   probe asserts the panel's own scroll-dismissal instead.
-- The band is 120 at `md` and 80 on the phone: collapse at `reopenAt + band`, asserted at both.
+- ~~The band is 120 at `md` and 80 on the phone: collapse at `reopenAt + band`~~ — superseded.
+  The head collapses where the open head leaves (`gridTop`) and reopens where the reserve would
+  show (`gridTop − bar`), asserted at both widths, with a SECOND collapse in the same case —
+  the only place the retired constant ever differed.
 - The result line stays `role="status"` and `sr-only` while shy at `md`.
 
 ## Task 5 — `scripts/probe-sets.mjs`: the desktop pass
