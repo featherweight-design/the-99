@@ -23,18 +23,93 @@ on:
         type: string
         default: ''
 
+# WORKFLOW SCOPE, NOT JOB SCOPE, and one group for both targets. Two separate
+# reasons land on the same line.
+#
+# The group is shared because the binding constraint here is EDHREC — one host,
+# however many of our databases are involved. That is where this diverges from
+# catalog and price refresh, which group per target because the thing THEY must
+# not collide on is the database, and the two are independent.
+#
+# The scope is the workflow because a `concurrency` block on a matrix job makes
+# each LEG its own queue item. With the legs serialized, one runs while the other
+# is pending — and GitHub keeps a single pending entry per group, so a newly
+# started run can displace that pending leg even under `cancel-in-progress:
+# false`. The first run would then finish without its production leg and still
+# chain into production prose off an index that was never rebuilt. Queuing the
+# whole run as one unit is what makes `max-parallel: 1` mean what it says.
 concurrency:
-  group: commander-index-${{ github.event.inputs.target || 'production' }}
+  group: commander-index
   cancel-in-progress: false
 
 permissions:
   contents: read
 
 jobs:
-  index:
+  # Resolves which databases this run indexes. A scheduled run fans out over both
+  # environments; a manual dispatch indexes only the one it names. This has to be
+  # a separate job because a matrix can only be built from a `needs` output — the
+  # alternative, an expression on `environment`, is what this workflow shipped
+  # with, and it sent every scheduled run to production alone. Catalog refresh hit
+  # it first and price refresh second (#691); this is the third and last.
+  plan:
     # Kill switch for the schedule; a manual dispatch always runs. Set the
     # COMMANDER_INDEX_ENABLED repository variable to 'true' or it never fires.
     if: vars.COMMANDER_INDEX_ENABLED == 'true' || github.event_name == 'workflow_dispatch'
+    runs-on: ubuntu-latest
+    outputs:
+      targets: ${{ steps.pick.outputs.targets }}
+    steps:
+      - id: pick
+        shell: bash
+        env:
+          # Read through the environment rather than interpolating into the script
+          # body, so the input cannot inject shell. The `case` re-validates what
+          # the `choice` type already constrains, because `github.event.inputs` is
+          # unset — not defaulted — off dispatch.
+          TARGET: ${{ github.event.inputs.target }}
+        run: |
+          case "$TARGET" in
+            staging|production) targets="[\"$TARGET\"]" ;;
+            '') targets='["staging","production"]' ;;
+            *) echo "Unrecognised target: $TARGET" >&2; exit 1 ;;
+          esac
+          echo "targets=$targets" >> "$GITHUB_OUTPUT"
+          echo "Indexing: $targets"
+
+  index:
+    needs: plan
+    strategy:
+      matrix:
+        target: ${{ fromJSON(needs.plan.outputs.targets) }}
+      # The two environments are independent databases. A staging build that fails
+      # must not cancel the production one, which is the environment the app
+      # actually serves.
+      fail-fast: false
+      # SERIAL, and this is the one place the catalog/price precedent does NOT
+      # carry. Those legs each pull a single bulk file, so fanning them out adds
+      # one concurrent download. This job makes ~3,000 EDHREC requests spaced by
+      # `DEFAULT_DELAY_MS` (250ms, `src/lib/edhrec/seed-index.ts`), and that delay
+      # is politeness to a host that owes us nothing — two concurrent legs would
+      # silently double the outbound rate to ~8 req/s. One at a time costs wall
+      # clock, which the 180-minute timeout has in hand, and costs EDHREC nothing.
+      # This orders the legs within ONE run; the workflow-level concurrency group
+      # at the top of the file is what stops two runs overlapping.
+      max-parallel: 1
+    # A FAILED STAGING LEG MUST NOT SPEAK FOR THE RUN. `commander-prose.yml` chains
+    # on `workflow_run.conclusion`, which is the AGGREGATE over both legs — so
+    # without this, a staging leg that errors (EDHREC 5xx, a rotated staging
+    # secret) makes the run's conclusion `failure` and production's sentences are
+    # never regenerated that month, even though production's own index succeeded.
+    # That is the same rule as `fail-fast: false` above, extended to the signal
+    # the run emits rather than only to the legs it cancels.
+    #
+    # SCHEDULED RUNS ONLY. On a manual dispatch naming `staging`, that leg is the
+    # whole run and the operator is asking about staging specifically — reporting
+    # green over a failed index would hide the very thing they dispatched to find
+    # out. The exception exists to protect production's prose chain, and a
+    # dispatch has no chain to protect.
+    continue-on-error: ${{ matrix.target == 'staging' && github.event_name == 'schedule' }}
     runs-on: ubuntu-latest
     # Serial-by-design: the wall clock is dominated by the politeness delay, not
     # by compute. Leave headroom rather than trimming to the expected runtime —
@@ -45,7 +120,7 @@ jobs:
     # pair: this writes to the same database with the same secret, and a second
     # environment holding an identical value is a second thing to keep in sync
     # for no benefit.
-    environment: catalog-${{ github.event.inputs.target || 'production' }}
+    environment: catalog-${{ matrix.target }}
     defaults:
       run:
         shell: bash
@@ -66,7 +141,7 @@ jobs:
           {
             echo "## Commander index"
             echo ""
-            echo "- Target: \`catalog-${{ github.event.inputs.target || 'production' }}\`"
+            echo "- Target: \`catalog-${{ matrix.target }}\`"
             echo ""
           } >> "$GITHUB_STEP_SUMMARY"
           pnpm --silent db:build:index | tee -a "$GITHUB_STEP_SUMMARY"
