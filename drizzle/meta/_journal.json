@@ -260,6 +260,13 @@
       "when": 1789575690703,
       "tag": "0036_gifted_hobgoblin",
       "breakpoints": true
+    },
+    {
+      "idx": 37,
+      "version": "7",
+      "when": 1789742306172,
+      "tag": "0037_nifty_ikaris",
+      "breakpoints": true
     }
   ]
 }

@@ -3,6 +3,7 @@ import { db } from "../../db";
 import { cards } from "../../db/schema";
 import { fetchBulkIndex, streamBulkEntries } from "./bulk";
 import { toCardRow, type CardRow } from "./transform";
+import { stampCatalogRefresh } from "../cache/stamp-catalog";
 
 // The bulk file is gzipped JSONL; stream-parse it so the seed never materializes the
 // whole payload.
@@ -44,5 +45,8 @@ export async function seedCards(): Promise<{ upserted: number; skipped: number }
     if (batch.length >= 500) await flush();
   }
   await flush();
+  // Every cached list payload carries card names, art and colour identities, so this run
+  // changed all of them. The stamp is what retires them; see `catalog-generation.ts`.
+  await stampCatalogRefresh();
   return { upserted, skipped };
 }

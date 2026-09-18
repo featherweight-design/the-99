@@ -882,6 +882,30 @@ export const commanderSupportCards = pgTable("commander_support_cards", {
  * "never seen", which is every account at launch. A row is written on first
  * dismiss; its absence reads as 0 rather than as an error.
  */
+/**
+ * When the card catalog last changed, as one row.
+ *
+ * Every cached list payload is derived from `cards`, `printings` and `sets` — the browse
+ * list carries names and art, the set grid carries a checklist, the rankings carry colour
+ * identities — and the catalog refresh writes all three. It cannot invalidate those
+ * payloads the way a reader's own write does: `revalidateUserLists` needs a user id, and a
+ * weekly job has no list of readers to fan out over. Before this, a refresh's result was up
+ * to an hour late for anyone holding a warm entry, which on 2026-09-16 meant a repaired
+ * database and a page still drawing the damage (#705).
+ *
+ * So the generation goes in the cache KEY instead: one row, stamped by each ingest, read
+ * through a short-lived cache of its own, and an entry filed under the previous value is
+ * never asked for again. A single row rather than a sequence because nothing needs to know
+ * how many refreshes there have been — only whether this is the same catalog the entry was
+ * built from.
+ */
+export const catalogRefreshes = pgTable("catalog_refreshes", {
+  // One row, forever. The check constraint is the whole schema: a second row would make
+  // "the current generation" a question with two answers.
+  id: integer("id").primaryKey(),
+  refreshedAt: timestamp("refreshed_at").notNull().defaultNow(),
+});
+
 export const userPrefs = pgTable("user_prefs", {
   userId: text("user_id").primaryKey(),
   aboutVersionSeen: integer("about_version_seen").notNull().default(0),
