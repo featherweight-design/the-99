@@ -21,6 +21,7 @@ const synergyCard = (id: string): SynergyCard => ({
   facet: "creature",
   inclusionPct: null,
   synergyPts: null,
+  imageUri: null,
   owned: true,
   committedTo: null, availability: null, price: null,
   manaCost: null,

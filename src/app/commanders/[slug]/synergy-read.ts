@@ -52,6 +52,10 @@ export async function readSynergyCards(
       name: cards.name,
       typeLine: cards.typeLine,
       manaCost: cards.manaCost,
+      // For the hover preview on the deck's top-off list. One more column on a
+      // join that is already here — no second query, no second join — against
+      // about 94 characters a row.
+      imageUri: cards.imageUri,
       // A card both commanders of a pair support has one support row each, so
       // the figures are aggregated rather than grouped by: a pair's advice is
       // the better of the two, exactly as `mergeEdhrecData` merges the live
@@ -72,6 +76,7 @@ export async function readSynergyCards(
       cards.name,
       cards.typeLine,
       cards.manaCost,
+      cards.imageUri,
       ownedTotals.qty,
     );
 
@@ -86,6 +91,9 @@ export async function readSynergyCards(
     // Nullable in the catalog — a land has no cost — and drawn only by the
     // top-off list, which renders an empty track rather than a placeholder.
     manaCost: r.manaCost,
+    // Nullable in the catalog, and the hover preview treats null as "no
+    // preview" rather than drawing an empty frame — `usePreviewRow` no-ops on it.
+    imageUri: r.imageUri,
     facet: cardFacet(r.typeLine),
     // `commander_support_cards.inclusion` is already a percentage — parse.ts
     // stores EDHREC's own `inclusion` field, or derives one as

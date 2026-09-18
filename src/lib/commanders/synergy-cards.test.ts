@@ -13,6 +13,7 @@ function card(over: Partial<SynergyCard> & { oracleId: string }): SynergyCard {
     facet: "creature",
     inclusionPct: null,
     synergyPts: null,
+    imageUri: null,
     owned: false,
     manaCost: null,
     committedTo: null, availability: null, price: null,

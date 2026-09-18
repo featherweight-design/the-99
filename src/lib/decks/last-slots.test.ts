@@ -3,7 +3,7 @@ import { listLastSlotsCandidates, poolEmptiedByNegativeCut } from "./last-slots"
 import type { SynergyCard } from "../commanders/synergy-cards";
 
 function card(id: string, synergyPts: number, owned: boolean): SynergyCard {
-  return { oracleId: id, name: id, typeLine: "Instant", facet: "spell", inclusionPct: null, synergyPts, owned, committedTo: null, availability: null, price: null, manaCost: null };
+  return { oracleId: id, name: id, typeLine: "Instant", facet: "spell", inclusionPct: null, imageUri: null, synergyPts, owned, committedTo: null, availability: null, price: null, manaCost: null };
 }
 
 const ranked = [
@@ -40,7 +40,7 @@ describe("the negative tail", () => {
     typeLine: "Instant",
     facet: "spell",
     inclusionPct: 40,
-    synergyPts,
+    imageUri: null, synergyPts,
     owned: true,
     committedTo: null,
     manaCost: null,
@@ -84,7 +84,7 @@ describe("the negative tail", () => {
 describe("why the pool is empty", () => {
   const c = (id: string, synergyPts: number | null): SynergyCard => ({
     oracleId: id, name: id, typeLine: "Instant", facet: "spell", inclusionPct: 40,
-    synergyPts, owned: true, committedTo: null, manaCost: null, availability: null, price: null,
+    synergyPts, imageUri: null, owned: true, committedTo: null, manaCost: null, availability: null, price: null,
   });
 
   it("says so when every offerable card argues against itself", () => {

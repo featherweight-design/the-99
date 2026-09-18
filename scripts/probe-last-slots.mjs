@@ -1,6 +1,6 @@
 // The Last 31 list, measured in a real browser at 1300x900 and 390x844.
 //
-// Five rulings here are facts about laid-out geometry or about a pointer, and
+// Six rulings here are facts about laid-out geometry or about a pointer, and
 // jsdom has neither.
 //
 // THE DESKTOP LIST IS BOUNDED. The handoff's long-list note refuses an inner
@@ -313,6 +313,34 @@ async function run() {
             `${unticked} then ${hovered}`,
           );
         }
+
+        // THE CARD ITSELF APPEARS UNDER THE POINTER. The row borrows the
+        // decklist's preview, which paints a 252x352 box after a 240ms open
+        // delay — a delay is not a transition, so nothing here waits on motion,
+        // but the box does not exist before it elapses. Read as a PAINTED
+        // background image, because the markup is identical whether or not the
+        // catalog had a picture for the card.
+        const preview = await page.evaluate(async () => {
+          const box = [...document.querySelectorAll('main [data-top-off-rows] input[type="checkbox"]')]
+            .find((b) => !b.checked);
+          const row = box?.closest("div[class*=rounded-]");
+          if (!row) return null;
+          row.dispatchEvent(new MouseEvent("mouseover", { bubbles: true }));
+          row.dispatchEvent(new MouseEvent("mouseenter", { bubbles: true }));
+          await new Promise((r) => setTimeout(r, 700));
+          const pane = [...document.querySelectorAll("div")]
+            .map((d) => ({ d, r: d.getBoundingClientRect() }))
+            .find(({ d, r }) => Math.round(r.width) === 252 && Math.round(r.height) === 352
+              && /url\(/.test(getComputedStyle(d).backgroundImage));
+          return pane ? { top: pane.r.top, left: pane.r.left, w: pane.r.width } : null;
+        });
+        report(
+          `${width}px · the card appears under the pointer`,
+          preview !== null,
+          preview === null
+            ? "no 252x352 box carrying a painted image — NOT a pass"
+            : `drawn at ${Math.round(preview.left)},${Math.round(preview.top)}`,
+        );
 
         // The name opens the card, and does NOT tick the row.
         const before = await page.evaluate(() =>

@@ -126,6 +126,7 @@ describe("Top-off commit bar — page-foot reservation", () => {
       facet: "spell",
       inclusionPct: 40,
       synergyPts: 20,
+      imageUri: null,
       owned: true,
       committedTo: null,
       manaCost: null,

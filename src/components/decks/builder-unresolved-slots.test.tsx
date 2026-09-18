@@ -86,6 +86,7 @@ const candidates: TopOffCandidate[] = Array.from({ length: 12 }, (_, i) => ({
   facet: "spell",
   inclusionPct: 40,
   synergyPts: 20,
+  imageUri: null,
   owned: false,
   committedTo: null,
   manaCost: null,

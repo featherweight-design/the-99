@@ -15,7 +15,7 @@
 import { type Ref, useEffect, useId, useRef, useState } from "react";
 import { synergyCopy } from "../../lib/copy/synergy-discovery";
 import { topOffCopy } from "../../lib/copy/top-off";
-import type { TopOffCandidate } from "../../lib/decks/last-slots";
+import { canSeed, type TopOffCandidate } from "../../lib/decks/last-slots";
 import { useIsDesktop } from "../ui/use-is-desktop";
 import { TopOffList } from "./top-off-list";
 import { useTopOffDraft } from "./use-top-off-draft";
@@ -168,22 +168,10 @@ function LastSlotsStripInner({
 
   const ownedIds = candidates.filter((c) => c.owned).map((c) => c.oracleId);
 
-  // What the SEED may reach for, which is narrower than what the player may tick.
-  //
-  // A card owned with every copy sleeved in another deck is offered, and rightly
-  // — the player may still decide to reclaim one. But arriving pre-ticked, it is
-  // indistinguishable from a card they can sleeve tonight, and committing it
-  // costs either a purchase or a card out of another deck. That is the same act
-  // the list draws a buy tag for, made silently on the player's behalf.
-  //
-  // `free > 0` is the test, from the same read the row's own marker draws from.
-  // A null `availability` is no row — an unowned card, or a read that could not
-  // reach — and reads as free everywhere else in the app (`availability.ts`), so
-  // an owned card with no reading seeds as it always has: the degraded case must
-  // not silently empty the promise the strip makes.
-  const seedableIds = candidates
-    .filter((c) => c.owned && (c.availability === null || c.availability.free > 0))
-    .map((c) => c.oracleId);
+  // What the SEED may reach for, which is narrower than what the player may
+  // tick. The rule is `canSeed`, shared with the list's bulk control so the two
+  // cannot drift — they already did once, in the round that narrowed this.
+  const seedableIds = candidates.filter(canSeed).map((c) => c.oracleId);
 
   const closeRef = useRef<HTMLButtonElement>(null);
   const exhaustedRef = useRef<HTMLDivElement>(null);

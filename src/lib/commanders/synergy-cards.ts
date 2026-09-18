@@ -19,6 +19,10 @@ export type SynergyCard = {
   facet: CardFacet;
   inclusionPct: number | null;
   synergyPts: number | null;
+  /** The card's own picture, for the top-off list's hover preview. Nullable in
+   *  the catalog; the preview treats null as "no preview" rather than drawing an
+   *  empty frame. */
+  imageUri: string | null;
   owned: boolean;
   /**
    * The deck this card already sits in, or null.

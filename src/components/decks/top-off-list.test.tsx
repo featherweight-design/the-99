@@ -1,4 +1,4 @@
-import { act, render, screen } from "@testing-library/react";
+import { act, fireEvent, render, screen } from "@testing-library/react";
 import { useState } from "react";
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import { topOffCopy } from "../../lib/copy/top-off";
@@ -19,6 +19,7 @@ function candidate(id: string, owned: boolean): TopOffCandidate {
     facet: "spell",
     inclusionPct: 40,
     synergyPts: 20,
+    imageUri: null,
     owned,
     committedTo: null,
     manaCost: null,
@@ -571,6 +572,45 @@ describe("TopOffList", () => {
   });
 });
 
+describe("TopOffList — the bulk tick", () => {
+  const claimed = (id: string): TopOffCandidate => ({
+    ...candidate(id, true),
+    availability: { owned: 1, hard: 1, soft: 0, free: 0, claims: [] },
+  });
+
+  it("reaches for what the seed reaches for, and says so", () => {
+    // The two drifted once already: the seed was narrowed to cards with a free
+    // copy while this control kept ticking every owned card, which left a
+    // one-click path to the exact mechanic the seed had stopped doing.
+    render(<Harness candidates={[claimed("held-1"), candidate("free-1", true)]} />);
+
+    const bulk = screen.getByRole("button", { name: topOffCopy.list.tickOwnedAria("1") });
+    expect(bulk).toHaveTextContent(topOffCopy.list.tickOwned("1"));
+
+    fireEvent.click(bulk);
+    const boxes = screen.getAllByRole("checkbox");
+    const byName = (name: string) =>
+      boxes.find((b) => (b.getAttribute("aria-label") ?? "").includes(name));
+    expect(byName("free-1")).toBeChecked();
+    expect(byName("held-1")).not.toBeChecked();
+  });
+
+  it("does not bring back a row the player set aside", () => {
+    // A bulk control that resurrected a decline would undo a choice with a press
+    // meant to save presses.
+    render(
+      <Harness
+        candidates={[candidate("free-1", true), candidate("free-2", true)]}
+        initialDeclined={["free-2"]}
+      />,
+    );
+
+    fireEvent.click(screen.getByRole("button", { name: topOffCopy.list.tickOwnedAria("1") }));
+    const boxes = screen.getAllByRole("checkbox");
+    expect(boxes.filter((b) => (b as HTMLInputElement).checked)).toHaveLength(1);
+  });
+});
+
 describe("TopOffList — the desktop row", () => {
   // Desktop alone. The phone row is one tap target on purpose — the addendum's
   // own rule, and what makes 38 of them tickable one-handed — so neither the
@@ -583,6 +623,18 @@ describe("TopOffList — the desktop row", () => {
 
   /** The row's own element, from the checkbox that names it. */
   const rowOf = (name: string) => rowBox(name).closest("li") ?? rowBox(name).parentElement;
+
+  it("draws no underline under the card name", () => {
+    // Nothing else in this app underlines a `CardDetailTrigger`, and on this
+    // surface the dashed underline is the decline's own reversible register —
+    // an underlined name reads as a second control of that kind.
+    desktop();
+
+    const trigger = screen.getByRole("button", {
+      name: cardDetailCopy.triggerAria("owned-1"),
+    });
+    expect(trigger.className).not.toContain("underline");
+  });
 
   it("opens the card from the name, as a control outside the tick's label", () => {
     desktop();
