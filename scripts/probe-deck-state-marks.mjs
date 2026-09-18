@@ -18,6 +18,8 @@ import { clerkSetup, setupClerkTestingToken } from "@clerk/testing/playwright";
 import { chromium } from "playwright";
 import { Pool, neonConfig } from "@neondatabase/serverless";
 import ws from "ws";
+import { readFileSync } from "node:fs";
+import { join } from "node:path";
 import { onPage } from "./lib/surface.mjs";
 import { requireEnv } from "./lib/env.mjs";
 
@@ -34,8 +36,31 @@ if (!EMAIL.includes("+clerk_test") && !PASSWORD) {
 }
 
 const BASE = process.env.PROBE_BASE ?? "http://localhost:3000";
+
+/**
+ * The chassis's own switch point, READ FROM THE CHASSIS.
+ *
+ * The tightest wide layout is the one worth measuring, and it is at the
+ * breakpoint — 1300 has slack and passes over an overflow that begins at the
+ * switch. A literal here is a second copy of a constant that belongs to
+ * `filter-chassis.tsx`: raised, this script's "boundary" becomes a compact
+ * viewport and the tight case goes unmeasured; lowered, it stops being the
+ * boundary at all. So it is parsed out of the source rather than typed again.
+ */
+const CHASSIS_WIDE_MIN_PX = (() => {
+  const source = readFileSync(
+    join(import.meta.dirname, "..", "src", "components", "ui", "filter-chassis.tsx"),
+    "utf8",
+  );
+  const match = source.match(/CHASSIS_WIDE_MIN_PX\s*=\s*(\d+)/);
+  if (!match) throw new Error("filter-chassis.tsx no longer declares CHASSIS_WIDE_MIN_PX");
+  return Number(match[1]);
+})();
 const WIDTHS = [
   { label: "desktop", width: 1300, height: 900 },
+  // The switch point itself: the tightest width at which the wide row renders,
+  // and the one where a fifth control either fits or wraps.
+  { label: "boundary", width: CHASSIS_WIDE_MIN_PX, height: 900 },
   { label: "phone", width: 390, height: 844 },
 ];
 
@@ -270,6 +295,64 @@ try {
     }
     if (read.plan.text.includes("change since")) {
       fail(`${label}: the plan tile prints a change figure, which it has no version for`);
+    }
+
+    // ── The wide chassis must not wrap, with a fifth control in the row ──
+    // Runs WHEREVER THE WIDE ROW RENDERS, and asks the CHASSIS which form it is
+    // in rather than comparing the viewport to a constant this script keeps its
+    // own copy of. `CHASSIS_WIDE_MIN_PX` is the chassis's to move: a duplicated
+    // 1000 here reports a false failure the day it rises, and stops describing
+    // the switch point the day it falls. The compact form puts every dimension
+    // in a sheet, so there is no row to wrap and nothing to measure.
+    {
+      const row = await page.evaluate(() => {
+        const chassis = document.querySelector("main [data-chassis-form]");
+        const form = chassis?.getAttribute("data-chassis-form") ?? null;
+        if (form !== "wide") return { form, wide: false };
+        const cluster = chassis?.querySelector("[data-chassis-row='controls']");
+        if (!cluster) return { form, wide: true, found: false };
+        const kids = [...cluster.children].filter((c) => c.getClientRects().length > 0);
+        const boxes = kids.map((c) => c.getBoundingClientRect());
+        // WRAP IS A BAND, NOT A SHARED TOP. The row and its inner group are
+        // both `items-center` and its controls are different heights — a 34px
+        // search field, a ~40px panel trigger, 22px colour pips — so their tops
+        // differ by several pixels while sitting on one line. A shared-top check
+        // fails on a perfectly healthy row, which is what the first version of
+        // this did: it reported "5 controls on 3 lines" against a row measuring
+        // 40px tall. What a second line actually costs is HEIGHT, so the band is
+        // compared to the tallest control rather than the tops to each other.
+        const top = Math.min(...boxes.map((b) => b.top));
+        const bottom = Math.max(...boxes.map((b) => b.bottom));
+        return {
+          form,
+          wide: true,
+          found: true,
+          controls: kids.length,
+          hasFacet: /Deck state/.test(cluster.textContent ?? ""),
+          band: Math.round(bottom - top),
+          tallest: Math.round(Math.max(...boxes.map((b) => b.height))),
+          overflow: cluster.scrollWidth - cluster.clientWidth,
+        };
+      });
+      if (!row.wide) {
+        note(`${label}: chassis is ${row.form ?? "absent"} — the facet is in the sheet, no row to wrap`);
+      } else if (!row.found) {
+        fail(`${label}: the wide chassis draws no control row`);
+      } else if (!row.hasFacet) {
+        fail(`${label}: the wide chassis row does not hold the Deck state control`);
+      } else if (row.band > row.tallest + 8) {
+        fail(
+          `${label}: the chassis row wrapped — ${row.controls} controls span ${row.band}px ` +
+            `against a tallest control of ${row.tallest}px`,
+        );
+      } else if (row.overflow > 1) {
+        fail(`${label}: the chassis row overflows by ${row.overflow}px`);
+      } else {
+        note(
+          `${label}: ${row.controls} controls, one line (${row.band}px band, ` +
+            `${row.tallest}px tallest), no overflow`,
+        );
+      }
     }
 
     // ── The deck page: the phase in words, at both widths ────────────────

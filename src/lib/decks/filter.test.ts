@@ -7,6 +7,7 @@ import {
   filtersToParams,
   type FilterableDeck,
 } from "./filter";
+import { DEFAULT_DECK_SORT } from "./sort";
 
 const NOW = new Date("2026-09-07T12:00:00Z");
 
@@ -24,6 +25,10 @@ function deck(over: Partial<FilterableDeck> & { id?: string } = {}) {
     partnerName: null,
     partnerColorIdentity: null,
     statusPill: "Complete" as const,
+    // A committed deck with a clean draft: the control every deck-state case
+    // below is read against.
+    lastCommittedAt: new Date("2026-09-01T00:00:00Z"),
+    pendingChanges: 0,
     lastPlayedAt: THIS_MONTH,
     ...over,
   };
@@ -143,6 +148,7 @@ describe("activeFilterCount", () => {
     expect(
       activeFilterCount({
         statuses: ["Draft", "Over"],
+        states: [],
         colours: ["R"],
         played: "never",
         search: "krenko",
@@ -164,6 +170,7 @@ describe("URL round trip", () => {
     const params = filtersToParams(
       {
         statuses: ["Draft", "To buy"],
+        states: ["pending"],
         colours: ["R", "G"],
         played: "never",
         search: "krenko",
@@ -194,4 +201,67 @@ describe("URL round trip", () => {
     expect(back.filters.colours).toEqual(["W", "G"]);
   });
 
+});
+
+describe("the deck-state facet", () => {
+  const plan = () => deck({ id: "plan", lastCommittedAt: null, pendingChanges: 0 });
+  const clean = () => deck({ id: "clean" });
+  const moved = () => deck({ id: "moved", pendingChanges: 4 });
+
+  it("returns the plans alone", () => {
+    const got = filterDecks([plan(), clean(), moved()], { ...EMPTY_FILTERS, states: ["uncommitted"] }, NOW);
+    expect(got.map((d) => d.id)).toEqual(["plan"]);
+  });
+
+  it("returns the moved drafts alone", () => {
+    const got = filterDecks([plan(), clean(), moved()], { ...EMPTY_FILTERS, states: ["pending"] }, NOW);
+    expect(got.map((d) => d.id)).toEqual(["moved"]);
+  });
+
+  // The two are mutually exclusive, so ticking both is a union: every deck that
+  // is not settled. The clean committed deck is the one that drops out.
+  it("returns every unsettled deck when both are on", () => {
+    const got = filterDecks(
+      [plan(), clean(), moved()],
+      { ...EMPTY_FILTERS, states: ["uncommitted", "pending"] },
+      NOW,
+    );
+    expect(got.map((d) => d.id)).toEqual(["plan", "moved"]);
+  });
+
+  // ACROSS headings they AND, as every other facet does: `Complete` plus
+  // pending is a finished deck mid-edit, which is the read the facet exists for.
+  it("ANDs against status", () => {
+    const building = deck({ id: "building", statusPill: "Building", pendingChanges: 4 });
+    const got = filterDecks(
+      [moved(), building],
+      { ...EMPTY_FILTERS, statuses: ["Complete"], states: ["pending"] },
+      NOW,
+    );
+    expect(got.map((d) => d.id)).toEqual(["moved"]);
+  });
+
+  // A plan's `pendingChanges` is 0 by construction, but a row that somehow
+  // carried both must not answer `pending` — the mark it draws is the plate.
+  it("never counts a plan as pending", () => {
+    const impossible = deck({ id: "x", lastCommittedAt: null, pendingChanges: 9 });
+    expect(filterDecks([impossible], { ...EMPTY_FILTERS, states: ["pending"] }, NOW)).toHaveLength(0);
+    expect(filterDecks([impossible], { ...EMPTY_FILTERS, states: ["uncommitted"] }, NOW)).toHaveLength(1);
+  });
+
+  it("round-trips through the URL and drops an unknown value", () => {
+    const { filters } = filtersFromParams(new URLSearchParams("state=pending,nonsense,uncommitted"));
+    // Canonical order, filtered from STATE_ORDER rather than mapped from input.
+    expect(filters.states).toEqual(["uncommitted", "pending"]);
+    expect(filtersToParams(filters, DEFAULT_DECK_SORT).get("state")).toBe("uncommitted,pending");
+  });
+
+  it("is absent from the URL when nothing is ticked", () => {
+    expect(filtersToParams(EMPTY_FILTERS, DEFAULT_DECK_SORT).has("state")).toBe(false);
+  });
+
+  it("counts each ticked row as one value on the badge", () => {
+    expect(activeFilterCount({ ...EMPTY_FILTERS, states: ["uncommitted"] })).toBe(1);
+    expect(activeFilterCount({ ...EMPTY_FILTERS, states: ["uncommitted", "pending"] })).toBe(2);
+  });
 });

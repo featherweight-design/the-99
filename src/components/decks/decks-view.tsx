@@ -15,7 +15,9 @@ import { refreshCopy } from "../../lib/copy/refresh";
 import {
   COLOUR_ORDER,
   EMPTY_FILTERS,
+  STATE_ORDER,
   STATUS_ORDER,
+  type DeckState,
   type PlayedWindow,
   activeFilterCount,
   filterDecks,
@@ -43,7 +45,7 @@ import { FilterPanel } from "../ui/filter-panel";
 import { useMinWidth } from "../ui/use-min-width";
 import { deckChassisCopy } from "../../lib/copy/filter-chassis";
 import { DeckCard } from "./deck-card";
-import { PLAYED_LABEL, SearchField, STATUS_COPY_KEY, toggleIn } from "./deck-filter-column";
+import { PLAYED_LABEL, SearchField, STATE_LABEL, STATUS_COPY_KEY, toggleIn } from "./deck-filter-column";
 import { DeckFilterSheet } from "./deck-filter-sheet";
 import { DeckSortMenu } from "./deck-sort-menu";
 import { DecksZero } from "./decks-zero";
@@ -95,13 +97,22 @@ export type DecksViewProps = {
 };
 
 /** The parameters this view owns. Everything else on the URL is left alone. */
-const OWNED_PARAMS = ["status", "colour", "played", "q", "sort", FOLDER_PARAM];
+// Every parameter `filtersToParams` can WRITE has to be listed here, or
+// unticking its last value leaves the old one stranded: the live URL is cleared
+// of these and then re-set from the serialiser, so a key missing from this list
+// is never cleared and never overwritten. `state` was exactly that miss, caught
+// by a chip-removal case rather than by reading.
+const OWNED_PARAMS = ["status", "state", "colour", "played", "q", "sort", FOLDER_PARAM];
 
 /**
- * The shelf is a THIRD FIELD here and never a fifth on `DeckFilters` (handoff
+ * The shelf is a field of THIS state and never one of `DeckFilters` (handoff
  * decision 7). That is what makes `EMPTY_FILTERS`, `activeFilterCount`, the
  * `Filters` badge and `Clear all filters` unable to move it — by construction
  * rather than by care.
+ *
+ * Stated as a boundary rather than as a count: the note used to say "never a
+ * fifth", which the deck-state facet made false by adding `states` beside the
+ * four that were there. The rule was never about how many there are.
  */
 /**
  * `sort` is null when the URL names no order — NOT "the default". The order has
@@ -119,6 +130,11 @@ function chipLabels(filters: DeckFilters): { key: string; label: string; without
       key: `status:${status}`,
       label: refreshCopy.status[STATUS_COPY_KEY[status]],
       without: { ...filters, statuses: filters.statuses.filter((s) => s !== status) },
+    })),
+    ...filters.states.map((code) => ({
+      key: `state:${code}`,
+      label: STATE_LABEL[code],
+      without: { ...filters, states: filters.states.filter((s) => s !== code) },
     })),
     ...filters.colours.map((colour) => ({
       key: `colour:${colour}`,
@@ -202,9 +218,12 @@ export function DecksView({
    * own `replaceState` at all — which is what made a first attempt at this
    * reconcile from a stale query and undo the choice just made.
    *
-   * ALL FIVE parameters, not just the sort. Reconciling one would give this view
-   * two rules for two halves of its own state, and the same navigation leaves a
-   * status filter on with a bare URL.
+   * EVERY parameter this view owns, not just the sort — `status`, `state`,
+   * `colour`, `played`, `q` and `sort`, which is what `OWNED_PARAMS` lists.
+   * Reconciling one would give this view two rules for two halves of its own
+   * state, and the same navigation leaves a status filter on with a bare URL.
+   * Named rather than counted: the count was five until the deck-state facet
+   * made it six, and a number in prose goes stale the moment a facet lands.
    *
    * `apply` records the query it writes, so this view's own write agrees on the
    * next render and nothing re-parses. It would be harmless if it did — the
@@ -617,6 +636,19 @@ export function DecksView({
   // Counts are what survives the OTHER active filters, which is what makes a
   // zero meaningful: a status showing 0 would return nothing *given the colours
   // already on*, rather than being a status no deck has ever had.
+  // The deck-state rows, counted the same way: what survives the OTHER active
+  // filters, so a zero means "none given what is already on" rather than "no
+  // deck has ever been one".
+  const stateOptions = STATE_ORDER.map((code) => {
+    const count = filterDecks(narrowed, { ...state.filters, states: [code] }, now).length;
+    return {
+      code,
+      label: STATE_LABEL[code],
+      count,
+      disabled: count === 0 && !state.filters.states.includes(code),
+    };
+  });
+
   const statusOptions = STATUS_ORDER.map((status) => {
     const count = filterDecks(narrowed, { ...state.filters, statuses: [status] }, now).length;
     return {
@@ -724,6 +756,25 @@ export function DecksView({
                       })
                     }
                     onClear={() => onFilters({ ...state.filters, statuses: [] })}
+                    widthPx={280}
+                    footerStatus={false}
+                  />
+                  {/* Directly after Status: adjacency says the two are read
+                      together, and the heading boundary says they are different
+                      questions. */}
+                  <FilterPanel
+                    desktopRowMinPx={44}
+                    compact={!wide}
+                    copy={deckChassisCopy.state}
+                    options={stateOptions}
+                    selected={state.filters.states}
+                    onToggle={(code) =>
+                      onFilters({
+                        ...state.filters,
+                        states: toggleIn(STATE_ORDER, state.filters.states, code as DeckState),
+                      })
+                    }
+                    onClear={() => onFilters({ ...state.filters, states: [] })}
                     widthPx={280}
                     footerStatus={false}
                   />

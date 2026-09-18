@@ -15,17 +15,20 @@
 
 import { useEffect, useRef, useState } from "react";
 import { useDialogA11y } from "../../lib/a11y/dialog";
+import { deckStateMarksCopy } from "../../lib/copy/deck-state-marks";
 import { deckChassisCopy } from "../../lib/copy/filter-chassis";
 import { refreshCopy } from "../../lib/copy/refresh";
 import {
   COLOUR_ORDER,
   EMPTY_FILTERS,
+  STATE_ORDER,
   STATUS_ORDER,
   type PlayedWindow,
 } from "../../lib/decks/filter";
 import { STATUS_TOKEN } from "../../lib/decks/status-style";
 import {
   PLAYED_LABEL,
+  STATE_LABEL,
   STATUS_COPY_KEY,
   SearchField,
   toggleIn,
@@ -259,6 +262,27 @@ function SheetBody({
           </div>
         </Group>
 
+
+        {/* The same heading the wide form draws, directly after Status and for
+            the same reason. Two rows, OR within the heading: they are mutually
+            exclusive, so ticking both returns every deck that is not settled. */}
+        <Group heading={deckStateMarksCopy.filter.heading}>
+          <div className="flex flex-wrap gap-[8px]">
+            {STATE_ORDER.map((code) => (
+              <Chip
+                key={code}
+                label={STATE_LABEL[code]}
+                on={filters.states.includes(code)}
+                onToggle={() =>
+                  onChange({
+                    ...filters,
+                    states: toggleIn(STATE_ORDER, filters.states, code),
+                  })
+                }
+              />
+            ))}
+          </div>
+        </Group>
 
         <Group heading={c.lastPlayedHeading}>
           <div className="flex flex-wrap gap-[8px]">
