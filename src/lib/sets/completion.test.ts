@@ -214,9 +214,11 @@ describe("sectionsOf", () => {
 
 describe("sectionsOf against the authoritative denominator", () => {
   it("reads a set as not indexed when the column is null, however many rows are classified", () => {
-    // The ingest clears sets.base_set_size before writing any batch, so a run that dies
-    // halfway leaves classified rows and a null column. Inferring from the rows alone
-    // would render a partial base run and a percentage computed from it.
+    // A null denominator beside classified rows is a set no run has ever published a base
+    // run for — since #704 the column is written by one transaction at the end of the
+    // ingest, so a half-finished run leaves the previous figure rather than a null. Either
+    // way, inferring from the rows alone would render a partial base run and a percentage
+    // computed from it.
     const cells = placeCells([p("1"), p("2")], [held({})]);
     expect(sectionsOf(cells, null).indexed).toBe(false);
     expect(sectionsOf(cells, null).percent).toBeNull();

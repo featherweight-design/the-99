@@ -120,16 +120,30 @@ export async function setBaseSetSizes(): Promise<number> {
 export function unsizedRunFailure(
   r: Pick<SeedPrintingsResult, "upserted" | "skippedOrphan" | "baseSetSizes">,
 ): string | null {
-  if (r.upserted === 0 || r.baseSetSizes > 0) return null;
+  if (r.baseSetSizes > 0) return null;
+  // ORPHANS ARE TESTED BEFORE the no-op case, not after. A run where EVERY printing is
+  // orphaned — `cards` populated but wholly out of step with the bulk — ingests nothing and
+  // skips a hundred thousand, and reading `upserted === 0` first would file the worst state
+  // this function can see as "nothing to do, exit 0".
   if (r.skippedOrphan > 0) {
     return `No set was sized: ${r.skippedOrphan} printing(s) name a card the oracle catalog `
       + "does not hold, so this run saw an incomplete bulk and refused to publish a base run "
       + "counted from the survivors. The previous denominators are untouched. Re-run the "
       + "refresh with the oracle ingest (`job=all`) to size them from a complete catalog.";
   }
-  return "No set was sized, and no printing was orphaned — so every set's printings are "
-    + "unclassified (`booster` null throughout). The previous denominators are untouched. "
-    + "This is not a state a healthy bulk produces; check the upstream file before re-running.";
+  // Nothing ingested and nothing orphaned is a bulk this catalog has no rows for at all,
+  // which is a no-op rather than a failure.
+  if (r.upserted === 0) return null;
+  // TWO CAUSES, AND THIS NAMES BOTH rather than asserting the likelier one. The fill matches
+  // `sets` by code, so it writes nothing either when no printing is classified (`booster`
+  // null throughout the bulk) or when `sets` holds none of these codes — a database where the
+  // sets ingest has never run, which `job=printings` on a fresh catalog produces. Sending a
+  // reader to inspect the upstream file for the second one wastes the trip.
+  return "No set was sized and no printing was orphaned. Either this bulk classifies nothing "
+    + "(`booster` null throughout), or the `sets` table holds none of its set codes — the sets "
+    + "ingest has not run against this database. The previous denominators are untouched. "
+    + "Re-run with `job=all`, which seeds sets and oracle cards first, and check the upstream "
+    + "file if it repeats.";
 }
 
 /**
