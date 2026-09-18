@@ -18,19 +18,35 @@
 //       as playing its commander's top N themes. This is the table the design
 //       table's rejection of that option is sourced from, not an afterthought
 //
-// Ordering matters to question 2 and is the one place this script could lie, so
-// it uses the LANES' OWN COMPARATORS rather than a restatement of them:
-// `byScoreThenOracleId` for `Best fit` and `byNovelty` for `Something new`,
-// imported from the modules the routes call. An earlier version wrote its own
-// `Something new` order as a RATIO (unplayed / eligible) where `byNovelty`
-// ranks on the absolute `unplayedCount`, so a commander with 2 eligible tags
-// and 1 unplayed sorted above one with 30 eligible and 12 unplayed — the
-// reverse of the app — and question 2 was not reporting the reader's first
-// screen at all. It also called that order "ascending" while sorting
-// descending. Both were caught by the pre-open pass, not by the run.
+// QUESTION 2 IS THE ONE PLACE THIS SCRIPT COULD LIE, and four review findings
+// landed on it — every one the same shape: a rule RESTATED here instead of the
+// route's own function being called.
 //
-// A run against a user with no scored rows says so and skips the `Best fit`
-// half rather than silently reporting some other order instead.
+// It now imports `byFit` and `byNovelty` and calls them, and it builds their
+// inputs the way the route does: `unplayedTags` over the FULL tag list for
+// `unplayedCount`, `clearsFloor` as the novelty lane's membership test, and
+// `notBuiltBy`'s rule for the lane split. What it still cannot reproduce is
+// named rather than papered over, below.
+//
+// The history is the argument for calling rather than restating. The first
+// version ordered `Something new` by a RATIO (unplayed / eligible) where
+// `byNovelty` ranks on the absolute count, so a commander with 2 eligible tags
+// and 1 unplayed sorted above one with 30 eligible and 12 unplayed — the
+// reverse of the app; it called that order "ascending" while sorting
+// descending; it ordered `Best fit` by `commander_scores.score` where `byFit`
+// ranks on `ownedSupport`, a field it never loaded; and it split the lanes on
+// `collection_items` alone where `/commanders` also excludes every commander
+// the reader has BUILT. None of it was caught by running the script.
+//
+// STILL NOT REPRODUCED, and read question 2 with these in mind:
+//   · `ownedSupport` — the count of the commander's support list the reader
+//     owns — needs a collection read this script does not do. `byFit`'s
+//     primary key is therefore approximated by `commander_scores.score` where
+//     the account has scored rows, and skipped entirely where it does not.
+//     `score` is a function of `ownedSupport`, so the order correlates; it is
+//     not the same order.
+//   · windowing. The routes ship a first batch and the reader scrolls; this
+//     reports the first 25 of a full sort.
 
 // `requireEnv` FIRST: `src/db` reads `DATABASE_URL` at import time, so the env
 // has to be loaded before that module is evaluated. Same order every probe here
@@ -40,7 +56,7 @@ requireEnv(["DATABASE_URL"]);
 
 import { sql } from "drizzle-orm";
 import { db } from "../src/db";
-import { byNovelty, loadPlayedTags } from "../src/lib/discovery/novelty";
+import { byNovelty, loadPlayedTags, unplayedTags } from "../src/lib/discovery/novelty";
 import {
   eligibleMechanics,
   gapSlotFor,
@@ -153,10 +169,26 @@ async function main() {
   console.log(`commanders on file: ${rows.length}`);
 
   // ── 1 · per lane, whole catalogue ───────────────────────────────────────
-  // The lanes are disjoint by construction: `/commanders` lists what the reader
-  // owns, `/discover` what they do not.
-  const ownedRows = rows.filter((r) => r.owned);
-  const unownedRows = rows.filter((r) => !r.owned);
+  //
+  // The lanes are disjoint by construction, but "owned" is not the whole split
+  // and the first version's was wrong in both directions: `/commanders` lists
+  // what the reader owns AND HAS NOT BUILT, and `/discover` applies `notBuiltBy`
+  // too, so a commander the reader has built appears on neither. Read against
+  // the app's own header — "190 commanders you own and haven't built" — the
+  // unfiltered owned count was 204. Named by review.
+  const built = new Set(
+    (
+      await db.execute<{ oracle_id: string }>(sql`
+        select commander_oracle_id as oracle_id from decks where user_id = ${userId}
+        union
+        select partner_oracle_id as oracle_id from decks
+         where user_id = ${userId} and partner_oracle_id is not null
+      `)
+    ).rows.map((r) => r.oracle_id),
+  );
+  const ownedRows = rows.filter((r) => r.owned && !built.has(r.oracleId));
+  const unownedRows = rows.filter((r) => !r.owned && !built.has(r.oracleId));
+  console.log(`commanders the reader has built, excluded from both lanes: ${built.size}`);
   report("/commanders (owned), whole lane", ownedRows, played);
   report("/discover (unowned), whole lane", unownedRows, played);
 
@@ -168,6 +200,9 @@ async function main() {
         "Run the scorer for this user, or read the whole-lane figures above only.",
     );
   } else {
+    // `byFit` ranks on `ownedSupport` then the oracle id. This script does not
+    // read the collection, so `score` stands in for that primary key — a
+    // function of it, correlated but not identical, and said so in the header.
     const bestFit = [...scored].sort((a, b) => b.score! - a.score!);
     report(`/discover · Best fit, first ${FIRST_SCREEN}`, bestFit.slice(0, FIRST_SCREEN), played);
     report("/discover · Best fit, first 100", bestFit.slice(0, 100), played);
@@ -180,11 +215,13 @@ async function main() {
   // deck count stands in for it here since this script does not read the
   // collection. The tiebreak only separates commanders already equal on the
   // figure that decides the order.
+  // `unplayedTags` over the FULL tag list, which is what the route counts —
+  // `eligibleMechanics` applies the theme floor and was the first version's
+  // input, so rows the route ranks on a larger count ranked lower here.
   const somethingNew = [...unownedRows]
     .map((r) => ({
       r,
-      unplayedCount: eligibleMechanics(r.tags, r.deckCount).filter((t) => !played.has(t.slug))
-        .length,
+      unplayedCount: unplayedTags(r.tags, played).length,
       ownedSupport: r.deckCount ?? 0,
       oracleId: r.oracleId,
     }))

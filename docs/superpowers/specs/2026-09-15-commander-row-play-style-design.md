@@ -515,7 +515,19 @@ two the three-name `unplayed` form already takes, so the occupants remain at
 parity today. Nothing measures it: the gap `<p>` carries no clamp and
 `probe:commander-row` measures the prose clamp only. A longer theme name could
 reach a third line and move row height with the occupant, which is what D9
-forbids. Recorded as open rather than asserted safe. Same slot, ink, measure and
+forbids. Recorded as open rather than asserted safe.
+
+**The clause that follows is the RETIRED sentence's, and is superseded.** It
+concluded that the line-count decision survives, which contradicts the caveat
+above it — review named the contradiction. What is true of the replacement is
+the ceiling `probe:commander-row` now measures: one line above `sm`, two at
+390px. What is NOT true of it, and was never testable, is that every occupant
+draws the same count — the gap text names this commander's themes, so its
+length is the commander's property, and two `unplayed` rows already differ (57
+characters takes one line at 390px, 63 takes two). D9 forbids height varying
+with which OCCUPANT the slot drew, not with the text inside one.
+
+Superseded from here to the end of this paragraph: same slot, ink, measure and
 line count, so the locked "row height never varies" decision survives a fifth state.
 
 Design also found a flaw in this spec's condition and fixed it. `every mechanic tag already

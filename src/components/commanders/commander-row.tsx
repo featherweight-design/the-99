@@ -142,7 +142,11 @@ const FIT_CHIP_STYLE = {
 function GapLine({ slot }: { slot: GapSlot }) {
   if (slot.kind === "noMechanics") {
     return (
-      <p className="font-sans" style={{ fontSize: 12.5, lineHeight: 1.45, color: "var(--fg-faint)" }}>
+      <p
+        data-testid="row-gap"
+        className="font-sans"
+        style={{ fontSize: 12.5, lineHeight: 1.45, color: "var(--fg-faint)" }}
+      >
         <span style={{ color: "var(--fg-muted)" }}>{untagged.heading}</span> {untagged.body}
       </p>
     );
@@ -164,7 +168,16 @@ function GapLine({ slot }: { slot: GapSlot }) {
       ? commanderRowCopy.gap.topStylesParts(slot.labels, slot.capped)
       : commanderRowCopy.gap.unplayedParts(slot.labels);
   return (
-    <p className="font-sans" style={{ fontSize: 12.5, lineHeight: 1.45, color: "var(--fg-muted)" }}>
+    // `data-testid`: the gap line is a bare `<p>` with no clamp, and
+    // `probe:commander-row` was selecting it as "any unclamped `main p`" —
+    // which also catches the page header, the rack, banners and empty states,
+    // so its count could be positive with no row gap line on screen at all.
+    // Named by review. A marker is the only thing that says which `<p>` this is.
+    <p
+      data-testid="row-gap"
+      className="font-sans"
+      style={{ fontSize: 12.5, lineHeight: 1.45, color: "var(--fg-muted)" }}
+    >
       {parts.map((part, i) =>
         typeof part === "string" ? (
           part

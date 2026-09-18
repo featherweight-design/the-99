@@ -77,7 +77,7 @@ is why it folds into state 5 rather than becoming a sixth.
 
 ### The slots are independent, so the states multiply — and all of it is drawn
 
-| | Full gap | Nothing new | No tag data |
+| | Full gap | Top play styles | No tag data |
 |---|---|---|---|
 | **sentence present** | 1 | 4 | 3 |
 | **sentence absent** | 2 | 2 + 4 | 2 + 3 |
@@ -171,17 +171,37 @@ same family as the sentence being replaced. The names are marked exactly as
 **Why, measured.** `played` is built from each built deck's **commander** tag
 list, and EDHREC tags a commander with every archetype people build with it
 rather than the one its owner built. Against the reference account on staging
-(18 decks):
+(18 decks, brews included):
 
-| | `/commanders` | `/discover` |
-|---|---|---|
-| rows | 204 | 3,075 |
-| `unplayed` | 22.1% | 29.1% |
-| `allPlayed` | **77.0%** | **67.2%** |
-| `noMechanics` | 1.0% | 3.7% |
+| | `/commanders` | `/discover` | `Something new`, top 25 |
+|---|---|---|---|
+| rows | 198 | 3,074 | 25 |
+| `unplayed` | 22.7% | 29.1% | 24.0% |
+| `allPlayed` | **76.3%** | **67.1%** | **76.0%** |
+| `noMechanics` | 1.0% | 3.7% | 0% |
 
-The median built commander donates **35** eligible themes and one donates 132,
-so the played set reaches 166 of 260 mechanics. The state was the majority voice
+**The `Something new` column is the reported 90%, and it took four review
+findings to measure.** The first version of the script ordered that lane by a
+ratio of its own and reported 0% — the sort maximises unplayed themes, so the
+state looked absent from exactly the screen it dominates. `byNovelty` ranks on
+`unplayedTags` over the commander's **whole** tag list, while the gap line names
+only **eligible** themes — mechanics, above the floor. The two disagree, so the
+sort promotes commanders with many obscure unplayed tags whose nameable themes
+are all played, and the line says so. 76% of the first screen.
+
+That disagreement is a second defect, recorded and not fixed here: the lane's
+order and the line's contents answer different questions about the same row. It
+belongs with the deck-analysis work, since deriving `played` from deck contents
+changes both sides.
+
+Both lanes also exclude every commander the reader has BUILT (`notBuiltBy`) —
+7 on this account. The first version split on `collection_items` alone and read
+204 owned rows against the app's own header, "190 commanders you own and haven't
+built".
+
+The median deck commander donates **35** eligible themes and one donates 132,
+so the played set reaches 166 of 260 mechanics. Decks, not built decks:
+`loadPlayedTags` joins no `deck_versions`, so a brew counts. The state was the majority voice
 of both lanes.
 
 **And it can be false.** A reader whose Kenrith deck is Politics still has Group
@@ -378,7 +398,7 @@ are unchanged.
 | **Full** | `prose` present, `gapSlot.kind === "unplayed"` | the stored sentence, the gap line naming up to three mechanics, Fit · deck count · price | `prose`, `gapSlot`, `score`, `measurableTotal`, `deckCount`, `price` |
 | **No sentence** | `prose === null` | the sentence slot **unmounts** — no placeholder, no reserved height | `prose` |
 | **No tags** | `gapSlot.kind === "noMechanics"` | `discoveryCopy.untagged` heading + body in the gap slot | `gapSlot` |
-| **Nothing new** | `gapSlot.kind === "allPlayed"` | `commanderRowCopy.gap.allPlayed` | `gapSlot` |
+| **Top play styles** | `gapSlot.kind === "allPlayed"` | `commanderRowCopy.gap.topStylesParts` | `gapSlot` |
 | **Unpriced** | `price.kind === "absent"` OR `priceOk === false` | the price figure **unmounts**; the deck count stays | `price`, `priceOk` |
 | **Unmeasured Fit** | `measurableTotal < 100` | the chip prints `fitDenominatorMeasurable(measurableTotal)` — never a bare `/100` | `measurableTotal` |
 | **No deck count** | `deckCount === null` | the figure is omitted, never zeroed | `deckCount` |
@@ -394,7 +414,7 @@ The delta is worth naming because the handoff's cut list does not: a "was 74, no
 | Element | Copy key | Arguments |
 |---|---|---|
 | Gap line, 1–3 names | `commanderRowCopy.gap.unplayed` | `(labels: string[])` |
-| Gap line, nothing new | `commanderRowCopy.gap.allPlayed` | — |
+| Gap line, top play styles | `commanderRowCopy.gap.topStylesParts` | — |
 | Gap line, no mechanic tags | `discoveryCopy.untagged.heading` / `.body` | — |
 | Foot-line separator | `commanderRowCopy.figures.separator` | — |
 | Fit denominator | `commandersCopy.row.fitDenominator` | — |
