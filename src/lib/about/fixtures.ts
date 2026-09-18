@@ -654,3 +654,12 @@ export const LANE_ROW_DISCOVER = laneRow(
   { kind: "notStocked" },
   "Abuelo decks blink artifacts and creatures, and tend to layer enter-the-battlefield triggers into a snowballing engine of tokens and lifegain.",
 );
+
+/**
+ * The colours a pair opens. §3 draws two ONE-colour halves and three pips
+ * under them, which is the whole claim: the pair's identity is wider than
+ * either commander's, and every count in the app measures against that.
+ *
+ * Two pips would draw a pair that opened nothing.
+ */
+export const PARTNER_UNION = ["W", "R", "U"] as const;
