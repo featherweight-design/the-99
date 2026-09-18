@@ -74,6 +74,8 @@ jobs:
       # is politeness to a host that owes us nothing — two concurrent legs would
       # silently double the outbound rate to ~8 req/s. One at a time costs wall
       # clock, which the 180-minute timeout has in hand, and costs EDHREC nothing.
+      # This orders the legs within ONE run; the workflow-level concurrency group
+      # above is what stops two runs overlapping.
       max-parallel: 1
     # A FAILED STAGING LEG MUST NOT SPEAK FOR THE RUN. `commander-prose.yml` chains
     # on `workflow_run.conclusion`, which is the AGGREGATE over both legs — so
@@ -91,11 +93,17 @@ jobs:
     continue-on-error: ${{ matrix.target == 'staging' && github.event_name == 'schedule' }}
     runs-on: ubuntu-latest
     concurrency:
-      # Per target: the two environments hold different databases, so a manual
-      # staging build has no reason to queue behind — or delay — the scheduled
-      # production one. Never cancel in progress; a half-rebuilt index is what the
-      # resume input exists to recover.
-      group: commander-index-${{ matrix.target }}
+      # ONE GROUP FOR BOTH TARGETS, which is where this diverges from catalog and
+      # price refresh a second time. Those group per target because the thing they
+      # must not collide on is the DATABASE, and the two are independent. The
+      # binding constraint here is EDHREC, which is one host however many of our
+      # databases are involved — and `max-parallel` only orders the legs WITHIN a
+      # run, so per-target groups would let a manual production dispatch overlap
+      # the scheduled staging leg and put two request streams on that host anyway.
+      # Never cancel in progress; a half-rebuilt index is what the resume input
+      # exists to recover, and a queued run is the correct behaviour here rather
+      # than a cost.
+      group: commander-index
       cancel-in-progress: false
     # Serial-by-design: the wall clock is dominated by the politeness delay, not
     # by compute. Leave headroom rather than trimming to the expected runtime —

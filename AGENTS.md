@@ -54,9 +54,12 @@ Package manager is **pnpm** (pinned via `packageManager` in package.json) — ne
   `environment` sends every scheduled run to production alone, and this was the third and last
   workflow carrying that bug. Two details differ from those two, both because this job makes
   ~3,000 rate-limited EDHREC requests rather than pulling one bulk file: the matrix is
-  `max-parallel: 1`, so fanning out does not double the outbound rate, and the staging leg is
+  `max-parallel: 1` under a single workflow-wide concurrency group, so neither two legs nor two
+  runs can put a second request stream on EDHREC; and on a **scheduled** run the staging leg is
   `continue-on-error`, so a staging failure cannot make the run's aggregate conclusion `failure`
-  and withhold the `Commander prose` chain from production for a month.
+  and withhold the `Commander prose` chain from production for a month. A dispatched staging run
+  is not excused that way and still reports its own failure, because that is the run an operator
+  dispatched to find out about.
 - `pnpm db:build:prose` writes one generated sentence per commander into `commander_support.prose`
   — sentence 1 of "Why this commander", and identical for every player, which is why no collection
   change invalidates it. Needs `ANTHROPIC_API_KEY`. The `Commander prose` workflow chains off a

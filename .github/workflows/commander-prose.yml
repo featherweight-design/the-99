@@ -43,8 +43,9 @@ jobs:
     # is why that workflow marks its staging leg `continue-on-error`: a staging
     # failure must not withhold production's sentences for a month.
     #
-    # THIS RUN IS ALWAYS PRODUCTION'S, and that is now a choice rather than a
-    # consequence. It used to follow from the index: a scheduled index run took
+    # A CHAINED RUN IS ALWAYS PRODUCTION'S — a dispatched one goes wherever its
+    # own `target` says, including staging, as the paragraph above describes. For
+    # the chain, that is now a choice rather than a consequence. It used to follow from the index: a scheduled index run took
     # that workflow's own `|| 'production'` default, so the fallback below was
     # true rather than merely usual. Since the index fans out over BOTH databases
     # on its schedule, a scheduled run is no longer production-only — but
