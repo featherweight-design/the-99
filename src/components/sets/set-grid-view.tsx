@@ -1424,6 +1424,13 @@ export function SetGridView(props: SetGridViewProps) {
                     </span>
                   </>
                 )}
+          {/* Marked for the focus gate and always mounted, though its CONTENTS are not: the
+              gate asks whether focus is inside something about to disappear, and at decision
+              time this link is still here. Unmounting it took focus to the body, which was
+              the settled behaviour for this whole class before the gate existed and is now
+              the one case the gate would have missed. The wrapper draws nothing of its own —
+              the separator goes with the link, as it always did. */}
+          <span data-set-shy-hides>
           {shownExtras.length > 0 && !shy ? (
             <>
               {" · "}
@@ -1445,6 +1452,7 @@ export function SetGridView(props: SetGridViewProps) {
               </a>
             </>
           ) : null}
+          </span>
         </p>
         ) : null}
         </div>

@@ -2621,6 +2621,35 @@ describe("SetGridView — the phone head collapses past a threshold", () => {
     expect(screen.getByRole("searchbox", { name: fieldName })).toBe(before);
   });
 
+  // The same node is not enough on its own — a remount that happened to produce an equal
+  // element would be caught by the identity check above, but LIVE state would not. Focus,
+  // the caret and the typed-but-not-yet-applied draft are the three things the round claims
+  // survive the threshold because nothing unmounts, so all three are read back.
+  //
+  // Round 2 asked whether the conditional prefix shifts the rack's unkeyed children and
+  // hands the search slot's fiber to the prefix. It does not: `{cond ? <div/> : null}` is a
+  // stable slot in the parent's children array, so a null becoming an element changes that
+  // slot alone and every later child keeps its index. This is what proves it rather than
+  // the reasoning.
+  it("keeps focus, the caret and the pending draft across the desktop collapse", () => {
+    stubDesktop(true);
+    const { container } = view([p("1"), p("2")], []);
+    const field = screen.getByRole("searchbox", { name: /^Search cards in / });
+    field.focus();
+    fireEvent.change(field, { target: { value: "plai" } });
+    (field as HTMLInputElement).setSelectionRange(2, 2);
+    expect(document.activeElement).toBe(field);
+
+    scrollTo(2000);
+    expect(isShy(container)).toBe(true);
+
+    const after = screen.getByRole("searchbox", { name: /^Search cards in / });
+    expect(after).toBe(field);
+    expect(document.activeElement).toBe(after);
+    expect((after as HTMLInputElement).value).toBe("plai");
+    expect((after as HTMLInputElement).selectionStart).toBe(2);
+  });
+
   // The phone's two bar controls exist because its rack is behind a sheet. At `md` the rack
   // is on the row, so a `Filters` trigger would be a second route to one rack and the
   // back-to-search button would point at a field that never moved.
@@ -2715,9 +2744,18 @@ describe("SetGridView — the phone head collapses past a threshold", () => {
   // already collapsed must not have it open underneath them.
   it("does not collapse while focus is inside a member the collapse hides", () => {
     stubDesktop(true);
-    const { container } = view([p("1"), p("2")], []);
-    const hidden = container.querySelector("[data-set-shy-hides] button") as HTMLElement;
+    // Extras, so the result region carries its `extras ↓` link — the one desktop-visible
+    // control among the hidden members.
+    const { container } = view([p("1", { booster: true }), p("2", { booster: false })], []);
+    // The `extras ↓` link inside the result region, which is a DESKTOP-visible control and
+    // deliberately not `CostStrip`'s phone-only toggle: that one is `md:hidden` but still in
+    // the document, and jsdom lets a `display:none` element take focus — so a test that
+    // focused it would pass at `md` without ever exercising the gate at this width.
+    const hidden = container.querySelector(
+      '[data-set-shy-hides] a[href="#extras"]',
+    ) as HTMLElement;
     expect(hidden).toBeTruthy();
+    expect(hidden.className).not.toMatch(/md:hidden/);
     hidden.focus();
     scrollTo(2000);
     expect(isShy(container)).toBe(false);

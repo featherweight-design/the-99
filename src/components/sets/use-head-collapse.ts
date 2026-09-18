@@ -144,6 +144,46 @@ export function useHeadCollapse({
   const restHeightRef = useRef<number | null>(null);
   /** The collapsed bar's height, measured the same way and only while it is drawn. */
   const barHeightRef = useRef<number | null>(null);
+  /**
+   * Set at a crossing, and cleared on the next frame — so the step that SETTLES a crossing
+   * does not animate either, and nothing later does.
+   *
+   * Now that both widths collapse, a crossing made while shy reopens the head (the reserve
+   * is the other width's and nothing can be measured until it is open) and the scroll
+   * listener — re-armed by the same `isDesktop` change — immediately re-decides at the
+   * reader's offset, usually back to collapsed. That second decision lands in its own
+   * commit, where `crossedBreakpoint` is already false: without this it animates, and the
+   * reader watches the head pop open and slide shut for a window resize.
+   *
+   * Armed by the passive effect at the exact moment it re-evaluates for the new width, and
+   * consumed by whichever layout run that evaluation causes. Its backstop is the reader's
+   * NEXT scroll rather than a frame, so no timing assumption is made anywhere.
+   *
+   * Two wrong versions came before this one, and both are worth keeping in view. The first
+   * cleared it on the next RUN of this layout effect: that effect runs only when `shy`,
+   * `isDesktop` or `deltaFiring` changes, so a crossing at the top of the page settled
+   * nothing and the flag sat set until the reader's next genuine collapse, minutes later,
+   * which then snapped. The second cleared it on a `requestAnimationFrame`, and `probe:sets`
+   * caught that one in a real engine: the frame fires before React flushes the re-render the
+   * settle's `setCollapsed` schedules, so the flag was already down when the layout run
+   * arrived and the head animated 299.5px → 57px across a window resize. jsdom orders those
+   * two the way that happens to work, so no unit test here can tell the versions apart —
+   * the check that can is in the probe.
+   *
+   * What is left makes no timing assumption at all: armed where the settle is dispatched,
+   * consumed by the layout run it causes, and taken down by the next scroll event if it
+   * causes none.
+   */
+  const settlingCrossingRef = useRef(false);
+  /**
+   * Set at a crossing, read once by the passive effect's re-evaluation below. Two flags
+   * because they answer different questions — "a crossing happened" and "the evaluation now
+   * running is that crossing's".
+   */
+  const crossingPendingRef = useRef(false);
+  /** True while an arm is outstanding, so the next real scroll can take it down. */
+  const staleArmRef = useRef(false);
+
   /** The width the recorded bar belongs to, so a trip can tell whose figure it holds. */
   const barDesktopRef = useRef<boolean | null>(null);
   /**
@@ -343,12 +383,37 @@ export function useHeadCollapse({
     if (!mayCollapse) return;
     // An open sheet freezes the head: the listener stands down and `collapsed` holds.
     if (sheetOpen) return;
-    const onScroll = () => evaluateCollapse(isDesktop);
-    // The first read is here, in a passive effect, so a reload at scrollY > 120 paints the
+    // The READER's scrolls, which are never a settle. A stale arm — a crossing whose
+    // evaluation changed nothing, so no layout run came to consume it — is taken down here
+    // before anything is decided, so it can never suppress this scroll's own step.
+    const onScroll = () => {
+      if (staleArmRef.current) {
+        staleArmRef.current = false;
+        settlingCrossingRef.current = false;
+      }
+      evaluateCollapse(isDesktop);
+    };
+    // A crossing's settle is THIS call: the layout effect above has already reopened the
+    // head, and re-arming for the new width re-decides at the reader's offset. Arming the
+    // suppression immediately around it is what makes the ordering irrelevant — whatever
+    // state change this causes, the layout run that follows sees the flag.
+    //
+    // An evaluation that changes nothing brings no layout run to consume the flag, so the
+    // listener below takes it down on the reader's next scroll instead — before deciding
+    // anything, so a stale arm can never suppress that scroll's own collapse.
+    if (crossingPendingRef.current) {
+      crossingPendingRef.current = false;
+      settlingCrossingRef.current = true;
+      staleArmRef.current = true;
+    }
+    // The initial read is deliberately NOT `onScroll`: this call IS the settle when a
+    // crossing is pending, and routing it through the reader's handler would disarm the
+    // suppression in the very call it was armed for.
+    evaluateCollapse(isDesktop);
+    // The first read is above, in a passive effect, so a reload at scrollY > 120 paints the
     // open head for one frame before collapsing. Moving it to a layout effect is what the
     // shape asks for and `react-hooks/set-state-in-effect` forbids outright; deriving it
     // during render would read `window.scrollY` on the server and mismatch on hydration.
-    onScroll();
     window.addEventListener("scroll", onScroll, { passive: true });
     return () => window.removeEventListener("scroll", onScroll);
   }, [mayCollapse, sheetOpen, isDesktop, evaluateCollapse]);
@@ -374,25 +439,6 @@ export function useHeadCollapse({
   /** The breakpoint the last run saw. A crossing is a re-layout, never a transition. */
   const animatedDesktopRef = useRef(isDesktop);
 
-  /**
-   * Set at a crossing, and cleared on the next frame — so the step that SETTLES a crossing
-   * does not animate either, and nothing later does.
-   *
-   * Now that both widths collapse, a crossing made while shy reopens the head (the reserve
-   * is the other width's and nothing can be measured until it is open) and the scroll
-   * listener — re-armed by the same `isDesktop` change — immediately re-decides at the
-   * reader's offset, usually back to collapsed. That second decision lands in its own
-   * commit, where `crossedBreakpoint` is already false: without this it animates, and the
-   * reader watches the head pop open and slide shut for a window resize.
-   *
-   * Cleared on a FRAME rather than by the next run of this effect, which is the version that
-   * shipped to review and was wrong. This effect runs only when `shy`, `isDesktop` or
-   * `deltaFiring` changes, and a crossing made at the top of the page settles nothing — the
-   * head was already open. The flag then sat set until the reader's next genuine collapse,
-   * minutes later, which snapped. The settle lands in the same frame as the crossing that
-   * causes it; anything that does not is a different event and animates.
-   */
-  const settlingCrossingRef = useRef(false);
 
   /**
    * The step between the two heights, animated — and owned by the engine rather than by this
@@ -449,15 +495,10 @@ export function useHeadCollapse({
     // the step was a CSS transition — the setup that followed the teardown saw no change and
     // never restarted.
     const stepping = changed || wasRunning;
+    // Consumed, not merely read: one settle, one suppression.
     const settling = settlingCrossingRef.current;
-    if (crossedBreakpoint) {
-      settlingCrossingRef.current = true;
-      // The settle, if there is one, is dispatched from the passive scroll effect that
-      // re-arms in this same commit — so it is this frame or it is not the crossing's.
-      requestAnimationFrame(() => {
-        settlingCrossingRef.current = false;
-      });
-    }
+    settlingCrossingRef.current = false;
+    if (crossedBreakpoint) crossingPendingRef.current = true;
     if (el === null || spacer === null || !stepping || crossedBreakpoint || settling
       || prefersReducedMotion() || typeof el.animate !== "function"
       || from === null || to === null || Math.abs(to - from) < 1) {

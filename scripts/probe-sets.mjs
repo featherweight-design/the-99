@@ -1372,6 +1372,40 @@ async function run() {
       );
     }
 
+    // The crossing, and the step that settles it, in a REAL engine. Neither width's head may
+    // animate across a breakpoint change — the two are different designs rather than two
+    // heights of one — and the settle is the half no unit test here can reach: React
+    // schedules the passive effect that re-decides for the new width, jsdom happens to run
+    // it in the order that works, and the ordering is the whole question. `getAnimations()`
+    // is the only witness.
+    await page.setViewportSize({ width: 390, height: 844 });
+    await page.goto(`${BASE}/collection/sets/${code}`, { waitUntil: "networkidle" });
+    await waitForCells(page);
+    await scrollTo(900);
+    const shyBefore = await headNow();
+    await page.evaluate(() => {
+      const head = document.querySelector("[data-set-head]");
+      if (head !== null) head.getAnimations().forEach((a) => a.cancel());
+    });
+    await page.setViewportSize({ width: 1280, height: 900 });
+    // Two frames for the crossing's own commit, then the settle's.
+    await page.evaluate(() => new Promise((r) => requestAnimationFrame(() => requestAnimationFrame(r))));
+    const crossingAnims = await page.evaluate(() => {
+      const head = document.querySelector("[data-set-head]");
+      if (head === null) return null;
+      const runs = head.getAnimations();
+      return runs.length === 0 ? 0 : runs.map((a) => `${a.playState}:${
+        (a.effect && a.effect.getKeyframes && a.effect.getKeyframes().map((k) => k.height).join(">")) || "?"
+      }`).join(", ");
+    });
+    failures += !report(
+      "a breakpoint crossing and its settle draw no animation on the head",
+      shyBefore !== null && shyBefore.shy && crossingAnims === 0,
+      shyBefore === null || !shyBefore.shy
+        ? "the head was not collapsed before the crossing — the check measured nothing"
+        : `${crossingAnims} animation(s) on the head after the crossing`,
+    );
+
     // Addendum 2 §3 asks for a gate holding the head open while the rarity panel is open.
     // There is none, and this is why: the desktop popover dismisses itself on scroll, so
     // the panel is already closed by the time the head decides anything. The gate was

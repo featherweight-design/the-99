@@ -13,7 +13,8 @@ filters, and the markup without the hook is a form nothing reaches.
 
 ## Task 1 — `use-head-collapse.ts`: the guard goes, two gates arrive
 
-- `mayCollapse` drops its `!isDesktop` term. It becomes `!deltaFiring && !panelOpen`.
+- `mayCollapse` drops its `!isDesktop` term. It becomes `!deltaFiring` — ~~`&& !panelOpen`~~,
+  withdrawn with the gate in Task 2.
 - **The `seenDesktop` breakpoint reopen STAYS**, against the handoff's §3, per the verdict:
   `restHeightRef` holds one width's rest height (148 phone, 276 desktop) and the open subtree is
   `display: none` while shy, so a crossing made while collapsed can neither use the recorded
@@ -59,7 +60,8 @@ where it closes.
 
 - The phone bar renders on `shy && !isDesktop`. Unchanged otherwise.
 - **New: the desktop identity prefix**, on `shy && isDesktop` — 22px `SetIcon`, the `h1` truncating
-  at `text-[14px]`, the `baseOwned / baseTotal` ratio with its existing `ratioAria`. No search
+  at `text-[15px]` (the addendum's own figure for this row), the `baseOwned / baseTotal` ratio with
+  its existing `ratioAria`. No search
   button and no `Filters` button: both exist on the phone because its controls are behind a sheet,
   and at `md` the controls themselves are on the row.
 - **Rack row 1 stays mounted while shy at `md`.** Its `shy ? "hidden" : "flex"` becomes hidden only
@@ -88,8 +90,9 @@ New, one per claim:
 - At `md`, shy renders the field **once** in the document — one element with its accessible name,
   at every offset. The round's load-bearing claim.
 - The desktop prefix draws no `Filters` trigger and no back-to-search button.
-- No collapse while the rarity panel is open; no collapse while focus is inside a
-  `data-set-shy-hides` member; the delta gate still holds at `md`.
+- No collapse while focus is inside a `data-set-shy-hides` member, and the delta gate still holds
+  at `md`. ~~No collapse while the rarity panel is open~~ — withdrawn with the gate in Task 2; the
+  probe asserts the panel's own scroll-dismissal instead.
 - The band is 120 at `md` and 80 on the phone: collapse at `reopenAt + band`, asserted at both.
 - The result line stays `role="status"` and `sr-only` while shy at `md`.
 
@@ -111,4 +114,5 @@ handoff's row arithmetic never carried. Asserted:
 
 ## Task 6 — Tracker
 
-`design-pipeline-status.md`: the row moves from 🟢 Ready to ✅ Shipped with the PR number.
+`design-pipeline-status.md`: the row moves from 🟢 Ready to ✅ Shipped with the PR numbers —
+#721 for the drop and the verdict, this PR for the build.
