@@ -276,8 +276,16 @@ function LastSlotsStripInner({
   // The two reopen notes are about ownership rather than ticks, so they keep the
   // unclamped owned count: you do still own all of them.
   const seedCount = String(Math.min(seedableIds.length, Math.max(openSlots, 0)));
+  // A seed of zero is now two opposite facts, and the sentence has to tell them
+  // apart: the player owns none of the candidates, or they own them and every
+  // copy is sleeved in another deck. `doorNote`'s zero branch says `You own none
+  // of these`, which is false in the second case and false to the player best
+  // placed to notice. The OWNED count picks between them, never the seed.
+  const noneFree = seedCount === "0" && ownedIds.length > 0;
   const doorNote = !visited
-    ? topOffCopy.strip.doorNote(seedCount)
+    ? noneFree
+      ? topOffCopy.strip.doorNoteNoneFree
+      : topOffCopy.strip.doorNote(seedCount)
     : ownedIds.length === 0
       ? topOffCopy.strip.doorNoteAgain(String(candidates.length))
       : topOffCopy.strip.doorNoteAgainOwned(
@@ -289,7 +297,9 @@ function LastSlotsStripInner({
   // the provenance and keep the promise. Both reopen cases take the one string:
   // the closed caption directly above already states the candidate count.
   const doorNoteMobile = !visited
-    ? topOffCopy.strip.doorNoteMobile(seedCount)
+    ? noneFree
+      ? topOffCopy.strip.doorNoteNoneFreeMobile
+      : topOffCopy.strip.doorNoteMobile(seedCount)
     : topOffCopy.strip.doorNoteAgainMobile;
 
   return (

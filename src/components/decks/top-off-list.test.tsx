@@ -609,9 +609,12 @@ describe("TopOffList — the desktop row", () => {
     stubViewport(390);
     render(<Harness />);
 
-    // The name is text in the label, not a button — so the only buttons on the
-    // row are the decline and the commit fixtures, never one named for the card.
-    expect(screen.queryByRole("button", { name: /^owned-1$/ })).toBeNull();
+    // Named by the trigger's OWN spoken name. `/^owned-1$/` can never match it —
+    // the trigger's accessible name is `View details for owned-1` — so that form
+    // passed at every width and let a trigger leak onto the one-tap phone row.
+    expect(
+      screen.queryByRole("button", { name: cardDetailCopy.triggerAria("owned-1") }),
+    ).toBeNull();
     expect(rowOf("owned-1")).not.toHaveTextContent("Spell");
   });
 

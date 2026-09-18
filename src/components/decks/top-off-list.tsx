@@ -538,42 +538,6 @@ export function TopOffList({
         </p>
       </div>
 
-      {/* ── Column header (§3) — desktop only ───────────────────────────── */}
-      <div
-        aria-hidden
-        className="hidden md:flex items-center gap-[10px] pt-[9px] pb-[7px] px-[9px] font-mono uppercase"
-        style={{ fontSize: "9.5px", letterSpacing: ".12em", color: "var(--fg-faint)" }}
-      >
-        <span className="w-[18px] flex-none" />
-        <span className="w-[7px] flex-none" />
-        <span className="flex-auto min-w-0">{topOffCopy.list.colCard}</span>
-        {/* Type, beside the name as the handoff's own long-list note orders it
-            (`box, dot, name, type, buy tag, synergy, inclusion`). It reads the
-            synergy panel's heading rather than declaring a second copy of the
-            word: two surfaces listing the same EDHREC pool under two different
-            headings for one column is the drift a shared string exists to stop. */}
-        <span className="flex-none" style={{ width: TYPE_COL }}>{synergyCopy.panel.colType}</span>
-        {/* The same shared track the rows draw into, never a literal beside it: the cost
-            column widened from 40 to 72 when the pips stopped overlapping, and a header
-            carrying its own copy of the old number put this heading and every one after it
-            32px left of the data underneath. */}
-        <span
-          className="flex-none text-right"
-          style={{ width: COST_TRACK }}
-        >
-          {topOffCopy.list.colCost}
-        </span>
-        <span className="w-[84px] flex-none" />
-        {/* Both figures narrow to pay for the decline's 60px slot, measured
-            against the string the row actually renders — `+147 pts`, eight
-            characters at IBM Plex Mono's 0.6em advance, which is 57.6px at
-            12px. 44px is recovered against 42px spent, so the name column
-            gains 2px rather than paying anything. */}
-        <span className="w-[60px] flex-none text-right">{topOffCopy.list.colSynergy}</span>
-        <span className="w-[36px] flex-none text-right">{topOffCopy.list.colDecks}</span>
-        <span className="w-[60px] flex-none" />
-      </div>
-
       {/* ── The rows (§4) ──────────────────────────────────────────────── */}
       <div
         role="group"
@@ -610,6 +574,59 @@ export function TopOffList({
         // Design; this is the reading surface, not the ranking.
         className="flex flex-col gap-[6px] md:gap-[5px] mt-[8px] md:max-h-[480px] md:overflow-y-auto"
       >
+        {/* ── Column header (§3) — desktop only ───────────────────────────── */}
+        {/* INSIDE the scroll box below, and sticky to its top, rather than a
+            sibling above it. A classic (non-overlay) scrollbar takes its width out
+            of the scroll container's CONTENT box, so a header outside would be
+            about 15px wider than the rows and every heading after the flex-auto
+            name column would sit that far right of the data it names — the same
+            failure this file's own header comment records at 32px, arriving the
+            other way. Invisible on overlay scrollbars, which is what macOS draws
+            and what the probe measures, so nothing here would have caught it.
+
+            Sticky, because a header that scrolled away with the rows would leave a
+            480px box of unlabelled figures. It carries the strip's own background
+            so rows pass under it rather than through it. */}
+        <div
+          aria-hidden
+          className="hidden md:flex md:sticky md:top-0 md:z-[1] items-center gap-[10px] pt-[9px] pb-[7px] px-[9px] font-mono uppercase"
+          style={{
+            fontSize: "9.5px",
+            letterSpacing: ".12em",
+            color: "var(--fg-faint)",
+            background: "var(--surface-rail)",
+          }}
+        >
+          <span className="w-[18px] flex-none" />
+          <span className="w-[7px] flex-none" />
+          <span className="flex-auto min-w-0">{topOffCopy.list.colCard}</span>
+          {/* Type, beside the name as the handoff's own long-list note orders it
+              (`box, dot, name, type, buy tag, synergy, inclusion`). It reads the
+              synergy panel's heading rather than declaring a second copy of the
+              word: two surfaces listing the same EDHREC pool under two different
+              headings for one column is the drift a shared string exists to stop. */}
+          <span className="flex-none" style={{ width: TYPE_COL }}>{synergyCopy.panel.colType}</span>
+          {/* The same shared track the rows draw into, never a literal beside it: the cost
+              column widened from 40 to 72 when the pips stopped overlapping, and a header
+              carrying its own copy of the old number put this heading and every one after it
+              32px left of the data underneath. */}
+          <span
+            className="flex-none text-right"
+            style={{ width: COST_TRACK }}
+          >
+            {topOffCopy.list.colCost}
+          </span>
+          <span className="w-[84px] flex-none" />
+          {/* Both figures narrow to pay for the decline's 60px slot, measured
+              against the string the row actually renders — `+147 pts`, eight
+              characters at IBM Plex Mono's 0.6em advance, which is 57.6px at
+              12px. 44px is recovered against 42px spent, so the name column
+              gains 2px rather than paying anything. */}
+          <span className="w-[60px] flex-none text-right">{topOffCopy.list.colSynergy}</span>
+          <span className="w-[36px] flex-none text-right">{topOffCopy.list.colDecks}</span>
+          <span className="w-[60px] flex-none" />
+        </div>
+
         {pool.map((c) => {
           if (illegal.has(c.oracleId)) {
             return (

@@ -828,7 +828,7 @@ Package manager is **pnpm** (pinned via `packageManager` in package.json) — ne
   lists, and nothing else), the array dependency restored (both hold-its-place checks), and
   `colorLabel` reverted to `join("")` (`found GRW`). Makes no writes; point it at `local-dev`.
 
-- `pnpm probe:last-slots` walks the Last 31 list at 1300x900 and 390x844 — four rulings that
+- `pnpm probe:last-slots` walks the Last 31 list at 1300x900 and 390x844 — five rulings that
   are facts about laid-out geometry or about a pointer, and jsdom has neither.
 
   **The desktop list is bounded; the phone's is not.** `LONG-LIST-thirty-one-rows.md` refuses
@@ -845,7 +845,17 @@ Package manager is **pnpm** (pinned via `packageManager` in package.json) — ne
   **The row lights under a pointer**, which needed the fill to leave the inline `style` — an
   inline background outranks every utility, so no hover could exist at all, and a class-list
   assertion cannot see that. **The name opens the card and does not tick the row**, those
-  being the same press on a control nested in the tick's label.
+  being the same press on a control nested in the tick's label. **The type word is drawn on
+  desktop and absent on the phone**, whose row is two lines by design with no room for it.
+
+  **The header and the rows share one content width**, which is why the column header sits
+  INSIDE the scroll box, sticky, rather than above it. A classic scrollbar takes its width out
+  of the scroll container's content box, so a header outside reads about 15px wider than the
+  rows and every heading after the flex-auto name column sits that far right of the data it
+  names — the same failure this component's own header comment records at 32px, arriving from
+  the other direction. macOS draws OVERLAY scrollbars, so the width delta reads 0 either way
+  on the machine the probe runs on; the check therefore asserts the structural fact — the
+  header is inside the box — which is what makes the delta 0 on Windows and Linux too.
 
   **A slot has to be FREED before the hover can be measured, and that is the fixture rather
   than a workaround.** On open the seed fills every slot, which leaves no row able to light: a

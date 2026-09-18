@@ -170,6 +170,24 @@ describe("LastSlotsStrip", () => {
     expect(screen.queryByText(topOffCopy.strip.doorNote("3"))).toBeNull();
   });
 
+  it("does not tell a player who owns every candidate that they own none", () => {
+    // A seed of zero is two opposite facts now. `doorNote`'s zero branch says
+    // `You own none of these`, which is false when the player owns all of them
+    // and every copy is sleeved in another deck — and false to the player best
+    // placed to notice. The OWNED count picks between them, never the seed.
+    render(<LastSlotsStrip {...base} candidates={[claimed("held-1"), claimed("held-2")]} />);
+
+    expect(screen.getByText(topOffCopy.strip.doorNoteNoneFree)).toBeInTheDocument();
+    expect(screen.queryByText(topOffCopy.strip.doorNote("0"))).toBeNull();
+  });
+
+  it("still says `you own none` when the player really owns none", () => {
+    render(<LastSlotsStrip {...base} candidates={[candidate("buy-1", false)]} />);
+
+    expect(screen.getByText(topOffCopy.strip.doorNote("0"))).toBeInTheDocument();
+    expect(screen.queryByText(topOffCopy.strip.doorNoteNoneFree)).toBeNull();
+  });
+
   it("seeds a card with no availability reading, which is the degraded case", () => {
     // A null reading is NO ROW — an unowned card, or a read that could not reach
     // — and reads as free everywhere else in the app. Seeding nothing here would

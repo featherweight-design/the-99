@@ -32,7 +32,7 @@
 import { clerkSetup, setupClerkTestingToken } from "@clerk/testing/playwright";
 import { chromium } from "playwright";
 import { requireEnv } from "./lib/env.mjs";
-import { onPage, PAGE } from "./lib/surface.mjs";
+import { onPage } from "./lib/surface.mjs";
 
 const { E2E_AUDIT_USER_EMAIL: EMAIL } = requireEnv(["E2E_AUDIT_USER_EMAIL", "CLERK_SECRET_KEY"]);
 const BASE = process.env.PROBE_BASE ?? "http://localhost:3000";
@@ -234,6 +234,33 @@ async function run() {
         // The fill, under a real pointer. Read as a COLOUR either side of a
         // hover rather than as a class: the defect was an inline style winning
         // over a utility, which leaves the class list reading correctly.
+        // The header and the rows share ONE content width. A classic scrollbar
+        // takes its width out of the scroll container's content box, so a header
+        // OUTSIDE the box reads about 15px wider than the rows and every heading
+        // after the flex-auto name column sits that far right of its data. macOS
+        // draws overlay scrollbars, so the width delta reads 0 either way here —
+        // which is why the check also asserts the header is INSIDE the box, the
+        // structural fact that makes the delta 0 on every platform.
+        const cols = await page.evaluate(() => {
+          const box = [...document.querySelectorAll('main div[role="group"]')]
+            .find((b) => b.querySelectorAll('input[type="checkbox"]').length > 0);
+          const header = box?.querySelector("div[aria-hidden]");
+          const row = box?.querySelector('input[type="checkbox"]')?.closest("div[class*=rounded-]");
+          if (!header || !row) return null;
+          return {
+            inside: box.contains(header),
+            delta: Math.abs(header.getBoundingClientRect().width - row.getBoundingClientRect().width),
+          };
+        });
+        report(
+          `${width}px · the header and the rows share a width`,
+          cols !== null && cols.inside && cols.delta <= 1,
+          cols === null
+            ? "no header or no row found — NOT a pass"
+            : `header is ${cols.inside ? "inside" : "OUTSIDE"} the box, widths differ by`
+              + ` ${Math.round(cols.delta * 100) / 100}px`,
+        );
+
         // A SLOT HAS TO BE FREED FIRST, and that is the fixture, not a
         // workaround. On open the seed fills every slot, which leaves the list
         // in a state where nothing can light: a ticked row already carries the

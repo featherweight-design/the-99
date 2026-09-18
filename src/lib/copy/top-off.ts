@@ -59,10 +59,17 @@ export const topOffCopy = {
      *  a button face; there is no such number now. This one explains a default
      *  and makes the safety promise the review step is for.
      *
-     *  The figure is the SEEDED TICK COUNT, which is the owned candidates
-     *  clamped to the open slots — so the sentence says what arrives ticked and
-     *  claims nothing about how many the player owns in total. A deck with 58
-     *  owned candidates for 31 slots seeds 31, and 'you own 31' would be false. */
+     *  The figure is the SEEDED TICK COUNT, which is the owned candidates WITH A
+     *  FREE COPY, clamped to the open slots — so the sentence says what arrives
+     *  ticked and claims nothing about how many the player owns in total. A deck
+     *  with 58 owned candidates for 31 slots seeds 31, and 'you own 31' would be
+     *  false.
+     *
+     *  The ZERO branch is the one place that distinction bites, which is why
+     *  `doorNoteNoneFree` exists beside it: a seed of 0 used to mean the player
+     *  owned none of the candidates, and now it also happens when they own every
+     *  one and every copy is sleeved in another deck. Those are opposite facts,
+     *  and the caller picks between them on the owned count, never on the seed. */
     doorNote: (seeded: string) =>
       seeded === '0'
         ? 'You own none of these, so the list arrives untouched. Nothing is added until you say so.'
@@ -91,6 +98,22 @@ export const topOffCopy = {
         : seeded === '1'
         ? '1 arrives ticked. Nothing is added until you say so.'
         : `${seeded} arrive ticked. Nothing is added until you say so.`,
+    /** A seed of zero that is NOT a statement about ownership.
+     *
+     *  The player owns candidates; every copy of every one of them is sleeved in
+     *  another deck. Saying `You own none of these` there is false, and false to
+     *  the player best placed to notice. The list still offers the cards, since a
+     *  copy can be reclaimed, so the sentence says where the copies ARE rather
+     *  than that there is nothing to do.
+     *
+     *  No figure. The count of owned-but-spoken-for candidates is a number the
+     *  player cannot act on from this door, and the caption above it already
+     *  carries the one they can. */
+    doorNoteNoneFree:
+      'Every copy you own is in another deck, so the list arrives untouched. Nothing is added until you say so.',
+    /** The phone form, dropping the provenance exactly as `doorNoteMobile` does. */
+    doorNoteNoneFreeMobile:
+      'Every copy you own is in another deck. Nothing is added until you say so.',
     /** One string for both reopen cases. The two desktop variants differ only in
      *  an ownership figure, and the closed caption directly above already states
      *  the candidate count, so phone keeps only the clause that matters. */
