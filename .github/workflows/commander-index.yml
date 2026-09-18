@@ -67,6 +67,22 @@ jobs:
       # must not cancel the production one, which is the environment the app
       # actually serves.
       fail-fast: false
+      # SERIAL, and this is the one place the catalog/price precedent does NOT
+      # carry. Those legs each pull a single bulk file, so fanning them out adds
+      # one concurrent download. This job makes ~3,000 EDHREC requests spaced by
+      # `DEFAULT_DELAY_MS` (250ms, `src/lib/edhrec/seed-index.ts`), and that delay
+      # is politeness to a host that owes us nothing — two concurrent legs would
+      # silently double the outbound rate to ~8 req/s. One at a time costs wall
+      # clock, which the 180-minute timeout has in hand, and costs EDHREC nothing.
+      max-parallel: 1
+    # A FAILED STAGING LEG MUST NOT SPEAK FOR THE RUN. `commander-prose.yml` chains
+    # on `workflow_run.conclusion`, which is the AGGREGATE over both legs — so
+    # without this, a staging leg that errors (EDHREC 5xx, a rotated staging
+    # secret) makes the run's conclusion `failure` and production's sentences are
+    # never regenerated that month, even though production's own index succeeded.
+    # That is the same rule as `fail-fast: false` above, extended to the signal
+    # the run emits rather than only to the legs it cancels.
+    continue-on-error: ${{ matrix.target == 'staging' }}
     runs-on: ubuntu-latest
     concurrency:
       # Per target: the two environments hold different databases, so a manual

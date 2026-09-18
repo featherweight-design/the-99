@@ -39,6 +39,10 @@ jobs:
     # against `staging` would otherwise chain into a production prose run and
     # rewrite production sentences from staging's tags.
     #
+    # `conclusion` here is the index run's AGGREGATE over both matrix legs, which
+    # is why that workflow marks its staging leg `continue-on-error`: a staging
+    # failure must not withhold production's sentences for a month.
+    #
     # THIS RUN IS ALWAYS PRODUCTION'S, and that is now a choice rather than a
     # consequence. It used to follow from the index: a scheduled index run took
     # that workflow's own `|| 'production'` default, so the fallback below was
