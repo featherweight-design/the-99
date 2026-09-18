@@ -18,6 +18,8 @@ import { clerkSetup, setupClerkTestingToken } from "@clerk/testing/playwright";
 import { chromium } from "playwright";
 import { Pool, neonConfig } from "@neondatabase/serverless";
 import ws from "ws";
+import { readFileSync } from "node:fs";
+import { join } from "node:path";
 import { onPage } from "./lib/surface.mjs";
 import { requireEnv } from "./lib/env.mjs";
 
@@ -34,11 +36,31 @@ if (!EMAIL.includes("+clerk_test") && !PASSWORD) {
 }
 
 const BASE = process.env.PROBE_BASE ?? "http://localhost:3000";
+
+/**
+ * The chassis's own switch point, READ FROM THE CHASSIS.
+ *
+ * The tightest wide layout is the one worth measuring, and it is at the
+ * breakpoint — 1300 has slack and passes over an overflow that begins at the
+ * switch. A literal here is a second copy of a constant that belongs to
+ * `filter-chassis.tsx`: raised, this script's "boundary" becomes a compact
+ * viewport and the tight case goes unmeasured; lowered, it stops being the
+ * boundary at all. So it is parsed out of the source rather than typed again.
+ */
+const CHASSIS_WIDE_MIN_PX = (() => {
+  const source = readFileSync(
+    join(import.meta.dirname, "..", "src", "components", "ui", "filter-chassis.tsx"),
+    "utf8",
+  );
+  const match = source.match(/CHASSIS_WIDE_MIN_PX\s*=\s*(\d+)/);
+  if (!match) throw new Error("filter-chassis.tsx no longer declares CHASSIS_WIDE_MIN_PX");
+  return Number(match[1]);
+})();
 const WIDTHS = [
   { label: "desktop", width: 1300, height: 900 },
-  // The chassis's own switch point, and the width where a fifth control in the
-  // wide row either fits or wraps. 1300 has slack and would pass either way.
-  { label: "boundary", width: 1000, height: 900 },
+  // The switch point itself: the tightest width at which the wide row renders,
+  // and the one where a fifth control either fits or wraps.
+  { label: "boundary", width: CHASSIS_WIDE_MIN_PX, height: 900 },
   { label: "phone", width: 390, height: 844 },
 ];
 

@@ -56,7 +56,16 @@ export const deckStateMarksCopy = {
     markAria: "not committed yet",
   },
 
-  /** The filter facet. One heading, two rows, no counts. */
+  /**
+   * The filter facet: one heading, two rows.
+   *
+   * The rows carry per-row counts in the wide form, like Status and Last played
+   * beside them — `FilterPanel`'s `showCounts` defaults true and `/decks`
+   * passes nothing to any of its three panels. An earlier draft of this note
+   * said "no counts", taking the handoff's line about the HEADING carrying no
+   * figure to mean the rows carried none either; suppressing them on one
+   * heading of three would be the inconsistency, not the fix.
+   */
   filter: {
     heading: "Deck state",
     /** The phase: no v1 at all. */
