@@ -3,6 +3,7 @@ import { describe, it, expect, vi, beforeEach } from "vitest";
 const rows = vi.hoisted(() => ({ value: [] as unknown[] }));
 const committed = vi.hoisted(() => ({ value: new Map<string, { id: string; name: string }>() }));
 const selected = vi.hoisted(() => ({ value: [] as Record<string, unknown>[] }));
+const grouped = vi.hoisted(() => ({ value: [] as unknown[][] }));
 
 // One chainable builder answers both queries this module builds: the ownership
 // subquery, which ends at `.as`, and the outer select, which is awaited at
@@ -16,9 +17,17 @@ vi.mock("../../../db", () => {
     as: () => ({ oracleId: "owned.oracle_id", qty: "owned.qty" }),
     then: (resolve: (value: unknown) => void) => resolve(rows.value),
   };
-  for (const step of ["from", "innerJoin", "leftJoin", "where", "groupBy"]) {
+  for (const step of ["from", "innerJoin", "leftJoin", "where"]) {
     chain[step] = () => chain;
   }
+  // The group-by's arguments are captured for the same reason the projection is:
+  // the image column has to be grouped exactly when it is selected, and those two
+  // drifted apart once — the projection went opt-in while the group-by kept
+  // naming the column, so the database read it either way.
+  chain.groupBy = (...keys: unknown[]) => {
+    grouped.value.push(keys);
+    return chain;
+  };
   // The projection is captured, so a test can ask WHICH columns were selected —
   // the one thing `withImages` changes, and a thing no shaped row can show.
   return {
@@ -43,10 +52,13 @@ beforeEach(() => {
   rows.value = [];
   committed.value = new Map();
   selected.value = [];
+  grouped.value = [];
 });
 
 /** The outer select's projection — the second `db.select` this module makes. */
 const projection = () => selected.value[selected.value.length - 1];
+/** The outer select's group-by keys. */
+const groupKeys = () => grouped.value[grouped.value.length - 1];
 
 describe("readSynergyCards — the image column", () => {
   // This reader serves two routes and only the deck page draws a preview, so the
@@ -68,6 +80,18 @@ describe("readSynergyCards — the image column", () => {
     // Both name the key — the row shape is one shape — and they differ in what
     // stands behind it: the catalog's column, or a literal null.
     expect(withImages.imageUri).not.toEqual(withoutImages.imageUri);
+  });
+
+  it("groups by the picture exactly when it selects it", async () => {
+    // The two have to move together: Postgres requires an ungrouped selected
+    // column to be aggregated, and naming an unselected one makes the database
+    // read and hash a column nothing asked for — most of the work the opt-in
+    // exists to avoid.
+    await readSynergyCards("user", ["cmdr"], []);
+    const withoutImages = groupKeys().length;
+
+    await readSynergyCards("user", ["cmdr"], [], true);
+    expect(groupKeys().length).toBe(withoutImages + 1);
   });
 
   it("carries the picture through to the shaped row", async () => {

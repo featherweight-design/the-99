@@ -85,12 +85,18 @@ export async function readSynergyCards(
     // `owned_totals.qty` holds one value per card, so grouping by it splits
     // nothing — it is here because Postgres requires every ungrouped select
     // column to be aggregated, not because the figure varies within a group.
+    // The image column is grouped ONLY when it is selected, and the two have to
+    // move together. Postgres requires an ungrouped selected column to be
+    // aggregated, so the group-by is mandatory when the column is real — and
+    // when it is the literal `null` above, naming it here makes the database
+    // read, hash and sort a column nothing asked for, which is most of the work
+    // the opt-in exists to avoid.
     .groupBy(
       commanderSupportCards.oracleId,
       cards.name,
       cards.typeLine,
       cards.manaCost,
-      cards.imageUri,
+      ...(withImages ? [cards.imageUri] : []),
       ownedTotals.qty,
     );
 
