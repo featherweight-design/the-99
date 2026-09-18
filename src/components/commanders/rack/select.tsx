@@ -306,10 +306,15 @@ export function RackSelect<K extends string>({
                   move(i, dir);
                 }}
                 onClick={() => {
-                  setOpen(false);
-                  // The row this click landed on unmounts with the menu, so
-                  // without this the keyboard reader is left on the body.
-                  trigger.current?.focus();
+                  // A pinned menu does not close on a pick either, and the
+                  // focus hand-back goes with it: nothing unmounts, so there
+                  // is nowhere the reader needs putting back to.
+                  if (!pinnedOpen) {
+                    setOpen(false);
+                    // The row this click landed on unmounts with the menu, so
+                    // without this the keyboard reader is left on the body.
+                    trigger.current?.focus();
+                  }
                   onChange(o.key);
                 }}
                 className={[

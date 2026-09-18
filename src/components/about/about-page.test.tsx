@@ -778,6 +778,14 @@ describe("what each chapter 01 figure actually draws", () => {
     expect(before).toBe(ORDER_OPTIONS.discover.length);
     fireEvent.click(trigger!);
     expect(el.querySelectorAll('[role="menuitemradio"]')).toHaveLength(before);
+
+    // And picking an option is the third door. `pinnedOpen` guarded the
+    // listeners, then the trigger, and left this one — three paths for one
+    // claim, which is what the prop's comment promised and did not deliver
+    // twice running.
+    const option = el.querySelector('[role="menuitemradio"]');
+    fireEvent.click(option!);
+    expect(el.querySelectorAll('[role="menuitemradio"]')).toHaveLength(before);
   });
 
   it("discover: the order control alone, with every gloss", () => {
