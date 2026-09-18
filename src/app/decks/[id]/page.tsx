@@ -156,9 +156,11 @@ export default async function DeckBuilderPage({
   const gameSummary = summarizeGames(games);
 
   // The whole pool the top-off list offers, in rank order and uncapped — the
-  // cap belongs to the selection, not to the list. A card the deck already
-  // holds is the one exclusion: a row the player cannot tick is a row the list
-  // has no reason to draw.
+  // cap belongs to the selection, not to the list. TWO exclusions: a card the
+  // deck already holds, because a row the player cannot tick is a row the list
+  // has no reason to draw; and a card whose synergy is negative, which is EDHREC
+  // arguing against the card under a heading that offers it. Both live in
+  // `listLastSlotsCandidates`, which is where the reasoning for each one is.
   const inDeckOracleIds = new Set(detail.cards.map((r) => r.oracleId));
   const candidateCards = listLastSlotsCandidates({ ranked, inDeckOracleIds });
   // Why the pool is empty, when it is. An empty list has two causes now and the

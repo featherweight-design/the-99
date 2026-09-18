@@ -952,7 +952,18 @@ function CandidateRow({
                 density="full"
               />
             ) : c.availability ? (
-              <AvailabilityMarker availability={c.availability} nameless />
+              // `--row-bg`, not the default `var(--bg)`. The over state draws a
+              // doubled diamond whose seam has to be the colour directly BEHIND
+              // it, and this row's fill is no longer one colour: it is `--surface`
+              // at rest and `--elevated-hover` ticked or under the pointer. A
+              // fixed seam draws the canvas colour through a surface-coloured
+              // row, which reads as a hairline crack rather than as the join it
+              // is — and the hover this round added is what made that reachable.
+              <AvailabilityMarker
+                availability={c.availability}
+                seam="var(--row-bg)"
+                nameless
+              />
             ) : null}
           </span>
         </label>

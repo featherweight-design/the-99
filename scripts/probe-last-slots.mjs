@@ -323,7 +323,10 @@ async function run() {
         } else {
           await name.click();
           await page.waitForTimeout(1_500);
-          const opened = await page.locator('[role="dialog"]').count();
+          // Scoped, like every other page-content query here: the shell draws a
+          // `role="dialog"` of its own for the account menu, so a bare locator
+          // can count a dialog this press did not open.
+          const opened = await onPage(page, '[role="dialog"]').count();
           const after = await page.evaluate(() =>
             document.querySelectorAll('main div[role="group"] input[type="checkbox"]:checked').length);
           report(

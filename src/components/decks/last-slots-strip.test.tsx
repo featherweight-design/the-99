@@ -519,7 +519,7 @@ describe("LastSlotsStrip", () => {
 
       const key = topOffDraftKey(base.deckId);
       await act(async () => {
-        localStorage.setItem(key, '{"t":["owned-1"],"d":[]}');
+        localStorage.setItem(key, '{"v":2,"t":["owned-1"],"d":[]}');
         window.dispatchEvent(new StorageEvent("storage", { key }));
       });
       expect(screen.getAllByRole("checkbox", { checked: true })).toHaveLength(1);
