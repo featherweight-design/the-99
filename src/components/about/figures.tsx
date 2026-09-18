@@ -22,7 +22,6 @@ import { GameAxisCell } from "../decks/game-axis-cell";
 import { CommitmentsCard } from "../home/commitments-card";
 import { THEMES } from "../../lib/theme/themes";
 import { addPanelCopy, exportLinkOutCopy, exportTabCopy } from "../../lib/copy/decks-builder";
-import { RECOMMENDED_MIX } from "../../lib/decks/mix";
 import { deckImportCopy } from "../../lib/copy/deck-import";
 import { deckStateMarksCopy } from "../../lib/copy/deck-state-marks";
 import { deckVersioningCopy } from "../../lib/copy/deck-versioning";
@@ -48,6 +47,7 @@ import {
   CommanderAvailabilityFigureBody,
   AutoFillFigureBody,
   DecklistMarksFigureBody,
+  RolesFigureBody,
   DeckPageFigureBody,
   ImportIssuesFigureBody,
   PartnerSlotFigureBody,
@@ -724,24 +724,10 @@ function AutoFillFigure({ width }: { width: AboutWidth }) {
 }
 
 function RolesFigure({ width }: { width: AboutWidth }) {
-  // A LEGEND, not `RoleChips`. That component is the commander page's own
-  // (role-chips.tsx:1-3) and this entry is about the DECK page, which draws
-  // `RoleCounterStrip` — five cells including Land, and the rationale as a real
-  // disclosure button. Mounting the commander chips here taught a surface the
-  // deck page never draws, and mounting the strip would need a deck.
   return (
-    <Legend
-      label="roles"
-      width={width}
-      rows={[
-        { mark: `${RECOMMENDED_MIX.ramp.label} · 12 of ${RECOMMENDED_MIX.ramp.target}`, meaning: "a surplus, not an error — nothing here is capped" },
-        { mark: `${RECOMMENDED_MIX.wipes.label} · 1 of ${RECOMMENDED_MIX.wipes.target}`, meaning: "a short role is the one thing that names what to do next" },
-        {
-          mark: addPanelCopy.strip.rationaleToggle,
-          meaning: "and the baselines are the format's, not this commander's",
-        },
-      ]}
-    />
+    <Specimen label="roles" width={width}>
+      <RolesFigureBody />
+    </Specimen>
   );
 }
 

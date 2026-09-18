@@ -20,6 +20,7 @@ import {
   ISSUE_UNMATCHED,
   CONTESTED_ARRIVAL,
   DECKLIST_MARK_ROWS,
+  ROLE_MIX_CARDS,
   FIT_LEGEND,
   LANE_DISCOVER,
   DECK_SPINE,
@@ -41,6 +42,7 @@ import { COST_PIP_SIZE, CostPips } from "../ui/cost-pips";
 import { TwoFacedMark } from "../cards/two-faced-mark";
 import { LastSlotsStrip } from "../decks/last-slots-strip";
 import { DecklistRow } from "../decks/decklist-row";
+import { RoleCounterStrip } from "../decks/role-counter-strip";
 import { ContestedCardRow } from "../decks/contested-card-row";
 import { FitLegend } from "../commanders/fit-legend";
 import { AvailabilityControl } from "../commanders/rack/availability-control";
@@ -606,5 +608,34 @@ export function DecklistMarksFigureBody() {
         ))}
       </div>
     </CardDetailProvider>
+  );
+}
+
+/**
+ * `roles` — the deck page's own `RoleCounterStrip`.
+ *
+ * The page drew a three-row legend here, with a note saying the strip could
+ * not be mounted because it "would need a deck". It does not: the strip takes
+ * `cards` and folds them with `computeRoleCounts`, which reads `role` and
+ * `quantity` and nothing else. Five rows state the five counts.
+ *
+ * `onSeeShelf` and `rolesWithShelves` arrive together or not at all — the
+ * strip's own contract, because supplying the handler alone disables every
+ * short cell rather than failing. They are supplied so the short cells draw
+ * their `consider →`, which the canvas draws and which a strip with no
+ * handler would silently omit. The handler is a no-op: `Specimen` is `inert`,
+ * so no cell can be pressed.
+ *
+ * It lives in this client module rather than beside the other server figures
+ * for that handler alone — a function cannot cross the server boundary, and
+ * the one that tried it is why this module exists.
+ */
+export function RolesFigureBody() {
+  return (
+    <RoleCounterStrip
+      cards={ROLE_MIX_CARDS}
+      onSeeShelf={() => {}}
+      rolesWithShelves={new Set(["wipes", "land"])}
+    />
   );
 }

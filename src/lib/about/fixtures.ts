@@ -979,3 +979,39 @@ export const DECKLIST_MARK_ROWS: DeckDetailCard[] = [
     availability: null,
   },
 ];
+
+/**
+ * `roles` — one card per role, quantity-weighted so the strip's five cells
+ * read the counts this entry wants to explain.
+ *
+ * `computeRoleCounts` sums `quantity` over `role` and reads nothing else, so
+ * one row per role states the tally exactly. The counts are chosen to draw
+ * every cell state the entry's caption names: Ramp OVER its number (12 of 10 —
+ * "a role over its number is fine and says so by saying nothing"), Draw and
+ * Removal exactly met, Wipes SHORT, and Land short of an advisory target,
+ * whose `rec ~37` is where the range still speaks.
+ */
+export const ROLE_MIX_CARDS: DeckDetailCard[] = (
+  [
+    ["ramp", 12],
+    ["draw", 10],
+    ["removal", 8],
+    ["wipes", 1],
+    ["land", 35],
+  ] as const
+).map(([role, quantity]) => ({
+  oracleId: `about-role-${role}`,
+  name: role,
+  typeLine: "",
+  cardTypeGroup: "Other" as const,
+  role,
+  cmc: 0,
+  owned: true,
+  quantity,
+  auto: false,
+  manaCost: null,
+  printedName: null,
+  printedSetCode: null,
+  printedCollectorNumber: null,
+  availability: null,
+}));

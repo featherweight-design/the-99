@@ -390,7 +390,11 @@ export const aboutEntries: readonly AboutEntry[] = [
     caption:
       'A decklist is read by the job a card does, not by type line, because that is how a deck is short: eleven creatures is not a problem, one board wipe is. The recommended mix is EDHREC’s averages, not a rule — a role over its number is fine and says so by saying nothing.',
     keys: [
-      'the second figure is the recommendation, so 5 wipes against 3 is a surplus rather than an error. Nothing is capped.',
+      // Named on the cell the figure actually draws. The canvas wrote "5
+      // wipes against 3", which was an example rather than a reading — and
+      // the strip below draws Wipes SHORT, because the caption's own example
+      // of a problem is the deck with one board wipe.
+      'the second figure is the recommendation, so 12 ramp against 10 is a surplus rather than an error. Nothing is capped.',
       'a short role is the one thing here that names what to do next, and `consider` goes straight to cards that would fill it.',
     ],
     since: 1,

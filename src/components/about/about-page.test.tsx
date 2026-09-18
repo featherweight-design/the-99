@@ -16,6 +16,11 @@ import { collectionChassisCopy, printingPickerCopy } from "../../lib/copy/collec
 import { spokenFullManaCost, spokenManaCost, twoFacedCopy } from "../../lib/copy/card-surfaces";
 import { COSTS } from "../../lib/about/fixtures";
 import { addPanelCopy } from "../../lib/copy/decks-builder";
+import {
+  RECOMMENDED_MIX,
+  RECOMMENDED_MIX_SOURCE_LINE,
+  ROLE_ORDER,
+} from "../../lib/decks/mix";
 import { setPageCopy } from "../../lib/copy/set-collections";
 import { PIP_ORDER } from "../../lib/copy/filter-chassis";
 import {
@@ -436,6 +441,47 @@ describe("the figures", () => {
       (el as HTMLElement).style.boxShadow.includes("--avail-over-border"),
     );
     expect(over.length, "the over-committed edge drew nothing").toBe(1);
+  });
+
+  it("draws the recommended mix as the deck page's own strip", () => {
+    const { container } = render(<AboutPage seen={0} />);
+    const plate = figures(container)["roles"];
+
+    // Five cells, which is the strip's own `ROLE_ORDER` rather than a number
+    // chosen here: the entry is about roles, and a figure drawing four of them
+    // would teach a mix that does not exist.
+    for (const role of ROLE_ORDER) {
+      // The cell uppercases with CSS, so the text node carries the label as
+      // `mix.ts` writes it.
+      expect(plate.textContent).toContain(RECOMMENDED_MIX[role].label);
+    }
+    expect(plate.textContent).toContain(RECOMMENDED_MIX_SOURCE_LINE);
+
+    // The two readings the key lines name, each on the cell that draws it. The
+    // surplus is read by its COLOUR rather than by its figure: `12 / 10` is
+    // still a pair of numbers with the state rule removed, and a cell over its
+    // target is the one that says so by going green.
+    // The numerator is the figure element's own first text node; the
+    // denominator is a child span, so a `textContent` match would read
+    // `12 / 10` and a childless filter would skip the element entirely.
+    const over = [...plate.querySelectorAll("p")].find(
+      (el) => el.firstChild?.textContent?.trim() === "12",
+    );
+    expect(over?.style.color ?? "", "the surplus cell drew no state").toContain(
+      "var(--success)",
+    );
+
+    // The short cell keeps its action, and it is the ONLY kind that does — a
+    // strip whose every cell offered `consider` would contradict the line it
+    // illustrates.
+    const considers = [...plate.querySelectorAll("button")].filter((el) =>
+      /consider/i.test(el.textContent ?? ""),
+    );
+    expect(considers.length, "the short cells drew no action").toBe(2);
+
+    // The disclosure, which is the third thing the entry's caption rests on:
+    // the baselines are the format's, not this commander's.
+    expect(plate.textContent).toContain(addPanelCopy.strip.rationaleToggle);
   });
 
   it("draws both fit shapes and writes no prose inside the frame", () => {
