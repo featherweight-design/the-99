@@ -105,6 +105,17 @@ own §0 says the R3 files are untouched, so honouring that claim is the whole fi
    the failure mode of a too-wide band is that the head stays open slightly longer, and the
    probe's desktop pass exercises it either way.
 
+   > **Erratum, 2026-09-18 — SUPERSEDED; there is no hysteresis constant.** "The head stays
+   > open slightly longer" was the wrong failure mode. With the open head no longer pinned,
+   > `reopenAt + 120` put the desktop collapse 63px BELOW the offset where that head leaves,
+   > so every collapse after the first of a visit crossed a strip with neither form on screen
+   > and then the bar snapped in. The two thresholds are already a band of the bar's own
+   > height — ~57 at `md`, ~75 on the phone — and `collapseAt` is now `gridTop` at both
+   > widths. That also closes a second fault this gap could not see: the first collapse of a
+   > visit ran on `gridTop` and every later one on `reopenAt + band`, so one visit had two
+   > collapse points. The wheel case still holds — one notch crosses both thresholds and
+   > lands the reader in a state they scrolled to, which is a gesture answered, not flutter.
+
 ## The two tests that invert
 
 - `set-grid-view.test.tsx:2538` — "never collapses at desktop, however far the reader scrolls"
