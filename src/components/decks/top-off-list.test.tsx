@@ -4,6 +4,7 @@ import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import { topOffCopy } from "../../lib/copy/top-off";
 import { stubViewport } from "../../test-utils/stub-viewport";
 import type { TopOffCandidate } from "../../lib/decks/last-slots";
+import { CardDetailProvider, cardDetailCopy } from "../cards/card-detail-provider";
 
 const actions = vi.hoisted(() => ({ commit: vi.fn() }));
 vi.mock("../../app/decks/actions", () => ({ commitTopOff: actions.commit }));
@@ -55,7 +56,13 @@ function Harness({
 }) {
   const [ticked, setTicked] = useState<Set<string>>(new Set(initialTicked));
   const [declined, setDeclined] = useState<Set<string>>(new Set(initialDeclined));
+  // The provider is a REQUIREMENT of the desktop row, not scaffolding: the name
+  // is a `CardDetailTrigger`, and that throws outside a provider rather than
+  // degrading. Production satisfies it — `builder-shell.tsx` wraps the strip at
+  // line 851 inside the provider it opens at 711 — and this harness has to state
+  // the same thing, or every desktop case here fails on the mount.
   return (
+    <CardDetailProvider fetchCard={vi.fn().mockResolvedValue(null)}>
     <TopOffList
       deckId="deck-1"
       listId="list-1"
@@ -84,6 +91,7 @@ function Harness({
       onClose={props.onClose ?? (() => {})}
       onBarHeight={props.onBarHeight ?? (() => {})}
     />
+    </CardDetailProvider>
   );
 }
 
@@ -563,6 +571,79 @@ describe("TopOffList", () => {
   });
 });
 
+describe("TopOffList — the desktop row", () => {
+  // Desktop alone. The phone row is one tap target on purpose — the addendum's
+  // own rule, and what makes 38 of them tickable one-handed — so neither the
+  // trigger nor the type word may appear there.
+  function desktop() {
+    const viewport = stubViewport(1280);
+    render(<Harness />);
+    return viewport;
+  }
+
+  /** The row's own element, from the checkbox that names it. */
+  const rowOf = (name: string) => rowBox(name).closest("li") ?? rowBox(name).parentElement;
+
+  it("opens the card from the name, as a control outside the tick's label", () => {
+    desktop();
+
+    // Named by the trigger's own spoken name, not by a loose match on the card:
+    // the decline control on the same row also carries the card's name.
+    const trigger = screen.getByRole("button", {
+      name: cardDetailCopy.triggerAria("owned-1"),
+    });
+    // OUTSIDE the label: a control nested in one toggles the tick on every press
+    // of it, which is the trap the decline control is already placed against.
+    expect(trigger.closest("label")).toBeNull();
+  });
+
+  it("states the card's type", () => {
+    desktop();
+
+    // The bucket word, which is the synergy panel's own `all`-facet rule: this
+    // list has no facet filter, so every row here is that case.
+    expect(rowOf("owned-1")).toHaveTextContent("Spell");
+  });
+
+  it("draws neither on a phone", () => {
+    stubViewport(390);
+    render(<Harness />);
+
+    // Named by the trigger's OWN spoken name. `/^owned-1$/` can never match it —
+    // the trigger's accessible name is `View details for owned-1` — so that form
+    // passed at every width and let a trigger leak onto the one-tap phone row.
+    expect(
+      screen.queryByRole("button", { name: cardDetailCopy.triggerAria("owned-1") }),
+    ).toBeNull();
+    expect(rowOf("owned-1")).not.toHaveTextContent("Spell");
+  });
+
+  it("lights under the pointer, and never on a row that cannot be ticked", () => {
+    // The fill had to leave the inline `style` to have a hover at all: an inline
+    // background outranks every utility, which is why this row never had one.
+    stubViewport(1280);
+    render(<Harness openSlots={1} initialTicked={["owned-1"]} />);
+
+    // `owned-2` is inert at the cap: a fill that lights under the pointer would
+    // promise a tick the row cannot take.
+    expect(rowOf("owned-2")?.className).not.toContain("md:hover:bg-");
+    // The ticked row is not inert, and carries the fill outright rather than a
+    // hover: it is already at the hovered colour, so a hover rule would be a
+    // no-op dressed as a state.
+    expect(rowOf("owned-1")?.className).toContain("bg-[color:var(--elevated-hover)]");
+  });
+
+  it("lights a row that can still be ticked", () => {
+    stubViewport(1280);
+    render(<Harness openSlots={3} />);
+
+    expect(rowOf("owned-1")?.className).toContain("md:hover:bg-");
+    // `--row-bg` travels with the fill so anything drawing a seam against the
+    // row tracks the swap rather than a fixed colour.
+    expect(rowOf("owned-1")?.className).toContain("md:hover:[--row-bg:");
+  });
+});
+
 // A modal DFC whose front is a land and whose back is a spell stores
 // `" // {3}{R}"` — non-null, and a cost this row never draws, because the pips
 // read the front half. The track must stay unmounted for it: mounted, the phone
@@ -582,7 +663,14 @@ describe("TopOffList — a cost that belongs to the back face", () => {
     // Asserted per ROW rather than by counting: the list mounts a phone tree and
     // a desktop tree, so a total is a number about the harness rather than about
     // either card.
-    expect(rowOf("owned-1")?.querySelector("[class*='md:order-3']")).toBeNull();
-    expect(rowOf("owned-2")?.querySelector("[class*='md:order-3']")).not.toBeNull();
+    // The rule is about the PIPS, not about the slot. Both rows hold the column
+    // open on desktop — the header reserves `COST_TRACK` for every row, so a row
+    // that mounted nothing would pull the four columns after it 72px left of
+    // their own headings — and what the back-face row must not draw is a cost.
+    const track = (name: string) => rowOf(name)?.querySelector("[class*='md:order-4']");
+    expect(track("owned-1")).not.toBeNull();
+    expect(track("owned-2")).not.toBeNull();
+    expect(track("owned-1")?.childElementCount).toBe(0);
+    expect(track("owned-2")?.childElementCount).toBeGreaterThan(0);
   });
 });

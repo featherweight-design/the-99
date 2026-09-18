@@ -828,6 +828,52 @@ Package manager is **pnpm** (pinned via `packageManager` in package.json) — ne
   lists, and nothing else), the array dependency restored (both hold-its-place checks), and
   `colorLabel` reverted to `join("")` (`found GRW`). Makes no writes; point it at `local-dev`.
 
+- `pnpm probe:last-slots` walks the Last 31 list at 1300x900 and 390x844 — five rulings that
+  are facts about laid-out geometry or about a pointer, and jsdom has neither.
+
+  **The desktop list is bounded; the phone's is not.** `LONG-LIST-thirty-one-rows.md` refuses
+  an inner scroller on four grounds and is right about every one AT 390px, so the phone keeps
+  what it drew: one scroll surface, the commit pinned in the quick-add dock's slot. But it
+  costs the decision as "a player scrolls past up to 38 rows", because "the list can never be
+  longer than 99 − built" — and `listLastSlotsCandidates` returns the whole ranked pool.
+  Measured on the shipped index: **262 candidates for the average commander, 423 at the
+  widest, and 3,264 of 3,279 commanders carry more than 100** even after the negative tail is
+  cut. Desktop therefore shipped the one option that note refused by name, an unpinned commit
+  at the end of the list. Run with the box removed, the probe reads the defect exactly: the
+  commit's top at **18,877px on a 900px viewport**.
+
+  **The row lights under a pointer**, which needed the fill to leave the inline `style` — an
+  inline background outranks every utility, so no hover could exist at all, and a class-list
+  assertion cannot see that. **The name opens the card and does not tick the row**, those
+  being the same press on a control nested in the tick's label. **The type word is drawn on
+  desktop and absent on the phone**, whose row is two lines by design with no room for it.
+
+  **The header and the rows share one content width**, which is why the column header sits
+  INSIDE the scroll box, sticky, rather than above it. A classic scrollbar takes its width out
+  of the scroll container's content box, so a header outside reads about 15px wider than the
+  rows and every heading after the flex-auto name column sits that far right of the data it
+  names — the same failure this component's own header comment records at 32px, arriving from
+  the other direction. macOS draws OVERLAY scrollbars, so the width delta reads 0 either way
+  on the machine the probe runs on; the check therefore asserts the structural fact — the
+  header is inside the box — which is what makes the delta 0 on Windows and Linux too.
+
+  **A slot has to be FREED before the hover can be measured, and that is the fixture rather
+  than a workaround.** On open the seed fills every slot, which leaves no row able to light: a
+  ticked row already carries the hovered colour (a hover rule there would be a no-op dressed
+  as a state), and every unticked row is INERT at the cap, where a fill would promise a tick
+  the row cannot take. The probe unticks one row first, which is what a reader does before
+  choosing a different card.
+
+  Two defects in the probe itself, each found by running a mutation against it. The trigger
+  check was scoped with `onPage` and nothing more — but the DECKLIST behind the strip is
+  inside `<main>` too and every one of its rows carries a `View details for …` trigger, so
+  removing this list's trigger entirely still opened a dialog and still reported a pass: the
+  probe was proving the decklist works. It is scoped to the row group now. And the phone's
+  pinned bar was read through `commit.closest("div")`, which is an inner flex wrapper and
+  static at both widths — it walks up to whatever is actually positioned instead.
+
+  Makes no writes. Point it at `local-dev`, **never production**.
+
 - `pnpm probe:scroll-lock` presses every overlay the app draws over a scrim — the filter
   sheets on `/collection`, `/commanders`, `/discover`, `/decks` and a set page, the
   `FilterPanel` sort sheet, and the card modal — and proves the page behind each one does

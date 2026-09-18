@@ -144,6 +144,87 @@ describe("LastSlotsStrip", () => {
     expect(screen.queryByText(topOffCopy.strip.caption("3", "0"))).toBeNull();
   });
 
+  // A card owned with every copy sleeved in another deck is offered, and rightly
+  // — the player may still reclaim one. What it must not do is arrive PRE-TICKED,
+  // where it is indistinguishable from a card they can sleeve tonight and
+  // committing it costs either a purchase or a card out of another deck. That is
+  // the act the list draws a buy tag for, made silently on their behalf.
+  const claimed = (id: string): TopOffCandidate => ({
+    ...candidate(id, true),
+    availability: { owned: 1, hard: 1, soft: 0, free: 0, claims: [] },
+  });
+  const spare = (id: string): TopOffCandidate => ({
+    ...candidate(id, true),
+    availability: { owned: 2, hard: 1, soft: 0, free: 1, claims: [] },
+  });
+
+  it("promises only the owned cards it can actually seed", () => {
+    render(
+      <LastSlotsStrip {...base} candidates={[claimed("held-1"), claimed("held-2"), spare("free-1")]} />,
+    );
+
+    // One, not three: the note states what will arrive ticked, so it reads the
+    // same list the seed does or it overstates by exactly the cards whose every
+    // copy is sleeved elsewhere.
+    expect(screen.getByText(topOffCopy.strip.doorNote("1"))).toBeInTheDocument();
+    expect(screen.queryByText(topOffCopy.strip.doorNote("3"))).toBeNull();
+  });
+
+  it("does not tell a player who owns every candidate that they own none", () => {
+    // A seed of zero is two opposite facts now. `doorNote`'s zero branch says
+    // `You own none of these`, which is false when the player owns all of them
+    // and every copy is sleeved in another deck — and false to the player best
+    // placed to notice. The OWNED count picks between them, never the seed.
+    render(<LastSlotsStrip {...base} candidates={[claimed("held-1"), claimed("held-2")]} />);
+
+    expect(screen.getByText(topOffCopy.strip.doorNoteNoneFree)).toBeInTheDocument();
+    expect(screen.queryByText(topOffCopy.strip.doorNote("0"))).toBeNull();
+  });
+
+  it("still says `you own none` when the player really owns none", () => {
+    render(<LastSlotsStrip {...base} candidates={[candidate("buy-1", false)]} />);
+
+    expect(screen.getByText(topOffCopy.strip.doorNote("0"))).toBeInTheDocument();
+    expect(screen.queryByText(topOffCopy.strip.doorNoteNoneFree)).toBeNull();
+  });
+
+  it("leaves a claimed card unticked when the list opens", async () => {
+    // The door-note checks above read `seedCount`, which is derived from the same
+    // list the seed is — so a regression that seeded from `ownedIds` while the
+    // note kept reading `seedableIds` would pass every one of them with claimed
+    // rows pre-ticked again. This opens the list and reads the boxes.
+    render(
+      <LastSlotsStrip {...base} candidates={[claimed("held-1"), spare("free-1")]} />,
+    );
+    await click(screen.getByRole("button", { name: doorName("3") }));
+
+    const boxes = screen.getAllByRole("checkbox");
+    const byName = (name: string) =>
+      boxes.find((b) => (b.getAttribute("aria-label") ?? "").includes(name));
+    expect(byName("free-1")).toBeChecked();
+    expect(byName("held-1")).not.toBeChecked();
+  });
+
+  it("seeds a card with no availability reading, which is the degraded case", () => {
+    // A null reading is NO ROW — an unowned card, or a read that could not reach
+    // — and reads as free everywhere else in the app. Seeding nothing here would
+    // let one failed read silently empty the promise the strip makes.
+    render(<LastSlotsStrip {...base} candidates={[candidate("unread", true)]} />);
+
+    expect(screen.getByText(topOffCopy.strip.doorNote("1"))).toBeInTheDocument();
+  });
+
+  it("does not claim nothing was ranked when the tail was simply cut", () => {
+    // `lastSlots.short` says the collection ran out and that there was nothing
+    // left that EDHREC ranks. Both clauses are false for a pool emptied by the
+    // negative cut: EDHREC ranked those cards, and what it said was that they
+    // belong here less than in decks generally.
+    render(<LastSlotsStrip {...base} candidates={[]} allNegative />);
+
+    expect(screen.getByTestId("last-slots-exhausted"))
+      .toHaveTextContent(topOffCopy.strip.exhaustedAllNegative);
+  });
+
   // §16 — an exhausted pool is honest, not alarming, so the plate carries the
   // provenance accent and never the warning colour. Asserted as longhands
   // because jsdom will not expand a shorthand whose value holds a var().
@@ -438,7 +519,7 @@ describe("LastSlotsStrip", () => {
 
       const key = topOffDraftKey(base.deckId);
       await act(async () => {
-        localStorage.setItem(key, '{"t":["owned-1"],"d":[]}');
+        localStorage.setItem(key, '{"v":2,"t":["owned-1"],"d":[]}');
         window.dispatchEvent(new StorageEvent("storage", { key }));
       });
       expect(screen.getAllByRole("checkbox", { checked: true })).toHaveLength(1);

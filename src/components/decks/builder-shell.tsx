@@ -125,6 +125,10 @@ interface BuilderShellProps {
       renders rather than a reason to unmount it: the door stays while slots are
       open, and says the pool ran out. */
   candidates?: TopOffCandidate[];
+  /** The pool is empty because every ranked card argues against itself, which is
+   *  a different fact from the collection running out and takes a different
+   *  sentence. Defaults false: an absent flag is not a claim. */
+  candidatesAllNegative?: boolean;
   /** One summary per fill pass, oldest first, passes with no live cards already
       dropped. Empty on a deck built before the ledger existed — which the
       ledger states rather than hides. */
@@ -178,6 +182,7 @@ export function BuilderShell({
   newestAsOf,
   provenance = null,
   candidates = [],
+  candidatesAllNegative = false,
   fillPasses = [],
   games = [],
   gameSummary = NO_GAMES,
@@ -853,6 +858,7 @@ export function BuilderShell({
               openSlots={bodySize - counts.total}
               bodySize={bodySize}
               candidates={candidates}
+              allNegative={candidatesAllNegative}
               deckOracleIds={topOffDeckOracleIds}
               newestAsOf={newestAsOf}
               onAnnounce={setAnnouncement}

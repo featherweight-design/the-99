@@ -42,9 +42,9 @@ describe("readTopOffDraft", () => {
     expect(readTopOffDraft('{"t":["sol-ring"]')).toBeNull();
     expect(readTopOffDraft("null")).toBeNull();
     expect(readTopOffDraft('["sol-ring"]')).toBeNull();
-    expect(readTopOffDraft('{"t":["sol-ring"]}')).toBeNull();
-    expect(readTopOffDraft('{"t":"sol-ring","d":[]}')).toBeNull();
-    expect(readTopOffDraft('{"t":[],"d":null}')).toBeNull();
+    expect(readTopOffDraft('{"v":2,"t":["sol-ring"]}')).toBeNull();
+    expect(readTopOffDraft('{"v":2,"t":"sol-ring","d":[]}')).toBeNull();
+    expect(readTopOffDraft('{"v":2,"t":[],"d":null}')).toBeNull();
   });
 
   // An id is an oracle id and nothing else. A number or a nested object
@@ -52,14 +52,27 @@ describe("readTopOffDraft", () => {
   // strings, so it could never match — it would sit in the set forever,
   // counted by the commit bar and dropped by the commit itself.
   it("is null when an entry is not a string", () => {
-    expect(readTopOffDraft('{"t":[1],"d":[]}')).toBeNull();
-    expect(readTopOffDraft('{"t":[],"d":[{"oracleId":"sol-ring"}]}')).toBeNull();
+    expect(readTopOffDraft('{"v":2,"t":[1],"d":[]}')).toBeNull();
+    expect(readTopOffDraft('{"v":2,"t":[],"d":[{"oracleId":"sol-ring"}]}')).toBeNull();
   });
 
-  it("reads a selection written by an older tab of this app", () => {
-    expect(readTopOffDraft('{"t":["sol-ring","mana-crypt"],"d":["chrome-mox"]}')).toEqual({
+  it("reads a selection written by another tab on this rule", () => {
+    expect(readTopOffDraft('{"v":2,"t":["sol-ring","mana-crypt"],"d":["chrome-mox"]}')).toEqual({
       ticked: new Set(["sol-ring", "mana-crypt"]),
       declined: new Set(["chrome-mox"]),
     });
+  });
+
+  it("refuses a draft chosen under an older seeding rule", () => {
+    // The strip RESTORES a draft instead of re-seeding it, which rests on the
+    // ticks having been the player's own. v1 auto-ticked every owned candidate,
+    // claimed copies included, so a draft written then can hold ticks nobody
+    // made for cards the current rule deliberately leaves alone — and restoring
+    // those would buy cards on a default this app has withdrawn.
+    expect(readTopOffDraft('{"t":["sol-ring"],"d":[]}')).toBeNull();
+    expect(readTopOffDraft('{"v":1,"t":["sol-ring"],"d":[]}')).toBeNull();
+    // Rejected WHOLE, as a half-parsed draft is: there is no way to tell which
+    // of its ticks were the player's and which were the withdrawn default.
+    expect(readTopOffDraft('{"v":1,"t":[],"d":["chrome-mox"]}')).toBeNull();
   });
 });

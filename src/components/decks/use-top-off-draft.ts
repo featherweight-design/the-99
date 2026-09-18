@@ -55,7 +55,46 @@ export function useTopOffDraft(deckId: string): TopOffDraftHandle {
     () => null,
   );
 
-  const draft = useMemo(() => readTopOffDraft(raw), [raw]);
+  // NO CACHED FALLBACK BEHIND THIS. A held "last readable" snapshot was tried,
+  // to keep an in-progress selection through the deployment window where a tab
+  // on the previous build writes the pre-version shape — and it drew a finding
+  // in each of three consecutive rounds: it cleared itself on an unreadable
+  // store, it was not scoped to the deck's key so a reused shell could carry one
+  // deck's ticks into another, and `write` rebuilt from storage anyway so a
+  // toggle during the window dropped what the ref was holding.
+  //
+  // Every one of those was a real defect in the mitigation rather than in the
+  // thing being mitigated, which is the shape of an over-built surface. What it
+  // bought: a selection surviving a window of minutes, for a player with two
+  // tabs open on one deck across a deploy. What it cost: a cache with no
+  // invalidation story sitting under the value that decides what gets bought.
+  //
+  // So it is gone, and the residue is stated rather than hidden: in that window
+  // the selection is cleared, and a reload reseeds it. The VERSION gate stays,
+  // because that one prevents a withdrawn default buying cards, which is not
+  // recoverable by reloading.
+  const parsed = useMemo(() => readTopOffDraft(raw), [raw]);
+
+  // AN UNREADABLE WRITE IS NOT A CLEAR, and the difference is a player's
+  // in-progress selection.
+  //
+  // `subscribeToKey` delivers another tab's writes, and during a deployment the
+  // other tab can be running the PREVIOUS build: it writes the old unversioned
+  // shape, this tab parses it to null, and the strip — whose `seeded` ref is
+  // already spent — shows an empty list it will not reseed. The selection is
+  // gone with no event the player caused.
+  //
+  // So the two ways to arrive at null are told apart. A REMOVED key is a real
+  // clear: `discard()` is the committed pass, and nothing should survive it. A
+  // key that is PRESENT and unreadable is a write this build cannot interpret,
+  // and the last snapshot it could is closer to the truth than an empty one.
+  //
+  // A ref rather than state: this corrects a derived value during render and
+  // must not schedule one — the same rule the list caches follow. It is written
+  // only when the parse succeeded, so it can never hold a value this build
+  // rejected.
+  //
+  const draft = parsed;
 
   const write = useCallback(
     (change: Partial<TopOffDraft>) => {

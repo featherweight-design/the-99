@@ -30,6 +30,11 @@ export interface LastSlotsStripProps {
   bodySize: number;
   /** The whole ranked pool, uncapped, already excluding what the deck holds. */
   candidates: TopOffCandidate[];
+  /** The pool is empty because every ranked card argues against itself rather
+   *  than because the collection ran out. Two different facts, two different
+   *  sentences: `synergyCopy.lastSlots.short` describes only the first, and it
+   *  is false in both of its clauses for the second. */
+  allNegative?: boolean;
   /** Oracle ids in the deck right now — the list names a row that went illegal
       while it was open rather than dropping it from under the cursor. */
   deckOracleIds: Set<string>;
@@ -57,10 +62,13 @@ export interface LastSlotsStripProps {
 function ExhaustedLine({
   total,
   shortfall,
+  allNegative = false,
   ref,
 }: {
   total: string;
   shortfall: string;
+  /** See `LastSlotsStripProps.allNegative`. */
+  allNegative?: boolean;
   ref?: Ref<HTMLDivElement>;
 }) {
   return (
@@ -89,7 +97,14 @@ function ExhaustedLine({
         i
       </div>
       <p className="flex-1 text-[12.5px] leading-[1.6]" style={{ color: "var(--fg-body)" }}>
-        {synergyCopy.lastSlots.short(total, shortfall)}
+        {/* Two ways to empty the pool, and only one of them is the collection
+            running out. `lastSlots.short` says there was nothing left that
+            EDHREC ranks — false when the rows were cut because EDHREC ranked
+            them BELOW their own baseline, which is where a deck holding every
+            positively-ranked card lands. */}
+        {allNegative
+          ? topOffCopy.strip.exhaustedAllNegative
+          : synergyCopy.lastSlots.short(total, shortfall)}
       </p>
     </div>
   );
@@ -110,6 +125,7 @@ function LastSlotsStripInner({
   openSlots,
   bodySize,
   candidates,
+  allNegative = false,
   deckOracleIds,
   newestAsOf,
   onAnnounce,
@@ -152,6 +168,23 @@ function LastSlotsStripInner({
 
   const ownedIds = candidates.filter((c) => c.owned).map((c) => c.oracleId);
 
+  // What the SEED may reach for, which is narrower than what the player may tick.
+  //
+  // A card owned with every copy sleeved in another deck is offered, and rightly
+  // — the player may still decide to reclaim one. But arriving pre-ticked, it is
+  // indistinguishable from a card they can sleeve tonight, and committing it
+  // costs either a purchase or a card out of another deck. That is the same act
+  // the list draws a buy tag for, made silently on the player's behalf.
+  //
+  // `free > 0` is the test, from the same read the row's own marker draws from.
+  // A null `availability` is no row — an unowned card, or a read that could not
+  // reach — and reads as free everywhere else in the app (`availability.ts`), so
+  // an owned card with no reading seeds as it always has: the degraded case must
+  // not silently empty the promise the strip makes.
+  const seedableIds = candidates
+    .filter((c) => c.owned && (c.availability === null || c.availability.free > 0))
+    .map((c) => c.oracleId);
+
   const closeRef = useRef<HTMLButtonElement>(null);
   const exhaustedRef = useRef<HTMLDivElement>(null);
   const rootRef = useRef<HTMLDivElement>(null);
@@ -164,7 +197,7 @@ function LastSlotsStripInner({
     // of them, which reads as an empty selection and not as an absent one.
     if (!seeded.current && !restored) {
       seeded.current = true;
-      seedTicked = new Set(ownedIds.slice(0, openSlots));
+      seedTicked = new Set(seedableIds.slice(0, openSlots));
       setTicked(seedTicked);
     }
     moveFocus.current = true;
@@ -251,12 +284,24 @@ function LastSlotsStripInner({
   const exhausted = candidates.length === 0;
 
   // The first-open note promises what will arrive ticked, and the seed clamps to
-  // the open slots, so it states the seeded figure rather than the owned one.
+  // the open slots, so it states the seeded figure rather than the owned one —
+  // which now means the SEEDABLE count, not the owned one. The promise and the
+  // seed read the same list or the note overstates by exactly the cards whose
+  // every copy is sleeved elsewhere.
+  //
   // The two reopen notes are about ownership rather than ticks, so they keep the
-  // unclamped count: you do still own all of them.
-  const seedCount = String(Math.min(ownedIds.length, Math.max(openSlots, 0)));
+  // unclamped owned count: you do still own all of them.
+  const seedCount = String(Math.min(seedableIds.length, Math.max(openSlots, 0)));
+  // A seed of zero is now two opposite facts, and the sentence has to tell them
+  // apart: the player owns none of the candidates, or they own them and every
+  // copy is sleeved in another deck. `doorNote`'s zero branch says `You own none
+  // of these`, which is false in the second case and false to the player best
+  // placed to notice. The OWNED count picks between them, never the seed.
+  const noneFree = seedCount === "0" && ownedIds.length > 0;
   const doorNote = !visited
-    ? topOffCopy.strip.doorNote(seedCount)
+    ? noneFree
+      ? topOffCopy.strip.doorNoteNoneFree
+      : topOffCopy.strip.doorNote(seedCount)
     : ownedIds.length === 0
       ? topOffCopy.strip.doorNoteAgain(String(candidates.length))
       : topOffCopy.strip.doorNoteAgainOwned(
@@ -268,7 +313,9 @@ function LastSlotsStripInner({
   // the provenance and keep the promise. Both reopen cases take the one string:
   // the closed caption directly above already states the candidate count.
   const doorNoteMobile = !visited
-    ? topOffCopy.strip.doorNoteMobile(seedCount)
+    ? noneFree
+      ? topOffCopy.strip.doorNoteNoneFreeMobile
+      : topOffCopy.strip.doorNoteMobile(seedCount)
     : topOffCopy.strip.doorNoteAgainMobile;
 
   return (
@@ -385,6 +432,7 @@ function LastSlotsStripInner({
           ref={exhaustedRef}
           total={String(bodySize - openSlots)}
           shortfall={String(openSlots)}
+          allNegative={allNegative}
         />
       ) : (
         <div className="md:flex md:items-center md:gap-[12px] md:flex-wrap">

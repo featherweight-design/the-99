@@ -24,7 +24,7 @@ describe("useTopOffDraft", () => {
   });
 
   it("restores a selection stored under this deck", () => {
-    localStorage.setItem(KEY, '{"t":["sol-ring"],"d":["chrome-mox"]}');
+    localStorage.setItem(KEY, '{"v":2,"t":["sol-ring"],"d":["chrome-mox"]}');
     const { result } = renderHook(() => useTopOffDraft(DECK));
     expect(result.current.ticked).toEqual(new Set(["sol-ring"]));
     expect(result.current.declined).toEqual(new Set(["chrome-mox"]));
@@ -37,7 +37,7 @@ describe("useTopOffDraft", () => {
   // restored — otherwise reopening after clearing every tick would seed the
   // owned cards straight back in.
   it("reads an emptied selection as restored, not as absent", () => {
-    localStorage.setItem(KEY, '{"t":[],"d":[]}');
+    localStorage.setItem(KEY, '{"v":2,"t":[],"d":[]}');
     const { result } = renderHook(() => useTopOffDraft(DECK));
     expect(result.current.restored).toBe(true);
   });
@@ -50,7 +50,7 @@ describe("useTopOffDraft", () => {
   });
 
   it("does not read another deck's selection", () => {
-    localStorage.setItem(topOffDraftKey("some-other-deck"), '{"t":["sol-ring"],"d":[]}');
+    localStorage.setItem(topOffDraftKey("some-other-deck"), '{"v":2,"t":["sol-ring"],"d":[]}');
     const { result } = renderHook(() => useTopOffDraft(DECK));
     expect(result.current.ticked).toEqual(new Set());
   });
@@ -90,7 +90,7 @@ describe("useTopOffDraft", () => {
   // open has to read as a first visit — otherwise it seeds nothing and offers
   // an empty list to a player who still has slots to fill.
   it("forgets the selection outright when it is discarded", () => {
-    localStorage.setItem(KEY, '{"t":["sol-ring"],"d":["chrome-mox"]}');
+    localStorage.setItem(KEY, '{"v":2,"t":["sol-ring"],"d":["chrome-mox"]}');
     const { result, unmount } = renderHook(() => useTopOffDraft(DECK));
     act(() => result.current.discard());
     expect(result.current.ticked).toEqual(new Set());
@@ -121,7 +121,7 @@ describe("useTopOffDraft", () => {
   it("settles when another tab writes this deck's selection", () => {
     const { result } = renderHook(() => useTopOffDraft(DECK));
     act(() => {
-      localStorage.setItem(KEY, '{"t":["sol-ring"],"d":[]}');
+      localStorage.setItem(KEY, '{"v":2,"t":["sol-ring"],"d":[]}');
       window.dispatchEvent(new StorageEvent("storage", { key: KEY }));
     });
     expect(result.current.ticked).toEqual(new Set(["sol-ring"]));
@@ -143,7 +143,7 @@ describe("useTopOffDraft", () => {
 
     setItem.mockRestore();
     act(() => {
-      localStorage.setItem(key, '{"t":["mana-crypt"],"d":[]}');
+      localStorage.setItem(key, '{"v":2,"t":["mana-crypt"],"d":[]}');
       window.dispatchEvent(new StorageEvent("storage", { key }));
     });
     expect(result.current.ticked).toEqual(new Set(["mana-crypt"]));
@@ -153,7 +153,7 @@ describe("useTopOffDraft", () => {
   // so it has to reach every subscriber — the shared listener dispatches by
   // key, and this is the one event that names none.
   it("settles when another tab clears storage outright", () => {
-    localStorage.setItem(KEY, '{"t":["sol-ring"],"d":[]}');
+    localStorage.setItem(KEY, '{"v":2,"t":["sol-ring"],"d":[]}');
     const { result } = renderHook(() => useTopOffDraft(DECK));
     expect(result.current.ticked).toEqual(new Set(["sol-ring"]));
     act(() => {
@@ -167,7 +167,7 @@ describe("useTopOffDraft", () => {
     const other = topOffDraftKey("some-other-deck");
     const { result } = renderHook(() => useTopOffDraft(DECK));
     act(() => {
-      localStorage.setItem(other, '{"t":["sol-ring"],"d":[]}');
+      localStorage.setItem(other, '{"v":2,"t":["sol-ring"],"d":[]}');
       window.dispatchEvent(new StorageEvent("storage", { key: other }));
     });
     expect(result.current.ticked).toEqual(new Set());
@@ -195,5 +195,41 @@ describe("useTopOffDraft", () => {
     const { result } = renderHook(() => useTopOffDraft("deck-whose-reads-throw"));
     act(() => result.current.setTicked(new Set(["sol-ring"])));
     expect(result.current.ticked).toEqual(new Set(["sol-ring"]));
+  });
+
+  describe("a write this build cannot read", () => {
+    it("clears the selection when an older tab writes the pre-version shape", () => {
+      // The deployment window, and the ACCEPTED cost of having no cache behind
+      // the version gate: a tab on the previous build writes the unversioned
+      // shape, this build cannot read it, and the selection goes. A reload
+      // reseeds it. The mitigation that held the last readable snapshot drew a
+      // finding in three consecutive rounds and was deleted — see the hook.
+      localStorage.setItem(KEY, '{"v":2,"t":["sol-ring"],"d":[]}');
+      const { result } = renderHook(() => useTopOffDraft(DECK));
+      expect(result.current.ticked).toEqual(new Set(["sol-ring"]));
+
+      act(() => {
+        localStorage.setItem(KEY, '{"t":["mana-crypt"],"d":[]}');
+        window.dispatchEvent(new StorageEvent("storage", { key: KEY }));
+      });
+
+      expect(result.current.ticked).toEqual(new Set());
+      expect(result.current.restored).toBe(false);
+    });
+
+    it("still forgets the selection when the key is removed", () => {
+      // The other way to reach null, and it IS a clear: `discard()` runs on a
+      // committed pass, where there is nothing left to hold.
+      localStorage.setItem(KEY, '{"v":2,"t":["sol-ring"],"d":[]}');
+      const { result } = renderHook(() => useTopOffDraft(DECK));
+
+      act(() => {
+        result.current.discard();
+        window.dispatchEvent(new StorageEvent("storage", { key: KEY }));
+      });
+
+      expect(result.current.ticked).toEqual(new Set());
+      expect(result.current.restored).toBe(false);
+    });
   });
 });
