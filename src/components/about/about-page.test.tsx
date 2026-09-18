@@ -4,6 +4,7 @@ import { AboutPage } from "./about-page";
 import { ABOUT_VERSION, aboutCopy, aboutEntries } from "../../lib/copy/about";
 import { FIGURES } from "./figures";
 import { availabilityCopy } from "../../lib/copy/availability";
+import { deckStateMarksCopy } from "../../lib/copy/deck-state-marks";
 import { refreshCopy } from "../../lib/copy/refresh";
 import { deckImportCopy } from "../../lib/copy/deck-import";
 import { ORDER_OPTIONS } from "../commanders/rack/order-options";
@@ -1198,4 +1199,53 @@ describe("entry anchors", () => {
     }
   });
 
+});
+
+describe("the deck-state marks on /about", () => {
+  // The key line describes a difference the reader has to SEE, so the entry
+  // has to draw it. Read off the resolved style, because "unfilled" is a
+  // painted fact and a class list cannot say it.
+  it("draws the badge in all three readings inside the versions figure", () => {
+    const { container } = render(<AboutPage seen={0} />);
+    const figure = container.querySelector("[data-specimen='versions']");
+    expect(figure).toBeTruthy();
+    const chips = [...figure!.querySelectorAll("span")].filter(
+      (el) => (el as HTMLElement).style.background !== "",
+    ) as HTMLElement[];
+    expect(chips).toHaveLength(3);
+    expect(chips[0].style.background).toBe("var(--bg)");
+    expect(chips[0].style.borderLeft).toBe("");
+    expect(chips[1].style.background).toContain("color-mix");
+    expect(chips[1].style.borderLeft).toBe("");
+    expect(chips[2].style.background).toContain("color-mix");
+    expect(chips[2].style.borderLeft).toBe("2px solid var(--fg)");
+  });
+
+  it("says what each reading means, in the page's own words", () => {
+    render(<AboutPage seen={0} />);
+    expect(screen.getByText("a plan — no version committed yet")).toBeInTheDocument();
+    expect(screen.getByText("a deck, sleeved as its newest version")).toBeInTheDocument();
+    // Built from the copy module, like the figure: a literal here would pin the
+    // very drift the figure was fixed to avoid.
+    expect(
+      screen.getByText(`a deck you have edited since — ${deckStateMarksCopy.detail(36, 2)}`),
+    ).toBeInTheDocument();
+  });
+
+  // The bump is what puts the page back in front of every account. A feature
+  // whose entry lands without one reaches nobody who is not already exploring.
+  it("moved the version, so a returning reader is shown the page again", () => {
+    expect(ABOUT_VERSION).toBe(5);
+    const entry = aboutEntries.find((e) => e.id === "versions");
+    expect(entry?.keys).toHaveLength(3);
+    // An AMENDMENT, not an entry — asserted as the PROPERTY rather than as a
+    // count. The design addendum said "the count stays at 33"; it is 35 today,
+    // because two entries landed between that document and this build, and a
+    // literal would have failed for a reason that has nothing to do with these
+    // marks. What this round actually promises is that nothing is NEW: no
+    // entry's `since` is this version, so the bump re-opens the page without
+    // any entry wearing a NEW plate.
+    expect(aboutEntries.filter((e) => e.since === ABOUT_VERSION)).toHaveLength(0);
+    expect(entry?.since).toBe(1);
+  });
 });

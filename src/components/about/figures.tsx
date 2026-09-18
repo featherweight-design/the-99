@@ -26,6 +26,7 @@ import { addPanelCopy, exportLinkOutCopy, exportTabCopy } from "../../lib/copy/d
 import { RECOMMENDED_MIX } from "../../lib/decks/mix";
 import { recommendationsCopy } from "../../lib/copy/recommendations";
 import { deckImportCopy } from "../../lib/copy/deck-import";
+import { deckStateMarksCopy } from "../../lib/copy/deck-state-marks";
 import { deckVersioningCopy } from "../../lib/copy/deck-versioning";
 import { gameLogCopy } from "../../lib/copy/game-log";
 import { topOffCopy } from "../../lib/copy/top-off";
@@ -894,6 +895,34 @@ function DeckImportFigure({ width }: { width: AboutWidth }) {
   );
 }
 
+/** The badge in all three readings, as legend marks.
+ *
+ *  ROWS of the entry's existing legend rather than a second block beside it:
+ *  `Legend`'s `mark` is a ReactNode, every other figure here draws exactly one
+ *  `[data-specimen]`, and `about-page.test.tsx` counts drawn specimens against
+ *  entries that have a figure — so a second one would make that count wrong for
+ *  a page that is drawing what it should.
+ *
+ *  It composes `StatusPillBadge` rather than replicating the chip, the way the
+ *  statuses figure composes `statusBarStyle`: a treatment drawn twice is a
+ *  treatment that can disagree with itself.
+ */
+function StateMark({ hollow, pending }: { hollow?: boolean; pending?: boolean }) {
+  return (
+    <StatusPillBadge
+      status="Complete"
+      hollow={hollow}
+      pending={pending}
+      // The FOOTER's box, as the statuses figure draws it: the component
+      // defaults to the tile's absolutely-positioned class.
+      className="flex h-[22px] flex-none items-center rounded-[6px] px-[8px] font-mono text-[10.5px] tracking-[0.06em]"
+      // The row states the meaning beside the mark, so the chip's own name
+      // would be the same sentence twice.
+      announceMark={false}
+    />
+  );
+}
+
 function VersionsFigure({ width }: { width: AboutWidth }) {
   return (
     <Legend
@@ -903,6 +932,21 @@ function VersionsFigure({ width }: { width: AboutWidth }) {
         { mark: "draft", meaning: "every add and cut, until you commit" },
         { mark: `v2 · ${deckVersioningCopy.history.current}`, meaning: "what the deck is sleeved as" },
         { mark: "v1", meaning: "and what it was, with the change between them readable" },
+        // ONE status across all three, so the only thing that changes between
+        // the rows is the mark: a second value here would invite the reader to
+        // read the phase and the status as one axis, which is the mistake the
+        // whole design is written against.
+        { mark: <StateMark hollow />, meaning: "a plan — no version committed yet" },
+        { mark: <StateMark />, meaning: "a deck, sleeved as its newest version" },
+        {
+          mark: <StateMark pending />,
+          // The FUNCTION, not the sentence it happens to produce. Every other
+          // figure here quotes its copy module, and a literal would keep this
+          // page saying `36 changes since v2` on the day the app started saying
+          // something else — `check:copy-drift` compares design tables against
+          // the code, never this page against the copy file.
+          meaning: `a deck you have edited since — ${deckStateMarksCopy.detail(36, 2)}`,
+        },
       ]}
     />
   );
