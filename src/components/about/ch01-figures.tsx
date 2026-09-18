@@ -46,6 +46,12 @@ import { PartnerSlot } from "../decks/partner-slot";
 import { BuilderTabs } from "../decks/builder-tabs";
 import { StatusPillBadge } from "../decks/status-pill";
 import { statusBarStyle } from "../../lib/decks/status-style";
+import { colorLabel, deckIdentity } from "../../lib/decks/format";
+import { identityGradient } from "../../lib/collection/gradients";
+import { PIP_SRC } from "../../lib/copy/filter-chassis";
+import type { PipCode } from "../../lib/copy/filter-chassis";
+import { deckImportCopy } from "../../lib/copy/deck-import";
+import { deckHeaderCopy } from "../../lib/copy/decks-builder";
 import { deckBodySize } from "../../lib/decks/deck-size";
 import { SynergyRow } from "../commanders/synergy-row";
 import { CardDetailProvider } from "../cards/card-detail-provider";
@@ -448,37 +454,97 @@ export function CommanderAvailabilityFigureBody() {
  * key and the synergy rows carried into round 1 of chapter 02.
  */
 export function DeckPageFigureBody() {
-  // THE BADGE, THE BAR AND THE TABS — what the entry's three key lines name.
-  // None of them is the art band, and the band is the part that cannot be
-  // shown: `SpineDesktop` lays out on a `basis-[280px]` and needs a wider row
-  // than About's ~750px plate, while `SpineMobile` is `md:hidden` and vanishes
-  // at desktop widths. The route renders both and lets CSS choose, which only
-  // works at route width. Hugh's call, 2026-09-18.
-  const { deck, counts, status } = DECK_SPINE;
+  // ROUTE LEAVES, CANVAS ARRANGEMENT — the pattern `browse` and `sets` already
+  // use, and the one I should have reached for first.
+  //
+  // `SpineDesktop` is a different COMPOSITION of the same information, laid
+  // out for a route-width row: at About's ~750px its art ballooned and its
+  // actions overlapped. I read that as "the header does not fit" and cut the
+  // figure down to the badge and the tabs. It fits: §3 draws a compact header
+  // at exactly this width, and what did not fit was one component's layout.
+  //
+  // So the parts come from the route — `StatusPillBadge`, `statusBarStyle`,
+  // `identityGradient`, `BuilderTabs` — and the arrangement comes from the
+  // drawing.
+  const { deck, counts, status, version } = DECK_SPINE;
   const body = deckBodySize(deck.partner !== null);
+  const identity = deckIdentity(deck.commander.colorIdentity, null);
   return (
-    <div className="flex flex-col gap-[12px]">
-      <div className="flex flex-wrap items-center gap-[10px]">
-        {/* The box is a PROP and the default is the tile's, which is
-            `absolute bottom-[13px] left-[13px]` — passed nothing, the badge
-            pins itself to a corner and disappears from a figure that has no
-            positioned art to pin to. #666 caught the same default on three
-            figures; this is the spine's own in-flow box. */}
-        <StatusPillBadge
-          status={status}
-          className="flex flex-none items-center rounded-[6px] px-[8px] py-[3px] font-mono text-[11px]"
+    <div className="overflow-hidden rounded-[10px] border border-solid border-[color:var(--border)] bg-[color:var(--bg)]">
+      {/* The art band, with the scrim §3 puts over it so the controls read
+          against any art. No fetch: the identity gradient stands in, as it
+          does on every other figure here. */}
+      <div
+        className="relative h-[96px]"
+        style={{ background: identityGradient(deck.commander.colorIdentity) }}
+      >
+        <span
+          aria-hidden
+          className="absolute inset-0"
+          style={{
+            background:
+              "linear-gradient(to top, rgb(0 0 0 / 0.8) 0%, rgb(0 0 0 / 0.12) 60%, transparent 100%)",
+          }}
         />
-        {/* The bar takes the SAME token the badge does, so the pair reads as
-            one state rather than two. */}
-        <span className="h-[6px] min-w-[160px] flex-1 overflow-hidden rounded-full bg-[color:var(--elevated)]">
-          <span className="block h-full" style={statusBarStyle(status, counts.built, body)} />
+        <span className="absolute bottom-[11px] left-[11px] flex h-[26px] items-center rounded-[7px] border border-solid border-[color:var(--border-strong)] bg-[rgb(0_0_0/0.55)] px-[10px] text-[11px] text-[color:var(--fg)]">
+          {deckHeaderCopy.cardDetails}
         </span>
-        <span className="font-mono text-[12px] text-[color:var(--fg)]">
-          {counts.built}
-          <span className="text-[color:var(--fg-faint)]"> / {body}</span>
-        </span>
+        <div className="absolute right-[13px] bottom-[11px] flex items-center gap-[8px]">
+          <span className="flex h-[28px] items-center rounded-[7px] border border-solid border-[color:var(--border-strong)] bg-[rgb(0_0_0/0.55)] px-[11px] text-[11.5px] text-[color:var(--fg)]">
+            {deckImportCopy.update.entryLabel}
+          </span>
+          <span className="flex h-[28px] items-center rounded-[7px] bg-[color:var(--fg)] px-[12px] text-[11.5px] font-semibold text-[color:var(--bg)]">
+            {deckHeaderCopy.export}
+          </span>
+        </div>
       </div>
-      <BuilderTabs tabs={DECK_TABS} view="deck" onViewChange={() => {}} />
+
+      <div className="px-[14px] py-[12px]">
+        <div className="mb-[7px] flex flex-wrap items-center gap-[9px]">
+          <span className="font-display text-[17px] font-bold text-[color:var(--fg)]">
+            {deck.name}
+          </span>
+          <span aria-hidden className="font-mono text-[11px] text-[color:var(--fg-faint)]">
+            ✎
+          </span>
+          <span aria-hidden className="flex gap-[3px]">
+            {identity.map((code) => (
+              <span
+                key={code}
+                className="h-[8px] w-[8px] rounded-[2px]"
+                style={{ background: `center / contain no-repeat url(${PIP_SRC[code as PipCode]})` }}
+              />
+            ))}
+          </span>
+          <span className="font-mono text-[10.5px] text-[color:var(--fg-body)]">
+            {deck.commander.name} · {colorLabel(identity)}
+          </span>
+          {/* The route's badge, in the spine's own in-flow box: its default is
+              the tile's `absolute`, which pins it to a corner and vanishes. */}
+          <StatusPillBadge
+            status={status}
+            className="flex flex-none items-center rounded-[6px] px-[8px] py-[3px] font-mono text-[10.5px]"
+          />
+          <KeyNumeral n={1} />
+        </div>
+
+        <div className="mb-[9px] flex items-center gap-[10px]">
+          <span className="h-[4px] w-[200px] flex-none overflow-hidden rounded-full bg-[color:var(--elevated)]">
+            <span className="block h-full" style={statusBarStyle(status, counts.built, body)} />
+          </span>
+          <span className="font-mono text-[13px] text-[color:var(--fg)]">
+            {counts.built}
+            <span className="text-[color:var(--fg-faint)]"> / {body}</span>
+          </span>
+          <span className="flex-1" />
+          <span className="font-mono text-[10px] text-[color:var(--fg-faint)]">{version}</span>
+        </div>
+
+        <div className="flex items-center gap-[9px]">
+          <BuilderTabs tabs={DECK_TABS} view="deck" onViewChange={() => {}} />
+          <KeyNumeral n={2} />
+        </div>
+      </div>
     </div>
   );
 }

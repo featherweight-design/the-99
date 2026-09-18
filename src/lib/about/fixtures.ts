@@ -836,7 +836,7 @@ export const SYNERGY_ROWS: SynergyCard[] = [
  * would draw four alike and say nothing about the rule.
  */
 export const DECK_TABS: BuilderTabSpec[] = [
-  { id: "deck", label: addPanelCopy.tabs.deck, count: 87, accessibleName: "In deck, 87 cards" },
+  { id: "deck", label: addPanelCopy.tabs.deck, count: 99, accessibleName: "In deck, 99 cards" },
   { id: "consider", label: addPanelCopy.tabs.consider, count: 80, accessibleName: "Consider, 80 cards" },
   { id: "games", label: gameLogCopy.tab.label, accessibleName: gameLogCopy.tab.label },
   {
@@ -860,11 +860,14 @@ export const DECK_SPINE = {
     partner: null,
   },
   counts: {
-    built: 87,
-    ownedCount: 74,
-    // Non-zero, because the header's `To buy` state is one of the things a
-    // reader of this entry has to be able to recognise.
-    toBuyCount: 13,
+    // A FULL body. §3 draws this deck complete, and complete is the state
+    // whose badge and bar agree most legibly — key line 1 is that the two are
+    // one pair, which a half-built bar shows less plainly than a full one.
+    built: 99,
+    ownedCount: 99,
+    toBuyCount: 0,
   },
-  status: "Building" as StatusPill,
+  status: "Complete" as StatusPill,
+  /** §3's own stamp on the header's right. */
+  version: "v1 · committed 5 Sep 2026",
 };

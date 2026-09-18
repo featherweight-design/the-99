@@ -14,6 +14,7 @@ import { FullCardTrigger } from "../commanders/full-card-trigger";
 import { ArtWash } from "../ui/art-wash";
 import { deckImportCopy } from "../../lib/copy/deck-import";
 import { overCopy, overWord, renameCopy } from "../../lib/copy/decks-builder";
+import { deckHeaderCopy } from "../../lib/copy/decks-builder";
 import { deckBodySize } from "../../lib/decks/deck-size";
 import { colorLabel, deckIdentity } from "../../lib/decks/format";
 import type { StatusPill } from "../../lib/decks/status";
@@ -663,7 +664,7 @@ export function SpineDesktop({
                   className="flex h-[32px] items-center gap-[6px] rounded-[8px] border border-[color:var(--border)] bg-transparent px-[14px] font-sans text-[12.5px] font-semibold text-[color:var(--fg-faint)]"
                   style={{ cursor: "not-allowed" }}
                 >
-                  Export
+                  {deckHeaderCopy.export}
                 </button>
               ) : (
                 /* The one filled button on this surface, and bone — accent is
@@ -672,7 +673,7 @@ export function SpineDesktop({
                   onClick={onExport}
                   className="flex h-[32px] items-center gap-[6px] px-[14px] text-[12.5px]"
                 >
-                  Export
+                  {deckHeaderCopy.export}
                 </PrimaryButton>
               )}
               {offerFirstCommit && <FirstCommitOffer deckId={deck.id} />}

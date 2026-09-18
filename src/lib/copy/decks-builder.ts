@@ -474,6 +474,17 @@ export function builtFragment(built: number, bodySize: number): string {
  * control — and two literals in two files is how a figure goes stale on a
  * rename while every test passes.
  */
+/**
+ * The deck header's own two controls. Both were literals in their components —
+ * `Export` in `spine-desktop.tsx`, `Card details` in `full-card-trigger.tsx` —
+ * until the About page needed to draw the header and would otherwise have
+ * retyped them. Same split the collection's search placeholder needed.
+ */
+export const deckHeaderCopy = {
+  export: "Export",
+  cardDetails: "Card details",
+} as const;
+
 export const exportTabCopy = { decklist: "Decklist", shopping: "Shopping list" } as const;
 
 export const exportLinkOutCopy = {
