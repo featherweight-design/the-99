@@ -663,9 +663,14 @@ describe("TopOffList — a cost that belongs to the back face", () => {
     // Asserted per ROW rather than by counting: the list mounts a phone tree and
     // a desktop tree, so a total is a number about the harness rather than about
     // either card.
-    // order-4 since the type column took the slot beside the name. The cost
-    // track's own slot is what this names, so it moves with it.
-    expect(rowOf("owned-1")?.querySelector("[class*='md:order-4']")).toBeNull();
-    expect(rowOf("owned-2")?.querySelector("[class*='md:order-4']")).not.toBeNull();
+    // The rule is about the PIPS, not about the slot. Both rows hold the column
+    // open on desktop — the header reserves `COST_TRACK` for every row, so a row
+    // that mounted nothing would pull the four columns after it 72px left of
+    // their own headings — and what the back-face row must not draw is a cost.
+    const track = (name: string) => rowOf(name)?.querySelector("[class*='md:order-4']");
+    expect(track("owned-1")).not.toBeNull();
+    expect(track("owned-2")).not.toBeNull();
+    expect(track("owned-1")?.childElementCount).toBe(0);
+    expect(track("owned-2")?.childElementCount).toBeGreaterThan(0);
   });
 });

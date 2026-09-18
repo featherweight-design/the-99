@@ -13,7 +13,11 @@ import {
   UPDATED_PARAM,
 } from "../../../lib/decks/arrival";
 import { readSynergyCards } from "../../commanders/[slug]/synergy-read";
-import { listLastSlotsCandidates, type TopOffCandidate } from "../../../lib/decks/last-slots";
+import {
+  listLastSlotsCandidates,
+  poolEmptiedByNegativeCut,
+  type TopOffCandidate,
+} from "../../../lib/decks/last-slots";
 import { loadPrices } from "../../../lib/decks/price-query";
 import { loadAvailability } from "../../../lib/decks/availability-query";
 import { provenanceForm } from "../../../lib/decks/price";
@@ -157,6 +161,10 @@ export default async function DeckBuilderPage({
   // has no reason to draw.
   const inDeckOracleIds = new Set(detail.cards.map((r) => r.oracleId));
   const candidateCards = listLastSlotsCandidates({ ranked, inDeckOracleIds });
+  // Why the pool is empty, when it is. An empty list has two causes now and the
+  // strip's shipped sentence only describes one of them — see
+  // `poolEmptiedByNegativeCut`.
+  const allNegative = poolEmptiedByNegativeCut({ ranked, inDeckOracleIds });
 
   // Sequential, not part of the Promise.all above: the suggestion and candidate
   // oracle ids come out of those calls, so there is nothing to price or to ask
@@ -236,6 +244,7 @@ export default async function DeckBuilderPage({
       firstRun={firstRun}
       commanderIdentity={commanderIdentity}
       candidates={candidates}
+      candidatesAllNegative={allNegative}
       fillPasses={fillPasses}
       draft={draft}
       wasCounts={wasCounts}

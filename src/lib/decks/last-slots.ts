@@ -45,9 +45,34 @@ export function listLastSlotsCandidates(args: {
   ranked: SynergyCard[];
   inDeckOracleIds: Set<string>;
 }): SynergyCard[] {
-  return args.ranked.filter(
-    (c) =>
-      !args.inDeckOracleIds.has(c.oracleId)
-      && !(c.synergyPts !== null && c.synergyPts < 0),
-  );
+  return args.ranked
+    .filter((c) => !args.inDeckOracleIds.has(c.oracleId))
+    .filter((c) => !arguesAgainstItself(c));
+}
+
+/** A card EDHREC ranks below its own baseline — see the exclusion above. */
+function arguesAgainstItself(c: SynergyCard): boolean {
+  return c.synergyPts !== null && c.synergyPts < 0;
+}
+
+/**
+ * Whether an empty pool is empty BECAUSE of the negative cut.
+ *
+ * `synergyCopy.lastSlots.short` explains an empty pool as the collection having
+ * run out with nothing left that EDHREC ranks. Since the tail is cut that is no
+ * longer the only way to empty it: a deck holding every positively-ranked card
+ * leaves a ranking that is entirely negative — reachable late in a build, and
+ * not rare — and the shipped sentence is then false in both of its clauses.
+ * EDHREC ranked those cards, and what it said was that they belong here less
+ * than in decks generally.
+ *
+ * Asked of the same two inputs the list is built from rather than returned
+ * beside it, so no caller can hold a count that disagrees with the rows.
+ */
+export function poolEmptiedByNegativeCut(args: {
+  ranked: SynergyCard[];
+  inDeckOracleIds: Set<string>;
+}): boolean {
+  const offerable = args.ranked.filter((c) => !args.inDeckOracleIds.has(c.oracleId));
+  return offerable.length > 0 && offerable.every(arguesAgainstItself);
 }

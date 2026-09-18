@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { listLastSlotsCandidates } from "./last-slots";
+import { listLastSlotsCandidates, poolEmptiedByNegativeCut } from "./last-slots";
 import type { SynergyCard } from "../commanders/synergy-cards";
 
 function card(id: string, synergyPts: number, owned: boolean): SynergyCard {
@@ -78,5 +78,55 @@ describe("the negative tail", () => {
     });
 
     expect(out.map((c) => c.oracleId)).toEqual(["free"]);
+  });
+});
+
+describe("why the pool is empty", () => {
+  const c = (id: string, synergyPts: number | null): SynergyCard => ({
+    oracleId: id, name: id, typeLine: "Instant", facet: "spell", inclusionPct: 40,
+    synergyPts, owned: true, committedTo: null, manaCost: null, availability: null, price: null,
+  });
+
+  it("says so when every offerable card argues against itself", () => {
+    // Reachable late in a build rather than exotic: a deck holding every
+    // positively-ranked card leaves a ranking that is entirely negative, and the
+    // shipped exhaustion sentence claims nothing was ranked at all.
+    expect(poolEmptiedByNegativeCut({
+      ranked: [c("neg-1", -4), c("neg-2", -1)],
+      inDeckOracleIds: new Set(),
+    })).toBe(true);
+  });
+
+  it("counts the in-deck exclusion first", () => {
+    // The positives are all sleeved, so what is LEFT is negative — which is the
+    // shape this exists for, and it would read false if the filter ran the other
+    // way round.
+    expect(poolEmptiedByNegativeCut({
+      ranked: [c("held", 50), c("neg-1", -4)],
+      inDeckOracleIds: new Set(["held"]),
+    })).toBe(true);
+  });
+
+  it("is false when the collection simply ran out", () => {
+    // Nothing offerable at all is the case the shipped sentence already
+    // describes, and it must keep it.
+    expect(poolEmptiedByNegativeCut({
+      ranked: [c("held", 50)],
+      inDeckOracleIds: new Set(["held"]),
+    })).toBe(false);
+    expect(poolEmptiedByNegativeCut({ ranked: [], inDeckOracleIds: new Set() })).toBe(false);
+  });
+
+  it("is false while anything is still offerable", () => {
+    expect(poolEmptiedByNegativeCut({
+      ranked: [c("neg-1", -4), c("ok", 2)],
+      inDeckOracleIds: new Set(),
+    })).toBe(false);
+    // A null score is not an argument against the card, so it keeps the pool
+    // non-empty and this false.
+    expect(poolEmptiedByNegativeCut({
+      ranked: [c("neg-1", -4), c("unscored", null)],
+      inDeckOracleIds: new Set(),
+    })).toBe(false);
   });
 });

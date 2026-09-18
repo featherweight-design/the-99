@@ -30,6 +30,11 @@ export interface LastSlotsStripProps {
   bodySize: number;
   /** The whole ranked pool, uncapped, already excluding what the deck holds. */
   candidates: TopOffCandidate[];
+  /** The pool is empty because every ranked card argues against itself rather
+   *  than because the collection ran out. Two different facts, two different
+   *  sentences: `synergyCopy.lastSlots.short` describes only the first, and it
+   *  is false in both of its clauses for the second. */
+  allNegative?: boolean;
   /** Oracle ids in the deck right now — the list names a row that went illegal
       while it was open rather than dropping it from under the cursor. */
   deckOracleIds: Set<string>;
@@ -57,10 +62,13 @@ export interface LastSlotsStripProps {
 function ExhaustedLine({
   total,
   shortfall,
+  allNegative = false,
   ref,
 }: {
   total: string;
   shortfall: string;
+  /** See `LastSlotsStripProps.allNegative`. */
+  allNegative?: boolean;
   ref?: Ref<HTMLDivElement>;
 }) {
   return (
@@ -89,7 +97,14 @@ function ExhaustedLine({
         i
       </div>
       <p className="flex-1 text-[12.5px] leading-[1.6]" style={{ color: "var(--fg-body)" }}>
-        {synergyCopy.lastSlots.short(total, shortfall)}
+        {/* Two ways to empty the pool, and only one of them is the collection
+            running out. `lastSlots.short` says there was nothing left that
+            EDHREC ranks — false when the rows were cut because EDHREC ranked
+            them BELOW their own baseline, which is where a deck holding every
+            positively-ranked card lands. */}
+        {allNegative
+          ? topOffCopy.strip.exhaustedAllNegative
+          : synergyCopy.lastSlots.short(total, shortfall)}
       </p>
     </div>
   );
@@ -110,6 +125,7 @@ function LastSlotsStripInner({
   openSlots,
   bodySize,
   candidates,
+  allNegative = false,
   deckOracleIds,
   newestAsOf,
   onAnnounce,
@@ -416,6 +432,7 @@ function LastSlotsStripInner({
           ref={exhaustedRef}
           total={String(bodySize - openSlots)}
           shortfall={String(openSlots)}
+          allNegative={allNegative}
         />
       ) : (
         <div className="md:flex md:items-center md:gap-[12px] md:flex-wrap">

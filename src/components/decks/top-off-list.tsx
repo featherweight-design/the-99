@@ -117,19 +117,26 @@ function moneyOf(price: PriceFact | null, newestAsOf: Date | null): string | nul
  *  which exists for exactly that case. No new string either way. */
 function rowLabel(c: TopOffCandidate, newestAsOf: Date | null): string {
   const clause = ownershipClause(c, newestAsOf);
+  // The type is drawn `aria-hidden`, so without this it is the one column on the
+  // row a screen reader never hears. Spoken at BOTH widths rather than only where
+  // the column is drawn: a reader who is not looking at the columns is not
+  // served by matching them, and the card's type is as true on a phone as on a
+  // desktop. It leads, beside the cost, because both are facts about the card
+  // rather than about this player's copy of it.
+  const type = FACET_TYPE_LABEL[c.facet];
   const inclusion =
     c.inclusionPct === null
       ? synergyCopy.figure.inclusionNone
       : synergyCopy.figure.inclusion(String(c.inclusionPct));
   const cost = spokenManaCost(c.manaCost);
   if (c.synergyPts !== null && c.synergyPts >= 0) {
-    return `${cost}. ${topOffCopy.list.rowAria(c.name, clause, String(c.synergyPts), inclusion)}`;
+    return `${cost}. ${type}. ${topOffCopy.list.rowAria(c.name, clause, String(c.synergyPts), inclusion)}`;
   }
   const synergy =
     c.synergyPts === null
       ? synergyCopy.figure.synergyNone
       : synergySignedDisplay(c.synergyPts);
-  return `${cost}. ${synergyCopy.figure.rowAria(
+  return `${cost}. ${type}. ${synergyCopy.figure.rowAria(
     c.name,
     clause.replace(/\.$/, ""),
     synergy,
@@ -147,7 +154,24 @@ function CostTrack({ cost }: { cost: string | null }) {
   // `" // {3}{R}"` — non-null, and a cost this row never draws — so a null check
   // would mount this flex item and give the phone row the track's `gap-[8px]`
   // ahead of the score with nothing inside it.
-  if (!hasFrontFaceCost(cost)) return null;
+  // A costless row still holds the column OPEN on desktop. The header reserves
+  // `COST_TRACK` for every row, so a row that mounted nothing here pulled the buy
+  // slot, the synergy, the inclusion and the decline 72px left of their own
+  // headings — the same misalignment this component's header comment records,
+  // arriving from the row's side instead of the header's.
+  //
+  // `md:` only, and empty: on the phone this track is a flex item in a gap-[8px]
+  // line, so a spacer there would give a costless row a gap with nothing in it,
+  // which is the exact defect the null return was written to avoid.
+  if (!hasFrontFaceCost(cost)) {
+    return (
+      <span
+        aria-hidden
+        className="hidden md:block flex-none md:order-4"
+        style={{ width: COST_TRACK }}
+      />
+    );
+  }
   return (
     // order-4, after the type column that now sits beside the name. The header
     // above lists the same eight slots in the same order, and the two have to be

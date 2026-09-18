@@ -98,6 +98,22 @@ export const topOffCopy = {
         : seeded === '1'
         ? '1 arrives ticked. Nothing is added until you say so.'
         : `${seeded} arrive ticked. Nothing is added until you say so.`,
+    /** The pool is empty because every ranked card ARGUES AGAINST itself.
+     *
+     *  `synergyCopy.lastSlots.short` says the collection ran out and that there
+     *  was nothing left that EDHREC ranks for this commander. That is one reason
+     *  a pool can be empty, and since the negative tail is cut it is no longer
+     *  the only one: a deck holding every positively-ranked card leaves a
+     *  ranking that is entirely negative, which is reachable late in a build and
+     *  not rare. Printing `nothing EDHREC ranks` there is false — EDHREC ranked
+     *  them, and what it said was that they belong in this deck less than in
+     *  decks generally.
+     *
+     *  No figure, and no offer to show them: the rows are cut because the
+     *  evidence is against them, and a control that reinstated them would spend
+     *  a decision on the cards with the weakest case in the list. */
+    exhaustedAllNegative:
+      'Everything left that EDHREC ranks for this commander is played less here than in decks generally, so there is nothing worth suggesting.',
     /** A seed of zero that is NOT a statement about ownership.
      *
      *  The player owns candidates; every copy of every one of them is sleeved in

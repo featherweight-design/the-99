@@ -188,6 +188,23 @@ describe("LastSlotsStrip", () => {
     expect(screen.queryByText(topOffCopy.strip.doorNoteNoneFree)).toBeNull();
   });
 
+  it("leaves a claimed card unticked when the list opens", async () => {
+    // The door-note checks above read `seedCount`, which is derived from the same
+    // list the seed is — so a regression that seeded from `ownedIds` while the
+    // note kept reading `seedableIds` would pass every one of them with claimed
+    // rows pre-ticked again. This opens the list and reads the boxes.
+    render(
+      <LastSlotsStrip {...base} candidates={[claimed("held-1"), spare("free-1")]} />,
+    );
+    await click(screen.getByRole("button", { name: doorName("3") }));
+
+    const boxes = screen.getAllByRole("checkbox");
+    const byName = (name: string) =>
+      boxes.find((b) => (b.getAttribute("aria-label") ?? "").includes(name));
+    expect(byName("free-1")).toBeChecked();
+    expect(byName("held-1")).not.toBeChecked();
+  });
+
   it("seeds a card with no availability reading, which is the degraded case", () => {
     // A null reading is NO ROW — an unowned card, or a read that could not reach
     // — and reads as free everywhere else in the app. Seeding nothing here would
@@ -195,6 +212,17 @@ describe("LastSlotsStrip", () => {
     render(<LastSlotsStrip {...base} candidates={[candidate("unread", true)]} />);
 
     expect(screen.getByText(topOffCopy.strip.doorNote("1"))).toBeInTheDocument();
+  });
+
+  it("does not claim nothing was ranked when the tail was simply cut", () => {
+    // `lastSlots.short` says the collection ran out and that there was nothing
+    // left that EDHREC ranks. Both clauses are false for a pool emptied by the
+    // negative cut: EDHREC ranked those cards, and what it said was that they
+    // belong here less than in decks generally.
+    render(<LastSlotsStrip {...base} candidates={[]} allNegative />);
+
+    expect(screen.getByTestId("last-slots-exhausted"))
+      .toHaveTextContent(topOffCopy.strip.exhaustedAllNegative);
   });
 
   // §16 — an exhausted pool is honest, not alarming, so the plate carries the
