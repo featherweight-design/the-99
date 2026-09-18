@@ -198,11 +198,12 @@ describe("useTopOffDraft", () => {
   });
 
   describe("a write this build cannot read", () => {
-    it("keeps the selection when an older tab writes the pre-version shape", () => {
-      // The deployment window: the other tab is still running the previous build
-      // and writes `{t,d}` with no version. Parsing that to null and handing back
-      // an empty draft loses an in-progress selection, and the strip will not
-      // reseed because its `seeded` ref is already spent.
+    it("clears the selection when an older tab writes the pre-version shape", () => {
+      // The deployment window, and the ACCEPTED cost of having no cache behind
+      // the version gate: a tab on the previous build writes the unversioned
+      // shape, this build cannot read it, and the selection goes. A reload
+      // reseeds it. The mitigation that held the last readable snapshot drew a
+      // finding in three consecutive rounds and was deleted — see the hook.
       localStorage.setItem(KEY, '{"v":2,"t":["sol-ring"],"d":[]}');
       const { result } = renderHook(() => useTopOffDraft(DECK));
       expect(result.current.ticked).toEqual(new Set(["sol-ring"]));
@@ -212,32 +213,8 @@ describe("useTopOffDraft", () => {
         window.dispatchEvent(new StorageEvent("storage", { key: KEY }));
       });
 
-      expect(result.current.ticked).toEqual(new Set(["sol-ring"]));
-      expect(result.current.restored).toBe(true);
-    });
-
-    it("keeps the selection when the store itself refuses to be read", () => {
-      // `readRaw` answers an unreadable store with the same null as an empty
-      // one, so clearing on null lets one transient failure — Safari's private
-      // mode, a locked-down cookie policy — throw away an in-progress selection.
-      // A removal and a refusal are opposite facts for this value.
-      localStorage.setItem(KEY, '{"v":2,"t":["sol-ring"],"d":[]}');
-      const { result } = renderHook(() => useTopOffDraft(DECK));
-      expect(result.current.ticked).toEqual(new Set(["sol-ring"]));
-
-      const real = Storage.prototype.getItem;
-      try {
-        Storage.prototype.getItem = () => {
-          throw new DOMException("denied", "SecurityError");
-        };
-        act(() => {
-          window.dispatchEvent(new StorageEvent("storage", { key: KEY }));
-        });
-        expect(result.current.ticked).toEqual(new Set(["sol-ring"]));
-        expect(result.current.restored).toBe(true);
-      } finally {
-        Storage.prototype.getItem = real;
-      }
+      expect(result.current.ticked).toEqual(new Set());
+      expect(result.current.restored).toBe(false);
     });
 
     it("still forgets the selection when the key is removed", () => {

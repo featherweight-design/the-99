@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useMemo, useRef, useSyncExternalStore } from "react";
+import { useCallback, useMemo, useSyncExternalStore } from "react";
 import {
   encodeTopOffDraft,
   readTopOffDraft,
@@ -10,27 +10,6 @@ import {
 import { readRaw, removeRaw, subscribeToKey, writeRaw } from "../ui/local-store";
 
 const EMPTY: TopOffDraft = { ticked: new Set(), declined: new Set() };
-
-/**
- * Whether the store answered at all, as opposed to answering "nothing".
- *
- * `readRaw` returns null for both, deliberately — see its own comment — so this
- * asks the one question it folds away: did the read THROW? Safari's private mode
- * and a locked-down cookie policy both throw here, and neither is a player
- * clearing their selection.
- *
- * Not in `local-store.ts`: every other caller of `readRaw` is right to treat the
- * two as one answer, and widening that module's contract for one value would put
- * this distinction in front of all of them.
- */
-function storeReadable(key: string): boolean {
-  try {
-    localStorage.getItem(key);
-    return true;
-  } catch {
-    return false;
-  }
-}
 
 export type TopOffDraftHandle = TopOffDraft & {
   /** Whether this player has already chosen against this deck. False on a
@@ -76,6 +55,24 @@ export function useTopOffDraft(deckId: string): TopOffDraftHandle {
     () => null,
   );
 
+  // NO CACHED FALLBACK BEHIND THIS. A held "last readable" snapshot was tried,
+  // to keep an in-progress selection through the deployment window where a tab
+  // on the previous build writes the pre-version shape — and it drew a finding
+  // in each of three consecutive rounds: it cleared itself on an unreadable
+  // store, it was not scoped to the deck's key so a reused shell could carry one
+  // deck's ticks into another, and `write` rebuilt from storage anyway so a
+  // toggle during the window dropped what the ref was holding.
+  //
+  // Every one of those was a real defect in the mitigation rather than in the
+  // thing being mitigated, which is the shape of an over-built surface. What it
+  // bought: a selection surviving a window of minutes, for a player with two
+  // tabs open on one deck across a deploy. What it cost: a cache with no
+  // invalidation story sitting under the value that decides what gets bought.
+  //
+  // So it is gone, and the residue is stated rather than hidden: in that window
+  // the selection is cleared, and a reload reseeds it. The VERSION gate stays,
+  // because that one prevents a withdrawn default buying cards, which is not
+  // recoverable by reloading.
   const parsed = useMemo(() => readTopOffDraft(raw), [raw]);
 
   // AN UNREADABLE WRITE IS NOT A CLEAR, and the difference is a player's
@@ -97,20 +94,7 @@ export function useTopOffDraft(deckId: string): TopOffDraftHandle {
   // only when the parse succeeded, so it can never hold a value this build
   // rejected.
   //
-  // A null `raw` is TWO answers, and `readRaw` collapses them by design: it says
-  // a store that refuses to be read is the same answer as an empty one, and
-  // leaves the caller to decide what absence means for its own value. For this
-  // value they are opposite. A key another tab REMOVED is a cleared selection
-  // and this tab should agree. A store that could not be read is a question that
-  // went unanswered, and throwing away an in-progress selection over it is the
-  // loss the ref exists to prevent.
-  //
-  // So the null path asks the store directly, which is the one place the
-  // difference is visible. Only on that path, so a healthy read costs nothing.
-  const lastGood = useRef<TopOffDraft | null>(null);
-  if (parsed !== null) lastGood.current = parsed;
-  else if (raw === null && storeReadable(key)) lastGood.current = null;
-  const draft = parsed ?? lastGood.current;
+  const draft = parsed;
 
   const write = useCallback(
     (change: Partial<TopOffDraft>) => {
@@ -126,14 +110,7 @@ export function useTopOffDraft(deckId: string): TopOffDraftHandle {
 
   const setTicked = useCallback((next: Set<string>) => write({ ticked: next }), [write]);
   const setDeclined = useCallback((next: Set<string>) => write({ declined: next }), [write]);
-  // The committed pass. It clears the held snapshot as well as the key, rather
-  // than leaving that to the read above: a discard on a device whose store has
-  // gone unreadable would otherwise hand the next render the selection it just
-  // committed.
-  const discard = useCallback(() => {
-    lastGood.current = null;
-    removeRaw(key);
-  }, [key]);
+  const discard = useCallback(() => removeRaw(key), [key]);
 
   return {
     ticked: draft?.ticked ?? EMPTY.ticked,

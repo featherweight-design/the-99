@@ -564,6 +564,13 @@ export function TopOffList({
 
       {/* ── The rows (§4) ──────────────────────────────────────────────── */}
       <div
+        // Named, so a probe can address THIS list rather than any group under
+        // `<main>`. The decklist behind the strip carries a `View details for …`
+        // trigger on every one of its rows, so a locator scoped to the page — or
+        // to `div[role="group"]` — is satisfied by the decklist and reports this
+        // list working when its own trigger is gone. That false pass has now been
+        // written twice; the attribute is what stops a third.
+        data-top-off-rows
         role="group"
         aria-label={topOffCopy.list.groupAria(
           String(pool.length),

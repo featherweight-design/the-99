@@ -141,8 +141,7 @@ async function run() {
       }
 
       const m = await page.evaluate(() => {
-        const boxes = [...document.querySelectorAll('main div[role="group"]')];
-        const rowsBox = boxes.find((b) => b.querySelectorAll('input[type="checkbox"]').length > 0);
+        const rowsBox = document.querySelector("main [data-top-off-rows]");
         if (!rowsBox) return null;
         const style = getComputedStyle(rowsBox);
         const rows = rowsBox.querySelectorAll('input[type="checkbox"]').length;
@@ -224,7 +223,7 @@ async function run() {
       // could fail, and a desktop row that lost the column could pass on the
       // card's name supplying the match.
       const typed = await page.evaluate(() => {
-        const row = document.querySelector('main div[role="group"] input[type="checkbox"]')
+        const row = document.querySelector('main [data-top-off-rows] input[type="checkbox"]')
           ?.closest("div[class*=rounded-]");
         if (!row) return null;
         const cell = row.querySelector("[data-top-off-type]");
@@ -250,8 +249,7 @@ async function run() {
         // which is why the check also asserts the header is INSIDE the box, the
         // structural fact that makes the delta 0 on every platform.
         const cols = await page.evaluate(() => {
-          const box = [...document.querySelectorAll('main div[role="group"]')]
-            .find((b) => b.querySelectorAll('input[type="checkbox"]').length > 0);
+          const box = document.querySelector("main [data-top-off-rows]");
           const header = box?.querySelector("div[aria-hidden]");
           const row = box?.querySelector('input[type="checkbox"]')?.closest("div[class*=rounded-]");
           if (!header || !row) return null;
@@ -278,7 +276,7 @@ async function run() {
         // probe unticks one row, which is what a reader does before choosing a
         // different card, and measures the rows that become tickable.
         await page.evaluate(() => {
-          const box = [...document.querySelectorAll('main div[role="group"] input[type="checkbox"]')]
+          const box = [...document.querySelectorAll('main [data-top-off-rows] input[type="checkbox"]')]
             .find((b) => b.checked);
           box?.click();
         });
@@ -288,7 +286,7 @@ async function run() {
         // already carries the hovered colour, so hovering one reads the same
         // colour twice on a working build.
         const unticked = await page.evaluate(() => {
-          const boxes = [...document.querySelectorAll('main div[role="group"] input[type="checkbox"]')];
+          const boxes = [...document.querySelectorAll('main [data-top-off-rows] input[type="checkbox"]')];
           const box = boxes.find((b) => !b.checked);
           if (!box) return null;
           const row = box.closest("div[class*=rounded-]");
@@ -318,14 +316,14 @@ async function run() {
 
         // The name opens the card, and does NOT tick the row.
         const before = await page.evaluate(() =>
-          document.querySelectorAll('main div[role="group"] input[type="checkbox"]:checked').length);
+          document.querySelectorAll('main [data-top-off-rows] input[type="checkbox"]:checked').length);
         // Scoped to the ROW GROUP, never to the page. `onPage` bounds this to
         // `<main>`, and the decklist behind the strip is inside `<main>` too —
         // and every one of its rows carries a `View details for …` trigger of
         // its own. The first version took the page-wide first match, so removing
         // this list's trigger entirely still opened a dialog and still reported
         // a pass: the probe was proving the decklist works.
-        const name = onPage(page, 'div[role="group"] button[aria-label^="View details for"]').first();
+        const name = onPage(page, '[data-top-off-rows] button[aria-label^="View details for"]').first();
         if ((await name.count()) === 0) {
           report(`${width}px · the name is a trigger`, false, "no trigger on any row — NOT a pass");
         } else {
@@ -336,7 +334,7 @@ async function run() {
           // can count a dialog this press did not open.
           const opened = await onPage(page, '[role="dialog"]').count();
           const after = await page.evaluate(() =>
-            document.querySelectorAll('main div[role="group"] input[type="checkbox"]:checked').length);
+            document.querySelectorAll('main [data-top-off-rows] input[type="checkbox"]:checked').length);
           report(
             `${width}px · the name opens the card`,
             opened > 0,
