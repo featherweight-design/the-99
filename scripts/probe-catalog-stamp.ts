@@ -24,7 +24,7 @@ import { sql } from "drizzle-orm";
 
 import { db } from "../src/db";
 import { catalogRefreshes, CATALOG_ROW_ID } from "../src/db/schema";
-import { generationKey } from "../src/lib/cache/catalog-generation";
+import { readCatalogGeneration } from "../src/lib/cache/catalog-generation";
 import { stampCatalogRefresh } from "../src/lib/cache/stamp-catalog";
 
 let failures = 0;
@@ -33,52 +33,60 @@ function check(label: string, ok: boolean, detail: string) {
   if (!ok) failures += 1;
 }
 
-const millisOf = async (): Promise<string | null> => {
-  const [row] = await db
-    .select({
-      millis: sql<string | null>`(extract(epoch from ${catalogRefreshes.refreshedAt}) * 1000)::bigint`,
-    })
-    .from(catalogRefreshes);
-  return row?.millis ?? null;
-};
-
+// THE PRODUCTION READER, not a copy of its query. `catalogGeneration` wraps this in
+// `unstable_cache`, which raises an invariant outside a request, so the uncached half is
+// exported for exactly this: a probe that re-wrote the epoch expression would drift from the
+// reader by one clause and both halves would go on passing.
 async function run() {
   await stampCatalogRefresh();
-  const first = await millisOf();
-  check("a stamp lands", first !== null, `generation ${generationKey(first)}`);
+  const first = await readCatalogGeneration();
+  check("a stamp lands", first !== "0", `generation ${first}`);
 
   // A second apart, because the column's resolution is what a reader compares.
   await new Promise((r) => setTimeout(r, 1_100));
   await stampCatalogRefresh();
-  const second = await millisOf();
+  const second = await readCatalogGeneration();
 
   const [{ count }] = await db
     .select({ count: sql<number>`count(*)::int` })
     .from(catalogRefreshes);
   check("two stamps leave one row", count === 1, `${count} row(s)`);
+  // A key that did not change is a cache that was never retired, so this is the figure the
+  // whole design turns on — read through the reader that composes it in production.
   check(
     "the generation moves",
-    first !== null && second !== null && Number(second) > Number(first),
-    `${generationKey(first)} → ${generationKey(second)}`,
-  );
-  // The reader's own translation, over the value the writer stored: a key that did not
-  // change is a cache that was never retired.
-  check(
-    "the key changes with it",
-    generationKey(first) !== generationKey(second),
-    `${generationKey(first)} vs ${generationKey(second)}`,
+    Number(second) > Number(first),
+    `${first} → ${second}`,
   );
 
-  let refused = false;
+  // THE CONSTRAINT BY NAME, not by any error at all. A bare catch here would take a
+  // permission error, a dropped connection or a typo in the statement for proof that the
+  // schema forbids a second row — a green check over an untested constraint.
+  let refusal = "no error at all";
   try {
     await db.execute(
       sql`insert into ${catalogRefreshes} (id, refreshed_at) values (${CATALOG_ROW_ID + 1}, now())`,
     );
-    await db.execute(sql`delete from ${catalogRefreshes} where id = ${CATALOG_ROW_ID + 1}`);
-  } catch {
-    refused = true;
+  } catch (error) {
+    // The SQLSTATE and the constraint name live on the CAUSE, not on the error drizzle
+    // throws: it wraps the driver's error in one carrying `query` and `params` only, so
+    // reading `code` off the top level finds undefined and every real refusal reads as "a
+    // different failure". Checked against the driver rather than assumed.
+    const wrapper = error as { cause?: unknown; message?: string };
+    const e = (wrapper.cause ?? error) as { code?: string; constraint?: string; message?: string };
+    const message = e.message ?? wrapper.message ?? String(error);
+    refusal = e.code === "23514" && e.constraint === "catalog_refreshes_single_row_check"
+      ? "ok"
+      : `a different failure: ${e.code ?? "?"} ${message.slice(0, 80)}`;
   }
-  check("a second row is refused", refused, "check constraint on the canonical id");
+  check(
+    "a second row is refused by the single-row check",
+    refusal === "ok",
+    refusal === "ok" ? "23514 catalog_refreshes_single_row_check" : refusal,
+  );
+  // Separate from the assertion above, and unconditional: an insert that slipped past the
+  // constraint must not be left behind for the next run to read as the canonical row.
+  await db.execute(sql`delete from ${catalogRefreshes} where id <> ${CATALOG_ROW_ID}`);
 
   console.log(failures === 0 ? "\nAll checks passed." : `\n${failures} check(s) failed.`);
   process.exit(failures === 0 ? 0 : 1);

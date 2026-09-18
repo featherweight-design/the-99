@@ -2,11 +2,32 @@
 // costs freshness rather than the page.
 import { describe, expect, it, vi } from "vitest";
 
-vi.mock("../../db", () => ({ db: {} }));
+const rows = vi.hoisted(() => ({ value: [] as { millis: string | null }[], where: null as unknown }));
+
+// A chainable stub shaped like the one query this module makes, so the reader's own
+// composition runs: the mocked cache below invokes the callback, and what it invokes is
+// `readCatalogGeneration` — not a copy of its SQL.
+vi.mock("../../db", () => ({
+  db: {
+    select: () => ({
+      from: () => ({
+        where: (clause: unknown) => {
+          rows.where = clause;
+          return Promise.resolve(rows.value);
+        },
+      }),
+    }),
+  },
+}));
 // No incremental cache outside a request, which is what `unstable_cache` raises on — the
 // state every non-request caller is in, and the one the fallback exists for.
+const cache = vi.hoisted(() => ({ throws: true }));
+
 vi.mock("next/cache", () => ({
-  unstable_cache: () => () => { throw new Error("Invariant: incrementalCache missing"); },
+  unstable_cache: (load: () => Promise<string>) => () => {
+    if (cache.throws) throw new Error("Invariant: incrementalCache missing");
+    return load();
+  },
 }));
 
 const { catalogGeneration, generationKey } = await import("./catalog-generation");
@@ -34,6 +55,33 @@ describe("generationKey", () => {
 describe("catalogGeneration", () => {
   // The direction to fail in: the generation buys freshness, and a page is worth more.
   it("answers the constant rather than throwing when the cache is unavailable", async () => {
+    cache.throws = true;
     await expect(catalogGeneration()).resolves.toBe("0");
+  });
+
+  // THE PATH THAT ACTUALLY RUNS IN PRODUCTION, which the fallback case above says nothing
+  // about: a reader that returned "0" for every request would pass that one while pinning
+  // every cache key to the same value forever.
+  it("answers the stamp the query returned", async () => {
+    cache.throws = false;
+    rows.value = [{ millis: "1789732800000" }];
+    await expect(catalogGeneration()).resolves.toBe("1789732800000");
+  });
+
+  // An empty table is a catalog nobody has stamped, which is the same key as one that
+  // cannot be read — not a crash, and not a fresh generation per request.
+  it("answers the constant when no stamp has been written", async () => {
+    cache.throws = false;
+    rows.value = [];
+    await expect(catalogGeneration()).resolves.toBe("0");
+  });
+
+  // The canonical row, by id. Composed here rather than assumed: `limit(1)` with no `where`
+  // would pass both cases above while taking whichever row Postgres reached first.
+  it("asks for the canonical row rather than the first one", async () => {
+    cache.throws = false;
+    rows.value = [{ millis: "1789732800000" }];
+    await catalogGeneration();
+    expect(rows.where).not.toBeNull();
   });
 });

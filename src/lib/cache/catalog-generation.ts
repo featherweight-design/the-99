@@ -30,7 +30,7 @@ const UNSTAMPED = "0";
  * A bigint arrives from the driver as a STRING, and it is already what the key wants — so
  * this normalises rather than parses. The parsing was the danger: the column carries no
  * zone, so a `Date` built from its rendering takes the reading host's clock with it, and
- * two servers in different zones would key one stamp two ways. `load` asks Postgres for the
+ * two servers in different zones would key one stamp two ways. `readCatalogGeneration` asks Postgres for the
  * number instead. `DeckClaim.since` carries the same note for the same reason.
  *
  * Exported so the translation is pinned by a test; the query around it needs a database.
@@ -41,7 +41,15 @@ export function generationKey(millis: string | number | null | undefined): strin
   return Number.isFinite(value) ? String(value) : UNSTAMPED;
 }
 
-async function load(): Promise<string> {
+/**
+ * The read itself, uncached and exported.
+ *
+ * `catalogGeneration` wraps this in `unstable_cache`, which raises an invariant outside a
+ * request — so a script cannot reach the production reader through it, and `probe:catalog-stamp`
+ * was reimplementing the query to get at the answer. A second copy of a query is the thing
+ * this repository keeps paying for: it drifts by one clause and both halves go on passing.
+ */
+export async function readCatalogGeneration(): Promise<string> {
   try {
     // EPOCH MILLIS COMPUTED IN SQL, and BY ID rather than whichever row comes first. The
     // column has no zone, so the driver would hand back a `Date` built from a naked
@@ -75,7 +83,7 @@ let cached: (() => Promise<string>) | null = null;
 export async function catalogGeneration(): Promise<string> {
   try {
     cached ??= unstable_cache(
-      load,
+      readCatalogGeneration,
       ["catalog-generation"],
       // No tag: nothing invalidates this on purpose. The window IS the invalidation story,
       // and a tag would need the same fan-out over readers this design exists to avoid.
