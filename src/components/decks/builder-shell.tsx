@@ -62,6 +62,9 @@ import type { VersionSummary } from "../../lib/decks/versions";
 import { PendingChangeProvider } from "./pending-change";
 // `draft-shape`, not `draft-state`: the latter holds the reads and imports `db`.
 import type { DraftState } from "../../lib/decks/draft-shape";
+// A VALUE import, and safe for the same reason the type above is: `draft-shape`
+// holds the pure half of the draft model and reaches no database.
+import { hasChanges } from "../../lib/decks/draft-shape";
 import { cardCopies, deckCounts, unresolvedCardCount, type DeckDetailCard } from "../../lib/decks/grouping";
 import { computeRoleCounts, RECOMMENDED_MIX, type MixRole } from "../../lib/decks/mix";
 import { useIsDesktop } from "../ui/use-is-desktop";
@@ -754,6 +757,14 @@ export function BuilderShell({
               // optimistic counts and would otherwise disagree with the page
               // around it mid-edit.
               status={serverStatus}
+              // Both marks off the draft this page already reads, rather than
+              // off a second read of the same rows: `version === null` is the
+              // deck with nothing to differ from — a plan — and `hasChanges` is
+              // the deck page's own definition of a moved draft, which is the
+              // definition the list read was built to agree with. An absent
+              // draft draws neither, as the prop's own note says.
+              hollow={draft ? draft.version === null : false}
+              pending={draft ? hasChanges(draft) : false}
               // State 2: a list that has never been committed and has reached a
               // full body.
               //

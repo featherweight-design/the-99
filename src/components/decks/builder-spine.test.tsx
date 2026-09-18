@@ -169,3 +169,41 @@ describe("BuilderSpine header", () => {
     expect(container.querySelectorAll(".bg-\\[color\\:var\\(--fg\\)\\]")).toHaveLength(1);
   });
 });
+
+describe("BuilderSpine deck-state marks", () => {
+  // Both widths render from one mount — the component draws a desktop band and
+  // a mobile band and lets CSS choose — so each assertion below is about BOTH
+  // spines unless it counts.
+  it("draws the phase in words at both widths, under the bar", () => {
+    mount({ overCommitted: 0, softClaimed: 0, hollow: true });
+    // TWO, one per width. A single hit means one spine lost the line, which is
+    // the parity break a class-list assertion on one band cannot see.
+    expect(screen.getAllByText("Not committed yet")).toHaveLength(2);
+  });
+
+  it("says nothing about the phase on a deck that has committed", () => {
+    mount({ overCommitted: 0, softClaimed: 0 });
+    expect(screen.queryByText("Not committed yet")).not.toBeInTheDocument();
+  });
+
+  it("hollows both chips and halves both bars for a plan", () => {
+    const { container } = mount({ overCommitted: 0, softClaimed: 0, hollow: true });
+    const chips = [...container.querySelectorAll("span")].filter(
+      (el) => (el as HTMLElement).style.background === "var(--bg)",
+    );
+    expect(chips).toHaveLength(2);
+    const bars = [...container.querySelectorAll("div")].filter(
+      (el) => (el as HTMLElement).style.opacity === "0.5",
+    );
+    expect(bars).toHaveLength(2);
+  });
+
+  it("draws the edge on both chips for a moved draft, and no phase line", () => {
+    const { container } = mount({ overCommitted: 0, softClaimed: 0, pending: true });
+    const edged = [...container.querySelectorAll("span")].filter(
+      (el) => (el as HTMLElement).style.borderLeft === "2px solid var(--fg)",
+    );
+    expect(edged).toHaveLength(2);
+    expect(screen.queryByText("Not committed yet")).not.toBeInTheDocument();
+  });
+});
