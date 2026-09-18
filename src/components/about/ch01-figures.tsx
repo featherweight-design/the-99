@@ -21,6 +21,9 @@ import {
   CONTESTED_ARRIVAL,
   FIT_LEGEND,
   LANE_DISCOVER,
+  READY_IN_USE,
+  READY_SLICE,
+  LANE_ROW_DISCOVER,
   LANE_OWNED,
   PRINTING_ROWS,
   REPLACE_ROWS,
@@ -35,6 +38,8 @@ import { TwoFacedMark } from "../cards/two-faced-mark";
 import { ContestedCardRow } from "../decks/contested-card-row";
 import { FitLegend } from "../commanders/fit-legend";
 import { FilterRack } from "../commanders/rack/filter-rack";
+import { RecCard } from "../commanders/rec-card";
+import type { DiscoveryItem } from "../../lib/discovery/list";
 import type { Lane, LaneParams } from "../../lib/commanders/lane-params";
 import { ReceiptRow } from "../collection/arrivals-summary";
 import { issueInspectorCopy } from "../../lib/copy/issue-inspector";
@@ -326,13 +331,45 @@ function laneRack(params: LaneParams, lane: Lane, shown: number, total: number) 
   );
 }
 
+/**
+ * The rack, and then a ROW.
+ *
+ * §3 draws the rack alone for both lanes, so a reader met the controls and
+ * never the thing they filter. Hugh asked for the row on 2026-09-18 — the one
+ * addition on this page not transcribed from the canvas, and a Design item
+ * rather than a quiet adoption.
+ */
+function laneWithRow(body: React.ReactNode, row: React.ReactNode) {
+  return (
+    <div className="flex flex-col gap-[12px]">
+      {body}
+      <div className="border-t border-solid border-[color:var(--border)] pt-[12px]">{row}</div>
+    </div>
+  );
+}
+
 export function CommanderLaneFigureBody() {
   // `avail: "free"` is the fixture's whole job — Build from is what this
   // entry's caption is about, and a rack on the default draws the control
   // without ever showing the choice being made.
-  return laneRack(LANE_OWNED, "owned", 34, 612);
+  return laneWithRow(
+    laneRack(LANE_OWNED, "owned", 34, 612),
+    // The OWNED arm of the shared row. `RecCard` delegates to `DiscoveryRow`
+    // when handed a discovery item, and that arm prints counts and no score —
+    // the wrong lane's row, and the headline this entry is about is the fit.
+    <RecCard
+      commander={READY_SLICE.shown[0]}
+      rank={1}
+      avail="free"
+      counts={READY_IN_USE.get(READY_SLICE.shown[0].oracleId) ?? null}
+      delta={null}
+    />,
+  );
 }
 
 export function DiscoverFigureBody() {
-  return laneRack(LANE_DISCOVER, "discover", 120, 1840);
+  return laneWithRow(
+    laneRack(LANE_DISCOVER, "discover", 120, 1840),
+    <RecCard discovery={LANE_ROW_DISCOVER} rank={LANE_ROW_DISCOVER.rank} sort="new" />,
+  );
 }

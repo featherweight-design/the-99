@@ -18,6 +18,8 @@ import {
   IMPORT_SOURCES,
   FIT_DEGRADED_SCORE,
   FIT_LEGEND,
+  LANE_ROW_DISCOVER,
+  LANE_ROW_OWNED,
   FIT_FULL_SCORE,
   READY_SLICE,
   SET_CELLS,
@@ -729,6 +731,16 @@ describe("what each chapter 01 figure actually draws", () => {
       expect(el.textContent).toContain(colour);
     }
     expect(el.textContent).toContain(filterCopy.match.exactlyShort);
+
+    // AND A ROW. §3 draws the rack alone, so a reader met the controls and
+    // never the thing they filter. The row carries the commander's name, its
+    // fit, its deck count and — on THIS lane — a price.
+    // The OWNED arm of the shared row — `RecCard` delegates to `DiscoveryRow`
+    // for a discovery item, and that arm prints counts and no score, which is
+    // the wrong lane's row. The headline here is the fit.
+    const row = READY_SLICE.shown[0];
+    expect(el.textContent).toContain(row.name);
+    expect(el.textContent).toContain(commandersCopy.row.fitDenominator);
   });
 
   it("discover: the rack, and what each order does", () => {
@@ -746,6 +758,13 @@ describe("what each chapter 01 figure actually draws", () => {
       expect(el.textContent).toContain(mark);
       expect(el.textContent).toContain(gloss);
     }
+
+    // The row, and the DIFFERENCE between the lanes. Discover ranks a
+    // commander you do not own and prints counts rather than a price: its
+    // price slot is `absent`, which draws no slot at all rather than a dash,
+    // so a row carrying one here would be the wrong lane's row.
+    expect(el.textContent).toContain(LANE_ROW_DISCOVER.name);
+    expect(el.textContent).not.toMatch(/\$[0-9]/);
   });
 
   it("import: the drop target and its two doors, as drawn", () => {

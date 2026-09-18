@@ -1,3 +1,5 @@
+import type { DiscoveryItem } from "../discovery/list";
+import type { PriceSlot } from "../discovery/price";
 import type { LaneParams } from "../commanders/lane-params";
 import type { FitLegendSegment } from "../../components/commanders/fit-legend";
 import type { CommanderListItem } from "../recs/recommend";
@@ -580,3 +582,78 @@ export const LANE_DISCOVER: LaneParams = {
   avail: "all",
   order: "popularity",
 };
+
+/**
+ * A lane row, as the reader meets it. §3 draws neither lane's ROW — only the
+ * rack above it — so a reader of those two entries saw the controls and never
+ * the thing they filter. Hugh asked for the row on 2026-09-18; it is the one
+ * addition on this page that is not transcribed from the canvas, and it goes
+ * on the Design list rather than being quietly adopted.
+ *
+ * The two differ deliberately, because the entries do. `/commanders` scores a
+ * commander you OWN and its row carries a price; `/discover` ranks one you do
+ * not, and prints counts rather than a score — so the discover fixture's price
+ * is `absent`, which draws no slot at all rather than a dash.
+ *
+ * `artCropUri` is null: a reference page must not fetch commander art, and the
+ * row falls back to the identity gradient.
+ */
+function laneRow(
+  slug: string,
+  name: string,
+  colorIdentity: string[],
+  rank: number,
+  score: number,
+  deckCount: number,
+  price: PriceSlot,
+  prose: string,
+): DiscoveryItem {
+  return {
+    slug,
+    name,
+    colorIdentity,
+    artCropUri: null,
+    releasedAt: "2026-02-14",
+    deckCount,
+    rank,
+    ownedSupport: 61,
+    edhrecTotal: 99,
+    colorPoolSize: 1615,
+    roleCounts: ROLE_COUNTS,
+    price,
+    tagTotal: 6,
+    unplayedLabels: [],
+    unplayedCount: 0,
+    nearestDeck: null,
+    prose,
+    // `allPlayed` — the row's second line. A fixture with unplayed mechanics
+    // would draw a list of them instead, which is a different state and not
+    // the one either entry is about.
+    gapSlot: { kind: "allPlayed" },
+    score,
+    measurableTotal: 100,
+    supportPct: 62,
+  };
+}
+
+export const LANE_ROW_OWNED = laneRow(
+  "hearthhull-the-worldseed",
+  "Hearthhull, the Worldseed",
+  ["B", "G", "R"],
+  2370,
+  57,
+  31169,
+  { kind: "priced", cents: 15 },
+  "Hearthhull decks accelerate mana through land plays, then usually convert that land-dense board into sacrifice fodder, burn payoffs, or a devastating land-destruction lock.",
+);
+
+export const LANE_ROW_DISCOVER = laneRow(
+  "abuelo-ancestral-echo",
+  "Abuelo, Ancestral Echo",
+  ["U", "W"],
+  6,
+  71,
+  1278,
+  { kind: "absent" },
+  "Abuelo decks blink artifacts and creatures, and tend to layer enter-the-battlefield triggers into a snowballing engine of tokens and lifegain.",
+);
