@@ -1,4 +1,4 @@
-import { act, render, screen, within } from "@testing-library/react";
+import { act, fireEvent, render, screen, within } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
 import { AboutPage } from "./about-page";
 import { ABOUT_VERSION, aboutCopy, aboutEntries } from "../../lib/copy/about";
@@ -753,6 +753,31 @@ describe("what each chapter 01 figure actually draws", () => {
     // actually lists, and dropping the rack is not a reason to drop that.
     expect(el.textContent).toContain(LANE_ROW_OWNED.name);
     expect(el.textContent).toContain(commandersCopy.row.fitDenominator);
+
+    // NO PRICE, on this lane, ever. `CommanderRow` passes an absent slot for
+    // every commander the reader owns, so a priced fixture drew a figure and a
+    // ManaPool stamp the route never ships. Asserted as an absence because the
+    // old fixture's `$0.15` passed every other check here.
+    expect(el.textContent).not.toMatch(/\$[0-9]/);
+  });
+
+  it("keeps the discover panel open when the trigger is pressed", () => {
+    // `pinnedOpen` skipped the document dismissal listeners and left the
+    // TRIGGER toggling as normal, so the panel still closed when the control
+    // itself was pressed — half a fix, and one the prop's own comment claimed
+    // was whole. The reader-clicks-elsewhere case was proved in a browser and
+    // this is the other door.
+    //
+    // `Specimen` puts `pointer-events: none` over the figure, which stops a
+    // real pointer and does NOT stop a dispatched click, so the press has to
+    // be guarded rather than assumed unreachable.
+    const el = plate("discover");
+    const trigger = el.querySelector("button");
+    expect(trigger, "the order control's trigger").not.toBeNull();
+    const before = el.querySelectorAll('[role="menuitemradio"]').length;
+    expect(before).toBe(ORDER_OPTIONS.discover.length);
+    fireEvent.click(trigger!);
+    expect(el.querySelectorAll('[role="menuitemradio"]')).toHaveLength(before);
   });
 
   it("discover: the order control alone, with every gloss", () => {

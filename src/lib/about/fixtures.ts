@@ -642,7 +642,12 @@ export const LANE_ROW_OWNED = laneRow(
   2370,
   57,
   31169,
-  { kind: "priced", cents: 15 },
+  // ABSENT, and not a choice. `CommanderRow` documents it: `/commanders`
+  // lists commanders the reader OWNS, so its rows always pass an absent slot
+  // and the lane reads no prices at all. A priced fixture here drew a figure
+  // and a ManaPool stamp the route never ships — the same fault as giving the
+  // lane the wrong row, one field down.
+  { kind: "absent" },
   "Hearthhull decks accelerate mana through land plays, then usually convert that land-dense board into sacrifice fodder, burn payoffs, or a devastating land-destruction lock.",
 );
 
@@ -683,7 +688,11 @@ export const PARTNER_PROPOSAL = {
     // finished by the caller on the real surface because only it knows whether
     // the partner came from the paste or was picked.
     caption: deckImportCopy.commander.proposed(2),
-    ariaLabel: "Bruse Tarl, Boorish Herder proposed as partner, reversible",
+    // The ROUTE's name for it. `create-picker.tsx` builds this with
+    // `proposedAria`, and a name typed here goes stale the moment that copy
+    // is reworded — the caption two lines up already reads from the module
+    // for exactly that reason.
+    ariaLabel: deckImportCopy.commander.proposedAria("Bruse Tarl, Boorish Herder"),
   },
   // Not load-bearing while `partner` is set: the slot draws the proposal
   // either way, and mutating this to 0 fails nothing. Stated rather than left

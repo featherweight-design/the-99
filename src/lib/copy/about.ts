@@ -274,10 +274,10 @@ export const aboutEntries: readonly AboutEntry[] = [
     route: '/discover',
     width: 'plate',
     caption:
-      'Commanders you do not own, ranked by how many cards you already own that would go in the deck. Discover shows counts rather than a score: how many of its most-played cards you have, how many decks EDHREC tracks, and how many of its top cards would be new to you.',
+      'Commanders you do not own, ranked by how many cards you already own that would go in the deck. Each row scores the fit the same way the commander lane does, and adds what only matters for a commander you would have to buy: how many decks EDHREC tracks, and what the card costs.',
     keys: [
       'five orders. Two of them, Best fit and Something new, change which commanders appear rather than only their order.',
-      'the big figure is how many of its most-played cards you already own, out of the ones we could read.',
+      'the fit score is read against your whole collection, because you would own this commander if you bought it.',
       '“new to you” is the reason to buy it: cards this commander wants that nothing you already own covers.',
     ],
     since: 1,

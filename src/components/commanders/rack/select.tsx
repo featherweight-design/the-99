@@ -233,7 +233,7 @@ export function RackSelect<K extends string>({
         aria-controls={open ? menuId : undefined}
         aria-busy={pending || undefined}
         aria-label={triggerIcon ? triggerLabel : undefined}
-        onClick={() => setOpen((v) => !v)}
+        onClick={() => setOpen((v) => (pinnedOpen ? v : !v))}
         onKeyDown={(e) => {
           if (e.key !== "ArrowDown") return;
           e.preventDefault();
