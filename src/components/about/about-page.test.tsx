@@ -1,9 +1,14 @@
-import { act, render, screen, within } from "@testing-library/react";
+import { act, fireEvent, render, screen, within } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
 import { AboutPage } from "./about-page";
 import { ABOUT_VERSION, aboutCopy, aboutEntries } from "../../lib/copy/about";
 import { FIGURES } from "./figures";
 import { availabilityCopy } from "../../lib/copy/availability";
+import { refreshCopy } from "../../lib/copy/refresh";
+import { deckImportCopy } from "../../lib/copy/deck-import";
+import { ORDER_OPTIONS } from "../commanders/rack/order-options";
+import { commandersCopy, filterCopy } from "../../lib/copy/lanes";
+import { explainedCopy } from "../../lib/copy/commander-explained";
 import { cardAssignmentsCopy } from "../../lib/copy/card-assignments";
 import { collectionChassisCopy, printingPickerCopy } from "../../lib/copy/collection";
 import { spokenFullManaCost, twoFacedCopy } from "../../lib/copy/card-surfaces";
@@ -13,6 +18,15 @@ import { PIP_ORDER } from "../../lib/copy/filter-chassis";
 import {
   CONTESTED_ARRIVAL,
   IMPORT_SOURCES,
+  FIT_DEGRADED_SCORE,
+  FIT_LEGEND,
+  LANE_ROW_DISCOVER,
+  LANE_OWNED,
+  LANE_ROW_OWNED,
+  PARTNER_PROPOSAL,
+  SYNERGY_ROWS,
+  FIT_FULL_SCORE,
+  READY_SLICE,
   SET_CELLS,
   SET_HEAD,
   PRINTING_ROWS,
@@ -398,10 +412,32 @@ describe("the figures", () => {
     // never sentences inside it.
     // The headline beside each bar is the lane's own string, so a reader can
     // check the sum against the figure the app would print.
-    expect(plate.textContent).toContain("/100 FIT");
-    expect(plate.textContent).toContain("/40 MEASURABLE FIT");
-    expect(plate.textContent).toContain("73");
-    expect(plate.textContent).toContain("27");
+    // BOTH denominators. §3 draws one shape; key line 1 names two — "where
+    // synergy could not be measured the score is out of 40, and it is never
+    // rescaled" — so a figure drawing only `/100` cannot substantiate the
+    // caption printed beside it.
+    expect(plate.textContent).toContain(explainedCopy.score.denominator);
+    expect(plate.textContent).toContain(explainedCopy.score.denominatorMeasurable(40));
+    expect(plate.textContent).toContain(String(FIT_FULL_SCORE));
+    expect(plate.textContent).toContain(String(FIT_DEGRADED_SCORE));
+    expect(plate.textContent).toContain(explainedCopy.score.bestInPool);
+
+    // THE KEY, EXPANDED. The entry is about the three parts, and the figure
+    // drew none of their explanations — only bars. Each part is asserted by
+    // its own points over its own weight AND by its body, because the legend
+    // row alone draws the numbers without ever saying what they mean.
+    for (const seg of FIT_LEGEND) {
+      expect(plate.textContent).toContain(`${seg.points}`);
+      expect(plate.textContent).toContain(explainedCopy.key[seg.key].weight(seg.weight));
+    }
+    // THE PHONE BODIES, because jsdom answers false for every media query, so
+    // `useIsDesktop` reports phone and the figure renders the branch a narrow
+    // reader gets. That is the right thing to assert here: the figure used to
+    // hardcode the desktop branch, which showed a phone reader a treatment the
+    // commander page never gives them. The desktop branch is covered by the
+    // screenshot, which is the only instrument that can see it.
+    expect(plate.textContent).toContain(explainedCopy.key.roles.bodyMobile);
+    expect(plate.textContent).toContain(explainedCopy.key.synergy.bodyMobile);
   });
 
   it("gives every entry a figure, and none of them an empty frame", () => {
@@ -659,6 +695,127 @@ describe("what each chapter 01 figure actually draws", () => {
     expect(el.textContent).toMatch(/grid/i);
   });
 
+  it("ready-to-build: Home's own block, both cards, and the absence at zero", () => {
+    const el = plate("ready-to-build");
+    const c = refreshCopy.home;
+
+    // Both commanders, and they are deliberately unlike — a pair of
+    // near-identical cards teaches nothing about what the figures mean.
+    for (const item of READY_SLICE.shown) {
+      expect(el.textContent).toContain(item.name);
+    }
+
+    // Key line 2: cards that fit, THEN how many are already committed — and
+    // the second clause is ABSENT at zero. The fixture gives one card 620 and
+    // the other none, so a figure printing the clause unconditionally fails
+    // here. A pair where both carried it could not show the absence at all.
+    expect(el.textContent).toContain(c.fitLine(READY_SLICE.shown[0].colorPoolSize));
+    expect(el.textContent).toContain(c.inUse(620));
+    // COUNTED, not searched for by absence. `not.toContain(c.inUse(0))` looks
+    // right and is a substring trap: `620 in use` contains `0 in use`, so it
+    // failed against a correct build. Exactly one card carries the clause.
+    const clauses = [...el.querySelectorAll("*")].filter(
+      (n) => n.children.length === 0 && /^\d+ in use$/.test(n.textContent ?? ""),
+    );
+    expect(clauses).toHaveLength(1);
+
+    // Key line 3: the floor is the lowest score actually shown, so the count
+    // is checkable against the lane.
+    expect(el.textContent).toContain(
+      c.moreAbove(READY_SLICE.moreCount, READY_SLICE.floor!),
+    );
+  });
+
+  it("commander-lane: Build from, chosen, and a row from the lane", () => {
+    const el = plate("commander-lane");
+
+    // BUILD FROM ALONE. The rack cannot show this control at About's width —
+    // wide it overflows the plate, compact it sits inside a sheet an inert
+    // specimen cannot open — so the figure drew a `Filters` trigger and never
+    // the choice its caption is about. Round 1 named it; Hugh ruled drop the
+    // rack, 2026-09-18.
+    expect(el.textContent).toContain(commandersCopy.availability.all);
+    // `freeShort` at the rack's 32px segment; the sheet's 44px pill takes the
+    // whole phrase. Asserted as the control draws it rather than as the copy
+    // module reads best.
+    expect(el.textContent).toContain(commandersCopy.availability.freeShort);
+
+    // CHOSEN, not merely present. The caption is about Build from choosing the
+    // pool, and a control resting on its default draws both options while
+    // showing no choice being made. Read off the pressed state, which the
+    // labels alone cannot carry.
+    const chosen = [...el.querySelectorAll('[aria-checked="true"],[aria-pressed="true"]')]
+      .map((n) => n.textContent)
+      .join(" ");
+    expect(chosen).toContain(commandersCopy.availability.freeShort);
+
+    // And the row, which was its own ask: a reader should see what the lane
+    // actually lists, and dropping the rack is not a reason to drop that.
+    expect(el.textContent).toContain(LANE_ROW_OWNED.name);
+    expect(el.textContent).toContain(commandersCopy.row.fitDenominator);
+
+    // NO PRICE, on this lane, ever. `CommanderRow` passes an absent slot for
+    // every commander the reader owns, so a priced fixture drew a figure and a
+    // ManaPool stamp the route never ships. Asserted as an absence because the
+    // old fixture's `$0.15` passed every other check here.
+    expect(el.textContent).not.toMatch(/\$[0-9]/);
+  });
+
+  it("keeps the discover panel open when the trigger is pressed", () => {
+    // `pinnedOpen` skipped the document dismissal listeners and left the
+    // TRIGGER toggling as normal, so the panel still closed when the control
+    // itself was pressed — half a fix, and one the prop's own comment claimed
+    // was whole. The reader-clicks-elsewhere case was proved in a browser and
+    // this is the other door.
+    //
+    // `Specimen` puts `pointer-events: none` over the figure, which stops a
+    // real pointer and does NOT stop a dispatched click, so the press has to
+    // be guarded rather than assumed unreachable.
+    const el = plate("discover");
+    const trigger = el.querySelector("button");
+    expect(trigger, "the order control's trigger").not.toBeNull();
+    const before = el.querySelectorAll('[role="menuitemradio"]').length;
+    expect(before).toBe(ORDER_OPTIONS.discover.length);
+    fireEvent.click(trigger!);
+    expect(el.querySelectorAll('[role="menuitemradio"]')).toHaveLength(before);
+
+    // And picking an option is the third door. `pinnedOpen` guarded the
+    // listeners, then the trigger, and left this one — three paths for one
+    // claim, which is what the prop's comment promised and did not deliver
+    // twice running.
+    const option = el.querySelector('[role="menuitemradio"]');
+    fireEvent.click(option!);
+    expect(el.querySelectorAll('[role="menuitemradio"]')).toHaveLength(before);
+  });
+
+  it("discover: the order control alone, with every gloss", () => {
+    const el = plate("discover");
+    // The rack and the row came OUT on 2026-09-18. Both lanes share one rack
+    // and one row, so drawing them twice said the same thing twice — this
+    // entry's caption is the five orders, and that is all the figure is.
+    for (const o of ORDER_OPTIONS.discover) {
+      expect(el.textContent).toContain(o.label);
+      if (o.gloss) expect(el.textContent).toContain(o.gloss);
+    }
+    expect(el.textContent).not.toContain(LANE_ROW_DISCOVER.name);
+  });
+
+  it("partners: the import proposal, and that it is reversible", () => {
+    const el = plate("partners");
+    // §3 drew two abstract halves and a row of union pips — a picture of
+    // nothing the app renders. Hugh's ruling, 2026-09-18: partners are met on
+    // DECK IMPORT, where a pasted list's second legend arrives as a proposal.
+    expect(el.textContent).toContain(PARTNER_PROPOSAL.partner.name);
+    expect(el.textContent).toContain(deckImportCopy.commander.proposed(2));
+
+    // REVERSIBLE is the whole point of the slot: a proposal you cannot change
+    // or remove is a decision the import made for you. Both controls, because
+    // either alone is a different offer.
+    const controls = [...el.querySelectorAll("button")].map((b) => b.textContent);
+    expect(controls).toContain(deckImportCopy.commander.change);
+    expect(controls).toContain(deckImportCopy.commander.remove);
+  });
+
   it("import: the drop target and its two doors, as drawn", () => {
     const el = plate("import");
     // TRANSCRIBED from §3. The figure used to list four source names as pills
@@ -823,11 +980,29 @@ describe("what each legend must hold", () => {
     return [...el!.querySelectorAll("dt")];
   };
 
-  it("gives Discover all five of its orders", () => {
+  it("gives Discover all five of its orders, in the real control", () => {
     // "two of them change which commanders the list holds" only means anything
     // beside the other three.
+    //
+    // The figure drew a `Legend` of five rows this module wrote; it mounts the
+    // ROUTE's order control now, open, so the orders and their glosses come
+    // from `ORDER_OPTIONS` and a rename reaches the figure by itself. The old
+    // check counted legend rows and cannot see that.
     const { container } = render(<AboutPage seen={0} />);
-    expect(rows(container, "discover")).toHaveLength(5);
+    const el = container.querySelector('[data-specimen="discover"]')!;
+    expect(el, "discover drew no figure").toBeTruthy();
+    for (const o of ORDER_OPTIONS.discover) {
+      expect(el.textContent).toContain(o.label);
+      if (o.gloss) expect(el.textContent).toContain(o.gloss);
+    }
+    // OPEN. A closed control draws its trigger and none of the options, which
+    // are this entry's whole subject.
+    // `menuitemradio` — the wide control is a menu, not a listbox. Counted
+    // rather than taken from the text above, which a CLOSED control would also
+    // satisfy if the labels happened to live in its trigger.
+    expect(el.querySelectorAll('[role="menuitemradio"]')).toHaveLength(
+      ORDER_OPTIONS.discover.length,
+    );
   });
 
   it("gives the deck page all four of its tabs", () => {
@@ -878,12 +1053,20 @@ describe("the commander-availability figure", () => {
     // Count-only: no deck name anywhere in the figure.
     expect(container.textContent).not.toMatch(/in [A-Z]/);
 
-    // One dot treatment across all four cells — the feature's whole claim.
-    const dots = container.querySelectorAll('[class*="rounded-full"][style*="width: 6px"]');
-    expect(dots.length).toBe(4);
-    for (const d of dots) {
-      expect(d.className).toContain("bg-[color:var(--success)]");
-    }
+    // ONE DOT TREATMENT across every OWNED row — the feature's whole claim,
+    // and the reason the fixture gives the four owned rows four different
+    // claims. The dot is sized by the route's own row now rather than by this
+    // page, so it is found by its ownership styling instead of a 6px width
+    // this module used to set.
+    const owned = SYNERGY_ROWS.filter((c) => c.owned);
+    const dots = [...container.querySelectorAll("span")].filter((n) =>
+      n.className.toString().includes("bg-[color:var(--success)]"),
+    );
+    expect(dots).toHaveLength(owned.length);
+
+    // And the UNOWNED row carries a price, which no owned row ever does —
+    // key line 3. An all-owned fixture draws none and passes everything above.
+    expect(container.textContent).toMatch(/\$[0-9]/);
   });
 });
 

@@ -1,3 +1,12 @@
+import type { SynergyCard } from "../commanders/synergy-cards";
+import { deckImportCopy } from "../copy/deck-import";
+import type { CommanderRowView } from "../../components/commanders/commander-row";
+import type { PriceSlot } from "../discovery/price";
+import type { LaneParams } from "../commanders/lane-params";
+import type { FitLegendSegment } from "../../components/commanders/fit-legend";
+import type { CommanderListItem } from "../recs/recommend";
+import type { ReadySlice } from "../recs/ready-to-build";
+import type { ReceiptCounts } from "../commanders/in-use";
 import { identityGradient } from "../collection/gradients";
 // The props every /about specimen is fed.
 //
@@ -454,3 +463,329 @@ export const SET_HEAD = {
   cost: "$188.66",
   sendCount: 46,
 };
+
+/**
+ * The two commanders §3 draws on Home's `Ready to build`, and the slice around
+ * them.
+ *
+ * Built as real `CommanderListItem`s so `ReadyToBuild` can be mounted whole —
+ * it draws the heading, the card pair, the more-above line and the route to
+ * the lane, which is the entry's whole composition. The figure it replaces was
+ * three mark-and-meaning rows that named the two figures and showed neither.
+ *
+ * `artCropUri` is null on purpose. A reference page must not fetch commander
+ * art, and `HeroCommander` falls back to the identity gradient — which is what
+ * the canvas draws for these two anyway.
+ *
+ * The pair is deliberately UNLIKE: one three-colour, one two, and different
+ * scores, because a pair of near-identical cards teaches nothing about what
+ * the figures on them mean.
+ */
+function readyCommander(
+  name: string,
+  slug: string,
+  typeLine: string,
+  colorIdentity: string[],
+  score: number,
+  pool: number,
+): CommanderListItem {
+  return {
+    oracleId: `about-${slug}`,
+    slug,
+    name,
+    typeLine,
+    colorIdentity,
+    colorPoolSize: pool,
+    roleCounts: ROLE_COUNTS,
+    edhrecOwnedCount: 61,
+    edhrecTotal: 99,
+    fitPool: 15,
+    fitRoles: 25,
+    fitSynergy: 33,
+    synergyState: "ok",
+    score,
+    rankScore: score,
+    measurableTotal: 100,
+    imageUri: null,
+    artCropUri: null,
+    receipts: "",
+  };
+}
+
+export const READY_SLICE: ReadySlice<CommanderListItem> = {
+  shown: [
+    readyCommander(
+      "Preston Garvey, Minuteman",
+      "preston-garvey-minuteman",
+      "Legendary Creature — Human Soldier",
+      ["G", "R", "W"],
+      73,
+      1615,
+    ),
+    readyCommander(
+      "Kotis, Sibsig Champion",
+      "kotis-sibsig-champion",
+      "Legendary Creature — Zombie Warrior",
+      ["U", "B"],
+      71,
+      1204,
+    ),
+  ],
+  // The floor is the lowest score actually SHOWN behind the pair, so the count
+  // is checkable against the lane — key line 3's whole subject.
+  moreCount: 7,
+  floor: 68,
+};
+
+/** Fitting cards a finished deck already sleeves, per commander. */
+export const READY_IN_USE = new Map<string, ReceiptCounts>([
+  ["about-preston-garvey-minuteman", { inUse: 620, wantedByBrew: 0 }],
+  // ZERO, and that is the point: the second clause is ABSENT at zero, which is
+  // key line 2. A pair where both cards carry it cannot show the absence.
+  ["about-kotis-sibsig-champion", { inUse: 0, wantedByBrew: 0 }],
+]);
+
+/**
+ * The three parts of a fit score, with the points and weights §3 draws:
+ * 15/15, 25/25, 33/60. Synergy carries the largest weight and is the one the
+ * fixture leaves SHORT — three full segments would draw a bar with no
+ * remainder and say nothing about what the track's empty tail means.
+ */
+export const FIT_LEGEND: FitLegendSegment[] = [
+  { key: "pool", points: 15, weight: 15 },
+  { key: "roles", points: 25, weight: 25 },
+  { key: "synergy", points: 33, weight: 60 },
+];
+
+/**
+ * The two lanes' rack state, as §3 draws each.
+ *
+ * `owned` carries `avail: "free"` — the Build from choice IS this entry's
+ * caption ("Build from chooses the pool the scores are read against"), so a
+ * rack resting on the default would draw the control and never the state that
+ * makes it mean something.
+ *
+ * Both carry a colour and `match: "exact"`, because `Any` and `Exactly` are
+ * the same control in two positions and a rack with no colours chosen shows
+ * neither as chosen.
+ */
+export const LANE_OWNED: LaneParams = {
+  q: "",
+  colors: ["g", "r", "w"],
+  match: "exactly",
+  avail: "free",
+  order: "fit",
+};
+
+export const LANE_DISCOVER: LaneParams = {
+  q: "",
+  colors: ["u", "b"],
+  match: "contains",
+  avail: "all",
+  order: "popularity",
+};
+
+/**
+ * A lane row, as the reader meets it.
+ *
+ * §3 draws neither lane's ROW — only the rack above it — so a reader of those
+ * two entries saw the controls and never the thing they filter. Hugh asked for
+ * the row on 2026-09-18; it is the one addition on this page not transcribed
+ * from the canvas, and it goes on the Design list rather than being quietly
+ * adopted.
+ *
+ * ONE row serves both lanes since #708, so these differ only in their data —
+ * which is the honest difference between the lanes and the reason there are
+ * two fixtures rather than one. The discover row's price is `notStocked`,
+ * because a commander nobody stocks still prints its deck count.
+ *
+ * `artCropUri` is null: a reference page must not fetch commander art, and the
+ * row falls back to the identity gradient.
+ */
+function laneRow(
+  slug: string,
+  name: string,
+  colorIdentity: string[],
+  rank: number,
+  score: number,
+  deckCount: number,
+  price: PriceSlot,
+  prose: string,
+): CommanderRowView {
+  return {
+    slug,
+    name,
+    colorIdentity,
+    artCropUri: null,
+    rank,
+    prose,
+    // `allPlayed` — the row's second line. A fixture with unplayed mechanics
+    // draws a list of them instead, which is a different state and not the one
+    // either entry is about.
+    gapSlot: { kind: "allPlayed" },
+    score,
+    measurableTotal: 100,
+    fitPool: 15,
+    fitRoles: 25,
+    fitSynergy: score - 40,
+    deckCount,
+    price,
+    priceOk: true,
+    href: `/commanders/${slug}`,
+  };
+}
+
+export const LANE_ROW_OWNED = laneRow(
+  "hearthhull-the-worldseed",
+  "Hearthhull, the Worldseed",
+  ["B", "G", "R"],
+  2370,
+  57,
+  31169,
+  // ABSENT, and not a choice. `CommanderRow` documents it: `/commanders`
+  // lists commanders the reader OWNS, so its rows always pass an absent slot
+  // and the lane reads no prices at all. A priced fixture here drew a figure
+  // and a ManaPool stamp the route never ships — the same fault as giving the
+  // lane the wrong row, one field down.
+  { kind: "absent" },
+  "Hearthhull decks accelerate mana through land plays, then usually convert that land-dense board into sacrifice fodder, burn payoffs, or a devastating land-destruction lock.",
+);
+
+export const LANE_ROW_DISCOVER = laneRow(
+  "abuelo-ancestral-echo",
+  "Abuelo, Ancestral Echo",
+  ["U", "W"],
+  6,
+  71,
+  1278,
+  { kind: "notStocked" },
+  "Abuelo decks blink artifacts and creatures, and tend to layer enter-the-battlefield triggers into a snowballing engine of tokens and lifegain.",
+);
+
+
+/**
+ * The partner proposal, as the reader actually meets it.
+ *
+ * §3 draws two abstract halves and a row of union pips — a picture of nothing
+ * the app renders. Hugh's ruling, 2026-09-18: partners are met on DECK IMPORT,
+ * where a pasted list's second legend arrives as a proposal you can change or
+ * remove, and on a deck's own header afterwards. `PartnerSlot` is that
+ * proposal, and it is mounted rather than drawn.
+ *
+ * The names are §3's own pair from the import artboard, so the figure and the
+ * drawing still agree about the example even though the composition does not.
+ *
+ * `imageUri` is null: a reference page fetches no card art.
+ */
+export const PARTNER_PROPOSAL = {
+  primaryName: "Ishai, Ojutai Dragonspeaker",
+  ability: { kind: "generic" } as const,
+  partner: {
+    name: "Bruse Tarl, Boorish Herder",
+    colorIdentity: ["R", "W"],
+    imageUri: null,
+    // The ROUTE's own provenance line, not a retyped one: the caption is
+    // finished by the caller on the real surface because only it knows whether
+    // the partner came from the paste or was picked.
+    caption: deckImportCopy.commander.proposed(2),
+    // The ROUTE's name for it. `create-picker.tsx` builds this with
+    // `proposedAria`, and a name typed here goes stale the moment that copy
+    // is reworded — the caption two lines up already reads from the module
+    // for exactly that reason.
+    ariaLabel: deckImportCopy.commander.proposedAria("Bruse Tarl, Boorish Herder"),
+  },
+  // Not load-bearing while `partner` is set: the slot draws the proposal
+  // either way, and mutating this to 0 fails nothing. Stated rather than left
+  // looking like coverage. It matters only to the EMPTY state, which is a
+  // different figure and not this entry's.
+  pairableCount: 7,
+};
+
+/**
+ * Three synergy rows, as a commander page draws them.
+ *
+ * The entry has NO canvas — it arrived with #683, after Design's last read of
+ * `main` — so there is nothing to transcribe and the surface is the only
+ * source. Its three key lines want three different rows, and one row can only
+ * say one of them:
+ *
+ *   1. the dot is ownership and ONLY that. Two owned rows with different
+ *      claims prove it: the dot does not move between them.
+ *   2. the note counts copies and never names a deck.
+ *   3. the synergy list PRICES what you do not own — so the third row is
+ *      unowned and carries a figure, which no owned row ever does.
+ *
+ * All four owned readings are here because the caption names all four — "one
+ * in a brew, none free, or short by however many copies" — and because the
+ * FIRST of them draws nothing at all, which is the claim that a spare copy is
+ * reported as silence. A fixture of owned rows alone would satisfy every
+ * assertion about the dot and say nothing about the price.
+ */
+export const SYNERGY_ROWS: SynergyCard[] = [
+  {
+    oracleId: "about-syn-free",
+    name: "Llanowar Elves",
+    typeLine: "Creature — Elf Druid",
+    facet: "creature",
+    inclusionPct: 58,
+    synergyPts: 3,
+    owned: true,
+    committedTo: null,
+    availability: AVAILABILITY[0].a,
+    price: null,
+    manaCost: "{G}",
+  },
+  {
+    oracleId: "about-syn-soft",
+    name: "Cultivate",
+    typeLine: "Sorcery",
+    facet: "spell",
+    inclusionPct: 62,
+    synergyPts: 4,
+    owned: true,
+    committedTo: null,
+    availability: AVAILABILITY[1].a,
+    price: null,
+    manaCost: "{2}{G}",
+  },
+  {
+    oracleId: "about-syn-hard",
+    name: "Arcane Signet",
+    typeLine: "Artifact",
+    facet: "artifact",
+    inclusionPct: 71,
+    synergyPts: 3,
+    owned: true,
+    committedTo: null,
+    availability: AVAILABILITY[2].a,
+    price: null,
+    manaCost: "{2}",
+  },
+  {
+    oracleId: "about-syn-over",
+    name: "Sol Ring",
+    typeLine: "Artifact",
+    facet: "artifact",
+    inclusionPct: 88,
+    synergyPts: 5,
+    owned: true,
+    committedTo: null,
+    availability: AVAILABILITY[3].a,
+    price: null,
+    manaCost: "{1}",
+  },
+  {
+    oracleId: "about-syn-buy",
+    name: "Smothering Tithe",
+    typeLine: "Enchantment",
+    facet: "enchantment",
+    inclusionPct: 48,
+    synergyPts: 6,
+    owned: false,
+    committedTo: null,
+    availability: null,
+    price: PRICES[0].fact,
+    manaCost: "{3}{W}",
+  },
+];
+

@@ -19,6 +19,13 @@ import {
   ISSUE_PARSE_ERROR,
   ISSUE_UNMATCHED,
   CONTESTED_ARRIVAL,
+  FIT_LEGEND,
+  LANE_DISCOVER,
+  PARTNER_PROPOSAL,
+  PRICES,
+  SYNERGY_ROWS,
+  LANE_ROW_OWNED,
+  LANE_OWNED,
   PRINTING_ROWS,
   REPLACE_ROWS,
   REPLACE_SUMMARY,
@@ -30,6 +37,14 @@ import { COSTS } from "../../lib/about/fixtures";
 import { COST_PIP_SIZE, CostPips } from "../ui/cost-pips";
 import { TwoFacedMark } from "../cards/two-faced-mark";
 import { ContestedCardRow } from "../decks/contested-card-row";
+import { FitLegend } from "../commanders/fit-legend";
+import { AvailabilityControl } from "../commanders/rack/availability-control";
+import { CommanderRow } from "../commanders/commander-row";
+import { PartnerSlot } from "../decks/partner-slot";
+import { SynergyRow } from "../commanders/synergy-row";
+import { CardDetailProvider } from "../cards/card-detail-provider";
+import { OrderControl } from "../commanders/rack/order-control";
+import { ORDER_OPTIONS } from "../commanders/rack/order-options";
 import { ReceiptRow } from "../collection/arrivals-summary";
 import { issueInspectorCopy } from "../../lib/copy/issue-inspector";
 import {
@@ -37,6 +52,7 @@ import {
   UnmatchedRowView,
 } from "../collection/issue-inspector-list";
 import { KeyNumeral } from "./numeral";
+import { useIsDesktop } from "../ui/use-is-desktop";
 
 const fmt = (n: number) => n.toLocaleString("en-US");
 
@@ -274,5 +290,146 @@ export function CardDetailFigureBody() {
         <TwoFacedMark layout="transform" />
       </div>
     </div>
+  );
+}
+
+/**
+ * The fit key, expanded. `FitLegend` draws the legend row with each part's
+ * points over its weight, the `Hide` trigger, and the three-column panel that
+ * explains Pool, Roles and Synergy — which is the entry's whole subject and
+ * was absent from the figure entirely.
+ *
+ * A client module because `FitLegend` holds `open` in state. `defaultOpen`
+ * exists for this: a specimen is inert, so the collapsed form would show the
+ * trigger and none of the three explanations.
+ */
+export function FitLegendFigureBody() {
+  // The About page renders at 390 too, and this hardcoded the desktop branch:
+  // a phone reader got the three-column key and the desktop trigger, which is
+  // a treatment the commander page never shows them. `FitLegend` has an
+  // explicit phone layout; the figure picks the same one the route would.
+  const desktop = useIsDesktop();
+  return (
+    <FitLegend
+      segments={FIT_LEGEND}
+      score={73}
+      width={desktop ? "desktop" : "phone"}
+      defaultOpen
+    />
+  );
+}
+
+
+
+export function CommanderLaneFigureBody() {
+  // BUILD FROM ALONE, not the rack.
+  //
+  // The rack cannot show this control at About's width. Wide, it overflows the
+  // ~750px plate; compact, `AvailabilityControl` lives inside `FilterSheet`,
+  // which starts closed and which an inert specimen cannot open — so the
+  // figure drew a `Filters` trigger and a `Free only` chip and never the
+  // choice its caption is about. Round 1 named it and Hugh ruled on
+  // 2026-09-18: drop the rack, same as discover.
+  //
+  // `wide` because the two segments fit side by side at any About width, and
+  // side by side is what makes them read as one choice with two answers.
+  // The ROW stays. It was a separate ask on 2026-09-18 — a reader of this
+  // entry should see what the lane actually lists — and dropping the rack is
+  // not a reason to drop it.
+  return (
+    <div className="flex flex-col gap-[12px]">
+      <AvailabilityControl value={LANE_OWNED.avail} onChange={() => {}} wide />
+      <div className="border-t border-solid border-[color:var(--border)] pt-[12px]">
+        <CommanderRow item={LANE_ROW_OWNED} />
+      </div>
+    </div>
+  );
+}
+
+export function DiscoverFigureBody() {
+  // THE ORDER CONTROL AND NOTHING ELSE.
+  //
+  // `/commanders` and `/discover` share one rack and, since #708, one row, so
+  // two figures drawing both showed the same thing twice and differed by a
+  // price line. This entry's caption is the five orders; the other lane's is
+  // Build from. The row came out on 2026-09-18 for that reason, and the rack
+  // with it.
+  //
+  // The panel is absolutely positioned and right-aligned to its container, so
+  // in a full-width box it opened far from its own trigger and read as a
+  // mistake. The container is the trigger's width instead, which puts the
+  // options directly under the control that names them, and its height is
+  // reserved because nothing here can dismiss a panel.
+  return (
+    // 380 = the trigger's 38px, the 4px it sits off, and the panel's measured
+    // 320. At 330 the last order clipped against the plate's own edge by 13px,
+    // which a reader reads as a list that ends early rather than as a figure
+    // cut short.
+    <div className="min-h-[380px] w-[300px]">
+      <OrderControl
+        value={LANE_DISCOVER.order}
+        options={ORDER_OPTIONS.discover}
+        onChange={() => {}}
+        wide
+        pinnedOpen
+      />
+    </div>
+  );
+}
+
+/** The import's partner proposal, mounted. Inert: `Specimen` blocks the taps. */
+export function PartnerSlotFigureBody() {
+  const p = PARTNER_PROPOSAL;
+  return (
+    <PartnerSlot
+      primaryName={p.primaryName}
+      ability={p.ability}
+      partner={p.partner}
+      pairableCount={p.pairableCount}
+      onAdd={() => {}}
+      onChange={() => {}}
+      onRemove={() => {}}
+    />
+  );
+}
+
+/**
+ * Three synergy rows from a commander page.
+ *
+ * The entry has no canvas — it arrived with #683, after Design's last read —
+ * so the surface is the only source. Its three key lines need three different
+ * rows: two owned with different claims, to show the dot never moves, and one
+ * unowned, because the list PRICES what you do not own and an all-owned
+ * fixture draws no price at all.
+ */
+export function CommanderAvailabilityFigureBody() {
+  // Same fault as the fit key. `SynergyRow` has a phone layout, and forcing
+  // the desktop one put its type, score, availability and toggle columns past
+  // the width a narrow plate has — clipped by `Specimen`'s own
+  // `overflow-hidden`, so the row simply lost its right-hand end.
+  const desktop = useIsDesktop();
+  return (
+    // `SynergyRow` opens the card detail, so it requires the provider's
+    // context — mounting it without one throws. The provider takes its fetcher
+    // as a prop for tests, and a figure is the same case: `Specimen` puts
+    // `pointer-events: none` over everything here, so no row can be opened and
+    // the resolver is never called. It returns null rather than reaching a
+    // server action a reference page has no business calling.
+    <CardDetailProvider fetchCard={async () => null}>
+      <div className="flex flex-col">
+        {SYNERGY_ROWS.map((card) => (
+          <SynergyRow
+            key={card.oracleId}
+            card={card}
+            selected={false}
+            onToggle={() => {}}
+            siblings={[]}
+            width={desktop ? "desktop" : "phone"}
+            facet={card.facet}
+            newestAsOf={PRICES[0].fact.asOf}
+          />
+        ))}
+      </div>
+    </CardDetailProvider>
   );
 }

@@ -22,7 +22,6 @@ import { RoleChips } from "../commanders/role-chips";
 import { GameAxisCell } from "../decks/game-axis-cell";
 import { CommitmentsCard } from "../home/commitments-card";
 import { THEMES } from "../../lib/theme/themes";
-import { discoverCopy } from "../../lib/copy/lanes";
 import { addPanelCopy, exportLinkOutCopy, exportTabCopy } from "../../lib/copy/decks-builder";
 import { RECOMMENDED_MIX } from "../../lib/decks/mix";
 import { recommendationsCopy } from "../../lib/copy/recommendations";
@@ -37,26 +36,31 @@ import { deckSortLabel } from "../../lib/about/sort-labels";
 import { DECK_GROUPING_LABELS } from "../../lib/copy/deck-sort";
 import { BrowseFigureBody } from "./browse-figure";
 import { KeyNumeral } from "./numeral";
+import { ORDER_OPTIONS } from "../commanders/rack/order-options";
+import { explainedCopy } from "../../lib/copy/commander-explained";
+import { ReadyToBuild } from "../home/ready-to-build";
 import { setFilterCopy, setPageCopy } from "../../lib/copy/set-collections";
 import { PIP_ORDER, PIP_SRC } from "../../lib/copy/filter-chassis";
 import {
   ImportFigureBody,
   CardDetailFigureBody,
+  CommanderLaneFigureBody,
+  DiscoverFigureBody,
+  FitLegendFigureBody,
+  CommanderAvailabilityFigureBody,
   ImportIssuesFigureBody,
+  PartnerSlotFigureBody,
   PostImportFigureBody,
 } from "./ch01-figures";
 import { cardAssignmentsCopy } from "../../lib/copy/card-assignments";
 import { statusBarStyle } from "../../lib/decks/status-style";
 import type { StatusPill } from "../../lib/decks/status";
 import { refreshCopy } from "../../lib/copy/refresh";
-import { commandersCopy } from "../../lib/copy/lanes";
 import { FitBar } from "../commanders/fit-bar";
 import { TwoFacedMark } from "../cards/two-faced-mark";
 import {
   LegendBox,
   Specimen,
-  SpecimenCell,
-  SpecimenResponsive,
 } from "./specimen";
 import type { AboutWidth } from "../../lib/copy/about";
 import {
@@ -68,6 +72,8 @@ import {
   GAME_COUNT,
   ROLE_COUNTS,
   SHOPPING,
+  READY_IN_USE,
+  READY_SLICE,
   SET_CELLS,
   SET_HEAD,
   COSTS,
@@ -248,38 +254,62 @@ function StatusFigure({ width }: { width: AboutWidth }) {
 
 /** The bar, both shapes: three segments out of 100, and two out of 40. */
 function FitFigure({ width }: { width: AboutWidth }) {
+  const e = explainedCopy.score;
   return (
     <Specimen label="fit" width={width}>
-      {/* No `legend`: FitBar draws it `hidden sm:flex`, so passing it would
-          show one to a desktop reader and nothing to a phone, and the entry's
-          key lines name the three parts for both.
+      {/* TRANSCRIBED from §3's commander-page header: the label, the score at
+          46px with its denominator and rank clause, the segmented bar, and the
+          three parts named with their own points out of their own weights.
 
-          The captions are ANNOTATION — one mono line under the thing it names,
-          which the grammar allows — not specimen strings. Prose inside the
-          frame would be this page writing sentences the app does not ship,
-          which is rule 4 of the copy file. */}
-      <div className="flex flex-col gap-[14px]">
-        {/* The headline beside each bar is the lane's OWN string — the entry's
-            key says the sum is printed and checkable, and a caption of my own
-            words would be this page inventing a figure the app renders. */}
-        <SpecimenCell caption="pool + roles + synergy, and the sum is printed">
-          <div className="w-full">
-            <FitBar fit={FIT_FULL} />
-            <p className="mt-[6px] font-mono text-[10.5px] text-[color:var(--fg-body)]">
-              {FIT_FULL_SCORE}
-              {commandersCopy.row.fitDenominator}
-            </p>
-          </div>
-        </SpecimenCell>
-        <SpecimenCell caption="synergy unmeasurable — two segments, and the denominator moves">
-          <div className="w-full">
-            <FitBar fit={FIT_DEGRADED} />
-            <p className="mt-[6px] font-mono text-[10.5px] text-[color:var(--fg-body)]">
-              {FIT_DEGRADED_SCORE}
-              {commandersCopy.row.fitDenominatorMeasurable(40)}
-            </p>
-          </div>
-        </SpecimenCell>
+          What this replaces drew two bars with a caption apiece — which showed
+          the bar and never the SUM the entry is about, and put this page's own
+          sentences inside the frame. */}
+      <div className="font-mono text-[10px] tracking-[0.14em] text-[color:var(--fg-faint)] uppercase">
+        {e.label}
+      </div>
+      <div className="mt-[8px] mb-[14px] flex flex-wrap items-baseline gap-[10px]">
+        <span className="text-[46px] leading-none font-bold text-[color:var(--fg)]">
+          {FIT_FULL_SCORE}
+        </span>
+        <span className="font-mono text-[15px] text-[color:var(--fg-faint)]">
+          {e.denominator}
+        </span>
+        <span className="text-[13.5px] font-semibold text-[color:var(--success)]">
+          {e.bestInPool}
+        </span>
+        <KeyNumeral n={2} />
+      </div>
+
+      {/* The route's own bar, and its own legend. `legend` draws the three
+          parts the entry's key lines name — passing them as captions of my own
+          would be this page inventing figures the app renders. */}
+      {/* The route's own bar and its own KEY. `FitLegend` draws each part's
+          points over its weight and, expanded, the three explanations — which
+          is what the entry is about and what the figure had none of. */}
+      <FitBar fit={FIT_FULL} />
+      <div className="mt-[10px]">
+        <FitLegendFigureBody />
+      </div>
+
+      {/* THE OTHER DENOMINATOR. §3 draws one shape; key line 1 names two —
+          "where synergy could not be measured the score is out of 40, and it
+          is never rescaled" — and a figure showing only `/100` cannot
+          substantiate that. The caption is the app's own copy, so it wins and
+          the drawing goes back to Design.
+
+          Drawn compactly rather than as a second full header: the subject here
+          is the DENOMINATOR, not a second score to compare. */}
+      <div className="mt-[14px] border-t border-solid border-[color:var(--border)] pt-[12px]">
+        <div className="mb-[7px] flex flex-wrap items-baseline gap-[8px]">
+          <span className="text-[19px] leading-none font-bold text-[color:var(--fg)]">
+            {FIT_DEGRADED_SCORE}
+          </span>
+          <span className="font-mono text-[11px] text-[color:var(--fg-faint)]">
+            {e.denominatorMeasurable(40)}
+          </span>
+          <KeyNumeral n={1} />
+        </div>
+        <FitBar fit={FIT_DEGRADED} />
       </div>
     </Specimen>
   );
@@ -685,68 +715,59 @@ function Legend({
 
 function ReadyToBuildFigure({ width }: { width: AboutWidth }) {
   return (
-    <Legend
-      label="ready-to-build"
-      width={width}
-      rows={[
-        { mark: refreshCopy.home.fitLine(1615), meaning: "how much of your collection fits" },
-        { mark: refreshCopy.home.inUse(550), meaning: "and how much of that is sleeved elsewhere" },
-        {
-          mark: refreshCopy.home.moreAbove(7, 61),
-          meaning: "the nine are a rank cut — the floor moves with your collection",
-        },
-      ]}
-    />
+    <Specimen label="ready-to-build" width={width}>
+      {/* The ROUTE's own block, mounted whole. §3 draws Home's `Ready to
+          build` — the heading, the pair of commander cards with their art,
+          identity pips, fit figures and `See the pool`, then the more-above
+          line and the way to the lane. The figure it replaces was three
+          mark-and-meaning rows that NAMED two of those figures and showed
+          neither, so the entry's three key lines had nothing to point at. */}
+      <ReadyToBuild ready={READY_SLICE} inUse={READY_IN_USE} />
+    </Specimen>
   );
 }
 
 function CommanderLaneFigure({ width }: { width: AboutWidth }) {
   return (
-    <Legend
-      label="commander-lane"
-      width={width}
-      rows={[
-        { mark: commandersCopy.availability.all, meaning: "scored against everything you own" },
-        {
-          mark: commandersCopy.availability.free,
-          meaning: "scored against what no finished deck is holding",
-        },
-        {
-          mark: commandersCopy.row.fitDenominatorMeasurable(40),
-          meaning: "where a commander's most-played list could not be read",
-        },
-      ]}
-    />
+    <Specimen label="commander-lane" width={width}>
+      <CommanderLaneFigureBody />
+    </Specimen>
   );
 }
 
+
 function DiscoverFigure({ width }: { width: AboutWidth }) {
-  const o = discoverCopy.order;
   return (
-    <Legend
+    <Specimen
       label="discover"
       width={width}
-      rows={[
-        { mark: o.bestFit, meaning: o.bestFitGloss },
-        { mark: o.somethingNew, meaning: o.somethingNewGloss },
-        { mark: o.popularity, meaning: o.popularityGloss },
-        { mark: o.name, meaning: o.nameGloss },
-        { mark: o.recent, meaning: o.recentGloss },
-      ]}
-    />
+      // The figure is the ONLY place the five orders and their glosses appear:
+      // the caption does not list them and neither do the key lines. A
+      // `Legend` was readable and this replaced one, so hiding it took the
+      // entry's whole subject away from assistive technology.
+      spokenAs={ORDER_OPTIONS.discover
+        .map((o) => (o.gloss ? `${o.label}: ${o.gloss}` : o.label))
+        .join(". ")}
+    >
+      <DiscoverFigureBody />
+    </Specimen>
   );
 }
 
 function PartnersFigure({ width }: { width: AboutWidth }) {
   return (
-    <Legend
-      label="partners"
-      width={width}
-      rows={[
-        { mark: "99", meaning: "a single commander and the ninety-nine behind it" },
-        { mark: "98", meaning: "a pair deck is still a hundred cards, so its 99 is 98" },
-      ]}
-    />
+    <Specimen label="partners" width={width}>
+      {/* THE SURFACE, not an abstraction of it. §3 draws two halves and a row
+          of union pips, which is a picture of nothing the app renders — Hugh
+          ruled on 2026-09-18 that partners are met on DECK IMPORT, where a
+          pasted list's second legend arrives as a proposal, and on the deck's
+          own header afterwards.
+
+          `PartnerSlot` is that proposal, mounted whole: the PARTNER heading,
+          the card, its provenance line, and the `Change` / `Remove` pair that
+          says the proposal is reversible. Inert like every specimen. */}
+      <PartnerSlotFigureBody />
+    </Specimen>
   );
 }
 
@@ -1014,40 +1035,14 @@ function ProxiesFigure({ width }: { width: AboutWidth }) {
  * render rather than leaving this page quietly out of date.
  */
 function CommanderAvailabilityFigure({ width }: { width: AboutWidth }) {
-  // The caption annotates; it never repeats the mark. `free` is the exception
-  // for the reason `AvailabilityFigure` gives: it draws nothing, so its cell
-  // would be blank without a caption saying the blank is the state.
-  const caption: Record<string, string> = {
-    free: "owned, with a copy to spare — and a spare copy is drawn as silence",
-    soft: "owned, and a deck you have not committed wants it",
-    hard: "owned, and every copy is in a committed deck",
-    over: "your committed decks want more copies than you own",
-  };
   return (
     <Specimen label="owned, and what is claiming it" width={width}>
-      <SpecimenResponsive>
-        {AVAILABILITY.map(({ key, a }) => (
-          <SpecimenCell key={key} caption={caption[key]}>
-            <span className="inline-flex items-center" style={{ gap: 6 }}>
-              {/* The dot is the same at all four readings. That IS the change:
-                  it is ownership and nothing else now, so the four cells differ
-                  only in what the marker beside it says. */}
-              <OwnershipDot owned size={6} className="block" />
-              {/* The chip's own type, not this page's: 10.5px mono is what the
-                  Role Coverage chip supplies, and without it the marker would
-                  show a treatment the reader never meets. */}
-              <span className="font-mono text-[10.5px] font-[600] tracking-[0.02em]">
-                <AvailabilityMarker
-                  availability={a}
-                  nameless
-                  spoken={false}
-                  seam="var(--surface-sunken)"
-                />
-              </span>
-            </span>
-          </SpecimenCell>
-        ))}
-      </SpecimenResponsive>
+      {/* The SURFACE. This entry has no canvas — it arrived with #683, after
+          Design's last read of `main` — so there was nothing to transcribe.
+          The figure it replaces was four cells this page captioned in its own
+          words; these are the commander page's own rows, and the three key
+          lines are each visible in one of them. */}
+      <CommanderAvailabilityFigureBody />
     </Specimen>
   );
 }

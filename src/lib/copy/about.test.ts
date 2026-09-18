@@ -224,6 +224,9 @@ describe("every entry is drawn, not just described", () => {
 // the page can plausibly reach is listed; a total outside it fails loudly on
 // the undefined rather than passing on a lenient match.
 const WORDS: Record<number, string> = {
+  12: "Twelve",
+  13: "Thirteen",
+  14: "Fourteen",
   15: "Fifteen",
   16: "Sixteen",
   17: "Seventeen",
@@ -232,4 +235,7 @@ const WORDS: Record<number, string> = {
   20: "Twenty",
   21: "Twenty-one",
   22: "Twenty-two",
+  23: "Twenty-three",
+  24: "Twenty-four",
+  25: "Twenty-five",
 };

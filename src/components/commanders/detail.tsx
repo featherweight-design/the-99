@@ -71,7 +71,7 @@ function FitHero({ commander: c, rank, isBestFit, avail, width }: FitHeroProps) 
       className="font-sans font-[600]"
       style={{ fontSize: 13, color: "var(--success)", marginLeft: isPhone ? 0 : 6 }}
     >
-      Best in your pool
+      {explainedCopy.score.bestInPool}
     </span>
   ) : (
     <span className="font-mono" style={{ fontSize: 13, color: "var(--fg-faint)" }}>

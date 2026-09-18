@@ -227,11 +227,11 @@ export const aboutEntries: readonly AboutEntry[] = [
     route: '/',
     width: 'plate',
     caption:
-      'Two commanders you could build today, drawn from the top nine by fit and turned over daily so Home is not the same pair every morning. Each card says how much of your collection fits them and how much of that is already sleeved into something else.',
+      'Two commanders you could build today. We rank every commander you own by fit and show you two of the top nine, changing the pair daily so Home is not the same every morning. Each card says how many of your cards would go in the deck, and how many of those are already sleeved into a deck you have built.',
     keys: [
-      'the nine are a rank cut, never a score cut — the floor moves with your collection rather than sitting at a fixed number.',
-      'cards that fit, then how many are already in a committed deck. The second clause is absent at zero.',
-      'the pair changes at midnight UTC, and while your top nine holds still it shares no commander with the day before — so all nine come up within five days.',
+      "the top nine is a ranking, not a passing score. The ninth commander's score moves as your collection grows; it is never a fixed number to beat.",
+      'each card shows how many of your cards fit, then how many of those are already committed. The second figure is left out when it is zero.',
+      'the pair changes at midnight UTC and never repeats a commander from the day before, so you see all nine within five days.',
       "the floor is the ninth commander's own score, so the count is checkable against the lane.",
     ],
     since: 1,
@@ -244,11 +244,11 @@ export const aboutEntries: readonly AboutEntry[] = [
     opens: 'opens a commander',
     width: 'plate',
     caption:
-      "Three parts, added: how much of your collection is even legal here, whether you own enough ramp, draw, removal and wipes to field a deck at all, and how much of this commander's most-played list you already have. The bar is those three in order, and the key on the page is the same words you are reading now.",
+      "We score how well a commander fits your collection out of 100, from three things added together: how many of your cards are legal in its colours, whether you own enough ramp, draw, removal and wipes to build at all, and how much of its most-played list you already have. The bar shows those three in that order.",
     keys: [
-      'the denominator is not always 100: where synergy could not be measured the score is out of 40, and it is never rescaled.',
-      'the sum is printed, so the three parts can be checked against the headline figure.',
-      'two scores are only comparable within one collection: the whole reading is about your shelf.',
+      "the score is out of 40 instead of 100 when we could not read a commander's most-played list. We never rescale it to look like a 100.",
+      'the three parts are printed with their sum, so you can check the score yourself.',
+      "a score only means something against your own collection. Comparing it to someone else's tells you nothing.",
     ],
     since: 1,
   },
@@ -257,9 +257,13 @@ export const aboutEntries: readonly AboutEntry[] = [
     chapter: '02',
     title: 'Commanders you can build today',
     route: '/commanders',
-    width: 'inset',
+    // A RACK figure, so it takes the full plate. `FilterRack` collapses its
+    // controls behind a `Filters` sheet below the chassis stop, and at the
+    // inset's 300px that is all a reader sees — the Build from choice this
+    // entry's caption is about would be inside a sheet no specimen can open.
+    width: 'plate',
     caption:
-      "Every commander you own and have not built, ranked by fit. Build from chooses the pool the scores are read against: All my cards, or Free cards only — not spoken for by a deck you have already built. Where we could not read a commander's most-played list, the bar has two segments instead of three and the denominator drops to 40.",
+      "Every commander you own and have not built yet, ranked by fit. Build from chooses which of your cards the scores are counted against: all of them, or only the ones no finished deck is holding. Where we could not read a commander's most-played list, the bar has two segments instead of three and the score is out of 40.",
     keys: [],
     since: 1,
   },
@@ -270,11 +274,11 @@ export const aboutEntries: readonly AboutEntry[] = [
     route: '/discover',
     width: 'plate',
     caption:
-      'Commanders you do not own, ranked by what your collection would support if you bought one card. Discover prints counts, never a score — how many of its most-played cards you already own, how many decks are tracked, and how many of its top cards would be new to you.',
+      'Commanders you do not own, ranked by how many cards you already own that would go in the deck. Each row scores the fit the same way the commander lane does, and adds what only matters for a commander you would have to buy: how many decks EDHREC tracks, and what the card costs.',
     keys: [
-      'five orders, and two of them — Best fit and Something new — change which commanders the list holds, not just their sequence.',
-      'the headline count is how much of its most-played list you already own, out of however many were measurable.',
-      '“new to you” is the acquisition argument: cards this commander wants that nothing you own already covers.',
+      'five orders. Two of them, Best fit and Something new, change which commanders appear rather than only their order.',
+      'the fit score is read against your whole collection, because you would own this commander if you bought it.',
+      '“new to you” is the reason to buy it: cards this commander wants that nothing you already own covers.',
     ],
     since: 1,
   },
@@ -286,7 +290,7 @@ export const aboutEntries: readonly AboutEntry[] = [
     opens: 'opens a commander',
     width: 'inset',
     caption:
-      'The cards you already own that would go in, grouped by the job they do, and how each role measures against its baseline — so a 1/3 on board wipes tells you what to fix before you commit to building anything. Each group can be read in the shipped order or by availability, which runs free copies first, then the ones a brew wants, then the ones in use, then anything over-committed.',
+      'The cards you already own that would go in this deck, grouped by the job they do. Each group shows what you have against what a deck needs, so a 1/3 on board wipes tells you what to fix before you start building. You can read a group in its usual order, or by availability: free copies first, then the ones a brew wants, then the ones already in use, then anything over-committed.',
     keys: [],
     since: 1,
   },
@@ -298,10 +302,10 @@ export const aboutEntries: readonly AboutEntry[] = [
     opens: 'opens a commander',
     width: 'plate',
     caption:
-      "Owning a card and being able to use it are different things, and this page now says which. A green dot means the card is yours; the note beside it says what is claiming it — one in a brew, none free, or short by however many copies your committed decks want past what you own. A card with a spare copy says nothing at all, because there is nothing to report.",
+      "Owning a card and being free to use it are different things. A green dot means the card is yours. The note beside it says what is claiming it: one in a brew, none free, or short by however many copies your committed decks want past what you own. A card with a spare copy says nothing, because there is nothing to report.",
     keys: [
-      'the dot is ownership and only that — it no longer changes colour when a deck holds the card.',
-      'the note counts copies, never names a deck; the card itself names every deck holding it.',
+      'the dot means you own the card and nothing else. It stays the same colour whether or not a deck is holding it.',
+      'the note counts copies and never names a deck. Open the card to see which decks are holding it.',
       'the synergy list prices what you do not own, so a card you would have to buy says so before you plan around it.',
     ],
     since: 3,
@@ -314,7 +318,7 @@ export const aboutEntries: readonly AboutEntry[] = [
     opens: 'opens a commander',
     width: 'inset',
     caption:
-      "Commanders that pair, and what the pair's wider colour identity opens up in your collection. A pair deck is still a hundred cards, so its 99 is 98 — every count and progress bar in the app measures it against that.",
+      "Commanders that pair, and what their combined colours open up in your collection. Two commanders take two of the hundred cards, so a pair deck's 99 is 98, and every count and progress bar in the app measures against that.",
     keys: [],
     since: 1,
   },
