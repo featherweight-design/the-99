@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useId, useRef, useState } from "react";
+import { useEffect, useId, useLayoutEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { deckImportCopy } from "../../lib/copy/deck-import";
 import { refreshCopy } from "../../lib/copy/refresh";
@@ -97,10 +97,14 @@ export function DeckCardOverflow({
    * Confirmed on screen 2026-09-16. A fixed box escapes every clipping ancestor;
    * `shelf-menu.tsx` records the same trap and the same fix.
    *
-   * Null until the panel opens, so the absolute classes below remain the
-   * fallback for the first paint and for a `place()` that finds no trigger.
+   * Null only before the first open. `place()` runs in the same batch as
+   * `setOpen`, so there is no paint with `at === null` and the absolute classes
+   * below are a fallback for nothing but a `buttonRef` that has gone — they are
+   * kept because a fixed box with no coordinates would draw at the viewport's
+   * top-left, which is worse than a clipped one.
    */
   const [at, setAt] = useState<{ top: number; left: number } | null>(null);
+  const panelRef = useRef<HTMLDivElement>(null);
   const buttonRef = useRef<HTMLButtonElement>(null);
   // Every deck card renders one of these, so the id has to be per-instance.
   const panelId = useId();
@@ -121,9 +125,39 @@ export function DeckCardOverflow({
     if (!box) return;
     const width = 186;
     const margin = 8;
+    // The gap the shipped panel draws under its trigger, as a number rather than
+    // the `mt-[6px] sm:mt-[4px]` classes: a flipped panel needs it ABOVE, and a
+    // margin-top would push it down into the trigger instead. 640 is Tailwind's
+    // `sm`.
+    const gap = window.innerWidth >= 640 ? 4 : 6;
+    const height = panelRef.current?.offsetHeight ?? 0;
+
     const wanted = box.right - width;
     const left = Math.min(Math.max(margin, wanted), window.innerWidth - width - margin);
-    setAt({ top: box.bottom, left: Math.max(margin, left) });
+
+    // FLIP WHEN THERE IS NO ROOM BELOW. A fixed box cannot be scrolled into view
+    // — scrolling re-runs this and carries the panel along with its trigger — so
+    // a panel hanging past the fold is not merely awkward, it is UNREACHABLE. A
+    // tile in the grid's last visible row is the common case, not the edge one:
+    // measured at 900x900, the four-row menu drew 821→975 and both `Move` and
+    // `Delete` were below the fold with no scroll that would reveal them.
+    //
+    // `height` is 0 on the very first placement, before the panel has rendered;
+    // the layout effect below re-places once it can be measured, and again
+    // whenever the mode changes the panel's height.
+    const below = box.bottom + gap;
+    const fitsBelow = height === 0 || below + height + margin <= window.innerHeight;
+    const above = box.top - gap - height;
+    const top = fitsBelow
+      ? below
+      : above >= margin
+        ? above
+        : // Neither side has room — a viewport shorter than the panel. Pin to the
+          // top margin so the panel's HEAD is readable and the reader can at
+          // least see what they opened.
+          margin;
+
+    setAt({ top, left });
   }
 
   function handleToggle(e: React.MouseEvent) {
@@ -245,7 +279,21 @@ export function DeckCardOverflow({
       window.removeEventListener("scroll", place, true);
       window.removeEventListener("resize", place);
     };
-  });
+    // `[open]`, as `shelf-menu.tsx` has it. With no array the effect reruns on
+    // every render, and `place()` sets fresh state on every scroll event — so one
+    // wheel gesture tore down and re-added both listeners once per frame.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [open]);
+
+  // Re-place once the panel can be MEASURED, and again whenever the mode changes
+  // its height — the menu is four rows, the delete pane is a paragraph. A layout
+  // effect rather than an effect: this runs before paint, so a panel that has to
+  // flip never draws once in the wrong place.
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  useLayoutEffect(() => {
+    if (open) place();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [open, mode]);
 
   function handleClose() {
     if (busy) return;
@@ -312,7 +360,13 @@ export function DeckCardOverflow({
       {open && (
         <div
           id={panelId}
-          style={at ? { position: "fixed", top: at.top, left: at.left } : undefined}
+          ref={panelRef}
+          // `marginTop: 0` because the gap moved into `place()`: the classes below
+          // still carry `mt-[6px] sm:mt-[4px]` for the absolute fallback, and a
+          // flipped panel must not be pushed back down into its own trigger.
+          style={
+            at ? { position: "fixed", top: at.top, left: at.left, marginTop: 0 } : undefined
+          }
           className="absolute right-0 top-full z-50 mt-[6px] w-[186px] overflow-hidden rounded-[10px] border border-solid border-[color:var(--border-strong)] bg-[color:var(--surface)] shadow-[0_22px_50px_rgba(0,0,0,0.6)] sm:mt-[4px]"
           // Propagation only: the deck-card Link overlay beneath fires on
           // bubbling, so stopping the bubble is the whole fix. preventDefault

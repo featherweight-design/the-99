@@ -136,7 +136,6 @@ async function makeDeck(userId, name = DECK_NAME) {
   return deckId;
 }
 
-/** Opens this deck's panel and presses Delete. Returns the panel locator. */
 /**
  * Is `node` actually REACHABLE — can a reader see and press it?
  *
@@ -155,8 +154,10 @@ async function makeDeck(userId, name = DECK_NAME) {
  *    clip the browser no longer applies, and reports 0 of 32px over a control
  *    that is plainly on screen.
  *
- * The browser's own hit-test knows about both. Two points, the centre and 3px
- * above the bottom edge, because a row clipped from below keeps its centre.
+ * The browser's own hit-test knows about both. THREE points — the centre and 3px
+ * inside each edge — because a box can lose either end: clipped from below by the
+ * art crop, and clipped from above by a pane that grew upward, which is what
+ * `deck-delete-mode.tsx` documents and what a centre-and-bottom pair passes over.
  */
 async function reach(panel, selector) {
   // `(root, sel)`, not a destructured pair: a locator's `evaluate` passes the
@@ -171,14 +172,26 @@ async function reach(panel, selector) {
     };
     return {
       height: Math.round(b.height),
-      reachable: at(b.left + b.width / 2, b.top + b.height / 2) && at(b.left + b.width / 2, b.bottom - 3),
+      reachable:
+        at(b.left + b.width / 2, b.top + 3) &&
+        at(b.left + b.width / 2, b.top + b.height / 2) &&
+        at(b.left + b.width / 2, b.bottom - 3),
     };
   }, selector);
 }
 
+/**
+ * Opens this deck's ⋯ panel and returns the panel locator. It does NOT press
+ * `Delete` — each caller does that itself, after the menu's own rows have been
+ * read, because pressing a row is what hid the fact that one of them was
+ * unreachable.
+ */
 async function openConfirm(page, name = DECK_NAME) {
   const trigger = onPage(page, `button[aria-label="Actions for ${name}"]`);
   await trigger.waitFor({ state: "visible", timeout: 20_000 });
+  // The trigger TOGGLES, so opening an already-open menu closes it and leaves no
+  // `aria-controls` to find. Close first and open from a known state.
+  if ((await trigger.getAttribute("aria-expanded")) === "true") await trigger.click();
   await trigger.click();
   const panelId = await trigger.getAttribute("aria-controls");
   if (!panelId) throw new Error("The trigger names no panel; the menu did not open.");
@@ -208,9 +221,11 @@ async function run() {
       await page.goto(`${BASE}/decks`, { waitUntil: "domcontentloaded" });
       const panel = await openConfirm(page);
 
-      // EVERY ROW OF THE MENU, before anything is pressed. The panel hangs out of
+      // EVERY ROW OF THE MENU, before anything is pressed, and HIT-TESTED rather
+      // than measured — see `reach()` for why rect arithmetic is wrong at both of
+      // the positions this panel takes. The panel used to hang out of
       // `data-deck-art`, which is `overflow-hidden` and 168px at the three-column
-      // band — and `Delete` is the LAST row, so it is the one that goes. Reading
+      // band, and `Delete` is the LAST row, so it was the one that went. Reading
       // the rows was the gap: this script pressed `Delete` to open the pane and
       // then measured the pane, which is a healthy reading of a surface reached
       // through a control no reader could see.
@@ -225,6 +240,7 @@ async function run() {
             label: node.textContent.trim(),
             height: Math.round(b.height),
             reachable:
+              at(node, b.left + b.width / 2, b.top + 3) &&
               at(node, b.left + b.width / 2, b.top + b.height / 2) &&
               at(node, b.left + b.width / 2, b.bottom - 3),
           };
@@ -236,6 +252,57 @@ async function run() {
       for (const row of rows) {
         check(row.reachable, `menu row “${row.label}” is reachable (${row.height}px tall)`);
       }
+
+      // THE SAME MENU, WITH THE TRIGGER NEAR THE FOLD. This is the case the fix
+      // for the art-crop clip introduced, and it was worse than the clip: a fixed
+      // box cannot be scrolled into view, because scrolling re-places it and it
+      // travels with its trigger. Measured at 900x900 before the flip, the
+      // four-row menu drew 821→975 and both `Move` and `Delete` sat below the
+      // fold permanently.
+      //
+      // The grid's last visible row is the COMMON case here, not an edge one, and
+      // no other check in this file reaches it: every one of them opens a menu on
+      // a deck at the top of a freshly loaded route.
+      await page.evaluate((label) => {
+        const trigger = document.querySelector(`main button[aria-label="Actions for ${label}"]`);
+        trigger.scrollIntoView({ block: "center" });
+        // Put the trigger about 140px above the fold — too little room for the
+        // ~153px menu, so the panel has to flip.
+        const r = trigger.getBoundingClientRect();
+        window.scrollBy(0, r.top - (window.innerHeight - 140));
+      }, DECK_NAME);
+      const lowPanel = await openConfirm(page, DECK_NAME);
+      const lowRows = await lowPanel.evaluate((el) => {
+        const at = (node, x, y) => {
+          const hit = document.elementFromPoint(x, y);
+          return hit !== null && (hit === node || node.contains(hit));
+        };
+        const box = el.getBoundingClientRect();
+        return {
+          top: Math.round(box.top),
+          bottom: Math.round(box.bottom),
+          viewport: window.innerHeight,
+          rows: [...el.querySelectorAll("a, button")].map((node) => {
+            const b = node.getBoundingClientRect();
+            return {
+              label: node.textContent.trim(),
+              reachable:
+                at(node, b.left + b.width / 2, b.top + 3) &&
+                at(node, b.left + b.width / 2, b.bottom - 3),
+            };
+          }),
+        };
+      });
+      check(
+        lowRows.bottom <= lowRows.viewport,
+        `a menu opened near the fold stays on screen (${lowRows.top}→${lowRows.bottom} in ${lowRows.viewport})`,
+      );
+      for (const row of lowRows.rows) {
+        check(row.reachable, `near the fold, menu row “${row.label}” is still reachable`);
+      }
+      // Back to the top, so the checks that follow read the ordinary placement.
+      await page.evaluate(() => window.scrollTo(0, 0));
+      await openConfirm(page, DECK_NAME);
 
       await panel.getByRole("button", { name: "Delete", exact: true }).click();
 
@@ -354,18 +421,10 @@ async function run() {
       );
 
       // And the half that `break-words` does NOT answer. Wrapping a 119-character
-      // name made the pane 323px tall, and the panel hangs inside `data-deck-art`,
-      // which is `overflow-hidden` and only 168px at the 900px band. Nothing
-      // rect-based sees that: `getBoundingClientRect` reports the layout box and
-      // knows nothing about a clipping ancestor, and Playwright clicks a painted-
-      // away button happily. So intersect each element with every clipping
-      // ancestor and read what is LEFT.
-      //
-      // BOTH elements, and the heading is the one that caught it. The first
-      // version of this block measured the confirm button alone and reported a
-      // clean 32-of-32 over a build whose heading had its first lines painted
-      // away — the reader could not see which deck they were deleting, which is
-      // the entire job of the pane. A screenshot found that, not this check.
+      // name made the pane 323px tall against the 176px a short name draws, and a
+      // pane that cannot fit below its trigger is flipped ABOVE it — so an
+      // over-tall pane loses its own first lines rather than its buttons. Both
+      // ends are hit-tested; see `reach()`.
       for (const [what, selector] of [
         ["heading", "p"],
         ["confirm", "button:last-of-type"],
