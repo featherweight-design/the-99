@@ -142,7 +142,11 @@ const FIT_CHIP_STYLE = {
 function GapLine({ slot }: { slot: GapSlot }) {
   if (slot.kind === "noMechanics") {
     return (
-      <p className="font-sans" style={{ fontSize: 12.5, lineHeight: 1.45, color: "var(--fg-faint)" }}>
+      <p
+        data-testid="row-gap"
+        className="font-sans"
+        style={{ fontSize: 12.5, lineHeight: 1.45, color: "var(--fg-faint)" }}
+      >
         <span style={{ color: "var(--fg-muted)" }}>{untagged.heading}</span> {untagged.body}
       </p>
     );
@@ -152,15 +156,28 @@ function GapLine({ slot }: { slot: GapSlot }) {
   // scans this line for, and the sentence around them is the same eleven words
   // on every row.
   //
-  // Rendered from `unplayedParts`, which is the sentence's one definition;
-  // `unplayed` is derived from it, so the spoken string and the drawn runs
-  // cannot disagree. `allPlayed` names no mechanic and so has no run to mark.
+  // Rendered from the parts builders, which are each sentence's one definition;
+  // the string forms are derived from them, so the spoken string and the drawn
+  // runs cannot disagree.
+  // BOTH NAMED STATES NAME MECHANICS, and both mark them. `allPlayed` used to
+  // be the one occupant with nothing in it — a sentence about the reader with no
+  // mechanic in sight, and the majority voice of both lanes. It now prints the
+  // commander's own top themes and claims nothing about the reader's decks.
   const parts: GapPart[] =
     slot.kind === "allPlayed"
-      ? [commanderRowCopy.gap.allPlayed]
+      ? commanderRowCopy.gap.topStylesParts(slot.labels, slot.capped)
       : commanderRowCopy.gap.unplayedParts(slot.labels);
   return (
-    <p className="font-sans" style={{ fontSize: 12.5, lineHeight: 1.45, color: "var(--fg-muted)" }}>
+    // `data-testid`: the gap line is a bare `<p>` with no clamp, and
+    // `probe:commander-row` was selecting it as "any unclamped `main p`" —
+    // which also catches the page header, the rack, banners and empty states,
+    // so its count could be positive with no row gap line on screen at all.
+    // Named by review. A marker is the only thing that says which `<p>` this is.
+    <p
+      data-testid="row-gap"
+      className="font-sans"
+      style={{ fontSize: 12.5, lineHeight: 1.45, color: "var(--fg-muted)" }}
+    >
       {parts.map((part, i) =>
         typeof part === "string" ? (
           part

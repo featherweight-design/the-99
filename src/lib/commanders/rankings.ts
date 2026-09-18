@@ -112,6 +112,10 @@ export type CommanderRankings = {
  * for: the two caches are dropped independently, and a pair bumped half-way is
  * the state nobody thinks to check.
  *
+ * 9 — `allPlayed` carries the commander's top themes and a `capped` flag. A
+ * warm v8 entry has neither, so every row in that state — 77% of this lane on
+ * the reference account — would draw a sentence with no mechanic in it.
+ *
  * 8 — the shared row ships, and this payload LOSES two fields to it: `receipts`,
  * whose line D1 cut, and `priceOk`, because every commander on this lane is
  * owned and §7.4 row 5 unmounts the price slot. A warm version-7 entry carries
@@ -127,7 +131,7 @@ export type CommanderRankings = {
  * sentence, no gap slot and no headline figure, because the key would have
  * matched.
  */
-const PAYLOAD_VERSION = 8;
+const PAYLOAD_VERSION = 9;
 
 /** The cache key this payload is filed under, version included. */
 export const commanderRankingsKey = ["commander-rankings", `v${PAYLOAD_VERSION}`];

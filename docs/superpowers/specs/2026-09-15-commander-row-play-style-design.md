@@ -499,7 +499,35 @@ specific — its `STATES-commander-row.md` is the states matrix of record and it
 ## The `Nothing new` ruling, accepted
 
 `Nothing new` is a copy swap in the gap line's own slot, asserting the overlap rather than a
-gap: **`You already play every mechanic this commander leans on.`** Same slot, ink, measure and
+gap: **`You already play every mechanic this commander leans on.`** — **SUPERSEDED
+2026-09-18.** The state now names the commander's own top themes and claims
+nothing about the reader: the sentence was 67% of `/discover` and 77% of
+`/commanders` on the reference account, and it can be false, because `played` is
+built from commander tag lists rather than deck contents. See
+`docs/superpowers/design-tables/discovery-rows.md` for the measurement and the
+options weighed. **The "same line count" clause below does NOT carry over to the replacement,
+and is not re-certified here.** The retired sentence was 56 characters; the
+`unplayed` form with three themes is 61; the new capped form is 81 (*This
+commander's top three play styles are Lands Matter, Reanimator and
+Politics.*). At 390px a 12.5px sans line holds roughly 58 characters, so the
+new form takes two lines there — measured on the contact sheet, and the same
+two the three-name `unplayed` form already takes, so the occupants remain at
+parity today. Nothing measures it: the gap `<p>` carries no clamp and
+`probe:commander-row` measures the prose clamp only. A longer theme name could
+reach a third line and move row height with the occupant, which is what D9
+forbids. Recorded as open rather than asserted safe.
+
+**The clause that follows is the RETIRED sentence's, and is superseded.** It
+concluded that the line-count decision survives, which contradicts the caveat
+above it — review named the contradiction. What is true of the replacement is
+the ceiling `probe:commander-row` now measures: one line above `sm`, two at
+390px. What is NOT true of it, and was never testable, is that every occupant
+draws the same count — the gap text names this commander's themes, so its
+length is the commander's property, and two `unplayed` rows already differ (57
+characters takes one line at 390px, 63 takes two). D9 forbids height varying
+with which OCCUPANT the slot drew, not with the text inside one.
+
+Superseded from here to the end of this paragraph: same slot, ink, measure and
 line count, so the locked "row height never varies" decision survives a fifth state.
 
 Design also found a flaw in this spec's condition and fixed it. `every mechanic tag already

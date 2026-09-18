@@ -65,7 +65,7 @@ control on it and nothing to announce.
 | 1 | **Full** | `prose` present, `gapSlot.kind === "unplayed"` | the stored sentence | `None of your decks play {a}, {b} or {c}.` | Fit chip · deck count · price |
 | 2 | **No sentence** | `prose === null` | **unmounts** — no placeholder, no reserved height, nothing synthesised and nothing truncated into the gap | unchanged | unchanged |
 | 3 | **No tags** | `gapSlot.kind === "noMechanics"` | unchanged | `discoveryCopy.untagged` heading + body, in the slot the line would occupy | unchanged |
-| 4 | **Nothing new** | `gapSlot.kind === "allPlayed"` | unchanged | `You already play every mechanic this commander leans on.` | unchanged |
+| 4 | **Top play styles** | `gapSlot.kind === "allPlayed"` | unchanged | `This commander's top three play styles are X, Y and Z.` — see the section below | unchanged |
 | 5 | **Unpriced** | `price.kind === "absent"` **or** `priceOk === false` | unchanged | unchanged | the price figure **unmounts**; the deck count stays; no dash, no zero, no reason given |
 
 **State 5 carries a condition the handoff did not have.** `priceOk` is the payload's record of a
@@ -77,7 +77,7 @@ is why it folds into state 5 rather than becoming a sixth.
 
 ### The slots are independent, so the states multiply — and all of it is drawn
 
-| | Full gap | Nothing new | No tag data |
+| | Full gap | Top play styles | No tag data |
 |---|---|---|---|
 | **sentence present** | 1 | 4 | 3 |
 | **sentence absent** | 2 | 2 + 4 | 2 + 3 |
@@ -93,7 +93,7 @@ reader's, the figures are the catalogue's.
 | Copy, three names | `None of your decks play {a}, {b} or {c}.` | same | `commanderRowCopy.gap.unplayed` |
 | Copy, two names | `None of your decks play {a} or {b}.` | same | same |
 | Copy, one name | `None of your decks play {a}.` | same | same |
-| Copy, nothing new | `You already play every mechanic this commander leans on.` | same | `commanderRowCopy.gap.allPlayed` |
+| Copy, top play styles | `This commander's top three play styles are X, Y and Z.` | same | `commanderRowCopy.gap.topStylesParts` |
 | Copy, no mechanic tags | `discoveryCopy.untagged.heading` + `.body` | same | shipped, unchanged |
 | Name cap | 3 | 3 | `GAP_NAME_CAP` |
 | Aria | read as written, in all three forms | same | — |
@@ -149,6 +149,102 @@ normally `0..measurableTotal` but **that is not an invariant**: the synergy rati
 unclamped, and `edhrec_total` sits one below the child-row count on 2 of 3,342 commanders, so a
 reader owning every support card can read a point or two over. Print it; never assert a bound on
 it.
+
+### State 4 stops claiming coverage — Hugh's ruling, 2026-09-18
+
+`allPlayed` used to read **`You already play every mechanic this commander leans
+on.`** It now names the commander's own top themes and asserts nothing about the
+reader:
+
+| Themes named | Copy |
+|---|---|
+| 3, with more cut | `This commander's top three play styles are X, Y and Z.` |
+| 3, none cut | `This commander's play styles are X, Y and Z.` |
+| 2 | `This commander's play styles are X and Y.` |
+| 1 | `This commander's play style is X.` |
+
+`capped` is what decides "top three": a commander with exactly three has had
+nothing cut, and implying a cut that did not happen is a small untruth of the
+same family as the sentence being replaced. The names are marked exactly as
+`unplayed`'s are, so both named states read the same way.
+
+**Why, measured.** `played` is built from each built deck's **commander** tag
+list, and EDHREC tags a commander with every archetype people build with it
+rather than the one its owner built. Against the reference account on staging
+(18 decks, brews included):
+
+| | `/commanders` | `/discover` | `Something new`, top 25 |
+|---|---|---|---|
+| rows | 198 | 3,074 | 25 |
+| `unplayed` | 22.7% | 29.1% | 24.0% |
+| `allPlayed` | **76.3%** | **67.1%** | **76.0%** |
+| `noMechanics` | 1.0% | 3.7% | 0% |
+
+**The `Something new` column is the reported 90%, and it took four review
+findings to measure.** The first version of the script ordered that lane by a
+ratio of its own and reported 0% — the sort maximises unplayed themes, so the
+state looked absent from exactly the screen it dominates. `byNovelty` ranks on
+`unplayedTags` over the commander's **whole** tag list, while the gap line names
+only **eligible** themes — mechanics, above the floor. The two disagree, so the
+sort promotes commanders with many obscure unplayed tags whose nameable themes
+are all played, and the line says so. 76% of the first screen.
+
+That disagreement is a second defect, recorded and not fixed here: the lane's
+order and the line's contents answer different questions about the same row. It
+belongs with the deck-analysis work, since deriving `played` from deck contents
+changes both sides.
+
+Both lanes also exclude every commander the reader has BUILT (`notBuiltBy`) —
+7 on this account. The first version split on `collection_items` alone and read
+204 owned rows against the app's own header, "190 commanders you own and haven't
+built".
+
+The median deck commander donates **35** eligible themes and one donates 132,
+so the played set reaches 166 of 260 mechanics. Decks, not built decks:
+`loadPlayedTags` joins no `deck_versions`, so a brew counts. The state was the majority voice
+of both lanes.
+
+**And it can be false.** A reader whose Kenrith deck is Politics still has Group
+Hug and Reanimator in their played set, so another commander whose themes are
+exactly those reads as fully covered. Hugh named that case. Showing the basis
+beside a false claim exhibits it rather than fixing it, which is why the claim
+went rather than gaining a parenthetical.
+
+**Only this half moved, and the asymmetry is the reason.** `unplayed` fires only
+when a theme is absent from every built commander's whole list — a conservative
+test, and safe to state. 94 mechanics are in that position on the reference
+account.
+
+**Rejected: narrowing the played set to each commander's top N tags.** Measured
+across the whole curve, and it swaps a false negative for a false positive
+rather than fixing either — at top-3 the played set is 15 mechanics against 18
+built decks, so the row would confidently deny archetypes the reader plainly
+plays. There is no principled N:
+
+| top N | played slugs | `/discover` `allPlayed` |
+|---|---|---|
+| 1 | 5 | 0.1% |
+| 3 | 15 | 0.6% |
+| 5 | 24 | 1.4% |
+| 10 | 37 | 4.3% |
+| 20 | 62 | 15.7% |
+| 50 | 115 | 41.2% |
+| all | 166 | 67.2% |
+
+**Also rejected: a thinness floor** ("you play X in only 2 of your 18 decks").
+It reads better but inherits the same defect — a deck counts as playing a theme
+because its commander is *tagged* with it, so the precise-looking figure rests
+on the same bad premise.
+
+**The real fix is Option D: derive `played` from deck CONTENTS.** That needs a
+card-to-theme mapping this database does not hold — we ingest per-commander
+support lists, not per-theme card lists — so it waits on player deck analysis,
+which is not scoped. This change is an honest holding position: it says only
+what can be supported, and it stays correct after D lands rather than needing a
+rewrite.
+
+Measured with `scripts/measure-gap-line.mts`, read-only, against
+`catalog-staging`.
 
 ### Band and foot line — CORRECTED against the R1 canvas, 2026-09-17
 
@@ -302,7 +398,7 @@ are unchanged.
 | **Full** | `prose` present, `gapSlot.kind === "unplayed"` | the stored sentence, the gap line naming up to three mechanics, Fit · deck count · price | `prose`, `gapSlot`, `score`, `measurableTotal`, `deckCount`, `price` |
 | **No sentence** | `prose === null` | the sentence slot **unmounts** — no placeholder, no reserved height | `prose` |
 | **No tags** | `gapSlot.kind === "noMechanics"` | `discoveryCopy.untagged` heading + body in the gap slot | `gapSlot` |
-| **Nothing new** | `gapSlot.kind === "allPlayed"` | `commanderRowCopy.gap.allPlayed` | `gapSlot` |
+| **Top play styles** | `gapSlot.kind === "allPlayed"` | `commanderRowCopy.gap.topStylesParts` | `gapSlot` |
 | **Unpriced** | `price.kind === "absent"` OR `priceOk === false` | the price figure **unmounts**; the deck count stays | `price`, `priceOk` |
 | **Unmeasured Fit** | `measurableTotal < 100` | the chip prints `fitDenominatorMeasurable(measurableTotal)` — never a bare `/100` | `measurableTotal` |
 | **No deck count** | `deckCount === null` | the figure is omitted, never zeroed | `deckCount` |
@@ -318,7 +414,7 @@ The delta is worth naming because the handoff's cut list does not: a "was 74, no
 | Element | Copy key | Arguments |
 |---|---|---|
 | Gap line, 1–3 names | `commanderRowCopy.gap.unplayed` | `(labels: string[])` |
-| Gap line, nothing new | `commanderRowCopy.gap.allPlayed` | — |
+| Gap line, top play styles | `commanderRowCopy.gap.topStylesParts` | — |
 | Gap line, no mechanic tags | `discoveryCopy.untagged.heading` / `.body` | — |
 | Foot-line separator | `commanderRowCopy.figures.separator` | — |
 | Fit denominator | `commandersCopy.row.fitDenominator` | — |

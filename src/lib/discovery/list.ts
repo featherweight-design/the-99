@@ -321,6 +321,10 @@ export function assembleDiscovery(input: {
  * this one when PR 3 changes the payload's shape, not to leave the pair
  * mismatched now.
  *
+ * 7 — `allPlayed` carries the commander's top themes and a `capped` flag. A
+ * warm v6 entry has neither, so every row in that state would draw a sentence
+ * with no mechanic in it.
+ *
  * 6 — Fit's three components come BACK, for the row's segmented bar (Hugh's
  * ruling, 2026-09-17). A warm version-5 entry has no `fitPool`, `fitRoles` or
  * `fitSynergy`, so every row would draw a bar with no segments in it.
@@ -347,7 +351,7 @@ export function assembleDiscovery(input: {
  * is the strongest kind of bump rather than the weakest: the old entry cannot
  * render the new row at all.
  */
-const PAYLOAD_VERSION = 6;
+const PAYLOAD_VERSION = 7;
 
 /** The cache key a discovery payload is filed under: its sort, and the version
     of the code that produced it. */

@@ -39,6 +39,37 @@ function unplayedParts(labels: string[]): GapPart[] {
   return ["None of your decks play ", { label: a! }, "."];
 }
 
+/**
+ * The commander's top themes, naming no deck of the reader's.
+ *
+ * Replaces *you already play every mechanic this commander leans on*, which was
+ * both the majority voice of two lanes and unsupportable — see `gapSlotFor`'s
+ * own note for the measurement and the cause. This sentence asserts nothing
+ * about the reader, so nothing in it can be false.
+ *
+ * `capped` decides "top three" against a plain list. A commander with exactly
+ * three themes has had nothing cut, and implying a cut that did not happen is a
+ * small untruth of the same family as the sentence this replaces.
+ */
+function topStylesParts(labels: string[], capped: boolean): GapPart[] {
+  const [a, b, c] = labels;
+  const lead = capped
+    ? "This commander's top three play styles are "
+    : "This commander's play styles are ";
+  if (labels.length >= 3) {
+    return [lead, { label: a! }, ", ", { label: b! }, " and ", { label: c! }, "."];
+  }
+  if (labels.length === 2) return [lead, { label: a! }, " and ", { label: b! }, "."];
+  // One theme is not a list, and "play styles are X" reads wrong for it. The
+  // singular lead is spelled out rather than assembled, because a sentence
+  // stitched from a plural template reads like one.
+  return [
+    capped ? "This commander's top play style is " : "This commander's play style is ",
+    { label: a! },
+    ".",
+  ];
+}
+
 export const commanderRowCopy = {
   /**
    * The gap line. TEMPLATED, never generated: per-player generation was priced
@@ -77,21 +108,28 @@ export const commanderRowCopy = {
         .join(""),
 
     /**
-     * Every mechanic tag on this commander is already played somewhere in the
-     * reader's decks. The claim is the OVERLAP, because the gap is empty and an
-     * empty clause is forbidden.
+     * The commander's top themes. See `topStylesParts` above for the sentence
+     * and `gapSlotFor` for the measurement that retired the claim this
+     * replaced.
      *
-     * It names no mechanic, no deck and no collection fact beyond play / do not
-     * play, so it reads identically on `/discover` and `/commanders` — which one
-     * shared row component requires (handoff D1).
-     *
-     * NOT CONGRATULATORY, and measurement has made that ruling load-bearing
-     * rather than precautionary: under `Something new` this same fact is why the
-     * row ranks last, and on a reader with 18 built decks it is 64% of the
-     * `/commanders` rows and 67% of `/discover`'s. A celebratory treatment would
-     * be the majority voice of both lanes.
+     * The doc block that stood here described that retired sentence — that it
+     * "names no mechanic, no deck", that "the claim is the OVERLAP", and that
+     * it was "64% of the /commanders rows and 67% of /discover's". Every clause
+     * is now either false or a stale figure: this sentence names three
+     * mechanics, makes no claim, and the measurement it quoted was superseded
+     * inside the same change by 77.0% / 67.2% against the reference account.
      */
-    allPlayed: "You already play every mechanic this commander leans on.",
+    topStylesParts: topStylesParts,
+
+    /**
+     * The same sentence as one string, DERIVED from the parts — the reason is
+     * `unplayed`'s: `check:copy-drift` reads the string form, and two templates
+     * would be free to drift.
+     */
+    topStyles: (labels: string[], capped: boolean) =>
+      topStylesParts(labels, capped)
+        .map((part) => (typeof part === "string" ? part : part.label))
+        .join(""),
 
     /**
      * NOT A STRING, recorded so the absence is deliberate: a commander with no

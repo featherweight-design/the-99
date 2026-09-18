@@ -43,9 +43,13 @@ const row = (over: Partial<CommanderRowView> = {}) => render(<CommanderRow item=
  * which is the right granularity: the marking is asserted separately.
  */
 function gapText(container: HTMLElement): string {
+  // THE LAST paragraph, not one matched on its words. The gap slot is the last
+  // `<p>` in every state — the sentence precedes it when present and the foot
+  // line is not a paragraph — and matching on "decks play" only ever found the
+  // `unplayed` occupant, so every assertion about the others read "" and passed
+  // or failed for the wrong reason.
   const paragraphs = Array.from(container.querySelectorAll("p"));
-  const gap = paragraphs.find((el) => el.textContent?.includes("decks play"));
-  return gap?.textContent ?? "";
+  return paragraphs[paragraphs.length - 1]?.textContent ?? "";
 }
 
 describe("CommanderRow · state 1, full", () => {
@@ -116,12 +120,52 @@ describe("CommanderRow · the gap slot is never empty", () => {
     expect(marked).toHaveLength(labels.length);
   });
 
-  // State 4. Not congratulatory: under `Something new` this same fact is why the
-  // row ranks last.
-  it("states the overlap when every mechanic is already played", () => {
-    row({ gapSlot: { kind: "allPlayed" } });
+  // State 4, and it NO LONGER CLAIMS COVERAGE. It used to read "you already play
+  // every mechanic this commander leans on", which measurement showed is both
+  // the majority voice of both lanes and unsupportable — `played` is built from
+  // each built deck's commander tag list, so a reader whose Kenrith deck is
+  // Politics still has Group Hug in their played set. It names the commander's
+  // own top themes instead.
+  it("names the commander's top play styles rather than claiming coverage", () => {
+    const { container } = row({
+      gapSlot: { kind: "allPlayed", labels: ["Group Hug", "Politics", "Reanimator"], capped: true },
+    });
 
-    expect(screen.getByText(commanderRowCopy.gap.allPlayed)).toBeInTheDocument();
+    expect(gapText(container)).toBe(
+      commanderRowCopy.gap.topStyles(["Group Hug", "Politics", "Reanimator"], true),
+    );
+    // The names are MARKED here too — both named states mark, so the line reads
+    // the same way whichever occupant it drew.
+    const marked = Array.from(container.querySelectorAll("b")).map((b) => b.textContent);
+    expect(marked).toEqual(["Group Hug", "Politics", "Reanimator"]);
+
+    // THE RETIRED CLAIM IS ABSENT, asserted rather than assumed gone: the copy
+    // key is deleted, so nothing but a literal can pin it.
+    expect(container.textContent).not.toContain("You already play");
+  });
+
+  // `capped` is the difference between "top three" and a plain list, and a
+  // commander with exactly three has had nothing cut.
+  it.each([
+    { capped: true, says: "top three play styles" },
+    { capped: false, says: "play styles are" },
+  ])("says $says when capped is $capped", ({ capped, says }) => {
+    const { container } = row({
+      gapSlot: { kind: "allPlayed", labels: ["Group Hug", "Politics", "Reanimator"], capped },
+    });
+
+    expect(gapText(container)).toContain(says);
+    if (!capped) expect(gapText(container)).not.toContain("top three");
+  });
+
+  // One theme is not a list. The singular lead is its own string rather than a
+  // plural template with one item in it.
+  it("reads as a singular when only one theme is named", () => {
+    const { container } = row({
+      gapSlot: { kind: "allPlayed", labels: ["Politics"], capped: false },
+    });
+
+    expect(gapText(container)).toBe("This commander's play style is Politics.");
   });
 
   // State 3, and the ruling that keeps state 4 honest: a commander with no
@@ -132,7 +176,7 @@ describe("CommanderRow · the gap slot is never empty", () => {
     const { container } = row({ gapSlot: { kind: "noMechanics" } });
 
     expect(screen.getByText(discoveryCopy.untagged.heading)).toBeInTheDocument();
-    expect(container.textContent).not.toContain(commanderRowCopy.gap.allPlayed);
+    expect(container.textContent).not.toContain("play style");
     // LANE-NEUTRAL. The shared row draws this on both lanes, so the body may not
     // name a sort only one of them has: it used to end "cannot appear under
     // Something new", which is false on /commanders.

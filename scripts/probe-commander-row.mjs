@@ -235,6 +235,81 @@ try {
         longestSeen = Math.max(longestSeen, clamp.worst.chars);
       }
 
+      // ── THE GAP LINE'S OCCUPANTS TAKE THE SAME NUMBER OF LINES ────────
+      //
+      // D9: row height varies with the SENTENCE and with nothing else — not
+      // with the sort, not with the lane, and not with which occupant the gap
+      // slot drew. That last clause had nothing measuring it, and 2026-09-18's
+      // copy change is exactly what could break it: the retired `allPlayed`
+      // sentence was 56 characters, the `unplayed` form with three themes is
+      // 61, and the replacement that names the commander's top three themes is
+      // 81. At 390px a 12.5px sans line holds roughly 58 characters, so this is
+      // decided by wrapping rather than by anything a class list shows.
+      //
+      // The gap `<p>` carries NO clamp, so the clamp check above skips it
+      // entirely — `webkitLineClamp` is "none" here — and an overflowing gap
+      // line does not overflow, it reflows and moves the row.
+      //
+      // Read as a MAXIMUM over every gap line on screen rather than per row: the
+      // property is that no occupant takes more lines than another, and the
+      // widest form of whichever occupants this screen holds is what bounds it.
+      const gapLines = await page.evaluate(() => {
+        // THE MARKER, not "any unclamped `main p`". That selector also caught
+        // the page header, the rack, banners and empty-state copy, so the count
+        // could be positive with no row gap line on screen and `worst` could be
+        // measuring unrelated text. Named by review.
+        const gaps = [...document.querySelectorAll("main [data-testid='row-gap']")];
+        const seen = [];
+        for (const p of gaps) {
+          const lh = parseFloat(getComputedStyle(p).lineHeight);
+          const lines = Math.round(p.clientHeight / lh);
+          const text = (p.textContent ?? "").trim();
+          seen.push({ lines, chars: text.length, text: text.slice(0, 56) });
+        }
+        const counts = [...new Set(seen.map((g) => g.lines))].sort((a, b) => a - b);
+        const widest = seen.reduce((w, g) => (!w || g.chars > w.chars ? g : w), null);
+        const tallest = seen.reduce((t, g) => (!t || g.lines > t.lines ? g : t), null);
+        return { gapCount: gaps.length, counts, widest, tallest };
+      });
+      note(
+        `  ${gapLines.gapCount} gap line(s) · line counts ${JSON.stringify(gapLines.counts)}` +
+          (gapLines.widest
+            ? ` · widest ${gapLines.widest.chars} chars "${gapLines.widest.text}"`
+            : ""),
+      );
+      // A run that found no gap line measured nothing: the slot is NEVER empty
+      // (D2), so zero means the selector lost its subject rather than that the
+      // rows are clean.
+      check(`${route} @ ${w.name}: gap lines were found`, gapLines.gapCount > 0, true);
+      if (gapLines.tallest) {
+        // WHY THIS IS A CEILING AND NOT AN EQUALITY, since review asked for the
+        // equality and the equality is wrong.
+        //
+        // D9 forbids row height varying with WHICH OCCUPANT the gap slot drew.
+        // It does not forbid it varying with the text's own length inside one
+        // occupant, and it cannot: the gap sentence names this commander's
+        // themes, so its length is a property of the commander.
+        //
+        // A cross-row equality test conflates the two and FAILS A CORRECT
+        // BUILD. Measured on `/commanders` at 390px, the line counts are
+        // [1, 2] — and both come from `unplayed`: "None of your decks play
+        // Mill, Rad Counters or Reanimator." is 57 characters and takes one
+        // line, "...Counters Matter, Proliferate or Infect." is 63 and takes
+        // two. Neither is a D9 violation, and no copy change could make them
+        // agree.
+        //
+        // What IS testable is the ceiling, which is what the drawing gives:
+        // one line above `sm`, two at 390px. An occupant that needs a third
+        // moves the row beyond what any other occupant can reach, and that is
+        // the failure D9 is about.
+        const budget = w.width < 768 ? 2 : 1;
+        check(
+          `${route} @ ${w.name}: no gap line exceeds ${budget} line(s)`,
+          gapLines.tallest.lines <= budget,
+          true,
+        );
+      }
+
       // ── no separator ends a line ──────────────────────────────────────
       //
       // FOUND BY THE CONTACT SHEET, not by any assertion here: the foot line

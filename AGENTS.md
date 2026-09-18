@@ -1042,3 +1042,28 @@ in one payload when the set of parameters is small enough to precompute.
   he may overrule a determination from either Design or this file.
 
 - `design/` is **reference material, never shipped code**. It sits outside both `public/` and `src/`, so no route serves it and no module imports it. Each handoff's `support.js` is a generated runtime that evaluates code dynamically and loads React from a CDN — it is read by opening that bundle's `.dc.html` from disk, and by nothing else. Never import from `design/`, and never copy a handoff asset into `public/`.
+
+- `scripts/measure-gap-line.mts` measures the commander row's gap line against a real
+  database — read-only, no fixture, no locks. It exists because the line's `allPlayed`
+  state turned out to be the DEFAULT rather than an edge case, and that is invisible from
+  the code: the frequency is a property of the reader's played set, so it reads 5.4% on the
+  seeded fixture account and 67.2% on the reference account in the same database. A
+  measurement taken against the wrong account is how a state the reader sees two rows out of
+  three gets designed as an exception.
+
+  It prints the occupant distribution per lane, the distribution in each sort's first screen,
+  the depth of the themes the row would name, and Option E's whole curve — the table the
+  design table's rejection of "narrow the played set to each commander's top N tags" is
+  sourced from. `MEASURE_USER_ID` picks the account; the default is the busiest, and it lists
+  every account it saw rather than picking one silently.
+
+  Two defects in it, both found by the pre-open pass rather than by running it, and both the
+  same shape — **a script that restates a rule instead of calling it**. Its `Something new`
+  order was a RATIO (unplayed / eligible) where the shipped `byNovelty` ranks on the absolute
+  `unplayedCount`, so a commander with 2 eligible tags and 1 unplayed sorted above one with 30
+  eligible and 12 unplayed, the reverse of the app; the header meanwhile called that order
+  "ascending" while sorting descending, and claimed the script "orders by the same figures the
+  lanes do rather than by a proxy" in the same breath. It now imports `byNovelty` and calls it.
+  And it said "built decks" throughout: `loadPlayedTags` joins no `deck_versions`, so a BREW
+  counts — deliberately — and `novelty.ts` records that this exact wording was corrected there
+  once already. Every figure it prints includes brews.

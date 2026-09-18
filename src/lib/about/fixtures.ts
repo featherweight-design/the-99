@@ -622,7 +622,19 @@ function laneRow(
     // `allPlayed` — the row's second line. A fixture with unplayed mechanics
     // draws a list of them instead, which is a different state and not the one
     // either entry is about.
-    gapSlot: { kind: "allPlayed" },
+    //
+    // It carries LABELS now: the state stopped claiming the reader plays every
+    // mechanic and names the commander's own top themes instead, so a fixture
+    // with none would draw a sentence with no mechanic in it — which is the
+    // emptiness that made the old sentence worth replacing. `capped` is true
+    // because a commander with only three eligible themes is the rare case:
+    // the median carries 35, so the About specimen should draw the form almost
+    // every row draws.
+    gapSlot: {
+      kind: "allPlayed",
+      labels: ["Group Hug", "Politics", "Reanimator"],
+      capped: true,
+    },
     score,
     measurableTotal: 100,
     fitPool: 15,
