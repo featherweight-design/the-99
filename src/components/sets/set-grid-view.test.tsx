@@ -2195,14 +2195,19 @@ describe("SetGridView — the phone head collapses past a threshold", () => {
     Object.defineProperty(HTMLElement.prototype, "animate", {
       value: animate, configurable: true, writable: true,
     });
+    // WIDTH-AWARE, which is what makes the reopen observable: a stub giving both widths one
+    // pair of heights cannot tell a head that re-measured at its new width from one that
+    // carried the old figures across. The phone head is 200 open and 52 collapsed; the
+    // desktop head is 900 and 56, far enough apart that the two outcomes cannot overlap.
     const rect = HTMLElement.prototype.getBoundingClientRect;
+    const openH = () => (wide ? 900 : 200);
     HTMLElement.prototype.getBoundingClientRect = function boxed(this: HTMLElement) {
       if (this.hasAttribute("data-set-head")) {
-        const height = this.hasAttribute("data-set-head-collapsed") ? 52 : 200;
+        const height = this.hasAttribute("data-set-head-collapsed") ? (wide ? 56 : 52) : openH();
         return { ...rect.call(this), height, bottom: height } as DOMRect;
       }
       if (this.hasAttribute("data-set-head-reserve")) {
-        return { ...rect.call(this), bottom: 200 - window.scrollY } as DOMRect;
+        return { ...rect.call(this), bottom: openH() - window.scrollY } as DOMRect;
       }
       return rect.call(this);
     };
@@ -2228,6 +2233,12 @@ describe("SetGridView — the phone head collapses past a threshold", () => {
       // 75px box on the way to a height belonging to the other design.
       wide = true;
       act(() => { for (const fn of listeners) fn(); });
+      // What this case proves is the SILENCE, and only that. The reopen it depends on is
+      // not assertable here: the settle re-decides inside the same `act`, so the state this
+      // can read is the settle's answer rather than the reopen's, and every stub that makes
+      // the two differ in jsdom ends up asserting the stub. Its proof is in `probe:sets`,
+      // which measures the reserve after a real round trip — `head + spacer` against the
+      // width's own rest height, in an engine that lays out.
       expect(animate).not.toHaveBeenCalled();
     } finally {
       HTMLElement.prototype.getBoundingClientRect = rect;
@@ -2594,9 +2605,9 @@ describe("SetGridView — the phone head collapses past a threshold", () => {
       act(() => { for (const fn of listeners) fn(); });
       expect(isShy(container)).toBe(false);
       expect(animate).not.toHaveBeenCalled();
-      // The frame the crossing was allowed passes, and the reader scrolls for real. The
-      // suppression is cleared on a `requestAnimationFrame`, so what has to elapse here is a
-      // frame rather than a timer — jsdom schedules rAF callbacks as macrotasks.
+      // And the reader scrolls for real. What takes the arm down is this scroll itself —
+      // the listener clears a stale arm before evaluating — so the step it causes animates
+      // like any other. The timer flush is only to let anything else pending settle first.
       act(() => { vi.runAllTimers(); });
       scrollTo(900);
       expect(isShy(container)).toBe(true);
@@ -2768,6 +2779,23 @@ describe("SetGridView — the phone head collapses past a threshold", () => {
     // And once focus leaves, the next read collapses.
     hidden.blur();
     scrollTo(2001);
+    expect(isShy(container)).toBe(true);
+  });
+
+  // The rack row's marker is CONDITIONAL — present below `md`, absent at it — so the desktop
+  // case above cannot see it at all. On the phone that row hides on collapse and carries the
+  // search field, which is the case the gate was added for; without this, removing the
+  // marker leaves every other test green.
+  it("does not collapse on the phone while focus is in the search field", () => {
+    stubDesktop(false);
+    const { container } = view([p("1"), p("2")], []);
+    const field = screen.getByRole("searchbox", { name: /^Search cards in / });
+    field.focus();
+    scrollTo(400);
+    expect(isShy(container)).toBe(false);
+    // And once focus leaves it, the next read collapses.
+    field.blur();
+    scrollTo(401);
     expect(isShy(container)).toBe(true);
   });
 

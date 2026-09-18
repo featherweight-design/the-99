@@ -1079,6 +1079,15 @@ async function run() {
       // this block. A loose bound is not a check here: the desktop figure happened to land
       // within 3px of the right one on this fixture, so anything short of the exact sum
       // passes on the bug.
+      //
+      // WHAT THIS CANNOT SEE, stated rather than implied: removing the breakpoint reopen in
+      // `use-head-collapse.ts` leaves this check green. The round trip ends back at the
+      // phone, where a head that never re-measured still holds the right figures — and the
+      // case the reopen protects is a crossing that STAYS at the new width, where the two
+      // rest heights on this fixture are 302 and ~300 and no assertion can separate them.
+      // The reopen is defensive and, on the sets available here, unproven by any check in
+      // this repository. A fixture whose title wraps at one width and not the other would
+      // give it one.
       failures += !report(
         "a trip to desktop and back reserves the phone's own rest height",
         afterTrip !== null

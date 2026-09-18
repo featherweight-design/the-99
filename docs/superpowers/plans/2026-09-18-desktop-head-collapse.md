@@ -3,7 +3,7 @@
 **Handoff:** `design/design_handoff_the99_set_collections/ADDENDUM-2-*` (R1) · **Verdict:**
 🟢 Green, `docs/superpowers/readiness-set-collections-addendum-2.md`
 
-**One PR.** Three files of source, one test file, one probe — well under the split threshold, and
+**One PR.** Two files of source after Task 2's withdrawal, one test file, one probe — well under the split threshold, and
 the slices do not separate: the hook without the markup collapses into a head that hides its own
 filters, and the markup without the hook is a form nothing reaches.
 

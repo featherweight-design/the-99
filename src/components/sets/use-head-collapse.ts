@@ -112,6 +112,13 @@ export function useHeadCollapse({
    * Clearing the recorded height instead was tried and measured worse: the reserve goes to
    * 0 where the desktop figure was accidentally within 3px of right.
    *
+   * NOTHING PROVES THIS TODAY, which is worth knowing before anyone deletes it. Removing the
+   * reopen leaves every unit test and every probe check green: the probe's round trip ends
+   * back at the phone, where a head that never re-measured still holds the right figures,
+   * and on the sets available here the two rest heights are ~302 and ~300 — closer than any
+   * assertion can separate. The argument above is the reason it stays; a fixture whose title
+   * wraps at one width and not the other would turn it into a measurement.
+   *
    * Adjusted DURING RENDER, which is React's supported pattern for deriving state from a
    * changed input.
    */
