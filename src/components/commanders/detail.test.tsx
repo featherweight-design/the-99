@@ -385,6 +385,25 @@ describe("commander detail — the art header band", () => {
     expect(band.firstElementChild).toHaveAttribute("data-art-wash-label-at", "96");
   });
 
+  // `GRU` is the pips again in a second alphabet, and the swatches beside it
+  // already carry the colours. `Temur` is the word a player uses, and it is the
+  // word every deck surface already prints for the same identity.
+  it("names the colour identity rather than spelling its letters", () => {
+    render(
+      <CommanderDetail
+        commander={commander({ colorIdentity: ["G", "R", "U"] })}
+        rank={1}
+        isBestFit
+        synergyCards={noSynergyCards}
+        newestAsOf={null}
+        avail="all"
+      />,
+    );
+
+    expect(screen.getByText("Temur")).toBeInTheDocument();
+    expect(screen.queryByText("GRU")).toBeNull();
+  });
+
   // The pips leave the band's top edge for the block. Five plated swatches in a
   // corner would be five plates for a decorative read, and every other band in
   // the app already draws them beside the name — so moving them is both cheaper

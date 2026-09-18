@@ -115,6 +115,73 @@ describe("the price under the art", () => {
       .toHaveTextContent(setPageCopy.cell.noStock);
   });
 
+  it("names the cheapest printing when the one on screen is dearer", () => {
+    // The bug this answers: /commanders/[slug] quotes a card's cheapest printing
+    // and this modal quotes the printing on screen, so the reader met $2.34 on one
+    // surface and $4.39 on the next with nothing saying they were two questions.
+    mount(card({
+      prices: indexPriceRows([
+        priceRow({ price_cents: 439 }),
+        priceRow({ scryfall_id: "cheap", collector_number: "999", price_cents: 234 }),
+      ]),
+    }));
+
+    expect(screen.getByTestId("modal-price-desktop")).toHaveTextContent("$4.39");
+    // Both widths, as with the tag they sit beside: the desktop stack and the
+    // phone's plate are in the DOM at once and separated by CSS.
+    expect(screen.getByTestId("modal-price-from-desktop")).toHaveTextContent("from $2.34");
+    expect(screen.getByTestId("modal-price-from-mobile")).toHaveTextContent("from $2.34");
+  });
+
+  it("says nothing when the printing on screen IS the cheapest", () => {
+    // `from $2.41` beside `$2.41` is the same number twice, which answers a
+    // question nobody has.
+    mount(card({
+      prices: indexPriceRows([
+        priceRow({ price_cents: 241 }),
+        priceRow({ scryfall_id: "dear", collector_number: "999", price_cents: 980 }),
+      ]),
+    }));
+
+    expect(screen.queryByTestId("modal-price-from-desktop")).toBeNull();
+  });
+
+  it("names the cheapest printing beside a `no stock` tag", () => {
+    // Same reader, same question, and no figure on screen to hold the answer
+    // against — which is the case that most needs it.
+    mount(card({
+      prices: indexPriceRows([
+        priceRow({ as_of: "2026-08-01 09:00:00" }),
+        priceRow({ scryfall_id: "cheap", collector_number: "999", price_cents: 234 }),
+      ]),
+    }));
+
+    expect(screen.getByTestId("modal-price-desktop"))
+      .toHaveTextContent(setPageCopy.cell.noStock);
+    // Both widths, as with the tag they sit beside: the desktop stack and the
+    // phone's plate are in the DOM at once and separated by CSS.
+    expect(screen.getByTestId("modal-price-from-desktop")).toHaveTextContent("from $2.34");
+    expect(screen.getByTestId("modal-price-from-mobile")).toHaveTextContent("from $2.34");
+  });
+
+  it("does not quote a foil figure as the cheapest", () => {
+    // A bare `from` with a foil figure behind it names a finish the reader cannot
+    // buy, which is what the tag's own qualifier exists to prevent.
+    mount(card({
+      prices: indexPriceRows([
+        priceRow({ price_cents: 439 }),
+        priceRow({
+          scryfall_id: "foil",
+          collector_number: "999",
+          price_cents: null,
+          price_cents_foil: 120,
+        }),
+      ]),
+    }));
+
+    expect(screen.queryByTestId("modal-price-from-desktop")).toBeNull();
+  });
+
   it("renders no node at all when no price read reached us", () => {
     // Silence is the state. Not a dash, not $0.00, not a reserved slot — and not
     // an aria-hidden placeholder either, so the absent state is absent to
@@ -157,9 +224,13 @@ describe("the price under the art", () => {
       ]),
     }));
 
-    expect(screen.getByTestId("modal-price-desktop")).not.toHaveTextContent("$99.99");
-    expect(screen.getByTestId("modal-price-desktop"))
+    // The TAG is what must not fall back — the figure under the art belongs to
+    // the art. The `from` line beside it carries a sibling's figure on purpose
+    // and says so in words, which is the whole difference between the two.
+    expect(screen.getByTestId("modal-price-tag-desktop")).not.toHaveTextContent("$99.99");
+    expect(screen.getByTestId("modal-price-tag-desktop"))
       .toHaveTextContent(setPageCopy.cell.noStock);
+    expect(screen.getByTestId("modal-price-from-desktop")).toHaveTextContent("from $99.99");
   });
 
   it("speaks the ratified sentence rather than a bare figure", () => {

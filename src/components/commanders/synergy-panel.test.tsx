@@ -110,6 +110,32 @@ describe("SynergyPanel", () => {
     ).toHaveAttribute("aria-expanded", "false");
   });
 
+  // The other half of that same row, and the half the collapse above does not
+  // deliver: the `<ul>` is one DOM node across every facet and every disclosure,
+  // so the offset it was left at survives while the box is unscrollable and comes
+  // back the moment the expansion returns. Switching facets from a list scrolled
+  // to its foot and pressing `Show all` reopened at the BOTTOM of a list the
+  // reader had never scrolled.
+  it("discards the scroll offset when the facet changes and when the list reopens", () => {
+    const cards = [...make(30, "creature"), ...make(20, "land")];
+    wrap(<SynergyPanel {...props} cards={cards} width="desktop" />);
+
+    fireEvent.click(
+      screen.getByRole("button", { name: synergyCopy.disclosure.showAllAria("30", "Creatures") }),
+    );
+    const list = screen.getAllByRole("listitem")[0].parentElement as HTMLElement;
+    list.scrollTop = 400;
+
+    fireEvent.click(screen.getByRole("radio", { name: synergyCopy.facet.itemAria("Lands", "20") }));
+    expect(list.scrollTop).toBe(0);
+
+    list.scrollTop = 400;
+    fireEvent.click(
+      screen.getByRole("button", { name: synergyCopy.disclosure.showAllAria("20", "Lands") }),
+    );
+    expect(list.scrollTop).toBe(0);
+  });
+
   // Reachable only because FacetStrip keeps a zero-count pill selectable.
   it("says the facet is empty when its pill is selected and it holds no rows", () => {
     wrap(<SynergyPanel {...props} cards={make(20, "land")} width="desktop" />);

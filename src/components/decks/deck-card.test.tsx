@@ -37,6 +37,36 @@ const deck = (over: Partial<DeckListItem> = {}): DeckListItem => ({
 });
 
 describe("DeckCard", () => {
+  // Three tiles in a row ending at three different heights reads as three
+  // different kinds of thing. The `<li>` already stretched to the grid row; the
+  // tile inside it sat at its own content height, so a deck with no detail line
+  // stopped short of the one beside it that had one.
+  it("fills the height of the grid row it is given", () => {
+    const { container } = render(
+      <DeckCard
+        folders={[]}
+        onCreateFolder={() => {}}
+        say={() => {}}
+        onMoved={() => {}}
+        keepsFocus
+        closeAfterCreate={null}
+        deck={deck({ statusPill: "Complete", toBuyCount: 0, lastPlayedAt: null })}
+        shopping={undefined}
+        now={now}
+      />,
+    );
+
+    const tile = container.querySelector("article")!;
+    expect(tile.className).toContain("sm:h-full");
+    expect(tile.className).toContain("flex-col");
+    // The footer takes the slack rather than the art band, and its rows stay at
+    // the top of it: stretched tracks would float the progress line into the
+    // middle of the space the tile was given.
+    const footer = container.querySelector(".deck-card-footer")!;
+    expect(footer.className).toContain("flex-1");
+    expect(footer.className).toContain("content-start");
+  });
+
   it("shows the status, the count with its denominator, and the explaining figure", () => {
     render(
       <DeckCard folders={[]} onCreateFolder={() => {}} say={() => {}} onMoved={() => {}} keepsFocus closeAfterCreate={null} deck={deck()} shopping={{ copies: 3, cents: 1840, pricedCopies: 3 }} now={now} />,

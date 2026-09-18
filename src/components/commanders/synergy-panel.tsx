@@ -19,6 +19,7 @@ import { facetCounts } from "../../lib/commanders/synergy-cards";
 import { explainedCopy } from "../../lib/copy/commander-explained";
 import { KeyPip } from "../ui/ownership-dot";
 import { synergyCopy } from "../../lib/copy/synergy-discovery";
+import { useDiscardedScroll } from "../ui/scroll-reset";
 import { FacetStrip } from "./facet-strip";
 import { SynergyRow } from "./synergy-row";
 
@@ -79,6 +80,20 @@ export function SynergyPanel({
     setFacetState(next);
     setExpanded(false);
   }
+
+  // Discarding the scroll position takes a WRITE, and collapsing the list is not
+  // one. The `<ul>` below is the same DOM node across every facet and every
+  // disclosure — same `id`, same position in the tree — so the browser keeps the
+  // offset it was left at while the box is unscrollable and hands it straight
+  // back the moment `maxHeight`/`overflowY` return. Switching from a list scrolled
+  // to its foot and pressing `Show all` on the next facet therefore reopened at the
+  // BOTTOM of a list the reader had never scrolled: the collapse above reads as the
+  // discard and never was one.
+  //
+  // Keyed on both pieces of state, because both transitions owe the same discard
+  // — a facet change, and an expansion that a previous one left an offset behind
+  // for. Role Coverage's own lists have the same rule and take the same hook.
+  const listRef = useDiscardedScroll<HTMLUListElement>([facet, expanded]);
 
   // Filter the card list by the selected facet.
   const facetCards = facet === "all" ? cards : cards.filter((c) => c.facet === facet);
@@ -350,6 +365,7 @@ export function SynergyPanel({
       {/* Card list */}
       {facetCount > 0 && (
         <ul
+          ref={listRef}
           id={listId}
           // Expanded, the list is a 480px scroll box. A scroll container with no
           // tabIndex and no name is unreachable by keyboard, so it takes both —

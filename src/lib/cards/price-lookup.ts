@@ -79,6 +79,41 @@ export type PrintingPrices = {
   newestAsOf: Date | null;
 };
 
+/**
+ * The cheapest LIVE non-foil figure across every printing of this card, in cents,
+ * or null when there is none.
+ *
+ * The modal prices the printing on screen and never falls back to another one —
+ * `priceFor` above is emphatic about that, and it stays true. This answers the
+ * other question, which the reader arrives with rather than asks: the commander
+ * page quotes a card's cheapest printing (`decks/price-query.ts` picks one row per
+ * oracle card, cheapest live first), so a reader who follows a $2.34 figure into a
+ * modal drawing a $4.39 printing is looking at two correct answers to two
+ * different questions with nothing on screen saying so. The figure under the art
+ * keeps belonging to the art; this one names the other question out loud.
+ *
+ * NON-FOIL ONLY, and live only. `price-query.ts` will fall back to a foil or
+ * etched figure for a card stocked in no other finish, and a bare `from $9.40`
+ * that turned out to mean `foil` would be a finish the reader cannot buy — the
+ * same error `qualifierOf` exists to prevent one surface up. Where every live
+ * printing is foil-only this says nothing, which is this module's answer to every
+ * question it cannot answer plainly.
+ */
+export function cheapestLiveCents(prices: PrintingPrices | null | undefined): number | null {
+  if (!prices || prices.newestAsOf === null) return null;
+  const newest = prices.newestAsOf.getTime();
+  let cheapest: number | null = null;
+  // Indexed by id rather than by printing key: every fact carries an id — the
+  // `left join` produces a row per catalog printing — and `ambiguousKeys` has
+  // already stripped the pairs that name two printings out of the other index.
+  for (const fact of Object.values(prices.byScryfallId)) {
+    if (fact.asOf.getTime() !== newest) continue;
+    if (fact.cents === null) continue;
+    if (cheapest === null || fact.cents < cheapest) cheapest = fact.cents;
+  }
+  return cheapest;
+}
+
 /** `BrowsePrinting`'s own key shape, so both sides of the lookup agree. */
 export function priceKeyFor(p: { setCode: string; collectorNumber: string }): string {
   return `${p.setCode.toUpperCase()}|${p.collectorNumber}`;

@@ -132,6 +132,18 @@ describe("DecksView", () => {
     expect(screen.getAllByRole("listitem")).toHaveLength(2);
   });
 
+  // The shell reserves exactly `--tabbar-h` under `<main>`, so a list with no
+  // bottom padding of its own ends flush against the phone's tab bar — the last
+  // tile's edge and the bar's edge with nothing between them. Desktop is
+  // unaffected: `sm:p-[18px_22px]` pays all four sides there.
+  it("leaves room under the last tile on a phone", () => {
+    const { container } = render(view([deckOf()]));
+    const list = container.querySelector("ul.flex-auto")!;
+
+    expect(list.className).toContain("pb-[14px]");
+    expect(list.className).not.toContain("pb-0");
+  });
+
   it("keeps the count and the grid in step while filtering", () => {
     render(
       view([

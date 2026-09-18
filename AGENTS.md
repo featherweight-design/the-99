@@ -712,6 +712,57 @@ Package manager is **pnpm** (pinned via `packageManager` in package.json) — ne
   class list reading correctly while the row shrinks the name instead of wrapping. It makes no
   writes. Point it at `local-dev`.
 
+- `pnpm probe:deck-grid` measures the decks grid at 1300x900 and 390x844 — two rulings that
+  are facts about laid-out geometry, which jsdom cannot produce.
+
+  **Tiles in a row end level.** A tile's footer draws a detail line only where there is a
+  figure or a real last-played date to put in it, so one tile carries `13 to buy · $14.84`
+  and the two beside it carry nothing — and the two beside it stopped short, because the
+  `<li>` stretched to the grid row and the tile inside it sat at its own content height.
+  Rows are grouped by MEASURED top edge rather than by index: the column count is a function
+  of the viewport, and a probe that divided the list into threes would compare tiles from two
+  different rows the moment the grid reflowed. A run where no row holds two tiles FAILS
+  rather than passing quietly — the ruling is about tiles beside each other.
+
+  **The last tile clears the tab bar.** The shell reserves exactly `--tabbar-h` under
+  `<main>`, so a list with no bottom padding of its own ends flush against the phone's bar.
+  It scrolls to the foot first, because the gap is only measurable once the list is actually
+  at it.
+
+  Its own fix taught the trap the phone check exists to catch: `h-full` on the `<li>` is a
+  percentage height resolved against a container the item is sizing, and below `sm` this list
+  is a flex COLUMN with no height of its own — 34 tiles took the phone's document to
+  **357,576px**. Every unit test passed, and the gap check read -73.5px. Both fixes were
+  reverted against it and both fail: the tile's `sm:h-full` (24.75px spread) and the list's
+  bottom padding (0.5px to the bar). Makes no writes; point it at `local-dev`.
+
+- `pnpm probe:list-scroll` presses every expandable list on `/commanders/[slug]` at both
+  widths and proves each one reopens at its top.
+
+  A collapse does not discard a scroll position. The element is the same DOM node across
+  every open and close, so the offset survives while the box is unscrollable and the browser
+  hands it back the moment `maxHeight`/`overflowY` return — measured at **offset 1752 either
+  side of a close**, with `scrollTop` reading 0 in between, which is the box being
+  unscrollable rather than the offset being gone. `useDiscardedScroll`
+  (`src/components/ui/scroll-reset.ts`) is the one rule; jsdom stores `scrollTop` as a plain
+  number with no layout behind it, so the unit tests prove the write happens and only this
+  proves the box returns.
+
+  **EVERY visible disclosure, not the first.** The page draws Role Coverage's four role lists
+  beside the synergy panel's own; they have the same rule, and the first version took the
+  first match and measured one of them while naming the other. Both had the defect. Two
+  clauses were paid for by a run: the sweep must filter on VISIBILITY, because the width the
+  probe is not running at keeps its copy of every disclosure in the DOM and a hidden button
+  spends thirty seconds failing to be clicked; and a list is collapsed by pressing its OWN
+  toggle, never `[aria-expanded="true"]`, whose first match at 390 belonged to another
+  section — the list never collapsed, the state never moved, and the check failed on a
+  working build. A list that opens without scrolling is reported as measuring nothing rather
+  than passing. Its last check is the path as REPORTED: scrolled to the foot, a different
+  facet pill pressed, then `Show all` on that facet. It also asserts the commander's identity
+  is NAMED (`Temur`) and that no bare WUBRG run is on the page. Both mutations fail it — the
+  hook's write removed (every list), and `colorLabel` reverted to `join("")` (`found GRW`).
+  Makes no writes; point it at `local-dev`.
+
 - `pnpm probe:scroll-lock` presses every overlay the app draws over a scrim — the filter
   sheets on `/collection`, `/commanders`, `/discover`, `/decks` and a set page, the
   `FilterPanel` sort sheet, and the card modal — and proves the page behind each one does

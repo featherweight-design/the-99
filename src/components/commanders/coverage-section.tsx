@@ -4,6 +4,7 @@
 // One section owns the heading, sub-caption, note, retry, and all four role panels.
 
 import { useState, useTransition, useId, type JSX } from "react";
+import { useDiscardedScroll } from "../ui/scroll-reset";
 import { useRouter } from "next/navigation";
 import { CoverageChip, CoverageRow, CoverageDisclosure, COVERAGE_CAP, COVERAGE_EXPANDED_CAP } from "./coverage-chip";
 import { explainedCopy } from "../../lib/copy/commander-explained";
@@ -140,6 +141,12 @@ function RolePanelDesktop({
   const target = ROLE_TARGETS[role];
   const cap = COVERAGE_CAP.desktop;
   const siblings = cards.map((c) => c.oracleId);
+  // The open list is a 320px scroll box, and closing it writes nothing to
+  // `scrollTop` — so a role scrolled to its foot and closed reopened at its foot,
+  // measured at offset 1752 either side of a close. Keyed on the card list too:
+  // re-sorting swaps which cards are in the box, and an offset into the old order
+  // means nothing in the new one.
+  const listRef = useDiscardedScroll<HTMLUListElement>([expanded, cards]);
   const visible = expanded ? cards.slice(0, COVERAGE_EXPANDED_CAP) : cards.slice(0, cap);
   const hiddenCount = cards.length - cap; // > 0 means disclosure needed
   const beyondExpanded = cards.length > COVERAGE_EXPANDED_CAP
@@ -187,6 +194,7 @@ function RolePanelDesktop({
       ) : (
         <>
           <ul
+            ref={listRef}
             id={listId}
             className="flex flex-wrap gap-[7px] list-none m-0 p-0"
             style={expanded ? { maxHeight: 320, overflowY: "auto" } : undefined}
@@ -249,6 +257,12 @@ function RolePanelPhone({
   const target = ROLE_TARGETS[role];
   const cap = COVERAGE_CAP.phone;
   const siblings = cards.map((c) => c.oracleId);
+  // The open list is a 320px scroll box, and closing it writes nothing to
+  // `scrollTop` — so a role scrolled to its foot and closed reopened at its foot,
+  // measured at offset 1752 either side of a close. Keyed on the card list too:
+  // re-sorting swaps which cards are in the box, and an offset into the old order
+  // means nothing in the new one.
+  const listRef = useDiscardedScroll<HTMLUListElement>([expanded, cards]);
   const visible = expanded ? cards.slice(0, COVERAGE_EXPANDED_CAP) : cards.slice(0, cap);
   const hiddenCount = cards.length - cap;
   const beyondExpanded = cards.length > COVERAGE_EXPANDED_CAP
@@ -300,6 +314,7 @@ function RolePanelPhone({
         ) : (
           <>
             <ul
+              ref={listRef}
               id={listId}
               className="flex flex-col gap-[8px] list-none m-0 p-0"
               style={expanded ? { maxHeight: 320, overflowY: "auto" } : undefined}
