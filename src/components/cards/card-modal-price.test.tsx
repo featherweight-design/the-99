@@ -8,6 +8,7 @@ import { act, fireEvent, render, screen } from "@testing-library/react";
 import type { BrowseCard, BrowsePrinting } from "../../lib/collection/browse";
 import { indexPriceRows, type PrintingPriceRow } from "../../lib/cards/price-lookup";
 import { setPageCopy } from "../../lib/copy/set-collections";
+import { priceCopy } from "../../lib/copy/price";
 
 vi.mock("../../app/collection/actions", () => ({
   // The real action reports whether it wrote; a bare `vi.fn()` resolves undefined,
@@ -131,6 +132,11 @@ describe("the price under the art", () => {
     // phone's plate are in the DOM at once and separated by CSS.
     expect(screen.getByTestId("modal-price-from-desktop")).toHaveTextContent("from $2.34");
     expect(screen.getByTestId("modal-price-from-mobile")).toHaveTextContent("from $2.34");
+    // The spoken half names the FINISH. `cheapestLiveCents` is non-foil only, so a
+    // live foil can undercut this figure and "cheapest printing" would be a false
+    // claim made to the one reader who cannot see the tag beside it.
+    expect(screen.getByTestId("modal-price-from-desktop"))
+      .toHaveTextContent(priceCopy.cheapest.aria("$2.34"));
   });
 
   it("says nothing when the printing on screen IS the cheapest", () => {
