@@ -299,7 +299,7 @@ async function main() {
   // edge nobody can clear. Only comparing the rows can tell the two apart, and
   // this check fails on any build that takes the shortcut.
   const afterDiscard = find(await listDecksWithStats(USER, "name"), committed);
-  check("a draft restored to its version is not pending", afterDiscard.hasPendingChanges, false);
+  check("a draft restored to its version has no changes", afterDiscard.pendingChanges, 0);
   check(
     "even though the discard moved the edit stamp past the commit",
     afterDiscard.lastEditedAt.getTime() > afterDiscard.lastCommittedAt!.getTime(),
@@ -309,14 +309,14 @@ async function main() {
   // A brew has nothing to differ from, and false is the accurate answer rather
   // than a missing case: that deck's mark is the hollow plate instead, and an
   // edge drawn there would be permanently on and would say nothing.
-  check("a deck with no version is never pending", find(await listDecksWithStats(USER, "name"), edited).hasPendingChanges, false);
+  check("a deck with no version counts none", find(await listDecksWithStats(USER, "name"), edited).pendingChanges, 0);
 
   // One add, and the flag turns over.
   await addCard(committed, await pickCard(3));
   check(
-    "one add makes the draft differ",
-    find(await listDecksWithStats(USER, "name"), committed).hasPendingChanges,
-    true,
+    "one add is one change",
+    find(await listDecksWithStats(USER, "name"), committed).pendingChanges,
+    1,
   );
 
   // A CUT, which the reverse `except` is the only thing that sees. A build
@@ -328,22 +328,50 @@ async function main() {
   `);
   check(
     "and cutting it back makes it clean again",
-    find(await listDecksWithStats(USER, "name"), committed).hasPendingChanges,
-    false,
+    find(await listDecksWithStats(USER, "name"), committed).pendingChanges,
+    0,
   );
   await fixture.execute(sql`
     update deck_cards set quantity = 2
     where deck_id = ${committed}::uuid and oracle_id = ${card}::uuid
   `);
+  // ONE change, not two. The symmetric difference puts this card on both sides
+  // and `draftDiff` files it as a single add — a figure counting rows would
+  // disagree with the deck page about every quantity change on the tile.
   check(
-    "a quantity change counts, with no card added or removed",
-    find(await listDecksWithStats(USER, "name"), committed).hasPendingChanges,
-    true,
+    "a quantity change is ONE change, not one per side",
+    find(await listDecksWithStats(USER, "name"), committed).pendingChanges,
+    1,
   );
   await fixture.execute(sql`
     update deck_cards set quantity = 1
     where deck_id = ${committed}::uuid and oracle_id = ${card}::uuid
   `);
+
+  // Two changes at once, and the version they are counted against. The tile
+  // prints both — `2 changes since v2` — so a version number that lagged the
+  // count would name the wrong list.
+  await addCard(committed, await pickCard(3));
+  await fixture.execute(sql`
+    update deck_cards set quantity = 3
+    where deck_id = ${committed}::uuid and oracle_id = ${card}::uuid
+  `);
+  const two = find(await listDecksWithStats(USER, "name"), committed);
+  check("an add and a quantity change are two changes", two.pendingChanges, 2);
+  check("and they are counted against the newest version", two.versionNumber, 2);
+  await fixture.execute(sql`
+    delete from deck_cards
+    where deck_id = ${committed}::uuid and oracle_id = ${await pickCard(3)}::uuid
+  `);
+  await fixture.execute(sql`
+    update deck_cards set quantity = 1
+    where deck_id = ${committed}::uuid and oracle_id = ${card}::uuid
+  `);
+  check(
+    "a brew has no version number to count against",
+    find(await listDecksWithStats(USER, "name"), edited).versionNumber,
+    null,
+  );
 
   // A COMMANDER SWAP does NOT flip it, and this case pins that deliberately.
   // `changeCount` on the deck page is adds + removes over the CARD diff alone,
@@ -358,9 +386,9 @@ async function main() {
     update decks set commander_oracle_id = ${otherCommander}::uuid where id = ${committed}::uuid
   `);
   check(
-    "a commander swap alone does not flip it — the card diff is the whole definition",
-    find(await listDecksWithStats(USER, "name"), committed).hasPendingChanges,
-    false,
+    "a commander swap alone counts nothing — the card diff is the whole definition",
+    find(await listDecksWithStats(USER, "name"), committed).pendingChanges,
+    0,
   );
   await fixture.execute(sql`
     update decks set commander_oracle_id = ${commander}::uuid where id = ${committed}::uuid

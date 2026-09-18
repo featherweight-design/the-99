@@ -468,14 +468,18 @@ export type DeckListItem = {
   /** Cards on lines the import could not name. Drives the deck card's badge. */
   unresolvedCount: number;
   /**
-   * Whether the draft differs from the newest committed version. False for a
-   * deck with no version — there is nothing to differ from, and that deck is a
-   * PLAN, which `lastCommittedAt === null` says instead.
+   * Cards the draft has changed since the newest committed version, counted the
+   * way the deck page counts them. Zero for a deck with no version — there is
+   * nothing to differ from, and that deck is a PLAN, which
+   * `lastCommittedAt === null` says instead.
    *
    * The two facts draw two marks and can never both be true: the pill's edge
    * needs a version, the hollow plate means there is none.
    */
-  hasPendingChanges: boolean;
+  pendingChanges: number;
+  /** The newest version's number, for `36 changes since v2`. Null for a deck
+      that has committed nothing. */
+  versionNumber: number | null;
   /**
    * The most recent game logged against this deck, or null when none is. Drawn
    * on the right of a tile's second row at desktop widths, and **only when it
@@ -560,12 +564,23 @@ export const lastCommittedSql = sql<Date | string | null>`(
 )`;
 
 /**
- * Whether a deck's draft differs from the version it last committed.
+ * How many cards a deck's draft has changed since the version it last
+ * committed, and which version that was.
  *
- * FALSE for a deck with no version at all, and that is the accurate answer
+ * ZERO for a deck with no version at all, and that is the accurate answer
  * rather than a missing case: there is nothing to differ from. That deck is a
  * PLAN, which `lastCommittedAt === null` already says, and the two facts get
  * two different marks — see the deck-state marks handoff.
+ *
+ * A COUNT rather than a flag, because the tile draws the figure as well as the
+ * mark: `36 changes since v2` is the detail row's line, and a boolean would
+ * force a second read of the same rows to put a number on it.
+ *
+ * `count(distinct oracle_id)`, which is what makes this figure agree with
+ * `changeCount` on the deck page. The symmetric difference puts a quantity
+ * change on BOTH sides — `1 → 2` is a row in each direction — while `draftDiff`
+ * files it as ONE add. Counting rows would tell a player who bought a second
+ * copy that they had made two changes.
  *
  * **A real diff, not a proxy.** `last_edited_at > committed_at` is the cheap
  * answer and it is wrong: a discard back to the version MOVES `last_edited_at`
@@ -599,35 +614,48 @@ export const lastCommittedSql = sql<Date | string | null>`(
  * child row's foreign key to its own primary key — matching nothing, for ever,
  * with no error. Every deck would read as clean.
  */
-export const hasPendingChangesSql = sql<boolean>`(
+export const pendingChangesSql = sql<number>`(
   select coalesce((
-    select
-      exists (
-        (
-          select dcd.oracle_id, dcd.quantity
-          from ${deckCards} dcd
-          where dcd.deck_id = ${decks}.id
-          except
-          select dvd.oracle_id, dvd.quantity
-          from ${deckVersionCards} dvd
-          where dvd.version_id = dv.id
-        )
-        union all
-        (
-          select dvo.oracle_id, dvo.quantity
-          from ${deckVersionCards} dvo
-          where dvo.version_id = dv.id
-          except
-          select dco.oracle_id, dco.quantity
-          from ${deckCards} dco
-          where dco.deck_id = ${decks}.id
-        )
+    select count(distinct diff.oracle_id)
+    from ${deckVersions} dv,
+    lateral (
+      (
+        select dcd.oracle_id, dcd.quantity
+        from ${deckCards} dcd
+        where dcd.deck_id = ${decks}.id
+        except
+        select dvd.oracle_id, dvd.quantity
+        from ${deckVersionCards} dvd
+        where dvd.version_id = dv.id
       )
-    from ${deckVersions} dv
+      union all
+      (
+        select dvo.oracle_id, dvo.quantity
+        from ${deckVersionCards} dvo
+        where dvo.version_id = dv.id
+        except
+        select dco.oracle_id, dco.quantity
+        from ${deckCards} dco
+        where dco.deck_id = ${decks}.id
+      )
+    ) as diff
     where dv.deck_id = ${decks}.id
-    order by dv.number desc
-    limit 1
-  ), false)
+      and dv.number = (
+        select max(dvn.number) from ${deckVersions} dvn where dvn.deck_id = ${decks}.id
+      )
+  ), 0)::int
+)`;
+
+/**
+ * The newest version's number, for the figure the mark explains: `36 changes
+ * since v2` needs the 2 as well as the 36.
+ *
+ * Null for a deck that has committed nothing, which is the same deck
+ * `lastCommittedAt` answers null for — and the tile never prints this without
+ * a change count above zero, which that deck can never have.
+ */
+export const newestVersionNumberSql = sql<number | null>`(
+  select max(dvm.number) from ${deckVersions} dvm where dvm.deck_id = ${decks}.id
 )`;
 
 /**
@@ -745,7 +773,8 @@ export async function listDecksWithStats(
       // parsings picks the wrong verb and the wrong order by exactly the offset.
       lastEditedAt: sql<Date | string>`${decks.lastEditedAt}`,
       lastCommittedAt: lastCommittedSql,
-      hasPendingChanges: hasPendingChangesSql,
+      pendingChanges: pendingChangesSql,
+      versionNumber: newestVersionNumberSql,
     })
     .from(decks)
     .innerJoin(cards, eq(decks.commanderOracleId, cards.oracleId))
@@ -900,11 +929,12 @@ export async function listDecksWithStats(
       // — the assertion is the type's, and an unreadable value throws instead.
       lastEditedAt: toDate(row.lastEditedAt, "decks.last_edited_at")!,
       lastCommittedAt: toDate(row.lastCommittedAt, "deck_versions.committed_at"),
-      // Coerced rather than trusted: the driver answers a raw boolean expression
-      // with a boolean, but this one is `coalesce(..., false)` over a subquery
-      // and a null reaching a field typed `boolean` would draw the edge on a
-      // deck that has no version.
-      hasPendingChanges: row.hasPendingChanges === true,
+      // `::int` on both, and coerced again here: an aggregate reached through
+      // raw SQL comes back as a string from some drivers, and a string `"0"` is
+      // truthy — which would draw the pending edge on every clean deck in the
+      // app.
+      pendingChanges: Number(row.pendingChanges ?? 0),
+      versionNumber: row.versionNumber === null ? null : Number(row.versionNumber),
       inUseElsewhere: inUseElsewhere.get(row.id) ?? 0,
       statusPill: pill,
     };

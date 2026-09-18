@@ -12,12 +12,12 @@
 import { describe, expect, it } from "vitest";
 import { db } from "../../db";
 import { decks } from "../../db/schema";
-import { hasPendingChangesSql } from "./read";
+import { pendingChangesSql } from "./read";
 
 const emitted = () =>
-  db.select({ id: decks.id, hasPendingChanges: hasPendingChangesSql }).from(decks).toSQL();
+  db.select({ id: decks.id, pendingChanges: pendingChangesSql }).from(decks).toSQL();
 
-describe("hasPendingChangesSql", () => {
+describe("pendingChangesSql", () => {
   it("qualifies every correlation against the outer deck", () => {
     const { sql: text } = emitted();
     // The outer table NAMED at each correlation. A bare `"id"` resolves against
@@ -50,8 +50,16 @@ describe("hasPendingChangesSql", () => {
 
   it("reads the newest version, and only that one", () => {
     const { sql: text } = emitted();
-    expect(text).toMatch(/order by\s+dv\.number desc/);
-    expect(text).toContain("limit 1");
+    expect(text).toContain("max(dvn.number)");
+    expect(text).toContain("dv.number =");
+  });
+
+  it("counts each changed card once, not each side of it", () => {
+    // `1 → 2` is a row in BOTH directions of the symmetric difference and ONE
+    // add in `draftDiff`. Counting rows would tell a player who bought a second
+    // copy that they had made two changes, and the tile's figure would disagree
+    // with the deck page's for every quantity change on it.
+    expect(emitted().sql).toContain("count(distinct diff.oracle_id)");
   });
 
   it("compares the cards alone, as the deck page's own change count does", () => {
@@ -65,11 +73,11 @@ describe("hasPendingChangesSql", () => {
     expect(text).not.toContain("partner_oracle_id");
   });
 
-  it("answers false for a deck with no version rather than null", () => {
+  it("answers zero for a deck with no version rather than null", () => {
     // A null here would reach a field typed `boolean` and draw the pending edge
     // on a deck that has never committed — the one deck that must never carry
     // it, because that deck's mark is the hollow plate instead.
     expect(emitted().sql).toMatch(/coalesce\(\(\s*select/);
-    expect(emitted().sql).toContain("), false)");
+    expect(emitted().sql).toContain("), 0)::int");
   });
 });

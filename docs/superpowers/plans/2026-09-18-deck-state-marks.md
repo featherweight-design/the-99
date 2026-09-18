@@ -40,10 +40,14 @@ They are sequential, not stacked. Each is cut from `main` after the previous mer
 No visible change. This PR makes the two facts readable and the two treatments expressible, and
 ships the copy block both later PRs draw from.
 
-### Task 1.1 — `hasPendingChanges` on the list read
+### Task 1.1 — the pending change COUNT on the list read
 
 `src/lib/decks/read.ts`. The plate needs nothing: `DeckListItem.lastCommittedAt` already ships
-via `lastCommittedSql` and is null exactly when no version exists. The edge needs a new figure.
+via `lastCommittedSql` and is null exactly when no version exists. The edge needs a new figure —
+a COUNT and the version's number, not a flag, because the tile draws `36 changes since v2`
+beneath the mark and a boolean would force a second read of the same rows to put a number on it.
+`count(distinct oracle_id)` over the symmetric difference, which is what makes it agree with
+`changeCount`: a quantity change is a row on both sides and one change on the deck page.
 
 **A real per-deck diff in the query, not a stored flag.** Ruled at the audit: a persisted boolean
 is correct only while every draft write path remembers it, and a missed one lies silently.
