@@ -48,6 +48,7 @@ import {
   DiscoverFigureBody,
   FitLegendFigureBody,
   ImportIssuesFigureBody,
+  PartnerSlotFigureBody,
   PostImportFigureBody,
 } from "./ch01-figures";
 import { cardAssignmentsCopy } from "../../lib/copy/card-assignments";
@@ -748,45 +749,16 @@ function DiscoverFigure({ width }: { width: AboutWidth }) {
 function PartnersFigure({ width }: { width: AboutWidth }) {
   return (
     <Specimen label="partners" width={width}>
-      {/* TRANSCRIBED from §3: two halves with an ampersand between them, then
-          the UNION identity under both. The figure was a two-row legend whose
-          marks were `99` and `98` — the 98 is the entry's caption, and a
-          figure repeating it showed a pair deck's card count while never
-          showing a pair.
+      {/* THE SURFACE, not an abstraction of it. §3 draws two halves and a row
+          of union pips, which is a picture of nothing the app renders — Hugh
+          ruled on 2026-09-18 that partners are met on DECK IMPORT, where a
+          pasted list's second legend arrives as a proposal, and on the deck's
+          own header afterwards.
 
-          The halves are the route's own identity gradients rather than the
-          canvas's two-stop wash, for the reason the browse tiles are: where
-          the drawing and the surface disagree about art the SURFACE owns, the
-          surface wins. */}
-      <div className="flex items-stretch gap-[8px]">
-        <div
-          className="h-[62px] flex-1 rounded-[8px] border border-solid border-[color:var(--border)]"
-          style={{ background: identityGradient(["W"]) }}
-        />
-        <div className="self-center font-display text-[13px] text-[color:var(--fg-faint)]">&amp;</div>
-        <div
-          className="h-[62px] flex-1 rounded-[8px] border border-solid border-[color:var(--border)]"
-          style={{ background: identityGradient(["R"]) }}
-        />
-      </div>
-      {/* The UNION, and it is the point: two commanders of one colour each
-          open a THIRD between them, and every count in the app then measures
-          against that wider identity. Three pips under a pair of one-colour
-          halves is the only way the figure says so. */}
-      <div className="mt-[9px] flex items-center gap-[7px]">
-        <span aria-hidden className="flex gap-[3px]">
-          {PARTNER_UNION.map((code) => (
-            <span
-              key={code}
-              className="h-[8px] w-[8px] rounded-[2px]"
-              style={{ background: `center / contain no-repeat url(${PIP_SRC[code]})` }}
-            />
-          ))}
-        </span>
-        <span className="font-mono text-[10px] text-[color:var(--fg-faint)]">
-          pair identity — {PARTNER_UNION.length} colours
-        </span>
-      </div>
+          `PartnerSlot` is that proposal, mounted whole: the PARTNER heading,
+          the card, its provenance line, and the `Change` / `Remove` pair that
+          says the proposal is reversible. Inert like every specimen. */}
+      <PartnerSlotFigureBody />
     </Specimen>
   );
 }

@@ -5,6 +5,7 @@ import { ABOUT_VERSION, aboutCopy, aboutEntries } from "../../lib/copy/about";
 import { FIGURES } from "./figures";
 import { availabilityCopy } from "../../lib/copy/availability";
 import { refreshCopy } from "../../lib/copy/refresh";
+import { deckImportCopy } from "../../lib/copy/deck-import";
 import { ORDER_OPTIONS } from "../commanders/rack/order-options";
 import { commandersCopy, filterCopy } from "../../lib/copy/lanes";
 import { explainedCopy } from "../../lib/copy/commander-explained";
@@ -21,7 +22,7 @@ import {
   FIT_LEGEND,
   LANE_ROW_DISCOVER,
   LANE_ROW_OWNED,
-  PARTNER_UNION,
+  PARTNER_PROPOSAL,
   FIT_FULL_SCORE,
   READY_SLICE,
   SET_CELLS,
@@ -757,27 +758,20 @@ describe("what each chapter 01 figure actually draws", () => {
     expect(el.textContent).not.toContain(LANE_ROW_DISCOVER.name);
   });
 
-  it("partners: two halves, and a union wider than either", () => {
+  it("partners: the import proposal, and that it is reversible", () => {
     const el = plate("partners");
-    // The figure was a two-row legend marked `99` and `98`. The 98 is the
-    // entry's own caption, so that figure repeated a sentence and never drew
-    // a pair.
-    //
-    // THE UNION IS THE CLAIM: two one-colour commanders open a THIRD between
-    // them, and every count in the app then measures against the wider
-    // identity. Counted, because two halves and two pips would draw a pair
-    // that opened nothing — which is the state this figure exists to rule out.
-    const halves = [...el.querySelectorAll("div")].filter((n) =>
-      (n.getAttribute("style") ?? "").includes("linear-gradient"),
-    );
-    expect(halves).toHaveLength(2);
+    // §3 drew two abstract halves and a row of union pips — a picture of
+    // nothing the app renders. Hugh's ruling, 2026-09-18: partners are met on
+    // DECK IMPORT, where a pasted list's second legend arrives as a proposal.
+    expect(el.textContent).toContain(PARTNER_PROPOSAL.partner.name);
+    expect(el.textContent).toContain(deckImportCopy.commander.proposed(2));
 
-    const pips = [...el.querySelectorAll("span")].filter((n) =>
-      (n.getAttribute("style") ?? "").includes("/mana/"),
-    );
-    expect(pips).toHaveLength(PARTNER_UNION.length);
-    expect(pips.length).toBeGreaterThan(halves.length);
-    expect(el.textContent).toContain(`${PARTNER_UNION.length} colours`);
+    // REVERSIBLE is the whole point of the slot: a proposal you cannot change
+    // or remove is a decision the import made for you. Both controls, because
+    // either alone is a different offer.
+    const controls = [...el.querySelectorAll("button")].map((b) => b.textContent);
+    expect(controls).toContain(deckImportCopy.commander.change);
+    expect(controls).toContain(deckImportCopy.commander.remove);
   });
 
   it("import: the drop target and its two doors, as drawn", () => {

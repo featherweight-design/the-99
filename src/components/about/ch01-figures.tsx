@@ -21,6 +21,7 @@ import {
   CONTESTED_ARRIVAL,
   FIT_LEGEND,
   LANE_DISCOVER,
+  PARTNER_PROPOSAL,
   LANE_ROW_OWNED,
   LANE_OWNED,
   PRINTING_ROWS,
@@ -37,6 +38,7 @@ import { ContestedCardRow } from "../decks/contested-card-row";
 import { FitLegend } from "../commanders/fit-legend";
 import { FilterRack } from "../commanders/rack/filter-rack";
 import { CommanderRow } from "../commanders/commander-row";
+import { PartnerSlot } from "../decks/partner-slot";
 import { OrderControl } from "../commanders/rack/order-control";
 import { ORDER_OPTIONS } from "../commanders/rack/order-options";
 import type { Lane, LaneParams } from "../../lib/commanders/lane-params";
@@ -386,5 +388,21 @@ export function DiscoverFigureBody() {
         defaultOpen
       />
     </div>
+  );
+}
+
+/** The import's partner proposal, mounted. Inert: `Specimen` blocks the taps. */
+export function PartnerSlotFigureBody() {
+  const p = PARTNER_PROPOSAL;
+  return (
+    <PartnerSlot
+      primaryName={p.primaryName}
+      ability={p.ability}
+      partner={p.partner}
+      pairableCount={p.pairableCount}
+      onAdd={() => {}}
+      onChange={() => {}}
+      onRemove={() => {}}
+    />
   );
 }

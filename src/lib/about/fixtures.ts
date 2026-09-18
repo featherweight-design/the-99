@@ -1,3 +1,4 @@
+import { deckImportCopy } from "../copy/deck-import";
 import type { CommanderRowView } from "../../components/commanders/commander-row";
 import type { PriceSlot } from "../discovery/price";
 import type { LaneParams } from "../commanders/lane-params";
@@ -663,3 +664,37 @@ export const LANE_ROW_DISCOVER = laneRow(
  * Two pips would draw a pair that opened nothing.
  */
 export const PARTNER_UNION = ["W", "R", "U"] as const;
+
+/**
+ * The partner proposal, as the reader actually meets it.
+ *
+ * §3 draws two abstract halves and a row of union pips — a picture of nothing
+ * the app renders. Hugh's ruling, 2026-09-18: partners are met on DECK IMPORT,
+ * where a pasted list's second legend arrives as a proposal you can change or
+ * remove, and on a deck's own header afterwards. `PartnerSlot` is that
+ * proposal, and it is mounted rather than drawn.
+ *
+ * The names are §3's own pair from the import artboard, so the figure and the
+ * drawing still agree about the example even though the composition does not.
+ *
+ * `imageUri` is null: a reference page fetches no card art.
+ */
+export const PARTNER_PROPOSAL = {
+  primaryName: "Ishai, Ojutai Dragonspeaker",
+  ability: { kind: "generic" } as const,
+  partner: {
+    name: "Bruse Tarl, Boorish Herder",
+    colorIdentity: ["R", "W"],
+    imageUri: null,
+    // The ROUTE's own provenance line, not a retyped one: the caption is
+    // finished by the caller on the real surface because only it knows whether
+    // the partner came from the paste or was picked.
+    caption: deckImportCopy.commander.proposed(2),
+    ariaLabel: "Bruse Tarl, Boorish Herder proposed as partner, reversible",
+  },
+  // Not load-bearing while `partner` is set: the slot draws the proposal
+  // either way, and mutating this to 0 fails nothing. Stated rather than left
+  // looking like coverage. It matters only to the EMPTY state, which is a
+  // different figure and not this entry's.
+  pairableCount: 7,
+};
