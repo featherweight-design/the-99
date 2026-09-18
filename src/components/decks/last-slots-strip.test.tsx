@@ -18,6 +18,7 @@ function candidate(id: string, owned: boolean): TopOffCandidate {
     facet: "spell",
     inclusionPct: 40,
     synergyPts: 20,
+    imageUri: null,
     owned,
     committedTo: null,
     manaCost: null,

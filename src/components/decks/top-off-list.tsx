@@ -18,7 +18,7 @@ import { topOffCopy } from "../../lib/copy/top-off";
 import { synergyCopy, synergySignedDisplay } from "../../lib/copy/synergy-discovery";
 import { spokenManaCost } from "../../lib/copy/card-surfaces";
 import { commitTopOff } from "../../app/decks/actions";
-import type { TopOffCandidate } from "../../lib/decks/last-slots";
+import { canSeed, type TopOffCandidate } from "../../lib/decks/last-slots";
 import {
   formatCents,
   summarisePrices,
@@ -34,6 +34,7 @@ import { OwnershipDot } from "../ui/ownership-dot";
 import { AvailabilityMarker } from "../ui/availability-marker";
 import { BuyTag } from "./buy-tag";
 import { GhostButton } from "../ui/button";
+import { HoverPreviewProvider, usePreviewRow } from "./hover-preview";
 import { useIsDesktop } from "../ui/use-is-desktop";
 
 /** How long ticking settles before one message is announced. Thirty fast taps
@@ -272,7 +273,18 @@ export function TopOffList({
   // and clamps to the open slots, so a player owning twelve candidates for three
   // slots is offered three — the figure both the face and the accessible name
   // carry, because a button that says twelve and ticks three is lying twice.
-  const tickable = Math.min(ownedIds.length, Math.max(openSlots, 0));
+  // The bulk control reaches for what the SEED reaches for — `canSeed`, the one
+  // predicate — so the two cannot say different things about the same card. A
+  // card owned with every copy sleeved elsewhere stays in the list and stays
+  // tickable by hand; what neither of these does is choose it for the player.
+  //
+  // It carries `ownedIds`' own exclusions as well, and they are not decoration:
+  // a row the player has SET ASIDE, or one that went illegal while the list was
+  // open, must not come back ticked because they pressed a bulk control.
+  const seedableIds = pool
+    .filter((c) => canSeed(c) && !illegal.has(c.oracleId) && !declined.has(c.oracleId))
+    .map((c) => c.oracleId);
+  const tickable = Math.min(seedableIds.length, Math.max(openSlots, 0));
   const untouched = pool.length - tickedCount - declinedHere;
 
   const buying = pool.filter((c) => live.has(c.oracleId) && !c.owned);
@@ -523,7 +535,7 @@ export function TopOffList({
 
         <div className="flex flex-wrap gap-[8px] mt-[11px] md:contents">
           <GhostButton
-            onClick={() => onTickedChange(new Set(ownedIds.slice(0, tickable)))}
+            onClick={() => onTickedChange(new Set(seedableIds.slice(0, tickable)))}
             disabled={inflight || tickable === 0}
             aria-label={topOffCopy.list.tickOwnedAria(String(tickable))}
             className="flex flex-1 items-center justify-center min-h-[44px] md:inline-flex md:flex-none md:min-h-0 md:h-[30px] md:px-[11px] rounded-[8px] font-mono text-[11px] text-[color:var(--fg-body)] disabled:opacity-50"
@@ -563,6 +575,12 @@ export function TopOffList({
       </div>
 
       {/* ── The rows (§4) ──────────────────────────────────────────────── */}
+      {/* One preview for the whole list, as the decklist mounts one for its
+          ninety-nine: 262 rows each carrying a positioned 252x352 box and a
+          timer of its own is the thing this component was written to avoid. No
+          padding class — the decklist passes its own row padding here, and this
+          list's rows carry theirs. */}
+      <HoverPreviewProvider>
       <div
         // Named, so a probe can address THIS list rather than any group under
         // `<main>`. The decklist behind the strip carries a `View details for …`
@@ -697,6 +715,7 @@ export function TopOffList({
           );
         })}
       </div>
+      </HoverPreviewProvider>
 
       {tickedCount === 0 && (
         <p className="font-mono text-[10.5px] mt-[9px]" style={{ color: "var(--fg-locked)" }}>
@@ -848,6 +867,11 @@ function CandidateRow({
   onToggle: () => void;
   onDecline: () => void;
 }) {
+  // The decklist's own preview, borrowed rather than redrawn: one instance for
+  // the whole list owns the image, the geometry and the two delays, and the row
+  // only reports that a pointer arrived. A null `imageUri` is a no-op inside it,
+  // so a card the catalog has no picture for draws nothing rather than a frame.
+  const previewHandlers = usePreviewRow(c.imageUri);
   const committed =
     c.owned && c.availability !== null && availabilityState(c.availability) === "hard";
   const tickId = useId();
@@ -880,6 +904,7 @@ function CandidateRow({
               ? ""
               : " md:hover:bg-[color:var(--elevated-hover)] md:hover:[--row-bg:var(--elevated-hover)]"),
       ].join(" ")}
+      {...previewHandlers}
       style={{
         border: ticked
           ? "1px solid var(--accent-shadow)"
@@ -986,7 +1011,7 @@ function CandidateRow({
             name={c.name}
             siblings={siblings}
             title={c.name}
-            className="md:order-2 flex-auto min-w-0 text-left truncate text-[13.5px] [color:var(--fg)] hover:underline"
+            className="md:order-2 flex-auto min-w-0 text-left truncate text-[13.5px] [color:var(--fg)]"
           >
             {c.name}
           </CardDetailTrigger>

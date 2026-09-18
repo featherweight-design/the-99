@@ -50,6 +50,28 @@ export function listLastSlotsCandidates(args: {
     .filter((c) => !arguesAgainstItself(c));
 }
 
+/**
+ * A card the list may tick BY DEFAULT — owned, with a copy free to sleeve.
+ *
+ * The seed and the bulk `Tick the N I can sleeve` control read this one
+ * predicate rather than each filtering on `owned` in their own file. They
+ * already drifted once in the opposite direction: the seed was narrowed to free
+ * copies while the bulk control kept ticking every owned card, which left a
+ * one-click path to exactly the mechanic the seed had stopped doing.
+ *
+ * A card owned with every copy sleeved elsewhere is still OFFERED, and still
+ * tickable by hand — the player may reclaim a copy. What it is not is a default:
+ * arriving ticked, it is indistinguishable from one they can sleeve tonight, and
+ * committing it costs a purchase or a card out of another deck.
+ *
+ * A null `availability` is no row — an unowned card, or a read that could not
+ * reach — and reads as free everywhere else in the app, so it stays seedable: a
+ * failed read must not quietly empty the promise the strip makes.
+ */
+export function canSeed(c: SynergyCard): boolean {
+  return c.owned && (c.availability === null || c.availability.free > 0);
+}
+
 /** A card EDHREC ranks below its own baseline — see the exclusion above. */
 function arguesAgainstItself(c: SynergyCard): boolean {
   return c.synergyPts !== null && c.synergyPts < 0;

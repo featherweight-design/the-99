@@ -828,7 +828,7 @@ Package manager is **pnpm** (pinned via `packageManager` in package.json) — ne
   lists, and nothing else), the array dependency restored (both hold-its-place checks), and
   `colorLabel` reverted to `join("")` (`found GRW`). Makes no writes; point it at `local-dev`.
 
-- `pnpm probe:last-slots` walks the Last 31 list at 1300x900 and 390x844 — five rulings that
+- `pnpm probe:last-slots` walks the Last 31 list at 1300x900 and 390x844 — six rulings that
   are facts about laid-out geometry or about a pointer, and jsdom has neither.
 
   **The desktop list is bounded; the phone's is not.** `LONG-LIST-thirty-one-rows.md` refuses
@@ -847,6 +847,15 @@ Package manager is **pnpm** (pinned via `packageManager` in package.json) — ne
   assertion cannot see that. **The name opens the card and does not tick the row**, those
   being the same press on a control nested in the tick's label. **The type word is drawn on
   desktop and absent on the phone**, whose row is two lines by design with no room for it.
+
+  **The card itself appears under the pointer.** The row borrows the decklist's
+  `HoverPreviewProvider` rather than drawing its own, so one instance owns the image, the
+  geometry and the two delays rather than one per row — 262 candidates for the average
+  commander, 423 at the widest, and more again for a PAIR, whose two support lists merge
+  (the fixture deck this probe runs against draws 480). The probe reads a PAINTED
+  252x352 background image after the 240ms open delay, because the markup is identical
+  whether or not the catalog had a picture for the card — and `usePreviewRow` no-ops on a null
+  `imageUri` rather than drawing an empty frame.
 
   **The header and the rows share one content width**, which is why the column header sits
   INSIDE the scroll box, sticky, rather than above it. A classic scrollbar takes its width out

@@ -22,6 +22,7 @@ const synergyCards: SynergyCard[] = [
     facet: "enchantment",
     inclusionPct: 31,
     synergyPts: 47,
+    imageUri: null,
     owned: true,
     committedTo: null, availability: null, price: null,
     manaCost: null,
@@ -33,6 +34,7 @@ const synergyCards: SynergyCard[] = [
     facet: "artifact",
     inclusionPct: 62,
     synergyPts: null,
+    imageUri: null,
     owned: false,
     committedTo: null, availability: null, price: null,
     manaCost: null,
@@ -463,6 +465,7 @@ describe("the price reaches both panels", () => {
       facet: "enchantment",
       inclusionPct: 44,
       synergyPts: 60,
+      imageUri: null,
       owned: false,
       committedTo: null,
       availability: null,
@@ -501,7 +504,7 @@ describe("the dot key reads the synergy panel too", () => {
   };
   const contendedSynergy: SynergyCard = {
     oracleId: "o-held", name: "Rhystic Study", typeLine: "Enchantment",
-    facet: "enchantment", inclusionPct: 44, synergyPts: 60,
+    facet: "enchantment", inclusionPct: 44, imageUri: null, synergyPts: 60,
     owned: true, committedTo: null,
     availability: { owned: 1, hard: 1, soft: 0, free: 0, claims: [] },
     price: null, manaCost: null,

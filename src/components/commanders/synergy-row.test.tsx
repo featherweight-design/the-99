@@ -10,7 +10,7 @@ import { CardDetailProvider } from "../cards/card-detail-provider";
 
 const base: SynergyCard = {
   oracleId: "a", name: "Command Tower", typeLine: "Land — Gate",
-  facet: "land", inclusionPct: 82, synergyPts: 1, owned: true, committedTo: null, availability: null, price: null,
+  facet: "land", inclusionPct: 82, imageUri: null, synergyPts: 1, owned: true, committedTo: null, availability: null, price: null,
   manaCost: null,
 };
 

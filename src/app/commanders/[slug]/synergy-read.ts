@@ -29,6 +29,20 @@ export async function readSynergyCards(
   userId: string,
   commanderOracleIds: string[],
   coveredOracleIds: string[],
+  /**
+   * Whether to carry each card's picture.
+   *
+   * OFF by default, because this reader serves two routes and only one of them
+   * draws a preview. `/commanders/[slug]` passes the whole array across the RSC
+   * boundary to its synergy panel, which calls no `usePreviewRow` — so at about
+   * 94 characters a row it would ship 25KB on an average commander and 40KB at
+   * the widest to draw nothing with.
+   *
+   * A row read WITHOUT images carries `imageUri: null`, which the preview reads
+   * as "no preview" — the same answer it gives for a card the catalog has no
+   * picture for, and the correct one either way: there is nothing to show.
+   */
+  withImages = false,
 ): Promise<SynergyCard[]> {
   // The player's collection, summed per card once and joined in — rather than a
   // correlated subselect, which the select list would evaluate per support row.
@@ -52,6 +66,10 @@ export async function readSynergyCards(
       name: cards.name,
       typeLine: cards.typeLine,
       manaCost: cards.manaCost,
+      // For the hover preview on the deck's top-off list. One more column on a
+      // join that is already here — no second query, no second join — and asked
+      // for only by the route that draws it: see `withImages`.
+      imageUri: withImages ? cards.imageUri : sql<string | null>`null`,
       // A card both commanders of a pair support has one support row each, so
       // the figures are aggregated rather than grouped by: a pair's advice is
       // the better of the two, exactly as `mergeEdhrecData` merges the live
@@ -67,11 +85,18 @@ export async function readSynergyCards(
     // `owned_totals.qty` holds one value per card, so grouping by it splits
     // nothing — it is here because Postgres requires every ungrouped select
     // column to be aggregated, not because the figure varies within a group.
+    // The image column is grouped ONLY when it is selected, and the two have to
+    // move together. Postgres requires an ungrouped selected column to be
+    // aggregated, so the group-by is mandatory when the column is real — and
+    // when it is the literal `null` above, naming it here makes the database
+    // read, hash and sort a column nothing asked for, which is most of the work
+    // the opt-in exists to avoid.
     .groupBy(
       commanderSupportCards.oracleId,
       cards.name,
       cards.typeLine,
       cards.manaCost,
+      ...(withImages ? [cards.imageUri] : []),
       ownedTotals.qty,
     );
 
@@ -86,6 +111,9 @@ export async function readSynergyCards(
     // Nullable in the catalog — a land has no cost — and drawn only by the
     // top-off list, which renders an empty track rather than a placeholder.
     manaCost: r.manaCost,
+    // Nullable in the catalog, and the hover preview treats null as "no
+    // preview" rather than drawing an empty frame — `usePreviewRow` no-ops on it.
+    imageUri: r.imageUri,
     facet: cardFacet(r.typeLine),
     // `commander_support_cards.inclusion` is already a percentage — parse.ts
     // stores EDHREC's own `inclusion` field, or derives one as
