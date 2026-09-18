@@ -2546,8 +2546,14 @@ describe("SetGridView — the phone head collapses past a threshold", () => {
 
   // The crossing's suppression must not outlive the crossing. A resize at the top of the
   // page settles nothing — the head was already open — and a flag cleared by the next run of
-  // the layout effect would still be set when the reader's next genuine collapse arrived,
-  // minutes later, and snap it. Cleared on a frame instead.
+  // the layout effect would still be set when the reader's next genuine collapse arrived
+  // minutes later, and snap it.
+  //
+  // What takes it down here is the reader's own next scroll: the listener clears a stale arm
+  // before it evaluates anything, so that scroll's step animates like any other. The
+  // `requestAnimationFrame` version this replaces is a regression in the other direction —
+  // it cleared the arm before the settle it was covering — and only `probe:sets` can see
+  // that one, because jsdom orders the frame and React's flush the way that happens to work.
   it("still animates a collapse that follows a crossing it did not settle", () => {
     vi.useFakeTimers();
     const listeners: (() => void)[] = [];

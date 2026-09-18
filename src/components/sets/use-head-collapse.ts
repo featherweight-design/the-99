@@ -145,8 +145,8 @@ export function useHeadCollapse({
   /** The collapsed bar's height, measured the same way and only while it is drawn. */
   const barHeightRef = useRef<number | null>(null);
   /**
-   * Set at a crossing, and cleared on the next frame — so the step that SETTLES a crossing
-   * does not animate either, and nothing later does.
+   * Armed for the step that SETTLES a crossing, so that step does not animate either — and
+   * taken down again whether or not there is one, so nothing later is suppressed.
    *
    * Now that both widths collapse, a crossing made while shy reopens the head (the reserve
    * is the other width's and nothing can be measured until it is open) and the scroll
