@@ -24,12 +24,10 @@ import { CommitmentsCard } from "../home/commitments-card";
 import { THEMES } from "../../lib/theme/themes";
 import { addPanelCopy, exportLinkOutCopy, exportTabCopy } from "../../lib/copy/decks-builder";
 import { RECOMMENDED_MIX } from "../../lib/decks/mix";
-import { recommendationsCopy } from "../../lib/copy/recommendations";
 import { deckImportCopy } from "../../lib/copy/deck-import";
 import { deckStateMarksCopy } from "../../lib/copy/deck-state-marks";
 import { deckVersioningCopy } from "../../lib/copy/deck-versioning";
 import { gameLogCopy } from "../../lib/copy/game-log";
-import { topOffCopy } from "../../lib/copy/top-off";
 import { folderCopy } from "../../lib/copy/folders";
 
 import { GAME_AXIS_KEYS } from "../../lib/decks/game-axes";
@@ -49,6 +47,7 @@ import {
   DiscoverFigureBody,
   FitLegendFigureBody,
   CommanderAvailabilityFigureBody,
+  AutoFillFigureBody,
   DeckPageFigureBody,
   ImportIssuesFigureBody,
   PartnerSlotFigureBody,
@@ -788,15 +787,9 @@ function DeckPageFigure({ width }: { width: AboutWidth }) {
 
 function AutoFillFigure({ width }: { width: AboutWidth }) {
   return (
-    <Legend
-      label="auto-fill"
-      width={width}
-      rows={[
-        { mark: "63 / 99", meaning: "assembled from what you own the moment you pick a commander" },
-        { mark: topOffCopy.strip.open("36"), meaning: "fills what is left, from your collection, in one pass" },
-        { mark: recommendationsCopy.auto.clearAll("36"), meaning: "and undoes the lot if you would rather pick yourself" },
-      ]}
-    />
+    <Specimen label="auto-fill" width={width}>
+      <AutoFillFigureBody />
+    </Specimen>
   );
 }
 

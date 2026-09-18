@@ -9,7 +9,7 @@ import { refreshCopy } from "../../lib/copy/refresh";
 import { gameLogCopy } from "../../lib/copy/game-log";
 import { deckImportCopy } from "../../lib/copy/deck-import";
 import { ORDER_OPTIONS } from "../commanders/rack/order-options";
-import { commandersCopy, filterCopy } from "../../lib/copy/lanes";
+import { commandersCopy } from "../../lib/copy/lanes";
 import { explainedCopy } from "../../lib/copy/commander-explained";
 import { cardAssignmentsCopy } from "../../lib/copy/card-assignments";
 import { collectionChassisCopy, printingPickerCopy } from "../../lib/copy/collection";
@@ -23,7 +23,6 @@ import {
   FIT_DEGRADED_SCORE,
   FIT_LEGEND,
   LANE_ROW_DISCOVER,
-  LANE_OWNED,
   LANE_ROW_OWNED,
   DECK_SPINE,
   DECK_TABS,

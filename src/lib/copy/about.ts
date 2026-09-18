@@ -344,8 +344,16 @@ export const aboutEntries: readonly AboutEntry[] = [
     id: 'auto-fill',
     chapter: '03',
     title: 'How much we fill in for you',
-    route: '/decks/new',
-    width: 'inset',
+    // The canvas names /decks/new, which is where the fill is ORDERED. The
+    // surface drawn below is where the rest of it is offered: the Top off
+    // strip, which lives between the ledger and the decklist on a deck's own
+    // page. The route line names the page the reader is looking at.
+    route: '/decks',
+    opens: 'opens a deck',
+    // 'inset' at the canvas, where the figure was a three-row legend. The
+    // strip's head is one baseline row on desktop and a ~300px column stacks
+    // it into five lines.
+    width: 'plate',
     caption:
       'Pick a commander and we assemble as much of the 99 as your collection supports, which is usually most of it. The rest is yours to fill, before or after you sleeve it up: Top off fills the remaining slots from what you own in one pass, and anything auto-added can be cleared in one action if you would rather start from your own picks.',
     keys: [],

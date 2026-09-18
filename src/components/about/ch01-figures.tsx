@@ -38,6 +38,7 @@ import { printingPickerCopy } from "../../lib/copy/collection";
 import { COSTS } from "../../lib/about/fixtures";
 import { COST_PIP_SIZE, CostPips } from "../ui/cost-pips";
 import { TwoFacedMark } from "../cards/two-faced-mark";
+import { LastSlotsStrip } from "../decks/last-slots-strip";
 import { ContestedCardRow } from "../decks/contested-card-row";
 import { FitLegend } from "../commanders/fit-legend";
 import { AvailabilityControl } from "../commanders/rack/availability-control";
@@ -528,5 +529,42 @@ export function DeckPageFigureBody() {
         <KeyNumeral n={2} />
       </div>
     </div>
+  );
+}
+
+/**
+ * `auto-fill` — the Top off strip, closed.
+ *
+ * The canvas draws NO figure here; the entry was a three-row legend quoting
+ * strings out of `topOffCopy`. The app has one surface whose whole job is the
+ * sentence this entry makes, and it is this strip: it names how many slots are
+ * still open, how many candidates it has for them, and how many of those arrive
+ * ticked because the player already owns them.
+ *
+ * The strip owns its own margins (`mx-[16px] md:mx-[30px]`), which it has
+ * because it sits between the ledger and the decklist on the builder page.
+ * Those come with it — a crop keeps what the component draws, and respacing it
+ * to sit flush in a figure would be the adaptation this page stopped making.
+ *
+ * `openSlots` is 5 rather than the 36 a fresh fill leaves, because the caption
+ * above it says we fill most of the 99 and the rest is the player's. A strip
+ * offering five candidates against thirty-six open slots would say the opposite
+ * of the sentence it illustrates.
+ *
+ * Every handler is a no-op: `Specimen` is `inert`, so nothing here can be
+ * pressed. `useTopOffDraft` only READS localStorage on mount, so the fixture
+ * deck id below writes nothing.
+ */
+export function AutoFillFigureBody() {
+  return (
+    <LastSlotsStrip
+      deckId="about-figure"
+      openSlots={5}
+      bodySize={99}
+      candidates={SYNERGY_ROWS}
+      deckOracleIds={new Set()}
+      newestAsOf={null}
+      onAnnounce={() => {}}
+    />
   );
 }
