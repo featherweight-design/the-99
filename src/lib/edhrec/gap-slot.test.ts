@@ -256,9 +256,12 @@ describe("gapSlotFor", () => {
   });
 
   // The reader plays everything above `Frogs`, which is what produced the
-  // reported row. With the classifier and the floor in place the slot has
-  // nothing left to name, and the sentence it draws is then TRUE.
-  it("reports allPlayed when every eligible mechanic is already built", () => {
+  // reported row. The state still fires on that condition — what changed is
+  // that it now carries the COMMANDER'S top themes, because the sentence it
+  // used to draw about the reader is not supportable. `Frogs` and `Crocodiles`
+  // are absent: the classifier cut them, so the named themes are the two
+  // eligible mechanics and `capped` is false.
+  it("reports allPlayed with the commander's top themes when everything is built", () => {
     const tags = [
       tag("Lands Matter", 897, "lands-matter"),
       tag("Reanimator", 761, "reanimator"),
@@ -266,7 +269,45 @@ describe("gapSlotFor", () => {
       tag("Crocodiles", 2, "crocodiles"),
     ];
     const played = new Set(["lands-matter", "reanimator"]);
-    expect(gapSlotFor(tags, 24054, played)).toEqual({ kind: "allPlayed" });
+    expect(gapSlotFor(tags, 24054, played)).toEqual({
+      kind: "allPlayed",
+      labels: ["Lands Matter", "Reanimator"],
+      capped: false,
+    });
+  });
+
+  // `capped` is what the copy needs to say "top three" rather than listing what
+  // it holds, so it is asserted on both sides of the cap rather than assumed.
+  it("names three themes and caps when the commander has more", () => {
+    const tags = [
+      tag("Lands Matter", 897, "lands-matter"),
+      tag("Reanimator", 761, "reanimator"),
+      tag("Politics", 700, "politics"),
+      tag("Group Hug", 614, "group-hug"),
+    ];
+    const played = new Set(["lands-matter", "reanimator", "politics", "group-hug"]);
+    expect(gapSlotFor(tags, 24054, played)).toEqual({
+      kind: "allPlayed",
+      labels: ["Lands Matter", "Reanimator", "Politics"],
+      capped: true,
+    });
+  });
+
+  // ORDERED BY DECK COUNT, like `unplayed`, and read on a list given in the
+  // wrong order so the sort is doing the work rather than the input.
+  it("orders the named themes by deck count, not by input order", () => {
+    const tags = [
+      tag("Group Hug", 614, "group-hug"),
+      tag("Lands Matter", 897, "lands-matter"),
+      tag("Politics", 700, "politics"),
+    ];
+    const played = new Set(["group-hug", "lands-matter", "politics"]);
+    const slot = gapSlotFor(tags, 24054, played);
+    expect(slot.kind === "allPlayed" && slot.labels).toEqual([
+      "Lands Matter",
+      "Politics",
+      "Group Hug",
+    ]);
   });
 
   // The distinction R1 found. A commander whose every tag is a creature type
@@ -277,7 +318,10 @@ describe("gapSlotFor", () => {
     expect(gapSlotFor(tags, 24054, none)).toEqual({ kind: "noMechanics" });
   });
 
-  it("separates the two empty cases even though both hold no labels", () => {
+  // ONLY ONE of the two is empty now: `allPlayed` names the commander's themes
+  // and `noMechanics` has none to name. The pair is still worth separating for
+  // R1's reason — a commander with nothing on file must not be described.
+  it("separates the two cases, one of which no longer holds no labels", () => {
     const allTribal = gapSlotFor([tag("Frogs", 598)], 24054, none);
     const allBuilt = gapSlotFor([tag("Reanimator", 761, "reanimator")], 24054, new Set(["reanimator"]));
     expect(allTribal.kind).toBe("noMechanics");
@@ -293,7 +337,14 @@ describe("gapSlotFor", () => {
   // whose only unplayed mechanics are accidents reads as allPlayed.
   it("does not let a sub-floor tag keep the slot out of allPlayed", () => {
     const tags = [tag("Reanimator", 761, "reanimator"), tag("Landfall", 2, "landfall")];
-    expect(gapSlotFor(tags, 24054, new Set(["reanimator"]))).toEqual({ kind: "allPlayed" });
+    // `Landfall` is under the floor, so it is neither unplayed nor NAMED — the
+    // themes the state prints are the eligible ones, which is the same set the
+    // decision was taken over.
+    expect(gapSlotFor(tags, 24054, new Set(["reanimator"]))).toEqual({
+      kind: "allPlayed",
+      labels: ["Reanimator"],
+      capped: false,
+    });
   });
 
   // Same comparator as `unplayedTags`, so the line and the list cannot disagree.

@@ -39,6 +39,37 @@ function unplayedParts(labels: string[]): GapPart[] {
   return ["None of your decks play ", { label: a! }, "."];
 }
 
+/**
+ * The commander's top themes, naming no deck of the reader's.
+ *
+ * Replaces *you already play every mechanic this commander leans on*, which was
+ * both the majority voice of two lanes and unsupportable — see `gapSlotFor`'s
+ * own note for the measurement and the cause. This sentence asserts nothing
+ * about the reader, so nothing in it can be false.
+ *
+ * `capped` decides "top three" against a plain list. A commander with exactly
+ * three themes has had nothing cut, and implying a cut that did not happen is a
+ * small untruth of the same family as the sentence this replaces.
+ */
+function topStylesParts(labels: string[], capped: boolean): GapPart[] {
+  const [a, b, c] = labels;
+  const lead = capped
+    ? "This commander's top three play styles are "
+    : "This commander's play styles are ";
+  if (labels.length >= 3) {
+    return [lead, { label: a! }, ", ", { label: b! }, " and ", { label: c! }, "."];
+  }
+  if (labels.length === 2) return [lead, { label: a! }, " and ", { label: b! }, "."];
+  // One theme is not a list, and "play styles are X" reads wrong for it. The
+  // singular lead is spelled out rather than assembled, because a sentence
+  // stitched from a plural template reads like one.
+  return [
+    capped ? "This commander's top play style is " : "This commander's play style is ",
+    { label: a! },
+    ".",
+  ];
+}
+
 export const commanderRowCopy = {
   /**
    * The gap line. TEMPLATED, never generated: per-player generation was priced
@@ -91,7 +122,17 @@ export const commanderRowCopy = {
      * `/commanders` rows and 67% of `/discover`'s. A celebratory treatment would
      * be the majority voice of both lanes.
      */
-    allPlayed: "You already play every mechanic this commander leans on.",
+    topStylesParts: topStylesParts,
+
+    /**
+     * The same sentence as one string, DERIVED from the parts — the reason is
+     * `unplayed`'s: `check:copy-drift` reads the string form, and two templates
+     * would be free to drift.
+     */
+    topStyles: (labels: string[], capped: boolean) =>
+      topStylesParts(labels, capped)
+        .map((part) => (typeof part === "string" ? part : part.label))
+        .join(""),
 
     /**
      * NOT A STRING, recorded so the absence is deliberate: a commander with no

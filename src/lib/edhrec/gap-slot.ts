@@ -77,6 +77,32 @@ export function eligibleMechanics(
  * What the gap slot draws. Never empty — one of three occupants, always, which
  * is the ruling that keeps row height from changing between two sorts.
  *
+ * **`allPlayed` NO LONGER CLAIMS COVERAGE, as of 2026-09-18.** It used to read
+ * *you already play every mechanic this commander leans on*, and measurement
+ * showed that sentence is unsupportable: `played` is built from each built
+ * deck's COMMANDER tag list, and EDHREC tags a commander with every archetype
+ * people build with it rather than the one its owner built. The median built
+ * commander donates 35 eligible themes and one donates 132, so on the reference
+ * account the played set reaches 166 of 260 mechanics and this state is 67% of
+ * `/discover` and 77% of `/commanders` — the default rather than an edge.
+ *
+ * Worse than common, it can be FALSE: a reader whose Kenrith deck is Politics
+ * still has Group Hug and Reanimator in their played set, so another commander
+ * whose themes are exactly those reads as fully covered. Hugh named that case
+ * on 2026-09-18.
+ *
+ * The condition is unchanged and the member keeps its name — every eligible
+ * theme really is in the played set — but the COPY now names the commander's
+ * top themes and asserts nothing about the reader. The asymmetry is the reason
+ * only this half moved: `unplayed` fires only when a theme is absent from every
+ * built commander's whole list, which is a conservative test and safe to state.
+ *
+ * The real fix is deriving `played` from deck CONTENTS rather than from
+ * commander tags. That needs a card-to-theme mapping this database does not
+ * hold — we ingest per-commander support lists, not per-theme card lists — so
+ * it waits on player deck analysis being scoped. Recorded here because this
+ * change is an honest holding position, not the answer.
+ *
  * `noMechanics` and `allPlayed` are separate members for the reason R1 found:
  * both leave the label list empty, and asserting *you already play every
  * mechanic this commander leans on* about a commander with no mechanics on file
@@ -96,7 +122,16 @@ export function eligibleMechanics(
  */
 export type GapSlot =
   | { readonly kind: "unplayed"; readonly labels: string[] }
-  | { readonly kind: "allPlayed" }
+  | {
+      readonly kind: "allPlayed";
+      /** The commander's top themes by deck count, `GAP_NAME_CAP` at most. */
+      readonly labels: string[];
+      /** Whether the commander had MORE eligible themes than were named. Decides
+          "top three" against a plain list: a commander with exactly three has
+          nothing cut, and implying a cut that did not happen is its own small
+          untruth. */
+      readonly capped: boolean;
+    }
   | { readonly kind: "noMechanics" };
 
 /**
@@ -116,10 +151,20 @@ export function gapSlotFor(
   const eligible = eligibleMechanics(tags, deckCount);
   if (!hasAnyMechanic || eligible.length === 0) return { kind: "noMechanics" };
 
-  const unplayed = eligible
-    .filter((t) => !played.has(t.slug))
-    .sort((a, b) => b.count - a.count || a.slug.localeCompare(b.slug));
-  if (unplayed.length === 0) return { kind: "allPlayed" };
+  const byCount = (a: EdhrecTag, b: EdhrecTag) =>
+    b.count - a.count || a.slug.localeCompare(b.slug);
+
+  const unplayed = eligible.filter((t) => !played.has(t.slug)).sort(byCount);
+  if (unplayed.length === 0) {
+    // THE COMMANDER'S OWN TOP THEMES, and the state stops claiming anything
+    // about the reader's decks. See the type above for why.
+    const top = [...eligible].sort(byCount);
+    return {
+      kind: "allPlayed",
+      labels: top.slice(0, GAP_NAME_CAP).map((t) => t.label),
+      capped: top.length > GAP_NAME_CAP,
+    };
+  }
 
   return { kind: "unplayed", labels: unplayed.slice(0, GAP_NAME_CAP).map((t) => t.label) };
 }

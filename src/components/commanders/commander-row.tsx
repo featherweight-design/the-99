@@ -155,9 +155,13 @@ function GapLine({ slot }: { slot: GapSlot }) {
   // Rendered from `unplayedParts`, which is the sentence's one definition;
   // `unplayed` is derived from it, so the spoken string and the drawn runs
   // cannot disagree. `allPlayed` names no mechanic and so has no run to mark.
+  // BOTH NAMED STATES NAME MECHANICS, and both mark them. `allPlayed` used to
+  // be the one occupant with nothing in it — a sentence about the reader with no
+  // mechanic in sight, and the majority voice of both lanes. It now prints the
+  // commander's own top themes and claims nothing about the reader's decks.
   const parts: GapPart[] =
     slot.kind === "allPlayed"
-      ? [commanderRowCopy.gap.allPlayed]
+      ? commanderRowCopy.gap.topStylesParts(slot.labels, slot.capped)
       : commanderRowCopy.gap.unplayedParts(slot.labels);
   return (
     <p className="font-sans" style={{ fontSize: 12.5, lineHeight: 1.45, color: "var(--fg-muted)" }}>

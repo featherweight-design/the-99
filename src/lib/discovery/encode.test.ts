@@ -104,20 +104,28 @@ describe("encodeDiscovery", () => {
     expect(roundTrip(listOf([baseItem, twin]))).toEqual(listOf([baseItem, twin]));
   });
 
-  // ALL THREE MEMBERS, because the two label-less ones encode as a one-element
-  // tuple and the round trip has to rebuild them WITHOUT a `labels` key rather
-  // than with an empty array. `toEqual` treats a missing key and `undefined`
-  // alike, so each is also read for its own shape.
+  // ALL THREE MEMBERS. `noMechanics` encodes as a one-element tuple and has to
+  // rebuild WITHOUT a `labels` key rather than with an empty array — `toEqual`
+  // treats a missing key and `undefined` alike, so the shape is read
+  // separately. `allPlayed` now carries labels AND `capped`, which is a third
+  // tuple slot and the one a v6 payload does not have.
   it.each<GapSlot>([
     { kind: "unplayed", labels: ["Counters", "Proliferate"] },
-    { kind: "allPlayed" },
+    { kind: "allPlayed", labels: ["Group Hug", "Politics"], capped: true },
+    { kind: "allPlayed", labels: ["Group Hug"], capped: false },
     { kind: "noMechanics" },
   ])("round-trips the $kind gap slot", (gapSlot) => {
     const list = listOf([{ ...baseItem, gapSlot }]);
 
     const back = roundTrip(list).items[0].gapSlot;
     expect(back).toEqual(gapSlot);
-    expect(Object.hasOwn(back, "labels")).toBe(gapSlot.kind === "unplayed");
+    expect(Object.hasOwn(back, "labels")).toBe(gapSlot.kind !== "noMechanics");
+    // `capped` survives as a BOOLEAN, not as the 1/0 it travels as: the wire
+    // form is an encoding detail and a reader taking `1` as truthy would pass
+    // this while handing the copy a number.
+    if (gapSlot.kind === "allPlayed") {
+      expect((back as { capped: unknown }).capped).toBe(gapSlot.capped);
+    }
   });
 
   // The labels come from the same theme vocabulary the rest of the payload

@@ -499,7 +499,13 @@ specific — its `STATES-commander-row.md` is the states matrix of record and it
 ## The `Nothing new` ruling, accepted
 
 `Nothing new` is a copy swap in the gap line's own slot, asserting the overlap rather than a
-gap: **`You already play every mechanic this commander leans on.`** Same slot, ink, measure and
+gap: **`You already play every mechanic this commander leans on.`** — **SUPERSEDED
+2026-09-18.** The state now names the commander's own top themes and claims
+nothing about the reader: the sentence was 67% of `/discover` and 77% of
+`/commanders` on the reference account, and it can be false, because `played` is
+built from commander tag lists rather than deck contents. See
+`docs/superpowers/design-tables/discovery-rows.md` for the measurement and the
+options weighed. Same slot, ink, measure and
 line count, so the locked "row height never varies" decision survives a fifth state.
 
 Design also found a flaw in this spec's condition and fixed it. `every mechanic tag already

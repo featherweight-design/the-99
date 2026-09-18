@@ -163,7 +163,11 @@ describe("assembleDiscovery", () => {
         deckCount: 1000,
         tags: [{ slug: "blink", label: "Blink", count: 500 }],
       });
-      expect(allPlayed.gapSlot).toEqual({ kind: "allPlayed" });
+      expect(allPlayed.gapSlot).toEqual({
+        kind: "allPlayed",
+        labels: ["Blink"],
+        capped: false,
+      });
 
       // A CREATURE TYPE IS NOT A MECHANIC, so a commander whose every tag is one
       // draws `noMechanics` rather than `allPlayed` — the ruling that keeps the
@@ -325,7 +329,7 @@ describe("assembleDiscovery", () => {
 // commander the player had already built with as a partner.
 describe("discoveryKey", () => {
   it("files a payload under its sort and its version", () => {
-    expect(discoveryKey("fit")).toEqual(["discovery", "fit", "v6"]);
+    expect(discoveryKey("fit")).toEqual(["discovery", "fit", "v7"]);
   });
 
   it("keeps two sorts apart", () => {

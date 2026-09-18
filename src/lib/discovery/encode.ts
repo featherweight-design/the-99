@@ -96,13 +96,28 @@ function encodeValue(
     // and `GAP_KINDS` rides in the payload for the same reason `keys` and
     // `roles` do: a decoder reading an older payload reads the order that
     // payload was written with.
+    // BOTH named kinds carry labels now, and `allPlayed` carries `capped` as a
+    // third slot. `noMechanics` stays a bare tag: it has no labels by
+    // definition, so giving it an empty array would cost 3,000 empty arrays to
+    // say what the tag already says.
     case "gapSlot":
-      return item.gapSlot.kind === "unplayed"
-        ? [
+      switch (item.gapSlot.kind) {
+        case "unplayed":
+          return [
             GAP_KINDS.indexOf("unplayed"),
             item.gapSlot.labels.map((label) => dict.file(label)),
-          ]
-        : [GAP_KINDS.indexOf(item.gapSlot.kind)];
+          ];
+        case "allPlayed":
+          return [
+            GAP_KINDS.indexOf("allPlayed"),
+            item.gapSlot.labels.map((label) => dict.file(label)),
+            // 1 / 0 rather than a boolean: this rides 3,000 rows in JSON, and
+            // the decoder is the only reader.
+            item.gapSlot.capped ? 1 : 0,
+          ];
+        default:
+          return [GAP_KINDS.indexOf(item.gapSlot.kind)];
+      }
     default:
       return item[key];
   }
@@ -124,11 +139,16 @@ function decodeValue(
         ? ART_STEM + value
         : value;
     case "gapSlot": {
-      const [kindAt, labels] = value as [number, number[] | undefined];
+      const [kindAt, labels, capped] = value as [number, number[] | undefined, number | undefined];
       const kind = gapKinds[kindAt];
-      return kind === "unplayed"
-        ? { kind, labels: (labels ?? []).map((i) => strings[i]) }
-        : { kind };
+      const named = (labels ?? []).map((i) => strings[i]!);
+      if (kind === "unplayed") return { kind, labels: named };
+      // A payload written before `allPlayed` carried labels decodes to an empty
+      // list, which the copy cannot draw — so the cache version is bumped
+      // rather than defended against here. `capped` falls back to `false` for
+      // the same reason it is not defended: there is no such payload to read.
+      if (kind === "allPlayed") return { kind, labels: named, capped: capped === 1 };
+      return { kind };
     }
     default:
       return value;

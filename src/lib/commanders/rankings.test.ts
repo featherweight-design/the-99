@@ -95,8 +95,14 @@ describe("loadCommanderRankings · the row's four joined fields", () => {
 
     const { items } = await loadCommanderRankings("user_1");
 
-    // `blink` is the fixture deck's tag, so the reader already plays it.
-    expect(items[0].gapSlot).toEqual({ kind: "allPlayed" });
+    // `blink` is the fixture deck's tag, so the reader already plays it — and
+    // the state carries the commander's own theme, which is what the row prints
+    // now that it no longer claims coverage.
+    expect(items[0].gapSlot).toEqual({
+      kind: "allPlayed",
+      labels: ["Blink"],
+      capped: false,
+    });
   });
 
   // NO PRICE ON THIS LANE AT ALL. §7.4 row 5 unmounts the slot for an owned
@@ -160,14 +166,14 @@ describe("loadCommanderRankings · the row's four joined fields", () => {
 // sentence, no gap slot and no headline figure.
 describe("the list caches' payload versions", () => {
   it("pins both, so a pair bumped half-way fails", () => {
-    expect(commanderRankingsKey).toEqual(["commander-rankings", "v8"]);
-    expect(discoveryKey("fit")).toEqual(["discovery", "fit", "v6"]);
+    expect(commanderRankingsKey).toEqual(["commander-rankings", "v9"]);
+    expect(discoveryKey("fit")).toEqual(["discovery", "fit", "v7"]);
   });
 
   // The sort rides in the key beside the version, so two sorts cannot share an
   // entry — a property of the key's shape rather than of either number.
   it("keeps the two discovery sorts apart at the same version", () => {
     expect(discoveryKey("new")).not.toEqual(discoveryKey("fit"));
-    expect(discoveryKey("new")).toContain("v6");
+    expect(discoveryKey("new")).toContain("v7");
   });
 });
