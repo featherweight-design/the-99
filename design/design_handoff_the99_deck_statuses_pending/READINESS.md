@@ -50,6 +50,17 @@ document disagree, the ledger is the build value.
    and the R4 section is nested beneath that heading. R1's text is not in the record it claims to
    keep. Navigational only; no build value turns on it.
 
+## Findings this folder will keep drawing, and why they stay
+
+Review round 1 on the handoff PR landed three findings on Design's own documents: the lower-case
+labels in `STATES-pending-mark.md` §A, the superseded `?pending=` shape in its state 24, and
+`README.md`'s source paths written without their `src/` prefix (plus one typo, "unre-run"). All
+three are real, and none is edited here. A handoff is a non-engineer's drawing package and the
+record of what they decided; the errata ledger above is how a contradiction in one is answered,
+because it governs the build without rewriting somebody else's document. The paths resolve — this
+repository has exactly one `status-style.ts` — and the casing and the facet shape are already
+items 4 and 3 of that ledger.
+
 ## Unruled states, and the rule that covers them
 
 Three surfaces are stated rather than drawn. §0 row A ("a plan, any of the six values") is general
@@ -58,33 +69,33 @@ and applies to each; none needs Design.
 7. **Home's resume row with a plan.** §B tabulates the pending mark only. Apply §0 A: the plate
    takes `--bg`, the word and ink are unchanged. There is no keyline to reconcile — see the
    pre-existing defect below.
-8. **The deck page's progress track.** §0 row D shows the bar as `—`, but `spine-desktop.tsx` and
-   `spine-mobile.tsx` both draw `statusBarStyle`. Apply §0 A's 50% opacity there as on the tile.
+8. **The deck page's progress track.** §0 row D shows the bar as `—`, but `src/components/decks/spine-desktop.tsx` and
+   `src/components/decks/spine-mobile.tsx` both draw `statusBarStyle`. Apply §0 A's 50% opacity there as on the tile.
 9. **The mobile spine's hollow plate on the wash** (§0 state E) is argued from the art-wash
    amendment and not drawn. The argument holds — the plate mixes into `--bg` rather than into
    transparency — but it is a measurement, so it is a probe rather than a review claim.
 
 ## Verified against the code
 
-- `--fg` and `--surface-inset` are declared by all six themes (`globals.css`).
-- The `--accent` collision is real: `STATUS_TOKEN["To buy"] === "--accent"` (`status-style.ts`).
+- `--fg` and `--surface-inset` are declared by all six themes (`src/app/globals.css`).
+- The `--accent` collision is real: `STATUS_TOKEN["To buy"] === "--accent"` (`src/lib/decks/status-style.ts`).
 - `statusPillStyle(status)` takes one argument, so hollow is one more argument and not a branch.
-- The pill sits in the tile **footer** on `var(--surface-inset)` (`deck-card.tsx`), not on art.
+- The pill sits in the tile **footer** on `var(--surface-inset)` (`src/components/decks/deck-card.tsx`), not on art.
   R4's ⚠ — that a `--bg` plate reads as slightly recessed there — is a real measurement to take.
-- `refreshCopy.status` is Title case, six strings (`refresh.ts`).
+- `refreshCopy.status` is Title case, six strings (`src/lib/copy/refresh.ts`).
 - About: `versions` carries 2 keys, `statuses` carries 4 (the template cap), 33 entries,
   `ABOUT_VERSION = 4`.
 
 ## Data
 
 10. **The primary mark needs no new query.** `DeckListItem.lastCommittedAt` already ships on both
-    list reads via `lastCommittedSql` (`read.ts`), and is null exactly when no version exists.
+    list reads via `lastCommittedSql` (`src/lib/decks/read.ts`), and is null exactly when no version exists.
     R4's `versionCount > 0` ask is already satisfied; the plate costs nothing.
 11. **The secondary mark is the whole data cost, and gap 2 stands.** There is no
     `hasPendingChanges` on the list read; the draft diff runs on the deck page alone today.
     **The cheap proxy is wrong**: `lastEditedAt > lastCommittedAt` reports a deck as pending for
     ever after a discard, because a discard moves `last_edited_at` by design (pinned by
-    `probe:touched`). Ruled: **a real per-deck diff in the list query**, not a persisted flag — a
+    `scripts/probe-touched.ts`). Ruled: **a real per-deck diff in the list query**, not a persisted flag — a
     stored boolean is correct only while every draft write path remembers it, and a missed one
     lies silently. Measure it against the route budget once it is in.
 
@@ -102,7 +113,7 @@ and applies to each; none needs Design.
 
 ## Carried out of scope
 
-- **`statusKeylineStyle` is dead code.** Only `status-style.test.ts` reads it; no component
+- **`statusKeylineStyle` is dead code.** Only `src/lib/decks/status-style.test.ts` reads it; no component
   renders a keyline. About's `resume` caption still tells the reader "the keyline on the left is
   the deck's status in the same six colours as its badge", which is describing something the app
   no longer draws. Pre-existing, unrelated to these marks, and worth its own ticket rather than a
