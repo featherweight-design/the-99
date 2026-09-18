@@ -41,6 +41,10 @@ export default async function DecksPage({
       includeInUseElsewhere: true,
       // This is the surface that draws `N proxies` and the covered status pill.
       includeProxyStats: true,
+      // And the deck-state marks: the hollow plate for a deck with no version,
+      // the pending edge for one whose draft has moved, and the change figure
+      // in the detail row.
+      includeDeckState: true,
     }),
     // The tile's To buy figure reads its copies and its cost from the same
     // roll-up, so the count and the price always cover the same cards.

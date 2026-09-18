@@ -222,7 +222,7 @@ async function main() {
   check("a commit leaves last_edited_at alone", await editedAt(committed), before);
 
   // ── The figure: what the reader actually gets back ───────────────────────
-  const list = await listDecksWithStats(USER, "name");
+  const list = await listDecksWithStats(USER, "name", { includeDeckState: true });
   // Four now: the three verb decks plus the backfill row above, which is a deck
   // like any other once its column is seeded.
   check("the list carries every fixture deck", list.length, 4);
@@ -248,7 +248,7 @@ async function main() {
   // A second commit, so `max()` is doing work rather than reading the only row.
   await addCard(committed, await pickCard(1));
   await commitVersion(committed, "second");
-  const reread = find(await listDecksWithStats(USER, "name"), committed);
+  const reread = find(await listDecksWithStats(USER, "name", { includeDeckState: true }), committed);
   const newest = await newestVersion(committed);
   check(
     "lastCommittedAt is the NEWEST commit",
@@ -262,7 +262,7 @@ async function main() {
   await logGame(played);
 
   // ── The verbs, over real rows ────────────────────────────────────────────
-  const fresh = await listDecksWithStats(USER, "name");
+  const fresh = await listDecksWithStats(USER, "name", { includeDeckState: true });
   check("an untouched-since-creation deck reads as edited", touchedBy(find(fresh, edited)).verb, "edited");
   check("a committed deck reads as committed", touchedBy(find(fresh, committed)).verb, "committed");
   check("a played deck reads as played", touchedBy(find(fresh, played)).verb, "played");
@@ -298,7 +298,7 @@ async function main() {
   // Under the proxy this deck reports pending for ever and its tile carries an
   // edge nobody can clear. Only comparing the rows can tell the two apart, and
   // this check fails on any build that takes the shortcut.
-  const afterDiscard = find(await listDecksWithStats(USER, "name"), committed);
+  const afterDiscard = find(await listDecksWithStats(USER, "name", { includeDeckState: true }), committed);
   check("a draft restored to its version has no changes", afterDiscard.pendingChanges, 0);
   check(
     "even though the discard moved the edit stamp past the commit",
@@ -309,13 +309,13 @@ async function main() {
   // A brew has nothing to differ from, and false is the accurate answer rather
   // than a missing case: that deck's mark is the hollow plate instead, and an
   // edge drawn there would be permanently on and would say nothing.
-  check("a deck with no version counts none", find(await listDecksWithStats(USER, "name"), edited).pendingChanges, 0);
+  check("a deck with no version counts none", find(await listDecksWithStats(USER, "name", { includeDeckState: true }), edited).pendingChanges, 0);
 
   // One add, and the flag turns over.
   await addCard(committed, await pickCard(3));
   check(
     "one add is one change",
-    find(await listDecksWithStats(USER, "name"), committed).pendingChanges,
+    find(await listDecksWithStats(USER, "name", { includeDeckState: true }), committed).pendingChanges,
     1,
   );
 
@@ -328,7 +328,7 @@ async function main() {
   `);
   check(
     "and cutting it back makes it clean again",
-    find(await listDecksWithStats(USER, "name"), committed).pendingChanges,
+    find(await listDecksWithStats(USER, "name", { includeDeckState: true }), committed).pendingChanges,
     0,
   );
   await fixture.execute(sql`
@@ -340,7 +340,7 @@ async function main() {
   // disagree with the deck page about every quantity change on the tile.
   check(
     "a quantity change is ONE change, not one per side",
-    find(await listDecksWithStats(USER, "name"), committed).pendingChanges,
+    find(await listDecksWithStats(USER, "name", { includeDeckState: true }), committed).pendingChanges,
     1,
   );
   await fixture.execute(sql`
@@ -356,7 +356,7 @@ async function main() {
     update deck_cards set quantity = 3
     where deck_id = ${committed}::uuid and oracle_id = ${card}::uuid
   `);
-  const two = find(await listDecksWithStats(USER, "name"), committed);
+  const two = find(await listDecksWithStats(USER, "name", { includeDeckState: true }), committed);
   check("an add and a quantity change are two changes", two.pendingChanges, 2);
   check("and they are counted against the newest version", two.versionNumber, 2);
   await fixture.execute(sql`
@@ -369,9 +369,28 @@ async function main() {
   `);
   check(
     "a brew has no version number to count against",
-    find(await listDecksWithStats(USER, "name"), edited).versionNumber,
+    find(await listDecksWithStats(USER, "name", { includeDeckState: true }), edited).versionNumber,
     null,
   );
+
+  // THE GATE. A caller that does not draw the marks does not pay for them, and
+  // the defaults it gets back are the ones a deck with no version gives — so
+  // the absence reads as "no mark", never as a wrong mark. Asserted against a
+  // deck that genuinely HAS changes, because against a clean deck the gated
+  // read and the ungated one agree and the check would measure nothing.
+  await addCard(committed, await pickCard(3));
+  const ungated = find(await listDecksWithStats(USER, "name"), committed);
+  check("a caller that skips the marks pays for no diff", ungated.pendingChanges, 0);
+  check("and gets no version number either", ungated.versionNumber, null);
+  check(
+    "while the same deck, read with them, reports the change",
+    find(await listDecksWithStats(USER, "name", { includeDeckState: true }), committed).pendingChanges,
+    1,
+  );
+  await fixture.execute(sql`
+    delete from deck_cards
+    where deck_id = ${committed}::uuid and oracle_id = ${await pickCard(3)}::uuid
+  `);
 
   // A COMMANDER SWAP does NOT flip it, and this case pins that deliberately.
   // `changeCount` on the deck page is adds + removes over the CARD diff alone,
@@ -387,7 +406,7 @@ async function main() {
   `);
   check(
     "a commander swap alone counts nothing — the card diff is the whole definition",
-    find(await listDecksWithStats(USER, "name"), committed).pendingChanges,
+    find(await listDecksWithStats(USER, "name", { includeDeckState: true }), committed).pendingChanges,
     0,
   );
   await fixture.execute(sql`

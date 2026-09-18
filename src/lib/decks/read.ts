@@ -690,6 +690,23 @@ export async function listDecksWithStats(
      * beside it: a caller that does not draw the figure does not buy it.
      */
     includeProxyStats?: boolean;
+    /**
+     * Whether to compute the deck-state marks — the pending change count and
+     * the version it counts against. Off by default, and `/decks/[id]` is the
+     * caller that leaves it off: it calls this for a deck-name list, draws no
+     * pill, and would otherwise pay two `except` scans and a newest-version
+     * lookup per deck to answer a question nothing on that page asks.
+     *
+     * `/` and `/decks` both pass it, because both RENDER the marks — and a deck
+     * whose tile carries the pending edge on one and not the other is the same
+     * disagreement `includeProxyStats` exists to prevent.
+     *
+     * With it off a deck's `pendingChanges` is 0 and its `versionNumber` null,
+     * which is the same answer a deck with no version gives: no edge drawn.
+     * That is the bargain the two options beside it already make — a caller
+     * that does not draw the figure does not buy it.
+     */
+    includeDeckState?: boolean;
   } = {},
 ): Promise<DeckListItem[]> {
   const ownedCountSql = sql<number>`coalesce(
@@ -773,8 +790,13 @@ export async function listDecksWithStats(
       // parsings picks the wrong verb and the wrong order by exactly the offset.
       lastEditedAt: sql<Date | string>`${decks.lastEditedAt}`,
       lastCommittedAt: lastCommittedSql,
-      pendingChanges: pendingChangesSql,
-      versionNumber: newestVersionNumberSql,
+      // `sql` either way, so the projection's SHAPE does not change with the
+      // option: a conditional column would make the row type depend on a
+      // runtime value, and every reader would have to narrow it.
+      pendingChanges: opts.includeDeckState ? pendingChangesSql : sql<number>`0::int`,
+      versionNumber: opts.includeDeckState
+        ? newestVersionNumberSql
+        : sql<number | null>`null::int`,
     })
     .from(decks)
     .innerJoin(cards, eq(decks.commanderOracleId, cards.oracleId))
