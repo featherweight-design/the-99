@@ -850,7 +850,9 @@ Package manager is **pnpm** (pinned via `packageManager` in package.json) — ne
 
   **The card itself appears under the pointer.** The row borrows the decklist's
   `HoverPreviewProvider` rather than drawing its own, so one instance owns the image, the
-  geometry and the two delays for a list that can run to 480 rows. The probe reads a PAINTED
+  geometry and the two delays rather than one per row — 262 candidates for the average
+  commander, 423 at the widest, and more again for a PAIR, whose two support lists merge
+  (the fixture deck this probe runs against draws 480). The probe reads a PAINTED
   252x352 background image after the 240ms open delay, because the markup is identical
   whether or not the catalog had a picture for the card — and `usePreviewRow` no-ops on a null
   `imageUri` rather than drawing an empty frame.

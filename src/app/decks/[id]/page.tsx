@@ -107,10 +107,14 @@ export default async function DeckBuilderPage({
               detail.commander.oracleId,
               detail.partner?.oracleId ?? "-",
             ],
+            // With images: this is the route whose top-off list draws the hover
+            // preview. `/commanders/[slug]` shares this reader and draws none,
+            // so it takes the default and ships no URLs it cannot use.
             () => readSynergyCards(
               userId,
               [detail.commander.oracleId, ...(detail.partner ? [detail.partner.oracleId] : [])],
               [],
+              true,
             ),
           )
         : [],

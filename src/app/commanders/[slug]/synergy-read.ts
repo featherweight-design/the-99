@@ -29,6 +29,20 @@ export async function readSynergyCards(
   userId: string,
   commanderOracleIds: string[],
   coveredOracleIds: string[],
+  /**
+   * Whether to carry each card's picture.
+   *
+   * OFF by default, because this reader serves two routes and only one of them
+   * draws a preview. `/commanders/[slug]` passes the whole array across the RSC
+   * boundary to its synergy panel, which calls no `usePreviewRow` — so at about
+   * 94 characters a row it would ship 25KB on an average commander and 40KB at
+   * the widest to draw nothing with.
+   *
+   * A row read WITHOUT images carries `imageUri: null`, which the preview reads
+   * as "no preview" — the same answer it gives for a card the catalog has no
+   * picture for, and the correct one either way: there is nothing to show.
+   */
+  withImages = false,
 ): Promise<SynergyCard[]> {
   // The player's collection, summed per card once and joined in — rather than a
   // correlated subselect, which the select list would evaluate per support row.
@@ -53,9 +67,9 @@ export async function readSynergyCards(
       typeLine: cards.typeLine,
       manaCost: cards.manaCost,
       // For the hover preview on the deck's top-off list. One more column on a
-      // join that is already here — no second query, no second join — against
-      // about 94 characters a row.
-      imageUri: cards.imageUri,
+      // join that is already here — no second query, no second join — and asked
+      // for only by the route that draws it: see `withImages`.
+      imageUri: withImages ? cards.imageUri : sql<string | null>`null`,
       // A card both commanders of a pair support has one support row each, so
       // the figures are aggregated rather than grouped by: a pair's advice is
       // the better of the two, exactly as `mergeEdhrecData` merges the live
