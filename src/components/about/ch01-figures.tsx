@@ -38,14 +38,13 @@ import { COST_PIP_SIZE, CostPips } from "../ui/cost-pips";
 import { TwoFacedMark } from "../cards/two-faced-mark";
 import { ContestedCardRow } from "../decks/contested-card-row";
 import { FitLegend } from "../commanders/fit-legend";
-import { FilterRack } from "../commanders/rack/filter-rack";
+import { AvailabilityControl } from "../commanders/rack/availability-control";
 import { CommanderRow } from "../commanders/commander-row";
 import { PartnerSlot } from "../decks/partner-slot";
 import { SynergyRow } from "../commanders/synergy-row";
 import { CardDetailProvider } from "../cards/card-detail-provider";
 import { OrderControl } from "../commanders/rack/order-control";
 import { ORDER_OPTIONS } from "../commanders/rack/order-options";
-import type { Lane, LaneParams } from "../../lib/commanders/lane-params";
 import { ReceiptRow } from "../collection/arrivals-summary";
 import { issueInspectorCopy } from "../../lib/copy/issue-inspector";
 import {
@@ -320,61 +319,31 @@ export function FitLegendFigureBody() {
   );
 }
 
-/**
- * A lane's filter rack, mounted from the route.
- *
- * §3 draws the whole rack for both commander lanes — the search field, the
- * five hues, `Any`/`Exactly`, and the lane's own order control. The figures
- * these replace were mark-and-meaning legends: they named the Build from modes
- * and the five orders and drew neither control, so a reader met a vocabulary
- * before ever meeting the thing it belongs to.
- *
- * Inert like every specimen, so `onChange` is never called.
- */
-function laneRack(params: LaneParams, lane: Lane, shown: number, total: number) {
-  return (
-    <FilterRack
-      params={params}
-      lane={lane}
-      onChange={() => {}}
-      shown={shown}
-      total={total}
-      excludedByExactly={null}
-      // The plate is ~750px inside a 1300px window, so the viewport query
-      // answers wide and the rack draws a form its container cannot hold.
-      // Pinned compact: every control stays reachable in the chips row and the
-      // result line, and nothing clips.
-      forceWide={false}
-    />
-  );
-}
 
-/**
- * The rack, and then a ROW.
- *
- * §3 draws the rack alone for both lanes, so a reader met the controls and
- * never the thing they filter. Hugh asked for the row on 2026-09-18 — the one
- * addition on this page not transcribed from the canvas, and a Design item
- * rather than a quiet adoption.
- */
-function laneWithRow(body: React.ReactNode, row: React.ReactNode) {
-  return (
-    <div className="flex flex-col gap-[12px]">
-      {body}
-      <div className="border-t border-solid border-[color:var(--border)] pt-[12px]">{row}</div>
-    </div>
-  );
-}
 
 export function CommanderLaneFigureBody() {
-  // `avail: "free"` is the fixture's whole job — Build from is what this
-  // entry's caption is about, and a rack on the default draws the control
-  // without ever showing the choice being made.
-  return laneWithRow(
-    laneRack(LANE_OWNED, "owned", 34, 612),
-    <CommanderRow item={LANE_ROW_OWNED} />,
+  // BUILD FROM ALONE, not the rack.
+  //
+  // The rack cannot show this control at About's width. Wide, it overflows the
+  // ~750px plate; compact, `AvailabilityControl` lives inside `FilterSheet`,
+  // which starts closed and which an inert specimen cannot open — so the
+  // figure drew a `Filters` trigger and a `Free only` chip and never the
+  // choice its caption is about. Round 1 named it and Hugh ruled on
+  // 2026-09-18: drop the rack, same as discover.
+  //
+  // `wide` because the two segments fit side by side at any About width, and
+  // side by side is what makes them read as one choice with two answers.
+  // The ROW stays. It was a separate ask on 2026-09-18 — a reader of this
+  // entry should see what the lane actually lists — and dropping the rack is
+  // not a reason to drop it.
+  return (
+    <div className="flex flex-col gap-[12px]">
+      <AvailabilityControl value={LANE_OWNED.avail} onChange={() => {}} wide />
+      <div className="border-t border-solid border-[color:var(--border)] pt-[12px]">
+        <CommanderRow item={LANE_ROW_OWNED} />
+      </div>
+    </div>
   );
-
 }
 
 export function DiscoverFigureBody() {

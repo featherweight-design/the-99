@@ -726,38 +726,33 @@ describe("what each chapter 01 figure actually draws", () => {
     );
   });
 
-  it("commander-lane: the route's own rack, carrying the chosen state", () => {
+  it("commander-lane: Build from, chosen, and a row from the lane", () => {
     const el = plate("commander-lane");
 
-    // WHAT JSDOM CAN SEE, and the limit is stated rather than worked around.
-    // `FilterRack` picks its form from `useMinWidth(1000)`, which is a VIEWPORT
-    // query — jsdom answers false for every media query, so the rack is always
-    // compact here and the wide form's controls are inside a sheet no specimen
-    // can open. The inline rack is checked by screenshot instead.
-    //
-    // What survives both forms is the rack's own summary of the chosen state,
-    // and that is the fixture's job: the colours and the `Exactly` join come
-    // from `LANE_OWNED`, so a rack mounted on defaults fails here.
-    // Read from the route's own names, not retyped. `/copy-review` caught the
-    // literals: the whole reason the figure mounts the rack is that a rename
-    // reaches it by itself, and a test holding its own copy of the colours
-    // defeats that for the one thing it was checking.
-    for (const code of LANE_OWNED.colors) {
-      expect(el.textContent).toContain(
-        filterCopy.colour.names[code as keyof typeof filterCopy.colour.names],
-      );
-    }
-    expect(el.textContent).toContain(filterCopy.match.exactlyShort);
+    // BUILD FROM ALONE. The rack cannot show this control at About's width —
+    // wide it overflows the plate, compact it sits inside a sheet an inert
+    // specimen cannot open — so the figure drew a `Filters` trigger and never
+    // the choice its caption is about. Round 1 named it; Hugh ruled drop the
+    // rack, 2026-09-18.
+    expect(el.textContent).toContain(commandersCopy.availability.all);
+    // `freeShort` at the rack's 32px segment; the sheet's 44px pill takes the
+    // whole phrase. Asserted as the control draws it rather than as the copy
+    // module reads best.
+    expect(el.textContent).toContain(commandersCopy.availability.freeShort);
 
-    // AND A ROW. §3 draws the rack alone, so a reader met the controls and
-    // never the thing they filter. The row carries the commander's name, its
-    // fit, its deck count and — on THIS lane — a price.
-    // AND A ROW. §3 draws the rack alone, so a reader met the controls and
-    // never the thing they filter. ONE row serves both lanes since #708, so
-    // the lanes differ only in their data — and this one is priced.
+    // CHOSEN, not merely present. The caption is about Build from choosing the
+    // pool, and a control resting on its default draws both options while
+    // showing no choice being made. Read off the pressed state, which the
+    // labels alone cannot carry.
+    const chosen = [...el.querySelectorAll('[aria-checked="true"],[aria-pressed="true"]')]
+      .map((n) => n.textContent)
+      .join(" ");
+    expect(chosen).toContain(commandersCopy.availability.freeShort);
+
+    // And the row, which was its own ask: a reader should see what the lane
+    // actually lists, and dropping the rack is not a reason to drop that.
     expect(el.textContent).toContain(LANE_ROW_OWNED.name);
     expect(el.textContent).toContain(commandersCopy.row.fitDenominator);
-    expect(el.textContent).toContain("$0.15");
   });
 
   it("discover: the order control alone, with every gloss", () => {
