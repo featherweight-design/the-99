@@ -18,6 +18,7 @@ const deck = (o: Partial<DeckListItem> = {}): DeckListItem => ({
   ownedCount: 96,
   toBuyCount: 3,
   unresolvedCount: 0,
+  hasPendingChanges: false,
   lastPlayedAt: new Date("2026-09-05T00:00:00Z"),
   lastEditedAt: new Date("2026-09-01T00:00:00Z"),
   lastCommittedAt: null,

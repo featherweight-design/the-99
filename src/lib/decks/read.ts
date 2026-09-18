@@ -8,6 +8,7 @@ import {
   deckFolders,
   deckGames,
   deckUnresolvedRows,
+  deckVersionCards,
   deckVersions,
   decks,
 } from "../../db/schema";
@@ -467,6 +468,15 @@ export type DeckListItem = {
   /** Cards on lines the import could not name. Drives the deck card's badge. */
   unresolvedCount: number;
   /**
+   * Whether the draft differs from the newest committed version. False for a
+   * deck with no version — there is nothing to differ from, and that deck is a
+   * PLAN, which `lastCommittedAt === null` says instead.
+   *
+   * The two facts draw two marks and can never both be true: the pill's edge
+   * needs a version, the hollow plate means there is none.
+   */
+  hasPendingChanges: boolean;
+  /**
    * The most recent game logged against this deck, or null when none is. Drawn
    * on the right of a tile's second row at desktop widths, and **only when it
    * has a date**: the `never played` clause is cut, with no replacement, because
@@ -547,6 +557,70 @@ export const lastCommittedSql = sql<Date | string | null>`(
   select max(dv.committed_at)
   from ${deckVersions} dv
   where dv.deck_id = ${decks}.id
+)`;
+
+/**
+ * Whether a deck's draft differs from the version it last committed.
+ *
+ * FALSE for a deck with no version at all, and that is the accurate answer
+ * rather than a missing case: there is nothing to differ from. That deck is a
+ * PLAN, which `lastCommittedAt === null` already says, and the two facts get
+ * two different marks — see the deck-state marks handoff.
+ *
+ * **A real diff, not a proxy.** `last_edited_at > committed_at` is the cheap
+ * answer and it is wrong: a discard back to the version MOVES `last_edited_at`
+ * by design (pinned by `scripts/probe-touched.ts`), so a deck restored to
+ * exactly its committed list would report pending for ever. Nothing in the
+ * columns short of comparing the rows can tell that state from a real edit.
+ *
+ * What "differs" means here is what `draftDiff` and the commander columns mean
+ * on the deck page: a quantity mismatch in either direction, a card on one side
+ * and not the other, or a commander swap — which is not a `deck_cards` row and
+ * would otherwise be a pending change nothing could see. Basics are included,
+ * as they are in the deck page's own change list.
+ *
+ * The symmetric difference is two `except`s rather than a join: a full outer
+ * join over two child tables inside a grouped select is a second way to write
+ * the same question and the more expensive one, and `except` compares the
+ * (oracle_id, quantity) PAIR, which is exactly the comparison.
+ *
+ * Aliased with both sides written out, for the reason `lastCommittedSql` above
+ * gives: in the projection of a select whose `from` names one table, Drizzle
+ * emits column references bare, and `where "deck_id" = "id"` compares each
+ * child row's foreign key to its own primary key — matching nothing, for ever,
+ * with no error. Every deck would read as clean.
+ */
+export const hasPendingChangesSql = sql<boolean>`(
+  select coalesce((
+    select
+      dv.commander_oracle_id is distinct from ${decks}.commander_oracle_id
+      or dv.partner_oracle_id is distinct from ${decks}.partner_oracle_id
+      or exists (
+        (
+          select dcd.oracle_id, dcd.quantity
+          from ${deckCards} dcd
+          where dcd.deck_id = ${decks}.id
+          except
+          select dvd.oracle_id, dvd.quantity
+          from ${deckVersionCards} dvd
+          where dvd.version_id = dv.id
+        )
+        union all
+        (
+          select dvo.oracle_id, dvo.quantity
+          from ${deckVersionCards} dvo
+          where dvo.version_id = dv.id
+          except
+          select dco.oracle_id, dco.quantity
+          from ${deckCards} dco
+          where dco.deck_id = ${decks}.id
+        )
+      )
+    from ${deckVersions} dv
+    where dv.deck_id = ${decks}.id
+    order by dv.number desc
+    limit 1
+  ), false)
 )`;
 
 /**
@@ -664,6 +738,7 @@ export async function listDecksWithStats(
       // parsings picks the wrong verb and the wrong order by exactly the offset.
       lastEditedAt: sql<Date | string>`${decks.lastEditedAt}`,
       lastCommittedAt: lastCommittedSql,
+      hasPendingChanges: hasPendingChangesSql,
     })
     .from(decks)
     .innerJoin(cards, eq(decks.commanderOracleId, cards.oracleId))
@@ -818,6 +893,11 @@ export async function listDecksWithStats(
       // — the assertion is the type's, and an unreadable value throws instead.
       lastEditedAt: toDate(row.lastEditedAt, "decks.last_edited_at")!,
       lastCommittedAt: toDate(row.lastCommittedAt, "deck_versions.committed_at"),
+      // Coerced rather than trusted: the driver answers a raw boolean expression
+      // with a boolean, but this one is `coalesce(..., false)` over a subquery
+      // and a null reaching a field typed `boolean` would draw the edge on a
+      // deck that has no version.
+      hasPendingChanges: row.hasPendingChanges === true,
       inUseElsewhere: inUseElsewhere.get(row.id) ?? 0,
       statusPill: pill,
     };

@@ -83,6 +83,17 @@ const pickCard = async (offset: number) => {
   return rows[0].oracle_id;
 };
 
+/** A second legend, for the commander-swap case. Ordered and offset rather than
+    picked at random so a failing run names the same pair the next one will. */
+const pickSecondCommander = async () => {
+  const { rows } = await fixture.execute<{ oracle_id: string }>(sql`
+    select oracle_id from cards where type_line ~ 'Legendary Creature'
+    order by oracle_id limit 1 offset 1
+  `);
+  if (!rows[0]) throw new Error("catalog holds one legend — seed it fully");
+  return rows[0].oracle_id;
+};
+
 /** A deck whose two timestamps are stated, so every figure below has a known truth. */
 const makeDeck = async (name: string, commander: string, createdAt: string) => {
   const { rows } = await fixture.execute<{ id: string }>(sql`
@@ -278,6 +289,80 @@ async function main() {
     "a discard moves last_edited_at",
     (await editedAt(committed)) !== beforeDiscard,
     true,
+  );
+
+  // ── Pending changes: the flag the deck tile's edge is drawn from ─────────
+  // THE CASE THE CHEAP PROXY FAILS. `last_edited_at > committed_at` is the
+  // obvious flag and it is wrong here: the discard above moved the edit stamp
+  // PAST the commit while restoring the draft to exactly the committed list.
+  // Under the proxy this deck reports pending for ever and its tile carries an
+  // edge nobody can clear. Only comparing the rows can tell the two apart, and
+  // this check fails on any build that takes the shortcut.
+  const afterDiscard = find(await listDecksWithStats(USER, "name"), committed);
+  check("a draft restored to its version is not pending", afterDiscard.hasPendingChanges, false);
+  check(
+    "even though the discard moved the edit stamp past the commit",
+    afterDiscard.lastEditedAt.getTime() > afterDiscard.lastCommittedAt!.getTime(),
+    true,
+  );
+
+  // A brew has nothing to differ from, and false is the accurate answer rather
+  // than a missing case: that deck's mark is the hollow plate instead, and an
+  // edge drawn there would be permanently on and would say nothing.
+  check("a deck with no version is never pending", find(await listDecksWithStats(USER, "name"), edited).hasPendingChanges, false);
+
+  // One add, and the flag turns over.
+  await addCard(committed, await pickCard(3));
+  check(
+    "one add makes the draft differ",
+    find(await listDecksWithStats(USER, "name"), committed).hasPendingChanges,
+    true,
+  );
+
+  // A CUT, which the reverse `except` is the only thing that sees. A build
+  // carrying one direction reports this deck clean while a card is missing
+  // from it.
+  await fixture.execute(sql`
+    delete from deck_cards
+    where deck_id = ${committed}::uuid and oracle_id = ${await pickCard(3)}::uuid
+  `);
+  check(
+    "and cutting it back makes it clean again",
+    find(await listDecksWithStats(USER, "name"), committed).hasPendingChanges,
+    false,
+  );
+  await fixture.execute(sql`
+    update deck_cards set quantity = 2
+    where deck_id = ${committed}::uuid and oracle_id = ${card}::uuid
+  `);
+  check(
+    "a quantity change counts, with no card added or removed",
+    find(await listDecksWithStats(USER, "name"), committed).hasPendingChanges,
+    true,
+  );
+  await fixture.execute(sql`
+    update deck_cards set quantity = 1
+    where deck_id = ${committed}::uuid and oracle_id = ${card}::uuid
+  `);
+
+  // A COMMANDER SWAP is not a deck_cards row, so a flag built from the card
+  // tables alone reports this deck clean while it is being led by somebody else.
+  const otherCommander = await pickSecondCommander();
+  await fixture.execute(sql`
+    update decks set commander_oracle_id = ${otherCommander}::uuid where id = ${committed}::uuid
+  `);
+  check(
+    "a commander swap is a pending change",
+    find(await listDecksWithStats(USER, "name"), committed).hasPendingChanges,
+    true,
+  );
+  await fixture.execute(sql`
+    update decks set commander_oracle_id = ${commander}::uuid where id = ${committed}::uuid
+  `);
+  check(
+    "and swapping back clears it",
+    find(await listDecksWithStats(USER, "name"), committed).hasPendingChanges,
+    false,
   );
 
   // ── Filing is not deck work ──────────────────────────────────────────────
