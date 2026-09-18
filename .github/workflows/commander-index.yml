@@ -23,6 +23,25 @@ on:
         type: string
         default: ''
 
+# WORKFLOW SCOPE, NOT JOB SCOPE, and one group for both targets. Two separate
+# reasons land on the same line.
+#
+# The group is shared because the binding constraint here is EDHREC — one host,
+# however many of our databases are involved. That is where this diverges from
+# catalog and price refresh, which group per target because the thing THEY must
+# not collide on is the database, and the two are independent.
+#
+# The scope is the workflow because a `concurrency` block on a matrix job makes
+# each LEG its own queue item. With the legs serialized, one runs while the other
+# is pending — and GitHub keeps a single pending entry per group, so a newly
+# started run can displace that pending leg even under `cancel-in-progress:
+# false`. The first run would then finish without its production leg and still
+# chain into production prose off an index that was never rebuilt. Queuing the
+# whole run as one unit is what makes `max-parallel: 1` mean what it says.
+concurrency:
+  group: commander-index
+  cancel-in-progress: false
+
 permissions:
   contents: read
 
@@ -75,7 +94,7 @@ jobs:
       # silently double the outbound rate to ~8 req/s. One at a time costs wall
       # clock, which the 180-minute timeout has in hand, and costs EDHREC nothing.
       # This orders the legs within ONE run; the workflow-level concurrency group
-      # above is what stops two runs overlapping.
+      # at the top of the file is what stops two runs overlapping.
       max-parallel: 1
     # A FAILED STAGING LEG MUST NOT SPEAK FOR THE RUN. `commander-prose.yml` chains
     # on `workflow_run.conclusion`, which is the AGGREGATE over both legs — so
@@ -92,19 +111,6 @@ jobs:
     # dispatch has no chain to protect.
     continue-on-error: ${{ matrix.target == 'staging' && github.event_name == 'schedule' }}
     runs-on: ubuntu-latest
-    concurrency:
-      # ONE GROUP FOR BOTH TARGETS, which is where this diverges from catalog and
-      # price refresh a second time. Those group per target because the thing they
-      # must not collide on is the DATABASE, and the two are independent. The
-      # binding constraint here is EDHREC, which is one host however many of our
-      # databases are involved — and `max-parallel` only orders the legs WITHIN a
-      # run, so per-target groups would let a manual production dispatch overlap
-      # the scheduled staging leg and put two request streams on that host anyway.
-      # Never cancel in progress; a half-rebuilt index is what the resume input
-      # exists to recover, and a queued run is the correct behaviour here rather
-      # than a cost.
-      group: commander-index
-      cancel-in-progress: false
     # Serial-by-design: the wall clock is dominated by the politeness delay, not
     # by compute. Leave headroom rather than trimming to the expected runtime —
     # a timeout mid-run leaves a partially rebuilt index, which the resume input
