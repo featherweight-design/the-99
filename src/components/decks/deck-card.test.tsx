@@ -423,6 +423,20 @@ describe("DeckCard", () => {
     // asserts. Reading the link's `aria-label` cannot: an `sr-only` span never
     // contributes to an explicit label, so the case would pass with the
     // `aria-hidden` removed and the duplication live. Verified by that mutation.
+    // The impossible state, stated rather than assumed away: `pendingChanges` is
+    // 0 for every deck with no version, by construction of the query that
+    // answers both, so this row cannot come off a real read. If one ever did,
+    // the phase is the louder and longer-lived fact and the plate is what draws.
+    it("gives the plate precedence if a row ever claimed both", () => {
+      const { container } = render(
+        <DeckCard folders={[]} onCreateFolder={() => {}} say={() => {}} onMoved={() => {}} keepsFocus closeAfterCreate={null} deck={deck({ lastCommittedAt: null, pendingChanges: 9, versionNumber: 3 })} shopping={undefined} now={now} />,
+      );
+      const chip = container.querySelector("[class*='grid-area:chip']") as HTMLElement;
+      expect(chip.style.background).toBe("var(--bg)");
+      expect(chip.style.borderLeft).toBe("");
+      expect(chip.textContent).toContain("not committed yet");
+    });
+
     it("keeps the pill's own mark out of the name, which states it once", () => {
       const { container } = render(
         <DeckCard folders={[]} onCreateFolder={() => {}} say={() => {}} onMoved={() => {}} keepsFocus closeAfterCreate={null} deck={committed({ pendingChanges: 36 })} shopping={undefined} now={now} />,

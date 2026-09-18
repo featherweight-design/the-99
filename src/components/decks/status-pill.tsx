@@ -35,8 +35,19 @@ const TILE_CLASS =
 /**
  * The two deck-state marks, which are drawn on the pill and are not statuses.
  * `hollow` is a deck with no committed version — a plan rather than a deck;
- * `pending` is a committed deck whose draft has moved. Mutually exclusive by
- * definition, which `statusPillStyle`'s own type enforces.
+ * `pending` is a committed deck whose draft has moved.
+ *
+ * They are mutually exclusive in the DATA, not in these props. The edge means
+ * "differs from the version", which requires a version, and the hollow plate
+ * means there is none: `pendingChanges` is 0 for every deck whose
+ * `lastCommittedAt` is null, by construction of the query that answers both.
+ * `statusPillStyle`'s own argument type refuses the pair; two independent
+ * booleans here would be a worse API for the call sites, which compute the two
+ * from different columns.
+ *
+ * So this component states a PRECEDENCE rather than pretending the impossible
+ * state cannot arrive: **hollow wins**. A deck that somehow claimed both has no
+ * version, and the phase is the louder and longer-lived fact of the two.
  *
  * The mark's name rides in an `sr-only` span rather than on the box, because an
  * edge and an untinted plate have no text at all: a sighted reader gets the
@@ -55,6 +66,7 @@ export function StatusPillBadge({
   status: Status;
   className?: string;
   hollow?: boolean;
+  /** Ignored when `hollow` is true — see the note above. */
   pending?: boolean;
   /**
    * Whether the mark's name rides along. Off where the SURFACE already states
