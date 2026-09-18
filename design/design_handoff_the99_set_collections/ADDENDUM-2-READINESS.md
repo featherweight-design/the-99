@@ -26,20 +26,28 @@ delete a guard.**
    those line heights, and a ±2px error per text line is ±8px on the identity block. It does not
    change any ruling (the offsets are measured at runtime, not from this table) but it does change
    the table in the handoff. **Ask: add a desktop width to `probe:sets` in this PR.**
-2. **The rarity-panel gate needs a signal the hook cannot see.** *(Erratum, 2026-09-18: closed by
-   deletion. The gate was built and measured unreachable — the desktop popover dismisses itself on
-   page scroll, so no collapse can land under an open panel. Nothing is lifted, `filter-panel.tsx`
-   is untouched, and the "no collapse while the rarity panel is open" assertion in the test list
-   below is replaced by a probe check that the panel is dismissed by that same scroll. A jsdom
-   `scroll` event targets `window`, which is not a `Node`, so the panel's own guard never runs and
-   a unit test would report it open on a build where it closes.)* `deltaFiring` and `sheetOpen` are
+2. **The rarity-panel gate needs a signal the hook cannot see.** `deltaFiring` and `sheetOpen` are
    already lifted into `set-grid-view.tsx`; the panel's open state currently lives inside
    `filter-panel.tsx`. Either it lifts (a fourth `useHeadCollapse` argument) or the hook reads a
    `data-` attribute, which is worse. **Small, but it is the one new wire in this round.**
+
+   > **Erratum, 2026-09-18 — closed by deletion; there is no wire.** The gate was built and
+   > measured unreachable: the desktop popover dismisses itself on page scroll, so no collapse can
+   > land under an open panel. Nothing is lifted and `filter-panel.tsx` is untouched. The "no
+   > collapse while the rarity panel is open" assertion in the test list below is replaced by a
+   > probe check that the panel is dismissed by that same scroll — and deliberately not a unit
+   > test, because a jsdom `scroll` event targets `window`, which is not a `Node`, so the panel's
+   > own guard never runs and the test would report it open on a build where it closes.
 3. **The focus gate is specified by intent, not by mechanism.** "Must not collapse while focus is
    inside the members the collapse hides" is the right rule; whether it is a `focusin`/`focusout`
    pair on the hidden wrapper or a `contains(document.activeElement)` check at decision time is an
    engineering call I have not made. The hook has no focus term today.
+
+   > **Erratum, 2026-09-18 — settled as `contains(document.activeElement)` at decision time.**
+   > Every other input to that decision is already re-read there, and the twelve rounds this file
+   > cost were all lifecycle defects, so a `focusin`/`focusout` pair would add two more. The
+   > members are marked `data-set-shy-hides`: three at `md`, and the rack row as a fourth below it,
+   > where it hides and carries the search field.
 4. **The wheel-notch figure is cited, not measured in this app.** 100–120px is the platform norm;
    120 has headroom over it either way, and the failure mode of a too-wide band is benign (the head
    stays open slightly longer). Worth one manual check on a real wheel before merge.
@@ -70,5 +78,9 @@ here about an input the phone does not have, and flutter is the defect readers r
 is fighting me". **First cut: the focus gate**, which is a real but narrow case (keyboard focus in
 the cost strip while the page scrolls) and severable. **Second: the rarity-panel gate**, if and only
 if the panel is changed to close on scroll instead — that is a smaller wire and an acceptable
-behaviour, though it costs a reader who opened the panel and nudged the wheel. **I would not cut the
+behaviour, though it costs a reader who opened the panel and nudged the wheel.
+
+> **Erratum, 2026-09-18 — the panel already closes on scroll, so this cut is not a cut.** The
+> condition named here was met before the round began; the gate is gone and the focus gate is the
+> only optional one left on this list. **I would not cut the
 `sr-only` result line**: it is one token and it is the whole reason rows 2 and 3 may go.

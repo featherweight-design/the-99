@@ -5,9 +5,9 @@
 - **Handoff:** `design/design_handoff_the99_set_collections/ADDENDUM-2-*` (R1, 2026-09-18)
 - **Amends:** `ADDENDUM-STATES.md` §"The phone head — two states", fifth Must-not only
 - **Audited:** 2026-09-18 against `main` at `993438ff`
-- **Design self-assessment:** 🟢 Green, five gaps named. Concur on the verdict; three of the
-  five gaps are restated below with a decision attached, and one blocker is added that the
-  self-assessment could not see because it is in a different file.
+- **Design self-assessment:** 🟢 Green, five gaps named. Concur on the verdict; all five are
+  answered below with a decision attached, and one blocker is added that the self-assessment
+  could not see because it is in a different file.
 
 One ruling is reversed: the desktop head may now take the collapse the phone head already
 has. Everything else in §"The phone head — two states" stands — the two phone heights, the
@@ -126,7 +126,14 @@ own §0 says the R3 files are untouched, so honouring that claim is the whole fi
 
 1. **The rest head is 300px and the bar is 57, not 276 and 56.** Design's gap 1 names this exactly
    — the figure is summed from type sizes and assumed line heights, and `probe:sets` had no
-   desktop pass to check it against. It now does: 57 against 300 at 1440, 1180 and 768 on `dsk`.
+   desktop pass to check it against.
+
+   **These figures are not evidence in this PR and are not what the verdict rests on.** They come
+   off the desktop pass added on the implementation branch, which lands in its own PR; this one
+   changes no code and the probe here still has only the 1280px breakpoint round trip. Recorded
+   now because the verdict is the document the next reader consults, and it would otherwise carry
+   a derivation that the build has already corrected: 57 against 300 at 1440, 1180 and 768 on
+   `dsk`.
    The 24px sits in the identity block, where the derivation assumes 1.2/1.45/1.4 line heights.
    **No ruling moves** — both heads measure themselves and no constant in code carries either
    figure — but §2's table is 24px optimistic about the saving, which is 81% rather than 80%.

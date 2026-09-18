@@ -154,6 +154,14 @@ still be cleared at the other.
 ## 4 · Call 4 — the CostStrip, and whether the bar may carry the figure
 
 **There is no desktop expanded state to design, because the desktop form has no collapsed one.**
+
+> **Erratum, 2026-09-18 — read this as the COST STRIP's own states.** The sentence predates §1 in
+> the drafting order and reads wrong beside it: the desktop head plainly does have a collapsed
+> form now, and this round is what gives it one. What has no desktop counterpart is the strip's
+> phone-only *expand in place on tap* — `cost-strip.tsx` ships the full card at `md:flex`, always
+> open and never closable, with both disclosure buttons `md:hidden`. That is unchanged, and the
+> strip is one of the members the collapse hides.
+
 `cost-strip.tsx` ships the full card at `md:flex`, always open and never closable, with both
 disclosure buttons `md:hidden`. The phone's "expands in place on tap" has no desktop counterpart to
 rule on, and it stays that way: the caveat lines — up to four — are the audit trail for the figure,
