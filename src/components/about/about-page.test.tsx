@@ -16,6 +16,8 @@ import { collectionChassisCopy, printingPickerCopy } from "../../lib/copy/collec
 import { spokenFullManaCost, spokenManaCost, twoFacedCopy } from "../../lib/copy/card-surfaces";
 import { COSTS } from "../../lib/about/fixtures";
 import { addPanelCopy } from "../../lib/copy/decks-builder";
+import { DECK_GROUPING_LABELS, deckSortOrderLabel } from "../../lib/copy/deck-sort";
+import { viewToggleCopy } from "../../lib/copy/card-surfaces";
 import {
   RECOMMENDED_MIX,
   RECOMMENDED_MIX_SOURCE_LINE,
@@ -482,6 +484,26 @@ describe("the figures", () => {
     // The disclosure, which is the third thing the entry's caption rests on:
     // the baselines are the format's, not this commander's.
     expect(plate.textContent).toContain(addPanelCopy.strip.rationaleToggle);
+  });
+
+  it("draws the decklist's own order bar, on the shopping filter", () => {
+    const { container } = render(<AboutPage seen={0} />);
+    const plate = figures(container)["decklist-order"];
+
+    // The two sections, which is the caption's first clause.
+    expect(plate.textContent).toContain(DECK_GROUPING_LABELS.type);
+    expect(plate.textContent).toContain(DECK_GROUPING_LABELS.role);
+
+    // The order control reads the live order back, and the order it is given
+    // is the one the caption's last clause is about. `deckSortOrderLabel`
+    // rather than a literal: the figure is here so a rename reaches it.
+    expect(plate.textContent).toContain(deckSortOrderLabel("price", "desc"));
+
+    // Price is offered on the shopping filter ALONE, so the bar has to be
+    // drawn there — and the way to tell which filter is open, without reading
+    // a pill's styling, is the control the All filter carries and Shopping
+    // does not: the list/card view toggle.
+    expect(plate.textContent).not.toContain(viewToggleCopy.deck.card);
   });
 
   it("draws both fit shapes and writes no prose inside the frame", () => {

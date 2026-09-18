@@ -405,7 +405,9 @@ export const aboutEntries: readonly AboutEntry[] = [
     title: 'Reading the 99 in a different order',
     route: '/decks',
     opens: 'opens a deck',
-    width: 'inset',
+    // 'inset' at the canvas, where the figure was a four-row legend. It draws
+    // the decklist's own bar now, which is a full-width row on the deck page.
+    width: 'plate',
     caption:
       'The 99 is always in sections — by role, or by type — and the order you pick applies inside them rather than flattening the list. Name and mana value are always offered; price joins them on the shopping filter, where money is the question being asked.',
     keys: [],

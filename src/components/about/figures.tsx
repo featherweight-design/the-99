@@ -29,8 +29,6 @@ import { gameLogCopy } from "../../lib/copy/game-log";
 import { folderCopy } from "../../lib/copy/folders";
 
 import { GAME_AXIS_KEYS } from "../../lib/decks/game-axes";
-import { deckSortLabel } from "../../lib/about/sort-labels";
-import { DECK_GROUPING_LABELS } from "../../lib/copy/deck-sort";
 import { BrowseFigureBody } from "./browse-figure";
 import { KeyNumeral } from "./numeral";
 import { ORDER_OPTIONS } from "../commanders/rack/order-options";
@@ -47,6 +45,7 @@ import {
   CommanderAvailabilityFigureBody,
   AutoFillFigureBody,
   DecklistMarksFigureBody,
+  DecklistOrderFigureBody,
   RolesFigureBody,
   DeckPageFigureBody,
   ImportIssuesFigureBody,
@@ -733,25 +732,9 @@ function RolesFigure({ width }: { width: AboutWidth }) {
 
 function DecklistOrderFigure({ width }: { width: AboutWidth }) {
   return (
-    <Legend
-      label="decklist-order"
-      width={width}
-      rows={[
-        {
-          mark: `${DECK_GROUPING_LABELS.role} / ${DECK_GROUPING_LABELS.type}`,
-          meaning: "the list is always in sections — that is how a deck is short",
-        },
-        {
-          mark: deckSortLabel("name"),
-          meaning: "and the order you pick applies inside them",
-        },
-        { mark: deckSortLabel("mana"), meaning: "curve up, or curve down" },
-        {
-          mark: deckSortLabel("price"),
-          meaning: "offered on the shopping filter only, where money is the question",
-        },
-      ]}
-    />
+    <Specimen label="decklist-order" width={width}>
+      <DecklistOrderFigureBody />
+    </Specimen>
   );
 }
 

@@ -81,7 +81,7 @@ described as its four hardest plates. The number was not checked before it was w
 artifact here would have contradicted it — the inventory photographed the figures that existed, so
 the sheet confirmed the scope back to its author.
 
-**Twenty-five are `Specimen`-rooted and ten are `Legend`-rooted.** This record said "four mount
+**Twenty-six are `Specimen`-rooted and nine are `Legend`-rooted.** This record said "four mount
 and the rest are legends" — wrong again, and wrong in the paragraph correcting a previous wrong
 count, which is the second time a figure here was written down without being counted. The twenty-three
 range from mounting a whole surface as-is (`SetCell`, `CommitmentsCard`, `GameAxisCell`,

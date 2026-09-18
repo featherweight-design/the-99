@@ -43,6 +43,7 @@ import { TwoFacedMark } from "../cards/two-faced-mark";
 import { LastSlotsStrip } from "../decks/last-slots-strip";
 import { DecklistRow } from "../decks/decklist-row";
 import { RoleCounterStrip } from "../decks/role-counter-strip";
+import { GroupToggle } from "../decks/group-toggle";
 import { ContestedCardRow } from "../decks/contested-card-row";
 import { FitLegend } from "../commanders/fit-legend";
 import { AvailabilityControl } from "../commanders/rack/availability-control";
@@ -636,6 +637,47 @@ export function RolesFigureBody() {
       cards={ROLE_MIX_CARDS}
       onSeeShelf={() => {}}
       rolesWithShelves={new Set(["wipes", "land"])}
+    />
+  );
+}
+
+/**
+ * `decklist-order` — the decklist's own `GroupToggle`.
+ *
+ * The legend here spelled four labels out of `deck-sort.ts`: the two
+ * groupings, then Name, Mana value and Price. The bar those labels live on is
+ * one component, and it answers the caption directly — the two section pills
+ * side by side, and the order control beside them reading the live order back.
+ *
+ * `filter` is `shopping` deliberately. The caption's last clause is that price
+ * joins the orders on the shopping filter, where money is the question being
+ * asked, and that clause is about WHICH FILTER IS OPEN. A bar drawn on All
+ * would illustrate the half of the sentence that excludes the other half.
+ *
+ * The order control's options sit behind a closed panel, which is where the
+ * app keeps them. This figure draws the bar, not the sheet.
+ *
+ * Every handler is a no-op under `Specimen`'s `inert`. `shoppingCards` is
+ * required rather than defaulted — an empty list renders the price strip with
+ * no buy link — so it carries the two rows the Shopping count claims.
+ */
+export function DecklistOrderFigureBody() {
+  return (
+    <GroupToggle
+      allCount={99}
+      shoppingCount={2}
+      filter="shopping"
+      grouping="role"
+      onFilterChange={() => {}}
+      onGroupingChange={() => {}}
+      view="list"
+      onViewChange={() => {}}
+      shoppingCards={[
+        { name: "Dockside Extortionist", quantity: 1 },
+        { name: "Cyclonic Rift", quantity: 1 },
+      ]}
+      sort={{ key: "name", direction: "asc" }}
+      onSortChange={() => {}}
     />
   );
 }
