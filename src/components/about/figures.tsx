@@ -49,6 +49,7 @@ import {
   DiscoverFigureBody,
   FitLegendFigureBody,
   CommanderAvailabilityFigureBody,
+  DeckPageFigureBody,
   ImportIssuesFigureBody,
   PartnerSlotFigureBody,
   PostImportFigureBody,
@@ -774,16 +775,14 @@ function PartnersFigure({ width }: { width: AboutWidth }) {
 
 function DeckPageFigure({ width }: { width: AboutWidth }) {
   return (
-    <Legend
-      label="deck-page"
-      width={width}
-      rows={[
-        { mark: `${addPanelCopy.tabs.deck} · 99`, meaning: "the list itself" },
-        { mark: `${addPanelCopy.tabs.consider} · 80`, meaning: "cards this commander wants that are not in it yet" },
-        { mark: gameLogCopy.tab.label, meaning: "no count until one is logged — the absence is the signal" },
-        { mark: `${deckVersioningCopy.history.tab} · 1`, meaning: "what you committed, and when" },
-      ]}
-    />
+    <Specimen label="deck-page" width={width}>
+      {/* §3 draws the deck's own header: the art band with `Card details`,
+          `Update from a list` and `Export`, then the name, its rename glyph,
+          the identity pips, the commander line and the status. The figure was
+          four tab labels with counts — it named the page's sections and showed
+          none of the header this entry is about. */}
+      <DeckPageFigureBody />
+    </Specimen>
   );
 }
 

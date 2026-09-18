@@ -1,3 +1,7 @@
+import type { BuilderTabSpec } from "../../components/decks/builder-tabs";
+import { addPanelCopy } from "../copy/decks-builder";
+import { gameLogCopy } from "../copy/game-log";
+import { deckVersioningCopy } from "../copy/deck-versioning";
 import type { SynergyCard } from "../commanders/synergy-cards";
 import { deckImportCopy } from "../copy/deck-import";
 import type { CommanderRowView } from "../../components/commanders/commander-row";
@@ -806,3 +810,61 @@ export const SYNERGY_ROWS: SynergyCard[] = [
   },
 ];
 
+
+/**
+ * A deck's own header, as §3 draws it: the art band with its three controls,
+ * then the name, its rename glyph, the identity pips, the commander line and
+ * the status.
+ *
+ * `SpineBandProps` is a plain data shape, so the band is mounted rather than
+ * redrawn. The figure it replaces was four tab labels with counts, which named
+ * the page's sections and showed none of the header the entry is about.
+ *
+ * A PAIR, deliberately: the denominator is 98 rather than 99 and the identity
+ * pips are the union of two commanders, and a single-commander fixture draws
+ * neither. §3's own deck is `HD - Brago`, a W/U pair.
+ *
+ * `artCropUri` is null — a reference page fetches no commander art, and the
+ * band falls back to the identity gradient.
+ */
+/**
+ * The four tabs, with the counts §3 draws.
+ *
+ * `games` carries NO count, and that is key line 2: a tab drops its count
+ * rather than printing a nought, so a deck nobody has logged a game against
+ * simply has no number beside Games. A fixture where every tab had a figure
+ * would draw four alike and say nothing about the rule.
+ */
+export const DECK_TABS: BuilderTabSpec[] = [
+  { id: "deck", label: addPanelCopy.tabs.deck, count: 87, accessibleName: "In deck, 87 cards" },
+  { id: "consider", label: addPanelCopy.tabs.consider, count: 80, accessibleName: "Consider, 80 cards" },
+  { id: "games", label: gameLogCopy.tab.label, accessibleName: gameLogCopy.tab.label },
+  {
+    id: "versions",
+    label: deckVersioningCopy.history.tab,
+    count: 1,
+    accessibleName: `${deckVersioningCopy.history.tab}, 1 version`,
+  },
+];
+
+export const DECK_SPINE = {
+  deck: {
+    id: "about-deck",
+    name: "HD - Brago",
+    commander: {
+      oracleId: "about-brago",
+      name: "Brago, King Eternal",
+      colorIdentity: ["W", "U"],
+      artCropUri: null,
+    },
+    partner: null,
+  },
+  counts: {
+    built: 87,
+    ownedCount: 74,
+    // Non-zero, because the header's `To buy` state is one of the things a
+    // reader of this entry has to be able to recognise.
+    toBuyCount: 13,
+  },
+  status: "Building" as StatusPill,
+};

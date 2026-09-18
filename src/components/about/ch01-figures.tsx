@@ -21,6 +21,8 @@ import {
   CONTESTED_ARRIVAL,
   FIT_LEGEND,
   LANE_DISCOVER,
+  DECK_SPINE,
+  DECK_TABS,
   PARTNER_PROPOSAL,
   PRICES,
   SYNERGY_ROWS,
@@ -41,6 +43,10 @@ import { FitLegend } from "../commanders/fit-legend";
 import { AvailabilityControl } from "../commanders/rack/availability-control";
 import { CommanderRow } from "../commanders/commander-row";
 import { PartnerSlot } from "../decks/partner-slot";
+import { BuilderTabs } from "../decks/builder-tabs";
+import { StatusPillBadge } from "../decks/status-pill";
+import { statusBarStyle } from "../../lib/decks/status-style";
+import { deckBodySize } from "../../lib/decks/deck-size";
 import { SynergyRow } from "../commanders/synergy-row";
 import { CardDetailProvider } from "../cards/card-detail-provider";
 import { OrderControl } from "../commanders/rack/order-control";
@@ -431,5 +437,48 @@ export function CommanderAvailabilityFigureBody() {
         ))}
       </div>
     </CardDetailProvider>
+  );
+}
+
+/**
+ * The deck header, mounted from the route.
+ *
+ * `SpineDesktop` and `SpineMobile` are two components, not one responsive
+ * band, so the figure picks the one the route would — the same fault the fit
+ * key and the synergy rows carried into round 1 of chapter 02.
+ */
+export function DeckPageFigureBody() {
+  // THE BADGE, THE BAR AND THE TABS — what the entry's three key lines name.
+  // None of them is the art band, and the band is the part that cannot be
+  // shown: `SpineDesktop` lays out on a `basis-[280px]` and needs a wider row
+  // than About's ~750px plate, while `SpineMobile` is `md:hidden` and vanishes
+  // at desktop widths. The route renders both and lets CSS choose, which only
+  // works at route width. Hugh's call, 2026-09-18.
+  const { deck, counts, status } = DECK_SPINE;
+  const body = deckBodySize(deck.partner !== null);
+  return (
+    <div className="flex flex-col gap-[12px]">
+      <div className="flex flex-wrap items-center gap-[10px]">
+        {/* The box is a PROP and the default is the tile's, which is
+            `absolute bottom-[13px] left-[13px]` — passed nothing, the badge
+            pins itself to a corner and disappears from a figure that has no
+            positioned art to pin to. #666 caught the same default on three
+            figures; this is the spine's own in-flow box. */}
+        <StatusPillBadge
+          status={status}
+          className="flex flex-none items-center rounded-[6px] px-[8px] py-[3px] font-mono text-[11px]"
+        />
+        {/* The bar takes the SAME token the badge does, so the pair reads as
+            one state rather than two. */}
+        <span className="h-[6px] min-w-[160px] flex-1 overflow-hidden rounded-full bg-[color:var(--elevated)]">
+          <span className="block h-full" style={statusBarStyle(status, counts.built, body)} />
+        </span>
+        <span className="font-mono text-[12px] text-[color:var(--fg)]">
+          {counts.built}
+          <span className="text-[color:var(--fg-faint)]"> / {body}</span>
+        </span>
+      </div>
+      <BuilderTabs tabs={DECK_TABS} view="deck" onViewChange={() => {}} />
+    </div>
   );
 }

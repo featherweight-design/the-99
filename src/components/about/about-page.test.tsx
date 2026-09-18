@@ -6,6 +6,7 @@ import { FIGURES } from "./figures";
 import { availabilityCopy } from "../../lib/copy/availability";
 import { deckStateMarksCopy } from "../../lib/copy/deck-state-marks";
 import { refreshCopy } from "../../lib/copy/refresh";
+import { gameLogCopy } from "../../lib/copy/game-log";
 import { deckImportCopy } from "../../lib/copy/deck-import";
 import { ORDER_OPTIONS } from "../commanders/rack/order-options";
 import { commandersCopy, filterCopy } from "../../lib/copy/lanes";
@@ -24,6 +25,8 @@ import {
   LANE_ROW_DISCOVER,
   LANE_OWNED,
   LANE_ROW_OWNED,
+  DECK_SPINE,
+  DECK_TABS,
   PARTNER_PROPOSAL,
   SYNERGY_ROWS,
   FIT_FULL_SCORE,
@@ -1006,9 +1009,32 @@ describe("what each legend must hold", () => {
     );
   });
 
-  it("gives the deck page all four of its tabs", () => {
+  it("deck-page: the badge, the bar and the tabs the key lines name", () => {
     const { container } = render(<AboutPage seen={0} />);
-    expect(rows(container, "deck-page")).toHaveLength(4);
+    const el = container.querySelector('[data-specimen="deck-page"]')!;
+    expect(el, "deck-page drew no figure").toBeTruthy();
+
+    // NOT the whole header. `SpineDesktop` needs a wider row than About's
+    // plate and `SpineMobile` is `md:hidden`, so the band cannot be shown at
+    // this width — and no key line names it. These three are what the lines
+    // are about.
+    expect(el.textContent).toContain(DECK_SPINE.status);
+    expect(el.textContent).toContain(`${DECK_SPINE.counts.built}`);
+
+    // Key line 2: a tab DROPS its count rather than printing a nought, so the
+    // Games tab carries no figure. Counted rather than searched for: three
+    // tabs with counts and one without is the rule, and a fixture where every
+    // tab had a figure would draw four alike and say nothing.
+    const withCounts = DECK_TABS.filter((t) => typeof t.count === "number");
+    expect(withCounts).toHaveLength(DECK_TABS.length - 1);
+    for (const tab of DECK_TABS) {
+      expect(el.textContent).toContain(tab.label);
+      if (typeof tab.count === "number") {
+        expect(el.textContent).toContain(String(tab.count));
+      }
+    }
+    const games = DECK_TABS.find((t) => t.count === undefined)!;
+    expect(games.label).toBe(gameLogCopy.tab.label);
   });
 
   it("gives the resume rows all three verbs", () => {
