@@ -16,8 +16,11 @@ seedPrintings()
     const failure = unsizedRunFailure(r);
     if (failure) {
       console.error(`\n${failure}`);
-      process.exit(1);
+      // `process.exitCode`, never `process.exit()`: the explanation above is the only thing
+      // that tells the next person which remedy to reach for, and exiting immediately can
+      // terminate the process before a piped stderr write has drained — leaving a failed
+      // job whose reason is missing from the log.
+      process.exitCode = 1;
     }
-    process.exit(0);
   })
-  .catch((err) => { console.error(err); process.exit(1); });
+  .catch((err) => { console.error(err); process.exitCode = 1; });

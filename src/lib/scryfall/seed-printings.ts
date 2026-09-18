@@ -76,13 +76,17 @@ export async function setRepresentativePrintings(): Promise<number> {
  * standing — stale by one refresh rather than absent, which is the lesser of the two wrongs
  * and the one a reader can still act on.
  */
+/** Thrown to roll the publish back when it would clear without replacing. Never escapes. */
+class PublishedNothing extends Error {}
+
 export async function setBaseSetSizes(): Promise<number> {
-  return db.transaction(async (tx) => {
-    // Still a clear-then-fill rather than an upsert: a set that LOST its classification
-    // (every printing now unclassified, or the set emptied) has to go back to null, and the
-    // fill below deliberately skips those rows so it cannot write a denominator of 0.
-    await tx.execute(sql`update sets set base_set_size = null where base_set_size is not null`);
-    const updated = await tx.execute(sql`
+  try {
+    return await db.transaction(async (tx) => {
+      // Still a clear-then-fill rather than an upsert: a set that LOST its classification
+      // (every printing now unclassified, or the set emptied) has to go back to null, and
+      // the fill below deliberately skips those rows so it cannot write a denominator of 0.
+      await tx.execute(sql`update sets set base_set_size = null where base_set_size is not null`);
+      const updated = await tx.execute(sql`
     with counts as (
       select set_code,
              count(*) filter (where booster is not null)::int                     as classified,
@@ -105,8 +109,20 @@ export async function setBaseSetSizes(): Promise<number> {
      where s.code = c.set_code and c.classified > 0
     returning s.code
   `);
-    return updated.rows.length;
-  });
+      // A FILL THAT WROTE NOTHING ROLLS THE CLEAR BACK. Both statements are inside one
+      // transaction so the intermediate blank is unobservable, but committing a clear whose
+      // fill matched no row would still leave every set null — which is the whole defect,
+      // reached through a different door: an unseeded `sets` table, or a printings table
+      // that classifies nothing, rather than an orphaned bulk. Rolling back is what makes
+      // `unsizedRunFailure`'s "the previous denominators are untouched" true in every path
+      // instead of just the orphan one.
+      if (updated.rows.length === 0) throw new PublishedNothing();
+      return updated.rows.length;
+    });
+  } catch (error) {
+    if (error instanceof PublishedNothing) return 0;
+    throw error;
+  }
 }
 
 /**
