@@ -15,10 +15,11 @@
  * optimisation for freshness, not a correctness boundary: with the table unreachable the
  * cache behaves exactly as it did before this existed, which is the direction to fail in.
  */
+import { eq } from "drizzle-orm";
 import { unstable_cache } from "next/cache";
 
 import { db } from "../../db";
-import { catalogRefreshes } from "../../db/schema";
+import { catalogRefreshes, CATALOG_ROW_ID } from "../../db/schema";
 
 /** Used when the stamp cannot be read, and when no ingest has ever run. */
 const UNSTAMPED = "0";
@@ -31,7 +32,15 @@ const UNSTAMPED = "0";
  */
 export function generationKey(refreshedAt: Date | string | null | undefined): string {
   if (!refreshedAt) return UNSTAMPED;
-  const millis = new Date(refreshedAt).getTime();
+  // A NAKED TIMESTAMP IS READ AS UTC. `2026-09-18 12:00:00` is what Postgres renders for a
+  // column with no zone, and `new Date()` takes that for LOCAL time — so two servers in
+  // different zones would derive two keys from one stamp and split the cache between them.
+  // Naming the zone keeps the host's own clock out of a shared key.
+  const stamped = typeof refreshedAt === "string"
+      && !/[Zz]$|[+-]\d\d:?\d\d$/.test(refreshedAt)
+    ? `${refreshedAt.replace(" ", "T")}Z`
+    : refreshedAt;
+  const millis = new Date(stamped).getTime();
   return Number.isNaN(millis) ? UNSTAMPED : String(millis);
 }
 

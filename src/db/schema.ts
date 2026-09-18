@@ -866,22 +866,9 @@ export const commanderSupportCards = pgTable("commander_support_cards", {
   index("commander_support_cards_oracle_idx").on(t.oracleId),
 ]);
 
-/**
- * Per-account preferences that are not a reading habit. A reading habit —
- * which view, which order — lives in localStorage, because it belongs to the
- * device and re-prompting on a second one costs nothing. This does not: the
- * About page follows the account, and a version marker that lived per device
- * would put the page in front of the same reader on every browser they use.
- *
- * Named for what it is rather than for its one column. A second per-account
- * preference is a column here, not a second table — but it gains none
- * speculatively.
- *
- * `about_version_seen` is the highest ABOUT_VERSION this account has
- * acknowledged by pressing the page's dismiss. 0 is the default and means
- * "never seen", which is every account at launch. A row is written on first
- * dismiss; its absence reads as 0 rather than as an error.
- */
+/** The id of the one row. Named so the reader and the writer cannot disagree about it. */
+export const CATALOG_ROW_ID = 1;
+
 /**
  * When the card catalog last changed, as one row.
  *
@@ -900,12 +887,31 @@ export const commanderSupportCards = pgTable("commander_support_cards", {
  * built from.
  */
 export const catalogRefreshes = pgTable("catalog_refreshes", {
-  // One row, forever. The check constraint is the whole schema: a second row would make
-  // "the current generation" a question with two answers.
+  // One row, forever, and the constraint below is what makes that a fact rather than a
+  // convention: a second row would make "the current generation" a question with two
+  // answers, and the reader would take whichever Postgres handed back first.
   id: integer("id").primaryKey(),
   refreshedAt: timestamp("refreshed_at").notNull().defaultNow(),
-});
+}, (t) => [
+  check("catalog_refreshes_single_row_check", sql`${t.id} = 1`),
+]);
 
+/**
+ * Per-account preferences that are not a reading habit. A reading habit —
+ * which view, which order — lives in localStorage, because it belongs to the
+ * device and re-prompting on a second one costs nothing. This does not: the
+ * About page follows the account, and a version marker that lived per device
+ * would put the page in front of the same reader on every browser they use.
+ *
+ * Named for what it is rather than for its one column. A second per-account
+ * preference is a column here, not a second table — but it gains none
+ * speculatively.
+ *
+ * `about_version_seen` is the highest ABOUT_VERSION this account has
+ * acknowledged by pressing the page's dismiss. 0 is the default and means
+ * "never seen", which is every account at launch. A row is written on first
+ * dismiss; its absence reads as 0 rather than as an error.
+ */
 export const userPrefs = pgTable("user_prefs", {
   userId: text("user_id").primaryKey(),
   aboutVersionSeen: integer("about_version_seen").notNull().default(0),

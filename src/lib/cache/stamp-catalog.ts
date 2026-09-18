@@ -6,19 +6,19 @@
  * the stamp by a moment gets the old generation and one more minute of the old payload
  * rather than a new generation over half-written rows.
  *
- * ONE ROW, upserted. `id` is the constant 1 because "the current catalog" is a single fact;
+ * ONE ROW, upserted. `id` is `CATALOG_ROW_ID`, and a check constraint forbids any other, because "the current catalog" is a single fact;
  * a table that grew a row per refresh would make reading it a scan with an ordering, for an
  * answer nothing needs the history of.
  */
 import { sql } from "drizzle-orm";
 
 import { db } from "../../db";
-import { catalogRefreshes } from "../../db/schema";
+import { catalogRefreshes, CATALOG_ROW_ID } from "../../db/schema";
 
 export async function stampCatalogRefresh(): Promise<void> {
   await db
     .insert(catalogRefreshes)
-    .values({ id: 1, refreshedAt: new Date() })
+    .values({ id: CATALOG_ROW_ID, refreshedAt: new Date() })
     .onConflictDoUpdate({
       target: catalogRefreshes.id,
       set: { refreshedAt: sql`excluded.refreshed_at` },
