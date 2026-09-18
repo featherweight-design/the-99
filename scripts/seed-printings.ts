@@ -14,13 +14,16 @@ seedPrintings()
     // while every set on the site read `not indexed yet` (#704). The data is intact either
     // way now; what this adds is that somebody finds out.
     const failure = unsizedRunFailure(r);
-    if (failure) {
-      console.error(`\n${failure}`);
-      // `process.exitCode`, never `process.exit()`: the explanation above is the only thing
-      // that tells the next person which remedy to reach for, and exiting immediately can
-      // terminate the process before a piped stderr write has drained — leaving a failed
-      // job whose reason is missing from the log.
-      process.exitCode = 1;
+    if (!failure) {
+      // Explicitly, as every sibling seed script does: the Neon pool can hold a socket open
+      // and the refresh step would sit on it until the workflow's 180-minute timeout.
+      process.exit(0);
     }
+    // EXITS FROM THE WRITE'S OWN CALLBACK. The explanation is the only thing that tells the
+    // next person which remedy to reach for, and `process.exit()` can kill the process
+    // before a piped stderr write has drained — a failed job whose reason is missing from
+    // the log. Waiting for the flush and then exiting keeps both the message and the
+    // termination the pool needs.
+    process.stderr.write(`\n${failure}\n`, () => process.exit(1));
   })
-  .catch((err) => { console.error(err); process.exitCode = 1; });
+  .catch((err) => { console.error(err); process.exit(1); });

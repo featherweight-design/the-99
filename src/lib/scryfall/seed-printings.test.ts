@@ -4,8 +4,14 @@
 // finished run counts as a failure is a decision about four numbers, and it is the decision
 // that was missing — the incident on 2026-09-16 ran green while blanking every set in the
 // database.
-import { describe, expect, it } from "vitest";
-import { unsizedRunFailure } from "./seed-printings";
+import { describe, expect, it, vi } from "vitest";
+
+// The module builds the Neon pool at import, and this file exercises a pure function that
+// touches none of it. Same mock every DB-importing unit test here uses: without it a test
+// with no database in sight opens a connection and holds the handle.
+vi.mock("../../db", () => ({ db: {} }));
+
+const { unsizedRunFailure } = await import("./seed-printings");
 
 const run = (over: Partial<Parameters<typeof unsizedRunFailure>[0]> = {}) => ({
   upserted: 102_769, skippedOrphan: 0, baseSetSizes: 740, ...over,

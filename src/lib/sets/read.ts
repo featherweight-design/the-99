@@ -274,10 +274,11 @@ export async function loadOwnedSets(userId: string): Promise<SetIndexRow[]> {
     // from the metadata query above: those are two statements, and a refresh between them
     // can pair one run's base_set_size with another run's booster flags.
     //
-    // It is also authoritative when null, which now means one thing only: no run has ever
-    // published a base run for this set. A half-finished refresh leaves the previous
-    // denominator standing instead (#704), and recomputing one here from partially
-    // rewritten rows would replace either state with a figure nobody published. The owned
+    // It is also authoritative when null, which means NO DENOMINATOR IS CURRENTLY PUBLISHED
+    // — not that none ever was. A set whose printings stop being classified goes back to
+    // null on the next successful run, and a half-finished refresh leaves the previous
+    // denominator standing (#704). Recomputing one here from partially rewritten rows would
+    // replace either state with a figure nobody published. The owned
     // count is still honest either way — it says what you hold, not what fraction of what.
     const snapshotSize = rows.length > 0
       ? ((rows[0] as unknown as { baseSetSize: number | null }).baseSetSize ?? null)

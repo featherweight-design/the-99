@@ -107,8 +107,16 @@ export async function setBaseSetSizes(): Promise<number> {
      -- denominator of 0 and the index reads "0%", which is the one thing nullability
      -- exists to prevent: a figure nobody computed, presented as a fact.
      where s.code = c.set_code and c.classified > 0
-    returning s.code
+    -- The VALUE, not just the row: the nullif above writes NULL for a set whose classified
+    -- printings are all variants, and RETURNING hands that row back like any other. Counting
+    -- rows would call such a run a publish, so a database of nothing but all-variant sets
+    -- would clear every denominator and report success. (No backticks in here: this comment
+    -- is inside a template literal, and one would end it.)
+    returning s.code, s.base_set_size
   `);
+      const published = updated.rows.filter(
+        (row) => (row as { base_set_size: number | null }).base_set_size !== null,
+      ).length;
       // A FILL THAT WROTE NOTHING ROLLS THE CLEAR BACK. Both statements are inside one
       // transaction so the intermediate blank is unobservable, but committing a clear whose
       // fill matched no row would still leave every set null — which is the whole defect,
@@ -116,8 +124,8 @@ export async function setBaseSetSizes(): Promise<number> {
       // that classifies nothing, rather than an orphaned bulk. Rolling back is what makes
       // `unsizedRunFailure`'s "the previous denominators are untouched" true in every path
       // instead of just the orphan one.
-      if (updated.rows.length === 0) throw new PublishedNothing();
-      return updated.rows.length;
+      if (published === 0) throw new PublishedNothing();
+      return published;
     });
   } catch (error) {
     if (error instanceof PublishedNothing) return 0;
