@@ -90,7 +90,10 @@ describe("Deck filters — the sheet the chassis opens on the phone", () => {
         onDismiss={() => {}}
         autoFocusSearch={false}
         {...props({
-          filters: { statuses: ["Draft"], colours: ["R"], played: "never", search: "krenko" },
+          filters: {
+            statuses: ["Draft"], states: ["pending"], colours: ["R"], played: "never",
+            search: "krenko",
+          },
           onChange,
         })}
       />,

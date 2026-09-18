@@ -36,6 +36,9 @@ if (!EMAIL.includes("+clerk_test") && !PASSWORD) {
 const BASE = process.env.PROBE_BASE ?? "http://localhost:3000";
 const WIDTHS = [
   { label: "desktop", width: 1300, height: 900 },
+  // The chassis's own switch point, and the width where a fifth control in the
+  // wide row either fits or wraps. 1300 has slack and would pass either way.
+  { label: "boundary", width: 1000, height: 900 },
   { label: "phone", width: 390, height: 844 },
 ];
 
@@ -270,6 +273,66 @@ try {
     }
     if (read.plan.text.includes("change since")) {
       fail(`${label}: the plan tile prints a change figure, which it has no version for`);
+    }
+
+    // ── The wide chassis must not wrap, with a fifth control in the row ──
+    // Runs WHEREVER THE WIDE ROW RENDERS rather than at a width this script
+    // names: the chassis owns its own switch point, and a probe that hard-codes
+    // 1000 measures nothing the day that constant moves. Below the switch the
+    // control lives in a sheet and there is no row to wrap, so a miss there is
+    // a skip; at or above it, a miss is a failure.
+    {
+      const row = await page.evaluate(() => {
+        const buttons = [...document.querySelectorAll("main button")]
+          .filter((b) => b.getClientRects().length > 0);
+        let el = buttons.find((b) => /Deck state/.test(b.textContent || ""));
+        if (!el) return { found: false };
+        // Climb to the element that actually holds the control cluster rather
+        // than trusting a class name: the chassis composes its own wrappers.
+        while (el && [...el.children].filter((c) => c.getClientRects().length > 0).length < 4) {
+          el = el.parentElement;
+        }
+        if (!el) return { found: false };
+        const kids = [...el.children].filter((c) => c.getClientRects().length > 0);
+        const boxes = kids.map((c) => c.getBoundingClientRect());
+        // WRAP IS A BAND, NOT A SHARED TOP. The row and its inner group are
+        // both `items-center` and its controls are different heights — a 34px
+        // search field, a ~40px panel trigger, 22px colour pips — so their tops
+        // differ by several pixels while sitting on one line. A shared-top check
+        // fails on a perfectly healthy row, which is what the first version of
+        // this did: it reported "5 controls on 3 lines" against a row measuring
+        // 40px tall. What a second line actually costs is HEIGHT, so the band is
+        // compared to the tallest control rather than the tops to each other.
+        const top = Math.min(...boxes.map((b) => b.top));
+        const bottom = Math.max(...boxes.map((b) => b.bottom));
+        const tallest = Math.max(...boxes.map((b) => b.height));
+        return {
+          found: true,
+          controls: kids.length,
+          band: Math.round(bottom - top),
+          tallest: Math.round(tallest),
+          overflow: el.scrollWidth - el.clientWidth,
+        };
+      });
+      if (!row.found) {
+        if (width >= 1000) {
+          fail(`${label}: the Deck state control is not in the wide chassis row`);
+        } else {
+          note(`${label}: compact form, the facet is in the sheet — no row to wrap`);
+        }
+      } else if (row.band > row.tallest + 8) {
+        fail(
+          `${label}: the chassis row wrapped — ${row.controls} controls span ${row.band}px ` +
+            `against a tallest control of ${row.tallest}px`,
+        );
+      } else if (row.overflow > 1) {
+        fail(`${label}: the chassis row overflows by ${row.overflow}px`);
+      } else {
+        note(
+          `${label}: ${row.controls} controls, one line (${row.band}px band, ` +
+            `${row.tallest}px tallest), no overflow`,
+        );
+      }
     }
 
     // ── The deck page: the phase in words, at both widths ────────────────

@@ -7,6 +7,7 @@
 // equivalent — neither route captioned its colour control at all.
 
 import { filterCopy } from "./lanes";
+import { deckStateMarksCopy } from "./deck-state-marks";
 import { refreshCopy } from "./refresh";
 import type { FilterPanelCopy } from "./collection";
 
@@ -92,8 +93,8 @@ const deckPanel = (
 
   panelAriaLabel: `${dimension} options`,
   sheetTitle: dimension,
-  // Neither dimension is searchable: status has six values and last-played two,
-  // which is a list you read rather than one you hunt through.
+  // NONE of these dimensions is searchable: status has six values, deck state
+  // two and last-played two, which are lists you read rather than hunt through.
   searchPlaceholder: "",
   searchAriaLabel: "",
   clearSearch: "",
@@ -128,6 +129,20 @@ const deckCount = (n: number) => `${fmt(n)} ${n === 1 ? "deck" : "decks"}`;
 
 export const deckChassisCopy = {
   status: deckPanel(refreshCopy.filters.statusHeading, deckCount),
+  /**
+   * The deck-state marks. Its own heading rather than two more Status rows,
+   * because Status partitions ONE fact — how the matched count stands against
+   * the body size — and these answer two others: whether the deck is committed
+   * at all, and whether its draft has moved since.
+   *
+   * NOT because of the panel's `N of N` footer, which is what an earlier draft
+   * of this note claimed: `/decks` passes `footerStatus={false}` to every panel
+   * it mounts, so that string is never drawn on this route. What a seventh
+   * `STATUS_ORDER` member would really break is the vocabulary it serialises —
+   * `?status=` values, `filterDecks`' comparison against `statusPill`, and the
+   * exhaustiveness `statusPill()` is written around.
+   */
+  state: deckPanel(deckStateMarksCopy.filter.heading, deckCount),
   played: deckPanel(refreshCopy.filters.lastPlayedHeading, deckCount),
   /** Row 3. The count the header used to print, now the chassis's result line. */
   result: (shown: number, total: number) =>

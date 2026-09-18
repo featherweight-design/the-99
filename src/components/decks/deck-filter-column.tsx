@@ -10,8 +10,10 @@
 import { refreshCopy } from "../../lib/copy/refresh";
 import {
   type DeckFilters,
+  type DeckState,
   type PlayedWindow,
 } from "../../lib/decks/filter";
+import { deckStateMarksCopy } from "../../lib/copy/deck-state-marks";
 import type { DeckSort } from "../../lib/decks/sort";
 import type { StatusPill } from "../../lib/decks/status";
 import { SearchIcon } from "./search-icon";
@@ -48,6 +50,12 @@ export const STATUS_COPY_KEY: Record<StatusPill, keyof typeof refreshCopy.status
   Unresolved: "unresolved",
   "To buy": "toBuy",
   Complete: "complete",
+};
+
+/** The deck-state rows, keyed off the copy file like every label here. */
+export const STATE_LABEL: Record<DeckState, string> = {
+  uncommitted: deckStateMarksCopy.filter.notCommitted,
+  pending: deckStateMarksCopy.filter.hasPending,
 };
 
 export const PLAYED_LABEL: Record<PlayedWindow, string> = {
