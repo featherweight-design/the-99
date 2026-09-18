@@ -71,20 +71,26 @@ function report(label, ok, detail) {
 }
 
 /**
- * Every closed `Show all …` disclosure the reader can actually press.
+ * Every closed disclosure the reader can actually press, whatever it says.
  *
- * VISIBLE ones only, and that clause is load-bearing rather than defensive: Role
- * Coverage draws four disclosures of its own on the same page, and the width this
- * probe is not running at keeps its copy in the DOM. A run that took the first
- * match spent thirty seconds trying to click a hidden button on the panel it was
- * not measuring.
+ * Selected by STRUCTURE — a closed `aria-expanded` button naming a list that is
+ * in the document — and never by its words. The first version matched
+ * `/Show all/` on the text, which is the phone's wording: Role Coverage's DESKTOP
+ * disclosure reads `+N more` (`coverage-chip.tsx`), so the 1300px run pressed the
+ * synergy panel's control alone and never measured `RolePanelDesktop` at all,
+ * while the header above claimed it swept every list. A revert of that panel's
+ * hook passed.
+ *
+ * VISIBLE ones only, and that clause is load-bearing rather than defensive: the
+ * width this probe is not running at keeps its copy of every disclosure in the
+ * DOM, and a run that took the first match spent thirty seconds trying to click
+ * a hidden button on the panel it was not measuring.
  */
 const DISCLOSURES = (page) =>
-  [...document.querySelectorAll(`${page} button[aria-expanded="false"]`)]
-    .filter((b) => /Show all/.test(b.textContent ?? ""))
+  [...document.querySelectorAll(`${page} button[aria-expanded="false"][aria-controls]`)]
     .filter((b) => b.getBoundingClientRect().width > 0 && b.offsetParent !== null)
     .map((b) => b.getAttribute("aria-controls"))
-    .filter(Boolean);
+    .filter((id) => id && document.getElementById(id) !== null);
 
 /** The named list's own scroll state. */
 const LIST = (id) => {
@@ -187,6 +193,62 @@ async function run() {
         );
         await page.click(`[aria-controls="${id}"]`);
         await page.waitForTimeout(250);
+      }
+
+      // The counterpart rule, and the one a careless dependency breaks: a list the
+      // reader is READING must hold its place while the section around it
+      // re-renders. `sortRoleCards` returns a fresh array for every order but the
+      // default, so keying the discard on the card list instead of the sort key
+      // fires the effect on every render — and pressing any OTHER role's
+      // disclosure would then yank the open one back to its top.
+      //
+      // Only reachable with the order changed, because the default order hands
+      // back the same array and the fault cannot appear there.
+      const ordered = await page.evaluate((p) => {
+        const trigger = [...document.querySelectorAll(`${p} button[aria-label="Order the role lists"]`)]
+          .find((b) => b.getBoundingClientRect().width > 0 && b.offsetParent !== null);
+        if (!trigger) return false;
+        trigger.click();
+        return true;
+      }, PAGE);
+      if (!ordered) {
+        report(`${width}px · the role order control`, false, "not on the page — NOT a pass");
+      } else {
+        await page.waitForTimeout(300);
+        await page.evaluate(() => {
+          const option = [...document.querySelectorAll('[role="menuitemradio"]')]
+            .find((o) => /Availability/.test(o.textContent ?? ""));
+          option?.click();
+        });
+        await page.waitForTimeout(500);
+        const roleIds = (await page.evaluate(DISCLOSURES, PAGE)).filter((id) => /-list$/.test(id));
+        if (roleIds.length < 2) {
+          report(
+            `${width}px · two role lists to read against each other`,
+            false,
+            `${roleIds.length} closed role disclosures — NOT a pass`,
+          );
+        } else {
+          await page.click(`[aria-controls="${roleIds[0]}"]`);
+          await page.waitForTimeout(400);
+          await page.evaluate((id) => {
+            const ul = document.getElementById(id);
+            if (ul) ul.scrollTop = ul.scrollHeight;
+          }, roleIds[0]);
+          await page.waitForTimeout(200);
+          const before = await page.evaluate(LIST, roleIds[0]);
+          // A sibling disclosure, which re-renders the section and nothing else.
+          await page.click(`[aria-controls="${roleIds[1]}"]`);
+          await page.waitForTimeout(400);
+          const after = await page.evaluate(LIST, roleIds[0]);
+          report(
+            `${width}px · an open list holds its place while a sibling opens`,
+            before !== null && before.top > 0 && after !== null && after.top === before.top,
+            before === null || before.top === 0
+              ? "the list did not scroll — NOT a pass: nothing was held"
+              : `left at ${Math.round(before.top)}, still at ${Math.round(after?.top ?? -1)}`,
+          );
+        }
       }
 
       // And the path as it was REPORTED, which no single disclosure covers: the

@@ -129,6 +129,7 @@ function RolePanelDesktop({
   expanded,
   onToggle,
   listId,
+  sort,
 }: {
   role: RoleName;
   cards: RoleCard[];
@@ -137,16 +138,23 @@ function RolePanelDesktop({
   expanded: boolean;
   onToggle: () => void;
   listId: string;
+  /** The order the cards arrived in — a scroll key, not a sorter. See below. */
+  sort: CoverageSortKey;
 }): JSX.Element {
   const target = ROLE_TARGETS[role];
   const cap = COVERAGE_CAP.desktop;
   const siblings = cards.map((c) => c.oracleId);
   // The open list is a 320px scroll box, and closing it writes nothing to
   // `scrollTop` — so a role scrolled to its foot and closed reopened at its foot,
-  // measured at offset 1752 either side of a close. Keyed on the card list too:
+  // measured at offset 1752 either side of a close. Keyed on the SORT as well:
   // re-sorting swaps which cards are in the box, and an offset into the old order
   // means nothing in the new one.
-  const listRef = useDiscardedScroll<HTMLUListElement>([expanded, cards]);
+  //
+  // The sort KEY, never the `cards` array. `sortRoleCards` returns a fresh array
+  // for every key but `played`, so an array dependency never compares equal and
+  // the effect fires on every render — which would drag a reader back to the top
+  // of the list they were reading the moment any sibling role was toggled.
+  const listRef = useDiscardedScroll<HTMLUListElement>([expanded, sort]);
   const visible = expanded ? cards.slice(0, COVERAGE_EXPANDED_CAP) : cards.slice(0, cap);
   const hiddenCount = cards.length - cap; // > 0 means disclosure needed
   const beyondExpanded = cards.length > COVERAGE_EXPANDED_CAP
@@ -245,6 +253,7 @@ function RolePanelPhone({
   expanded,
   onToggle,
   listId,
+  sort,
 }: {
   role: RoleName;
   cards: RoleCard[];
@@ -253,16 +262,23 @@ function RolePanelPhone({
   expanded: boolean;
   onToggle: () => void;
   listId: string;
+  /** The order the cards arrived in — a scroll key, not a sorter. See below. */
+  sort: CoverageSortKey;
 }): JSX.Element {
   const target = ROLE_TARGETS[role];
   const cap = COVERAGE_CAP.phone;
   const siblings = cards.map((c) => c.oracleId);
   // The open list is a 320px scroll box, and closing it writes nothing to
   // `scrollTop` — so a role scrolled to its foot and closed reopened at its foot,
-  // measured at offset 1752 either side of a close. Keyed on the card list too:
+  // measured at offset 1752 either side of a close. Keyed on the SORT as well:
   // re-sorting swaps which cards are in the box, and an offset into the old order
   // means nothing in the new one.
-  const listRef = useDiscardedScroll<HTMLUListElement>([expanded, cards]);
+  //
+  // The sort KEY, never the `cards` array. `sortRoleCards` returns a fresh array
+  // for every key but `played`, so an array dependency never compares equal and
+  // the effect fires on every render — which would drag a reader back to the top
+  // of the list they were reading the moment any sibling role was toggled.
+  const listRef = useDiscardedScroll<HTMLUListElement>([expanded, sort]);
   const visible = expanded ? cards.slice(0, COVERAGE_EXPANDED_CAP) : cards.slice(0, cap);
   const hiddenCount = cards.length - cap;
   const beyondExpanded = cards.length > COVERAGE_EXPANDED_CAP
@@ -642,6 +658,7 @@ export function CoverageSection({
               expanded={expanded}
               onToggle={() => toggleRole(role)}
               listId={listId(role)}
+              sort={sort}
             />
           ) : (
             <RolePanelPhone
@@ -653,6 +670,7 @@ export function CoverageSection({
               expanded={expanded}
               onToggle={() => toggleRole(role)}
               listId={listId(role)}
+              sort={sort}
             />
           );
         })}

@@ -1018,6 +1018,14 @@ export function CardModal({
   // the same question and no number to hold it against. Equal figures say
   // nothing: on the cheapest printing itself `from $2.34` beside `$2.34` is the
   // same number twice.
+  //
+  // THE COMPARISON IS AGAINST THE DRAWN FIGURE, whatever finish supplied it, and
+  // the cheapest is non-foil only — so the two sides can name different finishes.
+  // That asymmetry is the rule rather than a gap in it: what this line must never
+  // do is sit beside a smaller number claiming the card starts higher. A foil-only
+  // $1.20 with a $4.39 non-foil sibling therefore says nothing, which is silence
+  // and not a false claim; a foil-only $9.80 with the same sibling says
+  // `from $4.39`, which is true and is the reason a reader would look.
   const shownState = price?.fact
     ? priceState(price.fact, card.prices?.newestAsOf ?? null)
     : null;
@@ -1436,7 +1444,14 @@ export function CardModal({
                   heading there is aria-hidden, so a figure placed inside it would reach
                   no assistive technology at all (erratum E10). */}
               {compactArt && priceTag && (
-                <div className="md:hidden" data-testid="modal-price-compact">{priceTag}</div>
+                // The `from` figure comes with it. This is the state where the
+                // printing PICKER is open — the one moment the reader is choosing
+                // between printings — so a header that named the cheapest nowhere
+                // would withhold it exactly where it is being asked for.
+                <div className="md:hidden flex items-center gap-[6px]" data-testid="modal-price-compact">
+                  <span data-testid="modal-price-tag-compact">{priceTag}</span>
+                  {fromLine(true)}
+                </div>
               )}
               <div className={compactArt ? "min-w-0 hidden md:block" : "min-w-0"}>
                 <h3

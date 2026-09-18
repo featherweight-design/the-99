@@ -182,6 +182,36 @@ describe("the price under the art", () => {
     expect(screen.queryByTestId("modal-price-from-desktop")).toBeNull();
   });
 
+  it("says nothing when the figure on screen is already lower, whatever its finish", () => {
+    // The cheapest is non-foil only and the tag draws whichever finish this
+    // printing was stocked in, so the two sides can name different finishes. The
+    // rule is that this line never sits beside a smaller number claiming the card
+    // starts higher — so a foil-only $1.20 with a $4.39 non-foil sibling is
+    // silent.
+    mount(card({
+      prices: indexPriceRows([
+        priceRow({ price_cents: null, price_cents_foil: 120 }),
+        priceRow({ scryfall_id: "plain", collector_number: "999", price_cents: 439 }),
+      ]),
+    }));
+
+    expect(screen.getByTestId("modal-price-tag-desktop")).toHaveTextContent("$1.20");
+    expect(screen.queryByTestId("modal-price-from-desktop")).toBeNull();
+  });
+
+  it("names the cheapest beside a dearer foil-only figure", () => {
+    // The mirror of the case above, and the reason a reader would look: the
+    // printing on screen is stocked in foil at $9.80 and the card starts at $4.39.
+    mount(card({
+      prices: indexPriceRows([
+        priceRow({ price_cents: null, price_cents_foil: 980 }),
+        priceRow({ scryfall_id: "plain", collector_number: "999", price_cents: 439 }),
+      ]),
+    }));
+
+    expect(screen.getByTestId("modal-price-from-desktop")).toHaveTextContent("from $4.39");
+  });
+
   it("renders no node at all when no price read reached us", () => {
     // Silence is the state. Not a dash, not $0.00, not a reserved slot — and not
     // an aria-hidden placeholder either, so the absent state is absent to

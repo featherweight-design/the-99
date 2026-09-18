@@ -748,20 +748,38 @@ Package manager is **pnpm** (pinned via `packageManager` in package.json) — ne
   number with no layout behind it, so the unit tests prove the write happens and only this
   proves the box returns.
 
-  **EVERY visible disclosure, not the first.** The page draws Role Coverage's four role lists
-  beside the synergy panel's own; they have the same rule, and the first version took the
-  first match and measured one of them while naming the other. Both had the defect. Two
-  clauses were paid for by a run: the sweep must filter on VISIBILITY, because the width the
-  probe is not running at keeps its copy of every disclosure in the DOM and a hidden button
-  spends thirty seconds failing to be clicked; and a list is collapsed by pressing its OWN
-  toggle, never `[aria-expanded="true"]`, whose first match at 390 belonged to another
-  section — the list never collapsed, the state never moved, and the check failed on a
-  working build. A list that opens without scrolling is reported as measuring nothing rather
-  than passing. Its last check is the path as REPORTED: scrolled to the foot, a different
-  facet pill pressed, then `Show all` on that facet. It also asserts the commander's identity
-  is NAMED (`Temur`) and that no bare WUBRG run is on the page. Both mutations fail it — the
-  hook's write removed (every list), and `colorLabel` reverted to `join("")` (`found GRW`).
-  Makes no writes; point it at `local-dev`.
+  **EVERY visible disclosure, selected by STRUCTURE and never by its words.** The page draws
+  Role Coverage's four role lists beside the synergy panel's own; they have the same rule, and
+  the first version took the first match and measured one of them while naming the other. Both
+  had the defect. Three clauses were each paid for by a run:
+
+  - A closed `aria-expanded` button naming a list in the document is the selector. Matching
+    `/Show all/` on the text is the PHONE's wording — the desktop role disclosure reads
+    `+N more` (`coverage-chip.tsx`) — so the 1300px run pressed the synergy panel alone,
+    claimed to sweep every list, and passed a revert of `RolePanelDesktop`'s hook.
+  - The sweep filters on VISIBILITY: the width the probe is not running at keeps its copy of
+    every disclosure in the DOM, and a hidden button spends thirty seconds failing to be
+    clicked.
+  - A list is collapsed by pressing its OWN toggle, never `[aria-expanded="true"]`, whose
+    first match at 390 belonged to another section — the list never collapsed, the state never
+    moved, and the check failed on a working build.
+
+  A list that opens without scrolling is reported as measuring nothing rather than passing.
+
+  **The counterpart rule is checked too, and it is the one a careless dependency breaks:** a
+  list the reader is READING holds its place while the section around it re-renders.
+  `sortRoleCards` returns a fresh array for every order but the default, so keying the discard
+  on the card list rather than the sort KEY fires the effect on every render, and pressing any
+  other role's disclosure yanks the open one to its top. Only reachable with the order changed
+  to `Availability` — the default hands back the same array and the fault cannot appear there
+  — which is why the probe presses the order control before measuring it.
+
+  Its last check is the path as REPORTED: scrolled to the foot, a different facet pill
+  pressed, then `Show all` on that facet. It also asserts the commander's identity is NAMED
+  (`Temur`) and that no bare WUBRG run is on the page. Four mutations fail it — the hook's
+  write removed (every list), `RolePanelDesktop`'s hook alone reverted (the three desktop role
+  lists, and nothing else), the array dependency restored (both hold-its-place checks), and
+  `colorLabel` reverted to `join("")` (`found GRW`). Makes no writes; point it at `local-dev`.
 
 - `pnpm probe:scroll-lock` presses every overlay the app draws over a scrim — the filter
   sheets on `/collection`, `/commanders`, `/discover`, `/decks` and a set page, the
