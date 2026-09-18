@@ -115,10 +115,12 @@ export function DeckCardOverflow({
    * sits near the left margin, so it is placed FROM the left and pushed back
    * inside the margin when there is not room.
    *
-   * `top` is the trigger's bottom, NOT bottom + 6: the panel keeps its own
-   * `mt-[6px] sm:mt-[4px]`, and a fixed element's margin still offsets it. Adding
-   * the gap here as well would double it, and would flatten the 6/4 step the
-   * shipped panel draws between phone and desktop.
+   * THE GAP IS ARITHMETIC HERE, not a margin. `top` is the trigger's bottom plus
+   * `gap`, and the inline style zeroes `margin-top` — because a flipped panel
+   * needs the gap ABOVE it, where a margin-top would instead push it down into
+   * its own trigger. The `mt-[6px] sm:mt-[4px]` classes remain for the absolute
+   * fallback only, and `gap` reproduces their 6/4 step at the same 640px
+   * breakpoint. Do not add the gap in both places.
    */
   function place() {
     const box = buttonRef.current?.getBoundingClientRect();
