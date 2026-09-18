@@ -29,7 +29,7 @@ Every structural claim in the drop was checked against the tree:
 | `cost-strip.tsx` needs no change: `md:flex` always open, both disclosures `md:hidden` | **True** — `cost-strip.tsx:109`, `:137`, `:213` |
 | No new copy string: the bar prints the set name and `head.ratioAria`, both shipped | **True** — `set-collections.ts:275-277` |
 | `HYSTERESIS_PX` and `isDesktop` are already terms in the hook | **True** — `use-head-collapse.ts` |
-| `probe:sets` has no desktop pass over the collapse | **True** — `probe-sets.mjs:822` sets 390 before the whole block and never revisits it |
+| `probe:sets` has no desktop pass over the collapse | **True** — the block opens at 390 (`probe-sets.mjs:822`) and every threshold, band, animation and reversal check runs there. It does visit 1280 once, for the breakpoint round trip, but that measures the phone's reserve after the trip rather than a collapsed desktop head |
 | Two tests invert with this ruling | **True** — see below |
 
 ## The blocker: the drop edits a locked file
@@ -74,10 +74,20 @@ own §0 says the R3 files are untouched, so honouring that claim is the whole fi
    drops `!isDesktop`; the `seenDesktop` reopen stays. Eng call, per the standing rule that a
    mechanism with no layout consequence does not go back to Design.
 
-2. **The file table is one file short.** The rarity-panel gate needs the panel's open state,
-   which lives in `filter-panel.tsx:199` and is not reported to any caller. `FilterPanel` is
-   shared across routes, so the fourth file is `src/components/ui/filter-panel.tsx` and the
-   change is an additive optional `onOpenChange`, defaulted so no other caller moves.
+2. **The file table is one file short — and then it is not.** The rarity-panel gate needs the
+   panel's open state, which lives in `filter-panel.tsx:199` and is reported to no caller, so
+   this was ruled a fourth file taking an additive `onOpenChange`.
+
+   **Built, measured unreachable, and removed — the count is back to three.** The desktop popover
+   already dismisses itself on scroll, so there is no state in which a collapse lands under an
+   open panel: `probe:sets` opened the panel, scrolled, and reported the head collapsed for want
+   of a panel left to hold it. A gate nothing reaches is worse than none, because the next reader
+   takes it for a rule that holds. `filter-panel.tsx` is untouched.
+
+   What ships instead is an assertion of the property the gate stood in for — the probe checks the
+   panel is dismissed by the same scroll. Deliberately not a unit test: a jsdom `scroll` event
+   targets `window`, which is not a `Node`, so the panel's own `panelRef.contains(target)` guard
+   never runs and the test would report the panel open on a build where it closes.
 
 3. **The desktop probe is required, not optional.** Design asks whether to add a desktop width
    to `probe:sets` in this PR. A browser probe is the only proof a visual ruling shipped, and
@@ -100,10 +110,28 @@ own §0 says the R3 files are untouched, so honouring that claim is the whole fi
 - `set-grid-view.test.tsx:2538` — "never collapses at desktop, however far the reader scrolls"
   asserts the rule being reversed. Rewritten, not deleted: at `md`, scrolling past the
   threshold collapses, and the cost strip goes with it.
-- `set-grid-view.test.tsx:2169` — "does not animate a crossing to desktop" keeps its rule but
-  loses its premise. It crosses while shy and, with the reopen kept, `shy` now survives the
-  crossing; its stub reports the same height either side, so it would pass while measuring
-  nothing. It is rewritten to cross between two different heights and assert no `Animation`.
+- `set-grid-view.test.tsx:2169` — "does not animate a crossing to desktop" keeps its rule and
+  loses its ENDING. With the reopen kept the crossing still reopens, exactly as it asserts today —
+  but the scroll listener is re-armed by the same `isDesktop` change and re-decides at the reader's
+  offset, which at the test's 400 is back to collapsed. Its `expect(isShy).toBe(false)` therefore
+  fails, and it is rewritten to assert the rule alone: neither the crossing nor the step that
+  settles it animates.
+
+  **That settle is a mechanism the handoff does not carry.** The second decision lands in its own
+  commit, where `crossedBreakpoint` is already false — so without a flag carrying the crossing into
+  the next run, the reader watches the head pop open and slide shut for a window resize. Added in
+  the build, with the test above as its proof.
+
+## Errata against the handoff, from the build
+
+1. **The rest head is 300px and the bar is 57, not 276 and 56.** Design's gap 1 names this exactly
+   — the figure is summed from type sizes and assumed line heights, and `probe:sets` had no
+   desktop pass to check it against. It now does: 57 against 300 at 1440, 1180 and 768 on `dsk`.
+   The 24px sits in the identity block, where the derivation assumes 1.2/1.45/1.4 line heights.
+   **No ruling moves** — both heads measure themselves and no constant in code carries either
+   figure — but §2's table is 24px optimistic about the saving, which is 81% rather than 80%.
+2. **The rarity-panel gate is not shipped.** See gap 2 above.
+3. **The crossing's settle needs suppressing too.** See the 2169 rewrite above.
 
 ## About entry
 
