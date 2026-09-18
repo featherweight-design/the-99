@@ -22,6 +22,8 @@ import {
   FIT_LEGEND,
   LANE_DISCOVER,
   PARTNER_PROPOSAL,
+  PRICES,
+  SYNERGY_ROWS,
   LANE_ROW_OWNED,
   LANE_OWNED,
   PRINTING_ROWS,
@@ -39,6 +41,8 @@ import { FitLegend } from "../commanders/fit-legend";
 import { FilterRack } from "../commanders/rack/filter-rack";
 import { CommanderRow } from "../commanders/commander-row";
 import { PartnerSlot } from "../decks/partner-slot";
+import { SynergyRow } from "../commanders/synergy-row";
+import { CardDetailProvider } from "../cards/card-detail-provider";
 import { OrderControl } from "../commanders/rack/order-control";
 import { ORDER_OPTIONS } from "../commanders/rack/order-options";
 import type { Lane, LaneParams } from "../../lib/commanders/lane-params";
@@ -404,5 +408,41 @@ export function PartnerSlotFigureBody() {
       onChange={() => {}}
       onRemove={() => {}}
     />
+  );
+}
+
+/**
+ * Three synergy rows from a commander page.
+ *
+ * The entry has no canvas — it arrived with #683, after Design's last read —
+ * so the surface is the only source. Its three key lines need three different
+ * rows: two owned with different claims, to show the dot never moves, and one
+ * unowned, because the list PRICES what you do not own and an all-owned
+ * fixture draws no price at all.
+ */
+export function CommanderAvailabilityFigureBody() {
+  return (
+    // `SynergyRow` opens the card detail, so it requires the provider's
+    // context — mounting it without one throws. The provider takes its fetcher
+    // as a prop for tests, and a figure is the same case: `Specimen` puts
+    // `pointer-events: none` over everything here, so no row can be opened and
+    // the resolver is never called. It returns null rather than reaching a
+    // server action a reference page has no business calling.
+    <CardDetailProvider fetchCard={async () => null}>
+      <div className="flex flex-col">
+        {SYNERGY_ROWS.map((card) => (
+          <SynergyRow
+            key={card.oracleId}
+            card={card}
+            selected={false}
+            onToggle={() => {}}
+            siblings={[]}
+            width="desktop"
+            facet={card.facet}
+            newestAsOf={PRICES[0].fact.asOf}
+          />
+        ))}
+      </div>
+    </CardDetailProvider>
   );
 }

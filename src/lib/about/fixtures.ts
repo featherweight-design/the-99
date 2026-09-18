@@ -1,3 +1,4 @@
+import type { SynergyCard } from "../commanders/synergy-cards";
 import { deckImportCopy } from "../copy/deck-import";
 import type { CommanderRowView } from "../../components/commanders/commander-row";
 import type { PriceSlot } from "../discovery/price";
@@ -656,14 +657,6 @@ export const LANE_ROW_DISCOVER = laneRow(
   "Abuelo decks blink artifacts and creatures, and tend to layer enter-the-battlefield triggers into a snowballing engine of tokens and lifegain.",
 );
 
-/**
- * The colours a pair opens. §3 draws two ONE-colour halves and three pips
- * under them, which is the whole claim: the pair's identity is wider than
- * either commander's, and every count in the app measures against that.
- *
- * Two pips would draw a pair that opened nothing.
- */
-export const PARTNER_UNION = ["W", "R", "U"] as const;
 
 /**
  * The partner proposal, as the reader actually meets it.
@@ -698,3 +691,92 @@ export const PARTNER_PROPOSAL = {
   // different figure and not this entry's.
   pairableCount: 7,
 };
+
+/**
+ * Three synergy rows, as a commander page draws them.
+ *
+ * The entry has NO canvas — it arrived with #683, after Design's last read of
+ * `main` — so there is nothing to transcribe and the surface is the only
+ * source. Its three key lines want three different rows, and one row can only
+ * say one of them:
+ *
+ *   1. the dot is ownership and ONLY that. Two owned rows with different
+ *      claims prove it: the dot does not move between them.
+ *   2. the note counts copies and never names a deck.
+ *   3. the synergy list PRICES what you do not own — so the third row is
+ *      unowned and carries a figure, which no owned row ever does.
+ *
+ * All four owned readings are here because the caption names all four — "one
+ * in a brew, none free, or short by however many copies" — and because the
+ * FIRST of them draws nothing at all, which is the claim that a spare copy is
+ * reported as silence. A fixture of owned rows alone would satisfy every
+ * assertion about the dot and say nothing about the price.
+ */
+export const SYNERGY_ROWS: SynergyCard[] = [
+  {
+    oracleId: "about-syn-free",
+    name: "Llanowar Elves",
+    typeLine: "Creature — Elf Druid",
+    facet: "creature",
+    inclusionPct: 58,
+    synergyPts: 3,
+    owned: true,
+    committedTo: null,
+    availability: AVAILABILITY[0].a,
+    price: null,
+    manaCost: "{G}",
+  },
+  {
+    oracleId: "about-syn-soft",
+    name: "Cultivate",
+    typeLine: "Sorcery",
+    facet: "spell",
+    inclusionPct: 62,
+    synergyPts: 4,
+    owned: true,
+    committedTo: null,
+    availability: AVAILABILITY[1].a,
+    price: null,
+    manaCost: "{2}{G}",
+  },
+  {
+    oracleId: "about-syn-hard",
+    name: "Arcane Signet",
+    typeLine: "Artifact",
+    facet: "artifact",
+    inclusionPct: 71,
+    synergyPts: 3,
+    owned: true,
+    committedTo: null,
+    availability: AVAILABILITY[2].a,
+    price: null,
+    manaCost: "{2}",
+  },
+  {
+    oracleId: "about-syn-over",
+    name: "Sol Ring",
+    typeLine: "Artifact",
+    facet: "artifact",
+    inclusionPct: 88,
+    synergyPts: 5,
+    owned: true,
+    committedTo: null,
+    availability: AVAILABILITY[3].a,
+    price: null,
+    manaCost: "{1}",
+  },
+  {
+    oracleId: "about-syn-buy",
+    name: "Smothering Tithe",
+    typeLine: "Enchantment",
+    facet: "enchantment",
+    inclusionPct: 48,
+    synergyPts: 6,
+    owned: false,
+    committedTo: null,
+    availability: null,
+    price: PRICES[0].fact,
+    manaCost: "{3}{W}",
+  },
+];
+

@@ -23,6 +23,7 @@ import {
   LANE_ROW_DISCOVER,
   LANE_ROW_OWNED,
   PARTNER_PROPOSAL,
+  SYNERGY_ROWS,
   FIT_FULL_SCORE,
   READY_SLICE,
   SET_CELLS,
@@ -1011,12 +1012,20 @@ describe("the commander-availability figure", () => {
     // Count-only: no deck name anywhere in the figure.
     expect(container.textContent).not.toMatch(/in [A-Z]/);
 
-    // One dot treatment across all four cells — the feature's whole claim.
-    const dots = container.querySelectorAll('[class*="rounded-full"][style*="width: 6px"]');
-    expect(dots.length).toBe(4);
-    for (const d of dots) {
-      expect(d.className).toContain("bg-[color:var(--success)]");
-    }
+    // ONE DOT TREATMENT across every OWNED row — the feature's whole claim,
+    // and the reason the fixture gives the four owned rows four different
+    // claims. The dot is sized by the route's own row now rather than by this
+    // page, so it is found by its ownership styling instead of a 6px width
+    // this module used to set.
+    const owned = SYNERGY_ROWS.filter((c) => c.owned);
+    const dots = [...container.querySelectorAll("span")].filter((n) =>
+      n.className.toString().includes("bg-[color:var(--success)]"),
+    );
+    expect(dots).toHaveLength(owned.length);
+
+    // And the UNOWNED row carries a price, which no owned row ever does —
+    // key line 3. An all-owned fixture draws none and passes everything above.
+    expect(container.textContent).toMatch(/\$[0-9]/);
   });
 });
 

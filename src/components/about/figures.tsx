@@ -36,7 +36,6 @@ import { deckSortLabel } from "../../lib/about/sort-labels";
 import { DECK_GROUPING_LABELS } from "../../lib/copy/deck-sort";
 import { BrowseFigureBody } from "./browse-figure";
 import { KeyNumeral } from "./numeral";
-import { identityGradient } from "../../lib/collection/gradients";
 import { explainedCopy } from "../../lib/copy/commander-explained";
 import { ReadyToBuild } from "../home/ready-to-build";
 import { setFilterCopy, setPageCopy } from "../../lib/copy/set-collections";
@@ -47,6 +46,7 @@ import {
   CommanderLaneFigureBody,
   DiscoverFigureBody,
   FitLegendFigureBody,
+  CommanderAvailabilityFigureBody,
   ImportIssuesFigureBody,
   PartnerSlotFigureBody,
   PostImportFigureBody,
@@ -60,8 +60,6 @@ import { TwoFacedMark } from "../cards/two-faced-mark";
 import {
   LegendBox,
   Specimen,
-  SpecimenCell,
-  SpecimenResponsive,
 } from "./specimen";
 import type { AboutWidth } from "../../lib/copy/about";
 import {
@@ -75,7 +73,6 @@ import {
   SHOPPING,
   READY_IN_USE,
   READY_SLICE,
-  PARTNER_UNION,
   SET_CELLS,
   SET_HEAD,
   COSTS,
@@ -1027,40 +1024,14 @@ function ProxiesFigure({ width }: { width: AboutWidth }) {
  * render rather than leaving this page quietly out of date.
  */
 function CommanderAvailabilityFigure({ width }: { width: AboutWidth }) {
-  // The caption annotates; it never repeats the mark. `free` is the exception
-  // for the reason `AvailabilityFigure` gives: it draws nothing, so its cell
-  // would be blank without a caption saying the blank is the state.
-  const caption: Record<string, string> = {
-    free: "owned, with a copy to spare — and a spare copy is drawn as silence",
-    soft: "owned, and a deck you have not committed wants it",
-    hard: "owned, and every copy is in a committed deck",
-    over: "your committed decks want more copies than you own",
-  };
   return (
     <Specimen label="owned, and what is claiming it" width={width}>
-      <SpecimenResponsive>
-        {AVAILABILITY.map(({ key, a }) => (
-          <SpecimenCell key={key} caption={caption[key]}>
-            <span className="inline-flex items-center" style={{ gap: 6 }}>
-              {/* The dot is the same at all four readings. That IS the change:
-                  it is ownership and nothing else now, so the four cells differ
-                  only in what the marker beside it says. */}
-              <OwnershipDot owned size={6} className="block" />
-              {/* The chip's own type, not this page's: 10.5px mono is what the
-                  Role Coverage chip supplies, and without it the marker would
-                  show a treatment the reader never meets. */}
-              <span className="font-mono text-[10.5px] font-[600] tracking-[0.02em]">
-                <AvailabilityMarker
-                  availability={a}
-                  nameless
-                  spoken={false}
-                  seam="var(--surface-sunken)"
-                />
-              </span>
-            </span>
-          </SpecimenCell>
-        ))}
-      </SpecimenResponsive>
+      {/* The SURFACE. This entry has no canvas — it arrived with #683, after
+          Design's last read of `main` — so there was nothing to transcribe.
+          The figure it replaces was four cells this page captioned in its own
+          words; these are the commander page's own rows, and the three key
+          lines are each visible in one of them. */}
+      <CommanderAvailabilityFigureBody />
     </Specimen>
   );
 }
