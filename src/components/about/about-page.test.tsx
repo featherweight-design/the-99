@@ -21,6 +21,7 @@ import {
   FIT_DEGRADED_SCORE,
   FIT_LEGEND,
   LANE_ROW_DISCOVER,
+  LANE_OWNED,
   LANE_ROW_OWNED,
   PARTNER_PROPOSAL,
   SYNERGY_ROWS,
@@ -731,8 +732,14 @@ describe("what each chapter 01 figure actually draws", () => {
     // What survives both forms is the rack's own summary of the chosen state,
     // and that is the fixture's job: the colours and the `Exactly` join come
     // from `LANE_OWNED`, so a rack mounted on defaults fails here.
-    for (const colour of ["Green", "Red", "White"]) {
-      expect(el.textContent).toContain(colour);
+    // Read from the route's own names, not retyped. `/copy-review` caught the
+    // literals: the whole reason the figure mounts the rack is that a rename
+    // reaches it by itself, and a test holding its own copy of the colours
+    // defeats that for the one thing it was checking.
+    for (const code of LANE_OWNED.colors) {
+      expect(el.textContent).toContain(
+        filterCopy.colour.names[code as keyof typeof filterCopy.colour.names],
+      );
     }
     expect(el.textContent).toContain(filterCopy.match.exactlyShort);
 
