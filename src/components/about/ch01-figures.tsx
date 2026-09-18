@@ -24,6 +24,7 @@ import {
   READY_IN_USE,
   READY_SLICE,
   LANE_ROW_DISCOVER,
+  LANE_ROW_OWNED,
   LANE_OWNED,
   PRINTING_ROWS,
   REPLACE_ROWS,
@@ -38,8 +39,7 @@ import { TwoFacedMark } from "../cards/two-faced-mark";
 import { ContestedCardRow } from "../decks/contested-card-row";
 import { FitLegend } from "../commanders/fit-legend";
 import { FilterRack } from "../commanders/rack/filter-rack";
-import { RecCard } from "../commanders/rec-card";
-import type { DiscoveryItem } from "../../lib/discovery/list";
+import { CommanderRow } from "../commanders/commander-row";
 import type { Lane, LaneParams } from "../../lib/commanders/lane-params";
 import { ReceiptRow } from "../collection/arrivals-summary";
 import { issueInspectorCopy } from "../../lib/copy/issue-inspector";
@@ -354,22 +354,14 @@ export function CommanderLaneFigureBody() {
   // without ever showing the choice being made.
   return laneWithRow(
     laneRack(LANE_OWNED, "owned", 34, 612),
-    // The OWNED arm of the shared row. `RecCard` delegates to `DiscoveryRow`
-    // when handed a discovery item, and that arm prints counts and no score —
-    // the wrong lane's row, and the headline this entry is about is the fit.
-    <RecCard
-      commander={READY_SLICE.shown[0]}
-      rank={1}
-      avail="free"
-      counts={READY_IN_USE.get(READY_SLICE.shown[0].oracleId) ?? null}
-      delta={null}
-    />,
+    <CommanderRow item={LANE_ROW_OWNED} />,
   );
+
 }
 
 export function DiscoverFigureBody() {
   return laneWithRow(
     laneRack(LANE_DISCOVER, "discover", 120, 1840),
-    <RecCard discovery={LANE_ROW_DISCOVER} rank={LANE_ROW_DISCOVER.rank} sort="new" />,
+    <CommanderRow item={LANE_ROW_DISCOVER} />,
   );
 }

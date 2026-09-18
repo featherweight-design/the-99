@@ -1,4 +1,4 @@
-import type { DiscoveryItem } from "../discovery/list";
+import type { CommanderRowView } from "../../components/commanders/commander-row";
 import type { PriceSlot } from "../discovery/price";
 import type { LaneParams } from "../commanders/lane-params";
 import type { FitLegendSegment } from "../../components/commanders/fit-legend";
@@ -584,16 +584,18 @@ export const LANE_DISCOVER: LaneParams = {
 };
 
 /**
- * A lane row, as the reader meets it. §3 draws neither lane's ROW — only the
- * rack above it — so a reader of those two entries saw the controls and never
- * the thing they filter. Hugh asked for the row on 2026-09-18; it is the one
- * addition on this page that is not transcribed from the canvas, and it goes
- * on the Design list rather than being quietly adopted.
+ * A lane row, as the reader meets it.
  *
- * The two differ deliberately, because the entries do. `/commanders` scores a
- * commander you OWN and its row carries a price; `/discover` ranks one you do
- * not, and prints counts rather than a score — so the discover fixture's price
- * is `absent`, which draws no slot at all rather than a dash.
+ * §3 draws neither lane's ROW — only the rack above it — so a reader of those
+ * two entries saw the controls and never the thing they filter. Hugh asked for
+ * the row on 2026-09-18; it is the one addition on this page not transcribed
+ * from the canvas, and it goes on the Design list rather than being quietly
+ * adopted.
+ *
+ * ONE row serves both lanes since #708, so these differ only in their data —
+ * which is the honest difference between the lanes and the reason there are
+ * two fixtures rather than one. The discover row's price is `notStocked`,
+ * because a commander nobody stocks still prints its deck count.
  *
  * `artCropUri` is null: a reference page must not fetch commander art, and the
  * row falls back to the identity gradient.
@@ -607,32 +609,27 @@ function laneRow(
   deckCount: number,
   price: PriceSlot,
   prose: string,
-): DiscoveryItem {
+): CommanderRowView {
   return {
     slug,
     name,
     colorIdentity,
     artCropUri: null,
-    releasedAt: "2026-02-14",
-    deckCount,
     rank,
-    ownedSupport: 61,
-    edhrecTotal: 99,
-    colorPoolSize: 1615,
-    roleCounts: ROLE_COUNTS,
-    price,
-    tagTotal: 6,
-    unplayedLabels: [],
-    unplayedCount: 0,
-    nearestDeck: null,
     prose,
     // `allPlayed` — the row's second line. A fixture with unplayed mechanics
-    // would draw a list of them instead, which is a different state and not
-    // the one either entry is about.
+    // draws a list of them instead, which is a different state and not the one
+    // either entry is about.
     gapSlot: { kind: "allPlayed" },
     score,
     measurableTotal: 100,
-    supportPct: 62,
+    fitPool: 15,
+    fitRoles: 25,
+    fitSynergy: score - 40,
+    deckCount,
+    price,
+    priceOk: true,
+    href: `/commanders/${slug}`,
   };
 }
 
@@ -654,6 +651,6 @@ export const LANE_ROW_DISCOVER = laneRow(
   6,
   71,
   1278,
-  { kind: "absent" },
+  { kind: "notStocked" },
   "Abuelo decks blink artifacts and creatures, and tend to layer enter-the-battlefield triggers into a snowballing engine of tokens and lifegain.",
 );

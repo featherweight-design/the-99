@@ -735,12 +735,12 @@ describe("what each chapter 01 figure actually draws", () => {
     // AND A ROW. §3 draws the rack alone, so a reader met the controls and
     // never the thing they filter. The row carries the commander's name, its
     // fit, its deck count and — on THIS lane — a price.
-    // The OWNED arm of the shared row — `RecCard` delegates to `DiscoveryRow`
-    // for a discovery item, and that arm prints counts and no score, which is
-    // the wrong lane's row. The headline here is the fit.
-    const row = READY_SLICE.shown[0];
-    expect(el.textContent).toContain(row.name);
+    // AND A ROW. §3 draws the rack alone, so a reader met the controls and
+    // never the thing they filter. ONE row serves both lanes since #708, so
+    // the lanes differ only in their data — and this one is priced.
+    expect(el.textContent).toContain(LANE_ROW_OWNED.name);
     expect(el.textContent).toContain(commandersCopy.row.fitDenominator);
+    expect(el.textContent).toContain("$0.15");
   });
 
   it("discover: the rack, and what each order does", () => {
@@ -764,7 +764,10 @@ describe("what each chapter 01 figure actually draws", () => {
     // price slot is `absent`, which draws no slot at all rather than a dash,
     // so a row carrying one here would be the wrong lane's row.
     expect(el.textContent).toContain(LANE_ROW_DISCOVER.name);
+    // `notStocked`, so no figure — a commander nobody stocks still prints its
+    // deck count, and a price here would be the priced lane's row.
     expect(el.textContent).not.toMatch(/\$[0-9]/);
+    expect(el.textContent).toContain(String(LANE_ROW_DISCOVER.deckCount!.toLocaleString("en-US")));
   });
 
   it("import: the drop target and its two doors, as drawn", () => {
