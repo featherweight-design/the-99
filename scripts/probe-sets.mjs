@@ -1284,6 +1284,50 @@ async function run() {
 
       const restHead = await headNow();
       const tracksOpen = await tracksNow();
+      // NO BAND WITH NOTHING IN IT. The open head leaves at the grid's own top and the bar
+      // has to take over there — with a constant band on top of the reopen point, the
+      // desktop collapse sat 63px below that, so on every collapse after the first of a
+      // visit the reader crossed a strip with no head at all and then the bar snapped in.
+      // Swept rather than sampled: 8px steps across the whole crossing, asserting that at
+      // every offset either the open head is still on screen or the bar is.
+      //
+      // WHAT THIS CANNOT FAIL ON, stated because it looks like it should: restoring the
+      // additive band leaves it green. The sweep re-enters from y=0, so the collapse it
+      // watches is the FIRST of that visit — and the first has no bar to measure, so it runs
+      // on the grid's own top under either rule. The arithmetic that differs governs the
+      // second collapse onward, which is pinned in the unit suite instead ("collapses where
+      // the open head leaves…", whose last case is exactly that). What this earns is the
+      // PIN: a head sticky while open is on screen at every offset for the wrong reason, and
+      // the sibling check above separates those two.
+      await scrollTo(0);
+      const covered = await page.evaluate(async () => {
+        const head = document.querySelector("[data-set-head]");
+        const grid = document.querySelector("[data-set-grid]");
+        if (head === null || grid === null) return null;
+        const top = Math.round(grid.getBoundingClientRect().top + window.scrollY);
+        const frame = () => new Promise((r) => requestAnimationFrame(() => requestAnimationFrame(r)));
+        let worst = null;
+        for (let y = Math.max(0, top - 160); y <= top + 200; y += 8) {
+          window.scrollTo(0, y);
+          await frame();
+          const r = head.getBoundingClientRect();
+          // On screen at all: any part of the head's box inside the viewport.
+          const onScreen = r.bottom > 0 && r.top < window.innerHeight;
+          if (!onScreen && worst === null) worst = { y, top: Math.round(r.top) };
+        }
+        return { gridTop: top, worst };
+      });
+      failures += !report(
+        `the bar takes over where the open head leaves at ${width}`,
+        covered !== null && covered.worst === null,
+        covered === null
+          ? "the head or the grid was not on the page — the check measured nothing"
+          : covered.worst === null
+            ? `covered at every offset between them (grid top ${covered.gridTop})`
+            : `no head on screen at y=${covered.worst.y}, its top ${covered.worst.top}px`
+              + ` (grid top ${covered.gridTop})`,
+      );
+
       await scrollTo(900);
       const shyHead = await headNow();
       const tracksShy = await tracksNow();
@@ -1379,6 +1423,29 @@ async function run() {
         tracksOpen !== null && tracksOpen === tracksShy,
         `${tracksOpen} tracks open, ${tracksShy} collapsed`,
       );
+
+      // The OPEN head leaves with the cards here too. This is the phone's own #623 defect
+      // arriving at a second width: `md:sticky` pinned ~300px of header over the grid for
+      // the whole band below the threshold, so the reader scrolled most of a screen of
+      // cards under a header that never moved and then it snapped. Measured while the head
+      // is still open and BELOW its threshold, which is the only band where the two
+      // behaviours differ — above it nothing has scrolled, past it the bar is what is
+      // pinned. The open state is asserted alongside the offset, because a build that
+      // collapsed early would read a top of 0 here and pass.
+      await scrollTo(0);
+      const restTop = await headNow();
+      await scrollTo(150);
+      const partwayDesktop = await headNow();
+      failures += !report(
+        `the open head scrolls away rather than staying pinned at ${width}`,
+        restTop !== null && partwayDesktop !== null && !partwayDesktop.shy
+          && partwayDesktop.top <= restTop.top - 140,
+        restTop === null || partwayDesktop === null
+          ? "the head was not on the page — the check measured nothing"
+          : `top ${partwayDesktop.top}px at y=150 against ${restTop.top}px at rest,`
+            + ` shy=${partwayDesktop.shy}`,
+      );
+      await scrollTo(900);
     }
 
     // The crossing, and the step that settles it, in a REAL engine. Neither width's head may

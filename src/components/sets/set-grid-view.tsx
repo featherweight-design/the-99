@@ -614,18 +614,21 @@ export function SetGridView(props: SetGridViewProps) {
         data-set-head-shy={shy ? "" : undefined}
         data-set-head
         data-set-head-collapsed={shy ? "" : undefined}
-        /* STICKY ONLY WHEN THERE IS SOMETHING TO PIN. The open head is 288px of an
-           844px phone on the set `probe:sets` measures, and pinned it sat over the
-           grid for the whole band before the collapse — the reader scrolled a
-           screen of cards under a header that never moved, and then it snapped.
-           Scrolling out of the flow like any other block, it leaves gracefully,
-           the bar takes over at the offset where the last of it goes, and on the
-           way back up the open head slides in from the top edge instead of
-           appearing over a cut-off first row.
-           Desktop collapses too since addendum 2, and its head is `md:sticky` at both of
-           its heights — the pin was never the phone's problem there, because the desktop
-           bar is 57px rather than 288. */
-        className={`${shy ? "sticky" : ""} md:sticky top-0 z-[2] pb-[12px] pt-[10px]`}
+        /* STICKY ONLY WHEN THERE IS SOMETHING TO PIN, at EVERY width. The open head is
+           288px of an 844px phone and ~300px of a 900px desktop window, and pinned it sat
+           over the grid for the whole band before the collapse — the reader scrolled a
+           screen of cards under a header that never moved, and then it snapped. Scrolling
+           out of the flow like any other block, it leaves gracefully, the bar takes over at
+           the offset where the last of it goes, and on the way back up the open head slides
+           in from the top edge instead of appearing over a cut-off first row.
+
+           #623 made that the phone's rule and left `md:sticky` standing, correctly: desktop
+           did not collapse then, so its head had no second state to arrive at and pinning
+           was the whole point of it. Addendum 2 gave desktop the collapse and the exemption
+           became the phone's original defect at a second width — a ~300px header held over
+           the grid for the 120px band past the threshold, measured at `top 0px` while the
+           cards moved under it. The rule is one rule now. */
+        className={`${shy ? "sticky" : ""} top-0 z-[2] pb-[12px] pt-[10px]`}
         style={{ background: "var(--bg)", borderBottom: "1px solid var(--border)" }}
       >
         {/* §31's collapsed bar: ONE row at 52px carrying where you are, how far along, and
@@ -843,8 +846,16 @@ export function SetGridView(props: SetGridViewProps) {
             hides: §31 rules that the message must not be collapsed away. The head therefore
             grows by exactly this strip while it is firing, which is a height change under
             the reader — allowed here and nowhere else on this surface, because a delta is
-            news and the §28 three-row rule is about the filter state. The pin this replaced
-            grew the head by its whole open form instead. */}
+            news and the §28 three-row rule is about the filter state.
+
+            What "not collapsed away" can mean has a limit, and it is the same limit at both
+            widths now. `deltaFiring` forbids a collapse, so a firing strip restores the full
+            head — but the open head is not pinned, so a reader far down the grid gets it
+            restored at the TOP of the document rather than under their eyes. That is the
+            phone's shipped behaviour and desktop's too since the pin became conditional
+            there; the alternative is a ~300px header arriving over the cards a reader is
+            mid-way through, which is the defect the conditional pin exists to remove. The
+            message is not lost — it is where the head is. */}
         {/* `flow-root`, so the strip's own `mt-[10px]` is INSIDE this box. Without a
             formatting context that margin collapses through the wrapper, and the height
             subtracted from the reserve is 10px short of what the strip actually occupies —
