@@ -216,6 +216,30 @@ describe("useTopOffDraft", () => {
       expect(result.current.restored).toBe(true);
     });
 
+    it("keeps the selection when the store itself refuses to be read", () => {
+      // `readRaw` answers an unreadable store with the same null as an empty
+      // one, so clearing on null lets one transient failure — Safari's private
+      // mode, a locked-down cookie policy — throw away an in-progress selection.
+      // A removal and a refusal are opposite facts for this value.
+      localStorage.setItem(KEY, '{"v":2,"t":["sol-ring"],"d":[]}');
+      const { result } = renderHook(() => useTopOffDraft(DECK));
+      expect(result.current.ticked).toEqual(new Set(["sol-ring"]));
+
+      const real = Storage.prototype.getItem;
+      try {
+        Storage.prototype.getItem = () => {
+          throw new DOMException("denied", "SecurityError");
+        };
+        act(() => {
+          window.dispatchEvent(new StorageEvent("storage", { key: KEY }));
+        });
+        expect(result.current.ticked).toEqual(new Set(["sol-ring"]));
+        expect(result.current.restored).toBe(true);
+      } finally {
+        Storage.prototype.getItem = real;
+      }
+    });
+
     it("still forgets the selection when the key is removed", () => {
       // The other way to reach null, and it IS a clear: `discard()` runs on a
       // committed pass, where there is nothing left to hold.

@@ -146,8 +146,13 @@ async function run() {
         if (!rowsBox) return null;
         const style = getComputedStyle(rowsBox);
         const rows = rowsBox.querySelectorAll('input[type="checkbox"]').length;
+        // BOTH labels. The control reads `Add N cards` with a selection and
+        // `Add cards` with none, and a seed can legitimately be empty — an
+        // all-unowned pool, or one whose every owned copy is sleeved elsewhere.
+        // Matching only the figured form reports the commit missing and fails a
+        // list that is drawing perfectly well.
         const commit = [...document.querySelectorAll("main button")]
-          .find((b) => /^Add \d+ card/.test((b.textContent ?? "").trim()));
+          .find((b) => /^Add( \d+)? cards?$/.test((b.textContent ?? "").trim()));
         return {
           rows,
           overflowY: style.overflowY,
