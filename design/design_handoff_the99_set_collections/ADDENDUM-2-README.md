@@ -121,11 +121,35 @@ the panel is anchored to a trigger in the row, and collapsing under it moves its
 it is open. And a collapse is forbidden while **focus is inside the members the collapse hides**
 (the cost strip's Send, its disclosure, a chip's ×), because hiding them takes the keyboard with them.
 
+> **Erratum, 2026-09-18 — the rarity-panel gate is NOT shipped; the focus gate is.** The gate was
+> built as specified and `probe:sets` measured it unreachable: the desktop popover already dismisses
+> itself on page scroll (`filter-panel.tsx`), so there is no state in which a collapse lands under an
+> open panel. The probe reported the head collapsing for want of a panel left to hold it. A gate
+> nothing reaches is worse than none, because the next reader takes it for a rule that holds — so
+> `filter-panel.tsx` is untouched, no state is lifted, and what ships instead is a probe assertion of
+> the property the gate stood in for. See `docs/superpowers/readiness-set-collections-addendum-2.md`.
+
 **One gate that stops applying, carefully.** `mayCollapse` drops its `!isDesktop` term, and the
 breakpoint reopen goes with it — but **the crossing must still not animate** (the two widths are
 different designs, not two heights of one; animating it clipped the desktop controls inside a 75px
 box on the way to a height belonging to another design), and a bar height measured at one width must
 still be cleared at the other.
+
+> **Erratum, 2026-09-18 — the breakpoint reopen STAYS.** `mayCollapse` does drop `!isDesktop`, but
+> the reopen cannot go with it. The two widths have two rest heights (148 phone, ~300 desktop) and
+> the hook holds one `restHeightRef`; while the head is shy its open subtree is `display: none`, so
+> a crossing made collapsed can neither trust the recorded figure nor re-measure to replace it. The
+> spacer would reserve 92px where it owes ~244, and `gridTop` is read off that spacer, so both
+> thresholds go with it. Reopening is the one action that makes the head measurable at its new
+> width.
+>
+> Two consequences, both shipped. The crossing's **settle** must not animate either: the reopen plus
+> the re-armed scroll listener means the head usually re-decides straight back to collapsed one
+> commit later, where `crossedBreakpoint` is already false — without a flag the reader watches the
+> head pop open and slide shut for a window resize. And the recorded bar height now carries the
+> width it was measured at, since both widths draw one (52 and 57) where the shipped rule was "clear
+> the phone's figure once we are on desktop". See
+> `docs/superpowers/readiness-set-collections-addendum-2.md`.
 
 ## 4 · Call 4 — the CostStrip, and whether the bar may carry the figure
 
@@ -167,6 +191,13 @@ means it lands whole rather than half-drawn, and a commercial action that follow
 | `components/sets/set-grid-view.tsx` | The `shy` branch stops being phone-shaped: at `md` it is the identity prefix followed by the rack's own row 1, not a second bar. The open identity block, the cost wrapper and the chip line hide as they already do; the result line's `sr-only`-when-shy behaviour now applies at `md` too. Rack rows 2 and 3 are the only members whose hiding is new. |
 | `components/sets/cost-strip.tsx` | **Untouched.** |
 | `lib/copy/set-collections.ts` | **Untouched.** `head.ratioAria` and the set name are the only strings the bar prints and both exist. No `Filters` label, no badge aria, no back-to-search label — the desktop bar carries the controls themselves. |
+
+> **Erratum, 2026-09-18 — the file table as built.** `use-head-collapse.ts` KEEPS the breakpoint
+> reopen and gains two things this table does not name: the crossing's settle is suppressed, and the
+> recorded bar height carries the width it was measured at. Its gates are `deltaFiring` and
+> `sheetOpen` plus the focus gate — there is no rarity-panel term. `filter-panel.tsx` is untouched
+> and was never a fourth file. Both errata above give the reasons; the record is
+> `docs/superpowers/readiness-set-collections-addendum-2.md`.
 
 ## 7 · Sequencing
 

@@ -26,7 +26,13 @@ delete a guard.**
    those line heights, and a ±2px error per text line is ±8px on the identity block. It does not
    change any ruling (the offsets are measured at runtime, not from this table) but it does change
    the table in the handoff. **Ask: add a desktop width to `probe:sets` in this PR.**
-2. **The rarity-panel gate needs a signal the hook cannot see.** `deltaFiring` and `sheetOpen` are
+2. **The rarity-panel gate needs a signal the hook cannot see.** *(Erratum, 2026-09-18: closed by
+   deletion. The gate was built and measured unreachable — the desktop popover dismisses itself on
+   page scroll, so no collapse can land under an open panel. Nothing is lifted, `filter-panel.tsx`
+   is untouched, and the "no collapse while the rarity panel is open" assertion in the test list
+   below is replaced by a probe check that the panel is dismissed by that same scroll. A jsdom
+   `scroll` event targets `window`, which is not a `Node`, so the panel's own guard never runs and
+   a unit test would report it open on a build where it closes.)* `deltaFiring` and `sheetOpen` are
    already lifted into `set-grid-view.tsx`; the panel's open state currently lives inside
    `filter-panel.tsx`. Either it lifts (a fourth `useHeadCollapse` argument) or the hook reads a
    `data-` attribute, which is worse. **Small, but it is the one new wire in this round.**
@@ -50,8 +56,9 @@ delete a guard.**
   only at 390.
 - Reopen and collapse offsets are read from the measured reserve: force a two-line title and assert
   both offsets move by the same delta.
-- No collapse while the rarity panel is open, while a delta is firing, or while focus is inside the
-  hidden members — three assertions, one gate each.
+- No collapse while a delta is firing, or while focus is inside the hidden members — two
+  assertions, one gate each. ~~No collapse while the rarity panel is open~~ — see gap 2's erratum;
+  the probe asserts the dismissal instead.
 - The `md` crossing does not animate: cross with the bar drawn and assert no `Animation` on the head.
 - The result line is `sr-only` and still `role="status"` while collapsed at `md`; a filter change
   from the bar still announces.
