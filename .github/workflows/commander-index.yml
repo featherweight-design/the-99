@@ -82,7 +82,13 @@ jobs:
     # never regenerated that month, even though production's own index succeeded.
     # That is the same rule as `fail-fast: false` above, extended to the signal
     # the run emits rather than only to the legs it cancels.
-    continue-on-error: ${{ matrix.target == 'staging' }}
+    #
+    # SCHEDULED RUNS ONLY. On a manual dispatch naming `staging`, that leg is the
+    # whole run and the operator is asking about staging specifically — reporting
+    # green over a failed index would hide the very thing they dispatched to find
+    # out. The exception exists to protect production's prose chain, and a
+    # dispatch has no chain to protect.
+    continue-on-error: ${{ matrix.target == 'staging' && github.event_name == 'schedule' }}
     runs-on: ubuntu-latest
     concurrency:
       # Per target: the two environments hold different databases, so a manual
