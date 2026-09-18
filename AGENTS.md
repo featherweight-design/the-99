@@ -45,15 +45,23 @@ Package manager is **pnpm** (pinned via `packageManager` in package.json) — ne
   now: a sold-out printing keeps its last row with a frozen `as_of`, and any reader needing "stocked
   now" compares that `as_of` to the newest one in the table.
 - `pnpm db:build:index` rebuilds `commander_support` / `commander_support_cards` from EDHREC.
-  The `Commander index` workflow runs it monthly on the 3rd — the catalog refreshes every
-  Monday, so by the 3rd a set released in the previous week has already been ingested and
-  the name index can resolve it. Needs the `COMMANDER_INDEX_ENABLED` repository variable
-  set to `'true'` to fire on schedule.
+  The `Commander index` workflow runs it monthly on the 3rd against **both** `catalog-staging`
+  and `catalog-production` — the catalog refreshes every Monday, so by the 3rd a set released
+  in the previous week has already been ingested and the name index can resolve it. Needs the
+  `COMMANDER_INDEX_ENABLED` repository variable set to `'true'` to fire on schedule, and a
+  manual dispatch indexes only the environment it names. It fans out through a `plan` job and
+  a matrix for the same reason `Catalog refresh` and `Price refresh` do; an expression on
+  `environment` sends every scheduled run to production alone, and this was the third and last
+  workflow carrying that bug.
 - `pnpm db:build:prose` writes one generated sentence per commander into `commander_support.prose`
   — sentence 1 of "Why this commander", and identical for every player, which is why no collection
   change invalidates it. Needs `ANTHROPIC_API_KEY`. The `Commander prose` workflow chains off a
   **scheduled** `Commander index` run rather than carrying its own cron, because the prompt and the
-  input hash are built from the tags that job writes; dispatch it directly to target staging. A row
+  input hash are built from the tags that job writes. That chain is pinned to **production**, and
+  now deliberately rather than as a consequence of the index's own default: `workflow_run` fires
+  once per run and cannot tell which matrix leg it is hearing about. Staging takes its sentences
+  from `pnpm db:copy:prose` instead, which costs nothing; dispatch this workflow directly only to
+  GENERATE for staging. A row
   whose stored `prose_input_hash` still matches its inputs is skipped, so a re-run costs nothing for
   a commander whose tags have not moved, and an interrupted run resumes by being dispatched again.
   A commander whose every attempt fails the accept contract keeps its null and renders with no

@@ -23,19 +23,58 @@ on:
         type: string
         default: ''
 
-concurrency:
-  group: commander-index-${{ github.event.inputs.target || 'production' }}
-  cancel-in-progress: false
-
 permissions:
   contents: read
 
 jobs:
-  index:
+  # Resolves which databases this run indexes. A scheduled run fans out over both
+  # environments; a manual dispatch indexes only the one it names. This has to be
+  # a separate job because a matrix can only be built from a `needs` output — the
+  # alternative, an expression on `environment`, is what this workflow shipped
+  # with, and it sent every scheduled run to production alone. Catalog refresh hit
+  # it first and price refresh second (#691); this is the third and last.
+  plan:
     # Kill switch for the schedule; a manual dispatch always runs. Set the
     # COMMANDER_INDEX_ENABLED repository variable to 'true' or it never fires.
     if: vars.COMMANDER_INDEX_ENABLED == 'true' || github.event_name == 'workflow_dispatch'
     runs-on: ubuntu-latest
+    outputs:
+      targets: ${{ steps.pick.outputs.targets }}
+    steps:
+      - id: pick
+        shell: bash
+        env:
+          # Read through the environment rather than interpolating into the script
+          # body, so the input cannot inject shell. The `case` re-validates what
+          # the `choice` type already constrains, because `github.event.inputs` is
+          # unset — not defaulted — off dispatch.
+          TARGET: ${{ github.event.inputs.target }}
+        run: |
+          case "$TARGET" in
+            staging|production) targets="[\"$TARGET\"]" ;;
+            '') targets='["staging","production"]' ;;
+            *) echo "Unrecognised target: $TARGET" >&2; exit 1 ;;
+          esac
+          echo "targets=$targets" >> "$GITHUB_OUTPUT"
+          echo "Indexing: $targets"
+
+  index:
+    needs: plan
+    strategy:
+      matrix:
+        target: ${{ fromJSON(needs.plan.outputs.targets) }}
+      # The two environments are independent databases. A staging build that fails
+      # must not cancel the production one, which is the environment the app
+      # actually serves.
+      fail-fast: false
+    runs-on: ubuntu-latest
+    concurrency:
+      # Per target: the two environments hold different databases, so a manual
+      # staging build has no reason to queue behind — or delay — the scheduled
+      # production one. Never cancel in progress; a half-rebuilt index is what the
+      # resume input exists to recover.
+      group: commander-index-${{ matrix.target }}
+      cancel-in-progress: false
     # Serial-by-design: the wall clock is dominated by the politeness delay, not
     # by compute. Leave headroom rather than trimming to the expected runtime —
     # a timeout mid-run leaves a partially rebuilt index, which the resume input
@@ -45,7 +84,7 @@ jobs:
     # pair: this writes to the same database with the same secret, and a second
     # environment holding an identical value is a second thing to keep in sync
     # for no benefit.
-    environment: catalog-${{ github.event.inputs.target || 'production' }}
+    environment: catalog-${{ matrix.target }}
     defaults:
       run:
         shell: bash
@@ -66,7 +105,7 @@ jobs:
           {
             echo "## Commander index"
             echo ""
-            echo "- Target: \`catalog-${{ github.event.inputs.target || 'production' }}\`"
+            echo "- Target: \`catalog-${{ matrix.target }}\`"
             echo ""
           } >> "$GITHUB_STEP_SUMMARY"
           pnpm --silent db:build:index | tee -a "$GITHUB_STEP_SUMMARY"
