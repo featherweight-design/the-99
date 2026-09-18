@@ -276,24 +276,20 @@ try {
     }
 
     // ── The wide chassis must not wrap, with a fifth control in the row ──
-    // Runs WHEREVER THE WIDE ROW RENDERS rather than at a width this script
-    // names: the chassis owns its own switch point, and a probe that hard-codes
-    // 1000 measures nothing the day that constant moves. Below the switch the
-    // control lives in a sheet and there is no row to wrap, so a miss there is
-    // a skip; at or above it, a miss is a failure.
+    // Runs WHEREVER THE WIDE ROW RENDERS, and asks the CHASSIS which form it is
+    // in rather than comparing the viewport to a constant this script keeps its
+    // own copy of. `CHASSIS_WIDE_MIN_PX` is the chassis's to move: a duplicated
+    // 1000 here reports a false failure the day it rises, and stops describing
+    // the switch point the day it falls. The compact form puts every dimension
+    // in a sheet, so there is no row to wrap and nothing to measure.
     {
       const row = await page.evaluate(() => {
-        const buttons = [...document.querySelectorAll("main button")]
-          .filter((b) => b.getClientRects().length > 0);
-        let el = buttons.find((b) => /Deck state/.test(b.textContent || ""));
-        if (!el) return { found: false };
-        // Climb to the element that actually holds the control cluster rather
-        // than trusting a class name: the chassis composes its own wrappers.
-        while (el && [...el.children].filter((c) => c.getClientRects().length > 0).length < 4) {
-          el = el.parentElement;
-        }
-        if (!el) return { found: false };
-        const kids = [...el.children].filter((c) => c.getClientRects().length > 0);
+        const chassis = document.querySelector("main [data-chassis-form]");
+        const form = chassis?.getAttribute("data-chassis-form") ?? null;
+        if (form !== "wide") return { form, wide: false };
+        const cluster = chassis?.querySelector("[data-chassis-row='controls']");
+        if (!cluster) return { form, wide: true, found: false };
+        const kids = [...cluster.children].filter((c) => c.getClientRects().length > 0);
         const boxes = kids.map((c) => c.getBoundingClientRect());
         // WRAP IS A BAND, NOT A SHARED TOP. The row and its inner group are
         // both `items-center` and its controls are different heights — a 34px
@@ -305,21 +301,23 @@ try {
         // compared to the tallest control rather than the tops to each other.
         const top = Math.min(...boxes.map((b) => b.top));
         const bottom = Math.max(...boxes.map((b) => b.bottom));
-        const tallest = Math.max(...boxes.map((b) => b.height));
         return {
+          form,
+          wide: true,
           found: true,
           controls: kids.length,
+          hasFacet: /Deck state/.test(cluster.textContent ?? ""),
           band: Math.round(bottom - top),
-          tallest: Math.round(tallest),
-          overflow: el.scrollWidth - el.clientWidth,
+          tallest: Math.round(Math.max(...boxes.map((b) => b.height))),
+          overflow: cluster.scrollWidth - cluster.clientWidth,
         };
       });
-      if (!row.found) {
-        if (width >= 1000) {
-          fail(`${label}: the Deck state control is not in the wide chassis row`);
-        } else {
-          note(`${label}: compact form, the facet is in the sheet — no row to wrap`);
-        }
+      if (!row.wide) {
+        note(`${label}: chassis is ${row.form ?? "absent"} — the facet is in the sheet, no row to wrap`);
+      } else if (!row.found) {
+        fail(`${label}: the wide chassis draws no control row`);
+      } else if (!row.hasFacet) {
+        fail(`${label}: the wide chassis row does not hold the Deck state control`);
       } else if (row.band > row.tallest + 8) {
         fail(
           `${label}: the chassis row wrapped — ${row.controls} controls span ${row.band}px ` +

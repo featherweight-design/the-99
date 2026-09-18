@@ -218,9 +218,12 @@ export function DecksView({
    * own `replaceState` at all — which is what made a first attempt at this
    * reconcile from a stale query and undo the choice just made.
    *
-   * ALL FIVE parameters, not just the sort. Reconciling one would give this view
-   * two rules for two halves of its own state, and the same navigation leaves a
-   * status filter on with a bare URL.
+   * EVERY parameter this view owns, not just the sort — `status`, `state`,
+   * `colour`, `played`, `q` and `sort`, which is what `OWNED_PARAMS` lists.
+   * Reconciling one would give this view two rules for two halves of its own
+   * state, and the same navigation leaves a status filter on with a bare URL.
+   * Named rather than counted: the count was five until the deck-state facet
+   * made it six, and a number in prose goes stale the moment a facet lands.
    *
    * `apply` records the query it writes, so this view's own write agrees on the
    * next render and nothing re-parses. It would be harmless if it did — the
