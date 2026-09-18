@@ -84,6 +84,13 @@ Package manager is **pnpm** (pinned via `packageManager` in package.json) — ne
   commander is skipped before any of that, exactly as the generator skips it: a source
   generated before an id joined the list still holds that sentence, so the copy is the one
   path that could put a pulled sentence back.
+- **`job=printings` alone is the sharp tool, and its blast radius is every set.** The ingest
+  refuses to publish denominators from a run that skipped orphans, and skipping the oracle
+  refresh is what produces orphans — so the two together used to blank `base_set_size` for
+  the whole database and leave every set reading `not indexed yet` until a clean run, behind
+  a green job. Since #704 the publish clears and fills in one transaction, so a refused run
+  leaves the previous denominators standing and EXITS NON-ZERO instead. Dispatch `job=all`
+  unless you have a reason not to; the run takes about a minute either way.
 - The catalog refresh (`.github/workflows/catalog-refresh.yml`) runs 09:00 UTC every Monday and refreshes **both** `catalog-staging` and `catalog-production`. A stale catalog is silent: collection CSV rows whose card is missing land in `unmatched` and are dropped, so a set that lands between refreshes simply appears not to exist.
 - `pnpm check:copy-drift` fails when a design table still quotes a string the code stopped
   emitting. The property tables ARE the spec someone implements from and they quote copy

@@ -54,26 +54,39 @@ export async function setRepresentativePrintings(): Promise<number> {
 }
 
 /**
- * Blanks every set's denominator. Called BEFORE the ingest, not after it.
- *
- * Nullability protects the first migration and nothing after it: the ingest writes in
- * independent batches, so a refresh that dies halfway leaves a partly rewritten mix of
- * `booster` values beside the previous run's non-null `base_set_size` — a denominator that
- * no longer describes its numerator, rendered as a percentage. Clearing first means a
- * failed refresh leaves sets reading "not indexed yet", which is true.
- */
-export async function clearBaseSetSizes(): Promise<void> {
-  await db.execute(sql`update sets set base_set_size = null where base_set_size is not null`);
-}
-
-/**
  * Fills sets.base_set_size from the booster flag, with the Commander-product fallback.
  * Mirrors baseSetSizeOf in src/lib/sets/completion.ts, which is where it is unit tested:
  * a set with any booster printing counts those, and a set with none — every printing in a
  * Commander product carries booster false — counts its non-variant ones instead.
+ *
+ * CLEARS AND REPUBLISHES IN ONE TRANSACTION, and that is the whole point of the shape.
+ *
+ * The clear used to run on its own before the first batch, so that a refresh dying halfway
+ * could not leave the previous run's denominator beside half-rewritten `booster` flags —
+ * a denominator that no longer describes its numerator, drawn as a percentage. Sound on its
+ * own. What it did not survive was pairing with the caller's other rule, that a run which
+ * skipped orphans must publish nothing: between them, ONE orphaned printing blanked every
+ * set in the database and nothing restored them until a later run reported zero. On the
+ * weekly schedule that is up to seven days of every set reading `not indexed yet`, drawn
+ * exactly like a set the catalog has never seen, behind a green job. It happened on staging
+ * on 2026-09-16 (#704).
+ *
+ * Inside one transaction the blank is never observable: either both statements land or
+ * neither does. A run that dies before this point now leaves the PREVIOUS denominators
+ * standing — stale by one refresh rather than absent, which is the lesser of the two wrongs
+ * and the one a reader can still act on.
  */
+/** Thrown to roll the publish back when it would clear without replacing. Never escapes. */
+class PublishedNothing extends Error {}
+
 export async function setBaseSetSizes(): Promise<number> {
-  const updated = await db.execute(sql`
+  try {
+    return await db.transaction(async (tx) => {
+      // Still a clear-then-fill rather than an upsert: a set that LOST its classification
+      // (every printing now unclassified, or the set emptied) has to go back to null, and
+      // the fill below deliberately skips those rows so it cannot write a denominator of 0.
+      await tx.execute(sql`update sets set base_set_size = null where base_set_size is not null`);
+      const updated = await tx.execute(sql`
     with counts as (
       select set_code,
              count(*) filter (where booster is not null)::int                     as classified,
@@ -94,9 +107,80 @@ export async function setBaseSetSizes(): Promise<number> {
      -- denominator of 0 and the index reads "0%", which is the one thing nullability
      -- exists to prevent: a figure nobody computed, presented as a fact.
      where s.code = c.set_code and c.classified > 0
-    returning s.code
+    -- The VALUE, not just the row: the nullif above writes NULL for a set whose classified
+    -- printings are all variants, and RETURNING hands that row back like any other. Counting
+    -- rows would call such a run a publish, so a database of nothing but all-variant sets
+    -- would clear every denominator and report success. (No backticks in here: this comment
+    -- is inside a template literal, and one would end it.)
+    returning s.code, s.base_set_size
   `);
-  return updated.rows.length;
+      const published = updated.rows.filter(
+        (row) => (row as { base_set_size: number | null }).base_set_size !== null,
+      ).length;
+      // A FILL THAT WROTE NOTHING ROLLS THE CLEAR BACK. Both statements are inside one
+      // transaction so the intermediate blank is unobservable, but committing a clear whose
+      // fill matched no row would still leave every set null — which is the whole defect,
+      // reached through a different door: an unseeded `sets` table, or a printings table
+      // that classifies nothing, rather than an orphaned bulk. Rolling back is what makes
+      // `unsizedRunFailure`'s "the previous denominators are untouched" true in every path
+      // instead of just the orphan one.
+      if (published === 0) throw new PublishedNothing();
+      return published;
+    });
+  } catch (error) {
+    if (error instanceof PublishedNothing) return 0;
+    throw error;
+  }
+}
+
+/**
+ * Why this run published no denominators, or null when it published some.
+ *
+ * Pure, and separate from the ingest, because it is the sentence the CLI exits non-zero on
+ * (#704). A run that upserts a hundred thousand printings and sizes no set at all is a
+ * FAILED run wearing a green check: the word `0` in a summary line is the only thing that
+ * says so today, and nobody reads a summary line on a job that passed.
+ */
+export function unsizedRunFailure(
+  r: Pick<
+    SeedPrintingsResult,
+    "upserted" | "skippedOrphan" | "skippedLayout" | "skippedReversible" | "baseSetSizes"
+  >,
+): string | null {
+  if (r.baseSetSizes > 0) return null;
+  // ORPHANS ARE TESTED BEFORE the no-op case, not after. A run where EVERY printing is
+  // orphaned — `cards` populated but wholly out of step with the bulk — ingests nothing and
+  // skips a hundred thousand, and reading `upserted === 0` first would file the worst state
+  // this function can see as "nothing to do, exit 0".
+  if (r.skippedOrphan > 0) {
+    return `No set was sized: ${r.skippedOrphan} printing(s) name a card the oracle catalog `
+      + "does not hold, so this run saw an incomplete bulk and refused to publish a base run "
+      + "counted from the survivors. The previous denominators are untouched. Re-run the "
+      + "refresh with the oracle ingest (`job=all`) to size them from a complete catalog.";
+  }
+  // A no-op is a bulk this ingest RECOGNISED NOTHING IN — no printing accepted, none
+  // orphaned, and none turned away at the layout or reversible gates. `upserted === 0` alone
+  // is not that: an upstream shape change that sent every entry to one of those gates would
+  // ingest nothing, publish nothing, and be waved through here as "nothing to do", which is
+  // the silent success this whole function exists to end.
+  if (r.upserted === 0 && r.skippedLayout === 0 && r.skippedReversible === 0) return null;
+  if (r.upserted === 0) {
+    return `No set was sized and no printing was ingested, though the bulk held entries: `
+      + `${r.skippedLayout} token/emblem and ${r.skippedReversible} reversible were turned `
+      + "away at the layout gates and nothing else was recognised. That is an upstream shape "
+      + "change, not a catalog state — the previous denominators are untouched, and "
+      + "re-running will do the same until the bulk or the transform moves.";
+  }
+  // TWO CAUSES, AND THIS NAMES BOTH rather than asserting the likelier one. The fill matches
+  // `sets` by code, so it writes nothing either when no printing is classified (`booster`
+  // null throughout the bulk) or when `sets` holds none of these codes — a database where the
+  // sets ingest has never run, which `job=printings` on a fresh catalog produces. Sending a
+  // reader to inspect the upstream file for the second one wastes the trip.
+  return "No set was sized and no printing was orphaned. Either this bulk classifies nothing "
+    + "(`booster` null throughout), or the `sets` table holds none of its set codes — the sets "
+    + "ingest has not run against this database. The previous denominators are untouched. "
+    + "Re-run with `job=all`, which seeds sets and oracle cards first, and check the upstream "
+    + "file if it repeats.";
 }
 
 /**
@@ -129,10 +213,6 @@ export async function seedPrintings(): Promise<SeedPrintingsResult> {
   if (known.size === 0) {
     throw new Error("cards table is empty — run `pnpm db:seed` before seeding printings");
   }
-
-  // Before the first batch, so a run that dies halfway cannot leave a stale denominator
-  // beside a half-rewritten set of booster flags.
-  await clearBaseSetSizes();
 
   let upserted = 0, skippedOrphan = 0, skippedLayout = 0, skippedReversible = 0;
   let batch: PrintingRow[] = [];
@@ -194,8 +274,12 @@ export async function seedPrintings(): Promise<SeedPrintingsResult> {
   // Denominators are published only from a run that saw the WHOLE bulk. Orphans are
   // skipped when `cards` is behind `printings` — the supported manual mode — and a base
   // run counted from the survivors can be short, which would mark a set complete against
-  // a denominator missing its new cards. Left null, the sets read "not indexed yet" until
-  // a full refresh, which is true.
+  // a denominator missing its new cards.
+  //
+  // Refusing to publish no longer means blanking what is there: `setBaseSetSizes` clears and
+  // fills in one transaction, so skipping it leaves the PREVIOUS denominators standing. The
+  // run is a failure all the same, and `unsizedRunFailure` is the sentence the CLI exits on
+  // (#704) — a refresh that sized nothing must not pass for a refresh that worked.
   const baseSetSizes = skippedOrphan > 0 ? 0 : await setBaseSetSizes();
   return {
     upserted, skippedOrphan, skippedLayout, skippedReversible, representatives, baseSetSizes,

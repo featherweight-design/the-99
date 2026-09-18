@@ -227,10 +227,13 @@ export type SetSections = {
  * and its extras are the alternate treatments.
  *
  * `baseSetSize` is the AUTHORITATIVE denominator from `sets`, and passing it is what makes
- * a partial refresh legible. The ingest clears that column before writing any batch, so a
- * run that dies halfway leaves rows classified and the column null; inferring "indexed"
- * from the rows alone would render a partial base run and a percentage from it. A caller
- * with no denominator to hand (the delta poll, which only needs a count) may omit it.
+ * a partial refresh legible. The column is written by one transaction at the END of the
+ * ingest (#704), so a run that dies halfway leaves rows partly reclassified beside the
+ * PREVIOUS denominator — stale by one refresh, and never a denominator computed from the
+ * half of the bulk that landed. Inferring "indexed" from the rows alone would render
+ * exactly that: a partial base run, and a percentage from it. A caller with no denominator
+ * to hand (the delta poll, which only needs a count) may omit it, and null still means
+ * "nobody has stated a base run for this set".
  */
 export function sectionsOf(cells: Cell[], baseSetSize?: number | null): SetSections {
   const classified = cells.filter((c) => c.booster !== null);
