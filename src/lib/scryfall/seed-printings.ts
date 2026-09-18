@@ -2,6 +2,7 @@ import { sql } from "drizzle-orm";
 import { db } from "../../db";
 import { cards, printings, skippedPrintings } from "../../db/schema";
 import { fetchBulkIndex, streamBulkEntries } from "./bulk";
+import { stampCatalogRefresh } from "../cache/stamp-catalog";
 import {
   classifyPrinting,
   type PrintingRow,
@@ -281,6 +282,10 @@ export async function seedPrintings(): Promise<SeedPrintingsResult> {
   // run is a failure all the same, and `unsizedRunFailure` is the sentence the CLI exits on
   // (#704) — a refresh that sized nothing must not pass for a refresh that worked.
   const baseSetSizes = skippedOrphan > 0 ? 0 : await setBaseSetSizes();
+  // Stamped even when no denominator was published: the printings themselves moved, and a
+  // set grid is a checklist of them. A refused publish leaves the old denominators standing
+  // (#704), and those are exactly what a reader should stop being served a stale copy of.
+  await stampCatalogRefresh();
   return {
     upserted, skippedOrphan, skippedLayout, skippedReversible, representatives, baseSetSizes,
   };

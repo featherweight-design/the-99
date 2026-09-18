@@ -15,9 +15,16 @@
  * revalidates a list surface clears it — see `revalidateUserLists`. The hour
  * ceiling is a backstop, not the invalidation story: a write whose tag call was
  * missed self-heals within the hour instead of persisting until the next deploy.
+ *
+ * The reader's own writes are not the only thing these payloads depend on, though. Every
+ * one of them is derived from the card catalog, which a weekly job rewrites and which no
+ * tag can name — so the catalog's generation is part of the KEY. See
+ * `catalog-generation.ts`.
  */
 
 import { unstable_cache, updateTag } from "next/cache";
+
+import { catalogGeneration } from "./catalog-generation";
 
 const CEILING_SECONDS = 60 * 60;
 
@@ -54,12 +61,17 @@ function tagFor(userId: string): string {
  * printings, oracle text or back art (2.4 MB before, 1.0 MB after). Anything added to one
  * of these payloads spends headroom that is measured in hundreds of KB, not MB.
  */
-export function cacheForUser<T>(
+export async function cacheForUser<T>(
   userId: string,
   key: string[],
   load: () => Promise<T>,
 ): Promise<T> {
-  return unstable_cache(load, ["user-lists", userId, ...key], {
+  // THE CATALOG IS AN INPUT TO EVERY ONE OF THESE PAYLOADS, and the tag cannot express it:
+  // the tag is per reader, and the weekly refresh has no list of readers to drop. In the key
+  // it needs none — an entry built from the previous catalog is simply never asked for
+  // again. See `catalog-generation.ts` for what it costs and why it is cached for a minute.
+  const catalog = await catalogGeneration();
+  return unstable_cache(load, ["user-lists", userId, catalog, ...key], {
     tags: [tagFor(userId)],
     revalidate: CEILING_SECONDS,
   })();

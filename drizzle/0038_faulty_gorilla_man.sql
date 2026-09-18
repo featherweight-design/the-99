@@ -1,0 +1,1 @@
+ALTER TABLE "catalog_refreshes" ADD CONSTRAINT "catalog_refreshes_single_row_check" CHECK ("catalog_refreshes"."id" = 1);

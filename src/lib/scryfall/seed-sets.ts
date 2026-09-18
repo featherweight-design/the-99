@@ -3,6 +3,7 @@ import { db } from "../../db";
 import { sets } from "../../db/schema";
 import { SCRYFALL_HEADERS } from "./http";
 import { toSetRows } from "./transform-sets";
+import { stampCatalogRefresh } from "../cache/stamp-catalog";
 
 const SETS_INDEX = "https://api.scryfall.com/sets";
 
@@ -30,5 +31,7 @@ export async function seedSets(): Promise<{ upserted: number }> {
       },
     });
   }
+  // Set names and icons are drawn from every set surface, and those payloads are cached.
+  await stampCatalogRefresh();
   return { upserted: rows.length };
 }

@@ -55,6 +55,7 @@
     "probe:scroll-lock": "node scripts/probe-scroll-lock.mjs",
     "probe:pip-gap": "node scripts/probe-pip-gap.mjs",
     "probe:printing-pick": "node scripts/probe-printing-pick.mjs",
+    "probe:catalog-stamp": "tsx scripts/probe-catalog-stamp.ts",
     "probe:build-from": "node scripts/probe-build-from.mjs",
     "probe:arrivals": "tsx scripts/probe-arrivals.ts",
     "probe:commit-offer": "node scripts/probe-commit-offer.mjs",
