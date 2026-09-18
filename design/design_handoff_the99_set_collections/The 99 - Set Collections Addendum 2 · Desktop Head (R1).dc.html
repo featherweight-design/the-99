@@ -1,0 +1,549 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<meta name="design_doc_mode" content="canvas">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;500;600;700;800;900&family=IBM+Plex+Sans:ital,wght@0,400;0,500;0,600;0,700;1,400&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  * { box-sizing: border-box; }
+  body { margin: 0; background: #0B0A0C; }
+  ::selection { background: #CF8745; color: #14110E; }
+  a { color: #CF8745; text-decoration: none; }
+  a:hover { color: #DE9757; }
+  /* The same 37-key block as the R3 addendum's canvas — this round must measure on the
+     same values it does. Low Sun on :root so the page paints before the theme prop lands. */
+  :root, [data-theme="amonkhet"] {
+    --bg:#14110E; --surface:#1E1A15; --surface-raised:#211D18; --surface-rail:#1A1611;
+    --surface-sunken:#18140F; --surface-inset:#1B1712; --elevated:#29241F; --elevated-hover:#201C17;
+    --border:#2B241B; --border-strong:#3A3229; --border-dashed:#494037;
+    --fg:#EDE6D8; --fg-body:#C0B8A6; --fg-muted:#A59C89; --fg-faint:#8B8270; --fg-locked:#6E6654;
+    --accent:#CF8745; --accent-hover:#DE9757; --accent-strong:#AB6E37; --accent-dim:#6B482A;
+    --success:#6FA368; --warning:#DEAA29; --danger:#C6533F;
+    --w:#F4E9C4; --u:#3A6AA5; --b:#98748F; --r:#C05A3E; --g:#4B7A46;
+  }
+  [data-theme="kamigawa"] {
+    --bg:#0E0F14; --surface:#16181F; --surface-raised:#191B22; --surface-rail:#12141B;
+    --surface-sunken:#101219; --surface-inset:#13151C; --elevated:#20222A; --elevated-hover:#181A21;
+    --border:#181C26; --border-strong:#262A35; --border-dashed:#343843;
+    --fg:#E6E8F0; --fg-body:#B1B6C7; --fg-muted:#959AAD; --fg-faint:#6F7486; --fg-locked:#606476;
+    --accent:#FF4D9A; --accent-hover:#FF62A9; --accent-strong:#D33E7E; --accent-dim:#843052;
+    --success:#6FA368; --warning:#E0913C; --danger:#C6533F;
+    --w:#F4E9C4; --u:#3A6AA5; --b:#98748F; --r:#C05A3E; --g:#4B7A46;
+  }
+  [data-theme="phyrexia"] {
+    --bg:#0D0B0E; --surface:#151317; --surface-raised:#18161A; --surface-rail:#110F13;
+    --surface-sunken:#100E12; --surface-inset:#131115; --elevated:#1E1C20; --elevated-hover:#171519;
+    --border:#19161C; --border-strong:#262329; --border-dashed:#332F36;
+    --fg:#E4E2E6; --fg-body:#B5B2BB; --fg-muted:#9A96A0; --fg-faint:#78747E; --fg-locked:#64616A;
+    --accent:#52827A; --accent-hover:#629189; --accent-strong:#3E665F; --accent-dim:#213834;
+    --success:#6FA368; --warning:#E0913C; --danger:#C6533F;
+    --w:#F4E9C4; --u:#3A6AA5; --b:#98748F; --r:#C05A3E; --g:#527030;
+  }
+  [data-theme="kaldheim"] {
+    --bg:#121217; --surface:#1E1F26; --surface-raised:#22232B; --surface-rail:#181920;
+    --surface-sunken:#16171D; --surface-inset:#1A1B22; --elevated:#2D2E35; --elevated-hover:#212229;
+    --border:#1A1F2B; --border-strong:#2E3340; --border-dashed:#424755;
+    --fg:#C6D2D3; --fg-body:#B3C0C2; --fg-muted:#95A4A6; --fg-faint:#7C8A8C; --fg-locked:#5F6D6E;
+    --accent:#5C86C9; --accent-hover:#6C95D8; --accent-strong:#486BA3; --accent-dim:#2C405F;
+    --success:#6FA368; --warning:#E0913C; --danger:#C6533F;
+    --w:#F4E9C4; --u:#3A6AA5; --b:#98748F; --r:#C05A3E; --g:#4B7A46;
+  }
+  [data-theme="ixalan"] {
+    --bg:#0E1310; --surface:#171E19; --surface-raised:#1A221C; --surface-rail:#121814;
+    --surface-sunken:#101512; --surface-inset:#141B16; --elevated:#212A23; --elevated-hover:#18201A;
+    --border:#1D2620; --border-strong:#2C3830; --border-dashed:#3B4A3F;
+    --fg:#E0E7DE; --fg-body:#B6C2B3; --fg-muted:#98A695; --fg-faint:#808C7C; --fg-locked:#626E5E;
+    --accent:#A3C445; --accent-hover:#B2D257; --accent-strong:#85A22F; --accent-dim:#3E5220;
+    --success:#6FA368; --warning:#E0913C; --danger:#C6533F;
+    --w:#F4E9C4; --u:#3A6AA5; --b:#98748F; --r:#C05A3E; --g:#4B7A46;
+  }
+  [data-theme="eldraine"] {
+    --bg:#120E17; --surface:#1B1821; --surface-raised:#1F1C25; --surface-rail:#15121B;
+    --surface-sunken:#131018; --surface-inset:#17141D; --elevated:#26232C; --elevated-hover:#1D1A23;
+    --border:#241D30; --border-strong:#342C41; --border-dashed:#443C52;
+    --fg:#E4DEEE; --fg-body:#B9B2C5; --fg-muted:#9C95A8; --fg-faint:#898395; --fg-locked:#6A6475;
+    --accent:#AE88E6; --accent-hover:#BC9BEE; --accent-strong:#8E6AC4; --accent-dim:#4A3568;
+    --success:#6FA368; --warning:#E0913C; --danger:#C6533F;
+    --w:#F4E9C4; --u:#3A6AA5; --b:#98748F; --r:#C05A3E; --g:#4B7A46;
+  }
+</style>
+</helmet>
+
+<div data-theme="{{ theme }}" style="font-family:'IBM Plex Sans',sans-serif;color:#EDE6D8;padding:40px;background:#0B0A0C;background-image:radial-gradient(1400px 700px at 30% -300px, rgba(207,135,69,0.05), transparent 70%);min-height:100vh;">
+
+  <section style="max-width:1400px;margin:0 0 26px;">
+    <div style="display:flex;align-items:center;gap:14px;margin-bottom:14px;flex-wrap:wrap;">
+      <span style="font-family:'IBM Plex Mono',monospace;font-size:13px;font-weight:600;color:#14110E;background:#CF8745;border-radius:6px;padding:4px 10px;letter-spacing:0.08em;">ADDENDUM 2 &middot; R1</span>
+      <div style="font-family:'IBM Plex Mono',monospace;font-size:12px;letter-spacing:0.32em;text-transform:uppercase;color:#8E8269;">one ruling reversed &middot; the desktop head collapses too</div>
+    </div>
+    <h1 style="font-family:'Cinzel',serif;font-weight:800;font-size:34px;margin:0 0 10px;">276 to 56 &mdash; and the rack does not move.</h1>
+    <p style="max-width:1080px;font-size:15px;line-height:1.7;color:#C6B79A;margin:0 0 12px;"><b style="color:#EDE6D8;font-weight:600;">The rest form is untouched.</b> The reversed Must-not was &ldquo;must not change the desktop head&rdquo;, and the thing it forbade was a <i>second height</i> &mdash; not a redraw. So the only new state in this round is the collapsed one: at rest, <a href="#frames">&sect;2</a>'s 1180 and 1440 frames <i>are</i> the shipped head, drawn beside the collapsed form rather than against a replacement for it. <b style="color:#EDE6D8;font-weight:600;">Nothing in <span style="font-family:'IBM Plex Mono',monospace;font-size:13.5px;">md:</span> sizes, no copy string and no token changes.</b></p>
+    <p style="max-width:1080px;font-size:15px;line-height:1.7;color:#C6B79A;margin:0 0 12px;"><b style="color:#EDE6D8;font-weight:600;">Call 1 &mdash; the rack survives, literally: the same nodes.</b> The phone's collapsed bar is its own row because its controls <i>differ</i> there (the field becomes a button back to the head, <span style="font-family:'IBM Plex Mono',monospace;font-size:13.5px;">Filters</span> is the sheet). At <span style="font-family:'IBM Plex Mono',monospace;font-size:13.5px;">md:</span> the rack is inline and every control already fits one line, so the desktop collapse is <b style="color:#EDE6D8;font-weight:600;">row 1 of the rack, unchanged, with a 22px identity prefix ahead of it</b> &mdash; and rows 2 and 3 go. No second field, no duplicated control, no focus to rescue, no debounce to interrupt: the input the reader is typing in is the same input before and after the threshold. <a href="#rack">&sect;4</a>.</p>
+    <p style="max-width:1080px;font-size:15px;line-height:1.7;color:#C6B79A;margin:0 0 12px;"><b style="color:#EDE6D8;font-weight:600;">Call 2 &mdash; 56px</b> (<span style="font-family:'IBM Plex Mono',monospace;font-size:13.5px;">pt-[10px]</span> + a 34px row + <span style="font-family:'IBM Plex Mono',monospace;font-size:13.5px;">pb-[12px]</span>), against a rest head of <b style="color:#EDE6D8;font-weight:600;">276px</b> &mdash; one figure at both widths, because above 1024 nothing in this head's height depends on the width except whether the title wraps. <a href="#height">&sect;3</a>. <b style="color:#EDE6D8;font-weight:600;">Call 3 &mdash; the same measured rule, one constant retuned:</b> the hysteresis band goes 80 &rarr; 120px, because 80 is inside a single wheel notch. Collapse past <b style="color:#EDE6D8;font-weight:600;">340</b>, restore at <b style="color:#EDE6D8;font-weight:600;">220</b>. <a href="#threshold">&sect;5</a>. <b style="color:#EDE6D8;font-weight:600;">Call 4 &mdash; the CostStrip is untouched</b> (the desktop form has never been closable and does not become so) and <b style="color:#EDE6D8;font-weight:600;">the bar carries no money</b>, as on the phone. <a href="#money">&sect;6</a>.</p>
+    <p style="max-width:1080px;font-size:14px;line-height:1.7;color:#8E8269;margin:0;">Read <a href="ADDENDUM-2-README.md">ADDENDUM-2-README.md</a> for the decisions log, <a href="ADDENDUM-2-READINESS.md">ADDENDUM-2-READINESS.md</a> for the gap report. Governing and unedited: <a href="ADDENDUM-STATES.md">ADDENDUM-STATES.md</a> &sect;&ldquo;The phone head &mdash; two states&rdquo; (every ruling but the fifth Must-not), <a href="ADDENDUM-README.md">ADDENDUM-README.md</a> &sect;31, <a href="STATES-set-grid.md">STATES-set-grid.md</a>, <a href="README.md">README.md</a> R3. Read at <span style="font-family:'IBM Plex Mono',monospace;font-size:13px;">main</span> this round: <span style="font-family:'IBM Plex Mono',monospace;font-size:13px;">components/sets/set-grid-view.tsx</span>, <span style="font-family:'IBM Plex Mono',monospace;font-size:13px;">use-head-collapse.ts</span>, <span style="font-family:'IBM Plex Mono',monospace;font-size:13px;">cost-strip.tsx</span>, <span style="font-family:'IBM Plex Mono',monospace;font-size:13px;">delta-strip.tsx</span>, <span style="font-family:'IBM Plex Mono',monospace;font-size:13px;">set-icon.tsx</span>.</p>
+  </section>
+
+  <div style="border:1px solid #3A3229;border-left:3px solid #6FA368;border-radius:12px;background:#161318;padding:16px 20px;margin-bottom:20px;max-width:1400px;">
+    <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.16em;text-transform:uppercase;color:#6FA368;margin-bottom:10px;">Still locked &mdash; carried in, not re-argued</div>
+    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:14px 26px;font-size:13px;color:#A89B84;line-height:1.65;">
+      <div><b style="color:#EDE6D8;font-weight:600;">The two phone heights, 148 and 52.</b> Untouched. This round adds a third form to the <i>mechanism</i>, not a second answer to the phone's question.</div>
+      <div><b style="color:#EDE6D8;font-weight:600;">No reflow.</b> The head overlays; the grid's track count is identical at every scroll offset. The spacer beside it reserves the rest height, so the document never jumps on a crossing.</div>
+      <div><b style="color:#EDE6D8;font-weight:600;">No interpolation with scroll offset.</b> Two heights and a 180ms step between them; instant under <span style="font-family:'IBM Plex Mono',monospace;font-size:12.5px;">prefers-reduced-motion</span>.</div>
+      <div><b style="color:#EDE6D8;font-weight:600;">The delta gate.</b> If the strip is firing, the collapse waits &mdash; at both widths now, from the same <span style="font-family:'IBM Plex Mono',monospace;font-size:12.5px;">deltaFiring</span> term.</div>
+      <div><b style="color:#EDE6D8;font-weight:600;">Reserve the rest height.</b> The spacer is measured, not declared: the desktop head is one line taller with a wrapped title, and a constant that fits one set fits the next by luck.</div>
+    </div>
+  </div>
+
+  <div style="border:1px solid #2A241D;border-radius:14px;background:#16131A;padding:20px 24px;margin-bottom:38px;max-width:1400px;display:grid;grid-template-columns:repeat(auto-fit,minmax(250px,1fr));gap:18px 26px;">
+    <sc-for list="{{ calls }}" as="c" hint-placeholder-count="4">
+      <div><div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.16em;text-transform:uppercase;color:#8E8269;margin-bottom:6px;">{{ c.k }}</div><div style="font-size:13.5px;color:#C6B79A;line-height:1.55;">{{ c.v }}</div></div>
+    </sc-for>
+  </div>
+
+  <div style="display:flex;flex-direction:column;gap:56px;max-width:3100px;">
+
+  <!-- ========== §2 THE FRAMES ========== -->
+  <div id="frames">
+    <div style="font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:0.18em;text-transform:uppercase;color:#8E8269;margin-bottom:16px;border-top:1px solid #CF8745;padding-top:18px;">&sect;2 &middot; <span style="color:#CF8745;">at rest and collapsed, 1180 and 1440</span></div>
+
+    <div style="border:1px solid #3A3229;border-left:3px solid #CF8745;border-radius:12px;background:#161318;padding:16px 20px;margin-bottom:22px;max-width:1280px;">
+      <div style="font-size:13.5px;color:#A89B84;line-height:1.75;"><b style="color:#EDE6D8;font-weight:600;">The &ldquo;shipped&rdquo; frame and the &ldquo;at rest&rdquo; frame are one drawing</b>, which is the round's first finding rather than a shortcut: the reversal asks for a second height, and every line in the open head is still correct at the width where it has room. So the comparison that matters is not <i>shipped vs. redrawn</i> but <b style="color:#EDE6D8;font-weight:600;">276px on every screen of a 16,500px page vs. 56px</b>. The head is <span style="font-family:'IBM Plex Mono',monospace;font-size:12.5px;">md:sticky top-0 z-[2]</span> today &mdash; unconditionally at desktop &mdash; so, exactly as on the phone, the figure is not a first-screen cost that scrolls away.</div>
+    </div>
+
+    <div style="display:flex;gap:26px;flex-wrap:wrap;align-items:flex-start;">
+
+      <!-- 1180 -->
+      <div style="width:1180px;flex:none;display:flex;flex-direction:column;gap:20px;">
+        <div style="border:1px solid #C6533F;border-radius:12px;overflow:hidden;background:var(--bg);">
+          <div style="padding:10px 14px;background:var(--surface);border-bottom:1px solid var(--border);"><span style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.14em;text-transform:uppercase;color:#C6533F;">shipped &equiv; at rest &middot; 1180px &middot; head 276px &mdash; <span style="color:#EDE6D8;">sticky, so this is every screen</span></span></div>
+          <div style="position:relative;padding:40px;">
+            <div style="position:absolute;left:14px;top:40px;width:6px;height:276px;background:#C6533F;border-radius:3px;"></div>
+            <div style="display:flex;align-items:flex-start;gap:12px;padding-top:10px;">
+              <span style="width:44px;height:44px;border-radius:50%;background:var(--elevated);flex:none;display:flex;align-items:center;justify-content:center;font-family:'IBM Plex Mono',monospace;font-size:9px;color:var(--fg-muted);">set</span>
+              <span style="min-width:0;flex:1;">
+                <span style="display:block;font-family:'Cinzel',serif;font-size:24px;line-height:1.2;font-weight:700;color:var(--fg);">The Hobbit</span>
+                <span style="display:block;font-family:'IBM Plex Mono',monospace;font-size:11px;line-height:1.45;color:var(--fg-muted);">162 / 208 &middot; 78%</span>
+                <span style="display:block;font-family:'IBM Plex Mono',monospace;font-size:10px;line-height:1.4;color:var(--fg-locked);">HOB &middot; released 2026-08-14 &middot; 208 in the base run &middot; 113 extras</span>
+                <span style="display:block;font-family:'IBM Plex Mono',monospace;font-size:10px;line-height:1.4;color:var(--fg-locked);">base run only &middot; extras counted apart</span>
+              </span>
+            </div>
+            <div style="margin-top:10px;display:flex;flex-wrap:wrap;align-items:center;gap:8px 14px;border-radius:10px;border:1px solid var(--border);background:var(--surface-sunken);padding:10px 12px;">
+              <span style="display:flex;min-width:0;flex-direction:column;">
+                <span style="font-family:'IBM Plex Mono',monospace;font-size:10px;line-height:1.4;letter-spacing:0.08em;color:var(--fg-faint);">Cost to complete</span>
+                <span style="display:flex;flex-wrap:wrap;align-items:baseline;gap:8px;"><span style="font-family:'IBM Plex Mono',monospace;font-size:19px;line-height:1.3;color:var(--accent);">$188.66</span><span style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--fg-muted);">over 45 of the 46 you are missing</span></span>
+                <span style="font-family:'IBM Plex Mono',monospace;font-size:10px;line-height:1.4;color:var(--fg-locked);">1 has never been stocked and is not in this figure</span>
+              </span>
+              <span style="margin-left:auto;height:32px;display:inline-flex;align-items:center;padding:0 14px;border-radius:8px;background:var(--fg);color:var(--bg);font-size:13px;">Send 46 to ManaPool</span>
+            </div>
+            <div style="margin-top:10px;display:flex;align-items:center;gap:8px;flex-wrap:nowrap;">
+              <span style="height:32px;flex:1;min-width:132px;display:inline-flex;align-items:center;gap:8px;padding:0 10px;border-radius:8px;background:var(--surface-sunken);border:1px solid var(--border-strong);"><span style="font-family:'IBM Plex Mono',monospace;font-size:13px;color:var(--fg-faint);">&#8981;</span><span style="font-size:12.5px;color:var(--fg-faint);">Find a card in this set</span></span>
+              <span style="display:flex;gap:4px;flex:none;">
+                <sc-for list="{{ pips }}" as="p" hint-placeholder-count="5">
+                  <span style="width:22px;height:22px;border-radius:50%;background:{{ p.tok }};box-shadow:{{ p.ring }};"></span>
+                </sc-for>
+              </span>
+              <span style="flex:none;height:32px;display:inline-flex;align-items:center;gap:7px;padding:0 10px;border-radius:8px;font-size:12.5px;color:var(--accent);border:1px solid var(--accent);">Rarity &middot; uncommon <span style="font-family:'IBM Plex Mono',monospace;font-size:10px;">&#9662;</span></span>
+              <span style="flex:none;height:32px;display:inline-flex;align-items:center;padding:0 10px;border-radius:6px;font-size:12px;color:var(--fg-body);border:1px solid var(--border);">Missing only</span>
+            </div>
+            <div style="margin-top:8px;display:flex;align-items:center;gap:6px;">
+              <span style="height:22px;display:inline-flex;align-items:center;gap:6px;padding:0 8px;border-radius:5px;background:var(--surface-sunken);border:1px solid var(--border);font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:var(--fg-body);">3 colours <span style="color:var(--fg-muted);">&times;</span></span>
+              <span style="height:22px;display:inline-flex;align-items:center;gap:6px;padding:0 8px;border-radius:5px;background:var(--surface-sunken);border:1px solid var(--border);font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:var(--fg-body);">Uncommon <span style="color:var(--fg-muted);">&times;</span></span>
+              <span style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:var(--accent);margin-left:4px;">Clear all filters</span>
+            </div>
+            <div style="margin-top:8px;height:16px;font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--fg-muted);">54 cells &middot; 12 yours, 42 missing &middot; <span style="color:var(--accent);">extras &darr;</span></div>
+            <div style="height:12px;"></div>
+            <div style="border-top:1px solid var(--border);margin:0 -40px;"></div>
+            <div style="margin-top:20px;font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:0.12em;text-transform:uppercase;color:var(--fg-faint);">the base run</div>
+            <div style="margin-top:10px;display:grid;grid-template-columns:repeat(auto-fill,minmax(146px,1fr));gap:18px 10px;">
+              <sc-for list="{{ cellsRest }}" as="c" hint-placeholder-count="7">
+                <div style="min-width:0;">
+                  <div style="position:relative;width:100%;aspect-ratio:63/88;border-radius:6px;overflow:hidden;background:var(--surface-sunken);border:1px {{ c.edge }} {{ c.edgeCol }};">
+                    <div style="position:absolute;inset:0;background:linear-gradient(155deg, color-mix(in srgb, {{ c.tok }} 34%, var(--surface-sunken)) 0%, color-mix(in srgb, {{ c.tok }} 10%, var(--surface-sunken)) 70%, var(--surface-sunken) 100%);opacity:{{ c.dim }};filter:saturate({{ c.sat }});"></div>
+                  </div>
+                  <div style="display:flex;align-items:baseline;gap:5px;margin-top:6px;"><span style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--fg-muted);">{{ c.num }}</span><span style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--fg-locked);">{{ c.rar }}</span></div>
+                  <div style="font-size:11px;color:var(--fg-body);margin-top:2px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">{{ c.n }}</div>
+                </div>
+              </sc-for>
+            </div>
+          </div>
+        </div>
+
+        <div style="border:1px solid #6FA368;border-radius:12px;overflow:hidden;background:var(--bg);">
+          <div style="padding:10px 14px;background:var(--surface);border-bottom:1px solid var(--border);"><span style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.14em;text-transform:uppercase;color:#6FA368;">ruled &middot; collapsed &middot; 1180px &middot; head 56px &mdash; <span style="color:#EDE6D8;">same rack nodes, rows 2 and 3 gone</span></span></div>
+          <div style="position:relative;">
+            <div style="position:relative;z-index:2;background:var(--bg);border-bottom:1px solid var(--border);box-shadow:0 8px 20px rgba(0,0,0,0.45);padding:10px 40px 12px;">
+              <div style="display:flex;align-items:center;gap:10px;height:34px;">
+                <span style="width:22px;height:22px;border-radius:50%;background:var(--elevated);flex:none;display:flex;align-items:center;justify-content:center;font-family:'IBM Plex Mono',monospace;font-size:7px;color:var(--fg-muted);">set</span>
+                <span style="flex:none;max-width:220px;font-family:'Cinzel',serif;font-size:15px;font-weight:700;color:var(--fg);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">The Hobbit</span>
+                <span style="flex:none;font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--fg-muted);">162 / 208</span>
+                <span style="width:1px;height:20px;background:var(--border);flex:none;margin:0 2px;"></span>
+                <span style="height:32px;flex:1;min-width:132px;display:inline-flex;align-items:center;gap:8px;padding:0 10px;border-radius:8px;background:var(--surface-sunken);border:1px solid var(--border-strong);"><span style="font-family:'IBM Plex Mono',monospace;font-size:13px;color:var(--fg-faint);">&#8981;</span><span style="font-size:12.5px;color:var(--fg-faint);">Find a card in this set</span></span>
+                <span style="display:flex;gap:4px;flex:none;">
+                  <sc-for list="{{ pips }}" as="p" hint-placeholder-count="5">
+                    <span style="width:22px;height:22px;border-radius:50%;background:{{ p.tok }};box-shadow:{{ p.ring }};"></span>
+                  </sc-for>
+                </span>
+                <span style="flex:none;height:32px;display:inline-flex;align-items:center;gap:7px;padding:0 10px;border-radius:8px;font-size:12.5px;color:var(--accent);border:1px solid var(--accent);">Rarity &middot; uncommon <span style="font-family:'IBM Plex Mono',monospace;font-size:10px;">&#9662;</span></span>
+                <span style="flex:none;height:32px;display:inline-flex;align-items:center;padding:0 10px;border-radius:6px;font-size:12px;color:var(--fg-body);border:1px solid var(--border);">Missing only</span>
+              </div>
+            </div>
+            <div style="position:absolute;left:14px;top:0;width:6px;height:56px;background:#6FA368;border-radius:3px;z-index:3;"></div>
+            <div style="padding:18px 40px 40px;">
+              <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(146px,1fr));gap:18px 10px;">
+                <sc-for list="{{ cellsScrolled }}" as="c" hint-placeholder-count="14">
+                  <div style="min-width:0;">
+                    <div style="position:relative;width:100%;aspect-ratio:63/88;border-radius:6px;overflow:hidden;background:var(--surface-sunken);border:1px {{ c.edge }} {{ c.edgeCol }};">
+                      <div style="position:absolute;inset:0;background:linear-gradient(155deg, color-mix(in srgb, {{ c.tok }} 34%, var(--surface-sunken)) 0%, color-mix(in srgb, {{ c.tok }} 10%, var(--surface-sunken)) 70%, var(--surface-sunken) 100%);opacity:{{ c.dim }};filter:saturate({{ c.sat }});"></div>
+                    </div>
+                    <div style="display:flex;align-items:baseline;gap:5px;margin-top:6px;"><span style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--fg-muted);">{{ c.num }}</span><span style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--fg-locked);">{{ c.rar }}</span></div>
+                    <div style="font-size:11px;color:var(--fg-body);margin-top:2px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">{{ c.n }}</div>
+                    <sc-if value="{{ c.missing }}" hint-placeholder-val="{{ false }}">
+                      <div style="margin-top:4px;"><span style="display:inline-block;font-family:'IBM Plex Mono',monospace;font-size:10px;padding:2px 6px;border-radius:4px;color:var(--accent);border:1px dashed var(--accent-dim);">{{ c.price }}</span></div>
+                    </sc-if>
+                  </div>
+                </sc-for>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div style="border:1px solid #2A241D;border-radius:12px;background:#141118;padding:16px 18px;font-size:12.5px;color:#A89B84;line-height:1.7;max-width:1180px;"><b style="color:#EDE6D8;font-weight:600;">Two rows of cells above the fold become five.</b> On a 900px window (820px of content under the app's chrome) the head goes <b style="color:#EDE6D8;font-weight:600;">34% &rarr; 7%</b>. The money, the provenance, the scope note, the chip line and the visible result line are the five things that leave &mdash; <b style="color:#EDE6D8;font-weight:600;">and the filter state does not leave with the chips</b>: at desktop the lit controls carry it themselves (a ringed pip, <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">Rarity &middot; uncommon</span> in accent, <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">Missing only</span> lit), which is the twice-carried rule the chassis already holds them to. That is why there is no desktop badge to invent.</div>
+      </div>
+
+      <!-- 1440 -->
+      <div style="width:1440px;flex:none;display:flex;flex-direction:column;gap:20px;">
+        <div style="border:1px solid #C6533F;border-radius:12px;overflow:hidden;background:var(--bg);">
+          <div style="padding:10px 14px;background:var(--surface);border-bottom:1px solid var(--border);"><span style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.14em;text-transform:uppercase;color:#C6533F;">shipped &equiv; at rest &middot; 1440px &middot; head 276px &mdash; <span style="color:#EDE6D8;">the same figure; width buys measure, not height</span></span></div>
+          <div style="position:relative;padding:40px;">
+            <div style="position:absolute;left:14px;top:40px;width:6px;height:276px;background:#C6533F;border-radius:3px;"></div>
+            <div style="display:flex;align-items:flex-start;gap:12px;padding-top:10px;">
+              <span style="width:44px;height:44px;border-radius:50%;background:var(--elevated);flex:none;display:flex;align-items:center;justify-content:center;font-family:'IBM Plex Mono',monospace;font-size:9px;color:var(--fg-muted);">set</span>
+              <span style="min-width:0;flex:1;">
+                <span style="display:block;font-family:'Cinzel',serif;font-size:24px;line-height:1.2;font-weight:700;color:var(--fg);">The Hobbit</span>
+                <span style="display:block;font-family:'IBM Plex Mono',monospace;font-size:11px;line-height:1.45;color:var(--fg-muted);">162 / 208 &middot; 78%</span>
+                <span style="display:block;font-family:'IBM Plex Mono',monospace;font-size:10px;line-height:1.4;color:var(--fg-locked);">HOB &middot; released 2026-08-14 &middot; 208 in the base run &middot; 113 extras</span>
+                <span style="display:block;font-family:'IBM Plex Mono',monospace;font-size:10px;line-height:1.4;color:var(--fg-locked);">base run only &middot; extras counted apart</span>
+              </span>
+            </div>
+            <div style="margin-top:10px;display:flex;flex-wrap:wrap;align-items:center;gap:8px 14px;border-radius:10px;border:1px solid var(--border);background:var(--surface-sunken);padding:10px 12px;">
+              <span style="display:flex;min-width:0;flex-direction:column;">
+                <span style="font-family:'IBM Plex Mono',monospace;font-size:10px;line-height:1.4;letter-spacing:0.08em;color:var(--fg-faint);">Cost to complete</span>
+                <span style="display:flex;flex-wrap:wrap;align-items:baseline;gap:8px;"><span style="font-family:'IBM Plex Mono',monospace;font-size:19px;line-height:1.3;color:var(--accent);">$188.66</span><span style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--fg-muted);">over 45 of the 46 you are missing</span></span>
+                <span style="font-family:'IBM Plex Mono',monospace;font-size:10px;line-height:1.4;color:var(--fg-locked);">1 has never been stocked and is not in this figure</span>
+              </span>
+              <span style="margin-left:auto;height:32px;display:inline-flex;align-items:center;padding:0 14px;border-radius:8px;background:var(--fg);color:var(--bg);font-size:13px;">Send 46 to ManaPool</span>
+            </div>
+            <div style="margin-top:10px;display:flex;align-items:center;gap:8px;flex-wrap:nowrap;">
+              <span style="height:32px;flex:1;min-width:132px;display:inline-flex;align-items:center;gap:8px;padding:0 10px;border-radius:8px;background:var(--surface-sunken);border:1px solid var(--border-strong);"><span style="font-family:'IBM Plex Mono',monospace;font-size:13px;color:var(--fg-faint);">&#8981;</span><span style="font-size:12.5px;color:var(--fg-faint);">Find a card in this set</span></span>
+              <span style="display:flex;gap:4px;flex:none;">
+                <sc-for list="{{ pips }}" as="p" hint-placeholder-count="5">
+                  <span style="width:22px;height:22px;border-radius:50%;background:{{ p.tok }};box-shadow:{{ p.ring }};"></span>
+                </sc-for>
+              </span>
+              <span style="flex:none;height:32px;display:inline-flex;align-items:center;gap:7px;padding:0 10px;border-radius:8px;font-size:12.5px;color:var(--accent);border:1px solid var(--accent);">Rarity &middot; uncommon <span style="font-family:'IBM Plex Mono',monospace;font-size:10px;">&#9662;</span></span>
+              <span style="flex:none;height:32px;display:inline-flex;align-items:center;padding:0 10px;border-radius:6px;font-size:12px;color:var(--fg-body);border:1px solid var(--border);">Missing only</span>
+            </div>
+            <div style="margin-top:8px;display:flex;align-items:center;gap:6px;">
+              <span style="height:22px;display:inline-flex;align-items:center;gap:6px;padding:0 8px;border-radius:5px;background:var(--surface-sunken);border:1px solid var(--border);font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:var(--fg-body);">3 colours <span style="color:var(--fg-muted);">&times;</span></span>
+              <span style="height:22px;display:inline-flex;align-items:center;gap:6px;padding:0 8px;border-radius:5px;background:var(--surface-sunken);border:1px solid var(--border);font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:var(--fg-body);">Uncommon <span style="color:var(--fg-muted);">&times;</span></span>
+              <span style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:var(--accent);margin-left:4px;">Clear all filters</span>
+            </div>
+            <div style="margin-top:8px;height:16px;font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--fg-muted);">54 cells &middot; 12 yours, 42 missing &middot; <span style="color:var(--accent);">extras &darr;</span></div>
+            <div style="height:12px;"></div>
+            <div style="border-top:1px solid var(--border);margin:0 -40px;"></div>
+            <div style="margin-top:20px;font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:0.12em;text-transform:uppercase;color:var(--fg-faint);">the base run</div>
+            <div style="margin-top:10px;display:grid;grid-template-columns:repeat(auto-fill,minmax(146px,1fr));gap:18px 10px;">
+              <sc-for list="{{ cellsRestWide }}" as="c" hint-placeholder-count="9">
+                <div style="min-width:0;">
+                  <div style="position:relative;width:100%;aspect-ratio:63/88;border-radius:6px;overflow:hidden;background:var(--surface-sunken);border:1px {{ c.edge }} {{ c.edgeCol }};">
+                    <div style="position:absolute;inset:0;background:linear-gradient(155deg, color-mix(in srgb, {{ c.tok }} 34%, var(--surface-sunken)) 0%, color-mix(in srgb, {{ c.tok }} 10%, var(--surface-sunken)) 70%, var(--surface-sunken) 100%);opacity:{{ c.dim }};filter:saturate({{ c.sat }});"></div>
+                  </div>
+                  <div style="display:flex;align-items:baseline;gap:5px;margin-top:6px;"><span style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--fg-muted);">{{ c.num }}</span><span style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--fg-locked);">{{ c.rar }}</span></div>
+                  <div style="font-size:11px;color:var(--fg-body);margin-top:2px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">{{ c.n }}</div>
+                </div>
+              </sc-for>
+            </div>
+          </div>
+        </div>
+
+        <div style="border:1px solid #6FA368;border-radius:12px;overflow:hidden;background:var(--bg);">
+          <div style="padding:10px 14px;background:var(--surface);border-bottom:1px solid var(--border);"><span style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.14em;text-transform:uppercase;color:#6FA368;">ruled &middot; collapsed &middot; 1440px &middot; head 56px &mdash; <span style="color:#EDE6D8;">the field takes the width the chips no longer need</span></span></div>
+          <div style="position:relative;">
+            <div style="position:relative;z-index:2;background:var(--bg);border-bottom:1px solid var(--border);box-shadow:0 8px 20px rgba(0,0,0,0.45);padding:10px 40px 12px;">
+              <div style="display:flex;align-items:center;gap:10px;height:34px;">
+                <span style="width:22px;height:22px;border-radius:50%;background:var(--elevated);flex:none;display:flex;align-items:center;justify-content:center;font-family:'IBM Plex Mono',monospace;font-size:7px;color:var(--fg-muted);">set</span>
+                <span style="flex:none;max-width:280px;font-family:'Cinzel',serif;font-size:15px;font-weight:700;color:var(--fg);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">The Hobbit</span>
+                <span style="flex:none;font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--fg-muted);">162 / 208</span>
+                <span style="width:1px;height:20px;background:var(--border);flex:none;margin:0 2px;"></span>
+                <span style="height:32px;flex:1;min-width:132px;display:inline-flex;align-items:center;gap:8px;padding:0 10px;border-radius:8px;background:var(--surface-sunken);border:1px solid var(--border-strong);"><span style="font-family:'IBM Plex Mono',monospace;font-size:13px;color:var(--fg-faint);">&#8981;</span><span style="font-size:12.5px;color:var(--fg-faint);">Find a card in this set</span></span>
+                <span style="display:flex;gap:4px;flex:none;">
+                  <sc-for list="{{ pips }}" as="p" hint-placeholder-count="5">
+                    <span style="width:22px;height:22px;border-radius:50%;background:{{ p.tok }};box-shadow:{{ p.ring }};"></span>
+                  </sc-for>
+                </span>
+                <span style="flex:none;height:32px;display:inline-flex;align-items:center;gap:7px;padding:0 10px;border-radius:8px;font-size:12.5px;color:var(--accent);border:1px solid var(--accent);">Rarity &middot; uncommon <span style="font-family:'IBM Plex Mono',monospace;font-size:10px;">&#9662;</span></span>
+                <span style="flex:none;height:32px;display:inline-flex;align-items:center;padding:0 10px;border-radius:6px;font-size:12px;color:var(--fg-body);border:1px solid var(--border);">Missing only</span>
+              </div>
+            </div>
+            <div style="position:absolute;left:14px;top:0;width:6px;height:56px;background:#6FA368;border-radius:3px;z-index:3;"></div>
+            <div style="padding:18px 40px 40px;">
+              <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(146px,1fr));gap:18px 10px;">
+                <sc-for list="{{ cellsScrolledWide }}" as="c" hint-placeholder-count="18">
+                  <div style="min-width:0;">
+                    <div style="position:relative;width:100%;aspect-ratio:63/88;border-radius:6px;overflow:hidden;background:var(--surface-sunken);border:1px {{ c.edge }} {{ c.edgeCol }};">
+                      <div style="position:absolute;inset:0;background:linear-gradient(155deg, color-mix(in srgb, {{ c.tok }} 34%, var(--surface-sunken)) 0%, color-mix(in srgb, {{ c.tok }} 10%, var(--surface-sunken)) 70%, var(--surface-sunken) 100%);opacity:{{ c.dim }};filter:saturate({{ c.sat }});"></div>
+                    </div>
+                    <div style="display:flex;align-items:baseline;gap:5px;margin-top:6px;"><span style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--fg-muted);">{{ c.num }}</span><span style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--fg-locked);">{{ c.rar }}</span></div>
+                    <div style="font-size:11px;color:var(--fg-body);margin-top:2px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">{{ c.n }}</div>
+                    <sc-if value="{{ c.missing }}" hint-placeholder-val="{{ false }}">
+                      <div style="margin-top:4px;"><span style="display:inline-block;font-family:'IBM Plex Mono',monospace;font-size:10px;padding:2px 6px;border-radius:4px;color:var(--accent);border:1px dashed var(--accent-dim);">{{ c.price }}</span></div>
+                    </sc-if>
+                  </div>
+                </sc-for>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div style="border:1px solid #2A241D;border-radius:12px;background:#141118;padding:16px 18px;font-size:12.5px;color:#A89B84;line-height:1.7;max-width:1440px;"><b style="color:#EDE6D8;font-weight:600;">1440 is not a second design, and that is the ruling.</b> Everything that decides this head's height is a type size or a fixed padding &mdash; the only width-dependent member is whether the <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">line-clamp-2</span> title wraps, which 1440 makes <i>less</i> likely, not more. So there is <b style="color:#EDE6D8;font-weight:600;">one height and one threshold pair for every width above <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">md</span></b>, no breakpoint table, and the extra 260px goes where it should: into the field's rest width and the set name's measure on the bar.</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ========== §3 THE HEIGHT ========== -->
+  <div id="height">
+    <div style="font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:0.18em;text-transform:uppercase;color:#8E8269;margin-bottom:16px;border-top:1px solid #CF8745;padding-top:18px;">&sect;3 &middot; <span style="color:#CF8745;">call 2 &mdash; the collapsed height is 56px, and it is derived, not chosen</span></div>
+    <div style="display:flex;gap:22px;flex-wrap:wrap;align-items:flex-start;">
+      <div style="width:660px;flex:none;border:1px solid #2A241D;border-radius:12px;background:#141118;padding:18px 20px;">
+        <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.16em;text-transform:uppercase;color:#8E8269;margin-bottom:12px;">The rest head, member by member &mdash; 1180 and 1440 alike</div>
+        <div style="overflow:hidden;border:1px solid #2A241D;border-radius:8px;">
+          <div style="display:grid;grid-template-columns:1fr 92px 92px;background:#1A1620;font-family:'IBM Plex Mono',monospace;font-size:10.5px;letter-spacing:0.08em;text-transform:uppercase;color:#8E8269;">
+            <div style="padding:9px 12px;">member</div><div style="padding:9px 12px;">rest</div><div style="padding:9px 12px;">collapsed</div>
+          </div>
+          <sc-for list="{{ budget }}" as="b" hint-placeholder-count="9">
+            <div style="display:grid;grid-template-columns:1fr 92px 92px;border-top:1px solid #221D28;font-size:12px;color:#C6B79A;">
+              <div style="padding:9px 12px;">{{ b.k }}</div><div style="padding:9px 12px;font-family:'IBM Plex Mono',monospace;">{{ b.a }}</div><div style="padding:9px 12px;font-family:'IBM Plex Mono',monospace;color:#EDE6D8;">{{ b.b }}</div>
+            </div>
+          </sc-for>
+        </div>
+        <div style="margin-top:14px;font-size:13px;color:#A89B84;line-height:1.75;"><b style="color:#EDE6D8;font-weight:600;">34px, not 32 and not 44.</b> The row is one 32px hairline tall, plus the 2px a lit pip's <span style="font-family:'IBM Plex Mono',monospace;font-size:12.5px;">--accent</span> ring adds outside the control's own box &mdash; a 32px row clips it, and clipping the one carrier of the lit state is the pip defect arriving by another route. <b style="color:#EDE6D8;font-weight:600;">44 is the phone's target and has no business here:</b> these controls are 32px at <span style="font-family:'IBM Plex Mono',monospace;font-size:12.5px;">md</span> in the open head, and a bar that grew them would be a second skin for the same rack.</div>
+      </div>
+      <div style="width:560px;flex:none;display:flex;flex-direction:column;gap:18px;">
+        <div style="border:1px solid #2A241D;border-radius:12px;background:#141118;padding:18px 20px;font-size:13px;color:#A89B84;line-height:1.75;"><b style="color:#EDE6D8;font-weight:600;">Why the phone's 52 and the desktop's 56 differ by four pixels and not by forty.</b> They are the same row twice, sized by their own width's target: 44px controls in a 52px bar on the phone, 32px controls in a 56px bar at <span style="font-family:'IBM Plex Mono',monospace;font-size:12.5px;">md</span> &mdash; the desktop bar is <i>taller</i> because it keeps the head's real 10/12 padding rather than the phone bar's flush row, and because it carries five controls where the phone carries two. <b style="color:#EDE6D8;font-weight:600;">Neither figure is declared as a constant in code:</b> the bar is <span style="font-family:'IBM Plex Mono',monospace;font-size:12.5px;">pt-[10px]</span> + a 34px row + <span style="font-family:'IBM Plex Mono',monospace;font-size:12.5px;">pb-[12px]</span> and measures itself, which is what the threshold reads.</div>
+        <div style="border:1px solid #3A3229;border-left:3px solid #DEAA29;border-radius:12px;background:#161318;padding:16px 20px;font-size:13px;color:#A89B84;line-height:1.75;"><span style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.16em;text-transform:uppercase;color:#DEAA29;display:block;margin-bottom:8px;">The one figure that moves</span><b style="color:#EDE6D8;font-weight:600;">A wrapped title costs 29px, at rest only.</b> <span style="font-family:'IBM Plex Mono',monospace;font-size:12.5px;">Avatar: The Last Airbender</span> at 1180 is one line; at the widths where the <span style="font-family:'IBM Plex Mono',monospace;font-size:12.5px;">line-clamp-2</span> bites, rest is 305 and both offsets move with it. The bar does not: it truncates at one line by design, so <b style="color:#EDE6D8;font-weight:600;">the collapsed height is the same 56 for every set in the catalog</b> &mdash; which is exactly why the reserve is measured off the head and the threshold off the reserve, not off either constant.</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ========== §4 THE RACK ========== -->
+  <div id="rack">
+    <div style="font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:0.18em;text-transform:uppercase;color:#8E8269;margin-bottom:16px;border-top:1px solid #CF8745;padding-top:18px;">&sect;4 &middot; <span style="color:#CF8745;">call 1 &mdash; the rack survives by not being redrawn</span></div>
+    <div style="display:flex;gap:22px;flex-wrap:wrap;align-items:flex-start;">
+      <div style="width:680px;flex:none;border:1px solid #3A3229;border-left:3px solid #CF8745;border-radius:12px;background:#161318;padding:16px 20px;font-size:13.5px;color:#A89B84;line-height:1.75;"><b style="color:#EDE6D8;font-weight:600;">&ldquo;Survives, reduces, or goes&rdquo; has a fourth answer, and it is the cheap one: the same nodes, one row fewer.</b> The phone's collapsed bar had to be its own row because its controls change identity across the threshold &mdash; the field becomes a button back to the head, and <span style="font-family:'IBM Plex Mono',monospace;font-size:12.5px;">Filters</span> is a sheet trigger that does not exist at <span style="font-family:'IBM Plex Mono',monospace;font-size:12.5px;">md</span>. At desktop <b style="color:#EDE6D8;font-weight:600;">nothing changes identity</b>: the rack's row 1 is already one 32px line of five controls and it already fits with room. So the collapse keeps that row mounted and hides the members around it, which buys three things a redrawn bar cannot. <b style="color:#EDE6D8;font-weight:600;">One: no second field.</b> &sect;29 forbids two controls with one accessible name on this page, and a redrawn bar would mount a field behind a <span style="font-family:'IBM Plex Mono',monospace;font-size:12.5px;">display:none</span> twin. <b style="color:#EDE6D8;font-weight:600;">Two: nothing to rescue.</b> Focus, the caret, the 150ms debounce and the open rarity panel all survive the threshold because the element under them is never unmounted. <b style="color:#EDE6D8;font-weight:600;">Three: no desktop badge.</b> The lit controls are on the bar, so the filter state is carried where it is applied &mdash; the phone needed a badge only because its controls were behind a sheet.</div>
+      <div style="width:620px;flex:none;display:flex;flex-direction:column;gap:18px;">
+        <div style="border:1px solid #2A241D;border-radius:12px;background:#141118;padding:18px 20px;">
+          <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.16em;text-transform:uppercase;color:#8E8269;margin-bottom:12px;">The bar's row, priced at three widths &mdash; it cannot wrap</div>
+          <div style="overflow:hidden;border:1px solid #2A241D;border-radius:8px;">
+            <div style="display:grid;grid-template-columns:1fr 84px 84px 84px;background:#1A1620;font-family:'IBM Plex Mono',monospace;font-size:10.5px;letter-spacing:0.08em;text-transform:uppercase;color:#8E8269;">
+              <div style="padding:9px 12px;">child</div><div style="padding:9px 12px;">1024</div><div style="padding:9px 12px;">1180</div><div style="padding:9px 12px;">1440</div>
+            </div>
+            <sc-for list="{{ rackRow }}" as="r" hint-placeholder-count="7">
+              <div style="display:grid;grid-template-columns:1fr 84px 84px 84px;border-top:1px solid #221D28;font-size:12px;color:#C6B79A;">
+                <div style="padding:9px 12px;">{{ r.k }}</div><div style="padding:9px 12px;font-family:'IBM Plex Mono',monospace;">{{ r.a }}</div><div style="padding:9px 12px;font-family:'IBM Plex Mono',monospace;">{{ r.b }}</div><div style="padding:9px 12px;font-family:'IBM Plex Mono',monospace;color:#EDE6D8;">{{ r.c }}</div>
+              </div>
+            </sc-for>
+          </div>
+          <div style="margin-top:12px;font-size:12.5px;color:#A89B84;line-height:1.7;">The identity prefix costs <b style="color:#EDE6D8;font-weight:600;">125px of fixed width plus a truncating name</b>, and the field is the one child that shrinks &mdash; the same contract it has in the open row. At 944px of content it still rests at <b style="color:#EDE6D8;font-weight:600;">209px against its 132px minimum</b>, so <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">flex-nowrap</span> is a promise and not a hope.</div>
+        </div>
+        <div style="border:1px solid #2A241D;border-radius:12px;background:#141118;padding:18px 20px;font-size:13px;color:#A89B84;line-height:1.75;"><b style="color:#EDE6D8;font-weight:600;">What rows 2 and 3 do instead of being drawn.</b> The chip line goes, and its job was already doubled by the lit controls beside it. <b style="color:#EDE6D8;font-weight:600;">The result line keeps its live region and loses only its visible form</b> &mdash; <span style="font-family:'IBM Plex Mono',monospace;font-size:12.5px;">sr-only</span>, which is exactly what the shipped head already does with it while shy on the phone, so a filter changed from the collapsed bar is still announced. <b style="color:#EDE6D8;font-weight:600;">One consequence to accept:</b> a sighted reader who filters from the bar sees the grid change and not the count. The count is 120px of scroll-up away, and the alternative &mdash; keeping row 3 &mdash; is a 78px bar, which is not a collapse.</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ========== §5 THE THRESHOLD ========== -->
+  <div id="threshold">
+    <div style="font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:0.18em;text-transform:uppercase;color:#8E8269;margin-bottom:16px;border-top:1px solid #CF8745;padding-top:18px;">&sect;5 &middot; <span style="color:#CF8745;">call 3 &mdash; the same rule, one constant retuned</span></div>
+    <div style="display:flex;gap:22px;flex-wrap:wrap;align-items:flex-start;">
+      <div style="width:660px;flex:none;border:1px solid #2A241D;border-radius:12px;background:#141118;padding:18px 20px;">
+        <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.16em;text-transform:uppercase;color:#8E8269;margin-bottom:12px;">The offsets, from the shipped rule &mdash; <span style="color:#C6B79A;text-transform:none;letter-spacing:0;">reopen = gridTop &minus; bar; collapse = reopen + band</span></div>
+        <div style="overflow:hidden;border:1px solid #2A241D;border-radius:8px;">
+          <div style="display:grid;grid-template-columns:1fr 78px 78px 78px 78px;background:#1A1620;font-family:'IBM Plex Mono',monospace;font-size:10.5px;letter-spacing:0.08em;text-transform:uppercase;color:#8E8269;">
+            <div style="padding:9px 12px;">case</div><div style="padding:9px 12px;">rest</div><div style="padding:9px 12px;">bar</div><div style="padding:9px 12px;">reopen</div><div style="padding:9px 12px;">collapse</div>
+          </div>
+          <sc-for list="{{ offsets }}" as="o" hint-placeholder-count="5">
+            <div style="display:grid;grid-template-columns:1fr 78px 78px 78px 78px;border-top:1px solid #221D28;font-size:12px;color:#C6B79A;">
+              <div style="padding:9px 12px;">{{ o.k }}</div><div style="padding:9px 12px;font-family:'IBM Plex Mono',monospace;">{{ o.rest }}</div><div style="padding:9px 12px;font-family:'IBM Plex Mono',monospace;">{{ o.bar }}</div><div style="padding:9px 12px;font-family:'IBM Plex Mono',monospace;color:#EDE6D8;">{{ o.reopen }}</div><div style="padding:9px 12px;font-family:'IBM Plex Mono',monospace;color:#EDE6D8;">{{ o.collapse }}</div>
+            </div>
+          </sc-for>
+        </div>
+        <div style="margin-top:14px;font-size:13px;color:#A89B84;line-height:1.75;"><b style="color:#EDE6D8;font-weight:600;">Same rule, and deliberately so.</b> The shipped hook already derives both offsets from measurement rather than constants &mdash; the grid's own top for the collapse, the reserve's edge for the restore &mdash; and that derivation is width-agnostic: it asks &ldquo;has the open head gone past&rdquo; and &ldquo;would the reserve show&rdquo;, which are the right questions at 1440 as much as at 390. <b style="color:#EDE6D8;font-weight:600;">A desktop-specific rule would mean a second state machine for one number</b>, and that number is already a variable.</div>
+      </div>
+      <div style="width:560px;flex:none;display:flex;flex-direction:column;gap:18px;">
+        <div style="border:1px solid #3A3229;border-left:3px solid #DEAA29;border-radius:12px;background:#161318;padding:16px 20px;font-size:13px;color:#A89B84;line-height:1.75;"><span style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.16em;text-transform:uppercase;color:#DEAA29;display:block;margin-bottom:8px;">The one change: <span style="text-transform:none;letter-spacing:0;color:#C6B79A;">HYSTERESIS_PX 80 &rarr; 120, at <span style="font-family:'IBM Plex Mono',monospace;">md</span> only</span></span><b style="color:#EDE6D8;font-weight:600;">80px is inside one wheel notch.</b> A mouse wheel step is ~100&ndash;120px in every major engine, so a desktop band of 80 can be crossed in <i>both</i> directions by two consecutive notches &mdash; the flutter the band exists to prevent, arriving on the input the phone does not have. A thumb scrolls continuously; a wheel quantises, and the band has to be wider than the quantum. <b style="color:#EDE6D8;font-weight:600;">120 is one notch plus headroom</b>, and it is a term in the existing expression rather than a new branch: <span style="font-family:'IBM Plex Mono',monospace;font-size:12.5px;">HYSTERESIS_PX</span> becomes a function of <span style="font-family:'IBM Plex Mono',monospace;font-size:12.5px;">isDesktop</span>, which the hook already takes.</div>
+        <div style="border:1px solid #2A241D;border-radius:12px;background:#141118;padding:18px 20px;font-size:13px;color:#A89B84;line-height:1.75;"><b style="color:#EDE6D8;font-weight:600;">Two gates the desktop adds, and one it must stop applying.</b> <b style="color:#EDE6D8;font-weight:600;">Adds:</b> an <i>open rarity panel</i> freezes the head exactly as the phone sheet does &mdash; the panel is anchored to a trigger in the row, so collapsing under it would move its anchor 220px while it is open; and a collapse is forbidden while <i>the cost strip has focus inside it</i>, because the member the collapse hides would take the keyboard with it. <b style="color:#EDE6D8;font-weight:600;">Stops:</b> <span style="font-family:'IBM Plex Mono',monospace;font-size:12.5px;">mayCollapse</span>'s <span style="font-family:'IBM Plex Mono',monospace;font-size:12.5px;">!isDesktop</span> term goes, and with it the breakpoint reopen &mdash; but <b style="color:#EDE6D8;font-weight:600;">the crossing must still not animate</b> (the two forms are different designs, not two heights of one), and the bar height recorded at one width must still be cleared at the other.</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ========== §6 THE MONEY ========== -->
+  <div id="money">
+    <div style="font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:0.18em;text-transform:uppercase;color:#8E8269;margin-bottom:16px;border-top:1px solid #CF8745;padding-top:18px;">&sect;6 &middot; <span style="color:#CF8745;">call 4 &mdash; the CostStrip stays whole, and the bar carries no figure</span></div>
+    <div style="display:flex;gap:22px;flex-wrap:wrap;align-items:flex-start;">
+      <div style="width:660px;flex:none;border:1px solid #3A3229;border-left:3px solid #CF8745;border-radius:12px;background:#161318;padding:16px 20px;font-size:13.5px;color:#A89B84;line-height:1.75;"><b style="color:#EDE6D8;font-weight:600;">There is no desktop expanded state to design, because the desktop form has no collapsed one.</b> <span style="font-family:'IBM Plex Mono',monospace;font-size:12.5px;">cost-strip.tsx</span> ships the full card at <span style="font-family:'IBM Plex Mono',monospace;font-size:12.5px;">md:flex</span>, always open and never closable, with the disclosure buttons <span style="font-family:'IBM Plex Mono',monospace;font-size:12.5px;">md:hidden</span> on both sides of the swap &mdash; so the phone's <i>&ldquo;expands in place on tap&rdquo;</i> has no desktop counterpart to rule on. It stays that way: <b style="color:#EDE6D8;font-weight:600;">the caveat lines are the audit trail for the figure</b>, up to four of them, and at desktop there is room for all four beside a 32px button. This round changes nothing in that file.</div>
+      <div style="width:620px;flex:none;border:1px solid #2A241D;border-radius:12px;background:#141118;padding:18px 20px;font-size:13px;color:#A89B84;line-height:1.75;"><b style="color:#EDE6D8;font-weight:600;">And no, the bar does not carry the cost &mdash; the desktop case is stronger than the phone's, not weaker.</b> The figure re-scopes with the filters, and the collapsed bar is the one place where the filters can be changed with the figure's own denominator off screen: <span style="font-family:'IBM Plex Mono',monospace;font-size:12.5px;">$188.66 over 45 of 46</span> becoming <span style="font-family:'IBM Plex Mono',monospace;font-size:12.5px;">$12.04 over 3 of 3</span> under a reader's cursor, with the caveat count that explains it hidden, is a money figure that cannot be audited where it is read. <b style="color:#EDE6D8;font-weight:600;">The consequence, named:</b> the collapse also hides <span style="font-family:'IBM Plex Mono',monospace;font-size:12.5px;">Send N to ManaPool</span>, which is this page's one primary action. Accepted &mdash; it is 120px of scroll from anywhere on the page, the reserve means it lands whole rather than half-drawn, and a commercial action that follows the reader down a 16,500px grid is the pattern this whole finding exists to remove.</div>
+    </div>
+  </div>
+
+  <!-- ========== §7 MUST NOTS + CONTRACT ========== -->
+  <div id="contract">
+    <div style="font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:0.18em;text-transform:uppercase;color:#8E8269;margin-bottom:16px;border-top:1px solid #CF8745;padding-top:18px;">&sect;7 &middot; <span style="color:#CF8745;">what the desktop collapse must not do, and the file-by-file</span></div>
+    <div style="display:flex;gap:22px;flex-wrap:wrap;align-items:flex-start;">
+      <div style="width:660px;flex:none;border:1px solid #3A3229;border-left:3px solid #C6533F;border-radius:12px;background:#161318;padding:18px 20px;">
+        <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.16em;text-transform:uppercase;color:#C6533F;margin-bottom:12px;">Must not &mdash; the desktop form's own five</div>
+        <div style="display:flex;flex-direction:column;gap:10px;">
+          <sc-for list="{{ mustNots }}" as="m" hint-placeholder-count="5">
+            <div style="font-size:13px;color:#A89B84;line-height:1.65;padding-left:14px;border-left:1px solid #3A3229;">{{ m }}</div>
+          </sc-for>
+        </div>
+      </div>
+      <div style="width:620px;flex:none;border:1px solid #2A241D;border-radius:12px;background:#141118;padding:18px 20px;">
+        <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.16em;text-transform:uppercase;color:#8E8269;margin-bottom:12px;">File by file &mdash; three files, no new copy string</div>
+        <div style="display:flex;flex-direction:column;gap:12px;">
+          <sc-for list="{{ contract }}" as="f" hint-placeholder-count="4">
+            <div><div style="font-family:'IBM Plex Mono',monospace;font-size:11.5px;color:#CF8745;margin-bottom:3px;">{{ f.f }}</div><div style="font-size:12.5px;color:#A89B84;line-height:1.65;">{{ f.c }}</div></div>
+          </sc-for>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <sc-if value="{{ showRejected }}" hint-placeholder-val="{{ true }}">
+    <div id="rejected">
+      <div style="font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:0.18em;text-transform:uppercase;color:#8E8269;margin-bottom:16px;border-top:1px solid #C6533F;padding-top:18px;">&sect;8 &middot; <span style="color:#C6533F;">drawn and rejected</span></div>
+      <div style="display:flex;gap:22px;flex-wrap:wrap;">
+        <sc-for list="{{ rejected }}" as="r" hint-placeholder-count="3">
+          <div style="width:420px;flex:none;border:1px solid #3A3229;border-radius:12px;background:#161318;padding:18px 20px;">
+            <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.16em;text-transform:uppercase;color:#C6533F;margin-bottom:8px;">{{ r.k }}</div>
+            <div style="font-size:13px;color:#A89B84;line-height:1.7;">{{ r.v }}</div>
+          </div>
+        </sc-for>
+      </div>
+    </div>
+  </sc-if>
+
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;theme&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;default&quot;:&quot;amonkhet&quot;,&quot;options&quot;:[&quot;amonkhet&quot;,&quot;kamigawa&quot;,&quot;phyrexia&quot;,&quot;kaldheim&quot;,&quot;ixalan&quot;,&quot;eldraine&quot;],&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;Canvas&quot;},&quot;showRejected&quot;:{&quot;editor&quot;:&quot;boolean&quot;,&quot;default&quot;:true,&quot;tsType&quot;:&quot;boolean&quot;,&quot;section&quot;:&quot;Canvas&quot;},&quot;litPips&quot;:{&quot;editor&quot;:&quot;boolean&quot;,&quot;default&quot;:true,&quot;tsType&quot;:&quot;boolean&quot;,&quot;section&quot;:&quot;Canvas&quot;}}">
+class Component extends DCLogic {
+  renderVals() {
+    const lit = this.props.litPips ?? true;
+    const pipTok = ["var(--w)", "var(--u)", "var(--b)", "var(--r)", "var(--g)"];
+    const pips = pipTok.map((tok, i) => ({
+      tok,
+      ring: lit && i < 3 ? "0 0 0 2px var(--accent)" : "none",
+    }));
+
+    const cell = (n, tokIndex, num, opts) => {
+      const o = opts || {};
+      return {
+        n, num: String(num).padStart(3, "0"),
+        rar: o.rar || "C",
+        tok: pipTok[tokIndex],
+        missing: !o.own,
+        dim: o.own ? 1 : 0.28,
+        sat: o.own ? 1 : 0.55,
+        edge: o.own ? "solid" : "dashed",
+        edgeCol: o.own ? "var(--border-strong)" : "var(--fg-locked)",
+        price: o.price || "$0.42",
+      };
+    };
+    const names = [
+      "Belladonna Took", "Bilbo, Retired Burglar", "Smaug's Hoard", "Bag End",
+      "Thorin, King in Exile", "Barrel Down the Forest River", "Dwarven Warband",
+      "Gandalf's Firework", "Lake-town Dockworker", "Mirkwood Spider",
+      "Bard, Dragonslayer", "Arkenstone Glimmer", "Beorn, Skin-changer",
+      "Riddles in the Dark", "Elvenking's Feast", "Goblin Tunnels",
+      "Trollshaw Ambush", "Eagles of Manwe", "Gollum's Riddle",
+      "The Black Arrow", "Erebor Forgesmith", "Bombur, Unhorsed",
+    ];
+    const rars = ["C", "U", "R", "M"];
+    const mk = (count, offset) => names.slice(0, count).map((n, i) =>
+      cell(n, i % 5, offset + i, {
+        own: (i + offset) % 3 !== 1,
+        rar: rars[i % 4],
+        price: ["$0.42", "$1.18", "$6.50", "$24.90"][i % 4],
+      }));
+
+    return {
+      theme: this.props.theme ?? "amonkhet",
+      showRejected: this.props.showRejected ?? true,
+      pips,
+      cellsRest: mk(7, 42),
+      cellsRestWide: mk(9, 42),
+      cellsScrolled: mk(14, 106),
+      cellsScrolledWide: mk(18, 106),
+      calls: [
+        { k: "call 1 · what the bar carries", v: "The rack survives as the same nodes — row 1, unchanged, with a 22px identity prefix ahead of it. Rows 2 and 3 go; the lit controls carry the filter state, and the result line keeps its live region as sr-only." },
+        { k: "call 2 · the collapsed height", v: "56px — pt-[10px] + a 34px row + pb-[12px] — against a rest head of 276px. One figure at 1180 and 1440; 305 at rest when the title wraps, and the bar never does." },
+        { k: "call 3 · the threshold", v: "The shipped measured rule, unchanged: reopen at gridTop − bar, collapse a band past it. One constant retuned — the band goes 80 → 120px at md, because 80 is inside a single wheel notch. 220 and 340 at 1180." },
+        { k: "call 4 · the money", v: "cost-strip.tsx is untouched: the desktop form is always open and has never been closable, so there is no expanded state to rule on. The bar carries no figure — the same no as the phone, for a stronger reason." },
+      ],
+      budget: [
+        { k: "pt-[10px]", a: "10", b: "10" },
+        { k: "identity block — 44px icon beside a four-line stack (h1 29, ratio 16, provenance 14, scope note 14)", a: "73", b: "—" },
+        { k: "identity prefix — 22px icon, 15px name, ratio, on the rack's own row", a: "—", b: "in row" },
+        { k: "DeltaStrip wrapper, not firing", a: "0", b: "0" },
+        { k: "CostStrip + its mt-[10px] — label, figure, one caveat, 32px Send", a: "85", b: "—" },
+        { k: "rack row 1 + its mt-[10px] / the bar's 34px row", a: "42", b: "34" },
+        { k: "rack row 2, chips + mt-[8px]", a: "30", b: "—" },
+        { k: "rack row 3, result line + mt-[8px] (sr-only when collapsed)", a: "24", b: "0" },
+        { k: "pb-[12px]", a: "12", b: "12" },
+        { k: "total", a: "276", b: "56" },
+      ],
+      rackRow: [
+        { k: "22px icon + gaps + 15px name (truncates) + ratio + rule", a: "125+", b: "125+", c: "125+" },
+        { k: "SearchField — the only child that shrinks", a: "209", b: "240", c: "370" },
+        { k: "five 22px pips, 4px gaps", a: "126", b: "126", c: "126" },
+        { k: "Rarity · uncommon ▾ at its longest value", a: "149", b: "149", c: "149" },
+        { k: "Missing only", a: "106", b: "106", c: "106" },
+        { k: "eight 10px gaps", a: "80", b: "80", c: "80" },
+        { k: "content width", a: "944", b: "1100", c: "1360" },
+      ],
+      offsets: [
+        { k: "1180, one-line title", rest: "276", bar: "56", reopen: "220", collapse: "340" },
+        { k: "1440, one-line title", rest: "276", bar: "56", reopen: "220", collapse: "340" },
+        { k: "either, wrapped title", rest: "305", bar: "56", reopen: "249", collapse: "369" },
+        { k: "either, delta firing", rest: "—", bar: "—", reopen: "gated", collapse: "gated" },
+        { k: "phone, unchanged", rest: "148", bar: "52", reopen: "96", collapse: "176" },
+      ],
+      mustNots: [
+        "Must not become a second skin for the rack. Same controls, same 32px sizes, same order, same accessible names — a bar that restyled them would be two vocabularies for one row, which is the ghost-Clear defect at a different scale.",
+        "Must not mount a second search field. The open head's field is the bar's field; the collapse hides the members around it, never the row itself.",
+        "Must not collapse under an open rarity panel, an open sheet, a firing delta strip, or focus inside the members it hides.",
+        "Must not animate the md crossing. The two widths are different designs, not two heights of one — the crossing re-lays out, and the bar height measured at one width is cleared at the other.",
+        "Must not reserve a constant. The desktop rest height moves with a wrapped title; the spacer is measured off the head and the threshold off the spacer, exactly as it is on the phone.",
+      ],
+      contract: [
+        { f: "components/sets/use-head-collapse.ts", c: "mayCollapse drops its !isDesktop term and the breakpoint reopen goes with it. HYSTERESIS_PX becomes a function of isDesktop (80 phone, 120 md). Two gates join deltaFiring and sheetOpen: an open rarity panel, and focus inside the hidden members. Everything else — the reserve, the measured offsets, the 180ms step, the reduced-motion path, the anchoring switch — is unchanged and is why this is a small diff." },
+        { f: "components/sets/set-grid-view.tsx", c: "The shy branch stops being phone-shaped: one row that renders the identity prefix and then the rack's row 1 itself, rather than a second bar. The open identity block, the cost wrapper and the chip line hide as they already do; the result line's sr-only-when-shy behaviour now applies at md too. Rows 2 and 3 of the rack are the only members whose hiding is new." },
+        { f: "components/sets/cost-strip.tsx", c: "Untouched. The desktop form is always open and not closable; the phone disclosure stays md:hidden on both sides." },
+        { f: "lib/copy/set-collections.ts", c: "Untouched. head.ratioAria and the set name are the only strings the bar prints, and both already exist — the desktop bar needs no Filters label, no badge aria and no back-to-search label, because it carries the controls themselves." },
+      ],
+      rejected: [
+        { k: "rejected · the whole rack survives", v: "All three rows plus a one-line identity prefix is a 78px bar at best and 108px with a chip line — 28% of the saving for 100% of the complexity, and it keeps the two members (chips, count) whose state is already doubled elsewhere. A collapse that leaves a third of the head is a head that still follows the reader down." },
+        { k: "rejected · the rack goes", v: "The phone can drop its rack because Filters is a sheet trigger that survives on the bar. At md there is no sheet and no trigger, so dropping the rack leaves no route to the filters at all from anywhere below 340px of a 16,500px page — the reader scrolls a screen and a half back to change one rarity." },
+        { k: "rejected · a desktop Filters button + panel", v: "It would make the bar 56px with one control instead of five, and it would invent a sixth control type for one state: a desktop trigger that opens what is inline 220px above it. Two ways to reach one rack, one of them existing only while scrolled, is the fork the chassis package exists to prevent." },
+      ],
+    };
+  }
+}
+</script>
+</body>
+</html>
