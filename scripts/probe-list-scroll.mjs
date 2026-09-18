@@ -155,6 +155,7 @@ async function run() {
       // Every one of them, in turn. Each is opened, scrolled to its foot, closed
       // and opened again — the reported path, reduced to the transition that owes
       // the discard.
+      let measured = 0;
       for (const id of ids) {
         await page.click(`[aria-controls="${id}"]`);
         await page.waitForTimeout(400);
@@ -164,9 +165,11 @@ async function run() {
         }, id);
         await page.waitForTimeout(200);
         const atFoot = await page.evaluate(LIST, id);
-        // A list that does not scroll measured nothing. It is not a failure —
-        // a role with 12 cards has no 320px of them — but it is not a pass
-        // either, so it is counted and named.
+        // A list that does not scroll measured nothing. One of them is not a
+        // failure — a role with 12 cards has no 320px of them — but a run where
+        // EVERY list is like that has proved nothing at all, and the tally below
+        // is what stops it printing `All checks passed` over that. This probe's
+        // own "not a pass" rule, applied to the probe.
         if (atFoot === null || atFoot.max === 0) {
           console.log(`  --   ${width}px · ${id} — opens without scrolling, nothing to discard`);
           await page.click(`[aria-controls="${id}"]`);
@@ -182,6 +185,7 @@ async function run() {
         await page.waitForTimeout(300);
         await page.click(`[aria-controls="${id}"]`);
         await page.waitForTimeout(400);
+        measured += 1;
         const reopened = await page.evaluate(LIST, id);
         report(
           `${width}px · ${id} reopens at the top`,
@@ -194,6 +198,15 @@ async function run() {
         await page.click(`[aria-controls="${id}"]`);
         await page.waitForTimeout(250);
       }
+
+      report(
+        `${width}px · at least one list deep enough to measure`,
+        measured > 0,
+        measured > 0
+          ? `${measured} of ${ids.length} disclosures scrolled`
+          : `${ids.length} disclosures, none of them scrollable — this run proved NOTHING about`
+            + ` the discard. Pick a commander with more support, or a fuller collection.`,
+      );
 
       // The counterpart rule, and the one a careless dependency breaks: a list the
       // reader is READING must hold its place while the section around it

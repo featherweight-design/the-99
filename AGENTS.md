@@ -769,10 +769,18 @@ Package manager is **pnpm** (pinned via `packageManager` in package.json) — ne
   **The counterpart rule is checked too, and it is the one a careless dependency breaks:** a
   list the reader is READING holds its place while the section around it re-renders.
   `sortRoleCards` returns a fresh array for every order but the default, so keying the discard
-  on the card list rather than the sort KEY fires the effect on every render, and pressing any
+  on the array rather than on the JOINED IDS fires the effect on every render, and pressing any
   other role's disclosure yanks the open one to its top. Only reachable with the order changed
   to `Availability` — the default hands back the same array and the fault cannot appear there
-  — which is why the probe presses the order control before measuring it.
+  — which is why the probe presses the order control before measuring it. The joined ids are
+  what the key has to be rather than the sort key, because the degraded RETRY replaces
+  `roleCards` wholesale while neither `expanded` nor the sort moves, and an offset into rows
+  that no longer exist can sit past the new end.
+
+  **A run where no list scrolls fails.** One shallow role is reported as measuring nothing and
+  is not a failure — a role with 12 cards has no 320px of them — but a run where every list is
+  like that has proved nothing, and printing `All checks passed` over it is this probe's own
+  "not a pass" rule broken by the probe.
 
   Its last check is the path as REPORTED: scrolled to the foot, a different facet pill
   pressed, then `Show all` on that facet. It also asserts the commander's identity is NAMED
