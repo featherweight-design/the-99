@@ -32,3 +32,51 @@ describe("listLastSlotsCandidates", () => {
     expect(listLastSlotsCandidates({ ranked: [], inDeckOracleIds: new Set() })).toEqual([]);
   });
 });
+
+describe("the negative tail", () => {
+  const card = (id: string, synergyPts: number | null): SynergyCard => ({
+    oracleId: id,
+    name: id,
+    typeLine: "Instant",
+    facet: "spell",
+    inclusionPct: 40,
+    synergyPts,
+    owned: true,
+    committedTo: null,
+    manaCost: null,
+    availability: null,
+    price: null,
+  });
+
+  it("drops a card whose synergy argues against it", () => {
+    // A negative score is EDHREC saying the card appears in this commander's
+    // decks LESS than in decks generally. Offering it under a heading that
+    // suggests cards makes the player overrule the figure to ignore the row.
+    const out = listLastSlotsCandidates({
+      ranked: [card("good", 40), card("bad", -12), card("fine", 1)],
+      inDeckOracleIds: new Set(),
+    });
+
+    expect(out.map((c) => c.oracleId)).toEqual(["good", "fine"]);
+  });
+
+  it("keeps a card with no reading at all", () => {
+    // Null is no figure — an unscored card, or a degraded read — and silence is
+    // not evidence against a card. Only a figure that argues against it is.
+    const out = listLastSlotsCandidates({
+      ranked: [card("unscored", null)],
+      inDeckOracleIds: new Set(),
+    });
+
+    expect(out.map((c) => c.oracleId)).toEqual(["unscored"]);
+  });
+
+  it("still drops a card the deck already holds, whatever it scores", () => {
+    const out = listLastSlotsCandidates({
+      ranked: [card("held", 90), card("free", 90)],
+      inDeckOracleIds: new Set(["held"]),
+    });
+
+    expect(out.map((c) => c.oracleId)).toEqual(["free"]);
+  });
+});

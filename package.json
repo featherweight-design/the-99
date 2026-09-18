@@ -54,6 +54,7 @@
     "probe:colour-box": "node scripts/probe-chassis-colour.mjs",
     "probe:scroll-lock": "node scripts/probe-scroll-lock.mjs",
     "probe:pip-gap": "node scripts/probe-pip-gap.mjs",
+    "probe:last-slots": "node scripts/probe-last-slots.mjs",
     "probe:deck-grid": "node scripts/probe-deck-grid.mjs",
     "probe:list-scroll": "node scripts/probe-list-scroll.mjs",
     "probe:printing-pick": "node scripts/probe-printing-pick.mjs",

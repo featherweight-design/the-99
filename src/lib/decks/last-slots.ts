@@ -27,12 +27,27 @@ export type TopOffCandidate = SynergyCard;
  *
  *  The cap is a property of the selection, not of the pool: the player sees the
  *  whole ranking and ticks up to the open slots inside it, so a pool truncated
- *  at `openSlots` would hide the cards each tick is being chosen over. The one
- *  exclusion is a card the deck already holds: a row the player cannot tick is
- *  a row the list has no reason to draw. */
+ *  at `openSlots` would hide the cards each tick is being chosen over.
+ *
+ *  Two exclusions. A card the deck already holds — a row the player cannot tick
+ *  is a row the list has no reason to draw. And a card whose synergy is
+ *  NEGATIVE, which is EDHREC saying the card appears in this commander's decks
+ *  LESS than in decks generally: an argument against the card, printed under a
+ *  heading that offers it. The list is a suggestion, and a suggestion carrying
+ *  its own counter-evidence is one the player has to overrule to ignore.
+ *
+ *  A NULL synergy is kept. Null is no reading — an unscored card, or a degraded
+ *  read — and silence is not evidence against a card. Only a figure that argues
+ *  against it is. (Measured on the shipped index: no row scores exactly 0, so
+ *  the boundary is not load-bearing; it is written as `< 0` because that is the
+ *  claim, not because of where the data happens to sit.) */
 export function listLastSlotsCandidates(args: {
   ranked: SynergyCard[];
   inDeckOracleIds: Set<string>;
 }): SynergyCard[] {
-  return args.ranked.filter((c) => !args.inDeckOracleIds.has(c.oracleId));
+  return args.ranked.filter(
+    (c) =>
+      !args.inDeckOracleIds.has(c.oracleId)
+      && !(c.synergyPts !== null && c.synergyPts < 0),
+  );
 }

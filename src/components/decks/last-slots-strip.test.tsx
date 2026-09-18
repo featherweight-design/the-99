@@ -144,6 +144,41 @@ describe("LastSlotsStrip", () => {
     expect(screen.queryByText(topOffCopy.strip.caption("3", "0"))).toBeNull();
   });
 
+  // A card owned with every copy sleeved in another deck is offered, and rightly
+  // — the player may still reclaim one. What it must not do is arrive PRE-TICKED,
+  // where it is indistinguishable from a card they can sleeve tonight and
+  // committing it costs either a purchase or a card out of another deck. That is
+  // the act the list draws a buy tag for, made silently on their behalf.
+  const claimed = (id: string): TopOffCandidate => ({
+    ...candidate(id, true),
+    availability: { owned: 1, hard: 1, soft: 0, free: 0, claims: [] },
+  });
+  const spare = (id: string): TopOffCandidate => ({
+    ...candidate(id, true),
+    availability: { owned: 2, hard: 1, soft: 0, free: 1, claims: [] },
+  });
+
+  it("promises only the owned cards it can actually seed", () => {
+    render(
+      <LastSlotsStrip {...base} candidates={[claimed("held-1"), claimed("held-2"), spare("free-1")]} />,
+    );
+
+    // One, not three: the note states what will arrive ticked, so it reads the
+    // same list the seed does or it overstates by exactly the cards whose every
+    // copy is sleeved elsewhere.
+    expect(screen.getByText(topOffCopy.strip.doorNote("1"))).toBeInTheDocument();
+    expect(screen.queryByText(topOffCopy.strip.doorNote("3"))).toBeNull();
+  });
+
+  it("seeds a card with no availability reading, which is the degraded case", () => {
+    // A null reading is NO ROW — an unowned card, or a read that could not reach
+    // — and reads as free everywhere else in the app. Seeding nothing here would
+    // let one failed read silently empty the promise the strip makes.
+    render(<LastSlotsStrip {...base} candidates={[candidate("unread", true)]} />);
+
+    expect(screen.getByText(topOffCopy.strip.doorNote("1"))).toBeInTheDocument();
+  });
+
   // §16 — an exhausted pool is honest, not alarming, so the plate carries the
   // provenance accent and never the warning colour. Asserted as longhands
   // because jsdom will not expand a shorthand whose value holds a var().

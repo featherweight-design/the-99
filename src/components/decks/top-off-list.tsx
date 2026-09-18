@@ -27,6 +27,8 @@ import {
   type PriceFact,
 } from "../../lib/decks/price";
 import { availabilityState } from "../../lib/decks/availability";
+import { FACET_TYPE_LABEL } from "../../lib/cards/facet";
+import { CardDetailTrigger } from "../cards/card-detail-provider";
 import { COST_PIP_CAP, COST_PIP_SIZE, COST_TRACK, CostPips } from "../ui/cost-pips";
 import { OwnershipDot } from "../ui/ownership-dot";
 import { AvailabilityMarker } from "../ui/availability-marker";
@@ -37,6 +39,14 @@ import { useIsDesktop } from "../ui/use-is-desktop";
 /** How long ticking settles before one message is announced. Thirty fast taps
  *  is one message, which is the shipped selection rule from the Add panel. */
 const ANNOUNCE_SETTLE_MS = 600;
+
+/** The type column, desktop only, as one figure the header and the rows share.
+ *
+ *  90px rather than the synergy panel's 150: that panel prints a real type line
+ *  under a single facet, and this list has no facet filter, so every row here is
+ *  the panel's own "all" case — the bucket word, of which `Enchantment` is the
+ *  longest at about 76px. The name column is `flex-auto` and pays for it. */
+const TYPE_COL = "90px";
 
 export interface TopOffListProps {
   deckId: string;
@@ -139,7 +149,11 @@ function CostTrack({ cost }: { cost: string | null }) {
   // ahead of the score with nothing inside it.
   if (!hasFrontFaceCost(cost)) return null;
   return (
-    <span className="flex-none md:order-3">
+    // order-4, after the type column that now sits beside the name. The header
+    // above lists the same eight slots in the same order, and the two have to be
+    // read together — a change here with no change there puts every heading to
+    // the right of the data it names.
+    <span className="flex-none md:order-4">
       <CostPips cost={cost} size={13} className="flex gap-[3px] md:hidden" />
       <CostPips
         cost={cost}
@@ -183,6 +197,13 @@ export function TopOffList({
   // State with no setter rather than a ref: the pool is read on every render to
   // decide what to draw, which is exactly what a ref may not be used for.
   const [pool] = useState(candidates);
+
+  /** Every row in this list, so the card modal's Prev and Next page through the
+   *  pool the reader is looking at rather than the deck behind it. Declined and
+   *  illegal rows are in it on purpose: both are still on screen wearing their
+   *  own way back, and a traversal that skipped them would step over rows the
+   *  reader can see. */
+  const siblingIds = pool.map((c) => c.oracleId);
   const offered = new Set(candidates.map((c) => c.oracleId));
 
   // A candidate the deck gained while the list was open. Frozen rows keep their
@@ -526,6 +547,12 @@ export function TopOffList({
         <span className="w-[18px] flex-none" />
         <span className="w-[7px] flex-none" />
         <span className="flex-auto min-w-0">{topOffCopy.list.colCard}</span>
+        {/* Type, beside the name as the handoff's own long-list note orders it
+            (`box, dot, name, type, buy tag, synergy, inclusion`). It reads the
+            synergy panel's heading rather than declaring a second copy of the
+            word: two surfaces listing the same EDHREC pool under two different
+            headings for one column is the drift a shared string exists to stop. */}
+        <span className="flex-none" style={{ width: TYPE_COL }}>{synergyCopy.panel.colType}</span>
         {/* The same shared track the rows draw into, never a literal beside it: the cost
             column widened from 40 to 72 when the pips stopped overlapping, and a header
             carrying its own copy of the old number put this heading and every one after it
@@ -554,7 +581,34 @@ export function TopOffList({
           String(pool.length),
           String(openSlots),
         )}
-        className="flex flex-col gap-[6px] md:gap-[5px] mt-[8px]"
+        // DESKTOP ONLY, and the handoff's own long-list note is why.
+        //
+        // That note refuses an inner scroller outright, on four grounds, and it
+        // is right about every one of them AT 390px: two scroll surfaces a
+        // gesture cannot tell apart on a box nearly as wide as the viewport, a
+        // hidden bottom, chaining that throws the commit past a reader who is
+        // slowing down, and a trapped primary. The phone keeps exactly what it
+        // drew — one scroll surface, the commit pinned in the dock's slot.
+        //
+        // But it costs the decision as "a player scrolls past up to 38 rows",
+        // because "the list can never be longer than 99 − built". It can:
+        // `listLastSlotsCandidates` returns the whole ranked pool, which is 262
+        // cards for the average commander and 423 at the widest, and 3,264 of
+        // 3,279 commanders carry more than 100 even after the negative tail is
+        // cut. So on desktop the shipped shape is the one option that note
+        // refused by name — an unpinned commit at the end of the list — reached
+        // by a premise that did not hold.
+        //
+        // A pointer can address one box of two; a 390px thumb cannot. Bounding
+        // it here buys the always-visible primary the note wanted, without the
+        // gesture ambiguity it was avoiding.
+        //
+        // 480px is the synergy panel's own box on `/commanders/[slug]`, which is
+        // the other long EDHREC list in this app. `max-h`, so a list shorter than
+        // the box is its own height and no reader is given a scrollbar for six
+        // rows. Whether the POOL should be this long at all is a question for
+        // Design; this is the reading surface, not the ranking.
+        className="flex flex-col gap-[6px] md:gap-[5px] mt-[8px] md:max-h-[480px] md:overflow-y-auto"
       >
         {pool.map((c) => {
           if (illegal.has(c.oracleId)) {
@@ -587,6 +641,8 @@ export function TopOffList({
               inflight={inflight}
               capLineId={capLineId}
               newestAsOf={newestAsOf}
+              isDesktop={isDesktop}
+              siblings={siblingIds}
               onToggle={() => toggle(c.oracleId)}
               onDecline={() => decline(c)}
             />
@@ -723,6 +779,8 @@ function CandidateRow({
   inflight,
   capLineId,
   newestAsOf,
+  isDesktop,
+  siblings,
   onToggle,
   onDecline,
 }: {
@@ -732,6 +790,13 @@ function CandidateRow({
   inflight: boolean;
   capLineId: string;
   newestAsOf: Date | null;
+  /** Desktop alone opens the card. The phone row is one tap target on purpose —
+      the addendum's own rule, and what makes 38 of them tickable one-handed — so
+      a button inside it would put "read this card" and "tick this card" on the
+      same press. */
+  isDesktop: boolean;
+  /** The pool's ids, so the modal pages through the list the reader is in. */
+  siblings: string[];
   onToggle: () => void;
   onDecline: () => void;
 }) {
@@ -746,9 +811,28 @@ function CandidateRow({
   // the eight slots order themselves against the column header.
   return (
     <div
-      className="flex items-center gap-[9px] md:gap-[10px] rounded-[7px] min-h-[52px] md:min-h-[34px] pl-[8px] pr-[10px] md:px-[9px]"
+      // The fill moves to CLASSES so a hover can exist at all: an inline
+      // `background` outranks every utility, which is why this row has never had
+      // one. `--row-bg` travels with it, the way `update-diff-row.tsx` and the
+      // collection's own rows carry it, so anything drawing a seam against the
+      // row tracks the swap rather than a fixed colour.
+      //
+      // `md:` only. A touch device has no hover, and the sticky :hover a phone
+      // browser leaves behind after a tap would mark the last row pressed as
+      // though it were still under a pointer.
+      className={[
+        "flex items-center gap-[9px] md:gap-[10px] rounded-[7px]",
+        "min-h-[52px] md:min-h-[34px] pl-[8px] pr-[10px] md:px-[9px]",
+        ticked
+          ? "bg-[color:var(--elevated-hover)] [--row-bg:var(--elevated-hover)]"
+          : "bg-[color:var(--surface)] [--row-bg:var(--surface)]"
+            // Never on an inert row: at the cap a row cannot be ticked, and a
+            // fill that lights under the pointer would promise it can.
+            + (inert
+              ? ""
+              : " md:hover:bg-[color:var(--elevated-hover)] md:hover:[--row-bg:var(--elevated-hover)]"),
+      ].join(" ")}
       style={{
-        background: ticked ? "var(--elevated-hover)" : "var(--surface)",
         border: ticked
           ? "1px solid var(--accent-shadow)"
           : "1px solid var(--border)",
@@ -801,15 +885,23 @@ function CandidateRow({
             size={7}
             className="md:order-1"
           />
-          <span
-            className="flex-auto min-w-0 text-[12.5px] md:text-[13.5px] md:order-2"
-            style={{ color: "var(--fg)" }}
-          >
-            {c.name}
-          </span>
+          {/* Phone keeps the name as TEXT inside the label. The addendum's rule
+              for this row is that the target is the row, not the box — which is
+              what makes 38 of them tickable one-handed — so a button here would
+              put "read this card" and "tick this card" on one press. Desktop
+              takes the trigger instead, below, where a pointer can tell the two
+              apart and a hover says which is which. */}
+          {!isDesktop && (
+            <span
+              className="flex-auto min-w-0 text-[12.5px]"
+              style={{ color: "var(--fg)" }}
+            >
+              {c.name}
+            </span>
+          )}
           <span
             aria-hidden
-            className="flex-none flex items-center justify-end whitespace-nowrap font-mono text-[10px] md:order-4 md:w-[84px]"
+            className="flex-none flex items-center justify-end whitespace-nowrap font-mono text-[10px] md:order-5 md:w-[84px]"
           >
             {!c.owned ? (
               <BuyTag
@@ -824,6 +916,36 @@ function CandidateRow({
           </span>
         </label>
 
+        {/* Outside the label, deliberately: a control nested in one toggles the
+            tick on every press of it — the same trap the decline control is
+            placed against, recorded in the addendum. `md:contents` on the parent
+            makes this a direct child of the row's flex context, so `order` puts
+            it back beside the dot however the DOM is arranged. */}
+        {isDesktop && (
+          <CardDetailTrigger
+            oracleId={c.oracleId}
+            name={c.name}
+            siblings={siblings}
+            title={c.name}
+            className="md:order-2 flex-auto min-w-0 text-left truncate text-[13.5px] [color:var(--fg)] hover:underline"
+          >
+            {c.name}
+          </CardDetailTrigger>
+        )}
+
+        {/* Type, desktop only. The phone row is two lines carrying the name, the
+            two figures and the buy tag, and the handoff's own phone spec has no
+            type in it — adding a word there would cost the figure beside it. */}
+        {isDesktop && (
+          <span
+            aria-hidden
+            className="md:order-3 flex-none truncate font-mono text-[11px]"
+            style={{ width: TYPE_COL, color: "var(--fg-faint)" }}
+          >
+            {FACET_TYPE_LABEL[c.facet]}
+          </span>
+        )}
+
         <span className="flex items-center gap-[8px] font-mono text-[10px] md:contents">
           <label
             htmlFor={tickId}
@@ -832,7 +954,7 @@ function CandidateRow({
             <CostTrack cost={c.manaCost} />
             <span
               aria-hidden
-              className="flex-none md:order-5 md:w-[60px] md:text-right md:text-[12px]"
+              className="flex-none md:order-6 md:w-[60px] md:text-right md:text-[12px]"
               style={{ color: "var(--accent)" }}
             >
               {c.synergyPts === null
@@ -841,7 +963,7 @@ function CandidateRow({
             </span>
             <span
               aria-hidden
-              className="flex-none md:order-6 md:w-[36px] md:text-right md:text-[11px]"
+              className="flex-none md:order-7 md:w-[36px] md:text-right md:text-[11px]"
               style={{ color: "var(--fg-faint)" }}
             >
               {c.inclusionPct === null
@@ -861,7 +983,7 @@ function CandidateRow({
             onClick={onDecline}
             disabled={inflight}
             aria-label={topOffCopy.list.declineAria(c.name)}
-            className="ml-auto md:ml-0 md:order-7 flex-none flex items-center justify-end min-h-[44px] md:min-h-0 md:w-[60px] font-mono text-[10.5px] bg-transparent cursor-pointer disabled:opacity-50 disabled:cursor-default [color:var(--fg-faint)] hover:[color:var(--fg-body)]"
+            className="ml-auto md:ml-0 md:order-8 flex-none flex items-center justify-end min-h-[44px] md:min-h-0 md:w-[60px] font-mono text-[10.5px] bg-transparent cursor-pointer disabled:opacity-50 disabled:cursor-default [color:var(--fg-faint)] hover:[color:var(--fg-body)]"
           >
             <span className="[border-bottom:1px_dashed_var(--border-dashed)]">
               {topOffCopy.list.decline}
