@@ -3,6 +3,7 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 import { render, screen, fireEvent, act } from "@testing-library/react";
 import { SetGridView } from "./set-grid-view";
 import { placeCells, type SetPrinting } from "../../lib/sets/completion";
+import { setPageCopy } from "../../lib/copy/set-collections";
 
 const replace = vi.fn();
 let search = "";
@@ -2215,10 +2216,18 @@ describe("SetGridView — the phone head collapses past a threshold", () => {
       // it is about to arrive at.
       act(() => { for (const fn of finishers) fn(); });
       animate.mockClear();
-      // And now the window widens: same `shy` flip, different reason.
+      // And now the window widens. Since addendum 2 the desktop head collapses too, so the
+      // crossing is no longer a one-way flip to the open form: the reopen fires because the
+      // reserve and the recorded rest height belong to the other width, and the scroll
+      // listener — re-armed by the same `isDesktop` change — re-decides at the reader's
+      // offset, which at 400 is back to collapsed.
+      //
+      // The RULE is unchanged and is what this asserts: neither the crossing nor the step
+      // that settles it animates. The two widths are different designs rather than two
+      // heights of one, and animating between them clipped the desktop controls inside a
+      // 75px box on the way to a height belonging to the other design.
       wide = true;
       act(() => { for (const fn of listeners) fn(); });
-      expect(isShy(container)).toBe(false);
       expect(animate).not.toHaveBeenCalled();
     } finally {
       HTMLElement.prototype.getBoundingClientRect = rect;
@@ -2535,11 +2544,213 @@ describe("SetGridView — the phone head collapses past a threshold", () => {
     expect(region().textContent).not.toMatch(/·\s*$/);
   });
 
-  it("never collapses at desktop, however far the reader scrolls", () => {
+  // The crossing's suppression must not outlive the crossing. A resize at the top of the
+  // page settles nothing — the head was already open — and a flag cleared by the next run of
+  // the layout effect would still be set when the reader's next genuine collapse arrived,
+  // minutes later, and snap it. Cleared on a frame instead.
+  it("still animates a collapse that follows a crossing it did not settle", () => {
+    vi.useFakeTimers();
+    const listeners: (() => void)[] = [];
+    let wide = false;
+    vi.stubGlobal(
+      "matchMedia",
+      vi.fn().mockImplementation((query: string) => ({
+        matches: /prefers-reduced-motion/.test(query) ? false : wide,
+        addEventListener: (_: string, fn: () => void) => listeners.push(fn),
+        removeEventListener: vi.fn(),
+      })),
+    );
+    const animate = vi.fn(() => ({
+      cancel: vi.fn(),
+      finish: vi.fn(),
+      addEventListener: vi.fn(),
+      removeEventListener: vi.fn(),
+    }));
+    Object.defineProperty(HTMLElement.prototype, "animate", {
+      value: animate, configurable: true, writable: true,
+    });
+    const rect = HTMLElement.prototype.getBoundingClientRect;
+    HTMLElement.prototype.getBoundingClientRect = function boxed(this: HTMLElement) {
+      if (this.hasAttribute("data-set-head")) {
+        const height = this.hasAttribute("data-set-head-collapsed") ? 52 : 200;
+        return { ...rect.call(this), height, bottom: height } as DOMRect;
+      }
+      if (this.hasAttribute("data-set-head-reserve")) {
+        return { ...rect.call(this), bottom: 200 - window.scrollY } as DOMRect;
+      }
+      return rect.call(this);
+    };
+    try {
+      const { container } = view([p("1"), p("2")], []);
+      // At the top of the page, so the crossing changes the width and nothing else.
+      scrollTo(0);
+      wide = true;
+      act(() => { for (const fn of listeners) fn(); });
+      expect(isShy(container)).toBe(false);
+      expect(animate).not.toHaveBeenCalled();
+      // The frame the crossing was allowed passes, and the reader scrolls for real. The
+      // suppression is cleared on a `requestAnimationFrame`, so what has to elapse here is a
+      // frame rather than a timer — jsdom schedules rAF callbacks as macrotasks.
+      act(() => { vi.runAllTimers(); });
+      scrollTo(900);
+      expect(isShy(container)).toBe(true);
+      expect(animate).toHaveBeenCalled();
+    } finally {
+      HTMLElement.prototype.getBoundingClientRect = rect;
+      delete (HTMLElement.prototype as { animate?: unknown }).animate;
+      vi.unstubAllGlobals();
+      vi.useRealTimers();
+    }
+  });
+
+  // Addendum 2 §1. The round's load-bearing claim: at `md` the collapsed head IS the rack's
+  // own row, so there is exactly ONE search field in the document at every offset. A
+  // redrawn desktop bar would mount a second behind a `display:none` twin — two controls
+  // with one accessible name, which §29 forbids on this page.
+  it("keeps one search field at desktop, collapsed or not", () => {
+    stubDesktop(true);
+    const { container } = view([p("1"), p("2")], []);
+    const fieldName = /^Search cards in /;
+    expect(screen.getAllByRole("searchbox", { name: fieldName })).toHaveLength(1);
+    const before = screen.getByRole("searchbox", { name: fieldName });
+    scrollTo(2000);
+    expect(isShy(container)).toBe(true);
+    expect(screen.getAllByRole("searchbox", { name: fieldName })).toHaveLength(1);
+    // The SAME node, which is what keeps focus, the caret and the 150ms debounce across the
+    // threshold with nothing to rescue.
+    expect(screen.getByRole("searchbox", { name: fieldName })).toBe(before);
+  });
+
+  // The phone's two bar controls exist because its rack is behind a sheet. At `md` the rack
+  // is on the row, so a `Filters` trigger would be a second route to one rack and the
+  // back-to-search button would point at a field that never moved.
+  it("draws no Filters trigger and no back-to-search button on the desktop bar", () => {
     stubDesktop(true);
     const { container } = view([p("1"), p("2")], []);
     scrollTo(2000);
+    expect(isShy(container)).toBe(true);
+    expect(container.querySelector("[data-set-head-bar]")).toBeNull();
+    expect(container.querySelector("[data-set-head-prefix]")).toBeTruthy();
+    // The sheet trigger is `md:hidden` rather than unmounted — it is the phone's route to
+    // the rack and stays mounted for the crossing back — so what is asserted is that it is
+    // gated off at this width, not that it is absent.
+    expect(screen.getByRole("button", { name: /^Filters/ }).className).toMatch(/md:hidden/);
+    // The back-to-search button IS unmounted: it belongs to the phone bar, which does not
+    // render at `md` at all.
+    expect(screen.queryByRole("button", { name: setPageCopy.head.backToSearch }))
+      .toBeNull();
+  });
+
+  // The open block is `display:none` while the head is collapsed, which takes its heading
+  // out of the accessibility tree — so without an `h1` on the prefix, heading navigation
+  // would have no page heading at all for the whole collapsed state.
+  //
+  // Which of the two is EXPOSED is a `display` question and jsdom computes no styles, so
+  // that half is the probe's (`probe:sets`). What is asserted here is that the prefix
+  // carries an `h1` naming the set, rather than a span.
+  it("carries a page heading on the desktop prefix", () => {
+    stubDesktop(true);
+    const { container } = view([p("1"), p("2")], []);
+    scrollTo(2000);
+    expect(isShy(container)).toBe(true);
+    const prefix = container.querySelector("[data-set-head-prefix]");
+    expect(prefix?.querySelector("h1")?.textContent).toBe("Duskmourn");
+  });
+
+  // Addendum 2 §3: a wheel notch is ~100–120px, so an 80px band can be crossed in both
+  // directions by two consecutive notches. The phone keeps 80 because a thumb is
+  // continuous. Read against the fallback thresholds — no bar has been drawn yet, so the
+  // reopen point is 40 and the collapse point is the band past it.
+  it("takes a 120px band at desktop and keeps 80 on the phone", () => {
+    // The band is only read once a bar has been MEASURED — before that the first collapse
+    // runs on the grid's own top, and jsdom reports every box at 0 so it never gets there.
+    // Stubbed the way the crossing test stubs it: a 200px open head, a 52px bar, and a
+    // reserve whose bottom is the grid's top. Reopen is then 200 - 52 = 148, and the band
+    // is what decides the offset it collapses at again.
+    const rect = HTMLElement.prototype.getBoundingClientRect;
+    HTMLElement.prototype.getBoundingClientRect = function boxed(this: HTMLElement) {
+      if (this.hasAttribute("data-set-head")) {
+        const height = this.hasAttribute("data-set-head-collapsed") ? 52 : 200;
+        return { ...rect.call(this), height, bottom: height } as DOMRect;
+      }
+      if (this.hasAttribute("data-set-head-reserve")) {
+        return { ...rect.call(this), bottom: 200 - window.scrollY } as DOMRect;
+      }
+      return rect.call(this);
+    };
+    try {
+      for (const [wide, band] of [[true, 120], [false, 80]] as const) {
+        stubDesktop(wide);
+        const { container, unmount } = view([p("1"), p("2")], []);
+        scrollTo(400);
+        expect(isShy(container)).toBe(true);
+        // Back above the reserve, which reopens and leaves the bar's height recorded.
+        scrollTo(100);
+        expect(isShy(container)).toBe(false);
+        scrollTo(148 + band - 2);
+        expect(isShy(container)).toBe(false);
+        scrollTo(148 + band + 2);
+        expect(isShy(container)).toBe(true);
+        unmount();
+      }
+    } finally {
+      HTMLElement.prototype.getBoundingClientRect = rect;
+    }
+  });
+
+  // Addendum 2 §3 asks for a gate holding the head open while the rarity panel is open,
+  // because the panel is anchored to a trigger inside the row the head collapses into.
+  // There is none: the desktop popover dismisses itself on scroll, so the panel is already
+  // gone by the time any collapse decision is taken. The gate was built, and `probe:sets`
+  // reported it unreachable.
+  //
+  // That dismissal is NOT assertable here, which is why the probe owns it. `fireEvent.scroll`
+  // dispatches with `window` as the target, and the panel's listener asks
+  // `panelRef.current.contains(target)` — `contains` takes a Node, and window is not one. In
+  // a browser the target is `document` and the check runs; in jsdom it never gets that far,
+  // so a unit test would report the panel still open on a build where it closes.
+
+  // Hiding a member takes the keyboard with it. The gate is read at decision time, and it
+  // gates the open→shy edge alone — a reader who tabs into the row while the head is
+  // already collapsed must not have it open underneath them.
+  it("does not collapse while focus is inside a member the collapse hides", () => {
+    stubDesktop(true);
+    const { container } = view([p("1"), p("2")], []);
+    const hidden = container.querySelector("[data-set-shy-hides] button") as HTMLElement;
+    expect(hidden).toBeTruthy();
+    hidden.focus();
+    scrollTo(2000);
     expect(isShy(container)).toBe(false);
-    expect(container.querySelector("[data-set-cost]")).not.toBeNull();
+    // And once focus leaves, the next read collapses.
+    hidden.blur();
+    scrollTo(2001);
+    expect(isShy(container)).toBe(true);
+  });
+
+  // Rows 2 and 3 go, but the result line keeps its live region — which is what lets them.
+  // A filter changed from the collapsed bar is still announced.
+  it("keeps the result line announcing, unseen, while collapsed at desktop", () => {
+    stubDesktop(true);
+    const { container } = view([p("1"), p("2")], []);
+    scrollTo(2000);
+    const result = container.querySelector("[data-set-result]");
+    expect(result?.className).toBe("sr-only");
+    expect(screen.getAllByRole("status").filter((el) => /cell/.test(el.textContent ?? "")))
+      .toHaveLength(1);
+    expect(container.querySelector("[data-set-chips]")?.className).toMatch(/hidden/);
+  });
+
+  // Addendum 2 reverses `ADDENDUM-STATES.md`'s fifth Must-not. The desktop head is 276px of
+  // a page that runs to ~16,500, and it followed the reader down all of it.
+  it("collapses at desktop too, and the cost strip goes with it", () => {
+    stubDesktop(true);
+    const { container } = view([p("1"), p("2")], []);
+    scrollTo(2000);
+    expect(isShy(container)).toBe(true);
+    // The money is not on the bar. The figure re-scopes with the filters, and the collapsed
+    // head is the one place those can be changed with the denominator off screen. Hidden
+    // rather than unmounted, as on the phone — unmounting throws away the reader's expanded
+    // disclosure and any focus in it.
+    expect(container.querySelector("[data-set-cost]")?.closest("div.hidden")).toBeTruthy();
   });
 });

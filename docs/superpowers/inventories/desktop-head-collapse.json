@@ -1,0 +1,37 @@
+{
+  "feature": "The desktop head takes the collapse too",
+  "rows": [
+    {
+      "id": "set-head-rest",
+      "label": "/collection/sets/dsk — the head at rest",
+      "steps": [
+        { "goto": "/collection/sets/dsk", "settle": 4000, "wait": "[data-set-head]" }
+      ]
+    },
+    {
+      "id": "set-head-collapsed",
+      "label": "/collection/sets/dsk — the head collapsed, past the threshold",
+      "steps": [
+        { "goto": "/collection/sets/dsk", "settle": 4000, "wait": "[data-set-head]" },
+        { "scroll": 900, "settle": 900 }
+      ]
+    },
+    {
+      "id": "set-head-collapsed-filtered",
+      "label": "/collection/sets/dsk — collapsed with a rarity and a colour on",
+      "steps": [
+        { "goto": "/collection/sets/dsk?c=W&r=rare", "settle": 4000, "wait": "[data-set-head]" },
+        { "scroll": 900, "settle": 900 }
+      ]
+    },
+    {
+      "id": "set-head-collapsed-narrow-desktop",
+      "label": "/collection/sets/dsk — collapsed at the narrowest desktop",
+      "widths": ["desktop"],
+      "steps": [
+        { "goto": "/collection/sets/dsk", "settle": 4000, "wait": "[data-set-head]" },
+        { "scroll": 900, "settle": 900 }
+      ]
+    }
+  ]
+}

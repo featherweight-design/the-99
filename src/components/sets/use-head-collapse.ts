@@ -30,8 +30,17 @@ function prefersReducedMotion(): boolean {
  * How far past the reopen point the reader has to be before the head collapses. The band is
  * what stops a head one pixel either side of a single threshold flipping on every frame of a
  * slow scroll; 80 is the width the fixed 40/120 pair had.
+ *
+ * Wider at `md`, and for a reason the phone does not have: a thumb scrolls continuously, a
+ * wheel QUANTISES. A notch is ~100–120px in every major engine, so an 80px band can be
+ * crossed in both directions by two consecutive notches — the flutter the band exists to
+ * prevent, arriving on an input the phone cannot produce. 120 is one notch plus headroom,
+ * and the failure mode of a band that is too wide is benign: the head stays open slightly
+ * longer.
  */
-const HYSTERESIS_PX = 80;
+function hysteresisFor(isDesktop: boolean): number {
+  return isDesktop ? 120 : 80;
+}
 
 /**
  * The collapse and the restore, in ms. §31 asks for two heights, not for a head that tracks
@@ -67,7 +76,8 @@ export type HeadCollapse = {
 };
 
 /**
- * @param isDesktop  Desktop never collapses: same container, full form, `md:` untouched.
+ * @param isDesktop  Both widths collapse since addendum 2; this decides the band and is the
+ *   one event that invalidates every measurement held here — see the reopen below.
  * @param deltaFiring §31, verbatim: "if it is firing, the collapse waits". The delta strip
  *   is the one member of the head that is news rather than reference, and it carries the
  *   only offer to refresh a page the reader has just been told is stale.
@@ -88,11 +98,17 @@ export function useHeadCollapse({
   const [collapsed, setCollapsed] = useState(false);
 
   /**
-   * A breakpoint crossing reopens the head.
+   * A breakpoint crossing reopens the head — and it still does, now that BOTH widths
+   * collapse. Addendum 2 §3 says the reopen goes with the `!isDesktop` term; it cannot.
    *
-   * A reader who collapses on the phone, widens to desktop and comes back is still
-   * `collapsed`, so the head is shy on the first mobile render — and the recorder, which
-   * refuses to measure a collapsed head, leaves the DESKTOP height reserved underneath it.
+   * The two widths have two rest heights — ~288 and ~300 on the set `probe:sets` measures,
+   * and a different pair on the next set — and this hook holds one `restHeightRef`. While
+   * the head is shy its open subtree is `display: none`, so a reader who collapses on the
+   * phone and widens can neither trust the recorded figure nor re-measure to replace it: the
+   * spacer would reserve the wrong width's height less the bar in front of it, and `gridTop`
+   * is read off that spacer, so both thresholds go with it. Reopening is the one action that
+   * makes the head measurable again at its new width.
+   *
    * Clearing the recorded height instead was tried and measured worse: the reserve goes to
    * 0 where the desktop figure was accidentally within 3px of right.
    *
@@ -109,7 +125,18 @@ export function useHeadCollapse({
   // render the sheet opened — so the freeze below captured the value AFTER the change it
   // exists to prevent. This expression says what would be true without the sheet; the
   // freeze holds whatever was true when it opened.
-  const mayCollapse = !isDesktop && !deltaFiring;
+  //
+  // `!isDesktop` is gone: addendum 2 reverses the ruling that kept the desktop head at one
+  // height.
+  //
+  // There is NO rarity-panel term, though addendum 2 §3 asks for one. The panel it names
+  // dismisses itself on scroll already (`filter-panel.tsx`, the desktop popover's own
+  // `scroll` listener), so there is no state in which a collapse can land under an open
+  // panel — the gate was built, measured by `probe:sets` and found to be unreachable: the
+  // probe opened the panel, scrolled, and the head collapsed because the panel had closed
+  // itself first. A gate nothing reaches is worse than none, because the next reader takes
+  // it for a rule that holds.
+  const mayCollapse = !deltaFiring;
 
   const headRef = useRef<HTMLDivElement>(null);
   const spacerRef = useRef<HTMLDivElement>(null);
@@ -117,6 +144,8 @@ export function useHeadCollapse({
   const restHeightRef = useRef<number | null>(null);
   /** The collapsed bar's height, measured the same way and only while it is drawn. */
   const barHeightRef = useRef<number | null>(null);
+  /** The width the recorded bar belongs to, so a trip can tell whose figure it holds. */
+  const barDesktopRef = useRef<boolean | null>(null);
   /**
    * True only between the start of a height transition and its end. Every measurement is
    * off limits while it is: mid-animation the head is whatever pixel the transition has
@@ -254,12 +283,17 @@ export function useHeadCollapse({
     if (head !== null && !animatingRef.current) {
       if (head.hasAttribute("data-set-head-collapsed")) {
         barHeightRef.current = head.getBoundingClientRect().height;
-      } else if (onDesktop) {
-        // A figure measured on the phone must not decide a threshold after a trip to desktop
-        // and back: the bar is not drawn there, and the head it belongs to may have changed
-        // size while it was away. Cleared rather than kept, so the first collapse after the
-        // trip runs on the grid's own top like any other first collapse.
+        barDesktopRef.current = onDesktop;
+      } else if (barDesktopRef.current !== null && barDesktopRef.current !== onDesktop) {
+        // A bar measured at one width must not decide a threshold at the other. Both widths
+        // draw one now, and what is recorded here is the HEAD's box rather than the bar
+        // inside it — ~75 on the phone (a 52px bar plus the head's own 10/12 padding) against
+        // ~57 at `md`, where the head IS the row. So the rule is no longer "clear the phone's
+        // figure once we are on desktop" but "clear whichever figure was not measured here".
+        // Cleared rather than kept, so the first collapse after a trip runs on the grid's
+        // own top like any other first collapse.
         barHeightRef.current = null;
+        barDesktopRef.current = null;
       }
     }
     const gridTop = spacer === null
@@ -281,13 +315,25 @@ export function useHeadCollapse({
     // still falls back to 120.
     const collapseAt = bar === null || bar <= 0
       ? (measured ? gridTop : 120)
-      : reopenAt + HYSTERESIS_PX;
+      : reopenAt + hysteresisFor(onDesktop);
+    // Focus inside a member the collapse HIDES holds the head open, because hiding it takes
+    // the keyboard with it — the cost strip's Send, its disclosure, a chip's ×. Read at
+    // decision time rather than through a `focusin`/`focusout` pair: every other input to
+    // this decision is already re-read here, and the twelve review rounds this file cost
+    // were all lifecycle defects.
+    //
+    // Only ever a reason NOT to collapse. A reader who is already looking at the bar and
+    // tabs into the row must not have the head open itself underneath them, which is why
+    // this gates the open→shy edge alone and never the restore.
+    const holdsFocus = head !== null
+      && [...head.querySelectorAll("[data-set-shy-hides]")]
+        .some((member) => member.contains(document.activeElement));
     // Read as a function of the CURRENT state, which is what makes this hysteresis rather
     // than two thresholds: collapsed stays collapsed until the reserve would show, open
     // stays open until a band past it, and between the two nothing happens. Never
     // interpolated with the scroll offset — a head that tracked it would be permanently in
     // motion under the thing being read.
-    setCollapsed((was) => (was ? y > reopenAt : y > collapseAt));
+    setCollapsed((was) => (was ? y > reopenAt : !holdsFocus && y > collapseAt));
   }, []);
 
   // Placed after the recorder above, not before it: the decision is read off the
@@ -327,6 +373,26 @@ export function useHeadCollapse({
 
   /** The breakpoint the last run saw. A crossing is a re-layout, never a transition. */
   const animatedDesktopRef = useRef(isDesktop);
+
+  /**
+   * Set at a crossing, and cleared on the next frame — so the step that SETTLES a crossing
+   * does not animate either, and nothing later does.
+   *
+   * Now that both widths collapse, a crossing made while shy reopens the head (the reserve
+   * is the other width's and nothing can be measured until it is open) and the scroll
+   * listener — re-armed by the same `isDesktop` change — immediately re-decides at the
+   * reader's offset, usually back to collapsed. That second decision lands in its own
+   * commit, where `crossedBreakpoint` is already false: without this it animates, and the
+   * reader watches the head pop open and slide shut for a window resize.
+   *
+   * Cleared on a FRAME rather than by the next run of this effect, which is the version that
+   * shipped to review and was wrong. This effect runs only when `shy`, `isDesktop` or
+   * `deltaFiring` changes, and a crossing made at the top of the page settles nothing — the
+   * head was already open. The flag then sat set until the reader's next genuine collapse,
+   * minutes later, which snapped. The settle lands in the same frame as the crossing that
+   * causes it; anything that does not is a different event and animates.
+   */
+  const settlingCrossingRef = useRef(false);
 
   /**
    * The step between the two heights, animated — and owned by the engine rather than by this
@@ -383,14 +449,26 @@ export function useHeadCollapse({
     // the step was a CSS transition — the setup that followed the teardown saw no change and
     // never restarted.
     const stepping = changed || wasRunning;
-    if (el === null || spacer === null || !stepping || crossedBreakpoint
+    const settling = settlingCrossingRef.current;
+    if (crossedBreakpoint) {
+      settlingCrossingRef.current = true;
+      // The settle, if there is one, is dispatched from the passive scroll effect that
+      // re-arms in this same commit — so it is this frame or it is not the crossing's.
+      requestAnimationFrame(() => {
+        settlingCrossingRef.current = false;
+      });
+    }
+    if (el === null || spacer === null || !stepping || crossedBreakpoint || settling
       || prefersReducedMotion() || typeof el.animate !== "function"
       || from === null || to === null || Math.abs(to - from) < 1) {
-      // A bar height measured on the phone must not decide a threshold after a trip to
-      // desktop and back. `evaluateCollapse` clears it too, but that callback only runs from
-      // the scroll listener — and the listener is not installed on desktop, so the crossing
-      // itself is the only place that can.
-      if (crossedBreakpoint && isDesktop) barHeightRef.current = null;
+      // A bar height measured at one width must not decide a threshold at the other. The
+      // crossing clears it here as well as in `evaluateCollapse`, because the listener's
+      // next read may be a whole gesture away and the first decision after a crossing is
+      // the one most likely to be wrong.
+      if (crossedBreakpoint) {
+        barHeightRef.current = null;
+        barDesktopRef.current = null;
+      }
       sizeSpacer();
       if (containerRef.current !== null) {
         // The anchoring switch still applies: the leap is the height change's doing, not the

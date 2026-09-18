@@ -20,7 +20,7 @@
 import { clerkSetup, setupClerkTestingToken } from "@clerk/testing/playwright";
 import { chromium } from "playwright";
 import { requireEnv } from "./lib/env.mjs";
-import { openSheet } from "./lib/surface.mjs";
+import { onPage, openSheet } from "./lib/surface.mjs";
 
 const { E2E_AUDIT_USER_EMAIL: EMAIL } = requireEnv(["E2E_AUDIT_USER_EMAIL", "CLERK_SECRET_KEY"]);
 const BASE = process.env.PROBE_BASE ?? "http://localhost:3000";
@@ -1256,6 +1256,149 @@ async function run() {
       );
     }
     await scrollTo(0);
+
+    // Addendum 2: the desktop head takes the collapse too, and every ruling in that round
+    // is a fact about laid-out geometry. JSDOM computes no styles, so the unit tests can
+    // say which threshold fires and that the field's node is the same one either side —
+    // they cannot say the collapsed head is ONE row, that it is 56px, or that the prefix
+    // did not win the shrink and leave the set's name at zero.
+    //
+    // 768 is in the list for the last of those. It is the narrowest width at which the rack
+    // is inline (`useIsDesktop` is `min-width: 768px`), and the prefix is a member the
+    // handoff's row arithmetic never carried — so it is the width where an added item
+    // either fits or wraps the row the whole ruling depends on.
+    for (const width of [1440, 1180, 768]) {
+      await page.setViewportSize({ width, height: 900 });
+      await page.goto(`${BASE}/collection/sets/${code}`, { waitUntil: "networkidle" });
+      await waitForCells(page);
+      await scrollTo(0);
+
+      const restHead = await headNow();
+      const tracksOpen = await tracksNow();
+      await scrollTo(900);
+      const shyHead = await headNow();
+      const tracksShy = await tracksNow();
+
+      failures += !report(
+        `the desktop head collapses at ${width}`,
+        shyHead !== null && shyHead.shy,
+        shyHead === null
+          ? "the head was not on the page — the check measured nothing"
+          : `shy=${shyHead.shy} at ${shyHead.height}px, rest ${restHead?.height}px`,
+      );
+
+      // 56px = `pt-[10px]` + a 34px row + `pb-[12px]`. Asserted by VALUE rather than as
+      // "shorter than the rest", because a head that hid the wrong members would also be
+      // shorter — 78px with the result line kept, which the round rejects as "not a
+      // collapse".
+      failures += !report(
+        `the collapsed desktop head is 56px at ${width}`,
+        shyHead !== null && Math.abs(shyHead.height - 56) <= 3,
+        shyHead === null ? "no head" : `${shyHead.height}px`,
+      );
+
+      // The phone's bar must not be the thing that is drawn here. It carries a `Filters`
+      // sheet trigger that has no desktop counterpart and a button standing in for a field
+      // that never moved.
+      failures += !report(
+        `no phone bar is drawn at ${width}`,
+        shyHead !== null && shyHead.bar === null,
+        `bar=${shyHead === null ? "no head" : shyHead.bar}`,
+      );
+
+      // ONE row, which is the whole of call 1: the prefix is IN the rack's own row rather
+      // than above it. What that can and cannot fail on is worth being honest about — the
+      // row is `flex-nowrap items-center`, so two items inside it share a vertical centre by
+      // construction and the midpoint clause alone would pass on any build that draws both.
+      // It earns its place against a prefix taken OUT of the row (absolutely positioned, or
+      // rendered as the head's own block above it), which is the shape the phone bar has and
+      // the one a careless port would reach for. The ORDER clause beside it is what says the
+      // prefix leads: a build that drew it after the controls would satisfy every other
+      // reading here. The two-rows-instead-of-one case is caught by the height check above,
+      // which is why this one does not try to.
+      const row = await page.evaluate(() => {
+        const prefix = document.querySelector("[data-set-head-prefix]");
+        const field = document.querySelector("[data-set-search-slot]");
+        const name = prefix === null ? null : prefix.querySelector("h1");
+        if (prefix === null || field === null || name === null) return null;
+        const p = prefix.getBoundingClientRect();
+        const f = field.getBoundingClientRect();
+        return {
+          prefixMid: Math.round(p.top + p.height / 2),
+          fieldMid: Math.round(f.top + f.height / 2),
+          // Both edges, so the reading is "the prefix leads the row" rather than "two boxes
+          // exist somewhere".
+          prefixRight: Math.round(p.right),
+          fieldLeft: Math.round(f.left),
+          sameParent: prefix.parentElement === field.parentElement,
+          nameWidth: Math.round(name.getBoundingClientRect().width),
+          fieldWidth: Math.round(f.width),
+        };
+      });
+      failures += !report(
+        `the prefix leads the rack's own row at ${width}`,
+        row !== null && row.sameParent && Math.abs(row.prefixMid - row.fieldMid) <= 2
+          && row.prefixRight <= row.fieldLeft,
+        row === null
+          ? "the prefix or the field was not on the page — the check measured nothing"
+          : `same row=${row.sameParent}, prefix mid ${row.prefixMid} right ${row.prefixRight},`
+            + ` field mid ${row.fieldMid} left ${row.fieldLeft}`,
+      );
+
+      // The prefix is the shrinking member, so the failure mode is a set name at zero —
+      // which every other check here passes over, since a row of the right height with the
+      // right members is exactly what it would still be.
+      failures += !report(
+        `the set name survives the shrink at ${width}`,
+        row !== null && row.nameWidth >= 40 && row.fieldWidth >= 132,
+        row === null ? "no prefix" : `name ${row.nameWidth}px, field ${row.fieldWidth}px`,
+      );
+
+      // §29: two controls with one accessible name is the defect a redrawn bar would
+      // reintroduce. Counted in the document, at the offset where a twin would be mounted.
+      const fields = await onPage(page, '[data-set-search-slot] input').count();
+      failures += !report(
+        `exactly one search field at ${width} while collapsed`,
+        fields === 1,
+        `${fields} fields`,
+      );
+
+      // The grid must not reflow at any scroll position — the bar overlays. A track count
+      // that moved would mean the reserve is not holding the head's own height.
+      failures += !report(
+        `the grid keeps its track count across the collapse at ${width}`,
+        tracksOpen !== null && tracksOpen === tracksShy,
+        `${tracksOpen} tracks open, ${tracksShy} collapsed`,
+      );
+    }
+
+    // Addendum 2 §3 asks for a gate holding the head open while the rarity panel is open.
+    // There is none, and this is why: the desktop popover dismisses itself on scroll, so
+    // the panel is already closed by the time the head decides anything. The gate was
+    // built, run here, and reported FAIL with `shy=true` — not because the head misbehaved
+    // but because there was no open panel left for it to be held by. What is asserted now
+    // is the property the gate was standing in for: no scroll can move the anchor out from
+    // under a panel that is still open.
+    await page.setViewportSize({ width: 1180, height: 900 });
+    await page.goto(`${BASE}/collection/sets/${code}`, { waitUntil: "networkidle" });
+    await waitForCells(page);
+    await scrollTo(0);
+    const rarityTrigger = onPage(page, '[data-set-rarity] button').first();
+    if (await rarityTrigger.count() === 0) {
+      failures += !report("the rarity trigger is on the page", false, "no trigger found");
+    } else {
+      await rarityTrigger.click();
+      await page.waitForTimeout(200);
+      const openBefore = await onPage(page, '[role="dialog"]').count();
+      await scrollTo(900);
+      const openAfter = await onPage(page, '[role="dialog"]').count();
+      const underPanel = await headNow();
+      failures += !report(
+        "the rarity panel dismisses itself on the scroll that collapses the head",
+        openBefore === 1 && openAfter === 0 && underPanel !== null && underPanel.shy,
+        `panel ${openBefore} before, ${openAfter} after, shy=${underPanel?.shy}`,
+      );
+    }
 
     // The sheet's stacking context. `position: sticky` with a `z-index` creates one, so
     // while the sheet was a descendant of the head its `z-50` was confined to the head's
