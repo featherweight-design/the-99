@@ -142,7 +142,10 @@ export async function setBaseSetSizes(): Promise<number> {
  * says so today, and nobody reads a summary line on a job that passed.
  */
 export function unsizedRunFailure(
-  r: Pick<SeedPrintingsResult, "upserted" | "skippedOrphan" | "baseSetSizes">,
+  r: Pick<
+    SeedPrintingsResult,
+    "upserted" | "skippedOrphan" | "skippedLayout" | "skippedReversible" | "baseSetSizes"
+  >,
 ): string | null {
   if (r.baseSetSizes > 0) return null;
   // ORPHANS ARE TESTED BEFORE the no-op case, not after. A run where EVERY printing is
@@ -155,9 +158,19 @@ export function unsizedRunFailure(
       + "counted from the survivors. The previous denominators are untouched. Re-run the "
       + "refresh with the oracle ingest (`job=all`) to size them from a complete catalog.";
   }
-  // Nothing ingested and nothing orphaned is a bulk this catalog has no rows for at all,
-  // which is a no-op rather than a failure.
-  if (r.upserted === 0) return null;
+  // A no-op is a bulk this ingest RECOGNISED NOTHING IN — no printing accepted, none
+  // orphaned, and none turned away at the layout or reversible gates. `upserted === 0` alone
+  // is not that: an upstream shape change that sent every entry to one of those gates would
+  // ingest nothing, publish nothing, and be waved through here as "nothing to do", which is
+  // the silent success this whole function exists to end.
+  if (r.upserted === 0 && r.skippedLayout === 0 && r.skippedReversible === 0) return null;
+  if (r.upserted === 0) {
+    return `No set was sized and no printing was ingested, though the bulk held entries: `
+      + `${r.skippedLayout} token/emblem and ${r.skippedReversible} reversible were turned `
+      + "away at the layout gates and nothing else was recognised. That is an upstream shape "
+      + "change, not a catalog state — the previous denominators are untouched, and "
+      + "re-running will do the same until the bulk or the transform moves.";
+  }
   // TWO CAUSES, AND THIS NAMES BOTH rather than asserting the likelier one. The fill matches
   // `sets` by code, so it writes nothing either when no printing is classified (`booster`
   // null throughout the bulk) or when `sets` holds none of these codes — a database where the

@@ -14,7 +14,8 @@ vi.mock("../../db", () => ({ db: {} }));
 const { unsizedRunFailure } = await import("./seed-printings");
 
 const run = (over: Partial<Parameters<typeof unsizedRunFailure>[0]> = {}) => ({
-  upserted: 102_769, skippedOrphan: 0, baseSetSizes: 740, ...over,
+  upserted: 102_769, skippedOrphan: 0, skippedLayout: 5_898, skippedReversible: 82,
+  baseSetSizes: 740, ...over,
 });
 
 describe("unsizedRunFailure", () => {
@@ -51,17 +52,30 @@ describe("unsizedRunFailure", () => {
     expect(failure).not.toContain("name a card the oracle catalog");
   });
 
-  // A run with nothing to ingest and nothing orphaned sizes nothing and is not a failure —
-  // it is a no-op, reachable only from a bulk with no printing this catalog accepts.
-  it("passes a run that ingested nothing at all", () => {
-    expect(unsizedRunFailure(run({ upserted: 0, baseSetSizes: 0 }))).toBeNull();
+  // A no-op is a bulk this ingest recognised NOTHING in — nothing accepted, nothing
+  // orphaned, nothing turned away at a gate.
+  it("passes a run that recognised nothing at all", () => {
+    expect(unsizedRunFailure(run({
+      upserted: 0, baseSetSizes: 0, skippedLayout: 0, skippedReversible: 0,
+    }))).toBeNull();
+  });
+
+  // The shape that made `upserted === 0` too broad a no-op: an upstream change sends every
+  // entry to a layout gate, so nothing is ingested, nothing is orphaned, nothing is
+  // published — and the old rule waved it through as "nothing to do".
+  it("fails a bulk whose every entry went to a layout gate", () => {
+    const failure = unsizedRunFailure(run({ upserted: 0, baseSetSizes: 0 }));
+    expect(failure).toContain("upstream shape change");
+    expect(failure).toContain("5898");
   });
 
   // THE WORST STATE THIS FUNCTION CAN SEE, and the `upserted === 0` no-op test above is
   // what would have swallowed it: `cards` populated but wholly out of step with the bulk
   // ingests nothing and orphans everything.
   it("fails a run where every printing was orphaned", () => {
-    const failure = unsizedRunFailure({ upserted: 0, skippedOrphan: 102_769, baseSetSizes: 0 });
+    const failure = unsizedRunFailure(run({
+      upserted: 0, skippedOrphan: 102_769, baseSetSizes: 0,
+    }));
     expect(failure).toContain("102769");
   });
 });
