@@ -21,8 +21,6 @@ import {
   CONTESTED_ARRIVAL,
   FIT_LEGEND,
   LANE_DISCOVER,
-  READY_IN_USE,
-  READY_SLICE,
   LANE_ROW_DISCOVER,
   LANE_ROW_OWNED,
   LANE_OWNED,
@@ -40,6 +38,8 @@ import { ContestedCardRow } from "../decks/contested-card-row";
 import { FitLegend } from "../commanders/fit-legend";
 import { FilterRack } from "../commanders/rack/filter-rack";
 import { CommanderRow } from "../commanders/commander-row";
+import { OrderControl } from "../commanders/rack/order-control";
+import { ORDER_OPTIONS } from "../commanders/rack/order-options";
 import type { Lane, LaneParams } from "../../lib/commanders/lane-params";
 import { ReceiptRow } from "../collection/arrivals-summary";
 import { issueInspectorCopy } from "../../lib/copy/issue-inspector";
@@ -360,8 +360,33 @@ export function CommanderLaneFigureBody() {
 }
 
 export function DiscoverFigureBody() {
-  return laneWithRow(
-    laneRack(LANE_DISCOVER, "discover", 120, 1840),
-    <CommanderRow item={LANE_ROW_DISCOVER} />,
+  // NOT the rack. `/commanders` and `/discover` share one rack and, since
+  // #708, one row — so two figures drawing both showed the same thing twice
+  // and differed only in a price line. Each entry's caption is about
+  // something else: the other lane's is Build from, and this one's is "counts,
+  // never a score" plus the five orders.
+  //
+  // So this draws the ORDER CONTROL, open — the real one, with the five
+  // orders and the glosses that say what each DOES. It replaces a gloss list
+  // this module hand-built beside the rack, which was restating a control
+  // instead of showing it.
+  return (
+    <div className="flex flex-col gap-[12px]">
+      {/* The open panel is absolutely positioned, so on the route it floats
+          over the list and the reader dismisses it. Here it cannot be
+          dismissed, and left in flow it covered the row beneath. Its height is
+          reserved instead, which is the one thing a figure can do that the
+          route never has to. */}
+      <div className="min-h-[360px]">
+        <OrderControl
+          value={LANE_DISCOVER.order}
+          options={ORDER_OPTIONS.discover}
+          onChange={() => {}}
+          wide
+          defaultOpen
+        />
+      </div>
+      <CommanderRow item={LANE_ROW_DISCOVER} />
+    </div>
   );
 }

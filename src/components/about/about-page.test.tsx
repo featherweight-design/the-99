@@ -5,6 +5,7 @@ import { ABOUT_VERSION, aboutCopy, aboutEntries } from "../../lib/copy/about";
 import { FIGURES } from "./figures";
 import { availabilityCopy } from "../../lib/copy/availability";
 import { refreshCopy } from "../../lib/copy/refresh";
+import { ORDER_OPTIONS } from "../commanders/rack/order-options";
 import { commandersCopy, discoverCopy, filterCopy } from "../../lib/copy/lanes";
 import { explainedCopy } from "../../lib/copy/commander-explained";
 import { cardAssignmentsCopy } from "../../lib/copy/card-assignments";
@@ -934,11 +935,29 @@ describe("what each legend must hold", () => {
     return [...el!.querySelectorAll("dt")];
   };
 
-  it("gives Discover all five of its orders", () => {
+  it("gives Discover all five of its orders, in the real control", () => {
     // "two of them change which commanders the list holds" only means anything
     // beside the other three.
+    //
+    // The figure drew a `Legend` of five rows this module wrote; it mounts the
+    // ROUTE's order control now, open, so the orders and their glosses come
+    // from `ORDER_OPTIONS` and a rename reaches the figure by itself. The old
+    // check counted legend rows and cannot see that.
     const { container } = render(<AboutPage seen={0} />);
-    expect(rows(container, "discover")).toHaveLength(5);
+    const el = container.querySelector('[data-specimen="discover"]')!;
+    expect(el, "discover drew no figure").toBeTruthy();
+    for (const o of ORDER_OPTIONS.discover) {
+      expect(el.textContent).toContain(o.label);
+      if (o.gloss) expect(el.textContent).toContain(o.gloss);
+    }
+    // OPEN. A closed control draws its trigger and none of the options, which
+    // are this entry's whole subject.
+    // `menuitemradio` — the wide control is a menu, not a listbox. Counted
+    // rather than taken from the text above, which a CLOSED control would also
+    // satisfy if the labels happened to live in its trigger.
+    expect(el.querySelectorAll('[role="menuitemradio"]')).toHaveLength(
+      ORDER_OPTIONS.discover.length,
+    );
   });
 
   it("gives the deck page all four of its tabs", () => {

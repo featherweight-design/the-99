@@ -108,6 +108,7 @@ export function FilterPanel({
   selectionOrnament = true,
   showCounts = true,
   onAnnounce,
+  defaultOpen = false,
 }: {
   copy: FilterPanelCopy;
   options: FilterPanelOption[];
@@ -121,6 +122,8 @@ export function FilterPanel({
    * empty selection to offer a `Clear` for, so the desktop footer goes with it.
    */
   selectionMode?: "multi" | "single";
+  /** Start expanded. For a caller that cannot open it — `/about`'s specimens. */
+  defaultOpen?: boolean;
   /**
    * Whether a chosen row lights the trigger's border and badges the sheet's
    * title. True everywhere by default — a selection made among many is worth
@@ -196,7 +199,12 @@ export function FilterPanel({
   // A caller that passes no `compact` keeps this component's own media query,
   // so the surfaces outside the chassis are unaffected.
   const bp = (wide: string, narrow: string) => (isDesktop ? wide : narrow);
-  const [open, setOpen] = useState(false);
+  // `defaultOpen` starts the panel expanded. No route passes it — a reader
+  // opens a panel themselves — and `/about` does, because a specimen is inert
+  // and a figure of the closed state draws a trigger and none of the options
+  // the entry is about. Same affordance `FitLegend` needed, for the same
+  // reason.
+  const [open, setOpen] = useState(defaultOpen);
   const [query, setQuery] = useState("");
   const [activeCode, setActiveCode] = useState<string | null>(null);
   // Selection as it stood when the panel opened. Grouping is computed once, on

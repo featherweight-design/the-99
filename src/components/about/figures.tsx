@@ -54,7 +54,6 @@ import { cardAssignmentsCopy } from "../../lib/copy/card-assignments";
 import { statusBarStyle } from "../../lib/decks/status-style";
 import type { StatusPill } from "../../lib/decks/status";
 import { refreshCopy } from "../../lib/copy/refresh";
-import { commandersCopy } from "../../lib/copy/lanes";
 import { FitBar } from "../commanders/fit-bar";
 import { TwoFacedMark } from "../cards/two-faced-mark";
 import {
@@ -736,34 +735,11 @@ function CommanderLaneFigure({ width }: { width: AboutWidth }) {
   );
 }
 
-const ORDER_ROWS: [string, string][] = [
-  [discoverCopy.order.bestFit, discoverCopy.order.bestFitGloss],
-  [discoverCopy.order.somethingNew, discoverCopy.order.somethingNewGloss],
-  [discoverCopy.order.popularity, discoverCopy.order.popularityGloss],
-  [discoverCopy.order.name, discoverCopy.order.nameGloss],
-  [discoverCopy.order.recent, discoverCopy.order.recentGloss],
-];
 
 function DiscoverFigure({ width }: { width: AboutWidth }) {
   return (
     <Specimen label="discover" width={width}>
       <DiscoverFigureBody />
-      {/* The five orders stay. The rack shows the CONTROL; the entry's first
-          key line is about what two of the orders DO — "Best fit and Something
-          new change which commanders the list holds, not just their sequence"
-          — and a dropdown cannot say that. */}
-      <div className="mt-[12px] border-t border-solid border-[color:var(--border)] pt-[10px]">
-        <dl className="m-0 grid gap-[5px]">
-          {ORDER_ROWS.map(([mark, meaning]) => (
-            <div key={mark} className="flex flex-wrap items-baseline gap-x-[8px]">
-              <dt className="font-mono text-[10.5px] text-[color:var(--fg-body)]">{mark}</dt>
-              <dd className="m-0 font-mono text-[10.5px] text-[color:var(--fg-faint)]">
-                {meaning}
-              </dd>
-            </div>
-          ))}
-        </dl>
-      </div>
     </Specimen>
   );
 }

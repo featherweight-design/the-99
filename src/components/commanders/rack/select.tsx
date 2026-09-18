@@ -34,6 +34,7 @@ export function RackSelect<K extends string>({
   rowHeight = 44,
   showGlosses = false,
   pending = false,
+  defaultOpen = false,
 }: {
   /** Names the control for AT at both treatments. Never rendered as chrome on
       the rack — the trigger already says what it is. */
@@ -61,8 +62,14 @@ export function RackSelect<K extends string>({
       (#338). Never paired with `disabled`: disabling the focused element blurs
       it and the reader loses their place mid-flip. */
   pending?: boolean;
+  /** Start expanded. For a caller that cannot open it — `/about`'s specimens. */
+  defaultOpen?: boolean;
 }) {
-  const [open, setOpen] = useState(false);
+  // `defaultOpen` starts the list expanded. No route passes it — a reader
+  // opens the control — and `/about` does: a specimen is inert, so a figure of
+  // the closed state draws a trigger and none of the options, which on the
+  // discover lane are the entry's whole subject.
+  const [open, setOpen] = useState(defaultOpen);
   const root = useRef<HTMLDivElement>(null);
   const trigger = useRef<HTMLButtonElement>(null);
   const items = useRef<(HTMLButtonElement | null)[]>([]);
