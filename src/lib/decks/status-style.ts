@@ -59,13 +59,47 @@ function plate(token: string, alpha: string): string {
   return `color-mix(in srgb, var(${token}) ${alpha}, var(--bg))`;
 }
 
-export function statusPillStyle(status: StatusPill): CSSProperties {
+/**
+ * The two deck-state marks, which are not statuses and never become one.
+ *
+ * `hollow` is the PHASE: a deck that has never committed a version is a plan
+ * rather than a deck, and its plate drops the status tint. `pending` is the
+ * DIFF: a committed deck whose draft differs from its version.
+ *
+ * They are mutually exclusive by definition — the edge means "differs from the
+ * version", which requires a version; the hollow plate means there is none —
+ * and no caller may pass both. The type says so, so the impossible state cannot
+ * be written rather than being a rule somebody has to remember.
+ */
+export type DeckStateMarks =
+  | { hollow?: false; pending?: boolean }
+  | { hollow: true; pending?: false };
+
+export function statusPillStyle(
+  status: StatusPill,
+  marks: DeckStateMarks = {},
+): CSSProperties {
   const token = STATUS_TOKEN[status];
   const exception = PILL_EXCEPTION[status];
   return {
     color: `var(${exception ? exception.label : token})`,
-    background: plate(token, exception ? exception.fillAlpha : FILL_ALPHA),
+    // HOLLOW IS NOT TRANSPARENT. The art-wash amendment rules this plate opaque
+    // — the fill mixes into `--bg` so a bright pixel of art cannot reach the
+    // label — and the mobile spine puts the pill on the wash. So the hollow
+    // reading takes `--bg` ITSELF, the colour the tint was already mixing into,
+    // at 0%: fully opaque, one rule, and one argument rather than a branch.
+    background: marks.hollow ? "var(--bg)" : plate(token, exception ? exception.fillAlpha : FILL_ALPHA),
     border: `1px ${exception?.borderStyle ?? "solid"} var(--border-strong)`,
+    // `--fg` and not `--accent`: `STATUS_TOKEN["To buy"]` IS `--accent`, so an
+    // accent edge on that pill is an accent edge on an accent plate under an
+    // accent label — a heavier border of the pill's own colour, on the one value
+    // it most needs to be separable from, in every theme. `--fg` is the only ink
+    // in the palette that is not a status token and not a hue.
+    //
+    // It composes with Building's dashed hairline rather than replacing it: a
+    // line STYLE against a line WEIGHT, two facts on one box, and the pair
+    // survives greyscale where a colour alone would not.
+    ...(marks.pending ? { borderLeft: "2px solid var(--fg)" } : {}),
     // `text-shadow` is an inherited property, and every band that carries a pill
     // over art puts a cover shadow on the block around it — so the pill picked up
     // ink it is the stated exception to. It plates itself, so it needs none, and
@@ -88,9 +122,19 @@ export function statusBarStyle(
   status: StatusPill,
   built: number,
   bodySize: number,
+  /**
+   * The deck has no committed version. The bar follows its plate at half
+   * opacity, so a plan reads as ONE provisional object rather than as a hollow
+   * chip sitting beside a solid bar.
+   */
+  marks: { provisional?: boolean } = {},
 ): CSSProperties {
   const pct = Math.min(100, Math.max(0, (built / bodySize) * 100));
-  return { width: `${pct}%`, background: `var(${STATUS_TOKEN[status]})` };
+  return {
+    width: `${pct}%`,
+    background: `var(${STATUS_TOKEN[status]})`,
+    ...(marks.provisional ? { opacity: 0.5 } : {}),
+  };
 }
 
 /** The 3px left keyline on Home's list rows. */

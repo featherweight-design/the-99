@@ -105,3 +105,69 @@ describe("status style", () => {
     }
   });
 });
+
+describe("the deck-state marks", () => {
+  it("draws the hollow plate as an opaque --bg, never transparent", () => {
+    for (const status of ALL) {
+      const style = statusPillStyle(status, { hollow: true });
+      // The trap this case exists for. A literally transparent chip breaks the
+      // art-wash amendment on the mobile spine, where the pill sits on the
+      // wash and a bright pixel would reach the label.
+      expect(style.background).toBe("var(--bg)");
+      expect(String(style.background)).not.toContain("transparent");
+      expect(style.opacity).toBeUndefined();
+    }
+  });
+
+  it("leaves the word, the ink and the hairline alone when the plate is hollow", () => {
+    for (const status of ALL) {
+      const filled = statusPillStyle(status);
+      const hollow = statusPillStyle(status, { hollow: true });
+      expect(hollow.color).toBe(filled.color);
+      expect(hollow.border).toBe(filled.border);
+      // Building's dash is a status signal and survives the phase.
+      expect(String(hollow.border).includes("dashed")).toBe(status === "Building");
+    }
+  });
+
+  it("adds the pending edge as 2px --fg, and only on the left", () => {
+    for (const status of ALL) {
+      const style = statusPillStyle(status, { pending: true });
+      expect(style.borderLeft).toBe("2px solid var(--fg)");
+      // Never --accent: `To buy`'s own token IS --accent, so an accent edge
+      // reads as a heavier border of that pill's own colour.
+      expect(String(style.borderLeft)).not.toContain("--accent");
+      // The mark costs 2px and displaces nothing at ANY width, which means it
+      // draws on the left and nowhere else. Asserted side by side rather than
+      // only through `background` and `color`: a mark that also drew on the
+      // right passes every other case here while the pill silently grows 2px
+      // wider than this file claims it does.
+      expect(style.borderRight).toBeUndefined();
+      expect(style.borderTop).toBeUndefined();
+      expect(style.borderBottom).toBeUndefined();
+      expect(style.background).toBe(statusPillStyle(status).background);
+      expect(style.color).toBe(statusPillStyle(status).color);
+    }
+  });
+
+  it("composes the edge with Building's dash rather than replacing it", () => {
+    const style = statusPillStyle("Building", { pending: true });
+    expect(style.border).toContain("dashed");
+    expect(style.borderLeft).toBe("2px solid var(--fg)");
+  });
+
+  it("draws neither mark by default", () => {
+    const style = statusPillStyle("Complete");
+    expect(style.borderLeft).toBeUndefined();
+    expect(style.background).not.toBe("var(--bg)");
+  });
+
+  it("halves the bar for a deck with no version, and only then", () => {
+    expect(statusBarStyle("To buy", 99, 99, { provisional: true }).opacity).toBe(0.5);
+    expect(statusBarStyle("To buy", 99, 99).opacity).toBeUndefined();
+    // The colour and the width are the status's own either way: the phase
+    // changes how solid the object is, never what it measures.
+    expect(statusBarStyle("To buy", 60, 99, { provisional: true }).width)
+      .toBe(statusBarStyle("To buy", 60, 99).width);
+  });
+});

@@ -83,6 +83,17 @@ const pickCard = async (offset: number) => {
   return rows[0].oracle_id;
 };
 
+/** A second legend, for the commander-swap case. Ordered and offset rather than
+    picked at random so a failing run names the same pair the next one will. */
+const pickSecondCommander = async () => {
+  const { rows } = await fixture.execute<{ oracle_id: string }>(sql`
+    select oracle_id from cards where type_line ~ 'Legendary Creature'
+    order by oracle_id limit 1 offset 1
+  `);
+  if (!rows[0]) throw new Error("catalog holds one legend — seed it fully");
+  return rows[0].oracle_id;
+};
+
 /** A deck whose two timestamps are stated, so every figure below has a known truth. */
 const makeDeck = async (name: string, commander: string, createdAt: string) => {
   const { rows } = await fixture.execute<{ id: string }>(sql`
@@ -211,7 +222,7 @@ async function main() {
   check("a commit leaves last_edited_at alone", await editedAt(committed), before);
 
   // ── The figure: what the reader actually gets back ───────────────────────
-  const list = await listDecksWithStats(USER, "name");
+  const list = await listDecksWithStats(USER, "name", { includeDeckState: true });
   // Four now: the three verb decks plus the backfill row above, which is a deck
   // like any other once its column is seeded.
   check("the list carries every fixture deck", list.length, 4);
@@ -237,7 +248,7 @@ async function main() {
   // A second commit, so `max()` is doing work rather than reading the only row.
   await addCard(committed, await pickCard(1));
   await commitVersion(committed, "second");
-  const reread = find(await listDecksWithStats(USER, "name"), committed);
+  const reread = find(await listDecksWithStats(USER, "name", { includeDeckState: true }), committed);
   const newest = await newestVersion(committed);
   check(
     "lastCommittedAt is the NEWEST commit",
@@ -251,7 +262,7 @@ async function main() {
   await logGame(played);
 
   // ── The verbs, over real rows ────────────────────────────────────────────
-  const fresh = await listDecksWithStats(USER, "name");
+  const fresh = await listDecksWithStats(USER, "name", { includeDeckState: true });
   check("an untouched-since-creation deck reads as edited", touchedBy(find(fresh, edited)).verb, "edited");
   check("a committed deck reads as committed", touchedBy(find(fresh, committed)).verb, "committed");
   check("a played deck reads as played", touchedBy(find(fresh, played)).verb, "played");
@@ -279,6 +290,128 @@ async function main() {
     (await editedAt(committed)) !== beforeDiscard,
     true,
   );
+
+  // ── Pending changes: the flag the deck tile's edge is drawn from ─────────
+  // THE CASE THE CHEAP PROXY FAILS. `last_edited_at > committed_at` is the
+  // obvious flag and it is wrong here: the discard above moved the edit stamp
+  // PAST the commit while restoring the draft to exactly the committed list.
+  // Under the proxy this deck reports pending for ever and its tile carries an
+  // edge nobody can clear. Only comparing the rows can tell the two apart, and
+  // this check fails on any build that takes the shortcut.
+  const afterDiscard = find(await listDecksWithStats(USER, "name", { includeDeckState: true }), committed);
+  check("a draft restored to its version has no changes", afterDiscard.pendingChanges, 0);
+  check(
+    "even though the discard moved the edit stamp past the commit",
+    afterDiscard.lastEditedAt.getTime() > afterDiscard.lastCommittedAt!.getTime(),
+    true,
+  );
+
+  // A brew has nothing to differ from, and false is the accurate answer rather
+  // than a missing case: that deck's mark is the hollow plate instead, and an
+  // edge drawn there would be permanently on and would say nothing.
+  check("a deck with no version counts none", find(await listDecksWithStats(USER, "name", { includeDeckState: true }), edited).pendingChanges, 0);
+
+  // One add, and the flag turns over.
+  await addCard(committed, await pickCard(3));
+  check(
+    "one add is one change",
+    find(await listDecksWithStats(USER, "name", { includeDeckState: true }), committed).pendingChanges,
+    1,
+  );
+
+  // A CUT, which the reverse `except` is the only thing that sees. A build
+  // carrying one direction reports this deck clean while a card is missing
+  // from it.
+  await fixture.execute(sql`
+    delete from deck_cards
+    where deck_id = ${committed}::uuid and oracle_id = ${await pickCard(3)}::uuid
+  `);
+  check(
+    "and cutting it back makes it clean again",
+    find(await listDecksWithStats(USER, "name", { includeDeckState: true }), committed).pendingChanges,
+    0,
+  );
+  await fixture.execute(sql`
+    update deck_cards set quantity = 2
+    where deck_id = ${committed}::uuid and oracle_id = ${card}::uuid
+  `);
+  // ONE change, not two. The symmetric difference puts this card on both sides
+  // and `draftDiff` files it as a single add — a figure counting rows would
+  // disagree with the deck page about every quantity change on the tile.
+  check(
+    "a quantity change is ONE change, not one per side",
+    find(await listDecksWithStats(USER, "name", { includeDeckState: true }), committed).pendingChanges,
+    1,
+  );
+  await fixture.execute(sql`
+    update deck_cards set quantity = 1
+    where deck_id = ${committed}::uuid and oracle_id = ${card}::uuid
+  `);
+
+  // Two changes at once, and the version they are counted against. The tile
+  // prints both — `2 changes since v2` — so a version number that lagged the
+  // count would name the wrong list.
+  await addCard(committed, await pickCard(3));
+  await fixture.execute(sql`
+    update deck_cards set quantity = 3
+    where deck_id = ${committed}::uuid and oracle_id = ${card}::uuid
+  `);
+  const two = find(await listDecksWithStats(USER, "name", { includeDeckState: true }), committed);
+  check("an add and a quantity change are two changes", two.pendingChanges, 2);
+  check("and they are counted against the newest version", two.versionNumber, 2);
+  await fixture.execute(sql`
+    delete from deck_cards
+    where deck_id = ${committed}::uuid and oracle_id = ${await pickCard(3)}::uuid
+  `);
+  await fixture.execute(sql`
+    update deck_cards set quantity = 1
+    where deck_id = ${committed}::uuid and oracle_id = ${card}::uuid
+  `);
+  check(
+    "a brew has no version number to count against",
+    find(await listDecksWithStats(USER, "name", { includeDeckState: true }), edited).versionNumber,
+    null,
+  );
+
+  // THE GATE. A caller that does not draw the marks does not pay for them, and
+  // the defaults it gets back are the ones a deck with no version gives — so
+  // the absence reads as "no mark", never as a wrong mark. Asserted against a
+  // deck that genuinely HAS changes, because against a clean deck the gated
+  // read and the ungated one agree and the check would measure nothing.
+  await addCard(committed, await pickCard(3));
+  const ungated = find(await listDecksWithStats(USER, "name"), committed);
+  check("a caller that skips the marks pays for no diff", ungated.pendingChanges, 0);
+  check("and gets no version number either", ungated.versionNumber, null);
+  check(
+    "while the same deck, read with them, reports the change",
+    find(await listDecksWithStats(USER, "name", { includeDeckState: true }), committed).pendingChanges,
+    1,
+  );
+  await fixture.execute(sql`
+    delete from deck_cards
+    where deck_id = ${committed}::uuid and oracle_id = ${await pickCard(3)}::uuid
+  `);
+
+  // A COMMANDER SWAP does NOT flip it, and this case pins that deliberately.
+  // `changeCount` on the deck page is adds + removes over the CARD diff alone,
+  // so a flag that watched the commander columns too would draw the tile's edge
+  // on a deck whose own page counts zero changes and offers nothing to commit.
+  // Nothing in the app writes `commander_oracle_id` after a deck is created —
+  // this fixture reaches the state by raw SQL — so the alignment costs nothing
+  // today, and if a swap ever ships, `draft-shape.ts` is where it belongs and
+  // this flag follows it rather than disagreeing with it.
+  const otherCommander = await pickSecondCommander();
+  await fixture.execute(sql`
+    update decks set commander_oracle_id = ${otherCommander}::uuid where id = ${committed}::uuid
+  `);
+  check(
+    "a commander swap alone counts nothing — the card diff is the whole definition",
+    find(await listDecksWithStats(USER, "name", { includeDeckState: true }), committed).pendingChanges,
+    0,
+  );
+  await fixture.execute(sql`
+    update decks set commander_oracle_id = ${commander}::uuid where id = ${committed}::uuid
+  `);
 
   // ── Filing is not deck work ──────────────────────────────────────────────
   // The plan's rule, and the one a future broad "stamp every deck write" change
