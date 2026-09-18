@@ -54,14 +54,15 @@ describe("hasPendingChangesSql", () => {
     expect(text).toContain("limit 1");
   });
 
-  it("folds a commander swap in, since it is not a deck_cards row", () => {
+  it("compares the cards alone, as the deck page's own change count does", () => {
     const { sql: text } = emitted();
-    // `is distinct from`, never `<>`: a partner is nullable on both sides, and
-    // `null <> null` is null — so dropping a partner would compare as unknown
-    // and the swap would not register.
-    expect(text).toContain("dv.commander_oracle_id is distinct from");
-    expect(text).toContain("dv.partner_oracle_id is distinct from");
-    expect(text).not.toMatch(/commander_oracle_id\s*<>/);
+    // `changeCount` in `draft-shape.ts` is adds + removes over the CARD diff.
+    // A flag that also watched the commander columns would draw the edge on a
+    // deck whose page counts zero changes — and, in the tile, over a figure
+    // reading `0 changes since v2`. One definition, two surfaces that cannot
+    // disagree. Nothing writes `commander_oracle_id` after creation anyway.
+    expect(text).not.toContain("commander_oracle_id");
+    expect(text).not.toContain("partner_oracle_id");
   });
 
   it("answers false for a deck with no version rather than null", () => {

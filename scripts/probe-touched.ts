@@ -345,25 +345,26 @@ async function main() {
     where deck_id = ${committed}::uuid and oracle_id = ${card}::uuid
   `);
 
-  // A COMMANDER SWAP is not a deck_cards row, so a flag built from the card
-  // tables alone reports this deck clean while it is being led by somebody else.
+  // A COMMANDER SWAP does NOT flip it, and this case pins that deliberately.
+  // `changeCount` on the deck page is adds + removes over the CARD diff alone,
+  // so a flag that watched the commander columns too would draw the tile's edge
+  // on a deck whose own page counts zero changes and offers nothing to commit.
+  // Nothing in the app writes `commander_oracle_id` after a deck is created —
+  // this fixture reaches the state by raw SQL — so the alignment costs nothing
+  // today, and if a swap ever ships, `draft-shape.ts` is where it belongs and
+  // this flag follows it rather than disagreeing with it.
   const otherCommander = await pickSecondCommander();
   await fixture.execute(sql`
     update decks set commander_oracle_id = ${otherCommander}::uuid where id = ${committed}::uuid
   `);
   check(
-    "a commander swap is a pending change",
+    "a commander swap alone does not flip it — the card diff is the whole definition",
     find(await listDecksWithStats(USER, "name"), committed).hasPendingChanges,
-    true,
+    false,
   );
   await fixture.execute(sql`
     update decks set commander_oracle_id = ${commander}::uuid where id = ${committed}::uuid
   `);
-  check(
-    "and swapping back clears it",
-    find(await listDecksWithStats(USER, "name"), committed).hasPendingChanges,
-    false,
-  );
 
   // ── Filing is not deck work ──────────────────────────────────────────────
   // The plan's rule, and the one a future broad "stamp every deck write" change

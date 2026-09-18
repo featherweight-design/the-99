@@ -52,10 +52,14 @@ is correct only while every draft write path remembers it, and a missed one lies
 deck as pending for ever after a discard, because a discard moves `last_edited_at` by design —
 pinned by `scripts/probe-touched.ts`. Task 1.5 is the case that fails on it.
 
-The comparison is the draft's `deck_cards` against the newest version's rows, plus the deck's
-live commander columns against that version's — a commander swap is a pending change and is not
-a `deck_cards` row. Model it on `loadDraftState`'s own diff so the list read and the deck page
-cannot disagree about what "differs" means.
+The comparison is the draft's `deck_cards` against the newest version's rows, and **only** that:
+the symmetric difference of the `(oracle_id, quantity)` pair in both directions. The commander
+columns are deliberately out of it, though a version snapshots them — `changeCount` in
+`draft-shape.ts` is adds + removes over the card diff alone, so a broader flag would draw the
+tile's edge on a deck whose own page counts zero changes, over a figure reading `0 changes since
+v2`. Nothing writes `commander_oracle_id` after a deck is created, so the state is unreachable
+today; if a swap ever ships, `draft-shape.ts` is where it belongs and this flag follows it. One
+definition, two surfaces that cannot disagree.
 
 **Drizzle qualification.** This is a correlated subquery in the PROJECTION of a select whose
 `from` names one table, which is exactly the trap `AGENTS.md` documents: column references are

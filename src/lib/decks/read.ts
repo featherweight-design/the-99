@@ -573,11 +573,20 @@ export const lastCommittedSql = sql<Date | string | null>`(
  * exactly its committed list would report pending for ever. Nothing in the
  * columns short of comparing the rows can tell that state from a real edit.
  *
- * What "differs" means here is what `draftDiff` and the commander columns mean
- * on the deck page: a quantity mismatch in either direction, a card on one side
- * and not the other, or a commander swap — which is not a `deck_cards` row and
- * would otherwise be a pending change nothing could see. Basics are included,
+ * What "differs" means here is EXACTLY what it means on the deck page: a
+ * quantity mismatch in either direction, or a card on one side and not the
+ * other, over `deck_cards` against the newest version's rows. Basics included,
  * as they are in the deck page's own change list.
+ *
+ * **The commander columns are deliberately NOT compared**, though a version
+ * snapshots them. `changeCount` in `draft-shape.ts` is `adds + removes` over
+ * the CARD diff alone, so a flag that also watched the commander would draw the
+ * edge on a deck whose own page counts zero changes, draws no pending banner
+ * and offers nothing to commit — and in PR 2 that tile's figure reads `0
+ * changes since v2` beneath the mark. Nothing writes `commander_oracle_id`
+ * after a deck is created, so the state is unreachable today in any case. If a
+ * commander swap ever ships, the change model in `draft-shape.ts` is where it
+ * belongs, and this flag follows it for free rather than disagreeing with it.
  *
  * The symmetric difference is two `except`s rather than a join: a full outer
  * join over two child tables inside a grouped select is a second way to write
@@ -593,9 +602,7 @@ export const lastCommittedSql = sql<Date | string | null>`(
 export const hasPendingChangesSql = sql<boolean>`(
   select coalesce((
     select
-      dv.commander_oracle_id is distinct from ${decks}.commander_oracle_id
-      or dv.partner_oracle_id is distinct from ${decks}.partner_oracle_id
-      or exists (
+      exists (
         (
           select dcd.oracle_id, dcd.quantity
           from ${deckCards} dcd

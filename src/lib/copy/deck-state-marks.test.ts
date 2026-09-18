@@ -20,8 +20,12 @@ describe("deckStateMarksCopy", () => {
     expect(deckStateMarksCopy.filter.notCommitted).toBe(deckStateMarksCopy.phase.notCommitted);
   });
 
-  it("never spends the retired review-page tag", () => {
-    const every = JSON.stringify(deckStateMarksCopy);
-    expect(every).not.toContain("deck in draft");
+  it("does not reuse the pull guard's tag", () => {
+    // `deck in draft` is LIVE copy — `deckVersioningCopy.review.pullGuardTag`, drawn by
+    // `pull-control.tsx` beside a card name. What the review page retired is a
+    // bare `pending`, which was read there as a pending change to THAT CARD.
+    // Here the subject is the deck, so the word is safe and the tag is spoken
+    // for: two surfaces, two phrasings, neither borrowed from the other.
+    expect(JSON.stringify(deckStateMarksCopy)).not.toContain(deckVersioningCopy.review.pullGuardTag);
   });
 });

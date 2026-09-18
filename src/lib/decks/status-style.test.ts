@@ -137,8 +137,14 @@ describe("the deck-state marks", () => {
       // Never --accent: `To buy`'s own token IS --accent, so an accent edge
       // reads as a heavier border of that pill's own colour.
       expect(String(style.borderLeft)).not.toContain("--accent");
-      // The rest of the box is untouched — the mark costs 2px and displaces
-      // nothing at any width.
+      // The mark costs 2px and displaces nothing at ANY width, which means it
+      // draws on the left and nowhere else. Asserted side by side rather than
+      // only through `background` and `color`: a mark that also drew on the
+      // right passes every other case here while the pill silently grows 2px
+      // wider than this file claims it does.
+      expect(style.borderRight).toBeUndefined();
+      expect(style.borderTop).toBeUndefined();
+      expect(style.borderBottom).toBeUndefined();
       expect(style.background).toBe(statusPillStyle(status).background);
       expect(style.color).toBe(statusPillStyle(status).color);
     }
