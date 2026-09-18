@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useMemo, useSyncExternalStore } from "react";
+import { useCallback, useMemo, useRef, useSyncExternalStore } from "react";
 import {
   encodeTopOffDraft,
   readTopOffDraft,
@@ -55,7 +55,30 @@ export function useTopOffDraft(deckId: string): TopOffDraftHandle {
     () => null,
   );
 
-  const draft = useMemo(() => readTopOffDraft(raw), [raw]);
+  const parsed = useMemo(() => readTopOffDraft(raw), [raw]);
+
+  // AN UNREADABLE WRITE IS NOT A CLEAR, and the difference is a player's
+  // in-progress selection.
+  //
+  // `subscribeToKey` delivers another tab's writes, and during a deployment the
+  // other tab can be running the PREVIOUS build: it writes the old unversioned
+  // shape, this tab parses it to null, and the strip — whose `seeded` ref is
+  // already spent — shows an empty list it will not reseed. The selection is
+  // gone with no event the player caused.
+  //
+  // So the two ways to arrive at null are told apart. A REMOVED key is a real
+  // clear: `discard()` is the committed pass, and nothing should survive it. A
+  // key that is PRESENT and unreadable is a write this build cannot interpret,
+  // and the last snapshot it could is closer to the truth than an empty one.
+  //
+  // A ref rather than state: this corrects a derived value during render and
+  // must not schedule one — the same rule the list caches follow. It is written
+  // only when the parse succeeded, so it can never hold a value this build
+  // rejected.
+  const lastGood = useRef<TopOffDraft | null>(null);
+  if (parsed !== null) lastGood.current = parsed;
+  else if (raw === null) lastGood.current = null;
+  const draft = parsed ?? lastGood.current;
 
   const write = useCallback(
     (change: Partial<TopOffDraft>) => {

@@ -196,4 +196,39 @@ describe("useTopOffDraft", () => {
     act(() => result.current.setTicked(new Set(["sol-ring"])));
     expect(result.current.ticked).toEqual(new Set(["sol-ring"]));
   });
+
+  describe("a write this build cannot read", () => {
+    it("keeps the selection when an older tab writes the pre-version shape", () => {
+      // The deployment window: the other tab is still running the previous build
+      // and writes `{t,d}` with no version. Parsing that to null and handing back
+      // an empty draft loses an in-progress selection, and the strip will not
+      // reseed because its `seeded` ref is already spent.
+      localStorage.setItem(KEY, '{"v":2,"t":["sol-ring"],"d":[]}');
+      const { result } = renderHook(() => useTopOffDraft(DECK));
+      expect(result.current.ticked).toEqual(new Set(["sol-ring"]));
+
+      act(() => {
+        localStorage.setItem(KEY, '{"t":["mana-crypt"],"d":[]}');
+        window.dispatchEvent(new StorageEvent("storage", { key: KEY }));
+      });
+
+      expect(result.current.ticked).toEqual(new Set(["sol-ring"]));
+      expect(result.current.restored).toBe(true);
+    });
+
+    it("still forgets the selection when the key is removed", () => {
+      // The other way to reach null, and it IS a clear: `discard()` runs on a
+      // committed pass, where there is nothing left to hold.
+      localStorage.setItem(KEY, '{"v":2,"t":["sol-ring"],"d":[]}');
+      const { result } = renderHook(() => useTopOffDraft(DECK));
+
+      act(() => {
+        result.current.discard();
+        window.dispatchEvent(new StorageEvent("storage", { key: KEY }));
+      });
+
+      expect(result.current.ticked).toEqual(new Set());
+      expect(result.current.restored).toBe(false);
+    });
+  });
 });

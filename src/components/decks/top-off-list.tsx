@@ -991,6 +991,12 @@ function CandidateRow({
         {isDesktop && (
           <span
             aria-hidden
+            // Named for the probe, which otherwise has to recognise this column
+            // by its TEXT — and a card called `Spell` or `Land` is then
+            // indistinguishable from the type word, so a phone row drawing no
+            // type could fail and a desktop row missing it could pass on the
+            // card's own name.
+            data-top-off-type
             className="md:order-3 flex-none truncate font-mono text-[11px]"
             style={{ width: TYPE_COL, color: "var(--fg-faint)" }}
           >

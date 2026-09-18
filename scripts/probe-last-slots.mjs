@@ -1,6 +1,6 @@
 // The Last 31 list, measured in a real browser at 1300x900 and 390x844.
 //
-// Four rulings here are facts about laid-out geometry or about a pointer, and
+// Five rulings here are facts about laid-out geometry or about a pointer, and
 // jsdom has neither.
 //
 // THE DESKTOP LIST IS BOUNDED. The handoff's long-list note refuses an inner
@@ -213,14 +213,17 @@ async function run() {
       }
 
       // The type word, desktop only.
+      // Found STRUCTURALLY, by the column's own attribute. Matching the bucket
+      // words against the row's text cannot tell the type column from a card
+      // NAMED one of them — `Spell`, `Land` — so a phone row drawing no type
+      // could fail, and a desktop row that lost the column could pass on the
+      // card's name supplying the match.
       const typed = await page.evaluate(() => {
         const row = document.querySelector('main div[role="group"] input[type="checkbox"]')
           ?.closest("div[class*=rounded-]");
         if (!row) return null;
-        const words = ["Creature", "Spell", "Artifact", "Enchantment", "Land", "Other"];
-        return [...row.querySelectorAll("span")]
-          .some((s) => words.includes((s.textContent ?? "").trim())
-            && s.getBoundingClientRect().width > 0);
+        const cell = row.querySelector("[data-top-off-type]");
+        return cell !== null && cell.getBoundingClientRect().width > 0;
       });
       report(
         `${width}px · the type word`,
