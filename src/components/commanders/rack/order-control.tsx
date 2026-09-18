@@ -41,7 +41,7 @@ export function OrderControl({
   iconOnly = false,
   triggerHeight = 32,
   pending = false,
-  defaultOpen,
+  pinnedOpen,
 }: {
   value: LaneOrder;
   options: readonly { key: LaneOrder; label: string; gloss?: string }[];
@@ -58,8 +58,8 @@ export function OrderControl({
       round-trip and the answer is still out (#338). The other three arrange a
       list already in memory and never set this. */
   pending?: boolean;
-  /** Start the list expanded — `/about`'s specimens, which cannot open it. */
-  defaultOpen?: boolean;
+  /** Hold the list open and undismissable — `/about`'s specimens. */
+  pinnedOpen?: boolean;
 }) {
   const current = options.find((o) => o.key === value) ?? options[0];
   return (
@@ -79,7 +79,7 @@ export function OrderControl({
       triggerHeight={triggerHeight}
       rowHeight={44}
       pending={pending}
-      defaultOpen={defaultOpen}
+      pinnedOpen={pinnedOpen}
     />
   );
 }

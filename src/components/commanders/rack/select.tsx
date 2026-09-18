@@ -34,7 +34,7 @@ export function RackSelect<K extends string>({
   rowHeight = 44,
   showGlosses = false,
   pending = false,
-  defaultOpen = false,
+  pinnedOpen = false,
 }: {
   /** Names the control for AT at both treatments. Never rendered as chrome on
       the rack — the trigger already says what it is. */
@@ -62,14 +62,23 @@ export function RackSelect<K extends string>({
       (#338). Never paired with `disabled`: disabling the focused element blurs
       it and the reader loses their place mid-flip. */
   pending?: boolean;
-  /** Start expanded. For a caller that cannot open it — `/about`'s specimens. */
-  defaultOpen?: boolean;
+  /**
+   * Hold the list open and refuse every dismissal. For a caller that cannot
+   * open it and must not lose it — `/about`'s specimens, which are inert.
+   */
+  pinnedOpen?: boolean;
 }) {
-  // `defaultOpen` starts the list expanded. No route passes it — a reader
-  // opens the control — and `/about` does: a specimen is inert, so a figure of
-  // the closed state draws a trigger and none of the options, which on the
-  // discover lane are the entry's whole subject.
-  const [open, setOpen] = useState(defaultOpen);
+  // `pinnedOpen` holds the list open and makes it UNDISMISSABLE. No route
+  // passes it — a reader opens and closes the control — and `/about` does:
+  // a specimen is inert, so a figure of the closed state draws a trigger and
+  // none of the options, which on the discover lane are the entry's subject.
+  //
+  // Starting it merely open was not enough, and the difference was a real
+  // defect: this dismisses on a `pointerdown` ANYWHERE in the document, so the
+  // figure collapsed the first time a reader clicked on the About page and
+  // left the space it had reserved empty. Pinned, the listeners are never
+  // installed.
+  const [open, setOpen] = useState(pinnedOpen);
   const root = useRef<HTMLDivElement>(null);
   const trigger = useRef<HTMLButtonElement>(null);
   const items = useRef<(HTMLButtonElement | null)[]>([]);
@@ -79,7 +88,7 @@ export function RackSelect<K extends string>({
   const menuId = useId();
 
   useEffect(() => {
-    if (!open) return;
+    if (!open || pinnedOpen) return;
     // `pointerdown`, not `mousedown`: on a touch device the latter arrives only
     // as a synthesised event after the gesture completes, so a tap outside would
     // dismiss a beat late. `SortMenu` already listens this way.
@@ -100,7 +109,7 @@ export function RackSelect<K extends string>({
       document.removeEventListener("pointerdown", onDown);
       document.removeEventListener("keydown", onKey);
     };
-  }, [open]);
+  }, [open, pinnedOpen]);
 
   // Opening lands on the current value rather than the first row, so ↓ from the
   // trigger moves to what the reader would actually be choosing next.

@@ -389,7 +389,7 @@ export function DiscoverFigureBody() {
         options={ORDER_OPTIONS.discover}
         onChange={() => {}}
         wide
-        defaultOpen
+        pinnedOpen
       />
     </div>
   );
