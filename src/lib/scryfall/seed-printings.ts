@@ -54,26 +54,35 @@ export async function setRepresentativePrintings(): Promise<number> {
 }
 
 /**
- * Blanks every set's denominator. Called BEFORE the ingest, not after it.
- *
- * Nullability protects the first migration and nothing after it: the ingest writes in
- * independent batches, so a refresh that dies halfway leaves a partly rewritten mix of
- * `booster` values beside the previous run's non-null `base_set_size` — a denominator that
- * no longer describes its numerator, rendered as a percentage. Clearing first means a
- * failed refresh leaves sets reading "not indexed yet", which is true.
- */
-export async function clearBaseSetSizes(): Promise<void> {
-  await db.execute(sql`update sets set base_set_size = null where base_set_size is not null`);
-}
-
-/**
  * Fills sets.base_set_size from the booster flag, with the Commander-product fallback.
  * Mirrors baseSetSizeOf in src/lib/sets/completion.ts, which is where it is unit tested:
  * a set with any booster printing counts those, and a set with none — every printing in a
  * Commander product carries booster false — counts its non-variant ones instead.
+ *
+ * CLEARS AND REPUBLISHES IN ONE TRANSACTION, and that is the whole point of the shape.
+ *
+ * The clear used to run on its own before the first batch, so that a refresh dying halfway
+ * could not leave the previous run's denominator beside half-rewritten `booster` flags —
+ * a denominator that no longer describes its numerator, drawn as a percentage. Sound on its
+ * own. What it did not survive was pairing with the caller's other rule, that a run which
+ * skipped orphans must publish nothing: between them, ONE orphaned printing blanked every
+ * set in the database and nothing restored them until a later run reported zero. On the
+ * weekly schedule that is up to seven days of every set reading `not indexed yet`, drawn
+ * exactly like a set the catalog has never seen, behind a green job. It happened on staging
+ * on 2026-09-16 (#704).
+ *
+ * Inside one transaction the blank is never observable: either both statements land or
+ * neither does. A run that dies before this point now leaves the PREVIOUS denominators
+ * standing — stale by one refresh rather than absent, which is the lesser of the two wrongs
+ * and the one a reader can still act on.
  */
 export async function setBaseSetSizes(): Promise<number> {
-  const updated = await db.execute(sql`
+  return db.transaction(async (tx) => {
+    // Still a clear-then-fill rather than an upsert: a set that LOST its classification
+    // (every printing now unclassified, or the set emptied) has to go back to null, and the
+    // fill below deliberately skips those rows so it cannot write a denominator of 0.
+    await tx.execute(sql`update sets set base_set_size = null where base_set_size is not null`);
+    const updated = await tx.execute(sql`
     with counts as (
       select set_code,
              count(*) filter (where booster is not null)::int                     as classified,
@@ -96,7 +105,31 @@ export async function setBaseSetSizes(): Promise<number> {
      where s.code = c.set_code and c.classified > 0
     returning s.code
   `);
-  return updated.rows.length;
+    return updated.rows.length;
+  });
+}
+
+/**
+ * Why this run published no denominators, or null when it published some.
+ *
+ * Pure, and separate from the ingest, because it is the sentence the CLI exits non-zero on
+ * (#704). A run that upserts a hundred thousand printings and sizes no set at all is a
+ * FAILED run wearing a green check: the word `0` in a summary line is the only thing that
+ * says so today, and nobody reads a summary line on a job that passed.
+ */
+export function unsizedRunFailure(
+  r: Pick<SeedPrintingsResult, "upserted" | "skippedOrphan" | "baseSetSizes">,
+): string | null {
+  if (r.upserted === 0 || r.baseSetSizes > 0) return null;
+  if (r.skippedOrphan > 0) {
+    return `No set was sized: ${r.skippedOrphan} printing(s) name a card the oracle catalog `
+      + "does not hold, so this run saw an incomplete bulk and refused to publish a base run "
+      + "counted from the survivors. The previous denominators are untouched. Re-run the "
+      + "refresh with the oracle ingest (`job=all`) to size them from a complete catalog.";
+  }
+  return "No set was sized, and no printing was orphaned — so every set's printings are "
+    + "unclassified (`booster` null throughout). The previous denominators are untouched. "
+    + "This is not a state a healthy bulk produces; check the upstream file before re-running.";
 }
 
 /**
@@ -129,10 +162,6 @@ export async function seedPrintings(): Promise<SeedPrintingsResult> {
   if (known.size === 0) {
     throw new Error("cards table is empty — run `pnpm db:seed` before seeding printings");
   }
-
-  // Before the first batch, so a run that dies halfway cannot leave a stale denominator
-  // beside a half-rewritten set of booster flags.
-  await clearBaseSetSizes();
 
   let upserted = 0, skippedOrphan = 0, skippedLayout = 0, skippedReversible = 0;
   let batch: PrintingRow[] = [];
@@ -194,8 +223,12 @@ export async function seedPrintings(): Promise<SeedPrintingsResult> {
   // Denominators are published only from a run that saw the WHOLE bulk. Orphans are
   // skipped when `cards` is behind `printings` — the supported manual mode — and a base
   // run counted from the survivors can be short, which would mark a set complete against
-  // a denominator missing its new cards. Left null, the sets read "not indexed yet" until
-  // a full refresh, which is true.
+  // a denominator missing its new cards.
+  //
+  // Refusing to publish no longer means blanking what is there: `setBaseSetSizes` clears and
+  // fills in one transaction, so skipping it leaves the PREVIOUS denominators standing. The
+  // run is a failure all the same, and `unsizedRunFailure` is the sentence the CLI exits on
+  // (#704) — a refresh that sized nothing must not pass for a refresh that worked.
   const baseSetSizes = skippedOrphan > 0 ? 0 : await setBaseSetSizes();
   return {
     upserted, skippedOrphan, skippedLayout, skippedReversible, representatives, baseSetSizes,
