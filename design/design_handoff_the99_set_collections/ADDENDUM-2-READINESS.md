@@ -14,8 +14,8 @@ delete a guard.**
 | Call | State | Notes |
 |---|---|---|
 | 1 · what the bar carries | **Ready** | Row 1 of the rack, kept mounted, with a 22px identity prefix. No new control, no badge, no second field. |
-| 2 · the height | **Ready** | 56px = `pt-[10px]` + 34 + `pb-[12px]`. Measured, not declared; the threshold reads the measurement as it already does. |
-| 3 · the threshold | **Ready** | Shipped rule unchanged. One constant becomes a function of `isDesktop`; two gates added. |
+| 2 · the height | **Ready** | 56px = `pt-[10px]` + 34 + `pb-[12px]`. Measured, not declared; the threshold reads the measurement as it already does. *(Erratum 2026-09-18: measures 57 against a 300px rest on `dsk` — see gap 1, which predicted it.)* |
+| 3 · the threshold | **Ready** | Shipped rule unchanged. One constant becomes a function of `isDesktop`; ~~two gates added~~ **one gate added** — the focus gate. *(Erratum 2026-09-18: the rarity-panel gate was built and measured unreachable; see gap 2.)* The breakpoint reopen is KEPT, against §3 — *(erratum, same date: a collapsed head cannot measure its newly crossed width.)* |
 | 4 · the money | **Ready — nothing to build** | `cost-strip.tsx` untouched; the bar carries no figure. |
 
 ## The gap report
