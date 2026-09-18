@@ -15,7 +15,7 @@
  * optimisation for freshness, not a correctness boundary: with the table unreachable the
  * cache behaves exactly as it did before this existed, which is the direction to fail in.
  */
-import { eq } from "drizzle-orm";
+import { eq, sql } from "drizzle-orm";
 import { unstable_cache } from "next/cache";
 
 import { db } from "../../db";
@@ -25,32 +25,38 @@ import { catalogRefreshes, CATALOG_ROW_ID } from "../../db/schema";
 const UNSTAMPED = "0";
 
 /**
- * The stamp as a key segment. Epoch millis rather than the timestamp's own rendering, for
- * the reason `DeckClaim.since` gives: the column is `timestamp` without time zone, and
- * every other reading of one in this repository has been bitten by the local-time parse.
+ * The stamp as a key segment, from the epoch millis the query computed.
+ *
+ * A bigint arrives from the driver as a STRING, and it is already what the key wants — so
+ * this normalises rather than parses. The parsing was the danger: the column carries no
+ * zone, so a `Date` built from its rendering takes the reading host's clock with it, and
+ * two servers in different zones would key one stamp two ways. `load` asks Postgres for the
+ * number instead. `DeckClaim.since` carries the same note for the same reason.
+ *
  * Exported so the translation is pinned by a test; the query around it needs a database.
  */
-export function generationKey(refreshedAt: Date | string | null | undefined): string {
-  if (!refreshedAt) return UNSTAMPED;
-  // A NAKED TIMESTAMP IS READ AS UTC. `2026-09-18 12:00:00` is what Postgres renders for a
-  // column with no zone, and `new Date()` takes that for LOCAL time — so two servers in
-  // different zones would derive two keys from one stamp and split the cache between them.
-  // Naming the zone keeps the host's own clock out of a shared key.
-  const stamped = typeof refreshedAt === "string"
-      && !/[Zz]$|[+-]\d\d:?\d\d$/.test(refreshedAt)
-    ? `${refreshedAt.replace(" ", "T")}Z`
-    : refreshedAt;
-  const millis = new Date(stamped).getTime();
-  return Number.isNaN(millis) ? UNSTAMPED : String(millis);
+export function generationKey(millis: string | number | null | undefined): string {
+  if (millis === null || millis === undefined || millis === "") return UNSTAMPED;
+  const value = Number(millis);
+  return Number.isFinite(value) ? String(value) : UNSTAMPED;
 }
 
 async function load(): Promise<string> {
   try {
+    // EPOCH MILLIS COMPUTED IN SQL, and BY ID rather than whichever row comes first. The
+    // column has no zone, so the driver would hand back a `Date` built from a naked
+    // `2026-09-18 12:00:00` — already carrying the reading host's clock, which no later
+    // normalising can take out again. And `limit(1)` with no `where` asks for whatever
+    // Postgres reaches first: a second row would flip the generation between requests and
+    // retire every reader's cache on each flip. The check constraint makes that impossible;
+    // this makes the read correct regardless.
     const [row] = await db
-      .select({ refreshedAt: catalogRefreshes.refreshedAt })
+      .select({
+        millis: sql<string | null>`(extract(epoch from ${catalogRefreshes.refreshedAt}) * 1000)::bigint`,
+      })
       .from(catalogRefreshes)
-      .limit(1);
-    return generationKey(row?.refreshedAt);
+      .where(eq(catalogRefreshes.id, CATALOG_ROW_ID));
+    return generationKey(row?.millis);
   } catch {
     return UNSTAMPED;
   }

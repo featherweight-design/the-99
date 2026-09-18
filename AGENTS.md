@@ -91,6 +91,13 @@ Package manager is **pnpm** (pinned via `packageManager` in package.json) — ne
   a green job. Since #704 the publish clears and fills in one transaction, so a refused run
   leaves the previous denominators standing and EXITS NON-ZERO instead. Dispatch `job=all`
   unless you have a reason not to; the run takes about a minute either way.
+- **Each ingest stamps `catalog_refreshes`, and every cached list payload is keyed on it**
+  (#705). That is how a refresh retires readers' caches: `revalidateUserLists` takes a user
+  id and a weekly job has no list of readers, so the generation goes in the key instead and
+  a stale entry is never asked for rather than hunted down. The stamp is deliberately
+  NON-FATAL — this workflow runs the seed scripts directly and never runs `db:migrate`, so
+  a database without the table costs one refresh's staleness and a warning, not a red job
+  after a successful ingest.
 - The catalog refresh (`.github/workflows/catalog-refresh.yml`) runs 09:00 UTC every Monday and refreshes **both** `catalog-staging` and `catalog-production`. A stale catalog is silent: collection CSV rows whose card is missing land in `unmatched` and are dropped, so a set that lands between refreshes simply appears not to exist.
 - `pnpm check:copy-drift` fails when a design table still quotes a string the code stopped
   emitting. The property tables ARE the spec someone implements from and they quote copy
@@ -585,6 +592,16 @@ Package manager is **pnpm** (pinned via `packageManager` in package.json) — ne
   question for a layout engine. `/collection` is visited as `?view=rows` on purpose: its
   desktop default is the grid, which draws no pips, and a run that took the default would
   sweep nothing clean at the width the defect was reported on. Point it at `local-dev`.
+
+- `pnpm probe:catalog-stamp` proves the WRITE half of the catalog generation against a real
+  Postgres: two stamps leave one row and move the value, the key the reader derives changes
+  with it, and the check constraint refuses any id but the canonical one. `cacheForUser`'s
+  key is unit-tested with the generation mocked, which proves the reader and nothing about
+  the writer — a broken `ON CONFLICT` or a lost single-row invariant would pass the whole
+  suite while every catalog refresh left readers on stale lists for the hour ceiling, which
+  is the failure #705 exists to end. Unlike the other probes it cannot scope itself to a
+  fixture user: the table holds exactly one row, and the run leaves the stamp set to now,
+  which is what any ingest would have done. Point it at `local-dev`, **never production**.
 
 - `pnpm probe:printing-pick` presses a printing pick on `/collection` and answers two
   questions no component test can. THE ART MOVED: the patch is a client-side state write, so

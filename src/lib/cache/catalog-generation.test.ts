@@ -12,33 +12,22 @@ vi.mock("next/cache", () => ({
 const { catalogGeneration, generationKey } = await import("./catalog-generation");
 
 describe("generationKey", () => {
-  // Epoch millis, never the timestamp's own rendering: the column is `timestamp` without
-  // time zone, and this repository has shipped the local-time parse bug once already.
-  it("renders a stamp as epoch millis", () => {
-    expect(generationKey(new Date("2026-09-18T12:00:00Z"))).toBe("1789732800000");
-  });
-
-  // THE FORM THAT CARRIES THE RISK, which an ISO string ending in `Z` does not: Postgres
-  // renders this column without a zone, and `new Date("2026-09-18 12:00:00")` reads that as
-  // LOCAL — 18:00Z on a UTC-6 host. Two servers in different zones would then derive two
-  // keys from one stamp and split the cache between them. Run this file under `TZ` to see
-  // it bite: the assertion is absolute, so a local parse fails it anywhere but UTC.
-  it("reads a zoneless database timestamp as UTC", () => {
-    expect(generationKey("2026-09-18 12:00:00")).toBe("1789732800000");
-    expect(generationKey("2026-09-18T12:00:00")).toBe("1789732800000");
-  });
-
-  it("leaves a stamp that already names its zone alone", () => {
-    expect(generationKey("2026-09-18T12:00:00Z")).toBe("1789732800000");
-    expect(generationKey("2026-09-18T07:00:00-05:00")).toBe("1789732800000");
+  // A bigint arrives from the driver as a string, and the query already computed the epoch
+  // — so this normalises rather than parses. The parse is what could not be made safe: the
+  // column carries no zone, and a `Date` built from its rendering takes the reading host's
+  // clock with it, so two servers in different zones would key one stamp two ways.
+  it("takes the epoch the query computed", () => {
+    expect(generationKey("1789732800000")).toBe("1789732800000");
+    expect(generationKey(1789732800000)).toBe("1789732800000");
   });
 
   // Before any ingest has run, and after one that could not be read. Both mean "no catalog
   // generation is known", which is one key rather than two.
-  it("falls back to a constant for an absent or unparseable stamp", () => {
+  it("falls back to a constant for an absent or unreadable stamp", () => {
     expect(generationKey(null)).toBe("0");
     expect(generationKey(undefined)).toBe("0");
-    expect(generationKey("not a date")).toBe("0");
+    expect(generationKey("")).toBe("0");
+    expect(generationKey("not a number")).toBe("0");
   });
 });
 
