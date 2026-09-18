@@ -505,7 +505,17 @@ nothing about the reader: the sentence was 67% of `/discover` and 77% of
 `/commanders` on the reference account, and it can be false, because `played` is
 built from commander tag lists rather than deck contents. See
 `docs/superpowers/design-tables/discovery-rows.md` for the measurement and the
-options weighed. Same slot, ink, measure and
+options weighed. **The "same line count" clause below does NOT carry over to the replacement,
+and is not re-certified here.** The retired sentence was 56 characters; the
+`unplayed` form with three themes is 61; the new capped form is 81 (*This
+commander's top three play styles are Lands Matter, Reanimator and
+Politics.*). At 390px a 12.5px sans line holds roughly 58 characters, so the
+new form takes two lines there — measured on the contact sheet, and the same
+two the three-name `unplayed` form already takes, so the occupants remain at
+parity today. Nothing measures it: the gap `<p>` carries no clamp and
+`probe:commander-row` measures the prose clamp only. A longer theme name could
+reach a third line and move row height with the occupant, which is what D9
+forbids. Recorded as open rather than asserted safe. Same slot, ink, measure and
 line count, so the locked "row height never varies" decision survives a fifth state.
 
 Design also found a flaw in this spec's condition and fixed it. `every mechanic tag already

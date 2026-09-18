@@ -103,19 +103,21 @@ export function eligibleMechanics(
  * it waits on player deck analysis being scoped. Recorded here because this
  * change is an honest holding position, not the answer.
  *
- * `noMechanics` and `allPlayed` are separate members for the reason R1 found:
- * both leave the label list empty, and asserting *you already play every
- * mechanic this commander leans on* about a commander with no mechanics on file
- * is the defect this feature exists to prevent, one layer down.
+ * `noMechanics` and `allPlayed` are separate members for the reason R1 found,
+ * though no longer for the shape R1 described: they used to BOTH leave the
+ * label list empty, and only `noMechanics` does now. The distinction still
+ * holds and matters more plainly than before — `allPlayed` names the
+ * commander's themes, and a commander with nothing on file has none to name,
+ * so describing it at all is the defect this feature exists to prevent.
  *
  * **`noMechanics` means "no mechanic theme worth naming", which is WIDER than
  * "the classifier found nothing".** It also covers a commander whose mechanic
  * tags all sit under the floor. That case is currently UNREACHABLE on real data
  * — the floor was chosen partly because it leaves the zero-eligible population
  * exactly where no floor leaves it, at 118 — but the code has to answer for it,
- * and both of the other answers would be false: the reader plays none of those
- * themes, so `allPlayed` is a lie, and they are not nameable themes, so the
- * label list cannot be filled. If it ever becomes reachable the COPY needs a
+ * and `allPlayed` is the wrong answer for a reason that survived its rewrite:
+ * it names the commander's themes, and a sub-floor tag is not a nameable
+ * theme, so there is nothing for it to print. If it ever becomes reachable the COPY needs a
  * Design ruling, because `discoveryCopy.untagged` says EDHREC lists no
  * archetypes, which would then be false too. Recorded as a follow-up rather
  * than answered here: inventing a fourth string is a design decision.

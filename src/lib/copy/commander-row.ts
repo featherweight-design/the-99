@@ -108,19 +108,16 @@ export const commanderRowCopy = {
         .join(""),
 
     /**
-     * Every mechanic tag on this commander is already played somewhere in the
-     * reader's decks. The claim is the OVERLAP, because the gap is empty and an
-     * empty clause is forbidden.
+     * The commander's top themes. See `topStylesParts` above for the sentence
+     * and `gapSlotFor` for the measurement that retired the claim this
+     * replaced.
      *
-     * It names no mechanic, no deck and no collection fact beyond play / do not
-     * play, so it reads identically on `/discover` and `/commanders` — which one
-     * shared row component requires (handoff D1).
-     *
-     * NOT CONGRATULATORY, and measurement has made that ruling load-bearing
-     * rather than precautionary: under `Something new` this same fact is why the
-     * row ranks last, and on a reader with 18 built decks it is 64% of the
-     * `/commanders` rows and 67% of `/discover`'s. A celebratory treatment would
-     * be the majority voice of both lanes.
+     * The doc block that stood here described that retired sentence — that it
+     * "names no mechanic, no deck", that "the claim is the OVERLAP", and that
+     * it was "64% of the /commanders rows and 67% of /discover's". Every clause
+     * is now either false or a stale figure: this sentence names three
+     * mechanics, makes no claim, and the measurement it quoted was superseded
+     * inside the same change by 77.0% / 67.2% against the reference account.
      */
     topStylesParts: topStylesParts,
 

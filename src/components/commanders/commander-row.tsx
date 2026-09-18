@@ -152,9 +152,9 @@ function GapLine({ slot }: { slot: GapSlot }) {
   // scans this line for, and the sentence around them is the same eleven words
   // on every row.
   //
-  // Rendered from `unplayedParts`, which is the sentence's one definition;
-  // `unplayed` is derived from it, so the spoken string and the drawn runs
-  // cannot disagree. `allPlayed` names no mechanic and so has no run to mark.
+  // Rendered from the parts builders, which are each sentence's one definition;
+  // the string forms are derived from them, so the spoken string and the drawn
+  // runs cannot disagree.
   // BOTH NAMED STATES NAME MECHANICS, and both mark them. `allPlayed` used to
   // be the one occupant with nothing in it — a sentence about the reader with no
   // mechanic in sight, and the majority voice of both lanes. It now prints the

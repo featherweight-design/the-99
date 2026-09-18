@@ -3,7 +3,7 @@
 // built decks, it is the default.
 //
 // READ-ONLY. It writes nothing, takes no locks and creates no fixture — point it
-// at `local-dev` or any branch you can read. Four questions:
+// at `local-dev` or any branch you can read. Five questions:
 //
 //   1 · how often each gap-slot occupant is drawn, per lane
 //   2 · how often it is drawn in the rows a reader actually SEES — the first
@@ -12,14 +12,25 @@
 //       many of the reader's decks is it played? The proposal replaces a binary
 //       with this figure, so whether "1 of 18 decks" reads as informative or as
 //       noise is decided by its shape
-//   4 · how much of the catalogue the depth line would rescue — rows that draw
-//       `allPlayed` today and would carry a reading under the proposal
+//   4 · how much of the catalogue a depth line would rescue — rows that draw
+//       `allPlayed` today and would carry a reading under that proposal
+//   5 · OPTION E: what happens to the state's frequency if a deck only counts
+//       as playing its commander's top N themes. This is the table the design
+//       table's rejection of that option is sourced from, not an afterthought
 //
 // Ordering matters to question 2 and is the one place this script could lie, so
-// it orders by the same figures the lanes do rather than by a proxy:
-// `commander_scores.score` descending is `Best fit`, and tag distance ascending
-// is `Something new`. A run against a user with no scored rows says so and
-// skips that half rather than silently reporting the popularity order instead.
+// it uses the LANES' OWN COMPARATORS rather than a restatement of them:
+// `byScoreThenOracleId` for `Best fit` and `byNovelty` for `Something new`,
+// imported from the modules the routes call. An earlier version wrote its own
+// `Something new` order as a RATIO (unplayed / eligible) where `byNovelty`
+// ranks on the absolute `unplayedCount`, so a commander with 2 eligible tags
+// and 1 unplayed sorted above one with 30 eligible and 12 unplayed — the
+// reverse of the app — and question 2 was not reporting the reader's first
+// screen at all. It also called that order "ascending" while sorting
+// descending. Both were caught by the pre-open pass, not by the run.
+//
+// A run against a user with no scored rows says so and skips the `Best fit`
+// half rather than silently reporting some other order instead.
 
 // `requireEnv` FIRST: `src/db` reads `DATABASE_URL` at import time, so the env
 // has to be loaded before that module is evaluated. Same order every probe here
@@ -29,7 +40,7 @@ requireEnv(["DATABASE_URL"]);
 
 import { sql } from "drizzle-orm";
 import { db } from "../src/db";
-import { loadPlayedTags } from "../src/lib/discovery/novelty";
+import { byNovelty, loadPlayedTags } from "../src/lib/discovery/novelty";
 import {
   eligibleMechanics,
   gapSlotFor,
@@ -74,8 +85,13 @@ function report(label: string, rows: Row[], played: ReadonlySet<string>) {
 }
 
 async function main() {
-  // The account with the most built decks, since the whole effect is a function
-  // of how many decks the reader has: a one-deck account cannot produce it.
+  // The account with the most decks, since the whole effect is a function of how
+  // many the reader has: a one-deck account cannot produce it.
+  //
+  // DECKS, not built decks. `loadPlayedTags` joins no `deck_versions`, so a BREW
+  // counts — deliberately, and `novelty.ts` records that this exact wording was
+  // corrected there once already. Every figure below therefore includes brews,
+  // and calling them "built" would overstate what the played set is drawn from.
   // `.rows`, not the result object: `db.execute` returns the driver's result.
   const { rows: tops } = await db.execute<{ user_id: string; decks: number }>(sql`
     select user_id, count(*)::int as decks
@@ -94,7 +110,7 @@ async function main() {
 
   const deckSets = await loadPlayedTags(userId);
   const played = new Set(deckSets.flatMap((d) => [...d.slugs]));
-  console.log(`built decks with tags: ${deckSets.length} · distinct played slugs: ${played.size}`);
+  console.log(`decks with tags (brews included): ${deckSets.length} · distinct played slugs: ${played.size}`);
 
   // DEPTH, per played slug: in how many of the reader's decks does it appear?
   // This is the figure the proposal prints, and it is arithmetic over the sets
@@ -157,17 +173,23 @@ async function main() {
     report("/discover · Best fit, first 100", bestFit.slice(0, 100), played);
   }
 
-  // `Something new` ranks on tag distance — how little of the commander's theme
-  // set the reader already plays — so `allPlayed` sorts to the BOTTOM there by
-  // construction. Reproduced with the same ratio rather than asserted.
-  const distance = (r: Row) => {
-    const eligible = eligibleMechanics(r.tags, r.deckCount);
-    if (eligible.length === 0) return -1;
-    return eligible.filter((t) => !played.has(t.slug)).length / eligible.length;
-  };
+  // `Something new` ranks on how MANY of the commander's themes the reader does
+  // not play — an absolute count, not a share — so `allPlayed` sorts to the
+  // bottom there by construction. `byNovelty` is the route's own comparator and
+  // is called rather than restated; `ownedSupport` is its tiebreak, and the
+  // deck count stands in for it here since this script does not read the
+  // collection. The tiebreak only separates commanders already equal on the
+  // figure that decides the order.
   const somethingNew = [...unownedRows]
-    .filter((r) => distance(r) >= 0)
-    .sort((a, b) => distance(b) - distance(a));
+    .map((r) => ({
+      r,
+      unplayedCount: eligibleMechanics(r.tags, r.deckCount).filter((t) => !played.has(t.slug))
+        .length,
+      ownedSupport: r.deckCount ?? 0,
+      oracleId: r.oracleId,
+    }))
+    .sort(byNovelty)
+    .map((o) => o.r);
   report(
     `/discover · Something new, first ${FIRST_SCREEN}`,
     somethingNew.slice(0, FIRST_SCREEN),
@@ -286,7 +308,7 @@ async function main() {
   const lens = [...perDeck.values()].flat().map((t) => t.length).sort((a, b) => a - b);
   const at = (q: number) => lens[Math.floor((lens.length - 1) * q)];
   console.log(
-    `  eligible mechanic tags per built commander: ` +
+    `  eligible mechanic tags per deck commander: ` +
       `min ${at(0)} · median ${at(0.5)} · p90 ${at(0.9)} · max ${at(1)}`,
   );
 

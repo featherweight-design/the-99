@@ -235,6 +235,68 @@ try {
         longestSeen = Math.max(longestSeen, clamp.worst.chars);
       }
 
+      // ── THE GAP LINE'S OCCUPANTS TAKE THE SAME NUMBER OF LINES ────────
+      //
+      // D9: row height varies with the SENTENCE and with nothing else — not
+      // with the sort, not with the lane, and not with which occupant the gap
+      // slot drew. That last clause had nothing measuring it, and 2026-09-18's
+      // copy change is exactly what could break it: the retired `allPlayed`
+      // sentence was 56 characters, the `unplayed` form with three themes is
+      // 61, and the replacement that names the commander's top three themes is
+      // 81. At 390px a 12.5px sans line holds roughly 58 characters, so this is
+      // decided by wrapping rather than by anything a class list shows.
+      //
+      // The gap `<p>` carries NO clamp, so the clamp check above skips it
+      // entirely — `webkitLineClamp` is "none" here — and an overflowing gap
+      // line does not overflow, it reflows and moves the row.
+      //
+      // Read as a MAXIMUM over every gap line on screen rather than per row: the
+      // property is that no occupant takes more lines than another, and the
+      // widest form of whichever occupants this screen holds is what bounds it.
+      const gapLines = await page.evaluate(() => {
+        const paras = [...document.querySelectorAll("main p")];
+        // The gap line is the unclamped paragraph — the prose sentence is the
+        // clamped one, and the untagged note is a `<p>` too and belongs here.
+        const gaps = paras.filter((p) => getComputedStyle(p).webkitLineClamp === "none");
+        let worst = null;
+        for (const p of gaps) {
+          const lh = parseFloat(getComputedStyle(p).lineHeight);
+          const lines = Math.round(p.clientHeight / lh);
+          const text = (p.textContent ?? "").trim();
+          if (!worst || lines > worst.lines || (lines === worst.lines && text.length > worst.chars))
+            worst = { lines, chars: text.length, text: text.slice(0, 64) };
+        }
+        return { gapCount: gaps.length, worst };
+      });
+      note(
+        `  ${gapLines.gapCount} gap line(s)` +
+          (gapLines.worst
+            ? ` · worst ${gapLines.worst.lines} line(s) at ${gapLines.worst.chars} chars — ` +
+              `"${gapLines.worst.text}"`
+            : ""),
+      );
+      // A run that found no gap line measured nothing: the slot is NEVER empty
+      // (D2), so zero means the selector lost its subject rather than that the
+      // rows are clean.
+      check(`${route} @ ${w.name}: gap lines were found`, gapLines.gapCount > 0, true);
+      if (gapLines.worst) {
+        // The budget is the drawing's: one line above `sm`, two at 390px. Three
+        // is the failure — it moves row height with the occupant, and the
+        // remedy is shorter copy rather than a taller row.
+        //
+        // ONLY THE PHONE CELLS REACH THIS, and the run says so rather than
+        // leaving it as an implied strength: a lead grown to 137 characters
+        // fails `/commanders @ phone` and passes all three other cells, because
+        // a 1300px measure holds almost anything the copy can say. Measured by
+        // mutation, not assumed.
+        const budget = w.width < 768 ? 2 : 1;
+        check(
+          `${route} @ ${w.name}: no gap line exceeds ${budget} line(s)`,
+          gapLines.worst.lines <= budget,
+          true,
+        );
+      }
+
       // ── no separator ends a line ──────────────────────────────────────
       //
       // FOUND BY THE CONTACT SHEET, not by any assertion here: the foot line
