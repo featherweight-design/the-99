@@ -135,6 +135,16 @@ export function DeckCardOverflow({
     const wanted = box.right - width;
     const left = Math.min(Math.max(margin, wanted), window.innerWidth - width - margin);
 
+    // The tab bar is FIXED at z-40 across the bottom below `md`, and this panel
+    // does not outrank it: `position: fixed` escapes a clipping ancestor but NOT
+    // a stacking context, and the tile's own `relative z-10` wrapper is one — so
+    // the panel's `z-50` is resolved inside it and the bar paints over anything
+    // that reaches under it. Treat those pixels as unavailable rather than
+    // raising z-indexes across two components.
+    const tabbar =
+      parseFloat(getComputedStyle(document.documentElement).getPropertyValue("--tabbar-h")) || 0;
+    const floor = window.innerHeight - (window.innerWidth < 768 ? tabbar : 0);
+
     // FLIP WHEN THERE IS NO ROOM BELOW. A fixed box cannot be scrolled into view
     // — scrolling re-runs this and carries the panel along with its trigger — so
     // a panel hanging past the fold is not merely awkward, it is UNREACHABLE. A
@@ -146,7 +156,7 @@ export function DeckCardOverflow({
     // the layout effect below re-places once it can be measured, and again
     // whenever the mode changes the panel's height.
     const below = box.bottom + gap;
-    const fitsBelow = height === 0 || below + height + margin <= window.innerHeight;
+    const fitsBelow = height === 0 || below + height + margin <= floor;
     const above = box.top - gap - height;
     const top = fitsBelow
       ? below
@@ -273,36 +283,55 @@ export function DeckCardOverflow({
   // a container's rather than the window's.
   useEffect(() => {
     if (!open) return;
-    window.addEventListener("scroll", place, true);
+    // Resize only. Scrolling and any other movement of the anchor are covered by
+    // the frame loop below, which catches what a scroll listener cannot.
     window.addEventListener("resize", place);
-    return () => {
-      window.removeEventListener("scroll", place, true);
-      window.removeEventListener("resize", place);
-    };
-    // `[open]`, as `shelf-menu.tsx` has it. With no array the effect reruns on
-    // every render, and `place()` sets fresh state on every scroll event — so one
-    // wheel gesture tore down and re-added both listeners once per frame.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+    return () => window.removeEventListener("resize", place);
   }, [open]);
 
-  // Re-place once the panel can be MEASURED, and again whenever it CHANGES SIZE.
+  // Re-place once the panel can be MEASURED, and then whenever anything moves it.
   //
   // A layout effect rather than an effect: this runs before paint, so a panel
   // that has to flip never draws once in the wrong place.
   //
-  // `ResizeObserver` rather than a `[open, mode]` dependency list, because the
-  // panel resizes without either of them moving: the delete pane grows a
-  // `role="alert"` line when the action fails, and a pane that fitted below a
-  // trigger near the fold can be pushed past it by that extra line — with no
-  // reposition until some unrelated scroll. The observer covers the mode change
-  // too, since the menu and the pane are different heights.
+  // THREE things move it, and a scroll listener sees only one:
+  //  - the panel RESIZES without opening or changing mode — the delete pane grows
+  //    a `role="alert"` line when the action fails, which can push a pane that
+  //    fitted below its trigger past the fold. `ResizeObserver`.
+  //  - the page SCROLLS, which a fixed box does not follow.
+  //  - the ANCHOR MOVES UNDER A STILL PAGE. Changing the deck sort or filter
+  //    reorders `shown.map(… key={deck.id})`, so this very instance slides to a
+  //    new row with no scroll and no resize, and the panel would sit at the old
+  //    coordinates pointing at another deck's tile.
+  //
+  // A frame loop covers the last two together, and costs a rect read per frame
+  // only while a menu is open.
   useLayoutEffect(() => {
     const node = panelRef.current;
     if (!open || !node) return;
     place();
     const observer = new ResizeObserver(place);
     observer.observe(node);
-    return () => observer.disconnect();
+
+    let frame = 0;
+    let previous = "";
+    const track = () => {
+      const box = buttonRef.current?.getBoundingClientRect();
+      if (box) {
+        const key = `${Math.round(box.top)}:${Math.round(box.left)}`;
+        if (key !== previous) {
+          previous = key;
+          place();
+        }
+      }
+      frame = requestAnimationFrame(track);
+    };
+    frame = requestAnimationFrame(track);
+
+    return () => {
+      observer.disconnect();
+      cancelAnimationFrame(frame);
+    };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open, mode]);
 

@@ -272,6 +272,23 @@ async function run() {
         const r = trigger.getBoundingClientRect();
         window.scrollBy(0, r.top - (window.innerHeight - 140));
       });
+      // ASSERT THE SETUP, or this block is not coverage. `scrollIntoView` and
+      // `scrollBy` are both CLAMPED when the document is shorter than the offset
+      // asked for, and a menu that ends up opening near the top passes every
+      // check below trivially — its bottom is inside the viewport whether or not
+      // anything flipped. So read the trigger's final rect and fail when it is
+      // not actually near the fold.
+      const anchor = await onPage(page, `button[aria-label="Actions for ${DECK_NAME}"]`).evaluate(
+        (trigger) => {
+          const r = trigger.getBoundingClientRect();
+          return { top: Math.round(r.top), room: Math.round(window.innerHeight - r.bottom) };
+        },
+      );
+      check(
+        anchor.room < 160,
+        `the fixture trigger sits near the fold (${anchor.room}px below it)`,
+      );
+
       const lowPanel = await openConfirm(page, DECK_NAME);
       const lowRows = await lowPanel.evaluate((el) => {
         const at = (node, x, y) => {
@@ -297,6 +314,13 @@ async function run() {
       check(
         lowRows.bottom <= lowRows.viewport,
         `a menu opened near the fold stays on screen (${lowRows.top}→${lowRows.bottom} in ${lowRows.viewport})`,
+      );
+      // The panel is ABOVE its trigger, which is the flip itself rather than its
+      // consequence: a panel that merely happened to fit would pass the check
+      // above while the regression was back.
+      check(
+        lowRows.bottom <= anchor.top + 1,
+        `the menu flipped above its trigger (panel bottom ${lowRows.bottom}, trigger top ${anchor.top})`,
       );
       for (const row of lowRows.rows) {
         check(row.reachable, `near the fold, menu row “${row.label}” is still reachable`);
