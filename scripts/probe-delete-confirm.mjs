@@ -263,14 +263,15 @@ async function run() {
       // The grid's last visible row is the COMMON case here, not an edge one, and
       // no other check in this file reaches it: every one of them opens a menu on
       // a deck at the top of a freshly loaded route.
-      await page.evaluate((label) => {
-        const trigger = document.querySelector(`main button[aria-label="Actions for ${label}"]`);
+      // Through `onPage`, never a re-spelled `main`: the shell draws controls
+      // around `<main>`, and the scope has one definition in `lib/surface.mjs`.
+      await onPage(page, `button[aria-label="Actions for ${DECK_NAME}"]`).evaluate((trigger) => {
         trigger.scrollIntoView({ block: "center" });
         // Put the trigger about 140px above the fold — too little room for the
         // ~153px menu, so the panel has to flip.
         const r = trigger.getBoundingClientRect();
         window.scrollBy(0, r.top - (window.innerHeight - 140));
-      }, DECK_NAME);
+      });
       const lowPanel = await openConfirm(page, DECK_NAME);
       const lowRows = await lowPanel.evaluate((el) => {
         const at = (node, x, y) => {

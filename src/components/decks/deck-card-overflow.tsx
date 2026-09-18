@@ -285,13 +285,24 @@ export function DeckCardOverflow({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open]);
 
-  // Re-place once the panel can be MEASURED, and again whenever the mode changes
-  // its height — the menu is four rows, the delete pane is a paragraph. A layout
-  // effect rather than an effect: this runs before paint, so a panel that has to
-  // flip never draws once in the wrong place.
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+  // Re-place once the panel can be MEASURED, and again whenever it CHANGES SIZE.
+  //
+  // A layout effect rather than an effect: this runs before paint, so a panel
+  // that has to flip never draws once in the wrong place.
+  //
+  // `ResizeObserver` rather than a `[open, mode]` dependency list, because the
+  // panel resizes without either of them moving: the delete pane grows a
+  // `role="alert"` line when the action fails, and a pane that fitted below a
+  // trigger near the fold can be pushed past it by that extra line — with no
+  // reposition until some unrelated scroll. The observer covers the mode change
+  // too, since the menu and the pane are different heights.
   useLayoutEffect(() => {
-    if (open) place();
+    const node = panelRef.current;
+    if (!open || !node) return;
+    place();
+    const observer = new ResizeObserver(place);
+    observer.observe(node);
+    return () => observer.disconnect();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open, mode]);
 
