@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { indexPriceRows, priceFor, priceKeyFor, type PrintingPriceRow } from "./price-lookup";
+import { cheapestLiveCents, indexPriceRows, priceFor, priceKeyFor, type PrintingPriceRow } from "./price-lookup";
 
 const NEWEST = "2026-09-08 09:00:00";
 
@@ -220,5 +220,51 @@ describe("priceFor", () => {
 
     expect(priceFor(only, { scryfallId: "s-1", setCode: "C21", collectorNumber: "263" }))
       .toEqual({ fact: null });
+  });
+});
+
+describe("cheapestLiveCents", () => {
+  it("takes the lowest non-foil figure among the live printings", () => {
+    const prices = indexPriceRows([
+      row({ scryfall_id: "s-1", collector_number: "1", price_cents: 439 }),
+      row({ scryfall_id: "s-2", collector_number: "2", price_cents: 234 }),
+      row({ scryfall_id: "s-3", collector_number: "3", price_cents: 980 }),
+    ]);
+
+    expect(cheapestLiveCents(prices)).toBe(234);
+  });
+
+  it("ignores a stale row, however cheap", () => {
+    // The ingest upserts and never deletes, so a sold-out printing keeps its last
+    // row frozen at an older `as_of`. Quoting it would name a price nobody can pay.
+    const prices = indexPriceRows([
+      row({ scryfall_id: "s-1", collector_number: "1", price_cents: 439 }),
+      row({ scryfall_id: "s-2", collector_number: "2", price_cents: 99, as_of: "2026-08-04 09:00:00" }),
+    ]);
+
+    expect(cheapestLiveCents(prices)).toBe(439);
+  });
+
+  it("says nothing when every live printing is foil-only", () => {
+    // A bare `from $9.40` that turned out to mean foil would name a finish the
+    // reader cannot buy, which is the error the tag's own qualifier exists to stop.
+    const prices = indexPriceRows([
+      row({ scryfall_id: "s-1", collector_number: "1", price_cents: null, price_cents_foil: 940 }),
+    ]);
+
+    expect(cheapestLiveCents(prices)).toBeNull();
+  });
+
+  it("says nothing for a card the feed has never carried", () => {
+    const prices = indexPriceRows([
+      row({ scryfall_id: null, set_code: null, collector_number: null, as_of: null }),
+    ]);
+
+    expect(cheapestLiveCents(prices)).toBeNull();
+  });
+
+  it("says nothing when there is no read at all", () => {
+    expect(cheapestLiveCents(null)).toBeNull();
+    expect(cheapestLiveCents(undefined)).toBeNull();
   });
 });

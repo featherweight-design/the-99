@@ -28,7 +28,9 @@ import { clearCardArtPreference, setCardArtPreference } from "../../app/collecti
 import { ManaCost } from "./mana-pips";
 import { PrintingRegion, OVERFLOW_THRESHOLD, printingEntryCount, printingKey } from "./printing-region";
 import { PriceTag } from "./price-tag";
-import { priceFor, priceKeyFor } from "../../lib/cards/price-lookup";
+import { cheapestLiveCents, priceFor, priceKeyFor } from "../../lib/cards/price-lookup";
+import { formatCents, priceOf, priceState } from "../../lib/decks/price";
+import { priceCopy } from "../../lib/copy/price";
 import { useDialogA11y } from "../../lib/a11y/dialog";
 import { faceNames, isTwoFaced } from "../../lib/cards/faces";
 import { cardZoomCopy, printedNameCopy, twoFacedCopy } from "../../lib/copy/card-surfaces";
@@ -1004,6 +1006,58 @@ export function CardModal({
     <PriceTag fact={price.fact} newestAsOf={card.prices?.newestAsOf ?? null} standalone />
   ) : null;
 
+  // The other question, answered beside the first rather than instead of it.
+  //
+  // `/commanders/[slug]` quotes a card's CHEAPEST printing and this modal quotes
+  // the printing on screen, so a reader who follows a $2.34 synergy row into a
+  // $4.39 modal reads two correct figures for one card with nothing saying why.
+  // The tag keeps belonging to the art; this names where the card starts.
+  //
+  // Drawn only where the cheapest is genuinely LOWER than what is on screen — and
+  // where this printing carries no figure at all, which is the same reader with
+  // the same question and no number to hold it against. Equal figures say
+  // nothing: on the cheapest printing itself `from $2.34` beside `$2.34` is the
+  // same number twice.
+  //
+  // THE COMPARISON IS AGAINST THE DRAWN FIGURE, whatever finish supplied it, and
+  // the cheapest is non-foil only — so the two sides can name different finishes.
+  // That asymmetry is the rule rather than a gap in it: what this line must never
+  // do is sit beside a smaller number claiming the card starts higher. A foil-only
+  // $1.20 with a $4.39 non-foil sibling therefore says nothing, which is silence
+  // and not a false claim; a foil-only $9.80 with the same sibling says
+  // `from $4.39`, which is true and is the reason a reader would look.
+  const shownState = price?.fact
+    ? priceState(price.fact, card.prices?.newestAsOf ?? null)
+    : null;
+  const shownCents =
+    price?.fact && shownState ? priceOf(price.fact, shownState) : null;
+  const cheapestCents = cheapestLiveCents(card.prices);
+  const fromCents =
+    cheapestCents !== null && (shownCents === null || cheapestCents < shownCents)
+      ? cheapestCents
+      : null;
+  // The same split `PriceTag` makes, and for the reason recorded there: an
+  // `aria-label` on a bare span lands on the generic role and is dropped, so the
+  // visible words go `aria-hidden` and an `sr-only` sibling carries the sentence.
+  // A COMPANION to the tag, never a replacement for it. Where `priceFor` returns
+  // null the modal draws nothing at all — the holding names no printing, so the
+  // store was never asked — and a cheapest figure alone there would answer a
+  // question about a card under a picture of a printing nobody identified. The
+  // stack keeps its silence; this line only ever qualifies a figure that is
+  // already on screen.
+  const fromLine = (phone: boolean) =>
+    fromCents === null ? null : (
+      <span
+        className="flex items-center"
+        data-testid={phone ? "modal-price-from-mobile" : "modal-price-from-desktop"}
+      >
+        <span aria-hidden="true" className="font-mono text-[10px]" style={{ color: "var(--fg-locked)" }}>
+          {priceCopy.cheapest.from(formatCents(fromCents))}
+        </span>
+        <span className="sr-only">{priceCopy.cheapest.aria(formatCents(fromCents))}</span>
+      </span>
+    );
+
   /**
    * The art in the modal ITSELF turns now (#2). It used to swap one background
    * for another with no motion, so the only place a two-faced card behaved like
@@ -1105,14 +1159,27 @@ export function CardModal({
             // under one `--border-strong` hairline at radius 7. The phone's stack
             // sits over the blurred wash; the desktop's sits on flat `--bg` and
             // needs none, which is the one difference between the two widths.
+            //
+            // The `from` figure rides INSIDE the plate with the tag rather than
+            // beside it: over the blurred wash a bare 10px line has nothing to be
+            // legible against, and that is the whole reason the plate exists.
             <span
-              className="inline-flex rounded-[7px] p-[2px]"
+              className="inline-flex items-center gap-[6px] rounded-[7px] p-[2px]"
               style={{ background: "var(--bg)", border: "1px solid var(--border-strong)" }}
             >
-              {priceTag}
+              <span data-testid="modal-price-tag-mobile">{priceTag}</span>
+              {fromLine(true)}
             </span>
           ) : (
-            priceTag
+            // One ROW, not one more row: the stack's height is reserved by
+            // `underCardHeight` and a second line under the tag would need that
+            // figure moved — and would put the art's width under the reader at
+            // the moment a pick made the line appear, which is the defect row
+            // 1.14 already forbids one level up.
+            <span className="inline-flex items-center gap-[6px]">
+              <span data-testid="modal-price-tag-desktop">{priceTag}</span>
+              {fromLine(false)}
+            </span>
           )}
         </div>
       )}
@@ -1377,7 +1444,14 @@ export function CardModal({
                   heading there is aria-hidden, so a figure placed inside it would reach
                   no assistive technology at all (erratum E10). */}
               {compactArt && priceTag && (
-                <div className="md:hidden" data-testid="modal-price-compact">{priceTag}</div>
+                // The `from` figure comes with it. This is the state where the
+                // printing PICKER is open — the one moment the reader is choosing
+                // between printings — so a header that named the cheapest nowhere
+                // would withhold it exactly where it is being asked for.
+                <div className="md:hidden flex items-center gap-[6px]" data-testid="modal-price-compact">
+                  <span data-testid="modal-price-tag-compact">{priceTag}</span>
+                  {fromLine(true)}
+                </div>
               )}
               <div className={compactArt ? "min-w-0 hidden md:block" : "min-w-0"}>
                 <h3

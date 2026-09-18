@@ -6,6 +6,7 @@ import { drawsMarker } from "../../lib/decks/availability";
 import { commanderGradient } from "../../lib/collection/gradients";
 import { WUBRG_COLOR, cssUrl } from "../../lib/collection/browse";
 import { fitSegments } from "../../lib/recs/format";
+import { colorLabel } from "../../lib/decks/format";
 import { POOL_WEIGHT, ROLES_WEIGHT, SYNERGY_WEIGHT } from "../../lib/recs/score";
 import type { CommanderDetailScore, RankedCommander } from "../../lib/recs/recommend";
 import { explainedCopy, heroNoteEdits } from "../../lib/copy/commander-explained";
@@ -614,11 +615,16 @@ export function CommanderDetail({
                   }}
                 />
               ))}
+              {/* The identity's NAME, not its letters. `GRU` is the pips again
+                  in a second alphabet — the swatches beside it already carry the
+                  colours — where `Temur` is the word a player uses for the
+                  combination. `colorLabel` is the same namer every deck surface
+                  uses, so a commander and the deck it leads cannot disagree. */}
               <span
                 className="font-mono ml-[4px]"
                 style={{ fontSize: 12, color: "var(--fg-faint)" }}
               >
-                {c.colorIdentity.join("")}
+                {colorLabel(c.colorIdentity)}
               </span>
             </div>
           )}

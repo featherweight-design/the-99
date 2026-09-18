@@ -224,7 +224,13 @@ export function DeckCard({
       // viewport: this tile's width is the grid's column, and the grid's column
       // is not a function of the viewport alone — a 262px filter column sits
       // beside it.
-      className="@container relative min-w-0 flex-none overflow-hidden rounded-[14px]"
+      // `sm:h-full` + a column, so the tile answers the GRID row's height rather
+      // than its own content's: the footer below takes the slack, and a tile
+      // with no detail line ends level with the one beside it that has one.
+      // Paired with the `sm:h-full` on the `<li>`, and gated for the same reason
+      // — below `sm` the list is a flex column with no height to be a percentage
+      // of, and one stacked tile per row has nothing to end level with.
+      className="@container relative flex min-w-0 flex-none flex-col overflow-hidden rounded-[14px] sm:h-full"
       style={{ background: "var(--surface-inset)", border: "1px solid var(--border)" }}
     >
       {/* 1 · Art header. Always present: `decks.commander_oracle_id` is NOT
@@ -252,7 +258,9 @@ export function DeckCard({
           whatever it draws — and `decks-view.tsx` belongs to another round. */}
       <div
         data-deck-art
-        className="relative h-[168px] overflow-hidden @min-[330px]:h-[248px]"
+        // `shrink-0`: the tile is a flex column now, and a band that gave way
+        // would trade the art for the slack the footer is meant to take.
+        className="relative h-[168px] shrink-0 overflow-hidden @min-[330px]:h-[248px]"
       >
         {/* Two bands, one shown by the tile's own container query, because the
             cell band has a FLOOR the handoff states — never in a column under
@@ -390,7 +398,12 @@ export function DeckCard({
         // count and the detail figure are all in the link's name. No focusable
         // element lives in this row.
         aria-hidden="true"
-        className={`deck-card-footer grid items-center gap-x-[8px] gap-y-[10px] pt-[11px] pr-[13px] pb-[13px] pl-[13px] sm:gap-y-[9px] ${
+        // `flex-1` takes the slack a shorter tile would otherwise have left at
+        // the bottom of its grid row, and `content-start` keeps the rows at the
+        // top of it — the `items-center` beside it aligns a row's own cells, and
+        // stretching the tracks instead would float `[chip] [bar] [count]` into
+        // the middle of the empty space it was given.
+        className={`deck-card-footer grid flex-1 content-start items-center gap-x-[8px] gap-y-[10px] pt-[11px] pr-[13px] pb-[13px] pl-[13px] sm:gap-y-[9px] ${
           detail === null && !hasLastPlayed
             ? "[grid-template-areas:'chip_bar_count']"
             : detail === null

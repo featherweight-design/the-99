@@ -54,6 +54,26 @@ export const priceCopy = {
     behind: "these are behind",
   },
 
+  // ── The cheapest-printing line ────────────────────────────────────────
+  // Drawn beside the card modal's own tag, and ONLY where another printing of
+  // the same card is cheaper than the one on screen. `from` is the marketplace
+  // idiom for the bottom of a range, which is exactly what it is: the figure
+  // beside it belongs to this printing, and this one is where the card starts.
+  //
+  // It is not a warning and not an instruction. The reader arrived from a
+  // surface that quotes the cheapest printing, and without this the two figures
+  // are simply two numbers for one card.
+  // The spoken sentence names the FINISH, because the figure is the cheapest
+  // NON-FOIL printing and a live foil can undercut it — "cheapest printing" would
+  // then be a false claim, and the one reader who cannot see the tag beside it is
+  // the one being told. The visible `from` carries no such claim on its own: the
+  // tag it sits beside states its own finish, and a 10px line that spelled the
+  // qualifier out would be the longer half of the pair.
+  cheapest: {
+    from: (figure: string) => `from ${figure}`,
+    aria: (figure: string) => `cheapest non-foil printing of this card is ${figure} at ManaPool`,
+  },
+
   // ── Accessible names ──────────────────────────────────────────────────
   // Spoken once per price, on the tile only. The decklist row passes no label:
   // the word `buy` already sits in that row's reading order.

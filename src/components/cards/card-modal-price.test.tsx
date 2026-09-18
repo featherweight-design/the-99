@@ -8,6 +8,7 @@ import { act, fireEvent, render, screen } from "@testing-library/react";
 import type { BrowseCard, BrowsePrinting } from "../../lib/collection/browse";
 import { indexPriceRows, type PrintingPriceRow } from "../../lib/cards/price-lookup";
 import { setPageCopy } from "../../lib/copy/set-collections";
+import { priceCopy } from "../../lib/copy/price";
 
 vi.mock("../../app/collection/actions", () => ({
   // The real action reports whether it wrote; a bare `vi.fn()` resolves undefined,
@@ -115,6 +116,108 @@ describe("the price under the art", () => {
       .toHaveTextContent(setPageCopy.cell.noStock);
   });
 
+  it("names the cheapest printing when the one on screen is dearer", () => {
+    // The bug this answers: /commanders/[slug] quotes a card's cheapest printing
+    // and this modal quotes the printing on screen, so the reader met $2.34 on one
+    // surface and $4.39 on the next with nothing saying they were two questions.
+    mount(card({
+      prices: indexPriceRows([
+        priceRow({ price_cents: 439 }),
+        priceRow({ scryfall_id: "cheap", collector_number: "999", price_cents: 234 }),
+      ]),
+    }));
+
+    expect(screen.getByTestId("modal-price-desktop")).toHaveTextContent("$4.39");
+    // Both widths, as with the tag they sit beside: the desktop stack and the
+    // phone's plate are in the DOM at once and separated by CSS.
+    expect(screen.getByTestId("modal-price-from-desktop")).toHaveTextContent("from $2.34");
+    expect(screen.getByTestId("modal-price-from-mobile")).toHaveTextContent("from $2.34");
+    // The spoken half names the FINISH. `cheapestLiveCents` is non-foil only, so a
+    // live foil can undercut this figure and "cheapest printing" would be a false
+    // claim made to the one reader who cannot see the tag beside it.
+    expect(screen.getByTestId("modal-price-from-desktop"))
+      .toHaveTextContent(priceCopy.cheapest.aria("$2.34"));
+  });
+
+  it("says nothing when the printing on screen IS the cheapest", () => {
+    // `from $2.41` beside `$2.41` is the same number twice, which answers a
+    // question nobody has.
+    mount(card({
+      prices: indexPriceRows([
+        priceRow({ price_cents: 241 }),
+        priceRow({ scryfall_id: "dear", collector_number: "999", price_cents: 980 }),
+      ]),
+    }));
+
+    expect(screen.queryByTestId("modal-price-from-desktop")).toBeNull();
+  });
+
+  it("names the cheapest printing beside a `no stock` tag", () => {
+    // Same reader, same question, and no figure on screen to hold the answer
+    // against — which is the case that most needs it.
+    mount(card({
+      prices: indexPriceRows([
+        priceRow({ as_of: "2026-08-01 09:00:00" }),
+        priceRow({ scryfall_id: "cheap", collector_number: "999", price_cents: 234 }),
+      ]),
+    }));
+
+    expect(screen.getByTestId("modal-price-desktop"))
+      .toHaveTextContent(setPageCopy.cell.noStock);
+    // Both widths, as with the tag they sit beside: the desktop stack and the
+    // phone's plate are in the DOM at once and separated by CSS.
+    expect(screen.getByTestId("modal-price-from-desktop")).toHaveTextContent("from $2.34");
+    expect(screen.getByTestId("modal-price-from-mobile")).toHaveTextContent("from $2.34");
+  });
+
+  it("does not quote a foil figure as the cheapest", () => {
+    // A bare `from` with a foil figure behind it names a finish the reader cannot
+    // buy, which is what the tag's own qualifier exists to prevent.
+    mount(card({
+      prices: indexPriceRows([
+        priceRow({ price_cents: 439 }),
+        priceRow({
+          scryfall_id: "foil",
+          collector_number: "999",
+          price_cents: null,
+          price_cents_foil: 120,
+        }),
+      ]),
+    }));
+
+    expect(screen.queryByTestId("modal-price-from-desktop")).toBeNull();
+  });
+
+  it("says nothing when the figure on screen is already lower, whatever its finish", () => {
+    // The cheapest is non-foil only and the tag draws whichever finish this
+    // printing was stocked in, so the two sides can name different finishes. The
+    // rule is that this line never sits beside a smaller number claiming the card
+    // starts higher — so a foil-only $1.20 with a $4.39 non-foil sibling is
+    // silent.
+    mount(card({
+      prices: indexPriceRows([
+        priceRow({ price_cents: null, price_cents_foil: 120 }),
+        priceRow({ scryfall_id: "plain", collector_number: "999", price_cents: 439 }),
+      ]),
+    }));
+
+    expect(screen.getByTestId("modal-price-tag-desktop")).toHaveTextContent("$1.20");
+    expect(screen.queryByTestId("modal-price-from-desktop")).toBeNull();
+  });
+
+  it("names the cheapest beside a dearer foil-only figure", () => {
+    // The mirror of the case above, and the reason a reader would look: the
+    // printing on screen is stocked in foil at $9.80 and the card starts at $4.39.
+    mount(card({
+      prices: indexPriceRows([
+        priceRow({ price_cents: null, price_cents_foil: 980 }),
+        priceRow({ scryfall_id: "plain", collector_number: "999", price_cents: 439 }),
+      ]),
+    }));
+
+    expect(screen.getByTestId("modal-price-from-desktop")).toHaveTextContent("from $4.39");
+  });
+
   it("renders no node at all when no price read reached us", () => {
     // Silence is the state. Not a dash, not $0.00, not a reserved slot — and not
     // an aria-hidden placeholder either, so the absent state is absent to
@@ -157,9 +260,13 @@ describe("the price under the art", () => {
       ]),
     }));
 
-    expect(screen.getByTestId("modal-price-desktop")).not.toHaveTextContent("$99.99");
-    expect(screen.getByTestId("modal-price-desktop"))
+    // The TAG is what must not fall back — the figure under the art belongs to
+    // the art. The `from` line beside it carries a sibling's figure on purpose
+    // and says so in words, which is the whole difference between the two.
+    expect(screen.getByTestId("modal-price-tag-desktop")).not.toHaveTextContent("$99.99");
+    expect(screen.getByTestId("modal-price-tag-desktop"))
       .toHaveTextContent(setPageCopy.cell.noStock);
+    expect(screen.getByTestId("modal-price-from-desktop")).toHaveTextContent("from $99.99");
   });
 
   it("speaks the ratified sentence rather than a bare figure", () => {

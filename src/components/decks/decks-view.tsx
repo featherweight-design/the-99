@@ -999,9 +999,22 @@ export function DecksView({
               </button>
             </div>
           ) : (
-            <ul className="m-0 flex min-h-0 min-w-0 flex-auto list-none flex-col gap-[12px] px-[16px] pt-[14px] pb-0 sm:grid sm:grid-cols-3 sm:content-start sm:gap-[14px] sm:p-[18px_22px]">
+            <ul className="m-0 flex min-h-0 min-w-0 flex-auto list-none flex-col gap-[12px] px-[16px] pt-[14px] pb-[14px] sm:grid sm:grid-cols-3 sm:content-start sm:gap-[14px] sm:p-[18px_22px]">
               {shown.map((deck) => (
-                <li key={deck.id} className="flex-none">
+                // `sm:h-full` so the tile fills the GRID row rather than
+                // sitting at its own content height: a tile with no detail line
+                // is shorter than its neighbour with one, and three tiles in a
+                // row ending at three different heights reads as three different
+                // kinds of thing. The `<li>` already stretches to the row; the
+                // tile inside it did not.
+                //
+                // From `sm` ONLY, and that is not tidiness. Below it this list is
+                // a flex COLUMN whose own height comes from its content, so a
+                // percentage height on the item resolves against a container the
+                // item is sizing — which is a loop, and it ran: 34 tiles took the
+                // phone's document to 357,576px. A grid row has a height of its
+                // own to be a percentage of.
+                <li key={deck.id} className="sm:h-full flex-none">
                   <DeckCard
                     deck={deck}
                     shopping={shopping.byDeck.get(deck.id)}
