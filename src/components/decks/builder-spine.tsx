@@ -52,6 +52,9 @@ interface BuilderSpineProps {
   status: StatusPill;
   /** Passed straight through to both widths — see `SpineBandProps`. */
   offerFirstCommit?: boolean;
+  /** The deck-state marks, both passed straight through. See `SpineBandProps`. */
+  hollow?: boolean;
+  pending?: boolean;
 }
 
 // The seam in the doubled glyph is the colour of whatever sits behind it, and
@@ -258,6 +261,8 @@ export function BuilderSpine({
   onShowShopping,
   status,
   offerFirstCommit,
+  hollow,
+  pending,
 }: BuilderSpineProps) {
   return (
     <>
@@ -267,6 +272,8 @@ export function BuilderSpine({
       status={status}
       onExport={onExport}
       offerFirstCommit={offerFirstCommit}
+      hollow={hollow}
+      pending={pending}
     />
     <SpineMobile
       deck={deck}
@@ -274,6 +281,8 @@ export function BuilderSpine({
       status={status}
       onExport={onExport}
       offerFirstCommit={offerFirstCommit}
+      hollow={hollow}
+      pending={pending}
     />
 
     {/* Below the spine and above the decklist, per the canvas: it is a claim

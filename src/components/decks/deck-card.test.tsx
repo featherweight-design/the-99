@@ -328,9 +328,125 @@ describe("DeckCard", () => {
     );
     expect(
       screen.getByRole("link", {
-        name: "Atraxa, Praetors' Voice, Atraxa, Praetors' Voice, Non-red, To buy, 99 / 99, 3 to buy · $18.40, 2 days ago",
+        // The base fixture has never committed, so its status is followed by
+        // the phase — the mark is drawn on the pill and the name says so where
+        // it is drawn.
+        name: "Atraxa, Praetors' Voice, Atraxa, Praetors' Voice, Non-red, To buy, not committed yet, 99 / 99, 3 to buy · $18.40, 2 days ago",
       }),
     ).toBeInTheDocument();
+  });
+
+  describe("the deck-state marks", () => {
+    // A deck with a version behind it and nothing pending: the plain tile, and
+    // the control every case below is read against.
+    const committed = (over: Partial<DeckListItem> = {}) =>
+      deck({ lastCommittedAt: daysBefore(4), versionNumber: 2, ...over });
+
+    it("draws the hollow plate for a deck that has never committed", () => {
+      const { container } = render(
+        <DeckCard folders={[]} onCreateFolder={() => {}} say={() => {}} onMoved={() => {}} keepsFocus closeAfterCreate={null} deck={deck()} shopping={undefined} now={now} />,
+      );
+      const chip = container.querySelector("[class*='grid-area:chip']") as HTMLElement;
+      // `--bg` itself, opaque. A transparent chip breaks the art-wash amendment
+      // on the one surface that puts this pill on a wash.
+      expect(chip.style.background).toBe("var(--bg)");
+      expect(chip.style.borderLeft).toBe("");
+    });
+
+    it("draws the pending edge for a committed deck whose draft has moved", () => {
+      const { container } = render(
+        <DeckCard folders={[]} onCreateFolder={() => {}} say={() => {}} onMoved={() => {}} keepsFocus closeAfterCreate={null} deck={committed({ pendingChanges: 36 })} shopping={undefined} now={now} />,
+      );
+      const chip = container.querySelector("[class*='grid-area:chip']") as HTMLElement;
+      expect(chip.style.borderLeft).toBe("2px solid var(--fg)");
+      // The plate keeps its status tint: this is a deck, not a plan.
+      expect(chip.style.background).toContain("color-mix");
+    });
+
+    it("draws neither on a committed deck with a clean draft", () => {
+      const { container } = render(
+        <DeckCard folders={[]} onCreateFolder={() => {}} say={() => {}} onMoved={() => {}} keepsFocus closeAfterCreate={null} deck={committed()} shopping={undefined} now={now} />,
+      );
+      const chip = container.querySelector("[class*='grid-area:chip']") as HTMLElement;
+      expect(chip.style.borderLeft).toBe("");
+      expect(chip.style.background).not.toBe("var(--bg)");
+    });
+
+    it("halves the bar for a plan and leaves a deck's alone", () => {
+      const { container: plan } = render(
+        <DeckCard folders={[]} onCreateFolder={() => {}} say={() => {}} onMoved={() => {}} keepsFocus closeAfterCreate={null} deck={deck()} shopping={undefined} now={now} />,
+      );
+      expect((plan.querySelector("[data-deck-bar-fill]") as HTMLElement).style.opacity).toBe("0.5");
+      const { container: real } = render(
+        <DeckCard folders={[]} onCreateFolder={() => {}} say={() => {}} onMoved={() => {}} keepsFocus closeAfterCreate={null} deck={committed()} shopping={undefined} now={now} />,
+      );
+      expect((real.querySelector("[data-deck-bar-fill]") as HTMLElement).style.opacity).toBe("");
+    });
+
+    // The change figure OUTRANKS the count figures while a draft is open: the
+    // roll-up is what this tile would otherwise print, and mid-edit it is the
+    // figure the reader already knows.
+    it("prints the change figure in place of the status figure", () => {
+      render(
+        <DeckCard folders={[]} onCreateFolder={() => {}} say={() => {}} onMoved={() => {}} keepsFocus closeAfterCreate={null} deck={committed({ pendingChanges: 36 })} shopping={{ copies: 3, cents: 1840, pricedCopies: 3 }} now={now} />,
+      );
+      expect(screen.getByText("36 changes since v2")).toBeInTheDocument();
+      expect(screen.queryByText(/3 to buy/)).not.toBeInTheDocument();
+    });
+
+    // The ONE exception, and the reason the shipped cascade already ranks an
+    // unresolved line above shopping: it is not a consequence of editing.
+    it("keeps the unresolved figure, which is not a consequence of editing", () => {
+      render(
+        <DeckCard folders={[]} onCreateFolder={() => {}} say={() => {}} onMoved={() => {}} keepsFocus closeAfterCreate={null} deck={committed({ pendingChanges: 36, statusPill: "Unresolved", unresolvedCount: 2 })} shopping={undefined} now={now} />,
+      );
+      expect(screen.getByText("2 lines unresolved")).toBeInTheDocument();
+      expect(screen.queryByText(/36 changes/)).not.toBeInTheDocument();
+    });
+
+    it("names each mark after the status it is drawn on", () => {
+      const { unmount } = render(
+        <DeckCard folders={[]} onCreateFolder={() => {}} say={() => {}} onMoved={() => {}} keepsFocus closeAfterCreate={null} deck={committed({ pendingChanges: 36 })} shopping={undefined} now={now} />,
+      );
+      expect(screen.getByRole("link").getAttribute("aria-label"))
+        .toContain("To buy, pending changes, 99 / 99");
+      unmount();
+      render(
+        <DeckCard folders={[]} onCreateFolder={() => {}} say={() => {}} onMoved={() => {}} keepsFocus closeAfterCreate={null} deck={deck()} shopping={undefined} now={now} />,
+      );
+      expect(screen.getByRole("link").getAttribute("aria-label"))
+        .toContain("To buy, not committed yet, 99 / 99");
+    });
+
+    // The pill's own `sr-only` mark would be a SECOND announcement of one fact,
+    // and what prevents it is the footer's `aria-hidden` — so that is what this
+    // asserts. Reading the link's `aria-label` cannot: an `sr-only` span never
+    // contributes to an explicit label, so the case would pass with the
+    // `aria-hidden` removed and the duplication live. Verified by that mutation.
+    // The impossible state, stated rather than assumed away: `pendingChanges` is
+    // 0 for every deck with no version, by construction of the query that
+    // answers both, so this row cannot come off a real read. If one ever did,
+    // the phase is the louder and longer-lived fact and the plate is what draws.
+    it("gives the plate precedence if a row ever claimed both", () => {
+      const { container } = render(
+        <DeckCard folders={[]} onCreateFolder={() => {}} say={() => {}} onMoved={() => {}} keepsFocus closeAfterCreate={null} deck={deck({ lastCommittedAt: null, pendingChanges: 9, versionNumber: 3 })} shopping={undefined} now={now} />,
+      );
+      const chip = container.querySelector("[class*='grid-area:chip']") as HTMLElement;
+      expect(chip.style.background).toBe("var(--bg)");
+      expect(chip.style.borderLeft).toBe("");
+      expect(chip.textContent).toContain("not committed yet");
+    });
+
+    it("keeps the pill's own mark out of the name, which states it once", () => {
+      const { container } = render(
+        <DeckCard folders={[]} onCreateFolder={() => {}} say={() => {}} onMoved={() => {}} keepsFocus closeAfterCreate={null} deck={committed({ pendingChanges: 36 })} shopping={undefined} now={now} />,
+      );
+      const chip = container.querySelector("[class*='grid-area:chip']") as HTMLElement;
+      expect(chip.textContent).toContain("pending changes, not yet a version");
+      expect(chip.closest("[aria-hidden='true']")).not.toBeNull();
+      const name = screen.getByRole("link").getAttribute("aria-label") ?? "";
+      expect(name.match(/pending changes/g)?.length).toBe(1);
+    });
   });
 
   // A pair states BOTH commanders. The visible line shortens them to fit; the

@@ -280,3 +280,41 @@ describe("ResumeDecks", () => {
     expect(rows.className).toContain("min-[1180px]:flex-row");
   });
 });
+
+describe("the deck-state marks on a resume row", () => {
+  // The row draws no figure and needs none: its stamp already says WHEN, and
+  // `touchedBy` returns the edit as the winning act for exactly these decks.
+  it("draws the hollow plate for a plan and the edge for a moved draft", () => {
+    const plan = render(
+      <ResumeDecks decks={[deck({ id: "p", lastCommittedAt: null })]} shopping={rollup()} total={1} now={NOW} />,
+    );
+    const planChip = plan.container.querySelector("[class*='h-[19px]']") as HTMLElement;
+    expect(planChip.style.background).toBe("var(--bg)");
+    plan.unmount();
+
+    const moved = render(
+      <ResumeDecks
+        decks={[deck({ id: "m", lastCommittedAt: new Date("2026-09-10T00:00:00Z"), pendingChanges: 4, versionNumber: 2 })]}
+        shopping={rollup()}
+        total={1}
+        now={NOW}
+      />,
+    );
+    const chip = moved.container.querySelector("[class*='h-[19px]']") as HTMLElement;
+    expect(chip.style.borderLeft).toBe("2px solid var(--fg)");
+    // No figure on this row, at either mark — the stamp is the second half.
+    expect(moved.container.textContent).not.toContain("changes since");
+  });
+
+  it("names the mark, since neither an edge nor an untinted plate has text", () => {
+    render(
+      <ResumeDecks
+        decks={[deck({ id: "m2", lastCommittedAt: new Date("2026-09-10T00:00:00Z"), pendingChanges: 4, versionNumber: 2 })]}
+        shopping={rollup()}
+        total={1}
+        now={NOW}
+      />,
+    );
+    expect(screen.getByText(", pending changes, not yet a version")).toBeInTheDocument();
+  });
+});

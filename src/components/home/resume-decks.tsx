@@ -187,6 +187,15 @@ function ResumeRow(
         <span className="flex min-w-0 items-center gap-[14px]">
           <StatusPillBadge
             status={deck.statusPill}
+            // Both marks, no figure, and the row needs none: the stamp on the
+            // line above already reads `edited 2h ago` — `touchedBy` returns the
+            // edit as the winning act for exactly the decks this mark is about.
+            // The mark says NOT COMMITTED; the stamp says WHEN. Nothing shrinks:
+            // the plate costs nothing at all, and the edge costs ONE pixel —
+            // the pill already draws a 1px border on all four sides, so a 2px
+            // left border widens the chip by the difference.
+            hollow={deck.lastCommittedAt === null}
+            pending={deck.pendingChanges > 0}
             // §ResumeRow — status pill: shorter and tighter than the tile's, and
             // in flow rather than pinned to art. Only the geometry moves; the
             // fill and the label stay where they are written once.

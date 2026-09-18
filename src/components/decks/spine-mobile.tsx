@@ -22,6 +22,7 @@ import { type SpineBandProps, TRUNCATES } from "./spine-desktop";
 import { StatusPillBadge } from "./status-pill";
 import { useDeckRename } from "./use-deck-rename";
 import { ProxyTag } from "./proxy-tag";
+import { deckStateMarksCopy } from "../../lib/copy/deck-state-marks";
 import { proxyCopy } from "../../lib/copy/proxies";
 import { shortName } from "../../lib/cards/short-name";
 
@@ -33,6 +34,8 @@ export function SpineMobile({
   deck,
   counts,
   status,
+  hollow = false,
+  pending = false,
   onExport,
   offerFirstCommit,
 }: SpineBandProps) {
@@ -94,6 +97,14 @@ export function SpineMobile({
           left edge still while the names shrink behind it. */}
       <StatusPillBadge
         status={status}
+        // ONE pixel on a `flex-nowrap` row whose chip is already `flex-none`:
+        // the pill draws a 1px border on every side, so the 2px left edge costs
+        // the row the difference. Nothing wraps and `labelAtPx={115}` is
+        // untouched — probed, not asserted.
+        hollow={hollow}
+        pending={pending}
+        // See the desktop band: this page states both facts in words.
+        announceMark={false}
         // `h-[22px]`, the settled chip height, rather than vertical padding over
         // an inherited line box: that made this pill 23px and the block 91, one
         // pixel past the ramp keyed to it.
@@ -455,7 +466,8 @@ export function SpineMobile({
             <div
               data-testid="spine-bar-fill"
               className="h-full"
-              style={statusBarStyle(status, built, bodySize)}
+              // Follows the plate: a plan is one provisional object.
+            style={statusBarStyle(status, built, bodySize, { provisional: hollow })}
             />
           </div>
           <div
@@ -489,6 +501,17 @@ export function SpineMobile({
             )}
           </div>
         </div>
+        {/* The phase in words, in the same slot as desktop and for the same
+            reason — see the note there. */}
+        {hollow && (
+          <p
+            data-deck-phase
+            className="font-mono text-center m-0"
+            style={{ fontSize: 11.5, lineHeight: 1.5, marginTop: 6, color: "var(--fg-muted)" }}
+          >
+            {deckStateMarksCopy.phase.notCommitted}
+          </p>
+        )}
         {/* The same line the desktop head draws, on the surface where the pill
             is just as capable of reading `Complete` over printed cards. A
             feature that appears at one width only is the defect the acceptance

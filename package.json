@@ -68,7 +68,8 @@
     "seed:summary": "tsx scripts/seed-summary-fixture.ts",
     "probe:mana-symbols": "node scripts/probe-mana-symbols.mjs",
     "fetch:mana": "tsx scripts/fetch-mana-symbols.ts",
-    "probe:nav-cost": "node scripts/probe-nav-cost.mjs"
+    "probe:nav-cost": "node scripts/probe-nav-cost.mjs",
+    "probe:deck-state-marks": "node scripts/probe-deck-state-marks.mjs"
   },
   "dependencies": {
     "@clerk/nextjs": "^7.5.20",

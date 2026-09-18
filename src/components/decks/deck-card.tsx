@@ -6,6 +6,7 @@ import { formatCents } from "../../lib/decks/price";
 import type { DeckListItem } from "../../lib/decks/read";
 import type { DeckShopping } from "../../lib/decks/shopping-rollup";
 import { statusBarStyle } from "../../lib/decks/status-style";
+import { deckStateMarksCopy } from "../../lib/copy/deck-state-marks";
 import { formatWhen } from "../../lib/format/when";
 import { ArtWash, INK_SHADOW } from "../ui/art-wash";
 import { DeckCardOverflow } from "./deck-card-overflow";
@@ -27,6 +28,23 @@ function detailFor(
   now: Date,
 ): { text: string; color: string } | null {
   const c = refreshCopy.decks;
+  // THE CHANGE FIGURE OUTRANKS THE COUNT FIGURES while a draft is open. Mid-edit
+  // the count figures are transience rather than facts to act on — one deck
+  // reads Complete, Building, Over and Complete again over the course of a
+  // single swap — and the change count is the thing the reader did not know.
+  //
+  // `Unresolved` is the ONE exception, and for the reason the shipped cascade
+  // already ranks it above shopping: an unnamed line is not a consequence of
+  // editing, it is a card the app cannot even price.
+  if (deck.pendingChanges > 0 && deck.versionNumber !== null && deck.statusPill !== "Unresolved") {
+    return {
+      text: deckStateMarksCopy.detail(deck.pendingChanges, deck.versionNumber),
+      // `--fg-faint`, as the canvas draws it. The states matrix's `--accent`
+      // is R2 residue: it was there so the rule above and the line below read
+      // as one mark, and R3 moved the rule to `--fg`, which retired the reason.
+      color: "var(--fg-faint)",
+    };
+  }
   const statusDetail = statusDetailFor(deck, shopping, now);
   // Fills the slot only where the status has nothing to say in it. The clause is
   // a fact about the collection, and `4 over` or `3 lines unresolved` is a fact
@@ -200,19 +218,30 @@ export function DeckCard({
   // commanders: the visible line shortens them to fit and the accessible name
   // never does — truncation is a layout compromise, not an information one.
   const identity = `${deck.partnerName === null ? deck.commanderName : `${deck.commanderName} and ${deck.partnerName}`}, ${colour}`;
+  // The footer is `aria-hidden`, so the pill's own mark span says nothing here
+  // and the name is composed once, in order: the mark follows the STATUS,
+  // because that is where it is drawn.
+  const markName = deck.lastCommittedAt === null
+    ? deckStateMarksCopy.phase.markAria
+    : deck.pendingChanges > 0
+      ? deckStateMarksCopy.cardAriaSuffix
+      : null;
+  const statusName = markName === null
+    ? deck.statusPill
+    : `${deck.statusPill}, ${markName}`;
   const ariaLabel =
     detail === null
       ? refreshCopy.decks.cardAriaNoDetail(
           deck.name,
           identity,
-          deck.statusPill,
+          statusName,
           count,
           hasLastPlayed ? lastPlayed : undefined,
         )
       : refreshCopy.decks.cardAria(
           deck.name,
           identity,
-          deck.statusPill,
+          statusName,
           count,
           detail.text,
           hasLastPlayed ? lastPlayed : undefined,
@@ -422,6 +451,11 @@ export function DeckCard({
             and the label stay written once. */}
         <StatusPillBadge
           status={deck.statusPill}
+          // The plate says whether this is a deck at all, the edge whether a
+          // real deck has moved since its version. Never both: the edge needs a
+          // version and the hollow plate means there is none.
+          hollow={deck.lastCommittedAt === null}
+          pending={deck.pendingChanges > 0}
           className="[grid-area:chip] flex h-[22px] flex-none items-center rounded-[6px] px-[8px] font-mono text-[10.5px] tracking-[0.06em]"
         />
 
@@ -455,7 +489,11 @@ export function DeckCard({
             <div
               data-deck-bar-fill
               className="absolute top-0 bottom-0 left-0 rounded-full"
-              style={statusBarStyle(deck.statusPill, deck.built, bodySize)}
+              // The bar follows the plate, so a plan reads as ONE provisional
+              // object rather than as a hollow chip beside a solid bar.
+              style={statusBarStyle(deck.statusPill, deck.built, bodySize, {
+                provisional: deck.lastCommittedAt === null,
+              })}
             />
           )}
         </div>

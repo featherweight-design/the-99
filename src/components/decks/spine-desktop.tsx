@@ -22,6 +22,7 @@ import { FirstCommitOffer } from "./first-commit-offer";
 import { StatusPillBadge } from "./status-pill";
 import { useDeckRename } from "./use-deck-rename";
 import { ProxyTag } from "./proxy-tag";
+import { deckStateMarksCopy } from "../../lib/copy/deck-state-marks";
 import { proxyCopy } from "../../lib/copy/proxies";
 import { shortName } from "../../lib/cards/short-name";
 
@@ -62,6 +63,15 @@ export interface SpineBandProps {
     proxiedCount?: number;
   };
   status: StatusPill;
+  /**
+   * The deck-state marks, both optional because the fixtures that build this
+   * literal predate them. `hollow` — no committed version — is the deck page's
+   * own copy of what the grid teaches by contrast, which is why this page also
+   * states it in words under the bar. `pending` is a reminder in the identity
+   * band; the banner below states the changes in full.
+   */
+  hollow?: boolean;
+  pending?: boolean;
   onExport: () => void;
   /** True on a deck with no version whose list has reached a full body — the
    *  one condition under which `Commit as v1` is offered. Computed by the shell,
@@ -96,6 +106,8 @@ export function SpineDesktop({
   deck,
   counts,
   status,
+  hollow = false,
+  pending = false,
   onExport,
   offerFirstCommit,
 }: SpineBandProps) {
@@ -425,6 +437,12 @@ export function SpineDesktop({
                 names has to be restated here — there is no merge. */}
             <StatusPillBadge
               status={status}
+              hollow={hollow}
+              pending={pending}
+              // The band says both facts in words already — `Not committed yet`
+              // under the bar, and `PendingBanner`'s own heading above the list
+              // — so a name on the chip is the same sentence twice.
+              announceMark={false}
               className="flex flex-none items-center rounded-[6px] px-[8px] py-[3px] font-mono text-[11px]"
             />
           </div>
@@ -454,7 +472,8 @@ export function SpineDesktop({
               <div
                 data-testid="spine-bar-fill"
                 className="h-full"
-                style={statusBarStyle(status, built, bodySize)}
+                // Follows the plate: a plan is one provisional object.
+              style={statusBarStyle(status, built, bodySize, { provisional: hollow })}
               />
             </div>
             <div
@@ -489,6 +508,27 @@ export function SpineDesktop({
               )}
             </div>
           </div>
+
+          {/* The phase, in words, because a single deck page has no grid to
+              teach the untinted plate by contrast.
+
+              HERE and not beside `Commit as v1`, which is where the handoff
+              puts it: #641 cut a mono note from exactly that spot because the
+              action column sized to its content and took the deficit out of the
+              title column, which resolved to 0px. This line is the slot the
+              proxy count and the over figure already use to qualify the pill,
+              it costs the action column nothing, and it draws at both widths —
+              where the offer draws only on a deck that has reached a full body,
+              so most plans would never have seen the words at all. */}
+          {hollow && (
+            <p
+              data-deck-phase
+              className="font-mono m-0"
+              style={{ fontSize: 11.5, lineHeight: 1.5, marginTop: 6, color: "var(--fg-muted)" }}
+            >
+              {deckStateMarksCopy.phase.notCommitted}
+            </p>
+          )}
 
           {/* One mono line under the bar, absent at zero. A 99-card deck reading
               `Complete` with seven printed cards is correct AND is the moment a
