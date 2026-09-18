@@ -487,6 +487,7 @@ export function DeckPageFigureBody() {
           }}
         />
         <span className="absolute bottom-[11px] left-[11px] flex h-[26px] items-center rounded-[7px] border border-solid border-[color:var(--border-strong)] bg-[rgb(0_0_0/0.55)] px-[10px] text-[11px] text-[color:var(--fg)]">
+          <span aria-hidden className="mr-[6px] font-mono text-[10px]">⛶</span>
           {deckHeaderCopy.cardDetails}
         </span>
         <div className="absolute right-[13px] bottom-[11px] flex items-center gap-[8px]">
@@ -499,14 +500,20 @@ export function DeckPageFigureBody() {
         </div>
       </div>
 
-      <div className="px-[14px] py-[12px]">
-        <div className="mb-[7px] flex flex-wrap items-center gap-[9px]">
+      <div className="px-[14px] pt-[12px] pb-[9px]">
+        {/* The live band puts the NAME on its own line and the commander,
+            identity and status on a second. §3 folds all of it onto one row,
+            which fits but reads as a denser header than the deck page has.
+            Two lines, as the route draws them. */}
+        <div className="mb-[5px] flex items-center gap-[9px]">
           <span className="font-display text-[17px] font-bold text-[color:var(--fg)]">
             {deck.name}
           </span>
           <span aria-hidden className="font-mono text-[11px] text-[color:var(--fg-faint)]">
             ✎
           </span>
+        </div>
+        <div className="mb-[9px] flex flex-wrap items-center gap-[9px]">
           <span aria-hidden className="flex gap-[3px]">
             {identity.map((code) => (
               <span
@@ -519,8 +526,6 @@ export function DeckPageFigureBody() {
           <span className="font-mono text-[10.5px] text-[color:var(--fg-body)]">
             {deck.commander.name} · {colorLabel(identity)}
           </span>
-          {/* The route's badge, in the spine's own in-flow box: its default is
-              the tile's `absolute`, which pins it to a corner and vanishes. */}
           <StatusPillBadge
             status={status}
             className="flex flex-none items-center rounded-[6px] px-[8px] py-[3px] font-mono text-[10.5px]"
@@ -528,7 +533,7 @@ export function DeckPageFigureBody() {
           <KeyNumeral n={1} />
         </div>
 
-        <div className="mb-[9px] flex items-center gap-[10px]">
+        <div className="flex items-center gap-[10px]">
           <span className="h-[4px] w-[200px] flex-none overflow-hidden rounded-full bg-[color:var(--elevated)]">
             <span className="block h-full" style={statusBarStyle(status, counts.built, body)} />
           </span>
@@ -536,10 +541,16 @@ export function DeckPageFigureBody() {
             {counts.built}
             <span className="text-[color:var(--fg-faint)]"> / {body}</span>
           </span>
-          <span className="flex-1" />
-          <span className="font-mono text-[10px] text-[color:var(--fg-faint)]">{version}</span>
         </div>
+      </div>
 
+      {/* The stamp is its own row under the band on the live page, divided
+          from it, rather than riding the bar's right edge as §3 draws it. */}
+      <div className="border-t border-solid border-[color:var(--border)] px-[14px] py-[8px]">
+        <span className="font-mono text-[10px] text-[color:var(--fg-faint)]">{version}</span>
+      </div>
+
+      <div className="px-[14px] pt-[10px] pb-[12px]">
         <div className="flex items-center gap-[9px]">
           <BuilderTabs tabs={DECK_TABS} view="deck" onViewChange={() => {}} />
           <KeyNumeral n={2} />
