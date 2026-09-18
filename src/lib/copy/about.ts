@@ -370,7 +370,11 @@ export const aboutEntries: readonly AboutEntry[] = [
       'A decklist is rows, and each row answers four questions from left to right: do you own it, what is it, how many does the deck want, and is anything standing in the way. A row with nothing in its way carries no obstacle mark, so the ones you do see are all things to deal with — the separate auto tag says we picked the card for you, which is a fact about where it came from rather than a problem.',
     keys: [
       'a filled green dot is a card you own; a dashed hollow one is a card you do not. Same shape, same place, every list in the app.',
-      'the circled figure is how many copies this deck wants, and it is there whether that is one or four.',
+      // The canvas says "the circled figure ... is there whether that is one
+      // or four". The row draws neither half: the count is `×2` in mono beside
+      // the name, and `decklist-row.tsx` renders it on `quantity > 1` only.
+      // A single copy is the ordinary case and says so by saying nothing.
+      'a count appears beside the name only when the deck wants more than one copy, as `×2`. A row with no count wants one.',
       'one mark, and only when there is something to say: `1 in a brew`, `none free`, `short N`, `$` for a card you would have to buy, or `P` for one you are printing. One slot, one answer.',
       'the edge is the row’s own state — accent where you are working, and the over-committed colour when the deck wants more than you own.',
     ],

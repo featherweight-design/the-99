@@ -3,6 +3,7 @@ import { addPanelCopy } from "../copy/decks-builder";
 import { gameLogCopy } from "../copy/game-log";
 import { deckVersioningCopy } from "../copy/deck-versioning";
 import type { SynergyCard } from "../commanders/synergy-cards";
+import type { DeckDetailCard } from "../decks/grouping";
 import { deckImportCopy } from "../copy/deck-import";
 import type { CommanderRowView } from "../../components/commanders/commander-row";
 import type { PriceSlot } from "../discovery/price";
@@ -871,3 +872,110 @@ export const DECK_SPINE = {
   /** §3's own stamp on the header's right. */
   version: "v1 · committed 5 Sep 2026",
 };
+
+/**
+ * `decklist-marks` — five real `deck_cards` rows, one per mark the entry names.
+ *
+ * The figure mounts `DecklistRow` itself, so every field here is one the row
+ * actually reads. The order is the order the marks are introduced in the key
+ * lines: the free row first, so the reader sees what "nothing in its way"
+ * looks like before any mark at all.
+ *
+ * `cardTypeGroup` is deliberately never `"Lands"`. A row in the lands group
+ * drops its meta line and takes the shorter shell, so a mixed fixture would
+ * draw two row heights and read as a layout fault rather than as a set of
+ * marks.
+ */
+export const DECKLIST_MARK_ROWS: DeckDetailCard[] = [
+  {
+    oracleId: "about-mark-free",
+    name: CARDS.owned,
+    typeLine: "Artifact",
+    cardTypeGroup: "Artifacts",
+    role: "ramp",
+    cmc: 1,
+    owned: true,
+    quantity: 1,
+    auto: false,
+    manaCost: "{1}",
+    printedName: null,
+    printedSetCode: null,
+    printedCollectorNumber: null,
+    availability: AVAILABILITY[0].a,
+  },
+  {
+    oracleId: "about-mark-soft",
+    name: CARDS.removed,
+    typeLine: "Enchantment",
+    cardTypeGroup: "Enchantments",
+    role: "draw",
+    cmc: 3,
+    owned: true,
+    quantity: 1,
+    // The one row that carries the auto tag. It is a fact about where the card
+    // came from rather than an obstacle, which is the distinction the caption
+    // draws — so it rides a row whose availability slot is occupied by a claim,
+    // where the two can be seen not to be the same kind of thing.
+    auto: true,
+    manaCost: "{2}{U}",
+    printedName: null,
+    printedSetCode: null,
+    printedCollectorNumber: null,
+    availability: AVAILABILITY[1].a,
+  },
+  {
+    oracleId: "about-mark-over",
+    name: "Cyclonic Rift",
+    typeLine: "Instant",
+    cardTypeGroup: "Instants",
+    role: "other",
+    cmc: 7,
+    owned: true,
+    // Over-committed rows are where a count above one is ordinary, and the
+    // entry's count line has nothing to point at without one.
+    quantity: 2,
+    auto: false,
+    manaCost: "{6}{U}",
+    printedName: null,
+    printedSetCode: null,
+    printedCollectorNumber: null,
+    availability: AVAILABILITY[3].a,
+  },
+  {
+    oracleId: "about-mark-buy",
+    name: "Dockside Extortionist",
+    typeLine: "Creature — Goblin Pirate",
+    cardTypeGroup: "Creatures",
+    role: "ramp",
+    cmc: 2,
+    // `deckRowTag` answers `buy` on `!owned`, so this row draws the `$`.
+    owned: false,
+    quantity: 1,
+    auto: false,
+    manaCost: "{1}{R}",
+    printedName: null,
+    printedSetCode: null,
+    printedCollectorNumber: null,
+    availability: null,
+  },
+  {
+    oracleId: "about-mark-proxy",
+    name: CARDS.proxied,
+    typeLine: "Artifact",
+    cardTypeGroup: "Artifacts",
+    role: "ramp",
+    cmc: 0,
+    // Not owned AND proxied: `deckRowTag` answers `proxy` first, so `P` takes
+    // the slot `$` would otherwise have. The dot stays hollow, because `owned`
+    // is a fact about the collection and `proxied` one about this deck's slot.
+    owned: false,
+    proxied: true,
+    quantity: 1,
+    auto: false,
+    manaCost: "{0}",
+    printedName: null,
+    printedSetCode: null,
+    printedCollectorNumber: null,
+    availability: null,
+  },
+];

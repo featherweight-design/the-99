@@ -13,7 +13,6 @@
 
 import { AvailabilityMarker } from "../ui/availability-marker";
 import { OwnershipDot } from "../ui/ownership-dot";
-import { COST_PIP_CAP, COST_PIP_SIZE, COST_TRACK, CostPips } from "../ui/cost-pips";
 import { BuyTag } from "../decks/buy-tag";
 import { ProxyTag } from "../decks/proxy-tag";
 import { StatusPillBadge } from "../decks/status-pill";
@@ -48,6 +47,7 @@ import {
   FitLegendFigureBody,
   CommanderAvailabilityFigureBody,
   AutoFillFigureBody,
+  DecklistMarksFigureBody,
   DeckPageFigureBody,
   ImportIssuesFigureBody,
   PartnerSlotFigureBody,
@@ -58,7 +58,6 @@ import { statusBarStyle } from "../../lib/decks/status-style";
 import type { StatusPill } from "../../lib/decks/status";
 import { refreshCopy } from "../../lib/copy/refresh";
 import { FitBar } from "../commanders/fit-bar";
-import { TwoFacedMark } from "../cards/two-faced-mark";
 import {
   LegendBox,
   Specimen,
@@ -77,7 +76,6 @@ import {
   READY_SLICE,
   SET_CELLS,
   SET_HEAD,
-  COSTS,
   FIT_DEGRADED,
   FIT_DEGRADED_SCORE,
   FIT_FULL,
@@ -334,77 +332,9 @@ function FitFigure({ width }: { width: AboutWidth }) {
  * forks are the row's business.
  */
 function MarksFigure({ width }: { width: AboutWidth }) {
-  const rows = [
-    { name: CARDS.owned, cost: COSTS.simple, a: AVAILABILITY[0].a, note: "yours, and nothing wants it" },
-    { name: CARDS.removed, cost: COSTS.crowded, a: AVAILABILITY[1].a, note: "an unfinished deck has claimed it" },
-    { name: "Cyclonic Rift", cost: COSTS.simple, a: AVAILABILITY[3].a, note: "more asked for than you own" },
-  ];
   return (
     <Specimen label="marks" width={width}>
-      <div className="flex flex-col gap-[10px]">
-        {rows.map((row) => (
-          <div key={row.name} className="flex flex-col gap-[4px]">
-            <div className="flex items-center gap-[8px]">
-              <OwnershipDot owned size={7} />
-              <span className="min-w-0 flex-1 truncate text-[12.5px] text-[color:var(--fg)]">
-                {row.name}
-              </span>
-              {/* Cost before marker, which is the order the row draws them. */}
-              <CostPips
-                cost={row.cost}
-                size={COST_PIP_SIZE}
-                track={COST_TRACK}
-                cap={COST_PIP_CAP}
-              />
-              {/* `density="row"` leaves the font to the caller, and the real
-                  row supplies these two classes. */}
-              <span className="font-mono text-[11px] min-[1000px]:text-[11.5px]">
-                <AvailabilityMarker
-                  availability={row.a}
-                  density="row"
-                  seam="var(--surface-sunken)"
-                />
-              </span>
-            </div>
-            <span className="font-mono text-[10px] leading-[1.35] text-[color:var(--fg-faint)]">
-              {row.note}
-            </span>
-          </div>
-        ))}
-        <div className="flex items-center gap-[8px]">
-          <OwnershipDot owned={false} size={7} />
-          <span className="min-w-0 flex-1 truncate text-[12.5px] text-[color:var(--fg)]">
-            {CARDS.twoFaced}
-          </span>
-          <TwoFacedMark layout="transform" />
-          {/* `collapsed`, not `full`: the row draws the shopping treatment only
-              inside Shopping, and everywhere else the mark is a bare `$` —
-              which is the mark this entry's key line names. */}
-          <BuyTag
-            variant="row"
-            price={PRICES[0].fact}
-            newestAsOf={PRICES[0].fact.asOf}
-            density="collapsed"
-          />
-        </div>
-        <span className="font-mono text-[10px] leading-[1.35] text-[color:var(--fg-faint)]">
-          not owned — the buy mark takes the slot, and `//` says two faces
-        </span>
-
-        {/* The same slot, and the other mark that can hold it: a card you are
-            printing is not bought and not owned, so `P` replaces `$` rather
-            than joining it. */}
-        <div className="flex items-center gap-[8px]">
-          <OwnershipDot owned={false} size={7} />
-          <span className="min-w-0 flex-1 truncate text-[12.5px] text-[color:var(--fg)]">
-            {CARDS.proxied}
-          </span>
-          <ProxyTag variant="row" />
-        </div>
-        <span className="font-mono text-[10px] leading-[1.35] text-[color:var(--fg-faint)]">
-          one you are printing — `P` takes the slot instead of `$`
-        </span>
-      </div>
+      <DecklistMarksFigureBody />
     </Specimen>
   );
 }

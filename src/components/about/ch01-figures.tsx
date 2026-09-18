@@ -19,6 +19,7 @@ import {
   ISSUE_PARSE_ERROR,
   ISSUE_UNMATCHED,
   CONTESTED_ARRIVAL,
+  DECKLIST_MARK_ROWS,
   FIT_LEGEND,
   LANE_DISCOVER,
   DECK_SPINE,
@@ -39,6 +40,7 @@ import { COSTS } from "../../lib/about/fixtures";
 import { COST_PIP_SIZE, CostPips } from "../ui/cost-pips";
 import { TwoFacedMark } from "../cards/two-faced-mark";
 import { LastSlotsStrip } from "../decks/last-slots-strip";
+import { DecklistRow } from "../decks/decklist-row";
 import { ContestedCardRow } from "../decks/contested-card-row";
 import { FitLegend } from "../commanders/fit-legend";
 import { AvailabilityControl } from "../commanders/rack/availability-control";
@@ -566,5 +568,43 @@ export function AutoFillFigureBody() {
       newestAsOf={null}
       onAnnounce={() => {}}
     />
+  );
+}
+
+/**
+ * `decklist-marks` — five real `DecklistRow`s.
+ *
+ * The page drew its own row here: a dot, a name, a cost track and a marker,
+ * assembled by hand in the order the real row draws them. It was right about
+ * the order and wrong about everything the row does around it — the meta line
+ * under the name, the `×2` count, the auto tag, the over-committed inset ring.
+ * An entry titled "every mark on a decklist" is the last one that should be
+ * drawing its own approximation of the list.
+ *
+ * `CardDetailProvider` is the one context `DecklistRow` demands; every other
+ * hook it reads (`usePendingChange`, `usePassMark`, the optimistic-deck
+ * family) returns a null or a no-op with no provider above it. The fetcher
+ * resolves to null because `Specimen` is `inert` and no row here can be
+ * opened.
+ *
+ * `newestAsOf` is passed explicitly, as its own doc comment demands: a row
+ * that does not receive it reads every live price as absent and draws a bare
+ * `buy` with no figure.
+ */
+export function DecklistMarksFigureBody() {
+  return (
+    <CardDetailProvider fetchCard={async () => null}>
+      <div className="flex flex-col">
+        {DECKLIST_MARK_ROWS.map((card) => (
+          <DecklistRow
+            key={card.oracleId}
+            deckId="about-figure"
+            card={card}
+            siblings={[]}
+            newestAsOf={PRICES[0].fact.asOf}
+          />
+        ))}
+      </div>
+    </CardDetailProvider>
   );
 }
