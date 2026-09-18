@@ -147,7 +147,13 @@ export const topOffCopy = {
       `${ticked} of ${plural(n, 'slot', 'slots')} ticked · ${plural(cand, 'candidate', 'candidates')}, ${untouched} untouched`,
     headMobile: (ticked: string, n: string) => `${ticked} of ${n} ticked`,
 
-    /** The figure and the words are both the SEEDABLE count, not the owned one.
+    /** The figure and the words are both what this press would TICK, not what
+     *  the player owns.
+     *
+     *  `tickable`, which is the seedable count CLAMPED to the open slots — the
+     *  list has a separate `seedableIds.length` that is not clamped, and the two
+     *  differ whenever a player can sleeve more candidates than the deck has
+     *  room for. What the button promises is what pressing it does.
      *
      *  `I own` was true of the control that ticked every owned candidate, and
      *  stopped being true when the seed narrowed to cards with a free copy and
@@ -158,9 +164,9 @@ export const topOffCopy = {
      *  the player can do tonight, with the cards in front of them — and it is
      *  the one phrase that stays true whether the shortfall is ownership or
      *  somebody else's claim on a copy. */
-    tickOwned: (seedable: string) => `Tick the ${seedable} I can sleeve`,
-    tickOwnedAria: (seedable: string) =>
-      `Tick all ${plural(seedable, 'candidate', 'candidates')} you can sleeve now`,
+    tickOwned: (tickable: string) => `Tick the ${tickable} I can sleeve`,
+    tickOwnedAria: (tickable: string) =>
+      `Tick all ${plural(tickable, 'candidate', 'candidates')} you can sleeve now`,
     clearTicks: 'Clear all ticks',
 
     /** Column headers. The two figures sit under them at both widths on
