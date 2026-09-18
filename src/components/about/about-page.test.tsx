@@ -6,7 +6,7 @@ import { FIGURES } from "./figures";
 import { availabilityCopy } from "../../lib/copy/availability";
 import { refreshCopy } from "../../lib/copy/refresh";
 import { ORDER_OPTIONS } from "../commanders/rack/order-options";
-import { commandersCopy, discoverCopy, filterCopy } from "../../lib/copy/lanes";
+import { commandersCopy, filterCopy } from "../../lib/copy/lanes";
 import { explainedCopy } from "../../lib/copy/commander-explained";
 import { cardAssignmentsCopy } from "../../lib/copy/card-assignments";
 import { collectionChassisCopy, printingPickerCopy } from "../../lib/copy/collection";
@@ -744,31 +744,16 @@ describe("what each chapter 01 figure actually draws", () => {
     expect(el.textContent).toContain("$0.15");
   });
 
-  it("discover: the rack, and what each order does", () => {
+  it("discover: the order control alone, with every gloss", () => {
     const el = plate("discover");
-    const o = discoverCopy.order;
-    // Key line 1 is about what two orders DO, not what they are called — a
-    // dropdown cannot say that, so the glosses stay beside the control.
-    for (const [mark, gloss] of [
-      [o.bestFit, o.bestFitGloss],
-      [o.somethingNew, o.somethingNewGloss],
-      [o.popularity, o.popularityGloss],
-      [o.name, o.nameGloss],
-      [o.recent, o.recentGloss],
-    ]) {
-      expect(el.textContent).toContain(mark);
-      expect(el.textContent).toContain(gloss);
+    // The rack and the row came OUT on 2026-09-18. Both lanes share one rack
+    // and one row, so drawing them twice said the same thing twice — this
+    // entry's caption is the five orders, and that is all the figure is.
+    for (const o of ORDER_OPTIONS.discover) {
+      expect(el.textContent).toContain(o.label);
+      if (o.gloss) expect(el.textContent).toContain(o.gloss);
     }
-
-    // The row, and the DIFFERENCE between the lanes. Discover ranks a
-    // commander you do not own and prints counts rather than a price: its
-    // price slot is `absent`, which draws no slot at all rather than a dash,
-    // so a row carrying one here would be the wrong lane's row.
-    expect(el.textContent).toContain(LANE_ROW_DISCOVER.name);
-    // `notStocked`, so no figure — a commander nobody stocks still prints its
-    // deck count, and a price here would be the priced lane's row.
-    expect(el.textContent).not.toMatch(/\$[0-9]/);
-    expect(el.textContent).toContain(String(LANE_ROW_DISCOVER.deckCount!.toLocaleString("en-US")));
+    expect(el.textContent).not.toContain(LANE_ROW_DISCOVER.name);
   });
 
   it("import: the drop target and its two doors, as drawn", () => {

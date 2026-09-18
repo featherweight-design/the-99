@@ -22,7 +22,6 @@ import { RoleChips } from "../commanders/role-chips";
 import { GameAxisCell } from "../decks/game-axis-cell";
 import { CommitmentsCard } from "../home/commitments-card";
 import { THEMES } from "../../lib/theme/themes";
-import { discoverCopy } from "../../lib/copy/lanes";
 import { addPanelCopy, exportLinkOutCopy, exportTabCopy } from "../../lib/copy/decks-builder";
 import { RECOMMENDED_MIX } from "../../lib/decks/mix";
 import { recommendationsCopy } from "../../lib/copy/recommendations";

@@ -21,7 +21,6 @@ import {
   CONTESTED_ARRIVAL,
   FIT_LEGEND,
   LANE_DISCOVER,
-  LANE_ROW_DISCOVER,
   LANE_ROW_OWNED,
   LANE_OWNED,
   PRINTING_ROWS,
@@ -360,33 +359,32 @@ export function CommanderLaneFigureBody() {
 }
 
 export function DiscoverFigureBody() {
-  // NOT the rack. `/commanders` and `/discover` share one rack and, since
-  // #708, one row — so two figures drawing both showed the same thing twice
-  // and differed only in a price line. Each entry's caption is about
-  // something else: the other lane's is Build from, and this one's is "counts,
-  // never a score" plus the five orders.
+  // THE ORDER CONTROL AND NOTHING ELSE.
   //
-  // So this draws the ORDER CONTROL, open — the real one, with the five
-  // orders and the glosses that say what each DOES. It replaces a gloss list
-  // this module hand-built beside the rack, which was restating a control
-  // instead of showing it.
+  // `/commanders` and `/discover` share one rack and, since #708, one row, so
+  // two figures drawing both showed the same thing twice and differed by a
+  // price line. This entry's caption is the five orders; the other lane's is
+  // Build from. The row came out on 2026-09-18 for that reason, and the rack
+  // with it.
+  //
+  // The panel is absolutely positioned and right-aligned to its container, so
+  // in a full-width box it opened far from its own trigger and read as a
+  // mistake. The container is the trigger's width instead, which puts the
+  // options directly under the control that names them, and its height is
+  // reserved because nothing here can dismiss a panel.
   return (
-    <div className="flex flex-col gap-[12px]">
-      {/* The open panel is absolutely positioned, so on the route it floats
-          over the list and the reader dismisses it. Here it cannot be
-          dismissed, and left in flow it covered the row beneath. Its height is
-          reserved instead, which is the one thing a figure can do that the
-          route never has to. */}
-      <div className="min-h-[360px]">
-        <OrderControl
-          value={LANE_DISCOVER.order}
-          options={ORDER_OPTIONS.discover}
-          onChange={() => {}}
-          wide
-          defaultOpen
-        />
-      </div>
-      <CommanderRow item={LANE_ROW_DISCOVER} />
+    // 380 = the trigger's 38px, the 4px it sits off, and the panel's measured
+    // 320. At 330 the last order clipped against the plate's own edge by 13px,
+    // which a reader reads as a list that ends early rather than as a figure
+    // cut short.
+    <div className="min-h-[380px] w-[300px]">
+      <OrderControl
+        value={LANE_DISCOVER.order}
+        options={ORDER_OPTIONS.discover}
+        onChange={() => {}}
+        wide
+        defaultOpen
+      />
     </div>
   );
 }
