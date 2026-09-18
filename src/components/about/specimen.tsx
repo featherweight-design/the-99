@@ -18,6 +18,7 @@
 export function Specimen({
   children,
   label,
+  spokenAs,
   width = "plate",
 }: {
   children: React.ReactNode;
@@ -32,8 +33,26 @@ export function Specimen({
    * figure beside anything.
    */
   width?: "inset" | "plate";
+  /**
+   * What a screen reader hears INSTEAD of the figure.
+   *
+   * `Specimen` is `aria-hidden` because a figure normally repeats what the
+   * caption and the key lines already say. That stops being true when a figure
+   * is the SOLE source of something: the discover entry draws the five order
+   * names and their glosses and neither its caption nor its keys list them, so
+   * hiding the figure hid the entry's whole subject from assistive technology.
+   * A `Legend` was readable and this replaced one.
+   *
+   * Rendered sr-only OUTSIDE the hidden subtree, so the picture stays
+   * decorative and the words still reach a reader.
+   */
+  spokenAs?: React.ReactNode;
 }) {
   return (
+    <>
+    {/* OUTSIDE the hidden figure, deliberately. Inside it, `aria-hidden` would
+        swallow this too. */}
+    {spokenAs ? <span className="sr-only">{spokenAs}</span> : null}
     <figure
       aria-hidden
       inert
@@ -49,6 +68,7 @@ export function Specimen({
     >
       {children}
     </figure>
+    </>
   );
 }
 

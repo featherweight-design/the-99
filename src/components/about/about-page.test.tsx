@@ -430,8 +430,14 @@ describe("the figures", () => {
       expect(plate.textContent).toContain(`${seg.points}`);
       expect(plate.textContent).toContain(explainedCopy.key[seg.key].weight(seg.weight));
     }
-    expect(plate.textContent).toContain(explainedCopy.key.roles.body);
-    expect(plate.textContent).toContain(explainedCopy.key.synergy.body);
+    // THE PHONE BODIES, because jsdom answers false for every media query, so
+    // `useIsDesktop` reports phone and the figure renders the branch a narrow
+    // reader gets. That is the right thing to assert here: the figure used to
+    // hardcode the desktop branch, which showed a phone reader a treatment the
+    // commander page never gives them. The desktop branch is covered by the
+    // screenshot, which is the only instrument that can see it.
+    expect(plate.textContent).toContain(explainedCopy.key.roles.bodyMobile);
+    expect(plate.textContent).toContain(explainedCopy.key.synergy.bodyMobile);
   });
 
   it("gives every entry a figure, and none of them an empty frame", () => {

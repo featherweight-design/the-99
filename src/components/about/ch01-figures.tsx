@@ -53,6 +53,7 @@ import {
   UnmatchedRowView,
 } from "../collection/issue-inspector-list";
 import { KeyNumeral } from "./numeral";
+import { useIsDesktop } from "../ui/use-is-desktop";
 
 const fmt = (n: number) => n.toLocaleString("en-US");
 
@@ -304,7 +305,19 @@ export function CardDetailFigureBody() {
  * trigger and none of the three explanations.
  */
 export function FitLegendFigureBody() {
-  return <FitLegend segments={FIT_LEGEND} score={73} width="desktop" defaultOpen />;
+  // The About page renders at 390 too, and this hardcoded the desktop branch:
+  // a phone reader got the three-column key and the desktop trigger, which is
+  // a treatment the commander page never shows them. `FitLegend` has an
+  // explicit phone layout; the figure picks the same one the route would.
+  const desktop = useIsDesktop();
+  return (
+    <FitLegend
+      segments={FIT_LEGEND}
+      score={73}
+      width={desktop ? "desktop" : "phone"}
+      defaultOpen
+    />
+  );
 }
 
 /**
@@ -421,6 +434,11 @@ export function PartnerSlotFigureBody() {
  * fixture draws no price at all.
  */
 export function CommanderAvailabilityFigureBody() {
+  // Same fault as the fit key. `SynergyRow` has a phone layout, and forcing
+  // the desktop one put its type, score, availability and toggle columns past
+  // the width a narrow plate has — clipped by `Specimen`'s own
+  // `overflow-hidden`, so the row simply lost its right-hand end.
+  const desktop = useIsDesktop();
   return (
     // `SynergyRow` opens the card detail, so it requires the provider's
     // context — mounting it without one throws. The provider takes its fetcher
@@ -437,7 +455,7 @@ export function CommanderAvailabilityFigureBody() {
             selected={false}
             onToggle={() => {}}
             siblings={[]}
-            width="desktop"
+            width={desktop ? "desktop" : "phone"}
             facet={card.facet}
             newestAsOf={PRICES[0].fact.asOf}
           />

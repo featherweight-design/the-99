@@ -36,6 +36,7 @@ import { deckSortLabel } from "../../lib/about/sort-labels";
 import { DECK_GROUPING_LABELS } from "../../lib/copy/deck-sort";
 import { BrowseFigureBody } from "./browse-figure";
 import { KeyNumeral } from "./numeral";
+import { ORDER_OPTIONS } from "../commanders/rack/order-options";
 import { explainedCopy } from "../../lib/copy/commander-explained";
 import { ReadyToBuild } from "../home/ready-to-build";
 import { setFilterCopy, setPageCopy } from "../../lib/copy/set-collections";
@@ -737,7 +738,17 @@ function CommanderLaneFigure({ width }: { width: AboutWidth }) {
 
 function DiscoverFigure({ width }: { width: AboutWidth }) {
   return (
-    <Specimen label="discover" width={width}>
+    <Specimen
+      label="discover"
+      width={width}
+      // The figure is the ONLY place the five orders and their glosses appear:
+      // the caption does not list them and neither do the key lines. A
+      // `Legend` was readable and this replaced one, so hiding it took the
+      // entry's whole subject away from assistive technology.
+      spokenAs={ORDER_OPTIONS.discover
+        .map((o) => (o.gloss ? `${o.label}: ${o.gloss}` : o.label))
+        .join(". ")}
+    >
       <DiscoverFigureBody />
     </Specimen>
   );
