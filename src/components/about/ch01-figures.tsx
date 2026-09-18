@@ -676,7 +676,7 @@ export function DecklistOrderFigureBody() {
         { name: "Dockside Extortionist", quantity: 1 },
         { name: "Cyclonic Rift", quantity: 1 },
       ]}
-      sort={{ key: "name", direction: "asc" }}
+      sort={{ key: "price", direction: "desc" }}
       onSortChange={() => {}}
     />
   );
