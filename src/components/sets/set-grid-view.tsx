@@ -137,6 +137,12 @@ export function SetGridView(props: SetGridViewProps) {
   const { shy, headRef, spacerRef, containerRef, openHead } =
     useHeadCollapse({ isDesktop, deltaFiring, sheetOpen });
   /**
+   * The collapsed DESKTOP form, which is a different shape from the phone's: the same rack
+   * row with an identity prefix, rather than a bar of its own. Named once here because four
+   * class expressions below ask the same question.
+   */
+  const shyDesktop = shy && isDesktop;
+  /**
    * The search input, so every control that clears the query can put focus back in it.
    * Clearing hides the field's own × (`visibility`, and out of the tab order with it) and
    * unmounts the empty state's buttons — so without this, using any of them strands the
@@ -590,8 +596,7 @@ export function SetGridView(props: SetGridViewProps) {
       : firstEnabledRarity;
 
 
-  // Phone only, and only when there is a measured rest height to reserve. Desktop never
-  // collapses: same container, full form, `md:` sizes untouched.
+  // Both widths since addendum 2, and only when there is a measured rest height to reserve.
   // `collapsed` is the scroll's answer; `shy` is whether it applies. Held apart so a
   // reader who scrolls, then triggers a delta strip, restores the full head and keeps the
   // scroll state underneath it — rather than the strip clearing the state and the head
@@ -617,7 +622,9 @@ export function SetGridView(props: SetGridViewProps) {
            the bar takes over at the offset where the last of it goes, and on the
            way back up the open head slides in from the top edge instead of
            appearing over a cut-off first row.
-           Desktop never collapses, so its head stays pinned as it always was. */
+           Desktop collapses too since addendum 2, and its head is `md:sticky` at both of
+           its heights — the pin was never the phone's problem there, because the desktop
+           bar is 57px rather than 288. */
         className={`${shy ? "sticky" : ""} md:sticky top-0 z-[2] pb-[12px] pt-[10px]`}
         style={{ background: "var(--bg)", borderBottom: "1px solid var(--border)" }}
       >
@@ -629,7 +636,7 @@ export function SetGridView(props: SetGridViewProps) {
             The search control is a BUTTON back to the head, never a second field: §29
             forbids two controls with one accessible name on this page, and the field is
             forty pixels of scroll away. */}
-        {shy ? (
+        {shy && !isDesktop ? (
           <div
             data-set-head-bar
             className="flex h-[52px] items-center gap-[8px]"
@@ -722,7 +729,16 @@ export function SetGridView(props: SetGridViewProps) {
           </div>
         ) : null}
 
-        <div className={`${shy ? "hidden" : "flex"} items-start gap-[12px]`}>
+        {/* `data-set-shy-hides` on every member the collapse hides — three at `md`, and the
+            rack row as a fourth below it. That is what the hook's focus gate reads: hiding a
+            member takes the keyboard with it, so focus inside one holds the head open. A
+            marker rather than a class list, because the gate is about what DISAPPEARS and not
+            about how it is drawn, and the rack row is the case that proves the difference —
+            it hides at one width and is the collapsed head at the other. */}
+        <div
+          data-set-shy-hides
+          className={`${shy ? "hidden" : "flex"} items-start gap-[12px]`}
+        >
           {/* 30px on a phone, which is the geometry the sticky head is sized around. */}
           <SetIcon
             uri={iconSvgUri}
@@ -850,7 +866,7 @@ export function SetGridView(props: SetGridViewProps) {
         {/* Hidden as a WHOLE when shy, not just its contents: the wrapper's own 10px
             margin is real height, and an empty box with a margin is exactly the kind of
             slack that made the collapsed head 85px rather than 75. */}
-        <div className={shy ? "hidden" : "mt-[10px]"}>
+        <div data-set-shy-hides className={shy ? "hidden" : "mt-[10px]"}>
           {complete ? (
             // At 100% the extras are the only thing left, so the count is promoted into
             // the head and the same cost strip re-scopes to them.
@@ -907,7 +923,74 @@ export function SetGridView(props: SetGridViewProps) {
             unindexed set has no cells in either section, so there is no count to state and
             no grid beneath the head for a height change to move. The invariant is about the
             rack not moving what the reader is reading, and there is nothing there to move. */}
-        <div className={`mt-[10px] flex-nowrap items-center gap-[8px] ${shy ? "hidden" : "flex"}`}>
+        {/* Addendum 2 §1: at `md` the collapsed head IS this row, kept mounted, with an
+            identity prefix ahead of it. The phone's bar had to be its own row because its
+            controls change identity across the threshold — the field becomes a button back
+            to the head, and `Filters` is a sheet trigger with no desktop counterpart. At
+            `md` nothing changes identity, so hiding the row and drawing a replacement would
+            mount a second field behind a `display:none` twin: two controls with one
+            accessible name, which §29 forbids on this page and which `MissingOnlyToggle`
+            exists to avoid. Keeping the nodes also keeps focus, the caret, the 150ms
+            debounce and an open rarity panel across the threshold, with nothing to rescue. */}
+        <div
+          /* A hidden member on the PHONE and not at `md`, which is why the marker is
+             conditional rather than constant. The gate is about what DISAPPEARS: at `md` this
+             row is the collapsed head, so marking it there would hold the head open for as
+             long as the reader's cursor is in the field it is drawing. Below `md` it goes,
+             and it carries the search field — so without this, focus in the field and a
+             scroll past the threshold destroyed the caret, which is the exact case the gate
+             exists for. */
+          data-set-shy-hides={isDesktop ? undefined : ""}
+          className={`flex-nowrap items-center gap-[8px] ${shyDesktop ? "h-[34px]" : "mt-[10px]"}`
+            + ` ${shy && !isDesktop ? "hidden" : "flex"}`}
+        >
+          {/* 34px is the canvas's own figure for this row, and it is 32px controls with a
+              pixel either side — not a clip being avoided. (The lit pip's ring is a
+              `box-shadow`, which takes no layout and would not be clipped by a row carrying
+              no `overflow` of its own.) Not 44: that is the phone's target, and these
+              controls are 32px at `md` in the open head, so growing them here would be a
+              second skin for the same rack. */}
+          {shyDesktop ? (
+            <div
+              data-set-head-prefix
+              className="flex min-w-[120px] shrink items-center gap-[8px] self-stretch
+                         border-r border-[color:var(--border)] pr-[8px]"
+            >
+              <SetIcon
+                uri={iconSvgUri}
+                size={22}
+                desktopSize={22}
+                tone={complete ? "success" : "muted"}
+                ringed={complete}
+              />
+              {/* An `h1`, not a span, and for the phone bar's reason: the open block is
+                  `display:none` while the head is collapsed, which takes its heading out of
+                  the accessibility tree, so heading navigation would have no page heading at
+                  all for the whole collapsed state. Only ever one of the two is exposed. */}
+              {/* 15px, which is the canvas's own figure for this prefix and a point above the
+                  phone bar's 14 — the desktop bar carries five controls beside the name and
+                  the name is what identifies which set they are filtering. */}
+              <h1
+                className="min-w-0 flex-1 truncate font-display text-[15px]"
+                style={{ color: complete ? "var(--success)" : "var(--fg)" }}
+              >
+                {complete ? setPageCopy.complete.heading(name) : name}
+              </h1>
+              {/* Every indexed set, the complete one included — a complete base run can
+                  still have extras and enough cells to scroll, and the ratio is the
+                  reader's progress figure exactly where the head has stopped showing it
+                  anywhere else. */}
+              {sections.indexed ? (
+                <span
+                  className="shrink-0 font-mono text-[11px]"
+                  style={{ color: "var(--fg-muted)" }}
+                  aria-label={setPageCopy.head.ratioAria(sections.baseOwned, sections.baseTotal)}
+                >
+                  {sections.baseOwned} / {sections.baseTotal}
+                </span>
+              ) : null}
+            </div>
+          ) : null}
           {/* The field leads the row and is the ONLY child that shrinks — `min-w-0` on it
               and `shrink-0` on everything else is what keeps the row from wrapping. At
               390px the arithmetic is tight and deliberate: `Filters` with a badge is 93,
@@ -1054,7 +1137,7 @@ export function SetGridView(props: SetGridViewProps) {
               with the default `flex-shrink: 1` — so without this the rarity control joined
               the compression and the field stopped being the only child that shrinks. */}
           {isDesktop ? (
-            <div className="shrink-0">
+            <div data-set-rarity className="shrink-0">
             <FilterPanel
               copy={setFilterCopy.rarityPanel}
               searchable={false}
@@ -1104,6 +1187,7 @@ export function SetGridView(props: SetGridViewProps) {
             survive a collapse and a restore. */}
         <div
           data-set-chips
+          data-set-shy-hides
           className={`mt-[8px] items-center gap-[6px] ${shy ? "hidden" : "flex"}`}
           style={{ minHeight: 22 }}
         >
@@ -1340,6 +1424,13 @@ export function SetGridView(props: SetGridViewProps) {
                     </span>
                   </>
                 )}
+          {/* Marked for the focus gate and always mounted, though its CONTENTS are not: the
+              gate asks whether focus is inside something about to disappear, and at decision
+              time this link is still here. Unmounting it took focus to the body, which was
+              the settled behaviour for this whole class before the gate existed and is now
+              the one case the gate would have missed. The wrapper draws nothing of its own —
+              the separator goes with the link, as it always did. */}
+          <span data-set-shy-hides>
           {shownExtras.length > 0 && !shy ? (
             <>
               {" · "}
@@ -1361,6 +1452,7 @@ export function SetGridView(props: SetGridViewProps) {
               </a>
             </>
           ) : null}
+          </span>
         </p>
         ) : null}
         </div>

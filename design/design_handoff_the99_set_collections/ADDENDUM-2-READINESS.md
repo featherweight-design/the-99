@@ -80,7 +80,9 @@ the cost strip while the page scrolls) and severable. **Second: the rarity-panel
 if the panel is changed to close on scroll instead — that is a smaller wire and an acceptable
 behaviour, though it costs a reader who opened the panel and nudged the wheel.
 
+**I would not cut the
+`sr-only` result line**: it is one token and it is the whole reason rows 2 and 3 may go.
+
 > **Erratum, 2026-09-18 — the panel already closes on scroll, so this cut is not a cut.** The
 > condition named here was met before the round began; the gate is gone and the focus gate is the
-> only optional one left on this list. **I would not cut the
-`sr-only` result line**: it is one token and it is the whole reason rows 2 and 3 may go.
+> only optional one left on this list.

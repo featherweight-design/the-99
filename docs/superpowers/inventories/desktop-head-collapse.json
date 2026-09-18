@@ -1,0 +1,93 @@
+{
+  "feature": "The desktop head takes the collapse too",
+  "widths": [
+    {
+      "label": "phone",
+      "width": 390,
+      "height": 844
+    },
+    {
+      "label": "desktop",
+      "width": 1300,
+      "height": 900
+    },
+    {
+      "label": "narrow-desktop",
+      "width": 768,
+      "height": 900
+    }
+  ],
+  "rows": [
+    {
+      "id": "set-head-rest",
+      "label": "/collection/sets/dsk \u2014 the head at rest",
+      "steps": [
+        {
+          "goto": "/collection/sets/dsk",
+          "settle": 4000,
+          "wait": "[data-set-head]"
+        }
+      ],
+      "widths": [
+        "phone",
+        "desktop"
+      ]
+    },
+    {
+      "id": "set-head-collapsed",
+      "label": "/collection/sets/dsk \u2014 the head collapsed, past the threshold",
+      "steps": [
+        {
+          "goto": "/collection/sets/dsk",
+          "settle": 4000,
+          "wait": "[data-set-head]"
+        },
+        {
+          "scroll": 900,
+          "settle": 900
+        }
+      ],
+      "widths": [
+        "phone",
+        "desktop"
+      ]
+    },
+    {
+      "id": "set-head-collapsed-filtered",
+      "label": "/collection/sets/dsk \u2014 collapsed with a rarity and a colour on",
+      "steps": [
+        {
+          "goto": "/collection/sets/dsk?c=W&r=rare",
+          "settle": 4000,
+          "wait": "[data-set-head]"
+        },
+        {
+          "scroll": 900,
+          "settle": 900
+        }
+      ],
+      "widths": [
+        "phone",
+        "desktop"
+      ]
+    },
+    {
+      "id": "set-head-collapsed-narrow-desktop",
+      "label": "/collection/sets/dsk \u2014 collapsed at 768, the narrowest desktop",
+      "widths": [
+        "narrow-desktop"
+      ],
+      "steps": [
+        {
+          "goto": "/collection/sets/dsk",
+          "settle": 4000,
+          "wait": "[data-set-head]"
+        },
+        {
+          "scroll": 900,
+          "settle": 900
+        }
+      ]
+    }
+  ]
+}
