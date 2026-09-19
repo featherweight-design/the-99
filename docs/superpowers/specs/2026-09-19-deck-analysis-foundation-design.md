@@ -304,7 +304,7 @@ sharpens the reasoning.
 - **Any language-model call.** Sub-project 5, and it reads this object.
 - **Combo surfacing and near-miss recommendations.** The ingest lands here because the slot
   needs two-card-combo detection; *surfacing* combos and `almostIncluded` is sub-project 3
-  (§12).
+  (§14).
 - **Deck theme derivation from cards (#724).** Real, measured, and needs an EDHREC theme-page
   ingest that does not exist. §5.3 defines the slot the profile leaves for it, and why the
   profile must not hard-code commander tags as the theme source in the meantime.
@@ -550,7 +550,7 @@ would arrive.
 
 So legality is a **separate fact-group on the profile**, not a field in `ProfileBrackets`, and
 the sweep's `banned` flag is ignored entirely. That also gives rule-0 legality reporting
-(§12, currently unplaced) a place to land without reshaping anything later.
+(§14, currently unplaced) a place to land without reshaping anything later.
 
 ```ts
 type ProfileLegality = {
@@ -1970,42 +1970,64 @@ tests and probes. Design cannot change whether Armageddon is mass land denial.
 what, the phrasing of a verdict, where the card marks are drawn and where the push line
 appears.
 
-The brief asks Design for:
+### 11.1 The brief is five rounds, not one ask
 
-- Where a deck's bracket lives on the deck page, and its relationship to the Versions and
-  Games tabs.
-- How a full limits table reads without becoming a report card — three brackets, each with
-  four rules and its violations. Receipts are required (§2.2); density is the risk.
-- The standing card mark: Game Changer, mass land denial, extra turn, on a card row and in a
-  card modal, at both widths.
-- The push line at the moment of an add, and — load-bearing — **how a rule verdict and an
-  unquantified fact are visually distinguishable** (§7.2). A reader who cannot tell
-  *"this moves your bracket"* from *"this is your 8th tutor"* has been given a number to
-  defend that nobody computed.
-- **The skeleton fit**: per-type have-against-target, the curve comparison, and missing
-  staples carrying a rate and its denominator. Design's call is how this reads as *help*
-  rather than as a report card — it is the first thing a player with a half-built deck wants
-  and the easiest to make feel like a failing grade.
-- **`basis`** (§6A): a target drawn from this commander's own average deck, from a
-  colour-count fallback, or absent entirely. Three different strengths of claim in the same
-  slot, and the surface has to carry the difference without a footnote per row.
-- How a **thin-data commander** is stated (`coverage.thin`, §6A). The reader needs to know
-  the floor is doing more work than usual here, without the surface implying their commander
-  is a bad choice.
-- How `detection: partial` is stated without either alarming or being missed (§6.5). Now
-  writable: the classifier measures **91.7%** recall with a second source beside it (§4.2), so
-  this is a footnote rather than a caution.
-- **The population line** (§6.3a) beside the verdict — *"Bracket 3, where 5,055 of the 11,848
-  Ur-Dragon decks that declared one also sit"* — carrying its denominator without turning the
-  verdict into a popularity reading. This is the Rule 0 sentence, and it is the one figure on
-  the surface that is about other people rather than about this deck.
-- **How a rule that declines to count reads next to one that has no rule at all** — the
-  `unquantified` / `ruleless` split (§7.2). An extra-turn card at Bracket 3 and an eighth
-  tutor are both "does not move your bracket" and they are not the same sentence, and a
-  reader who conflates them will cut the wrong cards.
-- The upgrade path's presentation: a consequence, not a recommendation.
-- The About entry. Per the standing rule, a feature does not launch without one in the same
-  round, with the `ABOUT_VERSION` bump named as a task in the plan.
+§11's first draft was a single list of about fifteen distinct design problems. Ruled
+2026-09-19: *"as complexity grows, details get lost"* — so the brief is **one document with
+bounded rounds**, giving Design the whole shape while only ever asking for one piece.
+
+The seams are drawn where the *question* changes, not where the content does.
+
+**Round 0 — the frame.** What a player meets when they open deck analysis: the shape of the
+surface as a whole, where a narrative **deck synopsis** sits relative to the verdict and the
+skeleton, and what that slot reads as when the summary is absent, stale or refused.
+
+This round exists because the other four would otherwise be drawn as separate panels and
+discovered not to compose. The synopsis is the natural opener — *"you've finished the deck;
+here is what it does"* — and it is worth noting to Design that it is **a narration of the
+profile, not free prose**: deckcheck's example cites a Toralf/Blasphemous Act combo, a
+Locust God/Purphoros line, extra-combat spells and draw doublers, and every one of those is a
+fact §5 computes. The model supplies sentences; the code supplies facts (§2.4).
+
+The synopsis's **content** design — what it may claim, its length, its accept contract — is
+deliberately **not** in this round. Those depend on cost and validation rulings that belong
+with sub-project 6. `commander_support.prose` is the precedent for the null state.
+
+**Round 1 — the card mark.** Game Changer, mass land denial and extra turn, on a card row and
+in a card modal, at both widths.
+
+The only round that **fits into existing surfaces** — the collection, decklist rows, the card
+modal — rather than designing new real estate, which is a different problem. Small, and it
+unblocks rounds 2 and 4, which both reference it. Note for Design: only `game_changer` is a
+column on `cards`; the other two cost a join (§7.1).
+
+**Round 2 — the verdict.** The permitted range (§6.1a), the limits table — three brackets,
+four rules each — violations with their receipts, the population line with its denominator
+(§6.3a), and the three detection-coverage statements (§6.5).
+
+The Rule 0 conversation as a **reading**. Receipts are required (§2.2); density is the risk;
+it must not become a report card. Design's hardest call here is a full limits table that
+informs without grading.
+
+**Round 3 — the declaration.** *"Your cards permit 1 or 2 — which is this?"*; the combo lean
+with its receipts (§6.1b); correcting the lean; and drift between `declared` and `permits`.
+
+Split from round 2 deliberately: that one is a report, this is an **interaction with stored
+state**. Round 2 can ship showing a range in its unanswered state. The load-bearing
+distinction for Design is the one §7.2 already names — a reader who cannot tell *"this moves
+your bracket"* from *"this is your 8th tutor"* has been handed a number to defend that nobody
+computed, and the `unquantified` / `ruleless` split is exactly that difference.
+
+**Round 4 — acting on it.** The push line at the moment of an add, drawing `bracketDelta`'s
+four shapes distinguishably, and the upgrade path presented as a **consequence rather than a
+recommendation** (§7.3).
+
+**Held back: the skeleton fit.** It answers a different question — *"is this deck well built"*
+rather than *"how strong is it"* — and carries its own hard problems: per-type targets, the
+curve comparison, **five** strengths of `basis` (§6A), thin-data commanders, and a
+`missingStaples` list averaging **50 cards** per identity (§4A.1a), which must be ranked and
+truncated rather than printed. Its data also lands last (§4A.8). It gets its own brief once
+an index run has produced real output to draw against.
 
 **Which round owes the About entry, stated so it cannot be missed:** **not this one.**
 Sub-project 1 ships no UI, so there is nothing for a reader to discover and an entry would
@@ -2016,7 +2038,91 @@ entry" is exactly the reasoning that let the post-import summary reach `main` wi
 
 ---
 
-## 12. Sub-projects that follow
+## 13. Open for the plan
+
+Found by the 2026-09-19 cold-eyes review and **deliberately not resolved here** — each is
+plan-shaped: a task either can be written against it or it cannot, and that is the test the
+plan performs on this spec. Recorded because otherwise they live only in a conversation.
+
+### 13.1 Types named but never defined
+
+The signatures above reference these without shape. Some are reconstructable from prose, some
+are not; all need declaring before a task can be written.
+
+`CardRef` · `ComboRef` · `StapleRef` · `TypeFit` · `CurveFit` · `RoleFit` · `Violation` ·
+`BracketLimitReport` · `UnquantifiedFacts` · `BracketPopulation` · `CompositionTargets` ·
+`ProfileCounts` · `ProfileRoles` · `ProfileColours` · `ProfileThemes` · `Bracket` ·
+`UpgradePath` · `BracketLean` · `ComboReach`
+
+Two need decisions rather than transcription. **`Violation`** is used as both
+`violations: Violation[]` on the verdict and `rule: Violation` on a single `BracketDelta` —
+one type doing two jobs. **`ProfileColours`** is described as "identity, producibleColors, and
+their disagreement", and `producibleColors` has no stated derivation.
+
+### 13.2 Algorithms named but not specified
+
+- **`upgradePath`'s minimisation.** "The minimum set" is determined in *cardinality* and
+  undetermined in *identity*: with 4 Game Changers against B3's limit of 3, the minimum set is
+  size 1 and there are 4 candidates. Choosing one is a recommendation — the judgement §7.3 says
+  it avoids. Likely resolution: return the violation with its full candidate set. Also note
+  that no individual card "violates" a count rule, so §7.3's *"a card the deck holds and a rule
+  it violates"* is not true of what it returns.
+- **The B2/B3 chain-or-loop predicate** (§6.3). "An extra-turn card that recurs itself, or an
+  untap loop present as a combo" is not defined over anything the profile holds, and — unlike
+  the other two oracle rules — was never measured. Either specify and measure it, or state that
+  the B2/B3 extra-turn flag is always absent in this sub-project.
+- **The `produces` game-ending vocabulary** (§5.2). "The `Infinite …` family plus the
+  game-ending names" enumerates only `Win the game`. The generated list must also resolve a
+  contradiction: it cannot be both "regenerated by each ingest" and "committed so a change
+  shows up in a diff" — a cron cannot commit. `tag-kinds.generated.ts` is a **developer-run**
+  regeneration, so the analogy in §5.2 is wrong.
+- **The sweep's name→`oracle_id` mapping** (§4.4). `/estimate-bracket` takes names and returns
+  entries; nothing states how an entry is keyed back to a `cards` row, what happens when it
+  resolves to none or two, and how double-faced naming is handled. `index-build.ts` already
+  solves this for EDHREC and is the precedent.
+- **The `fingerprint`** (§5.1). No hash function, no canonical row ordering, no statement of
+  whether `auto` or `deck_proxies` participate, no rule for where the builder version lives.
+- **`requires` → `requires_template_ids`** (§4.3). The shape of `requires` on a bulk record is
+  not written down, and §4.3b's rule 1 is load-bearing on reading it correctly.
+
+### 13.3 Homes and cadences not assigned
+
+- **The three oracle-text classifiers** — mass land denial, extra turns, tutor targets — have
+  measurement scripts but no production home and no job that runs them. §4.4's
+  `db:seed:combos` describes only the sweep and the bulk. The measure scripts keep their
+  patterns as module-local consts, so the shipped rule and the measured rule would be two
+  copies unless the scripts import the production classifier.
+- **Cache invalidation covers one of three writers.** §4.4 has the combo job stamp
+  `catalog_refreshes`; neither `db:build:staples` nor the widened `Commander index` is specced
+  to, and both write the profile's headline inputs. Only `src/lib/scryfall/seed*.ts` stamps
+  today.
+- **Job chaining is asserted, not mechanised.** "Runs after `Catalog refresh`" has no
+  `workflow_run` trigger, and `db:build:staples` is said to chain like `Commander prose` — but
+  that chain is pinned to production because `workflow_run` cannot tell which matrix leg it
+  heard, and staging is served by `db:copy:prose`. There is no `db:copy:staples`.
+- **The derived floor has no first value.** §4.5's ingest guard refuses to publish below N and
+  M "taken from the first clean run" — the first run has no floor to check.
+
+### 13.4 Edge and failure cases with no stated behaviour
+
+A partial sweep (30 of 54 batches — `card_bracket_flags` defaults to `false`, so a partial
+publish silently un-flags); concurrent runs of either new job; an empty deck; a deck over 100
+cards from an import; a commander whose `synergy_state` is `degraded` rather than `absent`; a
+`declared` bracket that falls outside `permits` after an edit; and `compositionOf` when
+`composition` is null.
+
+### 13.5 Two testability gaps
+
+`probe:bracket` is specced as database-only but §8 asks it to prove that stamping
+`catalog_refreshes` retires a cached profile — `cacheForUser` wraps `unstable_cache`, a Next
+runtime primitive, so that needs a server. And §8's parse test names
+`src/lib/edhrec/__fixtures__/gisa.json`, which carries none of the composition fields or
+`mana_curve`; the fixture must be widened first.
+
+
+---
+
+## 14. Sub-projects that follow
 
 Named so the profile's shape accounts for them. None is specced.
 
