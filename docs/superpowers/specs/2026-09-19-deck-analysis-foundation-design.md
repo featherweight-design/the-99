@@ -93,17 +93,28 @@ These came out of intake on 2026-09-19 and are not re-opened downstream.
 
 ### 2.1 Report, never weight
 
-The slot is computed from the **countable** bracket rules only. Signals the rules mention
-without quantifying — "few tutors", how fast the deck wins — are printed as **adjacent facts
-with no threshold and no effect on the number**.
+The slot is computed from the **stated** bracket rules only. Anything the rules leave
+unquantified — how fast a deck wins, what "low quantities" of extra turns means — is printed
+as an **adjacent fact with no threshold and no effect on the number**.
 
 This is the standing convention here (#215: *"Two numbers shown side by side rather than one
 weighted score — combining them means owning and defending a formula tuned blind"*; #218
 reports synergy and need separately for the same reason).
 
-deckcheck's own payload confirms the rules support nothing more: their `bracket_limits` give
-tutors `{"max": "unlimited", "violated": false}` in **every** bracket. Even a system willing
-to blend cannot make a tutor count move a bracket, because the rules do not say how.
+**Tutors are the sharpest case, and the reason is stronger than "unquantified".** The
+February 2025 beta did say *"Tutors should be sparse"* for Brackets 1–3. The
+[October 21, 2025 update](https://magic.wizards.com/en/news/announcements/commander-brackets-beta-update-october-21-2025)
+**removed tutor restrictions from the brackets entirely**, on the grounds that the original
+benchmark was not clear enough and not all tutors are alike, and now relies on the Game
+Changers list to catch the efficient ones. There is no tutor limit in any bracket.
+
+So a tutor count beside a bracket verdict is not a fact the rules declined to quantify — it
+is a fact the rules **deliberately stopped asking about**, and the surface must not imply
+otherwise. deckcheck's payload agrees from the other side: their `bracket_limits` carry
+tutors as `{"max": "unlimited", "violated": false}` in every bracket.
+
+The count is still drawn, because it is what Max asked for (§7.2) and because a player having
+a Rule 0 conversation may still care. What changes is the sentence around it.
 
 ### 2.2 Never a single power number
 
@@ -206,8 +217,14 @@ sharpens the reasoning.
   new tables, on a weekly cron beside `Catalog refresh` and `Price refresh`.
 - A contract check for that upstream (`pnpm check:spellbook`), in the daily
   `Upstream contract checks` workflow.
-- A **measured deck skeleton**: format staples and conditioned role targets, derived from
-  `commander_support_cards` by a committed script into one new table. No new upstream.
+- A **measured staples floor**, derived from `commander_support_cards` into one new table by
+  a committed script. No new upstream.
+- A **widened EDHREC parse**: the ten per-commander composition counts and the average curve
+  the payload already carries and `parseEdhrecPayload` currently discards, as columns on
+  `commander_support`, written by the index build's existing fetch. One run of the existing
+  monthly job; no new endpoint and no additional request volume.
+- An **oracle-text mass-land-denial classifier**, implementing WotC's published definition as
+  a second source beside the Spellbook-derived one (§4.2).
 - The **Deck Profile**: a pure builder plus a cached loader, defined as a composable set of
   fact-groups.
 - **`fitSkeleton`**: where a deck sits against its skeleton, a pure function over the profile.
@@ -226,13 +243,16 @@ sharpens the reasoning.
   `last-slots.ts` and the Add panel from it is **sub-project 2** — it changes shipped
   surfaces and needs a design cycle, and separating the two means the floor can be measured,
   argued with and corrected before anything is built on it. `ROLE_TARGETS` keeps its current
-  callers untouched in this sub-project; §4A.5 covers the retirement.
+  callers untouched in this sub-project; §4A.6 covers what becomes of it.
 - **Any language-model call.** Sub-project 5, and it reads this object.
 - **Combo surfacing and near-miss recommendations.** The ingest lands here because the slot
   needs two-card-combo detection; *surfacing* combos and `almostIncluded` is sub-project 2.
 - **Deck theme derivation from cards (#724).** Real, measured, and needs an EDHREC theme-page
   ingest that does not exist. §5.3 defines the slot the profile leaves for it, and why the
   profile must not hard-code commander tags as the theme source in the meantime.
+- **Functional role targets** — ramp, draw, removal, wipes. **No source available here
+  produces them**, EDHREC publishing types rather than functions, and §4A.5 names that as the
+  open question this sub-project hands forward rather than filling it with a constant.
 - **Bracket 5.** Not derivable. §6.4.
 - **Pod comparison, salt surfacing, rule-0 legality reporting.** Named as future consumers so
   the profile's shape accounts for them; none is built here.
@@ -258,10 +278,21 @@ correct direction: a row written before the re-seed reads as "not a Game Changer
 loses a mark rather than inventing one. Same reasoning as `cards.layout`.
 
 The 53-card list is maintained by WotC and republished by Scryfall — last changed 2026-02-09,
-adding Farewell and Biorhythm. **It maintains itself through the weekly catalog refresh.** No
-list is transcribed into this repository, and none should be: a transcribed list is a copy
-that silently goes stale, and the failure mode is a deck slotted into a bracket it has
-outgrown.
+adding Farewell and Biorhythm (and explicitly *not* Lutri, the Spellchaser). **It maintains
+itself through the weekly catalog refresh.** No list is transcribed into this repository, and
+none should be: a transcribed list is a copy that silently goes stale, and the failure mode is
+a deck slotted into a bracket it has outgrown.
+
+**Verified rather than assumed:** `GET /cards/search?q=is:gamechanger` returns
+`total_cards: 53` — exactly the official count as of the February 2026 update. Scryfall's
+field is current and authoritative, so nothing here needs a second source. `pnpm
+check:scryfall` gains an assertion that the field is still present on a card object; the count
+itself is deliberately **not** pinned, because the list is meant to change and a test that
+fails when WotC updates it would be a test that punishes the ingest for working.
+
+EDHREC's payload also carries a per-commander `Game Changers` cardlist (present on 337 of 342
+cached payloads). It is **not** used: it is EDHREC's recommendation of which Game Changers suit
+that commander, not the list itself, and a bracket rule needs the authoritative membership.
 
 ### 4.2 Commander Spellbook
 
@@ -293,18 +324,36 @@ carries `uses` (cards), `requires` (templates), `bracketTag`, `identity`, `legal
 Land Denial template is how that card's classification is learned.
 
 This is **incomplete by construction** — a mass-land-denial card in no combo is invisible to
-it — and the spec does not pretend otherwise. Two consequences, both deliberate:
+it — and the spec does not pretend otherwise. Three consequences, all deliberate:
 
-1. The ingest records **provenance** per flag (`source = 'spellbook_variant'`), so a later
-   sub-project can add a second source without the reader guessing.
+1. The ingest records **provenance** per flag (`source`), so the reader of a row never has to
+   guess which classifier claimed it.
 2. `pnpm check:spellbook` (§4.5) asserts a **known-positive sample** — `Armageddon`,
    `Ravages of War`, `Jokulhaups`, `Time Warp`, `Temporal Manipulation` — and fails when the
    ingest stops recognising them. An incomplete classifier that silently becomes *more*
    incomplete is the failure this guards.
+3. A **second source** closes most of the gap, and it is not invented: WotC publishes a
+   definition of mass land denial (§6.2) — *"effects that destroy, exile, or bounce other
+   players' lands, keep lands tapped, or change what mana they produce, affecting four or more
+   lands per player, without replacing them"*. That is encodable as an oracle-text classifier
+   against `cards.oracle_text`, in the same shape as `classifyRoles` and `classifyEngine`, and
+   it reaches the common cases a combo index never will (`Armageddon`, `Catastrophe`,
+   `Decree of Annihilation`, `Wildfire`). It is a **classifier, not a list**, so it carries
+   false negatives; it writes `source = 'oracle_rule'` and the two sources union.
 
-**Where the honest answer is "unknown".** A deck may hold a mass-land-denial card this ingest
-does not know. The slot therefore reports, beside its verdict, that mass-land-denial
-detection is **sourced and partial** — not a silent claim of completeness. §6.5.
+   The distinction from an invented threshold matters: *"four or more lands per player"* is
+   **WotC's number**, quoted, not a cut this spec chose. §2.4a is satisfied by citation rather
+   than by measurement here, and that is the only case in the document where it is.
+
+**Where the honest answer is "unknown".** Even unioned, a deck may hold a mass-land-denial
+card neither source knows. The slot therefore reports, beside its verdict, that detection is
+**sourced and partial** — not a silent claim of completeness. §6.5.
+
+**EDHREC cannot substitute for Spellbook here, and this was checked.** The payload carries
+`panels.combocounts`, which looked like a free combo source. Measured across all 342 cached
+payloads: present on 334, **average length 4.0, maximum 4**. It is a fixed four-item teaser
+for the commander's page, not a decklist-aware combo set, and it names combos by string rather
+than by oracle id. It is unusable for a bracket rule.
 
 ### 4.3 Tables
 
@@ -384,86 +433,211 @@ mutated fixture before the check is believed.
 
 ## 4A. The measured skeleton
 
-### 4A.1 The distinction that makes this computable
+Everything in this section is measured. `scripts/measure-staples.mts` (read-only, committed)
+produced every figure below against the catalog, and can be re-run.
 
-`commander_support_cards.inclusion` is a card's inclusion rate **under one commander**. Held
-across ~3,279 commanders, it answers a second question the app has never asked:
+### 4A.1 What a staple is, measured rather than asserted
 
-> **A card with high inclusion across nearly every commander is a format staple. A card with
-> high inclusion under one commander is a synergy pick.**
+`commander_support_cards.inclusion` is a card's inclusion rate **under one commander**, on a
+0–100 scale. Held across 3,279 commanders and 859,794 support rows covering 25,763 distinct
+cards, it answers a second question the app has never asked.
 
-That is a `GROUP BY` over a table already ingested. No new upstream, no new API, no model.
+The spec's first draft said: *a card with high inclusion across nearly every commander is a
+format staple.* The measurement says that is **half right, and the missing half is what makes
+the cut defensible.**
 
-Critically, **the floor is derived from the corpus rather than from the commander's own
-page** — which is exactly why it still works for a commander with 40 decks on EDHREC. The
-thin-data commanders are the population the floor serves most, and `commander_support.deck_count`
-already identifies them.
+**Breadth separates cleanly.** Of 25,763 cards, only **14** are recommended for 2,000+
+commanders, 48 for 1,000–1,999 and 160 for 500–999 — then it balloons to 7,485 at 10–49 and
+10,976 at 2–9. There is a real knee and the head is tiny.
 
-**The honest limit, recorded rather than glossed:** EDHREC inclusion is what people *play*,
-not what is optimal. For a floor that is the right signal — it is the format's own consensus,
-and consensus is what a player building their first deck lacks. It is **not** a licence to
-blend it into a score; §2.2 is unaffected.
+**But average inclusion is flat across every breadth band** (19–33%), so breadth alone admits
+cards nobody actually plays:
 
-### 4A.2 Conditioning is measured too
+| card | commanders (of 3,279) | avg inclusion |
+|---|---|---|
+| Sol Ring | 3,266 | **77.0%** |
+| Arcane Signet | 3,247 | 62.1% |
+| Command Tower | 2,299 | 64.3% |
+| **Temple of the False God** | **2,296** | **12.2%** |
+| Ancient Tomb | 1,747 | 11.3% |
 
-"Most decks want an Arcane Signet, but it is less helpful in mono-coloured decks" becomes a
-number rather than an opinion: aggregate inclusion **by the commander's colour count**, and
-the mono-versus-multicolour gap is read off the corpus.
+**Temple of the False God is the named case this cut is defended against.** It is recommended
+for 2,296 commanders and played in 12.2% of their decks. A breadth-only floor puts it beside
+Sol Ring and tells a new player to run it. A staple is therefore **breadth AND inclusion** —
+recommended almost everywhere *and* actually played when it is.
 
-The same aggregation sources every target `ROLE_TARGETS` currently asserts — ramp, draw,
-removal, wipes — **and the land count it does not have at all**, which is the single most
-consequential number in deck construction and the one the app has never held.
+The floor is derived from the **corpus**, never from the commander's own page, which is why it
+still serves a commander with 40 decks on EDHREC. Those thin-data commanders are the
+population it serves most, and `commander_support.deck_count` identifies them.
 
-A condition is kept only when the measured difference is large enough to change a deck. The
-derivation script prints the gap per condition so the cut is made against figures, and the
-spec records which conditions survived and which were measured and dropped — the same way
-`gap-slot.ts` records that 2% and 1% were tried before 0.5%.
+**The honest limit:** EDHREC inclusion is what people *play*, not what is optimal. For a floor
+that is the right signal — it is the format's own consensus, and consensus is what a player
+building a first deck lacks. It is **not** a licence to blend it into a score; §2.2 stands.
 
-### 4A.3 Table
+### 4A.2 Weighting is not a complication; it changes the answer
+
+The floor is weighted by `commander_support.deck_count`, so a commander with 31,481 decks on
+file outvotes one with 40. That was specced as a precaution. Measured, it **moves 17 of the
+top 25 by three or more places**, and in the direction that argues for it:
+
+- promoted: **Command Tower 11 → 6**, **Exotic Orchard 18 → 9**, Fellwar Stone 9 → 7
+- demoted: **War Room 20 → 113**, **Nykthos 23 → 143**, Wayfarer's Bauble 15 → 40
+
+Unweighted, the long tail of barely-played commanders outvotes the format.
+
+### 4A.3 Colour count is a real conditioning axis
+
+*"Most decks want an Arcane Signet, but it is less helpful in mono-coloured decks"* is a
+number, not an opinion. The effects are large and they are not all the same shape:
+
+| card | 1 colour | 2 | 3 | 5 |
+|---|---|---|---|---|
+| **Command Tower** | **10.4%** | **80.6%** | 88.6% | 87.2% |
+| Arcane Signet | 53.4% | 69.2% | 75.2% | 73.7% |
+| Exotic Orchard | 16.1% | 25.2% | 53.1% | 63.5% |
+| Chromatic Lantern | 12.4% | 8.4% | 11.4% | 50.1% |
+| Swiftfoot Boots | 31.9% | 27.8% | 26.2% | **13.6%** |
+| Sol Ring | 75.6% | 76.8% | 81.2% | 75.0% |
+
+Command Tower's **70-point cliff** between one colour and two is the case that justifies the
+axis. Swiftfoot Boots runs the *other* way, so the conditioning is a gradient per card and not
+a single "multicolour bonus". Sol Ring is flat at 75–90% everywhere and is genuinely
+unconditional — which is what a floor entry should look like.
+
+A condition is kept only when the measured gap is large enough to change a deck. The
+derivation prints the gap per condition so the cut is made against figures, and this spec
+records which survived — the same way `gap-slot.ts` records that 2% and 1% were tried before
+0.5%.
+
+### 4A.4 Role targets do NOT come from this table — they come from a parse we already discard
+
+The first draft claimed ramp/draw/removal/wipes **and the land count** could be sourced from
+`commander_support_cards`. **That is false and the measurement killed it.**
+
+There are no decklists in that table. A target could only emerge as an expected count —
+Σ(inclusion)/100 per bucket — and measured, that yields:
+
+```
+creature 16.2 · nonbasic land 10.7 · artifact 9.1 · instant 7.7
+sorcery 5.8 · enchantment 5.2 · basic land 1.6 · other 0.6
+TOTAL 56.9          (a real deck is 99 + commander)
+```
+
+It accounts for **57 of 99 cards**, and is worst exactly where the land count lives: **1.6
+expected basic lands**, from only 6 distinct basics in the entire table, against a real deck's
+8–25. The average support list is 262 cards — a recommendation set, not a deck.
+
+**The data is already on disk.** `edhrec_cache.payload` — the raw response the app already
+fetches and stores — carries, at top level, per commander:
+
+```
+land  basic  nonbasic  creature  instant  sorcery  artifact  enchantment  planeswalker  battle
+```
+
+plus `panels.mana_curve` (counts per mana value) and `panels.piechart`. `parseEdhrecPayload`
+(`src/lib/edhrec/parse.ts:55`) reads `cardlists`, `taglinks`, `bracket_counts`,
+`budget_counts`, `similar` and three `card.*` fields, and **discards every one of these.**
+
+Measured over all 342 cached payloads:
+
+- every field present on **342 / 342**; `panels.mana_curve` on **342 / 342**
+- the type counts sum to **exactly 99 on every row** — min 99, max 99, no exceptions
+- land averages **35.3**, range **30–47**
+
+That last invariant is the reason to trust it: EDHREC is publishing a real average deck, not a
+loose statistic.
+
+And it is **per commander**, which is strictly better than the colour-bucket conditioning
+§4A.3 describes. Najeela (5 colours) runs 34 lands as **9 basic / 25 nonbasic**; Aang
+(mono-white) runs 36 as **29 / 7**. That is the mana-base difference measured directly.
+Colour-count conditioning becomes the **fallback** for a commander with no payload.
+
+**The cost, stated plainly.** `edhrec_cache` holds **342 of 3,279** commanders, because it is a
+demand cache with a 30-day TTL populated when someone views a commander — not by the index
+build. `db:build:index` already fetches all 3,279 of these pages monthly and parses them; it
+simply does not keep these fields. So the work is: widen `parseEdhrecPayload`, carry the
+fields through `SupportHeader` (`src/lib/edhrec/index-build.ts:9`), add columns, and **run the
+existing monthly job once**. No new upstream, no new endpoint, and **no additional request
+volume** — which matters, because that job is already `max-parallel: 1` under a workflow-wide
+concurrency group precisely so EDHREC never sees a second request stream from us.
+
+This is what #215's own note anticipated as "EDHREC parser widening".
+
+### 4A.5 What is still unsourced, and is not pretended otherwise
+
+EDHREC publishes **types**, not **functions**. So `land`, `creature`, `instant` and the curve
+are measured, and **ramp / draw / removal / wipes are not** — nothing in any source available
+here says how many ramp pieces an average deck runs.
+
+`ROLE_TARGETS`' four constants (`ramp: 10, draw: 10, removal: 8, wipes: 3`) therefore **stay
+asserted**, and this spec does not dress them up. They keep their current callers, unchanged,
+and §4A.6 covers what happens to them.
+
+This is a real gap, named rather than filled, and it is the one open question this sub-project
+hands forward. It is survivable because **the land count is the number that matters most and
+it is now in hand** — the motivating deck's fault was a mana base, not a ramp count.
+
+### 4A.6 `ROLE_TARGETS`: the type half is replaced, the function half is not
+
+Once the composition columns exist, `land` has a measured per-commander target where
+`ROLE_TARGETS` has none at all, and the constant is left holding only the four functional
+roles it can still claim. Sub-project 2 reads the measured columns for type targets and is the
+named owner of deciding what becomes of the remaining four.
+
+Recorded so it cannot be quietly skipped: a measured table beside an asserted constant is two
+sources of truth for overlapping questions, and this one has a known expiry.
+
+### 4A.7 Tables
 
 ```
 format_staples
   oracle_id          uuid not null references cards(oracle_id)
-  condition          text not null      -- 'all' | 'colors:1' | 'colors:2' ... | 'colors:5'
-  inclusion_rate     real not null      -- share of commanders in this condition, deck-weighted
-  commander_count    integer not null   -- denominator, never inferred
+  condition          text not null      -- 'all' | 'colors:1' .. 'colors:5'
+  commanders         integer not null   -- how many commanders recommend it, in this condition
+  commander_total    integer not null   -- the denominator, never inferred
+  avg_inclusion      real not null      -- 0-100, the second axis (§4A.1)
+  weighted_rank      integer not null   -- deck_count-weighted (§4A.2)
   primary key (oracle_id, condition)
-
-skeleton_targets
-  condition          text not null      -- same vocabulary
-  role               text not null      -- 'ramp'|'draw'|'removal'|'wipes'|'land'
-  target             real not null
-  sample_size        integer not null
-  primary key (condition, role)
 ```
 
-Every rate carries **its own denominator**, per the presentation rules inherited from #9 —
-a figure without one is an assertion the reader cannot check, which is the §2.2 lesson again.
+Composition targets are columns on `commander_support`, not a new table: they are one row per
+commander, written by the job that already writes that row, and a second table would be a join
+for no reason.
 
-Weighted by `commander_support.deck_count`, so a commander with 31,481 decks on file counts
-for more than one with 40. Unweighted would let the long tail of barely-played commanders
-outvote the format.
+```
+commander_support  (added)
+  avg_land, avg_basic, avg_nonbasic, avg_creature, avg_instant,
+  avg_sorcery, avg_artifact, avg_enchantment, avg_planeswalker, avg_battle  integer
+  avg_curve         jsonb            -- panels.mana_curve, counts per mana value
+```
 
-### 4A.4 `pnpm db:build:skeleton`
+Nullable, every one of them: a commander whose payload predates the widening has no
+composition, and **null reads as absent** where a zero would read as "this deck runs no
+lands". The reader falls back to the colour-count condition and says which it used.
 
-Runs after `Commander index`, in the same workflow chain and for the same reason
-`Commander prose` does: its inputs are the rows that job writes, so a rebuild invalidates it.
-Read-only against `commander_support*`, writes the two tables above.
+Every figure carries its denominator, per the presentation rules inherited from #9. A figure
+without one is an assertion the reader cannot check, which is §2.2 again.
 
-It prints its full derivation — rate distributions, per-condition gaps, what each cut
-includes and excludes — so the numbers can be argued with **before** sub-project 2 builds
-anything on them. This is `measure-gap-line.mts`'s role, and the reason that script exists.
+### 4A.8 `pnpm db:build:staples`
 
-### 4A.5 `ROLE_TARGETS` is replaced, not extended
+Derives `format_staples` from `commander_support_cards`. Read-only against its inputs, runs
+after `Commander index` in the same chain and for the same reason `Commander prose` does: its
+inputs are the rows that job writes.
 
-The four constants stay where they are and keep their current callers **for this
-sub-project** — nothing shipped changes behaviour on a spec that has not been reviewed
-against measured output. Sub-project 2 retires them, reads `skeleton_targets` instead, and
-that is a named task there rather than an assumption here.
+The composition columns need no separate job — they are written by the index build itself,
+during the fetch it already performs.
 
-Recorded so it cannot be quietly skipped: leaving both a constant and a measured table in
-place is two sources of truth for the same question, and the constant is the one with no land
-count and no provenance.
+**That has a scheduling consequence worth stating.** `Commander index` is monthly, on the 3rd,
+so the composition columns are empty until an index run completes after the widening merges.
+The feature does not break in the meantime — `basis` reports `"colors"` and the fit falls back
+(§6A) — but the per-commander half is absent until then, and a plan that assumes otherwise
+would have the surface reviewed against data that is not there. Dispatch the job manually once
+the widening lands rather than waiting for the cron.
+
+It prints its full derivation: the breadth distribution, the two-axis cut and what it includes
+and excludes either side of it, the weighted-versus-unweighted delta, and the per-condition
+gaps. That output is the argument, and it exists so the numbers can be disputed **before**
+sub-project 2 builds anything on them. This is `measure-gap-line.mts`'s role.
 
 
 ## 5. The Deck Profile
@@ -485,11 +659,35 @@ export type DeckProfile = {
 };
 ```
 
+```ts
+/**
+ * The measured standard this deck is read against — the stored figures only, never a
+ * comparison. `fitSkeleton` (§6A) does the comparing, so the same group serves a reader who
+ * wants the raw targets and one who wants the gap.
+ */
+type ProfileSkeleton = {
+  /** Per-commander composition, from the widened parse. Null where the payload predates it. */
+  composition: CompositionTargets | null;   // §4A.4
+  /** panels.mana_curve for this commander, counts per mana value. Null on the same terms. */
+  averageCurve: Record<string, number> | null;
+  /** The colour-count fallback, always present: `colors:1` … `colors:5`. */
+  condition: string;                        // §4A.3
+  staples: StapleRef[];                     // the floor for that condition, §4A.7
+  commanderDeckCount: number | null;        // the denominator behind all of it
+};
+```
+
 **Composable fact-groups, from the start.** Ownership, price and play-data groups are added
 by later sub-projects as sibling keys. Nothing about the loader, the fingerprint or the cache
 key changes when they arrive — that is the point of the shape, and it is why milestone 1
 computes only what its own consumers read rather than everything the suite will eventually
 want.
+
+**`skeleton` and `roles` are deliberately not merged.** `roles` is what this deck *contains*,
+classified by `classifyRoles`; `skeleton` is what the format *does*, measured. One is a fact
+about the reader's cards and the other a fact about everyone else's, and a single "roles with
+targets" group would put a measured land count and an asserted ramp constant (§4A.5) in the
+same shape and make them look equally sourced.
 
 ### 5.2 `ProfileBrackets`
 
@@ -515,23 +713,54 @@ type DetectionCoverage = {
 };
 ```
 
-**What counts as a two-card infinite combo.** A variant qualifies when
-`card_count = 2` **and** its `produces` names an unbounded or game-ending feature —
-Spellbook's own feature vocabulary, matched against a stored allowlist generated from the
-bulk rather than typed by hand, the way `tag-kinds.generated.ts` already handles EDHREC's
-tags. Card count alone is not the test: a two-card variant producing "two 1/1 tokens" is a
-synergy, not a combo, and slotting a deck to Bracket 4 over one would be a wrong verdict of
-exactly the kind §2.2 says lands on the table. The allowlist is regenerated by the ingest and
-its size is logged, so a vocabulary change upstream is visible rather than silent.
+Each `CardRef` on a flagged list carries its **source** (`spellbook_variant` | `oracle_rule`,
+§4.2), because a reader disputing a verdict is owed which classifier made the claim.
+
+**What counts as a two-card infinite combo.** Card count alone is not the test: a two-card
+variant producing "two 1/1 tokens" is a synergy, and slotting a deck to Bracket 4 over one
+would be a wrong verdict of exactly the kind §2.2 says lands on the table.
+
+The test is `card_count = 2` **and** a `produces` feature that is unbounded or game-ending.
+Spellbook's feature names carry that directly — sampled from `/variants/?q=cards=2` on
+2026-09-19:
+
+| variant | `bracketTag` | `produces` |
+|---|---|---|
+| Demonic Consultation + Thassa's Oracle | R | `Exile your library`, **`Win the game`** |
+| Sanguine Bond + Exquisite Blood | S | **`Infinite lifegain`**, `Infinite lifeloss` |
+| Dramatic Reversal + Isochron Scepter | S | **`Infinite mana …`**, `Infinite storm count` |
+
+So the rule is a **feature-name classifier** over `produces` — the `Infinite …` family plus the
+game-ending names — generated from the bulk's own vocabulary and regenerated by each ingest,
+the way `tag-kinds.generated.ts` already handles EDHREC's tags. Its size is logged, so a
+vocabulary change upstream is visible rather than silent, and the generated list is committed
+so a change to it shows up in a diff.
+
+**`bracketTag` is deliberately NOT the rule, and this was the tempting mistake.** Every variant
+carries one (`R`/`S`/`P`/`O`/`C`/`E`/`B` — Ruthless, Spicy, Powerful, Oddball, Core,
+Exhibition, Banned), and the vocabulary deliberately echoes WotC's bracket names, which makes
+it look like the answer. It is not: it is **Spellbook's judgement about which table a combo
+suits**, and the WotC rule asks a different question — whether the deck assembles an
+intentional two-card infinite combo at all. Sampled, the two disagree freely: of 40 two-card
+variants, 26 are `S`, 7 `R`, 2 `P`, 2 `O`, 2 `E`, 1 `C`, while `Sanguine Bond + Exquisite
+Blood` is plainly infinite at `S` and plainly infinite at `R` for
+`Demonic Consultation + Thassa's Oracle`.
+
+Letting `bracketTag` decide would import a third party's bracket opinion into a verdict the
+reader will take to a table as WotC's — §2.2's failure with someone else's number in it. It is
+**stored and reported** beside each combo, because a reader deciding whether a combo is "early
+game" (§6.3) is better off knowing Spellbook rates it Ruthless. It never moves the slot.
 
 Every list carries **card references, never counts alone**. A count with no cards is an
 assertion the reader cannot check, and the whole lesson of §2.2 is that receipts are what
 survive.
 
 `tutors` is classified from oracle text and carries no threshold anywhere in this
-sub-project. It exists because the reader wants it beside the verdict for a Rule 0
-conversation, and because Max's question — *does one more tutor move me?* — deserves the
-honest answer rather than silence. See §7.2.
+sub-project — **and no bracket rule reads it at all**, because WotC removed tutor restrictions
+in October 2025 (§2.1). It is in the profile because Max's question — *does one more tutor
+move me?* — deserves the honest answer rather than silence, and because a Rule 0 conversation
+may still want the count. It is a deck fact that no longer has a rule attached, which is a
+thing §7.2 has to say out loud rather than imply by placement.
 
 ### 5.3 `ProfileThemes` is null, deliberately
 
@@ -585,37 +814,80 @@ limits are reported, violated or not — the reader's real question is often "wh
 to cut to sit at 2", which a bare verdict cannot answer and a full table can. deckcheck's
 `bracket_limits` / `all_violations` shape is the right shape and is adopted in structure.
 
-### 6.2 The countable rules
+### 6.2 The stated rules, verbatim
 
-| | B1 Exhibition | B2 Core | B3 Upgraded | B4 Optimized |
+Transcribed from
+[Introducing Commander Brackets Beta](https://magic.wizards.com/en/news/announcements/introducing-commander-brackets-beta)
+as amended by the
+[October 21, 2025 update](https://magic.wizards.com/en/news/announcements/commander-brackets-beta-update-october-21-2025).
+The quoted text is the rule; the table is our reading of it.
+
+> **B1 Exhibition** — "No cards from the Game Changers list. No intentional two-card infinite
+> combos, mass land denial, or extra-turn cards."
+>
+> **B2 Core** — "No cards from the Game Changers list. No intentional two-card infinite combos
+> or mass land denial. Extra-turn cards should only appear in low quantities and are not
+> intended to be chained in succession or looped."
+>
+> **B3 Upgraded** — "Up to three cards from the Game Changers list. No intentional early-game
+> two-card infinite combos. Extra-turn cards should only appear in low quantities and are not
+> intended to be chained in succession or looped. No mass land denial."
+>
+> **B4 Optimized / B5 cEDH** — "There are no restrictions (other than the banned list)."
+
+Each original definition also carried *"Tutors should be sparse"* at B1–B3. **That clause is
+gone** — removed outright in October 2025 (§2.1). It is quoted here only because every
+third-party summary written before that date still carries it, and a reader checking our rules
+against one of those needs to know which of us is stale.
+
+| | B1 Exhibition | B2 Core | B3 Upgraded | B4 / B5 |
 |---|---|---|---|---|
 | Game Changers | 0 | 0 | ≤ 3 | unlimited |
 | Mass land denial | none | none | none | allowed |
-| Chained extra turns | none | none | none | allowed |
-| Two-card infinite combos | none | none | late-game only | allowed |
-| Tutors | reported, never weighted | | | |
+| Extra-turn cards | **none at all** | low quantities; not chained or looped | low quantities; not chained or looped | allowed |
+| Two-card infinite combos | none intentional | none intentional | **early-game** none | allowed |
+| Tutors | no rule in any bracket | | | |
+
+**Mass land denial has an official definition, and it is encodable:** *"effects that destroy,
+exile, or bounce other players' lands, keep lands tapped, or change what mana they produce,
+affecting four or more lands per player, without replacing them."* Armageddon qualifies; Strip
+Mine does not. §4.2's detection is partial against **that** definition, and the spec says so
+rather than leaving the target unstated.
 
 Expected game length (9+ / 8+ / 6+ / 4+ turns) is **not** computed. It is an outcome, not a
-deck property, and any estimate of it would be an invented weight wearing a turn number.
+deck property, and any estimate would be an invented weight wearing a turn number.
 
-### 6.3 Two judgement calls, made explicit
+### 6.3 Three judgement calls, made explicit
 
-Both are places where the rules are looser than an implementation must be. Each is recorded
-here so a later disagreement is a decision to revisit rather than a bug to hunt.
+Places where the rules are looser than an implementation must be. Recorded so a later
+disagreement is a decision to revisit rather than a bug to hunt.
 
-**Extra turns: "chained", not "present".** WotC's text prohibits *chaining* extra turns, not
-owning one. deckcheck counts cards and allows up to 3 in brackets 2 and 3 — their
-interpretation, visible in their payload. This spec follows the text: a violation requires
-**a card that grants an extra turn and can repeat itself** (`Time Warp` recursion, an
-`Aggravated Assault`-style untap loop present as a combo) rather than a bare count. Where the
-ingest cannot tell, the card is **reported under `unquantified`, not counted as a violation**
-— §2.1 applied at the point it actually bites.
+**Extra turns at B1 are a count; at B2/B3 they are not.** B1 forbids extra-turn cards outright,
+so there the rule is literal and a single `Time Warp` violates it. B2 and B3 say *"low
+quantities… not chained in succession or looped"*, which is two conditions and only one of them
+is countable. The slot therefore:
 
-**Two-card combos: "late-game" is not computable.** B3 permits late-game two-card combos and
-forbids early ones. Nothing in the data says when a combo lands. The slot therefore treats
-**any two-card infinite combo as permitted at B3 and forbidden at B1/B2**, and prints the
-combo with its pieces so the reader can judge. Inventing a mana-value threshold for
-"late-game" would be exactly the formula §2.1 refuses.
+- **counts** at B1 — any extra-turn card is a violation, stated as the rule states it;
+- at B2/B3 flags **only** a demonstrable chain or loop (an extra-turn card that recurs itself,
+  or an untap loop present as a combo), and reports the bare count under `unquantified` with
+  no verdict attached.
+
+deckcheck reads *"low quantities"* as **max 3** and enforces it; that is a defensible reading
+and it is not ours, because a number WotC did not write is a number we would have to defend.
+WotC's own gloss is *"a Time Warp or two is fine"* — which is guidance, not a threshold.
+
+**"Early-game" has an official gloss but is still not computable.** B3 forbids early two-card
+infinite combos; WotC's guidance is that **turn-six-or-later closers are acceptable**. Nothing
+in a decklist says which turn a combo lands, so the slot treats **any** two-card infinite combo
+as permitted at B3 and forbidden at B1/B2, and prints the combo with its pieces so the reader
+can judge. The turn-six gloss is quoted to the reader rather than encoded — it is WotC's
+number, and applying it would require a turn estimate that is itself invented.
+
+**"Intentional" is not inferable, and is deliberately ignored.** Every combo clause says
+*intentional*. Whether a player meant to include a combo is a fact about them, not the deck, so
+the slot reads every assembled two-card infinite as present and says which cards form it. The
+reader is the only one who can answer the other half, and the verdict must not appear to have.
+
 
 ### 6.4 Bracket 5 is not derivable, and is not offered
 
@@ -644,21 +916,38 @@ membership rather than published directly.
 
 ```ts
 type SkeletonFit = {
-  condition: string;                  // which conditioned skeleton was applied, and why
-  roles: RoleFit[];                   // per role: have, target, gap, and the cards counted
+  /** Where each target came from, per §4A.4's fallback chain. */
+  basis: "commander" | "colors" | "none";
+  types: TypeFit[];                   // land, creature, instant … : have, target, delta
+  curve: CurveFit | null;             // the deck's curve against the commander's average
   missingStaples: StapleRef[];        // floor cards absent, with measured rate + denominator
   presentStaples: StapleRef[];
   coverage: { commanderDeckCount: number | null; thin: boolean };
 };
 ```
 
-`coverage.thin` is the load-bearing field. A commander EDHREC barely holds is the case where
-the floor matters most **and** where the synergy pool is least trustworthy, so the fit says
-which situation the reader is in rather than presenting both alike.
+**`basis` is not decoration.** A composition target is per-commander where the payload exists,
+the colour-count condition where it does not, and absent for a commander with neither — three
+materially different claims, and a fit that presented them identically would be asserting a
+precision it does not have. The surface prints which.
+
+**Functional roles are absent from this type, deliberately.** There is no `roles` field,
+because §4A.5 has no measured target to put in one. `ROLE_TARGETS` is not read here; a fit
+that mixed measured type targets with asserted functional ones would launder the second
+through the credibility of the first.
+
+`coverage.thin` is the other load-bearing field. A commander EDHREC barely holds is the case
+where the floor matters most **and** where the synergy pool is least trustworthy, so the fit
+says which situation the reader is in rather than presenting both alike.
 
 `missingStaples` carries the measured rate and denominator with each card, never a bare
-recommendation. *"Sol Ring — in 87% of 3,279 commanders' decks"* is checkable. *"You should
-run Sol Ring"* is not.
+recommendation. *"Sol Ring — recommended for 3,266 of 3,279 commanders, played in 77% of their
+decks"* is checkable. *"You should run Sol Ring"* is not.
+
+`curve` compares the deck's `manaCurve()` against `panels.mana_curve` and reports the
+difference per mana value. It is a **comparison, not a verdict** — no bracket rule and no
+target is derived from it, and a deck being two cards heavy at three mana is a fact the reader
+does something with, not a failure the app names.
 
 ## 7. The marks and the push check
 
@@ -677,22 +966,32 @@ thing a player checks before a Rule 0 conversation.
 The prospective check. Max's case: *"if I add this mass land denial, or one more tutor, does
 it shift me up?"* — his concern being a deck too strong to be fun with friends.
 
-The answer has **two shapes that must never be blurred**:
+The answer has **four shapes that must never be blurred**:
 
 ```ts
 type BracketDelta =
-  | { kind: "moves";    from: Bracket; to: Bracket; rule: Violation }
-  | { kind: "counts";   rule: "gameChangers"; now: number; limit: number; to: Bracket | null }
-  | { kind: "reports";  fact: UnquantifiedFact }
+  | { kind: "moves";     from: Bracket; to: Bracket; rule: Violation }
+  | { kind: "counts";    rule: "gameChangers"; now: number; limit: number; to: Bracket }
+  | { kind: "unquantified"; rule: "extraTurns"; now: number; bracket: Bracket }
+  | { kind: "ruleless";  fact: "tutors"; now: number }
   | { kind: "none" };
 ```
 
 - *Armageddon — mass land denial. This moves you out of Bracket 3.* A **rule**.
 - *Your 4th Game Changer. Bracket 3 allows 3, so this moves you to Bracket 4.* A **rule with
   a count**.
-- *Your 8th tutor. No bracket rule counts tutors, and this does not move your bracket —
-  Bracket 2 asks you to keep them few.* A **fact with no verdict**, and saying so plainly is
-  the honest answer, not a hedge.
+- *Your 3rd extra-turn card. Bracket 3 asks for "low quantities" and does not say how many, so
+  this does not move your bracket — chaining or looping them would.* A rule that exists but
+  **declines to count**. (At Bracket 1 the same card is a `moves`: B1 forbids extra-turn cards
+  outright.)
+- *Your 8th tutor. No bracket rule counts tutors — Wizards removed tutor restrictions in
+  October 2025 and relies on the Game Changers list instead.* A fact with **no rule at all**.
+
+The last two are separate variants rather than one "fact" case because they are different
+claims. `unquantified` says *the rules care and will not say how much*; `ruleless` says *the
+rules used to ask and stopped*. Collapsing them would reintroduce the stale "few tutors"
+reading this spec had in its first draft (§2.1), and a reader acting on it would cut tutors to
+move a bracket that was never going to move.
 
 It is a pure function over an already-built profile plus one card, so it is cheap enough to
 run per candidate row. That property is required by later sub-projects too — every
@@ -714,13 +1013,28 @@ ship here rather than waiting for the swap tools.
 Three layers, because each catches what the others cannot.
 
 **Unit.** `buildDeckProfile`, `fitSkeleton`, `slotDeck`, `bracketDelta` and `upgradePath` are
-pure. For the skeleton: a thin-data commander sets `coverage.thin` and still gets a full
-floor; a missing staple carries its rate **and** its denominator; a conditioned target for a
-mono commander differs from the five-colour one where the measurement said it should. Cases
-per bracket boundary, per rule, and specifically: a deck at exactly 3 Game Changers (B3, no
-violation) against one at 4 (B4, with `Underworld Breach` named as the excess — the case
-visible in the supplied deckcheck payload); a mass-land-denial card with `detection: partial`
-still reported; a tutor that moves nothing.
+pure.
+
+For the skeleton: a thin-data commander sets `coverage.thin` and still gets a full floor; a
+missing staple carries its rate **and** its denominator; a commander with composition columns
+reports `basis: "commander"` and one without falls back to `basis: "colors"` with a
+colour-conditioned target; a commander with neither reports `basis: "none"` and **no target at
+all** rather than a zero.
+
+For the slot, cases per bracket boundary and per rule, and specifically:
+
+- exactly 3 Game Changers (B3, clean) against 4 (B4, `Underworld Breach` named as the excess —
+  the case in the supplied deckcheck payload)
+- **one extra-turn card at B1 is a violation; the same card at B2 is not** — §6.3's split, and
+  the case that a single shared "extra turns" rule would get wrong at one end or the other
+- a two-card infinite combo permitted at B3 and forbidden at B2
+- a mass-land-denial card from each source (`spellbook_variant`, `oracle_rule`), both reported,
+  both carrying provenance, with `detection` still `"partial"`
+- **a tutor returns `ruleless`, never `unquantified` or `moves`** — three variants that read
+  alike in prose and mean different things (§7.2)
+
+For the parse: `parseEdhrecPayload` over a fixture payload yields all ten composition counts
+and the curve, and a payload missing them yields nulls rather than zeros.
 
 **`pnpm check:spellbook`.** §4.5. Upstream contract, daily, no database.
 
@@ -751,10 +1065,17 @@ passes** when its fixture does not reach each rule it claims to test.
 
 **Mutation, before any of it is believed.** At minimum: drop the `game_changer` column read;
 make the combo join match on card count without the infinite check; remove the
-`detection: partial` report; let `bracketDelta` return `moves` for a tutor. Each must fail
-the run. Per `run the guard's failure path before trusting it` — six checks in one run once
-reported clean over real drift in this repository, and the pattern that caught it was running
-the failure path first.
+`detection: partial` report; let `bracketDelta` return `moves` for a tutor; apply the
+extra-turn count rule at B2 as well as B1; drop `basis` so a colour-conditioned target
+presents as a per-commander one. Each must fail the run. Per `run the guard's failure path
+before trusting it` — six checks in one run once reported clean over real drift in this
+repository, and the pattern that caught it was running the failure path first.
+
+**One instrument is already written and is itself the evidence for §4A.**
+`scripts/measure-staples.mts` is committed, read-only and re-runnable; every figure in that
+section came from it. It found a defect in its own first run — a `LEFT JOIN` inflating 3,279
+commanders to 859,794 — which is recorded here because a measurement that misreports its own
+denominator is precisely the failure this repository keeps finding in its own guards.
 
 ---
 
@@ -775,6 +1096,14 @@ Stated so a reader does not mistake silence for coverage.
   for a floor and a poor one for a ceiling.
 - **Anything about how the deck should be built.** The fit is a reading; acting on it is
   sub-project 2. Nothing in this sub-project changes what `fill.ts` or `last-slots.ts` do.
+- **How much ramp, draw, removal or board-wipe a deck should run.** Measured: EDHREC publishes
+  type counts, not functional ones, so those four targets have no source (§4A.5). The land
+  count, the type composition and the curve do.
+- **Whether a combo in the deck was intentional.** Every WotC combo clause says *intentional*
+  and that is a fact about the builder (§6.3). The slot reports what is assembled.
+- **Which turn a combo would land.** B3 turns on early-versus-late and WotC glosses the line at
+  turn six; nothing in a decklist answers it, so the combo and its pieces are printed and the
+  reader judges (§6.3).
 
 ---
 
@@ -821,14 +1150,21 @@ The brief asks Design for:
   unquantified fact are visually distinguishable** (§7.2). A reader who cannot tell
   *"this moves your bracket"* from *"this is your 8th tutor"* has been given a number to
   defend that nobody computed.
-- **The skeleton fit**: per-role have-against-target, and missing staples carrying a rate and
-  its denominator. Design's call is how this reads as *help* rather than as a report card —
-  it is the first thing a player with a half-built deck wants and the easiest to make feel
-  like a failing grade.
+- **The skeleton fit**: per-type have-against-target, the curve comparison, and missing
+  staples carrying a rate and its denominator. Design's call is how this reads as *help*
+  rather than as a report card — it is the first thing a player with a half-built deck wants
+  and the easiest to make feel like a failing grade.
+- **`basis`** (§6A): a target drawn from this commander's own average deck, from a
+  colour-count fallback, or absent entirely. Three different strengths of claim in the same
+  slot, and the surface has to carry the difference without a footnote per row.
 - How a **thin-data commander** is stated (`coverage.thin`, §6A). The reader needs to know
   the floor is doing more work than usual here, without the surface implying their commander
   is a bad choice.
 - How `detection: partial` is stated without either alarming or being missed (§6.5).
+- **How a rule that declines to count reads next to one that has no rule at all** — the
+  `unquantified` / `ruleless` split (§7.2). An extra-turn card at Bracket 3 and an eighth
+  tutor are both "does not move your bracket" and they are not the same sentence, and a
+  reader who conflates them will cut the wrong cards.
 - The upgrade path's presentation: a consequence, not a recommendation.
 - The About entry. Per the standing rule, a feature does not launch without one in the same
   round, with the `ABOUT_VERSION` bump named as a task in the plan.
