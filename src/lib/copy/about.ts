@@ -31,7 +31,7 @@
 // changes. about.test.ts pins a content hash, so a change forces either a
 // deliberate bump or a deliberate re-pin.
 
-export const ABOUT_VERSION = 4;
+export const ABOUT_VERSION = 5;
 
 export type AboutChapter = '01' | '02' | '03' | '04';
 export type AboutWidth = 'inset' | 'plate';
@@ -451,6 +451,7 @@ export const aboutEntries: readonly AboutEntry[] = [
     keys: [
       'the draft is reviewable before it lands: every add and cut beside the committed list, with nothing counted twice.',
       'a version carries its own record, so you can see whether a change helped rather than only that it happened.',
+      'a deck you have never committed shows an unfilled status badge wherever it is listed — it is a plan, not a deck yet. Once you commit v1 the badge fills in, and a bright edge appears whenever the list drifts from the version again. Deck state on the deck list filters by either.',
     ],
     since: 1,
   },
@@ -527,7 +528,7 @@ export const aboutEntries: readonly AboutEntry[] = [
     route: '/decks',
     width: 'plate',
     caption:
-      'Six statuses, and each one has a single next action. Exactly one of them means you can put the deck on a table — a hundred-card list you still have to buy four cards for is not Complete. Beside each badge the app draws one figure and no sentence, so the explanations sit in the key below where they are honestly this page’s own words.',
+      'Six statuses, and each one has a single next action. Exactly one of them means you can put the deck on a table — a hundred-card list you still have to buy four cards for is not Complete. Beside each badge the app draws one figure and no sentence, so the explanations sit in the key below where they are honestly this page’s own words. The badge also carries two marks that are not statuses — one for a deck you have never committed, one for a deck you have edited since its last version — and both are drawn and explained under Drafts, committing, and versions.',
     keys: [
       'Draft and Building are not legal lists yet, and the figure is how far off. Draft has nothing in it, so it shows when it was made instead.',
       'Over is past the body size and Unresolved is at it, each with something to settle: too many cards, or lines we could not put a card to.',
