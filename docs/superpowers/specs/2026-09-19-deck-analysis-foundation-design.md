@@ -68,6 +68,26 @@ reluctant to play it. deckcheck's own read of that deck says *Speed 3.5/10*, win
 9–10, *"fast mana is limited to Sol Ring"*. Every one of those is a foundation fact, and all
 of them arrived after the money was spent.
 
+**The skeleton was run against that deck before this spec was approved, and it reproduces the
+diagnosis.** Its composition against the Kratos/Atreus pair average (§4A.4a):
+
+| | HD - Gods | pair average | delta |
+|---|---|---|---|
+| Land | 37 | 37 | — |
+| Creature | 26 | 26 | — |
+| Instant | 11 | 11 | — |
+| Sorcery | 5 | 5 | — |
+| **Artifact** | **8** | **13** | **−5** |
+| Enchantment | 10 | 6 | +4 |
+
+Four types exact, and the one real gap is **five artifacts light** — which in this archetype is
+mana rocks. That is deckcheck's *"fast mana is limited to Sol Ring"*, reached from data this
+app already holds, with no model and no invented weight.
+
+Note what the **flat** targets could not have said. `landTarget()`'s 37 matches this deck
+exactly, so a land-count check reports it healthy — and it *is* healthy. The deck's problem was
+never lands, and only a per-commander composition could have pointed at the rocks instead.
+
 Bracket checking is not novel. [EDHcheck](https://edhcheck.com/),
 [BrackCheck](https://brackcheck.com/), [manatap.ai](https://www.manatap.ai/mtg-deck-checker)
 and [deckcheck.co](https://deckcheck.co/) all do it. It is chosen first because it is
@@ -227,9 +247,14 @@ sharpens the reasoning.
   the payload already carries and `parseEdhrecPayload` currently discards, as columns on
   `commander_support`, written by the index build's existing fetch. One run of the existing
   monthly job; no new endpoint and no additional request volume.
-- An **oracle-text mass-land-denial classifier**, implementing WotC's published definition as
-  a second source beside the Spellbook-derived one — measured at 91.7% recall with zero false
-  positives before being specced (§4.2).
+- **Two oracle-text classifiers** as a second source beside the Spellbook sweep, each measured
+  before being specced (§4.2): **mass land denial** at 91.7% recall / zero false positives
+  (union with the sweep 23/24), and **extra turns** at 100% recall / zero false positives with
+  zero misses across the whole catalog.
+- **Legality as its own fact-group**, read from `cards.commander_legal` rather than the sweep —
+  complete and local, where the sweep knows 28.5% of cards (§4.3a).
+- **Pair pages for partner commanders** (§4A.4a): pairs present in `decks` fetched by the
+  monthly index, any other pair covered by the existing demand cache. Both mechanisms exist.
 - The **Deck Profile**: a pure builder plus a cached loader, defined as a composable set of
   fact-groups.
 - **`fitSkeleton`**: where a deck sits against its skeleton, a pure function over the profile.
@@ -384,9 +409,32 @@ lands tapped" three different ways. The fix was to implement the remaining claus
 add patterns until the fixture passed. Tuning a classifier against its own test set produces a
 number that means nothing.
 
-**Every flag carries its source** (`spellbook_sweep` | `oracle_rule`), so a reader disputing a
-verdict is owed which classifier made the claim, and a later third source slots in without any
-reader changing.
+**Extra turns get the same treatment, and score better.** The sweep's 28.5% coverage is worse
+here than for mass land denial, because Bracket 1 forbids extra-turn cards **outright** — the
+only hard *count* rule in the system — and the list is reported as a fact on every verdict, not
+only at B1. Under-detection therefore under-reports everywhere, in the direction that tells a
+player their deck is gentler than it is.
+
+Measured (`scripts/measure-extra-turns.mts`, committed, read-only): **recall 21/21 (100%)**
+against unambiguous grants, **zero false positives** against cards that mention an extra turn
+and grant none.
+
+The reading that earns it is the third one, which a curated set cannot give. Sweeping the
+**whole catalog** for any mention of an extra turn: **56 cards, 52 claimed, 4 unclaimed** — and
+all four are genuine prevention effects (`Stranglehold`, `Trouble in Pairs`,
+`Gerrard's Hourglass Pendant`, `Ugin's Nexus`), each caught by the negation clause rather than
+missed. **Zero misses across 31,830 commander-legal cards**, which is a completeness claim mass
+land denial cannot make.
+
+The negation clause is why a naive `/extra turn/` match is wrong: **every prevention effect
+also matches a grant pattern**, so a rule without it flags the cards that do the opposite — and
+at Bracket 1 that moves a deck out over a card granting nothing.
+
+**Every flag carries its sources** (`spellbook_sweep` | `oracle_rule`), **per flag and as a
+set** (§4.3), so a reader disputing a verdict is owed which classifier made the claim — and
+whether both agreed. *"Both Spellbook and our own rule say `Armageddon` is mass land denial"* is
+a stronger answer than *"only our rule says `Back to Basics` is"*, and `Back to Basics` is
+exactly the card someone argues about.
 
 **And 23/24 is what makes §6.5's warning writable.** A verdict whose detection is 40% complete
 needs a prominent caution; one at 23/24 with two independent sources needs a quiet footnote.
@@ -420,18 +468,61 @@ spellbook_variants
   computed_at       timestamp not null default now()
 
 spellbook_variant_cards
-  variant_id        text not null references spellbook_variants on delete cascade
-  oracle_id         uuid not null references cards(oracle_id)
+  variant_id          text not null references spellbook_variants on delete cascade
+  oracle_id           uuid not null references cards(oracle_id)
+  must_be_commander   boolean not null default false   -- from uses[].mustBeCommander (§4.3b)
   primary key (variant_id, oracle_id)
   index on (oracle_id)                      -- "which combos does this card enable"
 
 card_bracket_flags
-  oracle_id         uuid primary key references cards(oracle_id)
-  mass_land_denial  boolean not null default false
-  extra_turn        boolean not null default false
-  source            text not null           -- 'spellbook_sweep' | 'oracle_rule' (§4.2)
-  computed_at       timestamp not null default now()
+  oracle_id                uuid primary key references cards(oracle_id)
+  mass_land_denial         boolean not null default false
+  mass_land_denial_sources text[] not null default '{}'   -- 'spellbook_sweep' | 'oracle_rule'
+  extra_turn               boolean not null default false
+  extra_turn_sources       text[] not null default '{}'
+  computed_at              timestamp not null default now()
 ```
+
+**Sources are per flag and are arrays, not one shared column.** A card can be mass land denial
+by the oracle rule and extra-turn by the sweep, and a single `source` string cannot describe
+that row honestly — which would make §5.2's promise of provenance unkeepable for exactly the
+cards most likely to be disputed. The array also records **agreement**: both classifiers
+catching a card is stronger evidence than one, and it costs nothing to keep.
+
+`banned` is deliberately **not** in this table — §4.3a.
+
+### 4.3a `banned` is local, complete, and not a bracket fact
+
+The first draft took `banned` from the Spellbook sweep. Two reasons that is wrong.
+
+**It is not a bracket rule.** WotC's own text gives B4 and B5 *"no restrictions (other than the
+banned list)"* — the banned list sits **under all five brackets** as a legality floor, not
+inside the bracket system. A banned card does not move a deck's bracket; it makes the deck
+illegal.
+
+**And the sweep knows 28.5% of the catalog** (§4.2) for the one fact that must never be
+under-reported. Telling a player their deck is fine when it is illegal is the worst failure
+this surface has.
+
+We already hold the complete answer: **`cards.commander_legal`**, from Scryfall's `legalities`,
+refreshed weekly. Measured 2026-09-19: **3,738 commander-illegal cards** in the catalog and
+**zero** in any deck in the database — the add path already gates, so an import is how one
+would arrive.
+
+So legality is a **separate fact-group on the profile**, not a field in `ProfileBrackets`, and
+the sweep's `banned` flag is ignored entirely. That also gives rule-0 legality reporting
+(§12, currently unplaced) a place to land without reshaping anything later.
+
+```ts
+type ProfileLegality = {
+  banned: CardRef[];              // cards.commander_legal = false
+  identityViolations: CardRef[];  // outside the commander's colour identity
+};
+```
+
+`identityViolations` is included because the check is free once the group exists — `deckCards`
+has no colour-identity constraint, a hazard #215 already flags, and a commander swap can
+silently render cards in the 99 illegal.
 
 `spellbook_variant_cards` is normalised for the same reason `commander_support_cards` is: the
 consuming query is always "intersect this deck's oracle ids with variant membership", which
@@ -444,17 +535,48 @@ cannot serve that.
 **Unresolvable names are dropped and counted**, exactly as the EDHREC ingest does, so an
 unresolvable card reduces measured coverage rather than silently shrinking a denominator.
 
+### 4.3b Three rules the combo join needs, or it reports wrong verdicts
+
+A false positive here is the expensive kind: the app says a deck assembles
+`Thassa's Oracle + Demonic Consultation`, slots it to Bracket 4, and the player cuts cards over
+a combo they do not have. All three rules were verified against real bulk records.
+
+**1 · A variant with template prerequisites is not a two-card combo.** `card_count` counts
+`uses` only. A variant with 2 `uses` **and** a non-empty `requires` is a three-piece combo —
+the deck also needs a card matching the template, which we cannot verify. Counting it as a
+two-card infinite over-slots the deck. Excluded from the two-card test; the `requires` array is
+stored so sub-project 3 can surface it as a near-miss.
+
+**2 · `mustBeCommander` must match the deck's actual commander.** Some pieces only work from
+the command zone — the Najeela family is the obvious case. A deck holding the card in its 99
+does not assemble that combo. Requires the column above, taken from `uses[].mustBeCommander`.
+
+**3 · The commander is not in `deck_cards`.** It lives on `decks.commander_oracle_id` and
+`partner_oracle_id`. A join over `deck_cards` alone silently misses **every combo the commander
+is part of** — a false *negative*, and commander-piece combos are the common case in this
+format, which makes this the most consequential of the three.
+
+Rules 1 and 2 prevent over-slotting; rule 3 prevents under-slotting. Each gets a probe case
+(§8), because all three are reachable only against a database.
+
 ### 4.4 The job
 
 `pnpm db:seed:combos` does two things, for the two questions §4.2 separates.
 
 **The sweep** — 54 batched `POST /estimate-bracket` calls of 600 cards each, harvesting
-card-level `massLandDenial` / `extraTurn` / `banned` into `card_bracket_flags`. About a minute,
+card-level `massLandDenial` and `extraTurn` into `card_bracket_flags` — **not `banned`, which
+comes from `cards.commander_legal` instead (§4.3a)**. About a minute,
 well inside 80 req/min, and it runs **before** the bulk so a bulk failure does not cost the
 card flags too.
 
-**The bulk** — streamed the way `streamBulkEntries` already streams Scryfall's. Projected to the fields above — the 656 MB is almost entirely image URLs we
+**The bulk** — projected to the fields above; the 656 MB is almost entirely image URLs we
 discard.
+
+**It cannot reuse `streamBulkEntries` as-is.** Scryfall's bulk is JSONL — one object per line,
+which is what that helper consumes. Spellbook's `variants.json` is **one JSON document** with a
+`variants` array, so it needs an incremental array parser rather than a line reader. A plan
+that assumes the existing helper applies will find this out at implementation time; it is
+recorded here instead.
 
 Workflow `Combo refresh`, weekly, against **both** `catalog-staging` and
 `catalog-production`, through a `plan` job feeding a matrix. **Not** an expression on
@@ -590,16 +712,25 @@ population it serves most, and `commander_support.deck_count` identifies them.
 that is the right signal — it is the format's own consensus, and consensus is what a player
 building a first deck lacks. It is **not** a licence to blend it into a score; §2.2 stands.
 
-### 4A.2 Weighting is not a complication; it changes the answer
+### 4A.2 Weighting governs ORDER, never membership
 
-The floor is weighted by `commander_support.deck_count`, so a commander with 31,481 decks on
-file outvotes one with 40. That was specced as a precaution. Measured, it **moves 17 of the
-top 25 by three or more places**, and in the direction that argues for it:
+Weighting by `commander_support.deck_count` makes a commander with 31,481 decks on file
+outvote one with 40. Measured, it **moves 17 of the top 25 by three or more places**, in the
+direction that argues for it:
 
 - promoted: **Command Tower 11 → 6**, **Exotic Orchard 18 → 9**, Fellwar Stone 9 → 7
 - demoted: **War Room 20 → 113**, **Nykthos 23 → 143**, Wayfarer's Bauble 15 → 40
 
-Unweighted, the long tail of barely-played commanders outvotes the format.
+**But the cut in §4A.1 is unweighted, and that is deliberate rather than an oversight.** An
+earlier draft asserted the floor was weighted while the ratified 11-card list had been computed
+on raw share and raw average inclusion — the spec claimed a basis its own output had not used.
+Settled 2026-09-19: **the ratified list is the list**, so membership is unweighted and
+`weighted_rank` governs only the order staples are presented in.
+
+The distinction is real, not bookkeeping. Unweighted membership asks *"is this recommended for
+most commanders in this condition"* — one commander, one vote. Weighted asks *"is it in most
+decks"*, which is dominated by a handful of mega-popular commanders and is the more volatile
+question. A floor wants the stable one; a presentation order is free to use the other.
 
 ### 4A.3 Colour count is a real conditioning axis
 
@@ -660,7 +791,9 @@ plus `panels.mana_curve` (counts per mana value) and `panels.piechart`. `parseEd
 Measured over all 342 cached payloads:
 
 - every field present on **342 / 342**; `panels.mana_curve` on **342 / 342**
-- the type counts sum to **exactly 99 on every row** — min 99, max 99, no exceptions
+- the type counts sum to **exactly 99 on every row** — min 99, max 99, no exceptions. That is
+  the SINGLE-commander body size; a pair's page sums to 98, and the invariant is
+  `deckBodySize(hasPartner)` rather than a literal 99 (§4A.4a)
 - land averages **35.3**, range **30–47**
 
 That last invariant is the reason to trust it: EDHREC is publishing a real average deck, not a
@@ -678,6 +811,43 @@ And it is **per commander**, which is strictly better than the colour-bucket con
 §4A.3 describes. Najeela (5 colours) runs 34 lands as **9 basic / 25 nonbasic**; Aang
 (mono-white) runs 36 as **29 / 7**. That is the mana-base difference measured directly.
 Colour-count conditioning becomes the **fallback** for a commander with no payload.
+
+### 4A.4a Partner pairs get a real composition, not a fallback
+
+The motivating deck is a **pair** — `Kratos, Stoic Father` and `Atreus, Impulsive Son`,
+`Partner—Father & son`. `commander_support` is keyed per oracle id and neither commander's page
+describes the pair, so an earlier draft gave pairs the colour-count fallback. That would have
+given the weakest reading in the whole skeleton to the one deck this suite exists for. Ruled
+2026-09-19: **pairs get real pair pages.**
+
+**EDHREC has them, and discovery is cheap.** The slug is the two commanders in **alphabetical**
+order; the wrong order returns a **67-byte** `{"redirect": "/commanders/…"}` stub naming the
+canonical one, so a miss costs almost nothing and corrects itself. Verified live:
+`atreus-impulsive-son-kratos-stoic-father` returns a full 99,794-byte page carrying
+`land 37, basic 17, nonbasic 20, creature 26, instant 11, sorcery 5, artifact 13,
+enchantment 6`, its own `panels.mana_curve`, `deck_count: 13,332` and its own `bracket_counts`.
+
+**Which pairs are fetched, and why not all of them.** There are roughly **2,847** possible
+combinations — 58 open-`Partner` commanders alone make 1,653, and 32 Background-carrying
+commanders against 30 Backgrounds make another 960. Sweeping them would roughly double a job
+kept at `max-parallel: 1` under one concurrency group precisely so EDHREC never sees a second
+request stream from us, and most of those pages describe pairs nobody has built.
+
+So **two mechanisms, both of which already exist**:
+
+- the monthly index fetches a pair page for every distinct `(commander_oracle_id,
+  partner_oracle_id)` present in `decks` — dozens, not thousands, growing with what the group
+  actually plays;
+- a pair nobody has built yet is covered by the **existing `edhrec_cache` demand path**
+  (`src/lib/edhrec/client.ts`), which already fetches, caches with a TTL and handles absence —
+  so a deck created tonight with a new pair reads its composition tonight.
+
+Neither is new machinery. The only additions are a pair-slug builder and the redirect follow.
+
+**A pair's composition sums to 98, not 99**, because the deck body is 100 − 2 commanders. The
+invariant is `deckBodySize(hasPartner)` (`src/lib/decks/deck-size.ts:7`), which already exists
+and is what every check must use. An earlier draft said "exactly 99 on every row" — true of
+singles, and wrong for exactly the decks this section is about.
 
 **The cost, stated plainly.** `edhrec_cache` holds **342 of 3,279** commanders, because it is a
 demand cache with a 30-day TTL populated when someone views a commander — not by the index
@@ -798,7 +968,8 @@ format_staples
   commanders         integer not null   -- how many commanders recommend it, in this condition
   commander_total    integer not null   -- the denominator, never inferred
   avg_inclusion      real not null      -- 0-100, the second axis (§4A.1)
-  weighted_rank      integer not null   -- deck_count-weighted (§4A.2)
+  weighted_rank      integer not null   -- deck_count-weighted DISPLAY ORDER only (§4A.2);
+                                        -- never a membership test
   primary key (oracle_id, condition)
 ```
 
@@ -872,6 +1043,7 @@ export type DeckProfile = {
   colours: ProfileColours;     // identity, producibleColors, and their disagreement
   skeleton: ProfileSkeleton;   // §4A — measured targets and staples, and what the deck holds
   brackets: ProfileBrackets;   // §5.2 — the fact-group the slot reads
+  legality: ProfileLegality;   // §4.3a — a floor under all five brackets, not a bracket rule
   themes: ProfileThemes | null; // §5.3 — null today, deliberately
 };
 ```
@@ -887,6 +1059,8 @@ type ProfileSkeleton = {
   composition: CompositionTargets | null;   // §4A.4
   /** panels.mana_curve for this commander, counts per mana value. Null on the same terms. */
   averageCurve: Record<string, number> | null;
+  /** Whether `composition` describes this commander or this PAIR (§4A.4a). */
+  compositionOf: "commander" | "pair";
   /** The colour-count fallback, always present: `colors:1` … `colors:5`. */
   condition: string;                        // §4A.3
   staples: StapleRef[];                     // the floor for that condition, §4A.7
@@ -914,7 +1088,6 @@ type ProfileBrackets = {
   massLandDenial: CardRef[];
   extraTurns: CardRef[];
   twoCardCombos: ComboRef[];         // card pairs, with the variant id
-  banned: CardRef[];
   tutors: CardRef[];                 // reported, never weighted — §2.1
   population: BracketPopulation | null;  // §6.3a — what other players declared, with its denominator
   detection: DetectionCoverage;      // §4.2, §6.5
@@ -1196,7 +1369,7 @@ membership rather than published directly.
 ```ts
 type SkeletonFit = {
   /** Where each target came from, per §4A.4's fallback chain. */
-  basis: "commander" | "colors" | "none";
+  basis: "commander" | "pair" | "colors" | "none";
   types: TypeFit[];                   // land, creature, instant … : have, target, delta
   curve: CurveFit | null;             // the deck's curve against the commander's average
   missingStaples: StapleRef[];        // floor cards absent, with measured rate + denominator
@@ -1205,10 +1378,11 @@ type SkeletonFit = {
 };
 ```
 
-**`basis` is not decoration.** A composition target is per-commander where the payload exists,
-the colour-count condition where it does not, and absent for a commander with neither — three
-materially different claims, and a fit that presented them identically would be asserting a
-precision it does not have. The surface prints which.
+**`basis` is not decoration.** A composition target comes from this pair's own page, or this
+commander's, or the colour-count condition, or nowhere — **four** materially different claims,
+and a fit that presented them identically would be asserting a precision it does not have. The
+surface prints which. `"pair"` is separate from `"commander"` because a pair's average deck is
+a different population, and it sums to 98 rather than 99 (§4A.4a).
 
 **Functional roles are absent from this type, deliberately.** There is no `roles` field,
 because §4A.5 has no measured target to put in one. `ROLE_TARGETS` is not read here; a fit
@@ -1224,7 +1398,13 @@ recommendation. *"Sol Ring — recommended for 3,266 of 3,279 commanders, played
 decks"* is checkable. *"You should run Sol Ring"* is not.
 
 `curve` compares the deck's `manaCurve()` against `panels.mana_curve` and reports the
-difference per mana value. It is a **comparison, not a verdict** — no bracket rule and no
+difference per mana value.
+
+**The two bucket the tail differently and must be aligned.** `manaCurve()` caps at
+`CURVE_MAX = 7` (`src/lib/decks/stats.ts:153`), folding everything above into the top bucket;
+EDHREC's curve carries literal keys past it — the Kratos/Atreus page has a `"9"`. `CurveFit`
+folds EDHREC's tail into the same 7+ bucket before comparing. Comparing them unaligned would
+report a phantom gap at the top of every curve. It is a **comparison, not a verdict** — no bracket rule and no
 target is derived from it, and a deck being two cards heavy at three mana is a fact the reader
 does something with, not a failure the app names.
 
@@ -1336,6 +1516,10 @@ What only a database can answer here:
   This is the join the floor rides on and no unit test can reach it.
 - **Partial detection is reported, not silently dropped**, on a fixture holding a
   mass-land-denial card the ingest does know.
+- **The three combo-join rules** (§4.3b), one case each: a template-gated variant whose two
+  named cards are both in the deck must **not** slot it; a `mustBeCommander` variant whose
+  piece sits in the 99 rather than the command zone must **not**; and a combo using the
+  commander **must** be found, which a join over `deck_cards` alone cannot do.
 
 The probe builds its own fixture deck: a brew with a known card set assembled to sit at a
 known bracket, mutated across the boundary within the run. A fixture that happens to hold no
@@ -1498,8 +1682,8 @@ future feature here that is structurally immune to the CRISPI failure. It reads 
 and adds nothing to it. **It does not require accounts**, and the spec's position is that the
 comparison and any eventual social layer are separate features, built in that order.
 
-Also raised in intake and unplaced: **rule-0 legality reporting** (banned
-cards and identity violations — `deck_cards` has no identity constraint, a hazard #215 already
-flags), **salt surfacing** (`commander_support.salt_score` is stored and drawn nowhere), and
+**Rule-0 legality reporting is no longer unplaced** — §4.3a gives it `ProfileLegality`, with
+banned cards and identity violations both computed here. What remains is a surface for it,
+which is Design's to place. Also raised in intake and still unplaced: **salt surfacing** (`commander_support.salt_score` is stored and drawn nowhere), and
 **play-data grounding** (`deck_games`, the differentiator nothing else in this space can
 reach).
