@@ -554,7 +554,7 @@ export const READY_SLICE: ReadySlice<CommanderListItem> = {
   floor: 68,
 };
 
-/** Fitting cards a finished deck already sleeves, per commander. */
+/** Fitting cards a committed deck already sleeves, per commander. */
 export const READY_IN_USE = new Map<string, ReceiptCounts>([
   ["about-preston-garvey-minuteman", { inUse: 620, wantedByBrew: 0 }],
   // ZERO, and that is the point: the second clause is ABSENT at zero, which is

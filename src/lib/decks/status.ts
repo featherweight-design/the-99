@@ -50,7 +50,7 @@
  * every half-finished idea fell into.
  *
  * "To buy" is not the same question as "do you own a copy". A card the player
- * owns can still be a card this deck has to buy, because an older finished deck
+ * owns can still be a card this deck has to buy, because an older committed deck
  * is already holding the copies — one Sol Ring across four sleeved decks is
  * three purchases. `unfundedCount` is that count and is what the last two rows
  * turn on; ownership alone would call such a deck `Complete` while its own

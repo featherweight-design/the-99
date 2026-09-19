@@ -345,7 +345,7 @@ export async function scoreOneCommander(
 
   // Ownership, not availability, so this overlap is taken over the collection
   // even in free mode. `scored.overlapOwnedIds` is the free pool's, and a card
-  // sleeved into a finished deck is exactly what that pool leaves out — asking
+  // sleeved into a committed deck is exactly what that pool leaves out — asking
   // it which decks hold these cards could only ever answer "none".
   const ownedOverlapIds =
     pool && support

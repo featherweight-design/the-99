@@ -148,11 +148,16 @@ describe("every entry is drawn, not just described", () => {
     const ids = new Set(aboutEntries.map((e) => e.id));
     expect(Object.keys(FIGURES).filter((k) => !ids.has(k))).toEqual([]);
     // 20s, not the 5s default. This is the FIRST of four tests to import
-    // `figures`, so it pays the whole module graph's compile and the other
-    // three run warm. Editing any About copy invalidates that graph's
-    // transform cache, so the cost lands on exactly the change most likely to
-    // touch this file: a one-word copy edit timed out here while every warm
-    // re-run passed, which reads as a flake and is a cold cache.
+    // `figures`, so it pays that whole module graph's compile and the other
+    // three run warm. On a cold process that has measured past 5s.
+    //
+    // It is NOT caused by editing About copy, which is what it looks like and
+    // what a first version of this comment claimed: a copy edit timed out here
+    // and a stashed tree passed, so the edit read as the cause. Measured, the
+    // run costs the same either way — 6554/6954/6560ms untouched against
+    // 6294ms straight after `touch src/lib/copy/about.ts`. Vitest keeps no
+    // transform cache between `vitest run` invocations for `src/`, so there is
+    // nothing there for an edit to invalidate. Any cold run pays it.
   }, 20_000);
 
   it("has a figure for every entry, or names it in the ledger", async () => {

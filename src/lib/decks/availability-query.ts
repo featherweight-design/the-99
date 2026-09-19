@@ -33,7 +33,7 @@ type Row = {
  *    deck's commanders are read from the VERSION's snapshot of those columns,
  *    so a query that answers for what is sleeved never mixes in draft truth.
  *
- * 2. BASIC LANDS ARE EXCLUDED ENTIRELY. A finished deck holds 30-odd Forests
+ * 2. BASIC LANDS ARE EXCLUDED ENTIRELY. A committed deck holds 30-odd Forests
  *    and almost nobody's collection row matches, so every sleeved deck would
  *    push its basics into `over` and fire the over-committed summary on a deck
  *    with nothing wrong with it.
@@ -303,7 +303,7 @@ const claimModel = (userId: string) => sql`
  * has held it longest — `deck_version_cards.since` ordering it, `deck_id`
  * breaking the tie — and the deck that has not sleeved it goes and buys one.
  * Before seniority existed the deficit was symmetric: one Sol Ring wanted by
- * five finished decks marked the card short in all five, so four decks that
+ * five committed decks marked the card short in all five, so four decks that
  * physically have it were told to go shopping.
  *
  * A deck that has not sleeved a card is junior on THAT card to every deck that
@@ -548,7 +548,7 @@ export async function loadAvailability(
       -- silence a version-shaped own_claim gave it.
       --
       -- The senior subtraction is capped at the supply, because the decks ahead of
-      -- this one cannot take copies that do not exist. Four finished decks each
+      -- this one cannot take copies that do not exist. Four committed decks each
       -- wanting a Relentless Rats the player owns one of are three decks short by
       -- one, not one deck short by one and the next short by two: the shortfall
       -- above the supply belongs to the seniors, and a "short 3" marker on a

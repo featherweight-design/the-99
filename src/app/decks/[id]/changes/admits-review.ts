@@ -29,7 +29,7 @@ export type ReviewAdmission = {
  * the server would accept.
  *
  * That leaves the brew: the absence of a version is not enough, because
- * `commitDeckVersion` refuses a v1 over an unfinished list, and a page offering
+ * `commitDeckVersion` refuses a v1 over a deck that is not whole, and a page offering
  * a commit the server will refuse is worse than a redirect. A deck that HAS a
  * version and no row has nothing pending, so nothing is offered either.
  */

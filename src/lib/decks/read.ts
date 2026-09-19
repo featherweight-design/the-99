@@ -321,7 +321,7 @@ export async function getDeckDetail(deckId: string, userId: string): Promise<Dec
     .orderBy(asc(cards.name));
 
   // This deck's own vantage: its claims must not count against its own rows, or
-  // every card in a finished deck would read as spoken for by itself.
+  // every card in a committed deck would read as spoken for by itself.
   //
   // Swallowed because the decklist is the deck — it has to render whether or not
   // the availability rollup succeeded. A null map leaves every row markerless,
@@ -564,7 +564,7 @@ export type DeckListItem = {
   /** When this deck was last committed, or null for a brew that never has been. */
   lastCommittedAt: Date | null;
   /**
-   * How many of this deck's owned cards a *different* finished deck has
+   * How many of this deck's owned cards a *different* committed deck has
    * sleeved. Zero when the availability read fails, which is the same thing the
    * tile draws when nothing is spoken for — a clause is not worth a 500.
    */
@@ -941,7 +941,7 @@ export async function listDecksWithStats(
 
   // This one decides the status pill, and every caller renders that.
   // `ownedCount` alone cannot answer it — a card the player owns is still a card
-  // THIS deck must buy when an older finished deck already holds every copy — so
+  // THIS deck must buy when an older committed deck already holds every copy — so
   // without it a fully-owned deck reads `Complete` while its own Shopping list
   // names twelve cards.
   //

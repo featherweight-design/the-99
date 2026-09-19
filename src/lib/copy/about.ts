@@ -263,7 +263,7 @@ export const aboutEntries: readonly AboutEntry[] = [
     // entry’s caption is about would be inside a sheet no specimen can open.
     width: 'plate',
     caption:
-      "Every commander you own and have not built yet, ranked by fit. Build from chooses which of your cards the scores are counted against: all of them, or only the ones no finished deck is holding. Where we could not read a commander’s most-played list, the bar has two segments instead of three and the score is out of 40.",
+      "Every commander you own and have not built yet, ranked by fit. Build from chooses which of your cards the scores are counted against: all of them, or only the ones no committed deck is holding. Where we could not read a commander’s most-played list, the bar has two segments instead of three and the score is out of 40.",
     keys: [],
     since: 1,
   },

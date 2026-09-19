@@ -7,13 +7,13 @@
 //
 // The vocabulary is `receiptCountsByCommander`'s and deliberately so: a card is
 // "in use" when a FINISHED deck has sleeved it and the supply is spent. A card
-// an unfinished brew merely lists is still in the box, and a card you own three
+// a draft merely lists is still in the box, and a card you own three
 // of and lent out one of is not a conflict.
 
 import { availabilityState, type Availability } from "./availability";
 
 /**
- * Per deck id, how many of its owned cards a *different* finished deck has
+ * Per deck id, how many of its owned cards a *different* committed deck has
  * sleeved. A deck with no such card is absent from the map rather than present
  * at zero — the clause is not drawn at zero, so the two are the same fact.
  *
