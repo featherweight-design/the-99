@@ -86,7 +86,7 @@ export function primaryRole(input: { typeLine: string; oracleText: string | null
 /**
  * Whether a deck row could flip from `To buy` to `Complete` once the seniority
  * allocation is known — the gate deciding whether `listDecksWithStats` runs the
- * shopping query at all. Its body size is its own: a pair deck is finished at
+ * shopping query at all. Its body size is its own: a pair deck is full at
  * 98, so measuring it against 99 would exclude the very deck the second query
  * exists to answer for.
  *

@@ -274,7 +274,7 @@ export const availabilityCopy = {
     // and the parts have to add up on screen, so every count below comes
     // straight from the query rather than being derived here.
     //
-    // FINISHED LISTS HOLD, UNFINISHED LISTS WANT. That is the whole model in two
+    // COMMITTED DECKS HOLD, DRAFTS WANT. That is the whole model in two
     // verbs, and it is the same distinction `receipt.wantedByBrew` draws. A
     // committed deck has the card; a draft has asked for it and holds
     // nothing yet. Do not level these to one verb: the difference between them

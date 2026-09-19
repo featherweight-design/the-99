@@ -185,7 +185,7 @@ export function deckCounts(
   // list is in your collection"; `coveredCount` answers "how many slots are
   // filled", which a printed card fills without the collection moving. The
   // status pill reads the second — a deck whose only gaps are proxies IS
-  // finished — while every ownership figure keeps reading the first.
+  // Complete — while every ownership figure keeps reading the first.
   const coveredCount = cards.reduce(
     (sum, c) => sum + (c.owned || c.proxied ? c.quantity : 0),
     0,

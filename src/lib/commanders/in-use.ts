@@ -23,7 +23,7 @@ import { commanderPool, type PoolCard } from "../recs/score";
  * clause by severity without double-counting anything.
  */
 export type ReceiptCounts = {
-  /** Fitting owned cards a FINISHED deck has sleeved (`hard` or `over`). */
+  /** Fitting owned cards a COMMITTED deck has sleeved (`hard` or `over`). */
   inUse: number;
   /** Fitting owned cards only a draft lists (`soft`). */
   wantedByBrew: number;

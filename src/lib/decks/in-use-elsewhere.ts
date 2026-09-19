@@ -6,7 +6,7 @@
 // list of twenty decks would otherwise be twenty `excludeDeckId` queries.
 //
 // The vocabulary is `receiptCountsByCommander`'s and deliberately so: a card is
-// "in use" when a FINISHED deck has sleeved it and the supply is spent. A card
+// "in use" when a COMMITTED deck has sleeved it and the supply is spent. A card
 // a draft merely lists is still in the box, and a card you own three
 // of and lent out one of is not a conflict.
 

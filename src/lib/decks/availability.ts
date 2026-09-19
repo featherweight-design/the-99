@@ -150,7 +150,7 @@ export type Availability = {
    */
   free: number;
   /**
-   * Every deck claiming this card — finished and brewing alike — minus the
+   * Every deck claiming this card — committed and draft alike — minus the
    * excluded deck when one was passed, so this follows the same vantage rule as
    * `free`. Ordered by name, then by id; the id is the tiebreak, not decoration,
    * because names collide, and without it two decks sharing a name would order
@@ -221,7 +221,7 @@ export type AvailabilityState = "free" | "soft" | "hard" | "over";
  * `free < 0` and presents as `over`.
  *
  * The hard state is therefore unreachable in this vantage — for ANY deck, not
- * only a finished one. Deck maturity is not an input here: it is already spent
+ * only a committed one. Deck maturity is not an input here: it is already spent
  * upstream, deciding whether each claim counted as hard or soft. Addendum 2
  * words the consequence as "inside a committed deck", because that is the case
  * it draws, but the caller controls the vantage and nothing checks maturity at

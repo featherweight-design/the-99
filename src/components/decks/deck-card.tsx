@@ -175,7 +175,7 @@ function statusDetailFor(
         : c.detailToBuyNoPrice(shopping.copies);
     }
     case "Complete":
-      // No figure. `all owned` was a third way of saying finished, beside a full
+      // No figure. `all owned` was a third way of saying Complete, beside a full
       // green bar and `99 / 99` — and the bar and the count carry it between
       // them. More art means less room for chrome, and this was the chrome that
       // repeated itself.

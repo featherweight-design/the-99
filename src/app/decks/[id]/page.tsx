@@ -95,7 +95,7 @@ export default async function DeckBuilderPage({
       listDecksWithStats(userId, "name"),
       // Read the ranked support list only when the strip can render. A completed
       // deck (openSlots ≤ 0) would never show the strip, so the query would be
-      // pure waste — skipping it saves a join on every finished-deck page load.
+      // pure waste — skipping it saves a join on every committed-deck page load.
       // The in-deck filter belongs to listLastSlotsCandidates, not here: passing
       // detail.cards as coveredOracleIds would apply the role-coverage exclusion
       // to them, which is a different exclusion with a different meaning.

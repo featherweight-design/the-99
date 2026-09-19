@@ -106,7 +106,7 @@ export function statusPill(args: {
    * restate it.
    *
    * The `Complete` branch reads THIS and not `ownedCount`: a deck whose only
-   * gaps are printed cards is finished, and the pill has always been a claim
+   * gaps are printed cards is Complete, and the pill has always been a claim
    * about the list rather than about a box.
    */
   coveredCount?: number;
