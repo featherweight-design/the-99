@@ -547,6 +547,14 @@ Measured over all 342 cached payloads:
 That last invariant is the reason to trust it: EDHREC is publishing a real average deck, not a
 loose statistic.
 
+**The sample was tested for bias rather than assumed representative.** `edhrec_cache` holds
+whatever commanders someone has viewed, which is not random. Measured: the 302 cached
+commanders that are also indexed average **3,853** decks on file against **2,687** for the
+2,977 uncached — about 43% more popular. But both groups span effectively the whole range
+(cached 2–50,337, uncached 1–52,883), so the sums-to-99 invariant is not an artifact of
+looking only at well-played commanders. It is a mild skew, stated rather than glossed, and the
+index re-run removes it entirely by covering all 3,279.
+
 And it is **per commander**, which is strictly better than the colour-bucket conditioning
 §4A.3 describes. Najeela (5 colours) runs 34 lands as **9 basic / 25 nonbasic**; Aang
 (mono-white) runs 36 as **29 / 7**. That is the mana-base difference measured directly.
