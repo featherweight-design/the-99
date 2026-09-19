@@ -75,6 +75,13 @@ describe("legend marks", () => {
   it("finds marks at all", () => {
     // The check above is vacuous if the regex stops matching — a rename of the
     // `mark` field, a formatter change — so the subject is asserted too.
-    expect(marks().length).toBeGreaterThan(20);
+    //
+    // The floor FALLS as figures are rebuilt on real components: every legend
+    // that becomes a mounted specimen takes its `mark` fields with it, and the
+    // page is deliberately converting them. It was 20 when most of chapter 03
+    // was legends and is 10 now that four entries still are. Lower it
+    // deliberately when a conversion lands; never remove it, because a regex
+    // matching nothing is exactly what it exists to catch.
+    expect(marks().length).toBeGreaterThan(10);
   });
 });

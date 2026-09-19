@@ -21,7 +21,7 @@ import { markerAria } from "../ui/availability-marker";
 import { CardSearchRowBody } from "./card-search-row";
 import { MutationError } from "./mutation-error";
 import { useAddOptimisticCard } from "./optimistic-deck";
-import { useCardSearch } from "./use-card-search";
+import { type CardSearchInput, useCardSearch } from "./use-card-search";
 import { useDeckMutation } from "./use-deck-mutation";
 
 interface QuickAddBarProps {
@@ -39,6 +39,26 @@ interface QuickAddBarProps {
    * deck's hard claim on it.
    */
   commanderOracleId: string;
+  /**
+   * The query the bar opens with, and the search behind it. Both default to
+   * what every real mounting wants — an empty field and the server action.
+   *
+   * `/about` supplies them together so its figure can draw the panel WITH
+   * RESULTS: the bar's rows come from `useCardSearch`, which needs two
+   * characters before it asks anything, so a figure taking the defaults draws
+   * a search field and an empty list — which is the one thing that entry is
+   * not about.
+   */
+  initialQuery?: string;
+  /**
+   * Whether the owned-only toggle starts on. True everywhere a player opens
+   * the bar — most adds come from the collection. `/about` passes false: its
+   * figure lists a card the player does not own, and a panel showing a `not
+   * owned` row under an enabled `Owned only` toggle is a state the real search
+   * cannot produce.
+   */
+  initialOwnedOnly?: boolean;
+  search?: CardSearchInput["search"];
 }
 
 export function QuickAddBar({
@@ -47,16 +67,19 @@ export function QuickAddBar({
   deckOracleIds,
   commanderShortName,
   commanderOracleId,
+  initialQuery = "",
+  initialOwnedOnly = true,
+  search,
 }: QuickAddBarProps) {
-  const [query, setQuery] = useState("");
-  const [ownedOnly, setOwnedOnly] = useState(true);
+  const [query, setQuery] = useState(initialQuery);
+  const [ownedOnly, setOwnedOnly] = useState(initialOwnedOnly);
   // Escape dismisses before it clears, so the list can be closed without losing
   // a query the user is still editing.
   const [dismissed, setDismissed] = useState(false);
   const listId = useId();
 
   const { trimmed, results, stale, open, noResults, searching, activeIndex, setActiveIndex, move } =
-    useCardSearch({ query, colorIdentity: commanderIdentity, ownedOnly, dismissed, deckId });
+    useCardSearch({ query, colorIdentity: commanderIdentity, ownedOnly, dismissed, deckId, search });
 
   // The commander counts, though it is no `deck_cards` row: `addCardToDeck`
   // refuses it (`validateCardForDeck` returns `is-commander`), so a row left

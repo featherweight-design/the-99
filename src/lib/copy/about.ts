@@ -375,8 +375,14 @@ export const aboutEntries: readonly AboutEntry[] = [
       // the name, and `decklist-row.tsx` renders it on `quantity > 1` only.
       // A single copy is the ordinary case and says so by saying nothing.
       'a count appears beside the name only when the deck wants more than one copy, as `×2`. A row with no count wants one.',
-      'one mark, and only when there is something to say: `1 in a brew`, `none free`, `short N`, `$` for a card you would have to buy, or `P` for one you are printing. One slot, one answer.',
-      'the edge is the row’s own state — accent where you are working, and the over-committed colour when the deck wants more than you own.',
+      // The red edge rides WITH `short N` rather than in the edge line below.
+      // It is the same answer drawn twice — the collection saying you are a
+      // copy short — where the accent edge answers a different question, and
+      // the two used to share one sentence as though they were one axis. The
+      // page caps an entry at four keys, so this is the split that fits: by
+      // WHAT IS BEING ANSWERED, which is the distinction that was missing.
+      'one mark, and only when there is something to say: `1 in a brew`, `none free`, `short N` — which also turns the row’s edge red — `$` for a card you would have to buy, or `P` for one you are printing. One slot, one answer.',
+      'a bright accent edge answers a different question: your draft has changed this row, and the edge goes when you commit.',
     ],
     since: 1,
   },
@@ -419,41 +425,22 @@ export const aboutEntries: readonly AboutEntry[] = [
     title: 'Adding cards',
     route: '/decks',
     opens: "opens a deck's Add panel",
-    width: 'inset',
+    // 'inset' at the canvas, where the figure was two names and a dot each.
+    // The panel's result row is a full-width option with a meta line and an
+    // availability slot, which a ~300px column cannot hold.
+    width: 'plate',
     caption:
-      'Search what you own or all of Magic, with the ownership dot on every result, and add without leaving the list you are looking at. A card another committed deck is holding still adds — it arrives carrying the mark that says so, rather than being refused.',
-    keys: [],
-    since: 1,
-  },
-  {
-    id: 'undo-removal',
-    chapter: '03',
-    title: 'Undoing a removal',
-    route: '/decks',
-    opens: 'opens a deck',
-    width: 'inset',
-    // R4: the specimen is the DECK PAGE control — `Rhystic Study removed` +
-    // `Undo` (decks-builder.ts, undo.removed / undo.action). The review
-    // screen's `Put back` (deck-versioning.ts:249) is a second door and is
-    // named in the caption rather than drawn. R3 drew one wearing the other.
-    caption:
-      "Take a card out of your deck and the row turns into an undo, naming it. The review screen offers the same thing on a cut of a single copy, reading Put back — a whole stack that came out is put back on the deck itself. Putting a card back also puts back what it cost: the deck's count, its shopping total and any claim it had on your collection all return together, so undo never leaves the figures half-changed. Pulling a copy out of another deck is not this, and discarding a draft is not either.",
-    keys: [],
-    since: 1,
-  },
-  {
-    id: 'deck-import',
-    chapter: '03',
-    title: 'Bring a deck over, or update one',
-    route: '/decks/import',
-    width: 'inset',
-    // R4: there is NO link mode. copy/deck-import.ts:26-30 — "that mode does
-    // not exist and is not being built (#282)". The doors are `Paste a list`
-    // and `Upload a file` (:37-40); the phone line is "Paste it or drop a
-    // file". Import reads a Moxfield CSV *export*, which is the collection
-    // entry's claim, not this one's.
-    caption:
-      'Paste a list or upload a file. The same route updates a deck you already have — there is no link mode, from Moxfield or anywhere else. A line we cannot put a card to does not stop the import — the deck is still made, the line is flagged inside it, and it counts toward the 99 but not toward what is built.',
+      // The canvas said "with the ownership dot on every result". The Add
+      // panel draws NO dot: `card-search-row.tsx` gives each result a card
+      // crop and states ownership in words — `×2 owned` or `not owned`. The
+      // figure this replaced drew dots because this sentence claimed them,
+      // which is the loop the rebuild exists to break.
+      // Two corrections deep now. The canvas said "the ownership dot on every
+      // result" and the panel draws no dot; the first fix said "how many
+      // copies you have", which is true of `rowOwned` and not of the bare
+      // `rowNotOwned` beside it. What both branches actually do is state
+      // ownership, with a figure only where there is one to give.
+      'Search what you own or all of Magic, with every result saying whether you own it and how many copies, and add without leaving the list you are looking at. A card another committed deck is holding still adds — it arrives carrying the mark that says so, rather than being refused.',
     keys: [],
     since: 1,
   },
@@ -474,6 +461,58 @@ export const aboutEntries: readonly AboutEntry[] = [
     since: 1,
   },
   {
+    id: 'shopping',
+    chapter: '03',
+    title: 'What you would need to buy',
+    route: '/decks',
+    opens: 'opens the shopping roll-up',
+    // 'inset' at the canvas, where the figure was two legend rows. It draws
+    // real Shopping-filter rows now, and a ~300px column truncated both card
+    // names to `Dockside ...` and `R. —`.
+    width: 'plate',
+    caption:
+      'Every card your decks want and you cannot supply, priced and grouped, across the whole library rather than one deck at a time. A card you own can be on this list: if an older committed deck is already holding your only copy, the newer deck has to buy one. Unpriced copies still count in the tally and add nothing to the total.',
+    keys: [],
+    since: 1,
+  },
+  {
+    id: 'deck-import',
+    chapter: '03',
+    title: 'Bring a deck over, or update one',
+    route: '/decks/import',
+    // 'inset' at the canvas, where the figure named three labels. It draws
+    // the route's own entry surface now — a mode toggle over a full-width
+    // paste field.
+    width: 'plate',
+    // R4: there is NO link mode. copy/deck-import.ts:26-30 — "that mode does
+    // not exist and is not being built (#282)". The doors are `Paste a list`
+    // and `Upload a file` (:37-40); the phone line is "Paste it or drop a
+    // file". Import reads a Moxfield CSV *export*, which is the collection
+    // entry's claim, not this one's.
+    caption:
+      'Paste a list or upload a file. The same route updates a deck you already have — there is no link mode, from Moxfield or anywhere else. A line we cannot put a card to does not stop the import — the deck is still made, the line is flagged inside it, and it counts toward the 99 but not toward what is built.',
+    keys: [],
+    since: 1,
+  },
+  {
+    id: 'undo-removal',
+    chapter: '03',
+    title: 'Undoing a removal',
+    route: '/decks',
+    opens: 'opens a deck',
+    // 'inset' at the canvas, where the figure was three legend rows. It draws
+    // decklist rows now, which are full-width.
+    width: 'plate',
+    // R4: the specimen is the DECK PAGE control — `Rhystic Study removed` +
+    // `Undo` (decks-builder.ts, undo.removed / undo.action). The review
+    // screen's `Put back` (deck-versioning.ts:249) is a second door and is
+    // named in the caption rather than drawn. R3 drew one wearing the other.
+    caption:
+      "Take a card out of your deck and the row turns into an undo, naming it. The review screen offers the same thing on a cut of a single copy, reading Put back — a whole stack that came out is put back on the deck itself. Putting a card back also puts back what it cost: the deck's count, its shopping total and any claim it had on your collection all return together, so undo never leaves the figures half-changed. Pulling a copy out of another deck is not this, and discarding a draft is not either.",
+    keys: [],
+    since: 1,
+  },
+  {
     id: 'export',
     chapter: '03',
     title: 'Take the list somewhere else',
@@ -488,22 +527,14 @@ export const aboutEntries: readonly AboutEntry[] = [
     caption:
       'The whole 99 as text a deckbuilding site will read, or just the cards you do not own. Buying is a link out, not a checkout — we hand Mana Pool the list and they take it from there, in a new tab, with nothing of yours attached.',
     keys: [
-      'the Shopping list tab is the cards this deck has to buy, counted on the pill — which includes one you own whose every copy another deck is already holding.',
+      // The canvas draws a count on the Shopping tab (`Shopping list 8`) and
+      // the app draws none: `export-dialog.tsx` renders `exportTabCopy.shopping`
+      // and nothing beside it. The figure below is that tab, so the claim had
+      // nowhere to hide.
+      'the Shopping list tab is the cards this deck has to buy — which includes one you own whose every copy another deck is already holding.',
       "the link opens in a new tab and carries the list, nothing else. A card's own link lands on every printing, because the app recommends a card rather than a printing.",
       'Copy to clipboard reads Copied ✓ for a second and a half, then returns. It and Download .txt are the same list in the form each site wants, and nothing here changes the deck.',
     ],
-    since: 1,
-  },
-  {
-    id: 'shopping',
-    chapter: '03',
-    title: 'What you would need to buy',
-    route: '/decks',
-    opens: 'opens the shopping roll-up',
-    width: 'inset',
-    caption:
-      'Every card your decks want and you cannot supply, priced and grouped, across the whole library rather than one deck at a time. A card you own can be on this list: if an older committed deck is already holding your only copy, the newer deck has to buy one. Unpriced copies still count in the tally and add nothing to the total.',
-    keys: [],
     since: 1,
   },
 

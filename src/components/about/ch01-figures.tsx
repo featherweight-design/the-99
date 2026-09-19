@@ -19,6 +19,11 @@ import {
   ISSUE_PARSE_ERROR,
   ISSUE_UNMATCHED,
   CONTESTED_ARRIVAL,
+  ADD_RESULTS,
+  DECK_VERSIONS,
+  EXPORT_DECKLIST,
+  SHOPPING_ROWS,
+  EXPORT_SHOPPING,
   DECKLIST_MARK_ROWS,
   ROLE_MIX_CARDS,
   FIT_LEGEND,
@@ -42,6 +47,11 @@ import { COST_PIP_SIZE, CostPips } from "../ui/cost-pips";
 import { TwoFacedMark } from "../cards/two-faced-mark";
 import { LastSlotsStrip } from "../decks/last-slots-strip";
 import { DecklistRow } from "../decks/decklist-row";
+import { QuickAddBar } from "../decks/quick-add-bar";
+import { PendingChangeProvider } from "../decks/pending-change";
+import { ImportEntry } from "../decks/import-entry";
+import { ExportDialog } from "../decks/export-dialog";
+import { VersionRail } from "../decks/version-history";
 import { RoleCounterStrip } from "../decks/role-counter-strip";
 import { GroupToggle } from "../decks/group-toggle";
 import { ContestedCardRow } from "../decks/contested-card-row";
@@ -595,19 +605,47 @@ export function AutoFillFigureBody() {
  * `buy` with no figure.
  */
 export function DecklistMarksFigureBody() {
+  // Each numeral sits beside the row that draws the mark its key line names,
+  // rather than under the figure with nothing to point at. The numerals are
+  // this page's annotation and the rows are the app's, which is why they are
+  // siblings here instead of anything reaching inside `DecklistRow`.
+  // A LIST per row, not one numeral: the over-committed row draws the count
+  // (key 2) AND the mark-plus-red-edge (key 3), and a single-numeral map would
+  // have silently dropped whichever was written second.
+  const NUMERALS: Record<string, number[]> = {
+    "about-mark-free": [1],
+    "about-mark-over": [2, 3],
+    "about-mark-pending": [4],
+  };
   return (
     <CardDetailProvider fetchCard={async () => null}>
-      <div className="flex flex-col">
-        {DECKLIST_MARK_ROWS.map((card) => (
-          <DecklistRow
-            key={card.oracleId}
-            deckId="about-figure"
-            card={card}
-            siblings={[]}
-            newestAsOf={PRICES[0].fact.asOf}
-          />
-        ))}
-      </div>
+      {/* The draft's own changed-card map. One row is in it, which is what
+          gives that row the accent edge — key line 4. Without a provider the
+          hook returns null, which is every deck with no draft, and the edge
+          could never be drawn here at all. */}
+      <PendingChangeProvider
+        value={{ moves: new Map([["about-mark-pending", { from: 1, to: 2 }]]) }}
+      >
+        <div className="flex flex-col">
+          {DECKLIST_MARK_ROWS.map((card) => (
+            <div key={card.oracleId} className="flex items-center gap-[10px]">
+              <span className="min-w-0 flex-1">
+                <DecklistRow
+                  deckId="about-figure"
+                  card={card}
+                  siblings={[]}
+                  newestAsOf={PRICES[0].fact.asOf}
+                />
+              </span>
+              <span className="flex w-[34px] flex-none justify-start gap-[4px]">
+                {(NUMERALS[card.oracleId] ?? []).map((n) => (
+                  <KeyNumeral key={n} n={n} />
+                ))}
+              </span>
+            </div>
+          ))}
+        </div>
+      </PendingChangeProvider>
     </CardDetailProvider>
   );
 }
@@ -680,4 +718,256 @@ export function DecklistOrderFigureBody() {
       onSortChange={() => {}}
     />
   );
+}
+
+/**
+ * `add-cards` — the Add panel itself.
+ *
+ * The figure drew the panel's RESULT ROWS and nothing else, which left the
+ * caption's first clause — search what you own or all of Magic — with nothing
+ * to point at. `QuickAddBar` is the whole panel: the field, the
+ * owned-only toggle, and the list under them.
+ *
+ * It could not simply be mounted, because its rows come from `useCardSearch`
+ * reaching a server action and that hook asks nothing under two characters —
+ * so the bar drew a field over an empty list. Two props fix that and both
+ * default to what every real mounting wants: `initialQuery` seeds the field,
+ * and `search` takes the resolver. The second is the same shape and the same
+ * reason as `CardDetailProvider`'s `fetchCard`, which this file already uses
+ * three times over.
+ *
+ * The three rows are unchanged and still carry the caption's second sentence:
+ * one owned, one not, and one a committed deck is holding — which still adds,
+ * arriving with the mark that says so.
+ */
+// Module constants, not literals in the render below. `useCardSearch` lists
+// `colorIdentity` in its effect dependencies and compares by identity, so a
+// fresh array from every render of this figure would restart the debounce each
+// time the resolver settled — a search every 150ms, for as long as the page is
+// open. It does not happen today, because nothing re-renders this figure and a
+// prop is only rebuilt when its PARENT renders: measured at one resolver call
+// in 1.2s, and `add-cards-stable.test.tsx` pins that. Hoisting removes the trap
+// rather than fixing a live hang, and costs nothing.
+const ADD_IDENTITY = ["W", "U"];
+// Honours its own `ownedOnly` argument rather than ignoring it. A resolver
+// that returned the same three rows under either filter would draw a panel
+// whose toggle contradicts its list — and the figure below turns the toggle
+// OFF, because one of those rows is a card the player does not own and `Owned
+// only` could never have produced it.
+const ADD_SEARCH = async (
+  _query: string,
+  _identity: string[] | null,
+  ownedOnly: boolean,
+) => (ownedOnly ? ADD_RESULTS.filter((r) => r.owned) : ADD_RESULTS);
+
+export function AddCardsFigureBody() {
+  return (
+    <QuickAddBar
+      deckId="about-figure"
+      commanderIdentity={ADD_IDENTITY}
+      deckOracleIds={[]}
+      commanderShortName={DECK_SPINE.deck.commander.name.split(",")[0]}
+      commanderOracleId={DECK_SPINE.deck.commander.oracleId}
+      // Two characters is `useCardSearch`'s own floor for asking anything, so
+      // a bar taking the default draws a field over an empty list — which is
+      // the one thing this entry is not about.
+      initialQuery="so"
+      // `All of Magic`. The list below holds a card the player does not own,
+      // which `Owned only` cannot return — and the caption's first clause is
+      // about searching both.
+      initialOwnedOnly={false}
+      // The resolver, rather than the server action. Same shape and same
+      // reason as `CardDetailProvider`'s `fetchCard`: a reference page has no
+      // business reaching a server action, and these three rows are chosen to
+      // say what the caption says.
+      search={ADD_SEARCH}
+    />
+  );
+}
+
+/**
+ * `undo-removal` — a decklist with one spent slot.
+ *
+ * The figure was three legend rows quoting `undo.removed`, `undo.action` and
+ * the review screen's `restore.cta`. The first two are one control, and the
+ * control is what the entry is about: a row that has become its own receipt.
+ *
+ * `DecklistRow` draws it on `spent`, which is decklist state rather than row
+ * state — so the figure asks for it the way the decklist does. The rows
+ * either side are ordinary, because the caption's verb is TURNS INTO: a
+ * receipt shown alone is a component, and a receipt between two live rows is
+ * the thing that happened to one of them.
+ *
+ * The review screen's `Put back` is deliberately NOT drawn. The R4 note on
+ * this entry rules it a second door, named in the caption rather than shown,
+ * because R3 drew one wearing the other's label.
+ */
+export function UndoRemovalFigureBody() {
+  // Hugh's call, 2026-09-19: the over-committed row was distracting here. A
+  // red edge and a `short 2` beside a receipt invite the reader to connect
+  // them, and they are unrelated — this entry is about the undo and nothing
+  // else. The rows either side are the two plainest in the fixture: one free,
+  // one whose only distinguishing field is a draft move — and there is no
+  // `PendingChangeProvider` here, so it draws no edge either. Both are fully
+  // owned with no obstacle mark, which is what the entry needs beside a
+  // receipt.
+  const above = DECKLIST_MARK_ROWS[0];
+  const spent = DECKLIST_MARK_ROWS[1];
+  const below = DECKLIST_MARK_ROWS[3];
+  return (
+    <CardDetailProvider fetchCard={async () => null}>
+      <div className="flex flex-col">
+        {[above, spent, below].map((card, i) => (
+          <DecklistRow
+            key={card.oracleId}
+            deckId="about-figure"
+            card={card}
+            siblings={[]}
+            spent={i === 1}
+            newestAsOf={PRICES[0].fact.asOf}
+          />
+        ))}
+      </div>
+    </CardDetailProvider>
+  );
+}
+
+/**
+ * `deck-import` — the import route's own entry surface.
+ *
+ * The figure was three legend rows naming the two mode labels and the update
+ * route's entry label. `ImportEntry` is the surface those labels live on, it
+ * takes no props, and it is what `/decks/import` renders — so the entry can
+ * show its own door rather than a list of the words on it.
+ *
+ * `compact` drops the route's page furniture — its heading and subtitle,
+ * which the entry above the figure already says in its own words, and a paste
+ * box at 300px with nothing in it. At full size the figure measured 1000px,
+ * taller than the viewport: a page rather than a picture of one. The canvas
+ * draws the same crop.
+ *
+ * Nothing here can be typed into or submitted: `Specimen` is `inert` and
+ * carries `pointer-events: none`, so the component's own actions are
+ * unreachable.
+ */
+export function DeckImportFigureBody() {
+  return <ImportEntry compact />;
+}
+
+
+/**
+ * `export` — the export dialog itself, drawn as a specimen.
+ *
+ * It was a three-row legend for a real reason: `ExportDialog` locks body
+ * scroll and traps focus, and a figure doing that on `/about` would lock that
+ * page's own scroll and swallow the reader's Tab. Hugh overruled the
+ * precedent on 2026-09-19, so the dialog takes an `inert` prop that suppresses
+ * every one of those behaviours — see `useDialogA11y`'s own note for why that
+ * is not a general escape hatch.
+ *
+ * The fixture is three body lines against a 99-card deck, so the preview's
+ * `… 96 more` tail is a real fold rather than a number typed here. The
+ * shopping list is the two cards the caption's key line is about: one not
+ * owned, and one owned whose copies another deck is already holding.
+ */
+export function ExportFigureBody() {
+  return (
+    // The dialog is `position: fixed`, so mounted plainly it resolves against
+    // the VIEWPORT and covers the whole page rather than sitting in the
+    // figure. A `transform` on an ancestor makes that ancestor the containing
+    // block for fixed descendants, which is what pins it inside this box —
+    // page-side styling rather than a second production change, since where
+    // the real dialog positions itself is correct and only this one caller
+    // wants it somewhere else.
+    //
+    // The height is stated because the contained dialog centres itself in its
+    // container, and a container sized by a scrim with no intrinsic height is
+    // zero.
+    <div className="relative h-[470px] overflow-hidden rounded-[8px] [transform:translateZ(0)]">
+      <ExportDialog
+        inert
+        open
+        // The SHOPPING tab, not the default: both of this entry's first two
+        // key lines are about it, and `Buy these at Mana Pool` renders on that
+        // tab alone. Opening on the decklist would draw a dialog whose two
+        // annotations point at a control that is not on screen.
+        initialTab="shopping"
+        onClose={() => {}}
+        deckName={DECK_SPINE.deck.name}
+        commanderName={DECK_SPINE.deck.commander.name}
+        partnerName={null}
+        decklistCards={EXPORT_DECKLIST}
+        shoppingCards={EXPORT_SHOPPING}
+      />
+    </div>
+  );
+}
+
+/**
+ * `shopping` — the Shopping filter's own rows.
+ *
+ * The canvas draws a "SPOKEN FOR" panel with two priced rows and a library
+ * total. That panel is a DIAGRAM of the idea rather than a surface: no route
+ * renders it. The library-wide total it ends with is real, but the app draws
+ * that in `CommitmentsCard`, which is already mounted whole as chapter 04's
+ * `commitments` figure — putting it here too would teach a reader that there
+ * are two of them.
+ *
+ * So the figure draws the half that IS a surface and that the caption's
+ * load-bearing sentence is about: a card you own can be on this list. Both
+ * rows go through `DecklistRow` with `inShopping`, which is how `/decks/[id]`
+ * draws them under the Shopping filter.
+ *
+ * The second row is the whole point. `isShoppingCard` puts an OWNED card on
+ * the list when its availability reads `over` — every copy claimed by a
+ * committed deck — and `deckRowTag` then answers `buy` for it through
+ * `spokenFor`. A figure of unowned rows alone would draw two buy tags and
+ * substantiate nothing.
+ */
+export function ShoppingFigureBody() {
+  return (
+    <CardDetailProvider fetchCard={async () => null}>
+      <div className="flex flex-col">
+        {SHOPPING_ROWS.map((card, i) => (
+          <DecklistRow
+            key={card.oracleId}
+            deckId="about-figure"
+            card={card}
+            siblings={[]}
+            inShopping
+            // The Shopping view's EDHREC figure. `undefined` would be the All
+            // view, which is not the list this entry is about; `null` is the
+            // view with no figure for that card, which is a real state of it.
+            shoppingFigure={i === 0 ? 34 : null}
+            newestAsOf={PRICES[0].fact.asOf}
+          />
+        ))}
+      </div>
+    </CardDetailProvider>
+  );
+}
+
+/**
+ * `versions` — the deck's own version rail.
+ *
+ * The figure was six legend rows: three naming a phase (`draft`, `v2 ·
+ * current`, `v1`) and three drawing the deck-state badge. The first three were
+ * the rail's own rows written out as words. The last three went with the
+ * feature: #738 removed those marks from the app, so main had already dropped
+ * them from this figure before this branch rebased onto it.
+ *
+ * `VersionRail` marks the newest row `current` from its own index, so the
+ * fixture states no such field — passing one would be this page deciding
+ * something the rail decides.
+ *
+ * Drawn CLOSED, which is what the tab renders on arrival: a row's diff is
+ * fetched when that row opens (`probe:versions` asserts exactly that), and a
+ * reference page opens nothing.
+ *
+ * The canvas draws a `Review and commit` bar above the rows. The app's control
+ * reads `Review N changes` (`deckVersioningCopy.reviewCta`) and lives on the
+ * deck page rather than the Versions tab, so it is not drawn here.
+ */
+export function VersionsFigureBody() {
+  return <VersionRail deckId="about-deck" versions={DECK_VERSIONS} />;
 }

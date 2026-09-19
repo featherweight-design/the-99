@@ -12,7 +12,6 @@
 // one fails there, which is the invariant this file now keeps.
 
 import { AvailabilityMarker } from "../ui/availability-marker";
-import { OwnershipDot } from "../ui/ownership-dot";
 import { BuyTag } from "../decks/buy-tag";
 import { ProxyTag } from "../decks/proxy-tag";
 import { StatusPillBadge } from "../decks/status-pill";
@@ -21,9 +20,6 @@ import { RoleChips } from "../commanders/role-chips";
 import { GameAxisCell } from "../decks/game-axis-cell";
 import { CommitmentsCard } from "../home/commitments-card";
 import { THEMES } from "../../lib/theme/themes";
-import { addPanelCopy, exportLinkOutCopy, exportTabCopy } from "../../lib/copy/decks-builder";
-import { deckImportCopy } from "../../lib/copy/deck-import";
-import { deckVersioningCopy } from "../../lib/copy/deck-versioning";
 import { gameLogCopy } from "../../lib/copy/game-log";
 import { folderCopy } from "../../lib/copy/folders";
 
@@ -37,6 +33,12 @@ import { setFilterCopy, setPageCopy } from "../../lib/copy/set-collections";
 import { PIP_ORDER, PIP_SRC } from "../../lib/copy/filter-chassis";
 import {
   ImportFigureBody,
+  AddCardsFigureBody,
+  ExportFigureBody,
+  VersionsFigureBody,
+  ShoppingFigureBody,
+  DeckImportFigureBody,
+  UndoRemovalFigureBody,
   CardDetailFigureBody,
   CommanderLaneFigureBody,
   DiscoverFigureBody,
@@ -63,7 +65,6 @@ import {
 import type { AboutWidth } from "../../lib/copy/about";
 import {
   AVAILABILITY,
-  CARDS,
   COMMITMENTS,
   COMMITMENTS_TOTAL_CARDS,
   GAME_AXES,
@@ -747,89 +748,48 @@ function DecklistOrderFigure({ width }: { width: AboutWidth }) {
 function AddCardsFigure({ width }: { width: AboutWidth }) {
   return (
     <Specimen label="add-cards" width={width}>
-      <div className="flex flex-col gap-[8px]">
-        <div className="flex items-center gap-[8px]">
-          <OwnershipDot owned size={7} />
-          <span className="text-[12.5px] text-[color:var(--fg)]">{CARDS.owned}</span>
-        </div>
-        <div className="flex items-center gap-[8px]">
-          <OwnershipDot owned={false} size={7} />
-          <span className="text-[12.5px] text-[color:var(--fg)]">{CARDS.proxied}</span>
-        </div>
-        <span className="font-mono text-[10px] text-[color:var(--fg-faint)]">
-          the dot is on every result, whether you own it or not
-        </span>
-      </div>
+      <AddCardsFigureBody />
     </Specimen>
   );
 }
 
 function UndoRemovalFigure({ width }: { width: AboutWidth }) {
   return (
-    <Legend
-      label="undo-removal"
-      width={width}
-      rows={[
-        { mark: addPanelCopy.undo.removed(CARDS.removed), meaning: "the row becomes its own undo" },
-        { mark: addPanelCopy.undo.action, meaning: "and the count, the total and the claim all come back together" },
-        { mark: deckVersioningCopy.restore.cta, meaning: "the same thing on the review screen, for a cut of one copy" },
-      ]}
-    />
+    <Specimen label="undo-removal" width={width}>
+      <UndoRemovalFigureBody />
+    </Specimen>
   );
 }
 
 function DeckImportFigure({ width }: { width: AboutWidth }) {
   return (
-    <Legend
-      label="deck-import"
-      width={width}
-      rows={[
-        { mark: deckImportCopy.entry.modePaste, meaning: "a list from anywhere" },
-        { mark: deckImportCopy.entry.modeFile, meaning: "or the file you exported" },
-        { mark: deckImportCopy.update.entryLabel, meaning: "the same route updates a deck you already have" },
-      ]}
-    />
+    <Specimen label="deck-import" width={width}>
+      <DeckImportFigureBody />
+    </Specimen>
   );
 }
 
 function VersionsFigure({ width }: { width: AboutWidth }) {
   return (
-    <Legend
-      label="versions"
-      width={width}
-      rows={[
-        { mark: "draft", meaning: "every add and cut, until you commit" },
-        { mark: `v2 · ${deckVersioningCopy.history.current}`, meaning: "what the deck is sleeved as" },
-        { mark: "v1", meaning: "and what it was, with the change between them readable" },
-      ]}
-    />
+    <Specimen label="versions" width={width}>
+      <VersionsFigureBody />
+    </Specimen>
   );
 }
 
 function ExportFigure({ width }: { width: AboutWidth }) {
   return (
-    <Legend
-      label="export"
-      width={width}
-      rows={[
-        { mark: exportTabCopy.decklist, meaning: "the whole 99, as text a deckbuilding site will read" },
-        { mark: exportTabCopy.shopping, meaning: "or only what this deck has to buy" },
-        { mark: exportLinkOutCopy.shopping, meaning: "a link out, in a new tab, with nothing of yours attached" },
-      ]}
-    />
+    <Specimen label="export" width={width}>
+      <ExportFigureBody />
+    </Specimen>
   );
 }
 
 function ShoppingFigure({ width }: { width: AboutWidth }) {
   return (
-    <Legend
-      label="shopping"
-      width={width}
-      rows={[
-        { mark: refreshCopy.decks.detailToBuy(23, "$124.40"), meaning: "across the library, not one deck at a time" },
-        { mark: "own it, still buying", meaning: "an older finished deck is holding your only copy" },
-      ]}
-    />
+    <Specimen label="shopping" width={width}>
+      <ShoppingFigureBody />
+    </Specimen>
   );
 }
 

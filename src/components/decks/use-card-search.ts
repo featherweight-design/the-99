@@ -9,7 +9,7 @@
 import { useEffect, useRef, useState } from "react";
 import { searchCards, type SearchResult } from "../../app/decks/[id]/search-action";
 
-interface CardSearchInput {
+export interface CardSearchInput {
   query: string;
   /** `null` drops the colour-identity constraint — see search-action.ts. */
   colorIdentity: string[] | null;
@@ -18,9 +18,25 @@ interface CardSearchInput {
   dismissed: boolean;
   /** The deck being built — the vantage each row's availability is read from. */
   deckId: string;
+  /**
+   * The search itself. Defaults to the server action, which is what every real
+   * combobox uses; `/about` passes a resolver that returns a fixed list, so its
+   * figure can draw the panel with results in it without a reference page
+   * reaching a server action.
+   *
+   * Same shape and same reason as `CardDetailProvider`'s `fetchCard`.
+   */
+  search?: typeof searchCards;
 }
 
-export function useCardSearch({ query, colorIdentity, ownedOnly, dismissed, deckId }: CardSearchInput) {
+export function useCardSearch({
+  query,
+  colorIdentity,
+  ownedOnly,
+  dismissed,
+  deckId,
+  search = searchCards,
+}: CardSearchInput) {
   // Rows carry the request that produced them. They stay on screen through the
   // next debounce — a list that blanks on every keystroke is worse than one that
   // lags by 150ms — but `stale` below stops Enter acting on them.
@@ -49,7 +65,7 @@ export function useCardSearch({ query, colorIdentity, ownedOnly, dismissed, deck
 
     let cancelled = false;
     timerRef.current = setTimeout(() => {
-      searchCards(trimmed, colorIdentity, ownedOnly, deckId)
+      search(trimmed, colorIdentity, ownedOnly, deckId)
         .then((found) => {
           if (cancelled) return;
           setRows({ for: requestKey, items: found });
@@ -71,6 +87,10 @@ export function useCardSearch({ query, colorIdentity, ownedOnly, dismissed, deck
       cancelled = true;
       if (timerRef.current !== null) clearTimeout(timerRef.current);
     };
+  // `search` is deliberately NOT a dependency: it is a constant at every call
+  // site (the module-level action, or one fixed resolver), and an inline arrow
+  // would re-fire the debounce on every render of the caller.
+  // eslint-disable-next-line react-hooks/exhaustive-deps -- see above
   }, [trimmed, queryActive, ownedOnly, colorIdentity, requestKey, deckId]);
 
   const results = rows?.items ?? [];
