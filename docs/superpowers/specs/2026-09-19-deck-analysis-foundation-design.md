@@ -42,11 +42,22 @@ foundation, analysis on top of that can be flawed."*
 The app today can say which cards go **with a commander**. It has no opinion about what makes
 a **deck**. Three places where that shows, all verifiable:
 
-- **The targets are flat and asserted.** `ROLE_TARGETS` (`src/lib/recs/roles.ts:4`) is
-  `ramp: 10, draw: 10, removal: 8, wipes: 3`, identical for every deck, with no staples. And
-  the app **does** have a land target — `landTarget()` in `src/lib/decks/deck-size.ts` returns
-  **37**, or 36 with a partner — which an earlier draft of this spec wrongly claimed did not
-  exist. The problem is not that it is missing; it is that **37 is flat where the measured
+- **The targets are flat, asserted, duplicated — and already labelled with a source they do not
+  have.** Three constants carry the same five numbers: `ROLE_TARGETS` (`src/lib/recs/roles.ts:4`)
+  at `ramp 10, draw 10, removal 8, wipes 3`; `landTarget()` (`src/lib/decks/deck-size.ts:14`) at
+  **37**, or 36 with a partner; and **`RECOMMENDED_MIX` (`src/lib/decks/mix.ts:50`)**, which
+  restates all five — `ramp 10, draw 10, removal 8, wipes 3, land 37` — with a label and an
+  `advisory` flag per role.
+
+  **`RECOMMENDED_MIX` is the one players actually see**, drawn by eight components including
+  `RoleCounterStrip` on the deck page and the review page's what-changed strip. And
+  `RECOMMENDED_MIX_SOURCE_LINE` (`mix.ts:89`) tells them where the numbers come from:
+  **`"EDHREC averages"`**.
+
+  **Nothing derives them from EDHREC.** That line is an unsourced claim the app makes to its
+  reader today. So §4A is not adding a new claim to the deck page — it is **making an existing
+  claim true**, and the measured figures disagree with the asserted ones: the corpus mean is
+  35.3 lands against a flat 37, ranging 30–47 by commander. The problem is not that it is missing; it is that **37 is flat where the measured
   spread is 30–47** (§4A.4). Najeela's decks average 34 lands and Aang's 36 — the flat target
   errs high for both, and the corpus mean is 35.3, so 37 is above the average deck rather than
   at it.
@@ -232,8 +243,10 @@ states"* — having rejected 2% because it leaves a commander with 31,481 decks 
 theme at all. `measure-gap-line.mts` exists because a state's frequency turned out to be a
 property of the account it was measured against.
 
-`ROLE_TARGETS`' four constants and `landTarget()`'s 37 are the standing counter-examples: each
-is asserted, and nothing records where any of them came from. The land target is the one this
+`ROLE_TARGETS`, `landTarget()` and `RECOMMENDED_MIX` are the standing counter-examples: three
+constants carrying five numbers between them, none derived — and `RECOMMENDED_MIX` goes further
+and **tells the reader they are "EDHREC averages"**, which is a sourcing claim with no
+derivation behind it. The land target is the one this
 sub-project can replace with a measurement; the other four it can only label (§4A.5).
 
 ### 2.5 The profile is facts; verdicts are pure functions over it
@@ -1050,6 +1063,12 @@ EDHREC publishes **types**, not **functions**. So `land`, `creature`, `instant` 
 are measured, and **ramp / draw / removal / wipes are not** — nothing in any source available
 here says how many ramp pieces an average deck runs.
 
+**The `advisory` flag is the precedent for how to label them.** `RECOMMENDED_MIX` already marks
+land `advisory: true` and the four functional roles `false` — the app distinguishes a soft target
+from a firm one today. After §4A that distinction inverts on its evidence: **land becomes the
+measured one** and the four functional roles become the rules of thumb. Sub-project 2 owns the
+flip, and it is a one-word change per role in a constant the surface already reads.
+
 **They are still surfaced, as an explicitly labelled rule of thumb** — ruled 2026-09-19. A
 player building a first deck is badly served by silence on removal, and the alternative to a
 labelled heuristic is not a better number, it is no signal at all.
@@ -1093,15 +1112,23 @@ data — the land count and the type composition — has **no overlap at all** w
 scoring engine reads. The migration cannot reach `commander_scores`, by construction rather
 than by choice.
 
-What the measured land target actually touches, in full:
+What the measured land target actually touches, in full — and a **third** draft got this wrong
+by missing an entire constant:
 
-| file | call sites |
+| file | what it holds |
 |---|---|
 | `src/lib/decks/deck-size.ts` | `landTarget()` itself |
-| `src/lib/decks/fill.ts` | 2 — the plan's ceiling and the land ceiling |
-| `src/lib/decks/suggest.ts` | 2 invocations (`:119`, `:154`), plus an import and a re-export |
+| `src/lib/decks/fill.ts` | 2 invocations — the plan's ceiling and the land ceiling |
+| `src/lib/decks/suggest.ts` | 2 invocations (`:119`, `:154`), an import and a re-export |
+| **`src/lib/decks/mix.ts:50`** | **`RECOMMENDED_MIX` — a second copy of all five numbers, read by eight components** |
 
-Three files, all in the deck-building path. Every other consumer of `ROLE_TARGETS` —
+`RECOMMENDED_MIX`'s consumers: `role-counter-strip.tsx`, `consider-panel.tsx`,
+`unresolved-group.tsx`, `changed-strip.tsx`, `strip-rationale.tsx`, `builder-shell.tsx`, and two
+copy modules. **This is the drawn surface**, so a measured land target that updated
+`deck-size.ts` and not `mix.ts` would change what the fill does while the strip on the same page
+kept saying 37.
+
+Still all in the deck-building path, and still nowhere near the scoring engine. Every other consumer of `ROLE_TARGETS` —
 `score.ts`, `weakest-role.ts`, `role-chips.tsx`, `coverage-section.tsx` — keeps flat targets
 because each reads the unmeasurable four, and there is
 a principled reason they should anyway: a **ranking** wants one yardstick across commanders,
