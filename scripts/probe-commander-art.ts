@@ -217,13 +217,26 @@ async function run() {
     check("names-only caller: no printed name is resolved",
       namesPair?.commanderPrintedName, null);
   } finally {
-    await fixture.execute(sql`delete from decks where user_id = ${USER}`);
-    await fixture.execute(sql`delete from collection_items where user_id = ${USER}`);
-    if (cropRestore) {
-      await fixture.execute(sql`
-        update printings set art_crop_uri = ${cropRestore.previous}
-        where scryfall_id = ${cropRestore.scryfallId}::uuid
-      `);
+    // EVERY restoration is attempted, and the SHARED row goes first. Sequential awaits
+    // make each cleanup a gate on the next, so a transient failure deleting this run's
+    // own rows would exit the block with `SENTINEL_CROP` left on a real catalog printing
+    // — a fixture's mess is this user's alone, that one is everybody's. Failures are
+    // collected and thrown after the last attempt rather than at the first.
+    const cleanups = [
+      ...(cropRestore
+        ? [fixture.execute(sql`
+            update printings set art_crop_uri = ${cropRestore.previous}
+            where scryfall_id = ${cropRestore.scryfallId}::uuid
+          `)]
+        : []),
+      fixture.execute(sql`delete from decks where user_id = ${USER}`),
+      fixture.execute(sql`delete from collection_items where user_id = ${USER}`),
+    ];
+    const outcomes = await Promise.allSettled(cleanups);
+    const failed = outcomes.filter((o) => o.status === "rejected");
+    if (failed.length > 0) {
+      for (const f of failed) console.error(f.reason);
+      throw new Error(`${failed.length} cleanup step(s) failed — see above`);
     }
   }
 }

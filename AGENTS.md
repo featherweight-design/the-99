@@ -618,8 +618,10 @@ Package manager is **pnpm** (pinned via `packageManager` in package.json) — ne
   collection reader, because it is a column on `decks` rather than a `deck_cards` row. The
   decklist beneath it had resolved every other card to the owned printing for months.
 
-  Its three sections cover the page, the tile through its OWN query (the two loaders could
-  drift at any time), and the fallback: a commander the player does not own keeps the oracle
+  Its four sections cover the page, the tile through its OWN query (the two loaders could
+  drift at any time), the `includeCommanderArt` gate — `/decks/[id]` calls the same loader
+  for a deck-name list and must not pay a collection aggregation per deck — and the
+  fallback: a commander the player does not own keeps the oracle
   art, unchanged. That last one is what says the fix costs nothing on a database whose
   `printings.art_crop_uri` is still null everywhere — which is every database until the next
   catalog refresh, and therefore the state it ships in.
@@ -629,7 +631,7 @@ Package manager is **pnpm** (pinned via `packageManager` in package.json) — ne
   resolved crop from a fallback. The previous value is read BEFORE the write and restored in
   the same `finally` as the fixture user's rows.
 
-  Three mutations were run against it. Reverting `getDeckDetail`'s override fails 3 of its 10
+  Three mutations were run against it. Reverting `getDeckDetail`'s override fails 3 of its 13
   checks and `listDecksWithStats`'s fails 2 — 5 with both reverted — while all four fallback
   checks pass in every case, which is the shape a correct probe has. Making
   `aggregateCollection` take `cards.art_crop_uri` directly fails the two crop checks — that one
