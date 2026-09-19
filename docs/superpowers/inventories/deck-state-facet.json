@@ -1,6 +1,6 @@
 {
   "feature": "Deck state \u2014 the one row that survives, and Status's seven",
-  "note": "ONE row under `Deck state` now \u2014 `Edited since last version` \u2014 and seven under Status. The phase the facet used to carry is `New` and `Draft` up there, because a facet duplicating two status rows can only disagree with them. Both renderings are photographed: a `FilterPanel` in the wide chassis and a chip group in the phone sheet. No `shares` block, deliberately \u2014 those are two components by design (`decks-view.tsx` mounts the panel, `deck-filter-sheet.tsx` draws chips), the same split every other facet on this route has, so a binding here would fail a correct build. What a picture adds over the tests: the heading sits directly after Status, Status itself now lists seven rows in cascade order, and the wide row does not wrap \u2014 `probe:deck-statuses` measures the wrap, this shows the placement. Same /about precondition as `deck-statuses.json`.",
+  "note": "ONE row under `Deck state` now \u2014 `Edited since last version` \u2014 and seven under Status. The phase the facet used to carry is `New` and `Draft` up there, because a facet duplicating two status rows can only disagree with them. Both renderings are photographed: a `FilterPanel` in the wide chassis and a chip group in the phone sheet. No `shares` block, deliberately \u2014 those are two components by design (`decks-view.tsx` mounts the panel, `deck-filter-sheet.tsx` draws chips), the same split every other facet on this route has, so a binding here would fail a correct build. What a picture adds over the tests: the heading sits directly after Status, Status itself now lists seven rows in cascade order, and the wide row does not wrap \u2014 `probe:deck-statuses` measures the wrap, this shows the placement. Same /about precondition as `deck-statuses.json`. The Status rows are photographed here rather than in `deck-statuses.json` because this is the FACET's inventory and Status is a facet: seven rows in cascade order, phase first, is the claim a picture settles and a unit test can only assert as an array.",
   "rows": [
     {
       "id": "decks-facet",
@@ -17,7 +17,7 @@
         },
         {
           "fill": "input[type=search]",
-          "text": "zz-marks",
+          "text": "zz-nd",
           "settle": 1200
         },
         {
@@ -30,6 +30,47 @@
     {
       "id": "decks-facet-sheet",
       "label": "/decks \u00b7 the facet in the phone sheet",
+      "view": "src/components/decks/deck-filter-sheet.tsx",
+      "widths": [
+        "phone"
+      ],
+      "steps": [
+        {
+          "goto": "/decks",
+          "wait": "main, [role=main], h1",
+          "settle": 3000
+        },
+        {
+          "clickRole": "button",
+          "name": "Filter decks",
+          "wait": "[role=dialog]",
+          "settle": 900
+        }
+      ]
+    },
+    {
+      "id": "status-seven",
+      "label": "/decks \u00b7 Status, open \u2014 seven rows, phase first",
+      "view": "src/components/decks/decks-view.tsx",
+      "widths": [
+        "desktop"
+      ],
+      "steps": [
+        {
+          "goto": "/decks",
+          "wait": "main, [role=main], h1",
+          "settle": 3000
+        },
+        {
+          "clickRole": "button",
+          "name": "Status filter",
+          "settle": 900
+        }
+      ]
+    },
+    {
+      "id": "status-seven-sheet",
+      "label": "/decks \u00b7 Status in the phone sheet \u2014 the same seven",
       "view": "src/components/decks/deck-filter-sheet.tsx",
       "widths": [
         "phone"
