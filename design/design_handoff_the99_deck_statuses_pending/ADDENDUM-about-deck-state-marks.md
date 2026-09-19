@@ -1,3 +1,5 @@
+> **SUPERSEDED 2026-09-19 by R6** — `ADDENDUM-about-new-and-draft.md` in this folder. Both marks this file amends the page for are retired. Kept as the record, per this folder's own convention for superseded turns (`README-r5.md`, `STATES-to-build.md`); the R6 drop deleted it, which would have left the About round with no trace of what it corrected.
+
 # About page — amendment for the deck-state marks
 
 `design_handoff_the99_deck_statuses_pending/` · R4

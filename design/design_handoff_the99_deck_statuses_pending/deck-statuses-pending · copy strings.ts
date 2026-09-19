@@ -1,3 +1,10 @@
+// SUPERSEDED 2026-09-19 by R5 — see `to-build · copy strings.ts` in this folder.
+// Every string below names one of the two deck-state marks, and both marks are
+// retired: they were the only wordless signals in the deck list, and the plate
+// measured ~39 near-neutral units against `Building`. What replaces them is a
+// seventh STATUS VALUE, `To build`, which needs one label in
+// `refreshCopy.status` and nothing else. Kept as the record.
+
 /**
  * #### R4 — TWO marks, two axes, one box.
  *
