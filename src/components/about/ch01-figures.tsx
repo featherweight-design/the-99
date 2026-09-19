@@ -22,6 +22,7 @@ import {
   ADD_RESULTS,
   CONTESTED_RESERVATION,
   DECK_FOLDERS,
+  GAME_SUMMARY,
   RESUME_DECKS,
   SHELF_COUNTS,
   RESUME_NOW,
@@ -53,10 +54,14 @@ import { COST_PIP_SIZE, CostPips } from "../ui/cost-pips";
 import { TwoFacedMark } from "../cards/two-faced-mark";
 import { LastSlotsStrip } from "../decks/last-slots-strip";
 import { DecklistRow } from "../decks/decklist-row";
+import { useSyncExternalStore } from "react";
 import { QuickAddBar } from "../decks/quick-add-bar";
 import { GameLogForm } from "../decks/game-log-form";
+import { GameFindings } from "../decks/games-panel";
 import { ResumeDecks } from "../home/resume-decks";
 import { ShelfLine } from "../decks/shelf-line";
+import { ThemeMiniature, themeInForce } from "../shell/theme-picker";
+import { THEMES } from "../../lib/theme/themes";
 import { PendingChangeProvider } from "../decks/pending-change";
 import { ImportEntry } from "../decks/import-entry";
 import { ExportDialog } from "../decks/export-dialog";
@@ -998,13 +1003,32 @@ export function VersionsFigureBody() {
  */
 export function LogAGameFigureBody() {
   return (
-    <GameLogForm
-      deckId="about-figure"
-      isFirstGame
-      initialOpen
-      onSaved={() => {}}
-      onAnnounce={() => {}}
-    />
+    <div className="relative">
+      <GameLogForm
+        deckId="about-figure"
+        isFirstGame
+        initialOpen
+        onSaved={() => {}}
+        onAnnounce={() => {}}
+      />
+      {/* The two numerals the canvas draws, beside the things the key lines
+          are about: the pod-size row, and the optional note under the save.
+          They are absolutely positioned because the form is mounted whole and
+          nothing here reaches inside it — the alternative was a prop on
+          `GameLogForm` for annotation it has no business knowing about.
+
+          The offsets are MEASURED, not guessed — the first version put ① on
+          top of the `POD SIZE` label. Both are anchored to the figure's RIGHT
+          and to a row whose height is fixed, because the plate is a fixed
+          760px cap on the one page that mounts this; the left edge of the pod
+          row moves with the label beside it and the right edge does not. */}
+      <span aria-hidden className="pointer-events-none absolute right-[120px] top-[138px]">
+        <KeyNumeral n={1} />
+      </span>
+      <span aria-hidden className="pointer-events-none absolute right-[36px] bottom-[54px]">
+        <KeyNumeral n={2} />
+      </span>
+    </div>
   );
 }
 
@@ -1078,4 +1102,84 @@ export function FoldersFigureBody() {
  */
 export function ReservationsFigureBody() {
   return <ContestedCardRow card={CONTESTED_RESERVATION} />;
+}
+
+/**
+ * `themes` — the six tiles, as the picker draws them, with the reader's own
+ * theme ticked.
+ *
+ * The figure drew its own tile: three coloured swatches over a name. The
+ * picker draws a MINIATURE OF THE APP — a panel with `99` set in that theme's
+ * display face, an accent bar, and the chrome beside it — which is the entry's
+ * subject far better than three rectangles, because the claim is that a theme
+ * changes the palette and not the meaning.
+ *
+ * `ThemeMiniature` and `themeInForce` are the picker's own, exported rather
+ * than copied. THE TICK IS THE READER'S: `themeInForce` reads
+ * `document.documentElement.dataset.theme`, which `applyTheme` writes, so the
+ * figure marks whichever theme the page is actually being read in. A server
+ * render cannot know it, so the tick appears after hydration — which is the
+ * same thing the picker itself does.
+ */
+export function ThemesFigureBody() {
+  // `useSyncExternalStore`, not an effect that sets state: the server has no
+  // document, so the tick cannot be rendered on the server — and setting state
+  // synchronously inside an effect is the cascading-render pattern the lint
+  // rule forbids. The server snapshot is null, which is "no tick", so the
+  // markup React sends and the first client paint agree.
+  //
+  // Nothing subscribes: `applyTheme` writes the attribute and the picker lives
+  // in a menu that unmounts, so there is no event to listen for. A reader who
+  // changes theme with this page open gets the whole page repainted by the
+  // attribute anyway; the tick catches up on the next render.
+  const active = useSyncExternalStore(
+    () => () => {},
+    () => themeInForce(THEMES[0].key),
+    () => null,
+  );
+  return (
+    <div className="grid grid-cols-3 gap-[10px] min-[1000px]:grid-cols-6">
+      {THEMES.map((theme) => (
+        <div
+          key={theme.key}
+          // The selected tile takes the PICKER'S OWN treatment, not just the
+          // tick: `bg-[--elevated]` under a 1px accent outline, which is what
+          // the account menu draws. The tick alone reads as a stray mark at
+          // this size, and the two together are one state.
+          className={`flex flex-col gap-[6px] rounded-[10px] p-[5px] ${
+            theme.key === active
+              ? "bg-[color:var(--elevated)] outline outline-1 outline-[color:var(--accent)]"
+              : ""
+          }`}
+        >
+          <ThemeMiniature theme={theme.key} compact={false} selected={theme.key === active} />
+          <span className="text-[12.5px] leading-[1.2] text-[color:var(--fg)]">{theme.name}</span>
+          {/* The plane is the SUBTITLE, never the label: you pick Neon Rain,
+              not Kamigawa, and an earlier figure had them the other way up.
+              `short`, which is what the picker draws — the full plane name is
+              "Kamigawa: Neon Dynasty" where the app says "Kamigawa". */}
+          <span className="font-mono text-[10px] text-[color:var(--fg-faint)]">{theme.short}</span>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+/**
+ * `log-findings` — the Games tab's own aggregate.
+ *
+ * The figure drew two `GameAxisCell`s in a column, with the bucket passed in
+ * as a prop. That is a cell, not a finding: the entry is about the tab
+ * SORTING what it has seen into what to fix and what to keep, and two cells
+ * side by side sort nothing. Both of its key lines pointed at parts the figure
+ * did not draw — the heading that describes under three games, and the Mixed
+ * line for anything that has cut both ways.
+ *
+ * `GameFindings` is the panel's own aggregate block, extracted so this page
+ * can draw it. It takes a summary and nothing else, which is what made the
+ * extraction safe — the panel around it holds a deck id, a form,
+ * announcements and a history, and none of them reach into this block.
+ */
+export function LogFindingsFigureBody() {
+  return <GameFindings summary={GAME_SUMMARY} />;
 }

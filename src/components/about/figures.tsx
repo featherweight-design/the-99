@@ -17,9 +17,7 @@ import { ProxyTag } from "../decks/proxy-tag";
 import { StatusPillBadge } from "../decks/status-pill";
 import { SetCell } from "../sets/set-cell";
 import { RoleChips } from "../commanders/role-chips";
-import { GameAxisCell } from "../decks/game-axis-cell";
 import { CommitmentsCard } from "../home/commitments-card";
-import { THEMES } from "../../lib/theme/themes";
 
 import { BrowseFigureBody } from "./browse-figure";
 import { KeyNumeral } from "./numeral";
@@ -32,6 +30,8 @@ import {
   ImportFigureBody,
   AddCardsFigureBody,
   FoldersFigureBody,
+  LogFindingsFigureBody,
+  ThemesFigureBody,
   LogAGameFigureBody,
   ReservationsFigureBody,
   ResumeFigureBody,
@@ -66,8 +66,6 @@ import {
   AVAILABILITY,
   COMMITMENTS,
   COMMITMENTS_TOTAL_CARDS,
-  GAME_AXES,
-  GAME_COUNT,
   ROLE_COUNTS,
   SHOPPING,
   READY_IN_USE,
@@ -211,44 +209,56 @@ function StatusFigure({ width }: { width: AboutWidth }) {
   const BODY = 99;
   return (
     <Specimen label="status" width={width}>
-      <div className="flex flex-col gap-[10px]">
-        {STATUSES.map((status) => (
-          <div key={status} className="flex flex-col gap-[4px]">
-            <div className="flex items-center gap-[10px]">
-              {/* The className is REQUIRED and it is the FOOTER's, not the
-                  tile's: the component defaults to `TILE_CLASS`, which opens
-                  `absolute bottom-[13px] left-[13px]` and would pin all six to
-                  the page corner, and the deck card's own footer draws 22px
-                  tall at 10.5px rather than the tile's 24px at 11px. */}
-              <StatusPillBadge
-                status={status}
-                className="flex h-[22px] flex-none items-center rounded-[6px] px-[8px] font-mono text-[10.5px] tracking-[0.06em]"
-              />
-              <span className="flex-none font-mono text-[10.5px] text-[color:var(--fg-faint)]">
-                {`${built[status]} / ${BODY}`}
-              </span>
-              {/* The track is drawn for every status; the fill is omitted for
-                  the one specimen with nothing built, which is what an empty
-                  track means. `New` rather than `Draft` since R6 — a draft has
-                  a length, and this one is drawn at 47 cards. */}
-              <div
-                className="relative h-[3px] flex-1 rounded-full"
-                style={{ background: "var(--border)" }}
-              >
-                {built[status] > 0 && (
-                  <div
-                    data-status-fill
-                    className="absolute top-0 bottom-0 left-0 rounded-full"
-                    style={statusBarStyle(status, built[status], BODY)}
-                  />
-                )}
-              </div>
+      {/* THREE COLUMNS, ON ONE LINE. The badge, then a fixed-width track, then
+          what the deck card prints beside it. The figure used to stack the
+          clause UNDER the row and give the track the rest of the width, which
+          read as seven two-line blocks rather than one table a reader can scan
+          down — and the third column is the whole point of the entry, since
+          each status has exactly one thing to say.
+
+          The track is fixed rather than `flex-1` for the same reason: a bar
+          that changes length with the sentence beside it is comparing two
+          different scales down the column. */}
+      <div className="flex flex-col">
+        {STATUSES.map((status, i) => (
+          <div
+            key={status}
+            className={`flex items-center gap-[12px] py-[9px] ${
+              i > 0 ? "border-t border-solid border-[color:var(--border)]" : ""
+            }`}
+          >
+            {/* The className is REQUIRED and it is the FOOTER's, not the
+                tile's: the component defaults to `TILE_CLASS`, which opens
+                `absolute bottom-[13px] left-[13px]` and would pin all seven to
+                the page corner, and the deck card's own footer draws 22px tall
+                at 10.5px rather than the tile's 24px at 11px. */}
+            <StatusPillBadge
+              status={status}
+              className="flex h-[22px] w-[86px] flex-none items-center rounded-[6px] px-[8px] font-mono text-[10.5px] tracking-[0.06em]"
+            />
+            {/* The track is drawn for every status; the fill is omitted for
+                the one specimen with nothing built, which is what an empty
+                track means. `New` rather than `Draft` since R6 — a draft has
+                a length, and this one is drawn at 47 cards. */}
+            <div
+              className="relative h-[3px] w-[248px] flex-none rounded-full"
+              style={{ background: "var(--border)" }}
+            >
+              {built[status] > 0 && (
+                <div
+                  data-status-fill
+                  className="absolute top-0 bottom-0 left-0 rounded-full"
+                  style={statusBarStyle(status, built[status], BODY)}
+                />
+              )}
             </div>
-            {clause[status] && (
-              <span className="font-mono text-[10px] text-[color:var(--fg-faint)]">
-                {clause[status]}
-              </span>
-            )}
+            {/* ONE thing per status, which is the entry's claim. A clause
+                where the card draws one; the count beside the bar where it
+                does not — and never both, because that would be two figures
+                saying the same thing. */}
+            <span className="min-w-0 flex-1 font-mono text-[10.5px] text-[color:var(--fg-faint)]">
+              {clause[status] ?? `${built[status]} / ${BODY}`}
+            </span>
           </div>
         ))}
       </div>
@@ -541,19 +551,7 @@ function RoleCoverageFigure({ width }: { width: AboutWidth }) {
 function LogFindingsFigure({ width }: { width: AboutWidth }) {
   return (
     <Specimen label="log-findings" width={width}>
-      <div className="flex flex-col gap-[10px]">
-        {GAME_AXES.map((tally, i) => (
-          <GameAxisCell
-            key={tally.key}
-            tally={tally}
-            gameCount={GAME_COUNT}
-            // Seven games clears PATTERN_MIN, so the cells take their buckets.
-            // Below it every cell is neutral, and a figure drawn there would
-            // teach the waiting state while the caption talks about findings.
-            bucket={i === 0 ? "fix" : "keep"}
-          />
-        ))}
-      </div>
+      <LogFindingsFigureBody />
     </Specimen>
   );
 }
@@ -575,37 +573,7 @@ function CommitmentsFigure({ width }: { width: AboutWidth }) {
 function ThemesFigure({ width }: { width: AboutWidth }) {
   return (
     <Specimen label="themes" width={width}>
-      <div className="grid grid-cols-2 gap-[8px] min-[1000px]:grid-cols-3">
-        {THEMES.map((theme) => (
-          <div
-            key={theme.key}
-            className="flex flex-col gap-[4px] rounded-[8px] border border-solid border-[color:var(--border)] px-[10px] py-[8px]"
-            data-theme={theme.key}
-          >
-            {/* The swatch is the entry's subject — a theme changes the palette
-                and nothing else — and a grid of names alone does not show it.
-                `data-theme` puts each tile in its own theme's tokens, which is
-                the same mechanism the app uses. */}
-            <span className="flex gap-[3px]">
-              {["--accent", "--success", "--danger"].map((token) => (
-                <span
-                  key={token}
-                  className="h-[8px] w-[14px] rounded-[2px]"
-                  style={{ background: `var(${token})` }}
-                />
-              ))}
-            </span>
-            <span className="text-[12.5px] text-[color:var(--fg)]">{theme.name}</span>
-            {/* The plane is the SUBTITLE, never the label: you pick Neon Rain,
-                not Kamigawa, and an earlier figure had them the other way up. */}
-            {/* `short`, which is what the picker draws — the full plane name
-                is "Kamigawa: Neon Dynasty" where the app says "Kamigawa". */}
-            <span className="font-mono text-[10px] text-[color:var(--fg-faint)]">
-              {theme.short}
-            </span>
-          </div>
-        ))}
-      </div>
+      <ThemesFigureBody />
     </Specimen>
   );
 }

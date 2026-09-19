@@ -11,6 +11,7 @@ import type { DeckListItem } from "../decks/read";
 import type { DeckFolderWithCount } from "../decks/folders";
 import type { ShelfCounts } from "../decks/folder-view";
 import type { ContestedCard } from "../collection/summary-read";
+import type { GameSummary } from "../decks/games";
 import { deckImportCopy } from "../copy/deck-import";
 import type { CommanderRowView } from "../../components/commanders/commander-row";
 import type { PriceSlot } from "../discovery/price";
@@ -1311,6 +1312,34 @@ export const RESUME_DECKS: DeckListItem[] = [
     statusPill: "To buy",
   },
   {
+    // A FOURTH, so the block draws its real 2x2 grid rather than a row of two
+    // and an orphan. Home lays these out in two columns from the wide stop,
+    // and an odd count photographs as a layout fault.
+    id: "about-resume-committed-2",
+    name: "HD - Kinnan",
+    createdAt: hoursBefore(24 * 60),
+    commanderName: "Kinnan, Bonder Prodigy",
+    commanderColorIdentity: ["G", "U"],
+    commanderImageUri: null,
+    commanderArtCropUri: null,
+    partnerName: null,
+    partnerColorIdentity: null,
+    folderId: null,
+    folderName: null,
+    built: 68,
+    ownedCount: 68,
+    toBuyCount: 0,
+    unresolvedCount: 0,
+    pendingChanges: 3,
+    versionNumber: 1,
+    lastPlayedAt: null,
+    lastEditedAt: hoursBefore(4),
+    lastCommittedAt: hoursBefore(24 * 12),
+    inUseElsewhere: 2,
+    proxiedCount: 0,
+    statusPill: "Building",
+  },
+  {
     id: "about-resume-played",
     name: "HD - Korvold",
     createdAt: hoursBefore(24 * 120),
@@ -1414,4 +1443,44 @@ export const CONTESTED_RESERVATION: ContestedCard = {
       allocated: 0,
     },
   ],
+};
+
+/**
+ * `log-findings` — a seven-game summary, with every part of the aggregate the
+ * entry's key lines name.
+ *
+ * `GameFindings` draws a Fix bucket, a Keep bucket, and the Mixed line under a
+ * rule — and the entry's second key line is about that last one ("anything
+ * that has cut both ways is STATED rather than filed — one line, never a third
+ * column"). A summary with an empty `mixed` draws no rule at all, so the key
+ * line would point at nothing.
+ *
+ * Seven games clears PATTERN_MIN. Below it every cell is neutral and the panel
+ * describes rather than finds, which is the state the caption's first key line
+ * contrasts against — so a fixture under three games would teach the opposite.
+ *
+ * `marked` is NOT derivable from the tallies and is stated for that reason:
+ * one game can contribute to several axes, so summing them overcounts.
+ */
+export const GAME_SUMMARY: GameSummary = {
+  count: GAME_COUNT,
+  marked: 5,
+  record: { wins: 4, losses: 3, draws: 0 },
+  axes: [
+    { key: "card_flow", worked: 1, hurt: 5, net: -4 },
+    { key: "board", worked: 1, hurt: 3, net: -2 },
+    { key: "interaction", worked: 5, hurt: 1, net: 4 },
+    { key: "mana", worked: 3, hurt: 0, net: 3 },
+    { key: "resilience", worked: 2, hurt: 2, net: 0 },
+  ],
+  fix: [
+    { key: "card_flow", worked: 1, hurt: 5, net: -4 },
+    { key: "board", worked: 1, hurt: 3, net: -2 },
+  ],
+  keep: [
+    { key: "interaction", worked: 5, hurt: 1, net: 4 },
+    { key: "mana", worked: 3, hurt: 0, net: 3 },
+  ],
+  // Cut both ways, so it is the Mixed line rather than a third column.
+  mixed: [{ key: "resilience", worked: 2, hurt: 2, net: 0 }],
 };

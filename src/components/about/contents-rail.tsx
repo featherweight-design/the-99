@@ -16,6 +16,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import { aboutCopy, type AboutChapter } from "../../lib/copy/about";
+import { PrimaryButton } from "../ui/button";
 
 export type RailChapter = {
   id: AboutChapter;
@@ -82,7 +83,26 @@ function Figure({ chapter }: { chapter: RailChapter }) {
 }
 
 /** Sticky beside the reading column, from the app's wide stop up. */
-export function ContentsRail({ chapters }: { chapters: readonly RailChapter[] }) {
+export function ContentsRail({
+  chapters,
+  dismiss,
+}: {
+  chapters: readonly RailChapter[];
+  /**
+   * The dismiss, when the reader is behind. It lives HERE on desktop rather
+   * than at the foot of the article: a reader who opened this page because a
+   * feature landed should not have to scroll thirty-five entries to leave it,
+   * and the rail is already sticky. Null when there is nothing to acknowledge.
+   *
+   * The phone draws its own, pinned to the viewport foot — see
+   * `about-page.tsx`. Exactly one is in the document at any width.
+   */
+  dismiss: {
+    action: (formData: FormData) => void | Promise<void>;
+    destination: string;
+    clause: string;
+  } | null;
+}) {
   const current = useCurrentChapter(chapters);
   return (
     <nav
@@ -128,6 +148,25 @@ export function ContentsRail({ chapters }: { chapters: readonly RailChapter[] })
           );
         })}
       </ol>
+
+      {dismiss && (
+        <form action={dismiss.action} className="mt-[18px]">
+          <input type="hidden" name="next" value={dismiss.destination} />
+          {/* `px-[18px]`: the button base carries NO horizontal padding — every
+              other caller supplies its own — so at `w-auto` the label filled
+              the box edge to edge and read as a clipped word. */}
+          <PrimaryButton
+            type="submit"
+            className="min-h-[36px] w-full px-[18px] text-[13px]"
+            aria-label={`${aboutCopy.dismiss} — ${dismiss.clause}`}
+          >
+            {aboutCopy.dismiss}
+          </PrimaryButton>
+          <span className="mt-[6px] block font-mono text-[10.5px] text-[color:var(--fg-faint)]">
+            {dismiss.clause}
+          </span>
+        </form>
+      )}
     </nav>
   );
 }

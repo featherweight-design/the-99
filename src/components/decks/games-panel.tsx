@@ -124,6 +124,69 @@ function mixedSentence(mixed: AxisTally[]): string {
   return gameLogCopy.buckets.mixedLine(clauses);
 }
 
+/**
+ * The aggregate readings — the Fix and Keep buckets, and the Mixed line under
+ * them.
+ *
+ * Extracted from the panel's own render so `/about` can draw it. It takes the
+ * summary and nothing else, which is what made the extraction safe: the panel
+ * around it holds a deck id, a form, announcements and a history, and none of
+ * them reach in here.
+ */
+export function GameFindings({ summary }: { summary: GameSummary }) {
+  return (
+    <>
+    {/* Case 4 of the ladder — games logged, no axis ever marked — draws no
+        aggregate at all. The headline has already said everything there is. */}
+    {summary.axes.length > 0 && (
+      <div className="mt-[18px] md:mt-[24px] rounded-[10px] md:rounded-[11px] px-[14px] py-[13px] md:px-[18px] md:py-[16px] bg-surface-sunken border border-border">
+        {summary.count === 1 ? (
+          <section>
+            <h4 className={BUCKET_HEADING + " text-fg-faint mb-[10px] md:mb-[12px]"}>
+              {gameLogCopy.buckets.oneGameHeading}
+            </h4>
+            <div className={CELL_STRIP}>
+              {summary.axes.map((t) => (
+                <GameAxisCell key={t.key} tally={t} gameCount={summary.count} />
+              ))}
+            </div>
+          </section>
+        ) : (
+          <>
+            <Bucket
+              heading={gameLogCopy.buckets.fix}
+              gloss={gameLogCopy.buckets.fixNote}
+              colour="text-warning"
+              tallies={summary.fix}
+              gameCount={summary.count}
+              bucket="fix"
+              first
+            />
+            <Bucket
+              heading={gameLogCopy.buckets.keep}
+              gloss={gameLogCopy.buckets.keepNote}
+              colour="text-success"
+              tallies={summary.keep}
+              gameCount={summary.count}
+              bucket="keep"
+              first={summary.fix.length === 0}
+            />
+          </>
+        )}
+        {summary.mixed.length > 0 && (
+          <div className="md:flex md:flex-wrap md:items-baseline md:gap-[10px] mt-[14px] md:mt-[18px] pt-[12px] md:pt-[14px] border-t border-border">
+            <span className={BUCKET_HEADING + " text-fg-faint"}>{gameLogCopy.buckets.mixed}</span>{" "}
+            <span className="font-mono text-[10.5px] md:text-[11px] text-fg-muted">
+              {mixedSentence(summary.mixed)}
+            </span>
+          </div>
+        )}
+      </div>
+    )}
+    </>
+  );
+}
+
 export function GamesPanel({ deckId, games, summary }: GamesPanelProps) {
   const headline = deriveHeadline(summary);
   const [announcement, setAnnouncement] = useState("");
@@ -232,53 +295,7 @@ export function GamesPanel({ deckId, games, summary }: GamesPanelProps) {
         {announcement}
       </span>
 
-      {/* Case 4 of the ladder — games logged, no axis ever marked — draws no
-          aggregate at all. The headline has already said everything there is. */}
-      {summary.axes.length > 0 && (
-        <div className="mt-[18px] md:mt-[24px] rounded-[10px] md:rounded-[11px] px-[14px] py-[13px] md:px-[18px] md:py-[16px] bg-surface-sunken border border-border">
-          {summary.count === 1 ? (
-            <section>
-              <h4 className={BUCKET_HEADING + " text-fg-faint mb-[10px] md:mb-[12px]"}>
-                {gameLogCopy.buckets.oneGameHeading}
-              </h4>
-              <div className={CELL_STRIP}>
-                {summary.axes.map((t) => (
-                  <GameAxisCell key={t.key} tally={t} gameCount={summary.count} />
-                ))}
-              </div>
-            </section>
-          ) : (
-            <>
-              <Bucket
-                heading={gameLogCopy.buckets.fix}
-                gloss={gameLogCopy.buckets.fixNote}
-                colour="text-warning"
-                tallies={summary.fix}
-                gameCount={summary.count}
-                bucket="fix"
-                first
-              />
-              <Bucket
-                heading={gameLogCopy.buckets.keep}
-                gloss={gameLogCopy.buckets.keepNote}
-                colour="text-success"
-                tallies={summary.keep}
-                gameCount={summary.count}
-                bucket="keep"
-                first={summary.fix.length === 0}
-              />
-            </>
-          )}
-          {summary.mixed.length > 0 && (
-            <div className="md:flex md:flex-wrap md:items-baseline md:gap-[10px] mt-[14px] md:mt-[18px] pt-[12px] md:pt-[14px] border-t border-border">
-              <span className={BUCKET_HEADING + " text-fg-faint"}>{gameLogCopy.buckets.mixed}</span>{" "}
-              <span className="font-mono text-[10.5px] md:text-[11px] text-fg-muted">
-                {mixedSentence(summary.mixed)}
-              </span>
-            </div>
-          )}
-        </div>
-      )}
+      <GameFindings summary={summary} />
 
       <div className="flex items-baseline gap-[10px] mt-[22px] mb-[10px]">
         <h2 className="font-mono uppercase text-[10px] tracking-[0.14em] text-fg-faint">

@@ -7,6 +7,7 @@ import { availabilityCopy } from "../../lib/copy/availability";
 import { refreshCopy } from "../../lib/copy/refresh";
 import { gameLogCopy } from "../../lib/copy/game-log";
 import { deckImportCopy } from "../../lib/copy/deck-import";
+import { THEMES } from "../../lib/theme/themes";
 import { deckVersioningCopy } from "../../lib/copy/deck-versioning";
 import { exportLinkOutCopy, exportTabCopy } from "../../lib/copy/decks-builder";
 import { ORDER_OPTIONS } from "../commanders/rack/order-options";
@@ -61,6 +62,24 @@ vi.mock("../../app/about/actions", () => ({ dismissAbout: vi.fn() }));
 // test renders the whole page.
 vi.mock("next/navigation", () => ({ useRouter: () => ({ push: vi.fn() }) }));
 
+/**
+ * The dismiss, at one width.
+ *
+ * The page draws TWO: one pinned to the phone's viewport foot, one in the
+ * desktop contents rail — because a reader who opened this page for a new
+ * feature should not have to scroll thirty-five entries to leave it. Each is
+ * hidden at the other's width with `display:none`, so exactly one is in the
+ * accessibility tree in a browser. jsdom computes no styles and finds both,
+ * so every lookup here names the one it means.
+ */
+function dismissButtons(): HTMLElement[] {
+  return screen.getAllByRole("button", { name: new RegExp("^" + aboutCopy.dismiss) });
+}
+const railDismiss = () =>
+  dismissButtons().find((el) => el.closest("nav") !== null) as HTMLElement;
+const phoneDismiss = () =>
+  dismissButtons().find((el) => el.closest("nav") === null) as HTMLElement;
+
 describe("the page a first-time reader sees", () => {
   it("marks nothing, because all of it is new to them", () => {
     render(<AboutPage seen={0} />);
@@ -75,16 +94,40 @@ describe("the page a first-time reader sees", () => {
     }
   });
 
-  it("offers the dismiss, because they have acknowledged nothing", () => {
+  it("offers the dismiss only to a reader who was SENT here", () => {
+    // Two conditions, and the second was missing. `behind` says there is
+    // something to acknowledge; `?next=` says we INTERRUPTED them — the gate
+    // is the only thing that puts it on this URL, and the account menu links
+    // to a bare `/about`. A reader who came to look has a nav rail and a back
+    // button, and `Got it — takes you home` would send them somewhere they
+    // never asked to go.
+    const sent = render(<AboutPage seen={0} next="/decks" />);
+    expect(dismissButtons()).toHaveLength(2);
+    expect(railDismiss(), "no dismiss in the contents rail").toBeTruthy();
+    expect(phoneDismiss(), "no dismiss pinned for the phone").toBeTruthy();
+    // BOTH carry their own horizontal padding. `renderButton`'s BASE sets
+    // none — every other call site supplies it — so the rail's `w-auto`
+    // button drew its label edge to edge and read as a clipped word. A class
+    // assertion is the only instrument here: jsdom lays nothing out, and the
+    // defect is an absent utility rather than a wrong value.
+    for (const button of dismissButtons()) {
+      expect(button.className, "the dismiss has no horizontal padding").toMatch(/\bpx-\[/);
+    }
+    sent.unmount();
+
+    // Behind, but came to look: nothing to press.
     render(<AboutPage seen={0} />);
-    expect(screen.getByRole("button", { name: new RegExp("^" + aboutCopy.dismiss) })).toBeTruthy();
+    expect(
+      screen.queryAllByRole("button", { name: new RegExp("^" + aboutCopy.dismiss) }),
+      "a reader who navigated here was offered a way out of a flow they never entered",
+    ).toHaveLength(0);
   });
 });
 
 describe("the reader who is current", () => {
   it("has no dismiss to press", () => {
     render(<AboutPage seen={ABOUT_VERSION} />);
-    expect(screen.queryByRole("button", { name: new RegExp("^" + aboutCopy.dismiss) })).toBeNull();
+    expect(screen.queryAllByRole("button", { name: new RegExp("^" + aboutCopy.dismiss) })).toHaveLength(0);
   });
 });
 
@@ -125,14 +168,14 @@ describe("the reader who is behind", () => {
 describe("where the dismiss sends them", () => {
   it("carries a same-origin destination through", () => {
     render(<AboutPage seen={0} next="/decks?sort=name" />);
-    const form = screen.getByRole("button", { name: new RegExp("^" + aboutCopy.dismiss) }).closest("form");
+    const form = railDismiss().closest("form");
     expect(form?.querySelector("input[name=next]")).toHaveValue("/decks?sort=name");
     expect(screen.getByText(aboutCopy.dismissDestination("/decks?sort=name"))).toBeTruthy();
   });
 
   it("refuses to print or carry another origin", () => {
     render(<AboutPage seen={0} next="//evil.example" />);
-    const form = screen.getByRole("button", { name: new RegExp("^" + aboutCopy.dismiss) }).closest("form");
+    const form = railDismiss().closest("form");
     expect(form?.querySelector("input[name=next]")).toHaveValue("/");
     expect(screen.getByText(aboutCopy.dismissDestinationHome)).toBeTruthy();
   });
@@ -166,7 +209,7 @@ describe("the dismiss control's accessible name", () => {
     // nothing about the destination.
     render(<AboutPage seen={0} next="/decks" />);
     expect(
-      screen.getByRole("button", {
+      screen.getAllByRole("button", {
         name: `${aboutCopy.dismiss} — ${aboutCopy.dismissDestination("/decks")}`,
       }),
     ).toBeTruthy();
@@ -180,7 +223,7 @@ describe("a crafted link", () => {
     // wrote the link. The page must not print or carry it.
     render(<AboutPage seen={0} next="//evil.example/decks" />);
     const form = screen
-      .getByRole("button", { name: new RegExp("^" + aboutCopy.dismiss) })
+      .getAllByRole("button", { name: new RegExp("^" + aboutCopy.dismiss) })[0]
       .closest("form");
     expect(form?.querySelector("input[name=next]")).toHaveValue("/");
     expect(screen.getByText(aboutCopy.dismissDestinationHome)).toBeTruthy();
@@ -1221,11 +1264,26 @@ describe("the themes figure", () => {
     expect(plate).toBeTruthy();
     const tiles = [...plate!.querySelectorAll("[data-theme]")];
     expect(tiles).toHaveLength(6);
+    // Each tile is the PICKER'S OWN miniature now — a panel with `99` set in
+    // that theme's display face over an accent bar — rather than three
+    // coloured rectangles this page drew. The claim is that a theme changes
+    // the palette and not the meaning, and a miniature of the app says that
+    // where three swatches only assert it.
+    //
+    // `data-theme` is what makes each tile resolve against its own tokens, so
+    // that attribute is the subject: a tile without it would draw the theme in
+    // force six times over.
     for (const tile of tiles) {
-      const swatches = [...tile.querySelectorAll("span")].filter(
-        (el) => (el as HTMLElement).style.background !== "",
-      );
-      expect(swatches, `${tile.getAttribute("data-theme")} draws no palette`).toHaveLength(3);
+      const key = tile.getAttribute("data-theme");
+      expect(THEMES.some((t) => t.key === key), `${key} is not a theme`).toBe(true);
+      expect(tile.textContent, `${key} draws no miniature`).toContain("99");
+    }
+    // Both halves of every name, in the picker's own vocabulary: the theme is
+    // the label and the plane is the subtitle. An earlier figure had them the
+    // other way up.
+    for (const theme of THEMES) {
+      expect(plate!.textContent).toContain(theme.name);
+      expect(plate!.textContent).toContain(theme.short);
     }
   });
 });
