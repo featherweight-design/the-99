@@ -30,15 +30,13 @@ export const WORD_DRIFT_ALLOWLIST = [
   // ── Templates the table fills with an example ──────────────────────────
   { quoted: "filter off · n results you don't own", reason: "table writes `n` where the code branches singular" },
 
-  // ── Sibling refusals, one word apart, in three modules ─────────────────
-  // `We couldn't clear those.` (recommendations), `We couldn't add those.`
-  // (synergy-discovery) and the top-off variant all ship and are all real. A
-  // table quoting one matches the others by shape, and nothing in the span
-  // says which module it meant.
-  { quoted: "we couldn't add those the deck is unchanged", reason: "sibling refusal; three ship one word apart" },
-  { quoted: "we couldn't clear those the deck is unchanged", reason: "sibling refusal; three ship one word apart" },
-  { quoted: "we couldn't fill those the deck is unchanged", reason: "sibling refusal; three ship one word apart" },
-  { quoted: "we couldn't make that swap nothing has changed", reason: "unrelated to the game-delete refusal it matches" },
+  // ── A table for a feature that is NOT BUILT ────────────────────────────
+  // `deck-tuning.md` specifies #10, which is designed and planned with the
+  // build paused, so none of its copy ships and every row of it matches the
+  // nearest shipped sibling by shape alone. This one lands on the game-delete
+  // refusal. When #10 is built this entry comes out, and the check starts
+  // holding that table to the strings it ships.
+  { quoted: "we couldn't make that swap nothing has changed", reason: "deck-tuning.md specifies #10, which is not built; nothing ships to compare against" },
 ];
 
 /** The allowlist as a set of reduced spans, for the check to test against. */

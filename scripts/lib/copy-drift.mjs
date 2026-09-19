@@ -219,10 +219,11 @@ export function quotations(src) {
  * and filenames. Prose-only takes the index from 16,573 strings to 583 and the
  * findings from hundreds to sixteen.
  *
- * FIVE WORDS, not three. A three-word span collides constantly — `upload your
+ * EIGHT WORDS, not three. A three-word span collides constantly — `upload your
  * collection` against `in your collection` is one substitution apart and the
- * two have nothing to do with each other. Five is where the collisions stop
- * and real drift still reads.
+ * two have nothing to do with each other. Five cut most of that and eight is
+ * where the last of it stops, with real drift still reading: the measured
+ * run was 368 findings at three, 86 at five, and 4 at eight.
  */
 export function prose(s) {
   // Interpolations go FIRST. `${deckCount}` carries braces, and testing the raw
@@ -234,7 +235,7 @@ export function prose(s) {
   const bare = s.replace(HOLES, " ");
   // CSS, class strings, selectors and filenames. NOT `;` or `:` on their own —
   // prose has both, and excluding them is what hid the sentence above.
-  if (/--|var\(|rgba?\(|#[0-9a-fA-F]{3,}|\d+(px|em|rem|%|deg|ms)\b|\.(ts|tsx|md|js|html|css)\b/.test(bare)) {
+  if (/--|var\(|rgba?\(|#[0-9a-fA-F]{3,}|\d+%|\d+(px|em|rem|deg|ms)\b|\.(ts|tsx|md|js|html|css)\b/.test(bare)) {
     return false;
   }
   if (words(s).split(" ").filter(Boolean).length < 8) return false;
@@ -262,10 +263,22 @@ export function prose(s) {
 export function wordDrift(quoted, index) {
   const qw = words(quoted).split(" ").filter(Boolean);
   const candidates = index.get(qw.length) ?? [];
+  // EXACT MATCHES FIRST, over the whole candidate list, before any near match
+  // is considered. A table quoting a string the app still ships is not drift,
+  // and the near-match scan cannot tell that on its own: it returns the first
+  // candidate 1-2 substitutions away, so a verbatim quotation is reported the
+  // moment a SIBLING ships one word apart. Three refusals do exactly that
+  // (`We couldn't add/clear/fill those. The deck is unchanged.`), and this
+  // check's first version reported two tables quoting `add` verbatim as stale
+  // copies of `clear`. Allowlisting that pair looked like a fix and was the
+  // opposite: it blinds the check to that sentence permanently, so a later
+  // rename of the string the tables really quote goes unreported.
+  let best = null;
   for (const s of candidates) {
     let d = 0;
     for (let i = 0; i < qw.length; i++) if (qw[i] !== s[i]) d++;
-    if (d >= 1 && d <= 2) return s.join(" ");
+    if (d === 0) return null;
+    if (best === null && d <= 2) best = s.join(" ");
   }
-  return null;
+  return best;
 }

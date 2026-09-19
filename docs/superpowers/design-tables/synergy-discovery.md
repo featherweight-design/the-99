@@ -705,7 +705,7 @@ Promise text column (flex:1, flex-direction:column):
 | Property | Value |
 |----------|-------|
 | control | Present and enabled (unchanged) |
-| error below | `synergyCopy.lastSlots.fillFailed` — "We couldn't fill those. The deck is unchanged." |
+| error below | `synergyCopy.lastSlots.topUpFailed` — "We couldn’t add those. The deck is unchanged."<br>Was `fillFailed` / "We couldn’t fill those." Two refusal strings for two controls collapsed into one when the commit settled one way; `fillFailed` was deleted with it (`src/lib/copy/top-off.ts:468`, and `top-off.md:1154` records the deletion). This row kept quoting the deleted string until the 2026-09-19 word-drift check reached it. |
 | error color | `var(--danger)` (`#C6533F`) |
 | error font | `var(--font-mono)`, 11px |
 | Other control | Stays enabled |

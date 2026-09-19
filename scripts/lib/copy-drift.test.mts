@@ -176,6 +176,16 @@ describe("wordDrift", () => {
     index.get(w.length)!.push(w);
   };
   ship("no free copies; they are on ${deckCount} of your committed decks");
+  // A SIBLING one word away, listed FIRST so the near-match scan reaches it
+  // before the exact match. This is the real tree's condition, not a
+  // contrivance: three refusals ship as `We couldn't add/clear/fill those.
+  // The deck is unchanged.` With one string in the index the only candidate
+  // is the one at distance 0, so the exact-match rule below was satisfied by
+  // the fixture rather than by the code, and the test passed with the rule
+  // deleted. Two substitutions from the shipped string and three or four from
+  // each rename quotation, so it is a candidate for the exact-match case ALONE
+  // and cannot win the two rename tests above.
+  index.get(10)!.unshift(words("no spare copies; they sit on ${deckCount} of your committed decks").split(" ").filter(Boolean));
 
   it("reports a two-word rename", () => {
     // `finished lists` → `committed decks`: the 2026-09-19 sweep, and the

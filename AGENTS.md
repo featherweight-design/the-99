@@ -117,11 +117,24 @@ Package manager is **pnpm** (pinned via `packageManager` in package.json) — ne
   below that `upload your collection` and `in your collection` are one substitution apart and
   unrelated.
 
+  **An EXACT match is checked across every candidate before any near match is taken**, and that
+  rule is worth more than it looks. Without it a table quoting a shipped string VERBATIM is
+  reported the moment a sibling ships one word apart — which three refusals do
+  (`We couldn’t add/clear/fill those. The deck is unchanged.`), so two tables quoting `add`
+  correctly were reported as stale copies of `clear`.
+
+  **Allowlisting that pair looked like a fix and was the opposite.** It suppressed the symptom
+  and blinded the check to that sentence permanently: a later rename of the string those tables
+  really quote would never be reported. Fixing the matcher instead cleared three of the four
+  rows AND surfaced real drift the fourth had been hiding — `synergy-discovery.md` still quoted
+  `lastSlots.fillFailed`, a key deleted when two refusal strings collapsed into one. **Reach for
+  the matcher before the allowlist; an entry that hides a bug hides whatever else that bug hid.**
+
   **A false positive is allowlisted in `scripts/lib/copy-drift-allowlist.mjs`, with its reason,
   and that is a deliberate act that shows up in a diff.** An exemption granted silently is how
   the next rename hides. A row there says "these two look alike to a machine and are unrelated",
-  never "this drift is fine" — the two entries that ARE drift say so and name the ruling they
-  wait on.
+  never "this drift is fine". One names a table for a feature that is NOT BUILT (`deck-tuning.md`
+  specifies #10, paused), where nothing ships to compare against; that row comes out when #10 does.
 
   **Its own failure paths are pinned** in `copy-drift.test.mts`, and they were run before it was
   believed: the first version reported green over a reverted rename, because `prose` tested the
