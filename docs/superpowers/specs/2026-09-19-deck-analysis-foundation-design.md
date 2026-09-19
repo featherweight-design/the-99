@@ -42,9 +42,13 @@ foundation, analysis on top of that can be flawed."*
 The app today can say which cards go **with a commander**. It has no opinion about what makes
 a **deck**. Three places where that shows, all verifiable:
 
-- **`ROLE_TARGETS`** (`src/lib/recs/roles.ts:4`) is `ramp: 10, draw: 10, removal: 8,
-  wipes: 3` — flat for every deck, **with no land target at all**, and no staples. A design
-  baseline, asserted rather than sourced.
+- **The targets are flat and asserted.** `ROLE_TARGETS` (`src/lib/recs/roles.ts:4`) is
+  `ramp: 10, draw: 10, removal: 8, wipes: 3`, identical for every deck, with no staples. And
+  the app **does** have a land target — `landTarget()` in `src/lib/decks/deck-size.ts` returns
+  **37**, or 36 with a partner — which an earlier draft of this spec wrongly claimed did not
+  exist. The problem is not that it is missing; it is that **37 is flat where the measured
+  spread is 30–47** (§4A.4). Najeela's decks average 34 lands and Aang's 36, and a constant is
+  wrong for both in opposite directions.
 - **Nothing is conditioned.** Mono-black and five-colour want different ramp and different
   fixing. The targets do not move, so "Arcane Signet is less useful in mono" has no way to be
   expressed.
@@ -189,9 +193,9 @@ states"* — having rejected 2% because it leaves a commander with 31,481 decks 
 theme at all. `measure-gap-line.mts` exists because a state's frequency turned out to be a
 property of the account it was measured against.
 
-The four constants in `ROLE_TARGETS` are the standing counter-example: they are asserted, they
-have no land count, and nothing records where they came from. They are replaced here, not
-extended.
+`ROLE_TARGETS`' four constants and `landTarget()`'s 37 are the standing counter-examples: each
+is asserted, and nothing records where any of them came from. The land target is the one this
+sub-project can replace with a measurement; the other four it can only label (§4A.5).
 
 ### 2.5 The profile is facts; verdicts are pure functions over it
 
@@ -713,15 +717,40 @@ sub-project hands forward. It is survivable because **the land count is the numb
 mattered most and it is now in hand** — the motivating deck's fault was a mana base, not a
 ramp count.
 
-### 4A.6 `ROLE_TARGETS`: the type half is replaced, the function half is not
+### 4A.6 The retirement is bigger than it looks, and this was measured too
 
-Once the composition columns exist, `land` has a measured per-commander target where
-`ROLE_TARGETS` has none at all, and the constant is left holding only the four functional
-roles it can still claim. Sub-project 2 reads the measured columns for type targets and is the
-named owner of deciding what becomes of the remaining four.
+An earlier draft said sub-project 2 "retires `ROLE_TARGETS`". Reading the consumers rather
+than assuming them, that is naive. **Eight non-test files read it**, and they are not all in
+the building path:
+
+| consumer | what it does with the targets |
+|---|---|
+| `src/lib/recs/score.ts:168` | folds them into the **commander score itself** — the ranking behind `/commanders` and `/discover` |
+| `src/lib/recs/score.ts:356` | derives `roleGaps` |
+| `src/lib/decks/fill.ts` | the fill plan's ceiling and its per-role stopping condition |
+| `src/lib/decks/suggest.ts` | suggestion targets |
+| `src/lib/recs/weakest-role.ts` | the weakest-role read |
+| `src/components/commanders/role-chips.tsx` | draws a target per chip |
+| `src/components/commanders/coverage-section.tsx` (×2) | draws targets in Role Coverage |
+| `src/lib/about/fixtures.ts` | an About fixture pinned against the current values |
+
+`landTarget()` has its own consumers in `fill.ts` and `suggest.ts`.
+
+**What follows, and it changes sub-project 2's size.** Changing a target changes
+`commander_scores` — which is stored, stamped by a writer version, and read by two of the
+app's busiest routes. A measured per-commander land target is not a swap inside the fill path;
+it reaches the ranking, which means a rescore, which means `probe:writer-version` and
+`probe:score-lock` territory.
+
+**So this sub-project retires nothing.** It computes the measured targets and reads them in
+`fitSkeleton` alone, which touches none of the eight. Sub-project 2 owns the migration and
+must plan for the scoring engine explicitly rather than discovering it — and it may
+legitimately decide the ranking keeps flat targets while the deck surfaces use measured ones,
+because a ranking wants stability across commanders and a deck reading wants accuracy for one.
 
 Recorded so it cannot be quietly skipped: a measured table beside an asserted constant is two
-sources of truth for overlapping questions, and this one has a known expiry.
+sources of truth for overlapping questions, and this one now has a named owner and a known
+blast radius rather than just an expiry.
 
 ### 4A.7 Tables
 
@@ -944,11 +973,28 @@ consumer. A null reads as absent. A wrong theme list does not.
 `buildDeckProfile(input): DeckProfile` is **pure** — no database, fully unit-testable, and
 the thing every test asserts against.
 
-`loadDeckProfile(deckId, userId)` gathers the rows and calls it, behind `cacheForUser` keyed
-on `(userId, deckId, fingerprint)`. The fingerprint includes the **catalog generation**
-(`catalogGeneration()`), so a combo or Game Changer the weekly ingest newly learned retires
-every cached profile without the job needing a list of readers — the mechanism #705 already
-established.
+`loadDeckProfile(deckId, userId)` gathers the rows and calls it, behind
+`cacheForUser(userId, ["deck-profile", deckId, fingerprint], load)` — the signature verified at
+`src/lib/cache/user-lists.ts:64` rather than assumed.
+
+Three of its constraints bear on this payload, and the first corrects an earlier draft:
+
+- **`cacheForUser` already injects the catalog generation into the key itself.** The
+  fingerprint must *not* repeat it — that would be an input filed twice, and the mechanism
+  #705 established is already doing the work.
+- **The entry is stored as JSON under a 2 MB ceiling.** An entry over it is refused with a
+  warning and never stored, so the loader runs on every request *and* pays to serialise first
+  — slower than not caching. The profile is small by nature, but `ProfileBrackets` carries
+  card lists for receipts and `staples` carries a floor, so the plan measures the serialised
+  size rather than assuming it.
+- **No `Map` and no `Date` survive the round trip** — a `Map` comes back `{}`. Every field in
+  §5.1 is already a plain object, array or scalar, and must stay that way.
+
+One consequence worth naming: `revalidateUserLists(userId)` drops **every** cached list
+payload for that reader, so a collection change retires deck profiles too. That is correct —
+ownership feeds later fact-groups — but it means the profile is invalidated more often than
+its own inputs strictly require, and a future sub-project adding an expensive group should
+know that before it leans on the cache.
 
 It reads the deck's **draft** state (`loadDraftState`), not its committed version. The
 question is always about the deck as it stands now, and a change staged tonight must move the
@@ -1402,6 +1448,12 @@ is being built, rather than a verdict after the money is spent — and it is the
 exists rather than a thing it could also do. It is placed second rather than first only
 because the floor it acts on must be measured, printed and argued with before anything is
 built on it (§4A.4).
+
+**It is also the largest of the eight, and that was measured rather than guessed.** §4A.6
+walks its consumers: a measured land target reaches `commander_scores`, which is stored,
+writer-stamped and read by `/commanders` and `/discover`. Anyone sequencing this should plan
+it as a scoring change with a deck-surface benefit, not as a deck-surface change — and should
+decide early whether the ranking keeps flat targets while deck readings use measured ones.
 
 **Pod comparison** is the strongest of the unplaced candidates and the most likely home for a
 comparative read (§2.3). It is what Hugh's pod already does by hand before a session, it is
