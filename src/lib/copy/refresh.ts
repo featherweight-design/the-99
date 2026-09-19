@@ -285,11 +285,15 @@ export const refreshCopy = {
 
   // ── Status vocabulary — shipped values, do not translate here ─────────
   // These are the labels the tiles, rows, pills and filters all share. One
-  // source, six strings; a rename is a rename everywhere.
+  // source, seven strings; a rename is a rename everywhere.
+  // Cascade order, and the order is the meaning: this object is read
+  // top-to-bottom by anybody learning the vocabulary, and `statusPill()` tests
+  // the phase before any count.
   status: {
+    new: 'New',
     draft: 'Draft',
-    building: 'Building',
     over: 'Over',
+    building: 'Building',
     unresolved: 'Unresolved',
     toBuy: 'To buy',
     complete: 'Complete',

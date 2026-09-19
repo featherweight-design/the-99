@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import {
   EMPTY_FILTERS,
+  STATUS_ORDER,
   activeFilterCount,
   filterDecks,
   filtersFromParams,
@@ -208,29 +209,18 @@ describe("the deck-state facet", () => {
   const clean = () => deck({ id: "clean" });
   const moved = () => deck({ id: "moved", pendingChanges: 4 });
 
-  it("returns the plans alone", () => {
-    const got = filterDecks([plan(), clean(), moved()], { ...EMPTY_FILTERS, states: ["uncommitted"] }, NOW);
-    expect(got.map((d) => d.id)).toEqual(["plan"]);
-  });
-
+  // ONE row now. The phase it used to hold is `New` and `Draft` in Status, and
+  // a facet duplicating two status rows can only disagree with them.
   it("returns the moved drafts alone", () => {
     const got = filterDecks([plan(), clean(), moved()], { ...EMPTY_FILTERS, states: ["pending"] }, NOW);
     expect(got.map((d) => d.id)).toEqual(["moved"]);
   });
 
-  // The two are mutually exclusive, so ticking both is a union: every deck that
-  // is not settled. The clean committed deck is the one that drops out.
-  it("returns every unsettled deck when both are on", () => {
-    const got = filterDecks(
-      [plan(), clean(), moved()],
-      { ...EMPTY_FILTERS, states: ["uncommitted", "pending"] },
-      NOW,
-    );
-    expect(got.map((d) => d.id)).toEqual(["plan", "moved"]);
+  it("never counts a deck with no version, whatever its pending figure says", () => {
+    const impossible = deck({ id: "x", lastCommittedAt: null, pendingChanges: 9 });
+    expect(filterDecks([impossible], { ...EMPTY_FILTERS, states: ["pending"] }, NOW)).toHaveLength(0);
   });
 
-  // ACROSS headings they AND, as every other facet does: `Complete` plus
-  // pending is a finished deck mid-edit, which is the read the facet exists for.
   it("ANDs against status", () => {
     const building = deck({ id: "building", statusPill: "Building", pendingChanges: 4 });
     const got = filterDecks(
@@ -241,27 +231,39 @@ describe("the deck-state facet", () => {
     expect(got.map((d) => d.id)).toEqual(["moved"]);
   });
 
-  // A plan's `pendingChanges` is 0 by construction, but a row that somehow
-  // carried both must not answer `pending` — the mark it draws is the plate.
-  it("never counts a plan as pending", () => {
-    const impossible = deck({ id: "x", lastCommittedAt: null, pendingChanges: 9 });
-    expect(filterDecks([impossible], { ...EMPTY_FILTERS, states: ["pending"] }, NOW)).toHaveLength(0);
-    expect(filterDecks([impossible], { ...EMPTY_FILTERS, states: ["uncommitted"] }, NOW)).toHaveLength(1);
-  });
-
-  it("round-trips through the URL and drops an unknown value", () => {
-    const { filters } = filtersFromParams(new URLSearchParams("state=pending,nonsense,uncommitted"));
-    // Canonical order, filtered from STATE_ORDER rather than mapped from input.
-    expect(filters.states).toEqual(["uncommitted", "pending"]);
-    expect(filtersToParams(filters, DEFAULT_DECK_SORT).get("state")).toBe("uncommitted,pending");
+  it("round-trips through the URL and drops the retired value", () => {
+    // `?state=uncommitted` is a link somebody may have saved. It is an unknown
+    // value now, so `readList` drops it — no migration, no error, and the deck
+    // list simply stops narrowing on a facet that no longer exists.
+    const { filters } = filtersFromParams(new URLSearchParams("state=uncommitted,pending"));
+    expect(filters.states).toEqual(["pending"]);
+    expect(filtersToParams(filters, DEFAULT_DECK_SORT).get("state")).toBe("pending");
   });
 
   it("is absent from the URL when nothing is ticked", () => {
     expect(filtersToParams(EMPTY_FILTERS, DEFAULT_DECK_SORT).has("state")).toBe(false);
   });
 
-  it("counts each ticked row as one value on the badge", () => {
-    expect(activeFilterCount({ ...EMPTY_FILTERS, states: ["uncommitted"] })).toBe(1);
-    expect(activeFilterCount({ ...EMPTY_FILTERS, states: ["uncommitted", "pending"] })).toBe(2);
+  it("counts the ticked row as one value on the badge", () => {
+    expect(activeFilterCount({ ...EMPTY_FILTERS, states: ["pending"] })).toBe(1);
+  });
+});
+
+describe("the status facet", () => {
+  // The order IS the cascade, and it is what `?status=` serialises.
+  it("lists seven values, phase first", () => {
+    expect([...STATUS_ORDER]).toEqual([
+      "New", "Draft", "Over", "Building", "Unresolved", "To buy", "Complete",
+    ]);
+  });
+
+  it("filters on New and Draft like any other value", () => {
+    const decks = [
+      deck({ id: "new", statusPill: "New" }),
+      deck({ id: "draft", statusPill: "Draft" }),
+      deck({ id: "done", statusPill: "Complete" }),
+    ];
+    const got = filterDecks(decks, { ...EMPTY_FILTERS, statuses: ["New", "Draft"] }, NOW);
+    expect(got.map((d) => d.id)).toEqual(["new", "draft"]);
   });
 });

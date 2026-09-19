@@ -18,8 +18,12 @@ import type { CSSProperties } from "react";
 import type { StatusPill } from "./status";
 
 export const STATUS_TOKEN: Record<StatusPill, string> = {
-  Draft: "--fg-faint",
-  Building: "--fg-body",
+  New: "--fg-faint",
+  Draft: "--fg-body",
+  // `--fg`, and the brightest neutral in the palette: a committed deck sitting
+  // short of its body size is a REAL deck in an odd state, which is a different
+  // thing from the provisional decks that used to land here.
+  Building: "--fg",
   Over: "--danger",
   Unresolved: "--warning",
   "To buy": "--accent",
@@ -31,15 +35,23 @@ const FILL_ALPHA = "18%";
 
 /**
  * Where the drawing departs from the flat rule. Absent status = the flat rule.
- * `label` is a whole token rather than an alpha: Draft and Building are the two
- * statuses whose own token is a text colour, and they take a lighter fill and a
- * quieter label than the four that key off a signal colour.
+ *
+ * TWO members, and both are the PHASE: `New` and `Draft` are the only values
+ * whose token is a text colour rather than a signal hue, so they take a lighter
+ * fill and a quieter label than the five that key off one.
+ *
+ * THE DASH BELONGS TO `Draft` NOW. A dashed edge has meant *provisional* since
+ * the refresh, and it is the one status signal that survives greyscale and
+ * colour blindness — which is also what separates `New` from `Draft`, since
+ * both are drawn from neutrals. It sat on `Building` while `Building` was where
+ * unfinished decks lived; they live in `Draft` now, so the signal followed the
+ * meaning rather than changing it. `Building` takes the flat rule.
  */
 const PILL_EXCEPTION: Partial<
   Record<StatusPill, { fillAlpha: string; label: string; borderStyle?: CSSProperties["borderStyle"] }>
 > = {
-  Draft: { fillAlpha: "16%", label: "--fg-muted" },
-  Building: { fillAlpha: "14%", label: "--fg-body", borderStyle: "dashed" },
+  New: { fillAlpha: "16%", label: "--fg-muted" },
+  Draft: { fillAlpha: "14%", label: "--fg-body", borderStyle: "dashed" },
 };
 
 /**
@@ -59,47 +71,13 @@ function plate(token: string, alpha: string): string {
   return `color-mix(in srgb, var(${token}) ${alpha}, var(--bg))`;
 }
 
-/**
- * The two deck-state marks, which are not statuses and never become one.
- *
- * `hollow` is the PHASE: a deck that has never committed a version is a plan
- * rather than a deck, and its plate drops the status tint. `pending` is the
- * DIFF: a committed deck whose draft differs from its version.
- *
- * They are mutually exclusive by definition — the edge means "differs from the
- * version", which requires a version; the hollow plate means there is none —
- * and no caller may pass both. The type says so, so the impossible state cannot
- * be written rather than being a rule somebody has to remember.
- */
-export type DeckStateMarks =
-  | { hollow?: false; pending?: boolean }
-  | { hollow: true; pending?: false };
-
-export function statusPillStyle(
-  status: StatusPill,
-  marks: DeckStateMarks = {},
-): CSSProperties {
+export function statusPillStyle(status: StatusPill): CSSProperties {
   const token = STATUS_TOKEN[status];
   const exception = PILL_EXCEPTION[status];
   return {
     color: `var(${exception ? exception.label : token})`,
-    // HOLLOW IS NOT TRANSPARENT. The art-wash amendment rules this plate opaque
-    // — the fill mixes into `--bg` so a bright pixel of art cannot reach the
-    // label — and the mobile spine puts the pill on the wash. So the hollow
-    // reading takes `--bg` ITSELF, the colour the tint was already mixing into,
-    // at 0%: fully opaque, one rule, and one argument rather than a branch.
-    background: marks.hollow ? "var(--bg)" : plate(token, exception ? exception.fillAlpha : FILL_ALPHA),
+    background: plate(token, exception ? exception.fillAlpha : FILL_ALPHA),
     border: `1px ${exception?.borderStyle ?? "solid"} var(--border-strong)`,
-    // `--fg` and not `--accent`: `STATUS_TOKEN["To buy"]` IS `--accent`, so an
-    // accent edge on that pill is an accent edge on an accent plate under an
-    // accent label — a heavier border of the pill's own colour, on the one value
-    // it most needs to be separable from, in every theme. `--fg` is the only ink
-    // in the palette that is not a status token and not a hue.
-    //
-    // It composes with Building's dashed hairline rather than replacing it: a
-    // line STYLE against a line WEIGHT, two facts on one box, and the pair
-    // survives greyscale where a colour alone would not.
-    ...(marks.pending ? { borderLeft: "2px solid var(--fg)" } : {}),
     // `text-shadow` is an inherited property, and every band that carries a pill
     // over art puts a cover shadow on the block around it — so the pill picked up
     // ink it is the stated exception to. It plates itself, so it needs none, and
@@ -122,19 +100,9 @@ export function statusBarStyle(
   status: StatusPill,
   built: number,
   bodySize: number,
-  /**
-   * The deck has no committed version. The bar follows its plate at half
-   * opacity, so a plan reads as ONE provisional object rather than as a hollow
-   * chip sitting beside a solid bar.
-   */
-  marks: { provisional?: boolean } = {},
 ): CSSProperties {
   const pct = Math.min(100, Math.max(0, (built / bodySize) * 100));
-  return {
-    width: `${pct}%`,
-    background: `var(${STATUS_TOKEN[status]})`,
-    ...(marks.provisional ? { opacity: 0.5 } : {}),
-  };
+  return { width: `${pct}%`, background: `var(${STATUS_TOKEN[status]})` };
 }
 
 /** The 3px left keyline on Home's list rows. */

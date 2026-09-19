@@ -947,10 +947,7 @@ describe("DecksView remembers the order", () => {
 });
 
 describe("the Deck state facet", () => {
-  // The sheet is the phone path and the one jsdom renders by default; the wide
-  // panels are behind the 1000px query. BOTH are asserted, because a facet that
-  // reaches one form only is the parity break this batch keeps looking for.
-  const plan = () => deckOf({ id: "plan", name: "a plan", lastCommittedAt: null, pendingChanges: 0 });
+  // ONE row. The phase it used to carry is `New` and `Draft` in Status now.
   const clean = () => deckOf({
     id: "clean", name: "a deck", lastCommittedAt: new Date("2026-09-01T00:00:00Z"), pendingChanges: 0,
   });
@@ -958,56 +955,34 @@ describe("the Deck state facet", () => {
     id: "moved", name: "mid-tinker", lastCommittedAt: new Date("2026-09-01T00:00:00Z"), pendingChanges: 4,
   });
 
-  it("filters to the plans from the sheet, and writes the URL", () => {
-    render(view([plan(), clean(), moved()]));
+  it("filters to the edited drafts from the sheet, and writes the URL", () => {
+    render(view([clean(), moved()]));
     openFilters();
-    fireEvent.click(screen.getAllByRole("checkbox", { name: "Not committed yet" })[0]);
-    expect(window.location.search).toBe("?state=uncommitted");
-    expect(screen.getByText("a plan")).toBeInTheDocument();
-    expect(screen.queryByText("a deck")).not.toBeInTheDocument();
-    expect(screen.queryByText("mid-tinker")).not.toBeInTheDocument();
-  });
-
-  // READS THE GRID, not the URL. Asserting the query string alone measures the
-  // serialiser and nothing else: with the whole `states` branch deleted from
-  // `filterDecks` every case in this file still passed, because a filter that
-  // filters nothing still writes its own parameter.
-  it("ANDs across headings: Complete plus pending is a finished deck mid-edit", () => {
-    render(view([
-      plan(),
-      clean(),
-      moved(),
-      deckOf({ id: "building", name: "still building", statusPill: "Building",
-        lastCommittedAt: new Date("2026-09-01T00:00:00Z"), pendingChanges: 4 }),
-    ]));
-    openFilters();
-    fireEvent.click(screen.getAllByRole("checkbox", { name: "Has pending changes" })[0]);
-    fireEvent.click(screen.getAllByRole("checkbox", { name: "Complete" })[0]);
-    expect(window.location.search).toContain("state=pending");
-    expect(window.location.search).toContain("status=Complete");
-    // `mid-tinker` is the only deck that is both.
+    fireEvent.click(screen.getAllByRole("checkbox", { name: "Edited since last version" })[0]);
+    expect(window.location.search).toBe("?state=pending");
     expect(screen.getByText("mid-tinker")).toBeInTheDocument();
-    expect(screen.queryByText("still building")).not.toBeInTheDocument();
     expect(screen.queryByText("a deck")).not.toBeInTheDocument();
-    expect(screen.queryByText("a plan")).not.toBeInTheDocument();
   });
 
-  // AFTER Status, and the order is the ruling: adjacency says the two are read
-  // together. Asserting presence alone passes with the panel anywhere in the
-  // row, including ahead of Status.
-  it("draws its own heading in the wide form, after Status", () => {
-    renderWide(view([plan(), clean(), moved()]));
-    const status = screen.getByRole("button", { name: /Status/ });
-    const state = screen.getByRole("button", { name: /Deck state/ });
-    expect(status.compareDocumentPosition(state) & Node.DOCUMENT_POSITION_FOLLOWING)
-      .toBeTruthy();
+  it("offers no row for the phase, which Status owns now", () => {
+    render(view([clean(), moved()]));
+    openFilters();
+    expect(screen.queryByRole("checkbox", { name: "Not committed yet" })).not.toBeInTheDocument();
+    expect(screen.getAllByRole("checkbox", { name: "Draft" }).length).toBeGreaterThan(0);
   });
 
   it("carries a removable chip like every other value", () => {
-    render(view([plan(), clean()]));
+    render(view([clean(), moved()]));
     openFilters();
-    fireEvent.click(screen.getAllByRole("checkbox", { name: "Not committed yet" })[0]);
-    fireEvent.click(screen.getByRole("button", { name: "Remove filter: Not committed yet" }));
+    fireEvent.click(screen.getAllByRole("checkbox", { name: "Edited since last version" })[0]);
+    fireEvent.click(screen.getByRole("button", { name: "Remove filter: Edited since last version" }));
     expect(window.location.search).toBe("");
+  });
+
+  it("draws its own heading in the wide form, after Status", () => {
+    renderWide(view([clean(), moved()]));
+    const status = screen.getByRole("button", { name: /Status/ });
+    const state = screen.getByRole("button", { name: /Deck state/ });
+    expect(status.compareDocumentPosition(state) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
   });
 });

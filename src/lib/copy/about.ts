@@ -469,7 +469,7 @@ export const aboutEntries: readonly AboutEntry[] = [
     keys: [
       'the draft is reviewable before it lands: every add and cut beside the committed list, with nothing counted twice.',
       'a version carries its own record, so you can see whether a change helped rather than only that it happened.',
-      'a deck you have never committed shows an unfilled status badge wherever it is listed — it is a plan, not a deck yet. Once you commit v1 the badge fills in, and a bright edge appears whenever the list drifts from the version again. Deck state on the deck list filters by either.',
+      'a deck you have never committed reads Draft however many cards it has — commit v1 and it takes the status its list earns.',
     ],
     since: 1,
   },
@@ -546,9 +546,9 @@ export const aboutEntries: readonly AboutEntry[] = [
     route: '/decks',
     width: 'plate',
     caption:
-      'Six statuses, and each one has a single next action. Exactly one of them means you can put the deck on a table — a hundred-card list you still have to buy four cards for is not Complete. Beside each badge the app draws one figure and no sentence, so the explanations sit in the key below where they are honestly this page’s own words. The badge also carries two marks that are not statuses — one for a deck you have never committed, one for a deck you have edited since its last version — and both are drawn and explained under Drafts, committing, and versions.',
+      'Seven statuses, and each one has a single next action. Exactly one of them means you can put the deck on a table — a hundred-card list you still have to buy four cards for is not Complete. Beside each badge the app draws one figure and no sentence, so the explanations sit in the key below where they are honestly this page’s own words.',
     keys: [
-      'Draft and Building are not legal lists yet, and the figure is how far off. Draft has nothing in it, so it shows when it was made instead.',
+      'New and Draft belong to a deck you have never committed: New has nothing in it and shows when it was made, Draft is that deck at any length. Building is a committed deck now short of its body size.',
       'Over is past the body size and Unresolved is at it, each with something to settle: too many cards, or lines we could not put a card to.',
       'To buy is the one that catches people — a finished 99 you cannot sleeve, because some of it is not on your shelf.',
       'Complete is the only status that means you can put the deck on a table. Each badge carries one figure and no sentence.',
@@ -573,7 +573,7 @@ export const aboutEntries: readonly AboutEntry[] = [
     route: '/',
     width: 'inset',
     caption:
-      'Home leads with the decks you touched last, newest first, and each row says which event put it there — edited, committed or played. The keyline on the left is the deck’s status in the same six colours as its badge.',
+      'Home leads with the decks you touched last, newest first, and each row says which event put it there — edited, committed or played. The keyline on the left is the deck’s status in the same colours as its badge.',
     keys: [],
     since: 1,
   },

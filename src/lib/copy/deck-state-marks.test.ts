@@ -11,21 +11,24 @@ describe("deckStateMarksCopy", () => {
     expect(deckStateMarksCopy.detail(1, 4)).toBe("1 change since v4");
   });
 
-  it("keeps the mark's accessible name distinct from the banner's heading", () => {
-    expect(deckStateMarksCopy.markAria).not.toBe(deckVersioningCopy.pending.label);
-    expect(deckStateMarksCopy.markAria).toBe("pending changes, not yet a version");
+  it("holds one facet row, the phase having become a status", () => {
+    expect(Object.keys(deckStateMarksCopy.filter)).toEqual(["heading", "hasPending"]);
+    expect(deckStateMarksCopy.filter.hasPending).toBe("Edited since last version");
   });
 
-  it("words the phase the same way in the facet and on the deck page", () => {
-    expect(deckStateMarksCopy.filter.notCommitted).toBe(deckStateMarksCopy.phase.notCommitted);
+  // Everything the marks needed is gone with them: a mark had no word, so each
+  // accessible name existed to supply one. A status word needs none — `cardAria`
+  // already announces it in position three.
+  it("keeps no accessible names, and no phase word of its own", () => {
+    const every = JSON.stringify(deckStateMarksCopy);
+    for (const gone of ["markAria", "cardAriaSuffix", "Not committed yet", "pending changes, not yet"]) {
+      expect(every).not.toContain(gone);
+    }
   });
 
   it("does not reuse the pull guard's tag", () => {
-    // `deck in draft` is LIVE copy — `deckVersioningCopy.review.pullGuardTag`, drawn by
-    // `pull-control.tsx` beside a card name. What the review page retired is a
-    // bare `pending`, which was read there as a pending change to THAT CARD.
-    // Here the subject is the deck, so the word is safe and the tag is spoken
-    // for: two surfaces, two phrasings, neither borrowed from the other.
+    // `deck in draft` is LIVE copy — `deckVersioningCopy.review.pullGuardTag`,
+    // drawn beside a card name. Here the subject is the deck.
     expect(JSON.stringify(deckStateMarksCopy)).not.toContain(deckVersioningCopy.review.pullGuardTag);
   });
 });
