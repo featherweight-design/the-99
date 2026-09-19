@@ -1073,8 +1073,14 @@ export const ADD_RESULTS: SearchResult[] = [
     imageUri: null,
     manaCost: "{1}{R}",
     cmc: 2,
-    // The dot is on EVERY result, which is the caption's first clause — so one
-    // row has to be a card the player does not own.
+    // The panel states OWNERSHIP on every result, and the two branches are
+    // different sentences — `×N owned` against a bare `not owned` — so one row
+    // has to be a card the player does not own or only one of them is drawn.
+    //
+    // This comment used to say "the dot is on every result", which was the
+    // caption's claim before this rebuild found that the panel draws no dot at
+    // all. Left standing it would have talked the next change into putting one
+    // back.
     owned: false,
     ownedQty: 0,
     availability: null,

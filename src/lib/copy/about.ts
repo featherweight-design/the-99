@@ -435,7 +435,12 @@ export const aboutEntries: readonly AboutEntry[] = [
       // crop and states ownership in words — `×2 owned` or `not owned`. The
       // figure this replaced drew dots because this sentence claimed them,
       // which is the loop the rebuild exists to break.
-      'Search what you own or all of Magic, with every result saying how many copies you have, and add without leaving the list you are looking at. A card another committed deck is holding still adds — it arrives carrying the mark that says so, rather than being refused.',
+      // Two corrections deep now. The canvas said "the ownership dot on every
+      // result" and the panel draws no dot; the first fix said "how many
+      // copies you have", which is true of `rowOwned` and not of the bare
+      // `rowNotOwned` beside it. What both branches actually do is state
+      // ownership, with a figure only where there is one to give.
+      'Search what you own or all of Magic, with every result saying whether you own it and how many copies, and add without leaving the list you are looking at. A card another committed deck is holding still adds — it arrives carrying the mark that says so, rather than being refused.',
     keys: [],
     since: 1,
   },
