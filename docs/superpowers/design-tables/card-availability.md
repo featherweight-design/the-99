@@ -122,13 +122,13 @@ Self-exclusion (A2RM:141–172, RD2:47–76): on a deck's own decklist the marke
 | 1.9 | `marker.hard` | `0 free` | CP:38 |
 | 1.10 | `marker.hardIn` | `0 free — in ${deckName}` | CP:39 |
 | 1.11 | `marker.hardMulti` | `0 free — across ${deckCount} decks` | CP:40 |
-| 1.12 | `marker.hardAria` | `no free copies; this one is on your ${deckName} list` | CP:41 |
+| 1.12 | `marker.hardAria` | `no free copies; this one is in your ${deckName} deck` | CP:41 |
 | 1.13 | `marker.hardMultiAria` | `no free copies; they are on ${deckCount} of your committed decks` | CP:42–43 |
 | 1.14 | `marker.over` | `short ${shortBy}` | CP:46 |
 | 1.15 | `marker.overWithDemand` | `short ${shortBy} — ${deckCount} decks want it` | CP:47 |
 | 1.16 | `marker.overAria` | `${deckCount} of your committed decks include this card and you own ${shortBy} too few` | CP:48 |
 | 1.17 | `marker.overAlsoIn` | `short ${shortBy} — also in ${otherDeck}` | CP:49 |
-| 1.18 | `marker.overAlsoInAria` | `your ${otherDeck} list also includes this card and you don’t own enough for both` | CP:50–51 |
+| 1.18 | `marker.overAlsoInAria` | `your ${otherDeck} deck also includes this card and you don’t own enough for both` | CP:50–51 |
 | 1.19 | `marker.tileInUse` | `in use — ${deckName}` | CP:54 |
 | 1.20 | `marker.tileOver` | `${deckCount} decks want it` | CP:55 |
 | 1.21 | `quantity.joiner` | ` · ` (space, middot, space) | CP:144–146 |
@@ -519,10 +519,10 @@ Every accessible name quoted verbatim from `availability · copy strings.ts`.
 | # | Context | Accessible name | Source |
 |---|---|---|---|
 | 17.1 | Soft marker | `1 copy is on a draft` / `${softQty} copies are on drafts` | CP:32–35 |
-| 17.2 | Hard marker, one deck | `no free copies; this one is on your ${deckName} list` | CP:41 |
+| 17.2 | Hard marker, one deck | `no free copies; this one is in your ${deckName} deck` | CP:41 |
 | 17.3 | Hard marker, many decks | `no free copies; they are on ${deckCount} of your committed decks` | CP:42–43 |
 | 17.4 | Over marker | `${deckCount} of your committed decks include this card and you own ${shortBy} too few` | CP:48 |
-| 17.5 | Over, own decklist | `your ${otherDeck} list also includes this card and you don’t own enough for both` | CP:50–51 |
+| 17.5 | Over, own decklist | `your ${otherDeck} deck also includes this card and you don’t own enough for both` | CP:50–51 |
 | 17.6 | Ranking, default | the segment's visible label, `commandersCopy.availability.all`. `ranking.allAria` was deleted with the rename (§7 errata) — the control labels each radio with the word on it rather than a second sentence | CP:66–85 |
 | 17.7 | Ranking, free | likewise `commandersCopy.availability.free`, at BOTH widths: the 32px rack segment shortens its visible text to `freeShort`, and the announced name stays the long form | CP:66–85 |
 | 17.8 | Ranking announce | `ranking.announce(mode, n)` | CP:81–84 |
