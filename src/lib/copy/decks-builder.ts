@@ -356,6 +356,25 @@ export const addPanelCopy = {
     dockSummary: (commander: string, identity: string) =>
       `${commander} · ${identity}`,
     dockSummaryEmpty: "Pick a commander to start",
+
+    // EXTRACTED 2026-09-19. These shipped inline in `create-picker.tsx`, which
+    // Design flagged while drawing the `new-deck` About entry: that entry's
+    // figure mounts the picker, so a rename in the component would have moved
+    // the page silently and the copy pass would never have seen these strings.
+    //
+    // The two titles are one control at two widths, not two strings with the
+    // same job: the phone names the ACT because the page arrives with no
+    // context around it, and desktop names the destination because the rail
+    // beside it already says where you are.
+    titlePhone: "Pick a commander",
+    titleDesktop: "New deck",
+    sub: "Choose a commander from your collection.",
+    searchPlaceholder: "Search commanders…",
+    namePlaceholder: "Deck name…",
+    selectedLabel: "Selected",
+    submit: "Create deck →",
+    submitPending: "Creating…",
+    failed: "Failed to create deck. Try again.",
   },
 } as const;
 

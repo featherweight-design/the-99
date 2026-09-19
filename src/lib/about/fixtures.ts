@@ -12,6 +12,9 @@ import type { DeckFolderWithCount } from "../decks/folders";
 import type { ShelfCounts } from "../decks/folder-view";
 import type { ContestedCard } from "../collection/summary-read";
 import type { GameSummary } from "../decks/games";
+import type { DraftRow } from "../decks/draft-state";
+import type { DeckClaim } from "../decks/availability";
+import type { OwnedLegalCommander } from "../decks/read";
 import { deckImportCopy } from "../copy/deck-import";
 import type { CommanderRowView } from "../../components/commanders/commander-row";
 import type { PriceSlot } from "../discovery/price";
@@ -1484,3 +1487,143 @@ export const GAME_SUMMARY: GameSummary = {
   // Cut both ways, so it is the Mixed line rather than a third column.
   mixed: [{ key: "resilience", worked: 2, hurt: 2, net: 0 }],
 };
+
+/**
+ * `review-and-commit` — the `Coming in` column of `/decks/[id]/changes`.
+ *
+ * Design's R5 picks this slice, and the reason is worth keeping: the route is
+ * ~1,100 lines, and this column is the only part carrying the four-bucket
+ * breakdown, `Pull it`, and both pull guards. The what-changed strip is the
+ * deck page's mix strip folded over two lists, which `deck-page` documents;
+ * the commit sheet and the discard confirm are consequences the caption names
+ * in a clause each.
+ *
+ * THREE ROWS, ONE PER ANSWER AN ADD CAN GET:
+ *
+ * - `free` — the collection has a spare copy. No control, nothing to decide.
+ * - `claimed` with a RELEASABLE holder — `releasableClaims` wants `mature`,
+ *   `senior`, not `pending`, not `commander`, and all four have to be right or
+ *   `pullCandidate` returns null and the row draws no control at all.
+ * - `claimed` with a PENDING holder — the same bucket, and the guard instead:
+ *   a deck with changes of its own cannot be raided, because a pull would
+ *   sweep those edits into a version its owner never asked for.
+ *
+ * The third row is the one this entry exists for, and it is also the row that
+ * the 2026-09-19 vocabulary sweep renamed: the tag read `deck in draft` when
+ * Design drew it and reads `deck has changes` now, because `draft` belongs to
+ * the status.
+ */
+const claim = (o: Partial<DeckClaim> & { id: string; name: string }): DeckClaim => ({
+  quantity: 1,
+  mature: true,
+  senior: true,
+  pending: false,
+  commander: false,
+  since: null,
+  versionNumber: null,
+  ...o,
+});
+
+const reviewRow = (
+  o: Partial<DraftRow> & { oracleId: string; name: string; typeLine: string },
+): DraftRow => ({
+  cardTypeGroup: "Other",
+  role: "other",
+  cmc: 2,
+  owned: true,
+  quantity: 1,
+  auto: false,
+  manaCost: null,
+  printedName: null,
+  printedSetCode: null,
+  printedCollectorNumber: null,
+  availability: null,
+  direction: "in",
+  from: 0,
+  to: 1,
+  bucket: "free",
+  shortfall: 0,
+  ...o,
+});
+
+export const REVIEW_IN_ROWS: DraftRow[] = [
+  reviewRow({
+    oracleId: "about-rev-free",
+    name: "Beast Within",
+    typeLine: "Instant",
+    cardTypeGroup: "Instants",
+    manaCost: "{2}{G}",
+    bucket: "free",
+    availability: { owned: 2, hard: 0, soft: 0, free: 2, claims: [] },
+  }),
+  reviewRow({
+    oracleId: "about-rev-pull",
+    name: CARDS.removed,
+    typeLine: "Enchantment",
+    cardTypeGroup: "Enchantments",
+    manaCost: "{2}{U}",
+    bucket: "claimed",
+    availability: {
+      owned: 1,
+      hard: 1,
+      soft: 0,
+      free: 0,
+      claims: [claim({ id: "about-atraxa", name: "Atraxa Counters", versionNumber: 4 })],
+    },
+  }),
+  reviewRow({
+    oracleId: "about-rev-guard",
+    name: CARDS.owned,
+    typeLine: "Artifact",
+    cardTypeGroup: "Artifacts",
+    manaCost: "{1}",
+    bucket: "claimed",
+    availability: {
+      owned: 1,
+      hard: 1,
+      soft: 0,
+      free: 0,
+      // `pending` is what draws the guard instead of the control.
+      claims: [
+        claim({ id: "about-kinnan", name: "Kinnan Ramp", pending: true, versionNumber: 2 }),
+      ],
+    },
+  }),
+];
+
+/**
+ * `new-deck` — three owned legends for the commander picker.
+ *
+ * `poolCount` is the figure beside each name: how many of the player's cards
+ * are legal in that commander's colours. It is the `Pool` part of a fit score
+ * read from the other side, which is the entry's second key line.
+ */
+export const CREATE_COMMANDERS: OwnedLegalCommander[] = [
+  {
+    oracleId: "about-preston",
+    name: "Preston Garvey, Minuteman",
+    colorIdentity: ["R", "G", "W"],
+    imageUri: null,
+    // Null rather than a Partner reminder: `PartnerSlot` is named in the
+    // caption and not drawn, because it appears only for a commander with the
+    // ability and would need a fourth row to explain itself.
+    oracleText: null,
+    poolCount: 1615,
+  },
+  {
+    oracleId: "about-kotis",
+    name: "Kotis, Sibsig Champion",
+    colorIdentity: ["U", "B", "G"],
+    imageUri: null,
+    oracleText: null,
+    poolCount: 1747,
+  },
+  {
+    oracleId: "about-kinnan-cmd",
+    name: "Kinnan, Bonder Prodigy",
+    colorIdentity: ["U", "G"],
+    imageUri: null,
+    oracleText: null,
+    poolCount: 1402,
+  },
+];

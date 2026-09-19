@@ -82,9 +82,11 @@ property that produced it does not.
 
 ## Entry count
 
-§3's own heading reads **"thirty-three entries, thirty-three figures"**. The code has 35. The two
-extras are `decklist-order`, added after #642 shipped the decklist's sort control, and
-`commander-availability`, added by #683 — both after the canvas was drawn. The rule in `AGENTS.md`
+§3's own heading reads **"thirty-three entries, thirty-three figures"**. The code has 37. The four
+extras are `decklist-order`, added after #642 shipped the decklist's sort control;
+`commander-availability`, added by #683; and `review-and-commit` and `new-deck`, drawn on the §G
+template as R5 after a coverage sweep found two routes a reader could reach with nothing on the
+page explaining them. All four arrived after the canvas was drawn. The rule in `AGENTS.md`
 is that a feature designs and builds its own About entry, so this table's count is expected to trail
 the code and the gap is not a finding. `about.test.ts` pins the figure, so it cannot go stale
 silently.

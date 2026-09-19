@@ -31,7 +31,7 @@
 // changes. about.test.ts pins a content hash, so a change forces either a
 // deliberate bump or a deliberate re-pin.
 
-export const ABOUT_VERSION = 6;
+export const ABOUT_VERSION = 7;
 
 export type AboutChapter = '01' | '02' | '03' | '04';
 export type AboutWidth = 'inset' | 'plate';
@@ -493,6 +493,42 @@ export const aboutEntries: readonly AboutEntry[] = [
       'Paste a list or upload a file. The same route updates a deck you already have, and there is no link mode, from Moxfield or anywhere else. A line we cannot put a card to does not stop the import: the deck is still made, the line is flagged inside it, and it counts toward the 99 but not toward what is built.',
     keys: [],
     since: 1,
+  },
+  {
+    id: 'review-and-commit',
+    chapter: '03',
+    title: 'Reviewing what a commit will cost',
+    route: '/decks',
+    opens: 'opens the review page',
+    width: 'plate',
+    // Design R5, with two corrections for the 2026-09-19 vocabulary ruling:
+    // the caption opened "A draft becomes a version here", which now reads as
+    // the versionless deck rather than the edits, and key line 3 quoted the
+    // guard tag as `deck in draft`. Both are copy, so eng resolved them.
+    caption:
+      'Committing turns your changes into a version, and this page is the only place that says what that will cost. Not what the deck holds, which the deck page already shows, but what committing it asks of the rest of your collection. Cards coming in are counted into buckets, and a card another deck has already sleeved carries Pull it: take that copy and the deck holding it is cut a version. It is the one act on this page nobody can take back.',
+    keys: [
+      '`Coming in` is broken down where it is headed, free, sleeved and to buy, so the page says what the commit costs before a single row is read.',
+      '`Pull it` takes a copy out of another deck and cuts that deck a version. It is the one act here that cannot be undone, which is why the deck it raids is named on the row.',
+      'a deck with changes of its own cannot be raided, so the row says `deck has changes` and offers no control.',
+    ],
+    since: 7,
+  },
+  {
+    id: 'new-deck',
+    chapter: '03',
+    title: 'Starting a deck',
+    route: '/decks/new',
+    opens: 'opens the commander picker',
+    width: 'plate',
+    caption:
+      'Every deck starts with a commander you already own. The picker lists them all with the size of the pool each one opens up, meaning how many of your cards are legal in its colours, and a name is the only other thing a deck needs. Commanders that partner get a second slot, filtered to the ones they can legally pair with. Arriving from a commander’s own page skips the list: the commander is already chosen, any synergy picks you made there travel with you, and the page asks for the name.',
+    keys: [
+      'only commanders you own and could legally build are listed. The picker is your collection, not a catalogue.',
+      'the figure beside each one is how many of your cards are legal in its colours, which is the Pool part of a fit score seen from the other side.',
+      'a name is required and everything else has a default: the deck is created empty, and the 99 is filled in afterwards.',
+    ],
+    since: 7,
   },
   {
     id: 'undo-removal',

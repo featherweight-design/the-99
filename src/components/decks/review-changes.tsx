@@ -149,7 +149,16 @@ function orderedIds(rows: DraftRow[]): string[] {
     .flatMap(([, groupRows]) => groupRows.map((r) => r.oracleId));
 }
 
-function Column({
+/**
+ * One column of the review page — its heading, its breakdown note, and its
+ * diff rows with whatever control each row earns.
+ *
+ * EXPORTED for `/about`, which draws `Coming in` as the `review-and-commit`
+ * entry's specimen: it is the slice carrying the four-bucket breakdown,
+ * `Pull it` and both pull guards, none of which any other route has. The
+ * review page is its only other caller and passes every prop.
+ */
+export function Column({
   deckId,
   heading,
   headingTone,

@@ -30,7 +30,9 @@ import {
   AddCardsFigureBody,
   FoldersFigureBody,
   LogFindingsFigureBody,
+  NewDeckFigureBody,
   ProxiesFigureBody,
+  ReviewAndCommitFigureBody,
   ThemesFigureBody,
   LogAGameFigureBody,
   ReservationsFigureBody,
@@ -827,6 +829,22 @@ function CommanderAvailabilityFigure({ width }: { width: AboutWidth }) {
     </Specimen>
   );
 }
+function ReviewAndCommitFigure({ width }: { width: AboutWidth }) {
+  return (
+    <Specimen label="review-and-commit" width={width}>
+      <ReviewAndCommitFigureBody />
+    </Specimen>
+  );
+}
+
+function NewDeckFigure({ width }: { width: AboutWidth }) {
+  return (
+    <Specimen label="new-deck" width={width}>
+      <NewDeckFigureBody />
+    </Specimen>
+  );
+}
+
 
 // would let a caller invoke a missing one with no type error.
 export const FIGURES: Partial<
@@ -857,6 +875,8 @@ export const FIGURES: Partial<
   roles: RolesFigure,
   "decklist-order": DecklistOrderFigure,
   "add-cards": AddCardsFigure,
+  "review-and-commit": ReviewAndCommitFigure,
+  "new-deck": NewDeckFigure,
   "undo-removal": UndoRemovalFigure,
   "deck-import": DeckImportFigure,
   versions: VersionsFigure,
