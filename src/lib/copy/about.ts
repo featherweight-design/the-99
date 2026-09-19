@@ -617,7 +617,7 @@ export const aboutEntries: readonly AboutEntry[] = [
     keys: [
       'New and Draft belong to a deck you have never committed: New has nothing in it and shows when it was made, Draft is that deck at any length. Building is a committed deck now short of its body size.',
       'Over is past the body size and Unresolved is at it, each with something to settle: too many cards, or lines we could not put a card to.',
-      'To buy is the one that catches people: a full 99 you cannot sleeve, because some of it is not on your shelf.',
+      'To buy is the one that catches people: a full deck you cannot sleeve, because some of it is not on your shelf.',
       'Complete is the only status that means you can put the deck on a table.',
     ],
     since: 1,
