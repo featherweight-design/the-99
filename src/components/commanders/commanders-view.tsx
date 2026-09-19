@@ -10,6 +10,7 @@ import {
 } from "react";
 import { useSearchParams } from "next/navigation";
 import { useLiveQuery } from "../../lib/commanders/live-query";
+import { commanderDisplayName } from "../../lib/cards/printed-name";
 import type { CommanderRowItem } from "../../lib/commanders/rankings";
 import { fromFreeDelta, type FreeRankingDelta } from "../../lib/recs/free-delta";
 import { filterByColors } from "../../lib/commanders/filter";
@@ -57,13 +58,28 @@ const colourName = (hue: string) =>
  * untouched, which is also what keeps the rank numerals meaningful: they are
  * built over the unfiltered list in fit order and never renumber.
  */
-function ordered<T extends { name: string }>(rows: T[], order: LaneOrder): T[] {
+function ordered<T extends { name: string; printedName?: string | null }>(
+  rows: T[],
+  order: LaneOrder,
+): T[] {
   if (order !== "name") return rows;
-  return [...rows].sort((a, b) => a.name.localeCompare(b.name, "en"));
+  // By the name DRAWN. An A-Z list is alphabetical in the names on screen or it is not
+  // alphabetical at all — a copy printed `Freya, Queen of the Valkyries` filed under I
+  // for Iroas reads as one card in the wrong place.
+  return [...rows].sort((a, b) =>
+    commanderDisplayName(a).localeCompare(commanderDisplayName(b), "en"),
+  );
 }
 
-function matchesQuery(name: string, q: string): boolean {
-  return name.toLowerCase().includes(q);
+/**
+ * EITHER name matches. The row draws the printed one, so a reader typing what they can
+ * see has to find it; the oracle name is what a player who knows the card types, and it
+ * is the only name the discover lane has. Dropping either would make a row unreachable
+ * by a name it is legitimately known by.
+ */
+function matchesQuery(row: { name: string; printedName?: string | null }, q: string): boolean {
+  return row.name.toLowerCase().includes(q)
+    || (row.printedName ?? "").toLowerCase().includes(q);
 }
 
 
@@ -271,7 +287,7 @@ export function CommandersView({
   // and nothing trimmed off the middle — the same matcher discovery uses.
   const searched = useMemo(() => {
     const q = params.q.trim().toLowerCase();
-    return q === "" ? active : active.filter((r) => matchesQuery(r.name, q));
+    return q === "" ? active : active.filter((r) => matchesQuery(r, q));
   }, [active, params.q]);
 
   const filtered = useMemo(
@@ -304,7 +320,7 @@ export function CommandersView({
   const sleevedByFree = useMemo(() => {
     if (avail !== "free" || !freeItems) return null;
     const q = params.q.trim().toLowerCase();
-    const searchedAll = q === "" ? results : results.filter((r) => matchesQuery(r.name, q));
+    const searchedAll = q === "" ? results : results.filter((r) => matchesQuery(r, q));
     const hidden = filterByColors(searchedAll, colors, params.match).length - filtered.length;
     return hidden > 0 ? hidden : null;
   }, [avail, freeItems, results, params.q, colors, params.match, filtered.length]);
@@ -396,7 +412,9 @@ export function CommandersView({
     );
     if (best === null) return null;
     const back = ordered(returned.get(best.control) as typeof searched, params.order);
-    return { name: back[0].name, control: best.control, rows: best.rows };
+    // The DRAWN name: this sentence offers to bring a row back, and naming it by the
+    // oracle name would promise a commander no row on this lane is captioned with.
+    return { name: commanderDisplayName(back[0]), control: best.control, rows: best.rows };
   }, [colors, searched, params.match, params.order]);
 
   // The named correction, and only it: one pip goes out and every other control
@@ -576,6 +594,10 @@ export function CommandersView({
                     item={{
                       slug: r.slug,
                       name: r.name,
+                      // The owned lane's rows are cards the reader HOLDS, so each
+                      // carries the name on their own copy; the discover lane leaves
+                      // it absent and the row draws the oracle name.
+                      printedName: r.printedName,
                       colorIdentity: r.colorIdentity,
                       artCropUri: r.artCropUri,
                       rank: rankBySlug.get(r.slug) ?? 0,

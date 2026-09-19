@@ -29,6 +29,13 @@ export type RankedCommander = CommanderScore & { slug: string; synergyState: Syn
  */
 export type CommanderDetailScore = RankedCommander & {
   committedSupport: { count: number; topDeck: string | null };
+  /**
+   * The name printed on the copy the player owns, where it differs. Applied by the page
+   * through `withOwnedCardArt`, not by the scorer — see the note at that call site.
+   * Absent for a commander they do not own, which on this page is an ordinary case:
+   * `/discover` links here too.
+   */
+  printedName?: string | null;
 };
 
 /**
@@ -60,6 +67,22 @@ export type CommanderListItem = Pick<
   /** Preformatted receipts line — overlapOwned can be large, so only the
       rendered preview string ships to the client. */
   receipts: string;
+  /**
+   * The name printed on the copy the player owns, where it differs from the oracle
+   * card's. Null when they own no copy of this commander, or when the copy they own
+   * prints the oracle name — which is almost every printing.
+   *
+   * Never set by this module, and not by `getRankedList` either — both answer out of the
+   * catalog, and which printing the player holds is a different question. It is applied
+   * at the DRAW, through `withOwnedCardArt`: `loadCommanderRankings` for the whole
+   * `/commanders` lane, Home for its ready slice alone. Anything reading a ranked item
+   * and expecting this field has to enrich it first; a shared loader doing it for
+   * everyone is what made Home pay a printings join for rows it never draws.
+   *
+   * Optional for the reason the deck payloads' twin is: fixtures across the suite build
+   * these literals without touching the catalog, and absent means null.
+   */
+  printedName?: string | null;
 };
 
 export function toListItem(r: RankedCommander): CommanderListItem {

@@ -650,8 +650,8 @@ Package manager is **pnpm** (pinned via `packageManager` in package.json) — ne
   collection reader, because it is a column on `decks` rather than a `deck_cards` row. The
   decklist beneath it had resolved every other card to the owned printing for months.
 
-  Its four sections cover the page, the tile through its OWN query (the two loaders could
-  drift at any time), the `includeCommanderArt` gate — `/decks/[id]` calls the same loader
+  Its five sections cover the page, the tile through its OWN query (the two loaders could
+  drift at any time), the `/decks/new` picker's own loader, the `includeCommanderArt` gate — `/decks/[id]` calls the same loader
   for a deck-name list and must not pay a collection aggregation per deck — and the
   fallback: a commander the player does not own keeps the oracle
   art, unchanged. That last one is what says the fix costs nothing on a database whose
@@ -673,6 +673,16 @@ Package manager is **pnpm** (pinned via `packageManager` in package.json) — ne
   `resolveArtCropUri`, and the code said otherwise until the run proved it. Same fixture
   discipline as `probe:claims`: a per-run `user_id` deleted in a `finally`, pointed at
   `local-dev` or a scratch branch, **never production**.
+
+  **What it does NOT cover, deliberately: `/commanders` and Home's hero.** Both read
+  `getRankedList`, whose cold path is the EDHREC fanout — a probe fixture user has no
+  stored scores, so calling it would make a network-dependent ranking run to assert a URL.
+  The override is pinned instead by `src/lib/recs/ranked-list.test.ts` on BOTH paths (the
+  stored one and the recompute), plus that the built-commander filter runs first so no
+  printing is resolved for a row nobody draws. The rendered half is
+  `commander-row.test.tsx` and `commanders-view.test.tsx`. The 2026-09-19 build was walked
+  in a browser at 1300px against a seeded alternate printing and drew the owned crop; that
+  reading is a one-off, not a check.
 
 - `pnpm probe:printing-pick` presses a printing pick on `/collection` and answers two
   questions no component test can. THE ART MOVED: the patch is a client-side state write, so

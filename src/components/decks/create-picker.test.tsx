@@ -136,3 +136,39 @@ describe("CreatePicker — the partner list's empty state", () => {
     expect(screen.queryByText(/none of your commanders can pair/)).toBeNull();
   });
 });
+
+// The picker draws each candidate's card image, and every row here is a card the player
+// OWNS — so both the art and the name are their copy's. `name` stays the oracle name on
+// the row itself, because `canPair` matches a "Partner with" ability against it.
+describe("CreatePicker — a renamed copy", () => {
+  const renamed = [
+    {
+      oracleId: "oracle-sld",
+      name: "Iroas, God of Victory",
+      printedName: "Freya, Queen of the Valkyries",
+      colorIdentity: ["R", "W"],
+      imageUri: null,
+      oracleText: null,
+      poolCount: 12,
+    },
+  ];
+
+  it("lists the row under the name printed on the card", () => {
+    render(<CreatePicker legalCommanders={renamed} />);
+
+    expect(screen.getByText("Freya, Queen of the Valkyries")).toBeTruthy();
+    expect(screen.queryByText("Iroas, God of Victory")).toBeNull();
+  });
+
+  it("finds it by either name", () => {
+    render(<CreatePicker legalCommanders={renamed} />);
+    const search = screen.getByRole("searchbox");
+
+    fireEvent.change(search, { target: { value: "freya" } });
+    expect(screen.getByText("Freya, Queen of the Valkyries")).toBeTruthy();
+
+    // The oracle name is what a player who knows the card types.
+    fireEvent.change(search, { target: { value: "iroas" } });
+    expect(screen.getByText("Freya, Queen of the Valkyries")).toBeTruthy();
+  });
+});

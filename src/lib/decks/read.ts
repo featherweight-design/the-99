@@ -12,12 +12,12 @@ import {
   deckVersions,
   decks,
 } from "../../db/schema";
-import {
-  aggregateCollection,
-  resolvedPrinting,
-  selectCollectionRows,
-} from "../collection/browse";
 import { ownedCardsWhere } from "../collection/owned-cards";
+import { commanderDisplayName } from "../cards/printed-name";
+import {
+  resolveOwnedPrintings,
+  type OwnedPrinting,
+} from "../collection/owned-printings";
 import { proxiedOracleIds, proxyCounts, type ProxyCount } from "./proxies";
 import { classifyRoles } from "../recs/roles";
 import { isCommanderCandidate } from "../recs/score";
@@ -190,56 +190,6 @@ export async function requireDeck(deckId: string, userId: string) {
     .where(and(eq(decks.id, deckId), eq(decks.userId, userId)));
   if (!deck || deck.userId !== userId) throw new Error("deck not found");
   return deck;
-}
-
-/** One printing as the player owns it — the art and the name that belong together. */
-type OwnedPrinting = {
-  printedName: string | null;
-  imageUri: string | null;
-  artCropUri: string | null;
-  setCode: string;
-  collectorNumber: string;
-};
-
-/**
- * The printing the player actually owns for each of these oracle ids, keyed by id.
- *
- * Reusing the collection reader rather than joining `printings` here is deliberate — the
- * art must follow the SAME printing the art preference picks, and `aggregateCollection`
- * is where that precedence lives. A card the player does not own is simply absent from
- * the map, since `selectCollectionRows` is rooted in `collection_items`.
- *
- * Swallowed, like the availability rollup beside its callers: the deck is the deck. A
- * failed lookup leaves every figure on its oracle-level value, which is exactly the
- * rendering that shipped before this existed.
- */
-async function resolveOwnedPrintings(
-  userId: string,
-  oracleIds: string[],
-): Promise<Map<string, OwnedPrinting>> {
-  const resolved = new Map<string, OwnedPrinting>();
-  // Never an empty `inArray`: a SQL error in some drivers and a full scan in others.
-  const ids = [...new Set(oracleIds)];
-  if (ids.length === 0) return resolved;
-  const owned = await selectCollectionRows(userId, ids)
-    .then(aggregateCollection)
-    .catch(() => []);
-  for (const c of owned) {
-    const p = resolvedPrinting(c);
-    if (p) {
-      resolved.set(c.oracleId, {
-        printedName: c.printedName,
-        imageUri: p.imageUri,
-        // `?? null` rather than left optional: `BrowsePrinting.artCropUri` is optional so
-        // the suite's fixtures need not carry it, and absent means what null does — fall
-        // back to the oracle-level crop.
-        artCropUri: p.artCropUri ?? null,
-        setCode: p.setCode,
-        collectorNumber: p.collectorNumber,
-      });
-    }
-  }
-  return resolved;
 }
 
 export async function getDeckDetail(deckId: string, userId: string): Promise<DeckDetail | null> {
@@ -1069,6 +1019,12 @@ export async function listDecksWithStats(
 export type OwnedLegalCommander = {
   oracleId: string;
   name: string;
+  /**
+   * The name printed on the copy the player owns, where it differs. Every row here is
+   * a card they own by definition, so this is the one list where the field is about
+   * the printing rather than about whether there is one.
+   */
+  printedName?: string | null;
   colorIdentity: string[];
   imageUri: string | null;
   /**
@@ -1121,19 +1077,33 @@ export async function listOwnedLegalCommanders(userId: string): Promise<OwnedLeg
     maskTally.set(m, (maskTally.get(m) ?? 0) + 1);
   }
 
+  // Every row here is a card the player owns, so every row has a printing of its own —
+  // this is the one list where the lookup misses nothing. The picker draws each
+  // candidate's card image, and `cards.image_uri` is one arbitrary printing's.
+  const owned = await resolveOwnedPrintings(userId, candidates.map((c) => c.oracleId));
+
   return candidates
     .map((c) => {
       const candidateMask = colorIdentityMask(c.colorIdentity);
       // Subtract 1 to exclude the commander itself (it appears in ownedRows).
       const poolCount = poolCountFromMaskTally(maskTally, candidateMask) - 1;
+      const own = owned.get(c.oracleId);
       return {
         oracleId: c.oracleId,
         name: c.name,
+        printedName: own?.printedName ?? null,
         colorIdentity: c.colorIdentity,
-        imageUri: c.imageUri,
+        imageUri: own?.imageUri ?? c.imageUri,
         oracleText: c.oracleText,
         poolCount,
       };
     })
-    .sort((a, b) => a.name.localeCompare(b.name));
+    // Ordered by the name DRAWN, not the oracle name. An A-Z list the reader scans is
+    // alphabetical in the names they can see or it is not alphabetical at all: a copy
+    // printed `Freya, Queen of the Valkyries` filed under I for Iroas reads as a list
+    // with one card in the wrong place. The picker's search matches both names, which
+    // is what keeps the oracle name reachable for a reader who types it.
+    .sort((a, b) =>
+      commanderDisplayName(a).localeCompare(commanderDisplayName(b), "en"),
+    );
 }

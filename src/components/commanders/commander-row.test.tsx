@@ -79,6 +79,34 @@ describe("CommanderRow · state 1, full", () => {
   });
 });
 
+describe("CommanderRow · the name is the copy the reader owns", () => {
+  // `/commanders` lists commanders the reader OWNS, and the row's wash is that copy's
+  // art — so the name over it has to be the one printed on it.
+  it("draws the printed name when the row carries one", () => {
+    row({ name: "Iroas, God of Victory", printedName: "Freya, Queen of the Valkyries" });
+
+    expect(screen.getByText("Freya, Queen of the Valkyries")).toBeTruthy();
+    expect(screen.queryByText("Iroas, God of Victory")).toBeNull();
+  });
+
+  it("names the link with the printed name too", () => {
+    row({ name: "Iroas, God of Victory", printedName: "Freya, Queen of the Valkyries" });
+
+    expect(
+      screen.getByRole("link", { name: /^Freya, Queen of the Valkyries ·/ }),
+    ).toBeTruthy();
+  });
+
+  // The DISCOVER lane sets nothing here — those commanders are ones the reader does not
+  // own, so there is no copy of theirs to read a name off. Absent must draw the oracle
+  // name rather than an empty string.
+  it("keeps the oracle name when no printed name is carried", () => {
+    row();
+
+    expect(screen.getByText("Atraxa, Praetors' Voice")).toBeTruthy();
+  });
+});
+
 describe("CommanderRow · state 2, no sentence", () => {
   // UNMOUNTS. No placeholder, no reserved height, nothing synthesised and
   // nothing truncated into the gap — a null is a legitimate output of the

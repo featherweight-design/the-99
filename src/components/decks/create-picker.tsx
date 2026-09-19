@@ -24,6 +24,7 @@ import { colorLabel } from "../../lib/decks/format";
 import { canPair, partnerAbility, partnerAbilityLabel } from "../../lib/decks/partner";
 import { deckImportCopy } from "../../lib/copy/deck-import";
 import { addPanelCopy, shortCommanderName } from "../../lib/copy/decks-builder";
+import { commanderDisplayName } from "../../lib/cards/printed-name";
 import { PartnerSlot } from "./partner-slot";
 import { PrimaryButton } from "@/components/ui/button";
 import { SearchField, TextField } from "@/components/ui/text-field";
@@ -70,7 +71,15 @@ export type CreatePickerProps = CreateModeProps | ImportModeProps;
  */
 type PickerRow = {
   oracleId: string;
+  /**
+   * The ORACLE name, and it stays that on purpose: `canPair` matches a "Partner with"
+   * ability against the named card, which is an oracle-level rule. Display reads
+   * `printedName` through `commanderDisplayName` instead.
+   */
   name: string;
+  /** The name on the copy the player owns, where it differs. Absent on the import door,
+      whose rows are a decklist's legends and not necessarily owned at all. */
+  printedName?: string | null;
   colorIdentity: string[];
   imageUri: string | null;
   metaMobile: string;
@@ -96,6 +105,7 @@ function createRow(c: OwnedLegalCommander): PickerRow {
   return {
     oracleId: c.oracleId,
     name: c.name,
+    printedName: c.printedName,
     colorIdentity: c.colorIdentity,
     imageUri: c.imageUri,
     metaMobile: meta,
@@ -199,7 +209,13 @@ export function CreatePicker(props: CreatePickerProps) {
     const base = pairing ? pairable : rows;
     const needle = query.trim().toLowerCase();
     if (isImport || needle.length === 0) return base;
-    return base.filter((c) => c.name.toLowerCase().includes(needle));
+    // Either name: the row draws the printed one, and the oracle name is what a player
+    // who knows the card types.
+    return base.filter(
+      (c) =>
+        c.name.toLowerCase().includes(needle)
+        || (c.printedName ?? "").toLowerCase().includes(needle),
+    );
   }, [isImport, rows, pairable, pairing, query]);
 
   const selected = rows.find((r) => r.oracleId === selectedId) ?? null;
@@ -214,7 +230,8 @@ export function CreatePicker(props: CreatePickerProps) {
   const partnerSourceLine = partnerId ? (sourceById.get(partnerId)?.sourceLine ?? null) : null;
   const partnerCard = partnerRow
     ? {
-        name: partnerRow.name,
+        // The drawn name, as everywhere the reader is being shown a card they hold.
+        name: commanderDisplayName(partnerRow),
         colorIdentity: partnerRow.colorIdentity,
         imageUri: partnerRow.imageUri,
         // In import mode both halves came from the paste, so the caption says so
@@ -227,7 +244,9 @@ export function CreatePicker(props: CreatePickerProps) {
         // it says who it is. A create-mode pick is not a proposal, so it is named
         // plainly and the `Change` and `Remove` buttons speak for themselves.
         ariaLabel:
-          partnerSourceLine !== null ? copy.proposedAria(partnerRow.name) : partnerRow.name,
+          partnerSourceLine !== null
+            ? copy.proposedAria(commanderDisplayName(partnerRow))
+            : commanderDisplayName(partnerRow),
       }
     : null;
 
@@ -444,7 +463,7 @@ export function CreatePicker(props: CreatePickerProps) {
           {selected && primaryAbility && (
             <div className="md:hidden mb-[16px]">
               <PartnerSlot
-                primaryName={selected.name}
+                primaryName={commanderDisplayName(selected)}
                 ability={primaryAbility}
                 partner={partnerCard}
                 pairableCount={pairable.length}
@@ -471,7 +490,7 @@ export function CreatePicker(props: CreatePickerProps) {
                 className="font-mono text-[11px] flex-1 min-w-0"
                 style={{ color: "var(--fg-body)" }}
               >
-                {copy.pairingFor(shortCommanderName(selected.name), pairable.length)}
+                {copy.pairingFor(shortCommanderName(commanderDisplayName(selected)), pairable.length)}
               </span>
               <button
                 type="button"
@@ -544,7 +563,7 @@ export function CreatePicker(props: CreatePickerProps) {
                             margin: 0,
                           }}
                         >
-                          {c.name}
+                          {commanderDisplayName(c)}
                         </p>
 
                         {/* §Commander picker row — pip + caption: mobile gap 5 mt 4 fs 10; desktop gap 6 mt 5 fs 11 */}
@@ -654,7 +673,7 @@ export function CreatePicker(props: CreatePickerProps) {
                     className="font-display font-semibold leading-[1.2]"
                     style={{ fontSize: 15, color: "var(--fg)", margin: 0 }}
                   >
-                    {selected.name}
+                    {commanderDisplayName(selected)}
                   </p>
                   {/* §Selected summary — caption: IBM Plex Mono 11px var(--fg-muted) mt-[3px] */}
                   <p
@@ -668,7 +687,7 @@ export function CreatePicker(props: CreatePickerProps) {
 
               {primaryAbility && (
                 <PartnerSlot
-                  primaryName={selected.name}
+                  primaryName={commanderDisplayName(selected)}
                   ability={primaryAbility}
                   partner={partnerCard}
                   pairableCount={pairable.length}
@@ -757,7 +776,9 @@ export function CreatePicker(props: CreatePickerProps) {
                 deck will actually be built against. */}
             {selected
               ? addPanelCopy.createPicker.dockSummary(
-                  partnerRow ? `${selected.name} + ${partnerRow.name}` : selected.name,
+                  partnerRow
+                    ? `${commanderDisplayName(selected)} + ${commanderDisplayName(partnerRow)}`
+                    : commanderDisplayName(selected),
                   colorLabel(
                     partnerRow
                       ? [...new Set([...selected.colorIdentity, ...partnerRow.colorIdentity])]

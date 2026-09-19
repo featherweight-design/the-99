@@ -5,6 +5,7 @@
 // this call site and no string is written here (plan ruling 5).
 
 import { PrimaryButton } from "@/components/ui/button";
+import { commanderDisplayName } from "../../lib/cards/printed-name";
 import { ArtWash, INK_SHADOW } from "@/components/ui/art-wash";
 import { WUBRG_COLOR } from "../../lib/collection/browse";
 import { refreshCopy } from "../../lib/copy/refresh";
@@ -82,7 +83,7 @@ export function HeroCommander({ item, inUse }: { item: CommanderListItem; inUse:
               className="m-0 min-w-0 truncate font-display text-[17px] font-semibold text-[color:var(--fg)] sm:text-[18px]"
               style={{ lineHeight: 1.15, textShadow: INK_SHADOW }}
             >
-              {item.name}
+              {commanderDisplayName(item)}
             </p>
             <span className="flex flex-none gap-[3px]" aria-hidden>
               {item.colorIdentity.map((color) => (

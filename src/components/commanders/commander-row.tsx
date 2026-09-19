@@ -29,6 +29,7 @@ import type { PriceSlot as PriceSlotValue } from "../../lib/discovery/price";
 import { fitSegments } from "../../lib/recs/format";
 import { ArtWash, INK_SHADOW } from "../ui/art-wash";
 import { FitBar } from "./fit-bar";
+import { commanderDisplayName } from "../../lib/cards/printed-name";
 import { IdentityPips } from "./commander-art";
 
 const { price: priceCopy, untagged } = discoveryCopy;
@@ -70,6 +71,13 @@ const LABEL_AT_PX = 56;
 export type CommanderRowView = {
   slug: string;
   name: string;
+  /**
+   * The name printed on the copy the player owns, where it differs from the oracle
+   * card's. Set by the OWNED lane only: `/discover` lists commanders the player does
+   * not own, so there is no copy of theirs to read a name off, and it leaves this
+   * absent. Absent and null both draw `name`.
+   */
+  printedName?: string | null;
   colorIdentity: string[];
   artCropUri: string | null;
   /** Position in the active ordering. Printed, never interpreted. */
@@ -285,7 +293,7 @@ export function CommanderRow({ item }: { item: CommanderRowView }) {
           composes. */}
       <Link
         href={item.href}
-        aria-label={`${item.name} · ${explainedCopy.score.scoreAria(item.score, item.measurableTotal)}`}
+        aria-label={`${commanderDisplayName(item)} · ${explainedCopy.score.scoreAria(item.score, item.measurableTotal)}`}
         className="absolute inset-0 z-[1]"
       />
 
@@ -326,7 +334,7 @@ export function CommanderRow({ item }: { item: CommanderRowView }) {
               className="font-display font-[600] truncate"
               style={{ fontSize: 14.5, lineHeight: 1.2, color: "var(--fg)", textShadow: INK_SHADOW }}
             >
-              {item.name}
+              {commanderDisplayName(item)}
             </span>
             <IdentityPips colorIdentity={item.colorIdentity} />
           </div>
