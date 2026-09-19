@@ -24,7 +24,7 @@ import { colorLabel } from "../../lib/decks/format";
 import { canPair, partnerAbility, partnerAbilityLabel } from "../../lib/decks/partner";
 import { deckImportCopy } from "../../lib/copy/deck-import";
 import { addPanelCopy, shortCommanderName } from "../../lib/copy/decks-builder";
-import { commanderDisplayName } from "../../lib/collection/owned-printings";
+import { commanderDisplayName } from "../../lib/cards/printed-name";
 import { PartnerSlot } from "./partner-slot";
 import { PrimaryButton } from "@/components/ui/button";
 import { SearchField, TextField } from "@/components/ui/text-field";

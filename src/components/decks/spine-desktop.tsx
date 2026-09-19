@@ -16,7 +16,7 @@ import { deckImportCopy } from "../../lib/copy/deck-import";
 import { overCopy, overWord, renameCopy } from "../../lib/copy/decks-builder";
 import { deckHeaderCopy } from "../../lib/copy/decks-builder";
 import { deckBodySize } from "../../lib/decks/deck-size";
-import { commanderDisplayName } from "../../lib/collection/owned-printings";
+import { commanderDisplayName } from "../../lib/cards/printed-name";
 import { colorLabel, deckIdentity } from "../../lib/decks/format";
 import type { StatusPill } from "../../lib/decks/status";
 import { STATUS_TOKEN, statusBarStyle } from "../../lib/decks/status-style";

@@ -19,7 +19,7 @@ import { shortCommanderName } from "../../lib/copy/decks-builder";
 import { deckImportCopy } from "../../lib/copy/deck-import";
 import { refreshCopy } from "../../lib/copy/refresh";
 import { deckBodySize } from "../../lib/decks/deck-size";
-import { commanderDisplayName } from "../../lib/collection/owned-printings";
+import { commanderDisplayName } from "../../lib/cards/printed-name";
 import type { DeckListItem } from "../../lib/decks/read";
 import type { ShoppingRollup } from "../../lib/decks/shopping-rollup";
 import { byTouched, elapsed, touchedBy } from "../../lib/decks/touched";

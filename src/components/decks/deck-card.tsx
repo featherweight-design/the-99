@@ -2,7 +2,7 @@ import Link from "next/link";
 import { refreshCopy } from "../../lib/copy/refresh";
 import { deckBodySize } from "../../lib/decks/deck-size";
 import { countStatus, type StatusPill } from "../../lib/decks/status";
-import { commanderDisplayName } from "../../lib/collection/owned-printings";
+import { commanderDisplayName } from "../../lib/cards/printed-name";
 import { colorLabel, deckIdentity } from "../../lib/decks/format";
 import { formatCents } from "../../lib/decks/price";
 import type { DeckListItem } from "../../lib/decks/read";

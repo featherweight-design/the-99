@@ -5,7 +5,7 @@
 // this call site and no string is written here (plan ruling 5).
 
 import { PrimaryButton } from "@/components/ui/button";
-import { commanderDisplayName } from "../../lib/collection/owned-printings";
+import { commanderDisplayName } from "../../lib/cards/printed-name";
 import { ArtWash, INK_SHADOW } from "@/components/ui/art-wash";
 import { WUBRG_COLOR } from "../../lib/collection/browse";
 import { refreshCopy } from "../../lib/copy/refresh";

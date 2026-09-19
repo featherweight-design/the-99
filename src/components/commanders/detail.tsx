@@ -14,7 +14,7 @@ import { availabilityCopy } from "../../lib/copy/availability";
 import { FitLegend, type FitLegendSegment } from "./fit-legend";
 import { WhySection } from "./why-section";
 import { FullCardTrigger } from "./full-card-trigger";
-import { commanderDisplayName } from "../../lib/collection/owned-printings";
+import { commanderDisplayName } from "../../lib/cards/printed-name";
 import { IdentityPips } from "./commander-art";
 import { ArtWash, COVER_INK_SHADOW } from "../ui/art-wash";
 import { CARD_ART_RING } from "../ui/commander-thumb";

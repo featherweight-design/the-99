@@ -13,8 +13,8 @@ import {
   decks,
 } from "../../db/schema";
 import { ownedCardsWhere } from "../collection/owned-cards";
+import { commanderDisplayName } from "../cards/printed-name";
 import {
-  commanderDisplayName,
   resolveOwnedPrintings,
   type OwnedPrinting,
 } from "../collection/owned-printings";

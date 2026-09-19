@@ -29,7 +29,7 @@ import type { PriceSlot as PriceSlotValue } from "../../lib/discovery/price";
 import { fitSegments } from "../../lib/recs/format";
 import { ArtWash, INK_SHADOW } from "../ui/art-wash";
 import { FitBar } from "./fit-bar";
-import { commanderDisplayName } from "../../lib/collection/owned-printings";
+import { commanderDisplayName } from "../../lib/cards/printed-name";
 import { IdentityPips } from "./commander-art";
 
 const { price: priceCopy, untagged } = discoveryCopy;

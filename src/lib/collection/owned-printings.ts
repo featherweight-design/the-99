@@ -57,19 +57,6 @@ export async function resolveOwnedPrintings(
 }
 
 /**
- * The name to caption a commander with: the one printed on the copy the player owns
- * where they own a renamed printing, the oracle name otherwise.
- *
- * `printedNameOf` in the collection reader is the same rule for a `BrowseCard`, whose
- * `printedName` is a required field. Every deck surface carries it OPTIONALLY — the
- * fixtures across the suite build commander literals that never touch the catalog — so
- * this is the one place that absence is read as null, rather than at nine call sites.
- */
-export function commanderDisplayName(c: { name: string; printedName?: string | null }): string {
-  return c.printedName ?? c.name;
-}
-
-/**
  * The same rows back, each drawn from the copy the player owns.
  *
  * AN EXPLICIT STEP AT THE DRAW, never inside a shared loader. `getRankedList` has five
