@@ -100,7 +100,14 @@ Package manager is **pnpm** (pinned via `packageManager` in package.json) — ne
   after a successful ingest.
 - The catalog refresh (`.github/workflows/catalog-refresh.yml`) runs 09:00 UTC every Monday and refreshes **both** `catalog-staging` and `catalog-production`. A stale catalog is silent: collection CSV rows whose card is missing land in `unmatched` and are dropped, so a set that lands between refreshes simply appears not to exist.
 - `pnpm check:copy-drift` fails when a design table still quotes a string the code stopped
-  emitting. The property tables ARE the spec someone implements from and they quote copy
+  emitting **by changing its PUNCTUATION** — `MARKS` is `[—:,.]`, and a quotation differing in
+  one of those and in nothing else is what it reports. It was built for the em-dash sweep and
+  that is the drift it measures.
+
+  **A WORD CHANGE IS INVISIBLE TO IT**, which is not a defect but is a limit worth knowing: the
+  2026-09-19 `brew` → `draft` vocabulary sweep left sixteen stale quotations across four design
+  tables and the check printed `No design table quotes a form the code stopped emitting` over
+  every one. Review found them by reading. After any rename, grep the tables yourself. The property tables ARE the spec someone implements from and they quote copy
   exactly, so a table that has drifted tells the next reader to ship a sentence the app no
   longer says. It runs in CI beside the other checks: static, no server, no browser, about a
   second.

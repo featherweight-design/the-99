@@ -96,7 +96,7 @@ Severity comes from `statusPill()` (`src/lib/decks/status.ts:15-24`, cited RM:21
 | # | State | Arithmetic | Renders | Source |
 |---|---|---|---|---|
 | 1.1 | **free** | `owned − hard > 0` and no soft claim | **Nothing.** No glyph, no text, no copy string, no container change, no accessible-name addition | RM:60–84, RM:79–84 |
-| 1.2 | **soft** (wanted by a brew) | at least one claim from a deck under 99, supply not exhausted | hollow diamond + count + word | RM:85–96 |
+| 1.2 | **soft** (wanted by a draft) | at least one claim from a deck under 99, supply not exhausted | hollow diamond + count + word | RM:85–96 |
 | 1.3 | **hard** (in use) | `owned − hard === 0` | solid brass diamond + `0 free` + optional deck clause | RM:85–96, CP:38–43 |
 | 1.4 | **over-committed** | `owned − hard < 0` | doubled `#C6533F` diamonds + `short N` + optional clause; **only** state that tints its container's border | RM:98–118 |
 
@@ -117,8 +117,8 @@ Self-exclusion (A2RM:141–172, RD2:47–76): on a deck's own decklist the marke
 
 | # | Key | String (verbatim) | Source |
 |---|---|---|---|
-| 1.7 | `marker.soft` | `1 in a brew` / `${softQty} in a brew` | CP:29–31 |
-| 1.8 | `marker.softAria` | `1 copy is on an unfinished deck` / `${softQty} copies are on unfinished decks` | CP:32–35 |
+| 1.7 | `marker.soft` | `1 in a draft` / `${softQty} in a draft` | CP:29–31 |
+| 1.8 | `marker.softAria` | `1 copy is on a draft` / `${softQty} copies are on drafts` | CP:32–35 |
 | 1.9 | `marker.hard` | `0 free` | CP:38 |
 | 1.10 | `marker.hardIn` | `0 free — in ${deckName}` | CP:39 |
 | 1.11 | `marker.hardMulti` | `0 free — across ${deckCount} decks` | CP:40 |
@@ -194,7 +194,7 @@ Self-exclusion applies here (§1.1). Three of five rows in the canvas carry no m
 | # | State | Trigger | Visual | Source |
 |---|---|---|---|---|
 | 4.7 | **Silent (free)** | `(owned − ownClaim) − (hard − ownHardClaim) > 0`, no soft | nothing rendered | RM:79–84 |
-| 4.8 | Soft | a sub-99 deck other than this one claims a copy | hollow glyph + `N in a brew` | RM:85–96 |
+| 4.8 | Soft | a sub-99 deck other than this one claims a copy | hollow glyph + `N in a draft` | RM:85–96 |
 | 4.9 | Hard | **unreachable inside a finished deck** — self-exclusion removes this deck's own claim | — | A2RM:141–172, RD2:47–76 |
 | 4.10 | Over-committed | supply short after exclusion | doubled red glyph + `short N`, container border `var(--avail-over-border)`. Spoken as `marker.overAriaCountOnly` | RM:98–118, CP:46, **amended #354**, **erratum 2026-09-16** |
 | 4.11 | Not owned | `owned === 0` | nothing — the guard precedes the states | RM:221–225 |
@@ -307,7 +307,7 @@ The receipt line **always renders**; the second clause is a suffix (RM:182–190
 | 8.2 | Verb — default | — | — | — | — | `receipt.fit` — `34 of your cards fit` | CP:90–104, CV:188 |
 | 8.3 | Verb — free mode | — | — | — | — | `receipt.fitFree` — verb becomes "are free" | CP:90–104, RM:182–190 |
 | 8.4 | Clause — hard | — | `#E8CE93` glyph brass | joined ` · ` | — | `receipt.inUse` / `inUseShort` — `◆ 12 already in use` | CP:90–104, CV:188 |
-| 8.5 | Clause — soft | — | `#C6B79A` | joined ` · ` | — | `receipt.wantedByBrew` — `◇ 4 wanted by a brew` | CP:90–104, CV:227 |
+| 8.5 | Clause — soft | — | `#C6B79A` | joined ` · ` | — | `receipt.wantedByBrew` — `◇ 4 wanted by a draft` | CP:90–104, CV:227 |
 | 8.6 | No clause | — | — | — | — | when nothing is claimed the line renders with **no suffix** (Lathril, CV:204–215) | CV:204–215 |
 
 **Row count: 6 elements.**
@@ -518,7 +518,7 @@ Every accessible name quoted verbatim from `availability · copy strings.ts`.
 
 | # | Context | Accessible name | Source |
 |---|---|---|---|
-| 17.1 | Soft marker | `1 copy is on an unfinished deck` / `${softQty} copies are on unfinished decks` | CP:32–35 |
+| 17.1 | Soft marker | `1 copy is on a draft` / `${softQty} copies are on drafts` | CP:32–35 |
 | 17.2 | Hard marker, one deck | `no free copies; this one is on your ${deckName} list` | CP:41 |
 | 17.3 | Hard marker, many decks | `no free copies; they are on ${deckCount} of your finished lists` | CP:42–43 |
 | 17.4 | Over marker | `${deckCount} of your finished lists include this card and you own ${shortBy} too few` | CP:48 |

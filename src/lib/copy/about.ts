@@ -302,7 +302,7 @@ export const aboutEntries: readonly AboutEntry[] = [
     opens: 'opens a commander',
     width: 'plate',
     caption:
-      "Owning a card and being free to use it are different things. A green dot means the card is yours. The note beside it says what is claiming it: one in a brew, none free, or short by however many copies your committed decks want past what you own. A card with a spare copy says nothing, because there is nothing to report.",
+      "Owning a card and being free to use it are different things. A green dot means the card is yours. The note beside it says what is claiming it: one in a draft, none free, or short by however many copies your committed decks want past what you own. A card with a spare copy says nothing, because there is nothing to report.",
     keys: [
       'the dot means you own the card and nothing else. It stays the same colour whether or not a deck is holding it.',
       'the note counts copies and never names a deck. Open the card to see which decks are holding it.',
@@ -381,7 +381,7 @@ export const aboutEntries: readonly AboutEntry[] = [
       // the two used to share one sentence as though they were one axis. The
       // page caps an entry at four keys, so this is the split that fits: by
       // WHAT IS BEING ANSWERED, which is the distinction that was missing.
-      'one mark, and only when there is something to say: `1 in a brew`, `none free`, `short N`, which also turns the row’s edge red, `$` for a card you would have to buy, or `P` for one you are printing. One slot, one answer.',
+      'one mark, and only when there is something to say: `1 in a draft`, `none free`, `short N`, which also turns the row’s edge red, `$` for a card you would have to buy, or `P` for one you are printing. One slot, one answer.',
       'a bright accent edge answers a different question: you have changed this row and not committed it yet, and the edge goes when you do.',
     ],
     since: 1,

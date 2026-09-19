@@ -1382,7 +1382,7 @@ export const RESUME_DECKS: DeckListItem[] = [
  */
 export const DECK_FOLDERS: DeckFolderWithCount[] = [
   { id: "about-folder-edh", name: "Pod night", createdAt: new Date("2026-06-01"), deckCount: 3 },
-  { id: "about-folder-brew", name: "Brews", createdAt: new Date("2026-07-14"), deckCount: 2 },
+  { id: "about-folder-retired", name: "Retired", createdAt: new Date("2026-07-14"), deckCount: 2 },
 ];
 
 export const SHELF_COUNTS: ShelfCounts = {
@@ -1390,7 +1390,7 @@ export const SHELF_COUNTS: ShelfCounts = {
   unfiled: 4,
   byFolder: new Map([
     ["about-folder-edh", 3],
-    ["about-folder-brew", 2],
+    ["about-folder-retired", 2],
   ]),
 };
 

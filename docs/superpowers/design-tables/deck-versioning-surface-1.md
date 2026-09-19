@@ -611,7 +611,7 @@ bottom-left slot.
 | color | — | `#8E8269` (`--fg-faint`) |
 | margin-bottom | — | `12px` |
 | sub-run 1 | — | `EDHREC averages` — `#6A6152`, `letter-spacing 0.06em`, `text-transform none` |
-| sub-run 2 (new, draft only) | — | `· reading the draft` — `#C9A24B` (`--accent`), `letter-spacing 0.06em`, `text-transform none` |
+| sub-run 2 (new, draft only) | — | `· reading pending changes` — `#C9A24B` (`--accent`), `letter-spacing 0.06em`, `text-transform none` |
 | wrapper padding | — | `22px 26px 0` |
 
 ### Cell row
