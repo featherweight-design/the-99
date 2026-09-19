@@ -629,8 +629,9 @@ Package manager is **pnpm** (pinned via `packageManager` in package.json) — ne
   resolved crop from a fallback. The previous value is read BEFORE the write and restored in
   the same `finally` as the fixture user's rows.
 
-  Three mutations were run against it. Reverting either loader's override fails 5 of its 10
-  checks while both fallback checks still pass, which is the shape a correct probe has. Making
+  Three mutations were run against it. Reverting `getDeckDetail`'s override fails 3 of its 10
+  checks and `listDecksWithStats`'s fails 2 — 5 with both reverted — while all four fallback
+  checks pass in every case, which is the shape a correct probe has. Making
   `aggregateCollection` take `cards.art_crop_uri` directly fails the two crop checks — that one
   is the reason the probe reaches through the resolver rather than asserting the join. The third
   measured NOTHING and corrected a comment instead: the `?? row.artCropUri` in the loader is

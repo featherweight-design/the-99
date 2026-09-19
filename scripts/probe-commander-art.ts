@@ -67,8 +67,18 @@ type Legend = {
  * Asked of the catalog rather than hard-coded: the fixture has to be a card whose oracle row
  * and chosen printing genuinely disagree, and which printing Scryfall's oracle row names
  * changes with every bulk refresh.
+ *
+ * `notOracleId` excludes a CARD, never a printing, and that is what the partner needs: this
+ * row set is one row per printing, so an unfiltered second pick lands on a second printing of
+ * the SAME card whenever the lowest-sorting one has two. The deck would then be led and
+ * partnered by one oracle id resolving through one map entry, and the partner checks would
+ * compare against a printing the resolver never chose.
+ *
+ * `cropless` picks a printing with no `art_crop_uri` of its own — the state of every printing
+ * before the first catalog refresh that fills the column, and the one the fallback check needs
+ * to stay true AFTER that refresh has run.
  */
-const pickLegend = async (offset: number): Promise<Legend> => {
+const pickLegend = async (opts: { notOracleId?: string; cropless?: boolean } = {}): Promise<Legend> => {
   const { rows } = await fixture.execute<Legend>(sql`
     select c.oracle_id, c.image_uri as card_image, c.art_crop_uri as card_crop,
            p.scryfall_id, p.set_code, p.collector_number, p.image_uri as printing_image
@@ -79,9 +89,12 @@ const pickLegend = async (offset: number): Promise<Legend> => {
       and p.scryfall_id <> c.scryfall_id
       and p.image_uri is not null
       and c.image_uri is not null
+      and c.art_crop_uri is not null
       and p.image_uri <> c.image_uri
+      ${opts.notOracleId ? sql`and c.oracle_id <> ${opts.notOracleId}::uuid` : sql``}
+      ${opts.cropless ? sql`and p.art_crop_uri is null` : sql``}
     order by c.oracle_id, p.scryfall_id
-    limit 1 offset ${offset}
+    limit 1
   `);
   if (!rows[0]) throw new Error("no legend owns a second printing — seed the catalog first");
   return rows[0];
@@ -124,8 +137,8 @@ async function run() {
   // cannot restore a row a throw interrupted, and this one is a shared catalog row.
   let cropRestore: { scryfallId: string; previous: string | null } | null = null;
 
-  const commander = await pickLegend(0);
-  const partner = await pickLegend(1);
+  const commander = await pickLegend();
+  const partner = await pickLegend({ notOracleId: commander.oracle_id, cropless: true });
   const unowned = await pickUnownedLegend();
 
   const { rows: before } = await fixture.execute<{ art_crop_uri: string | null }>(sql`
@@ -149,10 +162,11 @@ async function run() {
       detail?.commander.imageUri, commander.printing_image);
     check("deck page: commander crop is the owned printing's",
       detail?.commander.artCropUri, SENTINEL_CROP);
-    // The partner's printing carries no crop of its own, which is EVERY printing's state
-    // until the catalog is re-seeded — so its front is its own and its crop is the
-    // oracle's, resolved through `resolveArtCropUri`. This is the pair the app ships
-    // with on day one, and the check that says the fix costs nothing before then.
+    // The partner is CHOSEN for a printing with no crop of its own — every printing's state
+    // until the catalog is re-seeded, and a state some printings keep afterwards — so its
+    // front is its own and its crop is the oracle's, resolved through `resolveArtCropUri`.
+    // Picked rather than assumed: reading it off whatever printing sorted second passes only
+    // while the whole column is null, and would fail on a correct build the Monday after.
     check("deck page: partner front is the owned printing's",
       detail?.partner?.imageUri, partner.printing_image);
     check("deck page: a printing with no crop of its own falls back to the oracle's",
