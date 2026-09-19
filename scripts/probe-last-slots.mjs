@@ -294,11 +294,23 @@ async function run() {
           row.setAttribute("data-probe-hover", "1");
           return getComputedStyle(row).backgroundColor;
         });
+        // Both readings below hover the SAME marked row, so a fixture with no
+        // row to mark loses both. Reported as two failures and skipped, never
+        // attempted: the marked-row locator matches nothing on that path, and
+        // Playwright answers a hover on nothing by blocking for thirty seconds
+        // and then throwing — out of `run()`, past the remaining checks at this
+        // width, past the whole 390 pass, and past the pass/fail summary. A
+        // probe whose own output cannot be read is worse than no probe.
         if (unticked === null) {
           report(
             `${width}px · the row lights under the pointer`,
             false,
             "every row is ticked — NOT a pass: the fixture has no row to hover",
+          );
+          report(
+            `${width}px · the card appears under the pointer`,
+            false,
+            "no row to hover — NOT a pass, and not measured",
           );
         } else {
           await page.locator('[data-probe-hover="1"]').first().hover();
@@ -312,34 +324,34 @@ async function run() {
             hovered !== null && unticked !== hovered,
             `${unticked} then ${hovered}`,
           );
-        }
 
-        // THE CARD ITSELF APPEARS UNDER THE POINTER. The row borrows the
-        // decklist's preview, which paints a 252x352 box after a 240ms open
-        // delay — a delay is not a transition, so nothing here waits on motion,
-        // but the box does not exist before it elapses. Read as a PAINTED
-        // background image, because the markup is identical whether or not the
-        // catalog had a picture for the card.
-        // A REAL pointer, not a dispatched event. The box is placed from the
-        // event's own `clientX`/`clientY` now, and a synthetic `MouseEvent`
-        // carries 0,0 — so a dispatched hover parks it in the window's corner
-        // and reports a position belonging to nothing.
-        await page.locator('[data-probe-hover="1"]').first().hover();
-        await page.waitForTimeout(700);
-        const preview = await page.evaluate(() => {
-          const pane = [...document.querySelectorAll("div")]
-            .map((d) => ({ d, r: d.getBoundingClientRect() }))
-            .find(({ d, r }) => Math.round(r.width) === 252 && Math.round(r.height) === 352
-              && /url\(/.test(getComputedStyle(d).backgroundImage));
-          return pane ? { top: pane.r.top, left: pane.r.left, w: pane.r.width } : null;
-        });
-        report(
-          `${width}px · the card appears under the pointer`,
-          preview !== null,
-          preview === null
-            ? "no 252x352 box carrying a painted image — NOT a pass"
-            : `drawn at ${Math.round(preview.left)},${Math.round(preview.top)}`,
-        );
+          // THE CARD ITSELF APPEARS UNDER THE POINTER. The row borrows the
+          // decklist's preview, which paints a 252x352 box after a 240ms open
+          // delay — a delay is not a transition, so nothing here waits on motion,
+          // but the box does not exist before it elapses. Read as a PAINTED
+          // background image, because the markup is identical whether or not the
+          // catalog had a picture for the card.
+          // A REAL pointer, not a dispatched event. The box is placed from the
+          // event's own `clientX`/`clientY` now, and a synthetic `MouseEvent`
+          // carries 0,0 — so a dispatched hover parks it in the window's corner
+          // and reports a position belonging to nothing.
+          await page.locator('[data-probe-hover="1"]').first().hover();
+          await page.waitForTimeout(700);
+          const preview = await page.evaluate(() => {
+            const pane = [...document.querySelectorAll("div")]
+              .map((d) => ({ d, r: d.getBoundingClientRect() }))
+              .find(({ d, r }) => Math.round(r.width) === 252 && Math.round(r.height) === 352
+                && /url\(/.test(getComputedStyle(d).backgroundImage));
+            return pane ? { top: pane.r.top, left: pane.r.left, w: pane.r.width } : null;
+          });
+          report(
+            `${width}px · the card appears under the pointer`,
+            preview !== null,
+            preview === null
+              ? "no 252x352 box carrying a painted image — NOT a pass"
+              : `drawn at ${Math.round(preview.left)},${Math.round(preview.top)}`,
+          );
+        }
 
         // The name opens the card, and does NOT tick the row.
         const before = await page.evaluate(() =>
