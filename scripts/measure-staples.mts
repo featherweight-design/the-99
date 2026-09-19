@@ -253,6 +253,35 @@ max inclusion value seen  ${maxIncl ?? "—"}   (the scale: 0-1 or 0-100)`);
   for (const c2 of comp) { total += Number(c2.expected); console.log(row(c2.bucket, c2.expected)); }
   console.log(row("TOTAL", total.toFixed(1)) + "   <- a real deck is 99 + commander");
 
+  // ---- 7 · THE CUT ------------------------------------------------------
+  // §4A.1's two-axis definition needs a line. This prints the candidates either
+  // side of several, so the line is chosen against the cards it admits and the
+  // cards it turns away — the way gap-slot.ts chose 0.005 against Kenrith and
+  // Glarb rather than against an aggregate.
+  console.log(`\n== 7 · candidate cuts: breadth share x avg inclusion ==`);
+  const CUTS: [number, number][] = [[0.90, 50], [0.75, 40], [0.60, 30], [0.50, 25], [0.40, 20]];
+  const cand = await q<{ name: string; share: number; incl: number; tl: string }>(`
+    select c.name,
+           round((count(*)::numeric / 3279), 3)::float as share,
+           round(avg(csc.inclusion)::numeric, 1)::float as incl,
+           split_part(c.type_line, ' ', 1) as tl
+    from commander_support_cards csc
+    join cards c on c.oracle_id = csc.oracle_id
+    group by c.oracle_id, c.name, c.type_line
+    having count(*) >= 0.35 * 3279
+    order by avg(csc.inclusion) desc
+  `);
+  console.log(row("cut (share, inclusion)", "cards in"));
+  for (const [sh, inc] of CUTS) {
+    const inSet = cand.filter((c2) => c2.share >= sh && c2.incl >= inc);
+    console.log(row(`share>=${sh}  incl>=${inc}%`, inSet.length));
+  }
+  console.log(`\n  every candidate above share>=0.35, ranked by inclusion:`);
+  console.log(row("card", "share", "avg incl") + "   type");
+  for (const c2 of cand.slice(0, 32))
+    console.log(row(c2.name.slice(0, 37), c2.share, `${c2.incl}%`) + `   ${c2.tl}`);
+  if (cand.length > 32) console.log(`   … ${cand.length - 32} more below ${cand[31].incl}% inclusion`);
+
   await client.end();
   console.log("\ndone — read-only, nothing written.\n");
 }
