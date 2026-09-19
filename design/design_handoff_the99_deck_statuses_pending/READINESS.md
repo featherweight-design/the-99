@@ -155,3 +155,101 @@ is fully opaque on the mobile spine's wash.
 `/about` has no "amended" state — `since` is the version an entry FIRST appeared in — so the
 returning reader is interrupted and then shown a page with nothing marked. The three ways out are
 in that PR's body; the one that needs a drawing is an `amended` treatment, which is Design's.
+
+---
+
+# READINESS — R6, `New` and `Draft` (2026-09-19)
+
+**Verdict: 🟡 Yellow, and READY.** Audited against `main` at `3306ce1a`. Yellow by the legend's
+letter — every finding below is an eng-side clarification — and nothing returns to Design. The
+drawing is complete and implementable as it stands.
+
+This file was DELETED by the R6 drop and is restored here. It is the eng record of what the R4
+build measured, and those measurements are what R5 and R6 are written against.
+
+## What R6 ships
+
+The phase tests FIRST, as two words rather than two marks:
+
+```
+built === 0                   → New          (new member)
+lastCommittedAt === null      → Draft        (redefined: was 0 matched)
+built > bodySize              → Over
+built < bodySize              → Building     (now: committed, and short)
+unresolvedCount > 0           → Unresolved
+not covered, or unfunded > 0  → To buy
+otherwise                     → Complete
+```
+
+Both R4 marks stay retired. Pending changes gets no mark — confirmed twice, and the detail row's
+`1 change since v1` already carries it.
+
+## The one contradiction, and how eng resolves it
+
+**`New`'s cascade test and `New`'s definition disagree, and the definition is right.** R6's
+treatment table defines `New` as "0 cards, **never committed**"; its cascade tests `built === 0`
+alone, ahead of the version test. A committed deck cut back to zero cards therefore reads `New` —
+a deck with a v1, five games logged and a version rail, announcing itself as new.
+
+Build the table's rule: `built === 0 && lastCommittedAt === null → New`. A committed deck emptied
+to nothing then falls through to `built < bodySize → Building`, which R6 defines as *committed and
+short* — exactly what that deck is. No other value moves.
+
+## Errata — this section governs where it contradicts a document
+
+1. **"Header reads `7 of 7`" does not render on this route.** `/decks` passes
+   `footerStatus={false}` to every `FilterPanel` it mounts, so `copy.footerSelected` — the
+   `N of N` string — is never drawn there. The same claim was corrected once already in #732.
+   Nothing is owed: add the seventh row and no count follows it.
+2. **"The count stays at 33"** — `/about` holds **35** entries. Immaterial to R6, which adds and
+   removes none, but the figure is wrong in the addendum as written.
+3. **Both copy-strings files in this folder describe retired values.**
+   `deck-statuses-pending · copy strings.ts` is R4's two marks; `to-build · copy strings.ts` is
+   R5's value. R6's copy spec is the prose in `README-r6.md`, and that is what to build from.
+4. **R6 ships no per-surface states matrix.** `STATES-to-build.md` is R5's and is banner-marked
+   superseded. Acceptable rather than a gap: R6 adds no mark and no new geometry, so `New` and
+   `Draft` draw exactly as the six values already do on the tile, the resume row and both spines.
+   It does mean the per-surface behaviour is inherited rather than drawn, and the contact sheet
+   is what proves it.
+5. **"`statusPill()` gains one optional argument" — build it REQUIRED.** R6 prices the phase
+   flag as optional, which is the wrong shape for this argument: a call site that omitted it
+   would silently get the old five-test cascade, and the deck it would misreport is exactly the
+   one this round exists for — a never-committed 99 reading `Complete`. Required makes every
+   caller answer at compile time, and there are two. The plan's Task 1.1 carries this.
+6. **The facet's row labels are renamed in passing.** R6 names `No version yet` (deleted) and
+   `Edited since last version`; what shipped is `Not committed yet` and `Has pending changes`.
+   The deletion is structural and is R6's to rule; the surviving row's wording is copy content
+   and goes through `/copy-review` rather than back to Design.
+
+## The open call R6 flags, ruled here
+
+R6 overrules the brief's ruling 1: `Draft` now outranks `Over`, `Unresolved` and `To buy` for an
+uncommitted deck, so a 104-card idea reads `Draft` rather than `Over`.
+
+**Accepted**, with the measurement R6 did not have. The risk is that the pill stops discriminating
+on an account where little is committed:
+
+| Database | Decks with no version | Committed |
+| --- | --- | --- |
+| `production` | 4 of 8 | 4 |
+| `local-dev` | 34 of 34 | 0 |
+
+`local-dev`'s 34 is an artefact of probe fixtures, which never commit. On the real account the
+split is even, so the pill keeps its information. The count facts also survive in the detail row
+and the unresolved badge, which is what makes the loss a change of emphasis rather than of data.
+
+**This is the product owner's call and it has been made** — the ask that opened this round was "a
+draft is a draft, whatever its length". If the split ever moves hard toward uncommitted, the
+figure above is the one to re-measure.
+
+## Verified against the code
+
+- `lastCommittedAt` already ships on both list reads (`listDecksWithStats`), so the phase test
+  costs no query — the same finding as item 10 above, still true.
+- `statusPill()` has exactly two call sites: `read.ts` for the list and `builder-shell.tsx` for
+  the deck page. Both can answer the version question — the shell reads `draft.version` and the
+  versions rail already.
+- `PILL_EXCEPTION` holds `Draft` and `Building` today; R6 moves the dash to `Draft` and returns
+  `Building` to the flat rule, so the exception map keeps one member.
+- `?status=draft` remains a valid value selecting a different set, so no redirect is owed.
+

@@ -25,12 +25,548 @@
 
 <section style="--bg:#14110E;--surface:#1E1A15;--surface-inset:#1A1713;--elevated:#2A241D;--border:#26211B;--border-strong:#3A3229;--fg:#EDE6D8;--fg-muted:#B9AC93;--fg-body:#A89B84;--fg-faint:#8E8269;--fg-locked:#6A6152;--accent:#C9A24B;--success:#6FA368;--warning:#E0913C;--danger:#C6533F;display:flex;flex-direction:column;gap:26px;padding:40px;background:#0E0C0A;font-family:'IBM Plex Mono',monospace;">
 
-  <div id="4a" style="display:flex;flex-direction:column;gap:22px;width:1320px;padding-bottom:38px;margin-bottom:8px;border-bottom:1px solid var(--border-strong);">
+  <div id="6a" style="display:flex;flex-direction:column;gap:22px;width:1320px;padding-bottom:38px;margin-bottom:8px;border-bottom:1px solid var(--border-strong);">
+
+    <div style="display:flex;align-items:baseline;gap:14px;flex-wrap:wrap;">
+      <span style="display:flex;width:max-content;align-items:center;height:22px;padding:0 9px;border-radius:6px;border:1px solid var(--accent);background:color-mix(in srgb, var(--accent) 18%, var(--bg));color:var(--accent);font-size:11px;letter-spacing:0.06em;">6a</span>
+      <h1 style="margin:0;font-family:Fraunces,serif;font-weight:700;font-size:26px;color:var(--fg);">The phase goes <span style="font-style:italic;">first</span>. <span style="color:var(--fg);background:color-mix(in srgb, var(--fg-body) 14%, var(--bg));padding:0 7px;border-radius:5px;border:1px dashed var(--border-strong);">Draft</span> and <span style="color:var(--fg-muted);background:color-mix(in srgb, var(--fg-faint) 16%, var(--bg));padding:0 7px;border-radius:5px;border:1px solid var(--border-strong);">New</span>.</h1>
+      <span style="font-size:11px;color:var(--fg-locked);letter-spacing:0.08em;">R6 &middot; <a href="#5a">5a</a>&rsquo;s value could never reach the deck it was for</span>
+    </div>
+
+    <!-- The two answers -->
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;">
+      <div style="background:var(--surface-inset);border:1px solid #4A2F28;border-radius:12px;padding:18px 20px;">
+        <div style="font-size:10px;letter-spacing:0.16em;text-transform:uppercase;color:var(--danger);margin-bottom:12px;">Why R5 is wrong &mdash; and it is worse than the name</div>
+        <div style="display:flex;flex-direction:column;gap:10px;font-size:12.5px;line-height:1.6;color:var(--fg-body);">
+          <div><b style="color:var(--fg);font-weight:600;"><i>To build</i> sat below <i>To buy</i>, so it only ever fired on a deck where every card was already owned.</b> Your deck &mdash; 99 cards, several not yet bought &mdash; read <i>To buy</i>, exactly as before. <b style="color:var(--fg);font-weight:600;">R5 could not reach the deck it was written for.</b></div>
+          <div><b style="color:var(--fg);font-weight:600;">And that is structural, not a slip.</b> One pill is one ordered cascade. A value placed below <i>To buy</i> can only occupy the gap the other six leave &mdash; the full, owned, resolved deck. The one deck that needed no help. Placing the phase last guarantees it describes the wrong decks.</div>
+          <div><b style="color:var(--fg);font-weight:600;">Your transition case is the proof.</b> Commit that deck and it becomes <i>To buy</i>, because committing does not buy anything. A phase that sorts <i>below</i> ownership produces that nonsense; a phase that sorts <i>above</i> it cannot.</div>
+        </div>
+      </div>
+      <div style="background:var(--surface-inset);border:1px solid var(--border);border-radius:12px;padding:18px 20px;">
+        <div style="font-size:10px;letter-spacing:0.16em;text-transform:uppercase;color:var(--accent);margin-bottom:12px;">The resistance to <i>New</i> / <i>Draft</i>, stated honestly</div>
+        <div style="display:flex;flex-direction:column;gap:10px;font-size:12.5px;line-height:1.6;color:var(--fg-body);">
+          <div>I wrote that the new value &ldquo;does not want the word&rdquo;. <b style="color:var(--fg);font-weight:600;">The real reason was the rename cascade</b> &mdash; <span style="color:var(--fg-faint);">StatusPill</span>, <span style="color:var(--fg-faint);">refreshCopy.status</span>, the URL value, the filter row, the About key line. That is an implementation cost, and I presented it as vocabulary logic. It should have been a line item you priced, not an argument you had to see through.</div>
+          <div><b style="color:var(--fg);font-weight:600;">On the merits your words win outright.</b> A draft is a draft at any length &mdash; every other tool means it that way, and none of them requires a document to be empty first. <i>New</i> is then the honest word for the thing that has a commander and nothing else.</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Cascade -->
+    <div style="background:var(--surface-inset);border:1px solid var(--border);border-radius:12px;padding:18px 20px;display:flex;flex-direction:column;gap:15px;">
+      <div style="display:flex;align-items:baseline;gap:12px;flex-wrap:wrap;">
+        <div style="font-size:10px;letter-spacing:0.16em;text-transform:uppercase;color:var(--accent);">The cascade &mdash; the phase tests before the counts</div>
+        <span style="font-size:11px;color:var(--fg-locked);">overturns the brief&rsquo;s ruling 1, which is why it is drawn rather than assumed</span>
+      </div>
+
+      <div style="display:flex;align-items:stretch;flex-wrap:wrap;border:1px solid var(--border);border-radius:9px;overflow:hidden;">
+        <div style="flex:1;min-width:148px;padding:11px 13px;background:color-mix(in srgb, var(--fg) 5%, var(--bg));border-right:1px solid var(--border);"><div style="font-size:10px;color:var(--fg);margin-bottom:6px;">built === 0</div><span style="display:flex;width:max-content;align-items:center;height:22px;padding:0 8px;border-radius:6px;border:1px solid var(--border-strong);background:color-mix(in srgb, var(--fg-faint) 16%, var(--bg));color:var(--fg-muted);font-size:10.5px;letter-spacing:0.06em;">New</span></div>
+        <div style="flex:1;min-width:148px;padding:11px 13px;background:color-mix(in srgb, var(--fg) 5%, var(--bg));border-right:1px solid var(--border);"><div style="font-size:10px;color:var(--fg);margin-bottom:6px;">no v1</div><span style="display:flex;width:max-content;align-items:center;height:22px;padding:0 8px;border-radius:6px;border:1px dashed var(--border-strong);background:color-mix(in srgb, var(--fg-body) 14%, var(--bg));color:var(--fg-body);font-size:10.5px;letter-spacing:0.06em;">Draft</span></div>
+        <div style="flex:1;min-width:148px;padding:11px 13px;background:var(--bg);border-right:1px solid var(--border);"><div style="font-size:10px;color:var(--fg-locked);margin-bottom:6px;">&gt; bodySize</div><span style="display:flex;width:max-content;align-items:center;height:22px;padding:0 8px;border-radius:6px;border:1px solid var(--border-strong);background:color-mix(in srgb, var(--danger) 18%, var(--bg));color:var(--danger);font-size:10.5px;letter-spacing:0.06em;">Over</span></div>
+        <div style="flex:1;min-width:148px;padding:11px 13px;background:var(--bg);border-right:1px solid var(--border);"><div style="font-size:10px;color:var(--fg-locked);margin-bottom:6px;">&lt; bodySize</div><span style="display:flex;width:max-content;align-items:center;height:22px;padding:0 8px;border-radius:6px;border:1px solid var(--border-strong);background:color-mix(in srgb, var(--fg) 18%, var(--bg));color:var(--fg);font-size:10.5px;letter-spacing:0.06em;">Building</span></div>
+        <div style="flex:1;min-width:148px;padding:11px 13px;background:var(--bg);border-right:1px solid var(--border);"><div style="font-size:10px;color:var(--fg-locked);margin-bottom:6px;">unresolved</div><span style="display:flex;width:max-content;align-items:center;height:22px;padding:0 8px;border-radius:6px;border:1px solid var(--border-strong);background:color-mix(in srgb, var(--warning) 18%, var(--bg));color:var(--warning);font-size:10.5px;letter-spacing:0.06em;">Unresolved</span></div>
+        <div style="flex:1;min-width:148px;padding:11px 13px;background:var(--bg);border-right:1px solid var(--border);"><div style="font-size:10px;color:var(--fg-locked);margin-bottom:6px;">unfunded</div><span style="display:flex;width:max-content;align-items:center;height:22px;padding:0 8px;border-radius:6px;border:1px solid var(--border-strong);background:color-mix(in srgb, var(--accent) 18%, var(--bg));color:var(--accent);font-size:10.5px;letter-spacing:0.06em;">To buy</span></div>
+        <div style="flex:1;min-width:148px;padding:11px 13px;background:var(--bg);"><div style="font-size:10px;color:var(--fg-locked);margin-bottom:6px;">otherwise</div><span style="display:flex;width:max-content;align-items:center;height:22px;padding:0 8px;border-radius:6px;border:1px solid var(--border-strong);background:color-mix(in srgb, var(--success) 18%, var(--bg));color:var(--success);font-size:10.5px;letter-spacing:0.06em;">Complete</span></div>
+      </div>
+
+      <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:14px;font-size:12.5px;line-height:1.6;color:var(--fg-body);">
+        <div><b style="color:var(--fg);font-weight:600;">Two phase tests, then the five count tests unchanged.</b> <i>New</i> and <i>Draft</i> are the only additions to the order, and everything below them keeps its existing rank: <i>Over</i> still beats <i>Unresolved</i> still beats <i>To buy</i> still beats <i>Complete</i>. The shipped cascade is not rearranged, only preceded.</div>
+        <div><b style="color:var(--fg);font-weight:600;"><i>Building</i> gets sharper, not weaker.</b> It now means exactly one thing: <b style="color:var(--fg);font-weight:600;">a committed deck currently short of its body size</b> &mdash; you cut cards and have not refilled. That is a real, rare, actionable state, where today it is the catch-all every half-finished idea falls into.</div>
+        <div><b style="color:var(--fg);font-weight:600;">Still derivable.</b> Three counts plus <span style="color:var(--fg-faint);">lastCommittedAt === null</span>, which already ships on both list reads. <span style="color:var(--fg-faint);">statusPill()</span> gains one optional argument and two tests at the top of the same function.</div>
+      </div>
+    </div>
+
+    <!-- Vocabulary -->
+    <div style="background:var(--surface-inset);border:1px solid var(--border);border-radius:12px;padding:18px 20px;display:flex;flex-direction:column;gap:14px;">
+      <div style="display:flex;align-items:baseline;gap:12px;flex-wrap:wrap;">
+        <div style="font-size:10px;letter-spacing:0.16em;text-transform:uppercase;color:var(--accent);">The seven &middot; and the dash finds its true home</div>
+      </div>
+
+      <div style="display:grid;grid-template-columns:118px 210px 112px 128px 1fr;gap:9px 14px;align-items:center;font-size:11.5px;">
+        <div style="font-size:10px;letter-spacing:0.12em;text-transform:uppercase;color:var(--fg-locked);">Value</div>
+        <div style="font-size:10px;letter-spacing:0.12em;text-transform:uppercase;color:var(--fg-locked);">When</div>
+        <div style="font-size:10px;letter-spacing:0.12em;text-transform:uppercase;color:var(--fg-locked);">Token</div>
+        <div style="font-size:10px;letter-spacing:0.12em;text-transform:uppercase;color:var(--fg-locked);">Fill / label / border</div>
+        <div style="font-size:10px;letter-spacing:0.12em;text-transform:uppercase;color:var(--fg-locked);">Next action</div>
+
+        <span style="display:flex;width:max-content;align-items:center;height:22px;padding:0 8px;border-radius:6px;border:1px solid var(--border-strong);background:color-mix(in srgb, var(--fg-faint) 16%, var(--bg));color:var(--fg-muted);font-size:10.5px;letter-spacing:0.06em;">New</span>
+        <div style="color:var(--fg);">0 cards, never committed</div><div style="color:var(--fg-body);">--fg-faint</div><div style="color:var(--fg-body);">16% &middot; --fg-muted &middot; solid</div><div style="color:var(--fg-body);">Add cards</div>
+
+        <span style="display:flex;width:max-content;align-items:center;height:22px;padding:0 8px;border-radius:6px;border:1px dashed var(--border-strong);background:color-mix(in srgb, var(--fg-body) 14%, var(--bg));color:var(--fg-body);font-size:10.5px;letter-spacing:0.06em;">Draft</span>
+        <div style="color:var(--fg);"><b style="font-weight:600;">any cards, never committed</b></div><div style="color:var(--fg-body);">--fg-body</div><div style="color:var(--fg-body);">14% &middot; --fg-body &middot; <b style="color:var(--fg);font-weight:600;">dashed</b></div><div style="color:var(--fg-body);">Keep going, or commit v1</div>
+
+        <span style="display:flex;width:max-content;align-items:center;height:22px;padding:0 8px;border-radius:6px;border:1px solid var(--border-strong);background:color-mix(in srgb, var(--fg) 18%, var(--bg));color:var(--fg);font-size:10.5px;letter-spacing:0.06em;">Building</span>
+        <div style="color:var(--fg);"><b style="font-weight:600;">committed, now short</b></div><div style="color:var(--fg);"><b style="font-weight:600;">--fg</b></div><div style="color:var(--fg);"><b style="font-weight:600;">18% &middot; --fg &middot; solid</b></div><div style="color:var(--fg-body);">Add the rest</div>
+
+        <span style="display:flex;width:max-content;align-items:center;height:22px;padding:0 8px;border-radius:6px;border:1px solid var(--border-strong);background:color-mix(in srgb, var(--danger) 18%, var(--bg));color:var(--danger);font-size:10.5px;letter-spacing:0.06em;">Over</span>
+        <div style="color:var(--fg-body);">committed, past the body size</div><div style="color:var(--fg-body);">--danger</div><div style="color:var(--fg-body);">18% &middot; --danger &middot; solid</div><div style="color:var(--fg-body);">Cut the excess</div>
+
+        <span style="display:flex;width:max-content;align-items:center;height:22px;padding:0 8px;border-radius:6px;border:1px solid var(--border-strong);background:color-mix(in srgb, var(--warning) 18%, var(--bg));color:var(--warning);font-size:10.5px;letter-spacing:0.06em;">Unresolved</span>
+        <div style="color:var(--fg-body);">committed, a line unnamed</div><div style="color:var(--fg-body);">--warning</div><div style="color:var(--fg-body);">18% &middot; --warning &middot; solid</div><div style="color:var(--fg-body);">Resolve or drop</div>
+
+        <span style="display:flex;width:max-content;align-items:center;height:22px;padding:0 8px;border-radius:6px;border:1px solid var(--border-strong);background:color-mix(in srgb, var(--accent) 18%, var(--bg));color:var(--accent);font-size:10.5px;letter-spacing:0.06em;">To buy</span>
+        <div style="color:var(--fg-body);">committed, cards to buy</div><div style="color:var(--fg-body);">--accent</div><div style="color:var(--fg-body);">18% &middot; --accent &middot; solid</div><div style="color:var(--fg-body);">Buy the missing</div>
+
+        <span style="display:flex;width:max-content;align-items:center;height:22px;padding:0 8px;border-radius:6px;border:1px solid var(--border-strong);background:color-mix(in srgb, var(--success) 18%, var(--bg));color:var(--success);font-size:10.5px;letter-spacing:0.06em;">Complete</span>
+        <div style="color:var(--fg-body);">committed, owned, resolved</div><div style="color:var(--fg-body);">--success</div><div style="color:var(--fg-body);">18% &middot; --success &middot; solid</div><div style="color:var(--fg-body);">Play it</div>
+      </div>
+
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;font-size:12.5px;line-height:1.6;color:var(--fg-body);border-top:1px solid var(--border);padding-top:13px;">
+        <div><b style="color:var(--fg);font-weight:600;">The dash moves to <i>Draft</i>, and this is the change I would defend hardest.</b> A dashed edge has meant <i>provisional</i> since the refresh, and it is the one status signal that survives greyscale and colour blindness. It was on <i>Building</i> because <i>Building</i> was where unfinished decks lived. They live in <i>Draft</i> now, so the dash goes with them &mdash; <b style="color:var(--fg);font-weight:600;">the signal did not change meaning, the meaning moved and the signal followed.</b></div>
+        <div><b style="color:var(--fg);font-weight:600;"><i>Building</i> takes <span style="color:var(--fg);">--fg</span> at the flat 18%</b> &mdash; R5&rsquo;s one surviving finding, reused where it now belongs. A committed deck sitting short is a real deck in an odd state, so it takes a solid edge and the brightest neutral, not a provisional one. <span style="color:var(--fg-faint);">--success</span> is still refused for anything but <i>Complete</i>, and no hue is re-spent.</div>
+      </div>
+    </div>
+
+    <!-- Their decks -->
+    <div style="display:flex;flex-direction:column;gap:12px;">
+      <div style="display:flex;align-items:baseline;gap:12px;flex-wrap:wrap;">
+        <div style="font-size:10px;letter-spacing:0.16em;text-transform:uppercase;color:var(--accent);">/decks &middot; your four decks, and the one from the brief</div>
+        <span style="font-size:11px;color:var(--fg-locked);">card 2 is the deck that started this &mdash; it now says so at a glance</span>
+      </div>
+      <div style="display:grid;grid-template-columns:repeat(4,208px);gap:14px;">
+
+        <div style="border-radius:14px;overflow:hidden;background:var(--surface-inset);border:1px solid var(--border);">
+          <div style="position:relative;height:130px;background:repeating-linear-gradient(115deg,#2A241D 0 9px,#221D18 9px 18px);">
+            <div style="position:absolute;inset:0;background:linear-gradient(to top,rgba(20,17,14,0.96) 0,rgba(20,17,14,0.96) 42px,rgba(20,17,14,0.1) 100px);"></div>
+            <div style="position:absolute;left:12px;right:12px;bottom:9px;"><div style="font-family:Fraunces,serif;font-weight:600;font-size:14.5px;color:var(--fg);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">Mutant Menace</div><div style="margin-top:3px;font-size:10px;color:var(--fg-body);">The Mimeoplasm</div></div>
+          </div>
+          <div style="border-top:1px solid var(--border);padding:10px 12px 12px;display:flex;flex-direction:column;gap:8px;">
+            <div style="display:flex;align-items:center;gap:7px;">
+              <span style="display:flex;width:max-content;align-items:center;height:22px;padding:0 8px;border-radius:6px;border:1px solid var(--border-strong);background:color-mix(in srgb, var(--success) 18%, var(--bg));color:var(--success);font-size:10.5px;letter-spacing:0.06em;">Complete</span>
+              <div style="flex:1;min-width:0;height:3px;border-radius:999px;background:var(--border);"><div style="height:3px;width:100%;border-radius:999px;background:var(--success);"></div></div>
+            </div>
+            <div style="display:flex;"><span style="font-size:10.5px;color:var(--fg-faint);">v4 &middot; all owned</span><span style="margin-left:auto;font-size:10.5px;color:var(--fg-faint);">99 / 99</span></div>
+          </div>
+        </div>
+
+        <div style="border-radius:14px;overflow:hidden;background:var(--surface-inset);border:1px solid var(--accent);box-shadow:0 0 0 3px color-mix(in srgb, var(--accent) 18%, transparent);">
+          <div style="position:relative;height:130px;background:repeating-linear-gradient(115deg,#2A241D 0 9px,#221D18 9px 18px);">
+            <div style="position:absolute;inset:0;background:linear-gradient(to top,rgba(20,17,14,0.96) 0,rgba(20,17,14,0.96) 42px,rgba(20,17,14,0.1) 100px);"></div>
+            <div style="position:absolute;left:12px;right:12px;bottom:9px;"><div style="font-family:Fraunces,serif;font-weight:600;font-size:14.5px;color:var(--fg);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">Ur-Dragon idea</div><div style="margin-top:3px;font-size:10px;color:var(--fg-body);">The Ur-Dragon</div></div>
+          </div>
+          <div style="border-top:1px solid var(--border);padding:10px 12px 12px;display:flex;flex-direction:column;gap:8px;">
+            <div style="display:flex;align-items:center;gap:7px;">
+              <span style="display:flex;width:max-content;align-items:center;height:22px;padding:0 8px;border-radius:6px;border:1px dashed var(--border-strong);background:color-mix(in srgb, var(--fg-body) 14%, var(--bg));color:var(--fg-body);font-size:10.5px;letter-spacing:0.06em;">Draft</span>
+              <div style="flex:1;min-width:0;height:3px;border-radius:999px;background:var(--border);"><div style="height:3px;width:100%;border-radius:999px;background:var(--fg-body);"></div></div>
+            </div>
+            <div style="display:flex;"><span style="font-size:10.5px;color:var(--accent);">31 to buy &middot; $284.10</span><span style="margin-left:auto;font-size:10.5px;color:var(--fg-faint);">99 / 99</span></div>
+          </div>
+        </div>
+
+        <div style="border-radius:14px;overflow:hidden;background:var(--surface-inset);border:1px solid var(--border);">
+          <div style="position:relative;height:130px;background:repeating-linear-gradient(115deg,#2A241D 0 9px,#221D18 9px 18px);">
+            <div style="position:absolute;inset:0;background:linear-gradient(to top,rgba(20,17,14,0.96) 0,rgba(20,17,14,0.96) 42px,rgba(20,17,14,0.1) 100px);"></div>
+            <div style="position:absolute;left:12px;right:12px;bottom:9px;"><div style="font-family:Fraunces,serif;font-weight:600;font-size:14.5px;color:var(--fg);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">Kess Storm</div><div style="margin-top:3px;font-size:10px;color:var(--fg-body);">Kess</div></div>
+          </div>
+          <div style="border-top:1px solid var(--border);padding:10px 12px 12px;display:flex;flex-direction:column;gap:8px;">
+            <div style="display:flex;align-items:center;gap:7px;">
+              <span style="display:flex;width:max-content;align-items:center;height:22px;padding:0 8px;border-radius:6px;border:1px solid var(--border-strong);background:color-mix(in srgb, var(--accent) 18%, var(--bg));color:var(--accent);font-size:10.5px;letter-spacing:0.06em;">To buy</span>
+              <div style="flex:1;min-width:0;height:3px;border-radius:999px;background:var(--border);"><div style="height:3px;width:100%;border-radius:999px;background:var(--accent);"></div></div>
+            </div>
+            <div style="display:flex;"><span style="font-size:10.5px;color:var(--fg-faint);">3 to buy &middot; $18.40</span><span style="margin-left:auto;font-size:10.5px;color:var(--fg-faint);">99 / 99</span></div>
+          </div>
+        </div>
+
+        <div style="border-radius:14px;overflow:hidden;background:var(--surface-inset);border:1px solid var(--border);">
+          <div style="position:relative;height:130px;background:repeating-linear-gradient(115deg,#2A241D 0 9px,#221D18 9px 18px);">
+            <div style="position:absolute;inset:0;background:linear-gradient(to top,rgba(20,17,14,0.96) 0,rgba(20,17,14,0.96) 42px,rgba(20,17,14,0.1) 100px);"></div>
+            <div style="position:absolute;left:12px;right:12px;bottom:9px;"><div style="font-family:Fraunces,serif;font-weight:600;font-size:14.5px;color:var(--fg);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">Slimefoot maybe</div><div style="margin-top:3px;font-size:10px;color:var(--fg-body);">Slimefoot</div></div>
+          </div>
+          <div style="border-top:1px solid var(--border);padding:10px 12px 12px;display:flex;flex-direction:column;gap:8px;">
+            <div style="display:flex;align-items:center;gap:7px;">
+              <span style="display:flex;width:max-content;align-items:center;height:22px;padding:0 8px;border-radius:6px;border:1px solid var(--border-strong);background:color-mix(in srgb, var(--fg-faint) 16%, var(--bg));color:var(--fg-muted);font-size:10.5px;letter-spacing:0.06em;">New</span>
+              <div style="flex:1;min-width:0;height:3px;border-radius:999px;background:var(--border);"></div>
+            </div>
+            <div style="display:flex;"><span style="font-size:10.5px;color:var(--fg-faint);">created today</span><span style="margin-left:auto;font-size:10.5px;color:var(--fg-faint);">0 / 99</span></div>
+          </div>
+        </div>
+      </div>
+      <div style="font-size:12.5px;line-height:1.6;color:var(--fg-body);max-width:1060px;"><b style="color:var(--fg);font-weight:600;">Cards 2 and 3 were the indistinguishable pair.</b> Both 99 cards, both with cards to buy, one an idea and one a sleeved deck mid-swap. Now the word differs and the shopping figure survives underneath it on both &mdash; <b style="color:var(--fg);font-weight:600;">you lose nothing by reading <i>Draft</i> instead of <i>To buy</i>, because <span style="color:var(--fg-faint);">31 to buy &middot; $284.10</span> is still on the tile.</b></div>
+    </div>
+
+    <!-- About -->
+    <div style="display:grid;grid-template-columns:1.15fr 1fr;gap:14px;align-items:start;">
+      <div style="display:flex;flex-direction:column;gap:9px;">
+        <div style="display:flex;align-items:baseline;gap:12px;flex-wrap:wrap;">
+          <div style="font-size:10px;letter-spacing:0.16em;text-transform:uppercase;color:var(--accent);">About &middot; the <span style="color:var(--fg-faint);">versions</span> entry, corrected</div>
+          <span style="font-size:11px;color:var(--fg-locked);">still 33 entries &middot; still 3 keys &middot; <span style="color:var(--fg-faint);">ABOUT_VERSION</span> stays at 5</span>
+        </div>
+        <div style="background:var(--bg);border:1px solid var(--border-strong);border-radius:12px;padding:16px;">
+          <div style="display:flex;align-items:baseline;gap:9px;flex-wrap:wrap;margin-bottom:6px;">
+            <span style="font-size:15.5px;font-weight:600;color:var(--fg);">Drafts, committing, and versions</span>
+            <span style="font-size:11.5px;color:var(--accent);">/decks &middot; opens a deck&rsquo;s Versions tab</span>
+          </div>
+          <div style="font-size:13.5px;line-height:1.62;color:var(--fg-body);max-width:600px;margin-bottom:12px;text-wrap:pretty;">A deck has a committed list and a draft you are working on. Every add and cut sits in the draft until you commit it, and committing cuts a version you can read back. Cards staged in a draft already count against your collection, which is why a draft can make another deck read short 1.</div>
+          <div style="background:var(--surface-inset);border:1px solid var(--border);border-radius:8px;padding:14px 16px;display:flex;align-items:center;gap:14px;flex-wrap:wrap;">
+            <div style="display:flex;flex-direction:column;gap:5px;">
+              <span style="display:flex;width:max-content;align-items:center;height:22px;padding:0 8px;border-radius:6px;border:1px dashed var(--border-strong);background:color-mix(in srgb, var(--fg-body) 14%, var(--bg));color:var(--fg-body);font-size:10.5px;letter-spacing:0.06em;">Draft</span>
+              <span style="font-size:10px;color:var(--fg-locked);">no version yet</span>
+            </div>
+            <span style="font-size:11px;color:var(--fg-locked);">&rarr;</span>
+            <div style="display:flex;flex-direction:column;gap:5px;">
+              <span style="display:flex;width:max-content;align-items:center;height:22px;padding:0 8px;border-radius:6px;border:1px solid var(--border-strong);background:color-mix(in srgb, var(--success) 18%, var(--bg));color:var(--success);font-size:10.5px;letter-spacing:0.06em;">Complete</span>
+              <span style="font-size:10px;color:var(--fg-locked);">v1 committed</span>
+            </div>
+            <span style="font-size:11px;color:var(--fg-faint);margin-left:4px;">two readings, one arrow</span>
+          </div>
+          <div style="display:flex;flex-direction:column;gap:5px;margin-top:11px;">
+            <div style="display:flex;gap:9px;align-items:flex-start;"><span style="font-size:10px;color:var(--accent);flex:none;">1</span><span style="font-size:10.5px;color:var(--fg-faint);line-height:1.5;">the draft is reviewable before it lands: every add and cut beside the committed list, with nothing counted twice.</span></div>
+            <div style="display:flex;gap:9px;align-items:flex-start;"><span style="font-size:10px;color:var(--accent);flex:none;">2</span><span style="font-size:10.5px;color:var(--fg-faint);line-height:1.5;">a version carries its own record, so you can see whether a change helped rather than only that it happened.</span></div>
+            <div style="display:flex;gap:9px;align-items:flex-start;"><span style="font-size:10px;color:var(--fg);flex:none;">3</span><span style="font-size:10.5px;color:var(--fg);line-height:1.5;">a deck you have never committed reads Draft however many cards it has &mdash; commit v1 and it takes the status its list earns.</span></div>
+          </div>
+        </div>
+      </div>
+      <div style="background:var(--surface-inset);border:1px solid var(--border);border-radius:12px;padding:18px 20px;">
+        <div style="font-size:10px;letter-spacing:0.16em;text-transform:uppercase;color:var(--accent);margin-bottom:12px;">The other two entries</div>
+        <div style="display:flex;flex-direction:column;gap:10px;font-size:12.5px;line-height:1.6;color:var(--fg-body);">
+          <div><b style="color:var(--fg);font-weight:600;">Key 3 replaces R4&rsquo;s mark sentence, not R5&rsquo;s.</b> Both described things that will not exist. This one names the threshold the value turns on &mdash; a committed version, not a card count &mdash; and <i>&ldquo;the status its list earns&rdquo;</i> points at the six without listing them, which is <span style="color:var(--fg-faint);">statuses</span>&rsquo; job one chapter on.</div>
+          <div><b style="color:var(--fg);font-weight:600;"><span style="color:var(--fg-faint);">statuses</span> keeps its four keys and its deleted caption sentence.</b> The keys teach <i>thresholds</i>, not one value each, so a seventh value needs no fifth key. <b style="color:var(--danger);font-weight:600;">⚠ One check for the builder:</b> if any of those four names <i>Draft</i> as the 0-card state, that key is now wrong and must move to <i>New</i>. It is the one place in About this rename genuinely bites.</div>
+          <div><b style="color:var(--fg);font-weight:600;"><span style="color:var(--fg-faint);">resume</span>&rsquo;s caption drops its numeral</b> &mdash; &ldquo;the same colours as its badge&rdquo;, not &ldquo;the same six colours&rdquo;. A count in prose is a thing to get wrong again on the next value. The dead keyline underneath it is still pre-existing and still wants its own ticket.</div>
+          <div style="color:var(--fg-muted);"><span style="color:var(--fg-faint);">ABOUT_VERSION</span> stays at 5. This is the <b style="color:var(--fg);font-weight:600;">second correction in two days</b>, which strengthens that ruling rather than weakening it: the reader is not interrupted twice for our own revisions, least of all onto a page with nothing marked.</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Cost + deltas -->
+    <div style="display:grid;grid-template-columns:1fr 1fr 262px;gap:14px;align-items:start;">
+      <div style="background:var(--surface-inset);border:1px solid #4A3E28;border-radius:12px;padding:18px 20px;">
+        <div style="font-size:10px;letter-spacing:0.16em;text-transform:uppercase;color:var(--warning);margin-bottom:12px;">What this costs &mdash; the honest ledger</div>
+        <div style="display:flex;flex-direction:column;gap:10px;font-size:12.5px;line-height:1.6;color:var(--fg-body);">
+          <div><b style="color:var(--fg);font-weight:600;">An uncommitted deck loses its count word in the pill.</b> A 104-card idea reads <i>Draft</i>, not <i>Over</i>. The figure stays in the detail row, and the ruling that makes this right is the one R2 reached and R5 forgot: <b style="color:var(--fg);font-weight:600;">while a draft is open the count facts are transient</b> &mdash; they describe the editing, not the deck.</div>
+          <div><b style="color:var(--fg);font-weight:600;">It does contradict the brief&rsquo;s ruling 1</b>, which said <i>Over</i>, <i>Unresolved</i> and <i>To buy</i> keep winning. I am overruling it because R5 obeyed it and could not then reach your deck &mdash; but it is your call, and this is the one thing in R6 to push back on.</div>
+          <div><b style="color:var(--fg);font-weight:600;">Is it #357 again?</b> No, and the distinction is direction. <i>Playable</i> <b style="color:var(--fg);font-weight:600;">overclaimed</b> &mdash; it said ready about a deck needing fifteen cards. <i>Draft</i> <b style="color:var(--fg);font-weight:600;">underclaims</b>: it says provisional about a deck that is provisional, and no reader ever took a table to a draft.</div>
+        </div>
+      </div>
+      <div style="background:var(--surface-inset);border:1px solid var(--border);border-radius:12px;padding:18px 20px;">
+        <div style="font-size:10px;letter-spacing:0.16em;text-transform:uppercase;color:var(--accent);">The rename, priced</div>
+        <div style="display:flex;flex-direction:column;gap:9px;font-size:12.5px;line-height:1.6;color:var(--fg-body);margin-top:12px;">
+          <div><b style="color:var(--fg);font-weight:600;">One new member, one redefinition, no deletions.</b> <span style="color:var(--fg-faint);">StatusPill</span> gains <i>New</i>; <i>Draft</i> keeps its key and changes its threshold. <span style="color:var(--fg-faint);">refreshCopy.status</span> gains <span style="color:var(--fg-faint);">new: 'New'</span> above <span style="color:var(--fg-faint);">draft</span>.</div>
+          <div><b style="color:var(--fg);font-weight:600;">The URL value is the one migration.</b> <span style="color:var(--fg-faint);">?status=draft</span> now selects a different set than it did yesterday. Nothing breaks &mdash; it is a valid value returning valid decks &mdash; so no redirect is owed, but a saved filter means something new and that should be stated rather than discovered.</div>
+          <div><b style="color:var(--fg);font-weight:600;">About: <span style="color:var(--fg-faint);">statuses</span> is at the four-key cap and stays there</b> &mdash; its keys teach thresholds, not one value each. <span style="color:var(--fg-faint);">versions</span> key 3 becomes the <i>Draft</i> sentence. <span style="color:var(--fg-faint);">ABOUT_VERSION</span> still does not move.</div>
+        </div>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:9px;">
+        <div style="font-size:10px;letter-spacing:0.12em;text-transform:uppercase;color:var(--fg-locked);">the facet</div>
+        <div style="background:var(--surface-inset);border:1px solid var(--border);border-radius:12px;padding:14px;display:flex;flex-direction:column;gap:14px;">
+          <div style="display:flex;flex-direction:column;gap:8px;">
+            <div style="display:flex;align-items:baseline;gap:8px;"><span style="font-size:10px;letter-spacing:0.14em;text-transform:uppercase;color:var(--fg-faint);">Status</span><span style="margin-left:auto;font-size:10px;color:var(--fg-faint);">7 of 7</span></div>
+            <div style="display:flex;flex-direction:column;gap:7px;font-size:12.5px;color:var(--fg-body);">
+              <div style="display:flex;align-items:center;gap:9px;"><span style="width:14px;height:14px;flex:none;border-radius:4px;border:1px solid var(--border-strong);"></span>New</div>
+              <div style="display:flex;align-items:center;gap:9px;color:var(--fg);"><span style="width:14px;height:14px;flex:none;border-radius:4px;border:1px solid var(--accent);background:color-mix(in srgb, var(--accent) 60%, var(--bg));"></span>Draft</div>
+              <div style="display:flex;align-items:center;gap:9px;"><span style="width:14px;height:14px;flex:none;border-radius:4px;border:1px solid var(--border-strong);"></span>Building</div>
+              <div style="display:flex;align-items:center;gap:9px;"><span style="width:14px;height:14px;flex:none;border-radius:4px;border:1px solid var(--border-strong);"></span>Over</div>
+              <div style="display:flex;align-items:center;gap:9px;"><span style="width:14px;height:14px;flex:none;border-radius:4px;border:1px solid var(--border-strong);"></span>Unresolved</div>
+              <div style="display:flex;align-items:center;gap:9px;"><span style="width:14px;height:14px;flex:none;border-radius:4px;border:1px solid var(--border-strong);"></span>To buy</div>
+              <div style="display:flex;align-items:center;gap:9px;"><span style="width:14px;height:14px;flex:none;border-radius:4px;border:1px solid var(--border-strong);"></span>Complete</div>
+            </div>
+          </div>
+          <div style="display:flex;flex-direction:column;gap:8px;">
+            <div style="font-size:10px;letter-spacing:0.14em;text-transform:uppercase;color:var(--fg-faint);">Deck state</div>
+            <div style="display:flex;align-items:center;gap:9px;font-size:12.5px;color:var(--fg-body);"><span style="width:14px;height:14px;flex:none;border-radius:4px;border:1px solid var(--border-strong);"></span>Edited since last version</div>
+            <div style="font-size:11px;color:var(--fg-faint);line-height:1.5;"><b style="color:var(--fg-body);font-weight:600;">Down to one row.</b> <span style="color:var(--fg-locked);">No version yet</span> is deleted &mdash; <i>New</i> + <i>Draft</i> ticked in Status <b style="color:var(--fg-body);font-weight:600;">is</b> that filter now, exactly, and a facet that duplicates two status rows is a control that can only disagree with them.</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div id="5a" style="display:flex;flex-direction:column;gap:22px;width:1320px;opacity:0.72;padding-bottom:38px;margin-bottom:8px;border-bottom:1px solid var(--border-strong);">
+
+    <div style="display:flex;align-items:baseline;gap:14px;flex-wrap:wrap;">
+      <span style="display:flex;width:max-content;align-items:center;height:22px;padding:0 9px;border-radius:6px;border:1px solid var(--accent);background:color-mix(in srgb, var(--accent) 18%, var(--bg));color:var(--accent);font-size:11px;letter-spacing:0.06em;">5a</span>
+      <h1 style="margin:0;font-family:Fraunces,serif;font-weight:700;font-size:26px;color:var(--fg);">A seventh word: <span style="color:var(--fg);background:color-mix(in srgb, var(--fg) 18%, var(--bg));padding:0 7px;border-radius:5px;border:1px solid var(--border-strong);">To build</span></h1>
+      <span style="font-size:11px;color:var(--fg-locked);letter-spacing:0.08em;">R5 &middot; retires both marks from <a href="#4a">4a</a> &middot; <span style="color:var(--danger);">superseded by <a href="#6a">6a</a> &mdash; placed below <i>To buy</i>, this value can never reach a deck with cards left to buy</span></span>
+    </div>
+
+    <!-- What R4 got wrong -->
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;">
+      <div style="background:var(--surface-inset);border:1px solid #4A2F28;border-radius:12px;padding:18px 20px;">
+        <div style="font-size:10px;letter-spacing:0.16em;text-transform:uppercase;color:var(--danger);margin-bottom:12px;">What R4 got wrong &mdash; plainly</div>
+        <div style="display:flex;flex-direction:column;gap:10px;font-size:12.5px;line-height:1.6;color:var(--fg-body);">
+          <div><b style="color:var(--fg);font-weight:600;">Both marks work as drawn, and both are wordless.</b> They were the only signals in the deck list carrying meaning with no label anywhere on the surface. A vocabulary of six words gained two silent members, and a reader without the key cannot join them.</div>
+          <div><b style="color:var(--fg);font-weight:600;">And I argued a contrast I had not measured.</b> R4 said &ldquo;filled against hollow separates them at a glance&rdquo;. Built and measured: a plan&rsquo;s plate is <span style="color:var(--fg-faint);">rgb(20,17,14)</span> against a <i>Building</i> deck&rsquo;s <span style="color:var(--fg-faint);">rgb(44,40,35)</span> &mdash; <b style="color:var(--fg);font-weight:600;">~39 units, near-neutral</b>. Weakest at <i>Draft</i> and <i>Building</i>, whose plates are a text colour at 14&ndash;16% where the other four carry a hue at 18%. <b style="color:var(--fg);font-weight:600;">So the commonest WIP deck was the least legible case</b> &mdash; the exact deck the feature was for.</div>
+          <div style="color:var(--fg-muted);">The second failure is the instructive one: R3 refused a 168px figure it had only derived, then R4 shipped a contrast claim on no measurement at all. <b style="color:var(--fg);font-weight:600;">The rule this round earns: a signal that can be measured is not ruled until it has been.</b></div>
+        </div>
+      </div>
+      <div style="background:var(--surface-inset);border:1px solid var(--border);border-radius:12px;padding:18px 20px;">
+        <div style="font-size:10px;letter-spacing:0.16em;text-transform:uppercase;color:var(--accent);margin-bottom:12px;">The ask, restated &mdash; and why a word answers it</div>
+        <div style="display:flex;flex-direction:column;gap:10px;font-size:12.5px;line-height:1.6;color:var(--fg-body);">
+          <div style="font-size:14px;color:var(--fg);font-family:Fraunces,serif;">A 99-card deck with no committed version must not read as finished.</div>
+          <div><b style="color:var(--fg);font-weight:600;">That is a claim about the deck, not an annotation on one.</b> Every other such claim in this app is one of six words in one pill, and the pill was already saying something false: <i>To buy</i>, or <i>Complete</i>, on a deck nobody has sleeved.</div>
+          <div><b style="color:var(--fg);font-weight:600;">R1&rsquo;s ruling 1 is now overturned, and it should be.</b> It refused a seventh value because the six &ldquo;partition one fact&rdquo;. They partition <i>what stands between this deck and a table</i> &mdash; and for a full, owned, uncommitted list, what stands between it and a table is <b style="color:var(--fg);font-weight:600;">that you have not built it</b>. Same axis. Same question. It belongs in the pill.</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Ruling 1: precedence -->
+    <div style="background:var(--surface-inset);border:1px solid var(--border);border-radius:12px;padding:18px 20px;display:flex;flex-direction:column;gap:15px;">
+      <div style="display:flex;align-items:baseline;gap:12px;flex-wrap:wrap;">
+        <div style="font-size:10px;letter-spacing:0.16em;text-transform:uppercase;color:var(--accent);">Ruling 1 &middot; precedence &mdash; one rung, directly below Complete</div>
+        <span style="font-size:11px;color:var(--fg-locked);">three counts, plus <span style="color:var(--fg-faint);">lastCommittedAt === null</span></span>
+      </div>
+
+      <div style="display:flex;align-items:stretch;gap:0;flex-wrap:wrap;border:1px solid var(--border);border-radius:9px;overflow:hidden;">
+        <div style="flex:1;min-width:150px;padding:11px 13px;background:var(--bg);border-right:1px solid var(--border);"><div style="font-size:10px;color:var(--fg-locked);margin-bottom:6px;">built === 0</div><span style="display:flex;width:max-content;align-items:center;height:22px;padding:0 8px;border-radius:6px;border:1px solid var(--border-strong);background:color-mix(in srgb, var(--fg-faint) 16%, var(--bg));color:var(--fg-muted);font-size:10.5px;letter-spacing:0.06em;">Draft</span></div>
+        <div style="flex:1;min-width:150px;padding:11px 13px;background:var(--bg);border-right:1px solid var(--border);"><div style="font-size:10px;color:var(--fg-locked);margin-bottom:6px;">&lt; bodySize</div><span style="display:flex;width:max-content;align-items:center;height:22px;padding:0 8px;border-radius:6px;border:1px dashed var(--border-strong);background:color-mix(in srgb, var(--fg-body) 14%, var(--bg));color:var(--fg-body);font-size:10.5px;letter-spacing:0.06em;">Building</span></div>
+        <div style="flex:1;min-width:150px;padding:11px 13px;background:var(--bg);border-right:1px solid var(--border);"><div style="font-size:10px;color:var(--fg-locked);margin-bottom:6px;">&gt; bodySize</div><span style="display:flex;width:max-content;align-items:center;height:22px;padding:0 8px;border-radius:6px;border:1px solid var(--border-strong);background:color-mix(in srgb, var(--danger) 18%, var(--bg));color:var(--danger);font-size:10.5px;letter-spacing:0.06em;">Over</span></div>
+        <div style="flex:1;min-width:150px;padding:11px 13px;background:var(--bg);border-right:1px solid var(--border);"><div style="font-size:10px;color:var(--fg-locked);margin-bottom:6px;">unresolved &gt; 0</div><span style="display:flex;width:max-content;align-items:center;height:22px;padding:0 8px;border-radius:6px;border:1px solid var(--border-strong);background:color-mix(in srgb, var(--warning) 18%, var(--bg));color:var(--warning);font-size:10.5px;letter-spacing:0.06em;">Unresolved</span></div>
+        <div style="flex:1;min-width:150px;padding:11px 13px;background:var(--bg);border-right:1px solid var(--border);"><div style="font-size:10px;color:var(--fg-locked);margin-bottom:6px;">unfunded &gt; 0</div><span style="display:flex;width:max-content;align-items:center;height:22px;padding:0 8px;border-radius:6px;border:1px solid var(--border-strong);background:color-mix(in srgb, var(--accent) 18%, var(--bg));color:var(--accent);font-size:10.5px;letter-spacing:0.06em;">To buy</span></div>
+        <div style="flex:1;min-width:150px;padding:11px 13px;background:color-mix(in srgb, var(--fg) 5%, var(--bg));border-right:1px solid var(--border);"><div style="font-size:10px;color:var(--fg);margin-bottom:6px;">no version</div><span style="display:flex;width:max-content;align-items:center;height:22px;padding:0 8px;border-radius:6px;border:1px solid var(--border-strong);background:color-mix(in srgb, var(--fg) 18%, var(--bg));color:var(--fg);font-size:10.5px;letter-spacing:0.06em;">To build</span></div>
+        <div style="flex:1;min-width:150px;padding:11px 13px;background:var(--bg);"><div style="font-size:10px;color:var(--fg-locked);margin-bottom:6px;">otherwise</div><span style="display:flex;width:max-content;align-items:center;height:22px;padding:0 8px;border-radius:6px;border:1px solid var(--border-strong);background:color-mix(in srgb, var(--success) 18%, var(--bg));color:var(--success);font-size:10.5px;letter-spacing:0.06em;">Complete</span></div>
+      </div>
+
+      <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:14px;font-size:12.5px;line-height:1.6;color:var(--fg-body);">
+        <div><b style="color:var(--fg);font-weight:600;">It takes precedence over <i>Complete</i> and nothing else.</b> <i>Over</i>, <i>Unresolved</i> and <i>To buy</i> keep winning, because each is a fact to act on: an illegal count, a card we cannot price, a card you must go and buy. Not having sleeved it yet is the <b style="color:var(--fg);font-weight:600;">last</b> thing standing between the list and a table, so it is the last test before <i>Complete</i>.</div>
+        <div><b style="color:var(--fg);font-weight:600;">One rung, and no more &mdash; #357 is the reason.</b> <i>Playable</i> was retired for covering the last three rows at once and rendering as green, so a deck needing fifteen cards bought announced itself as ready. A value that outranked <i>To buy</i> would rebuild that defect from the other end: a shopping list hidden behind a sleeving prompt.</div>
+        <div><b style="color:var(--fg);font-weight:600;">Derivable, and the boolean already ships.</b> <span style="color:var(--fg-faint);">DeckListItem.lastCommittedAt</span> is on both list reads via <span style="color:var(--fg-faint);">lastCommittedSql</span>, null exactly when no version exists. <span style="color:var(--fg-faint);">statusPill()</span> gains one optional argument and one test; <span style="color:var(--fg-faint);">statusPillStyle</span> loses <span style="color:var(--fg-faint);">DeckStateMarks</span> entirely and returns to one argument.</div>
+      </div>
+    </div>
+
+    <!-- Ruling 2: the treatment, the amended table -->
+    <div style="background:var(--surface-inset);border:1px solid var(--border);border-radius:12px;padding:18px 20px;display:flex;flex-direction:column;gap:14px;">
+      <div style="display:flex;align-items:baseline;gap:12px;flex-wrap:wrap;">
+        <div style="font-size:10px;letter-spacing:0.16em;text-transform:uppercase;color:var(--accent);">Ruling 2 &middot; the amended per-value table</div>
+        <span style="font-size:11px;color:var(--fg-locked);">the seventh row is the only new line &mdash; six unchanged</span>
+      </div>
+
+      <div style="display:grid;grid-template-columns:118px 106px 128px 108px 118px 1fr;gap:9px 14px;align-items:center;font-size:11.5px;">
+        <div style="font-size:10px;letter-spacing:0.12em;text-transform:uppercase;color:var(--fg-locked);">Value</div>
+        <div style="font-size:10px;letter-spacing:0.12em;text-transform:uppercase;color:var(--fg-locked);">Token</div>
+        <div style="font-size:10px;letter-spacing:0.12em;text-transform:uppercase;color:var(--fg-locked);">Fill</div>
+        <div style="font-size:10px;letter-spacing:0.12em;text-transform:uppercase;color:var(--fg-locked);">Label</div>
+        <div style="font-size:10px;letter-spacing:0.12em;text-transform:uppercase;color:var(--fg-locked);">Border</div>
+        <div style="font-size:10px;letter-spacing:0.12em;text-transform:uppercase;color:var(--fg-locked);">Bar</div>
+
+        <span style="display:flex;width:max-content;align-items:center;height:22px;padding:0 8px;border-radius:6px;border:1px solid var(--border-strong);background:color-mix(in srgb, var(--fg-faint) 16%, var(--bg));color:var(--fg-muted);font-size:10.5px;letter-spacing:0.06em;">Draft</span>
+        <div style="color:var(--fg-body);">--fg-faint</div><div style="color:var(--fg-body);">token at 16%</div><div style="color:var(--fg-body);">--fg-muted</div><div style="color:var(--fg-body);">solid</div><div style="color:var(--fg-faint);">empty track</div>
+
+        <span style="display:flex;width:max-content;align-items:center;height:22px;padding:0 8px;border-radius:6px;border:1px dashed var(--border-strong);background:color-mix(in srgb, var(--fg-body) 14%, var(--bg));color:var(--fg-body);font-size:10.5px;letter-spacing:0.06em;">Building</span>
+        <div style="color:var(--fg-body);">--fg-body</div><div style="color:var(--fg-body);">token at 14%</div><div style="color:var(--fg-body);">--fg-body</div><div style="color:var(--fg-body);"><b style="color:var(--fg);font-weight:600;">dashed</b></div><div style="color:var(--fg-faint);">proportional</div>
+
+        <span style="display:flex;width:max-content;align-items:center;height:22px;padding:0 8px;border-radius:6px;border:1px solid var(--border-strong);background:color-mix(in srgb, var(--danger) 18%, var(--bg));color:var(--danger);font-size:10.5px;letter-spacing:0.06em;">Over</span>
+        <div style="color:var(--fg-body);">--danger</div><div style="color:var(--fg-body);">token at 18%</div><div style="color:var(--fg-body);">--danger</div><div style="color:var(--fg-body);">solid</div><div style="color:var(--fg-faint);">full</div>
+
+        <span style="display:flex;width:max-content;align-items:center;height:22px;padding:0 8px;border-radius:6px;border:1px solid var(--border-strong);background:color-mix(in srgb, var(--warning) 18%, var(--bg));color:var(--warning);font-size:10.5px;letter-spacing:0.06em;">Unresolved</span>
+        <div style="color:var(--fg-body);">--warning</div><div style="color:var(--fg-body);">token at 18%</div><div style="color:var(--fg-body);">--warning</div><div style="color:var(--fg-body);">solid</div><div style="color:var(--fg-faint);">full</div>
+
+        <span style="display:flex;width:max-content;align-items:center;height:22px;padding:0 8px;border-radius:6px;border:1px solid var(--border-strong);background:color-mix(in srgb, var(--accent) 18%, var(--bg));color:var(--accent);font-size:10.5px;letter-spacing:0.06em;">To buy</span>
+        <div style="color:var(--fg-body);">--accent</div><div style="color:var(--fg-body);">token at 18%</div><div style="color:var(--fg-body);">--accent</div><div style="color:var(--fg-body);">solid</div><div style="color:var(--fg-faint);">full</div>
+
+        <span style="display:flex;width:max-content;align-items:center;height:22px;padding:0 8px;border-radius:6px;border:1px solid var(--border-strong);background:color-mix(in srgb, var(--fg) 18%, var(--bg));color:var(--fg);font-size:10.5px;letter-spacing:0.06em;">To build</span>
+        <div style="color:var(--fg);"><b style="font-weight:600;">--fg</b></div><div style="color:var(--fg);"><b style="font-weight:600;">token at 18%</b></div><div style="color:var(--fg);"><b style="font-weight:600;">--fg</b></div><div style="color:var(--fg);">solid</div><div style="color:var(--fg);">full</div>
+
+        <span style="display:flex;width:max-content;align-items:center;height:22px;padding:0 8px;border-radius:6px;border:1px solid var(--border-strong);background:color-mix(in srgb, var(--success) 18%, var(--bg));color:var(--success);font-size:10.5px;letter-spacing:0.06em;">Complete</span>
+        <div style="color:var(--fg-body);">--success</div><div style="color:var(--fg-body);">token at 18%</div><div style="color:var(--fg-body);">--success</div><div style="color:var(--fg-body);">solid</div><div style="color:var(--fg-faint);">full</div>
+      </div>
+
+      <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:14px;font-size:12.5px;line-height:1.6;color:var(--fg-body);border-top:1px solid var(--border);padding-top:13px;">
+        <div><b style="color:var(--fg);font-weight:600;">The token is <span style="color:var(--fg);">--fg</span>, at the flat 18% &mdash; not a text-colour exception.</b> <i>Draft</i> and <i>Building</i> are quietened because they are the two <i>unfinished</i> states and their token is a dim text colour. This is a finished list, and its token is the brightest ink each theme owns. It takes the full rule.</div>
+        <div><b style="color:var(--fg);font-weight:600;">Which makes it the loudest neutral in the set</b>, brighter than <i>Draft</i> and <i>Building</i> and carrying the highest-contrast label of the seven. That is right for the one value whose next action is <i>go and do the thing</i>, and it is the exact inverse of R4&rsquo;s defect: the retired plate went <b style="color:var(--fg);font-weight:600;">39 units darker</b> and mute, this goes brighter with bright ink.</div>
+        <div><b style="color:var(--fg);font-weight:600;">And nothing is re-spent.</b> <span style="color:var(--fg-faint);">--success</span> is refused, per ruling 2 &mdash; green is the one word for playable and #357 is the price of blurring it. <span style="color:var(--fg-faint);">--fg</span> was the retired edge&rsquo;s ink, so the round frees exactly the token it then needs, and it is the only ink in the palette that is neither a hue nor already a status.</div>
+      </div>
+    </div>
+
+    <!-- Rulings 3 and 4 -->
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;">
+      <div style="background:var(--surface-inset);border:1px solid var(--border);border-radius:12px;padding:18px 20px;">
+        <div style="font-size:10px;letter-spacing:0.16em;text-transform:uppercase;color:var(--accent);margin-bottom:12px;">Ruling 3 &middot; <i>Draft</i> keeps the 0-card slot</div>
+        <div style="display:flex;flex-direction:column;gap:10px;font-size:12.5px;line-height:1.6;color:var(--fg-body);">
+          <div><b style="color:var(--fg);font-weight:600;">The question does not arise, because the new value does not want the word.</b> Every value in this table is named for <i>what stands in the way</i>, and four name it as an action: <i>Add</i>, <i>Cut</i>, <i>Resolve</i>, <i>Buy</i>. <i>To build</i> is the fifth, and it sits directly beside the one it rhymes with.</div>
+          <div style="display:flex;align-items:center;gap:7px;flex-wrap:wrap;padding:9px 11px;background:var(--bg);border:1px solid var(--border);border-radius:8px;">
+            <span style="display:flex;width:max-content;align-items:center;height:22px;padding:0 8px;border-radius:6px;border:1px solid var(--border-strong);background:color-mix(in srgb, var(--accent) 18%, var(--bg));color:var(--accent);font-size:10.5px;letter-spacing:0.06em;">To buy</span>
+            <span style="font-size:11px;color:var(--fg-faint);">you cannot sleeve it &mdash; cards missing</span>
+          </div>
+          <div style="display:flex;align-items:center;gap:7px;flex-wrap:wrap;padding:9px 11px;background:var(--bg);border:1px solid var(--border);border-radius:8px;">
+            <span style="display:flex;width:max-content;align-items:center;height:22px;padding:0 8px;border-radius:6px;border:1px solid var(--border-strong);background:color-mix(in srgb, var(--fg) 18%, var(--bg));color:var(--fg);font-size:10.5px;letter-spacing:0.06em;">To build</span>
+            <span style="font-size:11px;color:var(--fg-faint);">you <i>can</i> sleeve it &mdash; you have not</span>
+          </div>
+          <div><b style="color:var(--fg);font-weight:600;">So no rename, and no cascade.</b> <i>Draft</i> stays a <span style="color:var(--fg-faint);">StatusPill</span> member, a <span style="color:var(--fg-faint);">refreshCopy.status</span> key, a URL value and a filter row. A rename would have touched every one of those to buy a word this value does not need &mdash; and <i>Draft</i> is <b style="color:var(--fg);font-weight:600;">the honest word for nought cards</b>: a named commander and nothing else.</div>
+          <div style="color:var(--fg-muted);">The string is yours via <span style="color:var(--fg-faint);">/copy-review</span>. If it moves, the ruling that holds is the shape &mdash; a <i>to-</i> verb, parallel to <i>To buy</i>, below it in the cascade.</div>
+        </div>
+      </div>
+
+      <div style="background:var(--surface-inset);border:1px solid var(--border);border-radius:12px;padding:18px 20px;">
+        <div style="font-size:10px;letter-spacing:0.16em;text-transform:uppercase;color:var(--accent);margin-bottom:12px;">Ruling 4 &middot; pending changes gets no mark &mdash; confirmed</div>
+        <div style="display:flex;flex-direction:column;gap:10px;font-size:12.5px;line-height:1.6;color:var(--fg-body);">
+          <div><b style="color:var(--fg);font-weight:600;">Confirmed, not conceded.</b> The fact is already stated in words on all three surfaces that carry it &mdash; <span style="color:var(--fg-faint);">1 change since v1</span> in the tile&rsquo;s detail row, the banner on the deck page, <span style="color:var(--fg-faint);">edited 2h ago</span> on Home&rsquo;s stamp. A mark would be a fourth telling, and the wordless one.</div>
+          <div><b style="color:var(--fg);font-weight:600;">And the asymmetry is correct, not an inconsistency to fix.</b> Never-committed is a <i>state of the deck</i> and it changes what the deck is. Edited-since-v1 is an <i>event in its history</i>, and the history is what the detail row and the banner are for. One belongs in the pill; the other never did.</div>
+          <div style="color:var(--fg-muted);">This retires R1&ndash;R3 in full, and the <span style="color:var(--fg-faint);">2px --fg</span> edge with them. The data behind it stays &mdash; the count is what the detail row prints.</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Surfaces -->
+    <div style="display:flex;flex-direction:column;gap:12px;">
+      <div style="display:flex;align-items:baseline;gap:12px;flex-wrap:wrap;">
+        <div style="font-size:10px;letter-spacing:0.16em;text-transform:uppercase;color:var(--accent);">Every surface &middot; both widths</div>
+        <span style="font-size:11px;color:var(--fg-locked);">the pill is the whole change &mdash; no plate, no edge, no opacity anywhere</span>
+      </div>
+
+      <div style="display:flex;gap:14px;flex-wrap:wrap;align-items:flex-start;">
+
+        <div style="display:flex;flex-direction:column;gap:8px;">
+          <div style="font-size:10px;letter-spacing:0.12em;text-transform:uppercase;color:var(--fg-locked);">tile &middot; 360px</div>
+          <div style="width:360px;border-radius:14px;overflow:hidden;background:var(--surface-inset);border:1px solid var(--border);">
+            <div style="position:relative;height:150px;background:repeating-linear-gradient(115deg,#2A241D 0 9px,#221D18 9px 18px);">
+              <div style="position:absolute;inset:0;background:linear-gradient(to top,rgba(20,17,14,0.96) 0,rgba(20,17,14,0.96) 44px,rgba(20,17,14,0.1) 110px);"></div>
+              <div style="position:absolute;top:10px;right:10px;width:26px;height:26px;border-radius:7px;border:1px solid var(--border-strong);background:rgba(20,17,14,0.7);color:var(--fg-muted);display:flex;align-items:center;justify-content:center;font-size:13px;">&hellip;</div>
+              <div style="position:absolute;left:12px;right:12px;bottom:9px;"><div style="font-family:Fraunces,serif;font-weight:600;font-size:15px;color:var(--fg);">Ur-Dragon idea</div><div style="margin-top:3px;font-size:10.5px;color:var(--fg-body);">The Ur-Dragon &middot; five-colour</div></div>
+            </div>
+            <div style="border-top:1px solid var(--border);padding:10px 13px 12px;display:flex;flex-direction:column;gap:8px;">
+              <div style="display:flex;align-items:center;gap:8px;">
+                <span style="display:flex;width:max-content;align-items:center;height:22px;padding:0 8px;border-radius:6px;border:1px solid var(--border-strong);background:color-mix(in srgb, var(--fg) 18%, var(--bg));color:var(--fg);font-size:10.5px;letter-spacing:0.06em;">To build</span>
+                <div style="flex:1;min-width:0;height:3px;border-radius:999px;background:var(--border);"><div style="height:3px;width:100%;border-radius:999px;background:var(--fg);"></div></div>
+                <span style="font-size:12px;color:var(--fg);font-variant-numeric:tabular-nums;">99 / 99</span>
+              </div>
+              <div style="display:flex;"><span style="font-size:10.5px;color:var(--fg-faint);">all owned</span><span style="margin-left:auto;font-size:10.5px;color:var(--fg-faint);">never played</span></div>
+            </div>
+          </div>
+          <div style="width:360px;font-size:11.5px;line-height:1.55;color:var(--fg-body);">The detail row keeps <span style="color:var(--fg-faint);">all owned</span> &mdash; the figure that explains <i>why this is not To buy</i>, which is precisely what a reader needs beside this word. The bar is <span style="color:var(--fg-faint);">--fg</span>, full, at <b style="color:var(--fg);font-weight:600;">no opacity change</b>: R4&rsquo;s 50% is retired with the plate.</div>
+        </div>
+
+        <div style="display:flex;flex-direction:column;gap:8px;">
+          <div style="font-size:10px;letter-spacing:0.12em;text-transform:uppercase;color:var(--fg-locked);">phone &middot; 189px cell</div>
+          <div style="width:189px;border-radius:14px;overflow:hidden;background:var(--surface-inset);border:1px solid var(--border);">
+            <div style="position:relative;height:118px;background:repeating-linear-gradient(115deg,#2A241D 0 9px,#221D18 9px 18px);">
+              <div style="position:absolute;inset:0;background:linear-gradient(to top,rgba(20,17,14,0.96) 0,rgba(20,17,14,0.96) 42px,rgba(20,17,14,0.1) 96px);"></div>
+              <div style="position:absolute;left:11px;right:11px;bottom:8px;"><div style="font-family:Fraunces,serif;font-weight:600;font-size:14px;color:var(--fg);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">Ur-Dragon idea</div></div>
+            </div>
+            <div style="border-top:1px solid var(--border);padding:10px 11px 11px;display:flex;flex-direction:column;gap:8px;">
+              <div style="display:flex;align-items:center;gap:7px;">
+                <span style="display:flex;width:max-content;align-items:center;height:22px;padding:0 8px;border-radius:6px;border:1px solid var(--border-strong);background:color-mix(in srgb, var(--fg) 18%, var(--bg));color:var(--fg);font-size:10.5px;letter-spacing:0.06em;">To build</span>
+                <div style="flex:1;min-width:0;height:3px;border-radius:999px;background:var(--border);"><div style="height:3px;width:100%;border-radius:999px;background:var(--fg);"></div></div>
+              </div>
+              <div style="display:flex;"><span style="font-size:10.5px;color:var(--fg-faint);">all owned</span><span style="margin-left:auto;font-size:10.5px;color:var(--fg-faint);">99 / 99</span></div>
+            </div>
+          </div>
+          <div style="width:189px;font-size:11.5px;line-height:1.55;color:var(--fg-body);">Measured in the rendered page at 10.5px mono, IBM Plex Mono loaded: <b style="color:var(--fg);font-weight:600;">73.5px</b> against <i>Unresolved</i>&rsquo;s <b style="color:var(--fg);font-weight:600;">87.3px</b> &mdash; box width, text advance plus padding, border and letter-spacing. This footer already carries the wider one at this width, so nothing collapses and there is no collapsed form to define.</div>
+        </div>
+
+        <div style="display:flex;flex-direction:column;gap:12px;">
+          <div style="display:flex;flex-direction:column;gap:8px;">
+            <div style="font-size:10px;letter-spacing:0.12em;text-transform:uppercase;color:var(--fg-locked);">home &middot; resume row</div>
+            <div style="width:430px;position:relative;height:72px;border-radius:12px;overflow:hidden;background:var(--surface-inset);border:1px solid var(--border);display:flex;align-items:center;padding:10px 18px 10px 0;">
+              <div style="position:absolute;left:0;top:0;bottom:0;width:99px;background:repeating-linear-gradient(115deg,#2A241D 0 9px,#221D18 9px 18px);"></div>
+              <div style="position:absolute;left:0;top:0;bottom:0;width:150px;background:linear-gradient(to right,rgba(20,17,14,0.05),var(--surface-inset) 116px);"></div>
+              <div style="position:relative;display:flex;flex-direction:column;gap:4px;min-width:0;flex:1;padding-left:116px;">
+                <div style="display:flex;align-items:baseline;gap:8px;">
+                  <span style="font-family:Fraunces,serif;font-weight:600;font-size:14.5px;line-height:1.2;color:var(--fg);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">Ur-Dragon idea</span>
+                  <span style="margin-left:auto;font-size:10.5px;color:var(--fg-locked);white-space:nowrap;">edited 2h ago</span>
+                </div>
+                <div style="display:flex;align-items:center;gap:12px;min-width:0;">
+                  <span style="display:flex;width:max-content;align-items:center;height:19px;padding:0 7px;border-radius:5px;border:1px solid var(--border-strong);background:color-mix(in srgb, var(--fg) 18%, var(--bg));color:var(--fg);font-size:10px;">To build</span>
+                  <span style="flex:1;min-width:0;font-size:10.5px;color:var(--fg-body);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">The Ur-Dragon</span>
+                  <span style="flex:none;font-size:10.5px;color:var(--fg-faint);">99 / 99</span>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div style="display:flex;flex-direction:column;gap:8px;">
+            <div style="font-size:10px;letter-spacing:0.12em;text-transform:uppercase;color:var(--fg-locked);">spine desktop</div>
+            <div style="width:430px;background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:14px 16px;display:flex;flex-direction:column;gap:9px;">
+              <div style="font-family:Fraunces,serif;font-weight:700;font-size:20px;color:var(--fg);">Ur-Dragon idea</div>
+              <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
+                <span style="display:flex;width:max-content;align-items:center;height:22px;padding:0 8px;border-radius:6px;border:1px solid var(--border-strong);background:color-mix(in srgb, var(--fg) 18%, var(--bg));color:var(--fg);font-size:10.5px;letter-spacing:0.06em;">To build</span>
+                <div style="display:flex;gap:3px;">
+                  <span style="width:10px;height:10px;border-radius:999px;background:#F4E9C4;border:1px solid var(--border-strong);"></span>
+                  <span style="width:10px;height:10px;border-radius:999px;background:#3A6AA5;border:1px solid var(--border-strong);"></span>
+                  <span style="width:10px;height:10px;border-radius:999px;background:#98748F;border:1px solid var(--border-strong);"></span>
+                  <span style="width:10px;height:10px;border-radius:999px;background:#C05A3E;border:1px solid var(--border-strong);"></span>
+                  <span style="width:10px;height:10px;border-radius:999px;background:#4B7A46;border:1px solid var(--border-strong);"></span>
+                </div>
+                <span style="font-size:10px;color:var(--fg-body);">The Ur-Dragon &middot; five-colour</span>
+                <span style="margin-left:auto;display:flex;width:max-content;align-items:center;height:26px;padding:0 11px;border-radius:7px;border:1px solid var(--fg);background:var(--fg);color:var(--bg);font-size:11px;font-weight:600;">Commit as v1</span>
+              </div>
+            </div>
+          </div>
+          <div style="display:flex;flex-direction:column;gap:8px;">
+            <div style="font-size:10px;letter-spacing:0.12em;text-transform:uppercase;color:var(--fg-locked);">spine mobile &middot; 390px &middot; on the wash</div>
+            <div style="width:390px;position:relative;height:104px;border-radius:12px;overflow:hidden;background:repeating-linear-gradient(115deg,#2A241D 0 9px,#221D18 9px 18px);border:1px solid var(--border);">
+              <div style="position:absolute;inset:0;background:linear-gradient(to top,rgba(20,17,14,0.94) 0,rgba(20,17,14,0.94) 74px,rgba(20,17,14,0.12) 104px);"></div>
+              <div style="position:absolute;left:16px;right:16px;bottom:11px;display:flex;flex-direction:column;gap:6px;padding-right:36px;">
+                <div style="font-family:Fraunces,serif;font-weight:700;font-size:19px;line-height:1.25;color:var(--fg);text-shadow:0 1px 3px rgba(0,0,0,0.85);">Ur-Dragon idea</div>
+                <div style="display:flex;align-items:center;gap:8px;flex-wrap:nowrap;min-width:0;">
+                  <span style="flex:none;display:flex;width:max-content;align-items:center;height:22px;padding:0 7px;border-radius:6px;border:1px solid var(--border-strong);background:color-mix(in srgb, var(--fg) 18%, var(--bg));color:var(--fg);font-size:10px;">To build</span>
+                  <div style="flex:none;display:flex;gap:3px;">
+                    <span style="width:10px;height:10px;border-radius:999px;background:#F4E9C4;border:1px solid var(--border-strong);"></span>
+                    <span style="width:10px;height:10px;border-radius:999px;background:#3A6AA5;border:1px solid var(--border-strong);"></span>
+                    <span style="width:10px;height:10px;border-radius:999px;background:#98748F;border:1px solid var(--border-strong);"></span>
+                  </div>
+                  <span style="min-width:0;font-size:10px;color:var(--fg-body);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;text-shadow:0 1px 3px rgba(0,0,0,0.85);">The Ur-Dragon &middot; five-colour</span>
+                </div>
+              </div>
+            </div>
+            <div style="width:390px;font-size:11.5px;line-height:1.55;color:var(--fg-body);">The plate is <span style="color:var(--fg-faint);">color-mix(&hellip; var(--fg) 18%, var(--bg))</span> &mdash; opaque, per the art-wash amendment, like every other status. <b style="color:var(--fg);font-weight:600;">The one surface R4 had to argue about, this round does not have to.</b></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Facet + About + probes -->
+    <div style="display:grid;grid-template-columns:262px 1fr 1fr;gap:14px;align-items:start;">
+      <div style="display:flex;flex-direction:column;gap:9px;">
+        <div style="font-size:10px;letter-spacing:0.12em;text-transform:uppercase;color:var(--fg-locked);">/decks &middot; the facet, relabelled</div>
+        <div style="background:var(--surface-inset);border:1px solid var(--border);border-radius:12px;padding:14px;display:flex;flex-direction:column;gap:14px;">
+          <div style="display:flex;flex-direction:column;gap:8px;">
+            <div style="display:flex;align-items:baseline;gap:8px;"><span style="font-size:10px;letter-spacing:0.14em;text-transform:uppercase;color:var(--fg-faint);">Status</span><span style="margin-left:auto;font-size:10px;color:var(--fg-faint);">7 of 7</span></div>
+            <div style="display:flex;flex-direction:column;gap:7px;font-size:12.5px;color:var(--fg-body);">
+              <div style="display:flex;align-items:center;gap:9px;"><span style="width:14px;height:14px;flex:none;border-radius:4px;border:1px solid var(--border-strong);"></span>Draft</div>
+              <div style="display:flex;align-items:center;gap:9px;"><span style="width:14px;height:14px;flex:none;border-radius:4px;border:1px solid var(--border-strong);"></span>Building</div>
+              <div style="display:flex;align-items:center;gap:9px;"><span style="width:14px;height:14px;flex:none;border-radius:4px;border:1px solid var(--border-strong);"></span>Over</div>
+              <div style="display:flex;align-items:center;gap:9px;"><span style="width:14px;height:14px;flex:none;border-radius:4px;border:1px solid var(--border-strong);"></span>Unresolved</div>
+              <div style="display:flex;align-items:center;gap:9px;"><span style="width:14px;height:14px;flex:none;border-radius:4px;border:1px solid var(--border-strong);"></span>To buy</div>
+              <div style="display:flex;align-items:center;gap:9px;color:var(--fg);"><span style="width:14px;height:14px;flex:none;border-radius:4px;border:1px solid var(--accent);background:color-mix(in srgb, var(--accent) 60%, var(--bg));"></span>To build</div>
+              <div style="display:flex;align-items:center;gap:9px;"><span style="width:14px;height:14px;flex:none;border-radius:4px;border:1px solid var(--border-strong);"></span>Complete</div>
+            </div>
+          </div>
+          <div style="display:flex;flex-direction:column;gap:8px;">
+            <div style="font-size:10px;letter-spacing:0.14em;text-transform:uppercase;color:var(--fg-faint);">Deck state</div>
+            <div style="display:flex;flex-direction:column;gap:7px;font-size:12.5px;color:var(--fg-body);">
+              <div style="display:flex;align-items:center;gap:9px;"><span style="width:14px;height:14px;flex:none;border-radius:4px;border:1px solid var(--border-strong);"></span>No version yet</div>
+              <div style="display:flex;align-items:center;gap:9px;"><span style="width:14px;height:14px;flex:none;border-radius:4px;border:1px solid var(--border-strong);"></span>Edited since last version</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div style="background:var(--surface-inset);border:1px solid var(--border);border-radius:12px;padding:18px 20px;">
+        <div style="font-size:10px;letter-spacing:0.16em;text-transform:uppercase;color:var(--accent);margin-bottom:12px;">The facet &mdash; both rows stay, both relabelled</div>
+        <div style="display:flex;flex-direction:column;gap:10px;font-size:12.5px;line-height:1.6;color:var(--fg-body);">
+          <div><b style="color:var(--fg);font-weight:600;">Status gains a seventh row and the header reads <span style="color:var(--fg-faint);">7 of 7</span>.</b> It is a value now, so it serialises to <span style="color:var(--fg-faint);">?status=</span> like the others and the count keeps its contract with the grid.</div>
+          <div><b style="color:var(--fg);font-weight:600;">Deck state keeps both rows, because neither is what the status says.</b> <span style="color:var(--fg-faint);">Not committed yet</span> is relabelled <b style="color:var(--fg);font-weight:600;"><span style="color:var(--fg-faint);">No version yet</span></b>: it still catches a never-committed deck at <i>any</i> count, where <i>To build</i> catches only the full, owned ones. Keeping the old label beside a status of nearly the same words would read as a duplicate of it.</div>
+          <div><b style="color:var(--fg);font-weight:600;"><span style="color:var(--fg-faint);">Has pending changes</span> &rarr; <span style="color:var(--fg-faint);">Edited since last version</span></b>, which says the fact rather than naming a mark that no longer exists. The param is unchanged &mdash; <span style="color:var(--fg-faint);">?state=uncommitted,pending</span> &mdash; so no link anybody saved breaks.</div>
+          <div style="color:var(--fg-muted);">Both are label changes on a built, proven facet. No query moves.</div>
+        </div>
+      </div>
+
+      <div style="display:flex;flex-direction:column;gap:14px;">
+        <div style="background:var(--surface-inset);border:1px solid var(--border);border-radius:12px;padding:18px 20px;">
+          <div style="font-size:10px;letter-spacing:0.16em;text-transform:uppercase;color:var(--accent);margin-bottom:12px;">About &middot; the correction, and no second bump</div>
+          <div style="display:flex;flex-direction:column;gap:10px;font-size:12.5px;line-height:1.6;color:var(--fg-body);">
+            <div><b style="color:var(--fg);font-weight:600;">Both amended entries carry retired text and must be corrected in the same build.</b> <span style="color:var(--fg-faint);">versions</span> key 3 describes the unfilled badge and the bright edge; the <span style="color:var(--fg-faint);">statuses</span> caption sentence describes both marks. Neither thing will exist.</div>
+            <div><span style="color:var(--fg-faint);">versions</span> key 3 becomes: <i>&ldquo;a full deck you have never committed reads <b style="color:var(--fg);font-weight:600;">To build</b> until you commit v1 &mdash; it is a list, not a deck you can put on a table yet.&rdquo;</i> The <span style="color:var(--fg-faint);">statuses</span> caption sentence is <b style="color:var(--fg);font-weight:600;">deleted</b>, not rewritten: its four keys teach the values, and the seventh is now simply one of them.</div>
+            <div><b style="color:var(--fg);font-weight:600;">And <span style="color:var(--fg-faint);">ABOUT_VERSION</span> does not move again.</b> It went to 5 yesterday and put <span style="color:var(--fg-faint);">/about</span> in front of every account. Bumping a second time inside a week to correct our own copy spends the reader&rsquo;s attention on our error &mdash; and <span style="color:var(--fg-faint);">/about</span> has no <i>amended</i> state, so they would be interrupted and shown a page with nothing marked. <b style="color:var(--fg);font-weight:600;">Correct in place at 5.</b></div>
+            <div style="color:var(--fg-muted);">The <i>amended</i> treatment that would make a bump honest is still owed and still Design&rsquo;s. It is not this round.</div>
+          </div>
+        </div>
+        <div style="background:var(--surface-inset);border:1px solid #4A3E28;border-radius:12px;padding:18px 20px;">
+          <div style="font-size:10px;letter-spacing:0.16em;text-transform:uppercase;color:var(--warning);margin-bottom:12px;">To measure before this is locked</div>
+          <div style="display:flex;flex-direction:column;gap:9px;font-size:12.5px;line-height:1.6;color:var(--fg-body);">
+            <div><b style="color:var(--fg);font-weight:600;">1 &middot; <i>To build</i> against <i>Draft</i>, in greyscale.</b> Three neutral plates now sit in one vocabulary. <i>Building</i> has its dash; these two have only brightness &mdash; 18% of <span style="color:var(--fg-faint);">--fg</span> against 16% of <span style="color:var(--fg-faint);">--fg-faint</span>, with <span style="color:var(--fg-faint);">--fg</span> against <span style="color:var(--fg-faint);">--fg-muted</span> as labels. <b style="color:var(--fg);font-weight:600;">This is the same class of claim R4 shipped unmeasured</b>, so it is a probe and not a ruling. Mitigation if it fails: the two never share a count &mdash; <span style="color:var(--fg-faint);">0 / 99</span> against <span style="color:var(--fg-faint);">99 / 99</span>, at opposite ends of a deck&rsquo;s life.</div>
+            <div><b style="color:var(--fg);font-weight:600;">2 &middot; all six themes.</b> <span style="color:var(--fg-faint);">--fg</span> is declared by all six, but its distance from <span style="color:var(--fg-faint);">--fg-faint</span> is not constant &mdash; First Frost has the narrowest neutral ramp in the set. Probe 1 runs there first.</div>
+            <div><b style="color:var(--fg);font-weight:600;">3 &middot; the contact sheet catches this, not a review.</b> <span style="color:var(--fg-faint);">deck-state-marks.json</span> becomes <span style="color:var(--fg-faint);">deck-statuses.json</span> and asserts seven plates, not two marks.</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div id="4a" style="display:flex;flex-direction:column;gap:22px;width:1320px;opacity:0.72;padding-bottom:38px;margin-bottom:8px;border-bottom:1px solid var(--border-strong);">
 
     <div style="display:flex;align-items:baseline;gap:14px;flex-wrap:wrap;">
       <span style="display:flex;width:max-content;align-items:center;height:22px;padding:0 9px;border-radius:6px;border:1px solid var(--accent);background:color-mix(in srgb, var(--accent) 18%, var(--bg));color:var(--accent);font-size:11px;letter-spacing:0.06em;">4a</span>
       <h1 style="margin:0;font-family:Fraunces,serif;font-weight:700;font-size:26px;color:var(--fg);">A filled chip is a deck. A hollow chip is a plan.</h1>
-      <span style="font-size:11px;color:var(--fg-locked);letter-spacing:0.08em;">R4 &middot; the axis you actually wanted &mdash; <a href="#3a">3a</a>&rsquo;s edge becomes the secondary mark</span>
+      <span style="font-size:11px;color:var(--fg-locked);letter-spacing:0.08em;">R4 &middot; shipped 2026-09-18, <span style="color:var(--danger);">retired by <a href="#5a">5a</a> the next day &mdash; both marks are wordless, and the hollow plate measured ~39 near-neutral units against Building</span></span>
     </div>
 
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;">

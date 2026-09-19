@@ -1,3 +1,9 @@
+> **SUPERSEDED 2026-09-19 by R5** — `README-r5.md` and `STATES-to-build.md` in this folder.
+> Both deck-state marks described below (the hollow plate, the 2px `--fg` edge) shipped on
+> 2026-09-18 and were retired the next day: they were the only wordless signals in the deck list,
+> and the plate measured ~39 near-neutral units against `Building`. The state they signalled is now
+> a seventh status value, **`To build`**. Kept as the record of what was decided and why.
+
 # The deck-state marks — states, per surface
 
 *R4. TWO marks, two axes, one box. The **plate** says whether the deck has a v1 at all (tinted = a
