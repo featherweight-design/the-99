@@ -22,6 +22,8 @@ import {
   ADD_RESULTS,
   CARDS,
   CONTESTED_RESERVATION,
+  CREATE_COMMANDERS,
+  REVIEW_IN_ROWS,
   DECK_FOLDERS,
   GAME_SUMMARY,
   RESUME_DECKS,
@@ -60,6 +62,9 @@ import { QuickAddBar } from "../decks/quick-add-bar";
 import { GameLogForm } from "../decks/game-log-form";
 import { GameFindings } from "../decks/games-panel";
 import { ProxyControl } from "../decks/proxy-control";
+import { Column } from "../decks/review-changes";
+import { CreatePicker } from "../decks/create-picker";
+import { deckVersioningCopy } from "../../lib/copy/deck-versioning";
 import { ProxyTag } from "../decks/proxy-tag";
 import { ResumeDecks } from "../home/resume-decks";
 import { ShelfLine } from "../decks/shelf-line";
@@ -1230,6 +1235,80 @@ export function ProxiesFigureBody() {
           onSaved={() => {}}
         />
       </div>
+    </div>
+  );
+}
+
+/**
+ * `review-and-commit` — the review page's `Coming in` column.
+ *
+ * `Column` is exported for this. The route is ~1,100 lines and every
+ * chapter-03 figure that tried to draw a whole one was cropped; this column is
+ * the slice carrying what no other route has — the four-bucket breakdown,
+ * `Pull it`, and both pull guards.
+ *
+ * `claimsKnown` is true, deliberately. False is the degraded reading where the
+ * claim query failed, every bucket goes null and no row can draw a control —
+ * which is a real state and the wrong one to teach here.
+ *
+ * `contested` is empty and `onRestore` is null: the chooser belongs to the
+ * contested rows, which `reservations` draws, and a column of adds has nothing
+ * to put back.
+ */
+export function ReviewAndCommitFigureBody() {
+  return (
+    <CardDetailProvider fetchCard={async () => null}>
+      <Column
+        deckId="about-figure"
+        columnKey="in"
+        // The figure draws ONE column where the route draws a pair, so
+        // `phoneHeading` is true: it tells the column that no segmented control
+        // is naming the direction above it and the heading has to. The
+        // description id ties the column to the caption a reader tabbing
+        // straight into it would otherwise never meet.
+        descriptionId="about-review-in"
+        hiddenOnPhone={false}
+        phoneHeading
+        heading={deckVersioningCopy.review.groupIn(9)}
+        headingTone="var(--success)"
+        note={deckVersioningCopy.review.groupInBreakdown(5, 3, 1)}
+        rows={REVIEW_IN_ROWS}
+        contested={[]}
+        siblings={[]}
+        claimsKnown
+        newestAsOf={PRICES[0].fact.asOf}
+        onPulled={() => {}}
+        onRestore={null}
+        restoreErrors={{}}
+      />
+    </CardDetailProvider>
+  );
+}
+
+/**
+ * `new-deck` — the commander picker.
+ *
+ * Design's R5 picks the PICKER over the pre-filled door, and the argument is
+ * the one that decided it: the pre-filled door is the same act with the list
+ * already answered, reached by having chosen on a surface chapter 02 covers.
+ * An entry drawn on it would teach the shortcut and leave the front door
+ * undocumented; drawn on the picker, the shortcut is one caption clause.
+ */
+export function NewDeckFigureBody() {
+  return (
+    // CONTAINED, for the reason the export figure is: the picker's phone
+    // layout pins its selection dock with `position: fixed`, which resolves
+    // against the VIEWPORT and so escaped the figure — it painted at the
+    // window's full width, 16px past the frame, and sat over the app's own tab
+    // bar. A `transform` on an ancestor makes that ancestor the containing
+    // block for fixed descendants, so the dock lands at the foot of the figure
+    // where the route puts it at the foot of the page.
+    //
+    // Desktop needs none of this — the dock is phone-only and the two-column
+    // arrangement is in flow — so the height is phone-only too and desktop
+    // sizes to its content.
+    <div className="relative h-[680px] overflow-hidden [transform:translateZ(0)] md:h-auto md:transform-none">
+      <CreatePicker legalCommanders={CREATE_COMMANDERS} />
     </div>
   );
 }

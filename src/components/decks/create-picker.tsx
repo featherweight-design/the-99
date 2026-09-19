@@ -273,7 +273,7 @@ export function CreatePicker(props: CreatePickerProps) {
         // successful create painted "Failed to create deck" for the frame or
         // two the navigation took.
         unstable_rethrow(err);
-        setError("Failed to create deck. Try again.");
+        setError(addPanelCopy.createPicker.failed);
         // Released only on failure: success navigates away, and reopening the
         // door mid-navigation is what this guard exists to prevent.
         inFlight.current = false;
@@ -283,7 +283,7 @@ export function CreatePicker(props: CreatePickerProps) {
 
   // "Name & create →" used to point at a name field the dock itself carried.
   // The field is in the flow now, so the label is just the action (CV:267).
-  const submitLabel = isImport ? copy.submit : isPending ? "Creating…" : "Create deck →";
+  const submitLabel = isImport ? copy.submit : isPending ? addPanelCopy.createPicker.submitPending : addPanelCopy.createPicker.submit;
 
   return (
     <section>
@@ -305,8 +305,8 @@ export function CreatePicker(props: CreatePickerProps) {
             copy.heading
           ) : (
             <>
-              <span className="md:hidden">Pick a commander</span>
-              <span className="hidden md:inline">New deck</span>
+              <span className="md:hidden">{addPanelCopy.createPicker.titlePhone}</span>
+              <span className="hidden md:inline">{addPanelCopy.createPicker.titleDesktop}</span>
             </>
           )}
         </h1>
@@ -327,7 +327,7 @@ export function CreatePicker(props: CreatePickerProps) {
                   carries only the scope the title cannot. */}
               <span className="md:hidden">From your collection.</span>
               <span className="hidden md:inline" style={{ color: "var(--fg-muted)" }}>
-                Choose a commander from your collection.
+                {addPanelCopy.createPicker.sub}
               </span>
             </>
           )}
@@ -372,7 +372,7 @@ export function CreatePicker(props: CreatePickerProps) {
               className="text-[14px] md:text-[15px]"
               value={query}
               onChange={(e) => setQuery(e.target.value)}
-              placeholder="Search commanders…"
+              placeholder={addPanelCopy.createPicker.searchPlaceholder}
               aria-label="Search commanders"
               trailing={
                 /* §Search input — results count (desktop only) */
@@ -417,7 +417,7 @@ export function CreatePicker(props: CreatePickerProps) {
               value={deckName}
               onChange={(e) => setDeckName(e.target.value)}
               maxLength={DECK_NAME_MAX}
-              placeholder="Deck name…"
+              placeholder={addPanelCopy.createPicker.namePlaceholder}
               disabled={isPending}
               aria-label={isImport ? undefined : "Deck name"}
               // 16px on mobile: anything smaller makes iOS Safari zoom the field.
@@ -684,7 +684,7 @@ export function CreatePicker(props: CreatePickerProps) {
                   value={deckName}
                   onChange={(e) => setDeckName(e.target.value)}
                   maxLength={DECK_NAME_MAX}
-                  placeholder="Deck name…"
+                  placeholder={addPanelCopy.createPicker.namePlaceholder}
                   disabled={isPending}
                   aria-label={isImport ? undefined : "Deck name"}
                   className="block w-full p-[11px_13px] text-[14px] mb-[16px]"
@@ -715,7 +715,7 @@ export function CreatePicker(props: CreatePickerProps) {
             disabled={!canCreate || isPending}
             className="w-full text-[15px] transition-opacity disabled:opacity-40 py-[13px] px-0 min-h-[44px]"
           >
-            {isImport ? copy.submit : isPending ? "Creating…" : "Create deck →"}
+            {isImport ? copy.submit : isPending ? addPanelCopy.createPicker.submitPending : addPanelCopy.createPicker.submit}
           </PrimaryButton>
         </div>
 
