@@ -771,6 +771,23 @@ export async function listDecksWithStats(
      * that does not draw the figure does not buy it.
      */
     includeDeckState?: boolean;
+    /**
+     * Whether each row's commander art and name come from the printing the
+     * player owns rather than from the oracle-level catalog. Off by default,
+     * and `/decks/[id]` is the caller that leaves it off for the third time on
+     * this list: it calls this for a deck-name list, draws no commander art at
+     * all, and would otherwise pay a collection-and-printings aggregation over
+     * every deck the player has on every builder load.
+     *
+     * `/` and `/decks` both pass it, because both DRAW that art — the resume
+     * row's portrait and the tile's wash — and a commander drawn from a
+     * printing the player does not own is the defect this option exists to
+     * carry the fix for.
+     *
+     * With it off a row keeps `cards.image_uri` and `cards.art_crop_uri` and a
+     * null `commanderPrintedName`, which is what every row carried before.
+     */
+    includeCommanderArt?: boolean;
   } = {},
 ): Promise<DeckListItem[]> {
   const ownedCountSql = sql<number>`coalesce(
@@ -970,10 +987,9 @@ export async function listDecksWithStats(
   // in another printing drew art that is not on the card in the box. One query for
   // the whole grid, and fail-soft: an unresolved commander keeps the oracle art,
   // which is what every tile drew before this.
-  const ownedCommanders = await resolveOwnedPrintings(
-    userId,
-    rows.map((r) => r.commanderOracleId),
-  );
+  const ownedCommanders = opts.includeCommanderArt && rows.length > 0
+    ? await resolveOwnedPrintings(userId, rows.map((r) => r.commanderOracleId))
+    : new Map<string, OwnedPrinting>();
 
   return rows.map((row) => {
     const proxies = proxiedByDeck.get(row.id);

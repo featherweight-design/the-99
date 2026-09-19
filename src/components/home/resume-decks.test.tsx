@@ -118,6 +118,25 @@ describe("resumeDecks", () => {
 });
 
 describe("ResumeDecks", () => {
+  // The resume row's portrait is the owned printing's art, so its caption follows the
+  // same rule the tile and the spine do.
+  it("captions the row with the name printed on the copy the player owns", () => {
+    render(
+      <ResumeDecks
+        decks={[deck({
+          commanderName: "Iroas, God of Victory",
+          commanderPrintedName: "Freya, Queen of the Valkyries",
+        })]}
+        shopping={rollup()}
+        total={1}
+        now={NOW}
+      />,
+    );
+
+    expect(screen.getByText(/Freya, Queen of the Valkyries/)).toBeTruthy();
+    expect(screen.queryByText(/Iroas, God of Victory/)).toBeNull();
+  });
+
   it("gives the art its own column and starts type clear of it", () => {
     const { container } = render(<ResumeDecks decks={[deck()]} shopping={rollup()} total={1} now={NOW} />);
     const row = container.querySelector("a");

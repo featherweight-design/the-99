@@ -45,6 +45,9 @@ export default async function DecksPage({
       // the pending edge for one whose draft has moved, and the change figure
       // in the detail row.
       includeDeckState: true,
+      // The tile's wash IS the commander's art, so this surface pays for the
+      // copy the player owns rather than drawing another printing's.
+      includeCommanderArt: true,
     }),
     // The tile's To buy figure reads its copies and its cost from the same
     // roll-up, so the count and the price always cover the same cards.

@@ -107,6 +107,24 @@ describe("filterDecks", () => {
     const kept = filterDecks(decks, { ...EMPTY_FILTERS, search: "  kRenKo " }, NOW);
     expect(kept.map((d) => d.id)).toEqual(["a", "b"]);
   });
+
+  // The tile captions itself with the printed name, so the search box has to find it —
+  // and the oracle name still has to work, because that is what a player who knows the
+  // card types.
+  it("matches a renamed commander by either name", () => {
+    const decks = [
+      deck({
+        id: "sld",
+        name: "Valkyrie beats",
+        commanderName: "Iroas, God of Victory",
+        commanderPrintedName: "Freya, Queen of the Valkyries",
+      }),
+    ];
+    expect(filterDecks(decks, { ...EMPTY_FILTERS, search: "freya" }, NOW).map((d) => d.id))
+      .toEqual(["sld"]);
+    expect(filterDecks(decks, { ...EMPTY_FILTERS, search: "iroas" }, NOW).map((d) => d.id))
+      .toEqual(["sld"]);
+  });
   // A pair deck's colour is the UNION. The tile, both deck-header spines and the
   // rail all word it that way, so a filter reading the primary's identity alone
   // hid a deck from the very colour its own tile claimed.

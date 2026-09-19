@@ -100,13 +100,21 @@ const pickLegend = async (opts: { notOracleId?: string; cropless?: boolean } = {
   return rows[0];
 };
 
-/** A legend with no collection row of its own, for the unowned fallback. */
-const pickUnownedLegend = async () => {
+/**
+ * A legend with no collection row of its own, for the unowned fallback.
+ *
+ * The two cards the fixture is about to OWN are excluded by id. They sort from the other
+ * end, so the overlap does not happen today — and if it ever did, `own()` would make this
+ * deck's commander owned and all four fallback assertions would quietly exercise the owned
+ * path instead, which is a probe reporting a pass about a check it never ran.
+ */
+const pickUnownedLegend = async (owned: string[]) => {
   const { rows } = await fixture.execute<{
     oracle_id: string; image_uri: string | null; art_crop_uri: string | null;
   }>(sql`
     select oracle_id, image_uri, art_crop_uri from cards
     where type_line ~ 'Legendary Creature' and commander_legal and image_uri is not null
+      and oracle_id not in (${sql.join(owned.map((id) => sql`${id}::uuid`), sql`, `)})
     order by oracle_id desc limit 1
   `);
   if (!rows[0]) throw new Error("catalog holds no legend — seed it first");
@@ -133,24 +141,27 @@ const makeDeck = async (name: string, commander: string, partner: string | null)
 };
 
 async function run() {
-  // Captured BEFORE anything is written to it. A cleanup handle populated after its write
-  // cannot restore a row a throw interrupted, and this one is a shared catalog row.
+  // Captured BEFORE anything is written to it, and INSIDE the try that restores it. A
+  // cleanup handle populated after its write cannot restore a row a throw interrupted,
+  // and a write outside the try can commit and then be stranded by a failure on the very
+  // next statement — which on this one row would leave a sentinel URL on a real printing
+  // in a shared catalog.
   let cropRestore: { scryfallId: string; previous: string | null } | null = null;
 
-  const commander = await pickLegend();
-  const partner = await pickLegend({ notOracleId: commander.oracle_id, cropless: true });
-  const unowned = await pickUnownedLegend();
-
-  const { rows: before } = await fixture.execute<{ art_crop_uri: string | null }>(sql`
-    select art_crop_uri from printings where scryfall_id = ${commander.scryfall_id}::uuid
-  `);
-  cropRestore = { scryfallId: commander.scryfall_id, previous: before[0]?.art_crop_uri ?? null };
-  await fixture.execute(sql`
-    update printings set art_crop_uri = ${SENTINEL_CROP}
-    where scryfall_id = ${commander.scryfall_id}::uuid
-  `);
-
   try {
+    const commander = await pickLegend();
+    const partner = await pickLegend({ notOracleId: commander.oracle_id, cropless: true });
+    const unowned = await pickUnownedLegend([commander.oracle_id, partner.oracle_id]);
+
+    const { rows: before } = await fixture.execute<{ art_crop_uri: string | null }>(sql`
+      select art_crop_uri from printings where scryfall_id = ${commander.scryfall_id}::uuid
+    `);
+    cropRestore = { scryfallId: commander.scryfall_id, previous: before[0]?.art_crop_uri ?? null };
+    await fixture.execute(sql`
+      update printings set art_crop_uri = ${SENTINEL_CROP}
+      where scryfall_id = ${commander.scryfall_id}::uuid
+    `);
+
     await own(commander);
     await own(partner);
     const pairId = await makeDeck("probe pair", commander.oracle_id, partner.oracle_id);
@@ -172,8 +183,8 @@ async function run() {
     check("deck page: a printing with no crop of its own falls back to the oracle's",
       detail?.partner?.artCropUri, partner.card_crop);
 
-    // TWO. The grid, through its own query.
-    const list = await listDecksWithStats(USER, DEFAULT_DECK_SORT);
+    // TWO. The grid, through its own query, and only where the caller asks for it.
+    const list = await listDecksWithStats(USER, DEFAULT_DECK_SORT, { includeCommanderArt: true });
     const pairTile = list.find((d) => d.id === pairId);
     check("deck tile: commander front is the owned printing's",
       pairTile?.commanderImageUri, commander.printing_image);
@@ -192,6 +203,19 @@ async function run() {
       unownedTile?.commanderImageUri, unowned.image_uri);
     check("deck tile: an unowned commander keeps the oracle crop",
       unownedTile?.commanderArtCropUri, unowned.art_crop_uri);
+
+    // FOUR. The option is a real gate, not decoration. `/decks/[id]` calls this loader for
+    // a deck-name list and draws no commander art, so it must not pay the aggregation —
+    // and a default that silently resolved anyway would make the option a lie that costs
+    // a query per deck on every builder load.
+    const names = await listDecksWithStats(USER, DEFAULT_DECK_SORT);
+    const namesPair = names.find((d) => d.id === pairId);
+    check("names-only caller: commander front stays oracle-level",
+      namesPair?.commanderImageUri, commander.card_image);
+    check("names-only caller: commander crop stays oracle-level",
+      namesPair?.commanderArtCropUri, commander.card_crop);
+    check("names-only caller: no printed name is resolved",
+      namesPair?.commanderPrintedName, null);
   } finally {
     await fixture.execute(sql`delete from decks where user_id = ${USER}`);
     await fixture.execute(sql`delete from collection_items where user_id = ${USER}`);
