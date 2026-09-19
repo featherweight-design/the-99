@@ -252,10 +252,10 @@ describe("quickAdd.rowAria", () => {
         "Cyclonic Rift",
         "Instant",
         true,
-        "no free copies; this one is on your Atraxa list",
+        "no free copies; this one is in your Atraxa deck",
       ),
     ).toBe(
-      "Cyclonic Rift, Instant, owned, no free copies; this one is on your Atraxa list",
+      "Cyclonic Rift, Instant, owned, no free copies; this one is in your Atraxa deck",
     );
   });
 });

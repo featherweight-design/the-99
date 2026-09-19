@@ -428,7 +428,7 @@ describe("the resolution row's availability marker", () => {
     return waitFor(() => expect(screen.getAllByRole("option").length).toBeGreaterThan(0));
   };
 
-  it("claims a card another finished deck already holds", async () => {
+  it("claims a card another committed deck already holds", async () => {
     await mount(result({ name: "Rhystic Study", availability: claimed(["Atraxa"]) }));
 
     // Both widths are drawn, so the marker is in the DOM twice.

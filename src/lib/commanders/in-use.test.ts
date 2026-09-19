@@ -31,7 +31,7 @@ const soft = avail({ soft: 1 });
 const korvold = [{ oracleId: "korvold", colorIdentity: [] }];
 
 describe("receiptCountsByCommander", () => {
-  it("counts the fitting cards a finished deck has sleeved", () => {
+  it("counts the fitting cards a committed deck has sleeved", () => {
     const m = receiptCountsByCommander(korvold, [card("a"), card("b")], new Map([["a", hard]]));
     expect(m.get("korvold")).toEqual({ inUse: 1, wantedByBrew: 0 });
   });

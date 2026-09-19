@@ -111,7 +111,7 @@ Severity comes from `statusPill()` (`src/lib/decks/status.ts:15-24`, cited RM:21
 | 1.5 | Default / **off** the deck's own decklist — `/collection`, `/commanders`, commander detail, card detail | `free = owned − hard` | CV:48 callout, qualified RD2:105–110 |
 | 1.6 | **On** a deck's own decklist, and in the add panel opened from that deck | `free = (owned − ownClaim) − (hard − ownHardClaim)` | A2RM:141–172, RD2:47–76 |
 
-Self-exclusion (A2RM:141–172, RD2:47–76): on a deck's own decklist the marker scores against **every deck except that one**, excluding the current deck's copies from **supply as well as claims**. Consequence to enumerate as a rule: **the `hard` state is unreachable inside a finished deck.** A genuine conflict there presents as over-committed. It was drawn as `marker.overAlsoIn` — `short 1 — also in Kykar` (CP:49–51) — and on the decklist row itself is now count-only, `marker.over` (see the 4.6 / 4.10 amendment, #354); the surfaces that keep the named form are listed there. RD2:94–103 extends self-exclusion to the **add panel** via a `deckId` parameter on `searchCards`; the canvases never draw this, and it is required anyway.
+Self-exclusion (A2RM:141–172, RD2:47–76): on a deck's own decklist the marker scores against **every deck except that one**, excluding the current deck's copies from **supply as well as claims**. Consequence to enumerate as a rule: **the `hard` state is unreachable inside a committed deck.** A genuine conflict there presents as over-committed. It was drawn as `marker.overAlsoIn` — `short 1 — also in Kykar` (CP:49–51) — and on the decklist row itself is now count-only, `marker.over` (see the 4.6 / 4.10 amendment, #354); the surfaces that keep the named form are listed there. RD2:94–103 extends self-exclusion to the **add panel** via a `deckId` parameter on `searchCards`; the canvases never draw this, and it is required anyway.
 
 ### 1.2 Copy — exact strings, quoted not paraphrased
 
@@ -122,13 +122,13 @@ Self-exclusion (A2RM:141–172, RD2:47–76): on a deck's own decklist the marke
 | 1.9 | `marker.hard` | `0 free` | CP:38 |
 | 1.10 | `marker.hardIn` | `0 free — in ${deckName}` | CP:39 |
 | 1.11 | `marker.hardMulti` | `0 free — across ${deckCount} decks` | CP:40 |
-| 1.12 | `marker.hardAria` | `no free copies; this one is on your ${deckName} list` | CP:41 |
-| 1.13 | `marker.hardMultiAria` | `no free copies; they are on ${deckCount} of your finished lists` | CP:42–43 |
+| 1.12 | `marker.hardAria` | `no free copies; this one is in your ${deckName} deck` | CP:41 |
+| 1.13 | `marker.hardMultiAria` | `no free copies; they are on ${deckCount} of your committed decks` | CP:42–43 |
 | 1.14 | `marker.over` | `short ${shortBy}` | CP:46 |
 | 1.15 | `marker.overWithDemand` | `short ${shortBy} — ${deckCount} decks want it` | CP:47 |
-| 1.16 | `marker.overAria` | `${deckCount} of your finished lists include this card and you own ${shortBy} too few` | CP:48 |
+| 1.16 | `marker.overAria` | `${deckCount} of your committed decks include this card and you own ${shortBy} too few` | CP:48 |
 | 1.17 | `marker.overAlsoIn` | `short ${shortBy} — also in ${otherDeck}` | CP:49 |
-| 1.18 | `marker.overAlsoInAria` | `your ${otherDeck} list also includes this card and you don’t own enough for both` | CP:50–51 |
+| 1.18 | `marker.overAlsoInAria` | `your ${otherDeck} deck also includes this card and you don’t own enough for both` | CP:50–51 |
 | 1.19 | `marker.tileInUse` | `in use — ${deckName}` | CP:54 |
 | 1.20 | `marker.tileOver` | `${deckCount} decks want it` | CP:55 |
 | 1.21 | `quantity.joiner` | ` · ` (space, middot, space) | CP:144–146 |
@@ -195,7 +195,7 @@ Self-exclusion applies here (§1.1). Three of five rows in the canvas carry no m
 |---|---|---|---|---|
 | 4.7 | **Silent (free)** | `(owned − ownClaim) − (hard − ownHardClaim) > 0`, no soft | nothing rendered | RM:79–84 |
 | 4.8 | Soft | a sub-99 deck other than this one claims a copy | hollow glyph + `N in a draft` | RM:85–96 |
-| 4.9 | Hard | **unreachable inside a finished deck** — self-exclusion removes this deck's own claim | — | A2RM:141–172, RD2:47–76 |
+| 4.9 | Hard | **unreachable inside a committed deck** — self-exclusion removes this deck's own claim | — | A2RM:141–172, RD2:47–76 |
 | 4.10 | Over-committed | supply short after exclusion | doubled red glyph + `short N`, container border `var(--avail-over-border)`. Spoken as `marker.overAriaCountOnly` | RM:98–118, CP:46, **amended #354**, **erratum 2026-09-16** |
 | 4.11 | Not owned | `owned === 0` | nothing — the guard precedes the states | RM:221–225 |
 
@@ -262,7 +262,7 @@ this amendment's.
 > already describing keys that reached no screen. And free mode now decides which
 > commanders the lane LISTS as well as which cards it scores against, so the
 > label was renamed to `Build from`: a commander whose own card is sleeved into a
-> finished deck is no longer shown under `Free cards only`. Rows 7.1 to 7.3, 7.5,
+> committed deck is no longer shown under `Free cards only`. Rows 7.1 to 7.3, 7.5,
 > 7.6 and 7.14 carry the shipped segment NAMES. Row 7.14's treatment is a
 > separate matter and is marked below: the disabled-and-struck segment it calls
 > for has never shipped. The five dead
@@ -391,7 +391,7 @@ One region, **max two lines**, **red above muted, always** — the order is fixe
 | 12.6 | Soft heading | shipped heading | `#C6B79A` | — | — | `deckRollup.softHeading`, or **`softHeadingAfterOver`** when the red line is also present | CP:237–252, A2RM:111–139 |
 | 12.7 | Soft body — desktop | shipped body | `#C6B79A` | — | — | `deckRollup.softBody` (long form) | A2CV:552–562 |
 | 12.8 | Soft body — phone | shipped body | `#C6B79A` | — | — | `deckRollup.softBodyShort` | A2CV:496–509 |
-| 12.9 | Deck summary strip copy | shipped | shipped | — | — | `deckSummary.body(cardName, deckCount, ownedQty)` — `… is on ${deckCount} finished lists and you own ${ownedQty === 1 ? 'one' : ownedQty}. Nothing’s broken here — it’s a shopping decision.` | CP:130–138 |
+| 12.9 | Deck summary strip copy | shipped | shipped | — | — | `deckSummary.body(cardName, deckCount, ownedQty)` — `… is on ${deckCount} committed decks and you own ${ownedQty === 1 ? 'one' : ownedQty}. Nothing’s broken here — it’s a shopping decision.` | CP:130–138 |
 | 12.10 | Deck index | — | — | — | — | **nothing renders** | RM:98–118, A2RM:111–139 |
 
 ### 12.1 Named states
@@ -445,7 +445,7 @@ One region, **max two lines**, **red above muted, always** — the order is fixe
 
 **Row count: 9 elements.**
 
-**14.8 exists because commit status is not possession.** Four finished lists each reading
+**14.8 exists because commit status is not possession.** Four committed decks each reading
 `holds 1` against a single owned copy told the reader three lists hold a card that is in the
 fourth one's box. The figures were right throughout — `short N` counted correctly — but nothing
 on the block said which list the copy goes to, which is the question a reader with three decks
@@ -519,10 +519,10 @@ Every accessible name quoted verbatim from `availability · copy strings.ts`.
 | # | Context | Accessible name | Source |
 |---|---|---|---|
 | 17.1 | Soft marker | `1 copy is on a draft` / `${softQty} copies are on drafts` | CP:32–35 |
-| 17.2 | Hard marker, one deck | `no free copies; this one is on your ${deckName} list` | CP:41 |
-| 17.3 | Hard marker, many decks | `no free copies; they are on ${deckCount} of your finished lists` | CP:42–43 |
-| 17.4 | Over marker | `${deckCount} of your finished lists include this card and you own ${shortBy} too few` | CP:48 |
-| 17.5 | Over, own decklist | `your ${otherDeck} list also includes this card and you don’t own enough for both` | CP:50–51 |
+| 17.2 | Hard marker, one deck | `no free copies; this one is in your ${deckName} deck` | CP:41 |
+| 17.3 | Hard marker, many decks | `no free copies; they are on ${deckCount} of your committed decks` | CP:42–43 |
+| 17.4 | Over marker | `${deckCount} of your committed decks include this card and you own ${shortBy} too few` | CP:48 |
+| 17.5 | Over, own decklist | `your ${otherDeck} deck also includes this card and you don’t own enough for both` | CP:50–51 |
 | 17.6 | Ranking, default | the segment's visible label, `commandersCopy.availability.all`. `ranking.allAria` was deleted with the rename (§7 errata) — the control labels each radio with the word on it rather than a second sentence | CP:66–85 |
 | 17.7 | Ranking, free | likewise `commandersCopy.availability.free`, at BOTH widths: the 32px rack segment shortens its visible text to `freeShort`, and the announced name stays the long form | CP:66–85 |
 | 17.8 | Ranking announce | `ranking.announce(mode, n)` | CP:81–84 |

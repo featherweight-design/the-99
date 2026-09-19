@@ -600,7 +600,7 @@ rendered surfaces.
 | Role chip, not owned | — | not drawn; role lists are owned cards only | — |
 | Role chip, owned free | `availabilityState` reads `free` — a spare copy remains, whatever else claims one. `owned 4 · hard 3 · free 1` is this row, not the next | desktop `CoverageChip` 6px dot: `--success` fill, `color-mix(--success 40%, --bg)` border. Phone `CoverageRow` 7px dot: `--success` fill, `1px --border`. **No marker** | `availability` reading `free`, or null |
 | Role chip, soft or hard | a draft wants a copy, or no copy is free | dot **unchanged** — `--success` at every reading, because severity moved to the marker. Count-only `AvailabilityMarker density="row" nameless`, joined to the name at 6px: mono 10.5/600/0.02em on the chip, 11.5 on the phone row. Borders unchanged | `availability` reading `soft` or `hard` |
-| Role chip, over | finished decks want more copies than exist | as above, plus the **only** border tint: `color-mix(--danger 40%, --bg)` on both geometries | `availability` reading `over` |
+| Role chip, over | committed decks want more copies than exist | as above, plus the **only** border tint: `color-mix(--danger 40%, --bg)` on both geometries | `availability` reading `over` |
 | Synergy row, not owned | not in the collection | hollow 7px dot, `1px` stroke `--fg-locked` — shipped, untouched | `owned: false` |
 | Synergy row, owned free | owned, not in a deck | 7px dot `--success` fill | `owned: true`, `committed: false` |
 | Synergy row, owned committed | owned and in ≥1 deck | 7px dot `--avail-hard-fg` fill | `committed: true` |

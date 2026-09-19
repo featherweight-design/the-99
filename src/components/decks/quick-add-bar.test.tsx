@@ -413,7 +413,7 @@ describe("QuickAddBar — availability marker", () => {
     claims: hardDeckNames.map((n, i) => ({ id: `d${i + 1}`, name: n, quantity: 1, mature: true, pending: false, commander: false })),
   });
 
-  it("claims an off-list card another finished deck already holds", async () => {
+  it("claims an off-list card another committed deck already holds", async () => {
     searchCards.mockResolvedValue([{ ...rhystic, availability: claimed(["Atraxa"]) }]);
     mount();
     await search();

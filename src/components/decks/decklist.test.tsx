@@ -570,7 +570,7 @@ describe("Shopping row figure rendering differs by width", () => {
 // The whole amendment rests on one claim: a deck with no contested card renders
 // exactly what it renders today. Everything else is additive.
 
-/** Owned, and every copy already sleeved into a finished list elsewhere.
+/** Owned, and every copy already sleeved into a committed deck elsewhere.
  *  `free < 0` is what `availabilityState(..., { selfExcluded: true })` reads as
  *  `over`; it is NOT recomputable from `owned - hard` on a deck's own list. */
 function spokenForCard(overrides: Partial<DeckDetailCard> & { oracleId: string; name: string }) {

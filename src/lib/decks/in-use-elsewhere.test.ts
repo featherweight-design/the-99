@@ -11,14 +11,14 @@ function card(over: Partial<Availability> = {}): Availability {
 }
 
 describe("inUseElsewhereByDeck", () => {
-  it("counts a card a different finished deck has sleeved", () => {
+  it("counts a card a different committed deck has sleeved", () => {
     const counts = inUseElsewhereByDeck([
       card({ claims: [claim("a", false), claim("b", true)] }),
     ]);
     expect(counts.get("a")).toBe(1);
   });
 
-  it("counts the finished deck too — its card is spoken for by the other one", () => {
+  it("counts the committed deck too — its card is spoken for by the other one", () => {
     const counts = inUseElsewhereByDeck([
       card({ claims: [claim("a", true), claim("b", true)] }),
     ]);
@@ -59,7 +59,7 @@ describe("inUseElsewhereByDeck", () => {
     expect(counts.size).toBe(0);
   });
 
-  it("counts every claimant once two finished decks are in play", () => {
+  it("counts every claimant once two committed decks are in play", () => {
     const counts = inUseElsewhereByDeck([
       card({ claims: [claim("a", false), claim("b", true), claim("c", true)] }),
     ]);

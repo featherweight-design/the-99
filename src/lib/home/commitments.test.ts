@@ -12,7 +12,7 @@ const card = (a: Partial<Availability>): Availability => ({
 });
 
 describe("commitmentFigures", () => {
-  it("counts copies claimed by finished decks, not cards", () => {
+  it("counts copies claimed by committed decks, not cards", () => {
     // Two cards, one holding four hard copies — `Cards in use` is a copy count,
     // because its denominator is the collection's total copies.
     expect(
@@ -25,7 +25,7 @@ describe("commitmentFigures", () => {
     expect(commitmentFigures([card({ owned: 3, hard: 0, soft: 3, free: 3 })]).inUse).toBe(0);
   });
 
-  it("counts every card whose finished decks want more copies than exist", () => {
+  it("counts every card whose committed decks want more copies than exist", () => {
     expect(
       commitmentFigures([
         card({ owned: 1, hard: 2, free: -1 }),
