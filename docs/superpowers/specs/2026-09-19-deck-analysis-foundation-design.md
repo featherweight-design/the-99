@@ -316,11 +316,13 @@ Commander Spellbook holds all three. Verified live on 2026-09-19:
   which is how the ingest filters to commander-legal variants rather than storing all of
   them.
 
-**Decision: ingest locally, do not call per deck.**
+**Decision: resolve everything at ingest time, never during a page render.**
 
-A page render must not depend on a third party's uptime or a shared 80 req/min budget, and
-the response is enormous — every card carries six image URLs. Ingesting matches how this repo
-already treats Scryfall and ManaPool, and makes slotting a local SQL question.
+A page render must not depend on a third party's uptime or a shared 80 req/min budget, and the
+per-deck response is enormous — every card carries six image URLs. Both halves below therefore
+run in a scheduled job and write local tables, so slotting is a SQL question. This matches how
+the repo already treats Scryfall and ManaPool. Note the sweep in §4.2 *does* call their API —
+at ingest, 54 times a week, not once per reader.
 
 **The template gap, and the better path found in the second pass.** `/templates/` exposes
 `scryfallQuery` for most templates but **`Mass Land Denial` (id 89) returns `null`** — the
@@ -465,21 +467,29 @@ cached and a combo the ingest newly learned must retire them.
 A contract check in the daily `Upstream contract checks` workflow, beside `check:scryfall`
 and `check:manapool`. No database.
 
-Four assertions, and the last two are the ones that earn it:
+Five assertions, and the last two are the ones that earn it:
 
 1. The bulk index is reachable and `last-modified` is within 8 days.
-2. The first entry carries every field §4.3 projects.
-3. `BracketTagEnum` still has the seven members the check constraint encodes — an added tag
+2. The first bulk entry carries every field §4.3 projects.
+3. **The sweep's response shape holds**: a small `POST /estimate-bracket` still returns a
+   `cards` array whose entries carry `massLandDenial`, `extraTurn`, `gameChanger` and `banned`.
+   The sweep is now a first-class source (§4.2) and an upstream rename there would silently
+   zero every card flag — the same class of failure as a missing bulk field, and it needs the
+   same daily canary.
+4. `BracketTagEnum` still has the seven members the check constraint encodes — an added tag
    would otherwise fail every insert after the next upstream release.
-4. **The classification still works, proved two ways**, because a single form misses a
-   failure the other catches:
+5. **The named anchors still classify** — `Armageddon`, `Ravages of War`, `Jokulhaups`,
+   `Time Warp`, `Temporal Manipulation`, asserted through a live sweep call. This catches a
+   drift that keeps the counts healthy while the classification quietly changes meaning.
 
-   - a **derived floor** — the ingest classifies at least N cards as mass land denial and M as
-     extra-turn, with N and M taken from the first clean run and committed. This catches a
-     collapse: an upstream restructure that leaves the classifier matching nothing.
-   - a small set of **named anchors** — `Armageddon`, `Ravages of War`, `Jokulhaups`,
-     `Time Warp`, `Temporal Manipulation`. This catches a drift that keeps the count healthy
-     while the classification quietly changes meaning, which the floor alone cannot see.
+   **The other half of the ruling lives in the ingest, not here.** A *derived floor* — the run
+   classifies at least N cards as mass land denial and M as extra-turn, N and M taken from the
+   first clean run and committed — catches a collapse the anchors cannot: an upstream
+   restructure that leaves the classifier matching almost nothing while the five anchors happen
+   to survive. That check reads the run's own output, so it belongs to the job and **refuses to
+   publish** below the floor, exactly as the printings ingest refuses to publish denominators
+   from a run that skipped orphans. It cannot live in this contract check, which touches no
+   database.
 
    **The tension with §4.1 is real and the distinction is deliberate.** §4.1 forbids
    transcribing the Game Changers list because it is consumed as *data*, and a transcribed
@@ -488,7 +498,7 @@ Four assertions, and the last two are the ones that earn it:
    than a stale copy to refresh — and if a card legitimately leaves the index, the check
    failing is the correct outcome, not a false alarm.
 
-Per `run the guard's failure path before trusting it`, each of the four is run against a
+Per `run the guard's failure path before trusting it`, each of the five is run against a
 mutated fixture before the check is believed.
 
 ---
