@@ -8,6 +8,7 @@ import { loadShoppingRollup } from "../lib/decks/shopping-rollup";
 import { commitmentFigures, type Commitments } from "../lib/home/commitments";
 import { getCollectionLastUpdated, getCollectionStats } from "../lib/home/summary";
 import { getRankedList } from "../lib/recs/ranked-list";
+import { withOwnedCardArt } from "../lib/collection/owned-printings";
 import { readySlice } from "../lib/recs/ready-to-build";
 import { loadCollectionPool } from "../lib/recs/recommend";
 import { FirstRunChecklist } from "../components/home/first-run";
@@ -130,7 +131,12 @@ export default async function HomePage() {
   // figure stamped today. Read here rather than inside the slice because a helper
   // reading the clock itself could not be tested.
   const now = new Date();
-  const ready = readySlice(ranked.items, { userId, now });
+  // The slice FIRST, then the printings — nine rows rather than every commander the
+  // player could build. `getRankedList` deliberately does not resolve art itself: this
+  // page draws two of its rows on the desktop hero and the rest never reach a screen,
+  // and the lookup is a join over `collection_items × printings × sets`.
+  const slice = readySlice(ranked.items, { userId, now });
+  const ready = { ...slice, shown: await withOwnedCardArt(userId, slice.shown) };
 
   // One availability read between the in-use clause and the Commitments card.
   // Fail soft, the same way src/app/commanders/page.tsx does: losing

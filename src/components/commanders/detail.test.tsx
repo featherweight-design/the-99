@@ -100,6 +100,47 @@ describe("CommanderDetail synergy states", () => {
   });
 });
 
+// The page is the row's own link target: a row captioned with the copy the reader owns
+// must not lead to a head carrying the oracle name. `queryByText` over the whole render
+// covers every site that draws the name — the head and both widths of `FitHero` — which
+// is what makes the second case meaningful: it is the same sweep asserting the oracle
+// name IS drawn when no printed one was supplied.
+describe("CommanderDetail · a renamed copy", () => {
+  it("heads the page with the name printed on the card", () => {
+    render(
+      <CommanderDetail
+        commander={commander({
+          name: "Iroas, God of Victory",
+          printedName: "Freya, Queen of the Valkyries",
+        })}
+        rank={1}
+        isBestFit
+        synergyCards={noSynergyCards}
+        newestAsOf={null}
+        avail="all"
+      />,
+    );
+
+    expect(screen.getAllByText(/Freya, Queen of the Valkyries/).length).toBeGreaterThan(0);
+    expect(screen.queryByText(/Iroas, God of Victory/)).toBeNull();
+  });
+
+  it("keeps the oracle name for a commander the reader does not own", () => {
+    render(
+      <CommanderDetail
+        commander={commander()}
+        rank={1}
+        isBestFit
+        synergyCards={noSynergyCards}
+        newestAsOf={null}
+        avail="all"
+      />,
+    );
+
+    expect(screen.getAllByText(/Krenko, Mob Boss/).length).toBeGreaterThan(0);
+  });
+});
+
 describe("CommanderDetail fit hero", () => {
   // The figure and the ceiling beside it are one claim. A commander EDHREC does not
   // index is scored out of 40, and printing that 32 beside "/100" is the fabricated

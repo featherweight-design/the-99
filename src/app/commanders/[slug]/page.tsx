@@ -4,6 +4,7 @@ import { scoreOneCommander } from "../../../lib/recs/recommend";
 import { loadFreePool, rankFree } from "../../../lib/recs/free-ranking";
 import type { PoolCard } from "../../../lib/recs/score";
 import { resolveCommanderSlug } from "../../../lib/discovery/resolve-slug";
+import { withOwnedCardArt } from "../../../lib/collection/owned-printings";
 import { getRankedList } from "../../../lib/recs/ranked-list";
 import { CommanderDetail } from "../../../components/commanders/detail";
 import { readCommanderProse } from "../../../lib/prose/read";
@@ -77,8 +78,17 @@ export default async function CommanderDetailPage({
     }
   }
 
-  const commander = await scoreOneCommander(userId, found.oracleId, slug, pool);
-  if (!commander) notFound();
+  const scored = await scoreOneCommander(userId, found.oracleId, slug, pool);
+  if (!scored) notFound();
+  // The head of this page is the row's own link target, so it draws what the row drew: a
+  // row captioned with the copy the reader owns leading to a page headed with the oracle
+  // name and another printing's art is the mismatch, arriving one click later. ONE oracle
+  // id, so the lookup is a single-row read rather than the lane's whole list.
+  //
+  // The page's card ROWS — Role Coverage and the synergy panel — are deliberately not
+  // enriched: they are hundreds of rows per commander, mixed owned and unowned, and were
+  // ruled out of this round's scope.
+  const [commander] = await withOwnedCardArt(userId, [scored]);
 
   // Derive the oracle ids of owned cards that Role Coverage already covers.
   // Exclusion rule: an owned card drawn in any role list does not appear in the

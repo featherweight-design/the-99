@@ -16,6 +16,9 @@ vi.mock("../decks/availability-query", () => ({ loadAvailability: vi.fn() }));
 vi.mock("../recs/free-ranking", () => ({ rankFree: vi.fn() }));
 vi.mock("../edhrec/support-read", () => ({ loadSupportMeta: vi.fn() }));
 vi.mock("../discovery/novelty", () => ({ loadPlayedTags: vi.fn() }));
+// The owned-printing enrichment, which the lane applies itself: `getRankedList` is shared
+// with callers that draw no card at all, so the join belongs at the draw, not in it.
+vi.mock("../collection/owned-printings", () => ({ withOwnedCardArt: vi.fn() }));
 
 import { commanderRankingsKey, loadCommanderRankings } from "./rankings";
 import { discoveryKey } from "../discovery/list";
@@ -25,6 +28,7 @@ import { loadAvailability } from "../decks/availability-query";
 import { rankFree } from "../recs/free-ranking";
 import { loadSupportMeta } from "../edhrec/support-read";
 import { loadPlayedTags } from "../discovery/novelty";
+import { withOwnedCardArt } from "../collection/owned-printings";
 
 const item = (oracleId: string, over: Record<string, unknown> = {}) => ({
   oracleId, slug: oracleId, name: oracleId.toUpperCase(),
@@ -54,6 +58,8 @@ describe("loadCommanderRankings · the row's four joined fields", () => {
       { deckName: "Zur", colorIdentity: ["W"], slugs: new Set(["blink"]) },
     ]);
     vi.mocked(loadSupportMeta).mockResolvedValue(new Map());
+    // Pass-through by default, so every case above reads what it always did.
+    vi.mocked(withOwnedCardArt).mockImplementation(async (_userId, rows) => rows);
   });
 
   it("carries the sentence, the deck count and the gap slot off the metadata", async () => {
@@ -164,9 +170,51 @@ describe("loadCommanderRankings · the row's four joined fields", () => {
 // noticed and resolved as v7 — rather than both releases sharing a key, which
 // would have served every reader whose entry #702 wrote a payload with no
 // sentence, no gap slot and no headline figure.
+// The lane draws every row, so it pays for the printings itself — and it has to pay
+// BEFORE the free ranking, or the two modes disagree about the art.
+describe("loadCommanderRankings · the owned printing", () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    vi.mocked(getRankedList).mockResolvedValue({
+      items: [item("a"), item("b")],
+      degraded: false, uniqueCardsRead: 10, candidateCount: 2,
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    } as any);
+    vi.mocked(loadCollectionPool).mockResolvedValue({ collection: [] as never[] } as never);
+    vi.mocked(loadAvailability).mockResolvedValue(new Map());
+    vi.mocked(rankFree).mockResolvedValue({ ok: false } as never);
+    vi.mocked(loadPlayedTags).mockResolvedValue([]);
+    vi.mocked(loadSupportMeta).mockResolvedValue(new Map());
+    vi.mocked(withOwnedCardArt).mockImplementation(async (_userId, rows) =>
+      rows.map((r) => ({ ...r, imageUri: "owned.jpg", printedName: "Freya" })),
+    );
+  });
+
+  it("enriches the rows it is about to draw", async () => {
+    const { items } = await loadCommanderRankings("user_1");
+
+    expect(items.map((i) => i.imageUri)).toEqual(["owned.jpg", "owned.jpg"]);
+    expect(items[0].printedName).toBe("Freya");
+  });
+
+  // `rankFree` rebuilds its rows out of the collection pool, whose art is oracle-level,
+  // and `toFreeDelta` diffs field by field — so handing it the UNenriched list would send
+  // `imageUri` back as changed and the free-mode flip would repaint the oracle art under
+  // the owned printing's name.
+  it("hands the free ranking the enriched list, not the raw one", async () => {
+    vi.mocked(rankFree).mockResolvedValue({ ok: true, items: [] } as never);
+
+    await loadCommanderRankings("user_1");
+
+    const [, canonical] = vi.mocked(rankFree).mock.calls[0];
+    expect((canonical as { imageUri: string | null }[]).every((c) => c.imageUri === "owned.jpg"))
+      .toBe(true);
+  });
+});
+
 describe("the list caches' payload versions", () => {
   it("pins both, so a pair bumped half-way fails", () => {
-    expect(commanderRankingsKey).toEqual(["commander-rankings", "v9"]);
+    expect(commanderRankingsKey).toEqual(["commander-rankings", "v10"]);
     expect(discoveryKey("fit")).toEqual(["discovery", "fit", "v7"]);
   });
 

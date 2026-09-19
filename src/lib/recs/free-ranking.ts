@@ -102,6 +102,36 @@ export function carryCanonicalSlugs<T extends { oracleId: string }>(
 }
 
 /**
+ * CARRIED from canonical, never recomputed — the same rule as slugs and `synergyState`
+ * above, and load-bearing for the same reason those are.
+ *
+ * A row's art is the printing the player owns, which is a fact about their collection and
+ * not about which pool it was scored against: it is identical in both modes. But this
+ * function rebuilds its rows out of `loadCollectionPool`, whose `imageUri` and
+ * `artCropUri` are ORACLE-level — so without this the free rows differ from canonical in
+ * exactly those two fields, `toFreeDelta` reports them as changed, and pressing
+ * `Free only` repaints every row with the oracle art while the owned printing's NAME
+ * stays (the key is absent from a free row, so it is never diffed). One printing's name
+ * over another's picture, which is the defect this whole line of work exists to end.
+ */
+function carryCanonicalArt(
+  items: CommanderListItem[],
+  canonical: CommanderListItem[],
+): CommanderListItem[] {
+  const byOracleId = new Map(canonical.map((c) => [c.oracleId, c]));
+  return items.map((i) => {
+    const canon = byOracleId.get(i.oracleId);
+    if (!canon) return i;
+    return {
+      ...i,
+      imageUri: canon.imageUri,
+      artCropUri: canon.artCropUri,
+      printedName: canon.printedName,
+    };
+  });
+}
+
+/**
  * Ranks the candidate set against the free pool, narrowed to the commanders the
  * player could actually build from today.
  *
@@ -253,5 +283,5 @@ export async function rankFree(
   scored.sort(byScoreThenOracleId);
 
   const ranked: RankedCommander[] = carryCanonicalSlugs(scored, canonical);
-  return { items: ranked.map(toListItem), ok: true };
+  return { items: carryCanonicalArt(ranked.map(toListItem), canonical), ok: true };
 }

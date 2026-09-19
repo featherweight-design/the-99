@@ -373,6 +373,22 @@ describe("CommandersView zero states", () => {
     expect(screen.queryByText("No commander by that name")).toBeNull();
   });
 
+  // The sentence offers to bring a named row BACK, so it has to name it the way the row
+  // is captioned. Every other name read in this file moved to the drawn one; this is the
+  // one that reaches a zero state, where no row is on screen to correct it.
+  it("names the recoverable row by the name its row draws", () => {
+    const [row, ...rest] = results(3, ["R"]);
+    view([
+      { ...row, name: "Iroas, God of Victory", printedName: "Freya, Queen of the Valkyries" },
+      ...rest,
+    ]);
+    fireEvent.click(screen.getByRole("switch", { name: "Blue" }));
+    noRows();
+
+    expect(screen.getByText(/Freya, Queen of the Valkyries/)).toBeInTheDocument();
+    expect(screen.queryByText(/Iroas, God of Victory/)).toBeNull();
+  });
+
   it("shows no zero state when nothing narrowed the lane", () => {
     view(results(0));
     expect(screen.queryByText("Nothing in the pile matches")).toBeNull();

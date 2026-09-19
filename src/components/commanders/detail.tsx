@@ -14,6 +14,7 @@ import { availabilityCopy } from "../../lib/copy/availability";
 import { FitLegend, type FitLegendSegment } from "./fit-legend";
 import { WhySection } from "./why-section";
 import { FullCardTrigger } from "./full-card-trigger";
+import { commanderDisplayName } from "../../lib/collection/owned-printings";
 import { IdentityPips } from "./commander-art";
 import { ArtWash, COVER_INK_SHADOW } from "../ui/art-wash";
 import { CARD_ART_RING } from "../ui/commander-thumb";
@@ -35,7 +36,14 @@ import { PRIMARY } from "../ui/button";
 // ─── Fit Hero (right column top section) ─────────────────────────────────────
 
 type FitHeroProps = {
-  commander: RankedCommander;
+  // `printedName` widens `RankedCommander` rather than being added to it: the scorer never
+  // produces one — the page applies it through `withOwnedCardArt` after the fact.
+  //
+  // DOCUMENTARY, not load-bearing: `commanderDisplayName` takes an optional field, so it
+  // typechecks against a `RankedCommander` and reads the property at runtime either way.
+  // Written down so the next reader knows the object can carry it, rather than being
+  // surprised by a name that has no declaration behind it.
+  commander: RankedCommander & { printedName?: string | null };
   rank: number;
   isBestFit: boolean;
   avail: "all" | "free";
@@ -376,7 +384,7 @@ export function CommanderDetail({
                 overflow: "hidden",
               }}
             >
-              {c.name}
+              {commanderDisplayName(c)}
             </h1>
             <IdentityPips colorIdentity={c.colorIdentity} size={10} />
           </div>
@@ -446,7 +454,7 @@ export function CommanderDetail({
               }}
             >
               Cards from your collection that fit within{" "}
-              {c.name}&apos;s color identity and could slot into the 99.
+              {commanderDisplayName(c)}&apos;s color identity and could slot into the 99.
             </p>
           </div>
         </div>
@@ -593,7 +601,7 @@ export function CommanderDetail({
               className="font-display font-[700] m-0"
               style={{ fontSize: 21, color: "var(--fg)", lineHeight: 1.15 }}
             >
-              {c.name}
+              {commanderDisplayName(c)}
             </h1>
             <p className="m-0" style={{ fontSize: 12.5, color: "var(--fg-body)" }}>
               {c.typeLine}
@@ -693,7 +701,7 @@ export function CommanderDetail({
               }}
             >
               Cards from your collection that fit within{" "}
-              {c.name}&apos;s color identity and could slot into the 99.
+              {commanderDisplayName(c)}&apos;s color identity and could slot into the 99.
             </p>
           </div>
 

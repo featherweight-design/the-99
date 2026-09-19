@@ -29,6 +29,13 @@ export type RankedCommander = CommanderScore & { slug: string; synergyState: Syn
  */
 export type CommanderDetailScore = RankedCommander & {
   committedSupport: { count: number; topDeck: string | null };
+  /**
+   * The name printed on the copy the player owns, where it differs. Applied by the page
+   * through `withOwnedCardArt`, not by the scorer — see the note at that call site.
+   * Absent for a commander they do not own, which on this page is an ordinary case:
+   * `/discover` links here too.
+   */
+  printedName?: string | null;
 };
 
 /**

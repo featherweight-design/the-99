@@ -126,6 +126,31 @@ describe("rankFree with preloaded reads", () => {
     artCropUri: null,
   });
 
+  // The art and the printed name are the player's COPY, which is the same copy in either
+  // mode — but this function rebuilds its rows out of the collection pool, whose art is
+  // oracle-level. Carried from canonical for the same reason the slug and `synergyState`
+  // are: without it `toFreeDelta` reports both as changed and the free flip repaints the
+  // oracle art under the owned printing's name.
+  it("carries canonical's art and printed name onto the free rows", async () => {
+    const commander = { ...card("a"), typeLine: "Legendary Creature" };
+    const canonical = {
+      ...item("a"),
+      imageUri: "owned.jpg",
+      artCropUri: "owned-crop.jpg",
+      printedName: "Freya, Queen of the Valkyries",
+    };
+
+    const out = await rankFree("user", [canonical], {
+      collection: [commander, card("b")],
+      availability: new Map([["b", avail(1, 1)]]),
+    });
+
+    expect(out.ok).toBe(true);
+    expect(out.items[0].imageUri).toBe("owned.jpg");
+    expect(out.items[0].artCropUri).toBe("owned-crop.jpg");
+    expect(out.items[0].printedName).toBe("Freya, Queen of the Valkyries");
+  });
+
   // The point of the parameter: `/commanders` has already made both reads for
   // the receipt clause, so the free path must not pay for them a second time.
   it("makes no reads of its own", async () => {

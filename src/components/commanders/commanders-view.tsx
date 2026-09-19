@@ -412,7 +412,9 @@ export function CommandersView({
     );
     if (best === null) return null;
     const back = ordered(returned.get(best.control) as typeof searched, params.order);
-    return { name: back[0].name, control: best.control, rows: best.rows };
+    // The DRAWN name: this sentence offers to bring a row back, and naming it by the
+    // oracle name would promise a commander no row on this lane is captioned with.
+    return { name: commanderDisplayName(back[0]), control: best.control, rows: best.rows };
   }, [colors, searched, params.match, params.order]);
 
   // The named correction, and only it: one pip goes out and every other control

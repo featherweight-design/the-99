@@ -12,6 +12,7 @@ import type { Availability } from "../decks/availability";
 import { loadAvailability } from "../decks/availability-query";
 import { toFreeDelta, type FreeRankingDelta } from "../recs/free-delta";
 import { rankFree } from "../recs/free-ranking";
+import { withOwnedCardArt } from "../collection/owned-printings";
 import { getRankedList } from "../recs/ranked-list";
 import { loadCollectionPool } from "../recs/recommend";
 import type { CommanderListItem } from "../recs/recommend";
@@ -125,19 +126,34 @@ export type CommanderRankings = {
  * comment gave: it shipped in #700, so a v7 entry HAS it. What changed is that
  * this lane stopped having a price to report on at all.
  *
+ * 10 is the owned printing's art and name on every row: a warm v9 entry holds the
+ * oracle-level `imageUri`, `artCropUri` and no `printedName`, and would go on being
+ * served to a reader who writes nothing for up to the hour ceiling.
+ *
  * 6 AND 7 ARE TWO RELEASES, not one renumbered. #702 took 6 while this branch
  * was in review and both had claimed it; taking 6 here would have left every
  * reader whose entry was written by #702 being served a payload with no
  * sentence, no gap slot and no headline figure, because the key would have
  * matched.
  */
-const PAYLOAD_VERSION = 9;
+const PAYLOAD_VERSION = 10;
 
 /** The cache key this payload is filed under, version included. */
 export const commanderRankingsKey = ["commander-rankings", `v${PAYLOAD_VERSION}`];
 
 export async function loadCommanderRankings(userId: string): Promise<CommanderRankings> {
-  const { items, degraded, uniqueCardsRead, candidateCount } = await getRankedList(userId);
+  const { items: ranked, degraded, uniqueCardsRead, candidateCount } = await getRankedList(userId);
+
+  // The art and the name from the copy the player owns, applied HERE rather than inside
+  // `getRankedList`: this lane draws every row, and three of that function's five callers
+  // draw none of them. See `withOwnedCardArt`.
+  //
+  // BEFORE the free ranking, which is what keeps the two modes agreeing. `rankFree` scores
+  // the same commanders out of `loadCollectionPool`, whose art is oracle-level, and
+  // `toFreeDelta` diffs field by field — so enriching after it would send `imageUri` and
+  // `artCropUri` as CHANGED and the free-mode flip would paint the oracle art back under
+  // the owned printing's name.
+  const items = await withOwnedCardArt(userId, ranked);
 
   // No candidates means the page draws its empty state, which reads none of
   // what follows. The pool query is the expensive one and is skipped rather

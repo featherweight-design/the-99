@@ -68,3 +68,43 @@ export async function resolveOwnedPrintings(
 export function commanderDisplayName(c: { name: string; printedName?: string | null }): string {
   return c.printedName ?? c.name;
 }
+
+/**
+ * The same rows back, each drawn from the copy the player owns.
+ *
+ * AN EXPLICIT STEP AT THE DRAW, never inside a shared loader. `getRankedList` has five
+ * callers and only two of them draw a card: the others resolve a slug, count a zero state,
+ * or feed a ranking. Putting this inside it made all five pay a
+ * `collection_items × printings × sets` join over every commander candidate — measured at
+ * 56-104ms warm and 718ms cold for 243 ids on the reference account — so Home paid for 243
+ * rows to draw nine. That is the same defect `includeCommanderArt` exists to prevent on
+ * `listDecksWithStats`, and it was caught here by review rather than by measurement.
+ *
+ * Call it with the rows about to be RENDERED, which on Home is the ready slice and not the
+ * whole ranking.
+ *
+ * Fail-soft through `resolveOwnedPrintings`: a failed lookup returns an empty map and every
+ * row keeps the oracle-level art it arrived with.
+ */
+export async function withOwnedCardArt<
+  T extends {
+    oracleId: string;
+    imageUri: string | null;
+    artCropUri: string | null;
+    printedName?: string | null;
+  },
+>(userId: string, rows: T[]): Promise<T[]> {
+  if (rows.length === 0) return rows;
+  const owned = await resolveOwnedPrintings(userId, rows.map((r) => r.oracleId));
+  if (owned.size === 0) return rows;
+  return rows.map((r) => {
+    const own = owned.get(r.oracleId);
+    if (!own) return r;
+    return {
+      ...r,
+      imageUri: own.imageUri ?? r.imageUri,
+      artCropUri: own.artCropUri ?? r.artCropUri,
+      printedName: own.printedName,
+    };
+  });
+}
