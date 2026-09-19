@@ -848,7 +848,7 @@ Package manager is **pnpm** (pinned via `packageManager` in package.json) — ne
   being the same press on a control nested in the tick's label. **The type word is drawn on
   desktop and absent on the phone**, whose row is two lines by design with no room for it.
 
-  **The card itself appears under the pointer.** The row borrows the decklist's
+  **The card itself appears under the pointer.** The row borrows the shared
   `HoverPreviewProvider` rather than drawing its own, so one instance owns the image, the
   geometry and the two delays rather than one per row — 262 candidates for the average
   commander, 423 at the widest, and more again for a PAIR, whose two support lists merge
@@ -882,6 +882,39 @@ Package manager is **pnpm** (pinned via `packageManager` in package.json) — ne
   static at both widths — it walks up to whatever is actually positioned instead.
 
   Makes no writes. Point it at `local-dev`, **never production**.
+
+- `pnpm probe:hover-preview` walks EVERY surface that draws a card preview — the decklist and
+  the top-off list — at 1300x900, and proves the box follows the pointer.
+
+  It used to be placed against the ROW it belonged to. That works while a row is about as wide
+  as the box and fails completely when it is not: a top-off row spans the whole list, so
+  "beside the row" could only resolve to "past its far edge" — flush right, over TYPE, COST,
+  the availability, SYNERGY and DECKS, which are exactly the figures a reader hovers a row to
+  compare, with several hundred pixels of empty row going unused. Following the pointer answers
+  that without any surface having to describe its own columns, and cannot cover what the reader
+  is pointing at.
+
+  **Both surfaces are walked rather than one, because the rule is shared.** That is precisely
+  why it is worth checking: a change to the provider reaches every consumer, and inheritance is
+  the thing to verify rather than assume.
+
+  Asserted as a RELATION to the cursor and never against a column's position — a
+  column-relative assertion would be a fact about one list's widths at one viewport. **The
+  pointer must stay inside a row throughout**, since leaving one closes the box, so "move to
+  the window's edge" is not available and the ROW's own right edge is what the flip is measured
+  at. That matters: with the pointer mid-row a box that never flips passes every other check,
+  and the mutation removing the flip was invisible until the pointer went somewhere it
+  mattered. The flip is asserted only where the geometry demands one — the decklist's rows are
+  narrow enough not to need it and the probe says so rather than failing a working build.
+
+  **The vertical clamp is deliberately NOT measured here.** Reaching it needs the pointer near
+  the window's foot and still inside a row, and both surfaces have furniture there — the commit
+  bar on one, the quick-add dock on the other — so the pointer lands on that and the box
+  closes. `hover-preview.test.tsx` pins the arithmetic instead, deterministically. A fragile
+  browser check over a solid unit one is the worse trade.
+
+  Two mutations fail it: the rows reporting no movement, and the edge flip removed. Makes no
+  writes; point it at `local-dev`.
 
 - `pnpm probe:scroll-lock` presses every overlay the app draws over a scrim — the filter
   sheets on `/collection`, `/commanders`, `/discover`, `/decks` and a set page, the

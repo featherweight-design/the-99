@@ -3,8 +3,6 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { HoverPreviewProvider, usePreviewRow } from "./hover-preview";
 
-const PANE = { top: 0, left: 0, right: 1200, bottom: 800, width: 1200, height: 800 };
-
 function rect(r: Partial<DOMRect> & { left: number; right: number; top: number; height: number }) {
   return { ...r, width: r.right - r.left, bottom: r.top + r.height } as DOMRect;
 }
@@ -45,11 +43,6 @@ function Row({
   );
 }
 
-function setPaneRect(pane: typeof PANE = PANE) {
-  const el = document.querySelector(".pane") as HTMLElement;
-  el.getBoundingClientRect = () => rect(pane);
-}
-
 function setHover(matches: boolean) {
   Object.defineProperty(window, "matchMedia", {
     writable: true,
@@ -70,29 +63,49 @@ function setHover(matches: boolean) {
 const ART = "https://cards.example/sol-ring.jpg";
 const ART_2 = "https://cards.example/arcane-signet.jpg";
 
-// A row in the left column: 252 + 14 of clear space to its left, so the box
-// opens leftward.
+// Any row: the box is placed against the POINTER now, so a row's own rect no
+// longer decides where it goes. Kept because `usePreviewRow` still measures
+// nothing and the harness still needs a box to stub.
 const LEFT_COLUMN = rect({ left: 400, right: 700, top: 300, height: 34 });
-// A row hard against the pane's left edge, which is what flips the box right.
-const NO_ROOM = rect({ left: 10, right: 300, top: 300, height: 34 });
 
 function preview() {
   return screen.queryByTestId("hover-preview");
+}
+
+const frames = { value: 0, queue: [] as FrameRequestCallback[] };
+
+/** Runs every frame the provider has asked for, in order. */
+function flushFrames() {
+  const due = frames.queue.splice(0, frames.queue.length);
+  act(() => {
+    for (const cb of due) cb(0);
+  });
 }
 
 describe("HoverPreviewProvider", () => {
   beforeEach(() => {
     vi.useFakeTimers();
     setHover(true);
+    frames.value = 0;
+    frames.queue = [];
+    // Stubbed rather than faked through the timer mock: these tests assert HOW
+    // MANY frames were asked for, which is the coalescing rule, and that count
+    // has to be observable.
+    vi.stubGlobal("requestAnimationFrame", (cb: FrameRequestCallback) => {
+      frames.value += 1;
+      frames.queue.push(cb);
+      return frames.value;
+    });
+    vi.stubGlobal("cancelAnimationFrame", () => {});
   });
 
   afterEach(() => {
     vi.useRealTimers();
+    vi.unstubAllGlobals();
   });
 
   it("waits 240ms before it opens", () => {
     render(<Harness rows={[{ name: "a", imageUri: ART, box: LEFT_COLUMN }]} />);
-    setPaneRect();
 
     fireEvent.mouseEnter(screen.getByTestId("a"));
     act(() => void vi.advanceTimersByTime(239));
@@ -104,7 +117,6 @@ describe("HoverPreviewProvider", () => {
 
   it("does not open when the pointer leaves inside the delay", () => {
     render(<Harness rows={[{ name: "a", imageUri: ART, box: LEFT_COLUMN }]} />);
-    setPaneRect();
 
     fireEvent.mouseEnter(screen.getByTestId("a"));
     act(() => void vi.advanceTimersByTime(200));
@@ -116,7 +128,6 @@ describe("HoverPreviewProvider", () => {
 
   it("closes 80ms after the pointer leaves", () => {
     render(<Harness rows={[{ name: "a", imageUri: ART, box: LEFT_COLUMN }]} />);
-    setPaneRect();
 
     fireEvent.mouseEnter(screen.getByTestId("a"));
     act(() => void vi.advanceTimersByTime(240));
@@ -138,7 +149,6 @@ describe("HoverPreviewProvider", () => {
         ]}
       />,
     );
-    setPaneRect();
 
     fireEvent.mouseEnter(screen.getByTestId("a"));
     act(() => void vi.advanceTimersByTime(240));
@@ -156,7 +166,6 @@ describe("HoverPreviewProvider", () => {
   it("stays shut on a device with no hover", () => {
     setHover(false);
     render(<Harness rows={[{ name: "a", imageUri: ART, box: LEFT_COLUMN }]} />);
-    setPaneRect();
 
     fireEvent.mouseEnter(screen.getByTestId("a"));
     act(() => void vi.advanceTimersByTime(1000));
@@ -166,7 +175,6 @@ describe("HoverPreviewProvider", () => {
 
   it("stays shut for a card with no art", () => {
     render(<Harness rows={[{ name: "a", imageUri: null, box: LEFT_COLUMN }]} />);
-    setPaneRect();
 
     fireEvent.mouseEnter(screen.getByTestId("a"));
     act(() => void vi.advanceTimersByTime(1000));
@@ -174,88 +182,94 @@ describe("HoverPreviewProvider", () => {
     expect(preview()).toBeNull();
   });
 
-  it("opens left of the row, centred on it", () => {
+  it("opens right of the pointer, vertically centred on it", () => {
     render(<Harness rows={[{ name: "a", imageUri: ART, box: LEFT_COLUMN }]} />);
-    setPaneRect();
 
-    fireEvent.mouseEnter(screen.getByTestId("a"));
+    fireEvent.mouseEnter(screen.getByTestId("a"), { clientX: 300, clientY: 400 });
     act(() => void vi.advanceTimersByTime(240));
 
-    // 400 − 14 − 252, and 300 + 17 − 176.
-    expect(preview()?.style.left).toBe("134px");
-    expect(preview()?.style.top).toBe("141px");
+    // 300 + 18, and 400 − 176.
+    expect(preview()?.style.left).toBe("318px");
+    expect(preview()?.style.top).toBe("224px");
   });
 
-  it("flips right when the row has no room to its left", () => {
-    render(<Harness rows={[{ name: "a", imageUri: ART, box: NO_ROOM }]} />);
-    setPaneRect();
+  it("flips left of the pointer at the window's right edge", () => {
+    // A fixed box is bounded by the WINDOW, not by the list: the pane stopped
+    // bounding it when the box started following the pointer.
+    render(<Harness rows={[{ name: "a", imageUri: ART, box: LEFT_COLUMN }]} />);
 
-    fireEvent.mouseEnter(screen.getByTestId("a"));
+    fireEvent.mouseEnter(screen.getByTestId("a"), { clientX: 1000, clientY: 400 });
     act(() => void vi.advanceTimersByTime(240));
 
-    // 300 + 14.
-    expect(preview()?.style.left).toBe("314px");
+    // 1018 + 252 + 8 is past 1024, so 1000 − 18 − 252.
+    expect(preview()?.style.left).toBe("730px");
   });
 
-  it("holds the box inside the pane at either end of the list", () => {
-    render(
-      <Harness
-        rows={[
-          { name: "top", imageUri: ART, box: rect({ left: 400, right: 700, top: 4, height: 34 }) },
-          {
-            name: "bottom",
-            imageUri: ART,
-            box: rect({ left: 400, right: 700, top: 780, height: 34 }),
-          },
-        ]}
-      />,
-    );
-    setPaneRect();
+  it("holds the box inside the window at either end", () => {
+    render(<Harness rows={[{ name: "a", imageUri: ART, box: LEFT_COLUMN }]} />);
 
-    fireEvent.mouseEnter(screen.getByTestId("top"));
+    fireEvent.mouseEnter(screen.getByTestId("a"), { clientX: 300, clientY: 10 });
     act(() => void vi.advanceTimersByTime(240));
-    expect(preview()?.style.top).toBe("0px");
+    expect(preview()?.style.top).toBe("8px");
 
-    fireEvent.mouseLeave(screen.getByTestId("top"));
-    fireEvent.mouseEnter(screen.getByTestId("bottom"));
-    act(() => void vi.advanceTimersByTime(0));
-    expect(preview()?.style.top).toBe("448px");
+    fireEvent.mouseMove(screen.getByTestId("a"), { clientX: 300, clientY: 760 });
+    flushFrames();
+    // 768 − 352 − 8.
+    expect(preview()?.style.top).toBe("408px");
   });
 
-  it("holds the right edge too, rather than flipping onto the panel", () => {
-    // A row with nothing to its left in a 500px pane: the flip is taken and
-    // then clamped, because 300 + 14 + 252 lands 66px past the pane's right.
-    render(<Harness rows={[{ name: "a", imageUri: ART, box: NO_ROOM }]} />);
-    setPaneRect({ ...PANE, right: 500, width: 500 });
+  it("follows the pointer while it is open", () => {
+    // The whole point: the box is beside what the reader is looking at, and
+    // never on top of it.
+    render(<Harness rows={[{ name: "a", imageUri: ART, box: LEFT_COLUMN }]} />);
 
-    fireEvent.mouseEnter(screen.getByTestId("a"));
+    fireEvent.mouseEnter(screen.getByTestId("a"), { clientX: 300, clientY: 400 });
     act(() => void vi.advanceTimersByTime(240));
+    expect(preview()?.style.left).toBe("318px");
 
-    // 500 − 252.
-    expect(preview()?.style.left).toBe("248px");
+    fireEvent.mouseMove(screen.getByTestId("a"), { clientX: 500, clientY: 300 });
+    flushFrames();
+
+    expect(preview()?.style.left).toBe("518px");
+    expect(preview()?.style.top).toBe("124px");
   });
 
-  it("keeps the near edge when the pane is smaller than the box", () => {
-    // A two-card group in a short window: 120px of pane against a 352px box.
-    // There is no placement that fits, and the one that must not happen is a
-    // top above the pane, which is where the deck bar is.
-    render(
-      <Harness
-        rows={[{ name: "a", imageUri: ART, box: rect({ left: 400, right: 700, top: 260, height: 34 }) }]}
-      />,
-    );
-    setPaneRect({ ...PANE, top: 240, bottom: 360, height: 120, left: 380, right: 560, width: 180 });
+  it("writes once per frame however often the pointer reports", () => {
+    // A pointer reports far more often than the screen refreshes, and each extra
+    // write is a layout the browser throws away — on a list that can run to
+    // hundreds of rows.
+    render(<Harness rows={[{ name: "a", imageUri: ART, box: LEFT_COLUMN }]} />);
 
-    fireEvent.mouseEnter(screen.getByTestId("a"));
+    fireEvent.mouseEnter(screen.getByTestId("a"), { clientX: 300, clientY: 400 });
     act(() => void vi.advanceTimersByTime(240));
 
-    expect(preview()?.style.top).toBe("240px");
-    expect(preview()?.style.left).toBe("380px");
+    frames.value = 0;
+    for (let i = 0; i < 20; i++) {
+      fireEvent.mouseMove(screen.getByTestId("a"), { clientX: 300 + i, clientY: 400 });
+    }
+    expect(frames.value).toBe(1);
+
+    flushFrames();
+    // The LAST position, not the first: the frame reads where the pointer is
+    // when it runs, not where it was when the frame was asked for.
+    expect(preview()?.style.left).toBe("337px");
   });
+
+  it("opens where the pointer IS, not where it entered", () => {
+    // A reader who sets off down the list during the 240ms does not want the box
+    // at the point they crossed the row's edge.
+    render(<Harness rows={[{ name: "a", imageUri: ART, box: LEFT_COLUMN }]} />);
+
+    fireEvent.mouseEnter(screen.getByTestId("a"), { clientX: 300, clientY: 400 });
+    fireEvent.mouseMove(screen.getByTestId("a"), { clientX: 600, clientY: 400 });
+    act(() => void vi.advanceTimersByTime(240));
+
+    expect(preview()?.style.left).toBe("618px");
+  });
+
 
   it("says nothing and shows nothing but the card", () => {
     render(<Harness rows={[{ name: "a", imageUri: ART, box: LEFT_COLUMN }]} />);
-    setPaneRect();
 
     fireEvent.mouseEnter(screen.getByTestId("a"));
     act(() => void vi.advanceTimersByTime(240));

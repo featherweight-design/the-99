@@ -320,14 +320,13 @@ async function run() {
         // but the box does not exist before it elapses. Read as a PAINTED
         // background image, because the markup is identical whether or not the
         // catalog had a picture for the card.
-        const preview = await page.evaluate(async () => {
-          const box = [...document.querySelectorAll('main [data-top-off-rows] input[type="checkbox"]')]
-            .find((b) => !b.checked);
-          const row = box?.closest("div[class*=rounded-]");
-          if (!row) return null;
-          row.dispatchEvent(new MouseEvent("mouseover", { bubbles: true }));
-          row.dispatchEvent(new MouseEvent("mouseenter", { bubbles: true }));
-          await new Promise((r) => setTimeout(r, 700));
+        // A REAL pointer, not a dispatched event. The box is placed from the
+        // event's own `clientX`/`clientY` now, and a synthetic `MouseEvent`
+        // carries 0,0 — so a dispatched hover parks it in the window's corner
+        // and reports a position belonging to nothing.
+        await page.locator('[data-probe-hover="1"]').first().hover();
+        await page.waitForTimeout(700);
+        const preview = await page.evaluate(() => {
           const pane = [...document.querySelectorAll("div")]
             .map((d) => ({ d, r: d.getBoundingClientRect() }))
             .find(({ d, r }) => Math.round(r.width) === 252 && Math.round(r.height) === 352
