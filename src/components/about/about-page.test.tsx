@@ -1,4 +1,4 @@
-import { act, fireEvent, render, screen, within } from "@testing-library/react";
+import { act, fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
 import { AboutPage } from "./about-page";
 import { ABOUT_VERSION, aboutCopy, aboutEntries } from "../../lib/copy/about";
@@ -27,7 +27,6 @@ import {
 import { setPageCopy } from "../../lib/copy/set-collections";
 import { PIP_ORDER } from "../../lib/copy/filter-chassis";
 import {
-  ADD_RESULTS,
   DECK_VERSIONS,
   SHOPPING_ROWS,
   CARDS,
@@ -516,29 +515,28 @@ describe("the figures", () => {
     expect(plate.textContent).not.toContain(viewToggleCopy.deck.card);
   });
 
-  it("draws the Add panel's own result rows", () => {
+  it("draws the Add panel: the field, the toggle, and rows under them", async () => {
     const { container } = render(<AboutPage seen={0} />);
     const plate = figures(container)["add-cards"];
 
-    // The ownership phrase, both branches, in the row's own words. The caption
-    // used to claim a DOT on every result and the figure drew one; the panel
-    // draws neither — it states copies in text — so both strings are read off
-    // the copy layer rather than described here.
-    expect(plate.textContent).toContain(addPanelCopy.quickAdd.rowOwned(2));
+    // The caption's first clause, which the rows-only figure left with nothing
+    // to point at: search what you own or all of Magic.
+    expect(plate.querySelector("input")).not.toBeNull();
+    expect(plate.textContent).toContain(addPanelCopy.quickAdd.ownedToggle);
+
+    // The rows arrive through `useCardSearch`, which DEBOUNCES — so a
+    // synchronous assertion here reads the empty list and passes only while
+    // the figure draws no panel at all. Awaited, not flushed with a timer:
+    // the resolver is a promise too, and a fake-timer flush would run the
+    // debounce and then assert before it settled.
+    await waitFor(() => {
+      expect(plate.textContent).toContain(addPanelCopy.quickAdd.rowOwned(2));
+    });
     expect(plate.textContent).toContain(addPanelCopy.quickAdd.rowNotOwned);
 
     // The caption's second sentence, which the retired figure did not draw at
     // all: a card a committed deck is holding still adds, carrying the mark.
-    expect(plate.textContent).toContain(
-      availabilityCopy.marker.hard,
-    );
-
-    // And it is still an addable row rather than a refusal — the affordance is
-    // drawn on every row including that one.
-    const adds = [...plate.querySelectorAll("span")].filter(
-      (el) => el.textContent?.trim() === addPanelCopy.quickAdd.rowAddActive,
-    );
-    expect(adds.length, "the add affordance drew nothing").toBe(ADD_RESULTS.length);
+    expect(plate.textContent).toContain(availabilityCopy.marker.hard);
   });
 
   it("draws a spent slot between two live rows", () => {
@@ -583,6 +581,15 @@ describe("the figures", () => {
     // under its form, which is why mounting it says more than naming its
     // labels did.
     expect(plate.textContent).toContain(deckImportCopy.entry.aboutFailureHeading);
+
+    // And NOT the route's page furniture. `compact` drops the heading and the
+    // subtitle, which the entry above the figure already says in its own
+    // words — at full size this figure measured 1000px, taller than the
+    // viewport, and drew this route's title a second time directly under the
+    // entry's own. A mutation restoring them scored nothing until this clause
+    // existed.
+    expect(plate.textContent).not.toContain(deckImportCopy.entry.heading);
+    expect(plate.textContent).not.toContain(deckImportCopy.entry.sub);
 
     // And there is no third mode. R4's note on this entry says a link mode
     // "does not exist and is not being built", and the retired figure could

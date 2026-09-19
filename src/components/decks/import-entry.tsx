@@ -67,7 +67,17 @@ function formatBytes(bytes: number): string {
   return `${bytes} byte${bytes === 1 ? "" : "s"}`;
 }
 
-export function ImportEntry() {
+/**
+ * `compact` draws the door without its page furniture: no heading, no
+ * subtitle, and a paste box at four lines instead of three hundred pixels.
+ *
+ * `/about` is the only caller. Its entry already carries this route's title
+ * and its sentence, so the heading and subtitle arrive as a second copy of
+ * both — and an empty 300px paste target conveys nothing a figure needs while
+ * taking more height than the viewport has. The route itself never passes it:
+ * on `/decks/import` the heading names the page and the box is a real target.
+ */
+export function ImportEntry({ compact = false }: { compact?: boolean } = {}) {
   const router = useRouter();
   const [mode, setMode] = useState<ImportMode>("paste");
   const [pasteText, setPasteText] = useState("");
@@ -234,14 +244,24 @@ export function ImportEntry() {
   }
 
   return (
-    <div className="p-[16px_18px_24px] md:mx-auto md:w-full md:max-w-[760px] md:p-[44px_48px]">
-      <h2 className="font-display font-bold text-[20px] md:text-[28px] m-0 text-[color:var(--fg)]">
-        {copy.entry.heading}
-      </h2>
-      <p className="mt-[3px] md:mt-[4px] font-mono text-[10px] text-[color:var(--fg-faint)] md:font-sans md:text-[14px] md:text-[color:var(--fg-muted)]">
-        <span className="md:hidden">{copy.entry.subMobile}</span>
-        <span className="hidden md:inline">{copy.entry.sub}</span>
-      </p>
+    <div
+      className={
+        compact
+          ? "w-full"
+          : "p-[16px_18px_24px] md:mx-auto md:w-full md:max-w-[760px] md:p-[44px_48px]"
+      }
+    >
+      {!compact && (
+        <>
+          <h2 className="font-display font-bold text-[20px] md:text-[28px] m-0 text-[color:var(--fg)]">
+            {copy.entry.heading}
+          </h2>
+          <p className="mt-[3px] md:mt-[4px] font-mono text-[10px] text-[color:var(--fg-faint)] md:font-sans md:text-[14px] md:text-[color:var(--fg-muted)]">
+            <span className="md:hidden">{copy.entry.subMobile}</span>
+            <span className="hidden md:inline">{copy.entry.sub}</span>
+          </p>
+        </>
+      )}
 
       <div
         role="group"
@@ -286,7 +306,7 @@ export function ImportEntry() {
             maxLength={PASTE_MAX_BYTES}
             placeholder={copy.entry.pastePlaceholder}
             aria-describedby={failure ? "import-failure" : undefined}
-            className="h-[300px] w-full rounded-lg p-[14px_16px] font-mono text-[16px] md:text-[13px] resize-none bg-[color:var(--surface-sunken)] border border-solid border-[color:var(--border-strong)] text-[color:var(--fg-body)] caret-[color:var(--accent)] placeholder:text-[color:var(--fg-faint)]"
+            className={`${compact ? "h-[92px]" : "h-[300px]"} w-full rounded-lg p-[14px_16px] font-mono text-[16px] md:text-[13px] resize-none bg-[color:var(--surface-sunken)] border border-solid border-[color:var(--border-strong)] text-[color:var(--fg-body)] caret-[color:var(--accent)] placeholder:text-[color:var(--fg-faint)]`}
           />
         </div>
       ) : (

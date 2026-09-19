@@ -1041,8 +1041,8 @@ export const ROLE_MIX_CARDS: DeckDetailCard[] = (
  * `add-cards` — three Add-panel search results, one per reading the caption
  * makes.
  *
- * The figure mounts `CardSearchRowBody`, the component the quick-add list
- * draws each result with, so every field here is one that component reads.
+ * The figure mounts `QuickAddBar` with `search` returning this list, so every
+ * field here is one the panel's row actually reads.
  *
  * The third row is the caption's whole second sentence: a card a COMMITTED
  * deck is holding. `AVAILABILITY[2]` is the hard claim — one copy owned, one

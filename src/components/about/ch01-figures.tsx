@@ -47,12 +47,11 @@ import { COST_PIP_SIZE, CostPips } from "../ui/cost-pips";
 import { TwoFacedMark } from "../cards/two-faced-mark";
 import { LastSlotsStrip } from "../decks/last-slots-strip";
 import { DecklistRow } from "../decks/decklist-row";
-import { CardSearchRowBody } from "../decks/card-search-row";
+import { QuickAddBar } from "../decks/quick-add-bar";
 import { PendingChangeProvider } from "../decks/pending-change";
 import { ImportEntry } from "../decks/import-entry";
 import { ExportDialog } from "../decks/export-dialog";
 import { VersionRail } from "../decks/version-history";
-import { addPanelCopy } from "../../lib/copy/decks-builder";
 import { RoleCounterStrip } from "../decks/role-counter-strip";
 import { GroupToggle } from "../decks/group-toggle";
 import { ContestedCardRow } from "../decks/contested-card-row";
@@ -722,63 +721,43 @@ export function DecklistOrderFigureBody() {
 }
 
 /**
- * `add-cards` — three real quick-add result rows.
+ * `add-cards` — the Add panel itself.
  *
- * The figure drew two names with a dot beside each and a sentence saying the
- * dot is on every result. The Add panel's row says considerably more than
- * that, and the caption's second clause — a card another committed deck is
- * holding still adds, carrying the mark that says so — was not drawn at all.
+ * The figure drew the panel's RESULT ROWS and nothing else, which left the
+ * caption's first clause — search what you own or all of Magic — with nothing
+ * to point at. `QuickAddBar` is the whole panel: the field, the
+ * owned-only toggle, and the list under them.
  *
- * `CardSearchRowBody` is the component the list draws each result with, so
- * this composes that rather than redrawing a row. What surrounds it here is
- * the option shell `QuickAddRow` gives it: the same box, border and padding.
- * `QuickAddBar` itself is not mounted, because its rows come from
- * `useCardSearch` reaching a server action — with no query it draws a search
- * field and no results, which is the one thing this entry is about.
+ * It could not simply be mounted, because its rows come from `useCardSearch`
+ * reaching a server action and that hook asks nothing under two characters —
+ * so the bar drew a field over an empty list. Two props fix that and both
+ * default to what every real mounting wants: `initialQuery` seeds the field,
+ * and `search` takes the resolver. The second is the same shape and the same
+ * reason as `CardDetailProvider`'s `fetchCard`, which this file already uses
+ * three times over.
  *
- * `ownership` is composed the way the real row composes it, from the same two
- * keys, so a rename reaches the figure.
- *
- * `selfExcluded` is false on every row: it means "the figures behind this
- * marker were read from a vantage that dropped a claim of ours", and none of
- * these rows is in the deck. Setting it would silence the hard claim on the
- * third row, which is the row the entry exists for.
+ * The three rows are unchanged and still carry the caption's second sentence:
+ * one owned, one not, and one a committed deck is holding — which still adds,
+ * arriving with the mark that says so.
  */
 export function AddCardsFigureBody() {
   return (
-    <ul className="m-0 flex list-none flex-col gap-[6px] p-0">
-      {ADD_RESULTS.map((result) => (
-        <li
-          key={result.oracleId}
-          className="flex min-h-[56px] flex-col rounded-[9px] px-[10px] py-[8px] md:min-h-[52px] md:px-[12px]"
-          style={{ background: "var(--surface)", border: "1px solid var(--border)" }}
-        >
-          <CardSearchRowBody
-            result={result}
-            query=""
-            ownership={
-              result.owned
-                ? addPanelCopy.quickAdd.rowOwned(result.ownedQty)
-                : addPanelCopy.quickAdd.rowNotOwned
-            }
-            dim={false}
-            seam="var(--surface)"
-            nameClassName="flex-1 min-w-0 md:flex-none md:w-[210px] flex flex-col"
-            trailing={
-              <span
-                aria-hidden
-                className="flex-none text-right font-mono text-[10px] text-[color:var(--accent)] md:w-[56px] md:text-[11px]"
-              >
-                <span className="md:hidden">↵</span>
-                <span className="hidden md:inline">
-                  {addPanelCopy.quickAdd.rowAddActive}
-                </span>
-              </span>
-            }
-          />
-        </li>
-      ))}
-    </ul>
+    <QuickAddBar
+      deckId="about-figure"
+      commanderIdentity={["W", "U"]}
+      deckOracleIds={[]}
+      commanderShortName={DECK_SPINE.deck.commander.name.split(",")[0]}
+      commanderOracleId={DECK_SPINE.deck.commander.oracleId}
+      // Two characters is `useCardSearch`'s own floor for asking anything, so
+      // a bar taking the default draws a field over an empty list — which is
+      // the one thing this entry is not about.
+      initialQuery="so"
+      // The resolver, rather than the server action. Same shape and same
+      // reason as `CardDetailProvider`'s `fetchCard`: a reference page has no
+      // business reaching a server action, and these three rows are chosen to
+      // say what the caption says.
+      search={async () => ADD_RESULTS}
+    />
   );
 }
 
@@ -837,12 +816,18 @@ export function UndoRemovalFigureBody() {
  * takes no props, and it is what `/decks/import` renders — so the entry can
  * show its own door rather than a list of the words on it.
  *
+ * `compact` drops the route's page furniture — its heading and subtitle,
+ * which the entry above the figure already says in its own words, and a paste
+ * box at 300px with nothing in it. At full size the figure measured 1000px,
+ * taller than the viewport: a page rather than a picture of one. The canvas
+ * draws the same crop.
+ *
  * Nothing here can be typed into or submitted: `Specimen` is `inert` and
  * carries `pointer-events: none`, so the component's own actions are
  * unreachable.
  */
 export function DeckImportFigureBody() {
-  return <ImportEntry />;
+  return <ImportEntry compact />;
 }
 
 
