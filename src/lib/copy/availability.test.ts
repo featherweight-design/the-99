@@ -40,8 +40,8 @@ describe("availabilityCopy", () => {
   });
 
   it("singularises the soft marker", () => {
-    expect(availabilityCopy.marker.soft(1)).toBe("1 in a brew");
-    expect(availabilityCopy.marker.soft(2)).toBe("2 in a brew");
+    expect(availabilityCopy.marker.soft(1)).toBe("1 in a draft");
+    expect(availabilityCopy.marker.soft(2)).toBe("2 in a draft");
   });
 
   // "Deck tax" is banned vocabulary (it collides with commander tax), and most

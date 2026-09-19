@@ -197,7 +197,7 @@ export const cardAssignmentsCopy = {
       `${deck} wants it too, but it has no committed version — only committed decks can be ` +
       "given a copy.",
     brewNoteMany: (n: number) =>
-      `${n} brews want it too, but only committed decks can be given a copy.`,
+      `${n} drafts want it too, but only committed decks can be given a copy.`,
 
     /** THE VERB. Never rendered as a button. */
     heading: (copies: number) =>

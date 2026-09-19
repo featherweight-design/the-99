@@ -99,7 +99,7 @@ describe("DeckCardTile — the four states of Matrix 2", () => {
   // The chip sits outside the trigger, whose own accessible name would
   // otherwise replace everything nested under it — so it is in the tree in its
   // own right and speaks §17's prose itself.
-  it("draws and speaks the chip on a card with copies in a brew", () => {
+  it("draws and speaks the chip on a card with copies in a draft", () => {
     const availability: Availability = { owned: 2, hard: 0, soft: 1, free: 1, claims: [] };
 
     renderTile(<DeckCardTile deckId="d1" card={{ ...card, availability }} />);

@@ -133,9 +133,9 @@ export const deckVersioningCopy = {
     // Said once above the list instead of once per row. `changed`, not `added`:
     // the same rule marks a row the draft cut copies from.
     changeListCaption: (n: number) =>
-      `the brass rule marks the ${plural(n, "row")} this draft changed`,
+      `the brass rule marks the ${plural(n, "row")} you have changed`,
     // On the group heading, so grouping by type also maps where the draft happened.
-    groupChangeNote: (n: number) => `${n} changed in this draft`,
+    groupChangeNote: (n: number) => `${n} changed, not yet committed`,
     // The list toolbar's right slot, replacing "n cards are yours now" while a draft exists.
     // `differ from`, not `not in yet`: a row that held three copies and now holds
     // one is in the version, at a count the version does not have.
@@ -145,7 +145,7 @@ export const deckVersioningCopy = {
     // figures below were counted from. Drawn only while a draft exists — on a
     // clean deck there is one list, and naming it would raise a question the
     // reader does not have.
-    mixStripDraftNote: "· reading the draft",
+    mixStripDraftNote: "· reading pending changes",
     // The mix cell's bottom-left slot takes the previous figure instead of the
     // recommendation while a draft exists — but ONLY when the figure actually moved.
     mixCellWas: (n: number) => `was ${n}`,
@@ -232,12 +232,12 @@ export const deckVersioningCopy = {
     // card name it was taken for a pending change to that card, on a row where
     // the card is not being touched at all. R1's two-line sentence ("that deck
     // has its own pending changes →") was too long visually and in copy.
-    pullGuardTag: "deck in draft",
+    pullGuardTag: "deck has changes",
     // Never rendered — the row's accessible description, the way the commander
     // guard's is. It names no action because there is none: the `Open →` link
     // that used to carry this sentence pushed the card name off the desktop row.
     pullGuardA11y: (deck: string, card: string) =>
-      `${deck} has a draft of its own, so ${card} cannot be pulled from it.`,
+      `${deck} has pending changes of its own, so ${card} cannot be pulled from it.`,
     // Third guard: commander claims are in the availability model, so `Pull it` would
     // otherwise be offered on a row where it can only ever fail. Same tag shape, and
     // the same silence — no route releases it, so there is nothing to offer.

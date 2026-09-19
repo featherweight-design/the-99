@@ -71,7 +71,7 @@ describe("buildAvailabilityOptions", () => {
   it("labels the options in the design's words", () => {
     expect(buildAvailabilityOptions(cards, empty).map((o) => o.label)).toEqual([
       "Free",
-      "Wanted by a brew",
+      "Wanted by a draft",
       "In use",
       "Over-committed",
     ]);
