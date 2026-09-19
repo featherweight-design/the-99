@@ -4,8 +4,10 @@
 `spec/deck-analysis-foundation`. Not merged. §11.1 defines the five rounds; this brief is
 Round 0 only.
 
-**Verified against the branch at `89becfa0` on 2026-09-19.** Every `file:line` below was read
-on that commit, not recalled.
+**Verified against the branch at `ea00e8c8` on 2026-09-19**, rebased on `origin/main`. Every
+`file:line` below was read on that commit, not recalled — three of them were inherited from the
+September 12 brief below and had drifted by 60–100 lines, so do not trust a line number in an
+older brief without re-reading it.
 
 This round asks one question: **what does a player meet when they open deck analysis, and how
 does it sit with what the deck page already carries?** It asks for no component designs. The
@@ -30,11 +32,13 @@ Five rounds, in §11.1. Round 0 does not design any of them — it decides where
 
 Before adding anything, this is what the page holds:
 
-- `builder-tabs.tsx:9` — three views, `deck | consider | games`.
-- `builder-shell.tsx:863` — the **`RoleCounterStrip`**: five cells (ramp, draw, removal, wipes,
-  land) each stating a count against a target, headed by the line **`"EDHREC averages"`**
-  (`mix.ts:89`).
-- `builder-shell.tsx:924` — the `GamesPanel`.
+- `src/lib/decks/builder-view.ts:14` — **four** views, `deck | consider | games | versions`,
+  rendered by `builder-tabs.tsx:89` `BuilderTabs`. The September 12 brief below says three;
+  `versions` shipped after it.
+- `builder-shell.tsx:949` — the **`RoleCounterStrip`**: five cells (`mix.ts:11` `ROLE_ORDER` —
+  ramp, draw, removal, wipes, land) each stating a count against a target, headed by the line
+  **`"EDHREC averages"`** (`mix.ts:89`).
+- `builder-shell.tsx:1023` — the `GamesPanel`.
 - Deck versioning adds a **six-cell what-changed strip** on top of that.
 - The four-figures block (`docs/superpowers/design-briefs/2026-09-12-what-this-deck-is.md`) is
   briefed and unbuilt.
@@ -89,8 +93,10 @@ the state the design draws, never a truncated sentence nobody wrote.
 
 ## §5 What Design is being asked to call — open
 
-1. **Where does deck analysis live?** A fourth tab beside `deck | consider | games`, a section
-   within one of them, or a route of its own. The spec has no opinion and should not.
+1. **Where does deck analysis live?** A **fifth** tab beside
+   `deck | consider | games | versions`, a section within one of them, or a route of its own.
+   Five tabs is the part worth weighing — the tab row is already at four, and this brief has no
+   opinion about whether that is a ceiling.
 2. **How do the strips and the analysis coexist?** §2's unanswered question, now with a fourth
    claimant. Fold, stack, or separate — and if fold, which becomes which.
 3. **The synopsis's slot and its three absent states** — never generated, stale against the
