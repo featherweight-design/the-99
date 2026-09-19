@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import {
+  resolveArtCropUri,
   resolveBackImageUri,
   aggregateCollection,
   cssUrl,
@@ -50,6 +51,7 @@ const raw = (over: Partial<RawCollectionRow> = {}): RawCollectionRow => ({
   setName: "Commander 2021", releasedAt: "2021-04-23",
   preferredSetCode: null, preferredCollectorNumber: null,
   exactBackImageUri: null, representativeBackImageUri: null,
+  exactArtCropUri: null, representativeArtCropUri: null, cardArtCropUri: null,
   name: "Sol Ring", typeLine: "Artifact", manaCost: "{1}", cmc: 2, oracleText: null,
   keywords: [], rarity: "uncommon", colorIdentity: [],
   layout: "normal", backImageUri: null,
@@ -135,6 +137,46 @@ describe("resolveBackImageUri — the back follows the art, tier for tier", () =
   });
   it("is null for a single-faced card, which has no back anywhere", () => {
     expect(resolveBackImageUri({ ...base, exactImageUri: "exact.png", backImageUri: null }))
+      .toBeNull();
+  });
+});
+
+describe("resolveArtCropUri — the crop follows the art, tier for tier", () => {
+  const base = {
+    exactImageUri: null, representativeImageUri: null,
+    exactArtCropUri: null, representativeArtCropUri: null,
+    cardArtCropUri: "oracle-crop.png",
+  };
+  it("tier 1: takes the exact printing's crop when the exact art was used", () => {
+    expect(resolveArtCropUri({ ...base, exactImageUri: "exact.png",
+                               representativeImageUri: "rep.png",
+                               exactArtCropUri: "exact-crop.png",
+                               representativeArtCropUri: "rep-crop.png" }))
+      .toBe("exact-crop.png");
+  });
+  it("tier 2: takes the representative printing's crop when its art was used", () => {
+    expect(resolveArtCropUri({ ...base, representativeImageUri: "rep.png",
+                               exactArtCropUri: "exact-crop.png",
+                               representativeArtCropUri: "rep-crop.png" }))
+      .toBe("rep-crop.png");
+  });
+  // The same direction `resolveBackImageUri` had to be corrected in: a lower tier's crop
+  // under a higher tier's front is two printings on one card, which is the defect this
+  // whole column closes reached from the far side.
+  it("never borrows a lower tier's crop for a higher tier's front", () => {
+    expect(resolveArtCropUri({ ...base, exactImageUri: "exact.png",
+                               representativeImageUri: "rep.png",
+                               representativeArtCropUri: "rep-crop.png" }))
+      .toBe("oracle-crop.png");
+  });
+  // The state EVERY printing is in until the catalog is re-seeded against the new column,
+  // which is why it is the case that matters most on the day this ships.
+  it("falls back to the oracle-level crop when the printing carries none", () => {
+    expect(resolveArtCropUri({ ...base, exactImageUri: "exact.png" }))
+      .toBe("oracle-crop.png");
+  });
+  it("is null when no tier has a crop at all", () => {
+    expect(resolveArtCropUri({ ...base, exactImageUri: "exact.png", cardArtCropUri: null }))
       .toBeNull();
   });
 });

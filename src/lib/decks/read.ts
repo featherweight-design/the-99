@@ -146,6 +146,15 @@ export type DeckCommander = {
   oracleText: string | null;
   imageUri: string | null;
   artCropUri: string | null;
+  /**
+   * The name printed on the copy the player owns, where it differs from the oracle
+   * card's — Secret Lair's renames. Null when they own no copy, or when the copy
+   * they own prints the oracle name, which is almost every printing.
+   *
+   * Optional for the reason `proxied` is: fixtures across the suite build
+   * `DeckCommander` literals that never touch the catalog, and absent means null.
+   */
+  printedName?: string | null;
 };
 
 export type DeckDetail = {
@@ -181,6 +190,56 @@ export async function requireDeck(deckId: string, userId: string) {
     .where(and(eq(decks.id, deckId), eq(decks.userId, userId)));
   if (!deck || deck.userId !== userId) throw new Error("deck not found");
   return deck;
+}
+
+/** One printing as the player owns it — the art and the name that belong together. */
+type OwnedPrinting = {
+  printedName: string | null;
+  imageUri: string | null;
+  artCropUri: string | null;
+  setCode: string;
+  collectorNumber: string;
+};
+
+/**
+ * The printing the player actually owns for each of these oracle ids, keyed by id.
+ *
+ * Reusing the collection reader rather than joining `printings` here is deliberate — the
+ * art must follow the SAME printing the art preference picks, and `aggregateCollection`
+ * is where that precedence lives. A card the player does not own is simply absent from
+ * the map, since `selectCollectionRows` is rooted in `collection_items`.
+ *
+ * Swallowed, like the availability rollup beside its callers: the deck is the deck. A
+ * failed lookup leaves every figure on its oracle-level value, which is exactly the
+ * rendering that shipped before this existed.
+ */
+async function resolveOwnedPrintings(
+  userId: string,
+  oracleIds: string[],
+): Promise<Map<string, OwnedPrinting>> {
+  const resolved = new Map<string, OwnedPrinting>();
+  // Never an empty `inArray`: a SQL error in some drivers and a full scan in others.
+  const ids = [...new Set(oracleIds)];
+  if (ids.length === 0) return resolved;
+  const owned = await selectCollectionRows(userId, ids)
+    .then(aggregateCollection)
+    .catch(() => []);
+  for (const c of owned) {
+    const p = resolvedPrinting(c);
+    if (p) {
+      resolved.set(c.oracleId, {
+        printedName: c.printedName,
+        imageUri: p.imageUri,
+        // `?? null` rather than left optional: `BrowsePrinting.artCropUri` is optional so
+        // the suite's fixtures need not carry it, and absent means what null does — fall
+        // back to the oracle-level crop.
+        artCropUri: p.artCropUri ?? null,
+        setCode: p.setCode,
+        collectorNumber: p.collectorNumber,
+      });
+    }
+  }
+  return resolved;
 }
 
 export async function getDeckDetail(deckId: string, userId: string): Promise<DeckDetail | null> {
@@ -230,12 +289,8 @@ export async function getDeckDetail(deckId: string, userId: string): Promise<Dec
 
   const commanderRow = commanderRows.find((c) => c.oracleId === deck.commanderOracleId);
   if (!commanderRow) return null;
-  const commander = { ...commanderRow, proxied: proxiedIds.has(commanderRow.oracleId) };
   const partnerRow = deck.partnerOracleId
     ? (commanderRows.find((c) => c.oracleId === deck.partnerOracleId) ?? null)
-    : null;
-  const partner = partnerRow
-    ? { ...partnerRow, proxied: proxiedIds.has(partnerRow.oracleId) }
     : null;
 
   // Third: fetch all deck cards with owned flag.
@@ -284,40 +339,39 @@ export async function getDeckDetail(deckId: string, userId: string): Promise<Dec
         )
       : null;
 
-  // The printed name comes from the player's own copy, which this route does not
-  // otherwise read: the deck query is oracle-level. Reusing the collection reader
-  // rather than joining `printings` here is deliberate — the name must follow the
-  // SAME printing the art preference picks, and `aggregateCollection` is where
-  // that precedence lives. One extra query for the whole decklist.
+  // The printed name and the art both come from the player's own copy, which this
+  // route does not otherwise read: the deck query is oracle-level. One extra query
+  // for the whole decklist — see `resolveOwnedPrintings` for why it reuses the
+  // collection reader rather than joining `printings` here.
   //
-  // Swallowed like the availability rollup above, and for the same reason: the
-  // decklist is the deck. A failed lookup leaves every row on its oracle name,
-  // which is exactly today's rendering.
-  const resolved = new Map<
-    string,
-    {
-      printedName: string | null;
-      imageUri: string | null;
-      setCode: string;
-      collectorNumber: string;
-    }
-  >();
-  if (ownedIds.length > 0) {
-    const owned = await selectCollectionRows(userId, ownedIds)
-      .then(aggregateCollection)
-      .catch(() => []);
-    for (const c of owned) {
-      const p = resolvedPrinting(c);
-      if (p) {
-        resolved.set(c.oracleId, {
-          printedName: c.printedName,
-          imageUri: p.imageUri,
-          setCode: p.setCode,
-          collectorNumber: p.collectorNumber,
-        });
-      }
-    }
-  }
+  // The commanders ride along in the SAME lookup rather than in one of their own.
+  // They are columns on `decks`, not `deck_cards` rows, which is precisely how they
+  // came to be the one card on these two surfaces still drawn from the oracle-level
+  // catalog — art belonging to whichever printing Scryfall's oracle row happens to
+  // name, and not to the copy in the player's box.
+  const resolved = await resolveOwnedPrintings(userId, [...ownedIds, ...commanderIds]);
+
+  /** A commander drawn from the player's own copy where they have one. */
+  const asCommander = (row: typeof commanderRow): DeckCommander => {
+    const own = resolved.get(row.oracleId);
+    return {
+      ...row,
+      proxied: proxiedIds.has(row.oracleId),
+      // `?? row.imageUri` on each, separately: a printing ingested before
+      // `printings.art_crop_uri` existed has a front image and no crop, and the pair
+      // must not fall back together — the front is theirs, the crop is the oracle's
+      // until the next catalog refresh.
+      imageUri: own?.imageUri ?? row.imageUri,
+      artCropUri: own?.artCropUri ?? row.artCropUri,
+      // The name of whichever printing the art just came from. Held to the same
+      // invariant as every decklist row: a Secret Lair art under the oracle name is
+      // the mismatch the collection reader forbids, and taking the art without the
+      // name would have introduced it here.
+      printedName: own?.printedName ?? null,
+    };
+  };
+  const commander = asCommander(commanderRow);
+  const partner = partnerRow ? asCommander(partnerRow) : null;
 
   const detailCards: DeckDetailCard[] = cardRows.map((row) => ({
     oracleId: row.oracleId,
@@ -440,6 +494,14 @@ export type DeckListItem = {
   name: string;
   createdAt: Date;
   commanderName: string;
+  /**
+   * The name printed on the copy the player owns, where it differs from the oracle
+   * card's. Null when they own no copy, or when that copy prints the oracle name.
+   *
+   * Optional for the reason `DeckCommander.printedName` is: fixtures build these
+   * literals without touching the catalog, and absent means null.
+   */
+  commanderPrintedName?: string | null;
   commanderColorIdentity: string[];
   commanderImageUri: string | null;
   commanderArtCropUri: string | null;
@@ -763,6 +825,7 @@ export async function listDecksWithStats(
       id: decks.id,
       name: decks.name,
       createdAt: decks.createdAt,
+      commanderOracleId: decks.commanderOracleId,
       commanderName: cards.name,
       commanderColorIdentity: cards.colorIdentity,
       commanderImageUri: cards.imageUri,
@@ -900,6 +963,16 @@ export async function listDecksWithStats(
     unfundedByDeck.set(r.deckId, (unfundedByDeck.get(r.deckId) ?? 0) + r.quantity);
   }
 
+  // Every tile's commander art, from the copy the player owns. `cards.art_crop_uri`
+  // is oracle-level — one arbitrary printing's crop — so a deck led by a card owned
+  // in another printing drew art that is not on the card in the box. One query for
+  // the whole grid, and fail-soft: an unresolved commander keeps the oracle art,
+  // which is what every tile drew before this.
+  const ownedCommanders = await resolveOwnedPrintings(
+    userId,
+    rows.map((r) => r.commanderOracleId),
+  );
+
   return rows.map((row) => {
     const proxies = proxiedByDeck.get(row.id);
     const proxiedCount = proxies?.copies ?? 0;
@@ -923,9 +996,14 @@ export async function listDecksWithStats(
       name: row.name,
       createdAt: row.createdAt,
       commanderName: row.commanderName,
+      // The name of whichever printing the art below came from, so a renamed copy
+      // is not captioned with the oracle name over its own art.
+      commanderPrintedName: ownedCommanders.get(row.commanderOracleId)?.printedName ?? null,
       commanderColorIdentity: row.commanderColorIdentity,
-      commanderImageUri: row.commanderImageUri,
-      commanderArtCropUri: row.commanderArtCropUri,
+      commanderImageUri:
+        ownedCommanders.get(row.commanderOracleId)?.imageUri ?? row.commanderImageUri,
+      commanderArtCropUri:
+        ownedCommanders.get(row.commanderOracleId)?.artCropUri ?? row.commanderArtCropUri,
       partnerName: row.partnerName,
       partnerColorIdentity: row.partnerColorIdentity,
       folderId: row.folderId,

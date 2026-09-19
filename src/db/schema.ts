@@ -75,6 +75,16 @@ export const printings = pgTable("printings", {
   imageUri: text("image_uri"),
   imageUriSmall: text("image_uri_small"),
   /**
+   * THIS printing's frame-free 626×457 crop — `cards.art_crop_uri` is the same crop stored
+   * once per oracle id, taken from one arbitrary printing, which is what drew another
+   * printing's art behind a commander the player owns in a different one.
+   *
+   * Null on every row written before this column existed, and Scryfall's docs forbid
+   * constructing the URL, so a reader falls back to the oracle-level crop until the next
+   * catalog refresh fills it — which is exactly where it stood before.
+   */
+  artCropUri: text("art_crop_uri"),
+  /**
    * THIS printing's back face, for the layouts that have one. `cards.back_image_uri` is the
    * same art stored once per oracle id, which is why a flip on a picked printing used to
    * show a back belonging to another printing entirely — Secret Lair and the borderless

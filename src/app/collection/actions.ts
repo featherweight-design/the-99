@@ -290,6 +290,11 @@ function invalidateArtCaches(userId: string): void {
   // two cells change from one act, with the set's ratio unmoved. The set page is the only
   // surface where that swap is legible, and without this it happens invisibly.
   revalidatePath("/collection/sets/[code]", "page");
+  // A commander's art on both deck surfaces is the picked printing's now, so a pick on a
+  // card leading a deck changes the tile and the header band. `"page"` on the second: a
+  // route with a `[param]` is silently not invalidated without it.
+  revalidatePath("/decks");
+  revalidatePath("/decks/[id]", "page");
 }
 
 /** Forget the pick, returning the card to the resolver's choice. */

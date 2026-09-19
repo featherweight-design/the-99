@@ -16,7 +16,7 @@ import { deckImportCopy } from "../../lib/copy/deck-import";
 import { overCopy, overWord, renameCopy } from "../../lib/copy/decks-builder";
 import { deckBodySize } from "../../lib/decks/deck-size";
 import { IdentityPips } from "../commanders/commander-art";
-import { colorLabel, deckIdentity } from "../../lib/decks/format";
+import { colorLabel, commanderDisplayName, deckIdentity } from "../../lib/decks/format";
 import { STATUS_TOKEN, statusBarStyle } from "../../lib/decks/status-style";
 import { FirstCommitOffer } from "./first-commit-offer";
 import { type SpineBandProps, TRUNCATES } from "./spine-desktop";
@@ -131,11 +131,11 @@ export function SpineMobile({
       >
         {partner ? (
           <>
-            <span style={TRUNCATES}>{commander.name}</span>
+            <span style={TRUNCATES}>{commanderDisplayName(commander)}</span>
             {/* The pair names its owner, here as on desktop: two flags on one
                 caption row make a bare glyph ambiguous. */}
             {commander.proxied ? (
-              <ProxyTag variant="band" pairName={shortName(commander.name)} />
+              <ProxyTag variant="band" pairName={shortName(commanderDisplayName(commander))} />
             ) : null}
             <span style={{ flex: "none" }}>+</span>
             {/* The partner's printing opens from the word that names it. The
@@ -145,9 +145,9 @@ export function SpineMobile({
                 clipped bottom edge. */}
             <CardDetailTrigger
               oracleId={partner.oracleId}
-              name={partner.name}
-              title={partner.name}
-              ariaLabel={deckImportCopy.commander.partnerCardAria(partner.name)}
+              name={commanderDisplayName(partner)}
+              title={commanderDisplayName(partner)}
+              ariaLabel={deckImportCopy.commander.partnerCardAria(commanderDisplayName(partner))}
               className="font-mono"
               style={{
                 ...TRUNCATES,
@@ -163,10 +163,10 @@ export function SpineMobile({
                   is 9px taller than the text so the target clears 44px, and a
                   border there would draw that far below the name. */}
               <span style={{ borderBottom: "1px solid var(--border-strong)" }}>
-                {partner.name}
+                {commanderDisplayName(partner)}
               </span>
             </CardDetailTrigger>
-            {partner.proxied ? <ProxyTag variant="band" pairName={shortName(partner.name)} /> : null}
+            {partner.proxied ? <ProxyTag variant="band" pairName={shortName(commanderDisplayName(partner))} /> : null}
           </>
         ) : (
           <>
@@ -175,7 +175,7 @@ export function SpineMobile({
                 halves ellipsised the COLOUR away — the half that never needs to,
                 since it is three or four characters. The name gives instead,
                 which is the same ordered shrink the pair row above uses. */}
-            <span style={TRUNCATES}>{commander.name}</span>
+            <span style={TRUNCATES}>{commanderDisplayName(commander)}</span>
             {commander.proxied ? <ProxyTag variant="band" /> : null}
             <span style={{ flex: "none", whiteSpace: "nowrap" }}>
               &nbsp;· {colorLabel(commander.colorIdentity)}

@@ -1,0 +1,1 @@
+ALTER TABLE "printings" ADD COLUMN "art_crop_uri" text;

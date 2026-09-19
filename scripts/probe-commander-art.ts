@@ -1,0 +1,204 @@
+// A deck's commander art, proved against a real Postgres by calling the real readers.
+//
+// `cards.art_crop_uri` and `cards.image_uri` are ORACLE-LEVEL — one arbitrary printing per
+// card — so both deck surfaces drew a commander's art from a printing the player may not
+// own, while the decklist under it had resolved every other card to the copy in their box.
+// Three things only a database can answer:
+//
+//   THE DECK PAGE RESOLVES. `getDeckDetail` hands back the owned printing's front and crop
+//   for the commander, and for a partner.
+//   THE TILE RESOLVES TOO. `listDecksWithStats` does the same for the grid, through a
+//   separate query that could drift from the page's at any time.
+//   THE FALLBACK HOLDS. A commander the player does NOT own keeps the oracle-level art,
+//   and so does a printing ingested before `printings.art_crop_uri` existed — which is
+//   EVERY printing until the next catalog refresh, so it is the state that ships first.
+//
+// A unit test cannot reach any of it: the resolution is a join across `collection_items`,
+// two aliases of `printings` and `card_art_preferences`, assembled by `aggregateCollection`.
+//
+// It writes a fixture under a per-run `user_id` and deletes it in a `finally`. It also
+// writes a sentinel `art_crop_uri` onto ONE catalog printing — the column is null across
+// the whole catalog until a re-seed, and a crop that is null everywhere cannot tell a
+// resolved crop from a fallback. The previous value is read BEFORE the write and put back
+// in the same `finally`, for the reason every fixture here captures before it mutates.
+//
+// Run it against local dev or a scratch Neon branch — NEVER production.
+//
+// Run: `pnpm probe:commander-art`
+// First, and on its own line: src/db reads DATABASE_URL at module scope, so the .env has to
+// be loaded before the import below reaches it.
+import { requireEnv } from "./lib/env.mjs";
+import { Pool, neonConfig } from "@neondatabase/serverless";
+import { drizzle } from "drizzle-orm/neon-serverless";
+import { sql } from "drizzle-orm";
+import ws from "ws";
+import { getDeckDetail, listDecksWithStats } from "../src/lib/decks/read";
+import { DEFAULT_DECK_SORT } from "../src/lib/decks/sort";
+
+neonConfig.webSocketConstructor = ws;
+
+const { DATABASE_URL } = requireEnv(["DATABASE_URL"]);
+const pool = new Pool({ connectionString: DATABASE_URL });
+const fixture = drizzle(pool);
+const USER = `probe-commander-art-${Date.now()}`;
+const SENTINEL_CROP = "https://example.invalid/probe-owned-crop.jpg";
+
+let failures = 0;
+const check = (label: string, actual: unknown, expected: unknown) => {
+  const ok = actual === expected;
+  if (!ok) failures += 1;
+  console.log(`${ok ? "PASS" : "FAIL"}  ${label} — got ${actual}, expected ${expected}`);
+};
+
+type Legend = {
+  oracle_id: string;
+  card_image: string | null;
+  card_crop: string | null;
+  scryfall_id: string;
+  set_code: string;
+  collector_number: string;
+  printing_image: string | null;
+};
+
+/**
+ * A legend the player can own in a printing that is NOT the one the oracle row names, with
+ * its own front image — which is what makes "the art moved" observable at all.
+ *
+ * Asked of the catalog rather than hard-coded: the fixture has to be a card whose oracle row
+ * and chosen printing genuinely disagree, and which printing Scryfall's oracle row names
+ * changes with every bulk refresh.
+ */
+const pickLegend = async (offset: number): Promise<Legend> => {
+  const { rows } = await fixture.execute<Legend>(sql`
+    select c.oracle_id, c.image_uri as card_image, c.art_crop_uri as card_crop,
+           p.scryfall_id, p.set_code, p.collector_number, p.image_uri as printing_image
+    from cards c
+    join printings p on p.oracle_id = c.oracle_id
+    where c.type_line ~ 'Legendary Creature'
+      and c.commander_legal
+      and p.scryfall_id <> c.scryfall_id
+      and p.image_uri is not null
+      and c.image_uri is not null
+      and p.image_uri <> c.image_uri
+    order by c.oracle_id, p.scryfall_id
+    limit 1 offset ${offset}
+  `);
+  if (!rows[0]) throw new Error("no legend owns a second printing — seed the catalog first");
+  return rows[0];
+};
+
+/** A legend with no collection row of its own, for the unowned fallback. */
+const pickUnownedLegend = async () => {
+  const { rows } = await fixture.execute<{
+    oracle_id: string; image_uri: string | null; art_crop_uri: string | null;
+  }>(sql`
+    select oracle_id, image_uri, art_crop_uri from cards
+    where type_line ~ 'Legendary Creature' and commander_legal and image_uri is not null
+    order by oracle_id desc limit 1
+  `);
+  if (!rows[0]) throw new Error("catalog holds no legend — seed it first");
+  return rows[0];
+};
+
+const own = async (l: Pick<Legend, "oracle_id" | "scryfall_id" | "set_code" | "collector_number">) => {
+  await fixture.execute(sql`
+    insert into collection_items
+      (user_id, oracle_id, scryfall_id, set_code, collector_number, finish, quantity)
+    values (${USER}, ${l.oracle_id}::uuid, ${l.scryfall_id}::uuid,
+            ${l.set_code}, ${l.collector_number}, 'nonfoil', 1)
+  `);
+};
+
+const makeDeck = async (name: string, commander: string, partner: string | null) => {
+  const { rows } = await fixture.execute<{ id: string }>(sql`
+    insert into decks (user_id, name, commander_oracle_id, partner_oracle_id)
+    values (${USER}, ${name}, ${commander}::uuid,
+            ${partner === null ? null : sql`${partner}::uuid`})
+    returning id
+  `);
+  return rows[0].id;
+};
+
+async function run() {
+  // Captured BEFORE anything is written to it. A cleanup handle populated after its write
+  // cannot restore a row a throw interrupted, and this one is a shared catalog row.
+  let cropRestore: { scryfallId: string; previous: string | null } | null = null;
+
+  const commander = await pickLegend(0);
+  const partner = await pickLegend(1);
+  const unowned = await pickUnownedLegend();
+
+  const { rows: before } = await fixture.execute<{ art_crop_uri: string | null }>(sql`
+    select art_crop_uri from printings where scryfall_id = ${commander.scryfall_id}::uuid
+  `);
+  cropRestore = { scryfallId: commander.scryfall_id, previous: before[0]?.art_crop_uri ?? null };
+  await fixture.execute(sql`
+    update printings set art_crop_uri = ${SENTINEL_CROP}
+    where scryfall_id = ${commander.scryfall_id}::uuid
+  `);
+
+  try {
+    await own(commander);
+    await own(partner);
+    const pairId = await makeDeck("probe pair", commander.oracle_id, partner.oracle_id);
+    const unownedId = await makeDeck("probe unowned", unowned.oracle_id, null);
+
+    // ONE. The deck page hands back the copy in the box, front and crop.
+    const detail = await getDeckDetail(pairId, USER);
+    check("deck page: commander front is the owned printing's",
+      detail?.commander.imageUri, commander.printing_image);
+    check("deck page: commander crop is the owned printing's",
+      detail?.commander.artCropUri, SENTINEL_CROP);
+    // The partner's printing carries no crop of its own, which is every printing's state
+    // until the catalog is re-seeded — so its crop must be the oracle-level one, and its
+    // front must still be its own. The two fall back SEPARATELY or a half-ingested row
+    // pairs one printing's art with another's crop.
+    check("deck page: partner front is the owned printing's",
+      detail?.partner?.imageUri, partner.printing_image);
+    check("deck page: a printing with no crop of its own falls back to the oracle's",
+      detail?.partner?.artCropUri, partner.card_crop);
+
+    // TWO. The grid, through its own query.
+    const list = await listDecksWithStats(USER, DEFAULT_DECK_SORT);
+    const pairTile = list.find((d) => d.id === pairId);
+    check("deck tile: commander front is the owned printing's",
+      pairTile?.commanderImageUri, commander.printing_image);
+    check("deck tile: commander crop is the owned printing's",
+      pairTile?.commanderArtCropUri, SENTINEL_CROP);
+
+    // THREE. The fallback, on a commander the player does not own at all. This is the
+    // rendering that shipped before any of this, and it has to be exactly unchanged.
+    const unownedDetail = await getDeckDetail(unownedId, USER);
+    check("deck page: an unowned commander keeps the oracle front",
+      unownedDetail?.commander.imageUri, unowned.image_uri);
+    check("deck page: an unowned commander keeps the oracle crop",
+      unownedDetail?.commander.artCropUri, unowned.art_crop_uri);
+    const unownedTile = list.find((d) => d.id === unownedId);
+    check("deck tile: an unowned commander keeps the oracle front",
+      unownedTile?.commanderImageUri, unowned.image_uri);
+    check("deck tile: an unowned commander keeps the oracle crop",
+      unownedTile?.commanderArtCropUri, unowned.art_crop_uri);
+  } finally {
+    await fixture.execute(sql`delete from decks where user_id = ${USER}`);
+    await fixture.execute(sql`delete from collection_items where user_id = ${USER}`);
+    if (cropRestore) {
+      await fixture.execute(sql`
+        update printings set art_crop_uri = ${cropRestore.previous}
+        where scryfall_id = ${cropRestore.scryfallId}::uuid
+      `);
+    }
+  }
+}
+
+// A throw COUNTS as a failure before the exit code is computed: three probes in this
+// repository have printed "all checks passed" over an exception a `finally` swallowed.
+run()
+  .catch((error) => {
+    failures += 1;
+    console.error(error);
+  })
+  .finally(async () => {
+    await pool.end();
+    console.log(failures === 0 ? "\nAll checks passed." : `\n${failures} check(s) failed.`);
+    process.exit(failures === 0 ? 0 : 1);
+  });
