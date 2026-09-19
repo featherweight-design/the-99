@@ -149,10 +149,10 @@ async function run() {
       detail?.commander.imageUri, commander.printing_image);
     check("deck page: commander crop is the owned printing's",
       detail?.commander.artCropUri, SENTINEL_CROP);
-    // The partner's printing carries no crop of its own, which is every printing's state
-    // until the catalog is re-seeded — so its crop must be the oracle-level one, and its
-    // front must still be its own. The two fall back SEPARATELY or a half-ingested row
-    // pairs one printing's art with another's crop.
+    // The partner's printing carries no crop of its own, which is EVERY printing's state
+    // until the catalog is re-seeded — so its front is its own and its crop is the
+    // oracle's, resolved through `resolveArtCropUri`. This is the pair the app ships
+    // with on day one, and the check that says the fix costs nothing before then.
     check("deck page: partner front is the owned printing's",
       detail?.partner?.imageUri, partner.printing_image);
     check("deck page: a printing with no crop of its own falls back to the oracle's",

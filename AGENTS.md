@@ -610,6 +610,35 @@ Package manager is **pnpm** (pinned via `packageManager` in package.json) — ne
   fixture user: the table holds exactly one row, and the run leaves the stamp set to now,
   which is what any ingest would have done. Point it at `local-dev`, **never production**.
 
+- `pnpm probe:commander-art` proves a deck's commander is drawn from the copy the player owns,
+  against a real Postgres, by calling the real `getDeckDetail` and `listDecksWithStats`.
+
+  `cards.image_uri` and `cards.art_crop_uri` are ORACLE-LEVEL — one arbitrary printing per card
+  — and the commander is the one card on the deck surfaces that never went through the
+  collection reader, because it is a column on `decks` rather than a `deck_cards` row. The
+  decklist beneath it had resolved every other card to the owned printing for months.
+
+  Its three sections cover the page, the tile through its OWN query (the two loaders could
+  drift at any time), and the fallback: a commander the player does not own keeps the oracle
+  art, unchanged. That last one is what says the fix costs nothing on a database whose
+  `printings.art_crop_uri` is still null everywhere — which is every database until the next
+  catalog refresh, and therefore the state it ships in.
+
+  It writes the one sentinel this repository's probes allow into the shared catalog: an
+  `art_crop_uri` on ONE printing, because a column that is null everywhere cannot tell a
+  resolved crop from a fallback. The previous value is read BEFORE the write and restored in
+  the same `finally` as the fixture user's rows.
+
+  Three mutations were run against it. Reverting either loader's override fails 5 of its 10
+  checks while both fallback checks still pass, which is the shape a correct probe has. Making
+  `aggregateCollection` take `cards.art_crop_uri` directly fails the two crop checks — that one
+  is the reason the probe reaches through the resolver rather than asserting the join. The third
+  measured NOTHING and corrected a comment instead: the `?? row.artCropUri` in the loader is
+  unreachable for an owned card, because the oracle-level fallback already lives in
+  `resolveArtCropUri`, and the code said otherwise until the run proved it. Same fixture
+  discipline as `probe:claims`: a per-run `user_id` deleted in a `finally`, pointed at
+  `local-dev` or a scratch branch, **never production**.
+
 - `pnpm probe:printing-pick` presses a printing pick on `/collection` and answers two
   questions no component test can. THE ART MOVED: the patch is a client-side state write, so
   what proves it is a painted `background-image` on the tile, read after the modal is gone.

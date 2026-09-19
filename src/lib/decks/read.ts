@@ -357,10 +357,12 @@ export async function getDeckDetail(deckId: string, userId: string): Promise<Dec
     return {
       ...row,
       proxied: proxiedIds.has(row.oracleId),
-      // `?? row.imageUri` on each, separately: a printing ingested before
-      // `printings.art_crop_uri` existed has a front image and no crop, and the pair
-      // must not fall back together — the front is theirs, the crop is the oracle's
-      // until the next catalog refresh.
+      // Belt and braces on the right-hand side of each, and deliberately so: the
+      // oracle-level fallback for a printing ingested before `printings.art_crop_uri`
+      // existed already lives in `resolveArtCropUri`, which is where it belongs — one
+      // rule for every reader of a printing's art. A mutation run confirmed these two
+      // `??`s are unreachable for an owned card today; they are here so an owned
+      // commander cannot lose its art to a null if that resolution ever changes.
       imageUri: own?.imageUri ?? row.imageUri,
       artCropUri: own?.artCropUri ?? row.artCropUri,
       // The name of whichever printing the art just came from. Held to the same
