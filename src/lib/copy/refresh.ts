@@ -216,8 +216,8 @@ export const refreshCopy = {
   zero: {
     decksHeading: 'No decks yet',
     decksBody:
-      'Pick a commander and we assemble the 99 from cards you already own, then track what is missing.',
-    decksBodyShort: 'Pick a commander and we assemble the 99 from cards you already own.',
+      'Pick a commander and we’ll assemble the 99 from cards you already own, then track what’s missing.',
+    decksBodyShort: 'Pick a commander and we’ll assemble the 99 from cards you already own.',
     browseCommanders: 'Browse commanders',
     importDeck: 'Import a deck',
     // The figure that justifies Browse commanders being the primary. Omit the

@@ -208,3 +208,77 @@ export function quotations(src) {
   if (buf) emit(buf); // an unclosed span at end of file
   return out;
 }
+
+/**
+ * Is this span PROSE — something the app could actually say to a reader?
+ *
+ * The word-drift check below compares a table's quotations against shipped
+ * strings, and without this filter it compares CSS against Tailwind: measured
+ * on the shipped tree, indexing everything gave 905 unmatched spans out of
+ * 1062, almost all of them `box-shadow: inset 0 -26px …`, `linear-gradient(…)`
+ * and filenames. Prose-only takes the index from 16,573 strings to 583 and the
+ * findings from hundreds to sixteen.
+ *
+ * EIGHT WORDS, not three. A three-word span collides constantly — `upload your
+ * collection` against `in your collection` is one substitution apart and the
+ * two have nothing to do with each other. Five cut most of that and eight is
+ * where the last of it stops, with real drift still reading: the measured
+ * run was 368 findings at three, 86 at five, and 4 at eight.
+ */
+export function prose(s) {
+  // Interpolations go FIRST. `${deckCount}` carries braces, and testing the raw
+  // span rejected every string with a slot in it — including `no free copies;
+  // they are on ${deckCount} of your committed decks`, which is the exact
+  // sentence this check was built to protect. The first version of this
+  // reported GREEN over a reverted rename for that reason, which is the same
+  // failure as the guard it extends.
+  const bare = s.replace(HOLES, " ");
+  // CSS, class strings, selectors and filenames. NOT `;` or `:` on their own —
+  // prose has both, and excluding them is what hid the sentence above.
+  if (/--|var\(|rgba?\(|#[0-9a-fA-F]{3,}|\d+%|\d+(px|em|rem|deg|ms)\b|\.(ts|tsx|md|js|html|css)\b/.test(bare)) {
+    return false;
+  }
+  if (words(s).split(" ").filter(Boolean).length < 8) return false;
+  const letters = (bare.match(/[a-z]/gi) ?? []).length;
+  return letters / Math.max(bare.length, 1) > 0.6;
+}
+
+/**
+ * The shipped string this quotation is a stale copy OF, or null.
+ *
+ * A RENAME HAS A SHAPE: the same words in the same places, with one or two
+ * swapped. `no free copies; they are on N of your finished lists` became
+ * `… of your committed decks` — same length, two substitutions. That shape is
+ * what this looks for, rather than set overlap, because overlap rewards a
+ * table for quoting extra context: `Ramp 10 — you want your commander out a
+ * turn early` scores highly against the gloss it contains and is not drift at
+ * all, just the label-joiner the 2026-09-13 ruling protects.
+ *
+ * TWO substitutions rather than one, deliberately, and it is the difference
+ * between catching the 2026-09-19 vocabulary sweep and missing it: `finished
+ * lists` → `committed decks` moves two words at once. One substitution finds
+ * two real cases across the whole tree; two finds sixteen, of which fourteen
+ * are false and are why the allowlist exists.
+ */
+export function wordDrift(quoted, index) {
+  const qw = words(quoted).split(" ").filter(Boolean);
+  const candidates = index.get(qw.length) ?? [];
+  // EXACT MATCHES FIRST, over the whole candidate list, before any near match
+  // is considered. A table quoting a string the app still ships is not drift,
+  // and the near-match scan cannot tell that on its own: it returns the first
+  // candidate 1-2 substitutions away, so a verbatim quotation is reported the
+  // moment a SIBLING ships one word apart. Three refusals do exactly that
+  // (`We couldn't add/clear/fill those. The deck is unchanged.`), and this
+  // check's first version reported two tables quoting `add` verbatim as stale
+  // copies of `clear`. Allowlisting that pair looked like a fix and was the
+  // opposite: it blinds the check to that sentence permanently, so a later
+  // rename of the string the tables really quote goes unreported.
+  let best = null;
+  for (const s of candidates) {
+    let d = 0;
+    for (let i = 0; i < qw.length; i++) if (qw[i] !== s[i]) d++;
+    if (d === 0) return null;
+    if (best === null && d <= 2) best = s.join(" ");
+  }
+  return best;
+}

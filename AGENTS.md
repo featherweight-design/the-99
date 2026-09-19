@@ -100,14 +100,46 @@ Package manager is **pnpm** (pinned via `packageManager` in package.json) — ne
   after a successful ingest.
 - The catalog refresh (`.github/workflows/catalog-refresh.yml`) runs 09:00 UTC every Monday and refreshes **both** `catalog-staging` and `catalog-production`. A stale catalog is silent: collection CSV rows whose card is missing land in `unmatched` and are dropped, so a set that lands between refreshes simply appears not to exist.
 - `pnpm check:copy-drift` fails when a design table still quotes a string the code stopped
-  emitting **by changing its PUNCTUATION** — `MARKS` is `[—:,.]`, and a quotation differing in
-  one of those and in nothing else is what it reports. It was built for the em-dash sweep and
-  that is the drift it measures.
+  emitting, in PUNCTUATION or in WORDS. Two checks, and they are built for different drift.
 
-  **A WORD CHANGE IS INVISIBLE TO IT**, which is not a defect but is a limit worth knowing: the
-  2026-09-19 `brew` → `draft` vocabulary sweep left sixteen stale quotations across four design
-  tables and the check printed `No design table quotes a form the code stopped emitting` over
-  every one. Review found them by reading. After any rename, grep the tables yourself. The property tables ARE the spec someone implements from and they quote copy
+  **Punctuation** was the original: `MARKS` is `[—:,.]`, and a quotation differing from the code
+  in one of those and in nothing else is reported. That is what the em-dash sweep needed.
+
+  **Words** was added 2026-09-19, after the `brew` → `draft` rename left sixteen stale quotations
+  across four tables and the check printed `No design table quotes a form the code stopped
+  emitting` over every one. A rename leaves the punctuation alone, so the first check cannot see
+  it by construction. Review found them by reading, three rounds running.
+
+  The word check compares PROSE only — a class string, a CSS declaration and a filename are not
+  copy, and indexing them compared Tailwind against Tailwind — and it looks for the SHAPE OF A
+  RENAME: the same words in the same places with one or two swapped. Not set overlap, which
+  rewards a table for quoting extra context and flags every label-joiner. Eight words minimum:
+  below that `upload your collection` and `in your collection` are one substitution apart and
+  unrelated.
+
+  **An EXACT match is checked across every candidate before any near match is taken**, and that
+  rule is worth more than it looks. Without it a table quoting a shipped string VERBATIM is
+  reported the moment a sibling ships one word apart — which three refusals do
+  (`We couldn’t add/clear/fill those. The deck is unchanged.`), so two tables quoting `add`
+  correctly were reported as stale copies of `clear`.
+
+  **Allowlisting that pair looked like a fix and was the opposite.** It suppressed the symptom
+  and blinded the check to that sentence permanently: a later rename of the string those tables
+  really quote would never be reported. Fixing the matcher instead cleared three of the four
+  rows AND surfaced real drift the fourth had been hiding — `synergy-discovery.md` still quoted
+  `lastSlots.fillFailed`, a key deleted when two refusal strings collapsed into one. **Reach for
+  the matcher before the allowlist; an entry that hides a bug hides whatever else that bug hid.**
+
+  **A false positive is allowlisted in `scripts/lib/copy-drift-allowlist.mjs`, with its reason,
+  and that is a deliberate act that shows up in a diff.** An exemption granted silently is how
+  the next rename hides. A row there says "these two look alike to a machine and are unrelated",
+  never "this drift is fine". One names a table for a feature that is NOT BUILT (`deck-tuning.md`
+  specifies #10, paused), where nothing ships to compare against; that row comes out when #10 does.
+
+  **Its own failure paths are pinned** in `copy-drift.test.mts`, and they were run before it was
+  believed: the first version reported green over a reverted rename, because `prose` tested the
+  raw span and rejected every sentence containing `${…}` or a semicolon. That is the same failure
+  as the guard it extends, in the guard that was extending it. The property tables ARE the spec someone implements from and they quote copy
   exactly, so a table that has drifted tells the next reader to ship a sentence the app no
   longer says. It runs in CI beside the other checks: static, no server, no browser, about a
   second.

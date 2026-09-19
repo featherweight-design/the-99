@@ -10,7 +10,7 @@
 // comes out of a module, what comes out of a table, and what two strings reduce
 // to when they are compared. The command's own end-to-end proof is running it.
 import { describe, expect, it } from "vitest";
-import { jsxText, literals, marks, quotations, words } from "./copy-drift.mjs";
+import { jsxText, literals, marks, prose, quotations, wordDrift, words } from "./copy-drift.mjs";
 
 describe("literals", () => {
   it("keeps a nested template whole instead of closing on its inner backtick", () => {
@@ -137,5 +137,77 @@ describe("words and marks", () => {
     // `…` reduced to three full stops would read as punctuation the code never
     // ships, and every quotation using it would become a finding.
     expect(marks("… is on 3 lists")).toBe(marks("${name} is on 3 lists"));
+  });
+});
+
+// ── Word drift ────────────────────────────────────────────────────────────
+//
+// Each case below is a shape that defeated a version of `prose` or
+// `wordDrift` while this was being written. The first one matters most: the
+// check printed GREEN over a reverted `committed decks` → `finished lists`
+// rename, which is the exact drift it exists for, because `prose` tested the
+// raw span and rejected everything containing `${…}` or a semicolon.
+describe("prose", () => {
+  it("accepts a sentence with an interpolation and a semicolon", () => {
+    // The sentence that caught the first version out.
+    expect(prose("no free copies; they are on ${deckCount} of your committed decks")).toBe(true);
+  });
+
+  it("rejects CSS, class strings and filenames", () => {
+    expect(prose("box-shadow: inset 0 -26px 30px -22px rgba(0,0,0,.65)")).toBe(false);
+    expect(prose("md:hidden mt-[12px] bg-[color:var(--surface-rail)]")).toBe(false);
+    expect(prose("design/design_handoff_the99_about/The 99 - About Page (R4).dc.html")).toBe(false);
+  });
+
+  it("rejects a span too short to be compared safely", () => {
+    // `upload your collection` and `in your collection` are one substitution
+    // apart and have nothing to do with each other. Eight words is where the
+    // collisions stop.
+    expect(prose("upload your collection")).toBe(false);
+    expect(prose("1 in a draft")).toBe(false);
+  });
+});
+
+describe("wordDrift", () => {
+  const index = new Map<number, string[][]>();
+  const ship = (s: string) => {
+    const w = words(s).split(" ").filter(Boolean);
+    if (!index.has(w.length)) index.set(w.length, []);
+    index.get(w.length)!.push(w);
+  };
+  ship("no free copies; they are on ${deckCount} of your committed decks");
+  // A SIBLING one word away, listed FIRST so the near-match scan reaches it
+  // before the exact match. This is the real tree's condition, not a
+  // contrivance: three refusals ship as `We couldn't add/clear/fill those.
+  // The deck is unchanged.` With one string in the index the only candidate
+  // is the one at distance 0, so the exact-match rule below was satisfied by
+  // the fixture rather than by the code, and the test passed with the rule
+  // deleted. Two substitutions from the shipped string and three or four from
+  // each rename quotation, so it is a candidate for the exact-match case ALONE
+  // and cannot win the two rename tests above.
+  index.get(10)!.unshift(words("no spare copies; they sit on ${deckCount} of your committed decks").split(" ").filter(Boolean));
+
+  it("reports a two-word rename", () => {
+    // `finished lists` → `committed decks`: the 2026-09-19 sweep, and the
+    // reason the tolerance is two substitutions rather than one.
+    expect(
+      wordDrift("no free copies; they are on ${deckCount} of your finished lists", index),
+    ).toContain("committed decks");
+  });
+
+  it("reports a one-word rename", () => {
+    expect(
+      wordDrift("no free copies; they are on ${deckCount} of your committed lists", index),
+    ).toContain("committed decks");
+  });
+
+  it("says nothing about the string it already ships", () => {
+    expect(
+      wordDrift("no free copies; they are on ${deckCount} of your committed decks", index),
+    ).toBeNull();
+  });
+
+  it("says nothing about a sentence that shares no shape", () => {
+    expect(wordDrift("every deck starts with a commander you already own", index)).toBeNull();
   });
 });

@@ -61,10 +61,13 @@ import {
   jsxText,
   literals,
   marks,
+  prose,
   quotations,
   readable,
+  wordDrift,
   words,
 } from "./lib/copy-drift.mjs";
+import { allowlisted } from "./lib/copy-drift-allowlist.mjs";
 
 const copyFiles = (await readdir(COPY_DIR)).filter(
   (f) => f.endsWith(".ts") && !f.endsWith(".test.ts"),
@@ -74,6 +77,17 @@ const tableFiles = (await readdir(TABLE_DIR)).filter((f) => f.endsWith(".md"));
 // Shipped strings, keyed by their words. Short ones are skipped: a two-word
 // label collides with everything and proves nothing.
 const shipped = new Map();
+// The WORD-drift index, keyed by word count: a rename keeps the length and
+// moves one or two words, so only same-length candidates can match.
+const proseByLen = new Map();
+const indexProse = (strings) => {
+  for (const s of strings) {
+    if (!prose(s)) continue;
+    const w = words(s).split(" ").filter(Boolean);
+    if (!proseByLen.has(w.length)) proseByLen.set(w.length, []);
+    proseByLen.get(w.length).push(w);
+  }
+};
 let stringCount = 0;
 const index = (strings, file) => {
   for (const s of strings) {
@@ -85,7 +99,9 @@ const index = (strings, file) => {
   }
 };
 for (const f of copyFiles) {
-  index(literals(await readFile(path.join(COPY_DIR, f), "utf8")), f);
+  const strings = literals(await readFile(path.join(COPY_DIR, f), "utf8"));
+  index(strings, f);
+  indexProse(strings);
 }
 const components = await componentFiles(COMPONENT_DIR);
 for (const full of components) {
@@ -93,12 +109,35 @@ for (const full of components) {
   const rel = path.relative(ROOT, full);
   index(literals(src), rel);
   index(jsxText(src), rel);
+  indexProse(literals(src));
+  indexProse(jsxText(src));
 }
 
 const findings = [];
+const wordFindings = [];
+const allowed = allowlisted();
 const seen = new Set();
+const wordSeen = new Set();
 for (const f of tableFiles) {
-  for (const q of quotations(await readFile(path.join(TABLE_DIR, f), "utf8"))) {
+  const spans = quotations(await readFile(path.join(TABLE_DIR, f), "utf8"));
+
+  // WORD drift: a quotation shaped like a shipped string with one or two words
+  // moved. The punctuation check below cannot see this — `MARKS` is `[—:,.]`,
+  // so a rename differs in nothing it compares, and the 2026-09-19 `brew` →
+  // `draft` sweep left sixteen stale rows behind a green run.
+  for (const q of spans) {
+    if (!prose(q)) continue;
+    const key = words(q);
+    if (allowed.has(key)) continue;
+    const ships = wordDrift(q, proseByLen);
+    if (!ships) continue;
+    const id = `${f} ${key}`;
+    if (wordSeen.has(id)) continue;
+    wordSeen.add(id);
+    wordFindings.push({ table: `design-tables/${f}`, quoted: key, ships });
+  }
+
+  for (const q of spans) {
     if (!q.includes("—")) continue; // only the mark this project swept out
     const hits = shipped.get(words(q));
     if (!hits) continue;
@@ -129,10 +168,29 @@ console.log(
     `and ${components.length} components vs ${tableFiles.length} design tables`,
 );
 
-if (findings.length === 0) {
-  console.log("\nNo design table quotes a form the code stopped emitting.");
+if (findings.length === 0 && wordFindings.length === 0) {
+  console.log(
+    "\nNo design table quotes a form the code stopped emitting, in punctuation or in words.",
+  );
   process.exit(0);
 }
+
+if (wordFindings.length > 0) {
+  console.error(`\n${wordFindings.length} quotation(s) whose WORDS have moved:\n`);
+  for (const w of wordFindings) {
+    console.error(`  ${w.table}`);
+    console.error(`     table: ${w.quoted}`);
+    console.error(`     ships: ${w.ships}\n`);
+  }
+  console.error(
+    "A rename leaves the punctuation alone, so the check below cannot see it.\n" +
+      "Correct the table — or, where the two strings are unrelated and merely the\n" +
+      "same shape, add the `table:` line to `scripts/lib/copy-drift-allowlist.mjs`\n" +
+      "WITH ITS REASON. An exemption granted silently is how the next rename hides.",
+  );
+}
+
+if (findings.length === 0) process.exit(1);
 
 console.error(`\n${findings.length} stale quotation(s):\n`);
 for (const f of findings) {
