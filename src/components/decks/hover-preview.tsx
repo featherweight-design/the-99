@@ -28,8 +28,10 @@ import { cssUrl } from "../../lib/collection/browse";
 /** 252×352 is the handoff's figure and 63:88 exactly — the card's own ratio. */
 const WIDTH = 252;
 const HEIGHT = 352;
-/** Clear of the row on whichever side it opens. */
-const GUTTER = 14;
+/** Clear of the pointer on whichever side it opens. */
+const GUTTER = 18;
+/** Kept off the window's own edges, so the box never sits half off-screen. */
+const MARGIN = 8;
 
 /**
  * 240ms in, 80ms out. The delay is what makes an instant appearance calm rather
@@ -43,59 +45,68 @@ const OPEN_DELAY = 240;
 const CLOSE_DELAY = 80;
 
 /**
- * The image and where it goes, measured together in the event handler. The
- * geometry is state rather than something derived at render time: both rects
- * are live DOM measurements, and a render that took them would be reading the
- * layout of a frame it is in the middle of producing.
+ * The image, and where the box was when it opened.
+ *
+ * The POSITION after that is written straight to the node — see the move
+ * handler. State holds the opening position alone, so a pointer crossing 480
+ * rows does not re-render the list once per frame.
  */
 type PreviewTarget = { imageUri: string; box: PreviewBox };
 type PreviewBox = { top: number; left: number };
 
 type PreviewApi = {
-  /** Hover began on a row. Null `imageUri` is a no-op — see `usePreviewRow`. */
-  open: (imageUri: string | null | undefined, row: HTMLElement) => void;
+  /** Hover began on a row, at the pointer. Null `imageUri` is a no-op — see
+   *  `usePreviewRow`. */
+  open: (imageUri: string | null | undefined, x: number, y: number) => void;
+  /** The pointer moved while a row is hovered. */
+  move: (x: number, y: number) => void;
   close: () => void;
 };
 
 const PreviewContext = createContext<PreviewApi | null>(null);
 
 /**
- * Where the box goes. Left of the row, because the add panel docks right;
- * flipped right when there is not `WIDTH + GUTTER` to the left of it, which is
- * what a right-column row at a narrow desktop hits.
+ * Where the box goes: BESIDE THE POINTER, not beside the row.
  *
- * Bounded by the decklist pane rather than the viewport, on both axes: the
- * preview may overlap rows, since it is a transient, but the pane's edges are
- * where the deck bar and the add panel begin. Only a pane smaller than the box
- * itself gets past them — see `clamp`.
+ * It used to be placed against the row's own rect, which works while a row is
+ * about as wide as the box and fails completely when it is not. On the top-off
+ * list a row spans the whole list, so "beside the row" could only resolve to
+ * "past its far edge" — and the box landed flush right, over TYPE, COST, the
+ * availability, SYNERGY and DECKS, which are the figures a reader hovers a row
+ * to compare. Every one of them was covered, with several hundred pixels of
+ * empty row sitting unused.
+ *
+ * Following the pointer answers that without the surface having to describe
+ * itself: the box is always next to what the reader is looking at, and never on
+ * top of it. It also removes the whole question of which side a given list's
+ * data sits on.
+ *
+ * Right of the cursor by default, flipping left when the box would cross the
+ * viewport's edge — a fixed box is bounded by the window, not by the list, so
+ * the pane no longer bounds it. Vertically centred on the cursor and clamped to
+ * the window with the same margin.
  */
-function place(row: DOMRect, pane: DOMRect): PreviewBox {
-  const leftward = row.left - GUTTER - WIDTH;
-  const sided = leftward >= pane.left ? leftward : row.right + GUTTER;
-  const left = clamp(sided, pane.left, pane.right - WIDTH);
-  // Anchored to the row's vertical centre, then held inside the pane — a row
-  // near either end would otherwise hang the box off the top or the bottom.
-  const centred = row.top + row.height / 2 - HEIGHT / 2;
-  const top = clamp(centred, pane.top, pane.bottom - HEIGHT);
+function place(x: number, y: number): PreviewBox {
+  const rightward = x + GUTTER;
+  const left = rightward + WIDTH + MARGIN <= window.innerWidth
+    ? rightward
+    : Math.max(MARGIN, x - GUTTER - WIDTH);
+  const centred = y - HEIGHT / 2;
+  const top = clamp(centred, MARGIN, window.innerHeight - HEIGHT - MARGIN);
   return { top, left };
 }
 
-/**
- * A pane smaller than the box on some axis — a three-card group, a short window
- * — hands this a `max` below its `min`, and a plain `min(max(v, min), max)`
- * answers with that `max`: a top *above* the pane, or a left outside it. There
- * is no placement that fits in that case, so the near edge wins and the overflow
- * falls off the far one.
- */
 function clamp(value: number, min: number, max: number): number {
   return Math.min(Math.max(value, min), Math.max(min, max));
 }
 
 /**
- * The decklist's own pane. It is the provider itself rather than an element
- * inside it, because the pane is the box the preview is bounded by: two
- * elements would let one be wrapped without the other and place the preview
- * against something that is not the list.
+ * Wraps a list and owns one preview box for it.
+ *
+ * `className` is the wrapper's own padding, which the caller supplies because
+ * the wrapper stands in the list's layout. It no longer BOUNDS the preview —
+ * the box follows the pointer and is bounded by the window — so a caller that
+ * passes none simply adds no padding.
  */
 export function HoverPreviewProvider({
   className,
@@ -105,7 +116,6 @@ export function HoverPreviewProvider({
   children: React.ReactNode;
 }) {
   const [target, setTarget] = useState<PreviewTarget | null>(null);
-  const paneEl = useRef<HTMLDivElement | null>(null);
   const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
   // Read in `open` to decide whether the 240ms has already been paid. A ref
   // rather than the state itself, because `open` is stable and would otherwise
@@ -120,13 +130,27 @@ export function HoverPreviewProvider({
     if (timer.current) clearTimeout(timer.current);
   }, []);
 
+  // The box's own node, written to directly while the pointer moves. A
+  // `mousemove` that went through state would re-render this provider — and so
+  // every row under it — on every frame of a scan across a 480-row list, to move
+  // one absolutely positioned box.
+  const boxEl = useRef<HTMLDivElement | null>(null);
+  // Coalesced to one write per frame. A pointer reports far more often than the
+  // screen refreshes, and each extra write is a layout the browser throws away.
+  const frame = useRef<number | null>(null);
+  const pending = useRef<{ x: number; y: number } | null>(null);
+
+  useEffect(() => () => {
+    if (frame.current !== null) cancelAnimationFrame(frame.current);
+  }, []);
+
   const api = useMemo<PreviewApi>(
     () => ({
-      open: (imageUri, row) => {
+      open: (imageUri, x, y) => {
         // A row whose card has no art has nothing to preview. Silence rather
         // than a plate: the preview exists to answer "which card is this", and
         // an empty rectangle answers nothing.
-        if (!imageUri || !paneEl.current) return;
+        if (!imageUri) return;
         // Desktop only. A touch device fires `mouseenter` on tap, which would
         // put a transient the reader cannot dismiss over the row they meant to
         // press. Checked here rather than in CSS because the delays and the
@@ -134,15 +158,29 @@ export function HoverPreviewProvider({
         if (!window.matchMedia("(hover: hover)").matches) return;
         if (timer.current) clearTimeout(timer.current);
         const show = () => {
-          const pane = paneEl.current;
-          if (!pane) return;
-          setTarget({
-            imageUri,
-            box: place(row.getBoundingClientRect(), pane.getBoundingClientRect()),
-          });
+          // The pointer has moved since the delay began — a reader who set off
+          // down the list does not want the box where they entered the row.
+          const at = pending.current ?? { x, y };
+          setTarget({ imageUri, box: place(at.x, at.y) });
         };
+        pending.current = { x, y };
         if (isOpen.current) show();
         else timer.current = setTimeout(show, OPEN_DELAY);
+      },
+      move: (x, y) => {
+        pending.current = { x, y };
+        // Nothing to move until the box exists; the opening `show` reads
+        // `pending` for itself.
+        if (!isOpen.current || frame.current !== null) return;
+        frame.current = requestAnimationFrame(() => {
+          frame.current = null;
+          const box = boxEl.current;
+          const at = pending.current;
+          if (!box || !at) return;
+          const { top, left } = place(at.x, at.y);
+          box.style.top = `${top}px`;
+          box.style.left = `${left}px`;
+        });
       },
       close: () => {
         if (timer.current) clearTimeout(timer.current);
@@ -154,11 +192,12 @@ export function HoverPreviewProvider({
 
   return (
     <PreviewContext.Provider value={api}>
-      <div ref={paneEl} className={className}>
+      <div className={className}>
         {children}
       </div>
       {target && (
         <div
+          ref={boxEl}
           aria-hidden
           data-testid="hover-preview"
           className="fixed z-40 pointer-events-none rounded-[12px] hidden md:block"
@@ -185,10 +224,17 @@ export function HoverPreviewProvider({
 export function usePreviewRow(imageUri: string | null | undefined) {
   const api = useContext(PreviewContext);
   const onMouseEnter = useCallback(
-    (e: React.MouseEvent<HTMLElement>) => api?.open(imageUri, e.currentTarget),
+    (e: React.MouseEvent<HTMLElement>) => api?.open(imageUri, e.clientX, e.clientY),
     [api, imageUri],
+  );
+  // The box follows the pointer, so the row reports every move it sees. The
+  // provider coalesces them to one write per frame — the handler itself does no
+  // work beyond recording where the pointer is.
+  const onMouseMove = useCallback(
+    (e: React.MouseEvent<HTMLElement>) => api?.move(e.clientX, e.clientY),
+    [api],
   );
   const onMouseLeave = useCallback(() => api?.close(), [api]);
   if (!api) return {};
-  return { onMouseEnter, onMouseLeave };
+  return { onMouseEnter, onMouseMove, onMouseLeave };
 }

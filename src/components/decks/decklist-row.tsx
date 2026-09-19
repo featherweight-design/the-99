@@ -351,6 +351,9 @@ export function DecklistRow({
           a real border would add 2px to one row's height and shunt the list. */}
       <div
         {...previewHandlers}
+        // Named so a probe can address a decklist row without matching a
+        // composed class list, which is the caller's and changes with it.
+        data-decklist-row
         onClick={openFromRow}
         className={`group ${rowShell} cursor-pointer bg-[color:var(--surface-rail)] md:hover:bg-[color:var(--elevated-hover)]
           [--row-bg:var(--surface-rail)] md:hover:[--row-bg:var(--elevated-hover)]`}
