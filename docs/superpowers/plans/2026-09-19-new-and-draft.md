@@ -152,7 +152,7 @@ drew. The `versions` legend returns to its three rows.
 
 ### Task 2.3 — The walk
 
-Re-run `docs/superpowers/inventories/deck-state-marks.json` and `deck-state-facet.json` against
+Re-run `docs/superpowers/inventories/deck-statuses.json` and `deck-state-facet.json` against
 the new vocabulary, and correct both — the marks inventory is named for a feature that no longer
 exists. Its `/about` precondition stands and is why the first walk photographed `/about` in every
 cell.

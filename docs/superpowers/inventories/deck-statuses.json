@@ -1,0 +1,109 @@
+{
+  "feature": "Deck statuses \u2014 New and Draft, and the phase as a word",
+  "note": "Seven values now, and the claim is that the two PHASE words are legible beside the five count words \u2014 which is a claim about a GRID, so the /decks rows carry the fixtures side by side and the sheet is read across rather than down. `New` and `Draft` are the pair to look at: both are drawn from text colours rather than a hue, so in greyscale the dashed edge on `Draft` is the only thing between them. The deck page rows exist because its pill is the ONLY place that page states the phase \u2014 #730's mono line under the bar is retired with the marks it belonged to. Home's row is here because it carries the word beside the touched stamp, which is the pair a picture shows and a test cannot. Set MARKS_PLAN to a deck with no version and MARKS_MOVED to a committed deck whose draft has moved; `scripts/probe-deck-statuses.mjs` builds exactly those shapes if the account owns neither. PRECONDITION, and it cost a whole run: the account must already have dismissed the current ABOUT_VERSION. The gate redirects every route to /about until it is, and the first run of this sheet photographed /about in all twelve cells and read as coverage of nothing. It is not a step here because the dismissal is stored per ACCOUNT in the database rather than per browser \u2014 press `Got it` once as this account and every later run is clean, while a `Got it` step in the rows times out from the second row onward. The /decks rows SEARCH for the fixtures rather than photographing the whole grid: the account carries 37 decks and the words have to sit beside each other for the picture to be the claim. The FACET rows live in `deck-state-facet.json`: this inventory's `shares` block asserts every row draws the same `StatusPillBadge`, and the filter rows legitimately draw a filter \u2014 `check:shared` failed them for composing the right thing, which is the check working.",
+  "shares": {
+    "binding": "StatusPillBadge",
+    "module": "src/components/decks/status-pill.tsx"
+  },
+  "rows": [
+    {
+      "id": "decks-grid",
+      "label": "/decks \u00b7 the phase words beside the count words",
+      "view": "src/components/decks/deck-card.tsx",
+      "steps": [
+        {
+          "goto": "/decks",
+          "wait": "main, [role=main], h1",
+          "settle": 3000
+        },
+        {
+          "fill": "input[type=search]",
+          "text": "zz-marks",
+          "settle": 1200
+        }
+      ],
+      "widths": [
+        "desktop"
+      ]
+    },
+    {
+      "id": "decks-grid-phone",
+      "label": "/decks \u00b7 the phase words, stacked",
+      "view": "src/components/decks/deck-card.tsx",
+      "widths": [
+        "phone"
+      ],
+      "steps": [
+        {
+          "goto": "/decks",
+          "wait": "main, [role=main], h1",
+          "settle": 3000
+        },
+        {
+          "clickRole": "button",
+          "name": "Search decks",
+          "wait": "[role=dialog]",
+          "settle": 900
+        },
+        {
+          "fill": "input[type=search]",
+          "text": "zz-marks",
+          "settle": 900
+        },
+        {
+          "clickRole": "button",
+          "name": "^Show \\d+ decks?$",
+          "settle": 1500
+        }
+      ]
+    },
+    {
+      "id": "deck-page-plan",
+      "label": "/decks/[id] \u00b7 an uncommitted deck \u2014 the phase as a word in the pill",
+      "view": "src/components/decks/spine-desktop.tsx",
+      "steps": [
+        {
+          "goto": "/decks/${MARKS_PLAN}",
+          "wait": "main, [role=main], h1",
+          "settle": 3500
+        }
+      ]
+    },
+    {
+      "id": "deck-page-moved",
+      "label": "/decks/[id] \u00b7 a deck mid-tinker \u2014 the change figure, and the banner below it",
+      "view": "src/components/decks/spine-desktop.tsx",
+      "steps": [
+        {
+          "goto": "/decks/${MARKS_MOVED}",
+          "wait": "main, [role=main], h1",
+          "settle": 3500
+        }
+      ]
+    },
+    {
+      "id": "home-resume",
+      "label": "/ \u00b7 the resume rows \u2014 the status word beside the touched stamp",
+      "view": "src/components/home/resume-decks.tsx",
+      "steps": [
+        {
+          "goto": "/",
+          "wait": "main, [role=main], h1",
+          "settle": 3000
+        }
+      ]
+    },
+    {
+      "id": "about-versions",
+      "label": "/about \u00b7 the statuses entry, with all seven plates",
+      "view": "src/components/about/figures.tsx",
+      "steps": [
+        {
+          "goto": "/about",
+          "wait": "main, [role=main], h1",
+          "settle": 2500
+        }
+      ]
+    }
+  ]
+}

@@ -110,8 +110,10 @@ function detailFor(
   //
   // It can never take a warning colour, and nothing was added to prevent that:
   // every status that would lend it one already fills this slot with a figure
-  // (`4 over`, `3 lines unresolved`, the To-buy roll-up), so the only statuses
-  // reaching here are Complete, Building and Draft — all `--fg-faint`.
+  // (`4 over`, `3 lines unresolved`, the To-buy roll-up), so the only values
+  // reaching here are Complete, Building and New — all `--fg-faint`. `Draft` is
+  // not among them and cannot be: `figureFor` resolves every draft through
+  // `countStatus`, which answers one of the five committed values.
   // GUARDED to the three statuses that can reach the fallback honestly. `To buy`
   // also returns null here — a deck whose only missing cards are basics has a
   // `To buy` pill and no roll-up entry — and printing a proxy count there takes
