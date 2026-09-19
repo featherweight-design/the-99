@@ -108,18 +108,35 @@ async function measure(page, surface, rowLocator) {
     report(`${surface} · a row to hover`, false, "none on the page — NOT a pass");
     return;
   }
-  await rowLocator.nth(Math.min(2, rows - 1)).hover();
-  await page.waitForTimeout(700);
 
-  const opened = await page.evaluate(BOX);
+  // A PREVIEWABLE row, found by hovering until one opens the box. `imageUri` is
+  // nullable on both a deck row and a `SynergyCard`, and `usePreviewRow` no-ops
+  // on null by design — so a fixed nth row lands on a card the catalog has no
+  // picture for and reports "no preview" about a build that is working. Nothing
+  // in the DOM says which rows have art, so the box opening IS the test.
+  //
+  // Cheap after the first: the 240ms delay is paid once, and a row-to-row move
+  // while already open is instant.
+  const TRIES = 8;
+  let index = -1;
+  let opened = null;
+  for (let i = 0; i < Math.min(TRIES, rows) && opened === null; i++) {
+    await rowLocator.nth(i).hover();
+    await page.waitForTimeout(700);
+    opened = await page.evaluate(BOX);
+    if (opened !== null) index = i;
+  }
   report(
     `${surface} · the card appears`,
     opened !== null,
-    opened === null ? "no preview box — NOT a pass" : `at ${Math.round(opened.left)},${Math.round(opened.top)}`,
+    opened === null
+      ? `no preview on any of the first ${Math.min(TRIES, rows)} rows — NOT a pass:`
+        + " either none of them has art, or the provider is not wired"
+      : `row ${index} at ${Math.round(opened.left)},${Math.round(opened.top)}`,
   );
   if (opened === null) return;
 
-  const at = await rowLocator.nth(Math.min(2, rows - 1)).boundingBox();
+  const at = await rowLocator.nth(index).boundingBox();
   const x = Math.round(at.x + at.width / 2);
   const y = Math.round(at.y + at.height / 2);
   await page.mouse.move(x, y);
@@ -154,7 +171,7 @@ async function measure(page, surface, rowLocator) {
   // so "move to the window's edge" is not available. The rightmost point of the
   // row is, and on these full-width lists that is within a card's width of the
   // window — which is what makes the flip fire.
-  const near = await rowLocator.nth(Math.min(2, rows - 1)).boundingBox();
+  const near = await rowLocator.nth(index).boundingBox();
   await page.mouse.move(Math.round(near.x + near.width) - 6, y);
   await page.waitForTimeout(150);
   const atRight = await page.evaluate(BOX);

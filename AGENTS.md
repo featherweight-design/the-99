@@ -913,6 +913,12 @@ Package manager is **pnpm** (pinned via `packageManager` in package.json) — ne
   closes. `hover-preview.test.tsx` pins the arithmetic instead, deterministically. A fragile
   browser check over a solid unit one is the worse trade.
 
+  **It finds a PREVIEWABLE row by hovering until one opens the box.** `imageUri` is nullable on
+  both a deck row and a `SynergyCard`, and `usePreviewRow` no-ops on null by design — so a fixed
+  nth row lands on a card the catalog has no picture for and reports "no preview" about a build
+  that is working. Nothing in the DOM says which rows have art, so the box opening IS the test;
+  it tries the first eight and fails with which of the two it could not tell apart.
+
   Two mutations fail it: the rows reporting no movement, and the edge flip removed. Makes no
   writes; point it at `local-dev`.
 
