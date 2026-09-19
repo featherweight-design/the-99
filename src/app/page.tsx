@@ -106,7 +106,13 @@ export default async function HomePage() {
     // draws each deck's status pill, and without the figures a deck whose last
     // slots are printed reads `To buy` on Home while `/decks` says `Complete`
     // about the same deck.
-    listDecksWithStats(userId, "name", { includeProxyStats: true, includeDeckState: true }),
+    // Commander art on, for the same reason proxy stats are: these rows are
+    // RENDERED here, and the resume row's portrait is the commander's own art.
+    listDecksWithStats(userId, "name", {
+      includeProxyStats: true,
+      includeDeckState: true,
+      includeCommanderArt: true,
+    }),
   ]);
   if (stats.uniqueCards === 0 && decks.length === 0) {
     return <FirstRunChecklist />;

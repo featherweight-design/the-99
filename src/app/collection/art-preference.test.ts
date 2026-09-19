@@ -40,8 +40,11 @@ const stub = vi.hoisted(() => {
 vi.mock("../../db", () => ({ db: stub.db }));
 vi.mock("../../lib/auth", () => ({ requireUserId: async () => "user_1" }));
 vi.mock("next/cache", () => ({
-  revalidatePath: (p: string) => {
-    stub.calls.revalidated.push(p);
+  // The TYPE argument is recorded, not just the path. `revalidatePath` silently does
+  // nothing for a route with a `[param]` when it is omitted, so a mock that drops it
+  // lets the assertions below pass over exactly the failure they exist to catch.
+  revalidatePath: (p: string, type?: string) => {
+    stub.calls.revalidated.push(type === undefined ? p : `${p} (${type})`);
   },
   updateTag: () => {},
 }));
@@ -107,10 +110,14 @@ describe("setCardArtPreference", () => {
   //
   // The mock at the top runs `after` inline, so this asserts the paths; what pins the timing
   // is `deferred` below, which holds the callback instead of running it.
-  it("drops the browse route and the set page", async () => {
+  // The deck routes ride along because a commander's art on both of them is the picked
+  // printing's: a pick on a card leading a deck moves the tile's wash and the header band.
+  it("drops the browse route, the set page, Home and both deck routes", async () => {
     stub.calls.owned.push({ one: 1 });
     await setCardArtPreference(ORACLE, "ZNR", "12");
-    expect(stub.calls.revalidated).toEqual(["/collection", "/collection/sets/[code]"]);
+    expect(stub.calls.revalidated).toEqual([
+      "/collection", "/collection/sets/[code] (page)", "/", "/decks", "/decks/[id] (page)",
+    ]);
   });
 
   it("revalidates nothing until the response is out", async () => {
@@ -122,7 +129,9 @@ describe("setCardArtPreference", () => {
       expect(stub.calls.revalidated).toEqual([]);
       expect(stub.calls.deferred).toHaveLength(1);
       stub.calls.deferred[0]();
-      expect(stub.calls.revalidated).toEqual(["/collection", "/collection/sets/[code]"]);
+      expect(stub.calls.revalidated).toEqual([
+        "/collection", "/collection/sets/[code] (page)", "/", "/decks", "/decks/[id] (page)",
+      ]);
     } finally {
       stub.calls.hold = false;
     }
@@ -145,7 +154,10 @@ describe("clearCardArtPreference", () => {
       expect(stub.calls.revalidated).toEqual([]);
       stub.calls.deferred[0]();
       // The set page too: clearing a pick moves the fill back between the same two cells.
-      expect(stub.calls.revalidated).toEqual(["/collection", "/collection/sets/[code]"]);
+      // And both deck routes, whose commander art returns to the resolver's choice.
+      expect(stub.calls.revalidated).toEqual([
+        "/collection", "/collection/sets/[code] (page)", "/", "/decks", "/decks/[id] (page)",
+      ]);
     } finally {
       stub.calls.hold = false;
     }

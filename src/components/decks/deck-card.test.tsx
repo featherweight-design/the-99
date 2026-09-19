@@ -69,6 +69,35 @@ describe("DeckCard", () => {
     expect(footer.className).toContain("content-start");
   });
 
+  // The tile's wash is the OWNED printing's art, so the caption under it has to be the
+  // name printed on that copy. A Secret Lair art under the oracle name is the pairing the
+  // collection reader forbids everywhere else.
+  it("captions the tile with the name printed on the copy the player owns", () => {
+    render(
+      <DeckCard folders={[]} onCreateFolder={() => {}} say={() => {}} onMoved={() => {}} keepsFocus closeAfterCreate={null}
+        deck={deck({
+          commanderName: "Iroas, God of Victory",
+          commanderPrintedName: "Freya, Queen of the Valkyries",
+        })}
+        shopping={undefined} now={now} />,
+    );
+
+    expect(screen.getByText(/Freya, Queen of the Valkyries/)).toBeTruthy();
+    expect(screen.queryByText(/Iroas, God of Victory/)).toBeNull();
+  });
+
+  // Absent, not null: every fixture built before the field existed omits it, and a tile
+  // that printed `undefined` for them would be the regression this pairing was meant to
+  // prevent.
+  it("keeps the oracle name when the copy owned prints it", () => {
+    render(
+      <DeckCard folders={[]} onCreateFolder={() => {}} say={() => {}} onMoved={() => {}} keepsFocus closeAfterCreate={null}
+        deck={deck()} shopping={undefined} now={now} />,
+    );
+
+    expect(screen.getAllByText(/Atraxa, Praetors' Voice/).length).toBeGreaterThan(0);
+  });
+
   it("shows the status, the count with its denominator, and the explaining figure", () => {
     render(
       <DeckCard folders={[]} onCreateFolder={() => {}} say={() => {}} onMoved={() => {}} keepsFocus closeAfterCreate={null} deck={deck()} shopping={{ copies: 3, cents: 1840, pricedCopies: 3 }} now={now} />,

@@ -8,6 +8,12 @@ export type PrintingRow = {
   imageUri: string | null;
   imageUriSmall: string | null;
   /**
+   * This printing's frame-free crop — what a wash draws behind a commander. Oracle-level
+   * `cards.art_crop_uri` is one arbitrary printing's crop, so a player owning another
+   * printing saw art that is not on their card.
+   */
+  artCropUri: string | null;
+  /**
    * This printing's second face, which is what a flip has to swap to. Asked of the face
    * rather than of the layout, exactly as the cards transform does: split, flip and
    * adventure cards are `card_faces` arrays too and carry one image between them, so they
@@ -111,6 +117,12 @@ export function classifyPrinting(raw: Raw): PrintingClassification {
     raw.image_uris?.normal ?? faces?.find((f) => f.image_uris?.normal)?.image_uris.normal ?? null;
   const imageUriSmall =
     raw.image_uris?.small ?? faces?.find((f) => f.image_uris?.small)?.image_uris.small ?? null;
+  // Same face fallback, same reason: the two-sided layouts carry no top-level image_uris,
+  // and without it every DFC printing would store a NULL crop.
+  const artCropUri =
+    raw.image_uris?.art_crop
+    ?? faces?.find((f) => f.image_uris?.art_crop)?.image_uris.art_crop
+    ?? null;
 
   return {
     kind: "printing",
@@ -121,6 +133,7 @@ export function classifyPrinting(raw: Raw): PrintingClassification {
       collectorNumber: requiredString(raw, "collector_number"),
       imageUri,
       imageUriSmall,
+      artCropUri,
       backImageUri: faces?.[1]?.image_uris?.normal ?? null,
       finishes: Array.isArray(raw.finishes) && raw.finishes.length > 0
         ? raw.finishes

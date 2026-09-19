@@ -16,7 +16,7 @@ import { deckImportCopy } from "../../lib/copy/deck-import";
 import { overCopy, overWord, renameCopy } from "../../lib/copy/decks-builder";
 import { deckHeaderCopy } from "../../lib/copy/decks-builder";
 import { deckBodySize } from "../../lib/decks/deck-size";
-import { colorLabel, deckIdentity } from "../../lib/decks/format";
+import { colorLabel, commanderDisplayName, deckIdentity } from "../../lib/decks/format";
 import type { StatusPill } from "../../lib/decks/status";
 import { STATUS_TOKEN, statusBarStyle } from "../../lib/decks/status-style";
 import { FirstCommitOffer } from "./first-commit-offer";
@@ -37,6 +37,10 @@ export interface SpineBandProps {
       name: string;
       colorIdentity: string[];
       artCropUri: string | null;
+      /** The name on the copy the player owns, where it differs from the oracle
+       *  card's. Optional for the same reason `proxied` is; absent is null, and
+       *  the caption falls back to the oracle name. */
+      printedName?: string | null;
       /** This deck prints its copy of this commander. Optional because the
        *  fixtures that build this literal predate proxies; absent is unproxied. */
       proxied?: boolean;
@@ -51,6 +55,8 @@ export interface SpineBandProps {
       name: string;
       colorIdentity: string[];
       artCropUri: string | null;
+      /** As on the primary: the name on the copy owned, or null. */
+      printedName?: string | null;
       /** Per id: a pair deck can print one commander and own the other. */
       proxied?: boolean;
     } | null;
@@ -382,14 +388,14 @@ export function SpineDesktop({
                 alignItems: "baseline",
               }}
             >
-              <span style={TRUNCATES}>{commander.name}</span>
+              <span style={TRUNCATES}>{commanderDisplayName(commander)}</span>
               {/* The mark, on the caption's own line. A PAIR names its owner —
                   two commanders, two independent flags and one row, so a bare
                   glyph could belong to either — and a single commander never
                   pays for that. `P×2` is banned by ruling 5, so both proxied
                   draws two named marks in name order. */}
               {commander.proxied ? (
-                <ProxyTag variant="band" pairName={partner ? shortName(commander.name) : undefined} />
+                <ProxyTag variant="band" pairName={partner ? shortName(commanderDisplayName(commander)) : undefined} />
               ) : null}
               {partner ? (
                 <>
@@ -400,9 +406,9 @@ export function SpineDesktop({
                       art beside this text. */}
                   <CardDetailTrigger
                     oracleId={partner.oracleId}
-                    name={partner.name}
-                    title={partner.name}
-                    ariaLabel={deckImportCopy.commander.partnerCardAria(partner.name)}
+                    name={commanderDisplayName(partner)}
+                    title={commanderDisplayName(partner)}
+                    ariaLabel={deckImportCopy.commander.partnerCardAria(commanderDisplayName(partner))}
                     className="font-mono"
                     style={{
                       ...TRUNCATES,
@@ -412,10 +418,10 @@ export function SpineDesktop({
                       borderBottom: "1px solid var(--border-strong)",
                     }}
                   >
-                    {partner.name}
+                    {commanderDisplayName(partner)}
                   </CardDetailTrigger>
                   {partner.proxied ? (
-                    <ProxyTag variant="band" pairName={shortName(partner.name)} />
+                    <ProxyTag variant="band" pairName={shortName(commanderDisplayName(partner))} />
                   ) : null}
                 </>
               ) : null}

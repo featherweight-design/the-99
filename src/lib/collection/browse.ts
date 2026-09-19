@@ -62,6 +62,20 @@ export type BrowsePrinting = {
    */
   backImageUri?: string | null;
   /**
+   * THIS printing's frame-free crop — what a wash draws behind a commander sleeved from it.
+   *
+   * Printing-level for the same reason `backImageUri` is: `cards.art_crop_uri` is one
+   * arbitrary printing's crop, so a deck whose commander is owned in another printing drew
+   * art that is not on the card in the box. Falls through the same tiers as the front art,
+   * and null where they all miss — a printing ingested before the column existed included,
+   * which is what keeps the oracle-level fallback the reader had.
+   *
+   * Optional rather than `| null` required, exactly as `backImageUri` is: fixtures across
+   * the suite build `BrowsePrinting` literals that never touch the catalog, and absent
+   * means what null does here.
+   */
+  artCropUri?: string | null;
+  /**
    * The name printed on THIS printing when it differs from the oracle card's —
    * `printings.flavor_name`, populated for Secret Lair and similar renames
    * (#467). Null on the overwhelming majority of printings, which print the
@@ -293,6 +307,12 @@ export type RawCollectionRow = {
   representativeImageUri: string | null;
   /** Tier 3 — the oracle-level catalog image, i.e. today's behavior. */
   cardImageUri: string | null;
+  /** Tier 1's frame-free crop — the exact printing's own art. */
+  exactArtCropUri: string | null;
+  /** Tier 2's crop. `resolveArtCropUri` takes whichever tier the front art came from. */
+  representativeArtCropUri: string | null;
+  /** Tier 3's crop — `cards.art_crop_uri`, one arbitrary printing's, i.e. today's behavior. */
+  cardArtCropUri: string | null;
   /** Tier 1's printed name — the exact printing's `printings.flavor_name`, or null. */
   flavorName: string | null;
   /** Tier 2's printed name. `resolveFlavorName` takes whichever tier the art came from. */
@@ -368,6 +388,27 @@ export function resolveBackImageUri(r: {
 }
 
 /**
+ * The frame-free crop of whichever printing `resolveImageUri` just took the front art from.
+ *
+ * Same rule as `resolveBackImageUri`, for the same reason: the crop and the front art come
+ * off one printing or they disagree. A printing ingested before `printings.art_crop_uri`
+ * existed has none of its own, and the honest answer for it is the oracle-level crop every
+ * wash drew before the column existed — never the tier below, which is another printing's
+ * art under this printing's name.
+ */
+export function resolveArtCropUri(r: {
+  exactImageUri: string | null;
+  representativeImageUri: string | null;
+  exactArtCropUri: string | null;
+  representativeArtCropUri: string | null;
+  cardArtCropUri: string | null;
+}): string | null {
+  if (r.exactImageUri !== null) return r.exactArtCropUri ?? r.cardArtCropUri;
+  if (r.representativeImageUri !== null) return r.representativeArtCropUri ?? r.cardArtCropUri;
+  return r.cardArtCropUri;
+}
+
+/**
  * A collector number's digits with every non-digit stripped, so "12a" and "A-12" both sort as 12
  * and numberless values like "★" sort last. Deliberately the same rule as `numericPart` in
  * transform-printings.ts: browse order has to agree with the order the ingest chose the
@@ -423,6 +464,7 @@ export function aggregateCollection(rows: RawCollectionRow[]): BrowseCard[] {
       quantity: r.quantity,
       finishes: { [r.finish]: r.quantity },
       imageUri: resolveImageUri(r),
+      artCropUri: resolveArtCropUri(r),
       backImageUri: resolveBackImageUri(r),
       flavorName: resolveFlavorName(r),
     };
@@ -473,6 +515,7 @@ export function aggregateCollection(rows: RawCollectionRow[]): BrowseCard[] {
       // the image line above.
       seen.flavorName ??= printing.flavorName;
       seen.backImageUri ??= printing.backImageUri;
+      seen.artCropUri ??= printing.artCropUri;
       // NOT `??=`, unlike the two lines above. Two finishes of one printing normally
       // share a catalog id, but the import path already records that they can
       // disagree and rules that null is the honest answer when they do
@@ -770,6 +813,9 @@ export async function selectCollectionRows(
       layout: cards.layout,
       backImageUri: cards.backImageUri,
       exactImageUri: exact.imageUri,
+      exactArtCropUri: exact.artCropUri,
+      representativeArtCropUri: representative.artCropUri,
+      cardArtCropUri: cards.artCropUri,
       // The `exact` alias is the printing joined on `collection_items.scryfall_id`
       // — the printing the player physically owns, and the only one whose printed
       // name is theirs to show.

@@ -76,6 +76,11 @@ export const EMPTY_FILTERS: DeckFilters = {
 export type FilterableDeck = {
   name: string;
   commanderName: string;
+  /** The name printed on the copy the player owns, where it differs. The tile draws THIS
+      name, so a search that matched the oracle name alone would find nothing for the very
+      string on screen. Both are matched: the oracle name is what a player who knows the
+      card types, and the printed one is what they are reading. */
+  commanderPrintedName?: string | null;
   commanderColorIdentity: string[];
   /** The partner's, where there is one. A pair deck's colour is the UNION of the
       two — which every surface words — so a filter reading the primary's alone
@@ -139,6 +144,7 @@ export function filterDecks<T extends FilterableDeck>(
       needle &&
       !d.name.toLowerCase().includes(needle) &&
       !d.commanderName.toLowerCase().includes(needle) &&
+      !(d.commanderPrintedName ?? "").toLowerCase().includes(needle) &&
       !(d.partnerName ?? "").toLowerCase().includes(needle)
     ) {
       return false;

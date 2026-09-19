@@ -19,6 +19,7 @@ import { shortCommanderName } from "../../lib/copy/decks-builder";
 import { deckImportCopy } from "../../lib/copy/deck-import";
 import { refreshCopy } from "../../lib/copy/refresh";
 import { deckBodySize } from "../../lib/decks/deck-size";
+import { commanderDisplayName } from "../../lib/decks/format";
 import type { DeckListItem } from "../../lib/decks/read";
 import type { ShoppingRollup } from "../../lib/decks/shopping-rollup";
 import { byTouched, elapsed, touchedBy } from "../../lib/decks/touched";
@@ -91,6 +92,13 @@ function ResumeRow(
 ) {
   const stamp = touchedStamp(deck, now);
   const { partnerName } = deck;
+  // The name on the copy the player owns, because the portrait beside it is that
+  // copy's art. The partner carries no printed name in this payload and needs
+  // none: no resume row draws a second commander's art.
+  const commanderName = commanderDisplayName({
+    name: deck.commanderName,
+    printedName: deck.commanderPrintedName,
+  });
   const count = `${deck.built} / ${deckBodySize(partnerName !== null)}`;
   // Decision 23. The long form leaves negative room for a name at all — 62px of
   // pill, 28px of gaps and a 113px count against the 200px this line gets — so
@@ -207,7 +215,7 @@ function ResumeRow(
               truncation is a layout compromise, never an information one. */}
           {partnerName === null ? (
             <span className="min-w-0 flex-1 truncate font-mono text-[10.5px] text-[color:var(--fg-body)]">
-              {deck.commanderName}
+              {commanderName}
             </span>
           ) : (
             <>
@@ -215,7 +223,7 @@ function ResumeRow(
                 aria-hidden
                 className="flex min-w-0 flex-1 gap-[4px] overflow-hidden font-mono text-[10.5px] text-[color:var(--fg-body)]"
               >
-                <span style={TRUNCATES}>{shortCommanderName(deck.commanderName)}</span>
+                <span style={TRUNCATES}>{shortCommanderName(commanderName)}</span>
                 <span style={{ ...TRUNCATES, flexShrink: 1000 }}>
                   {`+ ${shortCommanderName(partnerName)}`}
                 </span>
@@ -226,8 +234,8 @@ function ResumeRow(
                   rather than following them, so the row is not read twice. */}
               <span className="sr-only">
                 {copies === null
-                  ? partnerCopy.pairAria(deck.commanderName, partnerName)
-                  : `${partnerCopy.pairAria(deck.commanderName, partnerName)} · ${partnerCopy.pairRowBuyAria(copies)}`}
+                  ? partnerCopy.pairAria(commanderName, partnerName)
+                  : `${partnerCopy.pairAria(commanderName, partnerName)} · ${partnerCopy.pairRowBuyAria(copies)}`}
               </span>
             </>
           )}

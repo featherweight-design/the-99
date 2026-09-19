@@ -60,6 +60,7 @@
     "probe:list-scroll": "node scripts/probe-list-scroll.mjs",
     "probe:printing-pick": "node scripts/probe-printing-pick.mjs",
     "probe:catalog-stamp": "tsx scripts/probe-catalog-stamp.ts",
+    "probe:commander-art": "tsx scripts/probe-commander-art.ts",
     "probe:build-from": "node scripts/probe-build-from.mjs",
     "probe:arrivals": "tsx scripts/probe-arrivals.ts",
     "probe:commit-offer": "node scripts/probe-commit-offer.mjs",

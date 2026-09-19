@@ -18,6 +18,7 @@ const plains = {
   image_uris: {
     normal: "https://cards.scryfall.io/normal/plains.jpg",
     small: "https://cards.scryfall.io/small/plains.jpg",
+    art_crop: "https://cards.scryfall.io/art_crop/plains.jpg",
   },
 };
 
@@ -29,7 +30,7 @@ const asPrinting = (raw: Record<string, unknown>): PrintingRow => {
 
 const printing = (over: Partial<PrintingRow>): PrintingRow => ({
   scryfallId: "id", oracleId: "o", setCode: "ecl", collectorNumber: "1",
-  imageUri: null, imageUriSmall: null, backImageUri: null,
+  imageUri: null, imageUriSmall: null, artCropUri: null, backImageUri: null,
   finishes: ["nonfoil"], isVariant: false,
   flavorName: null, booster: false, rarity: "common", ...over,
 });
@@ -44,6 +45,9 @@ describe("classifyPrinting", () => {
       collectorNumber: "269",
       imageUri: "https://cards.scryfall.io/normal/plains.jpg",
       imageUriSmall: "https://cards.scryfall.io/small/plains.jpg",
+      // THIS printing's crop, not the oracle row's. A deck's commander band drew
+      // `cards.art_crop_uri` — one arbitrary printing's art — until this column existed.
+      artCropUri: "https://cards.scryfall.io/art_crop/plains.jpg",
       finishes: ["nonfoil", "foil"],
       isVariant: false,
       flavorName: null,
@@ -71,13 +75,19 @@ describe("classifyPrinting", () => {
     const dfc = {
       ...plains, layout: "transform", image_uris: undefined,
       card_faces: [
-        { image_uris: { normal: "https://x/front.jpg", small: "https://x/front-s.jpg" } },
-        { image_uris: { normal: "https://x/back.jpg", small: "https://x/back-s.jpg" } },
+        { image_uris: { normal: "https://x/front.jpg", small: "https://x/front-s.jpg",
+                        art_crop: "https://x/front-crop.jpg" } },
+        { image_uris: { normal: "https://x/back.jpg", small: "https://x/back-s.jpg",
+                        art_crop: "https://x/back-crop.jpg" } },
       ],
     };
     expect(asPrinting(dfc)).toMatchObject({
       imageUri: "https://x/front.jpg",
       imageUriSmall: "https://x/front-s.jpg",
+      // The front face's crop, for the same reason the front face's image is taken: a
+      // two-sided layout carries no top-level `image_uris`, and without the fallback every
+      // DFC printing would store a null crop and keep drawing the oracle row's art.
+      artCropUri: "https://x/front-crop.jpg",
       // This printing's own second side, which is what makes a flip show the art of the
       // printing the reader picked rather than whichever one the oracle row was built from.
       backImageUri: "https://x/back.jpg",
@@ -95,6 +105,12 @@ describe("classifyPrinting", () => {
     };
     expect(asPrinting(split).backImageUri).toBeNull();
     expect(asPrinting({ ...plains, card_faces: undefined }).backImageUri).toBeNull();
+  });
+
+  it("stores no crop when neither the printing nor its faces carry one", () => {
+    // Every row an older ingest wrote is in this state until the catalog is re-seeded,
+    // and the reader has to fall back to the oracle-level crop for all of them.
+    expect(asPrinting({ ...plains, image_uris: { normal: "n.jpg" } }).artCropUri).toBeNull();
   });
 
   it("uses the first face that carries an image", () => {

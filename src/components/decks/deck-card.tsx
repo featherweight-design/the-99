@@ -2,7 +2,7 @@ import Link from "next/link";
 import { refreshCopy } from "../../lib/copy/refresh";
 import { deckBodySize } from "../../lib/decks/deck-size";
 import { countStatus, type StatusPill } from "../../lib/decks/status";
-import { colorLabel, deckIdentity } from "../../lib/decks/format";
+import { colorLabel, commanderDisplayName, deckIdentity } from "../../lib/decks/format";
 import { formatCents } from "../../lib/decks/price";
 import type { DeckListItem } from "../../lib/decks/read";
 import type { DeckShopping } from "../../lib/decks/shopping-rollup";
@@ -272,10 +272,17 @@ export function DeckCard({
   // and prints the wrong colour for any partner that adds one. Computed once and
   // used for the visible line and the accessible name, so the two cannot drift.
   const colour = colorLabel(deckIdentity(deck.commanderColorIdentity, deck.partnerColorIdentity));
+  // The name on the copy the player owns, since the art beside it is that copy's.
+  // The partner has no printed name here and needs none: no tile draws a second
+  // commander's art, so there is no pairing for its name to break.
+  const commanderName = commanderDisplayName({
+    name: deck.commanderName,
+    printedName: deck.commanderPrintedName,
+  });
   // The same identity the block draws, in the same order, and a PAIR states both
   // commanders: the visible line shortens them to fit and the accessible name
   // never does — truncation is a layout compromise, not an information one.
-  const identity = `${deck.partnerName === null ? deck.commanderName : `${deck.commanderName} and ${deck.partnerName}`}, ${colour}`;
+  const identity = `${deck.partnerName === null ? commanderName : `${commanderName} and ${deck.partnerName}`}, ${colour}`;
   const ariaLabel =
     detail === null
       ? refreshCopy.decks.cardAriaNoDetail(
@@ -437,14 +444,14 @@ export function DeckCard({
               // the larger shrink factor, so it is the half that gives, which is
               // the same ordered shrink the resume row and the spines use.
               <span className="flex min-w-0 gap-[4px]">
-                <span className="min-w-0 truncate">{deck.commanderName}</span>
+                <span className="min-w-0 truncate">{commanderName}</span>
                 <span className="flex-none">+</span>
                 <span className="min-w-0 truncate" style={{ flexShrink: 1000 }}>
                   {deck.partnerName}
                 </span>
               </span>
             ) : (
-              <span className="min-w-0 truncate">{deck.commanderName}</span>
+              <span className="min-w-0 truncate">{commanderName}</span>
             )}
             <span className="flex-none whitespace-nowrap">· {colour}</span>
           </span>
