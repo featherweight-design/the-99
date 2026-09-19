@@ -119,7 +119,7 @@ Mutation-check each: revert, confirm red, restore. **Restore from a scratchpad c
 
 ### Task 1.8 — The probe
 
-`scripts/probe-deck-state-marks.mjs` is rewritten as the seven-plate check rather than deleted —
+`scripts/probe-deck-state-marks.mjs` is rewritten as the seven-plate check rather than deleted, and renamed `scripts/probe-deck-statuses.mjs` —
 it already signs in, builds fixtures and reads resolved styles.
 
 - **No mark anywhere**: no chip on any surface draws a `2px` left border, and no bar draws
