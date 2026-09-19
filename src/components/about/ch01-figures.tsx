@@ -740,11 +740,22 @@ export function DecklistOrderFigureBody() {
  * one owned, one not, and one a committed deck is holding — which still adds,
  * arriving with the mark that says so.
  */
+// Module constants, not literals in the render below. `useCardSearch` lists
+// `colorIdentity` in its effect dependencies and compares by identity, so a
+// fresh array from every render of this figure would restart the debounce each
+// time the resolver settled — a search every 150ms, for as long as the page is
+// open. It does not happen today, because nothing re-renders this figure and a
+// prop is only rebuilt when its PARENT renders: measured at one resolver call
+// in 1.2s, and `add-cards-stable.test.tsx` pins that. Hoisting removes the trap
+// rather than fixing a live hang, and costs nothing.
+const ADD_IDENTITY = ["W", "U"];
+const ADD_SEARCH = async () => ADD_RESULTS;
+
 export function AddCardsFigureBody() {
   return (
     <QuickAddBar
       deckId="about-figure"
-      commanderIdentity={["W", "U"]}
+      commanderIdentity={ADD_IDENTITY}
       deckOracleIds={[]}
       commanderShortName={DECK_SPINE.deck.commander.name.split(",")[0]}
       commanderOracleId={DECK_SPINE.deck.commander.oracleId}
@@ -756,7 +767,7 @@ export function AddCardsFigureBody() {
       // reason as `CardDetailProvider`'s `fetchCard`: a reference page has no
       // business reaching a server action, and these three rows are chosen to
       // say what the caption says.
-      search={async () => ADD_RESULTS}
+      search={ADD_SEARCH}
     />
   );
 }
