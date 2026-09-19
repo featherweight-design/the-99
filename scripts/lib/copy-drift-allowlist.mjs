@@ -39,15 +39,6 @@ export const WORD_DRIFT_ALLOWLIST = [
   { quoted: "we couldn't clear those the deck is unchanged", reason: "sibling refusal; three ship one word apart" },
   { quoted: "we couldn't fill those the deck is unchanged", reason: "sibling refusal; three ship one word apart" },
   { quoted: "we couldn't make that swap nothing has changed", reason: "unrelated to the game-delete refusal it matches" },
-
-  // ── Drift that is already RECORDED and awaiting a ruling ───────────────
-  // `appshell.md:1558` carries its own `⚠ Drift, pre-dating the 2026-09-13
-  // punctuation sweep` note: the app says `we assemble`, the canvas said
-  // `we'll assemble`, they diverged before the sweep, and the row says so and
-  // asks for a Design ruling. Allowlisted because the table is already doing
-  // the honest thing — NOT because the drift is acceptable. When Design rules,
-  // fix the row and delete this entry.
-  { quoted: "pick a commander and we'll assemble the 99 from cards you already own", reason: "marked drift in appshell.md:1558, awaiting a Design ruling" },
 ];
 
 /** The allowlist as a set of reduced spans, for the check to test against. */

@@ -1554,8 +1554,8 @@ See collection empty state card-fan specs above. Mobile: 100×110px container. D
 | line-height | `1.6` | `1.6` |
 | margin | `12px 0 0` | `12px 0 0` |
 | max-width | — | `420px` |
-| content (mobile) | `Pick a commander and we'll assemble the 99 from cards you already own.` | — |
-| content (desktop) | — | `Pick a commander and we'll assemble the 99 from cards you already own — then track what's missing.`<br>**⚠ Drift, pre-dating the 2026-09-13 punctuation sweep:** the shipped string reads "Pick a commander and we assemble the 99 from cards you already own, then track what is missing." — `we`/`what is`, not `we'll`/`what's`. Diverged in wording before the sweep, so the sweep left it. Needs a Design ruling. |
+| content (mobile) | `Pick a commander and we’ll assemble the 99 from cards you already own.` | — |
+| content (desktop) | — | `Pick a commander and we’ll assemble the 99 from cards you already own, then track what’s missing.`<br>Comma, not the em-dash this row carried before the 2026-09-13 sweep. The contractions were settled by copy-review on 2026-09-19 in favour of the canvas, against `recommendationsCopy.build.stickyPromise` (`We’ll fill {n} of the 99`) — the same promise in the same slot, and the reason the shipped `we assemble` was the outlier. |
 
 ### "Browse commanders" CTA
 
