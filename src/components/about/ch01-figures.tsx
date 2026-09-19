@@ -749,7 +749,16 @@ export function DecklistOrderFigureBody() {
 // in 1.2s, and `add-cards-stable.test.tsx` pins that. Hoisting removes the trap
 // rather than fixing a live hang, and costs nothing.
 const ADD_IDENTITY = ["W", "U"];
-const ADD_SEARCH = async () => ADD_RESULTS;
+// Honours its own `ownedOnly` argument rather than ignoring it. A resolver
+// that returned the same three rows under either filter would draw a panel
+// whose toggle contradicts its list — and the figure below turns the toggle
+// OFF, because one of those rows is a card the player does not own and `Owned
+// only` could never have produced it.
+const ADD_SEARCH = async (
+  _query: string,
+  _identity: string[] | null,
+  ownedOnly: boolean,
+) => (ownedOnly ? ADD_RESULTS.filter((r) => r.owned) : ADD_RESULTS);
 
 export function AddCardsFigureBody() {
   return (
@@ -763,6 +772,10 @@ export function AddCardsFigureBody() {
       // a bar taking the default draws a field over an empty list — which is
       // the one thing this entry is not about.
       initialQuery="so"
+      // `All of Magic`. The list below holds a card the player does not own,
+      // which `Owned only` cannot return — and the caption's first clause is
+      // about searching both.
+      initialOwnedOnly={false}
       // The resolver, rather than the server action. Same shape and same
       // reason as `CardDetailProvider`'s `fetchCard`: a reference page has no
       // business reaching a server action, and these three rows are chosen to

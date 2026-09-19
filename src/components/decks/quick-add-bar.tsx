@@ -50,6 +50,14 @@ interface QuickAddBarProps {
    * not about.
    */
   initialQuery?: string;
+  /**
+   * Whether the owned-only toggle starts on. True everywhere a player opens
+   * the bar — most adds come from the collection. `/about` passes false: its
+   * figure lists a card the player does not own, and a panel showing a `not
+   * owned` row under an enabled `Owned only` toggle is a state the real search
+   * cannot produce.
+   */
+  initialOwnedOnly?: boolean;
   search?: CardSearchInput["search"];
 }
 
@@ -60,10 +68,11 @@ export function QuickAddBar({
   commanderShortName,
   commanderOracleId,
   initialQuery = "",
+  initialOwnedOnly = true,
   search,
 }: QuickAddBarProps) {
   const [query, setQuery] = useState(initialQuery);
-  const [ownedOnly, setOwnedOnly] = useState(true);
+  const [ownedOnly, setOwnedOnly] = useState(initialOwnedOnly);
   // Escape dismisses before it clears, so the list can be closed without losing
   // a query the user is still editing.
   const [dismissed, setDismissed] = useState(false);
