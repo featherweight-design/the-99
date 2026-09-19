@@ -251,7 +251,8 @@ sharpens the reasoning.
   callers untouched in this sub-project; §4A.6 covers what becomes of it.
 - **Any language-model call.** Sub-project 5, and it reads this object.
 - **Combo surfacing and near-miss recommendations.** The ingest lands here because the slot
-  needs two-card-combo detection; *surfacing* combos and `almostIncluded` is sub-project 2.
+  needs two-card-combo detection; *surfacing* combos and `almostIncluded` is sub-project 3
+  (§12).
 - **Deck theme derivation from cards (#724).** Real, measured, and needs an EDHREC theme-page
   ingest that does not exist. §5.3 defines the slot the profile leaves for it, and why the
   profile must not hard-code commander tags as the theme source in the meantime.
@@ -436,7 +437,7 @@ card_bracket_flags
 consuming query is always "intersect this deck's oracle ids with variant membership", which
 is a join Postgres does well and array containment does badly.
 
-The `oracle_id` index exists because sub-project 2 traverses the relation in the opposite
+The `oracle_id` index exists because sub-project 3 traverses the relation in the opposite
 direction — one card, which combos it appears in — and the primary key's leading column
 cannot serve that.
 
@@ -1471,7 +1472,7 @@ Named so the profile's shape accounts for them. None is specced.
 
 | # | Sub-project | Adds to the profile |
 |---|---|---|
-| 2 | **Informed building**: fill, top-off and the Add panel driven by the skeleton; `ROLE_TARGETS` retired (§4A.5) | — reads §4A |
+| 2 | **Informed building**: fill, top-off and the Add panel driven by the skeleton. Owns the `landTarget()` migration — three files, all in the deck path, and it cannot reach the scoring engine (§4A.6) | — reads §4A |
 | 3 | Combos and near-misses (`almostIncluded`) | — reads §4.3 |
 | 4 | Small swap tools: cheaper-than-$X, from-my-collection, #218, #217 | ownership, price groups |
 | 5 | #10 resumed, games as enrichment | play-data group |
