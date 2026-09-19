@@ -211,7 +211,12 @@ short* — exactly what that deck is. No other value moves.
    `Draft` draw exactly as the six values already do on the tile, the resume row and both spines.
    It does mean the per-surface behaviour is inherited rather than drawn, and the contact sheet
    is what proves it.
-5. **The facet's row labels are renamed in passing.** R6 names `No version yet` (deleted) and
+5. **"`statusPill()` gains one optional argument" — build it REQUIRED.** R6 prices the phase
+   flag as optional, which is the wrong shape for this argument: a call site that omitted it
+   would silently get the old five-test cascade, and the deck it would misreport is exactly the
+   one this round exists for — a never-committed 99 reading `Complete`. Required makes every
+   caller answer at compile time, and there are two. The plan's Task 1.1 carries this.
+6. **The facet's row labels are renamed in passing.** R6 names `No version yet` (deleted) and
    `Edited since last version`; what shipped is `Not committed yet` and `Has pending changes`.
    The deletion is structural and is R6's to rule; the surviving row's wording is copy content
    and goes through `/copy-review` rather than back to Design.
