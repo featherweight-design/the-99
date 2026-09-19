@@ -20,6 +20,12 @@ import {
   ISSUE_UNMATCHED,
   CONTESTED_ARRIVAL,
   ADD_RESULTS,
+  CONTESTED_RESERVATION,
+  DECK_FOLDERS,
+  RESUME_DECKS,
+  SHELF_COUNTS,
+  RESUME_NOW,
+  SHOPPING,
   DECK_VERSIONS,
   EXPORT_DECKLIST,
   SHOPPING_ROWS,
@@ -48,6 +54,9 @@ import { TwoFacedMark } from "../cards/two-faced-mark";
 import { LastSlotsStrip } from "../decks/last-slots-strip";
 import { DecklistRow } from "../decks/decklist-row";
 import { QuickAddBar } from "../decks/quick-add-bar";
+import { GameLogForm } from "../decks/game-log-form";
+import { ResumeDecks } from "../home/resume-decks";
+import { ShelfLine } from "../decks/shelf-line";
 import { PendingChangeProvider } from "../decks/pending-change";
 import { ImportEntry } from "../decks/import-entry";
 import { ExportDialog } from "../decks/export-dialog";
@@ -970,4 +979,103 @@ export function ShoppingFigureBody() {
  */
 export function VersionsFigureBody() {
   return <VersionRail deckId="about-deck" versions={DECK_VERSIONS} />;
+}
+
+/**
+ * `log-a-game` — the game log form, open.
+ *
+ * The figure was three legend rows naming the result words, the axis count and
+ * the form's own optional note. All three are things the form SAYS, and it is
+ * a real surface reached from a deck's Games tab.
+ *
+ * `initialOpen` starts it expanded. Logging a game begins with a press
+ * everywhere a player meets this, so the prop defaults to false; here the
+ * collapsed button would show the door rather than the room, and this entry's
+ * caption is entirely about the fields inside.
+ *
+ * `isFirstGame` is true, which is the state whose copy explains itself most:
+ * the form introduces the axes rather than assuming them.
+ */
+export function LogAGameFigureBody() {
+  return (
+    <GameLogForm
+      deckId="about-figure"
+      isFirstGame
+      initialOpen
+      onSaved={() => {}}
+      onAnnounce={() => {}}
+    />
+  );
+}
+
+/**
+ * `resume` — Home's own resume block.
+ *
+ * The figure was three legend rows quoting `touched.edited`, `.committed` and
+ * `.played` directly. That arrangement cannot be wrong and cannot be right:
+ * the block CHOOSES its verb by ranking three stamps, so a figure that types
+ * the three strings keeps printing them after the ranking changes.
+ *
+ * The fixture states dates instead and lets `ResumeDecks` decide the words —
+ * one deck edited two hours ago, one whose newest event is its commit, one
+ * played since either. `RESUME_NOW` is the page's clock rather than the real
+ * one, so a screenshot of this page does not differ from the last for no
+ * reason.
+ */
+export function ResumeFigureBody() {
+  return (
+    <ResumeDecks
+      decks={RESUME_DECKS}
+      shopping={SHOPPING}
+      total={RESUME_DECKS.length}
+      now={RESUME_NOW}
+    />
+  );
+}
+
+/**
+ * `folders` — the deck list's own shelf line.
+ *
+ * The figure was three legend rows, one of which was the phrase "narrows,
+ * never filters" — this page's paraphrase of a treatment rather than the
+ * treatment. The line says it itself, and says it the way the handoff's
+ * decision 3 requires: the selected segment spends NO ACCENT, taking `--fg` on
+ * `--elevated` under a ring, because accent is the chassis's own "this filter
+ * is on". A figure that writes the sentence cannot show that; one that draws
+ * the line cannot avoid it.
+ *
+ * A folder is selected rather than `All decks`, for the same reason: the
+ * unselected state is what every segment looks like, and the ruling is about
+ * what the SELECTED one does not do.
+ *
+ * `menu` returns null throughout. The selected folder's `…` is a real control
+ * on the route, and its absence here is deliberate — `Specimen` is `inert`, so
+ * a menu drawn in a figure is an affordance that cannot be opened.
+ */
+export function FoldersFigureBody() {
+  return (
+    <ShelfLine
+      folders={DECK_FOLDERS}
+      counts={SHELF_COUNTS}
+      shelf={DECK_FOLDERS[0].id}
+      onSelect={() => {}}
+      onCreate={() => {}}
+    />
+  );
+}
+
+/**
+ * `reservations` — the contested-card row itself.
+ *
+ * The figure was two legend rows: the phrase "first committed" — which is this
+ * page's summary of the rule rather than anything the app prints — and the
+ * chooser's heading with no chooser under it. The row is the rule: two decks,
+ * one copy, seniority deciding until the player picks.
+ *
+ * It is drawn with no `thisDeckId`. That prop tags the deck whose page the row
+ * is on, and a figure has no such page — passing one would mark a deck
+ * "this one" in a picture with no deck behind it.
+ */
+export function ReservationsFigureBody() {
+  return <ContestedCardRow card={CONTESTED_RESERVATION} />;
 }

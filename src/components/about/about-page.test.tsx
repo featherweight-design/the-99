@@ -208,35 +208,36 @@ describe("the figures", () => {
     expect(drawn).toBe(registered);
   });
 
-  it("hides a MOUNTED specimen from the reading order, and reads a legend aloud", () => {
-    // Two figure kinds, two rules, and the difference is where the information
-    // lives. A mounted component repeats what the caption and keys already
-    // say, so announcing it reads every mark twice and names controls that
-    // cannot be pressed. A legend's content exists NOWHERE else — Discover's
-    // five orders and their glosses are drawn there and in no caption — so
-    // hiding it hid the entry's whole subject from the readers least able to
-    // recover it elsewhere.
+  it("hides every figure from the reading order, and says it elsewhere", () => {
+    // ONE FIGURE KIND NOW. The page used to draw two: a mounted specimen,
+    // aria-hidden because it repeats what the caption and keys already say,
+    // and a readable `Legend` for entries whose content existed NOWHERE else —
+    // Discover's five orders and their glosses were drawn there and in no
+    // caption. Chapter 04 converted the last four legends, so the helper and
+    // its box are gone and `spokenAs` is the surviving way to put a figure's
+    // content into the reading order.
+    //
+    // What replaces the two-population check is the rule that made it matter:
+    // every figure is hidden, so every entry MUST carry its own prose. An
+    // entry with an aria-hidden figure and nothing readable beside it would
+    // hide its whole subject from the readers least able to recover it.
     const { container } = render(<AboutPage seen={0} />);
     const all = Object.entries(figures(container));
-    const legends = all.filter(([, el]) => el.hasAttribute("data-legend"));
-    const mounted = all.filter(([, el]) => !el.hasAttribute("data-legend"));
-    expect(legends.length).toBeGreaterThan(0);
-    expect(mounted.length).toBeGreaterThan(0);
+    expect(all.length, "no figures at all").toBeGreaterThan(0);
 
-    for (const [name, figure] of mounted) {
+    for (const [name, figure] of all) {
       expect(figure, name).toHaveAttribute("aria-hidden", "true");
       expect(figure, name).toHaveAttribute("inert");
       expect(figure.className, name).toContain("pointer-events-none");
     }
-    for (const [name, figure] of legends) {
-      // Readable, and structured: a mark and its meaning are a pair, so they
-      // are a `dt` and a `dd` rather than two spans a reader must infer.
-      expect(figure.hasAttribute("aria-hidden"), name).toBe(false);
-      expect(figure.hasAttribute("inert"), name).toBe(false);
-      expect(figure.querySelector("dl"), name).toBeTruthy();
-      expect(figure.querySelectorAll("dt").length, name).toBeGreaterThan(0);
+
+    for (const entry of aboutEntries) {
+      if (!(entry.id in FIGURES)) continue;
+      const prose = entry.caption.trim().length + entry.keys.join("").trim().length;
+      expect(prose, `${entry.id} draws a hidden figure and says nothing`).toBeGreaterThan(0);
     }
   });
+
 
   it("draws the buy tag's four claims, which are not four ways of saying cost", () => {
     // The frame is not the figure: asserting `data-width` alone leaves three
@@ -1230,15 +1231,14 @@ describe("the themes figure", () => {
 });
 
 describe("what each legend must hold", () => {
-  // The empty-frame gate is a floor, not coverage: a legend dropping a row —
+  // The empty-frame gate is a floor, not coverage: a figure dropping a row —
   // Discover drawing four of its five orders — clears it, and those rows ARE
   // the entry. Where an entry's caption states a count, the figure is held to
   // it here rather than left to a photograph.
-  const rows = (container: HTMLElement, label: string) => {
-    const el = container.querySelector(`[data-specimen="${label}"]`);
-    expect(el, `${label} drew no figure`).toBeTruthy();
-    return [...el!.querySelectorAll("dt")];
-  };
+  //
+  // This block read `dt` elements while these figures were legends. They are
+  // mounted components now, so each check below reads whatever the real
+  // control draws instead.
 
   it("gives Discover all five of its orders, in the real control", () => {
     // "two of them change which commanders the list holds" only means anything
@@ -1296,22 +1296,23 @@ describe("what each legend must hold", () => {
   it("gives the resume rows all three verbs", () => {
     // edited, committed, played — the entry's line is that each row says which
     // event put it there, which two verbs cannot demonstrate.
+    //
+    // The figure used to TYPE the three strings as legend marks, which is the
+    // one arrangement that cannot be wrong and cannot be right: `ResumeDecks`
+    // picks its verb by ranking three stamps, so a typed figure keeps printing
+    // them after the ranking changes. The fixture states dates now and the
+    // block chooses, so this reads what it CHOSE.
     const { container } = render(<AboutPage seen={0} />);
-    expect(rows(container, "resume")).toHaveLength(3);
-  });
-
-  it("pairs every legend mark with a meaning", () => {
-    // A `dt` with no `dd` is a mark nobody explained, and the pairing is the
-    // whole reason a legend is a description list.
-    const { container } = render(<AboutPage seen={0} />);
-    for (const el of container.querySelectorAll("[data-legend]")) {
-      const label = el.getAttribute("data-specimen");
-      const dts = el.querySelectorAll("dt").length;
-      const dds = el.querySelectorAll("dd").length;
-      expect(dts, `${label} has no rows`).toBeGreaterThan(1);
-      expect(dds, `${label} has ${dts} marks and ${dds} meanings`).toBe(dts);
+    const text =
+      container.querySelector("[data-specimen='resume']")?.textContent ?? "";
+    const c = refreshCopy.home.touched;
+    for (const verb of [c.edited, c.committed, c.played]) {
+      // The elapsed clause differs per row and is not the subject; the verb is.
+      const stem = verb("").replace(/\s+$/, "");
+      expect(text, `no row reads ${stem}`).toContain(stem);
     }
   });
+
 });
 
 // ── The commander-availability figure draws its four readings ─────────────
@@ -1426,31 +1427,32 @@ describe("the page's own type, against the design table", () => {
     // Two treatments in the canvas — 14px 16px and 12px — collapsed into one
     // row of the first table and then one blanket value in the code.
     //
-    // EVERY frame, and both chassis. `Specimen` and `LegendBox` each carry
-    // their own padding branch, so checking the first plate and the first
-    // inset tested `Specimen` twice and `LegendBox` never — reverting the
-    // legend's branch to the old blanket value left the suite green.
+    // EVERY frame, and BOTH WIDTHS. `Specimen` carries a padding branch per
+    // width, so checking the first frame of each kind is the only way to reach
+    // both — the earlier version of this checked the first plate and the first
+    // inset and so tested one chassis twice, because there were two chassis
+    // then. `LegendBox` was the second, and chapter 04 removed it with the
+    // last legend.
     const { container } = render(<AboutPage seen={0} />);
     const frames = [...container.querySelectorAll("[data-width]")];
     expect(frames.length).toBeGreaterThan(30);
 
-    const kinds = { mountedPlate: 0, mountedInset: 0, legendPlate: 0, legendInset: 0 };
+    const kinds = { plate: 0, inset: 0 };
     for (const frame of frames) {
       const label = frame.getAttribute("data-specimen");
       const inset = frame.getAttribute("data-width") === "inset";
-      const legend = frame.hasAttribute("data-legend");
       if (inset) {
         expect(frame.className, `${label} inset padding`).toContain("p-[12px]");
       } else {
         expect(frame.className, `${label} plate padding`).toContain("px-[16px]");
         expect(frame.className, `${label} plate padding`).toContain("py-[14px]");
       }
-      kinds[legend ? (inset ? "legendInset" : "legendPlate") : inset ? "mountedInset" : "mountedPlate"] += 1;
+      kinds[inset ? "inset" : "plate"] += 1;
     }
-    // Both chassis must actually be represented, or the loop above is checking
-    // one implementation twice.
-    expect(kinds.mountedPlate + kinds.mountedInset).toBeGreaterThan(0);
-    expect(kinds.legendPlate + kinds.legendInset).toBeGreaterThan(0);
+    // Both widths must actually be represented, or the loop above is checking
+    // one branch twice.
+    expect(kinds.plate, "no plate frames").toBeGreaterThan(0);
+    expect(kinds.inset, "no inset frames").toBeGreaterThan(0);
   });
 });
 

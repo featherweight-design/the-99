@@ -30,6 +30,13 @@ export interface GameLogFormProps {
   /** Bone-filled collapsed button. True only in the empty state, where the CTA
    *  is the tab and there is nothing else on the screen to outrank it. */
   ctaSolid?: boolean;
+  /**
+   * Start expanded rather than behind the CTA. False everywhere a player meets
+   * this form — logging a game begins with a press. `/about` passes true: the
+   * entry describing the form is about the fields, and a figure of the
+   * collapsed button would show the door rather than the room.
+   */
+  initialOpen?: boolean;
 }
 
 const POD_SIZES = [2, 3, 4, 5, 6, 7, 8];
@@ -91,8 +98,9 @@ export function GameLogForm({
   isFirstGame,
   ctaLabel,
   ctaSolid = false,
+  initialOpen = false,
 }: GameLogFormProps) {
-  const [open, setOpen] = useState(false);
+  const [open, setOpen] = useState(initialOpen);
   const [result, setResult] = useState<GameResult | null>(null);
   const [podSize, setPodSize] = useState(4);
   const [playedAt, setPlayedAt] = useState(today);

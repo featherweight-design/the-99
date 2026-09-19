@@ -81,12 +81,17 @@ described as its four hardest plates. The number was not checked before it was w
 artifact here would have contradicted it — the inventory photographed the figures that existed, so
 the sheet confirmed the scope back to its author.
 
-**Thirty-one are `Specimen`-rooted and four are `Legend`-rooted.** This record said "four mount
-and the rest are legends" — wrong again, and wrong in the paragraph correcting a previous wrong
-count, which is the second time a figure here was written down without being counted. The thirty-one
-range from mounting a whole surface as-is (`SetCell`, `CommitmentsCard`, `GameAxisCell`,
-`RoleChips`) to composing the app's own leaf components into an arrangement this page owns (the
-marks legend, the card-detail cells, the buy-tag states).
+**Thirty-five are `Specimen`-rooted and zero are `Legend`-rooted.** This record said "four mount
+and the rest are legends" — wrong when written, and wrong in the paragraph correcting a previous
+wrong count, which was the second time a figure here was written down without being counted. It is
+now every figure: chapter 04 converted the last four, and `Legend`, `Line` and `LegendBox` went
+with them.
+
+That makes the whole figure layer `aria-hidden`, so the rule the two populations existed to hold
+is now carried by a check instead: every entry drawing a figure must have a caption or keys of its
+own, because a hidden figure beside no prose hides its subject from exactly the readers least able
+to recover it. `spokenAs` is the remaining way to put a figure's own content into the reading
+order, and Discover's five orders — the case the legend existed for — use it.
 
 The split is a settled rule rather than a shortfall: a figure reproducing a surface becomes a second
 copy of it and drifts an edit at a time, and `DecklistRow`, `DeckCard` and `RoleCounterStrip` all

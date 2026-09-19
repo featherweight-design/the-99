@@ -20,10 +20,7 @@ import { RoleChips } from "../commanders/role-chips";
 import { GameAxisCell } from "../decks/game-axis-cell";
 import { CommitmentsCard } from "../home/commitments-card";
 import { THEMES } from "../../lib/theme/themes";
-import { gameLogCopy } from "../../lib/copy/game-log";
-import { folderCopy } from "../../lib/copy/folders";
 
-import { GAME_AXIS_KEYS } from "../../lib/decks/game-axes";
 import { BrowseFigureBody } from "./browse-figure";
 import { KeyNumeral } from "./numeral";
 import { ORDER_OPTIONS } from "../commanders/rack/order-options";
@@ -34,6 +31,10 @@ import { PIP_ORDER, PIP_SRC } from "../../lib/copy/filter-chassis";
 import {
   ImportFigureBody,
   AddCardsFigureBody,
+  FoldersFigureBody,
+  LogAGameFigureBody,
+  ReservationsFigureBody,
+  ResumeFigureBody,
   ExportFigureBody,
   VersionsFigureBody,
   ShoppingFigureBody,
@@ -53,13 +54,11 @@ import {
   PartnerSlotFigureBody,
   PostImportFigureBody,
 } from "./ch01-figures";
-import { cardAssignmentsCopy } from "../../lib/copy/card-assignments";
 import { statusBarStyle } from "../../lib/decks/status-style";
 import type { StatusPill } from "../../lib/decks/status";
 import { refreshCopy } from "../../lib/copy/refresh";
 import { FitBar } from "../commanders/fit-bar";
 import {
-  LegendBox,
   Specimen,
 } from "./specimen";
 import type { AboutWidth } from "../../lib/copy/about";
@@ -621,34 +620,6 @@ function ThemesFigure({ width }: { width: AboutWidth }) {
 
 /** One row of a legend: the thing, then what it means. A `dt`/`dd` pair,
  *  because that is the relationship and a screen reader can then say it. */
-function Line({ mark, meaning }: { mark: React.ReactNode; meaning: string }) {
-  return (
-    <div className="flex items-baseline gap-[10px]">
-      <dt className="flex-none font-mono text-[11px] text-[color:var(--fg-body)]">{mark}</dt>
-      <dd className="m-0 font-mono text-[10px] leading-[1.4] text-[color:var(--fg-faint)]">
-        {meaning}
-      </dd>
-    </div>
-  );
-}
-
-function Legend({
-  label,
-  width,
-  rows,
-}: {
-  label: string;
-  width: AboutWidth;
-  rows: { mark: React.ReactNode; meaning: string }[];
-}) {
-  return (
-    <LegendBox label={label} width={width}>
-      {rows.map((row, i) => (
-        <Line key={i} mark={row.mark} meaning={row.meaning} />
-      ))}
-    </LegendBox>
-  );
-}
 
 function ReadyToBuildFigure({ width }: { width: AboutWidth }) {
   return (
@@ -795,59 +766,33 @@ function ShoppingFigure({ width }: { width: AboutWidth }) {
 
 function LogAGameFigure({ width }: { width: AboutWidth }) {
   return (
-    <Legend
-      label="log-a-game"
-      width={width}
-      rows={[
-        { mark: `${gameLogCopy.form.won} / ${gameLogCopy.form.lost} / ${gameLogCopy.form.draw}`, meaning: "and how big the pod was" },
-        { mark: `${GAME_AXIS_KEYS.length} axes`, meaning: "each markable as what worked or what let you down" },
-        // The form says this itself, in one line, so the figure says it in the
-        // form's own words rather than a paraphrase of them.
-        { mark: gameLogCopy.form.optionalNote, meaning: "the form says so, under the axes" },
-      ]}
-    />
+    <Specimen label="log-a-game" width={width}>
+      <LogAGameFigureBody />
+    </Specimen>
   );
 }
 
 function FoldersFigure({ width }: { width: AboutWidth }) {
   return (
-    <Legend
-      label="folders"
-      width={width}
-      rows={[
-        { mark: folderCopy.shelves.all, meaning: "every deck, which is where you start" },
-        { mark: "a shelf", meaning: "a deck sits on one or on none" },
-        { mark: "narrows, never filters", meaning: "it spends no accent and no chip, and Clear all leaves it alone" },
-      ]}
-    />
+    <Specimen label="folders" width={width}>
+      <FoldersFigureBody />
+    </Specimen>
   );
 }
 
 function ResumeFigure({ width }: { width: AboutWidth }) {
-  const c = refreshCopy.home.touched;
   return (
-    <Legend
-      label="resume"
-      width={width}
-      rows={[
-        { mark: c.edited(refreshCopy.home.elapsed.hours(2)), meaning: "you changed the draft" },
-        { mark: c.committed(refreshCopy.home.elapsed.yesterday), meaning: "you cut a version" },
-        { mark: c.played(refreshCopy.home.elapsed.days(2)), meaning: "you logged a game" },
-      ]}
-    />
+    <Specimen label="resume" width={width}>
+      <ResumeFigureBody />
+    </Specimen>
   );
 }
 
 function ReservationsFigure({ width }: { width: AboutWidth }) {
   return (
-    <Legend
-      label="reservations"
-      width={width}
-      rows={[
-        { mark: "first committed", meaning: "holds the copy by default" },
-        { mark: cardAssignmentsCopy.contested.headingSpare, meaning: "and you can override that whenever you like" },
-      ]}
-    />
+    <Specimen label="reservations" width={width}>
+      <ReservationsFigureBody />
+    </Specimen>
   );
 }
 

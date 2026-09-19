@@ -591,7 +591,9 @@ export const aboutEntries: readonly AboutEntry[] = [
     chapter: '04',
     title: 'Sorting decks into folders',
     route: '/decks',
-    width: 'inset',
+    // 'inset' at the canvas, where the figure was a legend. Mounted,
+    // the shelf line is a full-width row of segments, and a ~300px column wraps it to three.
+    width: 'plate',
     caption:
       'A deck sits on one folder or on none. Every folder and its count is on screen without opening anything, and choosing one narrows the library rather than filtering it — it spends no accent, appears in no filter chip, and is not cleared by Clear all filters. Unfiled appears once you have made your first folder.',
     keys: [],
@@ -602,7 +604,9 @@ export const aboutEntries: readonly AboutEntry[] = [
     chapter: '04',
     title: 'Picking up where you left off',
     route: '/',
-    width: 'inset',
+    // 'inset' at the canvas, where the figure was a legend. Mounted,
+    // Home's resume block is a list of full-width rows, each with a portrait, a status keyline and a count.
+    width: 'plate',
     caption:
       'Home leads with the decks you touched last, newest first, and each row says which event put it there — edited, committed or played. The keyline on the left is the deck’s status in the same colours as its badge.',
     keys: [],
@@ -625,7 +629,9 @@ export const aboutEntries: readonly AboutEntry[] = [
     title: 'Which deck gets a shared copy',
     route: '/decks',
     opens: 'opens a deck',
-    width: 'inset',
+    // 'inset' at the canvas, where the figure was a legend. Mounted,
+    // the contested row draws two deck choices side by side with their stamps.
+    width: 'plate',
     caption:
       'When two decks want the same card and you own one, the deck that committed it first holds it by default — and you can override that, giving the copy to whichever deck you would rather sleeve it in. The other reads as short either way, which is why the diamond is on the card and not on the deck.',
     keys: [],

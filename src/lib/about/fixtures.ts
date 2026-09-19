@@ -7,6 +7,10 @@ import type { DeckDetailCard } from "../decks/grouping";
 import type { SearchResult } from "../../app/decks/[id]/search-action";
 import type { DecklistCard } from "../decks/export-helpers";
 import type { VersionSummary } from "../decks/versions";
+import type { DeckListItem } from "../decks/read";
+import type { DeckFolderWithCount } from "../decks/folders";
+import type { ShelfCounts } from "../decks/folder-view";
+import type { ContestedCard } from "../collection/summary-read";
 import { deckImportCopy } from "../copy/deck-import";
 import type { CommanderRowView } from "../../components/commanders/commander-row";
 import type { PriceSlot } from "../discovery/price";
@@ -1230,3 +1234,184 @@ export const DECK_VERSIONS: VersionSummary[] = [
     partnerName: null,
   },
 ];
+
+/**
+ * `resume` — three decks for Home's resume block, one per verb it can print.
+ *
+ * `ResumeDecks` chooses the verb from the three stamps rather than being told:
+ * `touched.ts` ranks edited / committed / played, so a fixture states the
+ * DATES and the block decides the words. The retired figure quoted all three
+ * strings directly, which is the one arrangement that cannot go wrong and also
+ * cannot be right — it would keep printing them after a rule change.
+ *
+ * The instants are stated relative to `RESUME_NOW`, which the figure passes as
+ * the page's clock. A fixture reading the real clock would make every
+ * screenshot of this page differ from the last for no reason.
+ */
+export const RESUME_NOW = new Date("2026-09-19T12:00:00.000Z");
+
+const hoursBefore = (h: number) => new Date(RESUME_NOW.getTime() - h * 3_600_000);
+
+export const RESUME_DECKS: DeckListItem[] = [
+  {
+    id: "about-resume-edited",
+    name: "HD - Brago",
+    createdAt: hoursBefore(24 * 40),
+    commanderName: "Brago, King Eternal",
+    commanderColorIdentity: ["W", "U"],
+    commanderImageUri: null,
+    commanderArtCropUri: null,
+    partnerName: null,
+    partnerColorIdentity: null,
+    folderId: null,
+    folderName: null,
+    built: 99,
+    ownedCount: 99,
+    toBuyCount: 0,
+    unresolvedCount: 0,
+    // Edited two hours ago and committed yesterday, so `edited` wins — which
+    // is the ranking, not a field.
+    pendingChanges: 7,
+    versionNumber: 2,
+    lastPlayedAt: hoursBefore(24 * 6),
+    lastEditedAt: hoursBefore(2),
+    lastCommittedAt: hoursBefore(26),
+    inUseElsewhere: 0,
+    proxiedCount: 0,
+    statusPill: "Complete",
+  },
+  {
+    id: "about-resume-committed",
+    name: "HD - Atraxa",
+    createdAt: hoursBefore(24 * 90),
+    commanderName: "Atraxa, Praetors' Voice",
+    commanderColorIdentity: ["W", "U", "B", "G"],
+    commanderImageUri: null,
+    commanderArtCropUri: null,
+    partnerName: null,
+    partnerColorIdentity: null,
+    folderId: null,
+    folderName: null,
+    built: 99,
+    ownedCount: 86,
+    toBuyCount: 13,
+    unresolvedCount: 0,
+    // Nothing pending, and the commit is STRICTLY newer than the edit —
+    // `touchedBy` resolves a tie to `edited`, so equal stamps would print the
+    // first deck's verb again and this row would prove nothing. A commit does
+    // not stamp `last_edited_at` (see touch.ts), so an edit then a commit an
+    // hour later is the ordinary shape of this.
+    pendingChanges: 0,
+    versionNumber: 4,
+    lastPlayedAt: hoursBefore(24 * 9),
+    lastEditedAt: hoursBefore(80),
+    lastCommittedAt: hoursBefore(30),
+    inUseElsewhere: 4,
+    proxiedCount: 0,
+    statusPill: "To buy",
+  },
+  {
+    id: "about-resume-played",
+    name: "HD - Korvold",
+    createdAt: hoursBefore(24 * 120),
+    commanderName: "Korvold, Fae-Cursed King",
+    commanderColorIdentity: ["B", "R", "G"],
+    commanderImageUri: null,
+    commanderArtCropUri: null,
+    partnerName: null,
+    partnerColorIdentity: null,
+    folderId: null,
+    folderName: null,
+    built: 99,
+    ownedCount: 99,
+    toBuyCount: 0,
+    unresolvedCount: 0,
+    // Played more recently than it was edited or committed.
+    pendingChanges: 0,
+    versionNumber: 3,
+    lastPlayedAt: hoursBefore(48),
+    lastEditedAt: hoursBefore(24 * 20),
+    lastCommittedAt: hoursBefore(24 * 20),
+    inUseElsewhere: 0,
+    proxiedCount: 0,
+    statusPill: "Complete",
+  },
+];
+
+/**
+ * `folders` — three shelves for the deck list's shelf line.
+ *
+ * `shelfSegments` builds the line from these: `All decks` first, the folders
+ * in `listFolders`' own order, then `Unfiled` — which `showsUnfiled` omits
+ * until the first folder exists, so a fixture with no folders would draw the
+ * one segment and prove nothing about the caption's last sentence.
+ *
+ * The counts are stated rather than summed, because the line is given them:
+ * `all` is every deck, `unfiled` the residue, and `byFolder` a figure per
+ * shelf. They are made to add up — 3 + 2 + 4 = 9 — since a reader can check
+ * that and the entry's whole claim is that every count is on screen at once.
+ */
+export const DECK_FOLDERS: DeckFolderWithCount[] = [
+  { id: "about-folder-edh", name: "Pod night", createdAt: new Date("2026-06-01"), deckCount: 3 },
+  { id: "about-folder-brew", name: "Brews", createdAt: new Date("2026-07-14"), deckCount: 2 },
+];
+
+export const SHELF_COUNTS: ShelfCounts = {
+  all: 9,
+  unfiled: 4,
+  byFolder: new Map([
+    ["about-folder-edh", 3],
+    ["about-folder-brew", 2],
+  ]),
+};
+
+/**
+ * `reservations` — one contested card with two committed claimants.
+ *
+ * The row is the app's whole answer to this entry: two decks want the card,
+ * one copy exists, and seniority decides until the player says otherwise.
+ * `since` is what orders the list and draws the stamp, so the older claim is
+ * the earlier instant — the default holder, stated as a DATE rather than as a
+ * flag, because that is how the model decides it.
+ *
+ * `granted: 0` on both: nobody has overridden anything yet, which is the state
+ * the caption's first clause describes. `allocated` is the allocation as it
+ * stands, so the senior deck has the copy and the other reads short — the
+ * caption's "the other reads as short either way".
+ *
+ * `fromImport` is FALSE. The same row is drawn on two surfaces and the flag is
+ * what tells them apart: true would make `arrived` an arrival and print `1 new
+ * copy`, which on a deck's own page tells the reader their collection turned
+ * up this morning.
+ */
+export const CONTESTED_RESERVATION: ContestedCard = {
+  oracleId: "about-contested",
+  cardName: CARDS.removed,
+  arrived: 1,
+  fromImport: false,
+  ownedBefore: 1,
+  owned: 1,
+  brewNames: [],
+  claimants: [
+    {
+      deckId: "about-resume-edited",
+      deckName: "HD - Brago",
+      quantity: 1,
+      commanderCopies: 0,
+      granted: 0,
+      since: new Date("2026-08-01T00:00:00.000Z").getTime(),
+      versionNumber: 2,
+      allocated: 1,
+    },
+    {
+      deckId: "about-resume-committed",
+      deckName: "HD - Atraxa",
+      quantity: 1,
+      commanderCopies: 0,
+      granted: 0,
+      since: new Date("2026-09-05T00:00:00.000Z").getTime(),
+      versionNumber: 4,
+      allocated: 0,
+    },
+  ],
+};
