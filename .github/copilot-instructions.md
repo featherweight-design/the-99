@@ -20,15 +20,14 @@ bug in any of the areas below is still a real bug.
   quotation that looks like an odd sentence is usually the product's own wording.
   `pnpm check:copy-drift` enforces agreement in CI. Report a table that
   contradicts the code; do not restyle the copy.
-- **Probes come in two kinds, and only one writes.** Of 88 probes, 28 build a
-  fixture: those write under a per-run `user_id` and delete it in a `finally`,
-  which is the required discipline here rather than a data-loss risk. The other
-  60 — `probe-pip-gap.mjs`, `probe-colour-box.mjs` and the rest — only sign in,
-  measure and close the browser. **Do not assume fixture safety in either
-  direction.** A writing probe that never cleans up is a real finding; so is one
-  that writes at all when it did not need to.
-- **Em dashes were deliberately removed from user-facing copy** in a ratified
-  sweep. Do not suggest reinstating them.
+- **Probes come in two kinds, and only one writes.** Some build a fixture: those
+  write under a per-run `user_id` and delete it in a `finally`, which is the
+  required discipline here rather than a data-loss risk. Most only sign in,
+  measure and close the browser — `probe-pip-gap.mjs` and `probe-colour-box.mjs`
+  are of that kind. Tell them apart by whether the script names a `user_id`, and
+  **do not assume fixture safety in either direction.** A writing probe that
+  never cleans up is a real finding; so is one that writes at all when it did not
+  need to.
 
 ## Where review has paid off here, historically
 
