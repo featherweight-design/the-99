@@ -7,6 +7,11 @@ import type { DeckDetailCard } from "../decks/grouping";
 import type { SearchResult } from "../../app/decks/[id]/search-action";
 import type { DecklistCard } from "../decks/export-helpers";
 import type { VersionSummary } from "../decks/versions";
+import type { DeckListItem } from "../decks/read";
+import type { DeckFolderWithCount } from "../decks/folders";
+import type { ShelfCounts } from "../decks/folder-view";
+import type { ContestedCard } from "../collection/summary-read";
+import type { GameSummary } from "../decks/games";
 import { deckImportCopy } from "../copy/deck-import";
 import type { CommanderRowView } from "../../components/commanders/commander-row";
 import type { PriceSlot } from "../discovery/price";
@@ -1230,3 +1235,252 @@ export const DECK_VERSIONS: VersionSummary[] = [
     partnerName: null,
   },
 ];
+
+/**
+ * `resume` — three decks for Home's resume block, one per verb it can print.
+ *
+ * `ResumeDecks` chooses the verb from the three stamps rather than being told:
+ * `touched.ts` ranks edited / committed / played, so a fixture states the
+ * DATES and the block decides the words. The retired figure quoted all three
+ * strings directly, which is the one arrangement that cannot go wrong and also
+ * cannot be right — it would keep printing them after a rule change.
+ *
+ * The instants are stated relative to `RESUME_NOW`, which the figure passes as
+ * the page's clock. A fixture reading the real clock would make every
+ * screenshot of this page differ from the last for no reason.
+ */
+export const RESUME_NOW = new Date("2026-09-19T12:00:00.000Z");
+
+const hoursBefore = (h: number) => new Date(RESUME_NOW.getTime() - h * 3_600_000);
+
+export const RESUME_DECKS: DeckListItem[] = [
+  {
+    id: "about-resume-edited",
+    name: "HD - Brago",
+    createdAt: hoursBefore(24 * 40),
+    commanderName: "Brago, King Eternal",
+    commanderColorIdentity: ["W", "U"],
+    commanderImageUri: null,
+    commanderArtCropUri: null,
+    partnerName: null,
+    partnerColorIdentity: null,
+    folderId: null,
+    folderName: null,
+    built: 99,
+    ownedCount: 99,
+    toBuyCount: 0,
+    unresolvedCount: 0,
+    // Edited two hours ago and committed yesterday, so `edited` wins — which
+    // is the ranking, not a field.
+    pendingChanges: 7,
+    versionNumber: 2,
+    lastPlayedAt: hoursBefore(24 * 6),
+    lastEditedAt: hoursBefore(2),
+    lastCommittedAt: hoursBefore(26),
+    inUseElsewhere: 0,
+    proxiedCount: 0,
+    statusPill: "Complete",
+  },
+  {
+    id: "about-resume-committed",
+    name: "HD - Atraxa",
+    createdAt: hoursBefore(24 * 90),
+    commanderName: "Atraxa, Praetors' Voice",
+    commanderColorIdentity: ["W", "U", "B", "G"],
+    commanderImageUri: null,
+    commanderArtCropUri: null,
+    partnerName: null,
+    partnerColorIdentity: null,
+    folderId: null,
+    folderName: null,
+    built: 99,
+    ownedCount: 86,
+    toBuyCount: 13,
+    unresolvedCount: 0,
+    // Nothing pending, and the commit is STRICTLY newer than the edit —
+    // `touchedBy` resolves a tie to `edited`, so equal stamps would print the
+    // first deck's verb again and this row would prove nothing. A commit does
+    // not stamp `last_edited_at` (see touch.ts), so an edit then a commit an
+    // hour later is the ordinary shape of this.
+    pendingChanges: 0,
+    versionNumber: 4,
+    lastPlayedAt: hoursBefore(24 * 9),
+    lastEditedAt: hoursBefore(80),
+    lastCommittedAt: hoursBefore(30),
+    inUseElsewhere: 4,
+    proxiedCount: 0,
+    statusPill: "To buy",
+  },
+  {
+    // A FOURTH, so the block draws its real 2x2 grid rather than a row of two
+    // and an orphan. Home lays these out in two columns from the wide stop,
+    // and an odd count photographs as a layout fault.
+    id: "about-resume-committed-2",
+    name: "HD - Kinnan",
+    createdAt: hoursBefore(24 * 60),
+    commanderName: "Kinnan, Bonder Prodigy",
+    commanderColorIdentity: ["G", "U"],
+    commanderImageUri: null,
+    commanderArtCropUri: null,
+    partnerName: null,
+    partnerColorIdentity: null,
+    folderId: null,
+    folderName: null,
+    built: 68,
+    ownedCount: 68,
+    toBuyCount: 0,
+    unresolvedCount: 0,
+    pendingChanges: 3,
+    versionNumber: 1,
+    lastPlayedAt: null,
+    lastEditedAt: hoursBefore(4),
+    lastCommittedAt: hoursBefore(24 * 12),
+    inUseElsewhere: 2,
+    proxiedCount: 0,
+    statusPill: "Building",
+  },
+  {
+    id: "about-resume-played",
+    name: "HD - Korvold",
+    createdAt: hoursBefore(24 * 120),
+    commanderName: "Korvold, Fae-Cursed King",
+    commanderColorIdentity: ["B", "R", "G"],
+    commanderImageUri: null,
+    commanderArtCropUri: null,
+    partnerName: null,
+    partnerColorIdentity: null,
+    folderId: null,
+    folderName: null,
+    built: 99,
+    ownedCount: 99,
+    toBuyCount: 0,
+    unresolvedCount: 0,
+    // Played more recently than it was edited or committed.
+    pendingChanges: 0,
+    versionNumber: 3,
+    lastPlayedAt: hoursBefore(48),
+    lastEditedAt: hoursBefore(24 * 20),
+    lastCommittedAt: hoursBefore(24 * 20),
+    inUseElsewhere: 0,
+    proxiedCount: 0,
+    statusPill: "Complete",
+  },
+];
+
+/**
+ * `folders` — three shelves for the deck list's shelf line.
+ *
+ * `shelfSegments` builds the line from these: `All decks` first, the folders
+ * in `listFolders`' own order, then `Unfiled` — which `showsUnfiled` omits
+ * until the first folder exists, so a fixture with no folders would draw the
+ * one segment and prove nothing about the caption's last sentence.
+ *
+ * The counts are stated rather than summed, because the line is given them:
+ * `all` is every deck, `unfiled` the residue, and `byFolder` a figure per
+ * shelf. They are made to add up — 3 + 2 + 4 = 9 — since a reader can check
+ * that and the entry's whole claim is that every count is on screen at once.
+ */
+export const DECK_FOLDERS: DeckFolderWithCount[] = [
+  { id: "about-folder-edh", name: "Pod night", createdAt: new Date("2026-06-01"), deckCount: 3 },
+  { id: "about-folder-brew", name: "Brews", createdAt: new Date("2026-07-14"), deckCount: 2 },
+];
+
+export const SHELF_COUNTS: ShelfCounts = {
+  all: 9,
+  unfiled: 4,
+  byFolder: new Map([
+    ["about-folder-edh", 3],
+    ["about-folder-brew", 2],
+  ]),
+};
+
+/**
+ * `reservations` — one contested card with two committed claimants.
+ *
+ * The row is the app's whole answer to this entry: two decks want the card,
+ * one copy exists, and seniority decides until the player says otherwise.
+ * `since` is what orders the list and draws the stamp, so the older claim is
+ * the earlier instant — the default holder, stated as a DATE rather than as a
+ * flag, because that is how the model decides it.
+ *
+ * `granted: 0` on both: nobody has overridden anything yet, which is the state
+ * the caption's first clause describes. `allocated` is the allocation as it
+ * stands, so the senior deck has the copy and the other reads short — the
+ * caption's "the other reads as short either way".
+ *
+ * `fromImport` is FALSE. The same row is drawn on two surfaces and the flag is
+ * what tells them apart: true would make `arrived` an arrival and print `1 new
+ * copy`, which on a deck's own page tells the reader their collection turned
+ * up this morning.
+ */
+export const CONTESTED_RESERVATION: ContestedCard = {
+  oracleId: "about-contested",
+  cardName: CARDS.removed,
+  arrived: 1,
+  fromImport: false,
+  ownedBefore: 1,
+  owned: 1,
+  brewNames: [],
+  claimants: [
+    {
+      deckId: "about-resume-edited",
+      deckName: "HD - Brago",
+      quantity: 1,
+      commanderCopies: 0,
+      granted: 0,
+      since: new Date("2026-08-01T00:00:00.000Z").getTime(),
+      versionNumber: 2,
+      allocated: 1,
+    },
+    {
+      deckId: "about-resume-committed",
+      deckName: "HD - Atraxa",
+      quantity: 1,
+      commanderCopies: 0,
+      granted: 0,
+      since: new Date("2026-09-05T00:00:00.000Z").getTime(),
+      versionNumber: 4,
+      allocated: 0,
+    },
+  ],
+};
+
+/**
+ * `log-findings` — a seven-game summary, with every part of the aggregate the
+ * entry's key lines name.
+ *
+ * `GameFindings` draws a Fix bucket, a Keep bucket, and the Mixed line under a
+ * rule — and the entry's second key line is about that last one ("anything
+ * that has cut both ways is STATED rather than filed — one line, never a third
+ * column"). A summary with an empty `mixed` draws no rule at all, so the key
+ * line would point at nothing.
+ *
+ * Seven games clears PATTERN_MIN. Below it every cell is neutral and the panel
+ * describes rather than finds, which is the state the caption's first key line
+ * contrasts against — so a fixture under three games would teach the opposite.
+ *
+ * `marked` is NOT derivable from the tallies and is stated for that reason:
+ * one game can contribute to several axes, so summing them overcounts.
+ */
+export const GAME_SUMMARY: GameSummary = {
+  count: GAME_COUNT,
+  marked: 5,
+  record: { wins: 4, losses: 3, draws: 0 },
+  axes: [
+    { key: "card_flow", worked: 1, hurt: 5, net: -4 },
+    { key: "board", worked: 1, hurt: 3, net: -2 },
+    { key: "interaction", worked: 5, hurt: 1, net: 4 },
+    { key: "mana", worked: 3, hurt: 0, net: 3 },
+    { key: "resilience", worked: 2, hurt: 2, net: 0 },
+  ],
+  fix: [
+    { key: "card_flow", worked: 1, hurt: 5, net: -4 },
+    { key: "board", worked: 1, hurt: 3, net: -2 },
+  ],
+  keep: [
+    { key: "interaction", worked: 5, hurt: 1, net: 4 },
+    { key: "mana", worked: 3, hurt: 0, net: 3 },
+  ],
+  // Cut both ways, so it is the Mixed line rather than a third column.
+  mixed: [{ key: "resilience", worked: 2, hurt: 2, net: 0 }],
+};

@@ -140,6 +140,22 @@ export function AboutPage({ seen, next }: { seen: number; next?: string }) {
   // Validated here as well as in the action: the page PRINTS the destination,
   // and printing an unvalidated value is its own small problem.
   const destination = safeNext(next);
+  /**
+   * The reader was SENT here, rather than coming to look.
+   *
+   * The gate redirects with `?next=<where they were going>` (`gate.ts`), and
+   * nothing else puts that parameter on this URL — the account menu links to
+   * a bare `/about`. So its presence is the difference between "we interrupted
+   * you" and "you opened the reference", and only the first is owed a way
+   * back: a reader who came to read has a nav rail and a back button, and a
+   * button reading `Got it — takes you home` would send them somewhere they
+   * never asked to go.
+   *
+   * `behind` is still required. Dismissing writes the version, and a reader
+   * who is current has nothing to acknowledge.
+   */
+  const redirected = typeof next === "string" && next.length > 0;
+  const offerDismiss = behind && redirected;
   // Counted here, where `seen` is known — the rail is a client component and
   // has no business reading the reader's acknowledged version.
   const railChapters = CHAPTERS.map((n) => {
@@ -220,38 +236,53 @@ export function AboutPage({ seen, next }: { seen: number; next?: string }) {
         </section>
       ))}
 
-      {/* The dismiss draws only when there is something to acknowledge. A
-          reader who reached this page from the account menu while current has
-          nothing to press, and a control that wrote a version they already had
-          would be a button with no effect. */}
-      {behind && (
+      {/* The pinned bar's own height, given back to the document.
+          `<main>` reserves `--tabbar-h` and nothing more, so the bar sat ON
+          the last entry: at 390px the final key line of `themes` was behind
+          it, readable only by a reader who knew to keep scrolling into a
+          control. 67px is the bar's composition — 10 top, a 44px control, 12
+          bottom, and its 1px rule — and it is spelled out here rather than
+          left as a number so a change to any of those has somewhere to land.
+
+          A spacer rather than padding on the article: the article is shared
+          with the desktop layout, where this bar does not exist. */}
+      {offerDismiss && <div aria-hidden className="h-[67px] min-[1000px]:hidden" />}
+
+      {/* THE PHONE'S DISMISS. Pinned to the foot of the viewport rather than
+          to the foot of the document: a reader who opened this page because a
+          new feature landed should not have to scroll thirty-five entries to
+          leave it. The rail carries the desktop copy — see `ContentsRail` —
+          and this one is hidden from the wide stop up, so exactly one is in
+          the document at any width and the control is announced once.
+
+          `--tabbar-h` is the shell's own reserved strip at this width, so the
+          bar sits ON it rather than over the tab bar's targets. */}
+      {offerDismiss && (
         <form
           action={dismissAbout}
-          // Stacked and full width on a phone, inline above it. The clause is
-          // a sentence, and at 390px it and a button do not share a line
-          // without one of them being cut.
-          className="mt-[32px] flex flex-col items-stretch gap-[10px] min-[1000px]:flex-row min-[1000px]:items-center min-[1000px]:gap-[12px]"
+          className="fixed inset-x-0 z-30 border-t border-solid border-[color:var(--border)] bg-[color:var(--bg)] px-[16px] pt-[10px] pb-[12px] min-[1000px]:hidden"
+          style={{ bottom: "var(--tabbar-h)" }}
         >
           <input type="hidden" name="next" value={destination} />
-          {/* The destination rides in the accessible name as well as beside
-              the button: the clause is a sibling, so a screen-reader user
-              pressing `Got it` would otherwise be told nothing about where
-              they are about to land. */}
           <PrimaryButton
             type="submit"
-            className="min-h-[44px] w-full min-[1000px]:w-auto"
+            className="min-h-[44px] w-full px-[18px]"
             aria-label={`${aboutCopy.dismiss} — ${destinationClause}`}
           >
             {aboutCopy.dismiss}
           </PrimaryButton>
-          <span className="text-center font-mono text-[11px] text-[color:var(--fg-faint)] min-[1000px]:text-left">
-            {destinationClause}
-          </span>
         </form>
       )}
       </article>
 
-      <ContentsRail chapters={railChapters} />
+      <ContentsRail
+        chapters={railChapters}
+        dismiss={
+          offerDismiss
+            ? { action: dismissAbout, destination, clause: destinationClause }
+            : null
+        }
+      />
     </div>
   );
 }

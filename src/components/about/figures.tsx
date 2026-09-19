@@ -13,17 +13,11 @@
 
 import { AvailabilityMarker } from "../ui/availability-marker";
 import { BuyTag } from "../decks/buy-tag";
-import { ProxyTag } from "../decks/proxy-tag";
 import { StatusPillBadge } from "../decks/status-pill";
 import { SetCell } from "../sets/set-cell";
 import { RoleChips } from "../commanders/role-chips";
-import { GameAxisCell } from "../decks/game-axis-cell";
 import { CommitmentsCard } from "../home/commitments-card";
-import { THEMES } from "../../lib/theme/themes";
-import { gameLogCopy } from "../../lib/copy/game-log";
-import { folderCopy } from "../../lib/copy/folders";
 
-import { GAME_AXIS_KEYS } from "../../lib/decks/game-axes";
 import { BrowseFigureBody } from "./browse-figure";
 import { KeyNumeral } from "./numeral";
 import { ORDER_OPTIONS } from "../commanders/rack/order-options";
@@ -34,6 +28,13 @@ import { PIP_ORDER, PIP_SRC } from "../../lib/copy/filter-chassis";
 import {
   ImportFigureBody,
   AddCardsFigureBody,
+  FoldersFigureBody,
+  LogFindingsFigureBody,
+  ProxiesFigureBody,
+  ThemesFigureBody,
+  LogAGameFigureBody,
+  ReservationsFigureBody,
+  ResumeFigureBody,
   ExportFigureBody,
   VersionsFigureBody,
   ShoppingFigureBody,
@@ -53,13 +54,11 @@ import {
   PartnerSlotFigureBody,
   PostImportFigureBody,
 } from "./ch01-figures";
-import { cardAssignmentsCopy } from "../../lib/copy/card-assignments";
 import { statusBarStyle } from "../../lib/decks/status-style";
 import type { StatusPill } from "../../lib/decks/status";
 import { refreshCopy } from "../../lib/copy/refresh";
 import { FitBar } from "../commanders/fit-bar";
 import {
-  LegendBox,
   Specimen,
 } from "./specimen";
 import type { AboutWidth } from "../../lib/copy/about";
@@ -67,8 +66,6 @@ import {
   AVAILABILITY,
   COMMITMENTS,
   COMMITMENTS_TOTAL_CARDS,
-  GAME_AXES,
-  GAME_COUNT,
   ROLE_COUNTS,
   SHOPPING,
   READY_IN_USE,
@@ -212,44 +209,76 @@ function StatusFigure({ width }: { width: AboutWidth }) {
   const BODY = 99;
   return (
     <Specimen label="status" width={width}>
-      <div className="flex flex-col gap-[10px]">
-        {STATUSES.map((status) => (
-          <div key={status} className="flex flex-col gap-[4px]">
-            <div className="flex items-center gap-[10px]">
+      {/* THREE COLUMNS, ON ONE LINE. The badge, then a fixed-width track, then
+          what the deck card prints beside it. The figure used to stack the
+          clause UNDER the row and give the track the rest of the width, which
+          read as seven two-line blocks rather than one table a reader can scan
+          down — and the third column is the whole point of the entry, since
+          each status has exactly one thing to say.
+
+          The track is fixed rather than `flex-1` for the same reason: a bar
+          that changes length with the sentence beside it is comparing two
+          different scales down the column. */}
+      <div className="flex flex-col">
+        {STATUSES.map((status, i) => (
+          <div
+            key={status}
+            className={`flex flex-col gap-[6px] py-[9px] md:flex-row md:items-center md:gap-[12px] ${
+              i > 0 ? "border-t border-solid border-[color:var(--border)]" : ""
+            }`}
+          >
+            {/* PHONE: the badge and its sentence share a line, and the track
+                gets its own beneath. THE TABLE DOES NOT FIT 390px — a fixed
+                86px badge, a fixed 248px track and a sentence come to more
+                than the plate has, and the first version ran the track off
+                the right edge and pushed the clause out of the figure
+                entirely. Desktop keeps the three columns, which is what makes
+                the column scannable at the width it was designed for. */}
+            <div className="flex items-center gap-[10px] md:contents">
               {/* The className is REQUIRED and it is the FOOTER's, not the
                   tile's: the component defaults to `TILE_CLASS`, which opens
-                  `absolute bottom-[13px] left-[13px]` and would pin all six to
-                  the page corner, and the deck card's own footer draws 22px
+                  `absolute bottom-[13px] left-[13px]` and would pin all seven
+                  to the page corner, and the deck card's own footer draws 22px
                   tall at 10.5px rather than the tile's 24px at 11px. */}
               <StatusPillBadge
                 status={status}
-                className="flex h-[22px] flex-none items-center rounded-[6px] px-[8px] font-mono text-[10.5px] tracking-[0.06em]"
+                className="flex h-[22px] w-[86px] flex-none items-center rounded-[6px] px-[8px] font-mono text-[10.5px] tracking-[0.06em]"
               />
-              <span className="flex-none font-mono text-[10.5px] text-[color:var(--fg-faint)]">
-                {`${built[status]} / ${BODY}`}
+              {/* ONE thing per status, which is the entry's claim. A clause
+                  where the card draws one; the count beside the bar where it
+                  does not — and never both, because that would be two figures
+                  saying the same thing.
+
+                  Its ORDER differs by width, which is why `md:contents` is
+                  here: on the phone it follows the badge, and on desktop it is
+                  the third column with the track between them. `contents`
+                  dissolves this wrapper into the row so the track can sit
+                  between its two children. */}
+              <span className="min-w-0 flex-1 font-mono text-[10.5px] text-[color:var(--fg-faint)] md:order-3">
+                {clause[status] ?? `${built[status]} / ${BODY}`}
               </span>
-              {/* The track is drawn for every status; the fill is omitted for
-                  the one specimen with nothing built, which is what an empty
-                  track means. `New` rather than `Draft` since R6 — a draft has
-                  a length, and this one is drawn at 47 cards. */}
-              <div
-                className="relative h-[3px] flex-1 rounded-full"
-                style={{ background: "var(--border)" }}
-              >
-                {built[status] > 0 && (
-                  <div
-                    data-status-fill
-                    className="absolute top-0 bottom-0 left-0 rounded-full"
-                    style={statusBarStyle(status, built[status], BODY)}
-                  />
-                )}
-              </div>
             </div>
-            {clause[status] && (
-              <span className="font-mono text-[10px] text-[color:var(--fg-faint)]">
-                {clause[status]}
-              </span>
-            )}
+            {/* The track is drawn for every status; the fill is omitted for
+                the one specimen with nothing built, which is what an empty
+                track means. `New` rather than `Draft` since R6 — a draft has
+                a length, and this one is drawn at 47 cards.
+
+                Full width on the phone, fixed on desktop: a bar that changes
+                length with the sentence beside it is comparing two different
+                scales down the column, and on the phone there is no sentence
+                beside it to change with. */}
+            <div
+              className="relative h-[3px] w-full rounded-full md:order-2 md:w-[248px] md:flex-none"
+              style={{ background: "var(--border)" }}
+            >
+              {built[status] > 0 && (
+                <div
+                  data-status-fill
+                  className="absolute top-0 bottom-0 left-0 rounded-full"
+                  style={statusBarStyle(status, built[status], BODY)}
+                />
+              )}
+            </div>
           </div>
         ))}
       </div>
@@ -542,19 +571,7 @@ function RoleCoverageFigure({ width }: { width: AboutWidth }) {
 function LogFindingsFigure({ width }: { width: AboutWidth }) {
   return (
     <Specimen label="log-findings" width={width}>
-      <div className="flex flex-col gap-[10px]">
-        {GAME_AXES.map((tally, i) => (
-          <GameAxisCell
-            key={tally.key}
-            tally={tally}
-            gameCount={GAME_COUNT}
-            // Seven games clears PATTERN_MIN, so the cells take their buckets.
-            // Below it every cell is neutral, and a figure drawn there would
-            // teach the waiting state while the caption talks about findings.
-            bucket={i === 0 ? "fix" : "keep"}
-          />
-        ))}
-      </div>
+      <LogFindingsFigureBody />
     </Specimen>
   );
 }
@@ -576,37 +593,7 @@ function CommitmentsFigure({ width }: { width: AboutWidth }) {
 function ThemesFigure({ width }: { width: AboutWidth }) {
   return (
     <Specimen label="themes" width={width}>
-      <div className="grid grid-cols-2 gap-[8px] min-[1000px]:grid-cols-3">
-        {THEMES.map((theme) => (
-          <div
-            key={theme.key}
-            className="flex flex-col gap-[4px] rounded-[8px] border border-solid border-[color:var(--border)] px-[10px] py-[8px]"
-            data-theme={theme.key}
-          >
-            {/* The swatch is the entry's subject — a theme changes the palette
-                and nothing else — and a grid of names alone does not show it.
-                `data-theme` puts each tile in its own theme's tokens, which is
-                the same mechanism the app uses. */}
-            <span className="flex gap-[3px]">
-              {["--accent", "--success", "--danger"].map((token) => (
-                <span
-                  key={token}
-                  className="h-[8px] w-[14px] rounded-[2px]"
-                  style={{ background: `var(${token})` }}
-                />
-              ))}
-            </span>
-            <span className="text-[12.5px] text-[color:var(--fg)]">{theme.name}</span>
-            {/* The plane is the SUBTITLE, never the label: you pick Neon Rain,
-                not Kamigawa, and an earlier figure had them the other way up. */}
-            {/* `short`, which is what the picker draws — the full plane name
-                is "Kamigawa: Neon Dynasty" where the app says "Kamigawa". */}
-            <span className="font-mono text-[10px] text-[color:var(--fg-faint)]">
-              {theme.short}
-            </span>
-          </div>
-        ))}
-      </div>
+      <ThemesFigureBody />
     </Specimen>
   );
 }
@@ -621,34 +608,6 @@ function ThemesFigure({ width }: { width: AboutWidth }) {
 
 /** One row of a legend: the thing, then what it means. A `dt`/`dd` pair,
  *  because that is the relationship and a screen reader can then say it. */
-function Line({ mark, meaning }: { mark: React.ReactNode; meaning: string }) {
-  return (
-    <div className="flex items-baseline gap-[10px]">
-      <dt className="flex-none font-mono text-[11px] text-[color:var(--fg-body)]">{mark}</dt>
-      <dd className="m-0 font-mono text-[10px] leading-[1.4] text-[color:var(--fg-faint)]">
-        {meaning}
-      </dd>
-    </div>
-  );
-}
-
-function Legend({
-  label,
-  width,
-  rows,
-}: {
-  label: string;
-  width: AboutWidth;
-  rows: { mark: React.ReactNode; meaning: string }[];
-}) {
-  return (
-    <LegendBox label={label} width={width}>
-      {rows.map((row, i) => (
-        <Line key={i} mark={row.mark} meaning={row.meaning} />
-      ))}
-    </LegendBox>
-  );
-}
 
 function ReadyToBuildFigure({ width }: { width: AboutWidth }) {
   return (
@@ -795,76 +754,40 @@ function ShoppingFigure({ width }: { width: AboutWidth }) {
 
 function LogAGameFigure({ width }: { width: AboutWidth }) {
   return (
-    <Legend
-      label="log-a-game"
-      width={width}
-      rows={[
-        { mark: `${gameLogCopy.form.won} / ${gameLogCopy.form.lost} / ${gameLogCopy.form.draw}`, meaning: "and how big the pod was" },
-        { mark: `${GAME_AXIS_KEYS.length} axes`, meaning: "each markable as what worked or what let you down" },
-        // The form says this itself, in one line, so the figure says it in the
-        // form's own words rather than a paraphrase of them.
-        { mark: gameLogCopy.form.optionalNote, meaning: "the form says so, under the axes" },
-      ]}
-    />
+    <Specimen label="log-a-game" width={width}>
+      <LogAGameFigureBody />
+    </Specimen>
   );
 }
 
 function FoldersFigure({ width }: { width: AboutWidth }) {
   return (
-    <Legend
-      label="folders"
-      width={width}
-      rows={[
-        { mark: folderCopy.shelves.all, meaning: "every deck, which is where you start" },
-        { mark: "a shelf", meaning: "a deck sits on one or on none" },
-        { mark: "narrows, never filters", meaning: "it spends no accent and no chip, and Clear all leaves it alone" },
-      ]}
-    />
+    <Specimen label="folders" width={width}>
+      <FoldersFigureBody />
+    </Specimen>
   );
 }
 
 function ResumeFigure({ width }: { width: AboutWidth }) {
-  const c = refreshCopy.home.touched;
   return (
-    <Legend
-      label="resume"
-      width={width}
-      rows={[
-        { mark: c.edited(refreshCopy.home.elapsed.hours(2)), meaning: "you changed the draft" },
-        { mark: c.committed(refreshCopy.home.elapsed.yesterday), meaning: "you cut a version" },
-        { mark: c.played(refreshCopy.home.elapsed.days(2)), meaning: "you logged a game" },
-      ]}
-    />
+    <Specimen label="resume" width={width}>
+      <ResumeFigureBody />
+    </Specimen>
   );
 }
 
 function ReservationsFigure({ width }: { width: AboutWidth }) {
   return (
-    <Legend
-      label="reservations"
-      width={width}
-      rows={[
-        { mark: "first committed", meaning: "holds the copy by default" },
-        { mark: cardAssignmentsCopy.contested.headingSpare, meaning: "and you can override that whenever you like" },
-      ]}
-    />
+    <Specimen label="reservations" width={width}>
+      <ReservationsFigureBody />
+    </Specimen>
   );
 }
 
 function ProxiesFigure({ width }: { width: AboutWidth }) {
   return (
     <Specimen label="proxies" width={width}>
-      <div className="flex flex-col gap-[8px]">
-        <div className="flex items-center gap-[8px]">
-          <ProxyTag variant="row" />
-          <span className="font-mono text-[10px] text-[color:var(--fg-faint)]">
-            leaves the buy list without joining your collection
-          </span>
-        </div>
-        <span className="font-mono text-[10px] text-[color:var(--fg-faint)]">
-          set completion does not move — a proxy is a card you can play with, not one you have
-        </span>
-      </div>
+      <ProxiesFigureBody />
     </Specimen>
   );
 }

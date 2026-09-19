@@ -20,6 +20,14 @@ import {
   ISSUE_UNMATCHED,
   CONTESTED_ARRIVAL,
   ADD_RESULTS,
+  CARDS,
+  CONTESTED_RESERVATION,
+  DECK_FOLDERS,
+  GAME_SUMMARY,
+  RESUME_DECKS,
+  SHELF_COUNTS,
+  RESUME_NOW,
+  SHOPPING,
   DECK_VERSIONS,
   EXPORT_DECKLIST,
   SHOPPING_ROWS,
@@ -47,7 +55,16 @@ import { COST_PIP_SIZE, CostPips } from "../ui/cost-pips";
 import { TwoFacedMark } from "../cards/two-faced-mark";
 import { LastSlotsStrip } from "../decks/last-slots-strip";
 import { DecklistRow } from "../decks/decklist-row";
+import { useSyncExternalStore } from "react";
 import { QuickAddBar } from "../decks/quick-add-bar";
+import { GameLogForm } from "../decks/game-log-form";
+import { GameFindings } from "../decks/games-panel";
+import { ProxyControl } from "../decks/proxy-control";
+import { ProxyTag } from "../decks/proxy-tag";
+import { ResumeDecks } from "../home/resume-decks";
+import { ShelfLine } from "../decks/shelf-line";
+import { ThemeMiniature, themeInForce } from "../shell/theme-picker";
+import { THEMES } from "../../lib/theme/themes";
 import { PendingChangeProvider } from "../decks/pending-change";
 import { ImportEntry } from "../decks/import-entry";
 import { ExportDialog } from "../decks/export-dialog";
@@ -883,7 +900,14 @@ export function ExportFigureBody() {
     // The height is stated because the contained dialog centres itself in its
     // container, and a container sized by a scrim with no intrinsic height is
     // zero.
-    <div className="relative h-[470px] overflow-hidden rounded-[8px] [transform:translateZ(0)]">
+    // THE HEIGHT IS THE DIALOG'S OWN, PER WIDTH, and it has to be: the phone
+    // draws a bottom SHEET anchored to its container's foot at a fixed 590px
+    // (`export-dialog.tsx`), so a 470px frame clipped 120px off its TOP — the
+    // title and both tabs — and left key line 1 pointing at a control that was
+    // not on screen. Desktop centres a 470px dialog instead. The breakpoint is
+    // `md:` because that is where the dialog itself switches, not the page's
+    // own wide stop.
+    <div className="relative h-[590px] overflow-hidden rounded-[8px] [transform:translateZ(0)] md:h-[470px]">
       <ExportDialog
         inert
         open
@@ -970,4 +994,242 @@ export function ShoppingFigureBody() {
  */
 export function VersionsFigureBody() {
   return <VersionRail deckId="about-deck" versions={DECK_VERSIONS} />;
+}
+
+/**
+ * `log-a-game` — the game log form, open.
+ *
+ * The figure was three legend rows naming the result words, the axis count and
+ * the form's own optional note. All three are things the form SAYS, and it is
+ * a real surface reached from a deck's Games tab.
+ *
+ * `initialOpen` starts it expanded. Logging a game begins with a press
+ * everywhere a player meets this, so the prop defaults to false; here the
+ * collapsed button would show the door rather than the room, and this entry's
+ * caption is entirely about the fields inside.
+ *
+ * `isFirstGame` is true, which is the state whose copy explains itself most:
+ * the form introduces the axes rather than assuming them.
+ */
+export function LogAGameFigureBody() {
+  return (
+    <div className="relative">
+      <GameLogForm
+        deckId="about-figure"
+        isFirstGame
+        initialOpen
+        onSaved={() => {}}
+        onAnnounce={() => {}}
+      />
+      {/* The two numerals the canvas draws, beside the things the key lines
+          are about: the pod-size row, and the optional note under the save.
+          They are absolutely positioned because the form is mounted whole and
+          nothing here reaches inside it — the alternative was a prop on
+          `GameLogForm` for annotation it has no business knowing about.
+
+          The offsets are MEASURED, not guessed — the first version put ① on
+          top of the `POD SIZE` label. Both are anchored to the figure's RIGHT
+          and to a row whose height is fixed, because the plate is a fixed
+          760px cap on the one page that mounts this; the left edge of the pod
+          row moves with the label beside it and the right edge does not. */}
+      <span aria-hidden className="pointer-events-none absolute right-[120px] top-[138px]">
+        <KeyNumeral n={1} />
+      </span>
+      <span aria-hidden className="pointer-events-none absolute right-[36px] bottom-[54px]">
+        <KeyNumeral n={2} />
+      </span>
+    </div>
+  );
+}
+
+/**
+ * `resume` — Home's own resume block.
+ *
+ * The figure was three legend rows quoting `touched.edited`, `.committed` and
+ * `.played` directly. That arrangement cannot be wrong and cannot be right:
+ * the block CHOOSES its verb by ranking three stamps, so a figure that types
+ * the three strings keeps printing them after the ranking changes.
+ *
+ * The fixture states dates instead and lets `ResumeDecks` decide the words —
+ * one deck edited two hours ago, one whose newest event is its commit, one
+ * played since either. `RESUME_NOW` is the page's clock rather than the real
+ * one, so a screenshot of this page does not differ from the last for no
+ * reason.
+ */
+export function ResumeFigureBody() {
+  return (
+    <ResumeDecks
+      decks={RESUME_DECKS}
+      shopping={SHOPPING}
+      total={RESUME_DECKS.length}
+      now={RESUME_NOW}
+    />
+  );
+}
+
+/**
+ * `folders` — the deck list's own shelf line.
+ *
+ * The figure was three legend rows, one of which was the phrase "narrows,
+ * never filters" — this page's paraphrase of a treatment rather than the
+ * treatment. The line says it itself, and says it the way the handoff's
+ * decision 3 requires: the selected segment spends NO ACCENT, taking `--fg` on
+ * `--elevated` under a ring, because accent is the chassis's own "this filter
+ * is on". A figure that writes the sentence cannot show that; one that draws
+ * the line cannot avoid it.
+ *
+ * A folder is selected rather than `All decks`, for the same reason: the
+ * unselected state is what every segment looks like, and the ruling is about
+ * what the SELECTED one does not do.
+ *
+ * `menu` returns null throughout. The selected folder's `…` is a real control
+ * on the route, and its absence here is deliberate — `Specimen` is `inert`, so
+ * a menu drawn in a figure is an affordance that cannot be opened.
+ */
+export function FoldersFigureBody() {
+  return (
+    <ShelfLine
+      folders={DECK_FOLDERS}
+      counts={SHELF_COUNTS}
+      shelf={DECK_FOLDERS[0].id}
+      onSelect={() => {}}
+      onCreate={() => {}}
+    />
+  );
+}
+
+/**
+ * `reservations` — the contested-card row itself.
+ *
+ * The figure was two legend rows: the phrase "first committed" — which is this
+ * page's summary of the rule rather than anything the app prints — and the
+ * chooser's heading with no chooser under it. The row is the rule: two decks,
+ * one copy, seniority deciding until the player picks.
+ *
+ * It is drawn with no `thisDeckId`. That prop tags the deck whose page the row
+ * is on, and a figure has no such page — passing one would mark a deck
+ * "this one" in a picture with no deck behind it.
+ */
+export function ReservationsFigureBody() {
+  return <ContestedCardRow card={CONTESTED_RESERVATION} />;
+}
+
+/**
+ * `themes` — the six tiles, as the picker draws them, with the reader's own
+ * theme ticked.
+ *
+ * The figure drew its own tile: three coloured swatches over a name. The
+ * picker draws a MINIATURE OF THE APP — a panel with `99` set in that theme's
+ * display face, an accent bar, and the chrome beside it — which is the entry's
+ * subject far better than three rectangles, because the claim is that a theme
+ * changes the palette and not the meaning.
+ *
+ * `ThemeMiniature` and `themeInForce` are the picker's own, exported rather
+ * than copied. THE TICK IS THE READER'S: `themeInForce` reads
+ * `document.documentElement.dataset.theme`, which `applyTheme` writes, so the
+ * figure marks whichever theme the page is actually being read in. A server
+ * render cannot know it, so the tick appears after hydration — which is the
+ * same thing the picker itself does.
+ */
+export function ThemesFigureBody() {
+  // `useSyncExternalStore`, not an effect that sets state: the server has no
+  // document, so the tick cannot be rendered on the server — and setting state
+  // synchronously inside an effect is the cascading-render pattern the lint
+  // rule forbids. The server snapshot is null, which is "no tick", so the
+  // markup React sends and the first client paint agree.
+  //
+  // Nothing subscribes: `applyTheme` writes the attribute and the picker lives
+  // in a menu that unmounts, so there is no event to listen for. A reader who
+  // changes theme with this page open gets the whole page repainted by the
+  // attribute anyway; the tick catches up on the next render.
+  const active = useSyncExternalStore(
+    () => () => {},
+    () => themeInForce(THEMES[0].key),
+    () => null,
+  );
+  return (
+    <div className="grid grid-cols-3 gap-[10px] min-[1000px]:grid-cols-6">
+      {THEMES.map((theme) => (
+        <div
+          key={theme.key}
+          // The selected tile takes the PICKER'S OWN treatment, not just the
+          // tick: `bg-[--elevated]` under a 1px accent outline, which is what
+          // the account menu draws. The tick alone reads as a stray mark at
+          // this size, and the two together are one state.
+          className={`flex flex-col gap-[6px] rounded-[10px] p-[5px] ${
+            theme.key === active
+              ? "bg-[color:var(--elevated)] outline outline-1 outline-[color:var(--accent)]"
+              : ""
+          }`}
+        >
+          <ThemeMiniature theme={theme.key} compact={false} selected={theme.key === active} />
+          <span className="text-[12.5px] leading-[1.2] text-[color:var(--fg)]">{theme.name}</span>
+          {/* The plane is the SUBTITLE, never the label: you pick Neon Rain,
+              not Kamigawa, and an earlier figure had them the other way up.
+              `short`, which is what the picker draws — the full plane name is
+              "Kamigawa: Neon Dynasty" where the app says "Kamigawa". */}
+          <span className="font-mono text-[10px] text-[color:var(--fg-faint)]">{theme.short}</span>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+/**
+ * `log-findings` — the Games tab's own aggregate.
+ *
+ * The figure drew two `GameAxisCell`s in a column, with the bucket passed in
+ * as a prop. That is a cell, not a finding: the entry is about the tab
+ * SORTING what it has seen into what to fix and what to keep, and two cells
+ * side by side sort nothing. Both of its key lines pointed at parts the figure
+ * did not draw — the heading that describes under three games, and the Mixed
+ * line for anything that has cut both ways.
+ *
+ * `GameFindings` is the panel's own aggregate block, extracted so this page
+ * can draw it. It takes a summary and nothing else, which is what made the
+ * extraction safe — the panel around it holds a deck id, a form,
+ * announcements and a history, and none of them reach into this block.
+ */
+export function LogFindingsFigureBody() {
+  return <GameFindings summary={GAME_SUMMARY} />;
+}
+
+/**
+ * `proxies` — the mark, and the control that sets it.
+ *
+ * The figure drew the `P` tag and two sentences of this page's own prose. It
+ * showed what a proxy LOOKS like on a row and never where one is made, which
+ * Hugh asked for on 2026-09-19: `ProxyControl` is the tick in the card sheet,
+ * and it is the one surface the entry's first clause — "mark a card as one you
+ * are printing" — is actually about.
+ *
+ * Drawn MARKED. The unmarked state is a bare tick beside a label and says
+ * nothing; marked, the control prints its own second clause — the deck's slot
+ * is filled, and nothing is claimed from your collection — which is the whole
+ * distinction the entry exists to make.
+ *
+ * The row above it stays, because the two answer different halves: the control
+ * is where the mark is set, the row is what it does to the list afterwards.
+ */
+export function ProxiesFigureBody() {
+  return (
+    <div className="flex flex-col gap-[14px]">
+      <div className="flex items-center gap-[8px]">
+        <ProxyTag variant="row" />
+        <span className="font-mono text-[10px] text-[color:var(--fg-faint)]">
+          leaves the buy list without joining your collection
+        </span>
+      </div>
+      <div className="border-t border-solid border-[color:var(--border)] pt-[12px]">
+        <ProxyControl
+          deckId="about-figure"
+          deckName={DECK_SPINE.deck.name}
+          oracleId={CARDS.proxied}
+          cardName={CARDS.proxied}
+          proxied
+          onSaved={() => {}}
+        />
+      </div>
+    </div>
+  );
 }

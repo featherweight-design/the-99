@@ -7,6 +7,7 @@ import { availabilityCopy } from "../../lib/copy/availability";
 import { refreshCopy } from "../../lib/copy/refresh";
 import { gameLogCopy } from "../../lib/copy/game-log";
 import { deckImportCopy } from "../../lib/copy/deck-import";
+import { THEMES } from "../../lib/theme/themes";
 import { deckVersioningCopy } from "../../lib/copy/deck-versioning";
 import { exportLinkOutCopy, exportTabCopy } from "../../lib/copy/decks-builder";
 import { ORDER_OPTIONS } from "../commanders/rack/order-options";
@@ -61,6 +62,24 @@ vi.mock("../../app/about/actions", () => ({ dismissAbout: vi.fn() }));
 // test renders the whole page.
 vi.mock("next/navigation", () => ({ useRouter: () => ({ push: vi.fn() }) }));
 
+/**
+ * The dismiss, at one width.
+ *
+ * The page draws TWO: one pinned to the phone's viewport foot, one in the
+ * desktop contents rail — because a reader who opened this page for a new
+ * feature should not have to scroll thirty-five entries to leave it. Each is
+ * hidden at the other's width with `display:none`, so exactly one is in the
+ * accessibility tree in a browser. jsdom computes no styles and finds both,
+ * so every lookup here names the one it means.
+ */
+function dismissButtons(): HTMLElement[] {
+  return screen.getAllByRole("button", { name: new RegExp("^" + aboutCopy.dismiss) });
+}
+const railDismiss = () =>
+  dismissButtons().find((el) => el.closest("nav") !== null) as HTMLElement;
+const phoneDismiss = () =>
+  dismissButtons().find((el) => el.closest("nav") === null) as HTMLElement;
+
 describe("the page a first-time reader sees", () => {
   it("marks nothing, because all of it is new to them", () => {
     render(<AboutPage seen={0} />);
@@ -75,16 +94,50 @@ describe("the page a first-time reader sees", () => {
     }
   });
 
-  it("offers the dismiss, because they have acknowledged nothing", () => {
+  it("offers the dismiss only to a reader who was SENT here", () => {
+    // Two conditions, and the second was missing. `behind` says there is
+    // something to acknowledge; `?next=` says we INTERRUPTED them — the gate
+    // is the only thing that puts it on this URL, and the account menu links
+    // to a bare `/about`. A reader who came to look has a nav rail and a back
+    // button, and `Got it — takes you home` would send them somewhere they
+    // never asked to go.
+    const sent = render(<AboutPage seen={0} next="/decks" />);
+    expect(dismissButtons()).toHaveLength(2);
+    expect(railDismiss(), "no dismiss in the contents rail").toBeTruthy();
+    expect(phoneDismiss(), "no dismiss pinned for the phone").toBeTruthy();
+    // BOTH carry their own horizontal padding. `renderButton`'s BASE sets
+    // none — every other call site supplies it — so the rail's `w-auto`
+    // button drew its label edge to edge and read as a clipped word. A class
+    // assertion is the only instrument here: jsdom lays nothing out, and the
+    // defect is an absent utility rather than a wrong value.
+    for (const button of dismissButtons()) {
+      expect(button.className, "the dismiss has no horizontal padding").toMatch(/\bpx-\[/);
+    }
+    // The pinned bar's height, given back to the document. `<main>` reserves
+    // `--tabbar-h` and nothing more, so without this the bar sits ON the last
+    // entry: at 390px the final key line of `themes` was behind it, readable
+    // only by someone who knew to keep scrolling into a control. Measured in a
+    // browser, not inferred — jsdom lays nothing out, so what a unit test can
+    // hold is that the spacer exists and is phone-only.
+    const spacer = [...sent.container.querySelectorAll("div[aria-hidden]")].find((el) =>
+      /\bh-\[\d+px\]/.test(el.className) && el.className.includes("min-[1000px]:hidden"),
+    );
+    expect(spacer, "nothing reserves the pinned dismiss's height").toBeTruthy();
+    sent.unmount();
+
+    // Behind, but came to look: nothing to press.
     render(<AboutPage seen={0} />);
-    expect(screen.getByRole("button", { name: new RegExp("^" + aboutCopy.dismiss) })).toBeTruthy();
+    expect(
+      screen.queryAllByRole("button", { name: new RegExp("^" + aboutCopy.dismiss) }),
+      "a reader who navigated here was offered a way out of a flow they never entered",
+    ).toHaveLength(0);
   });
 });
 
 describe("the reader who is current", () => {
   it("has no dismiss to press", () => {
     render(<AboutPage seen={ABOUT_VERSION} />);
-    expect(screen.queryByRole("button", { name: new RegExp("^" + aboutCopy.dismiss) })).toBeNull();
+    expect(screen.queryAllByRole("button", { name: new RegExp("^" + aboutCopy.dismiss) })).toHaveLength(0);
   });
 });
 
@@ -125,14 +178,14 @@ describe("the reader who is behind", () => {
 describe("where the dismiss sends them", () => {
   it("carries a same-origin destination through", () => {
     render(<AboutPage seen={0} next="/decks?sort=name" />);
-    const form = screen.getByRole("button", { name: new RegExp("^" + aboutCopy.dismiss) }).closest("form");
+    const form = railDismiss().closest("form");
     expect(form?.querySelector("input[name=next]")).toHaveValue("/decks?sort=name");
     expect(screen.getByText(aboutCopy.dismissDestination("/decks?sort=name"))).toBeTruthy();
   });
 
   it("refuses to print or carry another origin", () => {
     render(<AboutPage seen={0} next="//evil.example" />);
-    const form = screen.getByRole("button", { name: new RegExp("^" + aboutCopy.dismiss) }).closest("form");
+    const form = railDismiss().closest("form");
     expect(form?.querySelector("input[name=next]")).toHaveValue("/");
     expect(screen.getByText(aboutCopy.dismissDestinationHome)).toBeTruthy();
   });
@@ -166,7 +219,7 @@ describe("the dismiss control's accessible name", () => {
     // nothing about the destination.
     render(<AboutPage seen={0} next="/decks" />);
     expect(
-      screen.getByRole("button", {
+      screen.getAllByRole("button", {
         name: `${aboutCopy.dismiss} — ${aboutCopy.dismissDestination("/decks")}`,
       }),
     ).toBeTruthy();
@@ -180,7 +233,7 @@ describe("a crafted link", () => {
     // wrote the link. The page must not print or carry it.
     render(<AboutPage seen={0} next="//evil.example/decks" />);
     const form = screen
-      .getByRole("button", { name: new RegExp("^" + aboutCopy.dismiss) })
+      .getAllByRole("button", { name: new RegExp("^" + aboutCopy.dismiss) })[0]
       .closest("form");
     expect(form?.querySelector("input[name=next]")).toHaveValue("/");
     expect(screen.getByText(aboutCopy.dismissDestinationHome)).toBeTruthy();
@@ -208,35 +261,36 @@ describe("the figures", () => {
     expect(drawn).toBe(registered);
   });
 
-  it("hides a MOUNTED specimen from the reading order, and reads a legend aloud", () => {
-    // Two figure kinds, two rules, and the difference is where the information
-    // lives. A mounted component repeats what the caption and keys already
-    // say, so announcing it reads every mark twice and names controls that
-    // cannot be pressed. A legend's content exists NOWHERE else — Discover's
-    // five orders and their glosses are drawn there and in no caption — so
-    // hiding it hid the entry's whole subject from the readers least able to
-    // recover it elsewhere.
+  it("hides every figure from the reading order, and says it elsewhere", () => {
+    // ONE FIGURE KIND NOW. The page used to draw two: a mounted specimen,
+    // aria-hidden because it repeats what the caption and keys already say,
+    // and a readable `Legend` for entries whose content existed NOWHERE else —
+    // Discover's five orders and their glosses were drawn there and in no
+    // caption. Chapter 04 converted the last four legends, so the helper and
+    // its box are gone and `spokenAs` is the surviving way to put a figure's
+    // content into the reading order.
+    //
+    // What replaces the two-population check is the rule that made it matter:
+    // every figure is hidden, so every entry MUST carry its own prose. An
+    // entry with an aria-hidden figure and nothing readable beside it would
+    // hide its whole subject from the readers least able to recover it.
     const { container } = render(<AboutPage seen={0} />);
     const all = Object.entries(figures(container));
-    const legends = all.filter(([, el]) => el.hasAttribute("data-legend"));
-    const mounted = all.filter(([, el]) => !el.hasAttribute("data-legend"));
-    expect(legends.length).toBeGreaterThan(0);
-    expect(mounted.length).toBeGreaterThan(0);
+    expect(all.length, "no figures at all").toBeGreaterThan(0);
 
-    for (const [name, figure] of mounted) {
+    for (const [name, figure] of all) {
       expect(figure, name).toHaveAttribute("aria-hidden", "true");
       expect(figure, name).toHaveAttribute("inert");
       expect(figure.className, name).toContain("pointer-events-none");
     }
-    for (const [name, figure] of legends) {
-      // Readable, and structured: a mark and its meaning are a pair, so they
-      // are a `dt` and a `dd` rather than two spans a reader must infer.
-      expect(figure.hasAttribute("aria-hidden"), name).toBe(false);
-      expect(figure.hasAttribute("inert"), name).toBe(false);
-      expect(figure.querySelector("dl"), name).toBeTruthy();
-      expect(figure.querySelectorAll("dt").length, name).toBeGreaterThan(0);
+
+    for (const entry of aboutEntries) {
+      if (!(entry.id in FIGURES)) continue;
+      const prose = entry.caption.trim().length + entry.keys.join("").trim().length;
+      expect(prose, `${entry.id} draws a hidden figure and says nothing`).toBeGreaterThan(0);
     }
   });
+
 
   it("draws the buy tag's four claims, which are not four ways of saying cost", () => {
     // The frame is not the figure: asserting `data-width` alone leaves three
@@ -656,6 +710,20 @@ describe("the figures", () => {
     expect(plate.textContent).toContain(exportTabCopy.decklist);
     expect(plate.textContent).toContain(exportTabCopy.shopping);
     expect(plate.textContent).toContain(exportLinkOutCopy.shopping);
+
+    // The frame's height differs BY WIDTH, and that is not decoration: the
+    // phone draws a bottom sheet anchored to its container's foot at a fixed
+    // 590px, so a single 470px frame clipped 120px off its top — the title and
+    // both tabs — and left key line 1 pointing at a control that was not on
+    // screen. Measured in a browser; what a unit test can hold is that the two
+    // heights are still declared, because jsdom lays nothing out.
+    const frame = [...plate.querySelectorAll("div")].find((el) =>
+      el.className.includes("translateZ"),
+    );
+    expect(frame?.className, "the export frame has no phone height").toMatch(/\bh-\[\d+px\]/);
+    expect(frame?.className, "the export frame does not resize by width").toMatch(
+      /\bmd:h-\[\d+px\]/,
+    );
 
     // The dialog is drawn INERT. Were it opened, `useDialogA11y` would write
     // `document.body.style.overflow` — locking the About page's own scroll,
@@ -1220,25 +1288,39 @@ describe("the themes figure", () => {
     expect(plate).toBeTruthy();
     const tiles = [...plate!.querySelectorAll("[data-theme]")];
     expect(tiles).toHaveLength(6);
+    // Each tile is the PICKER'S OWN miniature now — a panel with `99` set in
+    // that theme's display face over an accent bar — rather than three
+    // coloured rectangles this page drew. The claim is that a theme changes
+    // the palette and not the meaning, and a miniature of the app says that
+    // where three swatches only assert it.
+    //
+    // `data-theme` is what makes each tile resolve against its own tokens, so
+    // that attribute is the subject: a tile without it would draw the theme in
+    // force six times over.
     for (const tile of tiles) {
-      const swatches = [...tile.querySelectorAll("span")].filter(
-        (el) => (el as HTMLElement).style.background !== "",
-      );
-      expect(swatches, `${tile.getAttribute("data-theme")} draws no palette`).toHaveLength(3);
+      const key = tile.getAttribute("data-theme");
+      expect(THEMES.some((t) => t.key === key), `${key} is not a theme`).toBe(true);
+      expect(tile.textContent, `${key} draws no miniature`).toContain("99");
+    }
+    // Both halves of every name, in the picker's own vocabulary: the theme is
+    // the label and the plane is the subtitle. An earlier figure had them the
+    // other way up.
+    for (const theme of THEMES) {
+      expect(plate!.textContent).toContain(theme.name);
+      expect(plate!.textContent).toContain(theme.short);
     }
   });
 });
 
 describe("what each legend must hold", () => {
-  // The empty-frame gate is a floor, not coverage: a legend dropping a row —
+  // The empty-frame gate is a floor, not coverage: a figure dropping a row —
   // Discover drawing four of its five orders — clears it, and those rows ARE
   // the entry. Where an entry's caption states a count, the figure is held to
   // it here rather than left to a photograph.
-  const rows = (container: HTMLElement, label: string) => {
-    const el = container.querySelector(`[data-specimen="${label}"]`);
-    expect(el, `${label} drew no figure`).toBeTruthy();
-    return [...el!.querySelectorAll("dt")];
-  };
+  //
+  // This block read `dt` elements while these figures were legends. They are
+  // mounted components now, so each check below reads whatever the real
+  // control draws instead.
 
   it("gives Discover all five of its orders, in the real control", () => {
     // "two of them change which commanders the list holds" only means anything
@@ -1296,22 +1378,23 @@ describe("what each legend must hold", () => {
   it("gives the resume rows all three verbs", () => {
     // edited, committed, played — the entry's line is that each row says which
     // event put it there, which two verbs cannot demonstrate.
+    //
+    // The figure used to TYPE the three strings as legend marks, which is the
+    // one arrangement that cannot be wrong and cannot be right: `ResumeDecks`
+    // picks its verb by ranking three stamps, so a typed figure keeps printing
+    // them after the ranking changes. The fixture states dates now and the
+    // block chooses, so this reads what it CHOSE.
     const { container } = render(<AboutPage seen={0} />);
-    expect(rows(container, "resume")).toHaveLength(3);
-  });
-
-  it("pairs every legend mark with a meaning", () => {
-    // A `dt` with no `dd` is a mark nobody explained, and the pairing is the
-    // whole reason a legend is a description list.
-    const { container } = render(<AboutPage seen={0} />);
-    for (const el of container.querySelectorAll("[data-legend]")) {
-      const label = el.getAttribute("data-specimen");
-      const dts = el.querySelectorAll("dt").length;
-      const dds = el.querySelectorAll("dd").length;
-      expect(dts, `${label} has no rows`).toBeGreaterThan(1);
-      expect(dds, `${label} has ${dts} marks and ${dds} meanings`).toBe(dts);
+    const text =
+      container.querySelector("[data-specimen='resume']")?.textContent ?? "";
+    const c = refreshCopy.home.touched;
+    for (const verb of [c.edited, c.committed, c.played]) {
+      // The elapsed clause differs per row and is not the subject; the verb is.
+      const stem = verb("").replace(/\s+$/, "");
+      expect(text, `no row reads ${stem}`).toContain(stem);
     }
   });
+
 });
 
 // ── The commander-availability figure draws its four readings ─────────────
@@ -1426,31 +1509,32 @@ describe("the page's own type, against the design table", () => {
     // Two treatments in the canvas — 14px 16px and 12px — collapsed into one
     // row of the first table and then one blanket value in the code.
     //
-    // EVERY frame, and both chassis. `Specimen` and `LegendBox` each carry
-    // their own padding branch, so checking the first plate and the first
-    // inset tested `Specimen` twice and `LegendBox` never — reverting the
-    // legend's branch to the old blanket value left the suite green.
+    // EVERY frame, and BOTH WIDTHS. `Specimen` carries a padding branch per
+    // width, so checking the first frame of each kind is the only way to reach
+    // both — the earlier version of this checked the first plate and the first
+    // inset and so tested one chassis twice, because there were two chassis
+    // then. `LegendBox` was the second, and chapter 04 removed it with the
+    // last legend.
     const { container } = render(<AboutPage seen={0} />);
     const frames = [...container.querySelectorAll("[data-width]")];
     expect(frames.length).toBeGreaterThan(30);
 
-    const kinds = { mountedPlate: 0, mountedInset: 0, legendPlate: 0, legendInset: 0 };
+    const kinds = { plate: 0, inset: 0 };
     for (const frame of frames) {
       const label = frame.getAttribute("data-specimen");
       const inset = frame.getAttribute("data-width") === "inset";
-      const legend = frame.hasAttribute("data-legend");
       if (inset) {
         expect(frame.className, `${label} inset padding`).toContain("p-[12px]");
       } else {
         expect(frame.className, `${label} plate padding`).toContain("px-[16px]");
         expect(frame.className, `${label} plate padding`).toContain("py-[14px]");
       }
-      kinds[legend ? (inset ? "legendInset" : "legendPlate") : inset ? "mountedInset" : "mountedPlate"] += 1;
+      kinds[inset ? "inset" : "plate"] += 1;
     }
-    // Both chassis must actually be represented, or the loop above is checking
-    // one implementation twice.
-    expect(kinds.mountedPlate + kinds.mountedInset).toBeGreaterThan(0);
-    expect(kinds.legendPlate + kinds.legendInset).toBeGreaterThan(0);
+    // Both widths must actually be represented, or the loop above is checking
+    // one branch twice.
+    expect(kinds.plate, "no plate frames").toBeGreaterThan(0);
+    expect(kinds.inset, "no inset frames").toBeGreaterThan(0);
   });
 });
 

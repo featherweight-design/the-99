@@ -139,25 +139,3 @@ export function SpecimenResponsive({ children }: { children: React.ReactNode }) 
  * hairline still says "this is a specimen of the app"; the difference is
  * whether the thing inside is a picture of information or the information.
  */
-export function LegendBox({
-  children,
-  label,
-  width = "plate",
-}: {
-  children: React.ReactNode;
-  label?: string;
-  width?: "inset" | "plate";
-}) {
-  return (
-    <figure
-      data-specimen={label}
-      data-width={width}
-      data-legend=""
-      className={`m-0 mt-[10px] overflow-hidden rounded-[8px] border border-solid border-[color:var(--border)] bg-[color:var(--surface-sunken)] ${
-        width === "inset" ? "p-[12px] min-[1000px]:max-w-[300px]" : "px-[16px] py-[14px]"
-      }`}
-    >
-      <dl className="m-0 flex flex-col gap-[8px]">{children}</dl>
-    </figure>
-  );
-}

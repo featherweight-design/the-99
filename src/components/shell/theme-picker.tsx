@@ -35,7 +35,7 @@ type PanelKind = "popover" | "sheet";
  * accent bar and the chrome beside it. Full-width at 46px tall in the popover;
  * a fixed 52×38 thumbnail in the sheet, where the label sits alongside.
  */
-function Miniature({ theme, compact, selected }: { theme: ThemeKey; compact: boolean; selected: boolean }) {
+export function ThemeMiniature({ theme, compact, selected }: { theme: ThemeKey; compact: boolean; selected: boolean }) {
   return (
     <span
       // Everything inside this box resolves against `theme`, not the theme in force.
@@ -122,7 +122,7 @@ function retirementNotice() {
  * — before any choice made in the first opening. The document attribute is the
  * live truth, since `applyTheme` is what writes it.
  */
-function themeInForce(fallback: ThemeKey): ThemeKey {
+export function themeInForce(fallback: ThemeKey): ThemeKey {
   if (typeof document === "undefined") return fallback;
   const painted = document.documentElement.dataset.theme;
   return isThemeKey(painted) ? painted : fallback;
@@ -250,7 +250,7 @@ export function ThemePicker({
                   : "hover:bg-[color:var(--surface-raised)]"
               }`}
             >
-              <Miniature theme={key} compact={compact} selected={isSelected} />
+              <ThemeMiniature theme={key} compact={compact} selected={isSelected} />
               <span className="flex min-w-0 flex-col gap-[2px]">
                 <span
                   className={`truncate font-medium leading-[1.25] ${
