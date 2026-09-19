@@ -142,11 +142,11 @@ describe("DeckCard", () => {
     expect(screen.queryByRole("link", { name: /open|build|edit/i })).toBeNull();
   });
 
-  it("draws commander art on a Draft tile, because every deck has a commander", () => {
+  it("draws commander art on a New tile, because every deck has a commander", () => {
     const { container } = render(
       <DeckCard folders={[]} onCreateFolder={() => {}} say={() => {}} onMoved={() => {}} keepsFocus closeAfterCreate={null}
         deck={deck({
-          statusPill: "Draft",
+          statusPill: "New",
           built: 0,
           ownedCount: 0,
           toBuyCount: 0,
@@ -328,124 +328,91 @@ describe("DeckCard", () => {
     );
     expect(
       screen.getByRole("link", {
-        // The base fixture has never committed, so its status is followed by
-        // the phase — the mark is drawn on the pill and the name says so where
-        // it is drawn.
-        name: "Atraxa, Praetors' Voice, Atraxa, Praetors' Voice, Non-red, To buy, not committed yet, 99 / 99, 3 to buy · $18.40, 2 days ago",
+        name: "Atraxa, Praetors' Voice, Atraxa, Praetors' Voice, Non-red, To buy, 99 / 99, 3 to buy · $18.40, 2 days ago",
       }),
     ).toBeInTheDocument();
   });
 
-  describe("the deck-state marks", () => {
-    // A deck with a version behind it and nothing pending: the plain tile, and
-    // the control every case below is read against.
+  describe("the phase, as a word", () => {
     const committed = (over: Partial<DeckListItem> = {}) =>
       deck({ lastCommittedAt: daysBefore(4), versionNumber: 2, ...over });
 
-    it("draws the hollow plate for a deck that has never committed", () => {
+    it("draws no mark on any tile", () => {
       const { container } = render(
-        <DeckCard folders={[]} onCreateFolder={() => {}} say={() => {}} onMoved={() => {}} keepsFocus closeAfterCreate={null} deck={deck()} shopping={undefined} now={now} />,
-      );
-      const chip = container.querySelector("[class*='grid-area:chip']") as HTMLElement;
-      // `--bg` itself, opaque. A transparent chip breaks the art-wash amendment
-      // on the one surface that puts this pill on a wash.
-      expect(chip.style.background).toBe("var(--bg)");
-      expect(chip.style.borderLeft).toBe("");
-    });
-
-    it("draws the pending edge for a committed deck whose draft has moved", () => {
-      const { container } = render(
-        <DeckCard folders={[]} onCreateFolder={() => {}} say={() => {}} onMoved={() => {}} keepsFocus closeAfterCreate={null} deck={committed({ pendingChanges: 36 })} shopping={undefined} now={now} />,
-      );
-      const chip = container.querySelector("[class*='grid-area:chip']") as HTMLElement;
-      expect(chip.style.borderLeft).toBe("2px solid var(--fg)");
-      // The plate keeps its status tint: this is a deck, not a plan.
-      expect(chip.style.background).toContain("color-mix");
-    });
-
-    it("draws neither on a committed deck with a clean draft", () => {
-      const { container } = render(
-        <DeckCard folders={[]} onCreateFolder={() => {}} say={() => {}} onMoved={() => {}} keepsFocus closeAfterCreate={null} deck={committed()} shopping={undefined} now={now} />,
+        <DeckCard folders={[]} onCreateFolder={() => {}} say={() => {}} onMoved={() => {}} keepsFocus closeAfterCreate={null} deck={deck({ statusPill: "Draft" })} shopping={undefined} now={now} />,
       );
       const chip = container.querySelector("[class*='grid-area:chip']") as HTMLElement;
       expect(chip.style.borderLeft).toBe("");
       expect(chip.style.background).not.toBe("var(--bg)");
+      expect((container.querySelector("[data-deck-bar-fill]") as HTMLElement).style.opacity).toBe("");
     });
 
-    it("halves the bar for a plan and leaves a deck's alone", () => {
-      const { container: plan } = render(
-        <DeckCard folders={[]} onCreateFolder={() => {}} say={() => {}} onMoved={() => {}} keepsFocus closeAfterCreate={null} deck={deck()} shopping={undefined} now={now} />,
+    // THE COST R6 NAMES, PAID BACK HERE. An uncommitted deck loses the count
+    // WORD in the pill, so the row beneath has to carry the count FIGURE — and
+    // it is the figure that deck will draw the moment it commits.
+    it("keeps a draft's count figure in the detail row", () => {
+      render(
+        <DeckCard folders={[]} onCreateFolder={() => {}} say={() => {}} onMoved={() => {}} keepsFocus closeAfterCreate={null} deck={deck({ statusPill: "Draft", built: 104, unresolvedCount: 0 })} shopping={undefined} now={now} />,
       );
-      expect((plan.querySelector("[data-deck-bar-fill]") as HTMLElement).style.opacity).toBe("0.5");
-      const { container: real } = render(
-        <DeckCard folders={[]} onCreateFolder={() => {}} say={() => {}} onMoved={() => {}} keepsFocus closeAfterCreate={null} deck={committed()} shopping={undefined} now={now} />,
-      );
-      expect((real.querySelector("[data-deck-bar-fill]") as HTMLElement).style.opacity).toBe("");
+      expect(screen.getByText("5 over")).toBeInTheDocument();
     });
 
-    // The change figure OUTRANKS the count figures while a draft is open: the
-    // roll-up is what this tile would otherwise print, and mid-edit it is the
-    // figure the reader already knows.
-    it("prints the change figure in place of the status figure", () => {
+    it("gives a draft the To buy roll-up figure it would commit into", () => {
+      render(
+        <DeckCard folders={[]} onCreateFolder={() => {}} say={() => {}} onMoved={() => {}} keepsFocus closeAfterCreate={null} deck={deck({ statusPill: "Draft", built: 99, ownedCount: 96 })} shopping={{ copies: 3, cents: 1840, pricedCopies: 3 }} now={now} />,
+      );
+      expect(screen.getByText("3 to buy · $18.40")).toBeInTheDocument();
+    });
+
+    // The defect `proxies.ts` documents, reached through the draft's figure:
+    // `proxiedCount` is `copies` — the commander included — so adding it to
+    // `ownedCount` fills a body slot with a proxied commander and a deck with a
+    // card genuinely missing reads as finished.
+    // Read through the PROXY FALLBACK, which is the one place `Complete` and
+    // `To buy` diverge with no roll-up to print: the fallback draws `1 proxy`
+    // for the first and deliberately nothing for the second. A fixture WITH a
+    // roll-up cannot see this — `unfundedCount` keeps the answer at `To buy`
+    // either way — which is how the first version of this case passed the
+    // mutation it was written for.
+    it("does not let a proxied commander cover a missing body card", () => {
+      render(
+        <DeckCard folders={[]} onCreateFolder={() => {}} say={() => {}} onMoved={() => {}} keepsFocus closeAfterCreate={null}
+          deck={deck({ statusPill: "Draft", built: 99, ownedCount: 98, toBuyCount: 1, proxiedCount: 1 })}
+          shopping={undefined} now={now} />,
+      );
+      // `To buy`: a card is genuinely missing, so the slot stays empty. Reading
+      // `1 proxy` here would mean the deck had been called finished.
+      expect(screen.queryByText("1 proxy")).not.toBeInTheDocument();
+    });
+
+    // The seniority defect, moved into the detail row: every card owned, every
+    // copy spoken for by an older deck. Without the roll-up in the figure this
+    // draft draws nothing and then flips to `To buy` on its first commit.
+    it("gives a draft whose copies are all spoken for its To buy figure", () => {
+      render(
+        <DeckCard folders={[]} onCreateFolder={() => {}} say={() => {}} onMoved={() => {}} keepsFocus closeAfterCreate={null}
+          deck={deck({ statusPill: "Draft", built: 99, ownedCount: 99, toBuyCount: 0 })}
+          shopping={{ copies: 12, cents: 4200, pricedCopies: 12 }} now={now} />,
+      );
+      expect(screen.getByText("12 to buy · $42.00")).toBeInTheDocument();
+    });
+
+    // `Draft` hides the count word on every brew, so a clause keyed to the word
+    // rather than the count vanished from all of them.
+    it("keeps the in-use-elsewhere clause on a short draft", () => {
+      render(
+        <DeckCard folders={[]} onCreateFolder={() => {}} say={() => {}} onMoved={() => {}} keepsFocus closeAfterCreate={null}
+          deck={deck({ statusPill: "Draft", built: 47, ownedCount: 47, toBuyCount: 0, inUseElsewhere: 3 })}
+          shopping={undefined} now={now} />,
+      );
+      expect(screen.getByText("3 in use elsewhere")).toBeInTheDocument();
+    });
+
+    it("still prints the change figure for a committed deck whose draft moved", () => {
       render(
         <DeckCard folders={[]} onCreateFolder={() => {}} say={() => {}} onMoved={() => {}} keepsFocus closeAfterCreate={null} deck={committed({ pendingChanges: 36 })} shopping={{ copies: 3, cents: 1840, pricedCopies: 3 }} now={now} />,
       );
       expect(screen.getByText("36 changes since v2")).toBeInTheDocument();
-      expect(screen.queryByText(/3 to buy/)).not.toBeInTheDocument();
-    });
-
-    // The ONE exception, and the reason the shipped cascade already ranks an
-    // unresolved line above shopping: it is not a consequence of editing.
-    it("keeps the unresolved figure, which is not a consequence of editing", () => {
-      render(
-        <DeckCard folders={[]} onCreateFolder={() => {}} say={() => {}} onMoved={() => {}} keepsFocus closeAfterCreate={null} deck={committed({ pendingChanges: 36, statusPill: "Unresolved", unresolvedCount: 2 })} shopping={undefined} now={now} />,
-      );
-      expect(screen.getByText("2 lines unresolved")).toBeInTheDocument();
-      expect(screen.queryByText(/36 changes/)).not.toBeInTheDocument();
-    });
-
-    it("names each mark after the status it is drawn on", () => {
-      const { unmount } = render(
-        <DeckCard folders={[]} onCreateFolder={() => {}} say={() => {}} onMoved={() => {}} keepsFocus closeAfterCreate={null} deck={committed({ pendingChanges: 36 })} shopping={undefined} now={now} />,
-      );
-      expect(screen.getByRole("link").getAttribute("aria-label"))
-        .toContain("To buy, pending changes, 99 / 99");
-      unmount();
-      render(
-        <DeckCard folders={[]} onCreateFolder={() => {}} say={() => {}} onMoved={() => {}} keepsFocus closeAfterCreate={null} deck={deck()} shopping={undefined} now={now} />,
-      );
-      expect(screen.getByRole("link").getAttribute("aria-label"))
-        .toContain("To buy, not committed yet, 99 / 99");
-    });
-
-    // The pill's own `sr-only` mark would be a SECOND announcement of one fact,
-    // and what prevents it is the footer's `aria-hidden` — so that is what this
-    // asserts. Reading the link's `aria-label` cannot: an `sr-only` span never
-    // contributes to an explicit label, so the case would pass with the
-    // `aria-hidden` removed and the duplication live. Verified by that mutation.
-    // The impossible state, stated rather than assumed away: `pendingChanges` is
-    // 0 for every deck with no version, by construction of the query that
-    // answers both, so this row cannot come off a real read. If one ever did,
-    // the phase is the louder and longer-lived fact and the plate is what draws.
-    it("gives the plate precedence if a row ever claimed both", () => {
-      const { container } = render(
-        <DeckCard folders={[]} onCreateFolder={() => {}} say={() => {}} onMoved={() => {}} keepsFocus closeAfterCreate={null} deck={deck({ lastCommittedAt: null, pendingChanges: 9, versionNumber: 3 })} shopping={undefined} now={now} />,
-      );
-      const chip = container.querySelector("[class*='grid-area:chip']") as HTMLElement;
-      expect(chip.style.background).toBe("var(--bg)");
-      expect(chip.style.borderLeft).toBe("");
-      expect(chip.textContent).toContain("not committed yet");
-    });
-
-    it("keeps the pill's own mark out of the name, which states it once", () => {
-      const { container } = render(
-        <DeckCard folders={[]} onCreateFolder={() => {}} say={() => {}} onMoved={() => {}} keepsFocus closeAfterCreate={null} deck={committed({ pendingChanges: 36 })} shopping={undefined} now={now} />,
-      );
-      const chip = container.querySelector("[class*='grid-area:chip']") as HTMLElement;
-      expect(chip.textContent).toContain("pending changes, not yet a version");
-      expect(chip.closest("[aria-hidden='true']")).not.toBeNull();
-      const name = screen.getByRole("link").getAttribute("aria-label") ?? "";
-      expect(name.match(/pending changes/g)?.length).toBe(1);
     });
   });
 
@@ -600,11 +567,11 @@ describe("DeckCard — the footer's second row", () => {
   // deck — and a Draft never draws last played, because its detail row carries
   // `created today` alone. Two separate conditions gave that deck an empty second
   // row at `sm`; one figure decides both the template and the render.
-  it("declares no second row for a Draft with a logged game", () => {
+  it("declares no second row for a New deck with a logged game", () => {
     const { container } = render(
       <DeckCard folders={[]} onCreateFolder={() => {}} say={() => {}} onMoved={() => {}} keepsFocus closeAfterCreate={null}
         deck={deck({
-          statusPill: "Draft",
+          statusPill: "New",
           built: 0,
           createdAt: daysBefore(30),
           lastPlayedAt: daysBefore(2),

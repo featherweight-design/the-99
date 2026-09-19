@@ -44,6 +44,7 @@ export function toggleIn<T extends string>(
 
 /** The pill vocabulary, keyed off the copy file rather than the union member. */
 export const STATUS_COPY_KEY: Record<StatusPill, keyof typeof refreshCopy.status> = {
+  New: "new",
   Draft: "draft",
   Building: "building",
   Over: "over",
@@ -54,7 +55,6 @@ export const STATUS_COPY_KEY: Record<StatusPill, keyof typeof refreshCopy.status
 
 /** The deck-state rows, keyed off the copy file like every label here. */
 export const STATE_LABEL: Record<DeckState, string> = {
-  uncommitted: deckStateMarksCopy.filter.notCommitted,
   pending: deckStateMarksCopy.filter.hasPending,
 };
 

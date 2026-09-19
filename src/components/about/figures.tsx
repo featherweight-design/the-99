@@ -23,7 +23,6 @@ import { CommitmentsCard } from "../home/commitments-card";
 import { THEMES } from "../../lib/theme/themes";
 import { addPanelCopy, exportLinkOutCopy, exportTabCopy } from "../../lib/copy/decks-builder";
 import { deckImportCopy } from "../../lib/copy/deck-import";
-import { deckStateMarksCopy } from "../../lib/copy/deck-state-marks";
 import { deckVersioningCopy } from "../../lib/copy/deck-versioning";
 import { gameLogCopy } from "../../lib/copy/game-log";
 import { folderCopy } from "../../lib/copy/folders";
@@ -173,7 +172,7 @@ function BuyTagFigure({ width }: { width: AboutWidth }) {
 }
 
 /**
- * All six statuses as the deck card draws them: `[badge] [count] [bar]`, and
+ * All seven statuses as the deck card draws them: `[badge] [count] [bar]`, and
  * the clause underneath for the four statuses that have one.
  *
  * The bar is here after being declined twice. The decline assumed it meant
@@ -191,13 +190,18 @@ function StatusFigure({ width }: { width: AboutWidth }) {
   // Building and Complete and prints `87 cards` — a string the deck card never
   // shows for either, because their figure is the count beside the bar.
   const clause: Partial<Record<StatusPill, string>> = {
-    Draft: detail.detailDraft,
+    // `New` is the empty never-committed deck, which is the state `detailDraft`
+    // ("created today") was always describing — the word moved to the phase and
+    // the figure went with it. A `Draft` at 47 cards draws whatever its counts
+    // would say, so no single specimen clause is honest for it.
+    New: detail.detailDraft,
     Over: detail.detailOver(5),
     Unresolved: detail.detailUnresolved(2),
     "To buy": detail.detailToBuy(3, "$12.40"),
   };
   const built: Record<StatusPill, number> = {
-    Draft: 0,
+    New: 0,
+    Draft: 47,
     Building: 87,
     Over: 104,
     Unresolved: 99,
@@ -223,13 +227,15 @@ function StatusFigure({ width }: { width: AboutWidth }) {
               <span className="flex-none font-mono text-[10.5px] text-[color:var(--fg-faint)]">
                 {`${built[status]} / ${BODY}`}
               </span>
-              {/* The track is drawn for every status; the fill is omitted
-                  entirely for Draft, which is what an empty track means. */}
+              {/* The track is drawn for every status; the fill is omitted for
+                  the one specimen with nothing built, which is what an empty
+                  track means. `New` rather than `Draft` since R6 — a draft has
+                  a length, and this one is drawn at 47 cards. */}
               <div
                 className="relative h-[3px] flex-1 rounded-full"
                 style={{ background: "var(--border)" }}
               >
-                {status !== "Draft" && (
+                {built[status] > 0 && (
                   <div
                     data-status-fill
                     className="absolute top-0 bottom-0 left-0 rounded-full"
@@ -786,34 +792,6 @@ function DeckImportFigure({ width }: { width: AboutWidth }) {
   );
 }
 
-/** The badge in all three readings, as legend marks.
- *
- *  ROWS of the entry's existing legend rather than a second block beside it:
- *  `Legend`'s `mark` is a ReactNode, every other figure here draws exactly one
- *  `[data-specimen]`, and `about-page.test.tsx` counts drawn specimens against
- *  entries that have a figure — so a second one would make that count wrong for
- *  a page that is drawing what it should.
- *
- *  It composes `StatusPillBadge` rather than replicating the chip, the way the
- *  statuses figure composes `statusBarStyle`: a treatment drawn twice is a
- *  treatment that can disagree with itself.
- */
-function StateMark({ hollow, pending }: { hollow?: boolean; pending?: boolean }) {
-  return (
-    <StatusPillBadge
-      status="Complete"
-      hollow={hollow}
-      pending={pending}
-      // The FOOTER's box, as the statuses figure draws it: the component
-      // defaults to the tile's absolutely-positioned class.
-      className="flex h-[22px] flex-none items-center rounded-[6px] px-[8px] font-mono text-[10.5px] tracking-[0.06em]"
-      // The row states the meaning beside the mark, so the chip's own name
-      // would be the same sentence twice.
-      announceMark={false}
-    />
-  );
-}
-
 function VersionsFigure({ width }: { width: AboutWidth }) {
   return (
     <Legend
@@ -823,21 +801,6 @@ function VersionsFigure({ width }: { width: AboutWidth }) {
         { mark: "draft", meaning: "every add and cut, until you commit" },
         { mark: `v2 · ${deckVersioningCopy.history.current}`, meaning: "what the deck is sleeved as" },
         { mark: "v1", meaning: "and what it was, with the change between them readable" },
-        // ONE status across all three, so the only thing that changes between
-        // the rows is the mark: a second value here would invite the reader to
-        // read the phase and the status as one axis, which is the mistake the
-        // whole design is written against.
-        { mark: <StateMark hollow />, meaning: "a plan — no version committed yet" },
-        { mark: <StateMark />, meaning: "a deck, sleeved as its newest version" },
-        {
-          mark: <StateMark pending />,
-          // The FUNCTION, not the sentence it happens to produce. Every other
-          // figure here quotes its copy module, and a literal would keep this
-          // page saying `36 changes since v2` on the day the app started saying
-          // something else — `check:copy-drift` compares design tables against
-          // the code, never this page against the copy file.
-          meaning: `a deck you have edited since — ${deckStateMarksCopy.detail(36, 2)}`,
-        },
       ]}
     />
   );

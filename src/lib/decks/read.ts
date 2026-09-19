@@ -914,6 +914,9 @@ export async function listDecksWithStats(
       unresolvedCount: row.unresolvedCount,
       unfundedCount: unfundedByDeck.get(row.id) ?? 0,
       bodySize: deckBodySize(row.partnerName !== null),
+      // The phase, and it costs no query: `lastCommittedAt` is already on this
+      // row, null exactly when the deck has never committed.
+      hasVersion: row.lastCommittedAt !== null,
     });
     return {
       id: row.id,

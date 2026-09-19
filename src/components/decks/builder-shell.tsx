@@ -9,7 +9,7 @@ import { useState, useMemo, useCallback, useEffect, useRef, useTransition } from
 import { printedNameOf } from "../../lib/collection/browse";
 import { deckBodySize } from "../../lib/decks/deck-size";
 import type { DeckDetail } from "../../lib/decks/read";
-import { statusPill } from "../../lib/decks/status";
+import { countStatus, statusPill } from "../../lib/decks/status";
 import { availabilityState, hardDecks } from "../../lib/decks/availability";
 import { isShoppingCard } from "../../lib/decks/shopping";
 import type { DeckSuggestion } from "../../lib/decks/suggest";
@@ -62,9 +62,6 @@ import type { VersionSummary } from "../../lib/decks/versions";
 import { PendingChangeProvider } from "./pending-change";
 // `draft-shape`, not `draft-state`: the latter holds the reads and imports `db`.
 import type { DraftState } from "../../lib/decks/draft-shape";
-// A VALUE import, and safe for the same reason the type above is: `draft-shape`
-// holds the pure half of the draft model and reaches no database.
-import { hasChanges } from "../../lib/decks/draft-shape";
 import { cardCopies, deckCounts, unresolvedCardCount, type DeckDetailCard } from "../../lib/decks/grouping";
 import { computeRoleCounts, RECOMMENDED_MIX, type MixRole } from "../../lib/decks/mix";
 import { useIsDesktop } from "../ui/use-is-desktop";
@@ -313,6 +310,12 @@ export function BuilderShell({
   // a deck that never reached 99.
   const serverStatus = statusPill({
     built: deck.built,
+    // The phase, from the draft this page already reads: `version === null` is
+    // the deck that has never committed. An absent draft means this shell knows
+    // nothing about versions — its own tests mount it that way — and a deck
+    // with no version is the honest default there, since the versions rail is
+    // empty too.
+    hasVersion: draft ? draft.version !== null : (versions?.length ?? 0) > 0,
     ownedCount: deck.ownedCount,
     // The pill reads coverage, so a deck whose last gaps are printed reads
     // `Complete` on its own page exactly as its tile does on `/decks`. Without
@@ -382,13 +385,21 @@ export function BuilderShell({
       overCommitted,
       // Row 12.15, the pre-99 window. This does NOT fall out of the arithmetic:
       // `soft` counts claims by OTHER unfinished decks, so a deck of this
-      // player's own reaching 99 leaves those claims standing. Read through
-      // `statusPill` rather than a hand-rolled `built < 99`, so there is one
-      // maturity threshold on this page and not two.
-      softClaimed: serverStatus === "Draft" || serverStatus === "Building" ? softClaimed : 0,
+      // player's own reaching 99 leaves those claims standing.
+      //
+      // Read through `countStatus`, NOT the pill: the window is about the COUNT
+      // — a list short of its body size — and since R6 the pill answers the
+      // phase first, so a finished 99 that has never been committed reads
+      // `Draft` and would have held this window open for ever. Same single
+      // threshold as before, asked of the half that owns it.
+      softClaimed: countStatus({
+        built: deck.built,
+        ownedCount: deck.ownedCount,
+        bodySize,
+      }) === "Building" ? softClaimed : 0,
       overCommittedCard: overCommitted === 1 ? lone : null,
     };
-  }, [deck.cards, serverStatus]);
+  }, [deck.cards, deck.built, deck.ownedCount, bodySize]);
 
   // The spent slot the undo row is drawn from. Decklist state rather than row
   // state, because the removal unmounts the row: held here it survives a tab
@@ -757,14 +768,6 @@ export function BuilderShell({
               // optimistic counts and would otherwise disagree with the page
               // around it mid-edit.
               status={serverStatus}
-              // Both marks off the draft this page already reads, rather than
-              // off a second read of the same rows: `version === null` is the
-              // deck with nothing to differ from — a plan — and `hasChanges` is
-              // the deck page's own definition of a moved draft, which is the
-              // definition the list read was built to agree with. An absent
-              // draft draws neither, as the prop's own note says.
-              hollow={draft ? draft.version === null : false}
-              pending={draft ? hasChanges(draft) : false}
               // State 2: a list that has never been committed and has reached a
               // full body.
               //

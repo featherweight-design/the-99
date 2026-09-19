@@ -60,11 +60,12 @@ export const PRICES: { state: PriceState; fact: PriceFact }[] = (() => {
   ];
 })();
 
-/** All six statuses, in the order `status.ts` defines them. */
+/** All seven statuses, in the order `status.ts` defines them. */
 export const STATUSES: StatusPill[] = [
+  "New",
   "Draft",
-  "Building",
   "Over",
+  "Building",
   "Unresolved",
   "To buy",
   "Complete",

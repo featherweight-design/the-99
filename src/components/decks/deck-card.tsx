@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { refreshCopy } from "../../lib/copy/refresh";
 import { deckBodySize } from "../../lib/decks/deck-size";
+import { countStatus, type StatusPill } from "../../lib/decks/status";
 import { colorLabel, deckIdentity } from "../../lib/decks/format";
 import { formatCents } from "../../lib/decks/price";
 import type { DeckListItem } from "../../lib/decks/read";
@@ -22,12 +23,53 @@ import { proxyCopy } from "../../lib/copy/proxies";
  * the meta row already prints, and for those the honest detail is nothing at
  * all rather than a second figure invented to fill the slot.
  */
+/**
+ * The value whose FIGURE a tile draws.
+ *
+ * A `Draft` keeps its count figure even though the pill stopped saying the
+ * count word — that is the trade R6 names when it moves the phase above the
+ * counts, and the detail row is where the cost is paid back. Every other value
+ * answers for itself.
+ *
+ * It is one function rather than a line in each consumer because three reads
+ * depend on it: the figure, the `in use elsewhere` clause (a question about the
+ * COUNT, which every brew now hides behind the word `Draft`) and the proxy
+ * fallback's guard.
+ */
+function countStatusFor(
+  deck: DeckListItem,
+  shopping: DeckShopping | undefined,
+): Exclude<StatusPill, "Draft"> {
+  if (deck.statusPill !== "Draft") return deck.statusPill;
+  return countStatus({
+    built: deck.built,
+    ownedCount: deck.ownedCount,
+    // `built - toBuyCount`, NEVER `ownedCount + proxiedCount`. `proxiedCount`
+    // is `copies` — every card this deck prints, commander included — and
+    // `proxies.ts` names it the one figure that must not be added to
+    // `ownedCount`: a proxied commander is not a body slot, and a printed card
+    // the player also owns is already counted. Adding it let a 98-owned
+    // 99-card deck read `Complete` with a card genuinely missing, once. The
+    // server has already done that subtraction with `covers`, which is what
+    // `toBuyCount` is.
+    coveredCount: deck.built - deck.toBuyCount,
+    unresolvedCount: deck.unresolvedCount,
+    // The roll-up, which is this tile's own definition of "to buy" and the
+    // figure it prints. Without it a draft that owns every card whose copies an
+    // older deck has sleeved draws NO figure and then flips to `To buy` the
+    // moment it commits — the seniority defect, moved into the detail row.
+    unfundedCount: shopping?.copies ?? 0,
+    bodySize: deckBodySize(deck.partnerName !== null),
+  });
+}
+
 function detailFor(
   deck: DeckListItem,
   shopping: DeckShopping | undefined,
   now: Date,
 ): { text: string; color: string } | null {
   const c = refreshCopy.decks;
+  const figureFor = countStatusFor(deck, shopping);
   // THE CHANGE FIGURE OUTRANKS THE COUNT FIGURES while a draft is open. Mid-edit
   // the count figures are transience rather than facts to act on — one deck
   // reads Complete, Building, Over and Complete again over the course of a
@@ -45,7 +87,7 @@ function detailFor(
       color: "var(--fg-faint)",
     };
   }
-  const statusDetail = statusDetailFor(deck, shopping, now);
+  const statusDetail = statusDetailFor(deck, shopping, now, figureFor);
   // Fills the slot only where the status has nothing to say in it. The clause is
   // a fact about the collection, and `4 over` or `3 lines unresolved` is a fact
   // about the deck the reader opened the tile for — the narrower reading of the
@@ -56,7 +98,11 @@ function detailFor(
   // reach here; cutting that figure opened the fallback to it, and a finished
   // deck reading `3 in use elsewhere` is a state nobody drew. Building is also
   // the status the clause answers a question for — what is holding this deck up.
-  if (statusDetail === null && deck.statusPill === "Building" && deck.inUseElsewhere > 0) {
+  // `figureFor`, not `statusPill`: the clause answers "what is holding this
+  // deck up", which is a question about the COUNT — and since R6 every
+  // uncommitted short deck says `Draft`, so keying on the word would have
+  // dropped this line from every brew that had it.
+  if (statusDetail === null && figureFor === "Building" && deck.inUseElsewhere > 0) {
     return { text: c.detailInUseElsewhere(deck.inUseElsewhere), color: "var(--accent)" };
   }
   // SECOND fallback, ranked after the clause above: that one answers "what is
@@ -64,18 +110,20 @@ function detailFor(
   //
   // It can never take a warning colour, and nothing was added to prevent that:
   // every status that would lend it one already fills this slot with a figure
-  // (`4 over`, `3 lines unresolved`, the To-buy roll-up), so the only statuses
-  // reaching here are Complete, Building and Draft — all `--fg-faint`.
+  // (`4 over`, `3 lines unresolved`, the To-buy roll-up), so the only values
+  // reaching here are Complete, Building and New — all `--fg-faint`. `Draft` is
+  // not among them and cannot be: `figureFor` resolves every draft through
+  // `countStatus`, which answers one of the five committed values.
   // GUARDED to the three statuses that can reach the fallback honestly. `To buy`
   // also returns null here — a deck whose only missing cards are basics has a
   // `To buy` pill and no roll-up entry — and printing a proxy count there takes
   // a slot that deliberately stays empty. The PR body claimed this was
   // structurally impossible; it is not, which is what the guard is for.
-  const FALLBACK_STATUSES = ["Complete", "Building", "Draft"] as const;
+  const FALLBACK_STATUSES = ["Complete", "Building", "New"] as const;
   if (
     statusDetail === null
     && deck.proxiedCount > 0
-    && (FALLBACK_STATUSES as readonly string[]).includes(deck.statusPill)
+    && (FALLBACK_STATUSES as readonly string[]).includes(figureFor)
   ) {
     return { text: proxyCopy.deckCard.line(deck.proxiedCount), color: "var(--fg-faint)" };
   }
@@ -88,10 +136,12 @@ function statusDetailFor(
   deck: DeckListItem,
   shopping: DeckShopping | undefined,
   now: Date,
+  /** The value whose FIGURE this row draws — see `countStatusFor`. */
+  figureFor: Exclude<StatusPill, "Draft">,
 ): string | null {
   const c = refreshCopy.decks;
-  switch (deck.statusPill) {
-    case "Draft":
+  switch (figureFor) {
+    case "New":
       // `detailDraft` is the literal `created today`, so it is only true on the
       // day of creation. An older Draft draws no figure rather than being told
       // a date it does not have — a Draft deck older than a day is a real state
@@ -135,6 +185,9 @@ function statusDetailFor(
 
 /** The detail figure carries the status's colour only where the status is a warning. */
 const DETAIL_COLOR: Record<DeckListItem["statusPill"], string> = {
+  // `New` and `Draft` are phases, not warnings: the figure beneath them is
+  // whatever their counts would say, drawn quietly.
+  New: "var(--fg-faint)",
   Draft: "var(--fg-faint)",
   Building: "var(--fg-faint)",
   Over: "var(--danger)",
@@ -203,11 +256,16 @@ export function DeckCard({
   // nothing here now.
   const lastPlayed = deck.lastPlayedAt ? formatWhen(deck.lastPlayedAt, now) : null;
   // ONE figure for whether the desktop row has a right-hand cell, because the
-  // grid template and the render have to agree. A Draft never draws last played —
-  // its detail row carries `created today` alone — and a Draft CAN have a logged
-  // game, since the Games panel offers the form on an empty deck. Two separate
-  // conditions would have given that deck an empty second row at `sm`.
-  const hasLastPlayed = lastPlayed !== null && deck.statusPill !== "Draft";
+  // grid template and the render have to agree. A `New` deck never draws last
+  // played — its detail row carries `created today` alone — and a `New` deck
+  // CAN have a logged game, since the Games panel offers the form on an empty
+  // deck. Two separate conditions would have given that deck an empty second
+  // row at `sm`.
+  //
+  // `New` and not `Draft`: since R6 a draft is a draft at any length, so an
+  // uncommitted 99 has a playing history like any other deck and the old test
+  // would have hidden it.
+  const hasLastPlayed = lastPlayed !== null && deck.statusPill !== "New";
 
   // The UNION, as `spine-desktop.tsx` already draws it: a pair's colour is both
   // commanders' identities together, and reading the primary's alone announces
@@ -218,30 +276,19 @@ export function DeckCard({
   // commanders: the visible line shortens them to fit and the accessible name
   // never does — truncation is a layout compromise, not an information one.
   const identity = `${deck.partnerName === null ? deck.commanderName : `${deck.commanderName} and ${deck.partnerName}`}, ${colour}`;
-  // The footer is `aria-hidden`, so the pill's own mark span says nothing here
-  // and the name is composed once, in order: the mark follows the STATUS,
-  // because that is where it is drawn.
-  const markName = deck.lastCommittedAt === null
-    ? deckStateMarksCopy.phase.markAria
-    : deck.pendingChanges > 0
-      ? deckStateMarksCopy.cardAriaSuffix
-      : null;
-  const statusName = markName === null
-    ? deck.statusPill
-    : `${deck.statusPill}, ${markName}`;
   const ariaLabel =
     detail === null
       ? refreshCopy.decks.cardAriaNoDetail(
           deck.name,
           identity,
-          statusName,
+          deck.statusPill,
           count,
           hasLastPlayed ? lastPlayed : undefined,
         )
       : refreshCopy.decks.cardAria(
           deck.name,
           identity,
-          statusName,
+          deck.statusPill,
           count,
           detail.text,
           hasLastPlayed ? lastPlayed : undefined,
@@ -451,11 +498,6 @@ export function DeckCard({
             and the label stay written once. */}
         <StatusPillBadge
           status={deck.statusPill}
-          // The plate says whether this is a deck at all, the edge whether a
-          // real deck has moved since its version. Never both: the edge needs a
-          // version and the hollow plate means there is none.
-          hollow={deck.lastCommittedAt === null}
-          pending={deck.pendingChanges > 0}
           className="[grid-area:chip] flex h-[22px] flex-none items-center rounded-[6px] px-[8px] font-mono text-[10.5px] tracking-[0.06em]"
         />
 
@@ -472,7 +514,7 @@ export function DeckCard({
           className="text-right font-mono text-[12.5px] tabular-nums sm:text-[12px]"
           style={{
             gridArea: "count",
-            color: deck.statusPill === "Draft" ? "var(--fg-muted)" : "var(--fg)",
+            color: deck.built === 0 ? "var(--fg-muted)" : "var(--fg)",
           }}
         >
           {count}
@@ -485,15 +527,15 @@ export function DeckCard({
           className="relative h-[3px] rounded-full"
           style={{ gridArea: "bar", background: "var(--border)" }}
         >
-          {deck.statusPill !== "Draft" && (
+          {/* `built`, not the status: an empty track is what nothing built
+              looks like, and since R6 a `Draft` can be 47 cards along. Reading
+              the count says what the old `!== "Draft"` meant and keeps saying
+              it whatever the vocabulary does next. */}
+          {deck.built > 0 && (
             <div
               data-deck-bar-fill
               className="absolute top-0 bottom-0 left-0 rounded-full"
-              // The bar follows the plate, so a plan reads as ONE provisional
-              // object rather than as a hollow chip beside a solid bar.
-              style={statusBarStyle(deck.statusPill, deck.built, bodySize, {
-                provisional: deck.lastCommittedAt === null,
-              })}
+              style={statusBarStyle(deck.statusPill, deck.built, bodySize)}
             />
           )}
         </div>

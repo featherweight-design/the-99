@@ -281,18 +281,21 @@ describe("ResumeDecks", () => {
   });
 });
 
-describe("the deck-state marks on a resume row", () => {
-  // The row draws no figure and needs none: its stamp already says WHEN, and
-  // `touchedBy` returns the edit as the winning act for exactly these decks.
-  it("draws the hollow plate for a plan and the edge for a moved draft", () => {
-    const plan = render(
-      <ResumeDecks decks={[deck({ id: "p", lastCommittedAt: null })]} shopping={rollup()} total={1} now={NOW} />,
+describe("a resume row after the marks", () => {
+  // The row draws the status word and nothing else about the phase: no plate
+  // swap, no edge, no figure. Its stamp already says when the deck was touched.
+  it("draws no mark on a deck with no version", () => {
+    const { container } = render(
+      <ResumeDecks decks={[deck({ id: "p", lastCommittedAt: null, statusPill: "Draft" })]} shopping={rollup()} total={1} now={NOW} />,
     );
-    const planChip = plan.container.querySelector("[class*='h-[19px]']") as HTMLElement;
-    expect(planChip.style.background).toBe("var(--bg)");
-    plan.unmount();
+    const chip = container.querySelector("[class*='h-[19px]']") as HTMLElement;
+    expect(chip.textContent).toBe("Draft");
+    expect(chip.style.borderLeft).toBe("");
+    expect(chip.style.background).not.toBe("var(--bg)");
+  });
 
-    const moved = render(
+  it("prints no change figure beside the stamp", () => {
+    const { container } = render(
       <ResumeDecks
         decks={[deck({ id: "m", lastCommittedAt: new Date("2026-09-10T00:00:00Z"), pendingChanges: 4, versionNumber: 2 })]}
         shopping={rollup()}
@@ -300,21 +303,6 @@ describe("the deck-state marks on a resume row", () => {
         now={NOW}
       />,
     );
-    const chip = moved.container.querySelector("[class*='h-[19px]']") as HTMLElement;
-    expect(chip.style.borderLeft).toBe("2px solid var(--fg)");
-    // No figure on this row, at either mark — the stamp is the second half.
-    expect(moved.container.textContent).not.toContain("changes since");
-  });
-
-  it("names the mark, since neither an edge nor an untinted plate has text", () => {
-    render(
-      <ResumeDecks
-        decks={[deck({ id: "m2", lastCommittedAt: new Date("2026-09-10T00:00:00Z"), pendingChanges: 4, versionNumber: 2 })]}
-        shopping={rollup()}
-        total={1}
-        now={NOW}
-      />,
-    );
-    expect(screen.getByText(", pending changes, not yet a version")).toBeInTheDocument();
+    expect(container.textContent).not.toContain("changes since");
   });
 });

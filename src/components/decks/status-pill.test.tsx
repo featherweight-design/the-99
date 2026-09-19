@@ -4,7 +4,7 @@ import { StatusPillBadge } from "./status-pill";
 import { refreshCopy } from "../../lib/copy/refresh";
 import type { StatusPill } from "../../lib/decks/status";
 
-const ALL: StatusPill[] = ["Draft", "Building", "Over", "Unresolved", "To buy", "Complete"];
+const ALL: StatusPill[] = ["New", "Draft", "Over", "Building", "Unresolved", "To buy", "Complete"];
 
 describe("StatusPillBadge", () => {
   it("labels every status from the shipped copy file", () => {
@@ -39,8 +39,8 @@ describe("StatusPillBadge", () => {
 
   // The dashed/solid split itself is pinned in status-style.test.ts; this only
   // checks the token file's border reaches the DOM at all.
-  it("carries Building's dashed hairline through to the rendered style", () => {
-    const { container } = render(<StatusPillBadge status="Building" />);
+  it("carries Draft's dashed hairline through to the rendered style", () => {
+    const { container } = render(<StatusPillBadge status="Draft" />);
     expect(container.querySelector("span")!.getAttribute("style")).toContain("dashed");
   });
 
@@ -49,7 +49,7 @@ describe("StatusPillBadge", () => {
   // picked up the shadow it exists to avoid. Refused centrally, so no surface
   // has to remember.
   it("carries no text shadow, whatever block it sits in", () => {
-    render(<StatusPillBadge status="Building" />);
-    expect(screen.getByText("Building").style.textShadow).toBe("none");
+    render(<StatusPillBadge status="Draft" />);
+    expect(screen.getByText("Draft").style.textShadow).toBe("none");
   });
 });

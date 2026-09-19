@@ -26,33 +26,30 @@ import type { StatusPill } from "./status";
 export type ColourCode = "W" | "U" | "B" | "R" | "G";
 export type PlayedWindow = "thisMonth" | "never";
 /**
- * The two deck-state marks, as a filter. NOT `StatusPill` members and never a
- * seventh row under Status: the six values partition one fact — how the matched
- * count stands against the body size — and these answer two others. A seventh
- * member would also change the vocabulary `STATUS_ORDER` serialises: the
- * `?status=` values, the comparison `filterDecks` makes against `statusPill`,
- * and the exhaustiveness `statusPill()` is written around.
+ * A committed deck whose draft has moved since its version.
  *
- * Mutually exclusive by definition, so ticking both returns every deck that is
- * not settled. That is a legal and useful read rather than a contradiction,
- * which is why they OR like every other heading rather than being a three-state
- * control.
+ * ONE member, and the heading holds one row. `uncommitted` was retired with the
+ * marks: ticking `New` and `Draft` in Status is that filter exactly, and a
+ * facet duplicating two status rows is a control that can only disagree with
+ * them. A stale `?state=uncommitted` is dropped by `readList` as an unknown
+ * value, so nothing is owed a migration.
  */
-export type DeckState = "uncommitted" | "pending";
+export type DeckState = "pending";
 
 /** Build order, and the order the column renders. Never re-sorted at the call site. */
 export const STATUS_ORDER: readonly StatusPill[] = [
+  "New",
   "Draft",
-  "Building",
   "Over",
+  "Building",
   "Unresolved",
   "To buy",
   "Complete",
 ];
 
-/** Build order, and the order the rows render. `uncommitted` leads because a
-    deck lives it first: a plan becomes a deck, and only then can drift. */
-export const STATE_ORDER: readonly DeckState[] = ["uncommitted", "pending"];
+/** One row, and the order is trivial — kept as a list so the facet reads like
+    every other one here and a second member needs no new shape. */
+export const STATE_ORDER: readonly DeckState[] = ["pending"];
 
 /** WUBRG. The pips render in this order and nothing else. */
 export const COLOUR_ORDER: readonly ColourCode[] = ["W", "U", "B", "R", "G"];
@@ -120,17 +117,8 @@ export function filterDecks<T extends FilterableDeck>(
   const needle = f.search.trim().toLowerCase();
   return decks.filter((d) => {
     if (f.statuses.length && !f.statuses.includes(d.statusPill)) return false;
-    // ORs within the heading, ANDs across them, exactly as every other facet
-    // here. The two can never both be true of one deck — the edge requires a
-    // version and the hollow plate means there is none — so ticking both is a
-    // union rather than an impossible intersection: every deck that is not
-    // settled.
-    if (f.states.length) {
-      const isPlan = d.lastCommittedAt === null;
-      const matched = f.states.some((state) =>
-        state === "uncommitted" ? isPlan : !isPlan && d.pendingChanges > 0,
-      );
-      if (!matched) return false;
+    if (f.states.length && !(d.lastCommittedAt !== null && d.pendingChanges > 0)) {
+      return false;
     }
     // The UNION, through the same helper every surface words its colour with. A
     // pair whose red comes only from its partner reads `Jeskai` on its own tile

@@ -119,7 +119,7 @@ Mutation-check each: revert, confirm red, restore. **Restore from a scratchpad c
 
 ### Task 1.8 — The probe
 
-`scripts/probe-deck-state-marks.mjs` is rewritten as the seven-plate check rather than deleted —
+`scripts/probe-deck-state-marks.mjs` is rewritten as the seven-plate check rather than deleted, and renamed `scripts/probe-deck-statuses.mjs` —
 it already signs in, builds fixtures and reads resolved styles.
 
 - **No mark anywhere**: no chip on any surface draws a `2px` left border, and no bar draws
@@ -152,7 +152,7 @@ drew. The `versions` legend returns to its three rows.
 
 ### Task 2.3 — The walk
 
-Re-run `docs/superpowers/inventories/deck-state-marks.json` and `deck-state-facet.json` against
+Re-run `docs/superpowers/inventories/deck-statuses.json` and `deck-state-facet.json` against
 the new vocabulary, and correct both — the marks inventory is named for a feature that no longer
 exists. Its `/about` precondition stands and is why the first walk photographed `/about` in every
 cell.

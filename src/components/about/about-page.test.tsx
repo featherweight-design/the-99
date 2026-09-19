@@ -4,7 +4,6 @@ import { AboutPage } from "./about-page";
 import { ABOUT_VERSION, aboutCopy, aboutEntries } from "../../lib/copy/about";
 import { FIGURES } from "./figures";
 import { availabilityCopy } from "../../lib/copy/availability";
-import { deckStateMarksCopy } from "../../lib/copy/deck-state-marks";
 import { refreshCopy } from "../../lib/copy/refresh";
 import { gameLogCopy } from "../../lib/copy/game-log";
 import { deckImportCopy } from "../../lib/copy/deck-import";
@@ -323,15 +322,15 @@ describe("the figures", () => {
     }
   });
 
-  it("draws all six statuses, each with the figure that explains it", () => {
+  it("draws all seven statuses, each with the figure that explains it", () => {
     const { container } = render(<AboutPage seen={0} />);
     const plate = figures(container)["status"];
     const pills = [...plate.querySelectorAll("span")].filter((el) =>
       el.className.toString().includes("rounded-[6px]"),
     );
-    expect(pills).toHaveLength(6);
+    expect(pills).toHaveLength(7);
     // `TILE_CLASS` is the component's default and opens `absolute
-    // bottom-[13px] left-[13px]`; defaulted here all six leave flow.
+    // bottom-[13px] left-[13px]`; defaulted here all seven leave flow.
     for (const pill of pills) {
       expect(pill.className).not.toContain("absolute");
       // The deck card's FOOTER treatment — 22px at 10.5px — not the tile's
@@ -354,10 +353,11 @@ describe("the figures", () => {
     expect(plate.textContent).not.toContain("99 cards");
     expect(plate.textContent).toContain("87 / 99");
 
-    // Five fills for six statuses: Draft draws an empty track, which is what
-    // an empty track means.
+    // Six fills for seven statuses: `New` draws an empty track, which is what
+    // an empty track means. `Draft` has a fill now — a draft is a draft at any
+    // length, and the specimen draws one at 47 cards.
     const fills = plate.querySelectorAll("[data-status-fill]");
-    expect(fills).toHaveLength(5);
+    expect(fills).toHaveLength(6);
   });
 
   it("draws the decklist marks as rows, at the row's own geometry", () => {
@@ -1325,51 +1325,24 @@ describe("entry anchors", () => {
 
 });
 
-describe("the deck-state marks on /about", () => {
-  // The key line describes a difference the reader has to SEE, so the entry
-  // has to draw it. Read off the resolved style, because "unfilled" is a
-  // painted fact and a class list cannot say it.
-  it("draws the badge in all three readings inside the versions figure", () => {
+describe("the vocabulary on /about", () => {
+  // The three-reading specimen went with the marks it drew. The figure returns
+  // to its three legend rows, and the STATUS figure grows a seventh plate.
+  it("draws no mark specimen in the versions figure", () => {
     const { container } = render(<AboutPage seen={0} />);
     const figure = container.querySelector("[data-specimen='versions']");
     expect(figure).toBeTruthy();
-    const chips = [...figure!.querySelectorAll("span")].filter(
+    const plated = [...figure!.querySelectorAll("span")].filter(
       (el) => (el as HTMLElement).style.background !== "",
-    ) as HTMLElement[];
-    expect(chips).toHaveLength(3);
-    expect(chips[0].style.background).toBe("var(--bg)");
-    expect(chips[0].style.borderLeft).toBe("");
-    expect(chips[1].style.background).toContain("color-mix");
-    expect(chips[1].style.borderLeft).toBe("");
-    expect(chips[2].style.background).toContain("color-mix");
-    expect(chips[2].style.borderLeft).toBe("2px solid var(--fg)");
+    );
+    expect(plated).toHaveLength(0);
   });
 
-  it("says what each reading means, in the page's own words", () => {
-    render(<AboutPage seen={0} />);
-    expect(screen.getByText("a plan — no version committed yet")).toBeInTheDocument();
-    expect(screen.getByText("a deck, sleeved as its newest version")).toBeInTheDocument();
-    // Built from the copy module, like the figure: a literal here would pin the
-    // very drift the figure was fixed to avoid.
-    expect(
-      screen.getByText(`a deck you have edited since — ${deckStateMarksCopy.detail(36, 2)}`),
-    ).toBeInTheDocument();
-  });
-
-  // The bump is what puts the page back in front of every account. A feature
-  // whose entry lands without one reaches nobody who is not already exploring.
-  it("moved the version, so a returning reader is shown the page again", () => {
-    expect(ABOUT_VERSION).toBe(5);
-    const entry = aboutEntries.find((e) => e.id === "versions");
-    expect(entry?.keys).toHaveLength(3);
-    // An AMENDMENT, not an entry — asserted as the PROPERTY rather than as a
-    // count. The design addendum said "the count stays at 33"; it is 35 today,
-    // because two entries landed between that document and this build, and a
-    // literal would have failed for a reason that has nothing to do with these
-    // marks. What this round actually promises is that nothing is NEW: no
-    // entry's `since` is this version, so the bump re-opens the page without
-    // any entry wearing a NEW plate.
-    expect(aboutEntries.filter((e) => e.since === ABOUT_VERSION)).toHaveLength(0);
-    expect(entry?.since).toBe(1);
+  it("draws all seven statuses in the status figure", () => {
+    const { container } = render(<AboutPage seen={0} />);
+    const figure = container.querySelector("[data-specimen='status']");
+    for (const word of ["New", "Draft", "Over", "Building", "Unresolved", "To buy", "Complete"]) {
+      expect(within(figure as HTMLElement).getByText(word), word).toBeInTheDocument();
+    }
   });
 });

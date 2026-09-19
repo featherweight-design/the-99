@@ -11,10 +11,13 @@ describe("refreshCopy", () => {
   });
 
   it("has one label per shipped status and no more", () => {
+    // CASCADE ORDER, which is the meaning: the phase is tested before any
+    // count, so it is read first here too.
     expect(Object.values(refreshCopy.status)).toEqual([
+      "New",
       "Draft",
-      "Building",
       "Over",
+      "Building",
       "Unresolved",
       "To buy",
       "Complete",

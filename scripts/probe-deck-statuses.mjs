@@ -1,19 +1,24 @@
-// The two deck-state marks, measured where they are painted.
+// The seven status plates, measured where they are painted.
 //
-// Every ruling here is a RESOLVED STYLE, and jsdom computes none: the component
-// tests can say `background: var(--bg)` is set and cannot say what `--bg`
-// resolves to, whether the plate is opaque over the wash, or whether the tile's
-// ground makes a hollow chip read as a hole rather than as a chip.
+// Every ruling here is a RESOLVED STYLE, and jsdom computes none: a component
+// test can say which token a pill asks for and cannot say what that token
+// resolves to, whether two neutral plates are distinguishable, or whether a
+// dash survives at 10.5px.
 //
-// Three readings, so three fixture decks: a PLAN (cards, no version), a DECK
-// (committed, clean) and a DECK MID-TINKER (committed, one card added since).
-// No fixture account happens to own one of each, and the whole claim is that
-// the three are distinguishable at a glance — which cannot be read off one.
+// THE ROUND THIS REPLACES. R4 drew two wordless marks — a hollow plate and a
+// 2px left rule — and R6 retired both: a signal the product owner could not
+// read without a key is not a signal, and the plate measured ~39 near-neutral
+// units against `Building`, the commonest work-in-progress deck. So this script
+// now proves the opposite of what it used to: that NO mark is drawn anywhere,
+// and that the phase is a word.
+//
+// Three fixture decks still, because the claim is about telling them apart: a
+// DRAFT (cards, no version), a NEW (no cards, no version) and a COMMITTED deck.
 //
 // Point it at `local-dev` or a scratch Neon branch, NEVER production. It writes
 // three decks under the account it signs in as and deletes them in a `finally`.
 //
-//   node scripts/probe-deck-state-marks.mjs
+//   node scripts/probe-deck-statuses.mjs
 import { clerkSetup, setupClerkTestingToken } from "@clerk/testing/playwright";
 import { chromium } from "playwright";
 import { Pool, neonConfig } from "@neondatabase/serverless";
@@ -165,9 +170,16 @@ async function buildFixtures(userId, onDeck) {
     );
   };
 
-  const plan = await make("probe · a plan, never committed");
+  const draft = await make("probe · a draft, never committed");
   const deck = await make("probe · a deck, committed and clean");
   const moved = await make("probe · a deck mid-tinker");
+  // FOUR fixtures, because the dash check needs BOTH neutral words on screen.
+  // `New` and `Draft` differ by their border style and by nothing else a
+  // greyscale reader can use, so a run holding only one of them skips that
+  // check and proves nothing — which is exactly what the first version of this
+  // rewrite did.
+  const fresh = await make("probe · a new deck, no cards");
+  await pool.query(`delete from deck_cards where deck_id = $1`, [fresh]);
   await commit(deck);
   await commit(moved);
   // The sixth card, added AFTER the commit — one change, so the edge is drawn
@@ -176,7 +188,7 @@ async function buildFixtures(userId, onDeck) {
     `insert into deck_cards (deck_id, oracle_id, quantity, auto) values ($1, $2, 1, false)`,
     [moved, cards[5]],
   );
-  return { plan, deck, moved };
+  return { fresh, draft, deck, moved };
 }
 
 /** The painted truth of one chip, read through whatever element draws it. */
@@ -188,6 +200,7 @@ const CHIP = (el) => {
     borderLeftWidth: s.borderLeftWidth,
     borderLeftColor: s.borderLeftColor,
     borderLeftStyle: s.borderLeftStyle,
+    borderStyle: s.borderTopStyle,
     borderTopWidth: s.borderTopWidth,
     borderRightWidth: s.borderRightWidth,
     color: s.color,
@@ -196,11 +209,23 @@ const CHIP = (el) => {
   };
 };
 
-const rgba = (value) => {
-  const m = value.match(/rgba?\(([^)]+)\)/);
-  if (!m) return null;
-  const parts = m[1].split(",").map((n) => Number(n.trim()));
-  return { r: parts[0], g: parts[1], b: parts[2], a: parts.length > 3 ? parts[3] : 1 };
+/**
+ * The alpha of a resolved colour, in either notation the app can produce.
+ *
+ * `color-mix(in srgb, …)` resolves to `color(srgb r g b)` — NOT to `rgb()` —
+ * and a parser that only knew `rgb()` returned null for every plate and then
+ * reported each one as transparent. Twelve failures on a build with nothing
+ * wrong with it, which is the shape this script exists to refuse in the other
+ * direction.
+ */
+const alphaOf = (value) => {
+  const fn = value.match(/color\(srgb\s+[^)]*?\/\s*([\d.]+)\s*\)/);
+  if (fn) return Number(fn[1]);
+  if (value.startsWith("color(")) return 1;
+  const parts = value.match(/rgba?\(([^)]+)\)/);
+  if (!parts) return null;
+  const nums = parts[1].split(",").map((n) => Number(n.trim()));
+  return nums.length > 3 ? nums[3] : 1;
 };
 
 let ids = [];
@@ -213,7 +238,10 @@ try {
   const page = await context.newPage();
   userId = await signIn(page);
   const fixtures = await buildFixtures(userId, (id) => ids.push(id));
-  note(`fixtures: plan ${fixtures.plan} · deck ${fixtures.deck} · moved ${fixtures.moved}`);
+  note(
+    `fixtures: new ${fixtures.fresh} · draft ${fixtures.draft} · deck ${fixtures.deck}` +
+      ` · moved ${fixtures.moved}`,
+  );
 
   for (const { label, width, height } of WIDTHS) {
     await page.setViewportSize({ width, height });
@@ -229,7 +257,8 @@ try {
 
     const read = {};
     for (const [key, name] of [
-      ["plan", "a plan, never committed"],
+      ["fresh", "a new deck, no cards"],
+      ["draft", "a draft, never committed"],
       ["deck", "a deck, committed and clean"],
       ["moved", "a deck mid-tinker"],
     ]) {
@@ -240,61 +269,68 @@ try {
       }
       read[key] = {
         chip: await tile.locator("[class*='grid-area:chip']").first().evaluate(CHIP),
-        bar: await tile.locator("[data-deck-bar-fill]").first()
-          .evaluate((el) => ({ opacity: getComputedStyle(el).opacity })),
+        word: (await tile.locator("[class*='grid-area:chip']").first().innerText()).trim(),
+        // An empty deck draws the track and no fill — that IS what an empty
+        // track means — so a missing fill is a state, not a failure.
+        bar: (await tile.locator("[data-deck-bar-fill]").count()) === 0
+          ? { opacity: "" }
+          : await tile.locator("[data-deck-bar-fill]").first()
+              .evaluate((el) => ({ opacity: getComputedStyle(el).opacity })),
         text: (await tile.innerText()).replace(/\s+/g, " "),
         ground: await tile.evaluate((el) => getComputedStyle(el).backgroundColor),
       };
     }
-    if (!read.plan || !read.deck || !read.moved) continue;
+    if (!read.fresh || !read.draft || !read.deck || !read.moved) continue;
 
-    // THE TRAP. Hollow is not transparent: the art-wash amendment rules this
-    // plate opaque, and an alpha under 1 here is the defect, not a style.
-    const planBg = rgba(read.plan.chip.background);
-    if (!planBg || planBg.a < 1) {
-      fail(`${label}: the plan's plate is ${read.plan.chip.background} — it must be opaque`);
-    } else {
-      note(`${label}: plan plate ${read.plan.chip.background} (opaque)`);
+    // NO MARK, ANYWHERE. This is the check the round turns on: R4's plate and
+    // edge are retired, so a chip drawing either is a regression to a
+    // vocabulary the reader could not decode.
+    for (const [key, r] of Object.entries(read)) {
+      if (r.chip.borderLeftWidth === "2px") {
+        fail(`${label}: the ${key} tile draws a 2px left edge — the pending mark is retired`);
+      }
+      if (r.bar.opacity !== "1" && r.bar.opacity !== "") {
+        fail(`${label}: the ${key} tile's bar is opacity ${r.bar.opacity} — the provisional bar is retired`);
+      }
+      const alpha = alphaOf(r.chip.background);
+      if (alpha === null || alpha < 1) {
+        fail(`${label}: the ${key} tile's plate is ${r.chip.background} — every plate is opaque`);
+      }
     }
-    // And it is a DIFFERENT colour from the deck's, or the phase says nothing.
-    if (read.plan.chip.background === read.deck.chip.background) {
-      fail(`${label}: the plan and the deck draw the same plate, so the phase is invisible`);
+
+    // THE PHASE IS A WORD. Read off the chip rather than inferred from a
+    // colour, which is the whole correction: `Draft` on a list of five cards,
+    // `New` on a list of none, and the committed deck saying whatever its
+    // counts earn.
+    if (read.fresh.word !== "New") {
+      fail(`${label}: the empty uncommitted deck reads "${read.fresh.word}", expected New`);
     }
-    // The ⚠ the handoff asks for, reported rather than ruled on: the tile's
-    // ground is `--surface-inset`, so a `--bg` plate reads slightly recessed.
+    if (read.draft.word !== "Draft") {
+      fail(`${label}: the uncommitted 5-card deck reads "${read.draft.word}", expected Draft`);
+    }
+    if (read.deck.word === "Draft" || read.moved.word === "Draft") {
+      fail(`${label}: a committed deck reads Draft — the phase is testing the wrong thing`);
+    }
     note(
-      `${label}: plan plate ${read.plan.chip.background} on tile ground ${read.plan.ground}` +
-        (read.plan.chip.background === read.plan.ground ? " — FLAT, no step" : " — a step"),
+      `${label}: words — ${read.fresh.word} / ${read.draft.word} / ${read.deck.word} /` +
+        ` ${read.moved.word} · plates ${read.fresh.chip.background} vs ${read.draft.chip.background}`,
     );
 
-    // The edge: 2px, on the left, and nowhere else.
-    const edge = read.moved.chip;
-    if (edge.borderLeftWidth !== "2px") {
-      fail(`${label}: the pending edge is ${edge.borderLeftWidth}, expected 2px`);
+    // THE DASH SEPARATES THE TWO NEUTRALS. `New` and `Draft` are both drawn
+    // from text colours, so in greyscale the border style is the only thing
+    // between them — which is why R6 moved it off `Building`. Read from the
+    // two fixtures that actually carry those words.
+    const byWord = Object.fromEntries(Object.values(read).map((r) => [r.word, r.chip]));
+    if (!byWord.New || !byWord.Draft) {
+      fail(`${label}: the run does not hold both New and Draft, so the dash check measured nothing`);
+    } else if (byWord.New.borderStyle === byWord.Draft.borderStyle) {
+      fail(
+        `${label}: New and Draft both draw a ${byWord.New.borderStyle} edge, so greyscale cannot ` +
+          `tell them apart`,
+      );
     }
-    if (edge.borderTopWidth === "2px" || edge.borderRightWidth === "2px") {
-      fail(`${label}: the pending mark is drawn on more than the left edge`);
-    }
-    note(`${label}: edge ${edge.borderLeftWidth} ${edge.borderLeftStyle} ${edge.borderLeftColor}`);
-    // A deck with a clean draft draws none of it.
-    if (read.deck.chip.borderLeftWidth === "2px") {
-      fail(`${label}: a clean committed deck is drawing the pending edge`);
-    }
-
-    // The bar follows the plate.
-    if (read.plan.bar.opacity !== "0.5") {
-      fail(`${label}: the plan's bar is opacity ${read.plan.bar.opacity}, expected 0.5`);
-    }
-    if (read.deck.bar.opacity !== "1") {
-      fail(`${label}: the deck's bar is opacity ${read.deck.bar.opacity}, expected 1`);
-    }
-
-    // The figure, and the tile that must NOT carry it.
-    if (!read.moved.text.includes("1 change since v1")) {
-      fail(`${label}: the moved tile does not print its change figure — ${read.moved.text}`);
-    }
-    if (read.plan.text.includes("change since")) {
-      fail(`${label}: the plan tile prints a change figure, which it has no version for`);
+    if (byWord.Draft && byWord.Draft.borderStyle !== "dashed") {
+      fail(`${label}: Draft's edge is ${byWord.Draft.borderStyle}, expected dashed`);
     }
 
     // ── The wide chassis must not wrap, with a fifth control in the row ──
@@ -355,65 +391,52 @@ try {
       }
     }
 
-    // ── The deck page: the phase in words, at both widths ────────────────
-    await page.goto(`${BASE}/decks/${fixtures.plan}`, { waitUntil: "domcontentloaded" });
+    // ── The deck page: the word, and no line under the bar ──────────────
+    // #730 drew the phase as a mono line under the progress bar. The pill says
+    // it now, and the line is gone: two statements of one fact is what this
+    // round removes.
+    await page.goto(`${BASE}/decks/${fixtures.fresh}`, { waitUntil: "domcontentloaded" });
     await page.waitForTimeout(600);
-    // The LINE, by its own marker, never `text=`: both spines are in the DOM —
-    // that is what the responsive split is — and Playwright's text engine also
-    // matches every ancestor whose whole text is the phrase, so a text read
-    // counts the paragraph, its wrapper, and the hidden width's copy of both.
-    // The visible filter is what separates the two widths.
-    const words = onPage(page, "[data-deck-phase]");
-    const visible = await words.count() === 0
-      ? 0
-      : await words.evaluateAll((els) => els.filter((el) => el.getClientRects().length > 0).length);
-    if (visible !== 1) {
-      fail(`${label}: the deck page draws the phase ${visible} times, expected exactly 1`);
-    } else {
-      note(`${label}: the deck page states the phase in words`);
+    const phaseLines = onPage(page, "[data-deck-phase]");
+    if ((await phaseLines.count()) > 0) {
+      fail(`${label}: the deck page still draws the retired phase line under the bar`);
     }
-    // And the spine's own chip is hollow there — the page the grid cannot teach.
-    // FAILS when the chip cannot be found, never skips. A selector that stops
-    // matching — a class rename, the header moving out of `main` — would
-    // otherwise report a clean run having measured nothing, which is the shape
-    // this whole script exists to refuse.
     const spineChip = onPage(page, "header [class*='rounded-[6px]']:visible").first();
     if ((await spineChip.count()) === 0) {
-      fail(`${label}: no chip is visible in the deck page's header, so the wash was not measured`);
+      fail(`${label}: no chip is visible in the deck page's header, so nothing was measured`);
     } else {
       const chip = await spineChip.evaluate(CHIP);
-      const bg = rgba(chip.background);
-      if (!bg || bg.a < 1) {
-        fail(`${label}: the spine's plan chip is ${chip.background} — it must be opaque on the wash`);
+      const word = (await spineChip.innerText()).trim();
+      const alpha = alphaOf(chip.background);
+      if (alpha === null || alpha < 1) {
+        fail(`${label}: the spine's chip is ${chip.background} — every plate is opaque on the wash`);
+      }
+      if (chip.borderLeftWidth === "2px") {
+        fail(`${label}: the spine's chip draws the retired 2px edge`);
+      }
+      if (word !== "New") {
+        fail(`${label}: the deck page's chip reads "${word}" for an empty uncommitted deck, expected New`);
+      } else {
+        note(`${label}: the deck page says ${word} in the pill, and nothing under the bar`);
       }
     }
 
-    await page.goto(`${BASE}/decks/${fixtures.deck}`, { waitUntil: "domcontentloaded" });
-    await page.waitForTimeout(600);
-    const onCommitted = onPage(page, "[data-deck-phase]");
-    const stillThere = await onCommitted.count() === 0
-      ? 0
-      : await onCommitted.evaluateAll((els) => els.filter((el) => el.getClientRects().length > 0).length);
-    if (stillThere !== 0) {
-      fail(`${label}: a committed deck's page draws the phase line`);
-    }
-
-    // ── Home: the resume rows carry the marks and no figure ──────────────
+    // ── Home: the word, no mark, no figure ──────────────────────────────
     await page.goto(`${BASE}/`, { waitUntil: "domcontentloaded" });
     await page.waitForTimeout(600);
     const row = onPage(page, "a[href*='/decks/']").filter({ hasText: "a deck mid-tinker" }).first();
     if ((await row.count()) === 0) {
-      note(`${label}: the moved deck is not in Home's resume block — rows are capped, skipped`);
+      note(`${label}: the edited deck is not in Home's resume block — rows are capped, skipped`);
     } else {
       const rowChip = await row.locator("[class*='h-[19px]']").first().evaluate(CHIP);
-      if (rowChip.borderLeftWidth !== "2px") {
-        fail(`${label}: Home's row draws no pending edge (${rowChip.borderLeftWidth})`);
+      if (rowChip.borderLeftWidth === "2px") {
+        fail(`${label}: Home's row draws the retired 2px edge`);
       }
       const text = (await row.innerText()).replace(/\s+/g, " ");
       if (text.includes("change since")) {
         fail(`${label}: Home's row prints a change figure — the stamp is its second half`);
       }
-      note(`${label}: Home's row carries the edge and no figure`);
+      note(`${label}: Home's row carries the word and no mark`);
     }
   }
 } finally {
@@ -441,4 +464,4 @@ if (failures.length > 0) {
   for (const line of failures) console.log(`  ✗ ${line}`);
   process.exit(1);
 }
-console.log("\nA plan, a deck and a deck mid-tinker are three different things on every surface.");
+console.log("\nSeven statuses, no marks, and the phase is a word on every surface.");
