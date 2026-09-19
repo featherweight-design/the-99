@@ -11,6 +11,7 @@ import { GhostButton } from "@/components/ui/button";
 import { CardDetailTrigger } from "../cards/card-detail-provider";
 import { FullCardTrigger } from "../commanders/full-card-trigger";
 import { ArtWash, COVER_INK_SHADOW } from "../ui/art-wash";
+import { deckHeaderCopy } from "../../lib/copy/decks-builder";
 import { deckImportCopy } from "../../lib/copy/deck-import";
 import { overCopy, overWord, renameCopy } from "../../lib/copy/decks-builder";
 import { deckBodySize } from "../../lib/decks/deck-size";
@@ -571,7 +572,7 @@ export function SpineMobile({
               <polyline points="7 10 12 15 17 10" />
               <line x1="12" y1="15" x2="12" y2="3" />
             </svg>
-            Export
+            {deckHeaderCopy.export}
           </button>
         )}
         {offerFirstCommit && <FirstCommitOffer deckId={deck.id} />}

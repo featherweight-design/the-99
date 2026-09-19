@@ -813,20 +813,18 @@ export const SYNERGY_ROWS: SynergyCard[] = [
 
 
 /**
- * A deck's own header, as §3 draws it: the art band with its three controls,
- * then the name, its rename glyph, the identity pips, the commander line and
- * the status.
+ * A deck's own header: the name, its rename glyph, the identity pips, the
+ * commander line, the status badge, the completion bar and its two actions.
  *
- * `SpineBandProps` is a plain data shape, so the band is mounted rather than
- * redrawn. The figure it replaces was four tab labels with counts, which named
- * the page's sections and showed none of the header the entry is about.
+ * SINGLE-COMMANDER, so the denominator is 99 and the pips are Brago's own
+ * Azorius identity. An earlier version of this comment claimed a PAIR — a 98
+ * denominator and a union of two identities — while `partner` was null, so it
+ * described a state the fixture has never drawn. §3's own deck is `HD -
+ * Brago`, who has no partner.
  *
- * A PAIR, deliberately: the denominator is 98 rather than 99 and the identity
- * pips are the union of two commanders, and a single-commander fixture draws
- * neither. §3's own deck is `HD - Brago`, a W/U pair.
- *
- * `artCropUri` is null — a reference page fetches no commander art, and the
- * band falls back to the identity gradient.
+ * `artCropUri` is null. The figure draws no art band at all now (see
+ * `DeckPageFigureBody`), and a reference page fetches no commander art either
+ * way.
  */
 /**
  * The four tabs, with the counts §3 draws.
