@@ -1526,7 +1526,7 @@ Cross-cutting conditions on the tile:
 
 1. **The To buy detail row reads `N to buy`, not `N unowned`, and the status condition is no
    longer "some card unowned".** Both the tile's figure and the `To buy` threshold now come from
-   the seniority allocation rather than from ownership, so a card an older finished deck already
+   the seniority allocation rather than from ownership, so a card an older committed deck already
    holds is one of the copies counted here while being a card the player owns. `detailToBuy` was
    reworded and `detailUnowned` became `detailToBuyNoPrice`; the geometry, colour and placement
    in the row above are unchanged. `Complete`'s `all owned` is untouched: a Complete deck owns

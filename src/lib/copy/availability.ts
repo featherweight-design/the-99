@@ -61,11 +61,11 @@ export const availabilityCopy = {
     hardMulti: (deckCount: number) =>
       deckCount === 1 ? "none free, in 1 deck" : `none free, across ${deckCount} decks`,
     hardAria: (deckName: string) =>
-      `no free copies; this one is on your ${deckName} list`,
+      `no free copies; this one is in your ${deckName} deck`,
     hardMultiAria: (deckCount: number) =>
       deckCount === 1
-        ? "no free copies; they are on 1 of your finished lists"
-        : `no free copies; they are on ${deckCount} of your finished lists`,
+        ? "no free copies; they are on 1 of your committed decks"
+        : `no free copies; they are on ${deckCount} of your committed decks`,
     hardAriaCountOnly: "no free copies",
 
     // over: free < 0. Never names decks — it is a count problem, not a location.
@@ -80,10 +80,10 @@ export const availabilityCopy = {
         : `short ${shortBy}, also in ${deckCount} decks`,
     overAria: (shortBy: number, deckCount: number) =>
       deckCount === 1
-        ? `1 of your finished lists includes this card and you own ${shortBy} too few`
-        : `${deckCount} of your finished lists include this card and you own ${shortBy} too few`,
+        ? `1 of your committed decks includes this card and you own ${shortBy} too few`
+        : `${deckCount} of your committed decks include this card and you own ${shortBy} too few`,
     overAriaCountOnly: (shortBy: number) =>
-      `you own ${shortBy} too few for the finished lists that include it`,
+      `you own ${shortBy} too few for the committed decks that include it`,
 
     // On a deck's OWN list the current deck is excluded from the marker, so
     // "also in N decks" would count the deck the player is standing in. Name the
@@ -91,7 +91,7 @@ export const availabilityCopy = {
     overAlsoIn: (shortBy: number, otherDeck: string) =>
       `short ${shortBy}, also in ${otherDeck}`,
     overAlsoInAria: (otherDeck: string) =>
-      `your ${otherDeck} list also includes this card and you don’t own enough for both`,
+      `your ${otherDeck} deck also includes this card and you don’t own enough for both`,
 
     // Tile caption line (sits under the type line, not on the art).
     tileInUse: (deckName: string) => `in use: ${deckName}`,
@@ -115,12 +115,12 @@ export const availabilityCopy = {
     //
     // Shown only in the `free` state, under the control.
     freeNote:
-      "Cards sleeved into a finished deck don’t count toward these scores.",
+      "Cards sleeved into a committed deck don’t count toward these scores.",
     // The long form's second sentence repeats the first's subject and verb, so
     // the contrast lands on the one word that changed. The drawn version
     // ("Unfinished brews still do.") made the reader go back for its subject.
     freeNoteLong:
-      "Cards sleeved into a finished deck don’t count toward these scores. Cards in a draft still do.",
+      "Cards sleeved into a committed deck don’t count toward these scores. Cards in a draft still do.",
     subtitleAll: "ranked by fit",
     subtitleFree: "ranked by what’s free",
     // Announced on the list’s existing live region when the toggle flips.
@@ -168,8 +168,8 @@ export const availabilityCopy = {
     // It describes LISTS. Never "in a box", "on a shelf", "sleeved up right now".
     expandedFor: (n: number) =>
       n === 1
-        ? "This one is sleeved into a deck you’ve finished. You can still build with it. You’d be taking it out of something."
-        : `These ${n} are sleeved into decks you’ve finished. You can still build with them. You’d be taking them out of something.`,
+        ? "This one is sleeved into a deck you’ve committed. You can still build with it. You’d be taking it out of something."
+        : `These ${n} are sleeved into decks you’ve committed. You can still build with them. You’d be taking them out of something.`,
     sectionInUse: (n: number) => `In use: ${n}`,
     sectionFree: (n: number) => `Free to build with: ${n}`,
     filteredHeading: (n: number) => `Showing the ${n} in use`,
@@ -190,9 +190,9 @@ export const availabilityCopy = {
   deckSummary: {
     heading: spokenForTwice,
     body: (cardName: string, deckCount: number, ownedQty: number) =>
-      `${cardName} is on ${deckCount === 1 ? "1 finished list" : `${deckCount} finished lists`} and you own ${ownedQty === 1 ? "one" : ownedQty}. Nothing’s broken here. It’s a shopping decision.`,
+      `${cardName} is on ${deckCount === 1 ? "1 committed deck" : `${deckCount} committed decks`} and you own ${ownedQty === 1 ? "one" : ownedQty}. Nothing’s broken here. It’s a shopping decision.`,
     bodyMany: (n: number) =>
-      `${n} of these are on more finished lists than you have copies. Nothing’s broken here. It’s a shopping decision.`,
+      `${n} of these are on more committed decks than you have copies. Nothing’s broken here. It’s a shopping decision.`,
     ariaLabel: (n: number) =>
       n === 1
         ? "1 card in this deck is over-committed"
@@ -279,7 +279,7 @@ export const availabilityCopy = {
     // finished list has the card; an unfinished one has asked for it and holds
     // nothing yet. Do not level these to one verb: the difference between them
     // is exactly what `free` counts.
-    detailClaimsHeading: "On your lists",
+    detailClaimsHeading: "In your decks",
     detailClaimHolds: (n: number) => `holds ${n}`,
     detailClaimWants: (n: number) => `wants ${n}`,
     // ALLOCATION IS A THIRD AXIS AND TAKES A THIRD PAIR — the card assignments
@@ -337,7 +337,7 @@ export const availabilityCopy = {
         ? "Nothing to sort out yet. The deck that wants it is still a draft. Whichever you sleeve first gets it."
         : "Nothing to sort out yet. The decks that want it are still drafts. Whichever you sleeve first gets it.",
     detailOverNote:
-      "More finished lists want it than you own. Nothing’s broken. It’s a shopping decision.",
+      "More committed decks want it than you own. Nothing’s broken. It’s a shopping decision.",
     // Why the shortfall above is smaller than the rows suggest. `short N` counts
     // finished lists only, deliberately — nothing is sleeved in a brew, so no copy
     // has gone anywhere — and a reader looking at five lists wanting one card has

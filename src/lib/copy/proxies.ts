@@ -129,8 +129,8 @@ export const proxyCopy = {
     // says has none. The missing figure IS the statement.
     note: (deckCount: number) =>
       deckCount === 1
-        ? "This list is covered and asks nothing of your collection."
-        : "These lists are covered and ask nothing of your collection.",
+        ? "This deck is covered and asks nothing of your collection."
+        : "These decks are covered and ask nothing of your collection.",
     // The total, when the player owns none. "none" rather than "0", which is
     // availabilityCopy.marker's own rule: every neighbouring number on these surfaces is
     // a quantity you can act on, and a leading 0 beside them reads as one more tally

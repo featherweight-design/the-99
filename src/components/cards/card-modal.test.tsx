@@ -207,7 +207,7 @@ describe("CardModal allocation receipt", () => {
   });
 
   // Finished lists HOLD, unfinished lists WANT. The verbs are the model.
-  it("separates what a finished list holds from what a brew wants", () => {
+  it("separates what a committed deck holds from what a brew wants", () => {
     mount({
       ...card,
       quantity: 2,
@@ -294,7 +294,7 @@ describe("CardModal allocation receipt", () => {
 
   // `short N` counts finished lists only, deliberately. A reader looking at three lists
   // wanting one card cannot tell that from a miscount unless the block says so.
-  it("says how many unfinished lists the figures leave out", () => {
+  it("says how many uncommitted decks the figures leave out", () => {
     mount({
       ...card,
       quantity: 1,
@@ -309,7 +309,7 @@ describe("CardModal allocation receipt", () => {
 
   // In the soft state every claimant is a brew and `detailSoftNote` is the whole story,
   // so this line would be the same fact twice.
-  it("leaves the line out when no finished list is involved", () => {
+  it("leaves the line out when no committed deck is involved", () => {
     mount({
       ...card,
       quantity: 1,

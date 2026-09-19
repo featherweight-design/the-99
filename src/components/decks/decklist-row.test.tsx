@@ -234,7 +234,7 @@ describe("DecklistRow availability marker (#43)", () => {
   // (design table row 4.9), so a genuine conflict arrives as over-committed.
   // Count-only in both views since #354: the other claimant is named by the
   // card modal's allocation receipt, not by this row.
-  it("carries the marker when another finished list wants the same copy", () => {
+  it("carries the marker when another committed deck wants the same copy", () => {
     renderRow(
       <DecklistRow deckId="d1" card={{ ...card, availability: avail(-1, ["Atraxa"]) }}  newestAsOf={null}/>,
     );
@@ -259,7 +259,7 @@ describe("DecklistRow availability marker (#43)", () => {
     );
 
     expect(
-      screen.getByText("you own 1 too few for the finished lists that include it"),
+      screen.getByText("you own 1 too few for the committed decks that include it"),
     ).toBeInTheDocument();
   });
 

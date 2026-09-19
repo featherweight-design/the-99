@@ -226,7 +226,7 @@ describe("rankFree membership", () => {
   const item = (oracleId: string) =>
     ({ oracleId, slug: oracleId, name: oracleId }) as unknown as CommanderListItem;
 
-  it("drops a commander whose own card a finished deck has sleeved", async () => {
+  it("drops a commander whose own card a committed deck has sleeved", async () => {
     const out = await rankFree("user", [item("sleeved"), item("spare")], {
       collection: [legend("sleeved"), legend("spare")],
       availability: new Map([["sleeved", avail(1, 1)]]),

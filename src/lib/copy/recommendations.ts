@@ -271,8 +271,8 @@ export const recommendationsCopy = {
     // nothing.
     introOnlySpokenFor: (n: string) =>
       n === '1'
-        ? 'One card here is already yours, and already sleeved into a finished list. A second copy is the only way to have both.'
-        : `${n} cards here are already yours, and already sleeved into finished lists. A second copy of each is the only way to have both.`,
+        ? 'One card here is already yours, and already sleeved into a committed deck. A second copy is the only way to have both.'
+        : `${n} cards here are already yours, and already sleeved into committed decks. A second copy of each is the only way to have both.`,
 
     // The leading figure stops being "cards to buy" the moment the list holds
     // two kinds of purchase, so it becomes the plain size of the list.

@@ -22,7 +22,7 @@ describe("availabilityState", () => {
     expect(availabilityState({ owned: 1, free: 0, soft: 3 })).toBe("hard");
   });
 
-  it("is over when more finished decks want the card than are owned", () => {
+  it("is over when more committed decks want the card than are owned", () => {
     expect(availabilityState({ owned: 1, free: -2, soft: 0 })).toBe("over");
   });
 

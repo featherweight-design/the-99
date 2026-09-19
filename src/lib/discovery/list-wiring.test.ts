@@ -73,7 +73,7 @@ vi.mock("./novelty", async (importOriginal) => ({
 
 const { loadDiscovery, loadDiscoveryPool } = await import("./list");
 
-/** One copy owned, claimed by a finished deck — nothing left free. */
+/** One copy owned, claimed by a committed deck — nothing left free. */
 const committed: Availability = { owned: 1, hard: 1, soft: 0, free: 0, claims: [] };
 
 describe("loadDiscovery — wiring", () => {
