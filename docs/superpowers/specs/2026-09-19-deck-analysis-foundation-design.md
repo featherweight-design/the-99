@@ -224,7 +224,8 @@ sharpens the reasoning.
   `commander_support`, written by the index build's existing fetch. One run of the existing
   monthly job; no new endpoint and no additional request volume.
 - An **oracle-text mass-land-denial classifier**, implementing WotC's published definition as
-  a second source beside the Spellbook-derived one (§4.2).
+  a second source beside the Spellbook-derived one — measured at 91.7% recall with zero false
+  positives before being specced (§4.2).
 - The **Deck Profile**: a pure builder plus a cached loader, defined as a composable set of
   fact-groups.
 - **`fitSkeleton`**: where a deck sits against its skeleton, a pure function over the profile.
@@ -250,9 +251,10 @@ sharpens the reasoning.
 - **Deck theme derivation from cards (#724).** Real, measured, and needs an EDHREC theme-page
   ingest that does not exist. §5.3 defines the slot the profile leaves for it, and why the
   profile must not hard-code commander tags as the theme source in the meantime.
-- **Functional role targets** — ramp, draw, removal, wipes. **No source available here
-  produces them**, EDHREC publishing types rather than functions, and §4A.5 names that as the
-  open question this sub-project hands forward rather than filling it with a constant.
+- **A measured source for functional role targets** — ramp, draw, removal, wipes. No source
+  available here produces them, EDHREC publishing types rather than functions. `ROLE_TARGETS`
+  is still surfaced as an explicitly labelled rule of thumb (§4A.5); what is out of scope is
+  pretending it was measured, and finding a source is the open question handed forward.
 - **Bracket 5.** Not derivable. §6.4.
 - **Pod comparison, salt surfacing, rule-0 legality reporting.** Named as future consumers so
   the profile's shape accounts for them; none is built here.
@@ -341,6 +343,24 @@ it — and the spec does not pretend otherwise. Three consequences, all delibera
    `Decree of Annihilation`, `Wildfire`). It is a **classifier, not a list**, so it carries
    false negatives; it writes `source = 'oracle_rule'` and the two sources union.
 
+   **Measured before it was believed** (`scripts/measure-mld.mts`, committed, read-only):
+   against 24 cards that unambiguously qualify, **recall 22/24 (91.7%)** with **zero false
+   positives** on a curated negative set (`Strip Mine`, `Path to Exile`, `Beast Within`,
+   `Scapeshift` and eight more), flagging **51 of 31,830** commander-legal cards. The two
+   residual misses are **named rather than chased**: `Wave of Vitriol` and `Cataclysm`, both
+   sacrifice-clause wordings the rule does not reach.
+
+   Its first version scored 66.7%, and the difference is worth recording because it is a
+   trap: every miss was a *wording variant of a clause already in the definition* — the
+   Orb/Stasis family says "keep lands tapped" three different ways. The fix was to implement
+   the remaining clauses, **not** to add patterns until the fixture passed. Tuning a
+   classifier against its own test set produces a number that means nothing.
+
+   **91.7% is also what makes §6.5's warning writable.** A verdict whose detection is 40%
+   complete needs a prominent caution; one at 91.7% with a second source beside it needs a
+   quiet footnote. Design cannot choose between those without the number, which is why it was
+   measured before the plan rather than during the build.
+
    The distinction from an invented threshold matters: *"four or more lands per player"* is
    **WotC's number**, quoted, not a cut this spec chose. §2.4a is satisfied by citation rather
    than by measurement here, and that is the only case in the document where it is.
@@ -423,8 +443,22 @@ Four assertions, and the last two are the ones that earn it:
 2. The first entry carries every field §4.3 projects.
 3. `BracketTagEnum` still has the seven members the check constraint encodes — an added tag
    would otherwise fail every insert after the next upstream release.
-4. **The known-positive sample resolves.** Each of `Armageddon`, `Ravages of War`,
-   `Jokulhaups`, `Time Warp`, `Temporal Manipulation` is still classified. §4.2.
+4. **The classification still works, proved two ways**, because a single form misses a
+   failure the other catches:
+
+   - a **derived floor** — the ingest classifies at least N cards as mass land denial and M as
+     extra-turn, with N and M taken from the first clean run and committed. This catches a
+     collapse: an upstream restructure that leaves the classifier matching nothing.
+   - a small set of **named anchors** — `Armageddon`, `Ravages of War`, `Jokulhaups`,
+     `Time Warp`, `Temporal Manipulation`. This catches a drift that keeps the count healthy
+     while the classification quietly changes meaning, which the floor alone cannot see.
+
+   **The tension with §4.1 is real and the distinction is deliberate.** §4.1 forbids
+   transcribing the Game Changers list because it is consumed as *data*, and a transcribed
+   copy of live data goes stale silently. These five cards are a **test fixture**: they are
+   asserted, never read. One of them ceasing to classify is a signal to investigate rather
+   than a stale copy to refresh — and if a card legitimately leaves the index, the check
+   failing is the correct outcome, not a false alarm.
 
 Per `run the guard's failure path before trusting it`, each of the four is run against a
 mutated fixture before the check is believed.
@@ -466,6 +500,45 @@ for 2,296 commanders and played in 12.2% of their decks. A breadth-only floor pu
 Sol Ring and tells a new player to run it. A staple is therefore **breadth AND inclusion** —
 recommended almost everywhere *and* actually played when it is.
 
+**The cut, ratified 2026-09-19 against the derivation's own output:**
+
+> A card is in the floor for a condition when it is recommended for **at least 50% of that
+> condition's commanders** and played, on average, in **at least 25% of their decks**. Basic
+> lands are excluded outright. A condition needs **at least 100 commanders** to carry a floor
+> of its own.
+
+What that admits for a mono-coloured commander — 11 cards, and the shape of the list is the
+argument for the line:
+
+```
+Sol Ring 75.6% · Arcane Signet 53.4% · Swiftfoot Boots 31.9% · Mind Stone 31.1%
+Rogue's Passage 29.9% · Solemn Simulacrum 29.6% · Reliquary Tower 29.6%
+Myriad Landscape 26.9% · Lightning Greaves 25.3% · Thought Vessel 25.3% · War Room 25.1%
+```
+
+**Command Tower is correctly absent from that list** (10.4% in mono, §4A.3), which is the
+conditioning doing exactly the job it was added for. `Temple of the False God` sits at 12.2%
+and is excluded with room to spare. Sizes elsewhere: two-colour 7, three-colour 22,
+five-colour 28.
+
+**The 100-commander floor exists because two conditions produce garbage without it.**
+Colourless has 46 commanders and four-colour has 16, and at those sample sizes "recommended
+for half of them" is a meaningless bar — they yield **105 and 51 cards** respectively, longer
+than the mono floor by an order of magnitude. Both fall back to the nearest populated
+condition and the fit reports that it did (§6A's `basis`). Sixty-two commanders are affected
+in total.
+
+**Two design findings the curve exposed, both of which change the table rather than tune it:**
+
+1. **There is no `all` condition, and there must not be.** Computed across every commander,
+   `Swords to Plowshares` reads **35.8%** breadth and looks marginal. It is not — it is a
+   60.8% staple that only appears for white commanders. A global floor systematically demotes
+   every colour-specific staple, so the floor is computed **per condition only**.
+2. **Basic lands are excluded by type, not by threshold.** `Plains` and `Mountain` top the
+   inclusion ranking at **95%**, which is an artifact of appearing only for their own colour.
+   They would be nonsense in a staples list, and §4A.4's `basic` / `nonbasic` counts already
+   answer the question they appear to answer.
+
 The floor is derived from the **corpus**, never from the commander's own page, which is why it
 still serves a commander with 40 decks on EDHREC. Those thin-data commanders are the
 population it serves most, and `commander_support.deck_count` identifies them.
@@ -504,10 +577,13 @@ axis. Swiftfoot Boots runs the *other* way, so the conditioning is a gradient pe
 a single "multicolour bonus". Sol Ring is flat at 75–90% everywhere and is genuinely
 unconditional — which is what a floor entry should look like.
 
-A condition is kept only when the measured gap is large enough to change a deck. The
-derivation prints the gap per condition so the cut is made against figures, and this spec
-records which survived — the same way `gap-slot.ts` records that 2% and 1% were tried before
-0.5%.
+**Conditioning is not polish here; the floor is wrong without it.** §4A.1's first finding is
+the proof: a colour-specific staple is invisible to a global computation. So there is no
+unconditioned floor to fall back to, and the condition is always part of the answer.
+
+The derivation prints the gap per condition so the cut is made against figures, and this spec
+records the line it produced — the same way `gap-slot.ts` records that 2% and 1% were tried
+before 0.5%.
 
 ### 4A.4 Role targets do NOT come from this table — they come from a parse we already discard
 
@@ -577,13 +653,27 @@ EDHREC publishes **types**, not **functions**. So `land`, `creature`, `instant` 
 are measured, and **ramp / draw / removal / wipes are not** — nothing in any source available
 here says how many ramp pieces an average deck runs.
 
-`ROLE_TARGETS`' four constants (`ramp: 10, draw: 10, removal: 8, wipes: 3`) therefore **stay
-asserted**, and this spec does not dress them up. They keep their current callers, unchanged,
-and §4A.6 covers what happens to them.
+**They are still surfaced, as an explicitly labelled rule of thumb** — ruled 2026-09-19. A
+player building a first deck is badly served by silence on removal, and the alternative to a
+labelled heuristic is not a better number, it is no signal at all.
 
-This is a real gap, named rather than filled, and it is the one open question this sub-project
-hands forward. It is survivable because **the land count is the number that matters most and
-it is now in hand** — the motivating deck's fault was a mana base, not a ramp count.
+The label is load-bearing and is not a footnote. A functional target must be **visibly a
+different kind of claim** from the land count wherever both appear: one is *what decks for
+this commander actually run*, the other is *a community rule of thumb this app did not
+measure*. `fitSkeleton` enforces that structurally by carrying **no functional roles at all**
+(§6A) — a surface that wants them reads `ROLE_TARGETS` directly and must say where they came
+from, rather than receiving them in the same shape as a measured figure.
+
+**This is not a CRISPI and the difference is worth stating.** §2.2 forbids a single blended
+number presented as a verdict. A rule of thumb makes no claim to precision, resolves to no
+score, and nobody carries it to a table as a ruling — the failure mode CRISPI had was that a
+figure *looked* authoritative. The rule here is the same one §2.2 actually encodes: say where
+a number came from, and never let an unsourced one borrow a sourced one's credibility.
+
+This remains a real gap, named rather than filled, and it is the open question this
+sub-project hands forward. It is survivable because **the land count is the number that
+mattered most and it is now in hand** — the motivating deck's fault was a mana base, not a
+ramp count.
 
 ### 4A.6 `ROLE_TARGETS`: the type half is replaced, the function half is not
 
@@ -600,13 +690,26 @@ sources of truth for overlapping questions, and this one has a known expiry.
 ```
 format_staples
   oracle_id          uuid not null references cards(oracle_id)
-  condition          text not null      -- 'all' | 'colors:1' .. 'colors:5'
+  condition          text not null      -- 'colors:1' .. 'colors:5'. There is no 'all'.
   commanders         integer not null   -- how many commanders recommend it, in this condition
   commander_total    integer not null   -- the denominator, never inferred
   avg_inclusion      real not null      -- 0-100, the second axis (§4A.1)
   weighted_rank      integer not null   -- deck_count-weighted (§4A.2)
   primary key (oracle_id, condition)
 ```
+
+**`condition` is the one vocabulary**, and `fitSkeleton`'s `basis` (§6A) reports *how* a
+condition was arrived at — the commander's own payload, the colour fallback, or nothing. Two
+words for two genuinely different things: `condition` names a bucket, `basis` names the
+strength of the claim behind it. A row here always carries a `condition`; a fit always carries
+both.
+
+Only conditions with **at least 100 commanders** are written (§4A.1). `colors:0` (46
+commanders) and `colors:4` (16) are therefore absent from this table by construction rather
+than filtered at read time — an empty floor and a floor that was never computed are different
+facts, and the reader is owed the second one.
+
+Basic lands never appear: excluded by type at derivation (§4A.1), not by threshold.
 
 Composition targets are columns on `commander_support`, not a new table: they are one row per
 commander, written by the job that already writes that row, and a second table would be a join
@@ -621,7 +724,9 @@ commander_support  (added)
 
 Nullable, every one of them: a commander whose payload predates the widening has no
 composition, and **null reads as absent** where a zero would read as "this deck runs no
-lands". The reader falls back to the colour-count condition and says which it used.
+lands". The reader falls back to the colour condition and reports `basis: "colors"`; where
+that condition is also absent (§4A.1's thin cases, after their own fallback) it reports
+`basis: "none"` and no target at all.
 
 Every figure carries its denominator, per the presentation rules inherited from #9. A figure
 without one is an assertion the reader cannot check, which is §2.2 again.
@@ -1176,6 +1281,13 @@ The brief asks Design for:
 - The upgrade path's presentation: a consequence, not a recommendation.
 - The About entry. Per the standing rule, a feature does not launch without one in the same
   round, with the `ABOUT_VERSION` bump named as a task in the plan.
+
+**Which round owes the About entry, stated so it cannot be missed:** **not this one.**
+Sub-project 1 ships no UI, so there is nothing for a reader to discover and an entry would
+describe a surface that does not exist. The entry and the `ABOUT_VERSION` bump belong to the
+round that ships the deck-analysis surface — sub-project 1b, once this brief has a READINESS
+verdict — and are a named task in *that* plan. Recorded here because "backend only, so no
+entry" is exactly the reasoning that let the post-import summary reach `main` with none.
 
 ---
 
