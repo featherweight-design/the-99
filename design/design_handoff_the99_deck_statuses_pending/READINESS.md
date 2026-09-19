@@ -253,3 +253,24 @@ figure above is the one to re-measure.
   `Building` to the flat rule, so the exception map keeps one member.
 - `?status=draft` remains a valid value selecting a different set, so no redirect is owed.
 
+## The close-out walk (2026-09-19)
+
+Both inventories were re-run against the shipped vocabulary. Nothing to fix, and one measurement
+worth recording because it is the cost this round accepted, seen live.
+
+**The seven rows draw in cascade order with no footer count**, phase first, at both widths.
+**The four words are legible side by side** on `/decks`: `New` with `created today`, `Draft` at
+five cards, `Building` on a committed deck of the same length, and `Building` again on the edited
+one with `1 change since v1` beneath it. No mark anywhere, on any surface.
+
+**The Draft-dominance figure, on screen.** The Status panel on the dev account reads
+`New 3 · Draft 33 · Over 0 · Building 2 · Unresolved 0 · To buy 0 · Complete 0` — 33 of 38 decks
+in one value, and the grid behind it is a column of identical `Draft` pills. That is the risk the
+verdict named and accepted, and it is worth seeing rather than only reading: on an account where
+little is committed the pill carries little, and the detail row does the work.
+
+It remains an artefact of the fixtures rather than a defect — probe decks never commit, and
+production is 4 of 8 — but the shape is now on record with a picture behind it. **If the
+production split ever moves hard toward uncommitted, this is the measurement to re-take**, and the
+question to re-ask is whether `Draft` should yield to a count word once a list is at its body size.
+
