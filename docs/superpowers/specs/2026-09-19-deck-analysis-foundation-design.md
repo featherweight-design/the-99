@@ -309,7 +309,12 @@ Commander Spellbook holds all three. Verified live on 2026-09-19:
   through the `Mass Land Denial` **template**, not a card list.
 - `POST /find-my-combos` returns `included` **and** `almostIncluded` — one card away.
 - `https://json.commanderspellbook.com/variants.json` is the daily bulk: 656 MB,
-  `last-modified` within hours.
+  `last-modified` within hours. **Every field §4.3 projects was verified present on a real
+  bulk record**, not inferred from the OpenAPI schema: `id`, `bracketTag`, `identity`,
+  `popularity` (nullable, and null on that record), `variantCount`, `uses[].card.oracleId`,
+  `requires`, `produces[].feature.name`, and `legalities.commander` as a boolean — the last of
+  which is how the ingest filters to commander-legal variants rather than storing all of
+  them.
 
 **Decision: ingest locally, do not call per deck.**
 
@@ -812,6 +817,7 @@ type ProfileBrackets = {
   twoCardCombos: ComboRef[];         // card pairs, with the variant id
   banned: CardRef[];
   tutors: CardRef[];                 // reported, never weighted — §2.1
+  population: BracketPopulation | null;  // §6.3a — what other players declared, with its denominator
   detection: DetectionCoverage;      // §4.2, §6.5
 };
 
@@ -858,6 +864,16 @@ intentional two-card infinite combo at all. Sampled, the two disagree freely: of
 variants, 26 are `S`, 7 `R`, 2 `P`, 2 `O`, 2 `E`, 1 `C`, while `Sanguine Bond + Exquisite
 Blood` is plainly infinite at `S` and plainly infinite at `R` for
 `Demonic Consultation + Thassa's Oracle`.
+
+**The decisive case, from the bulk's own first record:** `Gilder Bairn + Agatha's Soul
+Cauldron + Bloom Tender` produces `Infinite mana of colors among permanents you control` and
+`Infinite proliferate`, and carries **`bracketTag: "E"` — Exhibition**, Spellbook's gentlest
+tag. An unambiguously infinite combo rated as belonging at the most casual table. Whatever
+`bracketTag` measures it is not whether a combo is infinite, and a rule built on it would have
+read that variant as harmless.
+
+**The feature path is `produces[].feature.name`**, verified against the bulk rather than the
+API schema — the ingest reads the bulk, so that is what had to be checked.
 
 Letting `bracketTag` decide would import a third party's bracket opinion into a verdict the
 reader will take to a table as WotC's — §2.2's failure with someone else's number in it. It is
@@ -1001,6 +1017,40 @@ number, and applying it would require a turn estimate that is itself invented.
 the slot reads every assembled two-card infinite as present and says which cards form it. The
 reader is the only one who can answer the other half, and the verdict must not appear to have.
 
+
+### 6.3a The population baseline we already hold
+
+`commander_support.bracket_counts` is already ingested and drawn nowhere. It is **EDHREC's
+distribution of self-declared brackets for decks with that commander** — present on **3,252 of
+3,279** rows:
+
+```
+The Ur-Dragon   {"1":144, "2":2929, "3":5055, "4":3542, "5":178}
+Edgar Markov    {"1":92,  "2":3524, "3":5371, "4":4004, "5":173}
+```
+
+Averaged per commander: B1 15, B2 274, B3 251, B4 117, B5 52 — B2 and B3 dominate, which is
+what the format says about itself.
+
+**It costs nothing and it answers the question the slot cannot.** A verdict of "Bracket 3" is
+a fact about the deck; *"Bracket 3 — where 5,055 of the 11,848 Ur-Dragon decks that declared
+one also sit"* is the Rule 0 conversation. It is added to `ProfileBrackets` as `population`
+and reported beside the verdict.
+
+**Three rules on it, because it is easy to misuse.**
+
+- It is **self-declared by other players**, so it is a fact about the population and never an
+  input to the slot. Feeding it in would make our verdict a popularity reading — §2.2 with a
+  crowd instead of a formula.
+- **Only 22.4% of decks declare a bracket**, measured. The counts therefore sum to about a
+  fifth of `deck_count`, and the surface carries that denominator explicitly, per the #9 rule.
+  A reader shown "5,055 decks" who believes it is out of 50,478 has been misled by us.
+- The **27 commanders with no counts** report absent, not zero.
+
+**And a trap found next door, recorded so nothing ever reads it.** `budget_counts`, ingested
+alongside, looks like sibling data and is not: `budget` equals `expensive` on **3,138 of 3,252
+rows**, and both are `deck_count / 10`. It is a fixed decile split carrying no information
+beyond the deck count itself. Any figure derived from it would be noise wearing a label.
 
 ### 6.4 Bracket 5 is not derivable, and is not offered
 
@@ -1209,6 +1259,9 @@ Stated so a reader does not mistake silence for coverage.
   for a floor and a poor one for a ceiling.
 - **Anything about how the deck should be built.** The fit is a reading; acting on it is
   sub-project 2. Nothing in this sub-project changes what `fill.ts` or `last-slots.ts` do.
+- **Whether other players are right about their brackets.** §6.3a reports what they declared,
+  for 22.4% of decks that declared anything. It is context, never corroboration: a verdict and
+  a popular opinion agreeing does not make the verdict more true.
 - **How much ramp, draw, removal or board-wipe a deck should run.** Measured: EDHREC publishes
   type counts, not functional ones, so those four targets have no source (§4A.5). The land
   count, the type composition and the curve do.
@@ -1273,7 +1326,13 @@ The brief asks Design for:
 - How a **thin-data commander** is stated (`coverage.thin`, §6A). The reader needs to know
   the floor is doing more work than usual here, without the surface implying their commander
   is a bad choice.
-- How `detection: partial` is stated without either alarming or being missed (§6.5).
+- How `detection: partial` is stated without either alarming or being missed (§6.5). Now
+  writable: the classifier measures **91.7%** recall with a second source beside it (§4.2), so
+  this is a footnote rather than a caution.
+- **The population line** (§6.3a) beside the verdict — *"Bracket 3, where 5,055 of the 11,848
+  Ur-Dragon decks that declared one also sit"* — carrying its denominator without turning the
+  verdict into a popularity reading. This is the Rule 0 sentence, and it is the one figure on
+  the surface that is about other people rather than about this deck.
 - **How a rule that declines to count reads next to one that has no rule at all** — the
   `unquantified` / `ruleless` split (§7.2). An extra-turn card at Bracket 3 and an eighth
   tutor are both "does not move your bracket" and they are not the same sentence, and a
