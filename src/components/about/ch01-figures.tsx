@@ -1308,7 +1308,15 @@ export function NewDeckFigureBody() {
     // arrangement is in flow — so the height is phone-only too and desktop
     // sizes to its content.
     <div className="relative h-[680px] overflow-hidden [transform:translateZ(0)] md:h-auto md:transform-none">
-      <CreatePicker legalCommanders={CREATE_COMMANDERS} />
+      {/* Kotis chosen, per Design's fixture. The empty state draws `No
+          commander selected` over a disabled button, which is the surface
+          BEFORE anything happens rather than the one the caption describes —
+          and it leaves the name field and `Create deck →` undrawn, which are
+          two of the three things the entry's key lines are about. */}
+      <CreatePicker
+        legalCommanders={CREATE_COMMANDERS}
+        initialSelectedId={CREATE_COMMANDERS[1].oracleId}
+      />
     </div>
   );
 }

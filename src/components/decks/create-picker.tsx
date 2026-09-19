@@ -39,6 +39,16 @@ const copy = deckImportCopy.commander;
 type CreateModeProps = {
   mode?: "create";
   legalCommanders: OwnedLegalCommander[];
+  /**
+   * The commander the picker opens with chosen. Null everywhere a player
+   * arrives — picking is the act — so this defaults to the empty state.
+   *
+   * `/about` passes one: its `new-deck` entry is about the whole flow, and the
+   * empty state draws `No commander selected` over a disabled button, which is
+   * the surface before anything happens rather than the surface the caption
+   * describes.
+   */
+  initialSelectedId?: string | null;
 };
 
 type ImportModeProps = {
@@ -131,7 +141,9 @@ export function CreatePicker(props: CreatePickerProps) {
   }, [candidates, legalCommanders]);
 
   const [query, setQuery] = useState("");
-  const [selectedId, setSelectedId] = useState<string | null>(null);
+  const [selectedId, setSelectedId] = useState<string | null>(
+    props.mode === "import" ? null : (props.initialSelectedId ?? null),
+  );
   const [partnerId, setPartnerId] = useState<string | null>(null);
   /** True while the list is re-headed and filtered to the primary's legal partners. */
   const [pairing, setPairing] = useState(false);
