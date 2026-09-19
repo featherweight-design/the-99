@@ -72,9 +72,12 @@ export type CommanderListItem = Pick<
    * card's. Null when they own no copy of this commander, or when the copy they own
    * prints the oracle name — which is almost every printing.
    *
-   * Resolved in `getRankedList` rather than here: this module scores a commander out
-   * of the catalog and the collection's PRINTINGS are a different question, asked once
-   * for the whole list after both the stored and the recomputed paths have converged.
+   * Never set by this module, and not by `getRankedList` either — both answer out of the
+   * catalog, and which printing the player holds is a different question. It is applied
+   * at the DRAW, through `withOwnedCardArt`: `loadCommanderRankings` for the whole
+   * `/commanders` lane, Home for its ready slice alone. Anything reading a ranked item
+   * and expecting this field has to enrich it first; a shared loader doing it for
+   * everyone is what made Home pay a printings join for rows it never draws.
    *
    * Optional for the reason the deck payloads' twin is: fixtures across the suite build
    * these literals without touching the catalog, and absent means null.
