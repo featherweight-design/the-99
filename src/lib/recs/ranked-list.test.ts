@@ -20,6 +20,12 @@ const getCollectionStats = vi.fn<(userId: string) => Promise<{ uniqueCards: numb
 const loadBuiltCommanderIds = vi.fn<(userId: string) => Promise<Set<string>>>(
   async () => new Set<string>(),
 );
+// The owned-printing lookup, mocked because it reads `collection_items` — what these
+// tests pin is that BOTH paths pass through it and that a row it does not name is
+// left exactly as it was.
+const resolveOwnedPrintings = vi.fn<(userId: string, ids: string[]) => Promise<Map<string, unknown>>>(
+  async () => new Map(),
+);
 
 vi.mock("./store", () => ({ loadScores, persistScores, collectionGeneration, indexGeneration }));
 vi.mock("./recommend", async (importOriginal) => ({
@@ -28,6 +34,7 @@ vi.mock("./recommend", async (importOriginal) => ({
 }));
 vi.mock("../home/summary", () => ({ getCollectionStats }));
 vi.mock("../discovery/candidates", () => ({ loadBuiltCommanderIds }));
+vi.mock("../collection/owned-printings", () => ({ resolveOwnedPrintings }));
 
 const { getRankedList } = await import("./ranked-list");
 
@@ -47,6 +54,85 @@ beforeEach(() => {
   loadBuiltCommanderIds.mockReset().mockResolvedValue(new Set<string>());
   persistScores.mockClear();
   getCollectionStats.mockReset().mockResolvedValue({ uniqueCards: 10 });
+  resolveOwnedPrintings.mockReset().mockResolvedValue(new Map());
+});
+
+// The lane lists commanders the player OWNS, so its art has to be the copy in their
+// box — `cards.image_uri` and `cards.art_crop_uri` are one arbitrary printing's. Pinned
+// on both paths for the same reason the deck exclusion is: a warm `commander_scores`
+// set would otherwise serve oracle art for ever.
+describe("owned-printing art", () => {
+  const ownedMap = () => new Map([[
+    "kept",
+    {
+      printedName: "Freya, Queen of the Valkyries",
+      imageUri: "owned.jpg",
+      artCropUri: "owned-crop.jpg",
+      setCode: "SLD",
+      collectorNumber: "2215",
+    },
+  ]]);
+
+  it("takes the owned printing's art and name on the cached path", async () => {
+    loadScores.mockResolvedValue({
+      items: [{ ...item("kept", 90), imageUri: "oracle.jpg", artCropUri: "oracle-crop.jpg" }],
+      degradedOracleIds: [],
+    });
+    resolveOwnedPrintings.mockResolvedValue(ownedMap());
+
+    const [row] = (await getRankedList("user_1")).items;
+
+    expect(row.imageUri).toBe("owned.jpg");
+    expect(row.artCropUri).toBe("owned-crop.jpg");
+    expect(row.printedName).toBe("Freya, Queen of the Valkyries");
+  });
+
+  it("takes it on the recompute path too", async () => {
+    loadScores.mockResolvedValue({ items: [], degradedOracleIds: [] });
+    recommendCommanders.mockResolvedValue({
+      results: [{ ...item("kept", 90), imageUri: "oracle.jpg", artCropUri: "oracle-crop.jpg" }],
+      degraded: false,
+      uniqueCardsRead: 10,
+      candidateCount: 1,
+    });
+    resolveOwnedPrintings.mockResolvedValue(ownedMap());
+
+    const [row] = (await getRankedList("user_1")).items;
+
+    expect(row.imageUri).toBe("owned.jpg");
+    expect(row.printedName).toBe("Freya, Queen of the Valkyries");
+  });
+
+  // A commander scored from a collection row since removed, and the fail-soft path —
+  // `resolveOwnedPrintings` swallows its own failure and returns an empty map. Both
+  // have to leave the row exactly as the catalog had it.
+  it("leaves a row the lookup does not name on the oracle art", async () => {
+    loadScores.mockResolvedValue({
+      items: [{ ...item("unowned", 90), imageUri: "oracle.jpg", artCropUri: "oracle-crop.jpg" }],
+      degradedOracleIds: [],
+    });
+    resolveOwnedPrintings.mockResolvedValue(ownedMap());
+
+    const [row] = (await getRankedList("user_1")).items;
+
+    expect(row.imageUri).toBe("oracle.jpg");
+    expect(row.artCropUri).toBe("oracle-crop.jpg");
+    expect(row.printedName).toBeUndefined();
+  });
+
+  // Built commanders are filtered BEFORE the lookup: resolving a printing for a row
+  // nobody draws is work spent on nothing, and this lane can be hundreds of rows.
+  it("asks only about the rows that survive the built filter", async () => {
+    loadScores.mockResolvedValue({
+      items: [item("kept", 90), item("built", 95)],
+      degradedOracleIds: [],
+    });
+    loadBuiltCommanderIds.mockResolvedValue(new Set(["built"]));
+
+    await getRankedList("user_1");
+
+    expect(resolveOwnedPrintings).toHaveBeenCalledWith("user_1", ["kept"]);
+  });
 });
 
 describe("getRankedList", () => {

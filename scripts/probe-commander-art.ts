@@ -9,6 +9,8 @@
 //   for the commander, and for a partner.
 //   THE TILE RESOLVES TOO. `listDecksWithStats` does the same for the grid, through a
 //   separate query that could drift from the page's at any time.
+//   THE PICKER READS IT TOO. `/decks/new` lists the legends the player owns and draws
+//   each one's card image, through a loader of its own.
 //   THE FALLBACK HOLDS. A commander the player does NOT own keeps the oracle-level art,
 //   and so does a printing ingested before `printings.art_crop_uri` existed — which is
 //   EVERY printing until the next catalog refresh, so it is the state that ships first.
@@ -32,7 +34,11 @@ import { Pool, neonConfig } from "@neondatabase/serverless";
 import { drizzle } from "drizzle-orm/neon-serverless";
 import { sql } from "drizzle-orm";
 import ws from "ws";
-import { getDeckDetail, listDecksWithStats } from "../src/lib/decks/read";
+import {
+  getDeckDetail,
+  listDecksWithStats,
+  listOwnedLegalCommanders,
+} from "../src/lib/decks/read";
 import { DEFAULT_DECK_SORT } from "../src/lib/decks/sort";
 
 neonConfig.webSocketConstructor = ws;
@@ -216,6 +222,17 @@ async function run() {
       namesPair?.commanderArtCropUri, commander.card_crop);
     check("names-only caller: no printed name is resolved",
       namesPair?.commanderPrintedName, null);
+    // FIVE. The commander picker on `/decks/new`, which lists the legends the player owns
+    // and draws each one's card image. Every row there has a printing of its own by
+    // definition, so unlike the deck surfaces this one has no fallback case to speak of —
+    // what it can get wrong is asking the catalog instead of the collection.
+    const picker = await listOwnedLegalCommanders(USER);
+    const pickerRow = picker.find((c) => c.oracleId === commander.oracle_id);
+    check("commander picker: the card image is the owned printing's",
+      pickerRow?.imageUri, commander.printing_image);
+    check("commander picker: the fixture's commander is listed at all",
+      pickerRow !== undefined, true);
+
   } finally {
     // EVERY restoration is attempted, and the SHARED row goes first. Sequential awaits
     // make each cleanup a gate on the next, so a transient failure deleting this run's

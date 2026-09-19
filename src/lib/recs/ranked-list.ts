@@ -1,6 +1,7 @@
 import { cache } from "react";
 import { loadBuiltCommanderIds } from "../discovery/candidates";
 import { getCollectionStats } from "../home/summary";
+import { resolveOwnedPrintings } from "../collection/owned-printings";
 import { recommendCommanders, toListItem, type CommanderListItem } from "./recommend";
 import { collectionGeneration, indexGeneration, loadScores, persistScores } from "./store";
 
@@ -72,7 +73,8 @@ export const getRankedList = cache(async function getRankedList(
   // commander.
   if (list.items.length === 0) return { ...list, candidateCount: 0 };
 
-  const items = list.items.filter((i) => !built.has(i.oracleId));
+  const visibleItems = list.items.filter((i) => !built.has(i.oracleId));
+  const items = await withOwnedArt(userId, visibleItems);
   // And the flag follows the same rule as the row filter above, for the same
   // reason: `assemble` reports degradation across everything it scored, built
   // commanders included, so an EDHREC outage touching only a built commander
@@ -83,6 +85,43 @@ export const getRankedList = cache(async function getRankedList(
   const degraded = items.some((i) => i.synergyState === "degraded");
   return { ...list, items, degraded, candidateCount: items.length };
 });
+
+/**
+ * Each row's art and name from the copy the player owns.
+ *
+ * HERE, after both paths have converged and after the built-commander filter, for the same
+ * two reasons the exclusion above lives here: the stored path and the recompute would
+ * otherwise each need their own copy of the rule, and a warm `commander_scores` set would
+ * serve oracle art for ever. `commander_scores` stores no art at all — `loadScores` joins
+ * `cards` at read time — so nothing persisted goes stale when a player picks a different
+ * printing.
+ *
+ * ONE query for the whole list, after the filter rather than before it: a built commander
+ * is not drawn, so resolving its printing is work nobody sees. This lane is the cards the
+ * player OWNS, so most rows resolve; a row that does not — a commander scored from a
+ * collection row since removed — keeps the oracle art it had.
+ *
+ * Fail-soft inside `resolveOwnedPrintings`: a failed lookup returns an empty map and every
+ * row keeps the oracle-level art, which is exactly what this lane drew before.
+ */
+async function withOwnedArt(
+  userId: string,
+  items: CommanderListItem[],
+): Promise<CommanderListItem[]> {
+  if (items.length === 0) return items;
+  const owned = await resolveOwnedPrintings(userId, items.map((i) => i.oracleId));
+  if (owned.size === 0) return items;
+  return items.map((i) => {
+    const own = owned.get(i.oracleId);
+    if (!own) return i;
+    return {
+      ...i,
+      imageUri: own.imageUri ?? i.imageUri,
+      artCropUri: own.artCropUri ?? i.artCropUri,
+      printedName: own.printedName,
+    };
+  });
+}
 
 async function assemble(
   userId: string,

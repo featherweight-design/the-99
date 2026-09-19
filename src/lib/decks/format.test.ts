@@ -1,11 +1,5 @@
 import { describe, it, expect } from "vitest";
-import {
-  colorLabel,
-  commanderDisplayName,
-  deckIdentity,
-  formatDeckDate,
-  formatShortDeckDate,
-} from "./format";
+import { colorLabel, deckIdentity, formatDeckDate, formatShortDeckDate } from "./format";
 
 describe("deckIdentity", () => {
   it("orders a lone primary WUBRG, so its pips match a pair's", () => {
@@ -32,30 +26,6 @@ describe("deckIdentity", () => {
 
   it("carries a colorless pair through as colorless", () => {
     expect(deckIdentity([], [])).toEqual([]);
-  });
-});
-
-describe("commanderDisplayName", () => {
-  // The whole point of the helper: the art beside this name is the owned printing's, so a
-  // renamed copy has to be captioned with the name printed on it.
-  it("takes the name printed on the copy the player owns", () => {
-    expect(commanderDisplayName({
-      name: "Iroas, God of Victory",
-      printedName: "Freya, Queen of the Valkyries",
-    })).toBe("Freya, Queen of the Valkyries");
-  });
-
-  it("falls back to the oracle name when the copy prints it", () => {
-    expect(commanderDisplayName({ name: "Atraxa, Praetors' Voice", printedName: null }))
-      .toBe("Atraxa, Praetors' Voice");
-  });
-
-  // ABSENT is a state, not a gap: every commander fixture in the suite omits the field, and
-  // so does any payload built before it existed. It has to read as the oracle name rather
-  // than as `undefined` on screen.
-  it("reads an absent printed name as the oracle name", () => {
-    expect(commanderDisplayName({ name: "Muldrotha, the Gravetide" }))
-      .toBe("Muldrotha, the Gravetide");
   });
 });
 

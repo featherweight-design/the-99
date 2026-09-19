@@ -5,6 +5,7 @@ import { db } from "../../../db";
 import { cards } from "../../../db/schema";
 import { requireUserId } from "../../../lib/auth";
 import { isCommanderCandidate } from "../../../lib/recs/score";
+import { resolveOwnedPrintings } from "../../../lib/collection/owned-printings";
 import { listOwnedLegalCommanders } from "../../../lib/decks/read";
 import { parseSelectParam } from "../../../lib/decks/selection-param";
 import { CreatePreFilled } from "../../../components/decks/create-pre-filled";
@@ -26,13 +27,17 @@ export default async function NewDeckPage({
       .where(eq(cards.oracleId, commanderParam));
 
     if (row && row.commanderLegal && isCommanderCandidate(row)) {
+      // The copy the reader owns, where they own one. This door arrives from a synergy
+      // link rather than from the picker, so it misses the list's own resolution — and
+      // it draws the same card art at a larger size than any row does.
+      const owned = (await resolveOwnedPrintings(userId, [row.oracleId])).get(row.oracleId);
       return (
         <CreatePreFilled
           oracleId={row.oracleId}
-          name={row.name}
+          name={owned?.printedName ?? row.name}
           typeLine={row.typeLine}
           colorIdentity={row.colorIdentity}
-          imageUri={row.imageUri}
+          imageUri={owned?.imageUri ?? row.imageUri}
           // Shape-checked here, legality-checked in `createDeck`: this page has
           // no commander context until the row above resolves, and the action
           // has to re-check whatever it is handed anyway.

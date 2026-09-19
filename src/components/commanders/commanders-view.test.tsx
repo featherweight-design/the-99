@@ -284,6 +284,52 @@ describe("CommandersView windowing under the colour filter", () => {
   });
 });
 
+// The lane lists cards the reader OWNS, so a renamed copy is captioned with the name
+// printed on it — and then the controls that read a name have to read both, or the row
+// becomes unreachable by a name it is legitimately known by.
+describe("CommandersView · a renamed copy", () => {
+  const renamed = () => {
+    const [row, ...rest] = results(3);
+    return [
+      { ...row, name: "Iroas, God of Victory", printedName: "Freya, Queen of the Valkyries" },
+      ...rest,
+    ];
+  };
+  const searchFor = (q: string) =>
+    fireEvent.change(screen.getByRole("searchbox"), { target: { value: q } });
+
+  it("finds the row by the name on the card", () => {
+    view(renamed());
+    searchFor("freya");
+
+    expect(screen.getAllByRole("listitem")).toHaveLength(1);
+    expect(screen.getByText("Freya, Queen of the Valkyries")).toBeTruthy();
+  });
+
+  // The oracle name is what a player who knows the card types, and it is the only name
+  // `/discover` has — so dropping it would be a regression on both lanes at once.
+  it("finds it by the oracle name as well", () => {
+    view(renamed());
+    searchFor("iroas");
+
+    expect(screen.getAllByRole("listitem")).toHaveLength(1);
+  });
+
+  // A-Z is alphabetical in the names on screen or it is not alphabetical at all: sorted
+  // on the oracle name, `Freya` files under I and reads as one card out of place.
+  it("orders A-Z by the name drawn", () => {
+    // Through the URL, as the `free` mode above is: `o=name` is what the reader's own
+    // press writes, and the view reads its order from `window.location`.
+    window.history.replaceState(null, "", "/commanders?o=name");
+    // `Freya` sorts first among `General 1`/`General 2`; `Iroas` would sort last.
+    view(renamed());
+
+    const names = screen.getAllByRole("listitem").map((li) => li.textContent ?? "");
+    expect(names[0]).toContain("Freya, Queen of the Valkyries");
+    window.history.replaceState(null, "", "/commanders");
+  });
+});
+
 // Which zero state answers for an empty list follows which control emptied it.
 // The colour state promises a pip to drop; a query has no pip, so a search-only
 // zero used to fall through to an empty list under a rack still claiming

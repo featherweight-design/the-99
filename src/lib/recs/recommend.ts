@@ -60,6 +60,19 @@ export type CommanderListItem = Pick<
   /** Preformatted receipts line — overlapOwned can be large, so only the
       rendered preview string ships to the client. */
   receipts: string;
+  /**
+   * The name printed on the copy the player owns, where it differs from the oracle
+   * card's. Null when they own no copy of this commander, or when the copy they own
+   * prints the oracle name — which is almost every printing.
+   *
+   * Resolved in `getRankedList` rather than here: this module scores a commander out
+   * of the catalog and the collection's PRINTINGS are a different question, asked once
+   * for the whole list after both the stored and the recomputed paths have converged.
+   *
+   * Optional for the reason the deck payloads' twin is: fixtures across the suite build
+   * these literals without touching the catalog, and absent means null.
+   */
+  printedName?: string | null;
 };
 
 export function toListItem(r: RankedCommander): CommanderListItem {
