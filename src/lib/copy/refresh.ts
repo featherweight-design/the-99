@@ -111,7 +111,7 @@ export const refreshCopy = {
     // Tile detail row — the one figure that explains the status.
     //
     // Both clauses read "to buy" rather than "unowned". Since seniority landed,
-    // the figure counts trips to a shop, and a card an older finished deck has
+    // the figure counts trips to a shop, and a card an older committed deck has
     // already taken is one of them while being a card the player owns. The pill
     // BESIDE it says "To buy" and means the same thing — it sits on the progress
     // row now rather than on the art above this figure.

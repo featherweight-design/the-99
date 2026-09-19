@@ -14,7 +14,7 @@ import { availabilityState } from "./availability";
 
 /**
  * A card you don't own, or one you own whose copies are already sleeved into
- * finished lists — `over` from this deck's own vantage (amendment 5, #281).
+ * committed decks — `over` from this deck's own vantage (amendment 5, #281).
  * Both are one trip to a shop.
  *
  * The two halves cannot overlap: `availabilityState`'s first guard is

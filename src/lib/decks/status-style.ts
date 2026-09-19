@@ -93,7 +93,7 @@ export function statusPillStyle(status: StatusPill): CSSProperties {
  * special case; 0 built is already the empty track the states file draws.
  *
  * `bodySize` is the deck's own ceiling, not a constant: a pair deck is full at
- * 98, and measuring it against 99 would draw a finished deck's bar short of the
+ * 98, and measuring it against 99 would draw a committed deck's bar short of the
  * track. See `deckBodySize()` in `deck-size.ts`.
  */
 export function statusBarStyle(

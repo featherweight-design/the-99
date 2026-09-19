@@ -75,7 +75,7 @@ export type CommanderRankings = {
  * deleted.
  *
  * 3 — free mode now lists from the free pool rather than only ranking against
- * it, so version 2's `freeRanking` holds commanders whose own card a finished
+ * it, so version 2's `freeRanking` holds commanders whose own card a committed
  * deck has sleeved. The payload's SHAPE is unchanged and so are the reader's
  * rows — which is the whole problem, because the tag is dropped by the reader's
  * own writes and nothing here is a write. Only the cached RESULT moved. Without

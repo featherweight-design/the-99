@@ -25,7 +25,7 @@ const UNOWNED = "bg-transparent [border:1px_dashed_var(--fg-locked)]";
 type OwnershipDotProps = {
   owned: boolean;
   /**
-   * Owned, but already spoken for by a finished deck. Only read when `owned`
+   * Owned, but already spoken for by a committed deck. Only read when `owned`
    * is true, so a caller without the aggregate keeps passing `owned` alone and
    * gets the two states it has always had.
    */

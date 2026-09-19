@@ -133,7 +133,7 @@ export function byNovelty(a: Ordered, b: Ordered): number {
  * "Per deck", not "per built deck", and the distinction is deliberate: a BREW
  * counts, exactly as it counts for `notBuiltBy`, which joins no
  * `deck_versions`. Requiring a committed version here would have the two
- * disagree — a commander kept off the lane because an unfinished brew uses it,
+ * disagree — a commander kept off the lane because a draft uses it,
  * while that same brew's themes read as unplayed on every other row. The old
  * wording said "built deck" and was the looser claim's own contradiction.
  */

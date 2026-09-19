@@ -810,7 +810,7 @@ function ProxiesFigure({ width }: { width: AboutWidth }) {
  *
  * The pairing is the point, so both are drawn together on every row. Before this
  * feature the dot carried both facts and said the wrong one — a card with three
- * spare copies read the same as a card sleeved into a finished deck — and a
+ * spare copies read the same as a card sleeved into a committed deck — and a
  * figure showing the marker alone would teach the half that was never broken.
  *
  * Real components, real fixtures: `OwnershipDot` and `AvailabilityMarker` are

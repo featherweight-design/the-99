@@ -95,7 +95,7 @@ export function CommitmentsCard({
         />
 
         {/* The collection's availability view, filtered to the two states these
-            rows count — cards a finished deck has sleeved, and cards more than
+            rows count — cards a committed deck has sleeved, and cards more than
             one has claimed. `/collection` with no filter would be the whole
             collection, which is not what "review" means here. */}
         <GhostButton

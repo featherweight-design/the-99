@@ -56,7 +56,7 @@ export function FilterRack({
   /** Null unless `Exactly` is active AND it costs rows `Any` would have shown. */
   excludedByExactly: number | null;
   /** Owned lane only. Null unless free mode is on AND it hid commanders whose
-      own card a finished deck has sleeved. */
+      own card a committed deck has sleeved. */
   sleevedByFree?: number | null;
   /** Discover only: a ranking order missed the payload cache and the server is
       answering. Every other control, and every other order, narrows or arranges

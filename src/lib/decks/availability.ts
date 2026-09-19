@@ -133,7 +133,7 @@ export type Availability = {
   soft: number;
   /**
    * Copies not spoken for, FROM THE VANTAGE THIS WAS LOADED WITH. Negative when
-   * finished decks want more copies than exist.
+   * committed decks want more copies than exist.
    *
    * Off-decklist (no `excludeDeckId`) this is `owned − hard`. On a deck's own
    * decklist it is `owned − ownClaim − seniorHard`, because Addendum 2 §6
@@ -150,7 +150,7 @@ export type Availability = {
    */
   free: number;
   /**
-   * Every deck claiming this card — finished and brewing alike — minus the
+   * Every deck claiming this card — committed and draft alike — minus the
    * excluded deck when one was passed, so this follows the same vantage rule as
    * `free`. Ordered by name, then by id; the id is the tiebreak, not decoration,
    * because names collide, and without it two decks sharing a name would order
@@ -221,9 +221,9 @@ export type AvailabilityState = "free" | "soft" | "hard" | "over";
  * `free < 0` and presents as `over`.
  *
  * The hard state is therefore unreachable in this vantage — for ANY deck, not
- * only a finished one. Deck maturity is not an input here: it is already spent
+ * only a committed one. Deck maturity is not an input here: it is already spent
  * upstream, deciding whether each claim counted as hard or soft. Addendum 2
- * words the consequence as "inside a finished deck", because that is the case
+ * words the consequence as "inside a committed deck", because that is the case
  * it draws, but the caller controls the vantage and nothing checks maturity at
  * this layer. Pass `selfExcluded` only when `free` came from a query given the
  * matching `excludeDeckId`; passing it against an unexcluded figure silently
@@ -234,7 +234,7 @@ export type AvailabilityState = "free" | "soft" | "hard" | "over";
  * claim, this deck's included — so a soft claim on the copy is still the most
  * severe thing true about it, and returning silence before reading `soft` hid a
  * state the design draws. It is reached only where `soft > 0`, so a card no
- * unfinished deck wants is silent exactly as before.
+ * draft wants is silent exactly as before.
  *
  * The `owned <= 0` guard is tested against TRUE owned, never the excluded
  * supply, and it stays first: it keeps the marker off cards the player does not

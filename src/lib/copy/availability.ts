@@ -26,7 +26,7 @@
 // holding a card is not competition for itself, and "none free — in Atraxa"
 // rendered inside Atraxa names the deck the player is already inside. The soft
 // copy already said "other brews" for this reason. Two consequences:
-//   • inside a finished deck the HARD state is unreachable — a second finished
+//   • inside a committed deck the HARD state is unreachable — a second committed
 //     claim on one copy is over-commitment, so it presents as `overAlsoIn`.
 //   • /collection and the commander surfaces have no current deck, so no
 //     exclusion applies there; they compute against everything, as in #43.
@@ -274,9 +274,9 @@ export const availabilityCopy = {
     // and the parts have to add up on screen, so every count below comes
     // straight from the query rather than being derived here.
     //
-    // FINISHED LISTS HOLD, UNFINISHED LISTS WANT. That is the whole model in two
+    // COMMITTED DECKS HOLD, DRAFTS WANT. That is the whole model in two
     // verbs, and it is the same distinction `receipt.wantedByBrew` draws. A
-    // finished list has the card; an unfinished one has asked for it and holds
+    // committed deck has the card; a draft has asked for it and holds
     // nothing yet. Do not level these to one verb: the difference between them
     // is exactly what `free` counts.
     detailClaimsHeading: "In your decks",
@@ -323,7 +323,7 @@ export const availabilityCopy = {
     // form has to lie about one of the two cases.
     //
     // Scoped to the lists that WANT it, not to the rows above. The soft state is
-    // `free > 0 && soft > 0`, which permits a finished list holding copies at the
+    // `free > 0 && soft > 0`, which permits a committed deck holding copies at the
     // same time, so the design's "none of those lists is finished" would read as
     // a claim about every row on screen and contradict the ones marked `holds`.
     // `wants` is the same verb `detailClaimWants` prints, so the sentence points
@@ -339,12 +339,12 @@ export const availabilityCopy = {
     detailOverNote:
       "More committed decks want it than you own. Nothing’s broken. It’s a shopping decision.",
     // Why the shortfall above is smaller than the rows suggest. `short N` counts
-    // finished lists only, deliberately — nothing is sleeved in a brew, so no copy
+    // committed decks only, deliberately — nothing is sleeved in a brew, so no copy
     // has gone anywhere — and a reader looking at five lists wanting one card has
     // no way to tell that from a miscount. This says which lists were left out and
     // why, and prints no figure of its own beyond the count of them.
     //
-    // Drawn only where a finished list is already involved. In the soft state
+    // Drawn only where a committed deck is already involved. In the soft state
     // every claimant is a brew and `detailSoftNote` is the whole story, so this
     // would repeat it.
     detailBrewsUncounted: (brewCount: number) =>

@@ -29,7 +29,7 @@ export const COVERAGE_SORT_LABELS: Record<CoverageSortKey, string> = {
  * use, over-committed.
  *
  * FOUR buckets where this shipped two. The old partition read `committedTo`,
- * which cannot tell a brew's soft want from a finished deck's sleeved claim, so
+ * which cannot tell a brew's soft want from a committed deck's sleeved claim, so
  * two readings the marker draws differently sorted the same.
  *
  * The order keeps the shipped promise — free first — and ranks the rest by

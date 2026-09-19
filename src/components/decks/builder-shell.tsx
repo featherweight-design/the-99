@@ -324,7 +324,7 @@ export function BuilderShell({
     unresolvedCount: unresolvedCardCount(deck.unresolvedRows),
     // `isShoppingCard` is the client-side twin of `loadDeckBuyRows`, which is
     // what gives the deck list its pill. Both halves of the shopping list count
-    // — unowned, and owned but held by an older finished deck — so this pill and
+    // — unowned, and owned but held by an older committed deck — so this pill and
     // the Shopping filter's own count can never disagree.
     unfundedCount: cardCopies(deck.cards.filter(isShoppingCard)),
     bodySize,
@@ -370,8 +370,8 @@ export function BuilderShell({
       if (state === "over") {
         overCommitted++;
         // Only when a claiming deck is actually named. Row 12.9's sentence
-        // counts finished lists out loud, and with an empty name array it would
-        // say "on 0 finished lists" — the same hole `markerAria` guards.
+        // counts committed decks out loud, and with an empty name array it would
+        // say "on 0 committed decks" — the same hole `markerAria` guards.
         const named = hardDecks(a);
         lone =
           named.length > 0
@@ -384,12 +384,12 @@ export function BuilderShell({
     return {
       overCommitted,
       // Row 12.15, the pre-99 window. This does NOT fall out of the arithmetic:
-      // `soft` counts claims by OTHER unfinished decks, so a deck of this
+      // `soft` counts claims by OTHER drafts, so a deck of this
       // player's own reaching 99 leaves those claims standing.
       //
       // Read through `countStatus`, NOT the pill: the window is about the COUNT
       // — a list short of its body size — and since R6 the pill answers the
-      // phase first, so a finished 99 that has never been committed reads
+      // phase first, so a full 99 that has never been committed reads
       // `Draft` and would have held this window open for ever. Same single
       // threshold as before, asked of the half that owns it.
       softClaimed: countStatus({

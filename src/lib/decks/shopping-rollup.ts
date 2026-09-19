@@ -16,7 +16,7 @@
 // "To buy" is the seniority question, not the ownership one, and the rows come
 // from `loadDeckBuyRows` so that this roll-up, the status pill and a deck's own
 // Shopping list are one definition. A card owned in one copy and wanted by four
-// finished decks is three copies to buy: the oldest deck is holding the one
+// committed decks is three copies to buy: the oldest deck is holding the one
 // that exists. Counting only cards owned in zero copies — which this did — made
 // the tile disagree with the deck page it links to.
 //

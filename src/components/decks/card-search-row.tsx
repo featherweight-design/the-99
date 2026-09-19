@@ -51,7 +51,7 @@ interface CardSearchRowBodyProps {
    * count: a `deck_cards` row, and the commander, which is none but is still
    * dropped by the read (availability-query.ts:25).
    * Unclaimed rows must NOT set it: `free === 0` there is a genuine hard claim
-   * by some other finished deck, and self-exclusion would silence it (5.6).
+   * by some other committed deck, and self-exclusion would silence it (5.6).
    */
   selfExcluded?: boolean;
   /** The colour behind the marker, for the over glyph's seam. */

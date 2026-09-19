@@ -263,7 +263,7 @@ export const aboutEntries: readonly AboutEntry[] = [
     // entry’s caption is about would be inside a sheet no specimen can open.
     width: 'plate',
     caption:
-      "Every commander you own and have not built yet, ranked by fit. Build from chooses which of your cards the scores are counted against: all of them, or only the ones no finished deck is holding. Where we could not read a commander’s most-played list, the bar has two segments instead of three and the score is out of 40.",
+      "Every commander you own and have not built yet, ranked by fit. Build from chooses which of your cards the scores are counted against: all of them, or only the ones no committed deck is holding. Where we could not read a commander’s most-played list, the bar has two segments instead of three and the score is out of 40.",
     keys: [],
     since: 1,
   },
@@ -617,7 +617,7 @@ export const aboutEntries: readonly AboutEntry[] = [
     keys: [
       'New and Draft belong to a deck you have never committed: New has nothing in it and shows when it was made, Draft is that deck at any length. Building is a committed deck now short of its body size.',
       'Over is past the body size and Unresolved is at it, each with something to settle: too many cards, or lines we could not put a card to.',
-      'To buy is the one that catches people: a finished 99 you cannot sleeve, because some of it is not on your shelf.',
+      'To buy is the one that catches people: a full deck you cannot sleeve, because some of it is not on your shelf.',
       'Complete is the only status that means you can put the deck on a table.',
     ],
     since: 1,

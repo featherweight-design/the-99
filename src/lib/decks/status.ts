@@ -50,7 +50,7 @@
  * every half-finished idea fell into.
  *
  * "To buy" is not the same question as "do you own a copy". A card the player
- * owns can still be a card this deck has to buy, because an older finished deck
+ * owns can still be a card this deck has to buy, because an older committed deck
  * is already holding the copies — one Sol Ring across four sleeved decks is
  * three purchases. `unfundedCount` is that count and is what the last two rows
  * turn on; ownership alone would call such a deck `Complete` while its own
@@ -106,7 +106,7 @@ export function statusPill(args: {
    * restate it.
    *
    * The `Complete` branch reads THIS and not `ownedCount`: a deck whose only
-   * gaps are printed cards is finished, and the pill has always been a claim
+   * gaps are printed cards is Complete, and the pill has always been a claim
    * about the list rather than about a box.
    */
   coveredCount?: number;

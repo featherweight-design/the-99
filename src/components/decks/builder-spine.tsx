@@ -26,7 +26,7 @@ interface BuilderSpineProps {
   /** Cards in this deck the player is short of. Design table §12. */
   overCommitted: number;
   /**
-   * Cards in this deck that some unfinished list also wants. Disjoint from
+   * Cards in this deck that some draft also wants. Disjoint from
    * `overCommitted` — the states are a partition — which is what lets the soft
    * line say "N more" and have the two figures sum.
    */

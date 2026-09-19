@@ -28,8 +28,8 @@
  *    boxes, binders or sleeves. Hence `in your collection` and never `in the box`.
  * 3. `spoken for` IS NOT USED. `spokenForTwice` ships elsewhere meaning OVER-COMMITTED; the
  *    inert heading is `Nothing to choose here` instead.
- * 4. `holds` / `wants` CONSIDERED AND REJECTED. Those two carry the app's model — finished
- *    lists hold, unfinished lists want — so borrowing them would make `wants it` mean
+ * 4. `holds` / `wants` CONSIDERED AND REJECTED. Those two carry the app's model — committed
+ *    decks hold, drafts want — so borrowing them would make `wants it` mean
  *    "committed but lost the copy" here and "not committed at all" one row away. Allocation is
  *    a third axis and gets a third pair: `gets it` and `buys it`.
  *

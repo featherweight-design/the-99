@@ -114,7 +114,7 @@ function chipAria(card: RoleCard, hasFigure: boolean, showFigures: boolean): str
   // with no clause on it.
   //
   // ONE CASE IS NOT BYTE-IDENTICAL, and it is deliberate rather than an
-  // oversight: a card with spare copies that ALSO sits in a finished deck used
+  // oversight: a card with spare copies that ALSO sits in a committed deck used
   // to end `Already in Atraxa.`, because the retired suffix read `committedTo`,
   // which is deck membership and not a claim. That card is free — a copy is
   // there to use — and the suffix was the same false certainty this round was

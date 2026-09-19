@@ -70,7 +70,7 @@ export function ResolutionExpander({
   // `useCardSearch` passes `deckId`, so every figure comes back with this
   // deck's own claim already subtracted. `selfExcluded` may therefore be set
   // wherever this deck held a claim the query dropped — and only there, or a
-  // genuine hard claim by another finished deck resolves to silence.
+  // genuine hard claim by another committed deck resolves to silence.
   //
   // A resolution row can absolutely land on a card this deck already holds: a
   // duplicate import line, a basic, or the commander, which is no `deck_cards`

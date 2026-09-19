@@ -23,9 +23,9 @@ import { commanderPool, type PoolCard } from "../recs/score";
  * clause by severity without double-counting anything.
  */
 export type ReceiptCounts = {
-  /** Fitting owned cards a FINISHED deck has sleeved (`hard` or `over`). */
+  /** Fitting owned cards a COMMITTED deck has sleeved (`hard` or `over`). */
   inUse: number;
-  /** Fitting owned cards only an unfinished brew lists (`soft`). */
+  /** Fitting owned cards only a draft lists (`soft`). */
   wantedByBrew: number;
 };
 
@@ -39,7 +39,7 @@ export type ReceiptCounts = {
  *
  * `hard` and `over` are one count; `soft` is the other. That is the same
  * asymmetry the free pool draws and it is the point of the two severities: a
- * card sleeved into a finished deck is gone, a card an unfinished brew merely
+ * card sleeved into a committed deck is gone, a card a draft merely
  * lists is still in the box. A card with no availability row is free — basics
  * have no row by design.
  *

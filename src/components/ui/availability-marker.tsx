@@ -51,7 +51,7 @@ export function markerAria(a: Availability, opts?: MarkerOpts): string | null {
     case "hard":
       // No names is a real shape, not an impossible one: a degraded read can
       // return counts without them. Counting to zero out loud ("on 0 of your
-      // finished lists") is worse than the base form the copy file ships for
+      // committed decks") is worse than the base form the copy file ships for
       // exactly this case.
       if (opts?.nameless || hard.length === 0) return c.hardAriaCountOnly;
       return hard.length === 1
@@ -65,10 +65,10 @@ export function markerAria(a: Availability, opts?: MarkerOpts): string | null {
       // Two ways to lose the count, and the same answer to both — which is why
       // this guard is shaped exactly like the hard branch's. `nameless` is
       // /collection's contract and every chip's, where the label draws a bare
-      // `short N`; announcing "3 of your finished lists" there reads out a
+      // `short N`; announcing "3 of your committed decks" there reads out a
       // number the surface deliberately does not draw. And with no names at all
       // (a degraded read) the shortfall is still true where the count is not,
-      // since `overAria(n, 0)` would say "0 of your finished lists include this
+      // since `overAria(n, 0)` would say "0 of your committed decks include this
       // card". Both drop to the count-free shortfall the label already shows.
       if (opts?.nameless || hard.length === 0) {
         return c.overAriaCountOnly(-a.free);

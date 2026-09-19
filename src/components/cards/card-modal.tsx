@@ -196,7 +196,7 @@ function ProxyDetail({ card }: { card: BrowseCard }) {
  * draws for this exact question.
  *
  * The allocation half prints only while the card is contested. With copies enough for
- * everyone every finished list gets its ask, and `gets it` on every row is a word per row
+ * everyone every committed deck gets its ask, and `gets it` on every row is a word per row
  * saying nothing.
  */
 function claimLabel(claim: DeckClaim, allocated: number, contested: boolean): string {
@@ -222,13 +222,13 @@ function AvailabilityDetail({ card }: { card: BrowseCard }) {
   const c = availabilityCopy.collection;
   // Who actually gets each copy, from the one implementation of that arithmetic — the same
   // call the arrivals receipt and the chooser's preview make. A row's verb is this and not
-  // `claim.mature`: a finished list that came second to the only copy owned holds nothing.
+  // `claim.mature`: a committed deck that came second to the only copy owned holds nothing.
   const allocation = allocateClaims(a);
   const allocated = new Map(allocation.map((cl) => [cl.deckId, cl.allocated]));
-  // Contested means a finished list asked for a copy the supply could not give it. Only then
+  // Contested means a committed deck asked for a copy the supply could not give it. Only then
   // does saying who gets it tell the reader anything.
   const contested = allocation.some((cl) => cl.allocated < cl.quantity);
-  // The brews, which no figure in this block counts. Named where a finished list is already
+  // The brews, which no figure in this block counts. Named where a committed deck is already
   // in play; in the soft state every claimant is one and `detailSoftNote` says so already.
   const brews = a.claims.filter((cl) => !cl.mature).length;
   const note =
