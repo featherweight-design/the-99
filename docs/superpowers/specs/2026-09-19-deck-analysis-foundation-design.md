@@ -717,40 +717,45 @@ sub-project hands forward. It is survivable because **the land count is the numb
 mattered most and it is now in hand** — the motivating deck's fault was a mana base, not a
 ramp count.
 
-### 4A.6 The retirement is bigger than it looks, and this was measured too
+### 4A.6 What the measured targets actually touch
 
-An earlier draft said sub-project 2 "retires `ROLE_TARGETS`". Reading the consumers rather
-than assuming them, that is naive. **Eight non-test files read it**, and they are not all in
-the building path:
+Two drafts got this wrong in opposite directions, so it is settled here by reading the
+consumers rather than by inference.
 
-| consumer | what it does with the targets |
+The first draft said sub-project 2 "retires `ROLE_TARGETS`". The second, having counted eight
+non-test consumers including `src/lib/recs/score.ts`, said the migration reaches
+`commander_scores` and is therefore a rescore. **Both are wrong, and the reason is the same
+one §4A.5 already established.**
+
+`ROLE_TARGETS` holds **only the four functional roles** — ramp, draw, removal, wipes — and
+`computeFit` (`score.ts:167`) folds exactly those into the commander score. It excludes lands
+explicitly (`if (role !== "land")`, `score.ts:329`) and never reads `landTarget`.
+
+**Those four roles are precisely the four this sub-project cannot measure.** So the measured
+data — the land count and the type composition — has **no overlap at all** with what the
+scoring engine reads. The migration cannot reach `commander_scores`, by construction rather
+than by choice.
+
+What the measured land target actually touches, in full:
+
+| file | call sites |
 |---|---|
-| `src/lib/recs/score.ts:168` | folds them into the **commander score itself** — the ranking behind `/commanders` and `/discover` |
-| `src/lib/recs/score.ts:356` | derives `roleGaps` |
-| `src/lib/decks/fill.ts` | the fill plan's ceiling and its per-role stopping condition |
-| `src/lib/decks/suggest.ts` | suggestion targets |
-| `src/lib/recs/weakest-role.ts` | the weakest-role read |
-| `src/components/commanders/role-chips.tsx` | draws a target per chip |
-| `src/components/commanders/coverage-section.tsx` (×2) | draws targets in Role Coverage |
-| `src/lib/about/fixtures.ts` | an About fixture pinned against the current values |
+| `src/lib/decks/deck-size.ts` | `landTarget()` itself |
+| `src/lib/decks/fill.ts` | 2 — the plan's ceiling and the land ceiling |
+| `src/lib/decks/suggest.ts` | 3 — and it re-exports `landTarget` |
 
-`landTarget()` has its own consumers in `fill.ts` and `suggest.ts`.
+Three files, all in the deck-building path. The scoring engine, `role-chips.tsx` and
+`coverage-section.tsx` keep flat targets because they read the unmeasurable four, and there is
+a principled reason they should anyway: a **ranking** wants one yardstick across commanders,
+where a **deck reading** wants accuracy for one.
 
-**What follows, and it changes sub-project 2's size.** Changing a target changes
-`commander_scores` — which is stored, stamped by a writer version, and read by two of the
-app's busiest routes. A measured per-commander land target is not a swap inside the fill path;
-it reaches the ranking, which means a rescore, which means `probe:writer-version` and
-`probe:score-lock` territory.
+**This sub-project still retires nothing.** `fitSkeleton` reads the measured targets alone and
+touches none of the files above. Sub-project 2 owns the migration, and it is a deck-surface
+change of three files rather than the rescore the previous draft feared.
 
-**So this sub-project retires nothing.** It computes the measured targets and reads them in
-`fitSkeleton` alone, which touches none of the eight. Sub-project 2 owns the migration and
-must plan for the scoring engine explicitly rather than discovering it — and it may
-legitimately decide the ranking keeps flat targets while the deck surfaces use measured ones,
-because a ranking wants stability across commanders and a deck reading wants accuracy for one.
-
-Recorded so it cannot be quietly skipped: a measured table beside an asserted constant is two
-sources of truth for overlapping questions, and this one now has a named owner and a known
-blast radius rather than just an expiry.
+Recorded so it cannot be quietly skipped: a measured target beside an asserted constant is two
+sources of truth, and here the line between them is principled — measurable versus not — which
+is why both may legitimately stand.
 
 ### 4A.7 Tables
 
@@ -1449,11 +1454,10 @@ exists rather than a thing it could also do. It is placed second rather than fir
 because the floor it acts on must be measured, printed and argued with before anything is
 built on it (§4A.4).
 
-**It is also the largest of the eight, and that was measured rather than guessed.** §4A.6
-walks its consumers: a measured land target reaches `commander_scores`, which is stored,
-writer-stamped and read by `/commanders` and `/discover`. Anyone sequencing this should plan
-it as a scoring change with a deck-surface benefit, not as a deck-surface change — and should
-decide early whether the ranking keeps flat targets while deck readings use measured ones.
+**Its size was checked rather than assumed, twice.** §4A.6 walks the consumers: the measured
+land target touches three files, all in the deck-building path, and cannot reach
+`commander_scores` because the scoring engine reads only the four roles this sub-project
+cannot measure. An intermediate draft of this spec claimed otherwise and was wrong.
 
 **Pod comparison** is the strongest of the unplaced candidates and the most likely home for a
 comparative read (§2.3). It is what Hugh's pod already does by hand before a session, it is
