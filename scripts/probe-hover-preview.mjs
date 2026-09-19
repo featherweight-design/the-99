@@ -237,7 +237,16 @@ async function run() {
       } else {
         await door.click();
         await page.waitForTimeout(1_500);
-        await measure(page, "top-off", onPage(page, '[data-top-off-rows] > div'));
+        // CANDIDATE rows only. That container's direct children also include
+        // the sticky column header and any illegal or set-aside rows, none of
+        // which carries a preview handler — and each one eats an attempt, so a
+        // working provider reads as missing whenever they come first. The
+        // checkbox is what makes a row a candidate.
+        await measure(
+          page,
+          "top-off",
+          onPage(page, '[data-top-off-rows] > div:has(input[type="checkbox"])'),
+        );
       }
     }
 
