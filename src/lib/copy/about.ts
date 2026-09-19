@@ -31,7 +31,7 @@
 // changes. about.test.ts pins a content hash, so a change forces either a
 // deliberate bump or a deliberate re-pin.
 
-export const ABOUT_VERSION = 5;
+export const ABOUT_VERSION = 6;
 
 export type AboutChapter = '01' | '02' | '03' | '04';
 export type AboutWidth = 'inset' | 'plate';
@@ -166,14 +166,14 @@ export const aboutEntries: readonly AboutEntry[] = [
   {
     id: 'availability',
     chapter: '01',
-    title: 'Free, in a brew, committed, over-committed',
+    title: 'Free, in a draft, committed, over-committed',
     route: '/collection?avail=inuse,over',
     width: 'plate',
     caption:
       'One copy cannot be in two committed decks at once. Instead of a status word, a card carries a diamond that says how contested it is, and a card that is free carries nothing at all.',
     keys: [
       'free — you own it and nothing has claimed it. No diamond at all, which is the commonest state in the app.',
-      'in a brew — a deck you have never committed wants it. The claim is real but not binding, and it is the state a reader is least likely to guess.',
+      'in a draft — a deck you have never committed wants it, and that deck wears the same Draft badge on your decks page. The claim is real but not binding.',
       'none free — a committed deck holds every copy. The deck that sleeved it first keeps it by default, and you can hand it to another.',
       'short 2 — the committed decks between them ask for two more copies than you own. A card you own none of is not on this lane at all; on a decklist it takes the buy mark instead.',
     ],
@@ -290,7 +290,7 @@ export const aboutEntries: readonly AboutEntry[] = [
     opens: 'opens a commander',
     width: 'inset',
     caption:
-      'The cards you already own that would go in this deck, grouped by the job they do. Each group shows what you have against what a deck needs, so a 1/3 on board wipes tells you what to fix before you start building. You can read a group in its usual order, or by availability: free copies first, then the ones a brew wants, then the ones already in use, then anything over-committed.',
+      'The cards you already own that would go in this deck, grouped by the job they do. Each group shows what you have against what a deck needs, so a 1/3 on board wipes tells you what to fix before you start building. You can read a group in its usual order, or by availability: free copies first, then the ones a draft wants, then the ones already in use, then anything over-committed.',
     keys: [],
     since: 1,
   },
@@ -302,7 +302,7 @@ export const aboutEntries: readonly AboutEntry[] = [
     opens: 'opens a commander',
     width: 'plate',
     caption:
-      "Owning a card and being free to use it are different things. A green dot means the card is yours. The note beside it says what is claiming it: one in a brew, none free, or short by however many copies your committed decks want past what you own. A card with a spare copy says nothing, because there is nothing to report.",
+      "Owning a card and being free to use it are different things. A green dot means the card is yours. The note beside it says what is claiming it: one in a draft, none free, or short by however many copies your committed decks want past what you own. A card with a spare copy says nothing, because there is nothing to report.",
     keys: [
       'the dot means you own the card and nothing else. It stays the same colour whether or not a deck is holding it.',
       'the note counts copies and never names a deck. Open the card to see which decks are holding it.',
@@ -381,8 +381,8 @@ export const aboutEntries: readonly AboutEntry[] = [
       // the two used to share one sentence as though they were one axis. The
       // page caps an entry at four keys, so this is the split that fits: by
       // WHAT IS BEING ANSWERED, which is the distinction that was missing.
-      'one mark, and only when there is something to say: `1 in a brew`, `none free`, `short N`, which also turns the row’s edge red, `$` for a card you would have to buy, or `P` for one you are printing. One slot, one answer.',
-      'a bright accent edge answers a different question: your draft has changed this row, and the edge goes when you commit.',
+      'one mark, and only when there is something to say: `1 in a draft`, `none free`, `short N`, which also turns the row’s edge red, `$` for a card you would have to buy, or `P` for one you are printing. One slot, one answer.',
+      'a bright accent edge answers a different question: you have changed this row and not committed it yet, and the edge goes when you do.',
     ],
     since: 1,
   },
@@ -447,14 +447,14 @@ export const aboutEntries: readonly AboutEntry[] = [
   {
     id: 'versions',
     chapter: '03',
-    title: 'Drafts, committing, and versions',
+    title: 'Changes, committing, and versions',
     route: '/decks',
     opens: "opens a deck’s Versions tab",
     width: 'plate',
     caption:
-      'A deck has a committed list and a draft you are working on. Every add and cut sits in the draft until you commit it, and committing cuts a version you can read back. Cards staged in a draft already count against your collection, which is why a draft can make another deck read short 1.',
+      'A deck has a committed list and the changes you are making to it. Every add and cut waits there until you commit, and committing cuts a version you can read back. Cards you have added already count against your collection, which is why editing one deck can make another read short 1.',
     keys: [
-      'the draft is reviewable before it lands: every add and cut beside the committed list, with nothing counted twice.',
+      'the changes are reviewable before they land: every add and cut beside the committed list, with nothing counted twice.',
       'a version carries its own record, so you can see whether a change helped rather than only that it happened.',
       'a deck you have never committed reads Draft however many cards it has. Commit v1 and it takes the status its list earns.',
     ],

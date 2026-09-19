@@ -599,7 +599,7 @@ rendered surfaces.
 |---|---|---|---|
 | Role chip, not owned | — | not drawn; role lists are owned cards only | — |
 | Role chip, owned free | `availabilityState` reads `free` — a spare copy remains, whatever else claims one. `owned 4 · hard 3 · free 1` is this row, not the next | desktop `CoverageChip` 6px dot: `--success` fill, `color-mix(--success 40%, --bg)` border. Phone `CoverageRow` 7px dot: `--success` fill, `1px --border`. **No marker** | `availability` reading `free`, or null |
-| Role chip, soft or hard | a brew wants a copy, or no copy is free | dot **unchanged** — `--success` at every reading, because severity moved to the marker. Count-only `AvailabilityMarker density="row" nameless`, joined to the name at 6px: mono 10.5/600/0.02em on the chip, 11.5 on the phone row. Borders unchanged | `availability` reading `soft` or `hard` |
+| Role chip, soft or hard | a draft wants a copy, or no copy is free | dot **unchanged** — `--success` at every reading, because severity moved to the marker. Count-only `AvailabilityMarker density="row" nameless`, joined to the name at 6px: mono 10.5/600/0.02em on the chip, 11.5 on the phone row. Borders unchanged | `availability` reading `soft` or `hard` |
 | Role chip, over | finished decks want more copies than exist | as above, plus the **only** border tint: `color-mix(--danger 40%, --bg)` on both geometries | `availability` reading `over` |
 | Synergy row, not owned | not in the collection | hollow 7px dot, `1px` stroke `--fg-locked` — shipped, untouched | `owned: false` |
 | Synergy row, owned free | owned, not in a deck | 7px dot `--success` fill | `owned: true`, `committed: false` |
@@ -625,7 +625,7 @@ Section-level, one value for four panels, local state, not URL-mirrored.
 |---|---|---|---|
 | Most played (default) | initial mount | selected; order is the incoming order (inclusion desc, nulls last, then name — `score.ts:144`); sub-line "Highest EDHREC inclusion first. The order that ships." | — |
 | Most played, no figures | `showFigures === false` on the commander | same selection, sub-line swaps to "No EDHREC figures on this commander. The list is in collection order."; **not disabled** | `showFigures` |
-| Availability, selectable | always — the option has shipped since #131 | option present; order ranks **four** buckets, free → soft → hard → over, stable within each; sub-line "Free to use first, then wanted by a brew, then in use, then over-committed." | `availability` per card |
+| Availability, selectable | always — the option has shipped since #131 | option present; order ranks **four** buckets, free → soft → hard → over, stable within each; sub-line "Free to use first, then wanted by a draft, then in use, then over-committed." | `availability` per card |
 | Availability, a card with no claim row | `availability` is null | ranks as `free`. Null is NO ROW — an unowned card, a basic, or a read that could not reach — and on a panel built from the owned pool that is nothing to report | — |
 | Sorted | an option is chosen | chip/row order inside each of the four panels changes; which cards fall inside `COVERAGE_CAP` (12 desktop / 6 phone) changes; expanded list re-orders; one live-region message | sort value |
 | Untouched by a sort | any sort | panel order, `roleCounts`, baseline clauses, sub-caption, expansion state, the score, the legend, the paragraph, the synergy panel | — |

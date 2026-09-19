@@ -96,7 +96,7 @@ Severity comes from `statusPill()` (`src/lib/decks/status.ts:15-24`, cited RM:21
 | # | State | Arithmetic | Renders | Source |
 |---|---|---|---|---|
 | 1.1 | **free** | `owned − hard > 0` and no soft claim | **Nothing.** No glyph, no text, no copy string, no container change, no accessible-name addition | RM:60–84, RM:79–84 |
-| 1.2 | **soft** (wanted by a brew) | at least one claim from a deck under 99, supply not exhausted | hollow diamond + count + word | RM:85–96 |
+| 1.2 | **soft** (wanted by a draft) | at least one claim from a deck under 99, supply not exhausted | hollow diamond + count + word | RM:85–96 |
 | 1.3 | **hard** (in use) | `owned − hard === 0` | solid brass diamond + `0 free` + optional deck clause | RM:85–96, CP:38–43 |
 | 1.4 | **over-committed** | `owned − hard < 0` | doubled `#C6533F` diamonds + `short N` + optional clause; **only** state that tints its container's border | RM:98–118 |
 
@@ -117,8 +117,8 @@ Self-exclusion (A2RM:141–172, RD2:47–76): on a deck's own decklist the marke
 
 | # | Key | String (verbatim) | Source |
 |---|---|---|---|
-| 1.7 | `marker.soft` | `1 in a brew` / `${softQty} in a brew` | CP:29–31 |
-| 1.8 | `marker.softAria` | `1 copy is on an unfinished deck` / `${softQty} copies are on unfinished decks` | CP:32–35 |
+| 1.7 | `marker.soft` | `1 in a draft` / `${softQty} in a draft` | CP:29–31 |
+| 1.8 | `marker.softAria` | `1 copy is on a draft` / `${softQty} copies are on drafts` | CP:32–35 |
 | 1.9 | `marker.hard` | `0 free` | CP:38 |
 | 1.10 | `marker.hardIn` | `0 free — in ${deckName}` | CP:39 |
 | 1.11 | `marker.hardMulti` | `0 free — across ${deckCount} decks` | CP:40 |
@@ -194,7 +194,7 @@ Self-exclusion applies here (§1.1). Three of five rows in the canvas carry no m
 | # | State | Trigger | Visual | Source |
 |---|---|---|---|---|
 | 4.7 | **Silent (free)** | `(owned − ownClaim) − (hard − ownHardClaim) > 0`, no soft | nothing rendered | RM:79–84 |
-| 4.8 | Soft | a sub-99 deck other than this one claims a copy | hollow glyph + `N in a brew` | RM:85–96 |
+| 4.8 | Soft | a sub-99 deck other than this one claims a copy | hollow glyph + `N in a draft` | RM:85–96 |
 | 4.9 | Hard | **unreachable inside a finished deck** — self-exclusion removes this deck's own claim | — | A2RM:141–172, RD2:47–76 |
 | 4.10 | Over-committed | supply short after exclusion | doubled red glyph + `short N`, container border `var(--avail-over-border)`. Spoken as `marker.overAriaCountOnly` | RM:98–118, CP:46, **amended #354**, **erratum 2026-09-16** |
 | 4.11 | Not owned | `owned === 0` | nothing — the guard precedes the states | RM:221–225 |
@@ -307,7 +307,7 @@ The receipt line **always renders**; the second clause is a suffix (RM:182–190
 | 8.2 | Verb — default | — | — | — | — | `receipt.fit` — `34 of your cards fit` | CP:90–104, CV:188 |
 | 8.3 | Verb — free mode | — | — | — | — | `receipt.fitFree` — verb becomes "are free" | CP:90–104, RM:182–190 |
 | 8.4 | Clause — hard | — | `#E8CE93` glyph brass | joined ` · ` | — | `receipt.inUse` / `inUseShort` — `◆ 12 already in use` | CP:90–104, CV:188 |
-| 8.5 | Clause — soft | — | `#C6B79A` | joined ` · ` | — | `receipt.wantedByBrew` — `◇ 4 wanted by a brew` | CP:90–104, CV:227 |
+| 8.5 | Clause — soft | — | `#C6B79A` | joined ` · ` | — | `receipt.wantedByBrew` — `◇ 4 wanted by a draft` | CP:90–104, CV:227 |
 | 8.6 | No clause | — | — | — | — | when nothing is claimed the line renders with **no suffix** (Lathril, CV:204–215) | CV:204–215 |
 
 **Row count: 6 elements.**
@@ -399,7 +399,7 @@ One region, **max two lines**, **red above muted, always** — the order is fixe
 | # | State | Trigger | Visual | Source |
 |---|---|---|---|---|
 | 12.11 | **Silent** | no over-commitments, no soft claims | region absent entirely | A2CV:572–584 |
-| 12.12 | Soft only | sub-99 deck with brew claims | one muted line, `softHeading` | A2CV:454–460 |
+| 12.12 | Soft only | sub-99 deck with draft claims | one muted line, `softHeading` | A2CV:454–460 |
 | 12.13 | Over only | over-committed cards, no soft | one red line | A2RM:111–139 |
 | 12.14 | Both | both fire | red line **then** soft line, soft uses `softHeadingAfterOver` | A2RM:111–139, A2CV:496–509 |
 | 12.15 | At 99 | deck is complete | soft line suppressed (pre-99 only); red line may still render | A2RM:111–139 |
@@ -441,7 +441,7 @@ One region, **max two lines**, **red above muted, always** — the order is fixe
 | 14.6 | Detail copy | shipped | shipped | — | — | `collection.detailHeading`, `detailHardNote`, `detailSoftNote`, `detailOverNote` | CP:195–227 |
 | 14.7 | Card detail allocation receipt | eyebrow `font-mono 10px / 0.1em / uppercase`; rows `13px`; figures + split `font-mono 12px` | eyebrow + figures + split `var(--fg-faint)` / `var(--fg-muted)`; rows `var(--fg-body)` | claims eyebrow `mt-[14px]`; list `mt-[6px]`; row `py-[2px]`; split `mt-[8px]`; total line `mt-[8px]`, `gap-[8px]`; row gap `gap-[12px]` (arbitrary px, not the Tailwind scale) | hugs | renders whenever `claims` is non-empty — **including when the state is `free`**, which is the case #353 was filed on. One row per claiming deck: name as a link to `/decks/<id>`, then `holds N` (mature) or `wants N`, and — **only while the card is contested** — the allocation after it: `· gets it`, `· buys it`, or `· gets N of M` where part of the ask was covered. Split line reconciles to the total above: `in use · free`, or the `wanted / owned` comparison when `free < 0` | **NEW — #353/#355, not yet ratified by Design** |
 | 14.8 | Allocation on a receipt row | rows `13px`, figure `font-mono 12px` (14.7's) | `var(--fg-muted)` (14.7's) | inline after the figure, ` · ` separated | hugs | **Who actually gets the copy**, drawn on committed rows only and only while some committed list asked for a copy the supply could not give it. `collection.detailClaimGets` / `detailClaimBuys` / `detailClaimGetsPartial`, the pair card assignments R2 vocabulary ruling 4 defined for this axis. `holds` / `wants` stays commit status: that same ruling rejected keying it on allocation, because `wants 1` would then mean "committed but lost the copy" on one row and "not committed at all" on the next | **NEW 2026-09-16 — not yet ratified by Design** |
-| 14.9 | Brews left out of the figures | `12.5px / leading-1.5` | `var(--fg-muted)` | `mt-[6px]`, under the split line | hugs | `collection.detailBrewsUncounted`, drawn when a brew claims the card **and the state is not `soft`**. `short N` and the split line count committed lists only, so a reader seeing four lists want one card cannot tell the figure from a miscount; this names the ones left out and why. Withheld in the soft state, where every claimant is a brew and `detailSoftNote` is already the whole story | **NEW 2026-09-16 — not yet ratified by Design** |
+| 14.9 | Drafts left out of the figures | `12.5px / leading-1.5` | `var(--fg-muted)` | `mt-[6px]`, under the split line | hugs | `collection.detailBrewsUncounted`, drawn when a draft claims the card **and the state is not `soft`**. `short N` and the split line count committed lists only, so a reader seeing four lists want one card cannot tell the figure from a miscount; this names the ones left out and why. Withheld in the soft state, where every claimant is a draft and `detailSoftNote` is already the whole story | **NEW 2026-09-16 — not yet ratified by Design** |
 
 **Row count: 9 elements.**
 
@@ -467,7 +467,7 @@ Position: **fourth on desktop, fifth on phone** (A2RM:77–109). Four checkboxes
 |---|---|---|---|---|---|---|---|
 | 15.1 | Trigger | shipped | shipped | — | **44px** min target | `collection.filterLabel` | A2RM:77–109, A2RM:195–210 |
 | 15.2 | Menu row | shipped | shipped | — | **40px** row height | four rows | A2RM:195–210 |
-| 15.3 | Options | shipped | shipped | — | — | `Free` / `Wanted by a brew` / `In use` / `Over-committed` | A2RM:77–109 |
+| 15.3 | Options | shipped | shipped | — | — | `Free` / `Wanted by a draft` / `In use` / `Over-committed` | A2RM:77–109 |
 | 15.4 | Counts | shipped mono | shipped | — | — | e.g. `1,186 / 168 / 61 / 3` — sums to `1,418` (fabricated) | A2RM:77–109 |
 | 15.5 | Menu-row seam | — | `#2A241D` | — | 1px | over-committed glyph in the menu | A2CV:412–419 |
 | 15.6 | Chip | shipped chip | shipped | — | — | removable; **the marker glyph is the leading dot** | A2RM:77–109 |
@@ -518,7 +518,7 @@ Every accessible name quoted verbatim from `availability · copy strings.ts`.
 
 | # | Context | Accessible name | Source |
 |---|---|---|---|
-| 17.1 | Soft marker | `1 copy is on an unfinished deck` / `${softQty} copies are on unfinished decks` | CP:32–35 |
+| 17.1 | Soft marker | `1 copy is on a draft` / `${softQty} copies are on drafts` | CP:32–35 |
 | 17.2 | Hard marker, one deck | `no free copies; this one is on your ${deckName} list` | CP:41 |
 | 17.3 | Hard marker, many decks | `no free copies; they are on ${deckCount} of your finished lists` | CP:42–43 |
 | 17.4 | Over marker | `${deckCount} of your finished lists include this card and you own ${shortBy} too few` | CP:48 |

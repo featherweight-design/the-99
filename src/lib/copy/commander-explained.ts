@@ -308,7 +308,7 @@ export const explainedCopy = {
 
           No counts, per the standing rule: a sub-line above four panels cannot
           count for any one of them. */
-      sub: "Free to use first, then wanted by a brew, then in use, then over-committed.",
+      sub: "Free to use first, then wanted by a draft, then in use, then over-committed.",
     },
 
     /** One live-region message per settle, on CoverageSection's OWN aria-live="polite" node.

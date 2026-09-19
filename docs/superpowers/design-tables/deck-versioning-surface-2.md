@@ -70,7 +70,7 @@ Links inherit the canvas global rule: `a { color: #C9A24B; text-decoration: none
 ## Component: Review page shell (`/decks/[id]/changes`)
 
 Own route, back-navigable, **no focus trap and no modal** (README §Decisions 3; spec Addendum R3
-"Review changes is a page"). Reaching it once the draft has been committed **redirects to the
+"Review changes is a page"). Reaching it once the changes have been committed **redirects to the
 deck page** (state 25).
 
 | Property | Mobile | Desktop |
@@ -327,7 +327,7 @@ The deck page's own heading, mounted as shipped (`DecklistGroup` / `DecklistGrou
 | name color | `#EDE6D8` (`--fg`) | `#EDE6D8` |
 | count | mono `11px` `#8E8269` | mono `11px` `#8E8269` |
 | abbreviation | `Enchant.` in a narrow column | `Enchantments` full width; `Enchant.` in a nested sub-column |
-| `{n} added in this draft` note | — **not on this surface** (it is the pending decklist's) | — not on this surface |
+| `{n} added, not yet committed` note | — **not on this surface** (it is the pending decklist's) | — not on this surface |
 | empty group | absent on that side only (state 18) | absent on that side only |
 | group list container | `flex column`, `gap 4px` | `flex column`, `gap 4px`, `margin-bottom 16px` |
 
@@ -500,20 +500,20 @@ New atom. One per card, neutral, never solid, never the row default (README §De
 | tag font | mono `9.5px`, `letter-spacing 0.1em`, `uppercase` | mono `9.5px`, `letter-spacing 0.1em`, `uppercase` |
 | tag color | `#E0913C` (`--warning`) | `#E0913C` |
 | tag border / radius / padding | `1px solid #4A3A1C`, radius `4px`, `1px 5px` — `BuyTag`'s shape | `1px solid #4A3A1C`, radius `4px`, `1px 5px` |
-| tag text | `deck in draft` (`review.pullGuardTag`) — see the amendment below | `deck in draft` |
+| tag text | `deck has changes` (`review.pullGuardTag`) — see the amendment below | `deck has changes` |
 | tag placement | beside the deck name on the meta line, spaced by that line's `9px` gap | same — the `gap 5px` grouping went with the withdrawn action |
 | action label | **withdrawn** — see the amendment below | **withdrawn** |
 | action font | **withdrawn** | **withdrawn** |
 | action box | **withdrawn** | **withdrawn** |
 | geometry vs a pullable row | shorter — the tag alone stands where the control did | shorter |
 | price | **absent on the canvas's phone guard row** — states 20/21 say the price stays (Discrepancies 6) | present (`buy │ $6.40` on `Birds of Paradise`) |
-| accessible description | `{deck} has a draft of its own, so {card} cannot be pulled from it.` (`review.pullGuardA11y`) — carried by the row, never rendered | same |
+| accessible description | `{deck} has pending changes of its own, so {card} cannot be pulled from it.` (`review.pullGuardA11y`) — carried by the row, never rendered | same |
 | disabled button alternative | rejected — but so is the link now; the guard is a tag and a description (READINESS 13 is satisfied by drawing no control at all) | same |
-| server dependency | a per-holding-deck *has a draft* flag; the client must not infer it | same |
+| server dependency | a per-holding-deck *has changes* flag; the client must not infer it | same |
 
 > **Amendment, 2026-09-14 (PR #622), taken on Hugh's instruction and not through a design round.** The tag
 > read `pending`, and beside a card name it was taken for a pending change to **that card** — on
-> a row where the card is not being touched at all. It names the deck now: `deck in draft`. The
+> a row where the card is not being touched at all. It names the deck now: `deck has changes`. The
 > `Open →` anchor is withdrawn with the hover hint above, for the same reason, and the sentence
 > it used to carry reaches a screen reader as the row's own description instead. The commander
 > guard was already silent; the two guards now have the same shape.
@@ -524,7 +524,7 @@ New atom. One per card, neutral, never solid, never the row default (README §De
 |----------|--------|---------|
 | rendered on the canvas | **— (not drawn)** | **— (not drawn)** |
 | tag text | `commander` (`review.commanderGuardTag`) | `commander` |
-| tag shape | the same mono tag as variant 1's `deck in draft` | the same mono tag |
+| tag shape | the same mono tag as variant 1's `deck has changes` | the same mono tag |
 | control | **none at all** — no route releases a commander | **none** |
 | price | stays (state 21) | stays |
 | accessible name | `{card} is {deck}'s commander. It cannot be pulled.` (`review.commanderGuardA11y`) | same |
@@ -593,7 +593,7 @@ New atom. One per card, neutral, never solid, never the row default (README §De
 | consequence | `13px` `--fg-body`, naming v2, its date and its card count (`discard.consequence`) | same |
 | confirm button | the shipped danger button — `--danger` ink, `1px #4A2F28` — `Discard 36 changes` | same |
 | cancel button | `Keep editing`, brass fill, **on top** on phone | `Keep editing`, beside it |
-| refused | shipped `MutationError`; the confirm stays open; the draft untouched | same |
+| refused | shipped `MutationError`; the confirm stays open; the changes untouched | same |
 
 ---
 
@@ -612,14 +612,14 @@ discard confirm reached from this page). Diff source: `deck_cards` against the n
 | B17 — No removes | `removes.length === 0` | `Going out` absent; adds take the full width; nothing about the row changes | `adds`, `removes` |
 | B18 — A type group is empty on one side | a type has rows on one side only | The heading is absent **on that side only**; the columns do not align their groups and no spacer is drawn | per-type row sets per column |
 | B19 — A pull is available | add is sleeved in a deck with no pending changes and is not its commander | `Pull it` in the action slot, the holding deck named beside the name, the price beside that. One per card | `holdingDeck`, `price`, `canPull` |
-| B20 — A pull is guarded, the deck has pending changes | holding deck's own diff is non-empty | No `Pull it`; mono `deck in draft` tag on the deck name; **no anchor** (see the 2026-09-14 amendment); **the price stays**; the sentence is the row's accessible description | `holdingDeck`, `holdingDeckHasPendingChanges`, `price` |
+| B20 — A pull is guarded, the deck has pending changes | holding deck's own diff is non-empty | No `Pull it`; mono `deck has changes` tag on the deck name; **no anchor** (see the 2026-09-14 amendment); **the price stays**; the sentence is the row's accessible description | `holdingDeck`, `holdingDeckHasPendingChanges`, `price` |
 | B21 — A pull is guarded, the card is that deck's commander | the claim is a commander claim | The same tag reading `commander`, **no control at all**; the price stays | `holdingDeck`, `isCommanderOf`, `price` |
 | B22 — A pull in flight | mutation dispatched | The row's control reads `Pulling…`, disabled, **in place**; the row does not move and nothing unmounts | `isPending` per row |
 | B23 — A pull succeeded | mutation resolved | Dot goes to free; marker and price leave the row; pullable, to-buy and total re-print; **the row does not move**; announced once, no animation | `bucket`, `chipCounts`, `buyTotal`, announcement |
 | B24 — A pull was refused | mutation rejected | Shipped `MutationError` beneath the row's control; the row stays pullable | `error` per row |
-| B25 — Reached by a stale link | the draft has already been committed | **Redirect to the deck page** — no empty review page | `changeCount === 0` |
+| B25 — Reached by a stale link | the changes have already been committed | **Redirect to the deck page** — no empty review page | `changeCount === 0` |
 | D32 — Confirming a discard from this page | `Discard` pressed in the apply bar | The D31 confirm's two lines and two buttons, **in the apply bar**; no second wording | `changeCount`, `currentVersion`, `versionDate`, `versionCardCount`, `addCount`, `removeCount` |
-| B9 (table A) — Draft with no type changed | a type's before/after are equal | The **type block renders only the types whose count moved** — "a row of zeroes is a table explaining it has nothing in it" | per-type before/after |
+| B9 (table A) — Changes with no type moved | a type's before/after are equal | The **type block renders only the types whose count moved** — "a row of zeroes is a table explaining it has nothing in it" | per-type before/after |
 | B11 (table A) — A quantity changed only | one `draftDiff` entry with `from > 0 && to > 0` | One row reading `{name} {from} → {to}` via `recountedItem` — never a bare name | `from`, `to` |
 
 ### Cross-surface conditions that change Surface 2
@@ -755,7 +755,7 @@ discard confirm reached from this page). Diff source: `deck_cards` against the n
 6. **Phone guard row price.** States 20 and 21 both say "the price stays"; the phone guard row
    (`Birds of Paradise` / `Kinnan Ramp`) drops it, keeping only the `pending` tag and `Open →`.
    The desktop guard row keeps it. Both of those the canvas draws and neither ships: the
-   2026-09-14 amendment above reworded the tag to `deck in draft` and withdrew the anchor.
+   2026-09-14 amendment above reworded the tag to `deck has changes` and withdrew the anchor.
 7. **Strip cell order.** Canvas: mana value, Removal, Draw, Ramp, Wipes, Land. `changed.cells`:
    `manaValue, ramp, draw, removal, wipes, land`. README §3b names a third list — "mana value,
    removal, draw, ramp, **body**" — and `body` is not a role at all (§Errata).
@@ -791,7 +791,7 @@ discard confirm reached from this page). Diff source: `deck_cards` against the n
 18. **The pull-guard sentence.** `STATES-pending.md`'s copy table still lists the R1 string
     `that deck has its own pending changes →`, which README §Decisions 4 and the copy module
     both replaced — first with a `pending` tag plus `Open →`, and since the 2026-09-14
-    amendment with the `deck in draft` tag alone.
+    amendment with the `deck has changes` tag alone.
 19. **State numbers 21–25 are used twice.** Table B (review page) and table C (commit sheet)
     both number states 21–25. The errata's "section-scoped" ruling makes this legal, and it
     still means "state 21" is ambiguous without its table letter — and README §Decisions 4

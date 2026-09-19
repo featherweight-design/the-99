@@ -74,7 +74,7 @@ async function markers(page) {
     const seen = [];
     for (const node of document.querySelectorAll("span, p")) {
       const text = (node.textContent ?? "").trim();
-      if (!/^\d+ free|free$|in use|short|in a brew|decks? wants? it/i.test(text)) continue;
+      if (!/^\d+ free|free$|in use|short|in a draft|decks? wants? it/i.test(text)) continue;
       if (node.querySelector("span, p")) continue;
       const s = getComputedStyle(node);
       seen.push({

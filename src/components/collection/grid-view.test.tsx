@@ -71,12 +71,12 @@ describe("GridView pending tile", () => {
 describe("GridView availability chip", () => {
   it("renders nothing at all for a free card", () => {
     renderTiles({ ...card, quantity: 2, availability: avail(2, 0) });
-    expect(screen.queryByText(/free|in a brew|short/)).toBeNull();
+    expect(screen.queryByText(/free|in a draft|in a brew|short/)).toBeNull();
   });
 
   it("renders nothing when the availability read failed", () => {
     renderTiles({ ...card, quantity: 2, availability: null });
-    expect(screen.queryByText(/free|in a brew|short/)).toBeNull();
+    expect(screen.queryByText(/free|in a draft|in a brew|short/)).toBeNull();
   });
 
   it("carries a count-only chip on a committed tile", () => {

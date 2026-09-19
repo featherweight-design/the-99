@@ -46,11 +46,11 @@ export const availabilityCopy = {
   marker: {
     // soft: free > 0, soft > 0
     soft: (softQty: number) =>
-      softQty === 1 ? "1 in a brew" : `${softQty} in a brew`,
+      softQty === 1 ? "1 in a draft" : `${softQty} in a draft`,
     softAria: (softQty: number) =>
       softQty === 1
-        ? "1 copy is on an unfinished deck"
-        : `${softQty} copies are on unfinished decks`,
+        ? "1 copy is on a draft"
+        : `${softQty} copies are on drafts`,
 
     // hard: free = 0. Names the claiming deck ONLY when there is exactly one.
     // "none" rather than "0": every neighbouring number on these surfaces is a
@@ -120,7 +120,7 @@ export const availabilityCopy = {
     // the contrast lands on the one word that changed. The drawn version
     // ("Unfinished brews still do.") made the reader go back for its subject.
     freeNoteLong:
-      "Cards sleeved into a finished deck don’t count toward these scores. Cards in an unfinished brew still do.",
+      "Cards sleeved into a finished deck don’t count toward these scores. Cards in a draft still do.",
     subtitleAll: "ranked by fit",
     subtitleFree: "ranked by what’s free",
     // Announced on the list’s existing live region when the toggle flips.
@@ -149,7 +149,7 @@ export const availabilityCopy = {
     inUse: (n: number) => `${n} already in use`,
     inUseShort: (n: number) => `${n} in use`,
     wantedByBrew: (n: number) =>
-      n === 1 ? "1 wanted by a brew" : `${n} wanted by a brew`,
+      n === 1 ? "1 wanted by a draft" : `${n} wanted by a draft`,
     // Score delta, `free` ranking only, only where the score moved.
     delta: (drop: number) => `↓${drop}`,
     deltaFrom: (drop: number, was: number) => `↓${drop} from ${was}`,
@@ -236,7 +236,7 @@ export const availabilityCopy = {
     // worse than one with dim rows.
     filterLabel: "Availability",
     filterFree: "Free",
-    filterSoft: "Wanted by a brew",
+    filterSoft: "Wanted by a draft",
     filterHard: "In use",
     filterOver: "Over-committed",
     filterOptionAria: (label: string, n: number) =>
@@ -334,8 +334,8 @@ export const availabilityCopy = {
     // printed — the same rule the note's own header states.
     detailSoftNote: (brewCount: number) =>
       brewCount === 1
-        ? "Nothing to sort out yet. The list that wants it isn’t finished. Whichever you sleeve first gets it."
-        : "Nothing to sort out yet. The lists that want it aren’t finished. Whichever you sleeve first gets it.",
+        ? "Nothing to sort out yet. The deck that wants it is still a draft. Whichever you sleeve first gets it."
+        : "Nothing to sort out yet. The decks that want it are still drafts. Whichever you sleeve first gets it.",
     detailOverNote:
       "More finished lists want it than you own. Nothing’s broken. It’s a shopping decision.",
     // Why the shortfall above is smaller than the rows suggest. `short N` counts
@@ -349,8 +349,8 @@ export const availabilityCopy = {
     // would repeat it.
     detailBrewsUncounted: (brewCount: number) =>
       brewCount === 1
-        ? "The unfinished list isn’t counted: nothing is sleeved in it yet."
-        : `The ${brewCount} unfinished lists aren’t counted: nothing is sleeved in them yet.`,
+        ? "The draft isn’t counted: nothing is sleeved in it yet."
+        : `The ${brewCount} drafts aren’t counted: nothing is sleeved in them yet.`,
   },
 
   // ── Deck detail roll-up (addendum 2) ─────────────────────────────
@@ -368,17 +368,17 @@ export const availabilityCopy = {
 
     softHeading: (n: number) =>
       n === 1
-        ? "1 card here is in another brew too"
-        : `${n} cards here are in other brews too`,
+        ? "1 card here is in another draft too"
+        : `${n} cards here are in other drafts too`,
     // Used when the over-committed line is ALSO showing. "more" is load-bearing.
     softHeadingAfterOver: (n: number) =>
       n === 1
-        ? "1 more is in another brew too"
-        : `${n} more are in other brews too`,
+        ? "1 more is in another draft too"
+        : `${n} more are in other drafts too`,
     softBody:
-      "Nothing to sort out yet. None of those lists is finished either. Whichever you sleeve first gets them.",
+      "Nothing to sort out yet. None of those is past a draft either. Whichever you sleeve first gets them.",
     softBodyShort:
-      "Nothing to sort out yet. None of those lists is finished either.",
+      "Nothing to sort out yet. None of those is past a draft either.",
 
     regionAria: "Card commitments",
   },

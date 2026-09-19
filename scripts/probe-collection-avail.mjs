@@ -75,7 +75,7 @@ async function rows(page) {
       const box = b.getBoundingClientRect();
       const marker = [...b.querySelectorAll("span")]
         .reverse()
-        .find((n) => /^(\d+ free|\d+ in a brew|short \d+)$/.test((n.textContent ?? "").trim()));
+        .find((n) => /^(\d+ free|\d+ in a draft|short \d+)$/.test((n.textContent ?? "").trim()));
       const name = b.querySelector("span[title]");
       const ms = marker ? getComputedStyle(marker) : null;
       const s = getComputedStyle(b);
@@ -109,7 +109,7 @@ async function tiles(page) {
       const art = b.querySelector("div.relative");
       if (!art) continue;
       const chip = [...art.children].find((n) =>
-        /free|in a brew|short/.test((n.textContent ?? "").trim()),
+        /free|in a draft|short/.test((n.textContent ?? "").trim()),
       );
       const badge = [...art.children].find((n) => (n.textContent ?? "").trim().startsWith("×"));
       const artBox = art.getBoundingClientRect();
@@ -129,7 +129,7 @@ async function tiles(page) {
                 // `spoken` appends an sr-only prose span, so "last span" is the
                 // wrong one to measure — take the one carrying the drawn text.
                 const l = [...chip.querySelectorAll("span")].find((n) =>
-                  /^(\d+ free|\d+ in a brew|short \d+)$/.test((n.textContent ?? "").trim()),
+                  /^(\d+ free|\d+ in a draft|short \d+)$/.test((n.textContent ?? "").trim()),
                 );
                 const s = getComputedStyle(l);
                 return { size: s.fontSize, weight: s.fontWeight, family: s.fontFamily.split(",")[0] };

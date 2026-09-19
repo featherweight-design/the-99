@@ -352,7 +352,7 @@ describe("the figures", () => {
     const drawn = rows.map((row) => (row.children[1]?.textContent ?? "").trim());
     expect(drawn[0], "free draws no diamond, and that IS the state").toBe("no diamond at all");
     expect(drawn.slice(1).filter((t) => t.length > 0)).toHaveLength(3);
-    expect(drawn.join(" ")).toContain("in a brew");
+    expect(drawn.join(" ")).toContain("in a draft");
     expect(drawn.join(" ")).toContain("short 2");
 
     // Every row carries its numeral. "Annotation is a numeral and a line" is
@@ -452,7 +452,7 @@ describe("the figures", () => {
     // The availability slot's words. One row per state the marker speaks, and
     // the free row deliberately speaks none — a marker on every row would say
     // the opposite of the caption.
-    expect(plate.textContent).toContain("in a brew");
+    expect(plate.textContent).toContain("in a draft");
     expect(plate.textContent).toContain("short 2");
 
     // The count. The entry's key line was corrected to the row's own rule —

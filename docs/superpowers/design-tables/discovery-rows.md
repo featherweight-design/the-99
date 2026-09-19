@@ -171,7 +171,7 @@ same family as the sentence being replaced. The names are marked exactly as
 **Why, measured.** `played` is built from each built deck's **commander** tag
 list, and EDHREC tags a commander with every archetype people build with it
 rather than the one its owner built. Against the reference account on staging
-(18 decks, brews included):
+(18 decks, drafts included):
 
 | | `/commanders` | `/discover` | `Something new`, top 25 |
 |---|---|---|---|
@@ -201,7 +201,7 @@ built".
 
 The median deck commander donates **35** eligible themes and one donates 132,
 so the played set reaches 166 of 260 mechanics. Decks, not built decks:
-`loadPlayedTags` joins no `deck_versions`, so a brew counts. The state was the majority voice
+`loadPlayedTags` joins no `deck_versions`, so a draft counts. The state was the majority voice
 of both lanes.
 
 **And it can be false.** A reader whose Kenrith deck is Politics still has Group
