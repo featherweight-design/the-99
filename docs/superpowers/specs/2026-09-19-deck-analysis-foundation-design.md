@@ -28,8 +28,41 @@ one of them is genuinely a language-model feature:
 | Deck synopsis | deck facts → prompt | **yes** |
 | Intake questions → deck | intent parse → target facts | thin |
 
-This sub-project builds the object, and proves it with the one consumer that needs no model
-and no invented judgement: **strict WotC bracket slotting**.
+This sub-project builds the object, and proves it with **two** consumers that need no model
+and no invented judgement: a **measured deck skeleton** (§4A) and **strict WotC bracket
+slotting** (§6).
+
+### 1.1 Analysis of a finished deck is the failure to avoid, not the goal
+
+Every feature in the intake list assumes a deck that already exists. That assumption is
+precisely deckcheck's limitation and the reason this app was started: *"I need help actually
+building the deck in an informed way, not just help once it's complete. If I start with a bad
+foundation, analysis on top of that can be flawed."*
+
+The app today can say which cards go **with a commander**. It has no opinion about what makes
+a **deck**. Three places where that shows, all verifiable:
+
+- **`ROLE_TARGETS`** (`src/lib/recs/roles.ts:4`) is `ramp: 10, draw: 10, removal: 8,
+  wipes: 3` — flat for every deck, **with no land target at all**, and no staples. A design
+  baseline, asserted rather than sourced.
+- **Nothing is conditioned.** Mono-black and five-colour want different ramp and different
+  fixing. The targets do not move, so "Arcane Signet is less useful in mono" has no way to be
+  expressed.
+- **Top-off is purely relative.** `listLastSlotsCandidates` (`src/lib/decks/last-slots.ts:44`)
+  ranks `SynergyCard` — EDHREC synergy against that commander. For a commander EDHREC barely
+  holds, the pool is thin and noisy **and there is no floor to fall back to**. That is a
+  structural consequence, not a tuning problem.
+
+So the profile carries a **skeleton** fact-group beside its bracket one, and both are the same
+shape of statement: *here is a standard, here is where this deck sits against it, here are the
+cards responsible*. Acting on the skeleton — fill, top-off and the Add panel building against
+it — is **sub-project 2**, ahead of combos and the swap tools.
+
+The motivating case is a real one. HD - Gods was built without a foundation, went through
+three iterations, cost money, and has two wins against roughly six losses — and its owner is
+reluctant to play it. deckcheck's own read of that deck says *Speed 3.5/10*, wins on turn
+9–10, *"fast mana is limited to Sol Ring"*. Every one of those is a foundation fact, and all
+of them arrived after the money was spent.
 
 Bracket checking is not novel. [EDHcheck](https://edhcheck.com/),
 [BrackCheck](https://brackcheck.com/), [manatap.ai](https://www.manatap.ai/mtg-deck-checker)
@@ -133,6 +166,22 @@ deterministically.
 
 **A tool that cannot enforce its constraint deterministically does not offer it.**
 
+### 2.4a Every threshold is measured, and its measurement is reproducible
+
+No target, floor or staple is typed by hand. Each is derived from data already ingested, by a
+committed script that can be re-run, and each is justified in the spec **against a named case
+rather than an aggregate**.
+
+This is the house method, not a new one. `gap-slot.ts` sets `THEME_FLOOR_RATIO = 0.005` and
+defends it by what it does to Kenrith and to Glarb — *"The floor deletes accidents, not
+states"* — having rejected 2% because it leaves a commander with 31,481 decks on file with no
+theme at all. `measure-gap-line.mts` exists because a state's frequency turned out to be a
+property of the account it was measured against.
+
+The four constants in `ROLE_TARGETS` are the standing counter-example: they are asserted, they
+have no land count, and nothing records where they came from. They are replaced here, not
+extended.
+
 ### 2.5 The profile is facts; verdicts are pure functions over it
 
 The stored object holds **what is true about a deck**. Every verdict — the slot, the flags,
@@ -157,8 +206,11 @@ sharpens the reasoning.
   new tables, on a weekly cron beside `Catalog refresh` and `Price refresh`.
 - A contract check for that upstream (`pnpm check:spellbook`), in the daily
   `Upstream contract checks` workflow.
+- A **measured deck skeleton**: format staples and conditioned role targets, derived from
+  `commander_support_cards` by a committed script into one new table. No new upstream.
 - The **Deck Profile**: a pure builder plus a cached loader, defined as a composable set of
   fact-groups.
+- **`fitSkeleton`**: where a deck sits against its skeleton, a pure function over the profile.
 - **`slotDeck`**: the strict WotC bracket slot, a pure function over the profile.
 - **`bracketDelta`**: what a candidate card would do to a deck's slot — the push check.
 - **`upgradePath`**: the minimum set of cards to remove to reach a named lower bracket.
@@ -170,6 +222,11 @@ sharpens the reasoning.
 
 - **Any UI.** No handoff exists (`design/` carries no bracket or analysis project). §11
   covers the split: this builds Tier A facts; Tier B reads land after a READINESS verdict.
+- **Acting on the skeleton.** The floor is computed here and read here. Driving `fill.ts`,
+  `last-slots.ts` and the Add panel from it is **sub-project 2** — it changes shipped
+  surfaces and needs a design cycle, and separating the two means the floor can be measured,
+  argued with and corrected before anything is built on it. `ROLE_TARGETS` keeps its current
+  callers untouched in this sub-project; §4A.5 covers the retirement.
 - **Any language-model call.** Sub-project 5, and it reads this object.
 - **Combo surfacing and near-miss recommendations.** The ingest lands here because the slot
   needs two-card-combo detection; *surfacing* combos and `almostIncluded` is sub-project 2.
@@ -325,6 +382,90 @@ mutated fixture before the check is believed.
 
 ---
 
+## 4A. The measured skeleton
+
+### 4A.1 The distinction that makes this computable
+
+`commander_support_cards.inclusion` is a card's inclusion rate **under one commander**. Held
+across ~3,279 commanders, it answers a second question the app has never asked:
+
+> **A card with high inclusion across nearly every commander is a format staple. A card with
+> high inclusion under one commander is a synergy pick.**
+
+That is a `GROUP BY` over a table already ingested. No new upstream, no new API, no model.
+
+Critically, **the floor is derived from the corpus rather than from the commander's own
+page** — which is exactly why it still works for a commander with 40 decks on EDHREC. The
+thin-data commanders are the population the floor serves most, and `commander_support.deck_count`
+already identifies them.
+
+**The honest limit, recorded rather than glossed:** EDHREC inclusion is what people *play*,
+not what is optimal. For a floor that is the right signal — it is the format's own consensus,
+and consensus is what a player building their first deck lacks. It is **not** a licence to
+blend it into a score; §2.2 is unaffected.
+
+### 4A.2 Conditioning is measured too
+
+"Most decks want an Arcane Signet, but it is less helpful in mono-coloured decks" becomes a
+number rather than an opinion: aggregate inclusion **by the commander's colour count**, and
+the mono-versus-multicolour gap is read off the corpus.
+
+The same aggregation sources every target `ROLE_TARGETS` currently asserts — ramp, draw,
+removal, wipes — **and the land count it does not have at all**, which is the single most
+consequential number in deck construction and the one the app has never held.
+
+A condition is kept only when the measured difference is large enough to change a deck. The
+derivation script prints the gap per condition so the cut is made against figures, and the
+spec records which conditions survived and which were measured and dropped — the same way
+`gap-slot.ts` records that 2% and 1% were tried before 0.5%.
+
+### 4A.3 Table
+
+```
+format_staples
+  oracle_id          uuid not null references cards(oracle_id)
+  condition          text not null      -- 'all' | 'colors:1' | 'colors:2' ... | 'colors:5'
+  inclusion_rate     real not null      -- share of commanders in this condition, deck-weighted
+  commander_count    integer not null   -- denominator, never inferred
+  primary key (oracle_id, condition)
+
+skeleton_targets
+  condition          text not null      -- same vocabulary
+  role               text not null      -- 'ramp'|'draw'|'removal'|'wipes'|'land'
+  target             real not null
+  sample_size        integer not null
+  primary key (condition, role)
+```
+
+Every rate carries **its own denominator**, per the presentation rules inherited from #9 —
+a figure without one is an assertion the reader cannot check, which is the §2.2 lesson again.
+
+Weighted by `commander_support.deck_count`, so a commander with 31,481 decks on file counts
+for more than one with 40. Unweighted would let the long tail of barely-played commanders
+outvote the format.
+
+### 4A.4 `pnpm db:build:skeleton`
+
+Runs after `Commander index`, in the same workflow chain and for the same reason
+`Commander prose` does: its inputs are the rows that job writes, so a rebuild invalidates it.
+Read-only against `commander_support*`, writes the two tables above.
+
+It prints its full derivation — rate distributions, per-condition gaps, what each cut
+includes and excludes — so the numbers can be argued with **before** sub-project 2 builds
+anything on them. This is `measure-gap-line.mts`'s role, and the reason that script exists.
+
+### 4A.5 `ROLE_TARGETS` is replaced, not extended
+
+The four constants stay where they are and keep their current callers **for this
+sub-project** — nothing shipped changes behaviour on a spec that has not been reviewed
+against measured output. Sub-project 2 retires them, reads `skeleton_targets` instead, and
+that is a named task there rather than an assumption here.
+
+Recorded so it cannot be quietly skipped: leaving both a constant and a measured table in
+place is two sources of truth for the same question, and the constant is the one with no land
+count and no provenance.
+
+
 ## 5. The Deck Profile
 
 ### 5.1 Shape
@@ -335,9 +476,10 @@ export type DeckProfile = {
   /** Fingerprint of the inputs — decklist, commanders, catalog generation, builder version. */
   fingerprint: string;
   counts: ProfileCounts;       // total, nonland, land, basics
-  roles: ProfileRoles;         // classifyRoles tallies + ROLE_TARGETS gaps
+  roles: ProfileRoles;         // classifyRoles tallies, and the cards behind each
   curve: ManaCurve;            // manaCurve(), commanders folded in
   colours: ProfileColours;     // identity, producibleColors, and their disagreement
+  skeleton: ProfileSkeleton;   // §4A — measured targets and staples, and what the deck holds
   brackets: ProfileBrackets;   // §5.2 — the fact-group the slot reads
   themes: ProfileThemes | null; // §5.3 — null today, deliberately
 };
@@ -498,6 +640,26 @@ membership rather than published directly.
 
 ---
 
+## 6A. `fitSkeleton(profile): SkeletonFit` — pure
+
+```ts
+type SkeletonFit = {
+  condition: string;                  // which conditioned skeleton was applied, and why
+  roles: RoleFit[];                   // per role: have, target, gap, and the cards counted
+  missingStaples: StapleRef[];        // floor cards absent, with measured rate + denominator
+  presentStaples: StapleRef[];
+  coverage: { commanderDeckCount: number | null; thin: boolean };
+};
+```
+
+`coverage.thin` is the load-bearing field. A commander EDHREC barely holds is the case where
+the floor matters most **and** where the synergy pool is least trustworthy, so the fit says
+which situation the reader is in rather than presenting both alike.
+
+`missingStaples` carries the measured rate and denominator with each card, never a bare
+recommendation. *"Sol Ring — in 87% of 3,279 commanders' decks"* is checkable. *"You should
+run Sol Ring"* is not.
+
 ## 7. The marks and the push check
 
 ### 7.1 Card-level marks
@@ -551,7 +713,10 @@ ship here rather than waiting for the swap tools.
 
 Three layers, because each catches what the others cannot.
 
-**Unit.** `buildDeckProfile`, `slotDeck`, `bracketDelta` and `upgradePath` are pure. Cases
+**Unit.** `buildDeckProfile`, `fitSkeleton`, `slotDeck`, `bracketDelta` and `upgradePath` are
+pure. For the skeleton: a thin-data commander sets `coverage.thin` and still gets a full
+floor; a missing staple carries its rate **and** its denominator; a conditioned target for a
+mono commander differs from the five-colour one where the measurement said it should. Cases
 per bracket boundary, per rule, and specifically: a deck at exactly 3 Game Changers (B3, no
 violation) against one at 4 (B4, with `Underworld Breach` named as the excess — the case
 visible in the supplied deckcheck payload); a mass-land-denial card with `detection: partial`
@@ -572,6 +737,10 @@ What only a database can answer here:
 - The **cache key carries the catalog generation**: stamping `catalog_refreshes` retires a
   cached profile. `probe:catalog-stamp` proves the stamp; this proves a profile actually
   moves with it.
+- **The skeleton read joins correctly and picks the right condition.** A mono commander must
+  resolve `colors:1` and a Jeskai one `colors:3`, and a staple absent from the deck must
+  appear in `missingStaples` with the denominator the table stored — not a recomputed one.
+  This is the join the floor rides on and no unit test can reach it.
 - **Partial detection is reported, not silently dropped**, on a fixture holding a
   mass-land-denial card the ingest does know.
 
@@ -600,6 +769,12 @@ Stated so a reader does not mistake silence for coverage.
   for. Building it now would mean inventing the number §2.2 forbids.
 - **Every mass-land-denial card.** §4.2, §6.5.
 - **What a deck plays.** §5.3, #724.
+- **Whether a staple is *good*.** The floor reports what the format plays, at a measured rate
+  with its denominator (§4A.1). It does not claim the format is right, and a card the
+  consensus has not caught up to will read as missing. Format consensus is the correct signal
+  for a floor and a poor one for a ceiling.
+- **Anything about how the deck should be built.** The fit is a reading; acting on it is
+  sub-project 2. Nothing in this sub-project changes what `fill.ts` or `last-slots.ts` do.
 
 ---
 
@@ -646,6 +821,13 @@ The brief asks Design for:
   unquantified fact are visually distinguishable** (§7.2). A reader who cannot tell
   *"this moves your bracket"* from *"this is your 8th tutor"* has been given a number to
   defend that nobody computed.
+- **The skeleton fit**: per-role have-against-target, and missing staples carrying a rate and
+  its denominator. Design's call is how this reads as *help* rather than as a report card —
+  it is the first thing a player with a half-built deck wants and the easiest to make feel
+  like a failing grade.
+- How a **thin-data commander** is stated (`coverage.thin`, §6A). The reader needs to know
+  the floor is doing more work than usual here, without the surface implying their commander
+  is a bad choice.
 - How `detection: partial` is stated without either alarming or being missed (§6.5).
 - The upgrade path's presentation: a consequence, not a recommendation.
 - The About entry. Per the standing rule, a feature does not launch without one in the same
@@ -659,12 +841,19 @@ Named so the profile's shape accounts for them. None is specced.
 
 | # | Sub-project | Adds to the profile |
 |---|---|---|
-| 2 | Combos and near-misses (`almostIncluded`) | — reads §4.3 |
-| 3 | Small swap tools: cheaper-than-$X, from-my-collection, #218, #217 | ownership, price groups |
-| 4 | #10 resumed, games as enrichment | play-data group |
-| 5 | Deck synopsis (the one model feature) | — reads the whole object |
-| 6 | #215 alternate commander | — |
-| 7 | Intake questions → deck | — |
+| 2 | **Informed building**: fill, top-off and the Add panel driven by the skeleton; `ROLE_TARGETS` retired (§4A.5) | — reads §4A |
+| 3 | Combos and near-misses (`almostIncluded`) | — reads §4.3 |
+| 4 | Small swap tools: cheaper-than-$X, from-my-collection, #218, #217 | ownership, price groups |
+| 5 | #10 resumed, games as enrichment | play-data group |
+| 6 | Deck synopsis (the one model feature) | — reads the whole object |
+| 7 | #215 alternate commander | — |
+| 8 | Intake questions → deck | — |
+
+**Sub-project 2 is first on purpose.** It is the one that answers §1.1 — help while the deck
+is being built, rather than a verdict after the money is spent — and it is the reason this app
+exists rather than a thing it could also do. It is placed second rather than first only
+because the floor it acts on must be measured, printed and argued with before anything is
+built on it (§4A.4).
 
 **Pod comparison** is the strongest of the unplaced candidates and the most likely home for a
 comparative read (§2.3). It is what Hugh's pod already does by hand before a session, it is
