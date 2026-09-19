@@ -5,6 +5,7 @@
 
 import { useCardDetail } from "../cards/card-detail-provider";
 import { PENDING_OPACITY } from "./pending";
+import { deckHeaderCopy } from "../../lib/copy/decks-builder";
 
 /** The corners the control sits in. One rule decides all four: **bottom, on
     whichever side the label block does not reach.** `hero` is the commander
@@ -203,7 +204,7 @@ export function FullCardTrigger({
                 opacity: pending ? PENDING_OPACITY : undefined,
               }}
             >
-              Card details
+              {deckHeaderCopy.cardDetails}
             </span>
           ) : null}
         </span>

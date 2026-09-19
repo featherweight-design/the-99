@@ -19,8 +19,12 @@ import {
   ISSUE_PARSE_ERROR,
   ISSUE_UNMATCHED,
   CONTESTED_ARRIVAL,
+  DECKLIST_MARK_ROWS,
+  ROLE_MIX_CARDS,
   FIT_LEGEND,
   LANE_DISCOVER,
+  DECK_SPINE,
+  DECK_TABS,
   PARTNER_PROPOSAL,
   PRICES,
   SYNERGY_ROWS,
@@ -36,11 +40,24 @@ import { printingPickerCopy } from "../../lib/copy/collection";
 import { COSTS } from "../../lib/about/fixtures";
 import { COST_PIP_SIZE, CostPips } from "../ui/cost-pips";
 import { TwoFacedMark } from "../cards/two-faced-mark";
+import { LastSlotsStrip } from "../decks/last-slots-strip";
+import { DecklistRow } from "../decks/decklist-row";
+import { RoleCounterStrip } from "../decks/role-counter-strip";
+import { GroupToggle } from "../decks/group-toggle";
 import { ContestedCardRow } from "../decks/contested-card-row";
 import { FitLegend } from "../commanders/fit-legend";
 import { AvailabilityControl } from "../commanders/rack/availability-control";
 import { CommanderRow } from "../commanders/commander-row";
 import { PartnerSlot } from "../decks/partner-slot";
+import { BuilderTabs } from "../decks/builder-tabs";
+import { StatusPillBadge } from "../decks/status-pill";
+import { statusBarStyle } from "../../lib/decks/status-style";
+import { colorLabel, deckIdentity } from "../../lib/decks/format";
+import { PIP_SRC } from "../../lib/copy/filter-chassis";
+import type { PipCode } from "../../lib/copy/filter-chassis";
+import { deckImportCopy } from "../../lib/copy/deck-import";
+import { deckHeaderCopy } from "../../lib/copy/decks-builder";
+import { deckBodySize } from "../../lib/decks/deck-size";
 import { SynergyRow } from "../commanders/synergy-row";
 import { CardDetailProvider } from "../cards/card-detail-provider";
 import { OrderControl } from "../commanders/rack/order-control";
@@ -431,5 +448,236 @@ export function CommanderAvailabilityFigureBody() {
         ))}
       </div>
     </CardDetailProvider>
+  );
+}
+
+/**
+ * The deck header, mounted from the route.
+ *
+ * `SpineDesktop` and `SpineMobile` are two components, not one responsive
+ * band, so the figure picks the one the route would — the same fault the fit
+ * key and the synergy rows carried into round 1 of chapter 02.
+ */
+export function DeckPageFigureBody() {
+  // THE RIGHT-HAND COLUMN OF THE REAL BAND, cropped rather than adapted.
+  //
+  // The live header is two columns: art on the left, this on the right, with
+  // both actions outside the art. That needs a wider row than About's ~750px
+  // plate, and my first two attempts ADAPTED it — full-width art with the
+  // buttons moved on top, which is where §3 puts them and where the app never
+  // does. A reference page that relocates a control to make it fit is teaching
+  // the wrong page.
+  //
+  // Hugh's call, 2026-09-18: drop the art and `Card details`, keep the column.
+  // Everything left sits exactly where the deck page puts it relative to
+  // everything else, and the part that could not fit is absent rather than
+  // rearranged. No key line names the art.
+  const { deck, counts, status, version } = DECK_SPINE;
+  const body = deckBodySize(deck.partner !== null);
+  const identity = deckIdentity(deck.commander.colorIdentity, null);
+  return (
+    <div className="flex flex-col">
+      <div className="mb-[5px] flex items-center gap-[9px]">
+        <span className="font-display text-[17px] font-bold text-[color:var(--fg)]">
+          {deck.name}
+        </span>
+        <span aria-hidden className="font-mono text-[11px] text-[color:var(--fg-faint)]">
+          ✎
+        </span>
+      </div>
+
+      <div className="mb-[9px] flex flex-wrap items-center gap-[9px]">
+        <span aria-hidden className="flex gap-[3px]">
+          {identity.map((code) => (
+            <span
+              key={code}
+              className="h-[8px] w-[8px] rounded-[2px]"
+              style={{ background: `center / contain no-repeat url(${PIP_SRC[code as PipCode]})` }}
+            />
+          ))}
+        </span>
+        <span className="font-mono text-[10.5px] text-[color:var(--fg-body)]">
+          {deck.commander.name} · {colorLabel(identity)}
+        </span>
+        <StatusPillBadge
+          status={status}
+          className="flex flex-none items-center rounded-[6px] px-[8px] py-[3px] font-mono text-[10.5px]"
+        />
+        <KeyNumeral n={1} />
+      </div>
+
+      {/* The bar and the two actions share a row, as they do on the page. */}
+      <div className="flex flex-wrap items-center gap-[10px]">
+        <span className="h-[4px] w-[200px] flex-none overflow-hidden rounded-full bg-[color:var(--elevated)]">
+          <span className="block h-full" style={statusBarStyle(status, counts.built, body)} />
+        </span>
+        <span className="font-mono text-[13px] text-[color:var(--fg)]">
+          {counts.built}
+          <span className="text-[color:var(--fg-faint)]"> / {body}</span>
+        </span>
+        <span className="ml-auto flex items-center gap-[8px]">
+          <span className="flex h-[28px] items-center rounded-[7px] border border-solid border-[color:var(--border-strong)] px-[11px] text-[11.5px] text-[color:var(--fg)]">
+            {deckImportCopy.update.entryLabel}
+          </span>
+          <span className="flex h-[28px] items-center rounded-[7px] bg-[color:var(--fg)] px-[12px] text-[11.5px] font-semibold text-[color:var(--bg)]">
+            {deckHeaderCopy.export}
+          </span>
+        </span>
+      </div>
+
+      <div className="mt-[10px] border-t border-solid border-[color:var(--border)] pt-[8px]">
+        <span className="font-mono text-[10px] text-[color:var(--fg-faint)]">{version}</span>
+      </div>
+
+      <div className="mt-[10px] flex items-center gap-[9px]">
+        <BuilderTabs tabs={DECK_TABS} view="deck" onViewChange={() => {}} />
+        <KeyNumeral n={2} />
+      </div>
+    </div>
+  );
+}
+
+/**
+ * `auto-fill` — the Top off strip, closed.
+ *
+ * The canvas draws NO figure here; the entry was a three-row legend quoting
+ * strings out of `topOffCopy`. The app has one surface whose whole job is the
+ * sentence this entry makes, and it is this strip: it names how many slots are
+ * still open, how many candidates it has for them, and how many of those arrive
+ * ticked because the player already owns them.
+ *
+ * The strip owns its own margins (`mx-[16px] md:mx-[30px]`), which it has
+ * because it sits between the ledger and the decklist on the builder page.
+ * Those come with it — a crop keeps what the component draws, and respacing it
+ * to sit flush in a figure would be the adaptation this page stopped making.
+ *
+ * `openSlots` is 5 rather than the 36 a fresh fill leaves, because the caption
+ * above it says we fill most of the 99 and the rest is the player's. A strip
+ * offering five candidates against thirty-six open slots would say the opposite
+ * of the sentence it illustrates.
+ *
+ * Every handler is a no-op: `Specimen` is `inert`, so nothing here can be
+ * pressed. `useTopOffDraft` only READS localStorage on mount, so the fixture
+ * deck id below writes nothing.
+ */
+export function AutoFillFigureBody() {
+  return (
+    <LastSlotsStrip
+      deckId="about-figure"
+      openSlots={5}
+      bodySize={99}
+      candidates={SYNERGY_ROWS}
+      deckOracleIds={new Set()}
+      newestAsOf={null}
+      onAnnounce={() => {}}
+    />
+  );
+}
+
+/**
+ * `decklist-marks` — five real `DecklistRow`s.
+ *
+ * The page drew its own row here: a dot, a name, a cost track and a marker,
+ * assembled by hand in the order the real row draws them. It was right about
+ * the order and wrong about everything the row does around it — the meta line
+ * under the name, the `×2` count, the auto tag, the over-committed inset ring.
+ * An entry titled "every mark on a decklist" is the last one that should be
+ * drawing its own approximation of the list.
+ *
+ * `CardDetailProvider` is the one context `DecklistRow` demands; every other
+ * hook it reads (`usePendingChange`, `usePassMark`, the optimistic-deck
+ * family) returns a null or a no-op with no provider above it. The fetcher
+ * resolves to null because `Specimen` is `inert` and no row here can be
+ * opened.
+ *
+ * `newestAsOf` is passed explicitly, as its own doc comment demands: a row
+ * that does not receive it reads every live price as absent and draws a bare
+ * `buy` with no figure.
+ */
+export function DecklistMarksFigureBody() {
+  return (
+    <CardDetailProvider fetchCard={async () => null}>
+      <div className="flex flex-col">
+        {DECKLIST_MARK_ROWS.map((card) => (
+          <DecklistRow
+            key={card.oracleId}
+            deckId="about-figure"
+            card={card}
+            siblings={[]}
+            newestAsOf={PRICES[0].fact.asOf}
+          />
+        ))}
+      </div>
+    </CardDetailProvider>
+  );
+}
+
+/**
+ * `roles` — the deck page's own `RoleCounterStrip`.
+ *
+ * The page drew a three-row legend here, with a note saying the strip could
+ * not be mounted because it "would need a deck". It does not: the strip takes
+ * `cards` and folds them with `computeRoleCounts`, which reads `role` and
+ * `quantity` and nothing else. Five rows state the five counts.
+ *
+ * `onSeeShelf` and `rolesWithShelves` arrive together or not at all — the
+ * strip's own contract, because supplying the handler alone disables every
+ * short cell rather than failing. They are supplied so the short cells draw
+ * their `consider →`, which the canvas draws and which a strip with no
+ * handler would silently omit. The handler is a no-op: `Specimen` is `inert`,
+ * so no cell can be pressed.
+ *
+ * It lives in this client module rather than beside the other server figures
+ * for that handler alone — a function cannot cross the server boundary, and
+ * the one that tried it is why this module exists.
+ */
+export function RolesFigureBody() {
+  return (
+    <RoleCounterStrip
+      cards={ROLE_MIX_CARDS}
+      onSeeShelf={() => {}}
+      rolesWithShelves={new Set(["wipes", "land"])}
+    />
+  );
+}
+
+/**
+ * `decklist-order` — the decklist's own `GroupToggle`.
+ *
+ * The legend here spelled four labels out of `deck-sort.ts`: the two
+ * groupings, then Name, Mana value and Price. The bar those labels live on is
+ * one component, and it answers the caption directly — the two section pills
+ * side by side, and the order control beside them reading the live order back.
+ *
+ * `filter` is `shopping` deliberately. The caption's last clause is that price
+ * joins the orders on the shopping filter, where money is the question being
+ * asked, and that clause is about WHICH FILTER IS OPEN. A bar drawn on All
+ * would illustrate the half of the sentence that excludes the other half.
+ *
+ * The order control's options sit behind a closed panel, which is where the
+ * app keeps them. This figure draws the bar, not the sheet.
+ *
+ * Every handler is a no-op under `Specimen`'s `inert`. `shoppingCards` is
+ * required rather than defaulted — an empty list renders the price strip with
+ * no buy link — so it carries the two rows the Shopping count claims.
+ */
+export function DecklistOrderFigureBody() {
+  return (
+    <GroupToggle
+      allCount={99}
+      shoppingCount={2}
+      filter="shopping"
+      grouping="role"
+      onFilterChange={() => {}}
+      onGroupingChange={() => {}}
+      view="list"
+      onViewChange={() => {}}
+      shoppingCards={[
+        { name: "Dockside Extortionist", quantity: 1 },
+        { name: "Cyclonic Rift", quantity: 1 },
+      ]}
+      sort={{ key: "price", direction: "desc" }}
+      onSortChange={() => {}}
+    />
   );
 }

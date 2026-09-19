@@ -13,7 +13,6 @@
 
 import { AvailabilityMarker } from "../ui/availability-marker";
 import { OwnershipDot } from "../ui/ownership-dot";
-import { COST_PIP_CAP, COST_PIP_SIZE, COST_TRACK, CostPips } from "../ui/cost-pips";
 import { BuyTag } from "../decks/buy-tag";
 import { ProxyTag } from "../decks/proxy-tag";
 import { StatusPillBadge } from "../decks/status-pill";
@@ -23,18 +22,13 @@ import { GameAxisCell } from "../decks/game-axis-cell";
 import { CommitmentsCard } from "../home/commitments-card";
 import { THEMES } from "../../lib/theme/themes";
 import { addPanelCopy, exportLinkOutCopy, exportTabCopy } from "../../lib/copy/decks-builder";
-import { RECOMMENDED_MIX } from "../../lib/decks/mix";
-import { recommendationsCopy } from "../../lib/copy/recommendations";
 import { deckImportCopy } from "../../lib/copy/deck-import";
 import { deckStateMarksCopy } from "../../lib/copy/deck-state-marks";
 import { deckVersioningCopy } from "../../lib/copy/deck-versioning";
 import { gameLogCopy } from "../../lib/copy/game-log";
-import { topOffCopy } from "../../lib/copy/top-off";
 import { folderCopy } from "../../lib/copy/folders";
 
 import { GAME_AXIS_KEYS } from "../../lib/decks/game-axes";
-import { deckSortLabel } from "../../lib/about/sort-labels";
-import { DECK_GROUPING_LABELS } from "../../lib/copy/deck-sort";
 import { BrowseFigureBody } from "./browse-figure";
 import { KeyNumeral } from "./numeral";
 import { ORDER_OPTIONS } from "../commanders/rack/order-options";
@@ -49,6 +43,11 @@ import {
   DiscoverFigureBody,
   FitLegendFigureBody,
   CommanderAvailabilityFigureBody,
+  AutoFillFigureBody,
+  DecklistMarksFigureBody,
+  DecklistOrderFigureBody,
+  RolesFigureBody,
+  DeckPageFigureBody,
   ImportIssuesFigureBody,
   PartnerSlotFigureBody,
   PostImportFigureBody,
@@ -58,7 +57,6 @@ import { statusBarStyle } from "../../lib/decks/status-style";
 import type { StatusPill } from "../../lib/decks/status";
 import { refreshCopy } from "../../lib/copy/refresh";
 import { FitBar } from "../commanders/fit-bar";
-import { TwoFacedMark } from "../cards/two-faced-mark";
 import {
   LegendBox,
   Specimen,
@@ -77,7 +75,6 @@ import {
   READY_SLICE,
   SET_CELLS,
   SET_HEAD,
-  COSTS,
   FIT_DEGRADED,
   FIT_DEGRADED_SCORE,
   FIT_FULL,
@@ -334,77 +331,9 @@ function FitFigure({ width }: { width: AboutWidth }) {
  * forks are the row's business.
  */
 function MarksFigure({ width }: { width: AboutWidth }) {
-  const rows = [
-    { name: CARDS.owned, cost: COSTS.simple, a: AVAILABILITY[0].a, note: "yours, and nothing wants it" },
-    { name: CARDS.removed, cost: COSTS.crowded, a: AVAILABILITY[1].a, note: "an unfinished deck has claimed it" },
-    { name: "Cyclonic Rift", cost: COSTS.simple, a: AVAILABILITY[3].a, note: "more asked for than you own" },
-  ];
   return (
     <Specimen label="marks" width={width}>
-      <div className="flex flex-col gap-[10px]">
-        {rows.map((row) => (
-          <div key={row.name} className="flex flex-col gap-[4px]">
-            <div className="flex items-center gap-[8px]">
-              <OwnershipDot owned size={7} />
-              <span className="min-w-0 flex-1 truncate text-[12.5px] text-[color:var(--fg)]">
-                {row.name}
-              </span>
-              {/* Cost before marker, which is the order the row draws them. */}
-              <CostPips
-                cost={row.cost}
-                size={COST_PIP_SIZE}
-                track={COST_TRACK}
-                cap={COST_PIP_CAP}
-              />
-              {/* `density="row"` leaves the font to the caller, and the real
-                  row supplies these two classes. */}
-              <span className="font-mono text-[11px] min-[1000px]:text-[11.5px]">
-                <AvailabilityMarker
-                  availability={row.a}
-                  density="row"
-                  seam="var(--surface-sunken)"
-                />
-              </span>
-            </div>
-            <span className="font-mono text-[10px] leading-[1.35] text-[color:var(--fg-faint)]">
-              {row.note}
-            </span>
-          </div>
-        ))}
-        <div className="flex items-center gap-[8px]">
-          <OwnershipDot owned={false} size={7} />
-          <span className="min-w-0 flex-1 truncate text-[12.5px] text-[color:var(--fg)]">
-            {CARDS.twoFaced}
-          </span>
-          <TwoFacedMark layout="transform" />
-          {/* `collapsed`, not `full`: the row draws the shopping treatment only
-              inside Shopping, and everywhere else the mark is a bare `$` —
-              which is the mark this entry's key line names. */}
-          <BuyTag
-            variant="row"
-            price={PRICES[0].fact}
-            newestAsOf={PRICES[0].fact.asOf}
-            density="collapsed"
-          />
-        </div>
-        <span className="font-mono text-[10px] leading-[1.35] text-[color:var(--fg-faint)]">
-          not owned — the buy mark takes the slot, and `//` says two faces
-        </span>
-
-        {/* The same slot, and the other mark that can hold it: a card you are
-            printing is not bought and not owned, so `P` replaces `$` rather
-            than joining it. */}
-        <div className="flex items-center gap-[8px]">
-          <OwnershipDot owned={false} size={7} />
-          <span className="min-w-0 flex-1 truncate text-[12.5px] text-[color:var(--fg)]">
-            {CARDS.proxied}
-          </span>
-          <ProxyTag variant="row" />
-        </div>
-        <span className="font-mono text-[10px] leading-[1.35] text-[color:var(--fg-faint)]">
-          one you are printing — `P` takes the slot instead of `$`
-        </span>
-      </div>
+      <DecklistMarksFigureBody />
     </Specimen>
   );
 }
@@ -774,76 +703,38 @@ function PartnersFigure({ width }: { width: AboutWidth }) {
 
 function DeckPageFigure({ width }: { width: AboutWidth }) {
   return (
-    <Legend
-      label="deck-page"
-      width={width}
-      rows={[
-        { mark: `${addPanelCopy.tabs.deck} · 99`, meaning: "the list itself" },
-        { mark: `${addPanelCopy.tabs.consider} · 80`, meaning: "cards this commander wants that are not in it yet" },
-        { mark: gameLogCopy.tab.label, meaning: "no count until one is logged — the absence is the signal" },
-        { mark: `${deckVersioningCopy.history.tab} · 1`, meaning: "what you committed, and when" },
-      ]}
-    />
+    <Specimen label="deck-page" width={width}>
+      {/* §3 draws the deck's own header: the art band with `Card details`,
+          `Update from a list` and `Export`, then the name, its rename glyph,
+          the identity pips, the commander line and the status. The figure was
+          four tab labels with counts — it named the page's sections and showed
+          none of the header this entry is about. */}
+      <DeckPageFigureBody />
+    </Specimen>
   );
 }
 
 function AutoFillFigure({ width }: { width: AboutWidth }) {
   return (
-    <Legend
-      label="auto-fill"
-      width={width}
-      rows={[
-        { mark: "63 / 99", meaning: "assembled from what you own the moment you pick a commander" },
-        { mark: topOffCopy.strip.open("36"), meaning: "fills what is left, from your collection, in one pass" },
-        { mark: recommendationsCopy.auto.clearAll("36"), meaning: "and undoes the lot if you would rather pick yourself" },
-      ]}
-    />
+    <Specimen label="auto-fill" width={width}>
+      <AutoFillFigureBody />
+    </Specimen>
   );
 }
 
 function RolesFigure({ width }: { width: AboutWidth }) {
-  // A LEGEND, not `RoleChips`. That component is the commander page's own
-  // (role-chips.tsx:1-3) and this entry is about the DECK page, which draws
-  // `RoleCounterStrip` — five cells including Land, and the rationale as a real
-  // disclosure button. Mounting the commander chips here taught a surface the
-  // deck page never draws, and mounting the strip would need a deck.
   return (
-    <Legend
-      label="roles"
-      width={width}
-      rows={[
-        { mark: `${RECOMMENDED_MIX.ramp.label} · 12 of ${RECOMMENDED_MIX.ramp.target}`, meaning: "a surplus, not an error — nothing here is capped" },
-        { mark: `${RECOMMENDED_MIX.wipes.label} · 1 of ${RECOMMENDED_MIX.wipes.target}`, meaning: "a short role is the one thing that names what to do next" },
-        {
-          mark: addPanelCopy.strip.rationaleToggle,
-          meaning: "and the baselines are the format's, not this commander's",
-        },
-      ]}
-    />
+    <Specimen label="roles" width={width}>
+      <RolesFigureBody />
+    </Specimen>
   );
 }
 
 function DecklistOrderFigure({ width }: { width: AboutWidth }) {
   return (
-    <Legend
-      label="decklist-order"
-      width={width}
-      rows={[
-        {
-          mark: `${DECK_GROUPING_LABELS.role} / ${DECK_GROUPING_LABELS.type}`,
-          meaning: "the list is always in sections — that is how a deck is short",
-        },
-        {
-          mark: deckSortLabel("name"),
-          meaning: "and the order you pick applies inside them",
-        },
-        { mark: deckSortLabel("mana"), meaning: "curve up, or curve down" },
-        {
-          mark: deckSortLabel("price"),
-          meaning: "offered on the shopping filter only, where money is the question",
-        },
-      ]}
-    />
+    <Specimen label="decklist-order" width={width}>
+      <DecklistOrderFigureBody />
+    </Specimen>
   );
 }
 

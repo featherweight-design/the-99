@@ -224,6 +224,20 @@ describe("every entry is drawn, not just described", () => {
 // the page can plausibly reach is listed; a total outside it fails loudly on
 // the undefined rather than passing on a lenient match.
 const WORDS: Record<number, string> = {
+  // The Legend half falls as figures are rebuilt on real components, so the
+  // range runs to zero rather than stopping at the count of the day.
+  0: "Zero",
+  1: "One",
+  2: "Two",
+  3: "Three",
+  4: "Four",
+  5: "Five",
+  6: "Six",
+  7: "Seven",
+  8: "Eight",
+  9: "Nine",
+  10: "Ten",
+  11: "Eleven",
   12: "Twelve",
   13: "Thirteen",
   14: "Fourteen",
@@ -238,4 +252,14 @@ const WORDS: Record<number, string> = {
   23: "Twenty-three",
   24: "Twenty-four",
   25: "Twenty-five",
+  26: "Twenty-six",
+  27: "Twenty-seven",
+  28: "Twenty-eight",
+  29: "Twenty-nine",
+  30: "Thirty",
+  31: "Thirty-one",
+  32: "Thirty-two",
+  33: "Thirty-three",
+  34: "Thirty-four",
+  35: "Thirty-five",
 };

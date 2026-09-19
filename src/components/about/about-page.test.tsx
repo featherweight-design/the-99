@@ -6,24 +6,36 @@ import { FIGURES } from "./figures";
 import { availabilityCopy } from "../../lib/copy/availability";
 import { deckStateMarksCopy } from "../../lib/copy/deck-state-marks";
 import { refreshCopy } from "../../lib/copy/refresh";
+import { gameLogCopy } from "../../lib/copy/game-log";
 import { deckImportCopy } from "../../lib/copy/deck-import";
 import { ORDER_OPTIONS } from "../commanders/rack/order-options";
-import { commandersCopy, filterCopy } from "../../lib/copy/lanes";
+import { commandersCopy } from "../../lib/copy/lanes";
 import { explainedCopy } from "../../lib/copy/commander-explained";
 import { cardAssignmentsCopy } from "../../lib/copy/card-assignments";
 import { collectionChassisCopy, printingPickerCopy } from "../../lib/copy/collection";
-import { spokenFullManaCost, twoFacedCopy } from "../../lib/copy/card-surfaces";
+import { spokenFullManaCost, spokenManaCost, twoFacedCopy } from "../../lib/copy/card-surfaces";
 import { COSTS } from "../../lib/about/fixtures";
+import { addPanelCopy } from "../../lib/copy/decks-builder";
+import { DECK_GROUPING_LABELS, deckSortOrderLabel } from "../../lib/copy/deck-sort";
+import { viewToggleCopy } from "../../lib/copy/card-surfaces";
+import {
+  RECOMMENDED_MIX,
+  RECOMMENDED_MIX_SOURCE_LINE,
+  ROLE_ORDER,
+} from "../../lib/decks/mix";
 import { setPageCopy } from "../../lib/copy/set-collections";
 import { PIP_ORDER } from "../../lib/copy/filter-chassis";
 import {
+  CARDS,
   CONTESTED_ARRIVAL,
+  DECKLIST_MARK_ROWS,
   IMPORT_SOURCES,
   FIT_DEGRADED_SCORE,
   FIT_LEGEND,
   LANE_ROW_DISCOVER,
-  LANE_OWNED,
   LANE_ROW_OWNED,
+  DECK_SPINE,
+  DECK_TABS,
   PARTNER_PROPOSAL,
   SYNERGY_ROWS,
   FIT_FULL_SCORE,
@@ -351,49 +363,69 @@ describe("the figures", () => {
   it("draws the decklist marks as rows, at the row's own geometry", () => {
     const { container } = render(<AboutPage seen={0} />);
     const plate = figures(container)["marks"];
-    // A dot with no size draws at 0x0, and jsdom cannot see that — what a
-    // unit test can read is whether the caller supplied one.
-    // `rounded-full` alone also matches every mana pip, and a pip carries an
-    // inline width too — so that filter passed with all five dots deleted.
-    // The dot is the only 7px square in the plate.
-    const dots = [...plate.querySelectorAll("span")].filter((el) => {
-      const style = (el as HTMLElement).style;
-      return (
-        el.className.toString().includes("rounded-full") &&
-        style.width === "7px" &&
-        style.height === "7px"
-      );
-    });
-    expect(dots.length, "the ownership dots drew nothing").toBeGreaterThanOrEqual(4);
-    // `//` renders only for a two-sided layout; called bare the mark is null.
-    // Asserted on the MARK's own element — the row's note also contains the
-    // characters, so a textContent sweep passes over a mark that never drew.
-    const flip = [...plate.querySelectorAll("span")].filter(
-      (el) => el.textContent?.trim() === "//",
-    );
-    expect(flip.length, "the two-faced mark drew nothing").toBeGreaterThan(0);
-    expect(plate.textContent).toContain("Sol Ring");
 
-    // The other three slot components, each deletable without the assertions
-    // above noticing: the marker's words, the cost's pips, and the unowned
-    // row's buy mark — `$` and not the shopping treatment.
+    // The figure mounts `DecklistRow`, so each assertion below names a slot
+    // the ROW owns. The page used to assemble its own row here, and every one
+    // of these would have been an assertion about this test file's idea of a
+    // decklist rather than about the list a reader meets.
+
+    // The dot. `OwnershipDot` takes its size from the caller, and the row
+    // passes classes rather than an inline style — so this reads the class the
+    // row supplies. `rounded-full` alone matches every mana pip.
+    const dots = [...plate.querySelectorAll("span")].filter((el) =>
+      el.className.toString().includes("w-[7px]"),
+    );
+    expect(dots.length, "the ownership dots drew nothing").toBe(
+      DECKLIST_MARK_ROWS.length,
+    );
+    // Both states, since the entry's first key line is that they differ. The
+    // classes are `OwnershipDot`'s own, and a figure of five owned rows would
+    // draw five dots and teach half the line.
+    const dashed = dots.filter((el) => el.className.toString().includes("dashed"));
+    expect(dashed.length, "every dot drew the owned state").toBe(2);
+
+    expect(plate.textContent).toContain(CARDS.owned);
+
+    // The availability slot's words. One row per state the marker speaks, and
+    // the free row deliberately speaks none — a marker on every row would say
+    // the opposite of the caption.
     expect(plate.textContent).toContain("in a brew");
     expect(plate.textContent).toContain("short 2");
-    // The cost draws a fixed-width track; jsdom sees the style even though it
-    // lays nothing out, and an omitted CostPips leaves no element carrying it.
-    const tracks = [...plate.querySelectorAll("span")].filter(
-      (el) => (el as HTMLElement).style.width === "72px",
+
+    // The count. The entry's key line was corrected to the row's own rule —
+    // `×N` beside the name, on `quantity > 1` only — so both halves are read:
+    // the one row above a single copy prints it, and no other row does.
+    expect(plate.textContent).toContain(addPanelCopy.row.quantity(2));
+    expect(plate.textContent).not.toContain(addPanelCopy.row.quantity(1));
+
+    // The auto tag, which the caption separates from the obstacle marks. It is
+    // a control on the real row, so it is read as one.
+    // Queried by attribute rather than by role: `Specimen` is `aria-hidden`,
+    // so nothing inside it has an accessible role at all.
+    const autoTags = [...plate.querySelectorAll("button")].filter((el) =>
+      /Keep .* in this deck/.test(el.getAttribute("aria-label") ?? ""),
     );
-    expect(tracks.length, "the cost track drew nothing").toBeGreaterThan(0);
+    expect(autoTags.length, "the auto tag drew nothing").toBe(1);
+
+    // The cost. jsdom answers false for every media query, so the row's
+    // desktop track is `display:none` and the PHONE run is what renders here.
+    // Asserting the 72px track would be asserting a branch this environment
+    // never takes. The screenshot covers the desktop one.
+    // `spoken` puts the whole cost in an sr-only span beside the pips, which
+    // is the one part of the run that carries readable text.
+    const spoken = [...plate.querySelectorAll("span.sr-only")].map(
+      (el) => el.textContent ?? "",
+    );
+    expect(
+      spoken.some((t) => t === spokenManaCost(DECKLIST_MARK_ROWS[2].manaCost ?? "")),
+      "the cost drew nothing",
+    ).toBe(true);
+
     // `collapsed` is a bare `$`; `full` is the shopping treatment and prints a
-    // figure. The entry's key line names the bare mark, so a price here would
-    // teach the wrong one — and the visible text is what tells them apart,
-    // since `full` keeps the word in the accessible name either way.
-    // Leaf spans with no sr-only ANCESTOR. `collapsed` draws `$` and keeps the
-    // sentence in an sr-only sibling, so two things defeat a naive sweep:
-    // every ancestor span reads back as `$buy·$2.10`, and the figure inside
-    // the sr-only subtree is itself a leaf whose own class is not sr-only.
-    // Both made the two densities indistinguishable.
+    // figure. This figure is not the Shopping list, so a price here would
+    // teach the wrong mark. Leaf spans with no sr-only ANCESTOR: `collapsed`
+    // keeps its sentence in an sr-only sibling, so every ancestor span reads
+    // back as `$buy·$2.10` and the sr-only figure is itself a leaf.
     const visible = [...plate.querySelectorAll("span")]
       .filter((el) => el.childElementCount === 0 && el.closest(".sr-only") === null)
       .map((el) => el.textContent ?? "");
@@ -403,6 +435,75 @@ describe("the figures", () => {
     // The slot is SHARED: a card you are printing takes `P` instead of `$`,
     // and a figure that only ever drew the buy mark would document half of it.
     expect(visible.some((t) => t.trim() === "P"), "the proxy mark drew nothing").toBe(true);
+
+    // The fourth key line's edge. The over-committed row carries it as an
+    // inset ring rather than a border — 3px of real border would shunt one
+    // row's contents sideways — so it is read off the computed box shadow.
+    const over = [...plate.querySelectorAll("div")].filter((el) =>
+      (el as HTMLElement).style.boxShadow.includes("--avail-over-border"),
+    );
+    expect(over.length, "the over-committed edge drew nothing").toBe(1);
+  });
+
+  it("draws the recommended mix as the deck page's own strip", () => {
+    const { container } = render(<AboutPage seen={0} />);
+    const plate = figures(container)["roles"];
+
+    // Five cells, which is the strip's own `ROLE_ORDER` rather than a number
+    // chosen here: the entry is about roles, and a figure drawing four of them
+    // would teach a mix that does not exist.
+    for (const role of ROLE_ORDER) {
+      // The cell uppercases with CSS, so the text node carries the label as
+      // `mix.ts` writes it.
+      expect(plate.textContent).toContain(RECOMMENDED_MIX[role].label);
+    }
+    expect(plate.textContent).toContain(RECOMMENDED_MIX_SOURCE_LINE);
+
+    // The two readings the key lines name, each on the cell that draws it. The
+    // surplus is read by its COLOUR rather than by its figure: `12 / 10` is
+    // still a pair of numbers with the state rule removed, and a cell over its
+    // target is the one that says so by going green.
+    // The numerator is the figure element's own first text node; the
+    // denominator is a child span, so a `textContent` match would read
+    // `12 / 10` and a childless filter would skip the element entirely.
+    const over = [...plate.querySelectorAll("p")].find(
+      (el) => el.firstChild?.textContent?.trim() === "12",
+    );
+    expect(over?.style.color ?? "", "the surplus cell drew no state").toContain(
+      "var(--success)",
+    );
+
+    // The short cell keeps its action, and it is the ONLY kind that does — a
+    // strip whose every cell offered `consider` would contradict the line it
+    // illustrates.
+    const considers = [...plate.querySelectorAll("button")].filter((el) =>
+      /consider/i.test(el.textContent ?? ""),
+    );
+    expect(considers.length, "the short cells drew no action").toBe(2);
+
+    // The disclosure, which is the third thing the entry's caption rests on:
+    // the baselines are the format's, not this commander's.
+    expect(plate.textContent).toContain(addPanelCopy.strip.rationaleToggle);
+  });
+
+  it("draws the decklist's own order bar, on the shopping filter", () => {
+    const { container } = render(<AboutPage seen={0} />);
+    const plate = figures(container)["decklist-order"];
+
+    // The two sections, which is the caption's first clause.
+    expect(plate.textContent).toContain(DECK_GROUPING_LABELS.type);
+    expect(plate.textContent).toContain(DECK_GROUPING_LABELS.role);
+
+    // The order control reads the live order back, and the order it is given
+    // is the one the caption's last clause is about. `deckSortOrderLabel`
+    // rather than a literal: the figure is here so a rename reaches it.
+    expect(plate.textContent).toContain(deckSortOrderLabel("price", "desc"));
+
+    // Price is offered on the shopping filter ALONE, so the bar has to be
+    // drawn there — and the way to tell which filter is open, without reading
+    // a pill's styling, is the control the All filter carries and Shopping
+    // does not: the list/card view toggle.
+    expect(plate.textContent).not.toContain(viewToggleCopy.deck.card);
   });
 
   it("draws both fit shapes and writes no prose inside the frame", () => {
@@ -1006,9 +1107,32 @@ describe("what each legend must hold", () => {
     );
   });
 
-  it("gives the deck page all four of its tabs", () => {
+  it("deck-page: the badge, the bar and the tabs the key lines name", () => {
     const { container } = render(<AboutPage seen={0} />);
-    expect(rows(container, "deck-page")).toHaveLength(4);
+    const el = container.querySelector('[data-specimen="deck-page"]')!;
+    expect(el, "deck-page drew no figure").toBeTruthy();
+
+    // NOT the whole header. `SpineDesktop` needs a wider row than About's
+    // plate and `SpineMobile` is `md:hidden`, so the band cannot be shown at
+    // this width — and no key line names it. These three are what the lines
+    // are about.
+    expect(el.textContent).toContain(DECK_SPINE.status);
+    expect(el.textContent).toContain(`${DECK_SPINE.counts.built}`);
+
+    // Key line 2: a tab DROPS its count rather than printing a nought, so the
+    // Games tab carries no figure. Counted rather than searched for: three
+    // tabs with counts and one without is the rule, and a fixture where every
+    // tab had a figure would draw four alike and say nothing.
+    const withCounts = DECK_TABS.filter((t) => typeof t.count === "number");
+    expect(withCounts).toHaveLength(DECK_TABS.length - 1);
+    for (const tab of DECK_TABS) {
+      expect(el.textContent).toContain(tab.label);
+      if (typeof tab.count === "number") {
+        expect(el.textContent).toContain(String(tab.count));
+      }
+    }
+    const games = DECK_TABS.find((t) => t.count === undefined)!;
+    expect(games.label).toBe(gameLogCopy.tab.label);
   });
 
   it("gives the resume rows all three verbs", () => {

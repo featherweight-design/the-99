@@ -1,4 +1,9 @@
+import type { BuilderTabSpec } from "../../components/decks/builder-tabs";
+import { addPanelCopy } from "../copy/decks-builder";
+import { gameLogCopy } from "../copy/game-log";
+import { deckVersioningCopy } from "../copy/deck-versioning";
 import type { SynergyCard } from "../commanders/synergy-cards";
+import type { DeckDetailCard } from "../decks/grouping";
 import { deckImportCopy } from "../copy/deck-import";
 import type { CommanderRowView } from "../../components/commanders/commander-row";
 import type { PriceSlot } from "../discovery/price";
@@ -806,3 +811,205 @@ export const SYNERGY_ROWS: SynergyCard[] = [
   },
 ];
 
+
+/**
+ * A deck's own header: the name, its rename glyph, the identity pips, the
+ * commander line, the status badge, the completion bar and its two actions.
+ *
+ * SINGLE-COMMANDER, so the denominator is 99 and the pips are Brago's own
+ * Azorius identity. An earlier version of this comment claimed a PAIR — a 98
+ * denominator and a union of two identities — while `partner` was null, so it
+ * described a state the fixture has never drawn. §3's own deck is `HD -
+ * Brago`, who has no partner.
+ *
+ * `artCropUri` is null. The figure draws no art band at all now (see
+ * `DeckPageFigureBody`), and a reference page fetches no commander art either
+ * way.
+ */
+/**
+ * The four tabs, with the counts §3 draws.
+ *
+ * `games` carries NO count, and that is key line 2: a tab drops its count
+ * rather than printing a nought, so a deck nobody has logged a game against
+ * simply has no number beside Games. A fixture where every tab had a figure
+ * would draw four alike and say nothing about the rule.
+ */
+export const DECK_TABS: BuilderTabSpec[] = [
+  { id: "deck", label: addPanelCopy.tabs.deck, count: 99, accessibleName: "In deck, 99 cards" },
+  { id: "consider", label: addPanelCopy.tabs.consider, count: 80, accessibleName: "Consider, 80 cards" },
+  { id: "games", label: gameLogCopy.tab.label, accessibleName: gameLogCopy.tab.label },
+  {
+    id: "versions",
+    label: deckVersioningCopy.history.tab,
+    count: 1,
+    accessibleName: `${deckVersioningCopy.history.tab}, 1 version`,
+  },
+];
+
+export const DECK_SPINE = {
+  deck: {
+    id: "about-deck",
+    name: "HD - Brago",
+    commander: {
+      oracleId: "about-brago",
+      name: "Brago, King Eternal",
+      colorIdentity: ["W", "U"],
+      artCropUri: null,
+    },
+    partner: null,
+  },
+  counts: {
+    // A FULL body. §3 draws this deck complete, and complete is the state
+    // whose badge and bar agree most legibly — key line 1 is that the two are
+    // one pair, which a half-built bar shows less plainly than a full one.
+    built: 99,
+    ownedCount: 99,
+    toBuyCount: 0,
+  },
+  status: "Complete" as StatusPill,
+  /** §3's own stamp on the header's right. */
+  version: "v1 · committed 5 Sep 2026",
+};
+
+/**
+ * `decklist-marks` — five real `deck_cards` rows, one per mark the entry names.
+ *
+ * The figure mounts `DecklistRow` itself, so every field here is one the row
+ * actually reads. The order is the order the marks are introduced in the key
+ * lines: the free row first, so the reader sees what "nothing in its way"
+ * looks like before any mark at all.
+ *
+ * `cardTypeGroup` is deliberately never `"Lands"`. A row in the lands group
+ * drops its meta line and takes the shorter shell, so a mixed fixture would
+ * draw two row heights and read as a layout fault rather than as a set of
+ * marks.
+ */
+export const DECKLIST_MARK_ROWS: DeckDetailCard[] = [
+  {
+    oracleId: "about-mark-free",
+    name: CARDS.owned,
+    typeLine: "Artifact",
+    cardTypeGroup: "Artifacts",
+    role: "ramp",
+    cmc: 1,
+    owned: true,
+    quantity: 1,
+    auto: false,
+    manaCost: "{1}",
+    printedName: null,
+    printedSetCode: null,
+    printedCollectorNumber: null,
+    availability: AVAILABILITY[0].a,
+  },
+  {
+    oracleId: "about-mark-soft",
+    name: CARDS.removed,
+    typeLine: "Enchantment",
+    cardTypeGroup: "Enchantments",
+    role: "draw",
+    cmc: 3,
+    owned: true,
+    quantity: 1,
+    // The one row that carries the auto tag. It is a fact about where the card
+    // came from rather than an obstacle, which is the distinction the caption
+    // draws — so it rides a row whose availability slot is occupied by a claim,
+    // where the two can be seen not to be the same kind of thing.
+    auto: true,
+    manaCost: "{2}{U}",
+    printedName: null,
+    printedSetCode: null,
+    printedCollectorNumber: null,
+    availability: AVAILABILITY[1].a,
+  },
+  {
+    oracleId: "about-mark-over",
+    name: "Cyclonic Rift",
+    typeLine: "Instant",
+    cardTypeGroup: "Instants",
+    role: "other",
+    cmc: 7,
+    owned: true,
+    // Over-committed rows are where a count above one is ordinary, and the
+    // entry's count line has nothing to point at without one.
+    quantity: 2,
+    auto: false,
+    manaCost: "{6}{U}",
+    printedName: null,
+    printedSetCode: null,
+    printedCollectorNumber: null,
+    availability: AVAILABILITY[3].a,
+  },
+  {
+    oracleId: "about-mark-buy",
+    name: "Dockside Extortionist",
+    typeLine: "Creature — Goblin Pirate",
+    cardTypeGroup: "Creatures",
+    role: "ramp",
+    cmc: 2,
+    // `deckRowTag` answers `buy` on `!owned`, so this row draws the `$`.
+    owned: false,
+    quantity: 1,
+    auto: false,
+    manaCost: "{1}{R}",
+    printedName: null,
+    printedSetCode: null,
+    printedCollectorNumber: null,
+    availability: null,
+  },
+  {
+    oracleId: "about-mark-proxy",
+    name: CARDS.proxied,
+    typeLine: "Artifact",
+    cardTypeGroup: "Artifacts",
+    role: "ramp",
+    cmc: 0,
+    // Not owned AND proxied: `deckRowTag` answers `proxy` first, so `P` takes
+    // the slot `$` would otherwise have. The dot stays hollow, because `owned`
+    // is a fact about the collection and `proxied` one about this deck's slot.
+    owned: false,
+    proxied: true,
+    quantity: 1,
+    auto: false,
+    manaCost: "{0}",
+    printedName: null,
+    printedSetCode: null,
+    printedCollectorNumber: null,
+    availability: null,
+  },
+];
+
+/**
+ * `roles` — one card per role, quantity-weighted so the strip's five cells
+ * read the counts this entry wants to explain.
+ *
+ * `computeRoleCounts` sums `quantity` over `role` and reads nothing else, so
+ * one row per role states the tally exactly. The counts are chosen to draw
+ * every cell state the entry's caption names: Ramp OVER its number (12 of 10 —
+ * "a role over its number is fine and says so by saying nothing"), Draw and
+ * Removal exactly met, Wipes SHORT, and Land short of an advisory target,
+ * whose `rec ~37` is where the range still speaks.
+ */
+export const ROLE_MIX_CARDS: DeckDetailCard[] = (
+  [
+    ["ramp", 12],
+    ["draw", 10],
+    ["removal", 8],
+    ["wipes", 1],
+    ["land", 35],
+  ] as const
+).map(([role, quantity]) => ({
+  oracleId: `about-role-${role}`,
+  name: role,
+  typeLine: "",
+  cardTypeGroup: "Other" as const,
+  role,
+  cmc: 0,
+  owned: true,
+  quantity,
+  auto: false,
+  manaCost: null,
+  printedName: null,
+  printedSetCode: null,
+  printedCollectorNumber: null,
+  availability: null,
+}));

@@ -344,8 +344,16 @@ export const aboutEntries: readonly AboutEntry[] = [
     id: 'auto-fill',
     chapter: '03',
     title: 'How much we fill in for you',
-    route: '/decks/new',
-    width: 'inset',
+    // The canvas names /decks/new, which is where the fill is ORDERED. The
+    // surface drawn below is where the rest of it is offered: the Top off
+    // strip, which lives between the ledger and the decklist on a deck's own
+    // page. The route line names the page the reader is looking at.
+    route: '/decks',
+    opens: 'opens a deck',
+    // 'inset' at the canvas, where the figure was a three-row legend. The
+    // strip's head is one baseline row on desktop and a ~300px column stacks
+    // it into five lines.
+    width: 'plate',
     caption:
       'Pick a commander and we assemble as much of the 99 as your collection supports, which is usually most of it. The rest is yours to fill, before or after you sleeve it up: Top off fills the remaining slots from what you own in one pass, and anything auto-added can be cleared in one action if you would rather start from your own picks.',
     keys: [],
@@ -362,7 +370,11 @@ export const aboutEntries: readonly AboutEntry[] = [
       'A decklist is rows, and each row answers four questions from left to right: do you own it, what is it, how many does the deck want, and is anything standing in the way. A row with nothing in its way carries no obstacle mark, so the ones you do see are all things to deal with — the separate auto tag says we picked the card for you, which is a fact about where it came from rather than a problem.',
     keys: [
       'a filled green dot is a card you own; a dashed hollow one is a card you do not. Same shape, same place, every list in the app.',
-      'the circled figure is how many copies this deck wants, and it is there whether that is one or four.',
+      // The canvas says "the circled figure ... is there whether that is one
+      // or four". The row draws neither half: the count is `×2` in mono beside
+      // the name, and `decklist-row.tsx` renders it on `quantity > 1` only.
+      // A single copy is the ordinary case and says so by saying nothing.
+      'a count appears beside the name only when the deck wants more than one copy, as `×2`. A row with no count wants one.',
       'one mark, and only when there is something to say: `1 in a brew`, `none free`, `short N`, `$` for a card you would have to buy, or `P` for one you are printing. One slot, one answer.',
       'the edge is the row’s own state — accent where you are working, and the over-committed colour when the deck wants more than you own.',
     ],
@@ -378,7 +390,11 @@ export const aboutEntries: readonly AboutEntry[] = [
     caption:
       'A decklist is read by the job a card does, not by type line, because that is how a deck is short: eleven creatures is not a problem, one board wipe is. The recommended mix is EDHREC’s averages, not a rule — a role over its number is fine and says so by saying nothing.',
     keys: [
-      'the second figure is the recommendation, so 5 wipes against 3 is a surplus rather than an error. Nothing is capped.',
+      // Named on the cell the figure actually draws. The canvas wrote "5
+      // wipes against 3", which was an example rather than a reading — and
+      // the strip below draws Wipes SHORT, because the caption's own example
+      // of a problem is the deck with one board wipe.
+      'the second figure is the recommendation, so 12 ramp against 10 is a surplus rather than an error. Nothing is capped.',
       'a short role is the one thing here that names what to do next, and `consider` goes straight to cards that would fill it.',
     ],
     since: 1,
@@ -389,7 +405,9 @@ export const aboutEntries: readonly AboutEntry[] = [
     title: 'Reading the 99 in a different order',
     route: '/decks',
     opens: 'opens a deck',
-    width: 'inset',
+    // 'inset' at the canvas, where the figure was a four-row legend. It draws
+    // the decklist's own bar now, which is a full-width row on the deck page.
+    width: 'plate',
     caption:
       'The 99 is always in sections — by role, or by type — and the order you pick applies inside them rather than flattening the list. Name and mana value are always offered; price joins them on the shopping filter, where money is the question being asked.',
     keys: [],
