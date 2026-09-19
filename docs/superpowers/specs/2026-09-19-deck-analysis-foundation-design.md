@@ -757,6 +757,37 @@ Recorded so it cannot be quietly skipped: a measured target beside an asserted c
 sources of truth, and here the line between them is principled — measurable versus not — which
 is why both may legitimately stand.
 
+### 4A.6a The reconciliation sub-project 2 inherits
+
+Named here rather than discovered in `fill.ts`, because it is that sub-project's central
+design problem and it is visible from this one.
+
+EDHREC gives a **complete** measured skeleton by type — Najeela's decks average
+`land 34, creature 28, instant 14, artifact 9, enchantment 7, sorcery 7`, summing to exactly
+99. `fill.ts` fills by **function**: it walks `ramp / draw / removal / wipes` against
+`ROLE_TARGETS`, takes lands against `landTarget`, and leaves the remainder to synergy.
+
+**Type and function are orthogonal.** Solemn Simulacrum is a creature *and* ramp. So the two
+skeletons do not compose by addition:
+
+- filling to the measured **type** composition produces a deck shaped like real decks for that
+  commander, which may hold three removal spells
+- filling to the asserted **role** targets produces the right functional mix over an arbitrary
+  type spread, and covers only 68 of 99 slots
+
+The good answer satisfies both at once, which is a constraint problem rather than two
+sequential passes — and it is made harder by the asymmetry that one skeleton is measured and
+complete while the other is asserted and partial.
+
+**This spec deliberately does not solve it.** The right rule depends on how the fill actually
+behaves against real compositions, which cannot be measured until the composition columns are
+populated (§4A.8's scheduling note) — and a rule invented at a desk about a path nobody has
+measured is exactly how the four unsourced constants arrived in the first place.
+
+What sub-project 1 owes it is the full measured composition and the curve rather than the land
+count alone, which §4A.7 stores and §6A reports. What sub-project 2 owes is a measurement
+before a rule.
+
 ### 4A.7 Tables
 
 ```
