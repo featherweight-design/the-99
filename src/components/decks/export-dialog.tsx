@@ -42,6 +42,21 @@ interface ExportDialogProps {
   shoppingCards: { name: string; role?: string; quantity: number; owned: boolean }[];
   open: boolean;
   onClose: () => void;
+  /**
+   * Draw the dialog as a STATIC SPECIMEN rather than opening it — no scroll
+   * lock, no focus trap, no Escape handler. `/about` is the only caller: it
+   * draws this dialog as a figure, and an open dialog rendered into a
+   * reference page would lock that page's own scroll and swallow the reader's
+   * Tab. See `useDialogA11y`'s `inert`.
+   */
+  inert?: boolean;
+  /**
+   * Which tab the dialog opens on. Defaults to the decklist, which is what
+   * every real opening wants. `/about` passes `shopping`: its entry's two key
+   * lines are about that tab, and the `Buy these at Mana Pool` link they
+   * describe renders there alone.
+   */
+  initialTab?: Tab;
 }
 
 export function ExportDialog({
@@ -52,14 +67,16 @@ export function ExportDialog({
   shoppingCards,
   open,
   onClose,
+  inert = false,
+  initialTab = "decklist",
 }: ExportDialogProps) {
   const dialogRef = useRef<HTMLDivElement | null>(null);
-  const [tab, setTab] = useState<Tab>("decklist");
+  const [tab, setTab] = useState<Tab>(initialTab);
   const [status, setStatus] = useState("");
 
   // Focus trap, Escape, focus-return, body scroll lock — all hooks must run
   // before any early return, so the lock tracks `open` rather than the mount.
-  useDialogA11y(dialogRef, onClose, { lockScroll: open });
+  useDialogA11y(dialogRef, onClose, { lockScroll: open, inert });
 
   if (!open) return null;
 

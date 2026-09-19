@@ -7,6 +7,8 @@ import { availabilityCopy } from "../../lib/copy/availability";
 import { refreshCopy } from "../../lib/copy/refresh";
 import { gameLogCopy } from "../../lib/copy/game-log";
 import { deckImportCopy } from "../../lib/copy/deck-import";
+import { deckVersioningCopy } from "../../lib/copy/deck-versioning";
+import { exportLinkOutCopy, exportTabCopy } from "../../lib/copy/decks-builder";
 import { ORDER_OPTIONS } from "../commanders/rack/order-options";
 import { commandersCopy } from "../../lib/copy/lanes";
 import { explainedCopy } from "../../lib/copy/commander-explained";
@@ -25,6 +27,9 @@ import {
 import { setPageCopy } from "../../lib/copy/set-collections";
 import { PIP_ORDER } from "../../lib/copy/filter-chassis";
 import {
+  ADD_RESULTS,
+  DECK_VERSIONS,
+  SHOPPING_ROWS,
   CARDS,
   CONTESTED_ARRIVAL,
   DECKLIST_MARK_ROWS,
@@ -51,6 +56,11 @@ import {
 // The action is a server function; the page only needs it to exist as a form
 // target, and importing it for real drags a database client into jsdom.
 vi.mock("../../app/about/actions", () => ({ dismissAbout: vi.fn() }));
+// `deck-import` mounts `ImportEntry`, which calls `useRouter`. There is no app
+// router in jsdom, and without this the hook throws during render — which took
+// down all 53 tests in this file rather than the one figure, because every
+// test renders the whole page.
+vi.mock("next/navigation", () => ({ useRouter: () => ({ push: vi.fn() }) }));
 
 describe("the page a first-time reader sees", () => {
   it("marks nothing, because all of it is new to them", () => {
@@ -504,6 +514,147 @@ describe("the figures", () => {
     // a pill's styling, is the control the All filter carries and Shopping
     // does not: the list/card view toggle.
     expect(plate.textContent).not.toContain(viewToggleCopy.deck.card);
+  });
+
+  it("draws the Add panel's own result rows", () => {
+    const { container } = render(<AboutPage seen={0} />);
+    const plate = figures(container)["add-cards"];
+
+    // The ownership phrase, both branches, in the row's own words. The caption
+    // used to claim a DOT on every result and the figure drew one; the panel
+    // draws neither — it states copies in text — so both strings are read off
+    // the copy layer rather than described here.
+    expect(plate.textContent).toContain(addPanelCopy.quickAdd.rowOwned(2));
+    expect(plate.textContent).toContain(addPanelCopy.quickAdd.rowNotOwned);
+
+    // The caption's second sentence, which the retired figure did not draw at
+    // all: a card a committed deck is holding still adds, carrying the mark.
+    expect(plate.textContent).toContain(
+      availabilityCopy.marker.hard,
+    );
+
+    // And it is still an addable row rather than a refusal — the affordance is
+    // drawn on every row including that one.
+    const adds = [...plate.querySelectorAll("span")].filter(
+      (el) => el.textContent?.trim() === addPanelCopy.quickAdd.rowAddActive,
+    );
+    expect(adds.length, "the add affordance drew nothing").toBe(ADD_RESULTS.length);
+  });
+
+  it("draws a spent slot between two live rows", () => {
+    const { container } = render(<AboutPage seen={0} />);
+    const plate = figures(container)["undo-removal"];
+
+    // The receipt names the card, which is the caption's "naming it".
+    expect(plate.textContent).toContain(
+      addPanelCopy.undo.removed(DECKLIST_MARK_ROWS[1].name),
+    );
+    // And it is a real control, not a label — queried by attribute because
+    // `Specimen` is `aria-hidden` and nothing inside it has a role.
+    const undo = [...plate.querySelectorAll("button")].filter(
+      (el) => el.textContent?.trim() === addPanelCopy.undo.action,
+    );
+    expect(undo.length, "the undo control drew nothing").toBe(1);
+
+    // IN CONTEXT. The caption's verb is TURNS INTO, so the rows either side
+    // have to be ordinary ones — a receipt shown alone is a component, and a
+    // receipt between two live rows is the thing that happened to one of
+    // them. The spent row draws no ownership dot — but it DOES draw a spacer
+    // at the dot's exact size, to keep its name aligned with the rows above
+    // and below, so a width filter counts three. `rounded-full` is what only
+    // the real dot carries.
+    const dots = [...plate.querySelectorAll("span")].filter((el) => {
+      const c = el.className.toString();
+      return c.includes("w-[7px]") && c.includes("rounded-full");
+    });
+    expect(dots.length, "the live rows either side drew nothing").toBe(2);
+  });
+
+  it("draws the import route's own door, with both modes and no link mode", () => {
+    const { container } = render(<AboutPage seen={0} />);
+    const plate = figures(container)["deck-import"];
+
+    // The two doors the route actually offers.
+    expect(plate.textContent).toContain(deckImportCopy.entry.modePaste);
+    expect(plate.textContent).toContain(deckImportCopy.entry.modeFile);
+
+    // The caption's third sentence is the route's own copy, not this page's
+    // gloss on it — the entry surface carries the unmatched-line promise
+    // under its form, which is why mounting it says more than naming its
+    // labels did.
+    expect(plate.textContent).toContain(deckImportCopy.entry.aboutFailureHeading);
+
+    // And there is no third mode. R4's note on this entry says a link mode
+    // "does not exist and is not being built", and the retired figure could
+    // not have shown that — a legend of two rows proves nothing about a
+    // third. A mounted toggle does.
+    // Read off `aria-label`, not the text: each button renders BOTH the short
+    // and the long label and hides one with a `md:` class, so jsdom — which
+    // answers false for every media query and lays nothing out — reads the two
+    // concatenated. The aria-label is the single name the component gives the
+    // control at either width, which is why it exists.
+    const modes = [...plate.querySelectorAll("button")].filter((el) =>
+      ([deckImportCopy.entry.modePaste, deckImportCopy.entry.modeFile] as string[]).includes(
+        el.getAttribute("aria-label") ?? "",
+      ),
+    );
+    expect(modes.length, "the mode toggle drew nothing").toBe(2);
+  });
+
+  it("draws the version rail", () => {
+    const { container } = render(<AboutPage seen={0} />);
+    const plate = figures(container)["versions"];
+
+    // The rail. `initial` rather than `+99` is the v1 reading, and it is the
+    // one a fixture can get wrong without anything else noticing.
+    expect(plate.textContent).toContain(deckVersioningCopy.history.current);
+    expect(plate.textContent).toContain(DECK_VERSIONS[0].note);
+    expect(plate.textContent).toContain("initial");
+
+    // The deck-state marks used to sit in this figure and are deliberately
+    // NOT asserted: #738 removed them from the app, and main had dropped them
+    // from here before this branch rebased onto it. A test still demanding
+    // them would be pinning a feature that no longer exists.
+  });
+
+  it("draws the Shopping filter's two ways onto the list", () => {
+    const { container } = render(<AboutPage seen={0} />);
+    const plate = figures(container)["shopping"];
+
+    // Row one is unowned. Row two is the caption's load-bearing sentence: a
+    // card you OWN, on the list because a committed deck holds every copy —
+    // `isShoppingCard` answers true on the `over` state, and `deckRowTag` then
+    // answers `buy` through `spokenFor`. A figure of unowned rows alone would
+    // draw two buy tags and substantiate nothing.
+    expect(plate.textContent).toContain(SHOPPING_ROWS[0].name);
+    expect(plate.textContent).toContain(SHOPPING_ROWS[1].name);
+    expect(plate.textContent).toContain(availabilityCopy.marker.over(2));
+
+    // Both rows carry the buy mark, including the owned one.
+    const dots = [...plate.querySelectorAll("span")].filter((el) => {
+      const c = el.className.toString();
+      return c.includes("w-[7px]") && c.includes("rounded-full");
+    });
+    expect(dots.filter((el) => el.className.toString().includes("dashed")).length).toBe(1);
+    expect(dots.length).toBe(2);
+  });
+
+  it("draws the export dialog on the tab its key lines are about", () => {
+    const { container } = render(<AboutPage seen={0} />);
+    const plate = figures(container)["export"];
+
+    // Both tabs are present, and the SHOPPING one is the open one — the link
+    // below renders on that tab alone, so a dialog opened on the decklist
+    // would leave two of this entry's three key lines pointing at nothing.
+    expect(plate.textContent).toContain(exportTabCopy.decklist);
+    expect(plate.textContent).toContain(exportTabCopy.shopping);
+    expect(plate.textContent).toContain(exportLinkOutCopy.shopping);
+
+    // The dialog is drawn INERT. Were it opened, `useDialogA11y` would write
+    // `document.body.style.overflow` — locking the About page's own scroll,
+    // which is the regression the prop exists to prevent and the one thing
+    // here that is invisible in the markup.
+    expect(document.body.style.overflow).toBe("");
   });
 
   it("draws both fit shapes and writes no prose inside the frame", () => {

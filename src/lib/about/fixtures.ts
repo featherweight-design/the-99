@@ -4,6 +4,9 @@ import { gameLogCopy } from "../copy/game-log";
 import { deckVersioningCopy } from "../copy/deck-versioning";
 import type { SynergyCard } from "../commanders/synergy-cards";
 import type { DeckDetailCard } from "../decks/grouping";
+import type { SearchResult } from "../../app/decks/[id]/search-action";
+import type { DecklistCard } from "../decks/export-helpers";
+import type { VersionSummary } from "../decks/versions";
 import { deckImportCopy } from "../copy/deck-import";
 import type { CommanderRowView } from "../../components/commanders/commander-row";
 import type { PriceSlot } from "../discovery/price";
@@ -941,6 +944,25 @@ export const DECKLIST_MARK_ROWS: DeckDetailCard[] = [
     availability: AVAILABILITY[3].a,
   },
   {
+    // The accent edge: a row the DRAFT touched. `PendingChangeProvider` keys on
+    // oracle id, and `decklist-row.tsx` draws the edge as an inset 2px rule —
+    // 3px of real border would shunt one row's contents sideways.
+    oracleId: "about-mark-pending",
+    name: "Swords to Plowshares",
+    typeLine: "Instant",
+    cardTypeGroup: "Instants",
+    role: "removal",
+    cmc: 1,
+    owned: true,
+    quantity: 1,
+    auto: false,
+    manaCost: "{W}",
+    printedName: null,
+    printedSetCode: null,
+    printedCollectorNumber: null,
+    availability: AVAILABILITY[0].a,
+  },
+  {
     oracleId: "about-mark-buy",
     name: "Dockside Extortionist",
     typeLine: "Creature — Goblin Pirate",
@@ -1014,3 +1036,191 @@ export const ROLE_MIX_CARDS: DeckDetailCard[] = (
   printedCollectorNumber: null,
   availability: null,
 }));
+
+/**
+ * `add-cards` — three Add-panel search results, one per reading the caption
+ * makes.
+ *
+ * The figure mounts `CardSearchRowBody`, the component the quick-add list
+ * draws each result with, so every field here is one that component reads.
+ *
+ * The third row is the caption's whole second sentence: a card a COMMITTED
+ * deck is holding. `AVAILABILITY[2]` is the hard claim — one copy owned, one
+ * claimed, none free — and the row draws its marker and stays addable, rather
+ * than being refused.
+ */
+export const ADD_RESULTS: SearchResult[] = [
+  {
+    oracleId: "about-add-owned",
+    name: CARDS.owned,
+    typeLine: "Artifact",
+    cardTypeGroup: "Artifacts",
+    role: "ramp",
+    imageUri: null,
+    manaCost: "{1}",
+    cmc: 1,
+    owned: true,
+    ownedQty: 2,
+    availability: AVAILABILITY[0].a,
+    flavorName: null,
+  },
+  {
+    oracleId: "about-add-unowned",
+    name: "Dockside Extortionist",
+    typeLine: "Creature — Goblin Pirate",
+    cardTypeGroup: "Creatures",
+    role: "ramp",
+    imageUri: null,
+    manaCost: "{1}{R}",
+    cmc: 2,
+    // The dot is on EVERY result, which is the caption's first clause — so one
+    // row has to be a card the player does not own.
+    owned: false,
+    ownedQty: 0,
+    availability: null,
+    flavorName: null,
+  },
+  {
+    oracleId: "about-add-held",
+    name: CARDS.removed,
+    typeLine: "Enchantment",
+    cardTypeGroup: "Enchantments",
+    role: "draw",
+    imageUri: null,
+    manaCost: "{2}{U}",
+    cmc: 3,
+    owned: true,
+    ownedQty: 1,
+    availability: AVAILABILITY[2].a,
+    flavorName: null,
+  },
+];
+
+
+/**
+ * `export` — the two lists the dialog's tabs draw.
+ *
+ * `buildDecklistText` folds these into the preview, and the preview prints a
+ * `… N more` tail from the deck's own count — so the list is deliberately
+ * short and the count it is measured against is the real 99.
+ */
+export const EXPORT_DECKLIST: DecklistCard[] = [
+  { name: CARDS.owned, quantity: 1 },
+  { name: "Cultivate", quantity: 1 },
+  { name: CARDS.removed, quantity: 1 },
+];
+
+/**
+ * What the Shopping tab holds, and the entry's first key line: the pill counts
+ * the cards this deck has to buy, WHICH INCLUDES ONE YOU OWN whose every copy
+ * another deck is already holding. Both cases are here, or the key line has
+ * nothing to point at.
+ */
+export const EXPORT_SHOPPING: {
+  name: string;
+  role?: string;
+  quantity: number;
+  owned: boolean;
+}[] = [
+  { name: "Dockside Extortionist", quantity: 1, owned: false },
+  { name: CARDS.removed, quantity: 1, owned: true },
+];
+
+/**
+ * `shopping` — the two ways a card reaches the Shopping filter.
+ *
+ * `isShoppingCard` answers true for an unowned card outright, and for an OWNED
+ * card whose availability reads `over` — every copy claimed by a committed
+ * deck. The second is the caption's load-bearing sentence, and a fixture of
+ * unowned rows alone would draw two buy tags and substantiate nothing.
+ *
+ * The second row's `availability` is therefore `AVAILABILITY[3]`, the over
+ * state, and NOT the hard one: `availabilityState` reads `free` directly, and
+ * `hard` with `free: 0` resolves to `hard` rather than `over`, which would
+ * leave the row off the list it is here to be on.
+ */
+export const SHOPPING_ROWS: DeckDetailCard[] = [
+  {
+    oracleId: "about-shop-unowned",
+    name: "Dockside Extortionist",
+    typeLine: "Creature — Goblin Pirate",
+    cardTypeGroup: "Creatures",
+    role: "ramp",
+    cmc: 2,
+    owned: false,
+    quantity: 1,
+    auto: false,
+    manaCost: "{1}{R}",
+    printedName: null,
+    printedSetCode: null,
+    printedCollectorNumber: null,
+    availability: null,
+  },
+  {
+    oracleId: "about-shop-spoken",
+    name: CARDS.removed,
+    typeLine: "Enchantment",
+    cardTypeGroup: "Enchantments",
+    role: "draw",
+    cmc: 3,
+    owned: true,
+    quantity: 1,
+    auto: false,
+    manaCost: "{2}{U}",
+    printedName: null,
+    printedSetCode: null,
+    printedCollectorNumber: null,
+    availability: AVAILABILITY[3].a,
+  },
+];
+
+/**
+ * `versions` — two committed versions for the rail, newest first, exactly as
+ * `listVersions` returns them. `VersionRail` marks the first `current` from
+ * its own index, so no field here states it.
+ *
+ * v1 carries `adds: 99` against no predecessor, which the rail renders as
+ * `initial` rather than `+99`. v2's note is what makes the entry's second key
+ * line legible: a version carries its own record, so a change can be read as
+ * having helped rather than only as having happened.
+ *
+ * `gamesHeld` is on v1 alone, deliberately: the rail draws a tally only for a
+ * version that is no longer current, because the current one is still
+ * accumulating and a figure on it would be a count that has not finished.
+ */
+export const DECK_VERSIONS: VersionSummary[] = [
+  {
+    id: "about-v2",
+    number: 2,
+    committedAt: new Date("2026-09-05T00:00:00.000Z"),
+    note: "Swapped the top end for two more two-drops.",
+    commanderOracleId: "about-brago",
+    partnerOracleId: null,
+    commanderSince: new Date("2026-08-01T00:00:00.000Z"),
+    partnerSince: null,
+    cardCount: 99,
+    adds: 4,
+    removes: 4,
+    manaValue: 2.8,
+    gamesHeld: 0,
+    commanderName: "Brago, King Eternal",
+    partnerName: null,
+  },
+  {
+    id: "about-v1",
+    number: 1,
+    committedAt: new Date("2026-08-01T00:00:00.000Z"),
+    note: null,
+    commanderOracleId: "about-brago",
+    partnerOracleId: null,
+    commanderSince: new Date("2026-08-01T00:00:00.000Z"),
+    partnerSince: null,
+    cardCount: 99,
+    adds: 99,
+    removes: 0,
+    manaValue: 3.1,
+    gamesHeld: 3,
+    commanderName: "Brago, King Eternal",
+    partnerName: null,
+  },
+];

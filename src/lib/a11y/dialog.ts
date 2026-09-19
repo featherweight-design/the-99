@@ -102,6 +102,24 @@ export function useDialogA11y(
      * sheet around the row inert in one render.
      */
     returnFocusRef?: RefObject<HTMLElement | null>;
+    /**
+     * The dialog is being drawn as a STATIC SPECIMEN rather than opened, so
+     * every behaviour this hook adds is suppressed: no scroll lock, no focus
+     * capture or restore, no initial focus, no key listener.
+     *
+     * The one caller is `/about`, which draws the export dialog as a figure.
+     * A dialog rendered into a reference page would otherwise write
+     * `document.body.style.overflow`, locking that page's own scroll, and trap
+     * the reader's Tab inside a picture — both real regressions on a real
+     * route, and the scroll one is what `probe:scroll-lock` exists to catch.
+     *
+     * Not a general escape hatch. The figure is already `inert` and
+     * `pointer-events: none` at its root, so the dialog beneath it cannot be
+     * focused or pressed; this option stops the hook reaching OUT of that
+     * subtree to the document. Any other caller wanting it is asking for a
+     * dialog that is not a dialog.
+     */
+    inert?: boolean;
   },
 ) {
   const triggerRef = useRef<HTMLElement | null>(null);
@@ -109,9 +127,11 @@ export function useDialogA11y(
   const returnFocusRef = options?.returnFocusRef;
   const lockScroll = options?.lockScroll ?? true;
   const closeOnEscape = options?.closeOnEscape ?? true;
+  const inert = options?.inert ?? false;
 
   // Remember what had focus before the dialog opened; return it on close.
   useEffect(() => {
+    if (inert) return;
     triggerRef.current = document.activeElement as HTMLElement | null;
     return () => {
       // An explicit target beats the capture, which may have read `body` — see
@@ -127,25 +147,28 @@ export function useDialogA11y(
       // eslint-disable-next-line react-hooks/exhaustive-deps -- the value at cleanup is the point
       (returnFocusRef?.current ?? triggerRef.current)?.focus();
     };
-  }, [returnFocusRef]);
+  }, [returnFocusRef, inert]);
 
   // Focus initialFocusRef when provided (avoids a visible focus flash on the
   // first DOM-order focusable); otherwise fall back to the first visible child.
   useEffect(() => {
+    if (inert) return;
     if (initialFocusRef?.current) {
       initialFocusRef.current.focus();
       return;
     }
     if (!dialogRef.current) return;
     visibleFocusables(dialogRef.current)[0]?.focus();
-  }, [dialogRef, initialFocusRef]);
+  }, [dialogRef, initialFocusRef, inert]);
 
-  useScrollLock(lockScroll);
+  useScrollLock(lockScroll && !inert);
 
   // Escape closes; Tab wraps within the dialog.
   useEffect(() => {
     function onKey(e: KeyboardEvent) {
-      // No-op while no dialog is mounted (consumer rendered closed/null).
+      // No-op while no dialog is mounted (consumer rendered closed/null), and
+      // while this one is a specimen rather than an open dialog.
+      if (inert) return;
       const root = dialogRef.current;
       if (!root) return;
 
@@ -194,5 +217,5 @@ export function useDialogA11y(
     }
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
-  }, [dialogRef, onClose, closeOnEscape]);
+  }, [dialogRef, onClose, closeOnEscape, inert]);
 }
