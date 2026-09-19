@@ -322,57 +322,74 @@ A page render must not depend on a third party's uptime or a shared 80 req/min b
 the response is enormous — every card carries six image URLs. Ingesting matches how this repo
 already treats Scryfall and ManaPool, and makes slotting a local SQL question.
 
-**The template gap, stated plainly.** `/templates/` exposes `scryfallQuery` for most
-templates but **`Mass Land Denial` (id 89) returns `null`** — the membership is server-side
-and not downloadable. So card-level `massLandDenial` and `extraTurn` cannot be derived from
-the templates endpoint. They are instead harvested from the **variants bulk**: every variant
-carries `uses` (cards), `requires` (templates), `bracketTag`, `identity`, `legalities`,
-`popularity` and `variantCount`, and a card appearing in a variant that requires the Mass
-Land Denial template is how that card's classification is learned.
+**The template gap, and the better path found in the second pass.** `/templates/` exposes
+`scryfallQuery` for most templates but **`Mass Land Denial` (id 89) returns `null`** — the
+membership is server-side and not downloadable. The first draft therefore inferred card-level
+flags from the variants bulk, by finding cards in variants that `require` that template. That
+is fragile and, measured, unnecessary.
 
-This is **incomplete by construction** — a mass-land-denial card in no combo is invisible to
-it — and the spec does not pretend otherwise. Three consequences, all deliberate:
+**`/estimate-bracket` returns the server-side classification directly, and it batches.**
+`DeckRequest.main` accepts **600 cards**, and the response carries `massLandDenial`,
+`extraTurn`, `gameChanger` and `banned` per card. Measured on 2026-09-19: **600 cards in
+1,146 ms**, a 161 KB response. The catalog is 31,830 commander-legal cards, so **54 requests
+sweep all of it in about a minute** — comfortably inside the documented 80 req/min, and
+lighter on their infrastructure than the bulk download we are already taking.
 
-1. The ingest records **provenance** per flag (`source`), so the reader of a row never has to
-   guess which classifier claimed it.
-2. `pnpm check:spellbook` (§4.5) asserts a **known-positive sample** — `Armageddon`,
-   `Ravages of War`, `Jokulhaups`, `Time Warp`, `Temporal Manipulation` — and fails when the
-   ingest stops recognising them. An incomplete classifier that silently becomes *more*
-   incomplete is the failure this guards.
-3. A **second source** closes most of the gap, and it is not invented: WotC publishes a
-   definition of mass land denial (§6.2) — *"effects that destroy, exile, or bounce other
-   players' lands, keep lands tapped, or change what mana they produce, affecting four or more
-   lands per player, without replacing them"*. That is encodable as an oracle-text classifier
-   against `cards.oracle_text`, in the same shape as `classifyRoles` and `classifyEngine`, and
-   it reaches the common cases a combo index never will (`Armageddon`, `Catastrophe`,
-   `Decree of Annihilation`, `Wildfire`). It is a **classifier, not a list**, so it carries
-   false negatives; it writes `source = 'oracle_rule'` and the two sources union.
+So the ingest harvests card-level flags by a **batched sweep**, and uses the bulk for what
+only the bulk can answer: which combos a decklist assembles, as a local join (§4.3). Each
+source is used for the thing it is actually authoritative about.
 
-   **Measured before it was believed** (`scripts/measure-mld.mts`, committed, read-only):
-   against 24 cards that unambiguously qualify, **recall 22/24 (91.7%)** with **zero false
-   positives** on a curated negative set (`Strip Mine`, `Path to Exile`, `Beast Within`,
-   `Scapeshift` and eight more), flagging **51 of 31,830** commander-legal cards. The two
-   residual misses are **named rather than chased**: `Wave of Vitriol` and `Cataclysm`, both
-   sacrifice-clause wordings the rule does not reach.
+**Spellbook only knows about a quarter of the catalog, and that is what the oracle rule is
+for.** Measured across a random 590-card sample plus 10 known mass-land-denial cards: **171 of
+600 resolved (28.5%)**. Spellbook's card database holds cards that appear in its index, not
+every card in Magic — so a sweep alone would leave roughly seven cards in ten unclassified.
 
-   Its first version scored 66.7%, and the difference is worth recording because it is a
-   trap: every miss was a *wording variant of a clause already in the definition* — the
-   Orb/Stasis family says "keep lands tapped" three different ways. The fix was to implement
-   the remaining clauses, **not** to add patterns until the fixture passed. Tuning a
-   classifier against its own test set produces a number that means nothing.
+**The two sources are complementary, with named cases on both sides** — which is the argument
+for keeping both rather than a hedge:
 
-   **91.7% is also what makes §6.5's warning writable.** A verdict whose detection is 40%
-   complete needs a prominent caution; one at 91.7% with a second source beside it needs a
-   quiet footnote. Design cannot choose between those without the number, which is why it was
-   measured before the plan rather than during the build.
+| card | Spellbook sweep | oracle rule |
+|---|---|---|
+| `Armageddon`, `Winter Orb`, `Blood Moon`, `Stasis`, `Ruination`, `Static Orb`, `Global Ruin` | ✓ | ✓ |
+| **`Cataclysm`** | ✓ | ✗ (sacrifice-clause wording) |
+| **`Back to Basics`** | ✗ (not in their database) | ✓ |
+| `Wave of Vitriol` | ✗ | ✗ |
 
-   The distinction from an invented threshold matters: *"four or more lands per player"* is
-   **WotC's number**, quoted, not a cut this spec chose. §2.4a is satisfied by citation rather
-   than by measurement here, and that is the only case in the document where it is.
+**Union: 23 of 24.** Only `Wave of Vitriol` falls through both, and it is named here rather
+than chased. Neither source alone reaches that: the sweep misses 2, the oracle rule misses 2,
+and they are not the same 2.
+
+**The oracle rule, and why it is not an invented threshold.** WotC publishes a definition of
+mass land denial (§6.2) — *"effects that destroy, exile, or bounce other players' lands, keep
+lands tapped, or change what mana they produce, affecting four or more lands per player,
+without replacing them"*. That is encodable against `cards.oracle_text`, in the same shape as
+`classifyRoles` and `classifyEngine`, and *"four or more lands per player"* is **WotC's
+number**, quoted rather than chosen. §2.4a is satisfied here by citation rather than by
+measurement, and it is the only place in this document where that is true.
+
+**Measured before it was believed** (`scripts/measure-mld.mts`, committed, read-only): against
+24 cards that unambiguously qualify, **recall 22/24 (91.7%)** with **zero false positives** on
+a curated negative set (`Strip Mine`, `Path to Exile`, `Beast Within`, `Scapeshift` and eight
+more), flagging **51 of 31,830** commander-legal cards.
+
+Its first version scored 66.7%, and the difference is a trap worth recording: every miss was a
+*wording variant of a clause already in the definition* — the Orb/Stasis family says "keep
+lands tapped" three different ways. The fix was to implement the remaining clauses, **not** to
+add patterns until the fixture passed. Tuning a classifier against its own test set produces a
+number that means nothing.
+
+**Every flag carries its source** (`spellbook_sweep` | `oracle_rule`), so a reader disputing a
+verdict is owed which classifier made the claim, and a later third source slots in without any
+reader changing.
+
+**And 23/24 is what makes §6.5's warning writable.** A verdict whose detection is 40% complete
+needs a prominent caution; one at 23/24 with two independent sources needs a quiet footnote.
+Design cannot choose between those without the number, which is why it was measured before the
+plan rather than during the build.
 
 **Where the honest answer is "unknown".** Even unioned, a deck may hold a mass-land-denial
-card neither source knows. The slot therefore reports, beside its verdict, that detection is
-**sourced and partial** — not a silent claim of completeness. §6.5.
+card neither source knows — `Wave of Vitriol` is the measured example. The slot therefore
+reports, beside its verdict, that detection is **sourced and partial**, not a silent claim of
+completeness (§6.5). At a measured union of 23/24 that is a footnote rather than a caution.
 
 **EDHREC cannot substitute for Spellbook here, and this was checked.** The payload carries
 `panels.combocounts`, which looked like a free combo source. Measured across all 342 cached
@@ -405,7 +422,7 @@ card_bracket_flags
   oracle_id         uuid primary key references cards(oracle_id)
   mass_land_denial  boolean not null default false
   extra_turn        boolean not null default false
-  source            text not null           -- 'spellbook_variant'
+  source            text not null           -- 'spellbook_sweep' | 'oracle_rule' (§4.2)
   computed_at       timestamp not null default now()
 ```
 
@@ -422,8 +439,14 @@ unresolvable card reduces measured coverage rather than silently shrinking a den
 
 ### 4.4 The job
 
-`pnpm db:seed:combos`, streaming the bulk the way `streamBulkEntries` already streams
-Scryfall's. Projected to the fields above — the 656 MB is almost entirely image URLs we
+`pnpm db:seed:combos` does two things, for the two questions §4.2 separates.
+
+**The sweep** — 54 batched `POST /estimate-bracket` calls of 600 cards each, harvesting
+card-level `massLandDenial` / `extraTurn` / `banned` into `card_bracket_flags`. About a minute,
+well inside 80 req/min, and it runs **before** the bulk so a bulk failure does not cost the
+card flags too.
+
+**The bulk** — streamed the way `streamBulkEntries` already streams Scryfall's. Projected to the fields above — the 656 MB is almost entirely image URLs we
 discard.
 
 Workflow `Combo refresh`, weekly, against **both** `catalog-staging` and
@@ -832,7 +855,7 @@ type DetectionCoverage = {
 };
 ```
 
-Each `CardRef` on a flagged list carries its **source** (`spellbook_variant` | `oracle_rule`,
+Each `CardRef` on a flagged list carries its **source** (`spellbook_sweep` | `oracle_rule`,
 §4.2), because a reader disputing a verdict is owed which classifier made the claim.
 
 **What counts as a two-card infinite combo.** Card count alone is not the test: a two-card
@@ -1191,7 +1214,7 @@ For the slot, cases per bracket boundary and per rule, and specifically:
 - **one extra-turn card at B1 is a violation; the same card at B2 is not** — §6.3's split, and
   the case that a single shared "extra turns" rule would get wrong at one end or the other
 - a two-card infinite combo permitted at B3 and forbidden at B2
-- a mass-land-denial card from each source (`spellbook_variant`, `oracle_rule`), both reported,
+- a mass-land-denial card from each source (`spellbook_sweep`, `oracle_rule`), both reported,
   both carrying provenance, with `detection` still `"partial"`
 - **a tutor returns `ruleless`, never `unquantified` or `moves`** — three variants that read
   alike in prose and mean different things (§7.2)
