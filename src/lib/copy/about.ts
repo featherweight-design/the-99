@@ -290,7 +290,7 @@ export const aboutEntries: readonly AboutEntry[] = [
     opens: 'opens a commander',
     width: 'inset',
     caption:
-      'The cards you already own that would go in this deck, grouped by the job they do. Each group shows what you have against what a deck needs, so a 1/3 on board wipes tells you what to fix before you start building. You can read a group in its usual order, or by availability: free copies first, then the ones a brew wants, then the ones already in use, then anything over-committed.',
+      'The cards you already own that would go in this deck, grouped by the job they do. Each group shows what you have against what a deck needs, so a 1/3 on board wipes tells you what to fix before you start building. You can read a group in its usual order, or by availability: free copies first, then the ones a draft wants, then the ones already in use, then anything over-committed.',
     keys: [],
     since: 1,
   },

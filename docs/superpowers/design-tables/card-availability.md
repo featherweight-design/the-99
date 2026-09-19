@@ -399,7 +399,7 @@ One region, **max two lines**, **red above muted, always** — the order is fixe
 | # | State | Trigger | Visual | Source |
 |---|---|---|---|---|
 | 12.11 | **Silent** | no over-commitments, no soft claims | region absent entirely | A2CV:572–584 |
-| 12.12 | Soft only | sub-99 deck with brew claims | one muted line, `softHeading` | A2CV:454–460 |
+| 12.12 | Soft only | sub-99 deck with draft claims | one muted line, `softHeading` | A2CV:454–460 |
 | 12.13 | Over only | over-committed cards, no soft | one red line | A2RM:111–139 |
 | 12.14 | Both | both fire | red line **then** soft line, soft uses `softHeadingAfterOver` | A2RM:111–139, A2CV:496–509 |
 | 12.15 | At 99 | deck is complete | soft line suppressed (pre-99 only); red line may still render | A2RM:111–139 |
@@ -441,7 +441,7 @@ One region, **max two lines**, **red above muted, always** — the order is fixe
 | 14.6 | Detail copy | shipped | shipped | — | — | `collection.detailHeading`, `detailHardNote`, `detailSoftNote`, `detailOverNote` | CP:195–227 |
 | 14.7 | Card detail allocation receipt | eyebrow `font-mono 10px / 0.1em / uppercase`; rows `13px`; figures + split `font-mono 12px` | eyebrow + figures + split `var(--fg-faint)` / `var(--fg-muted)`; rows `var(--fg-body)` | claims eyebrow `mt-[14px]`; list `mt-[6px]`; row `py-[2px]`; split `mt-[8px]`; total line `mt-[8px]`, `gap-[8px]`; row gap `gap-[12px]` (arbitrary px, not the Tailwind scale) | hugs | renders whenever `claims` is non-empty — **including when the state is `free`**, which is the case #353 was filed on. One row per claiming deck: name as a link to `/decks/<id>`, then `holds N` (mature) or `wants N`, and — **only while the card is contested** — the allocation after it: `· gets it`, `· buys it`, or `· gets N of M` where part of the ask was covered. Split line reconciles to the total above: `in use · free`, or the `wanted / owned` comparison when `free < 0` | **NEW — #353/#355, not yet ratified by Design** |
 | 14.8 | Allocation on a receipt row | rows `13px`, figure `font-mono 12px` (14.7's) | `var(--fg-muted)` (14.7's) | inline after the figure, ` · ` separated | hugs | **Who actually gets the copy**, drawn on committed rows only and only while some committed list asked for a copy the supply could not give it. `collection.detailClaimGets` / `detailClaimBuys` / `detailClaimGetsPartial`, the pair card assignments R2 vocabulary ruling 4 defined for this axis. `holds` / `wants` stays commit status: that same ruling rejected keying it on allocation, because `wants 1` would then mean "committed but lost the copy" on one row and "not committed at all" on the next | **NEW 2026-09-16 — not yet ratified by Design** |
-| 14.9 | Brews left out of the figures | `12.5px / leading-1.5` | `var(--fg-muted)` | `mt-[6px]`, under the split line | hugs | `collection.detailBrewsUncounted`, drawn when a brew claims the card **and the state is not `soft`**. `short N` and the split line count committed lists only, so a reader seeing four lists want one card cannot tell the figure from a miscount; this names the ones left out and why. Withheld in the soft state, where every claimant is a brew and `detailSoftNote` is already the whole story | **NEW 2026-09-16 — not yet ratified by Design** |
+| 14.9 | Drafts left out of the figures | `12.5px / leading-1.5` | `var(--fg-muted)` | `mt-[6px]`, under the split line | hugs | `collection.detailBrewsUncounted`, drawn when a draft claims the card **and the state is not `soft`**. `short N` and the split line count committed lists only, so a reader seeing four lists want one card cannot tell the figure from a miscount; this names the ones left out and why. Withheld in the soft state, where every claimant is a draft and `detailSoftNote` is already the whole story | **NEW 2026-09-16 — not yet ratified by Design** |
 
 **Row count: 9 elements.**
 
@@ -467,7 +467,7 @@ Position: **fourth on desktop, fifth on phone** (A2RM:77–109). Four checkboxes
 |---|---|---|---|---|---|---|---|
 | 15.1 | Trigger | shipped | shipped | — | **44px** min target | `collection.filterLabel` | A2RM:77–109, A2RM:195–210 |
 | 15.2 | Menu row | shipped | shipped | — | **40px** row height | four rows | A2RM:195–210 |
-| 15.3 | Options | shipped | shipped | — | — | `Free` / `Wanted by a brew` / `In use` / `Over-committed` | A2RM:77–109 |
+| 15.3 | Options | shipped | shipped | — | — | `Free` / `Wanted by a draft` / `In use` / `Over-committed` | A2RM:77–109 |
 | 15.4 | Counts | shipped mono | shipped | — | — | e.g. `1,186 / 168 / 61 / 3` — sums to `1,418` (fabricated) | A2RM:77–109 |
 | 15.5 | Menu-row seam | — | `#2A241D` | — | 1px | over-committed glyph in the menu | A2CV:412–419 |
 | 15.6 | Chip | shipped chip | shipped | — | — | removable; **the marker glyph is the leading dot** | A2RM:77–109 |

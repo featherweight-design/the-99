@@ -401,7 +401,7 @@ const readReview = (page) =>
         // `span.inline-flex` alone is not the marker: the group headings' counts
         // and the `Pull it` button match it too. The label is the only thing that
         // identifies one.
-        .filter((s) => /^(none free|short \d+|\d+ in a brew)/.test(text(s)))
+        .filter((s) => /^(none free|short \d+|\d+ in a draft)/.test(text(s)))
         .map((s) => {
           const style = getComputedStyle(s);
           // The name is the row's TITLED trigger, and the title is what
@@ -707,7 +707,7 @@ async function claimOneCopy(userId, holderDeckId, holderVersionId, excludeDeckId
  * only speak when it is over or softly claimed. What is left is an add whose
  * lone copy is claimed *softly*: a brew — a deck with no committed version —
  * claims soft rather than hard, so `free` stays at 1, the add buckets free, no
- * buy tag is drawn, and `soft > 0` renders `1 in a brew`. That string is the
+ * buy tag is drawn, and `soft > 0` renders `1 in a draft`. That string is the
  * one Hugh photographed.
  *
  * Returns null rather than throwing when the collection holds no suitable card:
@@ -722,7 +722,7 @@ async function brewClaim(userId, excludeOracleIds, commanderOracleId) {
     // card `claimOneCopy` already took.
     //
     // Every deck, not just the two fixture ones: a card sitting in another BREW
-    // is softly claimed by it too, so the marker would read `2 in a brew` and the
+    // is softly claimed by it too, so the marker would read `2 in a draft` and the
     // named-row lookup below would fail on a fixture that is otherwise fine. The
     // brew this function creates has to be the only soft claim on the card.
     `select ci.oracle_id, c.name
@@ -1283,11 +1283,11 @@ try {
     // if the fixture's add stopped rendering one at all, which is the state the
     // styling is being measured on.
     const brewMarker = seen.markers.find(
-      (m) => m.name === brewed.name && m.label === "1 in a brew",
+      (m) => m.name === brewed.name && m.label === "1 in a draft",
     );
     if (!brewMarker) {
       mistypedMarkers.push(
-        `${label} · no "1 in a brew" marker on the ${brewed.name} row, so nothing was measured`,
+        `${label} · no "1 in a draft" marker on the ${brewed.name} row, so nothing was measured`,
       );
     }
     for (const marker of seen.markers) {

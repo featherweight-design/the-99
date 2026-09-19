@@ -733,8 +733,8 @@ states, which live in this banner's box). Diff source: `deck_cards` against the 
 
 | State | Triggering condition | Component rendered | Key props required |
 |---|---|---|---|
-| A1 — Brew, below a full body | `versionCount === 0 && bodySize < deckBodySize(hasPartner)` | Nothing: no banner, no Commit, no Discard, **no Versions tab**; decklist unchanged | `versionCount`, `bodySize`, `hasPartner` |
-| A2 — Brew, at a full body | `versionCount === 0 && bodySize === deckBodySize(hasPartner)` | `FirstCommitOffer` in the spine beside `Export` — brass **outline**, the control alone (the mono note is retired, see above). No banner, no Versions tab | `versionCount`, `bodySize`, `hasPartner`, `firstCommitCta` |
+| A1 — Draft, below a full body | `versionCount === 0 && bodySize < deckBodySize(hasPartner)` | Nothing: no banner, no Commit, no Discard, **no Versions tab**; decklist unchanged | `versionCount`, `bodySize`, `hasPartner` |
+| A2 — Draft, at a full body | `versionCount === 0 && bodySize === deckBodySize(hasPartner)` | `FirstCommitOffer` in the spine beside `Export` — brass **outline**, the control alone (the mono note is retired, see above). No banner, no Versions tab | `versionCount`, `bodySize`, `hasPartner`, `firstCommitCta` |
 | A3 — Committed, clean | `versionCount > 0 && changeCount === 0` | `Versions · {n}` tab only. **No banner, no Commit, no Discard, no empty diff panel, no "no pending changes" reassurance** | `versionCount`, `currentVersion`, `versionLine(version, date)` |
 | A4 — Committed, 1–6 changes | `versionCount > 0 && 1 <= changeCount <= INLINE_CHANGE_MAX` | `PendingBanner` **names density** + marked decklist | `adds[]` (name, cost, bucket, holdingDeck, price), `removes[]` (name, cost), `currentVersion`, `nextVersion`, `INLINE_CHANGE_MAX` |
 | A5 — Committed, 7+ changes | `versionCount > 0 && changeCount > INLINE_CHANGE_MAX` | `PendingBanner` **counts density** + marked decklist. Names not shown at all | `addCount`, `removeCount`, `changeCount`, `currentVersion`, `nextVersion`, `unfreeCount`, `buyTotal`, `pullableCount` |

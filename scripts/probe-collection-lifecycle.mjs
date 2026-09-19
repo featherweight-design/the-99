@@ -84,7 +84,7 @@ async function readRow(page, name) {
       const title = b.querySelector("span[title]");
       if (title?.getAttribute("title") !== wanted) continue;
       const marker = [...b.querySelectorAll("span")].find((n) =>
-        /^(\d+ free|\d+ in a brew|short \d+)$/.test((n.textContent ?? "").trim()),
+        /^(\d+ free|\d+ in a draft|short \d+)$/.test((n.textContent ?? "").trim()),
       );
       return {
         aria: b.getAttribute("aria-label"),

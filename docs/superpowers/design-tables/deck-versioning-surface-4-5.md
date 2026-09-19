@@ -206,7 +206,7 @@ has been corrected in the gap report.
 
 | Condition | Tab | Count | Source |
 |---|---|---|---|
-| 0 versions (a brew) | **absent entirely** — not empty, not disabled | n/a | state 37b, §Decisions 7, annotation card |
+| 0 versions (a draft) | **absent entirely** — not empty, not disabled | n/a | state 37b, §Decisions 7, annotation card |
 | 1 version | rendered | `1` | state 36 |
 | many versions | rendered | `{n}` | state 37 |
 | a pending draft exists | unchanged — the draft is **not** a version and gets no row and no count (state, READINESS 11) | unchanged | §Decisions 7 |
