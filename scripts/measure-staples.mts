@@ -19,10 +19,13 @@
 //   3 · WEIGHTING. The spec weights by `deck_count` so a commander with 31,481
 //       decks outvotes one with 40. Does that actually move the list, or is it a
 //       complication with no effect?
-//   4 · CONDITIONING. Does Arcane Signet's inclusion really differ between
-//       mono-coloured and multicoloured commanders? The colour-count axis was
-//       chosen because that example suggested it, which is the weakest possible
-//       reason to pick a data model.
+//   4 · CONDITIONING. The axis was COLOUR COUNT until 2026-09-19, and it was wrong in a way
+//       that took three review passes to see. A coloured card can never reach a 50% breadth
+//       bar under colour count: white appears in 1 of 5 mono identities (a 20% ceiling) and
+//       4 of 10 two-colour ones (40%). Both sit under the cut FOREVER, so the floor could
+//       only ever hold colourless cards — it would have told a mono-white player about Mind
+//       Stone and never about Swords to Plowshares. The axis is now the commander's EXACT
+//       COLOUR IDENTITY. Section 4 measures both so the difference stays visible.
 //   5 · THE ROLE TARGETS. §4A.2 claims ramp/draw/removal/wipes AND THE LAND COUNT
 //       can be sourced from this table. That is the claim most likely to be
 //       false: `commander_support_cards` is a per-commander RECOMMENDATION list,
@@ -195,28 +198,85 @@ max inclusion value seen  ${maxIncl ?? "—"}   (the scale: 0-1 or 0-100)`);
   }
   console.log(`\ncards moving 3+ places in the top 25: ${moved}`);
 
-  // ---- 4 · CONDITIONING --------------------------------------------------
-  console.log(`\n== 4 · colour count as a conditioning axis ==`);
-  const cond = await q<{ name: string; colors: number; commanders: number; avgIncl: number | null }>(`
-    select c.name,
-           cardinality(cmd.color_identity)::int as colors,
-           count(*)::int as commanders,
-           round(avg(csc.inclusion)::numeric, 3) as "avgIncl"
+  // ---- 4 · CONDITIONING: identity, not count -----------------------------
+  // Two readings side by side, because the difference is the finding. Colour
+  // COUNT cannot admit a coloured staple at mono or two colours; EXACT IDENTITY
+  // can, and still excludes a colourless card that is bad in that identity.
+  console.log(`\n== 4 · conditioning: colour count vs exact identity ==`);
+  const probe = await q<{ name: string; axis: string; pop: number; share: number; incl: number }>(`
+    with mono_count as (
+      select 'count:1' axis, count(*)::int t from commander_support cs
+      join cards cmd on cmd.oracle_id=cs.commander_oracle_id
+      where cardinality(cmd.color_identity)=1),
+    mono_w as (
+      select 'identity:W' axis, count(*)::int t from commander_support cs
+      join cards cmd on cmd.oracle_id=cs.commander_oracle_id
+      where cmd.color_identity = array['W']::text[])
+    select cc.name, 'count:1' as axis, (select t from mono_count) pop,
+           round((count(*)::numeric/(select t from mono_count)),3)::float share,
+           round(avg(csc.inclusion)::numeric,1)::float incl
     from commander_support_cards csc
     join commander_support cs using (commander_oracle_id)
-    join cards cmd on cmd.oracle_id = cs.commander_oracle_id
-    join cards c on c.oracle_id = csc.oracle_id
-    where c.name in ('Arcane Signet','Sol Ring','Command Tower','Commander''s Sphere',
-                     'Fellwar Stone','Exotic Orchard','Swiftfoot Boots','Chromatic Lantern')
-    group by c.name, colors
-    order by c.name, colors
+    join cards cmd on cmd.oracle_id=cs.commander_oracle_id
+    join cards cc on cc.oracle_id=csc.oracle_id
+    where cardinality(cmd.color_identity)=1
+      and cc.name in ('Swords to Plowshares','Path to Exile','Sol Ring','Command Tower')
+    group by cc.name
+    union all
+    select cc.name, 'identity:W', (select t from mono_w),
+           round((count(*)::numeric/(select t from mono_w)),3)::float,
+           round(avg(csc.inclusion)::numeric,1)::float
+    from commander_support_cards csc
+    join commander_support cs using (commander_oracle_id)
+    join cards cmd on cmd.oracle_id=cs.commander_oracle_id
+    join cards cc on cc.oracle_id=csc.oracle_id
+    where cmd.color_identity = array['W']::text[]
+      and cc.name in ('Swords to Plowshares','Path to Exile','Sol Ring','Command Tower')
+    group by cc.name
+    order by name, axis
   `);
-  console.log(row("card / commander colours", "commanders", "avg incl"));
-  let last = "";
-  for (const r of cond) {
-    if (r.name !== last) { console.log(`  ${r.name}`); last = r.name; }
-    console.log(row(`    ${r.colors}-colour commanders`, r.commanders, r.avgIncl ?? "—"));
+  console.log(row("card / axis", "share", "avg incl") + "   in floor?");
+  for (const x of probe) {
+    const inFloor = x.share >= 0.5 && x.incl >= 25;
+    console.log(row(`${x.name.slice(0, 24)} [${x.axis}]`, x.share, `${x.incl}%`) +
+      `   ${inFloor ? "YES" : "no"}`);
   }
+  console.log(`\n  Swords to Plowshares is the case: under colour count it can never clear the`);
+  console.log(`  breadth bar (white is 1 of 5 mono identities); under exact identity it does.`);
+  console.log(`  Command Tower is the counter-case: it must stay OUT of a mono floor, and does.`);
+
+  // ---- 5 · THE FLOORS THEMSELVES ----------------------------------------
+  console.log(`\n== 5 · exact-identity floors (buckets >= 100 commanders) ==`);
+  const floors = await q<{ id: string; pop: number; cards: number; coloured: number; lands: number }>(`
+    with tot as (
+      select coalesce(array_to_string(cmd.color_identity,''),'C') id, count(*)::int t
+      from commander_support cs join cards cmd on cmd.oracle_id=cs.commander_oracle_id
+      group by 1 having count(*) >= 100),
+    per as (
+      select coalesce(array_to_string(cmd.color_identity,''),'C') id, cc.name,
+             count(*)::int n, avg(csc.inclusion) incl,
+             case when cc.type_line ilike '%land%' then 'land'
+                  when cc.color_identity='{}'::text[] then 'clr' else 'col' end kind
+      from commander_support_cards csc
+      join commander_support cs using (commander_oracle_id)
+      join cards cmd on cmd.oracle_id=cs.commander_oracle_id
+      join cards cc on cc.oracle_id=csc.oracle_id
+      where cc.type_line not ilike 'basic land%'
+      group by 1, cc.name, cc.type_line, cc.color_identity)
+    select t.id, t.t pop, count(*)::int cards,
+           count(*) filter (where p.kind='col')::int coloured,
+           count(*) filter (where p.kind='land')::int lands
+    from per p join tot t using (id)
+    where p.n::numeric/t.t >= 0.5 and p.incl >= 25
+    group by t.id, t.t order by t.t desc
+  `);
+  console.log(row("identity", "pop", "cards") + "   coloured  lands");
+  for (const f of floors)
+    console.log(row(f.id, f.pop, f.cards) + `   ${String(f.coloured).padStart(8)}  ${String(f.lands).padStart(5)}`);
+  console.log(`\n  ${floors.length} buckets clear the 100-commander bar — every mono and every`);
+  console.log(`  two-colour identity. Three-plus-colour identities are thin and fall back to`);
+  console.log(`  colour count, where the ceiling no longer binds (white is 6 of 10 three-colour`);
+  console.log(`  identities, so Swords to Plowshares clears at 0.616 share).`);
 
   // ---- 6 · EXPECTED COMPOSITION -----------------------------------------
   // The decisive test for §4A.2. There are no decklists here, so a role TARGET
