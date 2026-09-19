@@ -1,11 +1,7 @@
 // /decks/new — two doors: pre-filled (when ?commander= is valid) or picker.
 // §Create — Pre-filled / §Create — Picker
-import { eq } from "drizzle-orm";
-import { db } from "../../../db";
-import { cards } from "../../../db/schema";
 import { requireUserId } from "../../../lib/auth";
-import { isCommanderCandidate } from "../../../lib/recs/score";
-import { resolveOwnedPrintings } from "../../../lib/collection/owned-printings";
+import { loadPreFilledCommander } from "../../../lib/decks/pre-filled-commander";
 import { listOwnedLegalCommanders } from "../../../lib/decks/read";
 import { parseSelectParam } from "../../../lib/decks/selection-param";
 import { CreatePreFilled } from "../../../components/decks/create-pre-filled";
@@ -19,28 +15,22 @@ export default async function NewDeckPage({
   const userId = await requireUserId();
   const { commander: commanderParam, select } = await searchParams;
 
-  // Pre-filled door: validate the ?commander= param server-side.
+  // Pre-filled door: validate the ?commander= param server-side, and draw the copy the
+  // reader owns. Both live in `loadPreFilledCommander` so they can be tested — a route
+  // module cannot be, and reverting the resolution here was invisible to the suite.
   if (commanderParam) {
-    const [row] = await db
-      .select()
-      .from(cards)
-      .where(eq(cards.oracleId, commanderParam));
-
-    if (row && row.commanderLegal && isCommanderCandidate(row)) {
-      // The copy the reader owns, where they own one. This door arrives from a synergy
-      // link rather than from the picker, so it misses the list's own resolution — and
-      // it draws the same card art at a larger size than any row does.
-      const owned = (await resolveOwnedPrintings(userId, [row.oracleId])).get(row.oracleId);
+    const commander = await loadPreFilledCommander(userId, commanderParam);
+    if (commander) {
       return (
         <CreatePreFilled
-          oracleId={row.oracleId}
-          name={owned?.printedName ?? row.name}
-          typeLine={row.typeLine}
-          colorIdentity={row.colorIdentity}
-          imageUri={owned?.imageUri ?? row.imageUri}
-          // Shape-checked here, legality-checked in `createDeck`: this page has
-          // no commander context until the row above resolves, and the action
-          // has to re-check whatever it is handed anyway.
+          oracleId={commander.oracleId}
+          name={commander.name}
+          typeLine={commander.typeLine}
+          colorIdentity={commander.colorIdentity}
+          imageUri={commander.imageUri}
+          // Shape-checked in the loader, legality-checked again in `createDeck`: this
+          // page has no commander context until that read resolves, and the action has
+          // to re-check whatever it is handed anyway.
           selectedOracleIds={parseSelectParam(select)}
         />
       );

@@ -112,11 +112,12 @@ describe("setCardArtPreference", () => {
   // is `deferred` below, which holds the callback instead of running it.
   // The deck routes ride along because a commander's art on both of them is the picked
   // printing's: a pick on a card leading a deck moves the tile's wash and the header band.
-  it("drops the browse route, the set page, Home and both deck routes", async () => {
+  it("drops the browse route, the set page, Home, and every deck and commander route", async () => {
     stub.calls.owned.push({ one: 1 });
     await setCardArtPreference(ORACLE, "ZNR", "12");
     expect(stub.calls.revalidated).toEqual([
       "/collection", "/collection/sets/[code] (page)", "/", "/decks", "/decks/[id] (page)",
+      "/commanders", "/commanders/[slug] (page)", "/decks/new",
     ]);
   });
 
@@ -131,6 +132,7 @@ describe("setCardArtPreference", () => {
       stub.calls.deferred[0]();
       expect(stub.calls.revalidated).toEqual([
         "/collection", "/collection/sets/[code] (page)", "/", "/decks", "/decks/[id] (page)",
+        "/commanders", "/commanders/[slug] (page)", "/decks/new",
       ]);
     } finally {
       stub.calls.hold = false;
@@ -157,6 +159,7 @@ describe("clearCardArtPreference", () => {
       // And both deck routes, whose commander art returns to the resolver's choice.
       expect(stub.calls.revalidated).toEqual([
         "/collection", "/collection/sets/[code] (page)", "/", "/decks", "/decks/[id] (page)",
+        "/commanders", "/commanders/[slug] (page)", "/decks/new",
       ]);
     } finally {
       stub.calls.hold = false;

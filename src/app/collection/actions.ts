@@ -297,6 +297,14 @@ function invalidateArtCaches(userId: string): void {
   revalidatePath("/");
   revalidatePath("/decks");
   revalidatePath("/decks/[id]", "page");
+  // And every commander surface, for the same reason: they draw the picked printing too.
+  // `/commanders` and Home share a payload but not a route, `/decks/new` lists the legends
+  // owned with their art, and the detail page is the row's own link target. Without these
+  // a reader who has already visited one navigates back through the router cache and finds
+  // the pick they just made undone.
+  revalidatePath("/commanders");
+  revalidatePath("/commanders/[slug]", "page");
+  revalidatePath("/decks/new");
 }
 
 /** Forget the pick, returning the card to the resolver's choice. */
