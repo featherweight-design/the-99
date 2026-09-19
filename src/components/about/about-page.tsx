@@ -236,6 +236,18 @@ export function AboutPage({ seen, next }: { seen: number; next?: string }) {
         </section>
       ))}
 
+      {/* The pinned bar's own height, given back to the document.
+          `<main>` reserves `--tabbar-h` and nothing more, so the bar sat ON
+          the last entry: at 390px the final key line of `themes` was behind
+          it, readable only by a reader who knew to keep scrolling into a
+          control. 67px is the bar's composition — 10 top, a 44px control, 12
+          bottom, and its 1px rule — and it is spelled out here rather than
+          left as a number so a change to any of those has somewhere to land.
+
+          A spacer rather than padding on the article: the article is shared
+          with the desktop layout, where this bar does not exist. */}
+      {offerDismiss && <div aria-hidden className="h-[67px] min-[1000px]:hidden" />}
+
       {/* THE PHONE'S DISMISS. Pinned to the foot of the viewport rather than
           to the foot of the document: a reader who opened this page because a
           new feature landed should not have to scroll thirty-five entries to

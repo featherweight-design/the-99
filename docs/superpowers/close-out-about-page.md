@@ -93,6 +93,15 @@ own, because a hidden figure beside no prose hides its subject from exactly the 
 to recover it. `spokenAs` is the remaining way to put a figure's own content into the reading
 order, and Discover's five orders — the case the legend existed for — use it.
 
+**Width follows what the figure IS, and that is a ruling rather than a taste.** Hugh settled it
+on 2026-09-19: a genuinely narrow figure takes `inset` and sits beside its text; a surface the app
+draws full-width takes `plate` and sits under it. The canvas used the two-column rhythm for several
+entries, and chapter 03/04 widened most of them — not for looks, but because an ~300px column
+truncated real content: the shelf line wrapped to three rows, the Shopping rows read
+`Dockside ...` and `R. —`, and the Top off strip stacked `THE LAST 5` into three lines. The
+entries still on `inset` (`commitments`, `proxies`, `reservations`'s neighbours) are the ones whose
+surface genuinely fits one.
+
 The split is a settled rule rather than a shortfall: a figure reproducing a surface becomes a second
 copy of it and drifts an edit at a time, and `DecklistRow`, `DeckCard` and `RoleCounterStrip` all
 take deck ids, mutation handlers and card records a reference page has none of.

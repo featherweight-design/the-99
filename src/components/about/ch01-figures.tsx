@@ -20,6 +20,7 @@ import {
   ISSUE_UNMATCHED,
   CONTESTED_ARRIVAL,
   ADD_RESULTS,
+  CARDS,
   CONTESTED_RESERVATION,
   DECK_FOLDERS,
   GAME_SUMMARY,
@@ -58,6 +59,8 @@ import { useSyncExternalStore } from "react";
 import { QuickAddBar } from "../decks/quick-add-bar";
 import { GameLogForm } from "../decks/game-log-form";
 import { GameFindings } from "../decks/games-panel";
+import { ProxyControl } from "../decks/proxy-control";
+import { ProxyTag } from "../decks/proxy-tag";
 import { ResumeDecks } from "../home/resume-decks";
 import { ShelfLine } from "../decks/shelf-line";
 import { ThemeMiniature, themeInForce } from "../shell/theme-picker";
@@ -897,7 +900,14 @@ export function ExportFigureBody() {
     // The height is stated because the contained dialog centres itself in its
     // container, and a container sized by a scrim with no intrinsic height is
     // zero.
-    <div className="relative h-[470px] overflow-hidden rounded-[8px] [transform:translateZ(0)]">
+    // THE HEIGHT IS THE DIALOG'S OWN, PER WIDTH, and it has to be: the phone
+    // draws a bottom SHEET anchored to its container's foot at a fixed 590px
+    // (`export-dialog.tsx`), so a 470px frame clipped 120px off its TOP — the
+    // title and both tabs — and left key line 1 pointing at a control that was
+    // not on screen. Desktop centres a 470px dialog instead. The breakpoint is
+    // `md:` because that is where the dialog itself switches, not the page's
+    // own wide stop.
+    <div className="relative h-[590px] overflow-hidden rounded-[8px] [transform:translateZ(0)] md:h-[470px]">
       <ExportDialog
         inert
         open
@@ -1182,4 +1192,44 @@ export function ThemesFigureBody() {
  */
 export function LogFindingsFigureBody() {
   return <GameFindings summary={GAME_SUMMARY} />;
+}
+
+/**
+ * `proxies` — the mark, and the control that sets it.
+ *
+ * The figure drew the `P` tag and two sentences of this page's own prose. It
+ * showed what a proxy LOOKS like on a row and never where one is made, which
+ * Hugh asked for on 2026-09-19: `ProxyControl` is the tick in the card sheet,
+ * and it is the one surface the entry's first clause — "mark a card as one you
+ * are printing" — is actually about.
+ *
+ * Drawn MARKED. The unmarked state is a bare tick beside a label and says
+ * nothing; marked, the control prints its own second clause — the deck's slot
+ * is filled, and nothing is claimed from your collection — which is the whole
+ * distinction the entry exists to make.
+ *
+ * The row above it stays, because the two answer different halves: the control
+ * is where the mark is set, the row is what it does to the list afterwards.
+ */
+export function ProxiesFigureBody() {
+  return (
+    <div className="flex flex-col gap-[14px]">
+      <div className="flex items-center gap-[8px]">
+        <ProxyTag variant="row" />
+        <span className="font-mono text-[10px] text-[color:var(--fg-faint)]">
+          leaves the buy list without joining your collection
+        </span>
+      </div>
+      <div className="border-t border-solid border-[color:var(--border)] pt-[12px]">
+        <ProxyControl
+          deckId="about-figure"
+          deckName={DECK_SPINE.deck.name}
+          oracleId={CARDS.proxied}
+          cardName={CARDS.proxied}
+          proxied
+          onSaved={() => {}}
+        />
+      </div>
+    </div>
+  );
 }

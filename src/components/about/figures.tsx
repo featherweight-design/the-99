@@ -13,7 +13,6 @@
 
 import { AvailabilityMarker } from "../ui/availability-marker";
 import { BuyTag } from "../decks/buy-tag";
-import { ProxyTag } from "../decks/proxy-tag";
 import { StatusPillBadge } from "../decks/status-pill";
 import { SetCell } from "../sets/set-cell";
 import { RoleChips } from "../commanders/role-chips";
@@ -31,6 +30,7 @@ import {
   AddCardsFigureBody,
   FoldersFigureBody,
   LogFindingsFigureBody,
+  ProxiesFigureBody,
   ThemesFigureBody,
   LogAGameFigureBody,
   ReservationsFigureBody,
@@ -223,25 +223,52 @@ function StatusFigure({ width }: { width: AboutWidth }) {
         {STATUSES.map((status, i) => (
           <div
             key={status}
-            className={`flex items-center gap-[12px] py-[9px] ${
+            className={`flex flex-col gap-[6px] py-[9px] md:flex-row md:items-center md:gap-[12px] ${
               i > 0 ? "border-t border-solid border-[color:var(--border)]" : ""
             }`}
           >
-            {/* The className is REQUIRED and it is the FOOTER's, not the
-                tile's: the component defaults to `TILE_CLASS`, which opens
-                `absolute bottom-[13px] left-[13px]` and would pin all seven to
-                the page corner, and the deck card's own footer draws 22px tall
-                at 10.5px rather than the tile's 24px at 11px. */}
-            <StatusPillBadge
-              status={status}
-              className="flex h-[22px] w-[86px] flex-none items-center rounded-[6px] px-[8px] font-mono text-[10.5px] tracking-[0.06em]"
-            />
+            {/* PHONE: the badge and its sentence share a line, and the track
+                gets its own beneath. THE TABLE DOES NOT FIT 390px — a fixed
+                86px badge, a fixed 248px track and a sentence come to more
+                than the plate has, and the first version ran the track off
+                the right edge and pushed the clause out of the figure
+                entirely. Desktop keeps the three columns, which is what makes
+                the column scannable at the width it was designed for. */}
+            <div className="flex items-center gap-[10px] md:contents">
+              {/* The className is REQUIRED and it is the FOOTER's, not the
+                  tile's: the component defaults to `TILE_CLASS`, which opens
+                  `absolute bottom-[13px] left-[13px]` and would pin all seven
+                  to the page corner, and the deck card's own footer draws 22px
+                  tall at 10.5px rather than the tile's 24px at 11px. */}
+              <StatusPillBadge
+                status={status}
+                className="flex h-[22px] w-[86px] flex-none items-center rounded-[6px] px-[8px] font-mono text-[10.5px] tracking-[0.06em]"
+              />
+              {/* ONE thing per status, which is the entry's claim. A clause
+                  where the card draws one; the count beside the bar where it
+                  does not — and never both, because that would be two figures
+                  saying the same thing.
+
+                  Its ORDER differs by width, which is why `md:contents` is
+                  here: on the phone it follows the badge, and on desktop it is
+                  the third column with the track between them. `contents`
+                  dissolves this wrapper into the row so the track can sit
+                  between its two children. */}
+              <span className="min-w-0 flex-1 font-mono text-[10.5px] text-[color:var(--fg-faint)] md:order-3">
+                {clause[status] ?? `${built[status]} / ${BODY}`}
+              </span>
+            </div>
             {/* The track is drawn for every status; the fill is omitted for
                 the one specimen with nothing built, which is what an empty
                 track means. `New` rather than `Draft` since R6 — a draft has
-                a length, and this one is drawn at 47 cards. */}
+                a length, and this one is drawn at 47 cards.
+
+                Full width on the phone, fixed on desktop: a bar that changes
+                length with the sentence beside it is comparing two different
+                scales down the column, and on the phone there is no sentence
+                beside it to change with. */}
             <div
-              className="relative h-[3px] w-[248px] flex-none rounded-full"
+              className="relative h-[3px] w-full rounded-full md:order-2 md:w-[248px] md:flex-none"
               style={{ background: "var(--border)" }}
             >
               {built[status] > 0 && (
@@ -252,13 +279,6 @@ function StatusFigure({ width }: { width: AboutWidth }) {
                 />
               )}
             </div>
-            {/* ONE thing per status, which is the entry's claim. A clause
-                where the card draws one; the count beside the bar where it
-                does not — and never both, because that would be two figures
-                saying the same thing. */}
-            <span className="min-w-0 flex-1 font-mono text-[10.5px] text-[color:var(--fg-faint)]">
-              {clause[status] ?? `${built[status]} / ${BODY}`}
-            </span>
           </div>
         ))}
       </div>
@@ -767,17 +787,7 @@ function ReservationsFigure({ width }: { width: AboutWidth }) {
 function ProxiesFigure({ width }: { width: AboutWidth }) {
   return (
     <Specimen label="proxies" width={width}>
-      <div className="flex flex-col gap-[8px]">
-        <div className="flex items-center gap-[8px]">
-          <ProxyTag variant="row" />
-          <span className="font-mono text-[10px] text-[color:var(--fg-faint)]">
-            leaves the buy list without joining your collection
-          </span>
-        </div>
-        <span className="font-mono text-[10px] text-[color:var(--fg-faint)]">
-          set completion does not move — a proxy is a card you can play with, not one you have
-        </span>
-      </div>
+      <ProxiesFigureBody />
     </Specimen>
   );
 }

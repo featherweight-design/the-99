@@ -113,6 +113,16 @@ describe("the page a first-time reader sees", () => {
     for (const button of dismissButtons()) {
       expect(button.className, "the dismiss has no horizontal padding").toMatch(/\bpx-\[/);
     }
+    // The pinned bar's height, given back to the document. `<main>` reserves
+    // `--tabbar-h` and nothing more, so without this the bar sits ON the last
+    // entry: at 390px the final key line of `themes` was behind it, readable
+    // only by someone who knew to keep scrolling into a control. Measured in a
+    // browser, not inferred — jsdom lays nothing out, so what a unit test can
+    // hold is that the spacer exists and is phone-only.
+    const spacer = [...sent.container.querySelectorAll("div[aria-hidden]")].find((el) =>
+      /\bh-\[\d+px\]/.test(el.className) && el.className.includes("min-[1000px]:hidden"),
+    );
+    expect(spacer, "nothing reserves the pinned dismiss's height").toBeTruthy();
     sent.unmount();
 
     // Behind, but came to look: nothing to press.
@@ -700,6 +710,20 @@ describe("the figures", () => {
     expect(plate.textContent).toContain(exportTabCopy.decklist);
     expect(plate.textContent).toContain(exportTabCopy.shopping);
     expect(plate.textContent).toContain(exportLinkOutCopy.shopping);
+
+    // The frame's height differs BY WIDTH, and that is not decoration: the
+    // phone draws a bottom sheet anchored to its container's foot at a fixed
+    // 590px, so a single 470px frame clipped 120px off its top — the title and
+    // both tabs — and left key line 1 pointing at a control that was not on
+    // screen. Measured in a browser; what a unit test can hold is that the two
+    // heights are still declared, because jsdom lays nothing out.
+    const frame = [...plate.querySelectorAll("div")].find((el) =>
+      el.className.includes("translateZ"),
+    );
+    expect(frame?.className, "the export frame has no phone height").toMatch(/\bh-\[\d+px\]/);
+    expect(frame?.className, "the export frame does not resize by width").toMatch(
+      /\bmd:h-\[\d+px\]/,
+    );
 
     // The dialog is drawn INERT. Were it opened, `useDialogA11y` would write
     // `document.body.style.overflow` — locking the About page's own scroll,
