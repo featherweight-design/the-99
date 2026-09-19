@@ -209,7 +209,7 @@ has been corrected in the gap report.
 | 0 versions (a draft) | **absent entirely** — not empty, not disabled | n/a | state 37b, §Decisions 7, annotation card |
 | 1 version | rendered | `1` | state 36 |
 | many versions | rendered | `{n}` | state 37 |
-| a pending draft exists | unchanged — the draft is **not** a version and gets no row and no count (state, READINESS 11) | unchanged | §Decisions 7 |
+| pending changes exist | unchanged — they are **not** a version and gets no row and no count (state, READINESS 11) | unchanged | §Decisions 7 |
 
 ---
 
@@ -218,7 +218,7 @@ has been corrected in the gap report.
 The list of committed versions, **newest first**, no filter and no search (state 37). Three row
 variants are drawn: the current version, an ordinary earlier version, and v1 (which reads
 `initial` in place of a delta). Component notes: "48px desktop / 64px phone (three lines),
-`--surface` on `1px --border`, radius 9px, `12px 14px`." The pending draft has no row here
+`--surface` on `1px --border`, radius 9px, `12px 14px`." The pending changes have no row here
 (READINESS 11) and there is **no restore, revert or rollback control** anywhere in the rail
 (§Decisions 7).
 
@@ -536,7 +536,7 @@ reads as a canvas state label rather than product chrome (Discrepancy 40).
 | border-bottom | `1px solid #574463` (unnamed; flagged on the canvas as a traced value) | `1px solid #574463` (same) |
 | padding-bottom | `7px` | `6px` |
 | margin-bottom | `9px` | `8px` |
-| `{n} added in this draft` note | **—** (that note belongs to the pending decklist, not a version diff) | **—** |
+| `{n} added, not yet committed` note | **—** (that note belongs to the pending decklist, not a version diff) | **—** |
 | bucket / availability heading | **—** (§Errata withdraws the five availability buckets; grouping is card type, rule 8b) | **—** |
 
 ### Group body (the rows under one heading)
@@ -828,7 +828,7 @@ not positions in one flat 1–45 sequence.
 
 | Condition | Effect | Source |
 |---|---|---|
-| A pending draft exists | **no change to the rail** — the draft gets no row, no count and no `v3 (draft)` phantom | READINESS 11, §Decisions 7 |
+| Pending changes exist | **no change to the rail** — they get no row, no count and no `v3 (pending)` phantom | READINESS 11, §Decisions 7 |
 | A versionless deck at a full body (`deckBodySize(hasPartner)` — 99, or 98 with a partner) | `Commit as v1` is offered **on the deck page**, not here; the Versions tab stays absent until that commit lands | §Decisions 9, §Errata |
 | A commit settles | announcement `Committed v3. 101 cards, 8 to buy.` on the existing live region; focus moves to the version line | §Announcements, READINESS 20 |
 | Motion, anywhere on these two surfaces | **none** — the commit sheet's open/close is the feature's only transition, and no figure counts up | READINESS 19, Contract |
@@ -843,7 +843,7 @@ not positions in one flat 1–45 sequence.
 - **No win rate, no per-version bucket, no "since v2" filter, no split summary** (§Decisions 5
   and 8, §Out of scope).
 - **No restore, revert or rollback** (§Decisions 7).
-- **No row for the pending draft** (READINESS 11).
+- **No row for pending changes** (READINESS 11).
 - **No `ver` column header** in the game log (§Engineering notes, §Errata).
 - **No chip and no link** on the game stamp (§Decisions 8, READINESS 12).
 - **No filter and no search** on the rail (state 37).

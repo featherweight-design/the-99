@@ -70,7 +70,7 @@ Links inherit the canvas global rule: `a { color: #C9A24B; text-decoration: none
 ## Component: Review page shell (`/decks/[id]/changes`)
 
 Own route, back-navigable, **no focus trap and no modal** (README §Decisions 3; spec Addendum R3
-"Review changes is a page"). Reaching it once the draft has been committed **redirects to the
+"Review changes is a page"). Reaching it once the changes have been committed **redirects to the
 deck page** (state 25).
 
 | Property | Mobile | Desktop |
@@ -327,7 +327,7 @@ The deck page's own heading, mounted as shipped (`DecklistGroup` / `DecklistGrou
 | name color | `#EDE6D8` (`--fg`) | `#EDE6D8` |
 | count | mono `11px` `#8E8269` | mono `11px` `#8E8269` |
 | abbreviation | `Enchant.` in a narrow column | `Enchantments` full width; `Enchant.` in a nested sub-column |
-| `{n} added in this draft` note | — **not on this surface** (it is the pending decklist's) | — not on this surface |
+| `{n} added, not yet committed` note | — **not on this surface** (it is the pending decklist's) | — not on this surface |
 | empty group | absent on that side only (state 18) | absent on that side only |
 | group list container | `flex column`, `gap 4px` | `flex column`, `gap 4px`, `margin-bottom 16px` |
 
@@ -509,7 +509,7 @@ New atom. One per card, neutral, never solid, never the row default (README §De
 | price | **absent on the canvas's phone guard row** — states 20/21 say the price stays (Discrepancies 6) | present (`buy │ $6.40` on `Birds of Paradise`) |
 | accessible description | `{deck} has pending changes of its own, so {card} cannot be pulled from it.` (`review.pullGuardA11y`) — carried by the row, never rendered | same |
 | disabled button alternative | rejected — but so is the link now; the guard is a tag and a description (READINESS 13 is satisfied by drawing no control at all) | same |
-| server dependency | a per-holding-deck *has a draft* flag; the client must not infer it | same |
+| server dependency | a per-holding-deck *has changes* flag; the client must not infer it | same |
 
 > **Amendment, 2026-09-14 (PR #622), taken on Hugh's instruction and not through a design round.** The tag
 > read `pending`, and beside a card name it was taken for a pending change to **that card** — on
@@ -593,7 +593,7 @@ New atom. One per card, neutral, never solid, never the row default (README §De
 | consequence | `13px` `--fg-body`, naming v2, its date and its card count (`discard.consequence`) | same |
 | confirm button | the shipped danger button — `--danger` ink, `1px #4A2F28` — `Discard 36 changes` | same |
 | cancel button | `Keep editing`, brass fill, **on top** on phone | `Keep editing`, beside it |
-| refused | shipped `MutationError`; the confirm stays open; the draft untouched | same |
+| refused | shipped `MutationError`; the confirm stays open; the changes untouched | same |
 
 ---
 
@@ -617,9 +617,9 @@ discard confirm reached from this page). Diff source: `deck_cards` against the n
 | B22 — A pull in flight | mutation dispatched | The row's control reads `Pulling…`, disabled, **in place**; the row does not move and nothing unmounts | `isPending` per row |
 | B23 — A pull succeeded | mutation resolved | Dot goes to free; marker and price leave the row; pullable, to-buy and total re-print; **the row does not move**; announced once, no animation | `bucket`, `chipCounts`, `buyTotal`, announcement |
 | B24 — A pull was refused | mutation rejected | Shipped `MutationError` beneath the row's control; the row stays pullable | `error` per row |
-| B25 — Reached by a stale link | the draft has already been committed | **Redirect to the deck page** — no empty review page | `changeCount === 0` |
+| B25 — Reached by a stale link | the changes have already been committed | **Redirect to the deck page** — no empty review page | `changeCount === 0` |
 | D32 — Confirming a discard from this page | `Discard` pressed in the apply bar | The D31 confirm's two lines and two buttons, **in the apply bar**; no second wording | `changeCount`, `currentVersion`, `versionDate`, `versionCardCount`, `addCount`, `removeCount` |
-| B9 (table A) — Draft with no type changed | a type's before/after are equal | The **type block renders only the types whose count moved** — "a row of zeroes is a table explaining it has nothing in it" | per-type before/after |
+| B9 (table A) — Changes with no type moved | a type's before/after are equal | The **type block renders only the types whose count moved** — "a row of zeroes is a table explaining it has nothing in it" | per-type before/after |
 | B11 (table A) — A quantity changed only | one `draftDiff` entry with `from > 0 && to > 0` | One row reading `{name} {from} → {to}` via `recountedItem` — never a bare name | `from`, `to` |
 
 ### Cross-surface conditions that change Surface 2

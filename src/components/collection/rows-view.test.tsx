@@ -72,12 +72,12 @@ describe("RowsView availability marker", () => {
   // any real collection are free, and a free row must be untouched.
   it("renders nothing at all for a free card", () => {
     renderRows({ ...card, quantity: 2, availability: avail(2, 0) });
-    expect(screen.queryByText(/free|in a draft|short/)).toBeNull();
+    expect(screen.queryByText(/free|in a draft|in a brew|short/)).toBeNull();
   });
 
   it("renders nothing when the availability read failed", () => {
     renderRows({ ...card, quantity: 2, availability: null });
-    expect(screen.queryByText(/free|in a draft|short/)).toBeNull();
+    expect(screen.queryByText(/free|in a draft|in a brew|short/)).toBeNull();
   });
 
   it("is count-only — the deck name never reaches a collection row", () => {

@@ -393,7 +393,7 @@ product owns no confirm dialog.
 | margin-bottom | `13px` | `14px` |
 | emphasis run | `v2, committed 14 Mar` in `#EDE6D8`, `font-weight 600` | `v2 as committed on 14 Mar` in `#EDE6D8`, `font-weight 600` |
 | must name | the version, **its date** and **its card count** | same |
-| text | canvas: `Back to v2, committed 14 Mar — 99 cards. Nothing about the draft is stored, so this cannot be undone.` | canvas: `The deck goes back to v2 as committed on 14 Mar — 99 cards. The nineteen you added and the seventeen you cut are not stored anywhere, so this cannot be undone.` (production string is `discard.consequence`) |
+| text | canvas: `Back to v2, committed 14 Mar — 99 cards. Nothing about the changes is stored, so this cannot be undone.` | canvas: `The deck goes back to v2 as committed on 14 Mar — 99 cards. The nineteen you added and the seventeen you cut are not stored anywhere, so this cannot be undone.` (production string is `discard.consequence`) |
 
 ### Button row
 
@@ -439,7 +439,7 @@ product owns no confirm dialog.
 |----------|--------|---------|
 | in-flight label | `Discarding…` (`discard.pending`) | same |
 | in-flight disabled | both controls disabled, **banner stays in place**, nothing unmounts | same |
-| refusal | shipped `MutationError` inside the banner; the confirm stays open; the draft untouched | same |
+| refusal | shipped `MutationError` inside the banner; the confirm stays open; the changes untouched | same |
 | announcement | `36 changes discarded. Back to v2.` — one message on the existing live region | same |
 | focus after discard | the deck name | same |
 
@@ -479,7 +479,7 @@ Contradictions.
 | color | — | `#6A6152` (`--fg-locked`) |
 | placement | — | list toolbar, right of the spacer, left of `By type`/`By role` |
 | text | — | `19 of these are not in v2 yet` (`pending.toolbarNote`) |
-| replaces | — | the shipped "n cards are yours now" note while a draft exists |
+| replaces | — | the shipped "n cards are yours now" note while changes exist |
 
 ### Caption above the list (as specified in the Component notes)
 
@@ -489,7 +489,7 @@ Contradictions.
 | font-size | `10px` | `10px` |
 | color | `#8E8269` (`--fg-faint`) | `#8E8269` (`--fg-faint`) |
 | placement | one line above the decklist | one line above the decklist |
-| text | `the brass rule marks the {n} rows this draft added` (`pending.addListCaption`) | same |
+| text | `the brass rule marks the {n} rows you have added` (`pending.addListCaption`) | same |
 | purpose | the sighted reader's key — said **once**, never per row | same |
 
 ---
@@ -566,11 +566,11 @@ height. `pending add` goes in the row's **accessible name only** and is never re
 | flex-direction | `column` | — |
 | grid-template-columns | — | `1fr 1fr` |
 | gap | `5px` | `5px 20px` |
-| removes drawn in the list | **never** — a removed card is not in the draft | never |
+| removes drawn in the list | **never** — a removed card is not among the changes | never |
 
 ---
 
-## Component: Type group heading (with the draft note)
+## Component: Type group heading (with the changes note)
 
 | Property | Mobile | Desktop |
 |----------|--------|---------|
@@ -586,16 +586,16 @@ height. `pending add` goes in the row's **accessible name only** and is never re
 | heading text-transform | `uppercase` | `uppercase` |
 | heading color | `#EDE6D8` (`--fg`) | `#EDE6D8` |
 | count font-family / size / color | `var(--font-mono)` · `11px` · `#8E8269` (`--fg-faint`) | `var(--font-mono)` · `11.5px` · `#8E8269` |
-| spacer | — (no draft note drawn at 390px) | `<span style="flex:1">` between count and note |
-| draft note font-family / size / color | not drawn | `var(--font-mono)` · `10.5px` · `#C9A24B` (`--accent`) |
-| draft note text | not drawn | `12 added in this draft` (`pending.groupAddNote`) |
+| spacer | — (no changes note drawn at 390px) | `<span style="flex:1">` between count and note |
+| changes note font-family / size / color | not drawn | `var(--font-mono)` · `10.5px` · `#C9A24B` (`--accent`) |
+| changes note text | not drawn | `12 added, not yet committed` (`pending.groupAddNote`) |
 | ordering inside a group | alphabetical, never `bucketAdds`' oracle-UUID order | same |
 | grouping source | the shipped `DecklistGroup` / `DecklistGroupHeader` / `GroupToggle` modules — **no extraction prerequisite** (§Errata) | same |
 | `By role` grouping | carries the same per-group added note | same |
 
 ---
 
-## Component: Mix strip (RECOMMENDED MIX) while a draft exists
+## Component: Mix strip (RECOMMENDED MIX) while changes exist
 
 Five cells, the shipped `ROLE_ORDER`: ramp, draw, removal, wipes, land. The only change is the
 bottom-left slot.
@@ -611,7 +611,7 @@ bottom-left slot.
 | color | — | `#8E8269` (`--fg-faint`) |
 | margin-bottom | — | `12px` |
 | sub-run 1 | — | `EDHREC averages` — `#6A6152`, `letter-spacing 0.06em`, `text-transform none` |
-| sub-run 2 (new, draft only) | — | `· reading pending changes` — `#C9A24B` (`--accent`), `letter-spacing 0.06em`, `text-transform none` |
+| sub-run 2 (new, pending changes only) | — | `· reading pending changes` — `#C9A24B` (`--accent`), `letter-spacing 0.06em`, `text-transform none` |
 | wrapper padding | — | `22px 26px 0` |
 
 ### Cell row
@@ -697,7 +697,7 @@ bottom-left slot.
 
 ---
 
-## Component: Hero (over-cap treatment while a draft exists)
+## Component: Hero (over-cap treatment while changes exist)
 
 Reused unchanged; recorded because the banner's states depend on it and **nothing is blocked**.
 
@@ -738,19 +738,19 @@ states, which live in this banner's box). Diff source: `deck_cards` against the 
 | A3 — Committed, clean | `versionCount > 0 && changeCount === 0` | `Versions · {n}` tab only. **No banner, no Commit, no Discard, no empty diff panel, no "no pending changes" reassurance** | `versionCount`, `currentVersion`, `versionLine(version, date)` |
 | A4 — Committed, 1–6 changes | `versionCount > 0 && 1 <= changeCount <= INLINE_CHANGE_MAX` | `PendingBanner` **names density** + marked decklist | `adds[]` (name, cost, bucket, holdingDeck, price), `removes[]` (name, cost), `currentVersion`, `nextVersion`, `INLINE_CHANGE_MAX` |
 | A5 — Committed, 7+ changes | `versionCount > 0 && changeCount > INLINE_CHANGE_MAX` | `PendingBanner` **counts density** + marked decklist. Names not shown at all | `addCount`, `removeCount`, `changeCount`, `currentVersion`, `nextVersion`, `unfreeCount`, `buyTotal`, `pullableCount` |
-| A6 — Committed, over the cap | `bodySize > deckBodySize(hasPartner)` with a draft | Banner unchanged (says nothing extra) + hero `101 / 99 · 2 over` in `--warning` + second bar segment. **Nothing blocked** | `bodySize`, `cap`, `overBy` |
-| A7 — Committed, under the cap | `bodySize < deckBodySize(hasPartner)` with a draft | Banner unchanged + hero `94 / 99` in `--warning`. Commit **not** disabled | `bodySize`, `cap` |
+| A6 — Committed, over the cap | `bodySize > deckBodySize(hasPartner)` with pending changes | Banner unchanged (says nothing extra) + hero `101 / 99 · 2 over` in `--warning` + second bar segment. **Nothing blocked** | `bodySize`, `cap`, `overBy` |
+| A7 — Committed, under the cap | `bodySize < deckBodySize(hasPartner)` with pending changes | Banner unchanged + hero `94 / 99` in `--warning`. Commit **not** disabled | `bodySize`, `cap` |
 | A8 — Adds only | `addCount > 0 && removeCount === 0` (and the mirror) | Banner counts render `+19` alone — the `−` figure **and the `/`** absent, never `−0` | `addCount`, `removeCount` |
-| A9 — Draft with no type changed | a type's before/after count is equal | (Review page's type block renders only moved types; no Surface 1 element changes) | per-type before/after counts |
-| A10 — Draft that moves no mix figure | `roleCount.after === roleCount.before` for a role | That mix cell keeps `rec {n}`; `was {n}` is **not** substituted | per-role `before`, `after`, `rec` |
+| A9 — Changes with no type moved | a type's before/after count is equal | (Review page's type block renders only moved types; no Surface 1 element changes) | per-type before/after counts |
+| A10 — Changes that move no mix figure | `roleCount.after === roleCount.before` for a role | That mix cell keeps `rec {n}`; `was {n}` is **not** substituted | per-role `before`, `after`, `rec` |
 | A11 — A quantity changed only | one `draftDiff` entry with `from > 0 && to > 0` | Banner counts `+1 / −1`; the row is ruled; the line reads `{name} {from} → {to}` via `recountedItem` | `from`, `to`, `recountedItem` |
-| A12 — Draft equals the version again | `changeCount === 0` after an edit | Returns to A3 with **no announcement** — the banner is derived, so it simply is not there | `changeCount` |
-| D30 — Discard at rest | draft exists, no confirm open | Neutral ghost `Discard`, third of three banner controls | `discardCta` |
+| A12 — Changes bring it back to the version | `changeCount === 0` after an edit | Returns to A3 with **no announcement** — the banner is derived, so it simply is not there | `changeCount` |
+| D30 — Discard at rest | changes exist, no confirm open | Neutral ghost `Discard`, third of three banner controls | `discardCta` |
 | D31 — Confirming | confirm opened from the banner | `DiscardConfirm` replaces the banner's body: `--danger` left rule, question, consequence naming **v{n}, its date and its card count**, two buttons. **Phone: `Keep editing` on top** | `changeCount`, `currentVersion`, `versionDate`, `versionCardCount`, `addCount`, `removeCount` |
 | D32 — Confirming, from the review page | confirm opened on `/decks/[id]/changes` | The same two lines and two buttons, **in the apply bar**. No second wording | same as D31 |
 | D33 — Discarding | mutation in flight | `Discarding…`, both controls disabled, **banner in place**, nothing unmounts | `isPending` |
 | D34 — Discarded | mutation resolved | Deck page in state A3; announced `{n} changes discarded. Back to v{v}.`; focus moves to the deck name. **No undo offer** | `changeCount`, `currentVersion` |
-| D35 — Refused | mutation rejected | Shipped `MutationError` in the banner; draft untouched; the confirm **stays open** | `error` |
+| D35 — Refused | mutation rejected | Shipped `MutationError` in the banner; changes untouched; the confirm **stays open** | `error` |
 
 ### Cross-surface conditions that change Surface 1
 
@@ -770,7 +770,7 @@ states, which live in this banner's box). Diff source: `deck_cards` against the 
 
 | Element | Status |
 |---|---|
-| Removes ghosted into the decklist | **Never** — a removed card is not in the draft |
+| Removes ghosted into the decklist | **Never** — a removed card is not among the changes |
 | A `pending add` chip on the row | Rejected (displaces ~86px of name on 19 rows) |
 | A ring or fourth state on the ownership dot | Rejected |
 | A fill tint (`--elevated-hover` + `--accent-shadow`) on a pending row | Rejected — already means "opted out" on the re-import kept row |
@@ -816,7 +816,7 @@ states, which live in this banner's box). Diff source: `deck_cards` against the 
 ## Ambiguous or missing in the design (no value to verify against)
 
 1. **No phone frame for the ≤6 names density**, the discard-from-review apply bar, the toolbar, the
-   mix strip or the group-heading draft note. The frames table marks these "— (same rule)"; every
+   mix strip or the group-heading changes note. The frames table marks these "— (same rule)"; every
    Mobile cell above that reads `(same rule)` or `—` has no drawn source.
 2. **No hover, focus-visible or active state** is drawn or described for any banner control, the
    `review changes` link, the `Commit as v1` offer, or a pending-marked row (only the generic row

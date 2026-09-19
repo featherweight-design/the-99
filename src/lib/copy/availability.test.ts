@@ -39,9 +39,20 @@ describe("availabilityCopy", () => {
     );
   });
 
-  it("singularises the soft marker", () => {
+  it("singularises the soft marker, and says the same word out loud", () => {
     expect(availabilityCopy.marker.soft(1)).toBe("1 in a draft");
     expect(availabilityCopy.marker.soft(2)).toBe("2 in a draft");
+    // BOTH FORMS, because the defect this vocabulary sweep fixed was that they
+    // DISAGREED: the mark rendered "1 in a brew" and announced "1 copy is on an
+    // unfinished deck", so a screen-reader user and a sighted user were told
+    // different things about the same state. Asserting only the visible half
+    // leaves the spoken half free to drift back.
+    expect(availabilityCopy.marker.softAria(1)).toBe("1 copy is on a draft");
+    expect(availabilityCopy.marker.softAria(2)).toBe("2 copies are on drafts");
+    for (const n of [1, 2]) {
+      expect(availabilityCopy.marker.soft(n)).toContain("draft");
+      expect(availabilityCopy.marker.softAria(n)).toContain("draft");
+    }
   });
 
   // "Deck tax" is banned vocabulary (it collides with commander tax), and most

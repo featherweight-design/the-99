@@ -205,6 +205,6 @@ describe("SuggestionTile availability caption", () => {
   it("draws nothing at all for a free card", () => {
     mount({ owned: 3, hard: 0, soft: 0, free: 3, claims: [] });
 
-    expect(screen.queryByText(/free|in a draft|short|in use/)).toBeNull();
+    expect(screen.queryByText(/free|in a draft|in a brew|short|in use/)).toBeNull();
   });
 });

@@ -227,7 +227,7 @@ describe("DecklistRow availability marker (#43)", () => {
   it("carries no marker when the card is free", () => {
     renderRow(<DecklistRow deckId="d1" card={{ ...card, availability: avail(2) }}  newestAsOf={null}/>);
 
-    expect(screen.queryByText(/free|in a draft|short/)).toBeNull();
+    expect(screen.queryByText(/free|in a draft|in a brew|short/)).toBeNull();
   });
 
   // Self-exclusion makes the hard state unreachable on a deck's own list
@@ -247,7 +247,7 @@ describe("DecklistRow availability marker (#43)", () => {
   it("renders exactly like the free state when the availability read failed", () => {
     renderRow(<DecklistRow deckId="d1" card={{ ...card, availability: null }}  newestAsOf={null}/>);
 
-    expect(screen.queryByText(/free|in a draft|short/)).toBeNull();
+    expect(screen.queryByText(/free|in a draft|in a brew|short/)).toBeNull();
   });
 
   // §17.5. This row has no aria-label of its own to hoist the prose into — the
