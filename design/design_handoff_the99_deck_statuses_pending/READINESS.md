@@ -120,3 +120,38 @@ and applies to each; none needs Design.
   passenger on this one.
 - The banner, the commit sheet, the review page, Discard and the game-log stamp stay with
   `design_handoff_the99_deck_versioning/`. This handoff changes nothing in them.
+
+## Measured after the build — one observation for the next design round
+
+The feature shipped across #727, #730, #732 and #733, and the close-out contact sheet
+(`docs/superpowers/inventories/deck-state-marks.json`) measured one thing worth handing back to
+Design rather than fixing eng-side, because it is a ruling and not a defect.
+
+**The hollow plate is weakest at exactly the two values whose token is already a text colour.**
+Measured in the app, on the deck tile:
+
+| Reading | Plate, resolved |
+| --- | --- |
+| A plan (any status) | `rgb(20, 17, 14)` — `--bg` |
+| A deck at `Building` | `srgb(0.173, 0.158, 0.138)` ≈ `rgb(44, 40, 35)` |
+
+That is a near-neutral step of about 39 units on a 0–255 scale. It is a real difference and the
+probe asserts it, but against `Building` and `Draft` — the two statuses drawn at 14% and 16% of a
+TEXT colour rather than 18% of a signal one — it is the quietest the contrast ever gets, while
+against `Over`, `Unresolved`, `To buy` and `Complete` the filled plate carries a hue and the pair
+separates easily.
+
+R4's argument for the plate ("filled against hollow separates them at a glance") is therefore
+true of four values and marginal on two. Nothing here is drawn wrongly, and no table is
+contradicted — this is a note for whoever next opens this handoff, with the figures already taken.
+
+**Also measured, and behaving as drawn:** the edge resolves to `2px rgb(237, 230, 216)` (`--fg`) at
+both widths, a plan's bar draws at `opacity: 0.5` where a deck's draws at 1, and the hollow plate
+is fully opaque on the mobile spine's wash.
+
+## One consequence of the version bump, for the same reader
+
+`ABOUT_VERSION` moved to 5 in #733, which is what puts `/about` back in front of every account.
+`/about` has no "amended" state — `since` is the version an entry FIRST appeared in — so the
+returning reader is interrupted and then shown a page with nothing marked. The three ways out are
+in that PR's body; the one that needs a drawing is an `amended` treatment, which is Design's.

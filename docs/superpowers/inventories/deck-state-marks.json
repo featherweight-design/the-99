@@ -1,0 +1,109 @@
+{
+  "feature": "Deck-state marks \u2014 a plan, a deck, and a deck mid-tinker",
+  "note": "The claim is that three readings of one badge are distinguishable at a glance, which is a claim about a GRID and cannot be photographed one deck at a time \u2014 so the /decks rows carry all three fixtures at once and the sheet is read across, not down. The deck page rows are the surface with no grid to teach the plate by contrast, which is why the phase is stated there in words. Home's row is included because it carries the marks with no figure beside them \u2014 the stamp is the second half of that sentence, and a picture is the only way to see the pair. Set MARKS_PLAN and MARKS_MOVED to a deck with no version and a committed deck whose draft has moved; `scripts/probe-deck-state-marks.mjs` builds exactly that shape if the account owns neither. PRECONDITION, and it cost a whole run: the account must already have dismissed the current ABOUT_VERSION. The gate redirects every route to /about until it is, and the first run of this sheet photographed /about in all twelve cells and read as coverage of nothing. It is not a step here because the dismissal is stored per ACCOUNT in the database rather than per browser \u2014 press `Got it` once as this account and every later run is clean, while a `Got it` step in the rows times out on the second row onward. The /decks rows SEARCH for the fixtures rather than photographing the whole grid: the account carries 37 decks and the three readings have to sit beside each other for the picture to be the claim. The FACET rows live in `deck-state-facet.json` rather than here: this inventory's `shares` block asserts every row draws the same `StatusPillBadge`, and the filter rows legitimately draw a filter \u2014 `check:shared` failed them for composing the right thing, which is the check working.",
+  "shares": {
+    "binding": "StatusPillBadge",
+    "module": "src/components/decks/status-pill.tsx"
+  },
+  "rows": [
+    {
+      "id": "decks-grid",
+      "label": "/decks \u00b7 the three readings side by side",
+      "view": "src/components/decks/deck-card.tsx",
+      "steps": [
+        {
+          "goto": "/decks",
+          "wait": "main, [role=main], h1",
+          "settle": 3000
+        },
+        {
+          "fill": "input[type=search]",
+          "text": "zz-marks",
+          "settle": 1200
+        }
+      ],
+      "widths": [
+        "desktop"
+      ]
+    },
+    {
+      "id": "decks-grid-phone",
+      "label": "/decks \u00b7 the three readings, stacked",
+      "view": "src/components/decks/deck-card.tsx",
+      "widths": [
+        "phone"
+      ],
+      "steps": [
+        {
+          "goto": "/decks",
+          "wait": "main, [role=main], h1",
+          "settle": 3000
+        },
+        {
+          "clickRole": "button",
+          "name": "Search decks",
+          "wait": "[role=dialog]",
+          "settle": 900
+        },
+        {
+          "fill": "input[type=search]",
+          "text": "zz-marks",
+          "settle": 900
+        },
+        {
+          "clickRole": "button",
+          "name": "^Show \\d+ decks?$",
+          "settle": 1500
+        }
+      ]
+    },
+    {
+      "id": "deck-page-plan",
+      "label": "/decks/[id] \u00b7 a plan \u2014 the hollow chip and the phase in words",
+      "view": "src/components/decks/spine-desktop.tsx",
+      "steps": [
+        {
+          "goto": "/decks/${MARKS_PLAN}",
+          "wait": "main, [role=main], h1",
+          "settle": 3500
+        }
+      ]
+    },
+    {
+      "id": "deck-page-moved",
+      "label": "/decks/[id] \u00b7 a deck mid-tinker \u2014 the edge, and the banner below it",
+      "view": "src/components/decks/spine-desktop.tsx",
+      "steps": [
+        {
+          "goto": "/decks/${MARKS_MOVED}",
+          "wait": "main, [role=main], h1",
+          "settle": 3500
+        }
+      ]
+    },
+    {
+      "id": "home-resume",
+      "label": "/ \u00b7 the resume rows \u2014 the marks with no figure, beside the stamp",
+      "view": "src/components/home/resume-decks.tsx",
+      "steps": [
+        {
+          "goto": "/",
+          "wait": "main, [role=main], h1",
+          "settle": 3000
+        }
+      ]
+    },
+    {
+      "id": "about-versions",
+      "label": "/about \u00b7 the versions entry, with the badge in all three readings",
+      "view": "src/components/about/figures.tsx",
+      "steps": [
+        {
+          "goto": "/about",
+          "wait": "main, [role=main], h1",
+          "settle": 2500
+        }
+      ]
+    }
+  ]
+}

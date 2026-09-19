@@ -1,0 +1,52 @@
+{
+  "feature": "Deck state \u2014 the facet that filters on the marks",
+  "note": "The two rows of the `Deck state` heading, in both renderings: a `FilterPanel` in the wide chassis and a chip group in the phone sheet. No `shares` block, deliberately \u2014 the wide form and the sheet are two components by design (`decks-view.tsx` mounts the panel, `deck-filter-sheet.tsx` draws chips), which is the same split every other facet on this route already has, so a binding here would fail a correct build. What a picture adds over the tests: the heading sits directly after Status in the wide row, and the row does not wrap with a fifth control in it \u2014 `probe:deck-state-marks` measures the wrap, this shows the placement. Same /about precondition as the marks inventory.",
+  "rows": [
+    {
+      "id": "decks-facet",
+      "label": "/decks \u00b7 the Deck state facet, open",
+      "view": "src/components/decks/decks-view.tsx",
+      "widths": [
+        "desktop"
+      ],
+      "steps": [
+        {
+          "goto": "/decks",
+          "wait": "main, [role=main], h1",
+          "settle": 3000
+        },
+        {
+          "fill": "input[type=search]",
+          "text": "zz-marks",
+          "settle": 1200
+        },
+        {
+          "clickRole": "button",
+          "name": "Deck state filter",
+          "settle": 900
+        }
+      ]
+    },
+    {
+      "id": "decks-facet-sheet",
+      "label": "/decks \u00b7 the facet in the phone sheet",
+      "view": "src/components/decks/deck-filter-sheet.tsx",
+      "widths": [
+        "phone"
+      ],
+      "steps": [
+        {
+          "goto": "/decks",
+          "wait": "main, [role=main], h1",
+          "settle": 3000
+        },
+        {
+          "clickRole": "button",
+          "name": "Filter decks",
+          "wait": "[role=dialog]",
+          "settle": 900
+        }
+      ]
+    }
+  ]
+}
