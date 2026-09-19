@@ -147,7 +147,13 @@ describe("every entry is drawn, not just described", () => {
     const { FIGURES } = await import("../../components/about/figures");
     const ids = new Set(aboutEntries.map((e) => e.id));
     expect(Object.keys(FIGURES).filter((k) => !ids.has(k))).toEqual([]);
-  });
+    // 20s, not the 5s default. This is the FIRST of four tests to import
+    // `figures`, so it pays the whole module graph's compile and the other
+    // three run warm. Editing any About copy invalidates that graph's
+    // transform cache, so the cost lands on exactly the change most likely to
+    // touch this file: a one-word copy edit timed out here while every warm
+    // re-run passed, which reads as a flake and is a cold cache.
+  }, 20_000);
 
   it("has a figure for every entry, or names it in the ledger", async () => {
     const { FIGURES } = await import("../../components/about/figures");
