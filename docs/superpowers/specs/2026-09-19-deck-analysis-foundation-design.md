@@ -241,8 +241,8 @@ sharpens the reasoning.
   new tables, on a weekly cron beside `Catalog refresh` and `Price refresh`.
 - A contract check for that upstream (`pnpm check:spellbook`), in the daily
   `Upstream contract checks` workflow.
-- A **measured staples floor**, derived from `commander_support_cards` into one new table by
-  a committed script. No new upstream.
+- A **measured staples floor**, conditioned on **exact colour identity** (§4A.3), derived from
+  `commander_support_cards` into one new table by a committed script. No new upstream.
 - A **widened EDHREC parse**: the ten per-commander composition counts and the average curve
   the payload already carries and `parseEdhrecPayload` currently discards, as columns on
   `commander_support`, written by the index build's existing fetch. One run of the existing
@@ -672,26 +672,50 @@ recommended almost everywhere *and* actually played when it is.
 > lands are excluded outright. A condition needs **at least 100 commanders** to carry a floor
 > of its own.
 
-What that admits for a mono-coloured commander — 11 cards, and the shape of the list is the
+The **thresholds** above survived review unchanged. The **condition** did not — see §4A.3,
+which replaced colour count with exact colour identity after the count axis was found to be
+incapable of ever admitting a coloured card. The floors below are the identity ones.
+
+What that admits for a **mono-white** commander — 27 cards, and the shape of the list is the
 argument for the line:
 
 ```
-Sol Ring 75.6% · Arcane Signet 53.4% · Swiftfoot Boots 31.9% · Mind Stone 31.1%
-Rogue's Passage 29.9% · Solemn Simulacrum 29.6% · Reliquary Tower 29.6%
-Myriad Landscape 26.9% · Lightning Greaves 25.3% · Thought Vessel 25.3% · War Room 25.1%
+Sol Ring 75.7% · Swords to Plowshares 67.2% · Path to Exile 61.0% · Arcane Signet 54.0%
+Pearl Medallion 52.6% · Generous Gift 39.5% · Emeria, the Sky Ruin 37.0% · War Room 34.1%
+Welcoming Vampire 32.5% · Mentor of the Meek 32.4% · Loran of the Third Path 32.3%
+Swiftfoot Boots 32.3% · Knight of the White Orchid 32.2% · Esper Sentinel 31.5%
+Mind Stone 29.9% · Sun Titan 29.8% · Oketra's Monument 29.7% · Austere Command 28.9%
+Solemn Simulacrum 28.5% · Mangara, the Diplomat 28.4% · Rogue's Passage 28.3%
+Myriad Landscape 28.2% · Land Tax 28.0% · Nykthos 27.7% · Keeper of the Accord 27.1%
+Mother of Runes 26.4% · Stroke of Midnight 25.7%
 ```
 
-**Command Tower is correctly absent from that list** (10.4% in mono, §4A.3), which is the
-conditioning doing exactly the job it was added for. `Temple of the False God` sits at 12.2%
-and is excluded with room to spare. Sizes elsewhere: two-colour 7, three-colour 22,
-five-colour 28.
+**15 coloured, 7 colourless, 5 lands.** That mix is the whole point of §4A.3's correction: the
+colour-count floor this replaced held **11 cards, every one of them colourless**.
 
-**The 100-commander floor exists because two conditions produce garbage without it.**
-Colourless has 46 commanders and four-colour has 16, and at those sample sizes "recommended
-for half of them" is a meaningless bar — they yield **105 and 51 cards** respectively, longer
-than the mono floor by an order of magnitude. Both fall back to the nearest populated
-condition and the fit reports that it did (§6A's `basis`). Sixty-two commanders are affected
-in total.
+**Command Tower is correctly absent** — 11.1% among mono-white commanders. It is colourless
+and would pass any identity test; what excludes it is inclusion, which is the second axis
+earning its place. `Temple of the False God` is excluded at 12.2% with room to spare.
+
+Floor sizes across the 15 identity buckets that clear the sample bar:
+
+| identity | commanders | cards | coloured | lands |
+|---|---|---|---|---|
+| W · R · B · U · G | 336 · 330 · 304 · 288 · 268 | 27 · 29 · 40 · 34 · 32 | 15 · 18 · 24 · 22 · 24 | 5 · 4 · 8 · 5 · 4 |
+| RW · BR · GW · UW · BU | 139 · 133 · 130 · 130 · 123 | 29 · 36 · 33 · 31 · 34 | 10 · 13 · 16 · 11 · 11 | 13 · 16 · 14 · 14 · 17 |
+| GU · RU · GR · BW · BG | 115 · 114 · 112 · 107 · 106 | 32 · 47 · 39 · 32 · 31 | 17 · 27 · 22 · 14 · 13 | 13 · 14 · 14 · 14 · 15 |
+
+Two-colour floors carry **13–17 lands each** — the identity's dual lands. A mana base is the
+thing the motivating deck lacked, and the colour-count floor could not name a single one of
+them.
+
+**The 100-commander bar now bites differently, and better.** Fifteen of the 32 exact
+identities clear it — **every mono and every two-colour identity, covering 2,735 of 3,279
+commanders (83%)**. The 17 thin buckets are colourless (46 commanders) and every three-plus
+identity, together 544 commanders. Those fall back to **colour count**, which is sound there
+precisely because the ceiling that broke it at mono and two colours has stopped binding: white
+is 6 of the 10 three-colour identities, so `Swords to Plowshares` clears the three-colour
+fallback at **0.616** share. The fit reports which it used (§6A's `basis`).
 
 **Two design findings the curve exposed, both of which change the table rather than tune it:**
 
@@ -732,32 +756,57 @@ most commanders in this condition"* — one commander, one vote. Weighted asks *
 decks"*, which is dominated by a handful of mega-popular commanders and is the more volatile
 question. A floor wants the stable one; a presentation order is free to use the other.
 
-### 4A.3 Colour count is a real conditioning axis
+### 4A.3 The conditioning axis is colour IDENTITY, not colour count
 
-*"Most decks want an Arcane Signet, but it is less helpful in mono-coloured decks"* is a
-number, not an opinion. The effects are large and they are not all the same shape:
+This section was wrong for three review passes, and the way it was wrong is worth more than
+the correction.
+
+**What the count axis got right.** *"Most decks want an Arcane Signet, but it is less helpful
+in mono"* is a number, and the numbers are large:
 
 | card | 1 colour | 2 | 3 | 5 |
 |---|---|---|---|---|
 | **Command Tower** | **10.4%** | **80.6%** | 88.6% | 87.2% |
 | Arcane Signet | 53.4% | 69.2% | 75.2% | 73.7% |
 | Exotic Orchard | 16.1% | 25.2% | 53.1% | 63.5% |
-| Chromatic Lantern | 12.4% | 8.4% | 11.4% | 50.1% |
 | Swiftfoot Boots | 31.9% | 27.8% | 26.2% | **13.6%** |
 | Sol Ring | 75.6% | 76.8% | 81.2% | 75.0% |
 
-Command Tower's **70-point cliff** between one colour and two is the case that justifies the
-axis. Swiftfoot Boots runs the *other* way, so the conditioning is a gradient per card and not
-a single "multicolour bonus". Sol Ring is flat at 75–90% everywhere and is genuinely
-unconditional — which is what a floor entry should look like.
+Command Tower's **70-point cliff** is real, Swiftfoot Boots runs the other way, and Sol Ring is
+flat. All of that still holds and none of it is discarded.
 
-**Conditioning is not polish here; the floor is wrong without it.** §4A.1's first finding is
-the proof: a colour-specific staple is invisible to a global computation. So there is no
-unconditioned floor to fall back to, and the condition is always part of the answer.
+**What it got wrong, structurally.** A coloured card can never clear a 50% breadth bar under
+colour count. White is **1 of 5** mono identities — a **20% ceiling** — and **4 of 10**
+two-colour ones, a **40% ceiling**. Both sit under the cut permanently. Measured:
 
-The derivation prints the gap per condition so the cut is made against figures, and this spec
-records the line it produced — the same way `gap-slot.ts` records that 2% and 1% were tried
-before 0.5%.
+| card / axis | share | inclusion | in floor? |
+|---|---|---|---|
+| Swords to Plowshares · `count:1` | 0.218 | 67.2% | **no** |
+| Swords to Plowshares · `identity:W` | **0.991** | 67.2% | **yes** |
+| Path to Exile · `count:1` | 0.219 | 61.0% | **no** |
+| Path to Exile · `identity:W` | **0.994** | 61.0% | **yes** |
+| Command Tower · `identity:W` | 0.482 | 11.1% | no |
+| Sol Ring · `identity:W` | 0.994 | 75.7% | yes |
+
+So the count floor could hold **only colourless cards**, and did: all 11 entries of the
+ratified mono floor were colourless. It would have told a player building their first
+mono-white deck about Mind Stone and never about **Swords to Plowshares**.
+
+**How the error survived two corrections, which is the part to remember.** §4A.1's first
+finding was that a *global* computation demotes colour-specific staples, and the card used to
+prove it was Swords to Plowshares. The fix was colour-count conditioning. Nobody checked
+whether the fix helped the card the argument was built on — it does not, because Command Tower
+is a colour-**count** effect and Swords to Plowshares is a colour-**identity** one. A correct
+finding, a plausible fix, and no test that the fix addressed the finding's own example.
+
+**The axis is the commander's exact colour identity.** A card is measured among commanders
+whose identity is exactly the deck's. That admits coloured staples with no ceiling, and it
+keeps the count axis's win: Command Tower is colourless, would pass any identity test, and is
+excluded by **inclusion** at 11.1% — which is the second axis doing the work §4A.1 gave it.
+
+**Conditioning is not polish; the floor is wrong without it, twice over.** Globally, a
+colour-specific staple is invisible. By count, it is unreachable. Only identity admits it, and
+only the inclusion axis keeps the wrong colourless cards out.
 
 ### 4A.4 Role targets do NOT come from this table — they come from a parse we already discard
 
@@ -964,7 +1013,9 @@ before a rule.
 ```
 format_staples
   oracle_id          uuid not null references cards(oracle_id)
-  condition          text not null      -- 'colors:1' .. 'colors:5'. There is no 'all'.
+  condition          text not null      -- exact identity: 'C','W','U','B','R','G','WU',…
+                                        -- or 'count:3'..'count:5' for thin buckets (§4A.3).
+                                        -- There is no 'all' condition.
   commanders         integer not null   -- how many commanders recommend it, in this condition
   commander_total    integer not null   -- the denominator, never inferred
   avg_inclusion      real not null      -- 0-100, the second axis (§4A.1)
@@ -979,10 +1030,10 @@ words for two genuinely different things: `condition` names a bucket, `basis` na
 strength of the claim behind it. A row here always carries a `condition`; a fit always carries
 both.
 
-Only conditions with **at least 100 commanders** are written (§4A.1). `colors:0` (46
-commanders) and `colors:4` (16) are therefore absent from this table by construction rather
-than filtered at read time — an empty floor and a floor that was never computed are different
-facts, and the reader is owed the second one.
+Only conditions with **at least 100 commanders** are written (§4A.1) — the 15 exact identities
+that clear it, plus the `count:` fallbacks for the 17 thin ones. A bucket that was never
+computed is absent by construction rather than filtered at read time: an empty floor and a
+floor nobody derived are different facts, and the reader is owed the second one.
 
 Basic lands never appear: excluded by type at derivation (§4A.1), not by threshold.
 
@@ -999,9 +1050,9 @@ commander_support  (added)
 
 Nullable, every one of them: a commander whose payload predates the widening has no
 composition, and **null reads as absent** where a zero would read as "this deck runs no
-lands". The reader falls back to the colour condition and reports `basis: "colors"`; where
-that condition is also absent (§4A.1's thin cases, after their own fallback) it reports
-`basis: "none"` and no target at all.
+lands". The reader falls back to the identity condition and reports `basis: "identity"`, or to
+the count fallback as `basis: "count"` where the identity bucket is too thin to derive
+(§4A.3); with neither it reports `basis: "none"` and no target at all.
 
 Every figure carries its denominator, per the presentation rules inherited from #9. A figure
 without one is an assertion the reader cannot check, which is §2.2 again.
@@ -1035,7 +1086,9 @@ sub-project 2 builds anything on them. This is `measure-gap-line.mts`'s role.
 ```ts
 export type DeckProfile = {
   deckId: string;
-  /** Fingerprint of the inputs — decklist, commanders, catalog generation, builder version. */
+  /** Fingerprint of the deck's OWN inputs — decklist rows, commander and partner ids, and a
+   *  builder version. Deliberately NOT the catalog generation: `cacheForUser` injects that
+   *  into the key itself (§5.4), and repeating it would file one input twice. */
   fingerprint: string;
   counts: ProfileCounts;       // total, nonland, land, basics
   roles: ProfileRoles;         // classifyRoles tallies, and the cards behind each
@@ -1061,7 +1114,8 @@ type ProfileSkeleton = {
   averageCurve: Record<string, number> | null;
   /** Whether `composition` describes this commander or this PAIR (§4A.4a). */
   compositionOf: "commander" | "pair";
-  /** The colour-count fallback, always present: `colors:1` … `colors:5`. */
+  /** The floor's bucket: this deck's exact identity where one was derived, else a
+   *  `count:` fallback. Always present. */
   condition: string;                        // §4A.3
   staples: StapleRef[];                     // the floor for that condition, §4A.7
   commanderDeckCount: number | null;        // the denominator behind all of it
@@ -1369,7 +1423,7 @@ membership rather than published directly.
 ```ts
 type SkeletonFit = {
   /** Where each target came from, per §4A.4's fallback chain. */
-  basis: "commander" | "pair" | "colors" | "none";
+  basis: "commander" | "pair" | "identity" | "count" | "none";
   types: TypeFit[];                   // land, creature, instant … : have, target, delta
   curve: CurveFit | null;             // the deck's curve against the commander's average
   missingStaples: StapleRef[];        // floor cards absent, with measured rate + denominator
@@ -1378,11 +1432,15 @@ type SkeletonFit = {
 };
 ```
 
-**`basis` is not decoration.** A composition target comes from this pair's own page, or this
-commander's, or the colour-count condition, or nowhere — **four** materially different claims,
+**`basis` is not decoration.** A target comes from this pair's own page, this commander's, its
+exact colour identity, a colour-count fallback, or nowhere — **five** materially different
+claims,
 and a fit that presented them identically would be asserting a precision it does not have. The
 surface prints which. `"pair"` is separate from `"commander"` because a pair's average deck is
-a different population, and it sums to 98 rather than 99 (§4A.4a).
+a different population, and it sums to 98 rather than 99 (§4A.4a). `"identity"` and `"count"`
+are separate because the second is the fallback for a bucket too thin to derive (§4A.3), and a
+reader is owed the difference between "decks in your colours run this" and "decks with your
+number of colours do".
 
 **Functional roles are absent from this type, deliberately.** There is no `roles` field,
 because §4A.5 has no measured target to put in one. `ROLE_TARGETS` is not read here; a fit
@@ -1476,9 +1534,10 @@ pure.
 
 For the skeleton: a thin-data commander sets `coverage.thin` and still gets a full floor; a
 missing staple carries its rate **and** its denominator; a commander with composition columns
-reports `basis: "commander"` and one without falls back to `basis: "colors"` with a
-colour-conditioned target; a commander with neither reports `basis: "none"` and **no target at
-all** rather than a zero.
+reports `basis: "commander"` and one without falls back to `basis: "identity"` with an
+identity-conditioned target; a commander in a thin identity bucket falls further to
+`basis: "count"`; one with neither reports `basis: "none"` and **no target at all** rather
+than a zero.
 
 For the slot, cases per bracket boundary and per rule, and specifically:
 
@@ -1510,8 +1569,9 @@ What only a database can answer here:
 - The **cache key carries the catalog generation**: stamping `catalog_refreshes` retires a
   cached profile. `probe:catalog-stamp` proves the stamp; this proves a profile actually
   moves with it.
-- **The skeleton read joins correctly and picks the right condition.** A mono commander must
-  resolve `colors:1` and a Jeskai one `colors:3`, and a staple absent from the deck must
+- **The skeleton read joins correctly and picks the right condition.** A mono-white commander
+  must resolve the `W` bucket and receive `Swords to Plowshares`; a Jeskai one must fall back
+  to `count:3` and report `basis: "count"`; and a staple absent from the deck must
   appear in `missingStaples` with the denominator the table stored — not a recomputed one.
   This is the join the floor rides on and no unit test can reach it.
 - **Partial detection is reported, not silently dropped**, on a fixture holding a
