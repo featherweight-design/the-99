@@ -38,9 +38,14 @@ forgotten one.
   "generate", never "write".
 - **Test suite**: 6,989 passing on `spec/deck-analysis-foundation` @ `eb7fefdd`; typecheck,
   lint and the stub-DB build all green.
-- **Neon topology**: `local-dev`, `catalog-staging`, `catalog-production` per AGENTS.md and
-  the topology memory. **NOT verified today** — the Neon MCP token had expired at authoring
-  time. Re-verify at kickoff before pointing any script at anything.
+- **Neon topology** (verified 2026-09-19 via MCP, and the first draft of this line had it
+  wrong): the project is **`the-99`** (`misty-rain-01681654`, Postgres 17) with exactly three
+  branches — **`production`** (primary/default), **`staging`**, and **`local-dev`**. There is
+  no Neon branch called `catalog-anything`: `catalog-staging` and `catalog-production` are
+  **GitHub environment** names, and each carries the `DATABASE_URL` for the Neon branch it
+  corresponds to. The workflows select them with `environment: catalog-${{ matrix.target }}`.
+  Keep the two vocabularies apart — a script is pointed at a Neon **branch**, a workflow leg
+  names a GitHub **environment**.
 - **Things that intentionally do not exist yet**: every table this epic adds; the
   `ANTHROPIC_API_KEY`-dependent prose path is untouched by this epic; no `/decks/[id]`
   analysis route and no About entry (both belong to Tier B).
@@ -207,11 +212,14 @@ Fix everything valid in-run; notify and keep building; never wait.
 ## Hard pause points
 
 - **Any production database migration.** The migrations here run automatically on the Vercel
-  production build, which is the existing mechanism — but a manual `db:migrate` against
-  `catalog-production` is a stop-and-ask.
-- **Pointing any script or probe at `catalog-production`.** Every seed and probe in this epic
-  is destructive within its scope: `db:seed:combos` deletes and refills three tables for every
-  user, and `probe:bracket` writes sentinel rows into shared catalog tables.
+  production build, which is the existing mechanism — but a manual `db:migrate` pointed at the
+  Neon **`production`** branch is a stop-and-ask.
+- **Pointing any script or probe at the `production` (or `staging`) Neon branch.** Every seed
+  and probe in this epic is destructive within its scope: `db:seed:combos` deletes and refills
+  three tables for every user, and `probe:bracket` writes sentinel rows into shared catalog
+  tables. Scripts run against **`local-dev`** or a scratch branch. Dispatching a WORKFLOW leg
+  at the `catalog-staging` / `catalog-production` environment is the separate, allowed path
+  below — the distinction is the vocabulary one above, and it is the one that gets confused.
 - **Any change to the five ratified walkthrough calls** (plan's "Walkthrough ratifications").
   If a review round argues one of them is wrong, stop and ask — they are Hugh's, not a
   reviewer's.
