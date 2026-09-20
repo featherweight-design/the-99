@@ -1102,7 +1102,7 @@ Package manager is **pnpm** (pinned via `packageManager` in package.json) — ne
   read, a four-rung composition chain, a staples join and a Spellbook combo join with three
   rules in its SQL.
 
-  Thirty-one checks. The draft IS the deck, so a card staged into `deck_cards` moves the slot
+  Thirty-five checks. The draft IS the deck, so a card staged into `deck_cards` moves the slot
   with no commit. The combo join's three §4.3b rules get one case each, and the
   most consequential is the false-NEGATIVE half: a `mustBeCommander` piece AS the commander
   must slot. A Game Changer COMMANDER counts against every limit — the commanders-are-cards
