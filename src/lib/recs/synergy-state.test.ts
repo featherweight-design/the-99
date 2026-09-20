@@ -5,7 +5,7 @@ import { scoringSynergyState, synergyStateFrom } from "./synergy-state";
 // New required fields added to EdhrecData that these tests don't exercise.
 const EMPTY_WIDE = {
   tags: [], bracketCounts: {}, budgetCounts: {}, similarNames: [],
-  deckCount: null, rank: null, saltScore: null,
+  deckCount: null, rank: null, saltScore: null, composition: null, manaCurve: null,
 };
 
 // Mirrors what parseEdhrecPayload actually emits: topCards keeps the card's

@@ -13,7 +13,7 @@ const base: EdhrecData = {
   similarNames: [],
   deckCount: null,
   rank: null,
-  saltScore: null,
+  saltScore: null, composition: null, manaCurve: null,
 };
 const A: EdhrecData = {
   ...base,

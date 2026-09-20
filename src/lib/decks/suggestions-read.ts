@@ -15,6 +15,7 @@ import { withinColorIdentity } from "../cards/identity-where";
 import { ownedCardsWhere } from "../collection/owned-cards";
 import { getEdhrecData } from "../edhrec/client";
 import { mergeEdhrecData } from "../edhrec/merge";
+import { readPairSupport, resolvePairEdhrecData } from "../edhrec/pair-read";
 import { type PoolCard } from "../recs/score";
 import { deckBodySize } from "./deck-size";
 import { cardTypeGroup, primaryRole, requireDeck } from "./read";
@@ -142,13 +143,36 @@ export async function loadDeckSuggestions(deckId: string, userId: string): Promi
   // cache). If EDHREC just doesn't index this commander (4xx), data === null
   // but the deck-suggestions panel should NOT flag "degraded" — user's normal
   // pool/role suggestions are unaffected.
-  const results = await Promise.all(commanders.map((c) => getEdhrecData(c.oracleId, c.name)));
+  // A PAIR'S OWN PAGE FIRST, where one has been indexed.
+  //
+  // `mergeEdhrecData` takes the union of two single-commander lists scored by the better of
+  // the two, which is an approximation of what people play with the PAIR. EDHREC publishes
+  // the real thing — the Kratos/Atreus page carries its own composition, its own
+  // `bracket_counts`, 13,332 decks and rank 159 — so where the monthly index has stored it,
+  // that is the better source for the same question. The merge stays as the fallback for a
+  // pair EDHREC has no page for; deleting it would silently regress those decks.
+  // Stored first, then the DEMAND path, then the merge. The index only fetches pairs present
+  // in `decks`, so the first deck to use a new pairing has no stored row — and without the
+  // demand fetch it would sit on the approximation until the next monthly run, which is up to
+  // a month for exactly the deck whose owner just built something new.
+  const stored = hasPartner
+    ? (await readPairSupport(commander.oracleId, partner!.oracleId).catch(() => null)) ??
+      (await resolvePairEdhrecData(
+        commander.oracleId, partner!.oracleId, commander.name, partner!.name,
+      ).catch(() => null))
+    : null;
+
+  const results = stored
+    ? []
+    : await Promise.all(commanders.map((c) => getEdhrecData(c.oracleId, c.name)));
 
   // A pair's advice is the union of both lists, scored by the better of the two:
   // a card the partner loves is not made worse by the primary not knowing it.
-  const data = mergeEdhrecData(results.map((r) => r.data));
-  // Either commander being unreachable leaves the list knowably incomplete.
-  const degraded = results.some((r) => r.unreachable);
+  const data = stored ?? mergeEdhrecData(results.map((r) => r.data));
+  // Either commander being unreachable leaves the list knowably incomplete. Stored index data
+  // is never degraded — it is the same standing the single-commander support the scoring
+  // engine reads already has.
+  const degraded = stored ? false : results.some((r) => r.unreachable);
   const topCards = data?.topCards ?? null;
   // Sparse: EDHREC reports a figure only for the cards it knows.
   const inclusionByName: Record<string, number | undefined> = data?.inclusionByName ?? {};

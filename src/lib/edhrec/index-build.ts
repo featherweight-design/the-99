@@ -2,7 +2,7 @@ import { classifyEngine, type CommanderEngine } from "../recs/engine";
 import { synergyStateFrom, type SynergyState } from "../recs/synergy-state";
 import { frontFaceName } from "../recs/faces";
 import type { EdhrecFetchResult } from "./client";
-import type { EdhrecTag } from "./parse";
+import type { CompositionCounts, EdhrecTag } from "./parse";
 
 export type IndexCommander = { oracleId: string; name: string; oracleText: string | null };
 
@@ -18,7 +18,43 @@ export type SupportHeader = {
   rank: number | null;
   saltScore: number | null;
   engine: CommanderEngine | null;
+  /** §4A.4's composition, flattened to the columns. Null on anything but a clean `ok` read. */
+  avgLand: number | null;
+  avgBasic: number | null;
+  avgNonbasic: number | null;
+  avgCreature: number | null;
+  avgInstant: number | null;
+  avgSorcery: number | null;
+  avgArtifact: number | null;
+  avgEnchantment: number | null;
+  avgPlaneswalker: number | null;
+  avgBattle: number | null;
+  avgCurve: Record<string, number> | null;
 };
+
+/**
+ * The composition columns for a header.
+ *
+ * Null on `degraded` and `absent` as well as on a payload that predates the widening — and
+ * the write layer goes further than this function can: `seed-index.ts` SKIPS the row entirely
+ * on `degraded`, preserving whatever was there. So these nulls describe what a header CARRIES,
+ * never what a degraded fetch writes, which is nothing at all.
+ */
+function compositionColumns(c: CompositionCounts | null, curve: Record<string, number> | null) {
+  return {
+    avgLand: c?.land ?? null,
+    avgBasic: c?.basic ?? null,
+    avgNonbasic: c?.nonbasic ?? null,
+    avgCreature: c?.creature ?? null,
+    avgInstant: c?.instant ?? null,
+    avgSorcery: c?.sorcery ?? null,
+    avgArtifact: c?.artifact ?? null,
+    avgEnchantment: c?.enchantment ?? null,
+    avgPlaneswalker: c?.planeswalker ?? null,
+    avgBattle: c?.battle ?? null,
+    avgCurve: curve,
+  };
+}
 
 export type SupportCard = {
   commanderOracleId: string;
@@ -82,6 +118,9 @@ export function toSupportRows(args: {
     rank: d?.rank ?? null,
     saltScore: d?.saltScore ?? null,
     engine: classifyEngine(commander),
+    // Only a clean read carries a composition: `d` is null on absent and on degraded.
+    ...compositionColumns(state === "ok" ? (d?.composition ?? null) : null,
+                          state === "ok" ? (d?.manaCurve ?? null) : null),
   };
 
   if (state !== "ok") return { header, cards: [], unresolved: 0 };

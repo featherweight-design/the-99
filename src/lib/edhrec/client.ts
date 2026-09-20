@@ -11,7 +11,7 @@ const edhrecUrl = (commanderName: string) =>
 
 // Timeout so a hung EDHREC request falls through to stale/degraded handling
 // instead of stalling the recommendations page.
-const edhrecInit = (): RequestInit => ({
+export const edhrecInit = (): RequestInit => ({
   headers: { "User-Agent": "the-99/1.0" },
   signal: AbortSignal.timeout(10_000),
 });

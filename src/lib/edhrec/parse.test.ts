@@ -100,19 +100,70 @@ const gisa = JSON.parse(readFileSync(join(dirname(fileURLToPath(import.meta.url)
 describe("parseEdhrecPayload — widened fields", () => {
   it("reads archetype tags from tag_counts, sorted by count descending", () => {
     const { tags } = parseEdhrecPayload(gisa);
-    expect(tags[0]).toEqual({ slug: "zombies", label: "Zombies", count: 566 });
+    expect(tags[0]).toEqual({ slug: "zombies", label: "Zombies", count: 526 });
     expect(tags.map((t) => t.count)).toEqual([...tags.map((t) => t.count)].sort((a, b) => b - a));
   });
 
   it("falls back to panels.taglinks when tag_counts is absent — one source, one fallback", () => {
     const { tags } = parseEdhrecPayload({ ...gisa, tag_counts: undefined });
-    expect(tags[0]).toEqual({ slug: "zombies", label: "Zombies", count: 566 });
+    expect(tags[0]).toEqual({ slug: "zombies", label: "Zombies", count: 526 });
   });
 
   it("reads bracket_counts and budget_counts from the top level", () => {
     const d = parseEdhrecPayload(gisa);
-    expect(d.bracketCounts).toEqual({ "1": 15, "2": 608, "3": 329, "4": 78, "5": 5 });
-    expect(d.budgetCounts).toEqual({ budget: 434, middle: 3481, expensive: 434 });
+    expect(d.bracketCounts).toEqual({ "1": 16, "2": 606, "3": 339, "4": 78, "5": 5 });
+    expect(d.budgetCounts).toEqual({ budget: 442, middle: 3543, expensive: 442 });
+  });
+
+  // The ten per-commander composition counts and the average curve the payload has always
+  // carried and this parse always discarded. Verified against a LIVE capture 2026-09-20:
+  // every field is at the TOP LEVEL (not under `container.json_dict`, where the card metadata
+  // lives), and the type counts sum to exactly 99 — EDHREC is publishing a real average deck
+  // rather than a loose statistic, which is the reason to trust it as a target.
+  it("reads the ten composition counts from the payload top level", () => {
+    const { composition } = parseEdhrecPayload(gisa);
+    expect(composition).toEqual({
+      land: 36, basic: 29, nonbasic: 7, creature: 29, instant: 7,
+      sorcery: 9, artifact: 11, enchantment: 6, planeswalker: 1, battle: 0,
+    });
+  });
+
+  // `basic` and `nonbasic` are a BREAKDOWN of `land`, not two more types — 29 + 7 = 36. A
+  // reader that adds all ten counts gets 135 and concludes the payload is nonsense.
+  it("its type counts sum to the deck body, with basic+nonbasic breaking down land", () => {
+    const c = parseEdhrecPayload(gisa).composition!;
+    expect(c.basic + c.nonbasic).toBe(c.land);
+    const types = c.land + c.creature + c.instant + c.sorcery + c.artifact +
+      c.enchantment + c.planeswalker + c.battle;
+    expect(types).toBe(99);
+  });
+
+  it("reads panels.mana_curve", () => {
+    const { manaCurve } = parseEdhrecPayload(gisa);
+    expect(manaCurve).toEqual({ "1": 10, "2": 14, "3": 19, "4": 10, "5": 6, "6": 3, "7": 1, "8": 1 });
+  });
+
+  // Null, never zero. A commander whose payload predates the widening has NO composition; a
+  // zero would read as "this commander's decks run no lands", which is a claim nobody made.
+  it("yields null composition and null curve when the fields are absent", () => {
+    const d = parseEdhrecPayload({ container: { json_dict: { cardlists: [] } } });
+    expect(d.composition).toBeNull();
+    expect(d.manaCurve).toBeNull();
+  });
+
+  // The house finiteness rule: NaN and Infinity are both `"number"`, and either reaching a
+  // target renders as nonsense rather than the honest omission a missing key gives.
+  it("yields null composition when any count is non-finite", () => {
+    const broken = { ...(gisa as Record<string, unknown>), creature: NaN };
+    expect(parseEdhrecPayload(broken).composition).toBeNull();
+  });
+
+  it("keeps a non-finite curve bucket out rather than passing it through", () => {
+    const broken = {
+      ...(gisa as Record<string, unknown>),
+      panels: { mana_curve: { "1": 5, "2": NaN } },
+    };
+    expect(parseEdhrecPayload(broken).manaCurve).toEqual({ "1": 5 });
   });
 
   it("reads similar commander names", () => {
@@ -123,8 +174,8 @@ describe("parseEdhrecPayload — widened fields", () => {
 
   it("reads commander metadata from container.json_dict.card", () => {
     const d = parseEdhrecPayload(gisa);
-    expect(d.deckCount).toBe(4349);
-    expect(d.rank).toBe(649);
+    expect(d.deckCount).toBe(4427);
+    expect(d.rank).toBe(647);
     expect(d.saltScore).toBeCloseTo(0.191, 3);
   });
 

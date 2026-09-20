@@ -74,6 +74,16 @@ export async function readSynergyCards(
       // the figures are aggregated rather than grouped by: a pair's advice is
       // the better of the two, exactly as `mergeEdhrecData` merges the live
       // lists. Over one id the grouped max is the row itself.
+      //
+      // KNOWN DIVERGENCE, deliberately not closed here. `commander_pair_support_cards` now
+      // holds what people actually play with a PAIR, and `suggestions-read` prefers it over
+      // this approximation — so once a widened index run has stored pair data, the deck
+      // suggestions panel and this panel can rank the same card differently for the same
+      // pair. Teaching this query the preference means restructuring an aggregating read on
+      // a hot route (the commander detail panel, its Role Coverage counts and the deck
+      // top-off list all come through here), which is not a change to make without the
+      // route walked. Until then this is invisible: no pair data exists until the monthly
+      // index next runs.
       inclusion: max(commanderSupportCards.inclusion),
       synergy: max(commanderSupportCards.synergy),
       ownedQuantity: sql<number>`coalesce(${ownedTotals.qty}, 0)`,
