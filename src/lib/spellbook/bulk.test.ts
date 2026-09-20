@@ -70,6 +70,20 @@ describe("streamVariants", () => {
     expect(got.map((v) => v.id)).toEqual(["a", "b"]);
   });
 
+  // A fixed character budget between the key and its `[` cannot tell "the separator is still
+  // in flight" from "this is a different key". The first version allowed seven characters, so
+  // a document with more whitespace than that had the key trimmed out of the buffer and threw
+  // "no variants array" at every chunk size.
+  it("survives arbitrary whitespace between the key and its bracket", async () => {
+    const got = await collect(`{"variants"${" ".repeat(40)}:${" ".repeat(40)}[{"id":"a"}]}`, 3);
+    expect(got.map((v) => v.id)).toEqual(["a"]);
+  });
+
+  it("survives a newline-formatted separator", async () => {
+    const got = await collect(`{\n  "variants"\n    :\n  [\n    {"id":"a"}\n  ]\n}`, 5);
+    expect(got.map((v) => v.id)).toEqual(["a"]);
+  });
+
   it("ignores keys before the variants array", async () => {
     const got = await collect(
       `{"timestamp":"2026-01-01","meta":{"variants":"not the array","n":[{"id":"decoy"}]},` +

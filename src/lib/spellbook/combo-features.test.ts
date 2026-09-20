@@ -57,6 +57,24 @@ describe("producesInfiniteTurns", () => {
     for (const f of INFINITE_TURN_FEATURES) expect(producesInfiniteTurns([f])).toBe(true);
   });
 
+  // The test above MEASURES NOTHING about the allowlist: all three generated entries begin
+  // "Infinite turns", so the regex alone satisfies every one and the
+  // `INFINITE_TURN_FEATURES.includes(f)` half could be deleted with the suite still green.
+  // The allowlist exists for a name that does NOT start that way — upstream could ship
+  // "Take infinite turns" or "Extra turns, arbitrarily many" — so it is exercised here with a
+  // name the regex cannot reach, injected into the same list the runtime reads.
+  it("claims an allowlisted name the regex cannot reach", () => {
+    const offPattern = "Take arbitrarily many extra turns";
+    expect(/^infinite (extra )?turns?\b/i.test(offPattern)).toBe(false);
+    const list = INFINITE_TURN_FEATURES as unknown as string[];
+    list.push(offPattern);
+    try {
+      expect(producesInfiniteTurns([offPattern])).toBe(true);
+    } finally {
+      list.pop();
+    }
+  });
+
   it("claims the bare upstream name, confirmed live", () => {
     expect(producesInfiniteTurns(["Infinite turns"])).toBe(true);
   });

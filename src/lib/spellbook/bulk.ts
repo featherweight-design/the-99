@@ -53,8 +53,17 @@ export async function* streamVariants(
         buf = rest.slice(m[0].length);
         return true;
       }
-      // Not followed by `: [` — either a different key, or the separator is still in flight.
-      if (rest.length < 8) return false;
+      // Not followed by `: [`. Two cases, and conflating them loses the document.
+      //
+      // The separator may still be IN FLIGHT — the key landed at the end of a chunk and its
+      // `: [` is in the next one. A fixed character budget cannot tell that from a genuinely
+      // different key: an earlier version allowed 7 characters, so a document formatted with
+      // more whitespace than that between the key and its bracket fell through to the rescan
+      // below, found no second occurrence, and had the key trimmed out of the buffer
+      // permanently — `{"variants"          :          [ … ]}` threw "no variants array" at
+      // every chunk size. So the test is what the text IS, not how long it is: while every
+      // character after the key is still a legal prefix of `: [`, wait for more.
+      if (/^\s*:?\s*$/.test(rest)) return false;
       from = k + 1;
     }
   };

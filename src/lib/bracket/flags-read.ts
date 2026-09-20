@@ -30,10 +30,14 @@ export const NO_BRACKET_FLAGS: CardBracketFlags = {
 };
 
 /**
- * Flags for many cards in one query. Absent ids are simply absent from the map rather than
- * mapped to `NO_BRACKET_FLAGS`, so a caller can tell "the ingest has never seen this card"
- * from "the ingest saw it and it is neither" — the ingest's own coverage is partial (§4.2)
- * and a reader disputing a verdict is owed that difference.
+ * Flags for many cards in one query.
+ *
+ * An absent id means NEITHER FLAG APPLIES, and that is all it means. The writer
+ * (`unionFlagRows`) emits no row for a card no source claims, so a card the sweep resolved
+ * and cleared is byte-identical here to one the sweep never returned — this read cannot tell
+ * them apart and must not be described as if it could. What a reader disputing a verdict is
+ * owed is the per-flag SOURCES on a row that exists; the ingest's own coverage figures are
+ * reported by the ingest, not recoverable from this table.
  */
 export async function loadBracketFlags(
   oracleIds: readonly string[],

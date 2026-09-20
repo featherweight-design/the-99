@@ -22,7 +22,7 @@
  *   shorter route.
  *
  *   **A card upstream does not index is simply ABSENT from the response.** Asking for five
- *   cards returned four: `Back to Basics` was not among them. That is the 28.5% coverage
+ *   cards returned four: `Back to Basics` was not among them. That is the coverage
  *   figure arriving as a missing entry rather than a null flag — and it is exactly the card
  *   the spec names as the one the oracle rule catches and the sweep does not. The union of
  *   the two sources is not a hedge; it is load-bearing, and this is the live proof.

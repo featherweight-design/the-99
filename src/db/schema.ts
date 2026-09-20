@@ -977,7 +977,9 @@ export const spellbookVariants = pgTable("spellbook_variants", {
 }, (t) => [
   // The enum narrows TypeScript only; without this the database takes any text. Same
   // reasoning as `commander_support.synergy_state`. `check:spellbook` asserts upstream still
-  // has exactly these seven, because an added tag would fail every insert after a release.
+  // has exactly these seven — not because an added tag would fail an insert (the transform
+  // refuses it first and DROPS the variant), but because that drop is silent and would empty
+  // this table behind a green job.
   check("spellbook_variants_bracket_tag_check",
     sql`${t.bracketTag} in ('R', 'S', 'P', 'O', 'C', 'E', 'B')`),
   check("spellbook_variants_card_count_check", sql`${t.cardCount} > 0`),
@@ -1011,7 +1013,7 @@ export const spellbookVariantCards = pgTable("spellbook_variant_cards", {
  * `banned` is deliberately NOT here. WotC's own text puts the banned list UNDER all five
  * brackets as a legality floor rather than inside the bracket system — a banned card does not
  * move a deck's bracket, it makes the deck illegal — and `cards.commander_legal` already
- * answers that completely and locally, where this table's upstream knows about 28.5% of the
+ * answers that completely and locally, where this table's upstream knows about a quarter of the
  * catalog.
  */
 export const cardBracketFlags = pgTable("card_bracket_flags", {

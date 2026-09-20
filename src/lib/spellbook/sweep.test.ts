@@ -70,7 +70,7 @@ describe("sweepCardFlags", () => {
     expect(out.flags.has(stranger.oracleId)).toBe(false);
   });
 
-  // The 28.5% coverage figure, as it actually arrives: a card upstream does not index is
+  // The coverage figure, as it actually arrives: a card upstream does not index is
   // absent from the response rather than returned with null flags. Live proof is
   // `Back to Basics`, which a five-card request came back without.
   it("counts a card upstream returned nothing for as not-indexed, not as false", async () => {

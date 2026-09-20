@@ -148,7 +148,12 @@ async function main(): Promise<void> {
     fail(`sweep: ${err instanceof Error ? err.message : String(err)}`);
   }
 
-  // 4 · the bracket-tag vocabulary still has exactly seven members
+  // 4 · the bracket-tag vocabulary still has exactly seven members.
+  //
+  // The consequence is a SILENT DROP, not a failed insert — `toVariantRows` refuses any tag
+  // outside the seven and returns `unknown-bracket-tag`, so an added or renamed tag upstream
+  // makes the ingest quietly discard every variant carrying it and exit 0. That is worse than
+  // a red insert and is why this assertion is worth a daily request.
   try {
     const res = await fetch(SCHEMA, { headers: { "User-Agent": USER_AGENT } });
     if (!res.ok) throw new Error(`HTTP ${res.status}`);
@@ -162,7 +167,7 @@ async function main(): Promise<void> {
       const gone = BRACKET_TAGS.filter((t) => !live.includes(t));
       // An ADDED tag is the sharp one: every insert carrying it fails the check constraint,
       // and the ingest would go red after the next upstream release rather than here.
-      if (added.length > 0) fail(`schema: BracketTagEnum gained ${added.join(", ")} — the check constraint will refuse it`);
+      if (added.length > 0) fail(`schema: BracketTagEnum gained ${added.join(", ")} — the ingest will silently DROP every variant carrying it`);
       if (gone.length > 0) fail(`schema: BracketTagEnum lost ${gone.join(", ")}`);
       if (added.length === 0 && gone.length === 0) console.log(`schema: ok (${live.length} bracket tags)`);
     }

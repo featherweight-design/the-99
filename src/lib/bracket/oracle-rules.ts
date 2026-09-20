@@ -150,7 +150,9 @@ export const isExtraTurn = (text: string | null): boolean => classifyExtraTurn(t
 export const MLD_DETECTION = {
   sources: 2,
   basis: "22 of 24 on a curated set",
-  knownMiss: "Wave of Vitriol",
+  /** BOTH misses. `basis` says two and an earlier version named one, leaving the other
+   *  unaccounted for in the only place a reader would look for it. */
+  knownMisses: ["Wave of Vitriol", "Cataclysm"],
 } as const;
 
 export const EXTRA_TURN_DETECTION = {

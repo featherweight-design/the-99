@@ -83,6 +83,12 @@ jobs:
           cache: pnpm
       - run: pnpm install --frozen-lockfile
       - name: Refresh combos
+        # GitHub expands `shell: bash` to `bash -eo pipefail`. WITHOUT IT the ingest's exit
+        # code is swallowed by `tee` and the job reports green over a run that wrote nothing
+        # — which would make the floor refusal, the one guard this ingest has against a
+        # silent collapse, invisible in the only place it matters. Every tee'd step in this
+        # repository carries this for the same reason.
+        shell: bash
         env:
           DATABASE_URL: ${{ secrets.DATABASE_URL }}
           # The streamer holds one record at a time, but the run buffers ~107k variant rows

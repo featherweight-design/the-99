@@ -46,6 +46,20 @@ export const FLOORS = {
    * thrown batch, so nothing else in the run would see it.
    */
   sweepResolutionShare: 0.5,
+  /**
+   * The BULK's own floor, and the gap that nearly shipped: every other floor here guards a
+   * classifier, and none of them looks at how many variants survived the transform.
+   *
+   * A complete, untruncated download whose records all DROP — upstream renames a bracket tag,
+   * or reshapes `legalities` or `uses` — passes every classifier floor, then clears 106,903
+   * variants and 376,700 membership rows inside the publish transaction and inserts nothing.
+   * Green job, both tables empty. That is precisely the wholesale-data-loss-behind-a-green-job
+   * that `bulk.ts` throws on truncation to prevent, arriving by the one door truncation does
+   * not cover.
+   *
+   * Half the measured 106,903.
+   */
+  variantsKept: 53000,
 } as const;
 
 export type IngestFloors = typeof FLOORS;
@@ -193,6 +207,19 @@ export async function ingestCombos(opts: {
     `bulk: ${variantRows.length} variants kept, ${cardRows.length} membership rows; ` +
       `dropped ${Object.entries(dropped).map(([k, v]) => `${k} ${v}`).join(", ") || "none"}`,
   );
+
+  // Checked AFTER the stream and BEFORE the publish, because that is the only window in which
+  // refusing still leaves the previous variants standing.
+  if (variantRows.length < floors.variantsKept) {
+    throw new Error(
+      `spellbook ingest REFUSED — ${variantRows.length} variants kept, below the floor of ` +
+        `${floors.variantsKept}. The previous variants stand, and the flags published above ` +
+        `are current.\n` +
+        `Dropped by reason: ${Object.entries(dropped).map(([k, v]) => `${k} ${v}`).join(", ") || "none"}\n` +
+        `A download that arrives whole and then drops everything is the one failure the ` +
+        `truncation guard cannot see.`,
+    );
+  }
 
   // ---- 7 · publish the VARIANTS, second transaction -----------------------------------
   await db.transaction(async (tx) => {
