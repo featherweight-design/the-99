@@ -272,13 +272,19 @@ async function main() {
       select c.oracle_id as cid, c.color_identity as ci from cards c
       join commander_support cs on cs.commander_oracle_id = c.oracle_id
       where cs.avg_land is not null),
+    -- LEFT join, so a commander whose identity the collection holds NO legal card for still
+    -- reaches the count with four zeroes instead of being dropped. An inner join silently
+    -- narrows the denominator to commanders the collection can build for, which is the
+    -- population this section is trying to measure rather than a filter it may apply — and
+    -- the narrower the collection, the more commanders vanish and the healthier the
+    -- saturation figure reads.
     counted as (
       select cmd.cid,
         count(*) filter (where p.oracle_id = any($1::uuid[])) as n_ramp,
         count(*) filter (where p.oracle_id = any($2::uuid[])) as n_draw,
         count(*) filter (where p.oracle_id = any($3::uuid[])) as n_removal,
         count(*) filter (where p.oracle_id = any($4::uuid[])) as n_wipes
-      from cmd join pool p on p.color_identity <@ cmd.ci group by 1)
+      from cmd left join pool p on p.color_identity <@ cmd.ci group by 1)
     select count(*)::int as commanders,
       count(*) filter (where n_ramp >= ${ROLE_TARGETS.ramp} and n_draw >= ${ROLE_TARGETS.draw}
         and n_removal >= ${ROLE_TARGETS.removal} and n_wipes >= ${ROLE_TARGETS.wipes})::int as all_four,
