@@ -1,0 +1,478 @@
+{
+  "_captured": "2026-09-20 from https://json.commanderspellbook.com/variants.json",
+  "_note": "Real records, field-slimmed to what the ingest projects (image URLs are ~90% of the bytes and all discarded). Nothing synthesised.",
+  "_why": [
+    "two-use WITH template prereq (rule 1 excludes)",
+    "two-use WITH template prereq (rule 1 excludes)",
+    "template prereq, more uses",
+    "commander-illegal (filtered at ingest)",
+    "commander-illegal (filtered at ingest)",
+    "two-card infinite (the slot's case)",
+    "two-card infinite (the slot's case)"
+  ],
+  "variants": [
+    {
+      "id": "3760-5147--86",
+      "status": "OK",
+      "bracketTag": "E",
+      "identity": "RG",
+      "popularity": 1367,
+      "variantCount": 4,
+      "legalities": {
+        "commander": true
+      },
+      "uses": [
+        {
+          "card": {
+            "oracleId": "b0a54050-3493-4ff6-8eca-e43b92c1f3d3",
+            "name": "Broodhatch Nantuko"
+          },
+          "mustBeCommander": false,
+          "quantity": 1
+        },
+        {
+          "card": {
+            "oracleId": "edad60c6-80de-4033-af1b-a703ac332983",
+            "name": "Goblin Bombardment"
+          },
+          "mustBeCommander": false,
+          "quantity": 1
+        }
+      ],
+      "requires": [
+        {
+          "template": {
+            "id": 86,
+            "name": "Card that gives indestructible",
+            "scryfallQuery": "otag:gives-indestructible"
+          },
+          "quantity": 1
+        }
+      ],
+      "produces": [
+        {
+          "feature": {
+            "name": "Infinite creature ETB",
+            "uncountable": true
+          }
+        },
+        {
+          "feature": {
+            "name": "Infinite creature LTB",
+            "uncountable": true
+          }
+        },
+        {
+          "feature": {
+            "name": "Infinite creature sacrifice triggers",
+            "uncountable": true
+          }
+        },
+        {
+          "feature": {
+            "name": "Infinite death triggers",
+            "uncountable": true
+          }
+        }
+      ]
+    },
+    {
+      "id": "413-3760--86",
+      "status": "OK",
+      "bracketTag": "E",
+      "identity": "G",
+      "popularity": 301,
+      "variantCount": 4,
+      "legalities": {
+        "commander": true
+      },
+      "uses": [
+        {
+          "card": {
+            "oracleId": "b0a54050-3493-4ff6-8eca-e43b92c1f3d3",
+            "name": "Broodhatch Nantuko"
+          },
+          "mustBeCommander": false,
+          "quantity": 1
+        },
+        {
+          "card": {
+            "oracleId": "3a38d2d1-c4ff-4088-b1df-5feb9602ee2e",
+            "name": "Blasting Station"
+          },
+          "mustBeCommander": false,
+          "quantity": 1
+        }
+      ],
+      "requires": [
+        {
+          "template": {
+            "id": 86,
+            "name": "Card that gives indestructible",
+            "scryfallQuery": "otag:gives-indestructible"
+          },
+          "quantity": 1
+        }
+      ],
+      "produces": [
+        {
+          "feature": {
+            "name": "Infinite creature ETB",
+            "uncountable": true
+          }
+        },
+        {
+          "feature": {
+            "name": "Infinite creature LTB",
+            "uncountable": true
+          }
+        },
+        {
+          "feature": {
+            "name": "Infinite creature sacrifice triggers",
+            "uncountable": true
+          }
+        },
+        {
+          "feature": {
+            "name": "Infinite death triggers",
+            "uncountable": true
+          }
+        }
+      ]
+    },
+    {
+      "id": "529-1849-7690-8181--165",
+      "status": "OK",
+      "bracketTag": "E",
+      "identity": "RGWU",
+      "popularity": 0,
+      "variantCount": 127,
+      "legalities": {
+        "commander": true
+      },
+      "uses": [
+        {
+          "card": {
+            "oracleId": "0f8de7f0-c61d-415d-b4db-4959374343da",
+            "name": "Denzilore Fatehold"
+          },
+          "mustBeCommander": false,
+          "quantity": 1
+        },
+        {
+          "card": {
+            "oracleId": "e790f7e6-45f5-45df-b8e5-bcbda4f69f8a",
+            "name": "Tocasia, Dig Site Mentor"
+          },
+          "mustBeCommander": false,
+          "quantity": 1
+        },
+        {
+          "card": {
+            "oracleId": "e9d20b6d-fa4f-473b-9866-230fd92a1319",
+            "name": "Invisible Woman, Sue Storm"
+          },
+          "mustBeCommander": false,
+          "quantity": 1
+        },
+        {
+          "card": {
+            "oracleId": "4500131b-7417-4f30-a1b0-97d51b2e6458",
+            "name": "Mass Hysteria"
+          },
+          "mustBeCommander": false,
+          "quantity": 1
+        }
+      ],
+      "requires": [
+        {
+          "template": {
+            "id": 165,
+            "name": "Hero Creature",
+            "scryfallQuery": "(kw:changeling or t:hero or o:\"This creature is the chosen type\") t:creature"
+          },
+          "quantity": 1
+        }
+      ],
+      "produces": [
+        {
+          "feature": {
+            "name": "Infinite +1/+1 counters on creatures you control",
+            "uncountable": true
+          }
+        },
+        {
+          "feature": {
+            "name": "Infinite surveil",
+            "uncountable": true
+          }
+        },
+        {
+          "feature": {
+            "name": "Infinite tapped creature tokens",
+            "uncountable": true
+          }
+        }
+      ]
+    },
+    {
+      "id": "4613-4687-5709",
+      "status": "OK",
+      "bracketTag": "B",
+      "identity": "GU",
+      "popularity": 0,
+      "variantCount": 37,
+      "legalities": {
+        "commander": false
+      },
+      "uses": [
+        {
+          "card": {
+            "oracleId": "a4441c7d-e22a-4e19-8365-34d52da9fe86",
+            "name": "Gilder Bairn"
+          },
+          "mustBeCommander": false,
+          "quantity": 1
+        },
+        {
+          "card": {
+            "oracleId": "c259e16f-2a44-4552-8678-815f757a02e8",
+            "name": "Agatha's Soul Cauldron"
+          },
+          "mustBeCommander": false,
+          "quantity": 1
+        },
+        {
+          "card": {
+            "oracleId": "3015882b-4897-4d2c-8e33-6731c85a0d03",
+            "name": "Rofellos, Llanowar Emissary"
+          },
+          "mustBeCommander": false,
+          "quantity": 1
+        }
+      ],
+      "requires": [],
+      "produces": [
+        {
+          "feature": {
+            "name": "Infinite green mana",
+            "uncountable": true
+          }
+        },
+        {
+          "feature": {
+            "name": "Infinite proliferate",
+            "uncountable": true
+          }
+        }
+      ]
+    },
+    {
+      "id": "3259-8183-8184",
+      "status": "OK",
+      "bracketTag": "B",
+      "identity": "BR",
+      "popularity": 0,
+      "variantCount": 1,
+      "legalities": {
+        "commander": false
+      },
+      "uses": [
+        {
+          "card": {
+            "oracleId": "fdaa0faf-e7ee-48b3-9330-de0fc3792ad3",
+            "name": "Breath of Fury"
+          },
+          "mustBeCommander": false,
+          "quantity": 1
+        },
+        {
+          "card": {
+            "oracleId": "a80ea391-54d1-4b61-95a3-f8deb4cbe842",
+            "name": "Arclight Phoenix"
+          },
+          "mustBeCommander": false,
+          "quantity": 1
+        },
+        {
+          "card": {
+            "oracleId": "e4b51c2d-7e56-435b-89d6-85e33df65879",
+            "name": "Darklight Phoenix"
+          },
+          "mustBeCommander": false,
+          "quantity": 1
+        }
+      ],
+      "requires": [],
+      "produces": [
+        {
+          "feature": {
+            "name": "Infinite combat damage",
+            "uncountable": true
+          }
+        },
+        {
+          "feature": {
+            "name": "Infinite combat phases",
+            "uncountable": true
+          }
+        },
+        {
+          "feature": {
+            "name": "Infinite creature ETB",
+            "uncountable": true
+          }
+        },
+        {
+          "feature": {
+            "name": "Infinite creature LTB",
+            "uncountable": true
+          }
+        },
+        {
+          "feature": {
+            "name": "Infinite creature sacrifice triggers",
+            "uncountable": true
+          }
+        },
+        {
+          "feature": {
+            "name": "Infinite death triggers",
+            "uncountable": true
+          }
+        },
+        {
+          "feature": {
+            "name": "Infinite mana creatures you control can produce",
+            "uncountable": true
+          }
+        },
+        {
+          "feature": {
+            "name": "Infinite untap of creatures you control",
+            "uncountable": true
+          }
+        }
+      ]
+    },
+    {
+      "id": "4067-8192",
+      "status": "OK",
+      "bracketTag": "R",
+      "identity": "WUB",
+      "popularity": 1,
+      "variantCount": 1,
+      "legalities": {
+        "commander": true
+      },
+      "uses": [
+        {
+          "card": {
+            "oracleId": "a5350327-e84c-44b6-8359-87882e521048",
+            "name": "Niv-Mizzet, Ghost Counsel"
+          },
+          "mustBeCommander": false,
+          "quantity": 1
+        },
+        {
+          "card": {
+            "oracleId": "656afde2-cdf3-4907-a0fc-7ac93f5d3e03",
+            "name": "Mind Over Matter"
+          },
+          "mustBeCommander": false,
+          "quantity": 1
+        }
+      ],
+      "requires": [],
+      "produces": [
+        {
+          "feature": {
+            "name": "Infinite draw triggers",
+            "uncountable": true
+          }
+        },
+        {
+          "feature": {
+            "name": "Infinite looting",
+            "uncountable": true
+          }
+        },
+        {
+          "feature": {
+            "name": "Infinite self-discard triggers",
+            "uncountable": true
+          }
+        },
+        {
+          "feature": {
+            "name": "Near-infinite lifegain triggers",
+            "uncountable": true
+          }
+        },
+        {
+          "feature": {
+            "name": "Near-infinite lifeloss",
+            "uncountable": true
+          }
+        }
+      ]
+    },
+    {
+      "id": "2275-8192",
+      "status": "OK",
+      "bracketTag": "R",
+      "identity": "WUB",
+      "popularity": 9,
+      "variantCount": 5,
+      "legalities": {
+        "commander": true
+      },
+      "uses": [
+        {
+          "card": {
+            "oracleId": "a5350327-e84c-44b6-8359-87882e521048",
+            "name": "Niv-Mizzet, Ghost Counsel"
+          },
+          "mustBeCommander": false,
+          "quantity": 1
+        },
+        {
+          "card": {
+            "oracleId": "7599fe9a-b6a5-491b-a308-aef3bf1e9daf",
+            "name": "Shabraz, the Skyshark"
+          },
+          "mustBeCommander": false,
+          "quantity": 1
+        }
+      ],
+      "requires": [],
+      "produces": [
+        {
+          "feature": {
+            "name": "Infinite card draw",
+            "uncountable": true
+          }
+        },
+        {
+          "feature": {
+            "name": "Infinite draw triggers",
+            "uncountable": true
+          }
+        },
+        {
+          "feature": {
+            "name": "Near-infinite +1/+1 counters on a creature",
+            "uncountable": true
+          }
+        },
+        {
+          "feature": {
+            "name": "Near-infinite lifegain triggers",
+            "uncountable": true
+          }
+        }
+      ]
+    }
+  ]
+}
