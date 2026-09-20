@@ -1464,6 +1464,14 @@ export const CONTESTED_RESERVATION: ContestedCard = {
  *
  * `marked` is NOT derivable from the tallies and is stated for that reason:
  * one game can contribute to several axes, so summing them overcounts.
+ *
+ * THREE axes per bucket, not two. The cell is a fixed 200px that wraps
+ * (`game-log.md`, "200px wide desktop, wrapping"), so a bucket of two fills
+ * 412px of the plate's ~700px and the figure reads as a broken layout rather
+ * than as a panel. Three fill 624px. A real deck logs against EIGHT axes, so
+ * two per bucket was also the unrepresentative case: Hugh reported the gap on
+ * 2026-09-19 and this is the fixture answer to it, chosen over widening the
+ * cell because that width is Design's and reaches the real Games tab.
  */
 export const GAME_SUMMARY: GameSummary = {
   count: GAME_COUNT,
@@ -1472,17 +1480,21 @@ export const GAME_SUMMARY: GameSummary = {
   axes: [
     { key: "card_flow", worked: 1, hurt: 5, net: -4 },
     { key: "board", worked: 1, hurt: 3, net: -2 },
+    { key: "speed", worked: 1, hurt: 4, net: -3 },
     { key: "interaction", worked: 5, hurt: 1, net: 4 },
     { key: "mana", worked: 3, hurt: 0, net: 3 },
+    { key: "closing", worked: 4, hurt: 1, net: 3 },
     { key: "resilience", worked: 2, hurt: 2, net: 0 },
   ],
   fix: [
     { key: "card_flow", worked: 1, hurt: 5, net: -4 },
     { key: "board", worked: 1, hurt: 3, net: -2 },
+    { key: "speed", worked: 1, hurt: 4, net: -3 },
   ],
   keep: [
     { key: "interaction", worked: 5, hurt: 1, net: 4 },
     { key: "mana", worked: 3, hurt: 0, net: 3 },
+    { key: "closing", worked: 4, hurt: 1, net: 3 },
   ],
   // Cut both ways, so it is the Mixed line rather than a third column.
   mixed: [{ key: "resilience", worked: 2, hurt: 2, net: 0 }],
