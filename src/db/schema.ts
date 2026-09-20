@@ -289,6 +289,18 @@ export const decks = pgTable("decks", {
    * by another route and take its decks with it.
    */
   folderId: uuid("folder_id").references(() => deckFolders.id, { onDelete: "set null" }),
+  /**
+   * The bracket the PLAYER declared for this deck, 1-5.
+   *
+   * NEVER INFERRED AND NEVER DEFAULTED. `slotDeck` computes which brackets a deck is
+   * permitted and reports a declaration outside that range as DRIFT — a finding of its own —
+   * rather than correcting it. Writing a computed value here would collapse the two into one
+   * and make the drift unreportable, because there would be nothing left to disagree with.
+   *
+   * Null is the honest state for every deck that exists today, and stays the state until a
+   * player says otherwise. No surface writes it yet.
+   */
+  declaredBracket: integer("declared_bracket"),
   createdAt: timestamp("created_at").notNull().defaultNow(),
   /**
    * When this deck's contents last changed — a card added or removed, basics
@@ -315,6 +327,12 @@ export const decks = pgTable("decks", {
   filled: boolean("filled").notNull().default(false),
 },
   (t) => [
+    // 1-5 or nothing. A 0 or a 6 is not a bracket, and a column that accepts one would put a
+    // value on screen that WotC's system has no name for.
+    check(
+      "decks_declared_bracket_range",
+      sql`${t.declaredBracket} is null or ${t.declaredBracket} between 1 and 5`,
+    ),
     check(
       "decks_partner_distinct",
       sql`${t.partnerOracleId} is null or ${t.partnerOracleId} <> ${t.commanderOracleId}`,
