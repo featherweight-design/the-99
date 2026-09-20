@@ -42,6 +42,12 @@
 // no initial. Same shape of rule as the bracket mark's 20px floor, reached from the
 // other direction: a numeral survives shrinking, a glyph past its floor does not.
 //
+// NO TOOLTIP HERE, YET. The handoff specifies a pointer-fine hover tooltip, and it
+// needs a positioned element with an open delay — which is a SURFACE concern with a
+// real consumer, not a prop on a glyph. It lands with the mounts in the next PRs;
+// `cardMarkCopy.tooltip` is already written and waiting. A prop accepted here with no
+// consumer would read as a wired feature and be silently dead.
+//
 // ABSENCE IS THE DESIGN. A card with no facts renders nothing and reserves nothing.
 // There is no positive claim at any size, because detection on two of the three is
 // measured and PARTIAL — a drawn absence would read as a cleared check when it is
@@ -101,13 +107,10 @@ export function CardFactMark({
    * the place that surface put it, rather than twice in the wrong order.
    */
   silent = false,
-  title,
 }: {
   fact: CardFact;
   size: number;
   silent?: boolean;
-  /** The tooltip sentence, when the caller is drawing one. Never a native `title`. */
-  title?: string;
 }) {
   if (size < CARD_FACT_MARK_FLOOR_PX) return null;
   const name = cardFactName(fact);
@@ -124,7 +127,6 @@ export function CardFactMark({
       aria-hidden={silent ? true : undefined}
       aria-label={silent ? undefined : name}
       data-testid={`card-fact-${fact}`}
-      data-fact-title={title}
     >
       <Glyph fact={fact} />
     </svg>

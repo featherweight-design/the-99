@@ -15,6 +15,7 @@ const WUBRG_ORDER: Record<string, number> = { W: 0, U: 1, B: 2, R: 3, G: 4 };
  * could not represent that, which is why the modal caption reads set + collector number here.
  */
 import type { PrintingPrices } from "../cards/price-lookup";
+import type { CardBracketFlags } from "../bracket/flags-read";
 import type { CardFact } from "../copy/card-mark";
 
 export type BrowsePrinting = {
@@ -907,8 +908,17 @@ export async function selectCollectionRows(
  * cost the collection: rejecting here would take the whole route down to hide three
  * glyphs. The cards come back exactly as they went in.
  */
-async function attachBracketFacts(cards: BrowseCard[]): Promise<BrowseCard[]> {
-  const { loadBracketFlags } = await import("../bracket/flags-read");
+export async function attachBracketFacts(
+  cards: BrowseCard[],
+  /**
+   * The flags read, injected so this is testable without a database. `loadBrowseCards`
+   * passes nothing and gets the real one — the seam exists because the alternative is
+   * an untested attachment path, and deleting every line here would otherwise leave the
+   * suite green while two of the three facts silently vanished from the list.
+   */
+  read?: (ids: readonly string[]) => Promise<Map<string, CardBracketFlags>>,
+): Promise<BrowseCard[]> {
+  const loadBracketFlags = read ?? (await import("../bracket/flags-read")).loadBracketFlags;
   const flags = await loadBracketFlags(cards.map((c) => c.oracleId)).catch(() => null);
   if (!flags) return cards;
   if (flags.size === 0) return cards;

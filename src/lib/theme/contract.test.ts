@@ -140,6 +140,15 @@ describe("theme contract", () => {
       expect(contrast(hex("bg"), hex("accent"))).toBeGreaterThanOrEqual(4.5);
       // The focus ring is the accent, drawn on the canvas.
       expect(contrast(hex("accent"), hex("bg"))).toBeGreaterThanOrEqual(3);
+      // The card mark, on every ground it is drawn on. It is a GRAPHIC, so 3:1 is the
+      // governing floor — but it is also the one mark whose whole legality rests on a
+      // measured figure, so the grounds are named individually rather than swept: a
+      // change to any one of them must fail here rather than in a screenshot nobody
+      // takes. `--elevated-hover` is the darkest and is the floor of record (6.31:1 on
+      // kaldheim, the weakest of the six).
+      for (const ground of ["surface", "surface-rail", "elevated-hover", "bg"]) {
+        expect(contrast(hex("fact"), hex(ground))).toBeGreaterThanOrEqual(3);
+      }
       // --avail-hard-fg exists so the "sleeved elsewhere" count reads as body
       // text rather than as decoration; the accent itself is often too dark.
       expect(contrast(hex("avail-hard-fg"), hex("surface"))).toBeGreaterThanOrEqual(7);
