@@ -78,7 +78,8 @@
     "check:constraints": "node scripts/check-constraints.mjs",
     "db:build:staples": "tsx scripts/build-staples.ts",
     "measure:tutors": "tsx scripts/measure-tutor-targets.mts",
-    "probe:bracket": "tsx scripts/probe-bracket.ts"
+    "probe:bracket": "tsx scripts/probe-bracket.ts",
+    "measure:roles": "tsx scripts/measure-role-targets.mts"
   },
   "dependencies": {
     "@clerk/nextjs": "^7.5.20",
