@@ -62,3 +62,64 @@ export const FACET_TYPE_LABEL: Record<CardFacet, string> = {
   land: "Land",
   other: "Other",
 };
+
+/**
+ * Whether the card COULD be played as a land, though its front face is not one.
+ *
+ * The third land answer in this file, and a different question from both of its neighbours.
+ * `cardFacet` buckets a row for a grouping strip. `isLandFace` decides whether a card
+ * contributed a mana value to a curve. This one decides whether the card can take a LAND DROP,
+ * which is what the fill needs before it decides how many lands to add.
+ *
+ * `layout` IS THE TEST, never the type line. 50 catalog rows are `modal_dfc` and 32 are
+ * `transform`; both read `Something // Land`, and only the first can be played as a land from
+ * hand. A `transform` card is cast as its front face and flips later, so `Ojer Axonil, Deepest
+ * Might // Temple of Power` is a creature you cast, never a turn-one land drop. A `type_line`
+ * test cannot see that difference, and counting those 32 as land-capable would have shipped.
+ *
+ * Returns FALSE when the front face is already a land — the Pathway cycle, `Land // Land`. That
+ * card is counted by `isLandFace`, and a card counted by both would be added twice wherever the
+ * two are summed.
+ */
+export function playableAsLand(typeLine: string, layout: string): boolean {
+  if (layout !== "modal_dfc") return false;
+  if (isLandFace(typeLine)) return false;
+  const faces = typeLine.split(" // ");
+  if (faces.length < 2) return false;
+  return /\bland\b/.test(faces[1].toLowerCase());
+}
+
+/** How `scryfall/transform.ts` joins a multi-faced card's two oracle texts. */
+const FACE_SEPARATOR = "\n//\n";
+
+/**
+ * The text of the spell you actually CAST.
+ *
+ * `cards.oracle_text` holds BOTH FACES, joined by `FACE_SEPARATOR` in `scryfall/transform.ts`,
+ * and `isLandFace` reads the front — so for a land-backed MDFC it returns false and
+ * `classifyRoles` then reads the land back's `{T}: Add {R}` and calls the card RAMP. 82
+ * commander-legal cards are shaped that way, and the inflation is measurable: the mean derived
+ * ramp target reads 8.5 on whole text against 7.8 on the front face, and the commanders
+ * measuring exactly zero wipes rise from 369 to 390 once the back faces stop contributing.
+ *
+ * Worse than a wrong average: a card read as ramp off its land back would be spent on the ramp
+ * floor AND counted against the land target, taking two slots' worth of credit for one card.
+ *
+ * `transform` is here as well as `modal_dfc` because both are cast as their front face; the
+ * back arrives later or never. Scoping this to `modal_dfc` alone leaves 32 of the 82 still
+ * inflating the figure, `Growing Rites of Itlimoc` and both Ojers among them.
+ *
+ * SPLIT, ADVENTURE and PREPARE are excluded deliberately: both halves are castable, so dropping
+ * the second would lose a real mode.
+ *
+ * DELIBERATELY NOT a change to `classifyRoles`. That function is read by the commander score and
+ * by surfaces this work does not touch, and moving it would move figures nobody asked to move.
+ */
+export function castFaceText(oracleText: string | null, layout: string): string | null {
+  if (oracleText === null) return null;
+  if (layout !== "modal_dfc" && layout !== "transform") return oracleText;
+  const halves = oracleText.split(FACE_SEPARATOR);
+  // A two-faced layout whose stored text carries no separator keeps its text whole rather than
+  // resolving to an empty first half.
+  return halves.length < 2 ? oracleText : halves[0];
+}
