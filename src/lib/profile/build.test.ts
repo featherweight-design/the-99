@@ -173,9 +173,12 @@ describe("the commanders are cards", () => {
     expect(p.brackets.gameChangers).toHaveLength(1);
     expect(p.brackets.comboReach.tutors).toHaveLength(1);
     expect(p.brackets.massLandDenial).toHaveLength(1);
-    // The COUNT still totals both rows — the copies are real even when the receipt is one
-    // line. Deduping the count instead would under-report a legitimate multi-copy row.
+    // The copies are summed rather than dropped — no information is lost — and `cards` is
+    // the SAME list every count was computed from, which is what the type promises.
     expect(p.counts.total).toBe(2);
+    expect(p.cards).toEqual([
+      { oracleId: "cmd", name: "Kinnan", typeLine: "Creature — Human", cmc: 2, quantity: 2 },
+    ]);
   });
 
   it("folds a commander into comboReach.tutors", () => {
@@ -489,5 +492,26 @@ describe("the role receipt lists distinct cards", () => {
     const p = buildDeckProfile(input({ cards: [growth, { ...growth }] }));
     expect(p.roles.cards.ramp).toEqual([{ oracleId: "growth", name: "Rampant Growth" }]);
     expect(p.roles.counts.ramp).toBe(4);
+  });
+});
+
+// `profile.cards` is the list every figure was computed from, not a differently-shaped
+// neighbour. An earlier version deduped only the exposed list while counting over the raw
+// input, so a duplicated row reported one card and two copies at once.
+describe("every figure comes from one normalised list", () => {
+  it("agrees between cards, counts and the curve", () => {
+    const land = card({ oracleId: "forest", typeLine: "Basic Land — Forest", quantity: 3 });
+    const spell = card({ oracleId: "bolt", typeLine: "Instant", cmc: 1, quantity: 2 });
+    const p = buildDeckProfile(
+      input({ cards: [land, { ...land }, spell] }),
+    );
+    expect(p.cards.map((c) => [c.oracleId, c.quantity])).toEqual([
+      ["forest", 6],
+      ["bolt", 2],
+    ]);
+    expect(p.counts.total).toBe(p.cards.reduce((n, c) => n + c.quantity, 0));
+    expect(p.counts.land).toBe(6);
+    expect(p.curve.lands).toBe(6);
+    expect(p.curve.copies).toBe(2);
   });
 });

@@ -78,12 +78,12 @@ export type ProfileInput = {
 const ref = (c: ProfileCardRow): CardRef => ({ oracleId: c.oracleId, name: c.name });
 
 /**
- * Dedupe by oracle id, preserving first-seen order.
+ * Map rows to refs, deduped on oracle id.
  *
- * A property of this pure function rather than a state its current caller produces —
- * `loadDeckProfileFromHead` dedupes before building, so a repeated id cannot reach here
- * from there today. It is kept because a receipt naming the same card twice reads as two
- * answers to one question, and the next caller of a pure function is not the current one.
+ * `normalise` already guarantees one row per card, so the dedupe here is belt and braces —
+ * kept because these lists are built from FILTERED subsets and a future filter that emits a
+ * card twice would otherwise put it in a receipt twice. A receipt naming the same card twice
+ * reads as two answers to one question.
  */
 function uniqueRefs(rows: ProfileCardRow[]): CardRef[] {
   const seen = new Set<string>();
@@ -96,10 +96,27 @@ function uniqueRefs(rows: ProfileCardRow[]): CardRef[] {
   return out;
 }
 
-/** The rows, deduped on oracle id — the same rule `uniqueRefs` applies to the receipts. */
-function uniqueRows(cards: ProfileCardRow[]): ProfileCardRow[] {
-  const seen = new Set<string>();
-  return cards.filter((c) => (seen.has(c.oracleId) ? false : (seen.add(c.oracleId), true)));
+/**
+ * ONE ROW PER CARD, with the quantities summed.
+ *
+ * Every figure on the profile is computed from the result, so `profile.cards` really is "the
+ * list every count was computed from" rather than a differently-shaped neighbour. An earlier
+ * version deduped only the exposed list while counting over the raw input, which made a
+ * duplicated row report one card and two copies at the same time — and the type's own comment
+ * promised otherwise.
+ *
+ * Summed rather than first-wins because no information should be lost: `deck_cards` has a
+ * primary key on `(deck_id, oracle_id)` so two rows for one card is malformed input, and the
+ * copies it names are still the caller's best statement of how many there are.
+ */
+function normalise(cards: readonly ProfileCardRow[]): ProfileCardRow[] {
+  const byId = new Map<string, ProfileCardRow>();
+  for (const card of cards) {
+    const seen = byId.get(card.oracleId);
+    if (seen) seen.quantity += card.quantity;
+    else byId.set(card.oracleId, { ...card });
+  }
+  return [...byId.values()];
 }
 
 function countCards(cards: ProfileCardRow[]): ProfileCounts {
@@ -222,7 +239,7 @@ function skeleton(input: ProfileInput): ProfileSkeleton {
 }
 
 export function buildDeckProfile(input: ProfileInput): DeckProfile {
-  const { cards } = input;
+  const cards = normalise(input.cards);
   const commanders = new Set(input.commanderOracleIds);
   const identitySet = new Set(input.identity.map((c) => c.toUpperCase()));
 
@@ -263,7 +280,7 @@ export function buildDeckProfile(input: ProfileInput): DeckProfile {
     deckId: input.deckId,
     commanderOracleIds: input.commanderOracleIds,
     fingerprint: input.fingerprint,
-    cards: uniqueRows(cards).map((c) => ({
+    cards: cards.map((c) => ({
       oracleId: c.oracleId, name: c.name, typeLine: c.typeLine,
       cmc: c.cmc, quantity: c.quantity,
     })),
