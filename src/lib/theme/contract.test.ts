@@ -26,7 +26,9 @@ const CONTRACT = [
   // bracket fact about a card, and a bracket fact is the format's vocabulary rather
   // than this app's mood. It is in CONTRACT because every theme must still declare
   // it — an unset custom property fails silently, which is the hazard check:tokens
-  // exists for — and the duplicate check is what pins it to one value across six.
+  // exists for. What pins it to ONE VALUE across the six is the cross-theme test at
+  // the foot of this file, NOT the duplicate check: that one rebuilds `seen` per
+  // theme, so it can only ever compare keys within a single block.
   "fact",
   "font-display-face",
 ];
@@ -215,5 +217,24 @@ describe("the display face", () => {
     for (const tokens of THEMES.values()) {
       expect(tokens.has("font-display")).toBe(false);
     }
+  });
+});
+
+// Asserted ACROSS the six themes rather than within one. The duplicate check above
+// runs inside `describe.each`, so it cannot see a token that drifted BETWEEN themes —
+// a different hex for `--fact` under one `[data-theme]` leaves every one of its
+// assertions green.
+//
+// `--fact` alone, deliberately. The WUBRG pips are theme-independent in spirit and
+// not in fact: Canopy shifts `--g` to #527030 where the other five carry #4B7A46,
+// because that theme's accent is itself green and the pip has to stay separable from
+// it — which the hue gate above pins. Listing them here would have failed for a
+// reason that is correct.
+describe("theme-independent tokens", () => {
+  it("declares one value for --fact in all six themes", () => {
+    // A bracket fact is the FORMAT's vocabulary rather than this app's mood, so the
+    // mark reads the same whatever theme the reader is in.
+    const values = new Set(entries.map(([, tokens]) => tokens.get("fact")));
+    expect([...values]).toEqual(["#8FA6BE"]);
   });
 });

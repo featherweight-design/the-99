@@ -135,7 +135,12 @@ export type BrowseCard = {
    */
   /**
    * The standing bracket facts this card carries — Game Changer, mass land denial,
-   * extra turns. Drawn as a mark wherever the card appears.
+   * extra turns.
+   *
+   * SET BY `loadBrowseCards` AND BY NOTHING ELSE TODAY. `loadCardDetail` builds its own
+   * `BrowseCard` and does not call `attachBracketFacts`, so the modal's block is wired
+   * with the surfaces rather than here — do not read a `facts` on a card from that
+   * loader as "this card has only these facts".
    *
    * OMITTED WHEN EMPTY rather than sent as `[]`, and that is a payload decision as much
    * as a semantic one: the overwhelming majority of cards carry none, this list is the
@@ -895,10 +900,17 @@ export async function selectCollectionRows(
  * row carries neither flag, and a read that comes back empty leaves every card exactly
  * as `aggregateCollection` left it. The surface then draws fewer marks than it might
  * have, which is silence — never a claim that a card is clear.
+ *
+ * QUIET ON FAILURE, for the same reason and with the same shape as the availability
+ * read on this page (`/collection/page.tsx`, "Quiet failure"). A mark is an annotation
+ * on a list that is useful without it, so a flags outage costs the marks and must not
+ * cost the collection: rejecting here would take the whole route down to hide three
+ * glyphs. The cards come back exactly as they went in.
  */
 async function attachBracketFacts(cards: BrowseCard[]): Promise<BrowseCard[]> {
   const { loadBracketFlags } = await import("../bracket/flags-read");
-  const flags = await loadBracketFlags(cards.map((c) => c.oracleId));
+  const flags = await loadBracketFlags(cards.map((c) => c.oracleId)).catch(() => null);
+  if (!flags) return cards;
   if (flags.size === 0) return cards;
   for (const card of cards) {
     const row = flags.get(card.oracleId);

@@ -8,11 +8,27 @@
 // letters in identical boxes could not have.
 //
 // ONE INK FOR THE CLASS, NOT THREE. `--fact` says *a bracket fact is present*; the
-// glyph says which one, so colour is never the only carrier. It is cool because
-// every status ink on these surfaces is warm (--warning to buy, --avail-over-fg
-// over-committed, --accent draft-touched, --danger short), and it is not `--fg`
+// glyph says which one, so colour is never the only carrier. It is not `--fg`
 // because at 13px on a name line `--fg` IS the card-name colour, so the mark would
 // join the title instead of annotating it.
+//
+// It is theme-INDEPENDENT, which the WUBRG pips are ALMOST but not quite (Canopy
+// shifts --g off its own green accent), so `--fact` is pinned across the six by a
+// test rather than by resemblance to them.
+//
+// THE HANDOFF'S "cool against warm status inks" ARGUMENT HOLDS FOR THE STATUS INKS
+// AND NOT FOR EVERY ACCENT, measured on the build: --warning, --danger and
+// --avail-over-fg are warm in all six themes, but --accent is COOL in two. Against
+// --fact, kaldheim's accent sits about 6° away in hue and phyrexia's about 41° —
+// the first well inside the 20° floor this repo's theme contract applies to the one
+// pair it guards. So on those two themes colour alone does not separate this mark
+// from a draft-touched one, and the separation that carries is the same one that
+// distinguishes it from the bracket mark: this glyph is BARE and every neighbour is
+// contained. That is why the no-container rule is semantic rather than stylistic,
+// and why nothing here may start drawing a box.
+//
+// Whether `--fact` should move off that hue is a DESIGN call, not one to settle in a
+// comment; it is recorded in the handoff's verdict rather than resolved here.
 //
 // MASS, NOT OUTLINE — a legibility decision at 12px, and what makes the glow work:
 // a filled silhouette throws the halo outward off a clean edge where an outline
