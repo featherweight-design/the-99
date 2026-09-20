@@ -1015,6 +1015,95 @@ export const edhrecPairCache = pgTable("edhrec_pair_cache", {
   check("edhrec_pair_cache_order_check", sql`${t.commanderOracleId} < ${t.partnerOracleId}`),
 ]);
 
+/**
+ * The measured format staples, per condition.
+ *
+ * A card is in a condition's floor when it is recommended for at least 50% of that
+ * condition's commanders AND played, on average, in at least 20% of their decks. Both axes
+ * earn their place and each was defended against a named case rather than an aggregate:
+ *
+ *   · BREADTH alone admits cards nobody plays. `Temple of the False God` is recommended for
+ *     2,296 of 3,279 commanders and played in 12.2% of their decks; a breadth-only floor
+ *     puts it beside Sol Ring and tells a new player to run it.
+ *   · INCLUSION alone is meaningless globally. `Swords to Plowshares` reads 35.8% breadth
+ *     computed across every commander and is a 60.8% white staple — so a global floor
+ *     systematically demotes every colour-specific card, and there is NO `all` condition.
+ *
+ * The 20% bar replaced 25% because 25 discriminated nothing it was defended on: its named
+ * case was Temple at 12.2%, which any bar above ~13% excludes. What 25 actually did at the
+ * boundary was admit `Swiftfoot Boots` at 32.3% and refuse `Lightning Greaves` at 23.0% —
+ * the same card under two names — while dropping a Game Changer from the floor of the
+ * identity that plays it most. At 20 the boundary discriminates in both directions:
+ * `Teferi's Protection` (20.3%) and `Akroma's Will` (21.0%) admitted, `Cut a Deal` (19.7%)
+ * and `Flowering of the White Tree` (19.9%) refused.
+ *
+ * Basic lands are excluded BY TYPE, never by threshold: `Plains` and `Mountain` top the
+ * inclusion ranking at 95%, which is an artifact of appearing only for their own colour.
+ */
+export const formatStaples = pgTable("format_staples", {
+  oracleId: uuid("oracle_id").notNull().references(() => cards.oracleId),
+  /** Exact identity ('C','W','UW',…) or a 'count:N' fallback. See `identityCondition`. */
+  condition: text("condition").notNull(),
+  /** How many commanders in this condition recommend it. */
+  commanders: integer("commanders").notNull(),
+  /** The denominator, stored rather than inferred — every figure carries its own. */
+  commanderTotal: integer("commander_total").notNull(),
+  /** 0-100, the second axis. */
+  avgInclusion: real("avg_inclusion").notNull(),
+  /**
+   * `deck_count`-weighted DISPLAY ORDER only, NEVER a membership test.
+   *
+   * The distinction is real rather than bookkeeping. Unweighted membership asks "is this
+   * recommended for most commanders in this condition" — one commander, one vote. Weighted
+   * asks "is it in most decks", which a handful of mega-popular commanders dominate. A floor
+   * wants the stable question; a presentation order is free to use the other.
+   */
+  weightedRank: integer("weighted_rank").notNull(),
+}, (t) => [
+  primaryKey({ columns: [t.oracleId, t.condition] }),
+  // The reader asks "what is the floor for this condition", always.
+  index("format_staples_condition_idx").on(t.condition),
+]);
+
+/**
+ * The composition fallback for a commander with no page of its own.
+ *
+ * A `GROUP BY` over the same `avg_*` columns — the mean of each count across an identity's
+ * commanders, weighted by `deck_count`. It is an AVERAGE OF AVERAGES and the profile labels
+ * it the weaker claim it is: a commander's own page describes decks built with that
+ * commander, this describes decks in those colours generally.
+ *
+ * It matters for two populations. 105 of 3,384 commander-eligible cards are not in the index
+ * at all (3.1%) — overwhelmingly newly printed commanders, which is exactly when someone is
+ * most eager to build and least able to be told anything. And it covers every deck in the
+ * window before a widened index run has populated the per-commander columns.
+ */
+export const identityComposition = pgTable("identity_composition", {
+  /** Same vocabulary as `format_staples`, so one bucket serves the floor and the target. */
+  condition: text("condition").primaryKey(),
+  avgLand: real("avg_land").notNull(),
+  avgBasic: real("avg_basic").notNull(),
+  avgNonbasic: real("avg_nonbasic").notNull(),
+  avgCreature: real("avg_creature").notNull(),
+  avgInstant: real("avg_instant").notNull(),
+  avgSorcery: real("avg_sorcery").notNull(),
+  avgArtifact: real("avg_artifact").notNull(),
+  avgEnchantment: real("avg_enchantment").notNull(),
+  avgPlaneswalker: real("avg_planeswalker").notNull(),
+  avgBattle: real("avg_battle").notNull(),
+  avgCurve: jsonb("avg_curve").$type<Record<string, number>>(),
+  /** The bucket's size — the sample bar's own witness. */
+  commanders: integer("commanders").notNull(),
+  /** How many of them actually carried a composition. The denominator behind the averages. */
+  withComposition: integer("with_composition").notNull(),
+  computedAt: timestamp("computed_at").notNull().defaultNow(),
+}, (t) => [
+  // An average over nothing is not an average. A bucket where no commander carried a
+  // composition must not be written at all, rather than written as a row of zeros that a
+  // reader would take for a measured target.
+  check("identity_composition_witness_check", sql`${t.withComposition} > 0`),
+]);
+
 /** The id of the one row. Named so the reader and the writer cannot disagree about it. */
 export const CATALOG_ROW_ID = 1;
 
