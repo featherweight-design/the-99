@@ -1,5 +1,14 @@
 # Deck Tuning Suggestions Implementation Plan
 
+> **Amended 2026-09-20 by the deck-analysis foundation (spec §10, PR 6 of that plan):**
+> (1) Task 7's evidence pack is assembled FROM the Deck Profile (`src/lib/profile`) rather
+> than built privately — two deck-characterisation objects is a reconciliation we can see
+> coming, and the profile already holds the counts, roles, curve, colours, skeleton fit and
+> bracket facts this plan's pack was going to gather for itself.
+> (2) The `PATTERN_MIN` game gate on suggestions is REMOVED. The profile alone is sufficient
+> input, so a deck built tonight gets an answer tonight; games enter the evidence pack when
+> they exist, and the panel states which it had. No other #10 ruling is re-opened.
+
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
 **Goal:** Turn a deck's logged games, per-game notes, and a stated deck intent into a small set of grounded cut/add suggestions the player can apply in one tap, produced by a single schema-constrained model call whose every claim is verified against the player's own data before it is shown.
