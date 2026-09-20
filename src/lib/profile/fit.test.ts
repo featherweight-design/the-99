@@ -250,7 +250,8 @@ describe("the land test agrees with the rest of the profile", () => {
       detection: DETECTION,
     });
 
-  // `Fell the Profane // Fell Mire` is an Instant. 83 catalog rows carry a land on the back
+  // `Fell the Profane // Fell Mire` is an Instant. 83 of the 35,572 catalog rows carry a land
+  // on the back
   // face alone, and every one of them would have been a land in this table and not in the
   // counts beside it.
   it("does not count a card whose LAND is on the back face", () => {

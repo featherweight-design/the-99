@@ -53,7 +53,7 @@ describe("wipes role", () => {
 });
 
 // The land test is `isLandFace` — the FRONT face, with a word boundary — not a substring
-// sweep of the whole type line. Measured on the shipped catalog: 82 of 31,830 commander-legal
+// sweep of the whole type line. Measured on the shipped catalog: 82 of the 31,830 commander-legal
 // cards disagreed between the two, every one an MDFC with a Land on the back.
 describe("what counts as a land", () => {
   const roles = (typeLine: string, oracleText: string | null = null) =>

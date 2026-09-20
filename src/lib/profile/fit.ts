@@ -94,7 +94,8 @@ function countByType(cards: readonly ProfileCard[]): CompositionTargets {
   for (const card of cards) {
     // THE FRONT FACE, through `isLandFace`, and never `includes("land")` on the whole line.
     // Two failures in one: `Fell the Profane // Fell Mire` is an Instant that is played as
-    // one, and 83 catalog rows carry a land on the back face alone — counting those would
+    // one, and 83 of the 35,572 CATALOG rows carry a land on the back face alone (82 of the
+    // 31,830 commander-legal ones) — counting those would
     // make this table disagree with `counts.land` and `curve.lands` on the same object. And
     // without a word boundary `Lander Rizzi` reads as a land.
     if (isLandFace(card.typeLine)) {
@@ -102,7 +103,7 @@ function countByType(cards: readonly ProfileCard[]): CompositionTargets {
       if (/^basic\b/.test(card.typeLine.trim().toLowerCase())) counts.basic += card.quantity;
       else counts.nonbasic += card.quantity;
     }
-    // The other types read the front face too, for the same reason: 79 cards carry
+    // The other types read the front face too, for the same reason: 79 catalog rows carry
     // `Creature` on the back alone, and a substring sweep puts `Treasure Map // Treasure
     // Cove` on both the artifact and the land axes.
     const front = card.typeLine.split(" // ")[0].toLowerCase();
