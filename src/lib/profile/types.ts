@@ -73,7 +73,14 @@ export type ProfileRoles = {
 };
 
 export type ProfileColours = {
-  /** The commanders' colour identity, alphabetical. */
+  /**
+   * The commanders' colour identity, in WUBRG order — the order every colour list on this
+   * object uses, and the order the app draws pips in everywhere else.
+   *
+   * NOT alphabetical, which an earlier version of this comment said while the code ordered
+   * WUBRG. The stored arrays are alphabetical, which is presumably where the claim came
+   * from, and a consumer relying on it would have mis-ordered every multi-colour identity.
+   */
   identity: string[];
   /**
    * The union of colour identities over the deck's LAND rows — an approximation of what the

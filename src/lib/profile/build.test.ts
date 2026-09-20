@@ -452,3 +452,42 @@ describe("a pip that can be paid another way", () => {
     expect(p.colours.unproducible).toEqual([]);
   });
 });
+
+describe("what a tutor cannot reach", () => {
+  // A tutor searches a LIBRARY. A combo piece in the command zone is already available, so
+  // it cannot be reached — and counting it pushes the [3,4] lean to `reachable` on every
+  // commander-based combo, the one case where the tutor contributes nothing.
+  it("never reaches a piece that is a commander", () => {
+    const combo: ComboRef = {
+      variantId: "v1",
+      cards: [
+        { oracleId: "cmd", name: "Commander Piece" },
+        { oracleId: "p2", name: "Other Piece" },
+      ],
+      produces: ["Infinite mana"],
+      bracketTag: "casual",
+      usesCommander: true,
+    };
+    const p = buildDeckProfile(
+      input({
+        cards: [card({ oracleId: "cmd" }), card({ oracleId: "p2" }), card({ oracleId: "tutor" })],
+        commanderOracleIds: ["cmd"],
+        tutorIds: new Set(["tutor"]),
+        twoCardCombos: [combo],
+      }),
+    );
+    expect(p.brackets.comboReach.reaches.map((r) => r.piece.oracleId)).toEqual(["p2"]);
+  });
+});
+
+describe("the role receipt lists distinct cards", () => {
+  // The comment has always promised this; the list pushed one ref per input ROW.
+  it("names a repeated row once while counting both copies", () => {
+    const growth = card({
+      oracleId: "growth", name: "Rampant Growth", oracleText: "Add {G}.", quantity: 2,
+    });
+    const p = buildDeckProfile(input({ cards: [growth, { ...growth }] }));
+    expect(p.roles.cards.ramp).toEqual([{ oracleId: "growth", name: "Rampant Growth" }]);
+    expect(p.roles.counts.ramp).toBe(4);
+  });
+});

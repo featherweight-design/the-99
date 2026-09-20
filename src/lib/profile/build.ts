@@ -126,12 +126,21 @@ function rolesOf(cards: ProfileCardRow[]): ProfileRoles {
     Role,
     CardRef[]
   >;
+  const listed = Object.fromEntries(ALL_ROLES.map((r) => [r, new Set<string>()])) as Record<
+    Role,
+    Set<string>
+  >;
   for (const c of cards) {
     for (const role of classifyRoles(c)) {
       // The COUNT is copies and the LIST is distinct cards. Three Rampant Growths are three
       // pieces of ramp against a target of ten, and naming the card three times in the
       // receipt would read as three different answers to the same problem.
+      //
+      // The count takes every row and the list dedupes on oracle id — a row repeated in the
+      // input would otherwise be listed twice while the comment above promised otherwise.
       counts[role] += c.quantity;
+      if (listed[role].has(c.oracleId)) continue;
+      listed[role].add(c.oracleId);
       refs[role].push(ref(c));
     }
   }
@@ -233,6 +242,11 @@ export function buildDeckProfile(input: ProfileInput): DeckProfile {
         // question is whether the combo can be ASSEMBLED, not whether a card is missing.
         // A tutor never "reaches" itself.
         if (piece.oracleId === tutor.oracleId) continue;
+        // A COMMANDER IS NOT IN THE LIBRARY. A tutor searches a library, so a combo piece
+        // sitting in the command zone is already available and cannot be "reached" — and
+        // counting it would push the [3,4] lean to `reachable` on every commander-based
+        // combo, which is the one case where the tutor contributes nothing at all.
+        if (commanders.has(piece.oracleId)) continue;
         if (!byId.has(piece.oracleId)) continue;
         reaches.push({ tutor, combo, piece });
       }
