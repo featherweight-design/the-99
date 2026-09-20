@@ -80,7 +80,16 @@ export type ProfileInput = {
    * an over-reporting caller gets: a receipt claiming every tutor finds every piece is one
    * nobody can check. The loader always supplies it.
    */
-  tutorReaches?: (tutorId: string, piece: { typeLine: string; colorIdentity: string[]; cmc: number }) => boolean;
+  tutorReaches?: (
+    tutorId: string,
+    /**
+     * The piece's own row. `oracleId` is declared because the caller is handed the whole row
+     * and a predicate that cannot name the card it is being asked about cannot express "this
+     * tutor finds THAT half" — which is the distinction the 3-vs-4 boundary turns on (§6.1b).
+     * It was passed all along and simply missing from the type.
+     */
+    piece: { oracleId: string; typeLine: string; colorIdentity: string[]; cmc: number },
+  ) => boolean;
   detection: DetectionCoverage;
 };
 

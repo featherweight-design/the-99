@@ -252,6 +252,18 @@ the full gate alone — no stacking, every intermediate state shippable.
 candidates-not-picks `upgradePath`; `bracketDelta`'s range-to-range shape; and execution as an
 autonomous epic-run through the standard gates.
 
+**Sixth ratification, added 2026-09-20 — it was made during planning and never written down,
+which is why the build shipped the opposite.** ONLY 1/2 AND 4/5 ARE EVER RANGES. Those two
+boundaries are questions the rules hand to the player; the 3-vs-4 boundary is a question about
+the deck, and answering it with a range asks too much of the reader and makes the ranking look
+indecisive. The combo clause therefore RESOLVES on §6.1b's tutor-coverage signal rather than
+widening to `[3, 4]`.
+
+The signal itself WAS documented (§6.1b, as reach) — what was missing is that it decides rather
+than advises, and §6.3 said the opposite in as many words. Spec §6.1a, §6.3 and §6.1b are
+amended, `permitsFor` and `slotDeck` follow, and Round 2's designs already drew it this way and
+had asked for the amendment.
+
 ---
 
 ## File structure

@@ -4,6 +4,7 @@ import {
   COMBO_POLICY,
   GAME_CHANGER_LIMIT,
   MASS_LAND_DENIAL_LIMIT,
+  comboLandsEarly,
   permitsFor,
 } from "./rules";
 import type {
@@ -42,12 +43,12 @@ export function slotDeck(profile: DeckProfile): BracketVerdict {
   const violatesB3 =
     gc.length > GAME_CHANGER_LIMIT[3] || mld.length > 0 || loops.length > 0;
 
-  const permits = permitsFor({
-    violatesB1,
-    violatesB2,
-    violatesB3,
-    hasCombo: combos.length > 0,
-  });
+  // The 3-vs-4 boundary resolves on whether the deck can ASSEMBLE a combo rather than draw
+  // into it. A commander piece counts as covered without a tutor — it is available every
+  // game by the format's own rules.
+  const assemblesCombo = comboLandsEarly(combos, profile.brackets.comboReach.reaches);
+
+  const permits = permitsFor({ violatesB1, violatesB2, violatesB3, assemblesCombo });
 
   const comboCards = (list: ComboRef[]): CardRef[] =>
     [...new Map(list.flatMap((c) => c.cards).map((c) => [c.oracleId, c])).values()];
@@ -134,18 +135,29 @@ export function slotDeck(profile: DeckProfile): BracketVerdict {
 }
 
 /**
- * The [3, 4] lean.
+ * WHY the combo boundary landed where it did.
  *
- * Only drawn where the range is wide enough that a reader is owed a reason to prefer one
- * end. `reachable` means a tutor in the deck finds a piece of an assembled combo — the
- * receipts name the combo and the tutors, so the reasoning is auditable rather than a word.
+ * This was the `[3, 4]` lean — advice on a range the reader had to settle. Since the range
+ * was overturned (2026-09-20) it is the REASON for a resolved verdict instead: `reachable`
+ * means the deck's tutors can assemble a whole combo and it slotted at 4; `drawOnly` means
+ * they cannot and it stayed at 3.
+ *
+ * It is drawn wherever a combo is present and the game-changer count did not already decide
+ * the bracket, because that is exactly where a reader is owed the reasoning — the verdict
+ * moved on a judgement rather than on a count, and §2.2 says a judgement without its cards is
+ * the thing this feature exists to avoid. The receipts name the combo and every tutor behind
+ * it.
  */
 function leanFor(
   profile: DeckProfile,
   permits: readonly number[],
   combos: ComboRef[],
 ): BracketLean | null {
-  if (!(permits.length === 2 && permits[0] === 3 && permits[1] === 4)) return null;
+  // Only where the combo clause was what decided it: a deck already past B3 on game changers
+  // or mass land denial reads [4, 5], and its bracket owes nothing to any tutor.
+  const decidedByCombo =
+    combos.length > 0 && permits.length === 1 && (permits[0] === 3 || permits[0] === 4);
+  if (!decidedByCombo) return null;
 
   const receipts = combos.map((combo) => ({
     combo,
@@ -158,6 +170,6 @@ function leanFor(
     ],
   }));
 
-  const reachable = receipts.some((r) => r.tutors.length > 0);
+  const reachable = permits[0] === 4;
   return { likely: reachable ? 4 : 3, reason: reachable ? "reachable" : "drawOnly", receipts };
 }

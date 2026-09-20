@@ -57,12 +57,41 @@ describe("moves", () => {
     expect(d.kind === "moves" && d.rule.cards[0].oracleId).toBe("cand");
   });
 
-  it("a card completing a combo on a [3] deck moves it to [3,4]", () => {
+  // Ruled 2026-09-20: the combo boundary RESOLVES on whether the deck's tutors can assemble
+  // the combo, so completing one in a deck that cannot search for it moves nothing — the deck
+  // was a 3 and stays a 3.
+  //
+  // KNOWN HOLE, and Round 4's to design rather than this function's to invent: the push check
+  // is then SILENT about an add that gives the reader a two-card infinite they did not have.
+  // The bracket is honestly unchanged, but "nothing happens" is not the whole truth, and the
+  // `ruleless` shape beside this one exists for exactly this class of fact. Recorded in the
+  // spec amendment rather than patched here, because the push line is a designed surface.
+  it("a card completing a combo moves nothing when the deck cannot tutor for it", () => {
     const d = bracketDelta(
       atThree(),
       candidate({ completesCombos: [combo("v1", ["Infinite mana"])] }),
     );
-    expect(d).toMatchObject({ kind: "moves", from: [3], to: [3, 4] });
+    expect(d).toEqual({ kind: "none" });
+  });
+
+  it("a card completing a combo the deck CAN assemble moves it to [4]", () => {
+    const deck = atThree();
+    const piece = { oracleId: "p1", name: "p1" };
+    // The tutors already in the deck reach every piece of the candidate's combo, so adding
+    // the last card makes it assemblable rather than merely present.
+    deck.brackets.comboReach.reaches = [
+      { tutor: { oracleId: "t1", name: "t1" }, combo: combo("v1", ["Infinite mana"]), piece },
+      {
+        tutor: { oracleId: "t2", name: "t2" },
+        combo: combo("v1", ["Infinite mana"]),
+        piece: { oracleId: "p2", name: "p2" },
+      },
+    ];
+    const d = bracketDelta(
+      deck,
+      candidate({ completesCombos: [combo("v1", ["Infinite mana"])] }),
+    );
+    expect(d).toMatchObject({ kind: "moves", from: [3], to: [4] });
     expect(d.kind === "moves" && d.rule.rule).toBe("twoCardCombos");
     // The RECEIPT, not only the rule name. Dropping it left the reader a verdict with no
     // evidence, and nothing here noticed until each combos site was mutated separately.

@@ -1,6 +1,6 @@
 import type { DeckProfile } from "../profile/types";
 import { producesInfiniteTurns } from "../spellbook/combo-features";
-import { GAME_CHANGER_LIMIT, permitsFor } from "./rules";
+import { comboLandsEarly, GAME_CHANGER_LIMIT, permitsFor } from "./rules";
 import { slotDeck } from "./slot";
 import type { Bracket, CardRef, ComboRef, Violation } from "./types";
 
@@ -74,7 +74,13 @@ export function bracketDelta(profile: DeckProfile, candidate: CandidateFacts): B
     violatesB1: gc > 0 || mld > 0 || turns > 0 || combos.length > 0,
     violatesB2: gc > 0 || mld > 0 || combos.length > 0,
     violatesB3: gc > GAME_CHANGER_LIMIT[3] || mld > 0 || loops.length > 0,
-    hasCombo: combos.length > 0,
+    // The candidate's own combo has no computed reach — nothing has asked which tutors find
+    // a card that is not in the deck yet — so coverage is read from the tutors already here.
+    // That errs toward "you would have to draw it", which is the direction this feature is
+    // required to err in: telling a player their deck is gentler than it is, is the failure
+    // §4.2 names as dangerous, and claiming an add pushed them to 4 on an uncomputed reach
+    // would be the same error pointing the other way.
+    assemblesCombo: comboLandsEarly(combos, b.comboReach.reaches),
   });
 
   const moved = from.join() !== to.join();
