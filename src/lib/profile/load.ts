@@ -212,6 +212,7 @@ export async function loadDeckProfileFromHead(head: ProfileHead): Promise<DeckPr
     ? await db
         .select({
           oracleId: cards.oracleId, name: cards.name, typeLine: cards.typeLine,
+          layout: cards.layout,
           oracleText: cards.oracleText, keywords: cards.keywords, cmc: cards.cmc,
           colorIdentity: cards.colorIdentity, manaCost: cards.manaCost,
           commanderLegal: cards.commanderLegal, gameChanger: cards.gameChanger,
@@ -237,6 +238,7 @@ export async function loadDeckProfileFromHead(head: ProfileHead): Promise<DeckPr
     rows.push({
       oracleId: card.oracleId,
       name: card.name,
+      layout: card.layout ?? "normal",
       typeLine: card.typeLine ?? "",
       oracleText: card.oracleText,
       keywords: card.keywords ?? [],

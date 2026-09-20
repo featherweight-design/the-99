@@ -22,7 +22,7 @@ const staple = (oracleId: string): StapleRef => ({
 
 const row = (over: Partial<ProfileCardRow> & { oracleId: string }): ProfileCardRow => ({
   name: over.oracleId, typeLine: "Creature — Human", oracleText: null, keywords: [],
-  cmc: 2, colorIdentity: [], manaCost: "{1}{G}", quantity: 1, commanderLegal: true,
+  cmc: 2, colorIdentity: [], manaCost: "{1}{G}", quantity: 1, commanderLegal: true, layout: "normal",
   ...over,
 });
 

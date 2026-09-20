@@ -12,6 +12,7 @@ const DETECTION: DetectionCoverage = {
 function card(over: Partial<ProfileCardRow> & { oracleId: string }): ProfileCardRow {
   return {
     name: over.oracleId,
+    layout: "normal",
     typeLine: "Creature — Human",
     oracleText: null,
     keywords: [],
@@ -58,7 +59,26 @@ describe("counts", () => {
         ],
       }),
     );
-    expect(p.counts).toEqual({ total: 15, nonland: 3, land: 12, basics: 10 });
+    expect(p.counts).toEqual({ total: 15, nonland: 3, land: 12, basics: 10, landCapable: 12 });
+  });
+
+  it("counts a modal land as land-capable without moving counts.land", () => {
+    const p = buildDeckProfile(input({ cards: [
+      card({ oracleId: "forest", name: "Forest", typeLine: "Basic Land — Forest", quantity: 10 }),
+      // A modal DFC: you choose the face as you play it, so the land mode is real.
+      card({ oracleId: "ss", name: "Shatterskull Smashing // Shatterskull, the Hammer Pass",
+        typeLine: "Sorcery // Land", layout: "modal_dfc", quantity: 1 }),
+      // A transform card is CAST as its front face and flips later, so it can never be a
+      // land drop. Counting it as one is the defect `playableAsLand` exists to prevent.
+      card({ oracleId: "ojer", name: "Ojer Axonil, Deepest Might // Temple of Power",
+        typeLine: "Legendary Creature — God // Land", layout: "transform", quantity: 1 }),
+    ] }));
+
+    // Exclusive, so the ten type axes still sum to the deck.
+    expect(p.counts.land).toBe(10);
+    // Only the modal one adds a land drop.
+    expect(p.counts.landCapable).toBe(11);
+    expect(p.landCapableCards.map((c) => c.oracleId)).toEqual(["ss"]);
   });
 
   // By type line, never by name. `Wastes` is a basic whose name is not a basic type, and
@@ -79,7 +99,7 @@ describe("counts", () => {
 
   it("an empty deck reports zeros and does not crash", () => {
     const p = buildDeckProfile(input());
-    expect(p.counts).toEqual({ total: 0, nonland: 0, land: 0, basics: 0 });
+    expect(p.counts).toEqual({ total: 0, nonland: 0, land: 0, basics: 0, landCapable: 0 });
     expect(p.curve.average).toBeNull();
     expect(p.legality.identityViolations).toEqual([]);
   });
@@ -177,7 +197,8 @@ describe("the commanders are cards", () => {
     // the SAME list every count was computed from, which is what the type promises.
     expect(p.counts.total).toBe(2);
     expect(p.cards).toEqual([
-      { oracleId: "cmd", name: "Kinnan", typeLine: "Creature — Human", cmc: 2, quantity: 2 },
+      { oracleId: "cmd", name: "Kinnan", typeLine: "Creature — Human", cmc: 2, quantity: 2,
+        layout: "normal" },
     ]);
   });
 

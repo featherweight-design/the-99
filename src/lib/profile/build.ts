@@ -1,4 +1,4 @@
-import { isLandFace } from "../cards/facet";
+import { isLandFace, playableAsLand } from "../cards/facet";
 import { manaCurve, type CurveCard } from "../decks/stats";
 import { classifyRoles, type Role } from "../recs/roles";
 import type {
@@ -40,6 +40,7 @@ export type ProfileCardRow = {
   manaCost: string | null;
   quantity: number;
   commanderLegal: boolean;
+  layout: string;
 };
 
 /** A composition candidate, already read. The loader supplies the ones it found; the FIRST
@@ -141,6 +142,7 @@ function countCards(cards: ProfileCardRow[]): ProfileCounts {
   let total = 0;
   let land = 0;
   let basics = 0;
+  let extraLandCapable = 0;
   for (const c of cards) {
     total += c.quantity;
     if (isLandFace(c.typeLine)) {
@@ -148,9 +150,18 @@ function countCards(cards: ProfileCardRow[]): ProfileCounts {
       // By TYPE LINE, never by name: a card is a basic because it says `Basic Land`, and
       // Snow-Covered Swamp and Wastes both do while neither is named for a basic type.
       if (/^basic\b/i.test(c.typeLine.trim())) basics += c.quantity;
+    } else if (playableAsLand(c.typeLine, c.layout)) {
+      // Counted SEPARATELY, never into `land`. The ten type axes must keep summing to the deck,
+      // so a modal land stays a Sorcery on the type table and gains a second figure here.
+      extraLandCapable += c.quantity;
     }
   }
-  return { total, nonland: total - land, land, basics };
+  return { total, nonland: total - land, land, basics, landCapable: land + extraLandCapable };
+}
+
+/** The cards that make `landCapable` differ from `land`. */
+function landCapableRefs(cards: ProfileCardRow[]): CardRef[] {
+  return uniqueRefs(cards.filter((c) => !isLandFace(c.typeLine) && playableAsLand(c.typeLine, c.layout)));
 }
 
 const ALL_ROLES: Role[] = ["ramp", "draw", "removal", "wipes", "land"];
@@ -306,9 +317,10 @@ export function buildDeckProfile(input: ProfileInput): DeckProfile {
     fingerprint: input.fingerprint,
     cards: cards.map((c) => ({
       oracleId: c.oracleId, name: c.name, typeLine: c.typeLine,
-      cmc: c.cmc, quantity: c.quantity,
+      cmc: c.cmc, quantity: c.quantity, layout: c.layout,
     })),
     counts: countCards(cards),
+    landCapableCards: landCapableRefs(cards),
     roles: rolesOf(cards),
     curve: manaCurve(curveCards),
     colours: colours(cards, input.identity),

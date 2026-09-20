@@ -13,6 +13,7 @@ const DETECTION: DetectionCoverage = {
 const card = (oracleId: string): ProfileCardRow => ({
   oracleId,
   name: oracleId,
+  layout: "normal",
   typeLine: "Creature — Human",
   oracleText: null,
   keywords: [],

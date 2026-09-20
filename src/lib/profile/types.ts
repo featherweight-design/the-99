@@ -36,6 +36,9 @@ export type ProfileCard = {
   typeLine: string;
   cmc: number;
   quantity: number;
+  /** Scryfall's own, e.g. `normal`, `modal_dfc`, `transform`, `split`. Carried because the
+   *  type line alone cannot tell a playable land back from one that only ever flips. */
+  layout: string;
 };
 
 /** Which classifier claimed a flag. A reader disputing a verdict is owed this. */
@@ -59,6 +62,18 @@ export type ProfileCounts = {
   nonland: number;
   land: number;
   basics: number;
+  /**
+   * True lands PLUS cards that could take a land drop instead of being cast.
+   *
+   * A SECOND figure beside `land`, never a replacement: `land` stays exclusive so the ten type
+   * axes still sum to the deck and a reader adding them is not double-counting. A spell//land
+   * modal DFC is one card playable either way, so a deck holding two of them has a land count
+   * and a land-drop count, and they are different numbers.
+   *
+   * Only `modal_dfc` contributes. A `transform` card with a land back is cast as its front face
+   * and flips later, so it can never be a land drop — see `playableAsLand`.
+   */
+  landCapable: number;
 };
 
 export type ProfileRoles = {
@@ -215,6 +230,9 @@ export type DeckProfile = {
    *  on this object was computed from. */
   cards: ProfileCard[];
   counts: ProfileCounts;
+  /** The cards behind the gap between `counts.land` and `counts.landCapable`. A figure with no
+   *  cards is an assertion nobody can check. */
+  landCapableCards: CardRef[];
   roles: ProfileRoles;
   curve: ManaCurve;
   colours: ProfileColours;
