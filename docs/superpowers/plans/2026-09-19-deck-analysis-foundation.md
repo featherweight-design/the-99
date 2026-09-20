@@ -159,27 +159,39 @@ Each entry names the task that implements it.
   `db:build:index`, per matrix leg — which sidesteps the `workflow_run` cannot-tell-which-leg
   problem entirely and needs no `db:copy:staples`, because unlike prose the derivation costs
   nothing to re-run (Task 11).
-- **R11 (§13.3) — the derived floor's first value is measured during implementation.** Task 6
-  runs the ingest against local-dev, records the two counts, and commits
-  `MIN_MASS_LAND_DENIAL_FLAGGED` / `MIN_EXTRA_TURN_FLAGGED` at 50% of the measured figures,
-  rounded down, with the measurement date and raw counts in the comment. The floor exists to
-  catch collapse, not drift, so half is the right slack.
-- **R12 (§13.4) — a partial sweep publishes nothing.** All 54 batch responses are collected in
-  memory (~8.7 MB), and `card_bracket_flags` is cleared and refilled in ONE transaction only
-  after every batch succeeded and both floors passed; any failure exits non-zero with the
-  previous flags standing — the #704 pattern, cited in the module header (Task 6).
+- **R11 (§13.3) — the derived floor's first value is measured during implementation, PER
+  SOURCE.** Task 6 runs the ingest against local-dev, records the sweep-claimed and
+  rule-claimed counts separately for each flag, and commits four floors at 50% of each,
+  rounded down, with the measurement date and raw counts in the comment. Per source because a
+  union floor cannot catch the collapse it exists for: the oracle rule alone flags 51 MLD
+  cards, so a sweep that silently zeroes still clears half the union. A resolution-ratio
+  refusal rides beside them: sweep entries that resolve to a `cards` row, as a share of
+  entries returned, below half the first run's measured share is the same collapse arriving
+  as a name-index regression — dropped-and-counted, so no batch ever throws for it.
+- **R12 (§13.4) — a partial sweep publishes nothing, and the flags never wait on the bulk.**
+  TWO transactions, deliberately: `card_bracket_flags` is cleared and refilled in its own
+  transaction once every batch succeeded and the per-source floors passed — BEFORE the bulk
+  streams — so a failed 656 MB download exits non-zero with fresh flags already standing,
+  which is what §4.4's sweep-first ordering is FOR. The two variant tables then clear and
+  refill in a second transaction. Any failure inside either leaves that publish's previous
+  rows standing — the #704 pattern, cited in the module header (Task 6). Inserts inside both
+  are chunked at 500 rows (the house limit — `seed.ts:45`, `seed-index.ts:84-86`; a single
+  `.values()` over ~10⁵ variant-card rows blows Postgres's 65,535-parameter cap). Memory
+  bound: the sweep responses are ~9 MB, but the buffered variant rows dominate and the real
+  ceiling is the workflow's `NODE_OPTIONS --max-old-space-size=4096`.
 - **R13 (§13.4) — concurrency needs no lock.** Each workflow has a concurrency group per
-  target (the house pattern), and the single-transaction publish means two overlapping manual
-  runs end in one complete, self-consistent set — the loser typically exits non-zero on a
-  unique violation against the winner's committed rows, which is a loud failure over an intact
-  table, and either outcome is acceptable. Stated in the ingest's header rather than defended
-  by machinery.
+  target (the house pattern), and each publish being one transaction means two overlapping
+  manual runs end with one complete, self-consistent set per table — whichever way the
+  interleaving resolves (clean overwrite or a loud unique-violation exit), no torn state is
+  reachable. The header claims that outcome, not a specific failure mechanism. Stated in the
+  ingest's header rather than defended by machinery.
 - **R14 (§13.4) — an empty deck and an over-100 import are ordinary inputs.** No special
   cases: an empty deck violates nothing and permits `[1, 2]` with every skeleton delta
   negative; an oversized deck reports its real counts. Both pinned by unit test (Tasks 12, 17).
-- **R15 (§13.4) — a `degraded` fetch writes null composition.** The widened header carries the
-  `avg_*` fields only on an `ok` parse; `degraded` and `absent` write nulls, and null reads as
-  absent, never zero (Task 9).
+- **R15 (§13.4) — a `degraded` fetch yields null composition.** The widened header carries the
+  `avg_*` fields only on an `ok` parse; on `degraded` the write layer skips the row entirely
+  (`seed-index.ts:160`, preserving the previous row), so the null rule is a fact about
+  `toSupportRows`' header, and null reads as absent, never zero (Task 9).
 - **R16 (§13.4) — declared-vs-permits drift is a first-class field:**
   `BracketVerdict.declaredOutsidePermits: boolean` (Task 17).
 - **R17 (§13.4) — `compositionOf` cannot dangle:** the skeleton's composition is restructured
@@ -228,8 +240,8 @@ Each entry names the task that implements it.
 | **2 — Spellbook ingest** | 3–8 | three tables, flags read, bulk streamer, sweep, `db:seed:combos`, `check:spellbook`, `Combo refresh` workflow, produces vocabulary | 0041 |
 | **3 — EDHREC widening + pairs** | 9–10 | widened parse + fixture, `avg_*` columns, pair tables, pair fetch in the index build, `edhrec_pair_cache`, `suggestions-read` preference | 0042, 0043 |
 | **4 — the measured floor** | 11 | `identityCondition` vocabulary, `db:build:staples`, `format_staples` + `identity_composition`, the workflow step | 0044 |
-| **5 — the Deck Profile** | 12–15 | profile types, `buildDeckProfile`, fingerprint, loader + cached wrapper, `fitSkeleton` | — |
-| **6 — the bracket verdicts** | 16–21 | tutor classifier, `slotDeck` + lean, `bracketDelta`, `upgradePath`, `decks.declared_bracket`, `probe:bracket`, docs + #10 amendment | 0045 |
+| **5 — the Deck Profile** | 12–15 | profile types, `buildDeckProfile`, fingerprint, loader + cached wrapper, `decks.declared_bracket` (the gather reads it), `fitSkeleton` | 0045 |
+| **6 — the bracket verdicts** | 16–21 | tutor classifier, `slotDeck` + lean, `bracketDelta`, `upgradePath`, `probe:bracket`, docs + #10 amendment | — |
 
 PRs 1–2 and 3–4 are independent chains; 5 needs 2, 3 and 4 merged; 6 needs 5. Each PR passes
 the full gate alone — no stacking, every intermediate state shippable.
@@ -273,7 +285,7 @@ autonomous epic-run through the standard gates.
 | `src/lib/spellbook/transform.ts` | bulk record → table rows; the commander-legal filter |
 | `src/lib/spellbook/sweep.ts` | batched `POST /estimate-bracket` client + name resolution |
 | `src/lib/spellbook/seed.ts` | the ingest: sweep → oracle-rule union → bulk → one-transaction publish → stamp |
-| `src/lib/edhrec/pair.ts` | pair slug, `resolvePairEdhrecData` (redirect-following demand fetch), pair row projection |
+| `src/lib/edhrec/pair.ts` | `canonicalPair` (the one order normalisation, writes AND reads), pair slug candidates, `fetchPairUncached` (index-pass fetch, redirect-following), `resolvePairEdhrecData` (demand fetch, redirect-following), `toPairRows` |
 
 **New — scripts & workflows:**
 
@@ -303,7 +315,7 @@ autonomous epic-run through the standard gates.
 | `.github/workflows/commander-index.yml` | `db:build:staples` step after the index build, per leg |
 | `docs/superpowers/plans/2026-09-07-deck-tuning-suggestions.md` | the two #10 amendments (§10) |
 | `AGENTS.md` | entries for the new job, checks, probe and workflow |
-| `package.json` | the six new script entries |
+| `package.json` | five new script entries (`db:seed:combos`, `check:spellbook`, `build:combo-features`, `db:build:staples`, `probe:bracket` — the measure script runs via `pnpm tsx`, like its siblings) |
 
 ---
 
@@ -322,16 +334,17 @@ autonomous epic-run through the standard gates.
 - [ ] **Step 1: failing tests.** In `transform.test.ts`, beside the existing `commanderLegal` cases:
 
 ```ts
+// The file's fixture is `solRing`, not `base` — build on it:
 it("reads game_changer as a strict true", () => {
-  expect(toCardRow({ ...base, game_changer: true })!.gameChanger).toBe(true);
+  expect(toCardRow({ ...solRing, game_changer: true })!.gameChanger).toBe(true);
 });
 it("defaults game_changer false when absent or non-boolean", () => {
-  expect(toCardRow(base)!.gameChanger).toBe(false);
-  expect(toCardRow({ ...base, game_changer: "yes" })!.gameChanger).toBe(false);
+  expect(toCardRow(solRing)!.gameChanger).toBe(false);
+  expect(toCardRow({ ...solRing, game_changer: "yes" })!.gameChanger).toBe(false);
 });
 ```
 
-(`raw.game_changer === true` is the correct parse: Scryfall can omit the field on a bulk object, and strict-true under-claims there — the right direction, same as `commanderLegal`'s `=== "legal"`.)
+(`raw.game_changer === true` is defensive parsing of an untyped bulk: anything absent or non-boolean reads false, which under-claims — the right direction, same as `commanderLegal`'s `=== "legal"`. Note the EXISTING first test `toEqual`s the full `solRing` row (`transform.test.ts:15-25`), so its expected object gains `gameChanger: false` in the same edit.)
 
 - [ ] **Step 2:** `pnpm test src/lib/scryfall/transform.test.ts` — FAIL (`gameChanger` not on `CardRow`).
 - [ ] **Step 3: implement.** `CardRow` gains `gameChanger: boolean`; `toCardRow` returns `gameChanger: raw.game_changer === true,`. Schema, beside `commanderLegal`:
@@ -393,6 +406,14 @@ export function matchedMldClauses(text: string | null): string[] { /* PATTERNS f
 export function classifyExtraTurn(text: string | null):
   { hit: boolean; why: string[]; blockedBy: string[] } { /* negations first */ }
 export const isExtraTurn = (t: string | null) => classifyExtraTurn(t).hit;
+// The §6.5 detection provenance strings live HERE, beside the classifiers they describe —
+// not in bracket/rules.ts (PR 6), because buildDeckProfile (PR 5) populates `detection`
+// and one definition must serve both. rules.ts re-exports them later. The combo string
+// lives in spellbook/combo-features.ts (PR 2) on the same principle.
+export const MLD_DETECTION = { sources: 2, basis: "23 of 24 on a curated set",
+  knownMiss: "Wave of Vitriol" } as const;
+export const EXTRA_TURN_DETECTION = { sources: 2,
+  basis: "no misses among the 56 cards whose text mentions one" } as const;
 ```
 
 - [ ] **Step 4:** tests PASS.
@@ -465,8 +486,8 @@ export const cardBracketFlags = pgTable("card_bracket_flags", {
 ```
 
 `banned` is deliberately absent — legality is `cards.commander_legal` (§4.3a).
-- [ ] **Step 2:** `pnpm db:generate` → 0041. Inspect.
-- [ ] **Step 3: the read.** `flags-read.ts`: one `inArray` select over `card_bracket_flags`, returns the Map, empty input → empty Map without a query (the `readEdhrecCache` shape). `card-detail.ts`: `loadCardDetail`'s card shape gains `bracketFlags` — `gameChanger` selected off `cards`, the other two from one `loadBracketFlags` call; a missing row reads all-false (default-false direction, stated in a comment). Quiet failure matches the file's own convention: a failed flags read leaves `bracketFlags` null and the modal omits the block. **No component changes** — where marks are drawn is Design's (§7.1, §11 Round 1).
+- [ ] **Step 2:** `pnpm db:generate` → 0041. Inspect — specifically the `text[]` defaults: `.default([])` has NO in-repo precedent (zero array defaults in `schema.ts` today) and the spec writes `default '{}'`; if the emitted SQL is anything but a working `'{}'::text[]` default, write the default as `sql\`'{}'\`` instead and re-generate.
+- [ ] **Step 3: the read.** `flags-read.ts`: one `inArray` select over `card_bracket_flags`, returns the Map, empty input → empty Map without a query (the `readEdhrecCache` shape). `card-detail.ts`: `BrowseCard.bracketFlags` is **optional and null-defaulted** — `catalogCard` stays pure and never sets it (it is the browse list's shared type, and R22 keeps browse un-widened); `loadCardDetail` ATTACHES the field after synthesis, the way it already attaches `availability`/`prices`/`proxiedBy`: `gameChanger` selected off `cards`, the other two from one `loadBracketFlags` call, missing row reads all-false (default-false direction, in a comment). Quiet failure matches the file's own convention: a failed flags read leaves `bracketFlags` null and the modal omits the block. **No component changes** — where marks are drawn is Design's (§7.1, §11 Round 1).
 - [ ] **Step 4: shape test.** `card-detail.test.ts` (or the nearest pure synthesis test — `catalogCard` is the tested layer): a card row carrying flags surfaces them; a card with no flags row reads `{ gameChanger, massLandDenial: false, extraTurn: false }`.
 - [ ] **Step 5:** Suite + gate. Commit `feat: spellbook tables, card bracket flags, and the flags read`.
 
@@ -552,21 +573,26 @@ it("keeps a flag-true row only when a source claims it", ...)   // the check con
 **Interfaces:**
 - Consumes: Tasks 2–5. Produces: populated `spellbook_variants`, `spellbook_variant_cards`, `card_bracket_flags`; the floor constants; the stamp.
 
-- [ ] **Step 1: the ingest, in order.** (1) Load commander-legal `{oracleId, name}` from `cards`; build the name index. (2) **Sweep first** — a bulk failure must not cost the card flags too (§4.4). (3) Run the oracle rules over the same rows; union per flag (Task 5). (4) **Floors:**
+- [ ] **Step 1: the ingest, in order.** (1) Load commander-legal `{oracleId, name}` from `cards`; build the name index. (2) **Sweep first.** (3) Run the oracle rules over the same rows; union per flag (Task 5). (4) **Floors, per source (R11):**
 
 ```ts
 // Measured against local-dev on the first clean run of this ingest (2026-09-XX, task 6
-// step 4): NNN mass-land-denial rows, MMM extra-turn rows. The floor is HALF each,
-// rounded down — it exists to catch a classifier collapse behind a green job (§4.5),
-// not to notice drift. An upstream restructure that zeroes the sweep while the five
-// contract anchors survive lands here.
-export const MIN_MASS_LAND_DENIAL_FLAGGED = ...;
-export const MIN_EXTRA_TURN_FLAGGED = ...;
+// step 4). One floor PER SOURCE per flag, at HALF the measured count, rounded down — a
+// union floor cannot catch a sweep collapse, because the oracle rule alone clears it
+// (51 MLD cards from the rule; the union barely moves when the sweep dies). Collapse
+// detection, not drift detection (§4.5).
+export const MIN_MLD_FROM_SWEEP = ...;      // measured NNN
+export const MIN_MLD_FROM_RULE = ...;       // measured NNN
+export const MIN_EXTRA_TURN_FROM_SWEEP = ...;
+export const MIN_EXTRA_TURN_FROM_RULE = ...;
+// And the same collapse arriving as a name-index regression: sweep entries resolving
+// to a cards row, as a share of entries returned, at half the first run's share.
+export const MIN_SWEEP_RESOLUTION_SHARE = ...;
 ```
 
-Below either floor: print both figures, write NOTHING, exit non-zero — the previous flags stand (R11, R12; the #704 refusal pattern, named in the header). (5) Stream the bulk through Task 4, filter commander-legal, resolve `uses[].card.oracleId` against `cards` (an FK violation would abort anyway; resolving first counts the drops instead), collect rows. (6) **One transaction:** delete-and-refill all three tables. Delete order: `spellbook_variant_cards` cascades from `spellbook_variants`; `card_bracket_flags` cleared and refilled in the same transaction — a refused run leaves yesterday's rows, a successful one replaces wholesale (a card that left the index must leave the table; the seed-index delete-then-insert reasoning). (7) `stampCatalogRefresh()` non-fatally (R9). (8) Print: batches, resolved/unresolved sweep entries, oracle-rule counts, union counts per flag, variants kept/dropped-by-reason, distinct `produces` names outside the committed vocabulary (R4's visibility).
-- [ ] **Step 2: unit tests** on the pure pieces: floor refusal (below → throws with both figures named), drop-reason accounting, the disagreement log shape.
-- [ ] **Step 3: run against local-dev.** Record the two measured counts; fill the floor constants; re-run; confirm green and the row counts stable. This run also populates local-dev for Tasks 8 and 20.
+Below any floor: print every figure, write NOTHING, exit non-zero (the #704 refusal pattern, named in the header). (5) **Publish the flags in their OWN transaction now** — before the bulk — chunked at 500-row inserts (R12): a bulk failure must not cost the card flags, and under a single shared transaction it would have, which is the contradiction the plan review caught. (6) Stream the bulk through Task 4, filter commander-legal, resolve `uses[].card.oracleId` against `cards` (an FK violation would abort anyway; resolving first counts the drops instead), collect rows. (7) **Second transaction:** delete-and-refill the two variant tables (`spellbook_variant_cards` cascades from `spellbook_variants`), inserts chunked at 500 — a refused or failed bulk leaves yesterday's variants standing while today's flags are already live, which is a coherent state: the two stores answer different questions. (8) `stampCatalogRefresh()` non-fatally (R9). (9) Print: batches, resolved/unresolved sweep entries and the resolution share, per-source flag counts, union counts, variants kept/dropped-by-reason, distinct `produces` names outside the committed vocabulary (R4's visibility).
+- [ ] **Step 2: unit tests** on the pure pieces: per-source floor refusal (below any → throws with every figure named), the resolution-share refusal, drop-reason accounting, the disagreement log shape.
+- [ ] **Step 3: run against local-dev.** Record the per-source counts and the resolution share; fill the five constants; re-run; confirm green and the row counts stable. This run also populates local-dev for Tasks 8 and 20.
 - [ ] **Step 4:** run the REFUSAL path once: temporarily set a floor above the measured count, run, confirm non-zero exit and untouched tables (`select count(*)` before/after). Revert. (Run the guard's failure path before believing it.)
 - [ ] **Step 5:** Suite + gate. Commit `feat: db:seed:combos — sweep, oracle-rule union, bulk ingest`.
 
@@ -607,7 +633,7 @@ Below either floor: print both figures, write NOTHING, exit non-zero — the pre
 - Test: `src/lib/spellbook/combo-features.test.ts`
 
 **Interfaces:**
-- Produces: `isInfiniteOrGameEnding(features: string[]): boolean` — the two-card-infinite test's second half (§5.2). Task 14's combo read consumes it.
+- Produces: `isInfiniteOrGameEnding(features: string[]): boolean` — the two-card-infinite test's second half (§5.2) — and `producesInfiniteTurns(features: string[]): boolean` (R3's loop test; Task 17's slot imports it), plus `COMBO_DETECTION` — the §6.5 provenance string for `twoCardCombos` ("Spellbook's index, excluding template-gated variants"), living here so PR 5's `detection` never reaches into PR 6. Task 14's combo read consumes all three.
 
 - [ ] **Step 1: failing tests:**
 
@@ -654,8 +680,8 @@ it("yields null composition and null curve when the fields are absent — never 
 it("keeps non-finite counts out", ...)                          // house finiteness rule
 ```
 
-Plus `index-build.test.ts`: header carries the fields on `ok`; **`degraded` and `absent` write nulls** (R15).
-- [ ] **Step 3: implement.** `parse.ts`: the counts live at the payload top level, the curve at `panels.mana_curve` — read with the same finiteness discipline as every other numeric in the file. Schema: ten nullable `integer` columns + `avg_curve jsonb` on `commander_support`, comment block quoting §4A.7's null rule. `SupportHeader` (+10 fields + curve), `writeToDb`'s upsert `set` list gains each (it enumerates columns — every one must be added, and this is exactly the silent-no-op shape the global constraints warn about: after editing, grep the `set` block for all eleven names and fail the task if any is missing). `buildCommanderIndex` completion gains `await stampCatalogRefresh()` (non-fatal, same call the Scryfall seeds make).
+Plus `index-build.test.ts`: header carries the fields on `ok`; **on `degraded`/`absent` the HEADER carries nulls** (R15 — note the write layer's own rule: `seed-index.ts:160` SKIPS the write entirely on `degraded` to preserve the previous row, so "writes nulls" is a fact about `toSupportRows`' output, and the test asserts the header, never a row).
+- [ ] **Step 3: implement.** `parse.ts`: read the counts and curve **at whatever nesting the step-1 recaptured fixture actually shows** — the spec says top level and `panels.mana_curve`, but this file's existing reads are mixed-shape (`bracket_counts` top-level, `deckCount` under `container.json_dict.card`, `parse.ts:56-70`), so the fixture is the authority, with the same finiteness discipline as every other numeric here. Schema: ten nullable `integer` columns + `avg_curve jsonb` on `commander_support`, comment block quoting §4A.7's null rule. `SupportHeader` (+10 fields + curve), `writeToDb`'s upsert `set` list gains each (it enumerates columns — every one must be added, and this is exactly the silent-no-op shape the global constraints warn about: after editing, grep the `set` block for all eleven names and fail the task if any is missing). The stamp goes in `scripts/build-commander-index.ts`'s success branch, NOT inside `buildCommanderIndex` — every I/O edge of that function is injectable (`write`, `clearScores`, `fetch`; `seed-index.ts:18-29`) because it is unit-tested, and a direct call would fire a real DB write in tests.
 - [ ] **Step 4:** `pnpm db:generate` → 0042. Tests PASS. Suite + gate.
 - [ ] **Step 5:** Commit `feat: the EDHREC parse keeps the composition and the curve`.
 
@@ -694,13 +720,16 @@ export const commanderPairSupport = pgTable("commander_pair_support", {
     sql`${t.commanderOracleId} < ${t.partnerOracleId}`),
 ]);
 // commander_pair_support_cards: (pairPK columns → FK composite, cascade) + oracleId,
-// inclusion real, synergy real; PK (commander, partner, oracle); index on (oracle_id).
+// inclusion real, synergy real, AND position integer not null — the list's own order.
+// suggestions-read ranks by LIST POSITION (`rankOf`, suggestions-read.ts:103-108), so a
+// table that stored only inclusion/synergy could not rebuild topCards without silently
+// changing the ranking semantics. PK (commander, partner, oracle); index on (oracle_id).
 // edhrec_pair_cache: same key + order check; payload jsonb not null; fetched_at.
 ```
 
 - [ ] **Step 2: failing tests — `pair.ts`.** `canonicalPair(a, b)` returns the two oracle ids with the lexicographically smaller FIRST — **the one normalisation, used by every write AND every read**: `decks` stores the pair in a meaningful order (`schema.ts:263-267`, the primary is first), so an un-normalised lookup silently misses every row where the primary carries the larger id, and the CHECK constrains storage only. `pairSlugCandidates` returns `[slugA-slugB]` with the two `commanderSlug` halves joined in alphabetical order, and the reverse as the fallback candidate. `resolvePairEdhrecData`: **a 200 whose body is `{"redirect": "/commanders/<slug>"}` is followed, and the STUB is never cached as a payload** (§4A.4a — the 67-byte trap); TTL and 4xx/5xx behaviour mirror `resolveEdhrecData` (fetcher injected). Pair composition sums to **98**, and any invariant check uses `deckBodySize(hasPartner)` (`deck-size.ts:7`), never a literal. `readPairSupport` and the Task 14 pair reads go through `canonicalPair` — pinned by a test whose fixture deck stores the larger id as primary.
-- [ ] **Step 3: the index pass.** `seed-index.ts` gains a pair pass after the singles: `select distinct commander_oracle_id, partner_oracle_id from decks where partner_oracle_id is not null` (normalised to canonical order), fetch each pair page uncached (same `fetchEdhrecUncached` reasoning — and the same politeness: inside the existing serial walk, never a second stream), project through `toSupportRows`'s pair sibling (`toPairRows`: header + cards against the same name index), delete-then-insert per pair. Dozens of pages, growing with what the group plays — never a sweep of the 2,847 possible pairs (§4A.4a names the cost).
-- [ ] **Step 4: the demand path + the preference.** In `suggestions-read.ts` (`:149` today): for a pair deck, first `readPairSupport`; if a pair row with cards exists, build the `topCards`/`inclusionByName`/`synergyByName` inputs from it. Else `resolvePairEdhrecData` through `edhrec_pair_cache` (demand, TTL'd). Else the existing `mergeEdhrecData` fallback — **the merge is not deleted**; a pair EDHREC has no page for keeps today's behaviour (§4A.4a). Extend the existing tests: pair-preferred, cache-fallback, merge-fallback.
+- [ ] **Step 3: the index pass.** `seed-index.ts` gains a pair pass after the singles: `select distinct commander_oracle_id, partner_oracle_id from decks where partner_oracle_id is not null` (through `canonicalPair`), fetched by **`fetchPairUncached(pair)` in `pair.ts`** — a NEW primitive, because no existing one can serve it: `fetchEdhrecUncached(commanderName)` slugifies ONE name (`client.ts:108`) and cannot build a `slugA-slugB` slug, and redirect-stub following must live in this fetch too or the index pass hitting the wrong-order slug parses the 67-byte stub as an absent page — the exact §4A.4a trap, this time in the monthly job. Same no-cache-read/no-cache-write reasoning as `fetchEdhrecUncached`, same politeness: inside the existing serial walk, never a second stream. Project through `toPairRows` (header + cards WITH position, against the same name index), delete-then-insert per pair. Dozens of pages, growing with what the group plays — never a sweep of the 2,847 possible pairs (§4A.4a names the cost).
+- [ ] **Step 4: the demand path + the preference.** In `suggestions-read.ts` (`:149` today): for a pair deck, first `readPairSupport` (through `canonicalPair`); if a pair row with cards exists, rebuild `topCards` **ordered by `position`** and the `inclusionByName`/`synergyByName` maps — which needs a `cards` join for NAMES, because the pair table stores oracle ids and every consumer here keys on lowercased name. Serving from the table sets `degraded: false` (stored index data — same standing as the single-commander support the scoring engine trusts) and leaves the `shoppingFigures` path exactly as it computes today. Else `resolvePairEdhrecData` through `edhrec_pair_cache` (demand, TTL'd, `degraded` from its result as the live path does). Else the existing `mergeEdhrecData` fallback — **the merge is not deleted**; a pair EDHREC has no page for keeps today's behaviour (§4A.4a). Extend the existing tests: pair-preferred (order preserved by position), cache-fallback, merge-fallback.
 - [ ] **Step 5:** Also correct `merge.ts`'s false premise comment ("a pair has no joint rank" — it has: the pair page carries `num_decks` and `rank`; the merge is the no-page fallback and says so).
 - [ ] **Step 6:** `pnpm db:generate` → 0043. Tests PASS. Suite + gate. Commit `feat: partner pairs get their own support, composition and demand cache`.
 
@@ -796,9 +825,10 @@ export type ProfileColours = {
    *  Orchard reads as colourless). Labelled approximate wherever drawn. */
   producibleColors: string[];
   /** Colours the deck's nonland MANA COSTS ask for that no land can produce — the
-   *  disagreement. "Needs" = the WUBRG letters appearing in nonland `manaCost` pips
-   *  (hybrid pips contribute both halves, an over-inclusion documented here), NOT
-   *  colour identity — an activation-cost-only colour is not a cast-time need. */
+   *  disagreement. "Needs" = the WUBRG letters in nonland `manaCost` pips, NOT colour
+   *  identity (an activation-cost-only colour is not a cast-time need). A HYBRID pip is
+   *  unproducible only when NO half is producible — {W/U} in a Plains deck needs
+   *  nothing, and reporting U there would manufacture a disagreement. */
   unproducible: string[];
 };
 export type CompositionTargets = {
@@ -831,7 +861,8 @@ export type BracketPopulation = {
   deckCount: number | null;
   of: "commander" | "pair";          // §6.3a: a pair's population is the pair page's
 };
-export type DetectionCoverage = {   // §6.5's shape (finding 6); strings from bracket/rules.ts
+export type DetectionCoverage = {   // §6.5's shape (finding 6); strings live beside their
+                                    // classifiers (oracle-rules.ts, combo-features.ts)
   massLandDenial: { sources: number; basis: string; knownMiss?: string };
   extraTurn: { sources: number; basis: string };
   twoCardCombos: { sources: number; basis: string };
@@ -867,6 +898,8 @@ it("folds both commanders into EVERY bracket list: a Game Changer commander is i
 it("reads basics by type line", ...)
 it("unproducible reads mana-cost pips, not colour identity — an activation-cost-only
     colour is not a need", ...)
+it("a hybrid pip is unproducible only when NO half is producible — {W/U} with Plains
+    reports nothing", ...)
 it("reports identity violations and banned cards as legality, never as bracket facts", ...)
 it("computes unproducible as needed-minus-producible", ...)
 it("an empty deck: zero counts, permits nothing to violate, no crash", ...)
@@ -929,7 +962,9 @@ Deliberately NOT the catalog generation — `cacheForUser` injects that into the
 
 **Files:**
 - Create: `src/lib/profile/load.ts`
-- Test: `src/lib/profile/load.test.ts` (query text via `.toSQL()` where correlated; assembly is probe territory)
+- Modify: `src/db/schema.ts` (`decks.declared_bracket` — moved HERE from PR 6 so the gather reads a real column; the plan review caught PR 5 consuming a PR 6 migration)
+- Create: `drizzle/0045_*.sql`
+- Test: `src/lib/profile/load.test.ts` (rendered SQL via `PgDialect.sqlToQuery`; assembly is probe territory)
 
 **Interfaces:**
 - Consumes: everything above. Produces: `loadDeckProfile(deckId, userId): Promise<DeckProfile | null>` (null = not the reader's deck — the same refusal `loadDeckStats` makes); `cachedDeckProfile(deckId, userId)` (R18); `loadCandidateFacts(profileDeckIds, commanderIds, oracleId)` for Task 18.
@@ -939,26 +974,30 @@ Deliberately NOT the catalog generation — `cacheForUser` injects that into the
   **The combo query** — the three §4.3b rules IN the SQL, commanders included (rule 3):
 
 ```ts
+// Every any() takes sql.param(...)::uuid[] — the house convention (candidates.ts:396,
+// availability-query.ts:589, price-query.ts:92); an uncast JS array against a uuid
+// column fails at runtime.
 const ids = [...deckIds, commanderId, ...(partnerId ? [partnerId] : [])];
 const commanders = [commanderId, ...(partnerId ? [partnerId] : [])];
 const rows = await db.execute(sql`
   select v.variant_id, v.bracket_tag, v.produces,
          array_agg(vc.oracle_id order by vc.oracle_id) as pieces,
-         bool_or(vc.oracle_id = any(${commanders})) as uses_commander
+         bool_or(vc.oracle_id = any(${sql.param(commanders)}::uuid[])) as uses_commander
   from ${spellbookVariants} v
   join ${spellbookVariantCards} vc on vc.variant_id = v.variant_id
   where v.card_count = 2
     and cardinality(v.requires_template_ids) = 0            -- §4.3b rule 1
     and exists (select 1 from ${spellbookVariantCards} vc2   -- prune before the group
-                where vc2.variant_id = v.variant_id and vc2.oracle_id = any(${ids}))
+                where vc2.variant_id = v.variant_id
+                  and vc2.oracle_id = any(${sql.param(ids)}::uuid[]))
   group by v.variant_id, v.bracket_tag, v.produces
   having bool_and(case when vc.must_be_commander              -- §4.3b rule 2
-                       then vc.oracle_id = any(${commanders})
-                       else vc.oracle_id = any(${ids}) end)`);
+                       then vc.oracle_id = any(${sql.param(commanders)}::uuid[])
+                       else vc.oracle_id = any(${sql.param(ids)}::uuid[]) end)`);
 ```
 
-then `isInfiniteOrGameEnding(produces)` in TS (Task 8) — card count alone is never the test (§5.2).
-- [ ] **Step 2: `.toSQL()` tests** for any correlated projection (the Drizzle qualification trap in AGENTS.md — assert the qualified form, not mere presence). The combo query above is a join with a `having`, which Drizzle qualifies; the test pins `must_be_commander` and both `any` arms are present.
+then `isInfiniteOrGameEnding(produces)` in TS (Task 8) — card count alone is never the test (§5.2). (No index serves the `card_count = 2 and cardinality(...) = 0` filter; fine at Spellbook's scale, and a partial index is the one-line insurance if `probe:bracket`'s timing says otherwise.)
+- [ ] **Step 2: rendered-SQL tests** via `PgDialect.sqlToQuery` — the repo's method for pinning emitted SQL (AGENTS.md's correlated-subquery section); a bare `sql` template has no `.toSQL()`. This query is handwritten with manual aliases, so the test pins the text itself: `must_be_commander`, both `any` arms, and the `::uuid[]` casts present.
 - [ ] **Step 3: the wrapper** (R18):
 
 The fingerprint's inputs are one cheap read — the deck row plus `deck_cards` `(oracleId, quantity)` — so the wrapper reads THOSE, computes the key, and puts everything expensive (flags, combos, staples, composition, population, classifiers, the build) inside the cached closure:
@@ -973,7 +1012,7 @@ export async function cachedDeckProfile(deckId: string, userId: string) {
 }
 ```
 
-`loadDeckProfile` = `loadProfileHead` + `loadDeckProfileFromHead`, so the probe calls the uncached whole and the wrapper shares every line. Honest comment kept: no shipped route calls the wrapper yet; the first Tier B consumer proves stamp-retirement end to end, and its plan carries that as a named task (R18).
+`loadDeckProfile` = `loadProfileHead` + `loadDeckProfileFromHead`, so the probe calls the uncached whole and the wrapper shares every line. **The body builds FROM the head's rows and never re-reads `deck_cards`** — a re-read inside the cached closure could see an edit made after the head read and file a profile built from the new contents under the old fingerprint; the head already holds `(oracleId, qty)`, so the body joins `cards` by those ids. The `decks.declared_bracket` schema step lands here (integer, nullable, `check between 1 and 5`, never inferred or defaulted; written by no surface until Tier B's Round 3 ask) → `pnpm db:generate` → 0045. Honest comment kept: no shipped route calls the wrapper yet; the first Tier B consumer proves stamp-retirement end to end, and its plan carries that as a named task (R18).
 - [ ] **Step 4:** Suite + gate. Commit `feat: loadDeckProfile — the gather, the combo join, the cache wrapper`.
 
 ---
@@ -1012,7 +1051,7 @@ it("thin coverage is reported, and the floor still serves", ...)
 it("a deck holding every floor card has empty missingStaples and full presentStaples", ...)
 ```
 
-- [ ] **Step 2: implement.** Type deltas from `CompositionTargets` vs profile counts by type line (the same bucketing the composition uses — land/creature/instant/sorcery/artifact/enchantment/planeswalker/battle, basic/nonbasic within land); `curve` only when `averageCurve` non-null; `thin` from `commanderDeckCount` under a named const whose value is DERIVED, not invented (§2.4a): read the `deck_count` distribution off the shipped index (one query, or `measure-staples.mts`'s printed corpus stats) and set `THIN_DECK_COUNT` at the bottom decile, recording the percentile, the measured value and the date in the comment. Null `commanderDeckCount` is `thin: true` — no page is the thinnest data there is.
+- [ ] **Step 2: implement.** Type deltas from `CompositionTargets` vs profile counts by type line (the same bucketing the composition uses — land/creature/instant/sorcery/artifact/enchantment/planeswalker/battle, basic/nonbasic within land); `curve` only when `averageCurve` non-null; `thin` from `commanderDeckCount` under a named const: read the `deck_count` distribution off the shipped index (one query) and set `THIN_DECK_COUNT` at the bottom decile — and the comment ADMITS the decile is a convention, not a measurement: the VALUE is read off real data, the PERCENTILE is a chosen round number, and dressing it as derived would be the exact §2.4a sin with better clothes. Record percentile, measured value and date. Null `commanderDeckCount` is `thin: true` — no page is the thinnest data there is.
 - [ ] **Step 3:** PASS. Commit `feat: fitSkeleton — the deck against its measured skeleton`.
 
 ---
@@ -1057,9 +1096,8 @@ it("a deck holding every floor card has empty missingStaples and full presentSta
 
 **Files:**
 - Create: `src/lib/bracket/types.ts`, `src/lib/bracket/rules.ts`, `src/lib/bracket/slot.ts`
-- Modify: `src/db/schema.ts` (`decks.declared_bracket`), `src/lib/profile/load.ts` (reads it)
 - Test: `src/lib/bracket/slot.test.ts`
-- Create: `drizzle/0045_*.sql`
+- (No migration — `decks.declared_bracket` moved to Task 14 / PR 5, which reads it.)
 
 **Interfaces:**
 - Produces:
@@ -1070,7 +1108,10 @@ export type RuleId = "gameChangers" | "massLandDenial" | "extraTurns" | "twoCard
 export type Violation = {
   rule: RuleId; bracket: 1 | 2 | 3;
   cards: CardRef[];                  // receipts, never counts alone (§2.2)
-  combos?: ComboRef[];               // when rule is twoCardCombos
+  combos?: ComboRef[];               // when the RECEIPT is a combo: the twoCardCombos rule,
+                                     // and the B3 extraTurns LOOP violation (R3) — the
+                                     // combo is the evidence B3 fell, so the violations
+                                     // array must be able to say so, not only the limits row
   have: number; limit: number;       // limit 0 where the bracket forbids outright
 };
 export type BracketLimitReport = {
@@ -1108,8 +1149,8 @@ export type BracketVerdict = {
 export function slotDeck(profile: DeckProfile): BracketVerdict;
 ```
 
-`rules.ts` transcribes §6.2's quoted text as the limits table and holds the detection strings (§6.5's exact provenance values — re-measured whenever a classifier changes, mutation-covered by the probe).
-- [ ] **Step 1: schema.** `decks.declared_bracket integer` nullable + `check (declared_bracket between 1 and 5)`, comment: never inferred, never defaulted; written by no shipped surface yet (Tier B owns the ask — §6.1a's interaction is Round 3). `pnpm db:generate` → 0045.
+`rules.ts` transcribes §6.2's quoted text as the limits table and RE-EXPORTS the detection strings, which live beside their classifiers (`oracle-rules.ts`, `combo-features.ts` — PRs 1–2, because `buildDeckProfile` in PR 5 populates `detection` and one definition must serve both; re-measured whenever a classifier changes, mutation-covered by the probe).
+- [ ] **Step 1: `rules.ts`.** The §6.2 limits transcription; `permitsFor`; re-exports of `MLD_DETECTION` / `EXTRA_TURN_DETECTION` (Task 2) and `COMBO_DETECTION` (Task 8) so verdict consumers import one module while the definitions live beside their classifiers. One comment the reasoning review earned: **B2's `loopCombos` flag is always redundant** — any infinite-turns combo already violates B2's combo clause — and it stays anyway, so nobody later "fixes" the redundancy by deleting the B3 half, which is the one that bites.
 - [ ] **Step 2: failing tests** — §8's slot list verbatim plus the boundary table:
 
 ```ts
@@ -1197,7 +1238,7 @@ it("a card completing an INFINITE-TURNS combo on a [3] deck: moves to [4,5] — 
 it("a second combo on a deck already [3,4]: none", ...)
 ```
 
-- [ ] **Step 2: implement.** Recompute `permitsFor` with the candidate folded in; classify: permits changed → `moves` (except the GC path, which is always `counts` with `to` = the new range); GC unchanged-range → `counts`; extra turn at an unmoved range → `unquantified`; tutor → `ruleless`; else `none`. Pure, cheap per row — the property later sub-projects need (§7.2).
+- [ ] **Step 2: implement.** Recompute `permitsFor` with the candidate folded in, then classify by an EXPLICIT precedence, because one card can fire several rules (Underworld Breach is a Game Changer that completes combos) and the four shapes must never be blurred: (1) permits changed by MLD, an extra turn at a B1-permitting deck, or a completed combo → `moves` with THAT rule and its receipts (a completed infinite-turns combo names the loop rule, R3); (2) the candidate is a Game Changer → `counts` with `to` = the new range, and any co-fired combo completion carried in the rule's `combos` receipts so the Tier B sentence explains the true reason; (3) extra turn at an unmoved range → `unquantified`; (4) tutor → `ruleless`; (5) else `none`. Pure, cheap per row — the property later sub-projects need (§7.2).
 - [ ] **Step 3: `loadCandidateFacts`.** Flags from `cards.game_changer` + `card_bracket_flags` + `classifyTutor`; `completesCombos` = the Task 14 combo query with the candidate unioned in, minus the combos already assembled — one-away detection as a diff of two runs of the same rule, never a second predicate that can drift.
 - [ ] **Step 4:** PASS. Commit `feat: bracketDelta — the push check, four shapes never blurred`.
 
@@ -1265,7 +1306,7 @@ it("already at target: items empty, blocked false", ...)
 - [ ] **Step 3: the six database answers** (§8, minus the cache one — R18, stated in the header with where it went):
   1. A draft-staged add moves the slot before any commit (insert a `deck_cards` row, reload, verdict moved).
   2. The combo detected across the join; then the three §4.3b rules one case each: template-gated pair present → not slotted; `mustBeCommander` piece in the 99 → not slotted; the commander as a piece → slotted (the false-NEGATIVE half, the most consequential of the three). Plus the R3 loop case: an assembled variant producing infinite turns (found by QUERY over the ingested table; FAIL if none is buildable from the local catalog) reads `[4,5]` with the combo on the B3 extraTurns row — and its mutation (drop `producesInfiniteTurns` from the B3 test) must fail the run.
-  3. The skeleton join picks the right condition: a mono-white commander resolves `W` and receives Swords to Plowshares; a three-colour one falls back to `count:3` with `basis: "count"`; a missing staple carries the STORED denominator, not a recomputed one. **The fallback states need rows local-dev will not have until a widened index run** (`identity_composition`, pair rows, a commander's `avg_*`) — the probe WRITES sentinel rows for each, capture-before-write and restore in the same `finally` as the fixture user's rows (the `probe:commander-art` pattern), and FAILS rather than skips when a state it claims to test is unreachable. No conditional "when the row exists" checks — that is the silent-pass trap this repo keeps paying for.
+  3. The skeleton join picks the right condition: a mono-white commander resolves `W` and receives Swords to Plowshares; a three-colour one falls back to `count:3` with `basis: "count"`; a missing staple carries the STORED denominator, not a recomputed one. **The fallback states need rows local-dev will not have until a widened index run** (`identity_composition`, pair rows, a commander's `avg_*`) — the probe WRITES sentinels for each, with TWO cleanup shapes kept distinct: a commander's `avg_*` is an UPDATE to an existing `commander_support` row, so it is capture-before-write and RESTORE (the `probe:commander-art` pattern); the `identity_composition` and `commander_pair_support` sentinels are NEW rows, so they are insert-and-DELETE, fabricating the not-null `bracket_counts` on the pair row. Both cleanups in the same `finally` as the fixture user's rows, handles populated before each write. The probe FAILS rather than skips when a state it claims to test is unreachable — no conditional "when the row exists" checks, the silent-pass trap this repo keeps paying for.
   4. Partial detection reported on a fixture holding a known MLD card, **and a flagged COMMANDER case: a deck led by a Game Changer legend (queried by flag, not by name) must slot [3]+ with the commander in the receipts** — the CRITICAL the plan review caught.
   5. Population carries its declared-total denominator, and `of: "pair"` against a pair deck through a sentinel pair row (same capture-restore).
   6. The serialised profile: `JSON.stringify(profile).length` printed and asserted under 2 MB with the fixture's realistic worst case (§5.4 — measured, not assumed).
