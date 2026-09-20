@@ -40,14 +40,14 @@ a slot the deck did not get.
 
 ### 1.2 The measured skeleton already describes how Hugh builds
 
-Across his 19 full staging decks, mean absolute error in land count:
+Across his twenty staging decks (nineteen of them full), mean absolute error in land count:
 
 | against | mean absolute error |
 |---|---|
 | the commander's own measured average | **1.6** |
 | the flat 37 | 2.3 |
 
-Fourteen of twenty decks sit within one land of their measured target. The tail is where it
+Fourteen of the twenty sit within one land of their measured target. The tail is where it
 matters: Yuriko is 11 lands from 37 and 5 from its measured 31; Elves is 8 from 37 and 2 from
 its measured 31. Creature deltas are mostly within ±3, and Goblins, Blood Rites and Yuriko are
 exactly 0.
@@ -245,23 +245,31 @@ against a 12.1 target). The ~42 missing cards are overwhelmingly **basics**, whi
 functional role at all. Non-land coverage is 45.2 of 63.5, a ratio of **0.711** with a standard
 deviation of 0.106.
 
-**Validation against Hugh's 20 real decks**, mean absolute error:
+**Validation against Hugh's 19 human-built decks**, mean absolute error. Re-measured
+2026-09-20 after pre-open review found two defects in the first pass — see the note below.
 
-| role | flat target | per-commander MAE | flat MAE | better by |
-|---|---|---|---|---|
-| ramp | 10 | 2.18 | 2.90 | 25% |
-| draw | 10 | 2.66 | 3.30 | 19% |
-| removal | 8 | 2.91 | 3.55 | 18% |
-| **wipes** | **3** | **0.86** | **2.30** | **63%** |
+| role | flat target | derived | scaled | flat | derived vs flat |
+|---|---|---|---|---|---|
+| ramp | 10 | **1.99** | 2.26 | 2.79 | 29% better |
+| draw | 10 | **2.62** | 2.82 | 3.32 | 21% |
+| removal | 8 | 3.06 | **2.95** | 3.68 | 17% |
+| **wipes** | **3** | **0.85** | 1.04 | **2.42** | **65%** |
 
-Derived means and ranges: ramp 8.5 (1.0 to 25.3), draw 8.3 (1.4 to 43.8), removal 5.2 (0.7 to
-22.3), wipes 0.8 (0.0 to 8.8).
+Derived means and ranges: ramp 7.8 (1.0 to 25.3), draw 8.3 (1.4 to 43.8), removal 5.1 (0.7 to
+22.3), wipes 0.7 (0.0 to 8.8).
 
-**Two caveats that belong in the open rather than in a footnote.** The sample is 20 decks and
-one collection. And the 0.711 coverage ratio is **not a validated scaling constant**: unscaled
-wins for ramp (2.18 against 2.31) while scaled wins for removal (2.91 against 3.12), which is
-within noise. **Ship unscaled and say so.** The defensible claim is that a per-commander figure
-beats a constant; the exact scaling is not earned.
+**Two defects in the first measurement, both found by the pre-open pass and both corrected
+above.** The table mixed conventions — ramp quoted an unscaled figure while the other three
+quoted scaled ones, under one column heading. And the deck population included `Test`, the
+unedited `planFill` output §1.3 identifies as the one deck badly off skeleton: validating these
+targets against the deck they exist to stop the app producing is marking our own homework. The
+figures above exclude it and report both conventions in their own columns.
+
+**Two caveats that belong in the open rather than in a footnote.** The sample is 19 decks and
+one collection. And the 0.711 coverage ratio is **not an earned correction**: derived beats
+scaled on three roles of four, and removal is the lone exception by 0.11, which is inside the
+noise of a 19-deck sample. **Ship unscaled and say so.** The defensible claim is that a
+per-commander figure beats a constant; the exact scaling is not.
 
 **Who takes the measured targets and who keeps flat ones:**
 
@@ -291,7 +299,7 @@ Four reasons it is out. It buys nothing visible: 59 commanders move, by at most 
 100, in exchange for a full rescore plus `probe:score-lock` and `probe:writer-version`
 re-runs. It moves the wrong way: derived targets are mostly *lower* than flat, so they saturate
 more easily and saturation goes from 98.3% to 99.97%, making a quarter of the commander score
-an almost literal constant. It forces an invented number into a score: **369 commanders have a
+an almost literal constant. It forces an invented number into a score: **390 commanders have a
 derived wipes target of 0**, and `min(n, t) / t` is undefined at zero, so somebody would have
 to decide what 0/0 means and bury that decision inside a score, which is the CRISPI failure
 mode exactly. And §4A.6's yardstick argument survives independently: a ranking wants one
@@ -311,9 +319,20 @@ Two consequences, and neither was visible in the figures:
   target** — one card taking two slots' worth of credit.
 
 **The fix is local, not a change to `classifyRoles`.** The derivation and the fill pass the FRONT
-FACE's text when the card is a `modal_dfc`, because that is the text of the spell you cast. The
-classifier keeps its current behaviour everywhere else, since changing it app-wide would move
-figures on surfaces this sub-project does not touch.
+FACE's text, because that is the text of the spell you cast. The classifier keeps its current
+behaviour everywhere else, since changing it app-wide would move figures on surfaces this
+sub-project does not touch.
+
+**It covers `transform` as well as `modal_dfc`, and that was a defect in an earlier draft of
+this section.** Both layouts are cast as their front face; the back arrives later or never.
+Scoping the fix to `modal_dfc` alone would have left **32 of the 82** land-backed cards still
+feeding `{T}: Add …` into `RAMP_PATTERNS` — including `Growing Rites of Itlimoc`, `Treasure Map`
+and both Ojers, which §2.8 names in its own table. `split`, `adventure` and `prepare` are
+excluded deliberately: both halves are castable, so dropping the second would lose a real mode.
+
+**Measured, so the inflation is not hypothetical:** the mean ramp target reads **8.5 on whole
+text against 7.8 on the front face**, and the count of commanders measuring exactly zero wipes
+rises from 369 to **390** once the back faces stop contributing.
 
 **The role targets DESCRIBE decks; the fill PLANS one, and the two must count alike.** The
 derivation adds a card to every role it satisfies — an instant that destroys and draws counts
@@ -326,7 +345,7 @@ its slot once.** The alternative — deriving the targets under the fill's own o
 make a measured figure depend on an implementation detail of the consumer, which is the
 laundering §4A.5 forbids.
 
-This is benign at today's numbers (8.5 + 8.3 + 5.2 + 0.8 = 22.8, under the flat 31) which is why
+This is benign at today's numbers (7.8 + 8.3 + 5.1 + 0.7 = 21.9, under the flat 31) which is why
 it is a correctness fix rather than an outage. **The §2.5 validation table is unaffected**: both
 sides of it were computed with the same every-role-per-card convention, so it compares like with
 like.

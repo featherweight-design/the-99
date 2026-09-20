@@ -444,8 +444,11 @@ against `commander_support` for a commander in that bucket.
 (`gh workflow run "Commander index" -f environment=catalog-staging`, ~50 min) or a reviewer
 loading staging sees a feature that does nothing.
 
-**PR 3 body records** the validation table, both caveats (n=20; the ratio is not a validated
-scaling constant), and the nonbasic-land coverage figure that defeats the "56.9 of 99" objection.
+**PR 3 body records** the validation table, both caveats (n=19 human-built decks, one
+collection; the ratio is not an earned correction), the nonbasic-land coverage figure that
+defeats the "56.9 of 99" objection, and the two defects pre-open review found in the first
+measurement: a table that mixed scaled and unscaled figures under one heading, and a deck
+population that included the app's own unedited fill output.
 
 ---
 
@@ -577,7 +580,7 @@ survives: a fit may carry a role target only with `measured` beside it.
 
 - [ ] **Step 2: Replace the guard test** with the rule that replaced it — every `RoleFit` carries
 `measured`; a commander basis marks them measured; **and a surplus is reported against a measured
-zero** (369 commanders measure 0 wipes, so a deck holding one is OVER, and calling that a
+zero** (390 commanders measure 0 wipes on front-face text, so a deck holding one is OVER, and calling that a
 shortfall would be the flat target's error wearing a measured number's authority).
 
 - [ ] **Step 3: Implement**, reading `profile.roles.counts` against
@@ -1068,6 +1071,6 @@ the thin branch shadowing `count:3` (Task 8), the missing route read (Task 17), 
 generalises `countByType` rather than copying it. `FillRole` gains `"other"` in Task 13 before
 Task 21 or 23 reads it.
 
-**Known risk, stated rather than designed around.** The role derivation rests on 20 decks and one
-collection. It ships as a **target** and never as a score: nothing ranks on it, and a wrong
+**Known risk, stated rather than designed around.** The role derivation rests on 19 human-built
+decks and one collection. It ships as a **target** and never as a score: nothing ranks on it, and a wrong
 figure costs a suggestion rather than a verdict.

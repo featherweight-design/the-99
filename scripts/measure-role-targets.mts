@@ -40,6 +40,28 @@ import { Pool, neonConfig } from "@neondatabase/serverless";
 import ws from "ws";
 import { classifyRoles, ROLE_TARGETS, type Role } from "../src/lib/recs/roles";
 
+/**
+ * The text of the spell you actually CAST.
+ *
+ * `cards.oracle_text` holds BOTH FACES joined "front\n//\nback" (`scryfall/transform.ts:19`),
+ * and `isLandFace` reads the front — so for a land-backed MDFC it returns false and
+ * `classifyRoles` then reads the land back's `{T}: Add {R}` and calls the card RAMP. 82
+ * commander-legal cards are shaped that way, and the inflation is measurable: the mean ramp
+ * target reads 8.5 on whole text against 7.8 on the front face.
+ *
+ * `transform` is included as well as `modal_dfc`. Both are cast as their front face; the back
+ * arrives later or never. Excluding it would leave 32 of the 82 still inflating the figure.
+ *
+ * SPLIT, ADVENTURE and PREPARE are excluded deliberately: both halves are castable, so
+ * dropping the second would lose a real mode.
+ */
+function castFaceText(oracleText: string | null, layout: string): string | null {
+  if (oracleText === null) return null;
+  if (layout !== "modal_dfc" && layout !== "transform") return oracleText;
+  const halves = oracleText.split("\n//\n");
+  return halves.length < 2 ? oracleText : halves[0];
+}
+
 neonConfig.webSocketConstructor = ws;
 const { DATABASE_URL } = requireEnv(["DATABASE_URL"]);
 const client = new Pool({ connectionString: DATABASE_URL });
@@ -76,12 +98,15 @@ function sd(xs: number[]): number {
  */
 async function classifyCatalog(): Promise<Map<string, Role[]>> {
   const rows = await q<{
-    oracle_id: string; type_line: string; oracle_text: string | null; keywords: string[] | null;
-  }>(`select oracle_id, type_line, oracle_text, keywords from cards where commander_legal`);
+    oracle_id: string; type_line: string; oracle_text: string | null;
+    keywords: string[] | null; layout: string;
+  }>(`select oracle_id, type_line, oracle_text, keywords, layout from cards where commander_legal`);
   const out = new Map<string, Role[]>();
   for (const row of rows) {
     out.set(row.oracle_id, classifyRoles({
-      typeLine: row.type_line, oracleText: row.oracle_text, keywords: row.keywords ?? [],
+      typeLine: row.type_line,
+      oracleText: castFaceText(row.oracle_text, row.layout),
+      keywords: row.keywords ?? [],
     }));
   }
   return out;
@@ -171,9 +196,19 @@ async function main() {
   }
 
   // 3 · validation against real decks
+  // HUMAN-BUILT DECKS ONLY, and the exclusion is load-bearing rather than tidy. A deck whose
+  // every row is `auto` is an unedited planFill output — on staging that is `Test`, which reads
+  // 5 creatures against a measured 24 and is the very deck this derivation exists to stop the
+  // app producing. Validating the targets against it would be marking our own homework.
+  //
+  // Scoped to ONE account too: a mean absolute error pooled across accounts is a figure about
+  // no one's decks, and the caption below claims a single builder.
   const deckRows = await q<{ deck_id: string; cid: string; oracle_id: string; quantity: number }>(`
+    with owner as (select user_id from decks group by 1 order by count(*) desc limit 1)
     select d.id as deck_id, d.commander_oracle_id as cid, dc.oracle_id, dc.quantity
-    from decks d join deck_cards dc on dc.deck_id = d.id`);
+    from decks d join deck_cards dc on dc.deck_id = d.id
+    where d.user_id = (select user_id from owner)
+      and exists (select 1 from deck_cards e where e.deck_id = d.id and not e.auto)`);
 
   const have = new Map<string, { cid: string; counts: Record<RoleKey, number> }>();
   for (const row of deckRows) {
@@ -210,8 +245,9 @@ async function main() {
       num(f(mean(errs.map((e) => e.flat)), 2), 10) + num(errs.length, 8));
   }
   if (Number.isFinite(cov?.ratio)) {
-    console.log(`\n  Where "derived" beats "scaled" on one role and loses on another, the coverage`);
-    console.log(`  ratio is not an earned correction. Ship the number that was measured.`);
+    console.log(`\n  Read the two middle columns against each other. Where "derived" wins some roles`);
+    console.log(`  and "scaled" wins others, the coverage ratio is not an earned correction and the`);
+    console.log(`  number to ship is the one that was measured.`);
   } else {
     console.log(`\n  The "scaled" column is absent because section 2 could not derive a ratio.`);
   }
@@ -258,12 +294,18 @@ async function main() {
   console.log(`  commanders saturating ALL FOUR flat targets: ${sat.all_four} of ${sat.commanders}` +
     ` (${f((sat.all_four / sat.commanders) * 100)}%)`);
   console.log(`  commanders short on wipes alone: ${sat.wipe_short}`);
-  console.log(`\n  computeFit's roleCoverage is already nearly inert for a collection this size.`);
-  console.log(`  Per-commander targets are mostly LOWER than flat, so they saturate MORE easily,`);
-  console.log(`  and a quarter of the commander score would become an almost literal constant.`);
-  console.log(`  That, plus the ${zeroWipes} undefined divisions in section 1, is why §2.5 keeps`);
-  console.log(`  score.ts on flat targets. A ranking wants one yardstick across commanders; a`);
-  console.log(`  deck reading wants accuracy for one.`);
+  console.log(`\n  computeFit's roleCoverage is already nearly inert for a collection this size:`);
+  console.log(`  that saturation figure IS the measurement, and it is measured against the FLAT`);
+  console.log(`  targets, which is what score.ts reads today.`);
+  console.log(`\n  WHAT THIS SECTION DOES NOT MEASURE, stated rather than implied: the effect of`);
+  console.log(`  feeding per-commander targets into roleCoverage. That comparison needs the same`);
+  console.log(`  count scored twice, and the spec's figures for it (mean fitRoles 24.97 -> 25.00,`);
+  console.log(`  3,322 -> 3,379 perfect, 59 commanders moving by at most 2 points of 100) were`);
+  console.log(`  taken by hand against catalog-staging and are NOT reproduced here.`);
+  console.log(`\n  What this section does establish is the premise underneath them: the component`);
+  console.log(`  is already saturated, and the ${zeroWipes} commanders measuring exactly zero wipes`);
+  console.log(`  in section 1 would each divide by zero in min(n,t)/t. A ranking wants one`);
+  console.log(`  yardstick across commanders; a deck reading wants accuracy for one.`);
   }
 
   // 5 · the orphan buckets
