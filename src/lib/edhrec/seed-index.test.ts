@@ -1,3 +1,4 @@
+import { PgDialect } from "drizzle-orm/pg-core";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 // How many times the run cleared persisted scores. Injected at every call
@@ -8,7 +9,9 @@ beforeEach(() => { cleared = 0; });
 const stub = vi.hoisted(() => ({ db: {} as Record<string, unknown> }));
 vi.mock("../../db", () => ({ db: stub.db }));
 
-import { buildCommanderIndex } from "./seed-index";
+import { buildCommanderIndex,
+  pairNameFilter,
+} from "./seed-index";
 
 const commander = (name: string, oracleId: string) => ({
   oracleId, name,
@@ -366,5 +369,22 @@ describe("buildCommanderIndex — the pair pass", () => {
     });
     expect(r.pairsFailed).toBe(1);
     expect(r.pairs).toBe(1);
+  });
+});
+
+describe("pairNameFilter", () => {
+  // The name map behind the pair pass. It used to read the WHOLE cards table for a bounded
+  // question — the commander index next door genuinely does need every row, which is what
+  // made the wrong read look like the house pattern.
+  it("keys on the ids it was given rather than scanning the table", () => {
+    const { sql: text } = new PgDialect().sqlToQuery(pairNameFilter(["a", "b"]));
+    expect(text).toContain('"oracle_id" = any(');
+  });
+
+  // The cast is the part that fails at RUNTIME, on a monthly job. A bare JS array against a
+  // uuid column raises rather than returning nothing, so nothing short of running the job
+  // would have said so.
+  it("casts the parameter to uuid[]", () => {
+    expect(new PgDialect().sqlToQuery(pairNameFilter(["a"])).sql).toContain("::uuid[]");
   });
 });

@@ -63,6 +63,23 @@ export type BuildIndexResult = {
  * Normalised through `canonicalPair` at the point of use rather than in SQL, so there is one
  * definition of the order and it lives beside the CHECK constraint that enforces it.
  */
+/**
+ * The pair name map's own filter, extracted so its emitted SQL can be pinned.
+ *
+ * `any(...)::uuid[]` rather than a bare array: an uncast JS array against a uuid column
+ * fails at RUNTIME, on a monthly job, which is the worst place to find out. The repo's rule
+ * — emitted SQL proves the question — applies even to a filter this simple, because nothing
+ * short of running the job would otherwise say so.
+ *
+ * What the test proves is the CAST, not that the filter is applied: every unit test here
+ * injects `loadPairs`, so nothing reaches the call site. Dropping the `.where` would go
+ * unreported, and the honest statement of that is this sentence rather than a check that
+ * does not exist.
+ */
+export function pairNameFilter(oracleIds: string[]) {
+  return sql`${cards.oracleId} = any(${sql.param(oracleIds)}::uuid[])`;
+}
+
 async function loadPairs(): Promise<{ a: string; b: string; nameA: string; nameB: string }[]> {
   const rows = await db
     .selectDistinct({
@@ -73,11 +90,18 @@ async function loadPairs(): Promise<{ a: string; b: string; nameA: string; nameB
     .where(sql`${decks.partnerOracleId} is not null`);
 
   if (rows.length === 0) return [];
+  // Keyed to the ids these pairs actually name, not the whole catalog. The commander index
+  // DOES read every card — `loadNameIndex` resolves EDHREC's names against all of them and
+  // has no smaller key to use — but this map answers a bounded question, and the two reads
+  // are close enough together for the wrong one to look like the house pattern.
+  const pairIds = [...new Set(rows.flatMap((r) => (r.b ? [r.a, r.b] : [])))];
   const names = new Map(
-    (await db.select({ oracleId: cards.oracleId, name: cards.name }).from(cards)).map((c) => [
-      c.oracleId,
-      c.name,
-    ]),
+    (
+      await db
+        .select({ oracleId: cards.oracleId, name: cards.name })
+        .from(cards)
+        .where(pairNameFilter(pairIds))
+    ).map((c) => [c.oracleId, c.name]),
   );
   const seen = new Set<string>();
   const out: { a: string; b: string; nameA: string; nameB: string }[] = [];
