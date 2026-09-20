@@ -1,0 +1,2 @@
+ALTER TABLE "decks" ADD COLUMN "declared_bracket" integer;--> statement-breakpoint
+ALTER TABLE "decks" ADD CONSTRAINT "decks_declared_bracket_range" CHECK ("decks"."declared_bracket" is null or "decks"."declared_bracket" between 1 and 5);

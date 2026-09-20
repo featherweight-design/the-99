@@ -81,3 +81,19 @@ describe("the assembled-combo query", () => {
     }
   });
 });
+
+// `card_count` keeps UPSTREAM's `uses` length while `spellbook_variant_cards` is deduped by
+// oracle id, so the column alone would admit a variant naming one card twice — and a deck
+// holding that single card would be reported as assembling a two-card combo.
+describe("two rows, not merely a card_count of 2", () => {
+  it("requires the group to hold exactly two pieces", () => {
+    expect(rendered()).toContain("having count(*) = 2");
+  });
+
+  it("keeps the count gate and the commander rule as separate clauses", () => {
+    const text = rendered();
+    expect(text.indexOf("having count(*) = 2")).toBeLessThan(
+      text.indexOf("case when vc.must_be_commander"),
+    );
+  });
+});

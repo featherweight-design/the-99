@@ -21,6 +21,23 @@ import type { ManaCurve } from "../decks/stats";
 
 export type CardRef = { oracleId: string; name: string };
 
+/**
+ * A deck row, as every verdict over this profile needs it.
+ *
+ * Carried ON the object rather than passed beside it, because a consumer holding a CACHED
+ * profile has no other way to get these rows — re-reading `deck_cards` itself would be
+ * unsynchronised with the fingerprint the profile was filed under, so an edit between the
+ * two would compare new counts against an old profile's targets and staples. Every verdict
+ * is a pure function over this object, and that is only true if the object is sufficient.
+ */
+export type ProfileCard = {
+  oracleId: string;
+  name: string;
+  typeLine: string;
+  cmc: number;
+  quantity: number;
+};
+
 /** Which classifier claimed a flag. A reader disputing a verdict is owed this. */
 export type FlagSource = "spellbook_sweep" | "oracle_rule";
 export type FlaggedCardRef = CardRef & { sources: FlagSource[] };
@@ -187,6 +204,9 @@ export type DeckProfile = {
   /** Over the deck's OWN inputs. Not the catalog generation: `cacheForUser` injects that into
    *  the key itself, and repeating it would file one input twice. */
   fingerprint: string;
+  /** Every row the deck holds, commanders included and deduped — the same list every count
+   *  on this object was computed from. */
+  cards: ProfileCard[];
   counts: ProfileCounts;
   roles: ProfileRoles;
   curve: ManaCurve;

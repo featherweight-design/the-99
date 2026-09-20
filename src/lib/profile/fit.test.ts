@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 
 import { buildDeckProfile, type ProfileCardRow, type ProfileInput } from "./build";
-import { fitSkeleton, foldCurve, THIN_DECK_COUNT, type CountableCard } from "./fit";
+import { fitSkeleton, foldCurve, THIN_DECK_COUNT } from "./fit";
 import type { CompositionTargets, DetectionCoverage, FlagSource, StapleRef } from "./types";
 
 const DETECTION: DetectionCoverage = {
@@ -26,10 +26,6 @@ const row = (over: Partial<ProfileCardRow> & { oracleId: string }): ProfileCardR
   ...over,
 });
 
-const countable = (r: ProfileCardRow): CountableCard => ({
-  oracleId: r.oracleId, typeLine: r.typeLine, cmc: r.cmc, quantity: r.quantity,
-});
-
 function fit(over: Partial<ProfileInput> = {}, cards: ProfileCardRow[] = []) {
   const profile = buildDeckProfile({
     deckId: "d", fingerprint: "f", cards, commanderOracleIds: ["cmd"], identity: ["G"],
@@ -41,7 +37,9 @@ function fit(over: Partial<ProfileInput> = {}, cards: ProfileCardRow[] = []) {
     detection: DETECTION,
     ...over,
   });
-  return fitSkeleton(profile, cards.map(countable));
+  // The profile alone. The rows travel on it, so this cannot drift from what the profile's
+  // own counts were computed from — which is the whole reason they moved there.
+  return fitSkeleton(profile);
 }
 
 const withComposition = (
@@ -226,5 +224,74 @@ describe("coverage", () => {
     expect(f.basis).toBe("commander");
     expect(f.types).toHaveLength(10);
     expect(f.missingStaples).toHaveLength(1);
+  });
+});
+
+// One DeckProfile must not report three different land counts for the same deck. The fit
+// used `typeLine.includes("land")` over the whole line where `counts.land` and `curve.lands`
+// both use `isLandFace` — the front face, with a word boundary.
+describe("the land test agrees with the rest of the profile", () => {
+  const profileFor = (cards: ProfileCardRow[]) =>
+    buildDeckProfile({
+      deckId: "d", fingerprint: "f", cards, commanderOracleIds: ["cmd"], identity: ["G"],
+      declared: null, condition: "G",
+      // A composition is required or `types` is empty and every assertion below reads
+      // `undefined` — which is a check measuring nothing rather than a check passing.
+      composition: {
+        pair: null,
+        commander: { targets: TARGETS, averageCurve: null },
+        identity: null,
+        count: null,
+      },
+      staples: [], commanderDeckCount: 1000, population: null,
+      mldFlags: new Map<string, FlagSource[]>(),
+      extraTurnFlags: new Map<string, FlagSource[]>(),
+      gameChangerIds: new Set<string>(), twoCardCombos: [], tutorIds: new Set<string>(),
+      detection: DETECTION,
+    });
+
+  // `Fell the Profane // Fell Mire` is an Instant. 83 catalog rows carry a land on the back
+  // face alone, and every one of them would have been a land in this table and not in the
+  // counts beside it.
+  it("does not count a card whose LAND is on the back face", () => {
+    const p = profileFor([
+      row({ oracleId: "fell", name: "Fell the Profane // Fell Mire", typeLine: "Instant // Land" }),
+    ]);
+    const f = fitSkeleton(p);
+    const by = Object.fromEntries(f.types.map((t) => [t.type, t.have]));
+    expect(p.counts.land).toBe(0);
+    expect(by.land).toBe(0);
+  });
+
+  // No word boundary, and `Lander Rizzi` is a land.
+  it("does not count a card whose type merely contains the letters", () => {
+    const p = profileFor([
+      row({ oracleId: "lander", name: "Lander Rizzi", typeLine: "Legendary Artifact Creature — Lander Rogue" }),
+    ]);
+    const f = fitSkeleton(p);
+    const by = Object.fromEntries(f.types.map((t) => [t.type, t.have]));
+    expect(by.land).toBe(0);
+    expect(by.nonbasic).toBe(0);
+  });
+
+  // `Treasure Map // Treasure Cove` is an Artifact. A substring sweep put it on both axes.
+  it("reads every other type off the front face too", () => {
+    const p = profileFor([
+      row({ oracleId: "map", name: "Treasure Map // Treasure Cove", typeLine: "Artifact // Land" }),
+    ]);
+    const by = Object.fromEntries(fitSkeleton(p).types.map((t) => [t.type, t.have]));
+    expect(by.artifact).toBe(1);
+    expect(by.land).toBe(0);
+  });
+
+  it("agrees with counts.land on an ordinary deck", () => {
+    const p = profileFor([
+      row({ oracleId: "forest", typeLine: "Basic Land — Forest", quantity: 10 }),
+      row({ oracleId: "bayou", typeLine: "Land — Swamp Forest", quantity: 5 }),
+      row({ oracleId: "bear", typeLine: "Creature — Bear" }),
+    ]);
+    const by = Object.fromEntries(fitSkeleton(p).types.map((t) => [t.type, t.have]));
+    expect(by.land).toBe(p.counts.land);
+    expect(by.land).toBe(p.curve.lands);
   });
 });

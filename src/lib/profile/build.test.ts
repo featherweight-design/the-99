@@ -421,3 +421,34 @@ describe("the commanders are named on the object", () => {
     expect(p.commanderOracleIds).toEqual(["cmd", "partner"]);
   });
 });
+
+// A pip with a NON-COLOUR alternative needs nothing. An earlier version kept the colour
+// half of `{2/W}` and `{W/P}` and a comment calling them "the same shape" as `{W/U}`; they
+// are the opposite shape, and the result was the exact false positive the hybrid rule
+// exists to prevent.
+describe("a pip that can be paid another way", () => {
+  it("demands no colour for a generic hybrid", () => {
+    expect(manaNeeds("{2/W}{2/W}")).toEqual([]);
+  });
+
+  it("demands no colour for a Phyrexian pip", () => {
+    expect(manaNeeds("{W/P}")).toEqual([]);
+  });
+
+  it("still demands one of the two halves of a colour hybrid", () => {
+    expect(manaNeeds("{W/U}")).toEqual([["W", "U"]]);
+  });
+
+  it("reports nothing unproducible for a deck running only generic hybrids", () => {
+    const p = buildDeckProfile(
+      input({
+        identity: ["W"],
+        cards: [
+          card({ oracleId: "waste", typeLine: "Land", colorIdentity: [], manaCost: null }),
+          card({ oracleId: "procession", manaCost: "{2/W}{2/W}{2/W}" }),
+        ],
+      }),
+    );
+    expect(p.colours.unproducible).toEqual([]);
+  });
+});

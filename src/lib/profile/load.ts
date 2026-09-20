@@ -105,11 +105,18 @@ export function assembledCombosQuery(ids: readonly string[], commanders: readonl
                     where vc2.variant_id = v.variant_id
                       and vc2.oracle_id = any(${sql.param([...ids])}::uuid[]))
       group by v.variant_id, v.bracket_tag, v.produces
-      -- RULE 2: a piece flagged must_be_commander only works from the command zone, so
-      -- holding it in the 99 assembles nothing. RULE 3: the commanders count as held.
-      having bool_and(case when vc.must_be_commander
-                           then vc.oracle_id = any(${sql.param([...commanders])}::uuid[])
-                           else vc.oracle_id = any(${sql.param([...ids])}::uuid[]) end)`;
+      -- TWO ROWS, not merely a card_count of 2. That column keeps UPSTREAM's own uses
+      -- length while spellbook_variant_cards is deduped by oracle id, so a variant naming
+      -- one card twice passes the column test, aggregates to a single piece, and a deck
+      -- holding that ONE card would be reported as assembling a two-card combo — the exact
+      -- over-slot to bracket 4 the §4.3b rules exist to prevent. Latent rather than live:
+      -- the current bulk has no such variant. This makes it stay that way.
+      having count(*) = 2
+        -- RULE 2: a piece flagged must_be_commander only works from the command zone, so
+        -- holding it in the 99 assembles nothing. RULE 3: the commanders count as held.
+        and bool_and(case when vc.must_be_commander
+                          then vc.oracle_id = any(${sql.param([...commanders])}::uuid[])
+                          else vc.oracle_id = any(${sql.param([...ids])}::uuid[]) end)`;
 }
 
 /** The two-card combos this deck ASSEMBLES, by the three §4.3b rules. */

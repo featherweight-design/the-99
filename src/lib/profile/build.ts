@@ -77,8 +77,14 @@ export type ProfileInput = {
 
 const ref = (c: ProfileCardRow): CardRef => ({ oracleId: c.oracleId, name: c.name });
 
-/** Dedupe by oracle id, preserving first-seen order. A commander appended to the rows can
- *  also be a `deck_cards` row in a malformed import, and a list naming it twice is wrong. */
+/**
+ * Dedupe by oracle id, preserving first-seen order.
+ *
+ * A property of this pure function rather than a state its current caller produces —
+ * `loadDeckProfileFromHead` dedupes before building, so a repeated id cannot reach here
+ * from there today. It is kept because a receipt naming the same card twice reads as two
+ * answers to one question, and the next caller of a pure function is not the current one.
+ */
 function uniqueRefs(rows: ProfileCardRow[]): CardRef[] {
   const seen = new Set<string>();
   const out: CardRef[] = [];
@@ -88,6 +94,12 @@ function uniqueRefs(rows: ProfileCardRow[]): CardRef[] {
     out.push(ref(r));
   }
   return out;
+}
+
+/** The rows, deduped on oracle id — the same rule `uniqueRefs` applies to the receipts. */
+function uniqueRows(cards: ProfileCardRow[]): ProfileCardRow[] {
+  const seen = new Set<string>();
+  return cards.filter((c) => (seen.has(c.oracleId) ? false : (seen.add(c.oracleId), true)));
 }
 
 function countCards(cards: ProfileCardRow[]): ProfileCounts {
@@ -135,19 +147,24 @@ const WUBRG = ["W", "U", "B", "R", "G"] as const;
  * whose only red is `{R}: …` would report a red the deck never has to produce at cast time.
  *
  * A HYBRID pip is one pip that either half pays, so it is grouped rather than split — the
- * caller reports it unproducible only when NO half is producible. `{2/W}` is the same shape
- * (generic or white), and `{W/P}` (Phyrexian) likewise offers a non-mana way out, so its
- * colour half alone carries the need.
+ * caller reports it unproducible only when NO half is producible.
+ *
+ * A pip offering a NON-COLOUR alternative needs nothing at all, and is dropped here rather
+ * than reduced to its colour half. `{2/W}` is paid with two generic mana by a deck that
+ * produces no white, and `{W/P}` is paid with two life — so reporting W for either would
+ * name a colour the deck never has to produce, which is the exact false positive the hybrid
+ * rule exists to prevent. An earlier version kept the colour half of both and a comment
+ * claiming they were "the same shape" as `{W/U}`; they are the opposite shape.
  */
 export function manaNeeds(manaCost: string | null): string[][] {
   if (!manaCost) return [];
   const needs: string[][] = [];
   for (const [, body] of manaCost.matchAll(/\{([^}]+)\}/g)) {
-    const halves = body
-      .toUpperCase()
-      .split("/")
-      .filter((h): h is (typeof WUBRG)[number] => (WUBRG as readonly string[]).includes(h));
-    if (halves.length > 0) needs.push([...new Set(halves)]);
+    const halves = body.toUpperCase().split("/");
+    // EVERY half must be a colour. One that is not — a generic number, `P`, `S` — is a way
+    // to pay this pip without that colour, so the pip demands nothing.
+    if (!halves.every((h) => (WUBRG as readonly string[]).includes(h))) continue;
+    needs.push([...new Set(halves)]);
   }
   return needs;
 }
@@ -232,6 +249,10 @@ export function buildDeckProfile(input: ProfileInput): DeckProfile {
     deckId: input.deckId,
     commanderOracleIds: input.commanderOracleIds,
     fingerprint: input.fingerprint,
+    cards: uniqueRows(cards).map((c) => ({
+      oracleId: c.oracleId, name: c.name, typeLine: c.typeLine,
+      cmc: c.cmc, quantity: c.quantity,
+    })),
     counts: countCards(cards),
     roles: rolesOf(cards),
     curve: manaCurve(curveCards),
