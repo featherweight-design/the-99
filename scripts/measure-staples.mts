@@ -33,7 +33,13 @@
 //       no land target can come from here at all. Asked directly.
 //
 // Question 5 is the one that can invalidate a section rather than tune a number,
-// so it prints its own evidence rather than a verdict.
+// so it prints its own evidence rather than a verdict — which is why it prints third,
+// ahead of questions 3 and 4.
+//
+// SECTIONS 6-8 ARE DERIVED OUTPUT, not questions: the ratified floors per identity, the
+// composition check, and the cut table the threshold was chosen from. Numbering them on
+// from the five is deliberate — section 6 used to print as a second "5", so the output
+// had two sections of that number and no way to cite either.
 
 import { requireEnv } from "./lib/env.mjs";
 import { Pool, neonConfig } from "@neondatabase/serverless";
@@ -42,6 +48,14 @@ import ws from "ws";
 neonConfig.webSocketConstructor = ws;
 const { DATABASE_URL } = requireEnv(["DATABASE_URL"]);
 const client = new Pool({ connectionString: DATABASE_URL });
+
+// THE RATIFIED CUT (spec §4A.1, re-ratified 2026-09-19 on the identity axis). Named
+// constants rather than literals, because this script IS the evidence the spec's figures
+// cite: it sat at the retired 25% bar while the spec quoted 757 cards and a 46-card
+// mono-white floor, so re-running it could not reproduce the document it is the source
+// for. A bar that appears three times gets edited in two places eventually.
+const RATIFIED_BREADTH = 0.5;
+const RATIFIED_INCLUSION = 20;
 
 const pct = (n: number, d: number) => (d === 0 ? "—" : `${((n / d) * 100).toFixed(1)}%`);
 const row = (...cells: (string | number)[]) =>
@@ -237,7 +251,7 @@ max inclusion value seen  ${maxIncl ?? "—"}   (the scale: 0-1 or 0-100)`);
   `);
   console.log(row("card / axis", "share", "avg incl") + "   in floor?");
   for (const x of probe) {
-    const inFloor = x.share >= 0.5 && x.incl >= 25;
+    const inFloor = x.share >= 0.5 && x.incl >= RATIFIED_INCLUSION;
     console.log(row(`${x.name.slice(0, 24)} [${x.axis}]`, x.share, `${x.incl}%`) +
       `   ${inFloor ? "YES" : "no"}`);
   }
@@ -246,7 +260,7 @@ max inclusion value seen  ${maxIncl ?? "—"}   (the scale: 0-1 or 0-100)`);
   console.log(`  Command Tower is the counter-case: it must stay OUT of a mono floor, and does.`);
 
   // ---- 5 · THE FLOORS THEMSELVES ----------------------------------------
-  console.log(`\n== 5 · exact-identity floors (buckets >= 100 commanders) ==`);
+  console.log(`\n== 6 · exact-identity floors (buckets >= 100 commanders) ==  [derived, not a question]`);
   const floors = await q<{ id: string; pop: number; cards: number; coloured: number; lands: number }>(`
     with tot as (
       select coalesce(array_to_string(cmd.color_identity,''),'C') id, count(*)::int t
@@ -267,7 +281,7 @@ max inclusion value seen  ${maxIncl ?? "—"}   (the scale: 0-1 or 0-100)`);
            count(*) filter (where p.kind='col')::int coloured,
            count(*) filter (where p.kind='land')::int lands
     from per p join tot t using (id)
-    where p.n::numeric/t.t >= 0.5 and p.incl >= 25
+    where p.n::numeric/t.t >= ${RATIFIED_BREADTH} and p.incl >= ${RATIFIED_INCLUSION}
     group by t.id, t.t order by t.t desc
   `);
   console.log(row("identity", "pop", "cards") + "   coloured  lands");
@@ -285,7 +299,7 @@ max inclusion value seen  ${maxIncl ?? "—"}   (the scale: 0-1 or 0-100)`);
   // that role an average deck for that commander runs. If those sums land near a
   // real 99-card deck, the derivation is sound. If they do not, §4A.2 is wrong
   // and the land target has to come from somewhere else entirely.
-  console.log(`\n== 6 · expected deck composition from summed inclusion ==`);
+  console.log(`\n== 7 · expected deck composition from summed inclusion ==  [derived, not a question]`);
   const comp = await q<{ bucket: string; expected: number }>(`
     with per_commander as (
       select cs.commander_oracle_id,
@@ -318,17 +332,24 @@ max inclusion value seen  ${maxIncl ?? "—"}   (the scale: 0-1 or 0-100)`);
   // side of several, so the line is chosen against the cards it admits and the
   // cards it turns away — the way gap-slot.ts chose 0.005 against Kenrith and
   // Glarb rather than against an aggregate.
-  console.log(`\n== 7 · candidate cuts: breadth share x avg inclusion ==`);
-  const CUTS: [number, number][] = [[0.90, 50], [0.75, 40], [0.60, 30], [0.50, 25], [0.40, 20]];
+  console.log(`\n== 8 · candidate cuts: breadth share x avg inclusion ==  [derived, not a question]`);
+  const CUTS: [number, number][] = [[0.90, 50], [0.75, 40], [0.60, 30], [0.50, 25],
+    [RATIFIED_BREADTH, RATIFIED_INCLUSION], [0.40, 20]];
   const cand = await q<{ name: string; share: number; incl: number; tl: string }>(`
+    with corpus as (select count(*)::numeric n from commander_support)
     select c.name,
-           round((count(*)::numeric / 3279), 3)::float as share,
+           -- The denominator is COUNTED, never a literal. It was hardcoded 3279 twice, so
+           -- against any database whose index is partial or regrown every share in this
+           -- section — and the whole candidate cut-off below — was computed against a
+           -- corpus that no longer existed. Section 6 always did this correctly, per
+           -- bucket, from its own tot CTE.
+           round((count(*)::numeric / (select n from corpus)), 3)::float as share,
            round(avg(csc.inclusion)::numeric, 1)::float as incl,
            split_part(c.type_line, ' ', 1) as tl
     from commander_support_cards csc
     join cards c on c.oracle_id = csc.oracle_id
     group by c.oracle_id, c.name, c.type_line
-    having count(*) >= 0.35 * 3279
+    having count(*) >= 0.35 * (select n from corpus)
     order by avg(csc.inclusion) desc
   `);
   console.log(row("cut (share, inclusion)", "cards in"));

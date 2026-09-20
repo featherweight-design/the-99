@@ -42,7 +42,19 @@ const GRANTS = [
 
 /**
  * Text that mentions an extra turn while granting none — a prevention, a skip, or a
- * restriction. Checked FIRST, because every one of these also matches a grant pattern.
+ * restriction. Checked FIRST.
+ *
+ * An earlier version of this comment said "because every one of these also matches a grant
+ * pattern", and the spec repeated it. Measured: FALSE for three of the four fixtures.
+ * `Stranglehold`, `Trouble in Pairs` and `Gerrard's Hourglass Pendant` read "if a player
+ * would begin an extra turn, that player skips that turn instead" and match NEITHER grant
+ * pattern — they are excluded by matching nothing, so they would pass with this whole array
+ * deleted. Only `Ugin's Nexus` earns the clause, because its death trigger really does say
+ * "take an extra turn after this one".
+ *
+ * The order is still right — a card that both grants and prevents must read as prevention —
+ * but the reason is one card, not four, and the run now prints which mechanism excluded each
+ * fixture so a vacuous row cannot hide behind a passing one.
  */
 const NEGATIONS = [
   { why: "skips that turn", re: /would begin an extra turn.{0,40}skips? that turn/i },
@@ -76,11 +88,36 @@ const KNOWN_NEGATIVE = [
   "Ugin's Nexus", "Obeka, Brute Chronologist", "Sundial of the Infinite", "Chronatog",
 ];
 
+/**
+ * Why a fixture name is missing from the corpus — the CORPUS is commander-legal cards, so a
+ * card can be absent for two quite different reasons and the run used to report both as
+ * "not in catalog under this name".
+ *
+ * `Emrakul, the Aeons Torn` is the case: it is in `cards` under exactly that name and is
+ * BANNED (`commander_legal = false`), so the query filters it. Reporting that as an
+ * unresolvable name told a reader the fixture had a typo, and the recall denominator quietly
+ * dropped a card for a reason nobody had stated.
+ */
+let allNames: Map<string, boolean> | null = null;
+async function loadAllNames(): Promise<void> {
+  const { rows } = await client.query<{ name: string; legal: boolean }>(
+    `select name, commander_legal as legal from cards`,
+  );
+  allNames = new Map(rows.map((r) => [r.name.toLowerCase(), r.legal]));
+}
+function excludedReason(name: string): string {
+  const legal = allNames?.get(name.toLowerCase());
+  if (legal === undefined) return "not in the catalog under this name";
+  return legal ? "in the catalog, legal — but absent from this corpus (unexpected)"
+               : "in the catalog but BANNED (commander_legal = false), so outside this corpus";
+}
+
 async function main() {
   const { rows } = await client.query<{ name: string; oracle_text: string | null }>(
     `select name, oracle_text from cards where commander_legal = true`,
   );
   console.log(`\n== corpus ==\ncommander-legal cards  ${rows.length}`);
+  await loadAllNames();
 
   const flagged = rows.filter((r) => classify(r.oracle_text).hit);
   console.log(`flagged by classifier  ${flagged.length}  (${((flagged.length / rows.length) * 100).toFixed(3)}%)`);
@@ -92,24 +129,38 @@ async function main() {
   let caught = 0, absent = 0;
   for (const n of KNOWN_POSITIVE) {
     const row = byName.get(n.toLowerCase());
-    if (!row) { absent++; console.log(`  ?  ${n.padEnd(26)} not in catalog under this name`); continue; }
+    if (!row) { absent++; console.log(`  ?  ${n.padEnd(26)} ${excludedReason(n)}`); continue; }
     const ok = flaggedNames.has(n.toLowerCase());
     if (ok) caught++;
     console.log(`  ${ok ? "✓" : "✗"}  ${n.padEnd(26)} ${ok ? classify(row.oracle_text).why.join(", ") : "MISSED"}`);
   }
   const denom = KNOWN_POSITIVE.length - absent;
-  console.log(`\n  recall ${caught}/${denom}  (${((caught / denom) * 100).toFixed(1)}%)   [${absent} unresolvable by name]`);
+  console.log(`\n  recall ${caught}/${denom}  (${((caught / denom) * 100).toFixed(1)}%)   [${absent} outside the corpus — see the reason printed above]`);
 
   console.log(`\n== precision: mentions an extra turn, grants none ==`);
   let falsePos = 0;
+  let negationExercised = 0;
   for (const n of KNOWN_NEGATIVE) {
     const row = byName.get(n.toLowerCase());
     if (!row) { console.log(`  ?  ${n.padEnd(26)} not in catalog`); continue; }
     const c = classify(row.oracle_text);
     if (c.hit) falsePos++;
-    console.log(`  ${c.hit ? "✗ FALSE POSITIVE" : "✓"}  ${n.padEnd(26)} ${c.blockedBy.length ? `blocked by: ${c.blockedBy.join(", ")}` : "no grant pattern"}`);
+    // WHICH MECHANISM excluded it, printed per row. A fixture excluded because no grant
+    // pattern matched it tests nothing about NEGATIONS — it passes with that whole array
+    // deleted — and three of the original four were exactly that while the header claimed
+    // all four exercised the clause.
+    const mechanism = c.blockedBy.length
+      ? `NEGATION earned it — blocked by: ${c.blockedBy.join(", ")}`
+      : `matched no grant pattern (does NOT exercise NEGATIONS)`;
+    if (c.blockedBy.length) negationExercised++;
+    console.log(`  ${c.hit ? "✗ FALSE POSITIVE" : "✓"}  ${n.padEnd(26)} ${mechanism}`);
   }
   console.log(`\n  false positives ${falsePos}`);
+  console.log(`  fixtures actually exercising the negation clause: ${negationExercised} of ${KNOWN_NEGATIVE.length}`);
+  if (negationExercised === 0) {
+    console.log(`  WARNING: no fixture exercises NEGATIONS — this precision run would pass`);
+    console.log(`  with the whole negation array deleted, and measures nothing about it.`);
+  }
 
   // THE SWEEP. A curated positive set only finds what its author thought of; this finds the
   // rest. Every card whose text mentions an extra turn, split by whether the rule claims it.

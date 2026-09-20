@@ -146,8 +146,9 @@ Each entry names the task that implements it.
   Nothing about the shape is assumed from the OpenAPI schema.
 - **R8 (§13.3) — the classifiers' production home is `src/lib/bracket/oracle-rules.ts`.**
   `measure-mld.mts` and `measure-extra-turns.mts` delete their local pattern consts and import
-  the production module, then both are re-run to confirm the committed figures (22/24, zero
-  false positives; 21/21, 52-of-56 sweep) before anything consumes the module (Task 2).
+  the production module, then both are re-run to confirm the committed figures (22/24 recall,
+  40 flagged, zero false positives against a 22-card negative set; 21/21, 52-of-56 sweep)
+  before anything consumes the module (Task 2).
 - **R9 (§13.3) — three writers stamp `catalog_refreshes`,** all non-fatally through the
   existing `stampCatalogRefresh`: `db:seed:combos` (Task 6), `db:build:staples` (Task 11), and
   the widened index build (Task 9 — finding 9 above: it never stamped, and it now writes
@@ -396,7 +397,9 @@ expect(isExtraTurn(TIME_WARP_TEXT)).toBe(true);
 
 Oracle texts inline in the test file (short, stable strings — a DB read in a unit test is the thing this repo never does).
 - [ ] **Step 2:** run — FAIL (module absent).
-- [ ] **Step 3: implement.** Move `PATTERNS` (all 14 clauses, `measure-mld.mts:40-63`) and `GRANTS`/`NEGATIONS` (`measure-extra-turns.mts:38-52`) into the module **verbatim** — the figures were measured against these exact regexes, and an edit here invalidates the measurement:
+- [ ] **Step 3: implement.** Move `PATTERNS` and `GRANTS`/`NEGATIONS` out of the measure scripts into the module **exactly as they stand on this branch** — including the guards added 2026-09-19 (§4.2a), which are the difference between flagging 40 cards and flagging 51. Re-running both scripts after the move must reproduce **22/24** and **21/21**; a different figure means the move changed a pattern.
+
+  **Do not "simplify" a guard while moving it.** Each one is a clause of WotC's definition and each was paid for by a card that shipped wrong without it: `\b` before `lands don't untap` (else `Islands`), `target` excluded (else a three-land one-turn effect), `you` excluded (else a self-drawback), narrowing adjectives and land-naming exception clauses on `destroy all permanents` (else `Scourglass`, whose text spares lands outright). The `Worldslayer` case is the one that shows the guards are not interchangeable — see §4.2a.
 
 ```ts
 export function isMassLandDenial(text: string | null): boolean {
@@ -417,7 +420,7 @@ export const EXTRA_TURN_DETECTION = { sources: 2,
 ```
 
 - [ ] **Step 4:** tests PASS.
-- [ ] **Step 5:** Rewire both measure scripts to import from `../src/lib/bracket/oracle-rules` and delete their local consts. Re-run both against local-dev: `pnpm tsx scripts/measure-mld.mts` must print **recall 22/24, false positives 0**; `pnpm tsx scripts/measure-extra-turns.mts` must print **21/21, 0 false positives, 52 of 56 claimed / 4 unclaimed-all-preventions**. Any drift = stop, find the edit.
+- [ ] **Step 5:** Rewire both measure scripts to import from `../src/lib/bracket/oracle-rules` and delete their local consts. Re-run both against local-dev: `pnpm tsx scripts/measure-mld.mts` must print **recall 22/24, 40 flagged, false positives 0 against the 22-card set**; `pnpm tsx scripts/measure-extra-turns.mts` must print **21/21, 0 false positives, 52 of 56 claimed, and `fixtures actually exercising the negation clause: 1 of 4`**. Any drift = stop, find the edit. That last line is deliberately part of the expected output: it is the one number that says the precision set measures the clause rather than passing over it.
 - [ ] **Step 6:** Suite + gate. Commit `refactor: oracle-text bracket classifiers get one production home`.
 
 ---

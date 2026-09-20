@@ -281,9 +281,11 @@ sharpens the reasoning.
   `commander_support`, written by the index build's existing fetch. One run of the existing
   monthly job; no new endpoint and no additional request volume.
 - **Two oracle-text classifiers** as a second source beside the Spellbook sweep, each measured
-  before being specced (§4.2): **mass land denial** at 91.7% recall / zero false positives
-  (union with the sweep 23/24), and **extra turns** at 100% recall / zero false positives, with
-  no misses among the 56 cards whose oracle text mentions an extra turn.
+  before being specced (§4.2): **mass land denial** at 91.7% recall, zero false positives
+  **against its curated negative set** (union with the sweep 23/24), and **extra turns** at
+  100% recall / zero false positives, with no misses among the 56 cards whose oracle text
+  mentions an extra turn. The scope on that first figure is load-bearing and an earlier draft
+  omitted it — see §4.2a.
 - **Legality as its own fact-group**, read from `cards.commander_legal` rather than the sweep —
   complete and local, where the sweep knows 28.5% of cards (§4.3a).
 - **Pair pages for partner commanders** (§4A.4a): pairs present in `decks` fetched by the
@@ -440,9 +442,45 @@ number**, quoted rather than chosen. §2.4a is satisfied here by citation rather
 measurement, and it is the only place in this document where that is true.
 
 **Measured before it was believed** (`scripts/measure-mld.mts`, committed, read-only): against
-24 cards that unambiguously qualify, **recall 22/24 (91.7%)** with **zero false positives** on
-a curated negative set (`Strip Mine`, `Path to Exile`, `Beast Within`, `Scapeshift` and eight
-more), flagging **51 of 31,830** commander-legal cards.
+24 cards that unambiguously qualify, **recall 22/24 (91.7%)** with **zero false positives
+against its curated negative set**, flagging **40 of 31,830** commander-legal cards.
+
+### 4.2a The precision claim had the wrong scope, and eleven cards were paying for it
+
+Recorded in full because the failure is this document's own method turned on itself.
+
+"Zero false positives" was true of a **12-card curated negative set** and was written as
+though it were a fact about the catalog. It was not. The classifier flagged **51** cards; a
+read of all 51 finds **eleven** that do not meet the quoted definition:
+
+| flagged card | why it is not mass land denial |
+|---|---|
+| `Choke`, `Curse of Marit Lage` | `Islands don't untap` — matched INSIDE the word `Islands`; a colour hoser, not four lands per player |
+| `Reduce // Rubble` | `up to three **target** lands … **next** untap step` — bounded and temporary |
+| `Lorthos, the Tidemaker` | eight **targeted** permanents for one untap step — same shape |
+| `Embargo` | `**Nonland** permanents don't untap` — the exact opposite of this rule |
+| `Freyalise's Radiance` | `**Snow** permanents` — a snow hoser, on the `Choke` pattern |
+| `Mungha Wurm` | `**You** can't untap more than one land` — a drawback on its own card |
+| `Scourglass` | `destroy all permanents **except for artifacts and lands**` |
+| `Wirefly Hive`, `Celestial Kirin`, `Season of Gathering` | `destroy all permanents` + a qualifier naming a subset that need not contain lands |
+
+Every one was **already being printed** by the script, in a section headed *"everything else
+it flagged (eyeball for precision)"* — truncated at 40 rows, and never read. The instrument
+was working; the reading was not, and the figure quoted beside it implied a sweep nobody had
+done.
+
+**The fix was clauses, never a suppression list** — the trap named below in this same
+section. `\b` on `lands don't untap`; `target` excluded there and on the permanents clause;
+narrowing adjectives (`nonland`, `snow`, `those`) and land-naming exception clauses excluded on
+`destroy all permanents`; `you` excluded on `can't untap more than`. Recall is **unchanged at
+22/24** and the flag count falls **51 → 40**. `Worldslayer` is the case that shaped the last
+of those: `destroy all permanents other than this Equipment` kills every land and IS mass land
+denial, so the guard tests whether the exception NAMES LANDS rather than whether an exception
+exists — a blunter guard loses it.
+
+All eleven are now in the negative fixture (22 cards), and the script's sweep section prints
+**every** flagged card with no truncation. **A precision claim about the catalog costs a human
+reading that list**, and the script now says so instead of printing a number nobody derived.
 
 Its first version scored 66.7%, and the difference is a trap worth recording: every miss was a
 *wording variant of a clause already in the definition* — the Orb/Stasis family says "keep
@@ -462,9 +500,19 @@ and grant none.
 
 The reading that earns it is the third one, which a curated set cannot give. Sweeping the whole
 catalog for any card whose text **mentions** an extra turn: **56 cards, 52 claimed, 4
-unclaimed** — and all four are genuine prevention effects (`Stranglehold`, `Trouble in Pairs`,
-`Gerrard's Hourglass Pendant`, `Ugin's Nexus`), each caught by the negation clause rather than
-missed.
+unclaimed** — `Stranglehold`, `Trouble in Pairs`, `Gerrard's Hourglass Pendant` and
+`Ugin's Nexus`, none of them wrongly missed.
+
+**Two corrections to an earlier draft of that sentence, which said "all four are genuine
+prevention effects, each caught by the negation clause".** Neither half held. The first three
+match **no grant pattern at all** — *"if a player would begin an extra turn, that player skips
+that turn instead"* contains no *"takes an extra turn"* — so they are excluded by matching
+nothing and would read the same with the negation array deleted. And `Ugin's Nexus` is not
+purely a prevention effect: its death trigger reads *"instead exile it and **take an extra
+turn after this one**"*, which is exactly why it is the **one** fixture the negation clause
+actually earns. The run now prints, per fixture, which mechanism excluded it, and warns when
+that count reaches zero — a precision set that exercises nothing is the vacuous-test class
+this repository keeps paying for, and here it was three rows in four.
 
 **The denominator is 56, not 31,830, and an earlier draft said otherwise.** A card granting an
 extra turn in wording the search phrase does not match is invisible to the instrument, exactly
@@ -472,9 +520,13 @@ as it is for mass land denial. What this shows is that among cards the phrase re
 is missed — a stronger result than the MLD fixture gives, and not a completeness claim over the
 catalog.
 
-The negation clause is why a naive `/extra turn/` match is wrong: **every prevention effect
-also matches a grant pattern**, so a rule without it flags the cards that do the opposite — and
-at Bracket 1 that moves a deck out over a card granting nothing.
+The negation clause is why a naive `/extra turn/` match is wrong: **a card can both prevent
+and grant**, and it must read as prevention. `Ugin's Nexus` is that card — it skips everyone
+else's extra turns and takes one itself when it dies — so a rule without the clause flags it,
+and at Bracket 1 that moves a deck out over a card whose whole purpose is stopping extra
+turns. (An earlier draft generalised this to *"every prevention effect also matches a grant
+pattern"*, which is false: the other three preventions match no grant pattern at all. One card
+earns the clause, and one is enough.)
 
 **Every flag carries its sources** (`spellbook_sweep` | `oracle_rule`), **per flag and as a
 set** (§4.3), so a reader disputing a verdict is owed which classifier made the claim — and
@@ -806,15 +858,23 @@ print 46 rows, and `weighted_rank` (§4A.2) is what orders them.
 and would pass any identity test; what excludes it is inclusion, which is the second axis
 earning its place. `Temple of the False God` is excluded at 12.2% with room to spare.
 
-Floor sizes across the 15 identity buckets that clear the sample bar:
+Floor sizes across the 15 identity buckets that clear the sample bar, **at the ratified
+(0.50, 20) cut** — re-derived 2026-09-19 and summing to the 757 quoted above:
 
 | identity | commanders | cards | coloured | lands |
 |---|---|---|---|---|
-| W · R · B · U · G | 336 · 330 · 304 · 288 · 268 | 27 · 29 · 40 · 34 · 32 | 15 · 18 · 24 · 22 · 24 | 5 · 4 · 8 · 5 · 4 |
-| RW · BR · GW · UW · BU | 139 · 133 · 130 · 130 · 123 | 29 · 36 · 33 · 31 · 34 | 10 · 13 · 16 · 11 · 11 | 13 · 16 · 14 · 14 · 17 |
-| GU · RU · GR · BW · BG | 115 · 114 · 112 · 107 · 106 | 32 · 47 · 39 · 32 · 31 | 17 · 27 · 22 · 14 · 13 | 13 · 14 · 14 · 14 · 15 |
+| W · R · B · U · G | 336 · 330 · 304 · 288 · 268 | 46 · 43 · 59 · 52 · 54 | 27 · 27 · 36 · 33 · 38 | 9 · 6 · 11 · 8 · 11 |
+| RW · BR · GW · UW · BU | 139 · 133 · 130 · 130 · 123 | 46 · 48 · 48 · 43 · 46 | 15 · 21 · 24 · 18 · 17 | 23 · 20 · 21 · 18 · 21 |
+| GU · RU · GR · BW · BG | 115 · 114 · 112 · 107 · 106 | 46 · 68 · 48 · 56 · 54 | 24 · 40 · 25 · 25 · 24 | 18 · 20 · 20 · 23 · 25 |
 
-Two-colour floors carry **13–17 lands each** — the identity's dual lands. A mana base is the
+**An earlier draft of this table carried the RETIRED 25% figures** — 27 cards for mono-white,
+506 in total — printed ten lines after the text ratifying 20% and quoting 757. The cause was
+not a transcription slip: `measure-staples.mts` itself still applied the 25% bar, so the table
+was an accurate record of what the committed instrument produced and the instrument disagreed
+with the document it was the evidence for. Both are corrected, and the bar now lives in one
+named constant in that script rather than in three literals.
+
+Two-colour floors carry **18–25 lands each** — the identity's dual lands. A mana base is the
 thing the motivating deck lacked, and the colour-count floor could not name a single one of
 them.
 
