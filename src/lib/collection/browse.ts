@@ -15,6 +15,7 @@ const WUBRG_ORDER: Record<string, number> = { W: 0, U: 1, B: 2, R: 3, G: 4 };
  * could not represent that, which is why the modal caption reads set + collector number here.
  */
 import type { PrintingPrices } from "../cards/price-lookup";
+import type { CardFact } from "../copy/card-mark";
 
 export type BrowsePrinting = {
   setCode: string;           // uppercased for display; stored lowercase
@@ -132,6 +133,21 @@ export type BrowseCard = {
    * and card-modal build BrowseCard literals that have no availability to give.
    * "Absent" and "read failed" both correctly render nothing.
    */
+  /**
+   * The standing bracket facts this card carries — Game Changer, mass land denial,
+   * extra turns. Drawn as a mark wherever the card appears.
+   *
+   * OMITTED WHEN EMPTY rather than sent as `[]`, and that is a payload decision as much
+   * as a semantic one: the overwhelming majority of cards carry none, this list is the
+   * largest payload in the app, and an empty array per card would spend bytes to say
+   * nothing. Absent means the card carries no fact — which is also exactly what the
+   * flags table's own absence means.
+   *
+   * It is NOT a completeness claim in either direction. Detection on two of the three is
+   * measured and PARTIAL, so an absent list is silence rather than a cleared check, and
+   * nothing drawn from it may say otherwise.
+   */
+  facts?: CardFact[];
   availability?: Availability | null;
   /**
    * The decks printing this card, which is NOT part of `availability.claims` and
@@ -277,6 +293,12 @@ export type RawCollectionRow = {
   keywords: string[];
   rarity: string;
   colorIdentity: string[];
+  /**
+   * Scryfall's own `game_changer`. It rides the card row, so every reader that already
+   * selects a card gets it free — which is why it is here and the other two facts are
+   * not: those cost a join and are attached per card actually drawn.
+   */
+  gameChanger: boolean;
   layout: string;
   backImageUri: string | null;
   /** From `sets`, joined on the holding's set code. Null when the catalog has no row. */
@@ -483,6 +505,7 @@ export function aggregateCollection(rows: RawCollectionRow[]): BrowseCard[] {
         keywords: r.keywords,
         rarity: coerceRarity(r.rarity),
         colorIdentity: r.colorIdentity,
+        facts: r.gameChanger ? ["gameChanger"] : undefined,
         imageUri: null,
         printedName: null,
         layout: r.layout,
@@ -810,6 +833,7 @@ export async function selectCollectionRows(
       keywords: cards.keywords,
       rarity: cards.rarity,
       colorIdentity: cards.colorIdentity,
+      gameChanger: cards.gameChanger,
       layout: cards.layout,
       backImageUri: cards.backImageUri,
       exactImageUri: exact.imageUri,
@@ -860,10 +884,41 @@ export async function selectCollectionRows(
   return rows;
 }
 
+/**
+ * Attach the two bracket facts that are NOT on a card row.
+ *
+ * `game_changer` is already aggregated — it rides `cards` — so this asks only about
+ * mass land denial and extra turns, which live in `card_bracket_flags`. One query for
+ * the whole collection rather than one per card.
+ *
+ * NULL-SAFE BY OMISSION, in the one direction this is allowed to fail: a card with no
+ * row carries neither flag, and a read that comes back empty leaves every card exactly
+ * as `aggregateCollection` left it. The surface then draws fewer marks than it might
+ * have, which is silence — never a claim that a card is clear.
+ */
+async function attachBracketFacts(cards: BrowseCard[]): Promise<BrowseCard[]> {
+  const { loadBracketFlags } = await import("../bracket/flags-read");
+  const flags = await loadBracketFlags(cards.map((c) => c.oracleId));
+  if (flags.size === 0) return cards;
+  for (const card of cards) {
+    const row = flags.get(card.oracleId);
+    if (!row) continue;
+    const extra: CardFact[] = [];
+    if (row.massLandDenial) extra.push("massLandDenial");
+    if (row.extraTurn) extra.push("extraTurns");
+    if (extra.length === 0) continue;
+    // Fixed order wherever more than one appears: gameChanger, massLandDenial,
+    // extraTurns — which is the order `CARD_FACTS` states and the key lists.
+    card.facts = [...(card.facts ?? []), ...extra];
+  }
+  return cards;
+}
+
 export const loadBrowseCards = cache(async function loadBrowseCards(
   userId: string,
 ): Promise<BrowseListCard[]> {
-  return toListCards(aggregateCollection(await selectCollectionRows(userId)));
+  const aggregated = aggregateCollection(await selectCollectionRows(userId));
+  return toListCards(await attachBracketFacts(aggregated));
 });
 
 /**

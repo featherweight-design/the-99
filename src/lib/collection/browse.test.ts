@@ -53,6 +53,7 @@ const raw = (over: Partial<RawCollectionRow> = {}): RawCollectionRow => ({
   exactBackImageUri: null, representativeBackImageUri: null,
   exactArtCropUri: null, representativeArtCropUri: null, cardArtCropUri: null,
   name: "Sol Ring", typeLine: "Artifact", manaCost: "{1}", cmc: 2, oracleText: null,
+  gameChanger: false,
   keywords: [], rarity: "uncommon", colorIdentity: [],
   layout: "normal", backImageUri: null,
   scryfallId: null,
@@ -805,5 +806,31 @@ describe("cssUrl", () => {
   });
   it("leaves parentheses literal — legal inside the quoted string", () => {
     expect(cssUrl("https://x.test/a(b).jpg")).toBe('url("https://x.test/a(b).jpg")');
+  });
+});
+
+describe("bracket facts on the browse payload", () => {
+  it("omits the list entirely for a card carrying no fact", () => {
+    // The payload rule: this is the largest list in the app and the overwhelming
+    // majority of cards carry nothing, so an empty array per card would spend bytes
+    // to say nothing. Absent is also what the flags table's own absence means.
+    const [card] = aggregateCollection([raw({ gameChanger: false })]);
+    expect(card.facts).toBeUndefined();
+    // Asserted on the SERIALIZED form, because bytes over the wire are the thing the
+    // rule is about — an `undefined` value still leaves a key on the object.
+    expect(JSON.stringify(card)).not.toContain("facts");
+  });
+
+  it("carries gameChanger straight off the card row", () => {
+    const [card] = aggregateCollection([raw({ gameChanger: true })]);
+    expect(card.facts).toEqual(["gameChanger"]);
+  });
+
+  it("survives the list trimmer, which is what the client actually receives", () => {
+    // `toListCards` destructures a handful of fields away and spreads the rest; a
+    // field added to BrowseCard and not to that spread would vanish between the
+    // server and the row that draws it.
+    const [listed] = toListCards(aggregateCollection([raw({ gameChanger: true })]));
+    expect(listed.facts).toEqual(["gameChanger"]);
   });
 });

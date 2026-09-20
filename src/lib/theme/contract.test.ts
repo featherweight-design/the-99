@@ -12,7 +12,7 @@ const CSS = readFileSync(
 );
 const THEMES = parseThemeBlocks(CSS);
 
-// The 37 keys, spelled out rather than derived from :root. Derived, a token
+// The 38 keys, spelled out rather than derived from :root. Derived, a token
 // dropped from every theme at once would still pass.
 const CONTRACT = [
   "bg", "surface", "surface-raised", "surface-rail", "surface-sunken",
@@ -22,6 +22,12 @@ const CONTRACT = [
   "accent", "accent-hover", "accent-strong", "accent-shadow", "accent-dim",
   "accent-mid", "success", "warning", "danger", "avail-soft", "avail-hard",
   "avail-hard-fg", "avail-over-fg", "avail-over-border", "w", "u", "b", "r", "g",
+  // Theme-INDEPENDENT, exactly as the WUBRG pips are: `--fact` marks a standing
+  // bracket fact about a card, and a bracket fact is the format's vocabulary rather
+  // than this app's mood. It is in CONTRACT because every theme must still declare
+  // it — an unset custom property fails silently, which is the hazard check:tokens
+  // exists for — and the duplicate check is what pins it to one value across six.
+  "fact",
   "font-display-face",
 ];
 
@@ -84,7 +90,7 @@ describe("theme contract", () => {
       return value;
     };
 
-    it("declares exactly the 37 contract keys", () => {
+    it("declares exactly the 38 contract keys", () => {
       expect([...tokens.keys()].sort()).toEqual([...CONTRACT].sort());
     });
 
