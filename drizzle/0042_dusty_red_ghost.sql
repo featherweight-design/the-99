@@ -42,6 +42,17 @@ CREATE TABLE "edhrec_pair_cache" (
 	CONSTRAINT "edhrec_pair_cache_order_check" CHECK ("edhrec_pair_cache"."commander_oracle_id" < "edhrec_pair_cache"."partner_oracle_id")
 );
 --> statement-breakpoint
+ALTER TABLE "commander_support" ADD COLUMN "avg_land" integer;--> statement-breakpoint
+ALTER TABLE "commander_support" ADD COLUMN "avg_basic" integer;--> statement-breakpoint
+ALTER TABLE "commander_support" ADD COLUMN "avg_nonbasic" integer;--> statement-breakpoint
+ALTER TABLE "commander_support" ADD COLUMN "avg_creature" integer;--> statement-breakpoint
+ALTER TABLE "commander_support" ADD COLUMN "avg_instant" integer;--> statement-breakpoint
+ALTER TABLE "commander_support" ADD COLUMN "avg_sorcery" integer;--> statement-breakpoint
+ALTER TABLE "commander_support" ADD COLUMN "avg_artifact" integer;--> statement-breakpoint
+ALTER TABLE "commander_support" ADD COLUMN "avg_enchantment" integer;--> statement-breakpoint
+ALTER TABLE "commander_support" ADD COLUMN "avg_planeswalker" integer;--> statement-breakpoint
+ALTER TABLE "commander_support" ADD COLUMN "avg_battle" integer;--> statement-breakpoint
+ALTER TABLE "commander_support" ADD COLUMN "avg_curve" jsonb;--> statement-breakpoint
 ALTER TABLE "commander_pair_support" ADD CONSTRAINT "commander_pair_support_commander_oracle_id_cards_oracle_id_fk" FOREIGN KEY ("commander_oracle_id") REFERENCES "public"."cards"("oracle_id") ON DELETE no action ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "commander_pair_support" ADD CONSTRAINT "commander_pair_support_partner_oracle_id_cards_oracle_id_fk" FOREIGN KEY ("partner_oracle_id") REFERENCES "public"."cards"("oracle_id") ON DELETE no action ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "commander_pair_support_cards" ADD CONSTRAINT "commander_pair_support_cards_oracle_id_cards_oracle_id_fk" FOREIGN KEY ("oracle_id") REFERENCES "public"."cards"("oracle_id") ON DELETE no action ON UPDATE no action;--> statement-breakpoint

@@ -1,6 +1,6 @@
 {
-  "id": "8e55c147-354c-4f66-98fa-145b074f4dda",
-  "prevId": "1d266f0c-fb90-4e6f-a0e1-9ee6591ee4f1",
+  "id": "fd29e8ad-cc04-40a6-94c6-f992e47bc42e",
+  "prevId": "c0cbf079-c98a-4efd-ad34-cc1576c8e3e0",
   "version": "7",
   "dialect": "postgresql",
   "tables": {
@@ -162,6 +162,87 @@
         "card_assignments_copies_positive": {
           "name": "card_assignments_copies_positive",
           "value": "\"card_assignments\".\"copies\" > 0"
+        }
+      },
+      "isRLSEnabled": false
+    },
+    "public.card_bracket_flags": {
+      "name": "card_bracket_flags",
+      "schema": "",
+      "columns": {
+        "oracle_id": {
+          "name": "oracle_id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true
+        },
+        "mass_land_denial": {
+          "name": "mass_land_denial",
+          "type": "boolean",
+          "primaryKey": false,
+          "notNull": true,
+          "default": false
+        },
+        "mass_land_denial_sources": {
+          "name": "mass_land_denial_sources",
+          "type": "text[]",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'{}'"
+        },
+        "extra_turn": {
+          "name": "extra_turn",
+          "type": "boolean",
+          "primaryKey": false,
+          "notNull": true,
+          "default": false
+        },
+        "extra_turn_sources": {
+          "name": "extra_turn_sources",
+          "type": "text[]",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'{}'"
+        },
+        "computed_at": {
+          "name": "computed_at",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {
+        "card_bracket_flags_oracle_id_cards_oracle_id_fk": {
+          "name": "card_bracket_flags_oracle_id_cards_oracle_id_fk",
+          "tableFrom": "card_bracket_flags",
+          "tableTo": "cards",
+          "columnsFrom": [
+            "oracle_id"
+          ],
+          "columnsTo": [
+            "oracle_id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {
+        "card_bracket_flags_mld_sources_check": {
+          "name": "card_bracket_flags_mld_sources_check",
+          "value": "\"card_bracket_flags\".\"mass_land_denial\" = (cardinality(\"card_bracket_flags\".\"mass_land_denial_sources\") > 0)"
+        },
+        "card_bracket_flags_et_sources_check": {
+          "name": "card_bracket_flags_et_sources_check",
+          "value": "\"card_bracket_flags\".\"extra_turn\" = (cardinality(\"card_bracket_flags\".\"extra_turn_sources\") > 0)"
+        },
+        "card_bracket_flags_source_values_check": {
+          "name": "card_bracket_flags_source_values_check",
+          "value": "\"card_bracket_flags\".\"mass_land_denial_sources\" <@ array['spellbook_sweep', 'oracle_rule']::text[]\n        and \"card_bracket_flags\".\"extra_turn_sources\" <@ array['spellbook_sweep', 'oracle_rule']::text[]"
         }
       },
       "isRLSEnabled": false
@@ -2792,6 +2873,160 @@
       "uniqueConstraints": {},
       "policies": {},
       "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.spellbook_variant_cards": {
+      "name": "spellbook_variant_cards",
+      "schema": "",
+      "columns": {
+        "variant_id": {
+          "name": "variant_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "oracle_id": {
+          "name": "oracle_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "must_be_commander": {
+          "name": "must_be_commander",
+          "type": "boolean",
+          "primaryKey": false,
+          "notNull": true,
+          "default": false
+        }
+      },
+      "indexes": {
+        "spellbook_variant_cards_oracle_idx": {
+          "name": "spellbook_variant_cards_oracle_idx",
+          "columns": [
+            {
+              "expression": "oracle_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {
+        "spellbook_variant_cards_variant_id_spellbook_variants_variant_id_fk": {
+          "name": "spellbook_variant_cards_variant_id_spellbook_variants_variant_id_fk",
+          "tableFrom": "spellbook_variant_cards",
+          "tableTo": "spellbook_variants",
+          "columnsFrom": [
+            "variant_id"
+          ],
+          "columnsTo": [
+            "variant_id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        },
+        "spellbook_variant_cards_oracle_id_cards_oracle_id_fk": {
+          "name": "spellbook_variant_cards_oracle_id_cards_oracle_id_fk",
+          "tableFrom": "spellbook_variant_cards",
+          "tableTo": "cards",
+          "columnsFrom": [
+            "oracle_id"
+          ],
+          "columnsTo": [
+            "oracle_id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {
+        "spellbook_variant_cards_variant_id_oracle_id_pk": {
+          "name": "spellbook_variant_cards_variant_id_oracle_id_pk",
+          "columns": [
+            "variant_id",
+            "oracle_id"
+          ]
+        }
+      },
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.spellbook_variants": {
+      "name": "spellbook_variants",
+      "schema": "",
+      "columns": {
+        "variant_id": {
+          "name": "variant_id",
+          "type": "text",
+          "primaryKey": true,
+          "notNull": true
+        },
+        "bracket_tag": {
+          "name": "bracket_tag",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "card_count": {
+          "name": "card_count",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "identity": {
+          "name": "identity",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "popularity": {
+          "name": "popularity",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "produces": {
+          "name": "produces",
+          "type": "text[]",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "requires_template_ids": {
+          "name": "requires_template_ids",
+          "type": "integer[]",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "computed_at": {
+          "name": "computed_at",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {},
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {
+        "spellbook_variants_bracket_tag_check": {
+          "name": "spellbook_variants_bracket_tag_check",
+          "value": "\"spellbook_variants\".\"bracket_tag\" in ('R', 'S', 'P', 'O', 'C', 'E', 'B')"
+        },
+        "spellbook_variants_card_count_check": {
+          "name": "spellbook_variants_card_count_check",
+          "value": "\"spellbook_variants\".\"card_count\" > 0"
+        }
+      },
       "isRLSEnabled": false
     },
     "public.user_prefs": {
