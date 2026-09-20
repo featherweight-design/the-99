@@ -1,4 +1,4 @@
-import { beforeEach, expect, it, vi } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 
 // How many times the run cleared persisted scores. Injected at every call
 // site because it is a database write and these cases have no database.
@@ -29,6 +29,10 @@ const okResult = (topCards: string[]) => ({
 it("writes one header per commander and one child row per resolved card", async () => {
   const writes: { header: { synergyState: string; edhrecTotal: number | null }; cards: unknown[] }[] = [];
   const r = await buildCommanderIndex({
+    // The pair pass is injected empty: these cases cover the single-commander walk, and the
+    // pair projection has its own suite. A default that reached the database would make every
+    // one of these tests need a real Postgres.
+    loadPairs: async () => [],
     loadCommanders: async () => [commander("Ghoulcaller Gisa", "g")],
     loadNameIndex: async () => [
       { oracleId: "g", name: "Ghoulcaller Gisa" },
@@ -53,6 +57,10 @@ it("writes one header per commander and one child row per resolved card", async 
 it("counts an unresolvable name without dropping it from edhrecTotal", async () => {
   let seen: { edhrecTotal: number | null } | undefined;
   const r = await buildCommanderIndex({
+    // The pair pass is injected empty: these cases cover the single-commander walk, and the
+    // pair projection has its own suite. A default that reached the database would make every
+    // one of these tests need a real Postgres.
+    loadPairs: async () => [],
     loadCommanders: async () => [commander("Ghoulcaller Gisa", "g")],
     loadNameIndex: async () => [{ oracleId: "s", name: "Sol Ring" }],
     fetch: async () => okResult(["Sol Ring", "A Card We Do Not Have"]),
@@ -72,6 +80,10 @@ it("does not write at all when EDHREC is unreachable", async () => {
   // existing row survive untouched, so the only correct write is no write.
   const writes: unknown[] = [];
   const r = await buildCommanderIndex({
+    // The pair pass is injected empty: these cases cover the single-commander walk, and the
+    // pair projection has its own suite. A default that reached the database would make every
+    // one of these tests need a real Postgres.
+    loadPairs: async () => [],
     loadCommanders: async () => [commander("Ghoulcaller Gisa", "g")],
     loadNameIndex: async () => [],
     fetch: async () => ({ data: null, unreachable: true }),
@@ -89,6 +101,10 @@ it("writes an absent header when EDHREC genuinely has no page", async () => {
   // and distinct from a failure to ask. It is written.
   let seen: { synergyState: string; edhrecTotal: number | null } | undefined;
   const r = await buildCommanderIndex({
+    // The pair pass is injected empty: these cases cover the single-commander walk, and the
+    // pair projection has its own suite. A default that reached the database would make every
+    // one of these tests need a real Postgres.
+    loadPairs: async () => [],
     loadCommanders: async () => [commander("Obscure Legend", "o")],
     loadNameIndex: async () => [],
     fetch: async () => ({ data: null, unreachable: false }),
@@ -104,6 +120,10 @@ it("writes an absent header when EDHREC genuinely has no page", async () => {
 
 it("does not abort the run when one commander throws", async () => {
   const r = await buildCommanderIndex({
+    // The pair pass is injected empty: these cases cover the single-commander walk, and the
+    // pair projection has its own suite. A default that reached the database would make every
+    // one of these tests need a real Postgres.
+    loadPairs: async () => [],
     loadCommanders: async () => [commander("A", "a"), commander("B", "b")],
     loadNameIndex: async () => [],
     fetch: async (name) => {
@@ -121,6 +141,10 @@ it("does not abort the run when one commander throws", async () => {
 it("skips commanders already computed after the run start when resuming", async () => {
   const fetch = vi.fn(async () => okResult([]));
   const r = await buildCommanderIndex({
+    // The pair pass is injected empty: these cases cover the single-commander walk, and the
+    // pair projection has its own suite. A default that reached the database would make every
+    // one of these tests need a real Postgres.
+    loadPairs: async () => [],
     loadCommanders: async () => [commander("A", "a"), commander("B", "b")],
     loadNameIndex: async () => [],
     loadAlreadyComputed: async () => new Set(["a"]),
@@ -136,6 +160,10 @@ it("skips commanders already computed after the run start when resuming", async 
 it("waits delayMs between fetches so EDHREC is not hammered", async () => {
   const sleeps: number[] = [];
   await buildCommanderIndex({
+    // The pair pass is injected empty: these cases cover the single-commander walk, and the
+    // pair projection has its own suite. A default that reached the database would make every
+    // one of these tests need a real Postgres.
+    loadPairs: async () => [],
     loadCommanders: async () => [commander("A", "a"), commander("B", "b")],
     loadNameIndex: async () => [],
     fetch: async () => okResult([]),
@@ -154,6 +182,10 @@ it("waits delayMs between fetches so EDHREC is not hammered", async () => {
 // all-or-nothing and why removing it would otherwise be invisible.
 it("clears persisted scores once, after a run that wrote something", async () => {
   await buildCommanderIndex({
+    // The pair pass is injected empty: these cases cover the single-commander walk, and the
+    // pair projection has its own suite. A default that reached the database would make every
+    // one of these tests need a real Postgres.
+    loadPairs: async () => [],
     loadCommanders: async () => [commander("A", "a"), commander("B", "b")],
     loadNameIndex: async () => [],
     fetch: async () => okResult(["Sol Ring"]),
@@ -168,6 +200,10 @@ it("clears persisted scores once, after a run that wrote something", async () =>
 // scores for it would be a self-inflicted cold start.
 it("leaves persisted scores alone when the run wrote nothing", async () => {
   await buildCommanderIndex({
+    // The pair pass is injected empty: these cases cover the single-commander walk, and the
+    // pair projection has its own suite. A default that reached the database would make every
+    // one of these tests need a real Postgres.
+    loadPairs: async () => [],
     loadCommanders: async () => [commander("A", "a")],
     loadNameIndex: async () => [],
     // A `degraded` header is not written, so nothing reached the table.
@@ -186,6 +222,10 @@ it("leaves persisted scores alone when the run wrote nothing", async () => {
 // computed against the previous index if the clear were gated on writes alone.
 it("clears persisted scores on a resume that wrote nothing but skipped work", async () => {
   await buildCommanderIndex({
+    // The pair pass is injected empty: these cases cover the single-commander walk, and the
+    // pair projection has its own suite. A default that reached the database would make every
+    // one of these tests need a real Postgres.
+    loadPairs: async () => [],
     loadCommanders: async () => [commander("A", "a"), commander("B", "b")],
     loadNameIndex: async () => [],
     loadAlreadyComputed: async () => new Set(["a", "b"]),
@@ -201,6 +241,10 @@ it("clears persisted scores on a resume that wrote nothing but skipped work", as
 // skipped, everything failed. The index did not move, so the scores stand.
 it("leaves scores alone when every commander failed and none was skipped", async () => {
   await buildCommanderIndex({
+    // The pair pass is injected empty: these cases cover the single-commander walk, and the
+    // pair projection has its own suite. A default that reached the database would make every
+    // one of these tests need a real Postgres.
+    loadPairs: async () => [],
     loadCommanders: async () => [commander("A", "a")],
     loadNameIndex: async () => [],
     fetch: async () => { throw new Error("boom"); },
@@ -238,6 +282,10 @@ it("clears scores under an exclusive index lock, in a transaction", async () => 
   stub.db.transaction = (cb: (t: typeof tx) => Promise<void>) => cb(tx);
 
   await buildCommanderIndex({
+    // The pair pass is injected empty: these cases cover the single-commander walk, and the
+    // pair projection has its own suite. A default that reached the database would make every
+    // one of these tests need a real Postgres.
+    loadPairs: async () => [],
     loadCommanders: async () => [commander("A", "a")],
     loadNameIndex: async () => [],
     fetch: async () => okResult(["Sol Ring"]),
@@ -251,4 +299,67 @@ it("clears scores under an exclusive index lock, in a transaction", async () => 
   // lock modes onto one label so the ORDER assertion above is about position
   // rather than mode.
   expect(exclusive).toBe(true);
+});
+
+describe("buildCommanderIndex — the pair pass", () => {
+  const noCommanders = {
+    loadCommanders: async () => [],
+    loadNameIndex: async () => [{ oracleId: "aaaaaaaa-0000-4000-8000-000000000001", name: "Sol Ring" }],
+    clearScores: async () => {},
+    sleep: async () => {},
+    delayMs: 0,
+  };
+  const A = "11111111-1111-4111-8111-111111111111";
+  const B = "22222222-2222-4222-8222-222222222222";
+  const pair = { a: A, b: B, nameA: "Kratos", nameB: "Atreus" };
+  const okResult = {
+    unreachable: false,
+    data: {
+      topCards: ["Sol Ring"], inclusionByName: { "sol ring": 70 }, synergyByName: {},
+      tags: [], bracketCounts: { "3": 1 }, budgetCounts: {}, similarNames: [],
+      deckCount: 13332, rank: 159, saltScore: null,
+      composition: null, manaCurve: null,
+    },
+  };
+
+  it("fetches and writes a pair present in decks", async () => {
+    const written: unknown[] = [];
+    const r = await buildCommanderIndex({
+      ...noCommanders,
+      loadPairs: async () => [pair],
+      fetchPair: async () => okResult,
+      writePair: async (h, c) => { written.push({ h, c }); },
+    });
+    expect(r.pairs).toBe(1);
+    expect(r.pairCardRows).toBe(1);
+    expect(written).toHaveLength(1);
+  });
+
+  // The same rule the single-commander write follows: degraded is "we could not reach
+  // EDHREC", not a fact about the pair, and writing it would cascade-delete a good pair's
+  // support list over one transient failure.
+  it("does not write a degraded pair", async () => {
+    const written: unknown[] = [];
+    const r = await buildCommanderIndex({
+      ...noCommanders,
+      loadPairs: async () => [pair],
+      fetchPair: async () => ({ data: null, unreachable: true }),
+      writePair: async (h, c) => { written.push({ h, c }); },
+    });
+    expect(r.pairs).toBe(0);
+    expect(r.degraded).toBe(1);
+    expect(written).toEqual([]);
+  });
+
+  it("counts a failed pair without abandoning the rest of the pass", async () => {
+    let calls = 0;
+    const r = await buildCommanderIndex({
+      ...noCommanders,
+      loadPairs: async () => [pair, { ...pair, a: A, b: "33333333-3333-4333-8333-333333333333" }],
+      fetchPair: async () => { if (++calls === 1) throw new Error("boom"); return okResult; },
+      writePair: async () => {},
+    });
+    expect(r.pairsFailed).toBe(1);
+    expect(r.pairs).toBe(1);
+  });
 });

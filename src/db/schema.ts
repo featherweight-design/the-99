@@ -1,7 +1,7 @@
 import { sql } from "drizzle-orm";
 import {
   pgTable, text, integer, real, timestamp, jsonb, boolean, primaryKey, uuid, index, check, date,
-  unique,
+  unique, foreignKey,
 } from "drizzle-orm/pg-core";
 import { FINISHES } from "../lib/collection/key";
 import type { EdhrecTag } from "../lib/edhrec/parse";
@@ -910,6 +910,96 @@ export const commanderSupportCards = pgTable("commander_support_cards", {
   // #218 traverses this relation in the opposite direction: one card, which
   // commanders support it. The PK's leading column cannot serve that query.
   index("commander_support_cards_oracle_idx").on(t.oracleId),
+]);
+
+/**
+ * A partner PAIR's own EDHREC page, which neither commander's page describes.
+ *
+ * `commander_support` is keyed per oracle id and `edhrec_cache` carries an FK to `cards`, so
+ * a pair row cannot exist in either without a migration — an earlier draft of the spec said
+ * "neither is new machinery" and was wrong on both counts.
+ *
+ * Verified live 2026-09-20 against `atreus-impulsive-son-kratos-stoic-father`: a real 99,794
+ * byte page carrying its own composition, its own `bracket_counts`, `num_decks: 13332` and
+ * `rank: 159`. A pair DOES have a joint rank and a joint deck count, which is what makes this
+ * table worth having rather than approximating.
+ *
+ * THE BODY IS 98, NOT 99. Its type counts sum to 100 minus two commanders, so every invariant
+ * check must use `deckBodySize(hasPartner)` rather than a literal — measured, not assumed.
+ */
+export const commanderPairSupport = pgTable("commander_pair_support", {
+  commanderOracleId: uuid("commander_oracle_id").notNull().references(() => cards.oracleId),
+  partnerOracleId: uuid("partner_oracle_id").notNull().references(() => cards.oracleId),
+  synergyState: text("synergy_state", { enum: ["ok", "absent", "degraded"] }).notNull(),
+  edhrecTotal: integer("edhrec_total"),
+  deckCount: integer("deck_count"),
+  rank: integer("rank"),
+  bracketCounts: jsonb("bracket_counts").$type<Record<string, number>>().notNull(),
+  avgLand: integer("avg_land"),
+  avgBasic: integer("avg_basic"),
+  avgNonbasic: integer("avg_nonbasic"),
+  avgCreature: integer("avg_creature"),
+  avgInstant: integer("avg_instant"),
+  avgSorcery: integer("avg_sorcery"),
+  avgArtifact: integer("avg_artifact"),
+  avgEnchantment: integer("avg_enchantment"),
+  avgPlaneswalker: integer("avg_planeswalker"),
+  avgBattle: integer("avg_battle"),
+  avgCurve: jsonb("avg_curve").$type<Record<string, number>>(),
+  computedAt: timestamp("computed_at").notNull().defaultNow(),
+}, (t) => [
+  primaryKey({ columns: [t.commanderOracleId, t.partnerOracleId] }),
+  // CANONICAL ORDER IS THE SCHEMA, not a convention a writer might remember: the
+  // lexicographically smaller oracle id is always first, so (A,B) and (B,A) cannot both
+  // exist. `decks` stores the pair in a MEANINGFUL order — the primary is first — so every
+  // read has to normalise before looking here, and this constraint is what makes forgetting
+  // that a loud failure rather than a silent miss.
+  check("commander_pair_support_order_check",
+    sql`${t.commanderOracleId} < ${t.partnerOracleId}`),
+  check("commander_pair_support_total_null_check",
+    sql`(${t.synergyState} = 'ok') = (${t.edhrecTotal} is not null)`),
+]);
+
+/** A pair's own support list — the cards people actually play with THAT pairing. */
+export const commanderPairSupportCards = pgTable("commander_pair_support_cards", {
+  commanderOracleId: uuid("commander_oracle_id").notNull(),
+  partnerOracleId: uuid("partner_oracle_id").notNull(),
+  oracleId: uuid("oracle_id").notNull().references(() => cards.oracleId),
+  inclusion: real("inclusion"),
+  synergy: real("synergy"),
+  /**
+   * The card's place in EDHREC's own ordering.
+   *
+   * Stored because `suggestions-read` ranks by LIST POSITION (`rankOf`), not by inclusion —
+   * so a table holding only the two figures could not rebuild `topCards` without silently
+   * changing what "top" means.
+   */
+  position: integer("position").notNull(),
+}, (t) => [
+  primaryKey({ columns: [t.commanderOracleId, t.partnerOracleId, t.oracleId] }),
+  foreignKey({
+    columns: [t.commanderOracleId, t.partnerOracleId],
+    foreignColumns: [commanderPairSupport.commanderOracleId, commanderPairSupport.partnerOracleId],
+  }).onDelete("cascade"),
+  // Sub-project 3 asks the opposite question — one card, which pairs play it.
+  index("commander_pair_support_cards_oracle_idx").on(t.oracleId),
+]);
+
+/**
+ * The demand cache for a pair nobody has built yet.
+ *
+ * A separate table rather than re-keying `edhrec_cache`: that one's primary key is a single
+ * oracle id with an FK to `cards`, so a pair row cannot exist in it, and re-keying it would
+ * rewrite every existing row for the sake of the dozens of pairs anyone has actually played.
+ */
+export const edhrecPairCache = pgTable("edhrec_pair_cache", {
+  commanderOracleId: uuid("commander_oracle_id").notNull().references(() => cards.oracleId),
+  partnerOracleId: uuid("partner_oracle_id").notNull().references(() => cards.oracleId),
+  payload: jsonb("payload").notNull(),
+  fetchedAt: timestamp("fetched_at").notNull().defaultNow(),
+}, (t) => [
+  primaryKey({ columns: [t.commanderOracleId, t.partnerOracleId] }),
+  check("edhrec_pair_cache_order_check", sql`${t.commanderOracleId} < ${t.partnerOracleId}`),
 ]);
 
 /** The id of the one row. Named so the reader and the writer cannot disagree about it. */

@@ -1,9 +1,16 @@
 import { eq, sql } from "drizzle-orm";
 import { db } from "../../db";
-import { cards, commanderScores, commanderSupport, commanderSupportCards } from "../../db/schema";
+import {
+  cards, commanderScores, commanderSupport, commanderSupportCards,
+  commanderPairSupport, commanderPairSupportCards, decks,
+} from "../../db/schema";
 import { SCORE_INDEX_LOCK } from "../recs/store";
 import { isCommanderCandidate } from "../recs/score";
-import { fetchEdhrecUncached, type EdhrecFetchResult } from "./client";
+import { edhrecInit, fetchEdhrecUncached, type EdhrecFetchResult } from "./client";
+import {
+  canonicalPair, fetchPair, toPairRows,
+  type PairCardRow, type PairHeaderRow,
+} from "./pair";
 import {
   buildNameIndex, toSupportRows,
   type IndexCommander, type SupportCard, type SupportHeader,
@@ -24,6 +31,15 @@ export type BuildIndexOptions = {
   /** Injectable for the same reason as `write`: the build is unit-tested
       without a database, and this is the run's last write. */
   clearScores?: () => Promise<void>;
+  /**
+   * The pair pass's three I/O edges, injectable for the same reason every other edge here is:
+   * this function is unit-tested, and a default that reaches the database would make every
+   * one of those tests hit a real Postgres. `loadPairs` defaulting to a real query is what
+   * broke them the first time.
+   */
+  loadPairs?: () => Promise<{ a: string; b: string; nameA: string; nameB: string }[]>;
+  fetchPair?: (nameA: string, nameB: string) => Promise<EdhrecFetchResult>;
+  writePair?: (header: PairHeaderRow, cards: PairCardRow[]) => Promise<void>;
   delayMs?: number;
   sleep?: (ms: number) => Promise<void>;
 };
@@ -34,7 +50,97 @@ export type BuildIndexResult = {
   cardRows: number;
   degraded: number; absent: number; unresolved: number;
   skipped: number; failed: number;
+  /** Partner pairs present in `decks` whose own EDHREC page was fetched and stored. */
+  pairs: number; pairCardRows: number; pairsFailed: number;
 };
+
+/**
+ * Distinct partner pairs someone has actually built, with both names.
+ *
+ * Normalised through `canonicalPair` at the point of use rather than in SQL, so there is one
+ * definition of the order and it lives beside the CHECK constraint that enforces it.
+ */
+async function loadPairs(): Promise<{ a: string; b: string; nameA: string; nameB: string }[]> {
+  const rows = await db
+    .selectDistinct({
+      a: decks.commanderOracleId,
+      b: decks.partnerOracleId,
+    })
+    .from(decks)
+    .where(sql`${decks.partnerOracleId} is not null`);
+
+  if (rows.length === 0) return [];
+  const names = new Map(
+    (await db.select({ oracleId: cards.oracleId, name: cards.name }).from(cards)).map((c) => [
+      c.oracleId,
+      c.name,
+    ]),
+  );
+  const seen = new Set<string>();
+  const out: { a: string; b: string; nameA: string; nameB: string }[] = [];
+  for (const row of rows) {
+    if (!row.b) continue;
+    const pair = canonicalPair(row.a, row.b);
+    const key = `${pair.commanderOracleId}|${pair.partnerOracleId}`;
+    // Two decks can carry the same pair in opposite column orders; canonical dedupe is what
+    // makes that one page fetched once rather than twice.
+    if (seen.has(key)) continue;
+    const nameA = names.get(pair.commanderOracleId);
+    const nameB = names.get(pair.partnerOracleId);
+    if (!nameA || !nameB) continue;
+    seen.add(key);
+    out.push({ a: pair.commanderOracleId, b: pair.partnerOracleId, nameA, nameB });
+  }
+  return out;
+}
+
+/**
+ * The index pass's own pair fetch: no cache read, no cache write, for the same two reasons
+ * `fetchEdhrecUncached` skips both — a 30-day TTL would re-serve rows fetched 29 days ago and
+ * stamp them current, and caching every page is hundreds of MB of jsonb for pairs nobody owns.
+ *
+ * It goes through `fetchPair` rather than a second copy of the URL logic, because the
+ * redirect stub is the trap and one follow is the only safe number.
+ */
+function fetchPairPage(nameA: string, nameB: string) {
+  return fetchPair(nameA, nameB, (url) => fetch(url, edhrecInit()));
+}
+
+async function writePair(header: PairHeaderRow, cardRows: PairCardRow[]): Promise<void> {
+  await db.transaction(async (tx) => {
+    await tx.insert(commanderPairSupport).values(header).onConflictDoUpdate({
+      target: [commanderPairSupport.commanderOracleId, commanderPairSupport.partnerOracleId],
+      set: {
+        synergyState: sql`excluded.synergy_state`,
+        edhrecTotal: sql`excluded.edhrec_total`,
+        deckCount: sql`excluded.deck_count`,
+        rank: sql`excluded.rank`,
+        bracketCounts: sql`excluded.bracket_counts`,
+        avgLand: sql`excluded.avg_land`,
+        avgBasic: sql`excluded.avg_basic`,
+        avgNonbasic: sql`excluded.avg_nonbasic`,
+        avgCreature: sql`excluded.avg_creature`,
+        avgInstant: sql`excluded.avg_instant`,
+        avgSorcery: sql`excluded.avg_sorcery`,
+        avgArtifact: sql`excluded.avg_artifact`,
+        avgEnchantment: sql`excluded.avg_enchantment`,
+        avgPlaneswalker: sql`excluded.avg_planeswalker`,
+        avgBattle: sql`excluded.avg_battle`,
+        avgCurve: sql`excluded.avg_curve`,
+        computedAt: sql`now()`,
+      },
+    });
+    // Delete-then-insert, not upsert: a card that left the pair's list must leave the table,
+    // and no upsert shape removes rows. Same reasoning as the single-commander write.
+    await tx.delete(commanderPairSupportCards).where(
+      sql`${commanderPairSupportCards.commanderOracleId} = ${header.commanderOracleId}
+          and ${commanderPairSupportCards.partnerOracleId} = ${header.partnerOracleId}`,
+    );
+    for (let i = 0; i < cardRows.length; i += CARD_BATCH_SIZE) {
+      await tx.insert(commanderPairSupportCards).values(cardRows.slice(i, i + CARD_BATCH_SIZE));
+    }
+  });
+}
 
 const defaultSleep = (ms: number) => new Promise<void>((r) => setTimeout(r, ms));
 
@@ -140,6 +246,9 @@ export async function buildCommanderIndex(
   const fetchOne = opts.fetch ?? fetchEdhrecUncached;
   const write = opts.write ?? writeToDb;
   const clearScores = opts.clearScores ?? clearPersistedScores;
+  const loadPairsFn = opts.loadPairs ?? loadPairs;
+  const fetchPairFn = opts.fetchPair ?? fetchPairPage;
+  const writePairFn = opts.writePair ?? writePair;
   const sleep = opts.sleep ?? defaultSleep;
   const delayMs = opts.delayMs ?? DEFAULT_DELAY_MS;
 
@@ -155,6 +264,7 @@ export async function buildCommanderIndex(
   const r: BuildIndexResult = {
     commanders: 0, cardRows: 0, degraded: 0, absent: 0,
     unresolved: 0, skipped: 0, failed: 0,
+    pairs: 0, pairCardRows: 0, pairsFailed: 0,
   };
 
   for (const commander of commanders) {
@@ -256,6 +366,42 @@ export async function buildCommanderIndex(
   // skips thousands, and would have left every score computed against the
   // previous index. The workflow supports that path explicitly, which is what
   // makes gating on writes alone wrong rather than merely narrow.
+  // ---- THE PAIR PASS -----------------------------------------------------------------
+  //
+  // Only pairs someone has actually BUILT. There are roughly 2,847 possible combinations —
+  // 58 open-`Partner` commanders alone make 1,653 — and sweeping them would roughly double a
+  // job kept at `max-parallel: 1` under one concurrency group precisely so EDHREC never sees
+  // a second request stream from us. Most of those pages describe pairs nobody has played.
+  // A pair nobody has built is served by the demand cache instead.
+  //
+  // Inside the same serial walk, with the same delay, for the same reason.
+  const pairs = await loadPairsFn();
+  if (pairs.length > 0) {
+    console.log(`commander-index: ${pairs.length} partner pair(s) present in decks`);
+  }
+  for (const pair of pairs) {
+    await sleep(delayMs);
+    try {
+      const result = await fetchPairFn(pair.nameA, pair.nameB);
+      const { header, cards: pairCards, unresolved } = toPairRows({
+        pair: canonicalPair(pair.a, pair.b),
+        result,
+        nameIndex,
+      });
+      r.unresolved += unresolved;
+      // Degraded is "we could not reach EDHREC", not a fact about the pair — the same rule
+      // the single-commander write follows, and for the same reason: writing it would
+      // cascade-delete a good pair's support list over one transient failure.
+      if (header.synergyState === "degraded") { r.degraded++; continue; }
+      await writePairFn(header, pairCards);
+      r.pairs++;
+      r.pairCardRows += pairCards.length;
+    } catch (err) {
+      r.pairsFailed++;
+      console.error(`commander-index: pair ${pair.nameA} + ${pair.nameB} failed`, err);
+    }
+  }
+
   if (r.commanders > 0 || r.skipped > 0) {
     await clearScores();
     console.log("commander-index: cleared persisted commander scores");
