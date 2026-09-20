@@ -119,7 +119,33 @@ From the spec's own rulings — these are settled and the frame should assume th
 
 ---
 
+## §6a Engineering addendum — 2026-09-19, after the implementation plan
+
+The implementation plan (`docs/superpowers/plans/2026-09-19-deck-analysis-foundation.md`, same
+branch) and its product walkthrough settled four things the spec's sketches predate. Rounds 2–4
+draw against THESE, not the spec's earlier shapes; none changes Round 0's questions.
+
+1. **The push line speaks range-to-range.** "What would adding this card do" can answer
+   *"moves you from 3 to 3-or-4"* — a range on either side, because a combo piece's honest
+   effect is widening, not a number. The spec's single-number sketch is superseded (plan,
+   Task 18).
+2. **The downgrade path hands a candidate set, never a pick.** *"Remove any 1 of these 4"*
+   with all four named — the app does not choose. A rule that cannot be cleared by removals
+   (the offending card is the commander) reads as blocked, stated plainly (plan, Task 19).
+3. **The bracket-3 limits table gains a loop state.** A deck whose assembled combo produces
+   infinite turns violates bracket 3's extra-turn clause outright — it reads *4-or-5*, with
+   the combo named as the receipt on the extra-turns row. Distinct from the generic
+   two-card-infinite case, which only widens to *3-or-4*. Single-card turn loops (Nexus of
+   Fate alone) are NOT detected, and the detection statement says so (plan, R3).
+4. **The three detection sentences are fixed constants**, one per fact, e.g. mass land
+   denial: *"23 of 24 on a curated set; known miss: Wave of Vitriol."* Round 2 designs the
+   slot they occupy; the words ship from code.
+
 ## §7 Sequence
 
 Round 0 lands, is audited against this brief, and then rounds 1–4 are briefed against the frame
-it establishes. Round 1 is deliberately small and unblocks 2 and 4.
+it establishes. Round 1 is deliberately small and unblocks 2 and 4 — its brief is already
+written and queued (`2026-09-19-the-card-mark.md`, same directory); it fires the moment Round
+0's audit lands. The skeleton-fit brief stays held back until a widened index run has produced
+real output to draw against (spec §11.1); engineering emits it mid-epic, unprompted, once that
+data exists.
