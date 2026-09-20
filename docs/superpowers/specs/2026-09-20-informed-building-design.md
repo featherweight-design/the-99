@@ -270,7 +270,7 @@ beats a constant; the exact scaling is not earned.
 | `src/lib/decks/deck-size.ts` | `src/lib/recs/score.ts` |
 | `src/lib/decks/fill.ts` | `src/lib/recs/weakest-role.ts` |
 | `src/lib/decks/suggest.ts` | `src/components/commanders/role-chips.tsx` |
-| `src/lib/decks/mix.ts` and its 8 components | `src/components/commanders/coverage-section.tsx` |
+| `src/lib/decks/mix.ts` and its 6 components | `src/components/commanders/coverage-section.tsx` |
 
 **No `commander_scores` rescore.** §4A.6 of the predecessor spec dismissed that risk because
 the four roles were unmeasurable; making them measurable revives the question, and it was
@@ -296,6 +296,40 @@ derived wipes target of 0**, and `min(n, t) / t` is undefined at zero, so somebo
 to decide what 0/0 means and bury that decision inside a score, which is the CRISPI failure
 mode exactly. And §4A.6's yardstick argument survives independently: a ranking wants one
 yardstick across commanders, where a deck reading wants accuracy for one.
+
+### 2.5a Two corrections the derivation needs, both found in plan review
+
+**`cards.oracle_text` holds BOTH FACES**, joined `"front\n//\nback"` by
+`src/lib/scryfall/transform.ts:19`. `isLandFace` reads the front face only, so for a land-backed
+MDFC it returns false and `classifyRoles` then sees the land back's `{T}: Add {R}` and classifies
+the card as **ramp**. 82 commander-legal cards carry a land on the back face alone.
+
+Two consequences, and neither was visible in the figures:
+
+- The derived `avg_ramp` is inflated by every land-backed MDFC in every support list.
+- Under §2.8 the same card would be **spent on the ramp floor and counted against the land
+  target** — one card taking two slots' worth of credit.
+
+**The fix is local, not a change to `classifyRoles`.** The derivation and the fill pass the FRONT
+FACE's text when the card is a `modal_dfc`, because that is the text of the spell you cast. The
+classifier keeps its current behaviour everywhere else, since changing it app-wide would move
+figures on surfaces this sub-project does not touch.
+
+**The role targets DESCRIBE decks; the fill PLANS one, and the two must count alike.** The
+derivation adds a card to every role it satisfies — an instant that destroys and draws counts
+toward both — because that is what the deck contains. `planFill` spends a card on the FIRST role
+it can close. Feeding a double-counted description into a single-spend floor makes the fill
+place two cards where the description counted one.
+
+**`planFill` therefore counts a placed card toward every role it satisfies, while still spending
+its slot once.** The alternative — deriving the targets under the fill's own ordering — would
+make a measured figure depend on an implementation detail of the consumer, which is the
+laundering §4A.5 forbids.
+
+This is benign at today's numbers (8.5 + 8.3 + 5.2 + 0.8 = 22.8, under the flat 31) which is why
+it is a correctness fix rather than an outage. **The §2.5 validation table is unaffected**: both
+sides of it were computed with the same every-role-per-card convention, so it compares like with
+like.
 
 **A separate finding, recorded but not acted on here.** The role component of the commander
 score is *already* nearly inert for a collection this size: 98.3% of commanders saturate all
@@ -388,6 +422,14 @@ under-landing by an MDFC costs nothing on the turns the mode is not needed.
 **Rejected: half credit at 0.5 per card.** It is a community rule of thumb nobody in this
 project measured, sitting inside the single number the fill builds to.
 
+**The objection to full credit, recorded rather than dismissed.** Plan review made the fair point
+that full credit is *also* unmeasured, and is the more aggressive of the two: a Zendikar-style
+MDFC land back enters tapped or costs life, and the back is unavailable on any turn the front was
+cast. Hugh chose full credit on 2026-09-20 on the asymmetry argument, with that trade stated. It
+is recorded here because the next person to measure this should know which way the thumb was on
+the scale, and because §2.5a's double-count fix removes the worst version of the risk: a card can
+no longer take a ramp slot AND a land slot.
+
 The profile still stores counts **exclusively** so totals add up, per Hugh's 2026-09-20 ruling,
 and still carries the list of cards that can be a land. This decision governs only what the
 fill targets.
@@ -457,14 +499,45 @@ separately from card count.
 
 ### 3.4 Surfaces
 
-- `mix.ts`'s `RECOMMENDED_MIX` becomes a per-deck value threaded to its eight components. This
-  is the bulk of the work and it is mechanical.
+- `mix.ts`'s `RECOMMENDED_MIX` becomes a per-deck value threaded to the **six** components that
+  import it: `role-counter-strip.tsx`, `consider-panel.tsx`, `unresolved-group.tsx`,
+  `changed-strip.tsx`, `strip-rationale.tsx`, `builder-shell.tsx`. This is the bulk of the work
+  and it is mechanical.
+
+  **Six, not eight.** §4A.6 of the predecessor spec lists those six "and two copy modules", and
+  an earlier draft of this section compressed that to "eight components". The two copy modules
+  (`recommendations.ts`, `decks-builder.ts`) only NAME the constant in comments — `decks-builder`
+  carries the rationale bodies while the heading is composed from the target at its call site in
+  `strip-rationale.tsx`, which is already one of the six. Neither copy module changes.
 - `RECOMMENDED_MIX_SOURCE_LINE` becomes **true**: once all five cells derive from EDHREC data,
   "EDHREC averages" stops being a claim about four numbers nobody measured. **This is the fix
   for the credibility bug rather than a rewording of it.**
 - The top-off list's single bulk control becomes two (§2.6).
 - The deck page's clear control becomes layered (§2.2).
 - `consider-panel.tsx` orders within a shelf by type gap (§2.7).
+
+---
+
+## 3A. The About entry
+
+**`CLAUDE.md` makes this a hard rule and the spec omitted it**, which plan review caught: "No
+FEATURE launches without an About entry, in the same round that ships it."
+
+This sub-project ships at least three things a reader could discover:
+
+| feature | entry |
+|---|---|
+| Build fills the whole 99 rather than 68 | edits the existing build entry; the capability changed |
+| The two bulk controls on the top-off list | edits the existing top-off entry |
+| The layered clear | **new entry** |
+
+`ABOUT_VERSION` is bumped once, in the PR that lands the layered clear, since a new entry always
+forces a bump. The earlier two are ordinary edits to entries that already exist.
+
+`src/lib/copy/about.test.ts` pins a content hash against `ABOUT_VERSION`, so any About copy edit
+forces either a deliberate bump or a deliberate re-pin. **Design draws the entries; Hugh decides
+which features owe one**, and he may rule that the first two are covered by the entries they
+edit.
 
 ---
 
@@ -541,7 +614,7 @@ Unit tests are the default; these are the things a unit test cannot reach.
 - **n=20 for the role derivation.** Mitigated by shipping it as a *target* rather than a
   *score*: nothing ranks on it, no commander is ordered by it, and a wrong figure costs a
   suggestion rather than a verdict. Re-measure when the deck corpus grows.
-- **`RECOMMENDED_MIX` threading touches eight components.** Mechanical but wide. It is a PR of
+- **`RECOMMENDED_MIX` threading touches six components.** Mechanical but wide. It is a PR of
   its own, and the boundary belongs in the plan rather than discovered during implementation.
 - **The fill now writes 99 rows instead of 68.** `clearAutoCards` and `restoreAutoCards` carry
   more rows; the transaction and the `fill_passes` ledger should be checked against the larger
