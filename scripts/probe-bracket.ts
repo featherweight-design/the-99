@@ -83,7 +83,7 @@ import { sql } from "drizzle-orm";
 import ws from "ws";
 
 import { canonicalPair } from "../src/lib/edhrec/pair";
-import { classifyTutor } from "../src/lib/bracket/tutor-targets";
+import { classifyTutor, tutorReaches } from "../src/lib/bracket/tutor-targets";
 import { loadDeckProfile } from "../src/lib/profile/load";
 import { fitSkeleton } from "../src/lib/profile/fit";
 import { slotDeck } from "../src/lib/bracket/slot";
@@ -650,27 +650,51 @@ async function tutorWiringChecks() {
     return;
   }
   const wanted = target.kinds[0][0][0];
-  const like = `%${wanted}%`;
 
-  const [split] = await rows<{ a: string; b: string }>(sql`
+  // THE PREDICATE PICKS THE FIXTURE, not a type-word match on the type line. A tutor can also
+  // be colour- or mana-value-constrained, and a piece chosen on its type alone can then be
+  // unreachable for a reason the SQL never saw — which fails a correct loader. Asking
+  // `tutorReaches` for both pieces and keeping the pair it disagrees about is the only
+  // selection that cannot do that, and it needs no second copy of the rule.
+  // IDS ONLY out of the aggregate. `array_agg` over `color_identity` raises
+  // `cannot accumulate empty arrays` the moment a colourless piece is in range — which is a
+  // fact about Postgres rather than about the data, and it took a run to find.
+  const candidates = await rows<{ a: string; b: string }>(sql`
     select (array_agg(vc.oracle_id order by vc.oracle_id))[1] as a,
            (array_agg(vc.oracle_id order by vc.oracle_id))[2] as b
     from spellbook_variants v
     join spellbook_variant_cards vc on vc.variant_id = v.variant_id
-    join cards c on c.oracle_id = vc.oracle_id
     where v.card_count = 2 and cardinality(v.requires_template_ids) = 0
       and not exists (select 1 from spellbook_variant_cards x
                       where x.variant_id = v.variant_id and x.must_be_commander)
       and exists (select 1 from unnest(v.produces) p
                   where p ilike '%infinite%' or p ilike '%win the game%')
-    group by v.variant_id
-    having count(*) = 2
-       and count(*) filter (where c.type_line ilike ${like}) = 1
-    order by v.variant_id limit 1`);
+    group by v.variant_id having count(*) = 2
+    order by v.variant_id limit 400`);
+
+  const pieceIds = [...new Set(candidates.flatMap((c) => [c.a, c.b]))];
+  const pieceRows = await rows<{
+    oracle_id: string; type_line: string; color_identity: string[] | null; cmc: number | null;
+  }>(sql`
+    select oracle_id, type_line, color_identity, cmc from cards
+    where oracle_id = any(${sql.param(pieceIds)}::uuid[])`);
+  const pieceById = new Map(pieceRows.map((r) => [r.oracle_id, r]));
+
+  const piece = (typeLine: string, colorIdentity: string[], cmc: number) => ({
+    typeLine, colorIdentity: colorIdentity ?? [], cmc: cmc ?? 0,
+  });
+  const reachOf = (oracleId: string) => {
+    const row = pieceById.get(oracleId);
+    return row ? tutorReaches(target, piece(row.type_line, row.color_identity ?? [], row.cmc ?? 0)) : null;
+  };
+  const split = candidates
+    .map((c) => ({ ...c, aReaches: reachOf(c.a), bReaches: reachOf(c.b) }))
+    .find((c) => c.aReaches !== null && c.bReaches !== null && c.aReaches !== c.bReaches);
   if (!split) {
     fail(
       "the tutor wiring",
-      `no two-card combo has exactly one ${wanted} piece, so a reach check would measure nothing`,
+      `no two-card combo among 400 holds one piece ${tutor.name} can reach and one it cannot, ` +
+        `so a reach check here would measure nothing`,
     );
     return;
   }
@@ -696,14 +720,12 @@ async function tutorWiringChecks() {
   check("and the deck assembles the combo", profile.brackets.twoCardCombos.length > 0, true);
 
   const reached = profile.brackets.comboReach.reaches.map((r) => r.piece.oracleId);
-  const [typed] = await rows<{ oracle_id: string }>(sql`
-    select oracle_id from cards
-    where oracle_id in (${split.a}::uuid, ${split.b}::uuid) and type_line ilike ${like}`);
-  const other = typed.oracle_id === split.a ? split.b : split.a;
+  const findable = split.aReaches ? split.a : split.b;
+  const unfindable = split.aReaches ? split.b : split.a;
 
-  check("it reaches the piece of the type it searches for", reached.includes(typed.oracle_id), true);
+  check("it reaches the piece the predicate says it can find", reached.includes(findable), true);
   // The half that fails on "every tutor reaches every piece".
-  check("and NOT the piece of another type", reached.includes(other), false);
+  check("and NOT the piece it cannot", reached.includes(unfindable), false);
 }
 
 /**
