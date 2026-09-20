@@ -288,6 +288,13 @@
       "when": 1789869162078,
       "tag": "0040_groovy_thunderball",
       "breakpoints": true
+    },
+    {
+      "idx": 41,
+      "version": "7",
+      "when": 1789870548513,
+      "tag": "0041_fixed_starfox",
+      "breakpoints": true
     }
   ]
 }

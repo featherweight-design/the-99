@@ -938,3 +938,102 @@ export const userPrefs = pgTable("user_prefs", {
   userId: text("user_id").primaryKey(),
   aboutVersionSeen: integer("about_version_seen").notNull().default(0),
 });
+
+/**
+ * Commander Spellbook's combo index, projected to what a bracket verdict needs.
+ *
+ * Resolved at INGEST, never during a page render: a render must not depend on a third
+ * party's uptime or a shared 80 req/min budget, and the per-deck API response is enormous
+ * (every card carries six image URLs). So the bulk is walked weekly and slotting becomes a
+ * SQL question — the same treatment Scryfall and ManaPool already get.
+ */
+export const spellbookVariants = pgTable("spellbook_variants", {
+  /** Upstream's own id, e.g. "4067-8192". Templates appear in it as a double dash. */
+  variantId: text("variant_id").primaryKey(),
+  /**
+   * Spellbook's opinion about which table a combo suits. STORED AND REPORTED, NEVER A RULE.
+   * The vocabulary deliberately echoes WotC's bracket names, which is what makes it look
+   * like the answer; it is not. The bulk's own first record — Gilder Bairn + Agatha's Soul
+   * Cauldron + Bloom Tender, producing "Infinite mana of colors among permanents you
+   * control" — carries `E`, Exhibition, their gentlest tag. Verified on the live bulk
+   * 2026-09-20. Whatever this measures it is not whether a combo is infinite.
+   */
+  bracketTag: text("bracket_tag").notNull(),
+  /**
+   * Length of `uses` ONLY — never `uses + requires`. A two-`uses` variant that also requires
+   * a TEMPLATE is a three-piece combo the deck may not be able to assemble, and counting it
+   * as a two-card infinite over-slots the deck. Measured on the live bulk: 2 of 13 two-use
+   * variants carry one, so the distinction is load-bearing rather than theoretical.
+   */
+  cardCount: integer("card_count").notNull(),
+  identity: text("identity").notNull(),
+  /** Nullable upstream, and kept null — a 0 reads as "nobody plays this". */
+  popularity: integer("popularity"),
+  /** Feature names, from `produces[].feature.name`. "Infinite mana …", "Win the game". */
+  produces: text("produces").array().notNull(),
+  /** Template prerequisites, stored so sub-project 3 can surface a near-miss. */
+  requiresTemplateIds: integer("requires_template_ids").array().notNull(),
+  computedAt: timestamp("computed_at").notNull().defaultNow(),
+}, (t) => [
+  // The enum narrows TypeScript only; without this the database takes any text. Same
+  // reasoning as `commander_support.synergy_state`. `check:spellbook` asserts upstream still
+  // has exactly these seven — not because an added tag would fail an insert (the transform
+  // refuses it first and DROPS the variant), but because that drop is silent and would empty
+  // this table behind a green job.
+  check("spellbook_variants_bracket_tag_check",
+    sql`${t.bracketTag} in ('R', 'S', 'P', 'O', 'C', 'E', 'B')`),
+  check("spellbook_variants_card_count_check", sql`${t.cardCount} > 0`),
+]);
+
+/**
+ * Which cards each variant uses. Normalised for the same reason `commander_support_cards`
+ * is: the consuming query is always "intersect this deck's oracle ids with variant
+ * membership", which is a join Postgres does well and array containment does badly.
+ */
+export const spellbookVariantCards = pgTable("spellbook_variant_cards", {
+  variantId: text("variant_id").notNull()
+    .references(() => spellbookVariants.variantId, { onDelete: "cascade" }),
+  oracleId: uuid("oracle_id").notNull().references(() => cards.oracleId),
+  /**
+   * From `uses[].mustBeCommander`. Some pieces only work from the command zone — the Najeela
+   * family is the obvious case — so a deck holding the card in its 99 does not assemble that
+   * combo, and the join has to know which is which.
+   */
+  mustBeCommander: boolean("must_be_commander").notNull().default(false),
+}, (t) => [
+  primaryKey({ columns: [t.variantId, t.oracleId] }),
+  // Sub-project 3 traverses this the other way — one card, which combos it enables — and the
+  // primary key's leading column cannot serve that.
+  index("spellbook_variant_cards_oracle_idx").on(t.oracleId),
+]);
+
+/**
+ * Card-level bracket facts that are not on a Scryfall card: mass land denial and extra turns.
+ *
+ * `banned` is deliberately NOT here. WotC's own text puts the banned list UNDER all five
+ * brackets as a legality floor rather than inside the bracket system — a banned card does not
+ * move a deck's bracket, it makes the deck illegal — and `cards.commander_legal` already
+ * answers that completely and locally, where this table's upstream knows about a quarter of the
+ * catalog.
+ */
+export const cardBracketFlags = pgTable("card_bracket_flags", {
+  oracleId: uuid("oracle_id").primaryKey().references(() => cards.oracleId),
+  massLandDenial: boolean("mass_land_denial").notNull().default(false),
+  /** 'spellbook_sweep' | 'oracle_rule' — per flag, because a card can be one by each. */
+  massLandDenialSources: text("mass_land_denial_sources").array().notNull().default(sql`'{}'`),
+  extraTurn: boolean("extra_turn").notNull().default(false),
+  extraTurnSources: text("extra_turn_sources").array().notNull().default(sql`'{}'`),
+  computedAt: timestamp("computed_at").notNull().defaultNow(),
+}, (t) => [
+  // A flag and its provenance cannot disagree: true iff at least one source claims it. The
+  // verdict owes a reader WHICH classifier made the claim, and that promise is unkeepable the
+  // moment a row can say "true, sources: {}" — which is exactly the row a partial publish or a
+  // half-written union would leave behind.
+  check("card_bracket_flags_mld_sources_check",
+    sql`${t.massLandDenial} = (cardinality(${t.massLandDenialSources}) > 0)`),
+  check("card_bracket_flags_et_sources_check",
+    sql`${t.extraTurn} = (cardinality(${t.extraTurnSources}) > 0)`),
+  check("card_bracket_flags_source_values_check",
+    sql`${t.massLandDenialSources} <@ array['spellbook_sweep', 'oracle_rule']::text[]
+        and ${t.extraTurnSources} <@ array['spellbook_sweep', 'oracle_rule']::text[]`),
+]);

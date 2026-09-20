@@ -30,46 +30,12 @@ neonConfig.webSocketConstructor = ws;
 const { DATABASE_URL } = requireEnv(["DATABASE_URL"]);
 const client = new Pool({ connectionString: DATABASE_URL });
 
-/**
- * Grants an extra turn. The wording is close to templated, which is why this is a far easier
- * problem than mass land denial — but the negation clause is load-bearing and is the whole
- * reason a naive `/extra turn/` match is wrong.
- */
-const GRANTS = [
-  { why: "takes an extra turn", re: /takes? (an|two|three|x|that many) extra turns?/i },
-  { why: "take an extra turn", re: /take an extra turn after this one/i },
-];
+// Imported, never restated — see the note in measure-mld.mts.
+import { classifyExtraTurn } from "../src/lib/bracket/oracle-rules";
 
-/**
- * Text that mentions an extra turn while granting none — a prevention, a skip, or a
- * restriction. Checked FIRST.
- *
- * An earlier version of this comment said "because every one of these also matches a grant
- * pattern", and the spec repeated it. Measured: FALSE for three of the four fixtures.
- * `Stranglehold`, `Trouble in Pairs` and `Gerrard's Hourglass Pendant` read "if a player
- * would begin an extra turn, that player skips that turn instead" and match NEITHER grant
- * pattern — they are excluded by matching nothing, so they would pass with this whole array
- * deleted. Only `Ugin's Nexus` earns the clause, because its death trigger really does say
- * "take an extra turn after this one".
- *
- * The order is still right — a card that both grants and prevents must read as prevention —
- * but the reason is one card, not four, and the run now prints which mechanism excluded each
- * fixture so a vacuous row cannot hide behind a passing one.
- */
-const NEGATIONS = [
-  { why: "skips that turn", re: /would begin an extra turn.{0,40}skips? that turn/i },
-  { why: "can't take extra turns", re: /can'?t take extra turns/i },
-  { why: "skip extra turns", re: /skips? (all )?extra turns/i },
-];
 
-const negated = (t: string) => NEGATIONS.filter((n) => n.re.test(t)).map((n) => n.why);
-const granted = (t: string) => GRANTS.filter((g) => g.re.test(t)).map((g) => g.why);
-const classify = (t: string | null) => {
-  if (!t) return { hit: false, why: [] as string[], blockedBy: [] as string[] };
-  const block = negated(t);
-  const grant = granted(t);
-  return { hit: grant.length > 0 && block.length === 0, why: grant, blockedBy: block };
-};
+
+const classify = classifyExtraTurn;
 
 /** Unambiguous grants. Recall is measured here. */
 const KNOWN_POSITIVE = [
