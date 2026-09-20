@@ -393,6 +393,21 @@ export async function buildCommanderIndex(
   // skips thousands, and would have left every score computed against the
   // previous index. The workflow supports that path explicitly, which is what
   // makes gating on writes alone wrong rather than merely narrow.
+  // THE SCORE CLEAR the long comment above belongs to — and it runs BEFORE the pair pass,
+  // not after it. The guard reads the COMMANDER counters only, because `commander_scores` is
+  // computed from commander support and a run that stored pairs and skipped every commander
+  // has moved none of its inputs. Ordering it after the pairs made a throw anywhere in that
+  // pass — `loadPairs` itself is outside the per-pair catch — skip the clear entirely, and
+  // leave every stored score computed against an index that had already moved, marked
+  // `writer_version`-current and indistinguishable from a fresh set. That is the exact
+  // failure `probe:score-lock` exists for, reached from the one direction the lock cannot
+  // help with. Clearing first fails the other way instead: a crash mid-pairs costs readers a
+  // cold recompute, which is a cost rather than a wrong answer.
+  if (r.commanders > 0 || r.skipped > 0) {
+    await clearScores();
+    console.log("commander-index: cleared persisted commander scores");
+  }
+
   // ---- THE PAIR PASS -----------------------------------------------------------------
   //
   // Only pairs someone has actually BUILT. There are roughly 2,847 possible combinations —
@@ -438,16 +453,6 @@ export async function buildCommanderIndex(
       r.pairsFailed++;
       console.error(`commander-index: pair ${pair.nameA} + ${pair.nameB} failed`, err);
     }
-  }
-
-  // THE SCORE CLEAR the long comment above belongs to. The pair pass was inserted between the
-  // two, so the reasoning and its call no longer touch; this line is the pointer back rather
-  // than a second copy of it. Note the guard reads the COMMANDER counters only — a run that
-  // stored pairs and skipped every commander has not moved anything `commander_scores` is
-  // computed from.
-  if (r.commanders > 0 || r.skipped > 0) {
-    await clearScores();
-    console.log("commander-index: cleared persisted commander scores");
   }
 
   return r;

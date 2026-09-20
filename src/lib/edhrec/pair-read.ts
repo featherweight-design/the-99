@@ -181,8 +181,12 @@ export async function resolvePairEdhrecData(
       target: [edhrecPairCache.commanderOracleId, edhrecPairCache.partnerOracleId],
       set: { payload: sql`excluded.payload`, fetchedAt: sql`excluded.fetched_at` },
     })
-    .catch(() => {
-      // A cache write failing must not cost the reader the answer it already has.
+    .catch((err) => {
+      // A cache write failing must not cost the reader the answer it already has — but it
+      // must not be silent either. Swallowed, a failing upsert (schema drift, a permission
+      // change, a connection fault) disables the pair cache completely and every reader
+      // re-fetches EDHREC forever, with the only symptom being a slow page.
+      console.error("edhrec pair cache upsert failed", err);
     });
   return fresh;
 }

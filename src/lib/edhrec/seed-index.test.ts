@@ -388,3 +388,48 @@ describe("pairNameFilter", () => {
     expect(new PgDialect().sqlToQuery(pairNameFilter(["a"])).sql).toContain("::uuid[]");
   });
 });
+
+// Round 4 of #754. `clearScores` used to run AFTER the pair pass, and `loadPairs` sits
+// outside the per-pair catch — so one throw there skipped the clear entirely and left every
+// stored score computed against an index that had already moved, marked
+// `writer_version`-current and indistinguishable from a fresh set. That is the failure
+// `probe:score-lock` exists for, reached from the one direction the lock cannot help with.
+describe("the score clear runs before the pair pass", () => {
+  it("clears even when loading the pairs throws", async () => {
+    let cleared = 0;
+    await expect(
+      buildCommanderIndex({
+        loadPairs: async () => {
+          throw new Error("pair query failed");
+        },
+        loadCommanders: async () => [commander("Ghoulcaller Gisa", "g")],
+        loadNameIndex: async () => [{ oracleId: "g", name: "Ghoulcaller Gisa" }],
+        fetch: async () => okResult(["Sol Ring"]),
+        write: async () => {},
+        clearScores: async () => {
+          cleared++;
+        },
+        delayMs: 0,
+      }),
+    ).rejects.toThrow("pair query failed");
+    expect(cleared).toBe(1);
+  });
+
+  // The counterpart, unchanged: a run that moved nothing must not throw away every reader's
+  // scores for it. That would be a self-inflicted cold start.
+  it("does not clear when no commander was written or skipped", async () => {
+    let cleared = 0;
+    await buildCommanderIndex({
+      loadPairs: async () => [],
+      loadCommanders: async () => [],
+      loadNameIndex: async () => [],
+      fetch: async () => okResult([]),
+      write: async () => {},
+      clearScores: async () => {
+        cleared++;
+      },
+      delayMs: 0,
+    });
+    expect(cleared).toBe(0);
+  });
+});
