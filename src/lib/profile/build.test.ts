@@ -411,3 +411,13 @@ describe("the cached form survives a JSON round trip", () => {
     expect(JSON.parse(JSON.stringify(p))).toEqual(p);
   });
 });
+
+describe("the commanders are named on the object", () => {
+  // The converse of the commanders-are-cards rule: they are cards you cannot REMOVE, and
+  // `upgradePath` must never offer one as a card to cut. Once the loader has unioned the
+  // commander rows into `cards`, nothing else here can tell one from a `deck_cards` row.
+  it("carries both commander oracle ids", () => {
+    const p = buildDeckProfile(input({ commanderOracleIds: ["cmd", "partner"] }));
+    expect(p.commanderOracleIds).toEqual(["cmd", "partner"]);
+  });
+});

@@ -177,6 +177,13 @@ export type ProfileThemes = { themes: { slug: string; label: string }[] };
 
 export type DeckProfile = {
   deckId: string;
+  /**
+   * Both commanders, or one. Carried because the commanders-are-cards rule has a CONVERSE
+   * that verdicts need: they are cards you cannot remove. `upgradePath` must never offer a
+   * commander as a card to cut, and nothing else on this object can tell one from a
+   * `deck_cards` row once the loader has unioned them.
+   */
+  commanderOracleIds: string[];
   /** Over the deck's OWN inputs. Not the catalog generation: `cacheForUser` injects that into
    *  the key itself, and repeating it would file one input twice. */
   fingerprint: string;

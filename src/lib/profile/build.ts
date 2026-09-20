@@ -230,6 +230,7 @@ export function buildDeckProfile(input: ProfileInput): DeckProfile {
 
   return {
     deckId: input.deckId,
+    commanderOracleIds: input.commanderOracleIds,
     fingerprint: input.fingerprint,
     counts: countCards(cards),
     roles: rolesOf(cards),
