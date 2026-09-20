@@ -1,6 +1,6 @@
 {
-  "id": "64338c94-59aa-46ab-9b74-79f5cc537c33",
-  "prevId": "fd29e8ad-cc04-40a6-94c6-f992e47bc42e",
+  "id": "1812d73c-c410-4b6b-b2d2-53bb0033fc84",
+  "prevId": "9384a17b-3732-4c6f-915c-ea79bd86b1db",
   "version": "7",
   "dialect": "postgresql",
   "tables": {
@@ -743,8 +743,8 @@
           "onDelete": "no action",
           "onUpdate": "no action"
         },
-        "commander_pair_support_cards_commander_oracle_id_partner_oracle_id_commander_pair_support_commander_oracle_id_partner_oracle_id_fk": {
-          "name": "commander_pair_support_cards_commander_oracle_id_partner_oracle_id_commander_pair_support_commander_oracle_id_partner_oracle_id_fk",
+        "commander_pair_support_cards_pair_fk": {
+          "name": "commander_pair_support_cards_pair_fk",
           "tableFrom": "commander_pair_support_cards",
           "tableTo": "commander_pair_support",
           "columnsFrom": [
@@ -760,8 +760,8 @@
         }
       },
       "compositePrimaryKeys": {
-        "commander_pair_support_cards_commander_oracle_id_partner_oracle_id_oracle_id_pk": {
-          "name": "commander_pair_support_cards_commander_oracle_id_partner_oracle_id_oracle_id_pk",
+        "commander_pair_support_cards_pk": {
+          "name": "commander_pair_support_cards_pk",
           "columns": [
             "commander_oracle_id",
             "partner_oracle_id",

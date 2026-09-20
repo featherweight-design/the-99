@@ -1069,9 +1069,19 @@ export const formatStaples = pgTable("format_staples", {
  * The composition fallback for a commander with no page of its own.
  *
  * A `GROUP BY` over the same `avg_*` columns — the mean of each count across an identity's
- * commanders, weighted by `deck_count`. It is an AVERAGE OF AVERAGES and the profile labels
- * it the weaker claim it is: a commander's own page describes decks built with that
- * commander, this describes decks in those colours generally.
+ * commanders, UNWEIGHTED. Each commander in the bucket counts once whatever its deck count,
+ * so the target describes the typical ARCHETYPE in those colours rather than the typical
+ * DECK: a 50,000-deck commander and a 50-deck one contribute equally. Weighting by
+ * `deck_count` would let a handful of popular commanders set the standard for their whole
+ * identity, which is the opposite of what a fallback is for.
+ *
+ * (An earlier draft of this comment said "weighted by `deck_count`" while the derivation
+ * never weighted anything — `weight_total` was computed and never read. Corrected rather
+ * than implemented: unweighted is the right answer here, and the claim was the drift.)
+ *
+ * It is an AVERAGE OF AVERAGES either way, and the profile labels it the weaker claim it is:
+ * a commander's own page describes decks built with that commander, this describes decks in
+ * those colours generally.
  *
  * It matters for two populations. 105 of 3,384 commander-eligible cards are not in the index
  * at all (3.1%) — overwhelmingly newly printed commanders, which is exactly when someone is

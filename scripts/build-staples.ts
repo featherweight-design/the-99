@@ -2,8 +2,8 @@
 // widened `commander_support` composition columns.
 //
 // Read-only against its inputs; writes only its two output tables, and both in ONE
-// transaction each so a failed run leaves the previous floors standing rather than a
-// half-written table.
+// transaction so a failed run leaves the previous floors standing rather than a half-written
+// pair.
 //
 // IT PRINTS ITS WHOLE DERIVATION, and that is the point rather than a courtesy. Sub-project 2
 // builds the fill, the top-off and the Add panel against these numbers, and the output is what
@@ -40,11 +40,103 @@ const IDENTITY_KEY = `
   case when cardinality(cmd.color_identity) = 0 then 'C'
        else array_to_string(array(select unnest(cmd.color_identity) order by 1), '') end`;
 
+/**
+ * The COUNT fallback key, matching `countCondition` exactly.
+ *
+ * `count:0` is the colourless bucket and reads oddly beside `'C'`; both exist because the two
+ * vocabularies answer different questions, and a commander is only ever looked up under one of
+ * them — its exact identity if that bucket cleared the bar, otherwise its colour count.
+ */
+const COUNT_KEY = `'count:' || cardinality(cmd.color_identity)`;
+
+/**
+ * NO `synergy_state` FILTER, ANYWHERE, and that is deliberate rather than an omission.
+ *
+ * The ratified figures — 757 staples, mono-white 46 — came out of `measure-staples.mts` §6,
+ * which filters on nothing. Adding a filter here re-derives a ratified number without
+ * re-ratifying it, and the two agree only while every commander is `ok`: on the local-dev
+ * index all 3,279 are, which is exactly why a filtered version reproduced the figures and
+ * looked correct. After a partially degraded run they diverge, every bucket's denominator
+ * shrinks, every breadth ratio rises, and the published floor silently grows past the cut.
+ *
+ * An `absent` commander is a real commander with no support cards. Counting it in the
+ * denominator and never in the numerator DEPRESSES every ratio, which is the conservative
+ * direction and the one the cut was defended at.
+ */
+const NO_STATE_FILTER = "";
+
 const pad = (s: string | number, n: number) => String(s).padEnd(n);
 const num = (s: string | number, n: number) => String(s).padStart(n);
 
 async function q<T = Record<string, unknown>>(text: string): Promise<T[]> {
   return (await db.execute(sql.raw(text))).rows as T[];
+}
+
+type StapleRow = {
+  condition: string; oracle_id: string; name: string; commanders: number;
+  commander_total: number; avg_inclusion: number; weighted_rank: number;
+};
+
+/**
+ * The floor for one KEY EXPRESSION — exact identity, or the colour-count fallback.
+ *
+ * One function for both, because two copies of a ratified cut drift a round at a time. The
+ * only difference between the two passes is the key and which commanders they are allowed to
+ * see, and both arrive as parameters.
+ */
+function floorsQuery(keyExpr: string, restrictTo: string) {
+  return `
+    with tot as (
+      select ${keyExpr} as condition, count(*)::int as t
+      from commander_support cs
+      join cards cmd on cmd.oracle_id = cs.commander_oracle_id
+      ${restrictTo}
+      group by 1 having count(*) >= ${MIN_COMMANDERS_PER_CONDITION}
+    ),
+    per as (
+      select ${keyExpr} as condition,
+             cc.oracle_id, cc.name,
+             count(*)::int as commanders,
+             avg(csc.inclusion) as avg_inclusion,
+             -- The weighted figure, for ORDER only. Membership below is unweighted.
+             sum(coalesce(cs.deck_count, 0))::numeric as weighted,
+             -- Basic lands are excluded BY TYPE, never by threshold: they top the inclusion
+             -- ranking at 95%, which is an artifact of appearing only for their own colour.
+             cc.type_line ilike 'basic land%' as is_basic
+      from commander_support_cards csc
+      join commander_support cs using (commander_oracle_id)
+      join cards cmd on cmd.oracle_id = cs.commander_oracle_id
+      join cards cc on cc.oracle_id = csc.oracle_id
+      ${restrictTo}
+      group by 1, cc.oracle_id, cc.name, cc.type_line
+    )
+    select p.condition, p.oracle_id, p.name, p.commanders,
+           t.t as commander_total,
+           round(p.avg_inclusion::numeric, 1)::float as avg_inclusion,
+           row_number() over (partition by p.condition order by p.weighted desc)::int as weighted_rank
+    from per p join tot t using (condition)
+    where p.commanders::numeric / t.t >= ${BREADTH}
+      and p.avg_inclusion >= ${INCLUSION}
+      and p.is_basic = false
+    order by p.condition, weighted_rank`;
+}
+
+/** Composition averages for one key expression, over the commanders that carry one. */
+function compositionQuery(keyExpr: string, restrictTo: string) {
+  const avg = (col: string) => `avg(cs.${col}) filter (where cs.avg_land is not null) as ${col}`;
+  return `
+    select ${keyExpr} as condition,
+           count(*)::int as commanders,
+           count(*) filter (where cs.avg_land is not null)::int as with_composition,
+           ${["avg_land", "avg_basic", "avg_nonbasic", "avg_creature", "avg_instant",
+              "avg_sorcery", "avg_artifact", "avg_enchantment", "avg_planeswalker",
+              "avg_battle"].map(avg).join(",\n           ")}
+    from commander_support cs
+    join cards cmd on cmd.oracle_id = cs.commander_oracle_id
+    ${restrictTo}
+    group by 1
+    having count(*) >= ${MIN_COMMANDERS_PER_CONDITION}
+       and count(*) filter (where cs.avg_land is not null) > 0`;
 }
 
 async function main() {
@@ -66,79 +158,76 @@ async function main() {
   }
 
   // ---- 1 · the exact-identity buckets that clear the sample bar -------------------------
-  console.log(`\n== 1 · buckets ==   (bar: ${MIN_COMMANDERS_PER_CONDITION} commanders)`);
+  console.log(`\n== 1 · exact-identity buckets ==   (bar: ${MIN_COMMANDERS_PER_CONDITION} commanders)`);
   const buckets = await q<{ condition: string; n: number }>(`
     select ${IDENTITY_KEY} as condition, count(*)::int as n
     from commander_support cs
     join cards cmd on cmd.oracle_id = cs.commander_oracle_id
-    where cs.synergy_state = 'ok'
     group by 1 having count(*) >= ${MIN_COMMANDERS_PER_CONDITION}
     order by count(*) desc`);
   const covered = buckets.reduce((a, b) => a + b.n, 0);
-  console.log(`  ${buckets.length} exact identities clear it, covering ${covered} of ${corpus.ok} commanders`);
+  console.log(`  ${buckets.length} exact identities clear it, covering ${covered} of ${corpus.commanders}`);
   console.log(`  ${buckets.map((b) => `${b.condition}:${b.n}`).join("  ")}`);
 
-  // ---- 2 · the floors -------------------------------------------------------------------
-  const rows = await q<{
-    condition: string; oracle_id: string; name: string; commanders: number;
-    commander_total: number; avg_inclusion: number; weighted_rank: number; is_land: boolean;
-  }>(`
-    with tot as (
-      select ${IDENTITY_KEY} as condition, count(*)::int as t,
-             sum(coalesce(cs.deck_count, 0))::numeric as weight_total
-      from commander_support cs
-      join cards cmd on cmd.oracle_id = cs.commander_oracle_id
-      where cs.synergy_state = 'ok'
-      group by 1 having count(*) >= ${MIN_COMMANDERS_PER_CONDITION}
-    ),
-    per as (
-      select ${IDENTITY_KEY} as condition,
-             cc.oracle_id, cc.name,
-             count(*)::int as commanders,
-             avg(csc.inclusion) as avg_inclusion,
-             -- The weighted figure, for ORDER only. Membership below is unweighted.
-             sum(coalesce(cs.deck_count, 0))::numeric as weighted,
-             cc.type_line ilike 'basic land%' as is_land
-      from commander_support_cards csc
-      join commander_support cs using (commander_oracle_id)
-      join cards cmd on cmd.oracle_id = cs.commander_oracle_id
-      join cards cc on cc.oracle_id = csc.oracle_id
-      where cs.synergy_state = 'ok'
-      group by 1, cc.oracle_id, cc.name, cc.type_line
-    )
-    select p.condition, p.oracle_id, p.name, p.commanders,
-           t.t as commander_total,
-           round(p.avg_inclusion::numeric, 1)::float as avg_inclusion,
-           row_number() over (partition by p.condition order by p.weighted desc)::int as weighted_rank,
-           p.is_land
-    from per p join tot t using (condition)
-    where p.commanders::numeric / t.t >= ${BREADTH}
-      and p.avg_inclusion >= ${INCLUSION}
-      -- Basic lands excluded BY TYPE, never by threshold: they top the inclusion ranking at
-      -- 95%, which is an artifact of appearing only for their own colour.
-      and not (cc_is_basic := false)
-    order by p.condition, weighted_rank`.replace("and not (cc_is_basic := false)", "and p.is_land = false"));
+  // ---- 2 · the count fallback, for everyone the exact buckets left behind ----------------
+  //
+  // WITHOUT THIS THE FOURTH RUNG OF THE BASIS CHAIN IS DEAD. `countCondition` is exported and
+  // unit-tested, the profile's chain names `count`, and `identity_composition`'s own comment
+  // says these tables exist for commanders an exact bucket cannot serve — but nothing derived
+  // a `count:N` row, so every three-plus-colour and colourless commander looked up a key that
+  // was never written and got no floor at all.
+  //
+  // Restricted to commanders NOT in a cleared exact bucket, deliberately. A count bucket that
+  // also swept up every mono-white commander would be a second, worse answer for a commander
+  // the exact floor already serves, and the chain takes the first hit — so the count row would
+  // never be read for them, while its averages would be dragged by them.
+  const clearedKeys = buckets.map((b) => `'${b.condition}'`);
+  const FALLBACK_ONLY =
+    clearedKeys.length > 0 ? `where (${IDENTITY_KEY}) not in (${clearedKeys.join(", ")})` : "";
 
-  const byCondition = new Map<string, typeof rows>();
+  const countBuckets = await q<{ condition: string; n: number }>(`
+    select ${COUNT_KEY} as condition, count(*)::int as n
+    from commander_support cs
+    join cards cmd on cmd.oracle_id = cs.commander_oracle_id
+    ${FALLBACK_ONLY}
+    group by 1 having count(*) >= ${MIN_COMMANDERS_PER_CONDITION}
+    order by count(*) desc`);
+  const leftOver = corpus.commanders - covered;
+  const countCovered = countBuckets.reduce((a, b) => a + b.n, 0);
+  console.log(`\n== 2 · the count fallback ==   (the ${leftOver} an exact bucket cannot serve)`);
+  console.log(`  ${countBuckets.length} count buckets clear the bar, covering ${countCovered} of ${leftOver}`);
+  console.log(`  ${countBuckets.map((b) => `${b.condition}:${b.n}`).join("  ") || "(none)"}`);
+  if (countCovered < leftOver) {
+    console.log(`  ${leftOver - countCovered} commanders clear NEITHER bar and have no floor at all.`);
+    console.log(`  The profile reports basis "none" for them, which is the state the design`);
+    console.log(`  draws — never a floor derived from a sample too small to defend.`);
+  }
+
+  // ---- 3 · the floors --------------------------------------------------------------------
+  const exactRows = await q<StapleRow>(floorsQuery(IDENTITY_KEY, NO_STATE_FILTER));
+  const countRows = await q<StapleRow>(floorsQuery(COUNT_KEY, FALLBACK_ONLY));
+  const rows = [...exactRows, ...countRows];
+
+  const byCondition = new Map<string, StapleRow[]>();
   for (const r of rows) {
     const list = byCondition.get(r.condition) ?? [];
     list.push(r);
     byCondition.set(r.condition, list);
   }
-  console.log(`\n== 2 · the ratified floor ==   (breadth >= ${BREADTH}, inclusion >= ${INCLUSION}%)`);
-  console.log(`  ${pad("identity", 10)}${num("commanders", 12)}${num("cards", 8)}`);
-  for (const b of buckets) {
+  console.log(`\n== 3 · the ratified floor ==   (breadth >= ${BREADTH}, inclusion >= ${INCLUSION}%)`);
+  console.log(`  ${pad("condition", 10)}${num("commanders", 12)}${num("cards", 8)}`);
+  for (const b of [...buckets, ...countBuckets]) {
     console.log(`  ${pad(b.condition, 10)}${num(b.n, 12)}${num((byCondition.get(b.condition) ?? []).length, 8)}`);
   }
   console.log(`  ${pad("TOTAL", 10)}${num("", 12)}${num(rows.length, 8)}`);
 
-  // ---- 3 · both sides of the boundary, which is what the cut is defended on --------------
-  console.log(`\n== 3 · the boundary, mono-white ==   (the cut is defended HERE, not on an aggregate)`);
+  // ---- 4 · both sides of the boundary, which is what the cut is defended on ---------------
+  console.log(`\n== 4 · the boundary, mono-white ==   (the cut is defended HERE, not on an aggregate)`);
   const boundary = await q<{ name: string; incl: number; inside: boolean }>(`
     with tot as (
       select count(*)::int as t from commander_support cs
       join cards cmd on cmd.oracle_id = cs.commander_oracle_id
-      where cs.synergy_state = 'ok' and cmd.color_identity = array['W']::text[]
+      where cmd.color_identity = array['W']::text[]
     ),
     per as (
       select cc.name, count(*)::int as n, avg(csc.inclusion) as incl
@@ -146,7 +235,7 @@ async function main() {
       join commander_support cs using (commander_oracle_id)
       join cards cmd on cmd.oracle_id = cs.commander_oracle_id
       join cards cc on cc.oracle_id = csc.oracle_id
-      where cs.synergy_state = 'ok' and cmd.color_identity = array['W']::text[]
+      where cmd.color_identity = array['W']::text[]
         and cc.type_line not ilike 'basic land%'
       group by cc.name
     )
@@ -158,7 +247,7 @@ async function main() {
     console.log(`  ${b.inside ? "in " : "out"}  ${pad(b.name, 34)}${num(`${b.incl}%`, 8)}`);
   }
 
-  // ---- 4 · publish ----------------------------------------------------------------------
+  // ---- 5 · publish -------------------------------------------------------------------------
   const stapleRows = rows.map((r) => ({
     oracleId: r.oracle_id,
     condition: r.condition,
@@ -168,26 +257,10 @@ async function main() {
     weightedRank: r.weighted_rank,
   }));
 
-  const comps = await q<Record<string, number | string>>(`
-    select ${IDENTITY_KEY} as condition,
-           count(*)::int as commanders,
-           count(*) filter (where cs.avg_land is not null)::int as with_composition,
-           avg(cs.avg_land) filter (where cs.avg_land is not null) as avg_land,
-           avg(cs.avg_basic) filter (where cs.avg_land is not null) as avg_basic,
-           avg(cs.avg_nonbasic) filter (where cs.avg_land is not null) as avg_nonbasic,
-           avg(cs.avg_creature) filter (where cs.avg_land is not null) as avg_creature,
-           avg(cs.avg_instant) filter (where cs.avg_land is not null) as avg_instant,
-           avg(cs.avg_sorcery) filter (where cs.avg_land is not null) as avg_sorcery,
-           avg(cs.avg_artifact) filter (where cs.avg_land is not null) as avg_artifact,
-           avg(cs.avg_enchantment) filter (where cs.avg_land is not null) as avg_enchantment,
-           avg(cs.avg_planeswalker) filter (where cs.avg_land is not null) as avg_planeswalker,
-           avg(cs.avg_battle) filter (where cs.avg_land is not null) as avg_battle
-    from commander_support cs
-    join cards cmd on cmd.oracle_id = cs.commander_oracle_id
-    where cs.synergy_state = 'ok'
-    group by 1
-    having count(*) >= ${MIN_COMMANDERS_PER_CONDITION}
-       and count(*) filter (where cs.avg_land is not null) > 0`);
+  const comps = [
+    ...(await q<Record<string, number | string>>(compositionQuery(IDENTITY_KEY, NO_STATE_FILTER))),
+    ...(await q<Record<string, number | string>>(compositionQuery(COUNT_KEY, FALLBACK_ONLY))),
+  ];
 
   const compRows = comps.map((c) => ({
     condition: String(c.condition),
@@ -217,12 +290,28 @@ async function main() {
     for (let i = 0; i < stapleRows.length; i += CHUNK) {
       await tx.insert(formatStaples).values(stapleRows.slice(i, i + CHUNK));
     }
-    await tx.delete(identityComposition);
-    if (compRows.length > 0) await tx.insert(identityComposition).values(compRows);
+    // THE SAME RULE AS ABOVE, applied to the other table — and it needs its own branch rather
+    // than sharing the staples refusal, because an empty composition is a LEGITIMATE state.
+    // No commander carries one until the first widened index run, so a hard refusal would
+    // fail every run until then and take the floors down with it. What must never happen is
+    // the clear: an upstream shape change that nulls every `avg_*` would otherwise delete
+    // every stored composition, print "published 0" and exit 0, dropping the profile to
+    // basis "none" for every deck behind a green job.
+    if (compRows.length > 0) {
+      await tx.delete(identityComposition);
+      await tx.insert(identityComposition).values(compRows);
+    }
   });
 
   console.log(`\npublished ${stapleRows.length} staple rows across ${byCondition.size} conditions`);
-  console.log(`published ${compRows.length} identity composition rows`);
+  if (compRows.length > 0) {
+    console.log(`published ${compRows.length} identity composition rows`);
+  } else {
+    console.log(
+      `derived NO composition rows — the previous ones (if any) are left standing rather ` +
+        `than cleared. See the note above if this is the pre-widened-index state.`,
+    );
+  }
 
   // The stamp: these are profile inputs, so a refresh must retire cached readers. Non-fatal,
   // as every other ingest's stamp is.
