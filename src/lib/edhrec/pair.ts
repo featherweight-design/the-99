@@ -1,5 +1,5 @@
 import { commanderSlug } from "./slug";
-import { parseEdhrecPayload, type EdhrecData } from "./parse";
+import { parseEdhrecPayload } from "./parse";
 import type { EdhrecFetchResult } from "./client";
 import { synergyStateFrom } from "../recs/synergy-state";
 
@@ -107,7 +107,16 @@ export async function fetchPair(
     }
     if (!res.ok) return { data: null, unreachable: true, rawPayload: null };
 
-    const payload = await res.json();
+    // Guarded for the same reason the socket error above is: a truncated or malformed body
+    // is upstream misbehaving, and an exception escaping here would take out the whole index
+    // pass rather than degrading one pair. Both single-commander fetches in `client.ts` have
+    // their `res.json()` inside the try that returns `unreachable`; this one did not.
+    let payload: unknown;
+    try {
+      payload = await res.json();
+    } catch {
+      return { data: null, unreachable: true, rawPayload: null };
+    }
     const target = redirectTarget(payload);
     if (target !== null) {
       const next = slugFromPath(target);

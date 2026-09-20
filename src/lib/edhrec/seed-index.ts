@@ -58,12 +58,6 @@ export type BuildIndexResult = {
 };
 
 /**
- * Distinct partner pairs someone has actually built, with both names.
- *
- * Normalised through `canonicalPair` at the point of use rather than in SQL, so there is one
- * definition of the order and it lives beside the CHECK constraint that enforces it.
- */
-/**
  * The pair name map's own filter, extracted so its emitted SQL can be pinned.
  *
  * `any(...)::uuid[]` rather than a bare array: an uncast JS array against a uuid column
@@ -80,6 +74,12 @@ export function pairNameFilter(oracleIds: string[]) {
   return sql`${cards.oracleId} = any(${sql.param(oracleIds)}::uuid[])`;
 }
 
+/**
+ * Distinct partner pairs someone has actually built, with both names.
+ *
+ * Normalised through `canonicalPair` at the point of use rather than in SQL, so there is one
+ * definition of the order and it lives beside the CHECK constraint that enforces it.
+ */
 async function loadPairs(): Promise<{ a: string; b: string; nameA: string; nameB: string }[]> {
   const rows = await db
     .selectDistinct({

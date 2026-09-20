@@ -228,3 +228,33 @@ describe("toPairRows", () => {
     expect(header.edhrecTotal).toBeNull();
   });
 });
+
+describe("fetchPair — a malformed body", () => {
+  // Round 2 of #754. `res.json()` sat OUTSIDE the try that returns `unreachable`, so a
+  // truncated or malformed body threw out of the function: the index pass's pair loop and
+  // the demand path would both take the exception rather than degrading one pair. Both
+  // single-commander fetches in `client.ts` have theirs inside the try; this one did not.
+  it("degrades rather than throwing", async () => {
+    const result = await fetchPair("Atraxa", "Zzz", async () => ({
+      ok: true,
+      status: 200,
+      json: async () => {
+        throw new SyntaxError("Unexpected end of JSON input");
+      },
+    }) as unknown as Response);
+    expect(result).toEqual({ data: null, unreachable: true, rawPayload: null });
+  });
+
+  // Degraded, never absent — the distinction the whole file turns on. An absent header
+  // overwrites a pair we already had and cascade-deletes its support list.
+  it("is degraded, not absent", async () => {
+    const result = await fetchPair("Atraxa", "Zzz", async () => ({
+      ok: true,
+      status: 200,
+      json: async () => {
+        throw new Error("socket hang up");
+      },
+    }) as unknown as Response);
+    expect(result.unreachable).toBe(true);
+  });
+});
