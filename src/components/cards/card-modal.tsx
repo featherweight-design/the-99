@@ -314,7 +314,7 @@ function AvailabilityDetail({ card }: { card: BrowseCard }) {
               className="m-0 mt-[6px] text-[12.5px] leading-[1.5]"
               style={{ color: "var(--fg-muted)" }}
             >
-              {c.detailBrewsUncounted(brews)}
+              {c.detailDraftsUncounted(brews)}
             </p>
           )}
         </>

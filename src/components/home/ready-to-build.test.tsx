@@ -28,7 +28,7 @@ const READY = {
   floor: 70,
 };
 
-const IN_USE = new Map([["o1", { inUse: 12, wantedByBrew: 0 }]]);
+const IN_USE = new Map([["o1", { inUse: 12, wantedByDraft: 0 }]]);
 
 describe("ReadyToBuild", () => {
   it("draws the frame's figures exactly", () => {

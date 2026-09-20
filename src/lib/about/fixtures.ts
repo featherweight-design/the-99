@@ -556,10 +556,10 @@ export const READY_SLICE: ReadySlice<CommanderListItem> = {
 
 /** Fitting cards a committed deck already sleeves, per commander. */
 export const READY_IN_USE = new Map<string, ReceiptCounts>([
-  ["about-preston-garvey-minuteman", { inUse: 620, wantedByBrew: 0 }],
+  ["about-preston-garvey-minuteman", { inUse: 620, wantedByDraft: 0 }],
   // ZERO, and that is the point: the second clause is ABSENT at zero, which is
   // key line 2. A pair where both cards carry it cannot show the absence.
-  ["about-kotis-sibsig-champion", { inUse: 0, wantedByBrew: 0 }],
+  ["about-kotis-sibsig-champion", { inUse: 0, wantedByDraft: 0 }],
 ]);
 
 /**

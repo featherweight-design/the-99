@@ -304,7 +304,7 @@ describe("CardModal allocation receipt", () => {
         { ...claim("d3", "Sketchbook", 1, false) },
       ]),
     });
-    expect(screen.getByText(c.detailBrewsUncounted(1))).toBeInTheDocument();
+    expect(screen.getByText(c.detailDraftsUncounted(1))).toBeInTheDocument();
   });
 
   // In the soft state every claimant is a brew and `detailSoftNote` is the whole story,
@@ -315,7 +315,7 @@ describe("CardModal allocation receipt", () => {
       quantity: 1,
       availability: withClaims(1, [claim("d1", "Sketchbook", 1, false)]),
     });
-    expect(screen.queryByText(c.detailBrewsUncounted(1))).toBeNull();
+    expect(screen.queryByText(c.detailDraftsUncounted(1))).toBeNull();
     expect(screen.getByText(c.detailSoftNote(1))).toBeInTheDocument();
   });
 

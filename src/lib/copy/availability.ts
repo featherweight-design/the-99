@@ -148,7 +148,7 @@ export const availabilityCopy = {
     // Appended when inUse > 0. Callers join with ' · '.
     inUse: (n: number) => `${n} already in use`,
     inUseShort: (n: number) => `${n} in use`,
-    wantedByBrew: (n: number) =>
+    wantedByDraft: (n: number) =>
       n === 1 ? "1 wanted by a draft" : `${n} wanted by a draft`,
     // Score delta, `free` ranking only, only where the score moved.
     delta: (drop: number) => `↓${drop}`,
@@ -275,7 +275,7 @@ export const availabilityCopy = {
     // straight from the query rather than being derived here.
     //
     // COMMITTED DECKS HOLD, DRAFTS WANT. That is the whole model in two
-    // verbs, and it is the same distinction `receipt.wantedByBrew` draws. A
+    // verbs, and it is the same distinction `receipt.wantedByDraft` draws. A
     // committed deck has the card; a draft has asked for it and holds
     // nothing yet. Do not level these to one verb: the difference between them
     // is exactly what `free` counts.
@@ -306,7 +306,7 @@ export const availabilityCopy = {
     // arithmetic is stated as the comparison it actually is.
     //
     // `by finished lists` was cut on 2026-09-16. It qualified the figure against
-    // the brews in the rows above, and `detailBrewsUncounted` now says exactly
+    // the brews in the rows above, and `detailDraftsUncounted` now says exactly
     // that one line below in a sentence, so the qualifier restated the next
     // line. With no brew in the list there is nothing for it to disambiguate.
     detailSplitOver: (wanted: number, owned: number) =>
@@ -329,11 +329,11 @@ export const availabilityCopy = {
     // `wants` is the same verb `detailClaimWants` prints, so the sentence points
     // at its rows rather than describing them.
     //
-    // Both branches close on "gets it", singular. `brewCount` counts LISTS, not
+    // Both branches close on "gets it", singular. `draftCount` counts LISTS, not
     // copies, so "gets them" would imply a number of copies the block has not
     // printed — the same rule the note's own header states.
-    detailSoftNote: (brewCount: number) =>
-      brewCount === 1
+    detailSoftNote: (draftCount: number) =>
+      draftCount === 1
         ? "Nothing to sort out yet. The deck that wants it is still a draft. Whichever you sleeve first gets it."
         : "Nothing to sort out yet. The decks that want it are still drafts. Whichever you sleeve first gets it.",
     detailOverNote:
@@ -347,10 +347,10 @@ export const availabilityCopy = {
     // Drawn only where a committed deck is already involved. In the soft state
     // every claimant is a brew and `detailSoftNote` is the whole story, so this
     // would repeat it.
-    detailBrewsUncounted: (brewCount: number) =>
-      brewCount === 1
+    detailDraftsUncounted: (draftCount: number) =>
+      draftCount === 1
         ? "The draft isn’t counted: nothing is sleeved in it yet."
-        : `The ${brewCount} drafts aren’t counted: nothing is sleeved in them yet.`,
+        : `The ${draftCount} drafts aren’t counted: nothing is sleeved in them yet.`,
   },
 
   // ── Deck detail roll-up (addendum 2) ─────────────────────────────

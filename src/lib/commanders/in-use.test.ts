@@ -33,21 +33,21 @@ const korvold = [{ oracleId: "korvold", colorIdentity: [] }];
 describe("receiptCountsByCommander", () => {
   it("counts the fitting cards a committed deck has sleeved", () => {
     const m = receiptCountsByCommander(korvold, [card("a"), card("b")], new Map([["a", hard]]));
-    expect(m.get("korvold")).toEqual({ inUse: 1, wantedByBrew: 0 });
+    expect(m.get("korvold")).toEqual({ inUse: 1, wantedByDraft: 0 });
   });
 
   // Both severities of "physically gone" count as in use. `over` is the same
   // fact with more decks wanting the card than the player owns copies.
   it("counts an over-committed card as in use too", () => {
     const m = receiptCountsByCommander(korvold, [card("a")], new Map([["a", over]]));
-    expect(m.get("korvold")).toEqual({ inUse: 1, wantedByBrew: 0 });
+    expect(m.get("korvold")).toEqual({ inUse: 1, wantedByDraft: 0 });
   });
 
   // The same asymmetry the free pool draws: a brew is a list, not a stack of
   // sleeves, so a soft claim leaves the card usable — and gets its own clause.
   it("counts a card an unfinished brew wants separately", () => {
     const m = receiptCountsByCommander(korvold, [card("a")], new Map([["a", soft]]));
-    expect(m.get("korvold")).toEqual({ inUse: 0, wantedByBrew: 1 });
+    expect(m.get("korvold")).toEqual({ inUse: 0, wantedByDraft: 1 });
   });
 
   // The two counts are disjoint, which is what lets the caller pick one clause
@@ -62,7 +62,7 @@ describe("receiptCountsByCommander", () => {
         ["c", soft],
       ]),
     );
-    expect(m.get("korvold")).toEqual({ inUse: 2, wantedByBrew: 1 });
+    expect(m.get("korvold")).toEqual({ inUse: 2, wantedByDraft: 1 });
   });
 
   // The counts must describe the SAME pool as `colorPoolSize`, or the receipt's
@@ -76,21 +76,21 @@ describe("receiptCountsByCommander", () => {
         ["white-card", hard],
       ]),
     );
-    expect(m.get("mono-white")).toEqual({ inUse: 1, wantedByBrew: 0 });
+    expect(m.get("mono-white")).toEqual({ inUse: 1, wantedByDraft: 0 });
   });
 
   // A commander sleeved into one of your own finished decks is still a
   // commander you could unsleeve, and it is never in its own 99.
   it("never counts the commander against itself", () => {
     const m = receiptCountsByCommander(korvold, [card("korvold")], new Map([["korvold", hard]]));
-    expect(m.get("korvold")).toEqual({ inUse: 0, wantedByBrew: 0 });
+    expect(m.get("korvold")).toEqual({ inUse: 0, wantedByDraft: 0 });
   });
 
   // Basics have no availability row by design, and a card with no row has no
   // claim on it. Absent must read as free, never as unknown-so-committed.
   it("treats a card with no availability row as free", () => {
     const m = receiptCountsByCommander(korvold, [card("forest")], new Map());
-    expect(m.get("korvold")).toEqual({ inUse: 0, wantedByBrew: 0 });
+    expect(m.get("korvold")).toEqual({ inUse: 0, wantedByDraft: 0 });
   });
 
   it("returns an entry for every commander it was given", () => {
