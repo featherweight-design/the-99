@@ -367,7 +367,7 @@ describe("ContestedCardRow", () => {
 
   it("names a brew and excludes it, rather than counting it or offering it", () => {
     render(<ContestedCardRow card={card({ brewNames: ["Muldrotha Lands"] })} />);
-    expect(screen.getByText(copy.contested.brewNote("Muldrotha Lands"))).toBeTruthy();
+    expect(screen.getByText(copy.contested.draftNote("Muldrotha Lands"))).toBeTruthy();
     // The supply line counts committed decks only — a brew cannot be given a copy, so counting
     // it would make the figure quietly wrong.
     expect(screen.getByText(copy.contested.supply(1, 2))).toBeTruthy();
@@ -375,7 +375,7 @@ describe("ContestedCardRow", () => {
 
   it("folds several brews into one line", () => {
     render(<ContestedCardRow card={card({ brewNames: ["One", "Two", "Three"] })} />);
-    expect(screen.getByText(copy.contested.brewNoteMany(3))).toBeTruthy();
+    expect(screen.getByText(copy.contested.draftNoteMany(3))).toBeTruthy();
   });
 
 });

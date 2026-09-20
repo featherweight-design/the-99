@@ -39,7 +39,7 @@ export function ReadyToBuild({
           <HeroCommander
             key={item.oracleId}
             item={item}
-            // `wantedByBrew` is read by neither figure on this card and is
+            // `wantedByDraft` is read by neither figure on this card and is
             // dropped here. A commander with no entry is the same claim as
             // zero, and the clause is absent for both.
             inUse={inUse.get(item.oracleId)?.inUse ?? 0}

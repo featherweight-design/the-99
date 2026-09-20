@@ -28,7 +28,7 @@ export type PoolRollup = {
 const emptyBucket = (): Bucket => ({
   size: 0,
   roleCounts: { ramp: 0, draw: 0, removal: 0, wipes: 0 },
-  counts: { inUse: 0, wantedByBrew: 0 },
+  counts: { inUse: 0, wantedByDraft: 0 },
 });
 
 function add(into: Bucket, from: Bucket, sign: 1 | -1) {
@@ -37,7 +37,7 @@ function add(into: Bucket, from: Bucket, sign: 1 | -1) {
     into.roleCounts[r] += sign * from.roleCounts[r];
   }
   into.counts.inUse += sign * from.counts.inUse;
-  into.counts.wantedByBrew += sign * from.counts.wantedByBrew;
+  into.counts.wantedByDraft += sign * from.counts.wantedByDraft;
 }
 
 /**
@@ -63,7 +63,7 @@ export function buildPoolRollup(
     if (a) {
       const state = availabilityState(a);
       if (state === "hard" || state === "over") one.counts.inUse++;
-      else if (state === "soft") one.counts.wantedByBrew++;
+      else if (state === "soft") one.counts.wantedByDraft++;
     }
     add(buckets[identityMask(c.colorIdentity)], one, 1);
     byOracleId.set(c.oracleId, one);

@@ -26,7 +26,7 @@ export type ReceiptCounts = {
   /** Fitting owned cards a COMMITTED deck has sleeved (`hard` or `over`). */
   inUse: number;
   /** Fitting owned cards only a draft lists (`soft`). */
-  wantedByBrew: number;
+  wantedByDraft: number;
 };
 
 /**
@@ -54,13 +54,13 @@ export function receiptCountsByCommander(
 ): Map<string, ReceiptCounts> {
   return new Map(
     commanders.map((commander) => {
-      const counts: ReceiptCounts = { inUse: 0, wantedByBrew: 0 };
+      const counts: ReceiptCounts = { inUse: 0, wantedByDraft: 0 };
       for (const c of commanderPool(commander, collection)) {
         const a = availability.get(c.oracleId);
         if (!a) continue;
         const state = availabilityState(a);
         if (state === "hard" || state === "over") counts.inUse++;
-        else if (state === "soft") counts.wantedByBrew++;
+        else if (state === "soft") counts.wantedByDraft++;
       }
       return [commander.oracleId, counts];
     }),

@@ -539,11 +539,11 @@ export function ContestedCardRow({
           count above quietly wrong; listing it as an option would invite a certain refusal. */}
       {card.brewNames.length === 1 ? (
         <p className="text-[11px] mt-[8px] mb-0" style={{ color: "var(--fg-faint)" }}>
-          {copy.contested.brewNote(card.brewNames[0])}
+          {copy.contested.draftNote(card.brewNames[0])}
         </p>
       ) : card.brewNames.length > 1 ? (
         <p className="text-[11px] mt-[8px] mb-0" style={{ color: "var(--fg-faint)" }}>
-          {copy.contested.brewNoteMany(card.brewNames.length)}
+          {copy.contested.draftNoteMany(card.brewNames.length)}
         </p>
       ) : null}
 
