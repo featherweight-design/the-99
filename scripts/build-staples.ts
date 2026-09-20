@@ -78,16 +78,6 @@ type StapleRow = {
 };
 
 /**
- * A `where` clause re-spelled as an `and`, for a query that already has one.
- *
- * The restriction arrives as a complete `where …` because every other caller uses it that
- * way; pasting a second `where` into one query is a syntax error, and dropping the
- * restriction instead would silently widen the population.
- */
-const andForm = (restrictTo: string) =>
-  restrictTo ? restrictTo.replace(/^\s*where\b/, "  and") : "";
-
-/**
  * The floor for one KEY EXPRESSION — exact identity, or the colour-count fallback.
  *
  * One function for both, because two copies of a ratified cut drift a round at a time. The
@@ -110,11 +100,20 @@ function floorsQuery(keyExpr: string, restrictTo: string) {
              avg(csc.inclusion) as avg_inclusion,
              -- The weighted figure, for ORDER only. Membership below is unweighted.
              --
-             -- coalesce(..., 1) and NOT 0, matching measure-staples.mts:205 exactly. A
-             -- commander with no recorded deck count gets one vote rather than none — zero
-             -- would silently drop it out of the ordering, and the displayed floor would be
-             -- ordered differently from the one the cut was ratified against.
-             sum(coalesce(cs.deck_count, 1))::numeric as weighted,
+             -- TWO null policies, and they belong to different figures:
+             --
+             --   · coalesce(deck_count, 1) and NOT 0. A commander with no recorded deck
+             --     count gets one vote rather than none, matching measure-staples.mts:205.
+             --   · The FILTER, not a WHERE. A row with no inclusion figure carries no
+             --     weight — but it must still COUNT toward breadth, because the ratified
+             --     floors query (measure-staples.mts §6, the source of 757 and mono-white
+             --     46) filters inclusion nowhere. An earlier fix put this in the WHERE
+             --     and narrowed the denominator with it, which is the same class of drift
+             --     it was fixing. It was invisible on this data — 0 of 859,794 rows have a
+             --     null inclusion — so the figures were unchanged because the filter
+             --     matched nothing, not because it was harmless.
+             sum(coalesce(cs.deck_count, 1)) filter (where csc.inclusion is not null)
+               ::numeric as weighted,
              -- Basic lands are excluded BY TYPE, never by threshold: they top the inclusion
              -- ranking at 95%, which is an artifact of appearing only for their own colour.
              cc.type_line ilike 'basic land%' as is_basic
@@ -122,13 +121,7 @@ function floorsQuery(keyExpr: string, restrictTo: string) {
       join commander_support cs using (commander_oracle_id)
       join cards cmd on cmd.oracle_id = cs.commander_oracle_id
       join cards cc on cc.oracle_id = csc.oracle_id
-      -- A row with no inclusion figure carries NO WEIGHT, matching
-      -- measure-staples.mts:208. Counted, it lets a commander's whole deck_count promote a
-      -- card on evidence the row does not actually contain — the card would outrank one
-      -- whose breadth is real, in an order that is supposed to be the ratified one.
-      -- avg() already ignores nulls, so this changes the WEIGHT and not the breadth.
-      where csc.inclusion is not null
-      ${andForm(restrictTo)}
+      ${restrictTo}
       group by 1, cc.oracle_id, cc.name, cc.type_line
     )
     select p.condition, p.oracle_id, p.name, p.commanders,
