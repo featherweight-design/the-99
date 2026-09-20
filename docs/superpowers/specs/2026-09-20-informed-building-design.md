@@ -194,6 +194,16 @@ Add those three conditions **below the bar**, marked thin the way `THIN_DECK_COU
 (`src/lib/profile/fit.ts`) already marks a thin commander. That takes the no-fallback
 population from 134 to zero.
 
+**Mechanism, refined while writing the plan.** An earlier draft of this section said the basis
+chain gains a fifth `group` rung. It does not need one. The condition vocabulary already has a
+key for every one of these buckets: `identityCondition([])` returns `'C'` for colourless and
+`countCondition(n)` returns `count:4` and `count:5`. Those keys are not missing, they are
+merely *unpopulated*, because `compositionQuery`'s `having count(*) >= 100` refuses them. So
+the change is a `thin boolean` column on `identity_composition`, a second branch in the build
+that emits the refused buckets with `thin = true`, and the **existing** two rungs finding them.
+One fewer rung, one fewer basis value, and `SkeletonFit` gains a thin flag it already has a
+vocabulary for rather than a new discriminant.
+
 **A single global row was rejected on measurement.** The three orphan groups are nothing like
 the average:
 
@@ -413,13 +423,16 @@ separately from card count.
 - **`db:build:staples`** (or a sibling step in the same matrix leg) derives the four role
   columns, prints its whole derivation the way the staples build does, and **refuses rather
   than publishing a partial set**, leaving the previous values standing and exiting non-zero.
-- The basis chain gains one rung: `pair → commander → identity → count → group → flat`.
+- The basis chain is unchanged in shape: `pair → commander → identity → count → flat`. What
+  changes is that the identity and count rungs now resolve for every commander, some of them to
+  a row flagged thin.
 
 ### 3.2 Profile
 
 - `ProfileSkeleton` gains `roleTargets` beside `composition`, carrying the same
   discriminated-provenance shape so a target never exists without its basis.
-- `SkeletonFit["basis"]` gains `"group"`.
+- `identity_composition` gains `thin boolean not null default false`; `SkeletonFit` surfaces it
+  as `coverage.thinCondition`. **No new `basis` value** (§2.4).
 - `fitSkeleton` may now carry functional roles. **Its "no functional roles here" rule exists
   because they were asserted**, and that reason ends when they are measured. The module comment
   must be rewritten to say so rather than quietly deleted, because the next reader will
@@ -476,6 +489,12 @@ so they do not collide with Rounds 1 and 2:
 
 1. **The layered clear** (§2.2). One button becomes a choice of three.
 2. **The second bulk control** on the top-off list (§2.6), and the two concession labels.
+
+**§2.6 splits along that line, and the split matters.** Replacing what the *existing* bulk
+button picks is a logic change behind an unchanged control, so it is an eng call and ships
+without waiting. Adding a *second* button is layout. Splitting them means the reported failure
+(a bulk control that optimises what can be sleeved instead of what the deck needs) is fixed in
+the same round as the fill, rather than sitting broken beside a fixed fill until Design returns.
 
 Everything else here is logic, ordering or copy, and proceeds without a Design round.
 
