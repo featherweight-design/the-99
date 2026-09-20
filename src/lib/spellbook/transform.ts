@@ -33,7 +33,8 @@ export type DropReason =
   | "unresolvable-card"
   | "no-uses"
   | "unknown-bracket-tag"
-  | "no-id";
+  | "no-id"
+  | "malformed-prerequisite";
 
 export type TransformResult =
   | { kind: "row"; variant: VariantRow; cards: VariantCardRow[] }
@@ -78,10 +79,24 @@ export function toVariantRows(raw: Record<string, unknown>, known: Set<string>):
     cards.push({ oracleId, mustBeCommander: u.mustBeCommander === true });
   }
 
+  // A MALFORMED PREREQUISITE MUST NOT LOOK LIKE NO PREREQUISITE.
+  //
+  // Filtering non-integer ids out silently erases the entry, so a three-piece variant whose
+  // template id is missing or malformed is stored with an empty `requiresTemplateIds` — and
+  // the two-card combo query then reads it as an assembleable two-card infinite and slots the
+  // deck to Bracket 4 over a combo it cannot make. That is exactly the false positive §4.3b
+  // rule 1 exists to prevent, arriving through a data-quality hole rather than a logic one.
+  //
+  // So the variant is DROPPED AND COUNTED instead. Erring toward dropping a real combo
+  // (under-slotting) over inventing one (over-slotting) is the direction this whole surface
+  // is built on: a wrong verdict costs someone a card they did not need to cut.
   const requires = Array.isArray(raw.requires) ? (raw.requires as Requires) : [];
-  const requiresTemplateIds = requires
-    .map((r) => r?.template?.id)
-    .filter((id): id is number => Number.isInteger(id));
+  const requiresTemplateIds: number[] = [];
+  for (const r of requires) {
+    const id = r?.template?.id;
+    if (!Number.isInteger(id)) return { kind: "drop", reason: "malformed-prerequisite" };
+    requiresTemplateIds.push(id as number);
+  }
 
   const produces = Array.isArray(raw.produces) ? (raw.produces as Produces) : [];
 

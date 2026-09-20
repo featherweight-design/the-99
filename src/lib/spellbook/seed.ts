@@ -208,8 +208,24 @@ export async function ingestCombos(opts: {
       `dropped ${Object.entries(dropped).map(([k, v]) => `${k} ${v}`).join(", ") || "none"}`,
   );
 
-  // Checked AFTER the stream and BEFORE the publish, because that is the only window in which
-  // refusing still leaves the previous variants standing.
+  // Checked AFTER the stream and BEFORE the variant publish, because that is the only window
+  // in which refusing still leaves the previous variants standing.
+  //
+  // THE FLAGS ARE ALREADY LIVE AT THIS POINT, DELIBERATELY, and the resulting mixed state is
+  // the design rather than a gap in it. The sweep-first ordering exists precisely so a bulk
+  // failure cannot cost the card flags: an earlier draft published all three tables in one
+  // transaction and a review round caught that it silently undid that guarantee. Reverting to
+  // one generation would reinstate the defect.
+  //
+  // The mixed state is also the better one for a READER. The two stores answer different
+  // questions — `card_bracket_flags` is "is this card mass land denial", `spellbook_variants`
+  // is "which combos exist" — and a verdict built from fresh flags plus week-old variants is
+  // strictly better than one built from week-old both. The alternative costs a week of stale
+  // flags to avoid a week of stale combos.
+  //
+  // Nothing is hidden: `computed_at` on each table records its own generation, so a reader
+  // comparing them can see exactly which is which, and the refusal message below says plainly
+  // that the flags above are current while the previous variants stand.
   if (variantRows.length < floors.variantsKept) {
     throw new Error(
       `spellbook ingest REFUSED — ${variantRows.length} variants kept, below the floor of ` +

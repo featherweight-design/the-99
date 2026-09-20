@@ -55,6 +55,27 @@ describe("toVariantRows", () => {
     expect(out.variant.cardCount).toBe(4);
   });
 
+  // The hole rule 1 could have been defeated through. Filtering a malformed template id out
+  // leaves `requiresTemplateIds` empty, and the combo query then reads a three-piece variant
+  // as an assembleable two-card infinite — over-slotting a deck to Bracket 4 over a combo it
+  // cannot make, which is the exact false positive the rule exists to prevent.
+  it("drops a variant whose template prerequisite has a malformed id", () => {
+    const r = byId("3760-5147--86");
+    for (const bad of [{ template: {} }, { template: { id: "86" } }, { template: { id: null } }, {}]) {
+      const out = toVariantRows({ ...r, requires: [bad] }, ALL_KNOWN);
+      expect(out).toEqual({ kind: "drop", reason: "malformed-prerequisite" });
+    }
+  });
+
+  it("drops the variant even when one prerequisite of several is malformed", () => {
+    const r = byId("3760-5147--86");
+    const out = toVariantRows(
+      { ...r, requires: [{ template: { id: 86 } }, { template: { id: "nope" } }] },
+      ALL_KNOWN,
+    );
+    expect(out).toEqual({ kind: "drop", reason: "malformed-prerequisite" });
+  });
+
   it("drops a commander-illegal variant and says so", () => {
     const out = toVariantRows(byId("4613-4687-5709"), ALL_KNOWN);
     expect(out).toEqual({ kind: "drop", reason: "not-commander-legal" });
