@@ -1012,6 +1012,171 @@ Package manager is **pnpm** (pinned via `packageManager` in package.json) — ne
   route as passing. A surface whose trigger is not on the page FAILS rather than being
   skipped. Point it at `local-dev`. One row is exempt from the offset half and says so: the
   sort panel returns focus to its trigger, which scrolls it back into view.
+- `pnpm db:seed:combos` ingests Commander Spellbook into `spellbook_variants`,
+  `spellbook_variant_cards` and `card_bracket_flags`. **The sweep runs BEFORE the bulk file**,
+  and that order is the whole design: `/estimate-bracket` answers per batch of 600 cards at 80
+  requests a minute and returns Scryfall oracle ids directly, so it resolves without a name
+  index at all — the plan's whole name-resolution step turned out to be unnecessary and was
+  dropped. The bulk file is a SINGLE 656MB JSON document, so it is parsed incrementally rather
+  than read into memory; the parser throws on truncation rather than silently ingesting a
+  prefix, which is the failure a streaming parse otherwise makes invisible.
+
+  **The publish is two transactions, flags then bulk**, and it refuses rather than publishing a
+  partial ingest. Per-source collapse FLOORS are checked first — `mldFromSweep` 30,
+  `mldFromRule` 20, `extraTurnFromSweep` 23, `extraTurnFromRule` 26, `sweepResolutionShare`
+  0.5, `variantsKept` 53,000 — every one measured on the first real run rather than guessed. A
+  run under any floor leaves the previous tables standing and exits non-zero, because a
+  half-ingested combo index is indistinguishable from a complete one to every reader.
+
+  `card_bracket_flags` carries per-flag SOURCES (`spellbook_sweep`, `oracle_rule`) with a check
+  constraint tying the boolean to a non-empty source array, so a row can never say "true, and
+  nobody claims it". An ABSENT id means neither flag applies and nothing more — a card the
+  sweep resolved and cleared is byte-identical to one it never returned, and no reader may
+  describe it as if it could tell them apart.
+
+- `pnpm check:spellbook` validates Spellbook's contract without a database — the index shape,
+  a real parse, and the `card_count` versus deduped-`uses` relationship. It runs daily in
+  `Upstream contract checks` for the same reason the Scryfall and ManaPool checks do: the
+  ingest is weekly, so a silent shape change would sit unnoticed for days.
+
+  One tension is deliberate and worth knowing: it asserts against the LIVE feed rather than a
+  fixture, so it can fail for an upstream change that is correct and expected. That is the
+  point — a fixture-only check passes forever over a feed that has moved.
+
+- `pnpm build:combo-features` regenerates `produces-kinds.generated.ts`, the vocabulary
+  `isInfiniteOrGameEnding` and `producesInfiniteTurns` read. Developer-run rather than
+  scheduled, and **the diff IS the review**: the file is a list of upstream's own feature
+  strings bucketed by what they mean, and a new bucket assignment is a judgement someone has
+  to make rather than a refresh someone can rubber-stamp.
+
+  CARD COUNT IS NEVER THE TEST. A two-card variant producing "infinite squirrels" is a
+  two-card variant; what decides whether the bracket system counts it is what it PRODUCES.
+  `probe:bracket` proves that against the real index, and the mutation dropping the check
+  measured nothing until the probe grew a fixture holding a mundane pair — 703 of 3,842
+  sampled two-card variants produce something that is not counted.
+
+- The `Combo refresh` workflow runs `db:seed:combos` 13:00 UTC every Monday against **both**
+  `catalog-staging` and `catalog-production`, through a `plan` job feeding a matrix for the
+  same reason `Catalog refresh`, `Price refresh` and `Commander index` do — an expression on
+  `environment` sends every scheduled run to production alone. It needs the
+  `COMBO_REFRESH_ENABLED` repository variable set to `'true'` to fire on schedule, and a manual
+  dispatch ingests only the environment it names. 13:00 rather than 09:00 so it lands AFTER the
+  catalog refresh that morning: the ingest resolves against `cards`, and a variant naming a
+  card the catalog does not yet hold is dropped as unresolvable.
+
+- `pnpm db:build:staples` derives `format_staples` and `identity_composition` from the
+  commander index. It runs as a STEP in each `Commander index` matrix leg rather than as a
+  `workflow_run` chain, because the floors are derived from the index that leg just wrote and
+  `workflow_run` fires once per run with no way to tell which leg it is hearing about — the
+  same constraint that pins `Commander prose` to production.
+
+  **It prints its whole derivation, and that is the point rather than a courtesy**: the bucket
+  distribution, where the cut falls in it, the weighted-versus-unweighted delta, both sides of
+  every condition's boundary, and the per-condition sizes. Sub-project 2 builds against these
+  numbers, so the output is what anyone disputing them argues with. `measure-gap-line.mts` is
+  the precedent: a threshold nobody can see the working for is an asserted constant with extra
+  steps.
+
+  Three rules it learned in review, each the same shape — **a derivation reproducing a ratified
+  figure has to reproduce its NULL POLICY too, and a null policy is invisible until the data
+  has nulls in it.** `coalesce(deck_count, 1)` and not 0. A row with no inclusion figure
+  carries no weight, via a FILTER on the sum and never a `where`, because the ratified floors
+  query filters inclusion nowhere and a `where` narrows the breadth denominator with it. Both
+  were inert on local-dev — 0 of 859,794 `commander_support_cards` rows have a null inclusion —
+  so a re-run reproducing the ratified numbers proved only that the change was inert.
+
+  The count fallback (`count:N`) exists because without it the basis chain's fourth rung is
+  dead: the 100-commander bar admits exactly 15 exact identities, and **544 commanders —
+  colourless plus every three-plus identity — would look up a key no row carries**. It is
+  restricted to the commanders an exact bucket cannot serve, because the chain takes the first
+  hit and a wider bucket would drag its own averages with commanders that never read it.
+
+  Neither table is cleared by an empty derivation. `format_staples` refuses and exits non-zero;
+  `identity_composition` needs its own branch rather than the same refusal, because an empty
+  composition is a LEGITIMATE state until the first widened index run and a hard refusal would
+  fail every run until then and take the floors down with it.
+
+- `pnpm probe:bracket` proves the bracket verdict against a real Postgres by calling the real
+  `loadDeckProfile`. Every rule the verdict applies is a pure function and every one is unit
+  tested; what no unit test here can reach is the GATHER — a deck row, `deck_cards`, a flags
+  read, a four-rung composition chain, a staples join and a Spellbook combo join with three
+  rules in its SQL.
+
+  Forty-five checks. The draft IS the deck, so a card staged into `deck_cards` moves the slot
+  with no commit. The combo join's three §4.3b rules get one case each, and the
+  most consequential is the false-NEGATIVE half: a `mustBeCommander` piece AS the commander
+  must slot. A Game Changer COMMANDER counts against every limit — the commanders-are-cards
+  rule end to end, on the one card that is a column rather than a row.
+
+  **The basis chain needs SENTINELS**, and that is why this probe writes to the catalog at all:
+  local-dev carries neither an `identity_composition` row, a `commander_pair_support` row, nor
+  a non-null `commander_support.avg_*`, so without them the chain has exactly ONE reachable
+  state and three of its four rungs are asserted by nobody. All four are covered. Order
+  matters and the code says why: rung 3 is read BEFORE rung 2 is written, because with a
+  commander row present the identity rung is unreachable by construction; and the PAIR rung is
+  read against its own two-commander deck, because reading it from the same fixture would make
+  it and rung 2 mutually unreachable and one would silently stop being asserted.
+
+  The pair sentinel is also what makes the POPULATION assertable — `of: "pair"`, its
+  declared total, and the deck count beside it, which is the pair the design exists to keep
+  together: a reader shown "200 decks" who believes it is out of 1,200 has been misled.
+
+  **Two cleanup shapes, kept distinct because confusing them loses data.** A commander's
+  `avg_*` is an UPDATE to a row that exists, so it is capture-before-write and RESTORED; the
+  identity row is new, so it is DELETED. Every handle is populated before the write it covers,
+  and every cleanup step runs even when an earlier one throws — a cleanup that stops at the
+  first failure poisons the next run of itself.
+
+  **`comboReach` is read through the real loader**, not only through hand-built
+  `CandidateFacts`. The loader classifies every card's oracle text and hands the builder a
+  predicate, and a regression there makes the [3,4] lean wrong while every other check passes.
+  BOTH SIDES of the relation are asserted — the piece the tutor can find and the one it cannot
+  — because a reach-only check passes on a build where the predicate always returns true,
+  which is exactly what "every tutor reaches every piece" looks like.
+
+  It refuses to start over empty tables, finds every fixture BY QUERY rather than by a name
+  that rots with the catalog, and FAILS rather than skipping when a fixture it needs is
+  unreachable. Six mutations, all six fail; the counts are in its header. Point it at
+  `local-dev` or a scratch Neon branch, **never production**.
+
+- `pnpm measure:tutors` prints what `classifyTutor` does to the live catalog — the 22-card
+  fixture with a reason per card, the corpus splits, reach against a real combo piece, and the
+  first 60 parses for reading. Read-only.
+
+  It exists because a classifier built from a named fixture agrees with that fixture and says
+  nothing about the 960 cards nobody listed. Four of its five design decisions contradict what
+  the plan assumed, and every one came out of reading the sweep: the hate cards need no
+  negation rule (zero of the 960 contain "can't search"); the opponent check is SENTENCE-scoped
+  because 65 of the 79 cards mentioning an opponent do so in a different sentence; a graveyard
+  destination assembles nothing on its own; and two mana-value phrasings were read inverted
+  until they were counted.
+
+  It also splits `alternatives` from `conjunctions` — 81 tutors against 61 on the shipped
+  catalog — because collapsing the two is the false positive the classifier was fixed for: a
+  tutor for `a legendary creature card` reached any legendary LAND until the and/or structure
+  was preserved, and the reach count against one real combo piece fell from 239 to 194.
+
+  Its `unreachable` counter is a structural INVARIANT rather than a live guard, and the
+  script says so: `kinds` is either `"any"` or a non-empty list, so an empty one is
+  unconstructible and a non-zero figure means `targetWords` started returning an empty array.
+  The regression it cannot see is the likelier one — a word DROPPED rather than kept gives
+  `words === null` and lands in the `any` bucket, silently widening every such tutor. Watch
+  `any` against 129 for that.
+
+- **The bracket system's classifiers are all PARTIAL, and every surface says so.** Mass land
+  denial is 22 of 24 on a curated set with both misses named; extra turns have no misses among
+  the 56 cards whose text mentions one; combos come from Spellbook's index excluding
+  template-gated variants. Those strings live beside the classifiers they describe
+  (`oracle-rules.ts`, `combo-features.ts`) and are re-exported by `bracket/rules.ts`, so a
+  verdict consumer imports one module while each definition stays where it can be re-measured.
+
+  **The B2/B3 chain-or-loop flag does not exist and is not coming from a reading.** WotC's text
+  above bracket 1 is about CHAINING extra turns, which is not a property of a decklist — so the
+  count is reported with no verdict attached, and the only thing that violates bracket 3 is a
+  measured LOOP: an assembled combo Spellbook records as producing infinite turns. The
+  self-recurring single card is NOT detected, and the detection copy says so rather than
+  letting the absence read as a clean deck.
+
 - `scripts/contact-sheet.mjs` photographs every surface in a feature's inventory at both widths
   and lays them out as one image, so a route that never got the feature, or a phone that is wrong
   while the desktop is right, is visible in a glance. Inventories live in

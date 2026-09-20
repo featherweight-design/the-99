@@ -76,7 +76,9 @@
     "build:combo-features": "tsx scripts/build-combo-features.mts",
     "check:spellbook": "tsx scripts/check-spellbook-contract.ts",
     "check:constraints": "node scripts/check-constraints.mjs",
-    "db:build:staples": "tsx scripts/build-staples.ts"
+    "db:build:staples": "tsx scripts/build-staples.ts",
+    "measure:tutors": "tsx scripts/measure-tutor-targets.mts",
+    "probe:bracket": "tsx scripts/probe-bracket.ts"
   },
   "dependencies": {
     "@clerk/nextjs": "^7.5.20",

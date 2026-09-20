@@ -70,8 +70,17 @@ export type ProfileInput = {
   extraTurnFlags: Map<string, FlagSource[]>;
   gameChangerIds: Set<string>;
   twoCardCombos: ComboRef[];
-  /** Pre-classified by the loader (Task 16's `classifyTutor`), so this stays pure. */
+  /** Pre-classified by the loader (`classifyTutor`), so this stays pure. */
   tutorIds: Set<string>;
+  /**
+   * Whether a tutor can actually FIND a piece. Supplied by the loader because the predicate
+   * reads the tutor's oracle text, which this function does not parse.
+   *
+   * Defaults to "reaches everything" when absent, which is what the type tests want and what
+   * an over-reporting caller gets: a receipt claiming every tutor finds every piece is one
+   * nobody can check. The loader always supplies it.
+   */
+  tutorReaches?: (tutorId: string, piece: { typeLine: string; colorIdentity: string[]; cmc: number }) => boolean;
   detection: DetectionCoverage;
 };
 
@@ -266,7 +275,11 @@ export function buildDeckProfile(input: ProfileInput): DeckProfile {
         // counting it would push the [3,4] lean to `reachable` on every commander-based
         // combo, which is the one case where the tutor contributes nothing at all.
         if (commanders.has(piece.oracleId)) continue;
-        if (!byId.has(piece.oracleId)) continue;
+        const held = byId.get(piece.oracleId);
+        if (!held) continue;
+        // And can this tutor find THIS piece? A land tutor does not fetch an artifact, and a
+        // `mana value 1 or less` tutor does not fetch a six-drop.
+        if (input.tutorReaches && !input.tutorReaches(tutor.oracleId, held)) continue;
         reaches.push({ tutor, combo, piece });
       }
     }
