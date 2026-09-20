@@ -36,6 +36,12 @@ jobs:
       - name: CSS tokens
         run: pnpm check:tokens
 
+      # A constraint name Postgres would truncate is invisible to every other step here:
+      # drizzle-kit compares its own snapshots, and the failure only appears when the
+      # migration RUNS — on a real deployment, the Vercel production build.
+      - name: Migration constraint names
+        run: pnpm check:constraints
+
       - name: Test
         run: pnpm test
 

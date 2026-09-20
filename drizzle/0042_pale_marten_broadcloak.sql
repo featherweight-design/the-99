@@ -30,7 +30,7 @@ CREATE TABLE "commander_pair_support_cards" (
 	"inclusion" real,
 	"synergy" real,
 	"position" integer NOT NULL,
-	CONSTRAINT "commander_pair_support_cards_commander_oracle_id_partner_oracle_id_oracle_id_pk" PRIMARY KEY("commander_oracle_id","partner_oracle_id","oracle_id")
+	CONSTRAINT "commander_pair_support_cards_pk" PRIMARY KEY("commander_oracle_id","partner_oracle_id","oracle_id")
 );
 --> statement-breakpoint
 CREATE TABLE "edhrec_pair_cache" (
@@ -56,7 +56,7 @@ ALTER TABLE "commander_support" ADD COLUMN "avg_curve" jsonb;--> statement-break
 ALTER TABLE "commander_pair_support" ADD CONSTRAINT "commander_pair_support_commander_oracle_id_cards_oracle_id_fk" FOREIGN KEY ("commander_oracle_id") REFERENCES "public"."cards"("oracle_id") ON DELETE no action ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "commander_pair_support" ADD CONSTRAINT "commander_pair_support_partner_oracle_id_cards_oracle_id_fk" FOREIGN KEY ("partner_oracle_id") REFERENCES "public"."cards"("oracle_id") ON DELETE no action ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "commander_pair_support_cards" ADD CONSTRAINT "commander_pair_support_cards_oracle_id_cards_oracle_id_fk" FOREIGN KEY ("oracle_id") REFERENCES "public"."cards"("oracle_id") ON DELETE no action ON UPDATE no action;--> statement-breakpoint
-ALTER TABLE "commander_pair_support_cards" ADD CONSTRAINT "commander_pair_support_cards_commander_oracle_id_partner_oracle_id_commander_pair_support_commander_oracle_id_partner_oracle_id_fk" FOREIGN KEY ("commander_oracle_id","partner_oracle_id") REFERENCES "public"."commander_pair_support"("commander_oracle_id","partner_oracle_id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
+ALTER TABLE "commander_pair_support_cards" ADD CONSTRAINT "commander_pair_support_cards_pair_fk" FOREIGN KEY ("commander_oracle_id","partner_oracle_id") REFERENCES "public"."commander_pair_support"("commander_oracle_id","partner_oracle_id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "edhrec_pair_cache" ADD CONSTRAINT "edhrec_pair_cache_commander_oracle_id_cards_oracle_id_fk" FOREIGN KEY ("commander_oracle_id") REFERENCES "public"."cards"("oracle_id") ON DELETE no action ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "edhrec_pair_cache" ADD CONSTRAINT "edhrec_pair_cache_partner_oracle_id_cards_oracle_id_fk" FOREIGN KEY ("partner_oracle_id") REFERENCES "public"."cards"("oracle_id") ON DELETE no action ON UPDATE no action;--> statement-breakpoint
 CREATE INDEX "commander_pair_support_cards_oracle_idx" ON "commander_pair_support_cards" USING btree ("oracle_id");

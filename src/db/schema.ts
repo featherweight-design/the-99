@@ -976,8 +976,21 @@ export const commanderPairSupportCards = pgTable("commander_pair_support_cards",
    */
   position: integer("position").notNull(),
 }, (t) => [
-  primaryKey({ columns: [t.commanderOracleId, t.partnerOracleId, t.oracleId] }),
+  // BOTH constraints are named explicitly, and that is not tidiness.
+  //
+  // Drizzle derives a name from the table plus every column, and on a composite key over a
+  // table with this name that runs to 130 characters. POSTGRES TRUNCATES AN IDENTIFIER AT 63
+  // BYTES, and the primary key and the foreign key here truncate to the SAME 63 — so the
+  // second `ADD CONSTRAINT` failed with "already exists" and took the whole migration down.
+  //
+  // Nothing in the repository catches that. `drizzle-kit check` compares its own snapshots,
+  // typecheck and lint never see SQL, and the generated file reads perfectly. It surfaces
+  // only when the migration RUNS — which, on a real deployment, is the Vercel production
+  // build. `pnpm check:constraints` now fails on any generated name over 63 bytes.
+  primaryKey({ name: "commander_pair_support_cards_pk",
+    columns: [t.commanderOracleId, t.partnerOracleId, t.oracleId] }),
   foreignKey({
+    name: "commander_pair_support_cards_pair_fk",
     columns: [t.commanderOracleId, t.partnerOracleId],
     foreignColumns: [commanderPairSupport.commanderOracleId, commanderPairSupport.partnerOracleId],
   }).onDelete("cascade"),
