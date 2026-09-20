@@ -108,8 +108,11 @@ restrictions other than the banned list, so there is nothing to tabulate). Four 
 - **The B3 loop state**, added after Round 0 went out: a deck whose assembled combo produces
   infinite turns violates B3's extra-turn clause outright and reads **`4 or 5`**, with the combo
   named as the receipt on the extra-turns row. Distinct from the generic two-card-infinite case,
-  which only widens to `3 or 4`. **Single-card turn loops are not detected** — Nexus of Fate alone
-  — and the detection statement says so.
+  which only widens to `3 or 4`. **Single-card turn loops are not detected** — Nexus of Fate alone.
+  **That caveat is not in the shipped contract yet:** `COMBO_DETECTION.basis` reads *"Spellbook's
+  index, excluding template-gated variants"* and `DetectionCoverage` carries no field for it, so
+  engineering owes the string before this slot can quote it. Draw the slot as though it will be
+  there — §6.5's whole rule is that the verdict states what it could not see.
 
 ### 4.3 Violations, with their receipts
 
@@ -149,10 +152,16 @@ it. The strings are **fixed constants shipping from code** — this round design
 occupy, not the words**:
 
 ```
-massLandDenial  2 sources  "23 of 24 on a curated set"  known miss: Wave of Vitriol
+massLandDenial  2 sources  "22 of 24 on a curated set"  known misses: Wave of Vitriol, Cataclysm
 extraTurn       2 sources  "no misses among the 56 cards whose text mentions one"
 twoCardCombos   1 source   "Spellbook's index, excluding template-gated variants"
 ```
+
+**Read off the shipped constants, not the spec.** `src/lib/bracket/oracle-rules.ts` is the source
+of truth and the spec's §6.5 sketch is stale against it: mass land denial is **22 of 24 with TWO
+known misses**, and the code carries a note recording that an earlier version named one and left
+the other unaccounted for — which is exactly the failure a provenance line exists to prevent. **The
+slot must hold a miss LIST, not a single name.**
 
 This is **provenance rather than a badge**, and its job is to answer *which* fact was uncertain at
 the moment someone disputes a verdict. It is also the one place on this surface that admits the
