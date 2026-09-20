@@ -259,3 +259,28 @@ describe("and is not or", () => {
     expect(tutorReaches(rebel, piece("Instant", 2))).toBe(false);
   });
 });
+
+// `snow` is a real supertype and `nonbasic` is a negation no type line spells. Dropping both
+// as noise turned each into an unrestricted `land` target.
+describe("land qualifiers", () => {
+  const t = (text: string) => classifyTutor(text) as TutorTarget;
+
+  it("keeps snow as a constraint", () => {
+    const north = t(
+      "Search your library for a snow land card, put it onto the battlefield tapped, then shuffle.",
+    );
+    expect(tutorReaches(north, piece("Basic Snow Land — Forest", 0))).toBe(true);
+    expect(tutorReaches(north, piece("Legendary Land", 0))).toBe(false);
+  });
+
+  // An under-claim, and the safe direction: the model cannot express "not basic", so such a
+  // tutor reaches nothing rather than reaching a basic it cannot find. Zero of the 960
+  // targets use the word, so it costs nothing today.
+  it("makes a nonbasic target reach nothing rather than reaching a basic", () => {
+    const hypothetical = t(
+      "Search your library for a nonbasic land card, put it onto the battlefield, then shuffle.",
+    );
+    expect(tutorReaches(hypothetical, piece("Basic Land — Forest", 0))).toBe(false);
+    expect(tutorReaches(hypothetical, piece("Legendary Land", 0))).toBe(false);
+  });
+});

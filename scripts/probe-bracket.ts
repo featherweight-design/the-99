@@ -108,6 +108,8 @@ type CompositionColumns = {
   avg_curve: Record<string, number> | null;
 };
 
+/** The commander sentinel's land target — recognisable, and what every restore checks for. */
+const SENTINEL_LAND = 34;
 let commanderCleanup: { oracleId: string; before: CompositionColumns } | null = null;
 /** Set ONLY when this run created the row — from the insert's own `returning`. */
 let identityCleanup: string | null = null;
@@ -398,6 +400,36 @@ async function basisChainChecks(deckId: string, commanderOracleId: string) {
   };
   const CURVE = { "1": 8, "2": 14, "7": 2, "9": 1 };
 
+  // --- concurrency ------------------------------------------------------------------------
+  //
+  // NO ADVISORY LOCK, and that is a measured decision rather than an omission.
+  //
+  // These sentinels are SHARED rows — `identity_composition.condition = 'W'` and one
+  // `commander_support` row — so two concurrent runs really can interleave, and the fixture
+  // user scoping that protects every other write here does nothing for rows that belong to no
+  // user. A Postgres advisory lock is the obvious instrument and it does not work against this
+  // database. Both flavours were tried and both leaked:
+  //
+  //   · A SESSION lock is counted, and Neon's pooler reuses backends, so `pg_backend_pid()` is
+  //     not a stable session identity across runs. Three consecutive runs, the third refused,
+  //     and `pg_locks` still held the id for a pid whose own unlock had returned true.
+  //   · A TRANSACTION lock on a dedicated client leaked too, and the session left holding it
+  //     was one of `src/db`'s pooled connections — its last statement a `card_bracket_flags`
+  //     read. The pooler multiplexes, so the lock is not scoped to the client that took it.
+  //
+  // A guard that fails one run in three, and whose only workaround is `pg_terminate_backend`,
+  // is worse than none: it teaches the operator to terminate backends by hand, which is how
+  // real data gets lost. So the CORRUPTION is guarded instead of the concurrency — the
+  // commander restore verifies it is putting a value back over the sentinel THIS run wrote
+  // and refuses loudly otherwise, so a second run can still make a mess of the assertions but
+  // not of the catalog. The refusal leaves the sentinel in place deliberately: an operator
+  // who can see 34 in `avg_land` can put the real value back, where a silent overwrite of
+  // whatever the other run restored leaves nothing to see.
+  //
+  // What a single run CANNOT prove: the guard only fires under concurrency, so no mutation
+  // here distinguishes it. Forcing the branch was run instead — it prints `cleanup REFUSED`,
+  // counts the failure, exits 1, and leaves the sentinel — and that is the evidence for it.
+
   // --- rung 0: nothing ----------------------------------------------------------------
   //
   // LIFTED FIRST, so the empty state is reachable on any database rather than only on one
@@ -494,7 +526,7 @@ async function basisChainChecks(deckId: string, commanderOracleId: string) {
     // that commander off rung 2 permanently.
     await fixture.execute(sql`
       update commander_support
-      set avg_land = 34, avg_basic = 12, avg_nonbasic = 22, avg_creature = 30,
+      set avg_land = ${SENTINEL_LAND}, avg_basic = 12, avg_nonbasic = 22, avg_creature = 30,
           avg_instant = 9, avg_sorcery = 4, avg_artifact = 10, avg_enchantment = 7,
           avg_planeswalker = 1, avg_battle = 0
       where commander_oracle_id = ${commanderOracleId}::uuid`);
@@ -506,7 +538,7 @@ async function basisChainChecks(deckId: string, commanderOracleId: string) {
     check(
       "and its target is the commander's, not the identity's",
       commanderFit.types.find((t) => t.type === "land")?.target,
-      34,
+      SENTINEL_LAND,
     );
   }
 }
@@ -685,6 +717,20 @@ run()
       }],
       ["the commander's composition", async () => {
         if (!commanderCleanup) return;
+        // Only over the sentinel THIS run wrote. A concurrent run that has already restored
+        // the real value must not have it overwritten by our stale capture.
+        const [now] = await rows<{ avg_land: number | null }>(sql`
+          select avg_land from commander_support
+          where commander_oracle_id = ${commanderCleanup.oracleId}::uuid`);
+        if (!now || now.avg_land !== SENTINEL_LAND) {
+          failures += 1;
+          console.error(
+            `cleanup REFUSED: the commander's avg_land is ${now?.avg_land ?? "gone"}, not the ` +
+              `${SENTINEL_LAND} this run wrote. Another run has already restored it, or ` +
+              `something else changed the row — overwriting would lose whatever is there now.`,
+          );
+          return;
+        }
         const b = commanderCleanup.before;
         await fixture.execute(sql`
           update commander_support

@@ -135,8 +135,15 @@ function targetWords(target: string): TutorAlternative[] | null {
 
   // ALTERNATIVES first, then the words within each. `a Forest, Island, or Mountain card` is
   // three alternatives; `a Rebel permanent card` is one alternative of two constraints.
+  // `snow` and `nonbasic` are NOT noise. `snow` is a real supertype — it is in 114 type
+  // lines — so dropping it turned `a snow land card` into an unrestricted land target that
+  // reached any land; 3 of the 960 say that. `nonbasic` is a NEGATION no type line spells, so
+  // keeping it as a constraint makes such a tutor reach nothing: an under-claim, which is the
+  // safe direction, and it costs nothing today because ZERO of the 960 targets use the word.
+  //
+  // `basic` stays out because `basicOnly` already gates reach to false for those.
   const noise =
-    /^(a|an|any|the|up|to|two|three|four|five|many|number|of|basic|snow|nonbasic|other|another|\d+)$/;
+    /^(a|an|any|the|up|to|two|three|four|five|many|number|of|basic|other|another|\d+)$/;
   const alternatives = head[1]
     .split(/\s+or\s+|\s+and\/or\s+|,/)
     .map((part) =>
