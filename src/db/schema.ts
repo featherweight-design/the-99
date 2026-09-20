@@ -56,6 +56,18 @@ export const cards = pgTable("cards", {
   layout: text("layout").notNull().default("normal"),
   /** The second face's art. Null for every layout with one face or one image. */
   backImageUri: text("back_image_uri"),
+  /**
+   * WotC's Game Changers list, as Scryfall's own boolean on the card object.
+   *
+   * A column rather than a transcribed list, and that is the whole point: the list is
+   * maintained by WotC, republished by Scryfall, and refreshed here by the weekly catalog
+   * job, so it maintains itself. A copy checked into this repository would go stale
+   * silently, and the failure mode is a deck slotted into a bracket it has outgrown.
+   *
+   * Defaults false, so a row written before the re-seed UNDER-claims — it loses a mark
+   * rather than inventing one. Same reasoning as `layout` above.
+   */
+  gameChanger: boolean("game_changer").notNull().default(false),
 }, (t) => [index("cards_name_idx").on(t.name)]);
 
 /**

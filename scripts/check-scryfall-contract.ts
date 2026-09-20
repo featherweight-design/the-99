@@ -12,8 +12,18 @@ import { fetchBulkIndex, streamBulkEntries, type BulkType } from "../src/lib/scr
 // lists because both transforms exclude on it — losing it would silently ingest tokens and
 // emblems rather than fail, which is exactly the kind of quiet break this canary exists for.
 const REQUIRED: Record<BulkType, readonly string[]> = {
+  // `game_changer` is WotC's Game Changers list as Scryfall republishes it. NOTHING READS
+  // THE COLUMN YET — the bracket slot that will treat it as authoritative membership is a
+  // later PR — so this is a canary placed ahead of its consumer, deliberately: the field
+  // disappearing is silent either way, and the cost of learning that on the day the slot
+  // ships is a feature that under-slots every deck holding one of the ~53.
+  //
+  // The COUNT is deliberately not pinned: the list is maintained by WotC and is meant to
+  // change, and a test that failed when they updated it would punish the ingest for
+  // working. What is pinned is that the field still exists.
   oracle_cards: [
     "oracle_id", "id", "name", "cmc", "color_identity", "type_line", "legalities", "layout",
+    "game_changer",
   ],
   // `booster` and `rarity` carry the set-collection feature: booster is the base-run
   // boundary and rarity is per-printing. The transform maps a missing one to null rather

@@ -22,7 +22,21 @@ describe("toCardRow", () => {
       imageUri: "https://cards.scryfall.io/normal/x.jpg",
       artCropUri: null,
       layout: "normal", backImageUri: null,
+      gameChanger: false,
     });
+  });
+
+  it("reads game_changer as a strict true", () => {
+    expect(toCardRow({ ...solRing, game_changer: true })!.gameChanger).toBe(true);
+  });
+
+  // Defensive parsing of an untyped bulk: anything absent or non-boolean reads false, which
+  // UNDER-claims — a card that is a Game Changer and reads false loses a mark, where the
+  // reverse invents one. Same direction as `commanderLegal`'s `=== "legal"`.
+  it("defaults game_changer false when absent or non-boolean", () => {
+    expect(toCardRow(solRing)!.gameChanger).toBe(false);
+    expect(toCardRow({ ...solRing, game_changer: "yes" })!.gameChanger).toBe(false);
+    expect(toCardRow({ ...solRing, game_changer: 1 })!.gameChanger).toBe(false);
   });
 
   it("stores the art crop, not the framed card image", () => {

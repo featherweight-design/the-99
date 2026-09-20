@@ -6,6 +6,7 @@ export type CardRow = {
   keywords: string[]; commanderLegal: boolean; imageUri: string | null;
   artCropUri: string | null; rarity: string;
   layout: string; backImageUri: string | null;
+  gameChanger: boolean;
 };
 // eslint-disable-next-line @typescript-eslint/no-explicit-any -- raw Scryfall bulk JSON is untyped by design; toCardRow narrows it.
 export type ScryfallCard = Record<string, any>;
@@ -53,6 +54,15 @@ export function toCardRow(raw: ScryfallCard): CardRow | null {
     // arrays, and they carry a single image between them, so they answer null
     // here without this needing to know their names.
     backImageUri: faces?.[1]?.image_uris?.normal ?? null,
+    // WotC's Game Changers list, republished by Scryfall as a boolean on the card object and
+    // refreshed by the weekly catalog job — so the list maintains itself and is never
+    // transcribed into this repository. A transcribed copy of live data goes stale silently,
+    // and the failure mode is a deck slotted into a bracket it has outgrown.
+    //
+    // `=== true` rather than a truthy read: the bulk is untyped, and anything absent or
+    // non-boolean must read false. That under-claims — a Game Changer reading false loses a
+    // mark, where a truthy read on some future string value would invent one.
+    gameChanger: raw.game_changer === true,
   };
 }
 
