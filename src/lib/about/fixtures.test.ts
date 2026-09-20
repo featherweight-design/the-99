@@ -36,6 +36,19 @@ describe("GAME_SUMMARY states an order summarizeGames could produce", () => {
     });
   }
 
+  // `summarizeGames` partitions on the sign of `net` alone (games.ts:160-162),
+  // so a bucket is not merely an order — it is a predicate. Without this, a
+  // positive-net row sitting in `fix` passes every assertion above: the order
+  // check sorts on |net| and never reads the sign.
+  it("puts each row in the bucket its own net decides", () => {
+    for (const row of GAME_SUMMARY.fix) expect(row.net).toBeLessThan(0);
+    for (const row of GAME_SUMMARY.keep) expect(row.net).toBeGreaterThan(0);
+    for (const row of GAME_SUMMARY.mixed) expect(row.net).toBe(0);
+    // And the partition is total: every axis lands in exactly one bucket.
+    const bucketed = [...GAME_SUMMARY.fix, ...GAME_SUMMARY.keep, ...GAME_SUMMARY.mixed];
+    expect(bucketed.map((r) => r.key).sort()).toEqual(GAME_SUMMARY.axes.map((a) => a.key).sort());
+  });
+
   it("keeps every bucketed axis in `axes`, and every tally self-consistent", () => {
     const flat = new Set(GAME_SUMMARY.axes.map((a) => a.key));
     for (const row of [...GAME_SUMMARY.fix, ...GAME_SUMMARY.keep, ...GAME_SUMMARY.mixed]) {
