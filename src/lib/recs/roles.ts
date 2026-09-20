@@ -25,9 +25,8 @@ const NOT_REMOVAL = /target .{0,30}you control/;
 export function classifyRoles(card: RoleInput): Role[] {
   const roles: Role[] = [];
   const text = (card.oracleText ?? "").toLowerCase();
-  const type = card.typeLine.toLowerCase();
 
-  // `isLandFace`, not `type.includes("land")`. Two failures in one substring test, and both
+  // `isLandFace`, not a substring sweep of the lowercased type line. Two failures in one substring test, and both
   // are measurable: 82 of 31,830 commander-legal cards disagree between the two, every one an
   // MDFC whose BACK face is a land — `Fell the Profane // Fell Mire` is an Instant you cast
   // from hand — and without a word boundary `Lander Rizzi` is a land as well.
