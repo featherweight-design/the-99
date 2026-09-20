@@ -107,11 +107,18 @@ Each entry names the task that implements it.
   the full candidate set and the count that must leave; picking which card is the reader's
   (or a later sub-project's). §7.3's "a card the deck holds and a rule it violates" is true of
   every candidate it lists, not of a chosen set (Task 19).
-- **R3 (§13.2) — the B2/B3 chain-or-loop flag does not ship.** It was never specified over
-  anything the profile holds and never measured, and §2.4a forbids shipping it in that state.
-  At B2/B3 the extra-turn count is reported under `unquantified` with no verdict attached; the
-  chain flag is a named gap in `detection` copy and in AGENTS.md. (The spec offered exactly
-  this resolution.) (Task 17)
+- **R3 (§13.2) — the chain-or-loop flag ships in its measurable half only** (ruled by Hugh
+  2026-09-19 in the plan walkthrough). §6.3's own "demonstrable chain or loop" names two
+  shapes, and they differ in evidence: **an assembled combo producing infinite turns is
+  Spellbook's measured data** — the profile already holds the combo and its `produces` — so
+  at B2/B3 that flags the loop clause as violated, with the combo as the receipt (at B2 the
+  combo rule already fires; B3 is where it bites: `[3,4]` becomes `[4,5]`). **The
+  self-recurring-card half (Nexus of Fate looping alone) does not ship**: no published
+  definition, no fixture of undisputed cases to measure against, so §2.4a bars authoring it —
+  it becomes buildable the honest way once declared brackets accumulate beside decklists
+  (§6.1b's own mechanism). The bare extra-turn count at B2/B3 stays under `unquantified`
+  with no verdict; the single-card-loop miss is named in `detection` copy and AGENTS.md.
+  (Tasks 8, 17, 18, 19, 20)
 - **R4 (§13.2) — the `produces` vocabulary is developer-run, not cron-run.**
   `pnpm build:combo-features` regenerates `src/lib/spellbook/produces-kinds.generated.ts`
   from the ingested `spellbook_variants.produces` vocabulary — the `tag-kinds.generated.ts`
@@ -226,6 +233,11 @@ Each entry names the task that implements it.
 
 PRs 1–2 and 3–4 are independent chains; 5 needs 2, 3 and 4 merged; 6 needs 5. Each PR passes
 the full gate alone — no stacking, every intermediate state shippable.
+
+**Walkthrough ratifications (Hugh, 2026-09-19), so no round re-litigates them:** the R3 split
+(combo-half ships, authored half waits for evidence); R18's Tier-B cache proof; R2's
+candidates-not-picks `upgradePath`; `bracketDelta`'s range-to-range shape; and execution as an
+autonomous epic-run through the standard gates.
 
 ---
 
@@ -609,9 +621,12 @@ it("refuses a bounded product", () =>
 it("refuses on bracketTag alone — there is no bracketTag input at all", ...)
   // structural: the function takes feature names only; the Gilder Bairn case
   // (unambiguously infinite at tag E) is why (§5.2).
+it("producesInfiniteTurns claims 'Infinite turns' and its wording variants, refuses
+    'Infinite mana' and every non-turn family", ...)   // R3's combo-loop half: the B2/B3
+  // loop flag reads this, so a false positive here is a false loop accusation.
 ```
 
-- [ ] **Step 2: the generator** (tag-kinds precedent, R4): reads distinct `produces` names from the ingested `spellbook_variants` (local-dev, populated by Task 6 step 3), buckets by `/^Infinite /i` and by `/\bwins? the game\b|\bloses? the game\b/i`, writes the generated file: the `GAME_ENDING` array plus a full vocabulary snapshot with counts as comments — **the committed diff is the review** (an allowlist, so an unknown new name defaults to NOT game-ending: under-claims, the right direction, same argument as tag-kinds' allowlist).
+- [ ] **Step 2: the generator** (tag-kinds precedent, R4): reads distinct `produces` names from the ingested `spellbook_variants` (local-dev, populated by Task 6 step 3), buckets by `/^Infinite /i`, by `/\bwins? the game\b|\bloses? the game\b/i`, and the turn-loop family by `/^infinite (extra )?turns?\b/i` into an `INFINITE_TURNS` array (`producesInfiniteTurns` reads it plus the live regex, same belt-and-braces as the Infinite family), writes the generated file: the `GAME_ENDING` and `INFINITE_TURNS` arrays plus a full vocabulary snapshot with counts as comments — **the committed diff is the review** (an allowlist, so an unknown new name defaults to NOT game-ending: under-claims, the right direction, same argument as tag-kinds' allowlist).
 - [ ] **Step 3:** run the generator against local-dev; eyeball the emitted `GAME_ENDING` list against the vocabulary snapshot in the same file; commit the generated file. Tests PASS.
 - [ ] **Step 4:** Commit `feat: produces vocabulary and the two-card-infinite feature test`.
 
@@ -1064,9 +1079,11 @@ export type BracketLimitReport = {
   massLandDenial: { have: number; violated: boolean; cards: FlaggedCardRef[] };
   extraTurns:
     | { counted: true; have: number; violated: boolean; cards: FlaggedCardRef[] }   // B1
-    | { counted: false; have: number; cards: FlaggedCardRef[] };  // B2/B3 — reported, no
-      // verdict; the chain-or-loop flag DOES NOT SHIP (R3): never specified over the
-      // profile and never measured, and §2.4a bars an unmeasured rule from a verdict.
+    | { counted: false; have: number; cards: FlaggedCardRef[];    // B2/B3 — the COUNT is
+        // reported with no verdict; the LOOP clause is violated only by measured evidence:
+        loopCombos: ComboRef[]; violated: boolean };  // an assembled combo producing
+      // infinite turns (R3 — Spellbook's own data, the combo is the receipt). The
+      // self-recurring-card loop is NOT detected and detection copy says so.
   twoCardCombos:
     | { policy: "forbidden"; have: number; violated: boolean; combos: ComboRef[] }   // B1/B2
     | { policy: "earlyGameOnly"; have: number; combos: ComboRef[] };  // B3 — widens, never
@@ -1104,6 +1121,9 @@ it("permits [3] at exactly 3 Game Changers and no combo; Underworld Breach as th
 it("permits [3,4] on a two-card infinite and nothing else at B3, with the lean populated:
     reachable when a tutor reaches a piece, drawOnly when none does, receipts naming
     combo, pieces and tutors", ...)
+it("permits [4,5] when the assembled combo produces INFINITE TURNS — the loop clause
+    violates B3 outright where a generic infinite only widens, with the combo as the
+    receipt on the B3 extraTurns row (R3); an infinite-mana combo does NOT trip it", ...)
 it("a template-gated 2-uses variant does not slot (it never entered twoCardCombos)", ...)
 it("a mustBeCommander piece in the 99 does not slot; the commander as a piece does", ...)
 it("MLD from each source carries its provenance; detection stays partial", ...)
@@ -1118,9 +1138,12 @@ it("empty deck permits [1,2] (R14)", ...)
 - [ ] **Step 3: implement.** The whole decision:
 
 ```ts
+const turnLoops = combos.filter((c) => producesInfiniteTurns(c.produces));
 const b1 = gc.length > 0 || mld.length > 0 || extraTurns.length > 0 || combos.length > 0;
 const b2 = gc.length > 0 || mld.length > 0 || combos.length > 0;
-const b3 = gc.length > 3 || mld.length > 0;
+const b3 = gc.length > 3 || mld.length > 0 || turnLoops.length > 0;  // R3: looping extra
+  // turns is stated as out at B3, and an assembled infinite-turns combo is a loop by
+  // Spellbook's measured data — so it VIOLATES B3 where a generic infinite only widens.
 const permits: Bracket[] =
   !b1 ? [1, 2] : !b2 ? [2] : !b3 ? (combos.length > 0 ? [3, 4] : [3]) : [4, 5];
 ```
@@ -1169,6 +1192,8 @@ it("an extra-turn card on a [1,2] deck: MOVES to [2] — B1 counts (§7.2's pare
 it("an 8th tutor: ruleless — never unquantified, never moves (§8's three-variants trap:
     they read alike in prose and mean different things)", ...)
 it("a card completing a combo on a [3] deck: moves to [3,4]", ...)
+it("a card completing an INFINITE-TURNS combo on a [3] deck: moves to [4,5] — the loop
+    clause, not the widening (R3)", ...)
 it("a second combo on a deck already [3,4]: none", ...)
 ```
 
@@ -1213,7 +1238,9 @@ export function upgradePath(profile: DeckProfile, target: 1 | 2 | 3): UpgradePat
 it("4 GC to target 3: removeCount 1, candidates all 4 — determined in cardinality,
     undetermined in identity, and it stays that way (§13.2)", ...)
 it("to target 2: every GC, every combo (per-combo piece sets), MLD listed", ...)
-it("to target 1: extra turns join — B1 is the only bracket where they are items", ...)
+it("to target 1: extra turns join — B1 is the only bracket where the COUNT is an item", ...)
+it("to target 3: an infinite-turns combo is an item (break the loop — per-combo piece
+    candidates), where a generic infinite combo is not (it only widens at B3)", ...)
 it("a commander-piece combo at target 2: empty candidates for that combo, blocked true", ...)
 it("a Game Changer COMMANDER at target 2: the commander is not a candidate, and with no
     other GC the removeCount cannot be met — blocked true", ...)
@@ -1237,7 +1264,7 @@ it("already at target: items empty, blocked false", ...)
 - [ ] **Step 2: fixture.** Per-run `user_id`; a brew (no version) whose cards are chosen FROM THE CATALOG BY QUERY at run time — flagged rows queried by flag, a GC by `game_changer = true`, a combo pair by querying a 2-card variant whose pieces exist locally — never hard-coded names that rot with the catalog. The probe FAILS when its fixture cannot reach a rule it claims to test (§8: a fixture with no Game Changer proves nothing about the Game Changer rule).
 - [ ] **Step 3: the six database answers** (§8, minus the cache one — R18, stated in the header with where it went):
   1. A draft-staged add moves the slot before any commit (insert a `deck_cards` row, reload, verdict moved).
-  2. The combo detected across the join; then the three §4.3b rules one case each: template-gated pair present → not slotted; `mustBeCommander` piece in the 99 → not slotted; the commander as a piece → slotted (the false-NEGATIVE half, the most consequential of the three).
+  2. The combo detected across the join; then the three §4.3b rules one case each: template-gated pair present → not slotted; `mustBeCommander` piece in the 99 → not slotted; the commander as a piece → slotted (the false-NEGATIVE half, the most consequential of the three). Plus the R3 loop case: an assembled variant producing infinite turns (found by QUERY over the ingested table; FAIL if none is buildable from the local catalog) reads `[4,5]` with the combo on the B3 extraTurns row — and its mutation (drop `producesInfiniteTurns` from the B3 test) must fail the run.
   3. The skeleton join picks the right condition: a mono-white commander resolves `W` and receives Swords to Plowshares; a three-colour one falls back to `count:3` with `basis: "count"`; a missing staple carries the STORED denominator, not a recomputed one. **The fallback states need rows local-dev will not have until a widened index run** (`identity_composition`, pair rows, a commander's `avg_*`) — the probe WRITES sentinel rows for each, capture-before-write and restore in the same `finally` as the fixture user's rows (the `probe:commander-art` pattern), and FAILS rather than skips when a state it claims to test is unreachable. No conditional "when the row exists" checks — that is the silent-pass trap this repo keeps paying for.
   4. Partial detection reported on a fixture holding a known MLD card, **and a flagged COMMANDER case: a deck led by a Game Changer legend (queried by flag, not by name) must slot [3]+ with the commander in the receipts** — the CRITICAL the plan review caught.
   5. Population carries its declared-total denominator, and `of: "pair"` against a pair deck through a sentinel pair row (same capture-restore).
