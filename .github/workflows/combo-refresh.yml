@@ -1,0 +1,96 @@
+name: Combo refresh
+
+# Rebuilds `spellbook_variants`, `spellbook_variant_cards` and `card_bracket_flags` from
+# Commander Spellbook. Measured on the first real run: 54 sweep requests plus a 656 MB bulk
+# stream, ~106,900 variants and ~376,700 membership rows.
+on:
+  schedule:
+    # 13:00 UTC every Monday — FOUR HOURS after `Catalog refresh` (09:00), and the gap is the
+    # point rather than politeness. A variant naming a card the catalog has not ingested yet
+    # is unresolvable, so the catalog has to move first; the printings download alone allows
+    # 30 minutes before any parsing, so four hours covers its worst case with room.
+    #
+    # A clock rather than a `workflow_run` chain, deliberately: `workflow_run` fires once per
+    # run and cannot tell which matrix leg it is hearing about, which is exactly why the
+    # `Commander prose` chain had to be pinned to production. This job wants BOTH legs.
+    - cron: '0 13 * * 1'
+  workflow_dispatch:
+    inputs:
+      target:
+        description: Which catalog database to refresh
+        type: choice
+        options: [staging, production]
+        default: staging
+
+permissions:
+  contents: read
+
+jobs:
+  # Resolves which databases this run refreshes. A scheduled run fans out over both; a manual
+  # dispatch refreshes only the one it names. This has to be a SEPARATE JOB because a matrix
+  # can only be built from a `needs` output — the alternative, an expression on `environment`,
+  # is the bug this repository has now found in three workflows, and it sends every scheduled
+  # run to production alone while staging silently goes stale.
+  plan:
+    # Kill switch for the cron; a manual dispatch always runs. Set the COMBO_REFRESH_ENABLED
+    # repository variable to 'true' or the scheduled refresh never fires.
+    if: vars.COMBO_REFRESH_ENABLED == 'true' || github.event_name == 'workflow_dispatch'
+    runs-on: ubuntu-latest
+    outputs:
+      targets: ${{ steps.pick.outputs.targets }}
+    steps:
+      - id: pick
+        shell: bash
+        env:
+          # Read through the environment rather than interpolated into the script body, so the
+          # input cannot inject shell. The `case` re-validates what the `choice` type already
+          # constrains, because `github.event.inputs` is unset — not defaulted — off dispatch.
+          TARGET: ${{ github.event.inputs.target }}
+        run: |
+          case "$TARGET" in
+            staging|production) targets="[\"$TARGET\"]" ;;
+            '') targets='["staging","production"]' ;;
+            *) echo "Unrecognised target: $TARGET" >&2; exit 1 ;;
+          esac
+          echo "targets=$targets" >> "$GITHUB_OUTPUT"
+          echo "Refreshing: $targets"
+
+  refresh:
+    needs: plan
+    strategy:
+      matrix:
+        target: ${{ fromJSON(needs.plan.outputs.targets) }}
+      # Independent databases: a staging failure must not cancel the production leg, which is
+      # the one the app actually serves.
+      fail-fast: false
+    runs-on: ubuntu-latest
+    concurrency:
+      # Per target. The two environments are different databases, so a manual staging refresh
+      # has no reason to queue behind the scheduled production one. Never cancel in progress:
+      # this job publishes in two transactions and an abort between them leaves fresh flags
+      # beside yesterday's variants — recoverable, but not worth causing.
+      group: combo-refresh-${{ matrix.target }}
+      cancel-in-progress: false
+    # The bulk download alone can run long before any parsing begins.
+    timeout-minutes: 60
+    environment: catalog-${{ matrix.target }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - name: Refresh combos
+        env:
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+          # The streamer holds one record at a time, but the run buffers ~107k variant rows
+          # and ~377k membership rows before its publish, plus 54 sweep responses. The
+          # ManaPool canary's precedent, for the same reason.
+          NODE_OPTIONS: --max-old-space-size=4096
+        run: |
+          echo "### Combo refresh — \`catalog-${{ matrix.target }}\`" >> "$GITHUB_STEP_SUMMARY"
+          echo '```' >> "$GITHUB_STEP_SUMMARY"
+          pnpm --silent db:seed:combos | tee -a "$GITHUB_STEP_SUMMARY"
+          echo '```' >> "$GITHUB_STEP_SUMMARY"

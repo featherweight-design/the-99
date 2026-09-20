@@ -73,7 +73,8 @@
     "probe:nav-cost": "node scripts/probe-nav-cost.mjs",
     "probe:deck-statuses": "node scripts/probe-deck-statuses.mjs",
     "db:seed:combos": "tsx scripts/seed-combos.ts",
-    "build:combo-features": "tsx scripts/build-combo-features.mts"
+    "build:combo-features": "tsx scripts/build-combo-features.mts",
+    "check:spellbook": "tsx scripts/check-spellbook-contract.ts"
   },
   "dependencies": {
     "@clerk/nextjs": "^7.5.20",
