@@ -71,7 +71,9 @@
     "probe:mana-symbols": "node scripts/probe-mana-symbols.mjs",
     "fetch:mana": "tsx scripts/fetch-mana-symbols.ts",
     "probe:nav-cost": "node scripts/probe-nav-cost.mjs",
-    "probe:deck-statuses": "node scripts/probe-deck-statuses.mjs"
+    "probe:deck-statuses": "node scripts/probe-deck-statuses.mjs",
+    "db:seed:combos": "tsx scripts/seed-combos.ts",
+    "build:combo-features": "tsx scripts/build-combo-features.mts"
   },
   "dependencies": {
     "@clerk/nextjs": "^7.5.20",

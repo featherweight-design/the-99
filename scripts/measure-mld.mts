@@ -32,65 +32,12 @@ neonConfig.webSocketConstructor = ws;
 const { DATABASE_URL } = requireEnv(["DATABASE_URL"]);
 const client = new Pool({ connectionString: DATABASE_URL });
 
-/**
- * The candidate classifier. Each clause maps to a phrase in the quoted definition, and the
- * comment says which — so a reader can check the rule against the rule rather than against
- * an intuition about what mass land denial "feels like".
- */
-const PATTERNS: { why: string; re: RegExp }[] = [
-  // "destroy … other players' lands … four or more per player"
-  { why: "destroy all lands", re: /destroy all (creatures and |artifacts and |nonland permanents and )?lands/i },
-  { why: "destroy N lands", re: /destroys? (four|five|six|seven|eight|nine|ten|\d+) lands/i },
-  { why: "destroy all nonbasic", re: /destroy all nonbasic lands/i },
-  // "permanents" needs TWO guards, each paid for by a real false positive the sweep below
-  // found. A NARROWING qualifier reduces the sweep to a subset that need not contain lands —
-  // `destroy all permanents named Wirefly`, `…with that spell's mana value`, `…of the chosen
-  // type`. And an EXCEPTION CLAUSE THAT NAMES LANDS spares them outright: Scourglass reads
-  // `destroy all permanents except for artifacts and lands`, the exact opposite of this rule.
-  //
-  // The second guard tests for `land` inside the exception rather than for the exception
-  // itself, and that distinction is the whole of it: Worldslayer's `destroy all permanents
-  // other than this Equipment` leaves every land dead and IS mass land denial. A guard on
-  // `other than` alone reads the two alike and loses it.
-  {
-    why: "destroy all permanents",
-    re: /destroy all (?:artifacts, creatures, and lands|permanents(?!\s+(?:named|with|of)\b)(?![^.]*\b(?:except|other than)\b[^.]*\bland))/i,
-  },
-  // "exile"
-  { why: "exile all lands", re: /exile all lands/i },
-  // "bounce"
-  { why: "return all lands", re: /return all lands .{0,40}owner'?s'? hands?/i },
-  // "affecting four or more lands per player" via a sacrifice clause
-  { why: "sacrifice N lands", re: /(each player|players) sacrifices? (four|five|six|seven|all|x|\d+) lands?/i },
-  // Cataclysm-style: keep a few, sacrifice the rest
-  { why: "keeps N, sacs rest", re: /chooses? .{0,60}\ba land\b.{0,80}sacrifices? (the |all the )?rest/i },
-  // "keep lands tapped". The word boundary is load-bearing: without it this matches INSIDE
-  // `Islands don't untap`, and flagged Choke and Curse of Marit Lage — single-colour hosers
-  // that hit only the opponents on that colour, where the definition asks for four or more
-  // lands PER PLAYER. `Nonbasic lands` and `Lands` both still match, which is what it is for.
-  // …and `target` is excluded for the definition's OTHER clause: `up to three target lands
-  // don't untap during their controller's next untap step` (Reduce // Rubble) is a bounded
-  // selection for one turn, where the rule asks for four or more lands per player. A global
-  // statement never says "target".
-  { why: "lands don't untap", re: /(?<!target )\blands don'?t untap/i },
-  // "keep lands tapped" — the Orb/Stasis family words this several ways
-  // `You can't untap…` is a DRAWBACK on your own card (Mungha Wurm), not denial aimed at the
-  // table. `Players` and `Your opponents` both still match, which is the Orb family.
-  { why: "can't untap more than", re: /(?<!\byou )can'?t untap more than (one|two|three|\w+) (land|permanent)/i },
-  { why: "skip untap step", re: /skips? (their|your|his or her) untap steps?/i },
-  // Three guards, all found by reading the sweep. A NARROWING adjective can exclude lands
-  // outright (`Nonland permanents don't untap` — Embargo) or reduce the effect to a sliver
-  // of them (`Snow permanents` — Freyalise's Radiance, a snow hoser on the Choke pattern).
-  // And `those permanents … next untap step` is Lorthos: eight TARGETED permanents for one
-  // turn, the same bounded-and-temporary shape excluded on the `lands don't untap` clause.
-  {
-    why: "permanents don't untap",
-    re: /(?<!\b(?:nonland|snow|those|artifact|creature|enchantment)\s)permanents don'?t untap during(?![^.]*\bnext untap step)/i,
-  },
-  // "change what mana they produce"
-  { why: "nonbasic lands are", re: /nonbasic lands are mountains|nonbasic lands? lose all land types/i },
-  { why: "lands produce colorless", re: /lands? .{0,30}produce .{0,10}colorless instead/i },
-];
+// THE PRODUCTION CLASSIFIER, imported rather than restated. These two files were separate
+// copies of one rule for a day, and in that day the spec's "zero false positives" line was
+// measured against a curated set while the catalog held eleven. A script that restates a rule
+// measures its own copy.
+import { matchedMldClauses } from "../src/lib/bracket/oracle-rules";
+
 
 /** Cards that unambiguously qualify under the quoted definition. Recall is measured here. */
 const KNOWN_POSITIVE = [
@@ -129,8 +76,7 @@ const KNOWN_NEGATIVE = [
   "Mungha Wurm",           // `YOU can't untap more than one land` — a drawback on its own card
 ];
 
-const hit = (text: string | null) =>
-  text ? PATTERNS.filter((p) => p.re.test(text)).map((p) => p.why) : [];
+const hit = matchedMldClauses;
 
 /**
  * Why a fixture name is missing from the corpus — the CORPUS is commander-legal cards, so a
