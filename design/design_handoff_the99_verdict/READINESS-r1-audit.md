@@ -51,6 +51,22 @@ in the same box as a single bracket; WotC's names verbatim; **no tutor gate** (t
 *finding* with a `no limit` chip); no expected game length; the lean and declaration held for
 Round 3; Round 0's and Round 1's marks adopted rather than redrawn; mobile and desktop together.
 
+## Precedence — read this before building anything from the package
+
+**Where the 2026-09-20 ruling touches a document, THIS AUDIT outranks every file in the drop,
+`HANDOFF.md` included.** The ruling landed after the package was drawn, so the package cannot
+have absorbed it: `HANDOFF.md`, `READINESS.md`, `README.md` and `STATES-verdict.md` all still
+present the `3 or 4` range as an open engineering question and describe the fallback glyph for
+it. **Do not implement that path.** It is history.
+
+Everywhere the ruling does NOT reach, Round 0's precedence stands unchanged: `HANDOFF.md` wins,
+then the Turn 4 canvas sections, then everything else.
+
+Four more places where the package is stale against the tree rather than against the ruling —
+the tutor source, `--fact`, the climb's action wording, and the combo modal's payload — are
+errata 1, 7, 10 and 12 below. **A reader building from the package alone will implement at
+least two things that are wrong.**
+
 ## §2 — the `3 or 4` range, and the ruling that settled it
 
 Round 2 was drawn **without** the `[3, 4]` reading, and asked for a spec amendment. The shipped
@@ -110,7 +126,23 @@ as an open call.
 10. **Measure the lemniscate against turn-again at the 12px floor in the build.** Both are stroked
     arcs, and that pairing was never in Round 1's seven-neighbour distinctness pass. The reasoning
     is prose and no measurement backs it — **this becomes a probe check, not a paragraph.**
-11. **Data dependencies:** `Violation.cards` and `ComboRef` must arrive with oracle ids and image
+12. **THE COMBO MODAL'S PAYLOAD DOES NOT EXIST, and it is the round's load-bearing surface.**
+    The modal draws the pair, what it produces, **its mana**, and **Spellbook's four steps**.
+    None of the last two is stored: `spellbook_variants` holds `variant_id`, the `uses` count,
+    `produces` and `bracket_tag` and nothing else, and `ComboRef` carries no mana, no steps and
+    **no image uris** — while `CardRef` is `{ oracleId, name }`, so the named tiles have no art
+    to draw either.
+
+    **This is an ingest change, not a loader change**, and it cannot be met by asking Spellbook
+    at render time: the schema's own rule is that third-party data is fetched at ingest and
+    never during a render. So the build owes a widened `spellbook_variants` (mana and the step
+    list), a widened `ComboRef`, and an image uri on the refs the modal renders as tiles.
+
+    **Size it before the surface is planned.** It is the one erratum here that can move the PR
+    boundaries, because a modal with no steps is not the modal this round designed — it is the
+    count-without-cards shape §2.2 was written against, arriving by a different road.
+
+13. **Data dependencies:** `Violation.cards` and `ComboRef` must arrive with oracle ids and image
     uris (the modal renders tiles — never string-match a name); `counted: false` must reach the
     client; `population` stays nullable and is never zeroed; the single-card-loop caveat string is
     still owed on `COMBO_DETECTION`.
