@@ -92,6 +92,25 @@ describe("streamVariants", () => {
     expect(got.map((v) => v.id)).toEqual(["real"]);
   });
 
+  // The decoy that defeated the previous version. Requiring the `[` after the key rules out a
+  // nested key holding a STRING — which is all the old test used — but a nested key holding a
+  // real ARRAY passes that check, and the scan took it and reported a clean run over the
+  // wrong data. Depth is what tells them apart.
+  it("ignores a nested variants ARRAY and takes the top-level one", async () => {
+    const got = await collect(
+      `{"meta":{"variants":[{"id":"decoy"}]},"variants":[{"id":"real"}]}`,
+    );
+    expect(got.map((v) => v.id)).toEqual(["real"]);
+  });
+
+  it("ignores a nested decoy split across chunks", async () => {
+    const got = await collect(
+      `{"meta":{"nested":{"variants":[{"id":"decoy"},{"id":"decoy2"}]}},"variants":[{"id":"real"}]}`,
+      4,
+    );
+    expect(got.map((v) => v.id)).toEqual(["real"]);
+  });
+
   it("yields nothing for an empty variants array", async () => {
     expect(await collect(doc(""))).toEqual([]);
   });

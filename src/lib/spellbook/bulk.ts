@@ -31,26 +31,61 @@ export async function* streamVariants(
   let done = false; // have we seen the array's closing `]`
 
   // Parser state for the element currently being accumulated.
+  // Depth/string state for the top-level key scan, carried across chunks.
+  let scanDepth = 0;
+  let scanStr = false;
+  let scanEsc = false;
+  let scanFrom = 0;
+
   let depth = 0;
   let inString = false;
   let escaped = false;
   let element = "";
 
   const findArrayStart = (): boolean => {
-    // The key can appear inside a nested object before the real one (a `meta` block naming
-    // it, say), so require the `[` that follows it rather than the key alone.
-    let from = 0;
+    // TOP-LEVEL ONLY, tracked by depth.
+    //
+    // An earlier version required the `[` after the key and claimed that handled a nested
+    // decoy. It does not: `{"meta":{"variants":[…]},"variants":[…]}` has a nested key that IS
+    // followed by `[`, so the scan took the decoy and returned successfully — ingesting the
+    // wrong array and reporting a clean run. Requiring the bracket only rules out a nested
+    // key holding a STRING, which is the weaker case and the one the old test happened to use.
+    //
+    // So the scan walks the document counting brace/bracket depth, in string state, and
+    // accepts the key only at depth 1 — where the real one lives. `depthScanned` carries that
+    // state across chunk boundaries, since the key can arrive in any chunk.
     for (;;) {
-      const k = buf.indexOf(ARRAY_KEY, from);
+      // Advance the depth scan to the next occurrence of the key, so `scanDepth` describes
+      // the nesting AT that key rather than at the start of the buffer.
+      const k = buf.indexOf(ARRAY_KEY, scanFrom);
+      // With no match, stop the depth scan short of the tail we are about to RETAIN, so those
+      // characters are counted exactly once — when the next chunk arrives and they are
+      // rescanned. Counting them now and again later corrupts the depth by however many
+      // braces the tail holds.
+      const keep = k === -1 ? Math.min(buf.length - scanFrom, ARRAY_KEY.length - 1) : 0;
+      const upto = k === -1 ? buf.length - keep : k;
+      for (let i = scanFrom; i < upto; i++) {
+        const ch = buf[i];
+        if (scanEsc) { scanEsc = false; continue; }
+        if (ch === "\\" && scanStr) { scanEsc = true; continue; }
+        if (ch === '"') { scanStr = !scanStr; continue; }
+        if (scanStr) continue;
+        if (ch === "{" || ch === "[") scanDepth++;
+        else if (ch === "}" || ch === "]") scanDepth--;
+      }
       if (k === -1) {
-        // Keep only a tail long enough to re-match a key split across chunks.
-        if (buf.length > ARRAY_KEY.length) buf = buf.slice(-ARRAY_KEY.length);
+        buf = buf.slice(upto);
+        scanFrom = 0;
         return false;
       }
       const rest = buf.slice(k + ARRAY_KEY.length);
       const m = /^\s*:\s*\[/.exec(rest);
-      if (m) {
+      // Depth 1 is the top level: the document's own `{` opened depth 1, and a key inside a
+      // nested object sits at 2 or deeper. A decoy `{"meta":{"variants":[…]}}` is skipped
+      // here rather than ingested as the real array.
+      if (m && scanDepth === 1 && !scanStr) {
         buf = rest.slice(m[0].length);
+        scanFrom = 0;
         return true;
       }
       // Not followed by `: [`. Two cases, and conflating them loses the document.
@@ -63,8 +98,15 @@ export async function* streamVariants(
       // permanently — `{"variants"          :          [ … ]}` threw "no variants array" at
       // every chunk size. So the test is what the text IS, not how long it is: while every
       // character after the key is still a legal prefix of `: [`, wait for more.
-      if (/^\s*:?\s*$/.test(rest)) return false;
-      from = k + 1;
+      if (m === null && /^\s*:?\s*$/.test(rest)) {
+        // Waiting for the separator. Anchor the scan AT this key so the next entry does not
+        // re-count the characters before it — re-counting the document's opening `{` on every
+        // chunk is what drove the depth past 1 and lost the array entirely.
+        scanFrom = k;
+        return false;
+      }
+      // Step past this occurrence, counting the key's own characters into the depth scan.
+      scanFrom = k + ARRAY_KEY.length;
     }
   };
 

@@ -48,8 +48,17 @@ async function firstVariant(): Promise<Record<string, unknown> | null> {
   const res = await fetch(BULK_INDEX, {
     headers: { "User-Agent": USER_AGENT, Range: "bytes=0-500000" },
   });
-  if (!res.ok && res.status !== 206) {
-    fail(`bulk: HTTP ${res.status}`);
+  if (res.status !== 206) {
+    // A 200 means the range was IGNORED, and `res.text()` on it would buffer the whole
+    // 656 MB into a daily canary with a 10-minute budget — exhausting its memory to check a
+    // field list. Refusing is both safer and more informative than succeeding slowly: if
+    // upstream stops honouring ranges, that is itself worth an alert.
+    fail(
+      res.ok
+        ? `bulk: expected a 206 for a ranged request, got ${res.status} — range ignored, refusing to buffer 656 MB`
+        : `bulk: HTTP ${res.status}`,
+    );
+    await res.body?.cancel();
     return null;
   }
   const text = await res.text();
@@ -165,8 +174,11 @@ async function main(): Promise<void> {
     else {
       const added = live.filter((t) => !BRACKET_TAGS.includes(t));
       const gone = BRACKET_TAGS.filter((t) => !live.includes(t));
-      // An ADDED tag is the sharp one: every insert carrying it fails the check constraint,
-      // and the ingest would go red after the next upstream release rather than here.
+      // An ADDED tag is the sharp one, and the failure is SILENT rather than loud:
+      // `toVariantRows` refuses any tag outside the seven and counts it as a dropped record,
+      // so no insert ever reaches the constraint. The ingest publishes a table missing every
+      // variant carrying the new tag, and exits 0. This assertion is the only thing that says
+      // so. (Third copy of this claim — the other two were corrected and this one was not.)
       if (added.length > 0) fail(`schema: BracketTagEnum gained ${added.join(", ")} — the ingest will silently DROP every variant carrying it`);
       if (gone.length > 0) fail(`schema: BracketTagEnum lost ${gone.join(", ")}`);
       if (added.length === 0 && gone.length === 0) console.log(`schema: ok (${live.length} bracket tags)`);

@@ -32,7 +32,8 @@ export type DropReason =
   | "not-commander-legal"
   | "unresolvable-card"
   | "no-uses"
-  | "unknown-bracket-tag";
+  | "unknown-bracket-tag"
+  | "no-id";
 
 export type TransformResult =
   | { kind: "row"; variant: VariantRow; cards: VariantCardRow[] }
@@ -48,6 +49,12 @@ export function toVariantRows(raw: Record<string, unknown>, known: Set<string>):
   if ((raw.legalities as Record<string, unknown> | undefined)?.commander !== true) {
     return { kind: "drop", reason: "not-commander-legal" };
   }
+
+  // `String(raw.id)` on a missing id yields the literal "undefined", which is a bogus primary
+  // key — and a SECOND malformed record collides with it and fails the whole insert batch.
+  // The canary reads only the first record, so a malformed one later in the file reaches here
+  // unannounced; counting it as a drop is what makes it visible.
+  if (typeof raw.id !== "string" || raw.id.length === 0) return { kind: "drop", reason: "no-id" };
 
   const bracketTag = typeof raw.bracketTag === "string" ? raw.bracketTag : "";
   if (!BRACKET_TAGS.has(bracketTag)) return { kind: "drop", reason: "unknown-bracket-tag" };
@@ -81,7 +88,7 @@ export function toVariantRows(raw: Record<string, unknown>, known: Set<string>):
   return {
     kind: "row",
     variant: {
-      variantId: String(raw.id),
+      variantId: raw.id,
       bracketTag,
       cardCount: uses.length,
       identity: typeof raw.identity === "string" ? raw.identity : "",
