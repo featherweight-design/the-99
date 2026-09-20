@@ -14,6 +14,7 @@ import {
 } from "../../db/schema";
 import { loadBracketFlags } from "../bracket/flags-read";
 import { EXTRA_TURN_DETECTION, MLD_DETECTION } from "../bracket/oracle-rules";
+import { classifyTutor, tutorReaches } from "../bracket/tutor-targets";
 import { cacheForUser } from "../cache/user-lists";
 import { canonicalPair } from "../edhrec/pair";
 import { COMBO_DETECTION, isInfiniteOrGameEnding } from "../spellbook/combo-features";
@@ -283,6 +284,19 @@ export async function loadDeckProfileFromHead(head: ProfileHead): Promise<DeckPr
     if (f.extraTurn) extraTurnFlags.set(oracleId, f.extraTurnSources as FlagSource[]);
   }
 
+  // THE TUTORS, classified here rather than in the builder, so the builder stays pure. Only
+  // a tutor that can actually FIND a piece of a combo this deck assembles is recorded: the
+  // profile reports the reach as a fact, and a tutor that reaches nothing is still a tutor —
+  // which is why `comboReach.tutors` takes the whole set and the pairing is the builder's.
+  const tutorIds = new Set<string>();
+  const tutorTargets = new Map<string, ReturnType<typeof classifyTutor>>();
+  for (const row of rows) {
+    const target = classifyTutor(row.oracleText);
+    if (!target) continue;
+    tutorIds.add(row.oracleId);
+    tutorTargets.set(row.oracleId, target);
+  }
+
   const input: ProfileInput = {
     deckId: head.deckId,
     fingerprint: profileFingerprint(head),
@@ -304,10 +318,14 @@ export async function loadDeckProfileFromHead(head: ProfileHead): Promise<DeckPr
     extraTurnFlags,
     gameChangerIds: new Set(cardRows.filter((r) => r.gameChanger).map((r) => r.oracleId)),
     twoCardCombos: combos,
-    // TODO(task 16): `classifyTutor` over these rows' oracle text. Until it lands the reach
-    // is empty rather than absent, and `probe:bracket` asserts a non-empty one so this
-    // cannot stay behind a green run.
-    tutorIds: new Set<string>(),
+    tutorIds,
+    // The reach predicate travels with the ids, so the builder pairs a tutor with a piece
+    // only where the tutor can actually find it. Without this every tutor "reaches" every
+    // piece, which is a receipt nobody can check and an overstatement on every deck.
+    tutorReaches: (tutorId, piece) => {
+      const target = tutorTargets.get(tutorId);
+      return target ? tutorReaches(target, piece) : false;
+    },
     detection: {
       massLandDenial: MLD_DETECTION,
       extraTurn: EXTRA_TURN_DETECTION,

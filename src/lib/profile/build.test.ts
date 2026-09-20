@@ -515,3 +515,51 @@ describe("every figure comes from one normalised list", () => {
     expect(p.curve.copies).toBe(2);
   });
 });
+
+// The reach predicate. Without it every tutor "reaches" every piece, which is a receipt
+// nobody can check and an overstatement on every deck that holds a tutor.
+describe("a tutor reaches only what it can find", () => {
+  const combo: ComboRef = {
+    variantId: "v1",
+    cards: [
+      { oracleId: "artifact-piece", name: "Artifact Piece" },
+      { oracleId: "land-piece", name: "Land Piece" },
+    ],
+    produces: ["Infinite mana"],
+    bracketTag: "casual",
+    usesCommander: false,
+  };
+
+  const cards = [
+    card({ oracleId: "tutor", name: "Sylvan Scrying" }),
+    card({ oracleId: "artifact-piece", typeLine: "Artifact" }),
+    card({ oracleId: "land-piece", typeLine: "Land" }),
+  ];
+
+  it("pairs only the pieces the predicate admits", () => {
+    const p = buildDeckProfile(
+      input({
+        cards,
+        tutorIds: new Set(["tutor"]),
+        twoCardCombos: [combo],
+        tutorReaches: (_id, piece) => piece.typeLine.toLowerCase().includes("land"),
+      }),
+    );
+    expect(p.brackets.comboReach.reaches.map((r) => r.piece.oracleId)).toEqual(["land-piece"]);
+  });
+
+  // A tutor that reaches nothing is still a tutor — the profile reports it as a fact, and
+  // `bracketDelta` calls that `ruleless` rather than hiding it.
+  it("still lists a tutor that reaches nothing", () => {
+    const p = buildDeckProfile(
+      input({
+        cards,
+        tutorIds: new Set(["tutor"]),
+        twoCardCombos: [combo],
+        tutorReaches: () => false,
+      }),
+    );
+    expect(p.brackets.comboReach.tutors).toHaveLength(1);
+    expect(p.brackets.comboReach.reaches).toEqual([]);
+  });
+});
