@@ -33,9 +33,11 @@ export type CandidateFacts = {
  *                   Game Changer does), and the count is still the sentence a reader needs.
  * · `unquantified`— a fact the system reports and refuses to score, at a bracket that does
  *                   not count it. Never a move.
- * · `ruleless`    — a fact no bracket rule counts at all. Tutors, and only tutors.
+ * · `ruleless`    — a fact no bracket LIMIT counts. Tutors, and only tutors — and note that since
+ * 2026-09-20 a tutor can still decide the 3-vs-4 boundary by covering a combo, which is a
+ * different thing from being counted against a limit. No rule anywhere says "too many".
  *
- * `from` and `to` are RANGES. The spec's own `[3] → [3,4]` widening cannot be written with
+ * `from` and `to` are RANGES. A `[3] → [4]` resolution cannot be written with
  * single brackets, and writing it as `3 → 4` would claim a slot the system does not assign.
  */
 export type BracketDelta =
@@ -80,7 +82,7 @@ export function bracketDelta(profile: DeckProfile, candidate: CandidateFacts): B
     // required to err in: telling a player their deck is gentler than it is, is the failure
     // §4.2 names as dangerous, and claiming an add pushed them to 4 on an uncomputed reach
     // would be the same error pointing the other way.
-    assemblesCombo: comboLandsEarly(combos, b.comboReach.reaches),
+    assemblesCombo: comboLandsEarly(combos, b.comboReach.reaches, profile.commanderOracleIds),
   });
 
   const moved = from.join() !== to.join();
@@ -101,7 +103,7 @@ export function bracketDelta(profile: DeckProfile, candidate: CandidateFacts): B
     }
     if (newLoops.length > 0) {
       // The LOOP clause, not the widening: a completed infinite-turns combo violates B3
-      // outright where a generic infinite only opens the range to [3,4].
+      // outright, where a generic infinite resolves the boundary on tutor coverage instead.
       return {
         kind: "moves", from, to,
         rule: {

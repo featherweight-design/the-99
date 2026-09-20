@@ -65,7 +65,7 @@ export type TutorConstraint = string[];
  * `an artifact or enchantment card` is two alternatives of one constraint each. Collapsing
  * the two into a flat list and matching with `some` made the first behave like the second —
  * so a legendary-creature tutor reached any legendary LAND, and any non-legendary creature,
- * and the [3,4] lean reported `reachable` on combos it cannot find. 146 of the 960 tutors
+ * and the lean reported `reachable` on combos it cannot find. 146 of the 960 tutors
  * carry more than one word, and the sample holds both shapes side by side.
  */
 export type TutorAlternative = TutorConstraint[];

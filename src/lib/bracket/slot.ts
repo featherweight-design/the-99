@@ -46,7 +46,11 @@ export function slotDeck(profile: DeckProfile): BracketVerdict {
   // The 3-vs-4 boundary resolves on whether the deck can ASSEMBLE a combo rather than draw
   // into it. A commander piece counts as covered without a tutor — it is available every
   // game by the format's own rules.
-  const assemblesCombo = comboLandsEarly(combos, profile.brackets.comboReach.reaches);
+  const assemblesCombo = comboLandsEarly(
+    combos,
+    profile.brackets.comboReach.reaches,
+    profile.commanderOracleIds,
+  );
 
   const permits = permitsFor({ violatesB1, violatesB2, violatesB3, assemblesCombo });
 

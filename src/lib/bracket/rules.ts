@@ -109,20 +109,24 @@ export function comboLandsEarly(
   combos: readonly {
     variantId: string;
     cards: readonly { oracleId: string }[];
-    usesCommander: boolean;
   }[],
   reaches: readonly { combo: { variantId: string }; piece: { oracleId: string } }[],
+  commanderOracleIds: readonly string[],
 ): boolean {
+  const inCommandZone = new Set(commanderOracleIds);
   return combos.some((combo) => {
     const reached = new Set(
       reaches.filter((r) => r.combo.variantId === combo.variantId).map((r) => r.piece.oracleId),
     );
-    // A commander piece is available every game by the format's own rules, so it needs no
-    // tutor. `usesCommander` says one of the pieces is in the command zone without saying
-    // which, so the requirement drops by exactly one piece rather than naming a card —
-    // which is the same answer and needs no commander list threaded through.
-    const needed = combo.cards.length - (combo.usesCommander ? 1 : 0);
-    const covered = combo.cards.filter((c) => reached.has(c.oracleId)).length;
-    return needed > 0 && covered >= needed;
+    // A piece is covered when a tutor finds it OR it sits in the command zone, where it is
+    // available every game by the format's own rules.
+    //
+    // COUNTED PER PIECE, not deducted once from the total. `buildDeckProfile` skips a reach
+    // for EVERY commander piece, so a partner deck whose combo is its two commanders has two
+    // uncoverable pieces — subtracting a flat one would leave it needing a tutor for a combo
+    // that assembles in the command zone every single game.
+    return combo.cards.every(
+      (c) => reached.has(c.oracleId) || inCommandZone.has(c.oracleId),
+    );
   });
 }

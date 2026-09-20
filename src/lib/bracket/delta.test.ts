@@ -74,29 +74,15 @@ describe("moves", () => {
     expect(d).toEqual({ kind: "none" });
   });
 
-  it("a card completing a combo the deck CAN assemble moves it to [4]", () => {
-    const deck = atThree();
-    const piece = { oracleId: "p1", name: "p1" };
-    // The tutors already in the deck reach every piece of the candidate's combo, so adding
-    // the last card makes it assemblable rather than merely present.
-    deck.brackets.comboReach.reaches = [
-      { tutor: { oracleId: "t1", name: "t1" }, combo: combo("v1", ["Infinite mana"]), piece },
-      {
-        tutor: { oracleId: "t2", name: "t2" },
-        combo: combo("v1", ["Infinite mana"]),
-        piece: { oracleId: "p2", name: "p2" },
-      },
-    ];
-    const d = bracketDelta(
-      deck,
-      candidate({ completesCombos: [combo("v1", ["Infinite mana"])] }),
-    );
-    expect(d).toMatchObject({ kind: "moves", from: [3], to: [4] });
-    expect(d.kind === "moves" && d.rule.rule).toBe("twoCardCombos");
-    // The RECEIPT, not only the rule name. Dropping it left the reader a verdict with no
-    // evidence, and nothing here noticed until each combos site was mutated separately.
-    expect(d.kind === "moves" && d.rule.combos?.map((c) => c.variantId)).toEqual(["v1"]);
-  });
+  // DELIBERATELY NOT TESTED HERE: "the add makes the combo assemblable, so the push check
+  // reports [3] → [4]". That state cannot exist. `buildDeckProfile` computes reaches over the
+  // combos the deck ALREADY holds, so no reach can name a variant the deck is still one card
+  // away from — a fixture that hand-writes one asserts a transition the push check can never
+  // reach in production, which is a test measuring nothing.
+  //
+  // It is the same hole the case above names, seen from the other side, and it is Round 4's:
+  // the push check cannot currently say "this add hands you a combo your tutors can already
+  // find", because nothing has computed that reach yet.
 
   // The loop clause, not the widening. A completed infinite-TURNS combo violates B3 outright.
   it("a card completing an infinite-turns combo moves a [3] deck to [4,5]", () => {

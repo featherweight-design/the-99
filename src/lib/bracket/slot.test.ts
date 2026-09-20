@@ -172,6 +172,22 @@ describe("the permitted range", () => {
     expect(v.lean).toMatchObject({ likely: 3, reason: "drawOnly" });
   });
 
+  it("permits [4] when the combo IS the two commanders", () => {
+    // A partner deck whose combo is both commanders assembles it in the command zone every
+    // game, and no tutor can ever reach either piece — the builder skips a reach for EVERY
+    // commander. Deducting a flat one for `usesCommander` left this needing a tutor for a
+    // combo that is always available, which is the case that proves coverage is counted per
+    // piece rather than subtracted once.
+    const v = verdict({
+      cards: [card("cmd1"), card("cmd2")],
+      commanderOracleIds: ["cmd1", "cmd2"],
+      twoCardCombos: [
+        { ...combo("v1", ["Infinite mana"], ["cmd1", "cmd2"]), usesCommander: true },
+      ],
+    });
+    expect(v.permits).toEqual([4]);
+  });
+
   it("permits [4] on a commander combo whose one library piece is reachable", () => {
     // A commander is not in the library, so no tutor can ever "reach" it — the builder
     // skips it by design. Requiring every piece to be tutored would make a commander combo
@@ -208,7 +224,7 @@ describe("the permitted range", () => {
 });
 
 describe("the lean", () => {
-  it("is null anywhere but [3,4]", () => {
+  it("is null where no combo decided the bracket", () => {
     expect(verdict().lean).toBeNull();
     expect(
       verdict({
@@ -218,11 +234,16 @@ describe("the lean", () => {
     ).toBeNull();
   });
 
-  it("leans 4 when a tutor reaches a piece, with the tutor named", () => {
+  it("leans 4 when the tutors cover EVERY piece, with the tutor named", () => {
+    // `tutorReaches` is stated rather than defaulted: the builder's default is "reaches
+    // everything", under which this case passes on the overturned single-reach rule too —
+    // and a case that holds under both rules is not testing the one that shipped.
     const v = verdict({
       cards: [card("p1"), card("p2"), card("demonic")],
       tutorIds: new Set(["demonic"]),
       twoCardCombos: [combo("v1", ["Infinite mana"])],
+      tutorReaches: (tutorId, piece) =>
+        tutorId === "demonic" && (piece.oracleId === "p1" || piece.oracleId === "p2"),
     });
     expect(v.lean).toMatchObject({ likely: 4, reason: "reachable" });
     expect(v.lean!.receipts[0].tutors.map((t) => t.oracleId)).toEqual(["demonic"]);

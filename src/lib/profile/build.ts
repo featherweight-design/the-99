@@ -281,7 +281,7 @@ export function buildDeckProfile(input: ProfileInput): DeckProfile {
         if (piece.oracleId === tutor.oracleId) continue;
         // A COMMANDER IS NOT IN THE LIBRARY. A tutor searches a library, so a combo piece
         // sitting in the command zone is already available and cannot be "reached" — and
-        // counting it would push the [3,4] lean to `reachable` on every commander-based
+        // counting it would push the lean to `reachable` on every commander-based
         // combo, which is the one case where the tutor contributes nothing at all.
         if (commanders.has(piece.oracleId)) continue;
         const held = byId.get(piece.oracleId);

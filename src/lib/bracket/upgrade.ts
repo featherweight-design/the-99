@@ -1,6 +1,6 @@
 import type { DeckProfile } from "../profile/types";
 import { producesInfiniteTurns } from "../spellbook/combo-features";
-import { COMBO_POLICY, GAME_CHANGER_LIMIT } from "./rules";
+import { comboLandsEarly, COMBO_POLICY, GAME_CHANGER_LIMIT } from "./rules";
 import type { CardRef, ComboRef } from "./types";
 
 /**
@@ -74,13 +74,20 @@ export function upgradePath(profile: DeckProfile, target: 1 | 2 | 3): UpgradePat
   // rule is about chaining them, which no removal list can answer.
   if (target === 1) countRule("extraTurns", b.extraTurns, 0);
 
-  // At 1 and 2 every combo has to be broken. At 3 only a LOOP does — a generic infinite
-  // widens the range there rather than violating it, so listing it would tell a player to
-  // cut a card for a rule the target does not state.
+  // At 1 and 2 every combo has to be broken. At 3, two kinds do: a LOOP, which violates B3's
+  // extra-turn clause outright, and a combo the deck's TUTORS CAN ASSEMBLE, which is what
+  // resolves the 3-vs-4 boundary since the range was overturned (2026-09-20).
+  //
+  // Before that ruling a generic infinite merely widened the range at 3, so listing it would
+  // have told a player to cut a card for a rule the target did not state. Now it decides the
+  // bracket, and omitting it was worse than noise: a deck sitting at 4 BECAUSE its tutors
+  // assemble a combo asked for the path to 3 and was told it had nothing to cut.
+  const assembled = (c: ComboRef) =>
+    comboLandsEarly([c], b.comboReach.reaches, profile.commanderOracleIds);
   const combosToBreak =
     COMBO_POLICY[target] === "forbidden"
       ? b.twoCardCombos
-      : b.twoCardCombos.filter((c) => producesInfiniteTurns(c.produces));
+      : b.twoCardCombos.filter((c) => producesInfiniteTurns(c.produces) || assembled(c));
 
   if (combosToBreak.length > 0) {
     const combos = combosToBreak.map((combo) => {
