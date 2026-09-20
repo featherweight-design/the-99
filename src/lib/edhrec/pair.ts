@@ -1,6 +1,7 @@
 import { commanderSlug } from "./slug";
 import { parseEdhrecPayload, type EdhrecData } from "./parse";
 import type { EdhrecFetchResult } from "./client";
+import { synergyStateFrom } from "../recs/synergy-state";
 
 /**
  * Partner pairs: their own EDHREC page, their own composition, their own support list.
@@ -66,16 +67,28 @@ export type PairFetcher = (url: string) => Promise<{ ok: boolean; status: number
  * Shared by the index pass and the demand path, because the trap is the same on both and a
  * second copy of the follow logic is a second place to forget it.
  */
+/**
+ * A pair fetch's result, plus the raw payload.
+ *
+ * The raw body is carried because the DEMAND path caches it — `edhrec_pair_cache` stores what
+ * upstream sent, not what we parsed, so a later parse widening reads old rows correctly
+ * rather than being stuck with whatever fields the parser understood on the day. That is the
+ * same reason `edhrec_cache` stores a payload rather than a projection.
+ */
+export type PairFetchResult = EdhrecFetchResult & { rawPayload: unknown };
+
 export async function fetchPair(
   nameA: string,
   nameB: string,
   fetcher: PairFetcher,
-): Promise<EdhrecFetchResult> {
+): Promise<PairFetchResult> {
   const [first, second] = pairSlugCandidates(nameA, nameB);
   const tried = new Set<string>();
 
   for (let slug: string | null = first; slug !== null; ) {
-    if (tried.has(slug)) break; // a redirect loop is upstream's problem, not an infinite one
+    // A redirect loop is upstream's problem, not an infinite one — and it is degraded rather
+    // than absent, for the same reason an unparseable target is.
+    if (tried.has(slug)) return { data: null, unreachable: true, rawPayload: null };
     tried.add(slug);
     let res;
     try {
@@ -83,26 +96,33 @@ export async function fetchPair(
     } catch {
       // Network error or timeout: unreachable, not "this pair does not exist". The
       // distinction is the same one `synergyStateFrom` draws for single commanders.
-      return { data: null, unreachable: true };
+      return { data: null, unreachable: true, rawPayload: null };
     }
     // 429/403 mean the service is blocking us, which says nothing about the pair.
-    if (res.status === 429 || res.status === 403) return { data: null, unreachable: true };
+    if (res.status === 429 || res.status === 403) return { data: null, unreachable: true, rawPayload: null };
     if (res.status >= 400 && res.status < 500) {
       // A genuine 4xx on the FIRST guess just means the other arrangement is the real one.
       slug = tried.has(second) ? null : second;
       continue;
     }
-    if (!res.ok) return { data: null, unreachable: true };
+    if (!res.ok) return { data: null, unreachable: true, rawPayload: null };
 
     const payload = await res.json();
     const target = redirectTarget(payload);
     if (target !== null) {
-      slug = slugFromPath(target);
+      const next = slugFromPath(target);
+      // A redirect we cannot parse — `/commanders/<slug>/<theme>`, say — is upstream behaving
+      // in a way we do not understand, NOT a pair that does not exist. Reporting `absent`
+      // would make the index write an absent header over a pair it already had data for and
+      // cascade-delete its support list, which is exactly what the socket-error path above
+      // goes out of its way to avoid.
+      if (next === null) return { data: null, unreachable: true, rawPayload: null };
+      slug = next;
       continue;
     }
-    return { data: parseEdhrecPayload(payload), unreachable: false };
+    return { data: parseEdhrecPayload(payload), unreachable: false, rawPayload: payload };
   }
-  return { data: null, unreachable: false };
+  return { data: null, unreachable: false, rawPayload: null };
 }
 
 export type PairHeaderRow = {
@@ -144,11 +164,14 @@ export function toPairRows(args: {
 }): { header: PairHeaderRow; cards: PairCardRow[]; unresolved: number } {
   const { pair, result } = args;
   const d = result.data;
-  const state: "ok" | "absent" | "degraded" = result.unreachable
-    ? "degraded"
-    : d === null
-      ? "absent"
-      : "ok";
+  // THE SHARED RULE, not an inline copy of it. `synergyStateFrom` additionally requires
+  // NON-EMPTY topCards, because `parseEdhrecPayload` degrades to an empty list on an
+  // unexpected payload shape — a 200 carrying no `cardlists` (a stub, a partial, an error
+  // page rendered as JSON) parses to a perfectly non-null `EdhrecData`. An inline
+  // `d === null ? absent : ok` writes that as `ok` with `edhrec_total: 0`, and `writePair`
+  // then deletes every stored card row for the pair. This file's own header names that exact
+  // payload as the trap it avoids; deriving the state twice is how it got back in.
+  const state = synergyStateFrom(result);
   const c = state === "ok" ? (d!.composition ?? null) : null;
 
   const header: PairHeaderRow = {

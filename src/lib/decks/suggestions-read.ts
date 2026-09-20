@@ -15,7 +15,7 @@ import { withinColorIdentity } from "../cards/identity-where";
 import { ownedCardsWhere } from "../collection/owned-cards";
 import { getEdhrecData } from "../edhrec/client";
 import { mergeEdhrecData } from "../edhrec/merge";
-import { readPairSupport } from "../edhrec/pair-read";
+import { readPairSupport, resolvePairEdhrecData } from "../edhrec/pair-read";
 import { type PoolCard } from "../recs/score";
 import { deckBodySize } from "./deck-size";
 import { cardTypeGroup, primaryRole, requireDeck } from "./read";
@@ -151,8 +151,15 @@ export async function loadDeckSuggestions(deckId: string, userId: string): Promi
   // `bracket_counts`, 13,332 decks and rank 159 — so where the monthly index has stored it,
   // that is the better source for the same question. The merge stays as the fallback for a
   // pair EDHREC has no page for; deleting it would silently regress those decks.
+  // Stored first, then the DEMAND path, then the merge. The index only fetches pairs present
+  // in `decks`, so the first deck to use a new pairing has no stored row — and without the
+  // demand fetch it would sit on the approximation until the next monthly run, which is up to
+  // a month for exactly the deck whose owner just built something new.
   const stored = hasPartner
-    ? await readPairSupport(commander.oracleId, partner!.oracleId).catch(() => null)
+    ? (await readPairSupport(commander.oracleId, partner!.oracleId).catch(() => null)) ??
+      (await resolvePairEdhrecData(
+        commander.oracleId, partner!.oracleId, commander.name, partner!.name,
+      ).catch(() => null))
     : null;
 
   const results = stored

@@ -314,6 +314,7 @@ describe("buildCommanderIndex — the pair pass", () => {
   const pair = { a: A, b: B, nameA: "Kratos", nameB: "Atreus" };
   const okResult = {
     unreachable: false,
+    rawPayload: {},
     data: {
       topCards: ["Sol Ring"], inclusionByName: { "sol ring": 70 }, synergyByName: {},
       tags: [], bracketCounts: { "3": 1 }, budgetCounts: {}, similarNames: [],
@@ -343,11 +344,15 @@ describe("buildCommanderIndex — the pair pass", () => {
     const r = await buildCommanderIndex({
       ...noCommanders,
       loadPairs: async () => [pair],
-      fetchPair: async () => ({ data: null, unreachable: true }),
+      fetchPair: async () => ({ data: null, unreachable: true, rawPayload: null }),
       writePair: async (h, c) => { written.push({ h, c }); },
     });
     expect(r.pairs).toBe(0);
-    expect(r.degraded).toBe(1);
+    // pairsDegraded, NOT degraded: the commander counter feeds two exit guards that read it
+    // as "commanders degraded", so one unreachable pair used to fail a resume run in which
+    // every commander was skipped.
+    expect(r.pairsDegraded).toBe(1);
+    expect(r.degraded).toBe(0);
     expect(written).toEqual([]);
   });
 

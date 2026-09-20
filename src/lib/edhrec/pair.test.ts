@@ -87,13 +87,31 @@ describe("fetchPair", () => {
   it("reports unreachable on a rate limit rather than absent", async () => {
     for (const status of [429, 403]) {
       const res = await fetchPair("A", "B", async () => ({ ok: false, status, json: async () => ({}) }));
-      expect(res).toEqual({ data: null, unreachable: true });
+      expect(res).toEqual({ data: null, unreachable: true, rawPayload: null });
     }
+  });
+
+  // An unparseable redirect target is upstream behaving in a way we do not understand, not a
+  // pair that does not exist — and the difference decides whether the index preserves the
+  // pair's stored support list or cascade-deletes it.
+  it("reports unreachable when a redirect target cannot be parsed", async () => {
+    const res = await fetchPair("A", "B", async () => ok({ redirect: "/themes/aggro" }));
+    expect(res).toEqual({ data: null, unreachable: true, rawPayload: null });
+  });
+
+  it("reports unreachable on a redirect loop rather than absent", async () => {
+    let n = 0;
+    const res = await fetchPair("A", "B", async () => {
+      n++;
+      return ok({ redirect: "/commanders/a-b" });
+    });
+    expect(res).toEqual({ data: null, unreachable: true, rawPayload: null });
+    expect(n).toBeLessThan(6);
   });
 
   it("reports unreachable when the fetch throws", async () => {
     const res = await fetchPair("A", "B", async () => { throw new Error("socket"); });
-    expect(res).toEqual({ data: null, unreachable: true });
+    expect(res).toEqual({ data: null, unreachable: true, rawPayload: null });
   });
 });
 
@@ -132,7 +150,9 @@ describe("toPairRows", () => {
     const { header } = toPairRows({
       pair, nameIndex,
       result: { unreachable: false, data: data({
-        topCards: [],
+        // A real page, so the state is ok — an empty topCards list reads ABSENT now, which is
+        // the point of sharing synergyStateFrom rather than deriving the state inline.
+        topCards: ["Sol Ring"],
         composition: {
           land: 37, basic: 17, nonbasic: 20, creature: 26, instant: 11,
           sorcery: 5, artifact: 13, enchantment: 6, planeswalker: 0, battle: 0,
@@ -184,6 +204,19 @@ describe("toPairRows", () => {
     expect(header.edhrecTotal).toBeNull();
     expect(header.avgLand).toBeNull();
     expect(header.bracketCounts).toEqual({});
+    expect(cards).toEqual([]);
+  });
+
+  // The payload this file's header names as the trap, arriving through the OTHER door: a 200
+  // that parses fine and carries no cards. Derived inline it reads `ok` with a total of 0,
+  // and the write then deletes every card row the pair already had.
+  it("treats a 200 carrying no cards as absent, not as an empty ok", () => {
+    const { header, cards } = toPairRows({
+      pair, nameIndex,
+      result: { unreachable: false, data: data({ topCards: [] }) },
+    });
+    expect(header.synergyState).toBe("absent");
+    expect(header.edhrecTotal).toBeNull();
     expect(cards).toEqual([]);
   });
 

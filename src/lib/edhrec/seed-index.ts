@@ -51,7 +51,10 @@ export type BuildIndexResult = {
   degraded: number; absent: number; unresolved: number;
   skipped: number; failed: number;
   /** Partner pairs present in `decks` whose own EDHREC page was fetched and stored. */
-  pairs: number; pairCardRows: number; pairsFailed: number;
+  pairs: number; pairCardRows: number; pairsFailed: number; pairsDegraded: number;
+  /** Unresolvable names on PAIR pages, kept apart from the commander total for the same
+   *  reason the degraded counts are kept apart. */
+  pairsUnresolved: number;
 };
 
 /**
@@ -264,7 +267,7 @@ export async function buildCommanderIndex(
   const r: BuildIndexResult = {
     commanders: 0, cardRows: 0, degraded: 0, absent: 0,
     unresolved: 0, skipped: 0, failed: 0,
-    pairs: 0, pairCardRows: 0, pairsFailed: 0,
+    pairs: 0, pairCardRows: 0, pairsFailed: 0, pairsDegraded: 0, pairsUnresolved: 0,
   };
 
   for (const commander of commanders) {
@@ -388,11 +391,22 @@ export async function buildCommanderIndex(
         result,
         nameIndex,
       });
-      r.unresolved += unresolved;
+      r.pairsUnresolved += unresolved;
+      // Per PAGE, not only in the aggregate — the warning the commander loop emits, for its
+      // own stated reason: one page contributing hundreds of unresolved names is a
+      // name-format mismatch there, and a total cannot tell that from a broad drizzle.
+      if (unresolved > 0) {
+        console.warn(
+          `commander-index: pair ${pair.nameA} + ${pair.nameB} — ${unresolved} unresolvable name(s)`,
+        );
+      }
       // Degraded is "we could not reach EDHREC", not a fact about the pair — the same rule
       // the single-commander write follows, and for the same reason: writing it would
       // cascade-delete a good pair's support list over one transient failure.
-      if (header.synergyState === "degraded") { r.degraded++; continue; }
+      // `r.pairsDegraded`, NOT `r.degraded`. That counter feeds two exit guards reading it as
+      // "commanders degraded", so mixing pairs in means one unreachable pair fails a resume
+      // run where every commander was skipped — exit 1, "EDHREC is unreachable", after a good run.
+      if (header.synergyState === "degraded") { r.pairsDegraded++; continue; }
       await writePairFn(header, pairCards);
       r.pairs++;
       r.pairCardRows += pairCards.length;
@@ -402,6 +416,11 @@ export async function buildCommanderIndex(
     }
   }
 
+  // THE SCORE CLEAR the long comment above belongs to. The pair pass was inserted between the
+  // two, so the reasoning and its call no longer touch; this line is the pointer back rather
+  // than a second copy of it. Note the guard reads the COMMANDER counters only — a run that
+  // stored pairs and skipped every commander has not moved anything `commander_scores` is
+  // computed from.
   if (r.commanders > 0 || r.skipped > 0) {
     await clearScores();
     console.log("commander-index: cleared persisted commander scores");

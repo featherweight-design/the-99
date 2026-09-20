@@ -1,8 +1,12 @@
-import { and, eq } from "drizzle-orm";
+import { and, eq, sql } from "drizzle-orm";
 
 import { db } from "../../db";
-import { cards, commanderPairSupport, commanderPairSupportCards } from "../../db/schema";
-import { canonicalPair } from "./pair";
+import {
+  cards, commanderPairSupport, commanderPairSupportCards, edhrecPairCache,
+} from "../../db/schema";
+import { canonicalPair, fetchPair } from "./pair";
+import { edhrecInit } from "./client";
+import { parseEdhrecPayload } from "./parse";
 import type { EdhrecData } from "./parse";
 
 /**
@@ -93,4 +97,60 @@ export async function readPairSupport(a: string, b: string): Promise<EdhrecData 
           },
     manaCurve: header.avgCurve,
   };
+}
+
+/** 30 days, matching the single-commander demand cache. */
+const PAIR_TTL_MS = 30 * 24 * 60 * 60 * 1000;
+
+/**
+ * The DEMAND path: a pair nobody has built, fetched on request and cached.
+ *
+ * The monthly index only fetches pairs present in `decks` — there are ~2,847 possible
+ * combinations and that job runs at `max-parallel: 1` precisely so EDHREC never sees a second
+ * request stream from us. So the first deck to use a new pairing has no stored row, and this
+ * is what serves it: one fetch, cached for the same 30 days the single-commander cache uses.
+ *
+ * Returns null on any failure rather than throwing. A pair page is an enrichment — the caller
+ * falls back to `mergeEdhrecData`, which is what it did before pairs existed at all.
+ */
+export async function resolvePairEdhrecData(
+  a: string,
+  b: string,
+  nameA: string,
+  nameB: string,
+): Promise<EdhrecData | null> {
+  const pair = canonicalPair(a, b);
+  // Canonical on the READ too, not just the write. The CHECK constrains storage; passing a
+  // deck's own column order straight through would simply miss every row whose primary
+  // carries the larger id, silently and forever.
+  const [cached] = await db
+    .select()
+    .from(edhrecPairCache)
+    .where(
+      and(
+        eq(edhrecPairCache.commanderOracleId, pair.commanderOracleId),
+        eq(edhrecPairCache.partnerOracleId, pair.partnerOracleId),
+      ),
+    );
+  if (cached && Date.now() - cached.fetchedAt.getTime() < PAIR_TTL_MS) {
+    return parseEdhrecPayload(cached.payload);
+  }
+
+  const result = await fetchPair(nameA, nameB, (url) => fetch(url, edhrecInit()));
+  // Prefer stale over nothing, exactly as `resolveEdhrecData` does: a transient failure on a
+  // pair we already have should not cost the reader the data.
+  if (result.data === null) return cached ? parseEdhrecPayload(cached.payload) : null;
+
+  const now = new Date();
+  await db
+    .insert(edhrecPairCache)
+    .values({ ...pair, payload: result.rawPayload ?? {}, fetchedAt: now })
+    .onConflictDoUpdate({
+      target: [edhrecPairCache.commanderOracleId, edhrecPairCache.partnerOracleId],
+      set: { payload: sql`excluded.payload`, fetchedAt: sql`excluded.fetched_at` },
+    })
+    .catch(() => {
+      // A cache write failing must not cost the reader the answer it already has.
+    });
+  return result.data;
 }
