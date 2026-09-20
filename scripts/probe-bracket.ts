@@ -717,17 +717,24 @@ run()
       }],
       ["the commander's composition", async () => {
         if (!commanderCleanup) return;
-        // Only over the sentinel THIS run wrote. A concurrent run that has already restored
-        // the real value must not have it overwritten by our stale capture.
+        // TWO states this run is responsible for, not one. `avg_land` is the sentinel if the
+        // run got as far as rung 2, and NULL if it threw between rung 0's clearing and that
+        // write — and an earlier version restored only the first, so any throw in between
+        // erased the captured values it was holding. Both are ours to put back.
+        //
+        // Anything else belongs to somebody: a concurrent run that has already restored the
+        // real value must not have it overwritten by our stale capture.
         const [now] = await rows<{ avg_land: number | null }>(sql`
           select avg_land from commander_support
           where commander_oracle_id = ${commanderCleanup.oracleId}::uuid`);
-        if (!now || now.avg_land !== SENTINEL_LAND) {
+        const ours = now && (now.avg_land === SENTINEL_LAND || now.avg_land === null);
+        if (!ours) {
           failures += 1;
           console.error(
-            `cleanup REFUSED: the commander's avg_land is ${now?.avg_land ?? "gone"}, not the ` +
-              `${SENTINEL_LAND} this run wrote. Another run has already restored it, or ` +
-              `something else changed the row — overwriting would lose whatever is there now.`,
+            `cleanup REFUSED: the commander's avg_land is ${now?.avg_land ?? "gone"} — neither ` +
+              `the ${SENTINEL_LAND} this run wrote nor the null it cleared to. Another run has ` +
+              `already restored it, or something else changed the row; overwriting would lose ` +
+              `whatever is there now.`,
           );
           return;
         }

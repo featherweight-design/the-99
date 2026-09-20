@@ -284,3 +284,25 @@ describe("land qualifiers", () => {
     expect(tutorReaches(hypothetical, piece("Legendary Land", 0))).toBe(false);
   });
 });
+
+// Colours are ALTERNATIVES. Every multi-colour phrasing in the corpus is a disjunction —
+// `Sunforger` searches "a red or white instant card" — and 4 of the 13 coloured targets name
+// more than one, so an intersection made all four reach nothing.
+describe("colour alternatives", () => {
+  const sunforger = classifyTutor(
+    "Search your library for a red or white instant card with mana value 4 or less, reveal it, put it into your hand, then shuffle.",
+  ) as TutorTarget;
+
+  it("reads both colours", () => {
+    expect(sunforger.colors).toEqual(["W", "R"]);
+  });
+
+  it("reaches a piece carrying either one", () => {
+    expect(tutorReaches(sunforger, piece("Instant", 2, ["R"]))).toBe(true);
+    expect(tutorReaches(sunforger, piece("Instant", 2, ["W"]))).toBe(true);
+  });
+
+  it("still refuses a piece carrying neither", () => {
+    expect(tutorReaches(sunforger, piece("Instant", 2, ["U"]))).toBe(false);
+  });
+});

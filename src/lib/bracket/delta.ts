@@ -40,7 +40,22 @@ export type CandidateFacts = {
  */
 export type BracketDelta =
   | { kind: "moves"; from: Bracket[]; to: Bracket[]; rule: Violation }
-  | { kind: "counts"; rule: "gameChangers"; now: number; limit: number; to: Bracket[] }
+  | {
+      kind: "counts";
+      rule: "gameChangers";
+      now: number;
+      limit: number;
+      to: Bracket[];
+      /**
+       * Combos this candidate ALSO completes.
+       *
+       * Underworld Breach is a Game Changer that completes combos, and the precedence above
+       * sends it here — so without the receipts a consumer is told "4 of 3" and has no way to
+       * explain the rest of what the card did. The count is still the sentence; this is the
+       * evidence underneath it.
+       */
+      combos: ComboRef[];
+    }
   | { kind: "unquantified"; rule: "extraTurns"; now: number; bracket: Bracket }
   | { kind: "ruleless"; fact: "tutors"; now: number }
   | { kind: "none" };
@@ -112,7 +127,14 @@ export function bracketDelta(profile: DeckProfile, candidate: CandidateFacts): B
   //     fourth Game Changer, and the sentence a reader needs there is "4 of 3", not "the
   //     range widened".
   if (candidate.gameChanger) {
-    return { kind: "counts", rule: "gameChangers", now: gc, limit: GAME_CHANGER_LIMIT[3], to };
+    return {
+      kind: "counts",
+      rule: "gameChangers",
+      now: gc,
+      limit: GAME_CHANGER_LIMIT[3],
+      to,
+      combos: candidate.completesCombos,
+    };
   }
 
   // 3 · An extra turn at a bracket that does not count them. Reported, never scored.

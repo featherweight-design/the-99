@@ -64,6 +64,9 @@ describe("moves", () => {
     );
     expect(d).toMatchObject({ kind: "moves", from: [3], to: [3, 4] });
     expect(d.kind === "moves" && d.rule.rule).toBe("twoCardCombos");
+    // The RECEIPT, not only the rule name. Dropping it left the reader a verdict with no
+    // evidence, and nothing here noticed until each combos site was mutated separately.
+    expect(d.kind === "moves" && d.rule.combos?.map((c) => c.variantId)).toEqual(["v1"]);
   });
 
   // The loop clause, not the widening. A completed infinite-TURNS combo violates B3 outright.
@@ -91,14 +94,14 @@ describe("counts", () => {
   // reader needs — "4 of 3", not "the range widened".
   it("a fourth Game Changer counts, even though it also moves", () => {
     expect(bracketDelta(atThree(), candidate({ gameChanger: true }))).toEqual({
-      kind: "counts", rule: "gameChangers", now: 4, limit: 3, to: [4, 5],
+      kind: "counts", rule: "gameChangers", now: 4, limit: 3, to: [4, 5], combos: [],
     });
   });
 
   it("a second Game Changer counts and does not move", () => {
     const p = profile({ cards: [card("gc1")], gameChangerIds: new Set(["gc1"]) });
     expect(bracketDelta(p, candidate({ gameChanger: true }))).toEqual({
-      kind: "counts", rule: "gameChangers", now: 2, limit: 3, to: [3],
+      kind: "counts", rule: "gameChangers", now: 2, limit: 3, to: [3], combos: [],
     });
   });
 
@@ -156,5 +159,25 @@ describe("none", () => {
     });
     expect(bracketDelta(p, candidate({ completesCombos: [combo("v2", ["Infinite mana"])] })))
       .toEqual({ kind: "none" });
+  });
+});
+
+// Underworld Breach: a Game Changer that also completes a combo. The precedence sends it to
+// `counts` — the count is the sentence a reader needs — but the combo receipts have to come
+// with it, or the consumer is told "4 of 3" and cannot explain the rest of what the card did.
+describe("a counts result carries its co-fired combo receipts", () => {
+  it("names the combos a Game Changer also completes", () => {
+    const completed = combo("v1", ["Infinite mana"]);
+    const d = bracketDelta(
+      atThree(),
+      candidate({ gameChanger: true, completesCombos: [completed] }),
+    );
+    expect(d.kind).toBe("counts");
+    expect(d.kind === "counts" && d.combos.map((c) => c.variantId)).toEqual(["v1"]);
+  });
+
+  it("is an empty list when the Game Changer completes nothing", () => {
+    const d = bracketDelta(atThree(), candidate({ gameChanger: true }));
+    expect(d.kind === "counts" && d.combos).toEqual([]);
   });
 });

@@ -227,10 +227,12 @@ export function tutorReaches(target: TutorTarget, piece: TutorPiece): boolean {
 
   if (target.colors != null) {
     const identity = new Set(piece.colorIdentity.map((c) => c.toUpperCase()));
-    // Every named colour must be on the piece: "a green creature card" is not satisfied by a
-    // blue one, and "a white or blue card" is a phrasing this parser reads as both, which is
-    // the conservative reading.
-    if (!target.colors.every((c) => identity.has(c))) return false;
+    // ANY named colour, because every multi-colour phrasing in the corpus is a disjunction:
+    // `Sunforger` searches "a red or white instant card", `Kaito Shizuki` "a blue or black
+    // card". Measured — 13 of the 960 targets name a colour and 4 name more than one, and
+    // not one of the four is a conjunction. `every` made those four reach nothing, because no
+    // single piece carries both colours the tutor offers a choice between.
+    if (!target.colors.some((c) => identity.has(c))) return false;
   }
 
   if (target.kinds === "any") return true;
