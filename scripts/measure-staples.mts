@@ -57,6 +57,20 @@ const client = new Pool({ connectionString: DATABASE_URL });
 const RATIFIED_BREADTH = 0.5;
 const RATIFIED_INCLUSION = 20;
 
+// The condition key, in SQL, matching `identityCondition` in the plan (alphabetical letters,
+// 'C' for colourless) — because these are PERSISTED KEYS and the derivation and the reader
+// must agree by construction rather than by coincidence.
+//
+// Two ways the obvious `coalesce(array_to_string(color_identity,''),'C')` is wrong. It
+// PRESERVES ARRAY ORDER, so it agrees with the alphabetical helper only while the stored
+// arrays happen to be sorted — measured true today across all ten two-colour identities, and
+// an unstated property of the data rather than a guarantee. And `array_to_string` on an empty
+// array returns `''`, NOT null, so the coalesce never fires and the 46 colourless commanders
+// key on an empty string instead of 'C'.
+const IDENTITY_KEY = `
+  case when cardinality(cmd.color_identity) = 0 then 'C'
+       else array_to_string(array(select unnest(cmd.color_identity) order by 1), '') end`;
+
 const pct = (n: number, d: number) => (d === 0 ? "—" : `${((n / d) * 100).toFixed(1)}%`);
 const row = (...cells: (string | number)[]) =>
   cells.map((c, i) => (i === 0 ? String(c).padEnd(38) : String(c).padStart(12))).join("");
@@ -251,7 +265,7 @@ max inclusion value seen  ${maxIncl ?? "—"}   (the scale: 0-1 or 0-100)`);
   `);
   console.log(row("card / axis", "share", "avg incl") + "   in floor?");
   for (const x of probe) {
-    const inFloor = x.share >= 0.5 && x.incl >= RATIFIED_INCLUSION;
+    const inFloor = x.share >= RATIFIED_BREADTH && x.incl >= RATIFIED_INCLUSION;
     console.log(row(`${x.name.slice(0, 24)} [${x.axis}]`, x.share, `${x.incl}%`) +
       `   ${inFloor ? "YES" : "no"}`);
   }
@@ -263,11 +277,11 @@ max inclusion value seen  ${maxIncl ?? "—"}   (the scale: 0-1 or 0-100)`);
   console.log(`\n== 6 · exact-identity floors (buckets >= 100 commanders) ==  [derived, not a question]`);
   const floors = await q<{ id: string; pop: number; cards: number; coloured: number; lands: number }>(`
     with tot as (
-      select coalesce(array_to_string(cmd.color_identity,''),'C') id, count(*)::int t
+      select ${IDENTITY_KEY} id, count(*)::int t
       from commander_support cs join cards cmd on cmd.oracle_id=cs.commander_oracle_id
       group by 1 having count(*) >= 100),
     per as (
-      select coalesce(array_to_string(cmd.color_identity,''),'C') id, cc.name,
+      select ${IDENTITY_KEY} id, cc.name,
              count(*)::int n, avg(csc.inclusion) incl,
              case when cc.type_line ilike '%land%' then 'land'
                   when cc.color_identity='{}'::text[] then 'clr' else 'col' end kind
@@ -301,7 +315,22 @@ max inclusion value seen  ${maxIncl ?? "—"}   (the scale: 0-1 or 0-100)`);
   // and the land target has to come from somewhere else entirely.
   console.log(`\n== 7 · expected deck composition from summed inclusion ==  [derived, not a question]`);
   const comp = await q<{ bucket: string; expected: number }>(`
-    with per_commander as (
+    with cmds as (
+      select commander_oracle_id from commander_support where synergy_state = 'ok'
+    ),
+    -- Every (commander, bucket) pair, so a commander with NO cards in a bucket
+    -- contributes a 0 rather than being absent. Without this the average is taken over
+    -- only the commanders represented in each bucket, which is a different denominator
+    -- per row and not a corpus average at all. Measured impact on this data: one bucket,
+    -- the "other" row, 0.6 -> 0.5 — nearly every commander has something in nearly every
+    -- bucket. Small, and the query was still answering a question nobody asked.
+    -- (No backticks in these SQL comments: this whole string is a JS template literal and
+    -- a backtick ends it. Cost two runs today.)
+    bucket_names(bucket) as (values ('basic land'),('nonbasic land'),('creature'),
+      ('artifact'),('enchantment'),('instant'),('sorcery'),('other')),
+    scaffold as (select cmds.commander_oracle_id, bucket_names.bucket
+                 from cmds cross join bucket_names),
+    per_commander as (
       select cs.commander_oracle_id,
              case
                when c.type_line ilike 'basic land%'   then 'basic land'
@@ -319,8 +348,10 @@ max inclusion value seen  ${maxIncl ?? "—"}   (the scale: 0-1 or 0-100)`);
       join cards c on c.oracle_id = csc.oracle_id
       group by cs.commander_oracle_id, 2
     )
-    select bucket, round(avg(expected)::numeric, 1)::float as expected
-    from per_commander group by bucket order by expected desc
+    select s.bucket, round(avg(coalesce(p.expected, 0))::numeric, 1)::float as expected
+    from scaffold s
+    left join per_commander p using (commander_oracle_id, bucket)
+    group by s.bucket order by expected desc
   `);
   let total = 0;
   console.log(row("type bucket", "expected/deck"));
@@ -343,8 +374,13 @@ max inclusion value seen  ${maxIncl ?? "—"}   (the scale: 0-1 or 0-100)`);
            -- section — and the whole candidate cut-off below — was computed against a
            -- corpus that no longer existed. Section 6 always did this correctly, per
            -- bucket, from its own tot CTE.
-           round((count(*)::numeric / (select n from corpus)), 3)::float as share,
-           round(avg(csc.inclusion)::numeric, 1)::float as incl,
+           -- RAW for filtering, rounded only for display. Rounding first puts a card at
+           -- 19.96% inclusion over a 20% cut, so the table that the threshold was CHOSEN
+           -- from disagrees at its own boundary with the floor query beside it, which
+           -- filters on raw values. The boundary is the only part of this table anyone
+           -- reads closely.
+           (count(*)::numeric / (select n from corpus))::float as share,
+           avg(csc.inclusion)::float as incl,
            split_part(c.type_line, ' ', 1) as tl
     from commander_support_cards csc
     join cards c on c.oracle_id = csc.oracle_id

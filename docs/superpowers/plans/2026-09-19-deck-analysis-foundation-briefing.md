@@ -3,8 +3,8 @@
 Feature-specific facts for the `epic-run` of the deck-analysis foundation. Run mechanics
 live in the skill; this carries only what is true about THIS epic.
 
-**This is a backend-only epic.** That fact does most of the work below: five of the seven
-gates do not fire, the cold-eyes review has no screenshots to look at, and the launch-gating
+**This is a backend-only epic.** That fact does most of the work below: four of the seven
+gates do not fire and a fifth is adapted, the cold-eyes review has no screenshots to look at, and the launch-gating
 answer is a real "nothing becomes reachable" rather than an omission. Each of those is
 stated explicitly rather than deleted, because a deleted section reads the same as a
 forgotten one.
@@ -174,8 +174,11 @@ index` monthly + its staples step, and the profile read that consumes them):
 
 1. **Fires** — dispatch the real workflow and confirm the rows exist, per environment.
 2. **Fires once** — dispatch twice; confirm row counts stable and no duplicate-key failure.
-   The idempotency mechanism is named explicitly per table: delete-and-refill inside one
-   transaction for all five ingest tables, `onConflictDoUpdate` for `commander_support`.
+   The idempotency mechanism is named explicitly per table: `card_bracket_flags` cleared and
+   refilled in ONE transaction before the bulk streams, the two variant tables in a SECOND
+   afterwards (R12 — the split is what permits the documented fresh-flags/stale-variants
+   state, so verifying one shared transaction would be verifying the wrong guarantee), and
+   `onConflictDoUpdate` for `commander_support`.
 3. **Right audience** — the analogue of "the wrong user" here is **the wrong environment**.
    The three-times-found bug in this repo is a scheduled run reaching production alone. Confirm
    BOTH matrix legs ran on the scheduled path, not just a dispatched one.
@@ -216,7 +219,8 @@ Fix everything valid in-run; notify and keep building; never wait.
   Neon **`production`** branch is a stop-and-ask.
 - **Pointing any script or probe at the `production` (or `staging`) Neon branch.** Every seed
   and probe in this epic is destructive within its scope: `db:seed:combos` deletes and refills
-  three tables for every user, and `probe:bracket` writes sentinel rows into shared catalog
+  three SHARED CATALOG tables for the whole database — it is not user-scoped, and no user's
+  rows are isolated from it — and `probe:bracket` writes sentinel rows into shared catalog
   tables. Scripts run against **`local-dev`** or a scratch branch. Dispatching a WORKFLOW leg
   at the `catalog-staging` / `catalog-production` environment is the separate, allowed path
   below — the distinction is the vocabulary one above, and it is the one that gets confused.

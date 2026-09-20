@@ -987,13 +987,20 @@ There are no decklists in that table. A target could only emerge as an expected 
 
 ```
 creature 16.2 · nonbasic land 10.7 · artifact 9.1 · instant 7.7
-sorcery 5.8 · enchantment 5.2 · basic land 1.6 · other 0.6
-TOTAL 56.9          (a real deck is 99 + commander)
+sorcery 5.8 · enchantment 5.2 · basic land 1.6 · other 0.5
+TOTAL 56.8          (a real deck is 99 + commander)
 ```
 
 It accounts for **57 of 99 cards**, and is worst exactly where the land count lives: **1.6
 expected basic lands**, from only 6 distinct basics in the entire table, against a real deck's
 8–25. The average support list is 262 cards — a recommendation set, not a deck.
+
+*(The totals moved 56.9 → 56.8 and `other` 0.6 → 0.5 on 2026-09-19. The query averaged over
+only the commanders REPRESENTED in each bucket rather than over the corpus, so a commander
+with no card in a bucket was absent rather than contributing zero — a different denominator
+per row. Corrected with a scaffold. The measured impact is one bucket by 0.1, because nearly
+every commander has something in nearly every bucket, and the conclusion is unmoved — but
+review was right that the figures were not the ones the sentence claimed.)*
 
 **The data is already on disk.** `edhrec_cache.payload` — the raw response the app already
 fetches and stores — carries, at top level, per commander:
@@ -1265,7 +1272,12 @@ shown the second while believing the first.
 ```
 format_staples
   oracle_id          uuid not null references cards(oracle_id)
-  condition          text not null      -- exact identity: 'C','W','U','B','R','G','WU',…
+  condition          text not null      -- exact identity, letters ALPHABETICAL:
+                                        -- 'C','W','U','B','R','G','UW','BG','RW',…
+                                        -- Alphabetical, not WUBRG: these are persisted keys,
+                                        -- and the derivation and the reader must produce the
+                                        -- same string by construction. An earlier draft wrote
+                                        -- 'WU' here while `identityCondition` sorted to 'UW'.
                                         -- or 'count:3'..'count:5' for thin buckets (§4A.3).
                                         -- There is no 'all' condition.
   commanders         integer not null   -- how many commanders recommend it, in this condition

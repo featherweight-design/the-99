@@ -110,14 +110,18 @@ const KNOWN_NEGATIVE = [
   "Strip Mine", "Wasteland", "Ghost Quarter", "Field of Ruin", "Tectonic Edge",
   "Path to Exile", "Assassin's Trophy", "Beast Within", "Generous Gift",
   "Scapeshift", "Splendid Reclamation", "Harrow",
-  // Added 2026-09-19, each one a card this classifier ACTUALLY FLAGGED while the line above
+  // Added 2026-09-19: the ELEVEN cards this classifier actually flagged while the line above
   // read "zero false positives" — found by the sweep, not by the fixture. A negative fixture
-  // of cards no pattern was ever going to match measures nothing; these six all matched.
+  // of cards no pattern was ever going to match measures nothing; every one of these matched.
+  // They stay as REGRESSION ANCHORS: each is now excluded by a guard, so dropping a guard puts
+  // its card back here as a counted false positive rather than leaving it to be noticed in the
+  // sweep by a reader who may not be looking.
   "Choke",                 // `Islands don't untap` — a colour hoser, not four lands per player
   "Curse of Marit Lage",   // same
   "Reduce // Rubble",      // three TARGET lands, for one untap step
   "Scourglass",            // `destroy all permanents EXCEPT FOR artifacts and lands`
   "Wirefly Hive",          // `destroy all permanents named Wirefly`
+  "Celestial Kirin",       // `destroy all permanents with that spell's mana value`
   "Season of Gathering",   // `destroy all permanents of the chosen type`
   "Embargo",               // `NONLAND permanents don't untap` — the opposite of this rule
   "Freyalise's Radiance",  // `Snow permanents` — a snow hoser, on the Choke pattern
