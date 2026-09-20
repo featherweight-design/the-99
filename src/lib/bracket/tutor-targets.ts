@@ -52,11 +52,29 @@
  * whose green is only in an activation cost.
  */
 
+/**
+ * One acceptable word set. `permanent` expands to the six permanent types, so a single
+ * written word can admit several — everything else is a list of one.
+ */
+export type TutorConstraint = string[];
+
+/**
+ * One alternative: EVERY constraint in it must match the piece's type line.
+ *
+ * `a legendary creature card` is one alternative of two constraints, and both have to hold.
+ * `an artifact or enchantment card` is two alternatives of one constraint each. Collapsing
+ * the two into a flat list and matching with `some` made the first behave like the second —
+ * so a legendary-creature tutor reached any legendary LAND, and any non-legendary creature,
+ * and the [3,4] lean reported `reachable` on combos it cannot find. 146 of the 960 tutors
+ * carry more than one word, and the sample holds both shapes side by side.
+ */
+export type TutorAlternative = TutorConstraint[];
+
 export type TutorTarget = {
-  /** `"any"` is a genuinely untargeted search. Otherwise a list of words tested against the
-   *  piece's TYPE LINE — card types and subtypes alike, which is why no subtype table is
-   *  needed and `a goblin card` finds a Goblin. */
-  kinds: "any" | string[];
+  /** `"any"` is a genuinely untargeted search. Otherwise alternatives of constraints, tested
+   *  against the piece's TYPE LINE — card types and subtypes alike, which is why no subtype
+   *  table is needed and `a goblin card` finds a Goblin. */
+  kinds: "any" | TutorAlternative[];
   /** Null when the search names no colour. */
   colors: string[] | null;
   maxManaValue: number | null;
@@ -111,20 +129,26 @@ function clauseSentence(text: string): string | null {
  * piece, and now for the RIGHT reason: `Dark Depths` has no Forest type, so the type-line
  * test refuses it rather than a missing-word rule refusing everything.
  */
-function targetWords(target: string): string[] | null {
+function targetWords(target: string): TutorAlternative[] | null {
   const head = /^(.*?)\bcards?\b/.exec(target);
   if (!head) return null;
-  const words = head[1]
-    .replace(/\band\/or\b|\bor\b|,/g, " ")
-    .split(/\s+/)
-    .map((w) => w.trim())
-    .filter(
-      (w) =>
-        w.length > 2 &&
-        !/^(a|an|any|the|up|to|two|three|four|five|many|number|of|basic|snow|nonbasic|other|another|\d+)$/.test(w) &&
-        !(w in COLOR_WORDS),
-    );
-  return words.length > 0 ? words : null;
+
+  // ALTERNATIVES first, then the words within each. `a Forest, Island, or Mountain card` is
+  // three alternatives; `a Rebel permanent card` is one alternative of two constraints.
+  const noise =
+    /^(a|an|any|the|up|to|two|three|four|five|many|number|of|basic|snow|nonbasic|other|another|\d+)$/;
+  const alternatives = head[1]
+    .split(/\s+or\s+|\s+and\/or\s+|,/)
+    .map((part) =>
+      part
+        .split(/\s+/)
+        .map((w) => w.trim())
+        .filter((w) => w.length > 2 && !noise.test(w) && !(w in COLOR_WORDS))
+        .map((w): TutorConstraint => KINDS[w] ?? [w]),
+    )
+    .filter((alt) => alt.length > 0);
+
+  return alternatives.length > 0 ? alternatives : null;
 }
 
 /**
@@ -180,12 +204,7 @@ export function classifyTutor(oracleText: string | null): TutorTarget | null {
 
   const maxManaValue = ceilingFrom(target);
 
-  const words = targetWords(target);
-  const kinds =
-    words === null
-      ? "any"
-      : [...new Set(words.flatMap((w) => KINDS[w] ?? [w]))];
-
+  const kinds = targetWords(target) ?? "any";
   return { kinds, colors: colors.length > 0 ? colors : null, maxManaValue, basicOnly };
 }
 
@@ -209,5 +228,8 @@ export function tutorReaches(target: TutorTarget, piece: TutorPiece): boolean {
 
   if (target.kinds === "any") return true;
   const types = piece.typeLine.toLowerCase();
-  return target.kinds.some((k) => types.includes(k));
+  // SOME alternative, EVERY constraint within it. The two quantifiers are the whole rule.
+  return target.kinds.some((alternative) =>
+    alternative.every((constraint) => constraint.some((word) => types.includes(word))),
+  );
 }

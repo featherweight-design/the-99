@@ -56,12 +56,12 @@ describe("classifyTutor", () => {
   });
 
   it("reads one type, and two", () => {
-    expect(classifyTutor(TEXT.worldly)?.kinds).toEqual(["creature"]);
-    expect(classifyTutor(TEXT.enlightened)?.kinds).toEqual(["artifact", "enchantment"]);
+    expect(classifyTutor(TEXT.worldly)?.kinds).toEqual([[["creature"]]]);
+    expect(classifyTutor(TEXT.enlightened)?.kinds).toEqual([[["artifact"]], [["enchantment"]]]);
   });
 
   it("reads a colour beside the type", () => {
-    expect(classifyTutor(TEXT.gsz)).toMatchObject({ kinds: ["creature"], colors: ["G"] });
+    expect(classifyTutor(TEXT.gsz)).toMatchObject({ kinds: [[["creature"]]], colors: ["G"] });
   });
 
   // "X or less" is not a number, so it constrains nothing — Green Sun's Zenith really can
@@ -83,7 +83,7 @@ describe("classifyTutor", () => {
   it("flags a basic-land search and does not flag a land search", () => {
     expect(classifyTutor(TEXT.wilds)?.basicOnly).toBe(true);
     expect(classifyTutor(TEXT.cropRotation)).toMatchObject({
-      kinds: ["land"],
+      kinds: [[["land"]]],
       basicOnly: false,
     });
   });
@@ -92,8 +92,8 @@ describe("classifyTutor", () => {
   // table is needed. The first version resolved against a fixed type list and wrote off 253
   // of the corpus's 960 as reaching nothing.
   it("keeps a subtype as itself", () => {
-    expect(classifyTutor(TEXT.harbinger)?.kinds).toEqual(["goblin"]);
-    expect(classifyTutor(TEXT.sisay)?.kinds).toEqual(["legendary"]);
+    expect(classifyTutor(TEXT.harbinger)?.kinds).toEqual([[["goblin"]]]);
+    expect(classifyTutor(TEXT.sisay)?.kinds).toEqual([[["legendary"]]]);
   });
 
   it("refuses a graveyard destination — it assembles nothing on its own", () => {
@@ -106,7 +106,7 @@ describe("classifyTutor", () => {
 
   // The scope is the SENTENCE. A card-scoped opponent check drops 65 real tutors.
   it("keeps a tutor whose card mentions an opponent in another sentence", () => {
-    expect(classifyTutor(TEXT.rangerCaptain)?.kinds).toEqual(["creature"]);
+    expect(classifyTutor(TEXT.rangerCaptain)?.kinds).toEqual([[["creature"]]]);
   });
 
   // Regression anchors, and NOT evidence of a negation rule: none of these contains
@@ -174,7 +174,7 @@ describe("tutorReaches", () => {
     const balamb = classifyTutor(
       "When this creature enters, search your library for a Forest card, reveal it, put it into your hand, then shuffle.",
     ) as TutorTarget;
-    expect(balamb.kinds).toEqual(["forest"]);
+    expect(balamb.kinds).toEqual([[["forest"]]]);
     expect(tutorReaches(balamb, piece("Legendary Snow Land", 0))).toBe(false);
     expect(tutorReaches(balamb, piece("Basic Land — Forest", 0))).toBe(true);
   });
@@ -207,5 +207,55 @@ describe("the mana-value ceiling", () => {
   it("still reads 'N or less' and a bare exact N as ceilings", () => {
     expect(cap("Search your library for a creature card with mana value 3 or less, reveal it, put it into your hand, then shuffle.")).toBe(3);
     expect(cap("Search your library for an artifact card with mana value 3, reveal that card, put it into your hand, then shuffle.")).toBe(3);
+  });
+});
+
+
+// ALTERNATIVES versus CONSTRAINTS — the two quantifiers are the whole rule, and collapsing
+// them made a conjunction behave like a disjunction. 146 of the 960 tutors carry more than
+// one word and the corpus holds both shapes side by side, so neither reading can be assumed.
+describe("and is not or", () => {
+  const t = (text: string) => classifyTutor(text) as TutorTarget;
+  const legendaryCreature = t(
+    "Search your library for a legendary creature card, reveal it, put it into your hand, then shuffle.",
+  );
+
+  it("reads a conjunction as one alternative of two constraints", () => {
+    expect(legendaryCreature.kinds).toEqual([[["legendary"], ["creature"]]]);
+  });
+
+  // The false positive this closes: a legendary-creature tutor reaching a legendary LAND,
+  // which then reports `reachable` on a combo it cannot find.
+  it("requires every constraint in the alternative", () => {
+    expect(tutorReaches(legendaryCreature, piece("Legendary Creature — Elf"))).toBe(true);
+    expect(tutorReaches(legendaryCreature, piece("Legendary Snow Land", 0))).toBe(false);
+    expect(tutorReaches(legendaryCreature, piece("Creature — Elf"))).toBe(false);
+  });
+
+  it("still reads a genuine or as two alternatives", () => {
+    const enlightened = t(TEXT.enlightened);
+    expect(tutorReaches(enlightened, piece("Artifact"))).toBe(true);
+    expect(tutorReaches(enlightened, piece("Enchantment"))).toBe(true);
+    expect(tutorReaches(enlightened, piece("Creature — Elf"))).toBe(false);
+  });
+
+  // `a Forest, Island, or Mountain card` — commas separate alternatives too.
+  it("splits alternatives on commas as well as on or", () => {
+    const monument = t(
+      "Search your library for a Forest, Island, or Mountain card, put it onto the battlefield tapped, then shuffle.",
+    );
+    expect(tutorReaches(monument, piece("Basic Land — Island", 0))).toBe(true);
+    expect(tutorReaches(monument, piece("Basic Land — Swamp", 0))).toBe(false);
+  });
+
+  // `a Rebel permanent card` — a conjunction whose second constraint is itself a set,
+  // because `permanent` expands to the six permanent types.
+  it("expands permanent inside a conjunction", () => {
+    const rebel = t(
+      "Search your library for a Rebel permanent card with mana value 3 or less, put it onto the battlefield, then shuffle.",
+    );
+    expect(tutorReaches(rebel, piece("Creature — Human Rebel", 2))).toBe(true);
+    expect(tutorReaches(rebel, piece("Creature — Human Soldier", 2))).toBe(false);
+    expect(tutorReaches(rebel, piece("Instant", 2))).toBe(false);
   });
 });

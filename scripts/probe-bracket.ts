@@ -113,7 +113,13 @@ let commanderCleanup: { oracleId: string; before: CompositionColumns } | null = 
 let identityCleanup: string | null = null;
 /** A row that was already there, lifted so the chain's empty state is reachable. */
 let identityRestore:
-  | { condition: string; row: CompositionColumns; commanders: number; withComposition: number }
+  | {
+      condition: string;
+      row: CompositionColumns;
+      commanders: number;
+      withComposition: number;
+      computedAt: string;
+    }
   | null = null;
 /** Counts its own failures. A probe whose exit code disagrees with its output is worse than
  *  no probe — the count used to live at each call site, and a check that forgot it printed
@@ -397,12 +403,15 @@ async function basisChainChecks(deckId: string, commanderOracleId: string) {
   // LIFTED FIRST, so the empty state is reachable on any database rather than only on one
   // that has never had a widened index run. Both handles are populated before the write they
   // cover; the commander's row is restored, the identity row is put back.
+  // `computed_at` is captured with the rest. Left out, the restore reinserts at the column
+  // DEFAULT and every probe run silently re-stamps the row as freshly generated — a restore
+  // that changes the one field a freshness consumer reads is not a restore.
   const [existingIdentity] = await rows<CompositionColumns & {
-    commanders: number; with_composition: number;
+    commanders: number; with_composition: number; computed_at: string;
   }>(sql`
     select avg_land, avg_basic, avg_nonbasic, avg_creature, avg_instant, avg_sorcery,
            avg_artifact, avg_enchantment, avg_planeswalker, avg_battle, avg_curve,
-           commanders, with_composition
+           commanders, with_composition, computed_at
     from identity_composition where condition = 'W'`);
   if (existingIdentity) {
     identityRestore = {
@@ -410,6 +419,7 @@ async function basisChainChecks(deckId: string, commanderOracleId: string) {
       row: existingIdentity,
       commanders: existingIdentity.commanders,
       withComposition: existingIdentity.with_composition,
+      computedAt: existingIdentity.computed_at,
     };
     await fixture.execute(sql`delete from identity_composition where condition = 'W'`);
   }
@@ -700,7 +710,7 @@ run()
           insert into identity_composition
             (condition, avg_land, avg_basic, avg_nonbasic, avg_creature, avg_instant,
              avg_sorcery, avg_artifact, avg_enchantment, avg_planeswalker, avg_battle,
-             avg_curve, commanders, with_composition)
+             avg_curve, commanders, with_composition, computed_at)
           values (${identityRestore.condition}, ${identityRestore.row.avg_land},
                   ${identityRestore.row.avg_basic}, ${identityRestore.row.avg_nonbasic},
                   ${identityRestore.row.avg_creature}, ${identityRestore.row.avg_instant},
@@ -710,7 +720,8 @@ run()
                   ${identityRestore.row.avg_curve === null
                       ? null
                       : JSON.stringify(identityRestore.row.avg_curve)}::jsonb,
-                  ${identityRestore.commanders}, ${identityRestore.withComposition})
+                  ${identityRestore.commanders}, ${identityRestore.withComposition},
+                  ${identityRestore.computedAt}::timestamp)
           on conflict (condition) do nothing`);
       }],
       // Every step runs even when an earlier one throws — a cleanup that stops at the first

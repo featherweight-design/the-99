@@ -23,17 +23,17 @@ const EXPECTED: { name: string; want: Partial<TutorTarget> | null; why: string }
   { name: "Vampiric Tutor", want: { kinds: "any" }, why: "untargeted, to the top" },
   { name: "Gamble", want: { kinds: "any" }, why: "untargeted, with a cost" },
   { name: "Diabolic Tutor", want: { kinds: "any" }, why: "untargeted" },
-  { name: "Worldly Tutor", want: { kinds: ["creature"] }, why: "one type" },
-  { name: "Eladamri's Call", want: { kinds: ["creature"] }, why: "one type, to hand" },
-  { name: "Mystical Tutor", want: { kinds: ["instant", "sorcery"] }, why: "two types" },
-  { name: "Enlightened Tutor", want: { kinds: ["artifact", "enchantment"] }, why: "two types" },
-  { name: "Idyllic Tutor", want: { kinds: ["enchantment"] }, why: "one type" },
-  { name: "Fabricate", want: { kinds: ["artifact"] }, why: "one type" },
-  { name: "Crop Rotation", want: { kinds: ["land"], basicOnly: false }, why: "land, NOT basic" },
-  { name: "Sylvan Scrying", want: { kinds: ["land"], basicOnly: false }, why: "land, NOT basic" },
-  { name: "Green Sun's Zenith", want: { kinds: ["creature"], colors: ["G"] }, why: "colour + type" },
-  { name: "Trinket Mage", want: { kinds: ["artifact"], maxManaValue: 1 }, why: "N or less" },
-  { name: "Tribute Mage", want: { kinds: ["artifact"], maxManaValue: 2 }, why: "exact N, read as a ceiling" },
+  { name: "Worldly Tutor", want: { kinds: [[["creature"]]] }, why: "one type" },
+  { name: "Eladamri's Call", want: { kinds: [[["creature"]]] }, why: "one type, to hand" },
+  { name: "Mystical Tutor", want: { kinds: [[["instant"]], [["sorcery"]]] }, why: "two types" },
+  { name: "Enlightened Tutor", want: { kinds: [[["artifact"]], [["enchantment"]]] }, why: "two types" },
+  { name: "Idyllic Tutor", want: { kinds: [[["enchantment"]]] }, why: "one type" },
+  { name: "Fabricate", want: { kinds: [[["artifact"]]] }, why: "one type" },
+  { name: "Crop Rotation", want: { kinds: [[["land"]]], basicOnly: false }, why: "land, NOT basic" },
+  { name: "Sylvan Scrying", want: { kinds: [[["land"]]], basicOnly: false }, why: "land, NOT basic" },
+  { name: "Green Sun's Zenith", want: { kinds: [[["creature"]]], colors: ["G"] }, why: "colour + type" },
+  { name: "Trinket Mage", want: { kinds: [[["artifact"]]], maxManaValue: 1 }, why: "N or less" },
+  { name: "Tribute Mage", want: { kinds: [[["artifact"]]], maxManaValue: 2 }, why: "exact N, read as a ceiling" },
   { name: "Evolving Wilds", want: { basicOnly: true }, why: "basics only" },
   // The hate cards. NOT excluded by a negation rule — they never match the clause at all.
   { name: "Stranglehold", want: null, why: "no search clause" },
@@ -41,7 +41,7 @@ const EXPECTED: { name: string; want: Partial<TutorTarget> | null; why: string }
   { name: "Opposition Agent", want: null, why: "no search clause" },
   { name: "Leonin Arbiter", want: null, why: "no search clause" },
   // Sentence scope, both directions.
-  { name: "Ranger-Captain of Eos", want: { kinds: ["creature"] }, why: "opponent named in ANOTHER sentence" },
+  { name: "Ranger-Captain of Eos", want: { kinds: [[["creature"]]] }, why: "opponent named in ANOTHER sentence" },
   { name: "Entomb", want: null, why: "graveyard destination assembles nothing" },
 ];
 
@@ -95,9 +95,13 @@ async function main() {
     any: parsed.filter((p) => p.t?.kinds === "any").length,
     basics: parsed.filter((p) => p.t?.basicOnly).length,
     typed: parsed.filter((p) => Array.isArray(p.t?.kinds) && p.t.kinds.length > 0).length,
+    alternatives: parsed.filter((p) => Array.isArray(p.t?.kinds) && p.t.kinds.length > 1).length,
     // Kept at zero deliberately. It was 253 before subtypes were carried through, and a
     // counter that has to STAY zero is the only thing that would notice it coming back.
     unreachable: parsed.filter((p) => Array.isArray(p.t?.kinds) && p.t.kinds.length === 0).length,
+    conjunctions: parsed.filter(
+      (p) => Array.isArray(p.t?.kinds) && p.t.kinds.some((alt) => alt.length > 1),
+    ).length,
     coloured: parsed.filter((p) => p.t?.colors != null).length,
     capped: parsed.filter((p) => p.t?.maxManaValue != null).length,
   };

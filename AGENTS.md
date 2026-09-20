@@ -1137,6 +1137,11 @@ Package manager is **pnpm** (pinned via `packageManager` in package.json) — ne
   destination assembles nothing on its own; and two mana-value phrasings were read inverted
   until they were counted.
 
+  It also splits `alternatives` from `conjunctions` — 81 tutors against 61 on the shipped
+  catalog — because collapsing the two is the false positive the classifier was fixed for: a
+  tutor for `a legendary creature card` reached any legendary LAND until the and/or structure
+  was preserved, and the reach count against one real combo piece fell from 239 to 194.
+
   Its `unreachable` counter is a structural INVARIANT rather than a live guard, and the
   script says so: `kinds` is either `"any"` or a non-empty list, so an empty one is
   unconstructible and a non-zero figure means `targetWords` started returning an empty array.
