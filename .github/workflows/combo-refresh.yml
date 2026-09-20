@@ -90,7 +90,11 @@ jobs:
         # repository carries this for the same reason.
         shell: bash
         env:
-          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+          # CATALOG_DATABASE_URL, which is the only secret the catalog-* environments carry.
+          # `secrets.DATABASE_URL` resolves to an empty string there, and `requireEnv` then
+          # refuses — so every scheduled run would have failed the moment the kill switch was
+          # turned on. Same name every sibling workflow in these environments reads.
+          DATABASE_URL: ${{ secrets.CATALOG_DATABASE_URL }}
           # The streamer holds one record at a time, but the run buffers ~107k variant rows
           # and ~377k membership rows before its publish, plus 54 sweep responses. The
           # ManaPool canary's precedent, for the same reason.
