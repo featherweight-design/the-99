@@ -65,8 +65,18 @@ routed the declaration here. **Reconcile those two**: the box has survived three
 size and the declaration belongs in its sub-line rather than as a new shape.
 
 `declared` is **never inferred and never defaulted** (`types.ts:63`). A null means the player has
-not answered, and the surface shows the range. **Permanently skippable** — Round 0's word, and it
-holds: a player who does not want to answer must be able to stop being asked.
+not answered, and the surface shows the range.
+
+**"Permanently skippable" was Round 0's word, and NOTHING PERSISTS IT.** `decks.declared_bracket`
+is the only stored state and its null already means *not answered*, so a skip returns to exactly
+the state the reader skipped from and the block asks again on the next load. There is no third
+value, on the deck row or anywhere else.
+
+**This is an open call and §4.5 is where it gets made**, because the two ways out cost different
+things. Either a skip is *persisted* — a second stored value, which is a migration and a new
+state on the verdict for every round after this one to draw — or the requirement is *relaxed*, and
+the block stays askable but quiet enough that being asked again is not a nag. **Design picks
+which, and engineering builds it; do not assume the first.**
 
 ### 3.2 Correcting the lean
 A reader who disagrees with *"we think this is a 4"* overrules it, and their correction is stored
@@ -94,7 +104,11 @@ has four declarations and four permitted ranges rather than four computed figure
    the receipts sit, and how a tutor list reads without implying a tutor count matters.
 3. **The drift state** — §3.3. A report, never a reprimand, and never an offer to "fix" it.
 4. **Whether the ringed `≈` survives the ruling**, and what it means if it does.
-5. **The skip**, and what the block looks like once skipped. Permanently means permanently.
+5. **The skip** — and first, whether it persists at all (§3.1). Today nothing stores one, so
+   "permanently skippable" is a requirement no shipped state can satisfy. Persisting it buys a
+   migration and a state every later round must draw; relaxing it means the block may be asked
+   again, and must be quiet enough that this is not a nag. Then: what the block looks like once
+   skipped.
 
 ## §5 Locked, and not open
 
@@ -112,8 +126,12 @@ has four declarations and four permitted ranges rather than four computed figure
 ## §6 What engineering has ready
 
 All of it. `slotDeck` returns `permits`, `declared`, `declaredOutsidePermits` and `lean` today;
-the amendment on `feat/combo-decides` changes what `lean` MEANS and not its shape. The write path
-for `declared` is the one piece not yet built, and it is small — a column and a server action.
+the amendment on `feat/combo-decides` changes what `lean` MEANS and not its shape.
+
+**The column already exists** — `decks.declared_bracket` (`schema.ts:303`), with a check
+constraint pinning it to 1–5 or null, and the profile loader already reads it. **Only the write
+action is missing**, and it is small. Nothing here needs a migration, unless §3.1's skip call goes
+the persisted way — which is the one thing in this round that would.
 
 **One hole this round does not own, recorded so it is not drawn by accident:** with the boundary
 resolving, adding a card that completes a combo to a deck that cannot tutor for it moves the
