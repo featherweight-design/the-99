@@ -46,10 +46,12 @@
 // Every handle is populated BEFORE the write it covers, so a throw part-way through cannot
 // strand catalog state, and every cleanup step runs even when an earlier one throws.
 //
-// The PAIR rung is NOT covered here, and an earlier header claimed a sentinel for it that
-// was never written. Reaching it needs a `commander_pair_support` row whose not-null
-// `bracket_counts` would have to be fabricated, for a rung `probe:draft` and the pair tests
-// already exercise from the read side; the claim is withdrawn rather than the code invented.
+// ALL FOUR RUNGS of the basis chain are covered, the pair included. Its sentinel fabricates
+// `bracket_counts` and `edhrec_total` because both are not-null — that is what a sentinel is —
+// and it is what lets the population's `of: "pair"`, its declared total and the deck count
+// beside it be asserted at all. An earlier version of this header said the pair rung was NOT
+// covered and withdrew the claim rather than building it; both the code and this sentence
+// have caught up.
 //
 // IT FAILS RATHER THAN SKIPS. A state it claims to test and cannot reach is a failure, not a
 // note — a conditional "when the row exists" check is the silent pass this repository keeps
@@ -944,10 +946,29 @@ run()
       }],
       ["the pair sentinel", async () => {
         if (!pairCleanup) return;
+        // OWNERSHIP-CHECKED, the same rule the commander restore follows. A key-only delete
+        // removes whatever is at that key, and a concurrent index job can have replaced this
+        // run's sentinel with real data by now. The sentinel's own `avg_land` is what says
+        // the row is still ours.
+        const [now] = await rows<{ avg_land: number | null }>(sql`
+          select avg_land from commander_pair_support
+          where commander_oracle_id = ${pairCleanup.commanderOracleId}::uuid
+            and partner_oracle_id = ${pairCleanup.partnerOracleId}::uuid`);
+        if (!now) return;
+        if (now.avg_land !== SENTINEL_PAIR_LAND) {
+          failures += 1;
+          console.error(
+            `cleanup REFUSED: the pair row's avg_land is ${now.avg_land} rather than the ` +
+              `${SENTINEL_PAIR_LAND} this run wrote — something replaced the sentinel, and ` +
+              `deleting by key would take that with it.`,
+          );
+          return;
+        }
         await fixture.execute(sql`
           delete from commander_pair_support
           where commander_oracle_id = ${pairCleanup.commanderOracleId}::uuid
-            and partner_oracle_id = ${pairCleanup.partnerOracleId}::uuid`);
+            and partner_oracle_id = ${pairCleanup.partnerOracleId}::uuid
+            and avg_land = ${SENTINEL_PAIR_LAND}`);
       }],
       ["the pre-existing identity row", async () => {
         if (!identityRestore) return;

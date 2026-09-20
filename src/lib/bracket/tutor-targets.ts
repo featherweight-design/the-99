@@ -141,9 +141,13 @@ function targetWords(target: string): TutorAlternative[] | null {
   // keeping it as a constraint makes such a tutor reach nothing: an under-claim, which is the
   // safe direction, and it costs nothing today because ZERO of the 960 targets use the word.
   //
-  // `basic` stays out because `basicOnly` already gates reach to false for those.
+  // `basic` stays out because `basicOnly` already gates reach to false for those. And `one`
+  // is a QUANTITY beside `two`..`five`, which were always here — left out, `one creature card`
+  // made `one` a required type-line constraint and the tutor reached no creature at all.
+  // Zero of the 960 targets use that phrasing today, so the fix costs nothing and closes a
+  // door rather than a hole.
   const noise =
-    /^(a|an|any|the|up|to|two|three|four|five|many|number|of|basic|other|another|\d+)$/;
+    /^(a|an|any|the|up|to|one|two|three|four|five|many|number|of|basic|other|another|\d+)$/;
   const alternatives = head[1]
     .split(/\s+or\s+|\s+and\/or\s+|,/)
     .map((part) =>
