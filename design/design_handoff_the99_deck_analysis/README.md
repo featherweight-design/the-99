@@ -12,7 +12,8 @@ deck page already carries, and what the synopsis's slot does when there is no se
 Rounds 1–4 are briefed against this frame.
 
 **Source of truth:** `docs/superpowers/design-briefs/2026-09-19-where-deck-analysis-lives.md` on
-`spec/deck-analysis-foundation` (PR #746, open), read at `ea00e8c8`. Spec:
+`main` (merged in PR #746; read at `ea00e8c8` on `spec/deck-analysis-foundation`, the branch it was
+drawn against). Spec:
 `docs/superpowers/specs/2026-09-19-deck-analysis-foundation-design.md`, §11.1 for the round structure.
 
 **File:** `The 99 - Deck Analysis Frame.dc.html` — canvas (pan/zoom), with a **theme prop**:

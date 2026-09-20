@@ -68,6 +68,8 @@ bracket carried to a table with three other people, with no way to show the card
 
 ## Errata — all engineering-resolvable
 
+Errata 5 and the last two rows of 4 came out of the review round on this PR rather than the audit.
+
 1. **The allowance is missing from the climb's barometers.** The denominator lock's partial, above.
    Restore `receipts.allowance` beside each count.
 2. **Tutors fell off the final climb.** `README.md:120` still specifies a dashed tutor row tagged
@@ -92,11 +94,20 @@ bracket carried to a table with three other people, with no way to show the card
    | Numeral kerning on `4` | `dx="-0.9"` (`HANDOFF.md:15`) | `dx="-1.8"` (`README.md:294`) |
    | The mark's floor | "the floor is 20px, and it is a hard one" (`README.md:256`) | `floor 24px` in the variants table (`README.md:290`) |
    | Palette | **DECIDED: 2e Ignition** (`README.md:345`, `HANDOFF.md:16`) | "currently drawn in 2a" (`:311`); "II + 2b is the pairing" (`:196-198`) |
+   | The undeclared range's action | **two labelled CTAs**, `Bracket 1` / `Bracket 2`, under *"Pick one so pods know what to expect"* (`HANDOFF.md:18`, canvas) | "one neutral outline button" (`README.md:202`, `:211`, `:589`); one generic `declare` plus a skip label (`copy strings.ts:51`) |
+   | Which brackets are offered | the two that survive the deck's receipts — the drawn case offers 1 **or 2** | `undeclared` hard-codes 1 and 5 (`copy strings.ts:47`), which reads as suppressing a valid `Core` declaration and misdescribes the 4/5 range |
 
-5. **The copy file uses `—` escapes** (`:43`, `:47`, `:56`, `:114`, `:121`) plus literal em
+5. **Two denominators are hard-coded to 99, against the frame's own live-list ruling.** The frame is
+   explicit that every figure reads the live deck and *"every denominator is the live count — `of 62`
+   on a 62-card pile, never a hard 99"* (`FRAME:75-84`). But state 5 says *"the bracket needs one pass
+   over all 99"* with a `— of 99 read` denominator (`STATES-synopsis.md:26`), and the copy file
+   hard-codes the same figure (`copy strings.ts:105`). A 62-card pile would be told its bracket needs
+   a pass over 99 cards. **Both take the live total as a parameter**, and the canvas's own examples
+   read as examples rather than as the rule. Found by review, not by this audit.
+6. **The copy file uses `—` escapes** (`:43`, `:47`, `:56`, `:114`, `:121`) plus literal em
    dashes in its comments. Run it through `copy-review` for the em-dash rule before any of it
    lands in `src/lib/copy/`.
-6. **The handoff's own punch list is carried as-is** (`HANDOFF.md:44-56`): the phone header order,
+7. **The handoff's own punch list is carried as-is** (`HANDOFF.md:44-56`): the phone header order,
    deck tiles taking the named chip rather than the bare mark, Home's resume row (not mocked),
    colour-board tiles still on the one-line footer, the real `Yuriko, the Tiger's Shadow` clip at
    160px in a 130px box, and the README doc sync. The five Cinzel "content clipped" findings are
