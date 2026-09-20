@@ -145,3 +145,27 @@ jobs:
             echo ""
           } >> "$GITHUB_STEP_SUMMARY"
           pnpm --silent db:build:index | tee -a "$GITHUB_STEP_SUMMARY"
+
+      # A STEP IN THIS LEG, deliberately, and not a `workflow_run` chain of its own.
+      #
+      # The floors are derived FROM the index this leg just wrote, so they have to run
+      # against the same database — and `workflow_run` fires once per run with no way to
+      # tell which matrix leg it is hearing about. `commander-prose.yml` is pinned to
+      # production for exactly that reason and takes staging's sentences from a copy
+      # instead; there is no copy for this, because the derivation costs one query and
+      # nothing else. A step per leg is the only shape that gives each environment floors
+      # computed from its own index.
+      #
+      # It runs on success only (the step default), so a failed index never publishes
+      # floors derived from a half-written one. The script has its own refusal on top of
+      # that: an empty derivation exits non-zero and leaves the previous floors standing,
+      # because an empty result is either an empty index or a broken query and neither is
+      # a reason to delete a good table.
+      - name: Derive the format staples
+        run: |
+          {
+            echo ""
+            echo "## Format staples"
+            echo ""
+          } >> "$GITHUB_STEP_SUMMARY"
+          pnpm --silent db:build:staples | tee -a "$GITHUB_STEP_SUMMARY"
