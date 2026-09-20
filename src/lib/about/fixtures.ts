@@ -1464,25 +1464,45 @@ export const CONTESTED_RESERVATION: ContestedCard = {
  *
  * `marked` is NOT derivable from the tallies and is stated for that reason:
  * one game can contribute to several axes, so summing them overcounts.
+ *
+ * THREE axes per bucket, not two. The cell is a fixed 200px that wraps
+ * (`game-log.md`, "200px wide desktop, wrapping"), so a bucket of two fills
+ * 412px of the plate's ~700px and the figure reads as a broken layout rather
+ * than as a panel. Three fill 624px. A real deck logs against EIGHT axes, so
+ * two per bucket was also the unrepresentative case: Hugh reported the gap on
+ * 2026-09-19 and this is the fixture answer to it, chosen over widening the
+ * cell because that width is Design's and reaches the real Games tab.
  */
 export const GAME_SUMMARY: GameSummary = {
   count: GAME_COUNT,
   marked: 5,
   record: { wins: 4, losses: 3, draws: 0 },
+  // VOCABULARY ORDER, per `GameSummary.axes` — `GAME_AXIS_KEYS` is speed,
+  // card_flow, mana, interaction, board, resilience, engine, closing. The
+  // buckets below rank by strength instead; this flat list does not, because
+  // it is what the N=1 panel draws and ranking one game would be a claim.
   axes: [
+    { key: "speed", worked: 1, hurt: 4, net: -3 },
     { key: "card_flow", worked: 1, hurt: 5, net: -4 },
-    { key: "board", worked: 1, hurt: 3, net: -2 },
-    { key: "interaction", worked: 5, hurt: 1, net: 4 },
     { key: "mana", worked: 3, hurt: 0, net: 3 },
+    { key: "interaction", worked: 5, hurt: 1, net: 4 },
+    { key: "board", worked: 1, hurt: 3, net: -2 },
     { key: "resilience", worked: 2, hurt: 2, net: 0 },
+    { key: "closing", worked: 4, hurt: 1, net: 3 },
   ],
+  // STRONGEST FIRST, which is `sortAxes`: |net| descending, ties broken by
+  // vocabulary order. -4, -3, -2 — not the order these were added in.
   fix: [
     { key: "card_flow", worked: 1, hurt: 5, net: -4 },
+    { key: "speed", worked: 1, hurt: 4, net: -3 },
     { key: "board", worked: 1, hurt: 3, net: -2 },
   ],
+  // 4, then 3 and 3 tied and broken by vocabulary order — mana is index 2,
+  // closing index 7, so mana leads. Already right; stated so it stays right.
   keep: [
     { key: "interaction", worked: 5, hurt: 1, net: 4 },
     { key: "mana", worked: 3, hurt: 0, net: 3 },
+    { key: "closing", worked: 4, hurt: 1, net: 3 },
   ],
   // Cut both ways, so it is the Mixed line rather than a third column.
   mixed: [{ key: "resilience", worked: 2, hurt: 2, net: 0 }],
