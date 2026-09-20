@@ -1137,8 +1137,12 @@ Package manager is **pnpm** (pinned via `packageManager` in package.json) — ne
   destination assembles nothing on its own; and two mana-value phrasings were read inverted
   until they were counted.
 
-  Its `unreachable` counter has to stay at 0 and warns if it does not — a family coming out
-  wrong is a clause bug, never a name to add to a list.
+  Its `unreachable` counter is a structural INVARIANT rather than a live guard, and the
+  script says so: `kinds` is either `"any"` or a non-empty list, so an empty one is
+  unconstructible and a non-zero figure means `targetWords` started returning an empty array.
+  The regression it cannot see is the likelier one — a word DROPPED rather than kept gives
+  `words === null` and lands in the `any` bucket, silently widening every such tutor. Watch
+  `any` against 129 for that.
 
 - **The bracket system's classifiers are all PARTIAL, and every surface says so.** Mass land
   denial is 22 of 24 on a curated set with both misses named; extra turns have no misses among

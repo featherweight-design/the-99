@@ -37,6 +37,8 @@ const TEXT = {
     "Your opponents can't search libraries. If an opponent would begin an extra turn, that player skips that turn instead.",
   arbiter:
     "Players can't search libraries. Any player may pay {2} for that player to ignore this effect until end of turn.",
+  oppositionAgent:
+    "Flash\nYou control your opponents while they're searching their libraries. While an opponent is searching their library, they exile each card they find. You may play those cards for as long as they remain exiled, and you may spend mana as though it were mana of any type to cast those spells.",
   mindcensor:
     "Flash\nFlying\nIf an opponent would search a library, that player searches the top four cards of that library instead.",
 };
@@ -115,6 +117,9 @@ describe("classifyTutor", () => {
     ["Stranglehold", TEXT.stranglehold],
     ["Leonin Arbiter", TEXT.arbiter],
     ["Aven Mindcensor", TEXT.mindcensor],
+    // Named in the classifier's header as a regression anchor and pinned by nothing until
+    // now — its text says "searching their libraries", never "search your library for".
+    ["Opposition Agent", TEXT.oppositionAgent],
   ])("refuses %s — it never matches the clause", (_name, text) => {
     expect(classifyTutor(text)).toBeNull();
   });
@@ -157,8 +162,21 @@ describe("tutorReaches", () => {
   it("a subtype tutor reaches by type line", () => {
     expect(tutorReaches(t(TEXT.harbinger), piece("Creature — Goblin"))).toBe(true);
     expect(tutorReaches(t(TEXT.harbinger), piece("Creature — Merfolk Wizard"))).toBe(false);
-    // A land-subtype tutor still reaches no combo piece — for the right reason now.
+    // `legendary` is a supertype on the type line, so Captain Sisay reaches a legendary land.
     expect(tutorReaches(t(TEXT.sisay), piece("Legendary Snow Land", 0))).toBe(true);
+  });
+
+  // A LAND-SUBTYPE tutor reaches no combo piece, and now for the right reason: the type-line
+  // test refuses `Dark Depths` because it carries no Forest type, where the retired
+  // fixed-kind-list version refused everything. The classifier's header records this case and
+  // nothing asserted it.
+  it("a land-subtype tutor refuses a nonbasic land without that type", () => {
+    const balamb = classifyTutor(
+      "When this creature enters, search your library for a Forest card, reveal it, put it into your hand, then shuffle.",
+    ) as TutorTarget;
+    expect(balamb.kinds).toEqual(["forest"]);
+    expect(tutorReaches(balamb, piece("Legendary Snow Land", 0))).toBe(false);
+    expect(tutorReaches(balamb, piece("Basic Land — Forest", 0))).toBe(true);
   });
 });
 

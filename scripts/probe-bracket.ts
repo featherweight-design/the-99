@@ -33,11 +33,23 @@
 // needs a reader whose cache can be observed across a catalog stamp, and no route calls the
 // wrapper yet — the first Tier B consumer proves it, and its plan carries that as a task.
 //
-// TWO CLEANUP SHAPES, kept distinct because confusing them loses data. A commander's `avg_*`
-// is an UPDATE to a row that already exists, so it is capture-before-write and RESTORE. The
-// `identity_composition` and `commander_pair_support` sentinels are NEW rows, so they are
-// insert-and-DELETE. Every handle is populated BEFORE the write it covers, so a throw
-// part-way through cannot strand catalog state.
+// THREE CLEANUP SHAPES, kept distinct because confusing them loses data:
+//
+//   · A row this run CREATED is deleted — and only when the insert's own `returning` says it
+//     was created. An earlier version set the handle before an `on conflict do nothing` and
+//     deleted unconditionally, which removes a row somebody else's index run wrote.
+//   · A row this run OVERWROTE is restored, all eleven columns of it. An earlier version
+//     captured `avg_land` alone and set the other nine to null, which is a delete with extra
+//     steps rather than a restore.
+//   · A row this run LIFTED to reach an empty state is put back.
+//
+// Every handle is populated BEFORE the write it covers, so a throw part-way through cannot
+// strand catalog state, and every cleanup step runs even when an earlier one throws.
+//
+// The PAIR rung is NOT covered here, and an earlier header claimed a sentinel for it that
+// was never written. Reaching it needs a `commander_pair_support` row whose not-null
+// `bracket_counts` would have to be fabricated, for a rung `probe:draft` and the pair tests
+// already exercise from the read side; the claim is withdrawn rather than the code invented.
 //
 // IT FAILS RATHER THAN SKIPS. A state it claims to test and cannot reach is a failure, not a
 // note — a conditional "when the row exists" check is the silent pass this repository keeps
@@ -88,8 +100,21 @@ let failures = 0;
 // Populated BEFORE the write each one covers. A commander's composition is an UPDATE to a row
 // that exists, so it is RESTORED; the identity row is new, so it is DELETED. Confusing the two
 // removes a real index row.
-let commanderCleanup: { oracleId: string; avgLand: number | null } | null = null;
+type CompositionColumns = {
+  avg_land: number | null; avg_basic: number | null; avg_nonbasic: number | null;
+  avg_creature: number | null; avg_instant: number | null; avg_sorcery: number | null;
+  avg_artifact: number | null; avg_enchantment: number | null;
+  avg_planeswalker: number | null; avg_battle: number | null;
+  avg_curve: Record<string, number> | null;
+};
+
+let commanderCleanup: { oracleId: string; before: CompositionColumns } | null = null;
+/** Set ONLY when this run created the row — from the insert's own `returning`. */
 let identityCleanup: string | null = null;
+/** A row that was already there, lifted so the chain's empty state is reachable. */
+let identityRestore:
+  | { condition: string; row: CompositionColumns; commanders: number; withComposition: number }
+  | null = null;
 /** Counts its own failures. A probe whose exit code disagrees with its output is worse than
  *  no probe — the count used to live at each call site, and a check that forgot it printed
  *  FAIL and then "All checks passed" over the top. */
@@ -276,13 +301,6 @@ async function run() {
   const baseProfile = await profileFor(deckId);
   const fit = fitSkeleton(baseProfile);
   check("the condition is the commander's exact identity", baseProfile.skeleton.condition, "W");
-  // An earlier version asserted `fit.basis !== "none" || true` here, which is `true` — a
-  // check that could not fail, over the one figure the basis chain exists to produce.
-  check(
-    "with no composition anywhere, the basis is none and no target is invented",
-    [fit.basis, fit.types.length],
-    ["none", 0],
-  );
   const staple = fit.missingStaples[0] ?? fit.presentStaples[0];
   if (!staple) {
     fail("the floor is non-empty", "no staple row for condition W — run pnpm db:build:staples");
@@ -330,9 +348,23 @@ async function run() {
   //
   // MEASURED, not assumed. The profile is cached as JSON, so its size is a real constraint on
   // the object's shape rather than a style note.
+  // A REALISTIC BODY. Measured on the §1 fixture — two cards — the ceiling cannot be
+  // approached under any regression, so the check could not fail and the header's claim to
+  // measure "a realistic worst case" was not what the code did.
   console.log(`\n== 8 · the serialised payload ==`);
-  const bytes = JSON.stringify(await profileFor(deckId)).length;
-  console.log(`  ${bytes.toLocaleString()} bytes for a ${(await profileFor(deckId)).counts.total}-card fixture`);
+  const body = await rows<CardRow>(sql`
+    select oracle_id, name from cards
+    where commander_legal = true and type_line not ilike 'basic land%'
+    order by oracle_id limit 99`);
+  const fatDeck = await makeDeck(
+    "probe payload",
+    gcLegend.oracle_id,
+    body.map((c) => c.oracle_id),
+  );
+  const fat = await profileFor(fatDeck);
+  const bytes = JSON.stringify(fat).length;
+  console.log(`  ${bytes.toLocaleString()} bytes for a ${fat.counts.total}-card deck`);
+  check("the fixture is a full body, not a stub", fat.counts.total >= 99, true);
   check("under the 2 MB ceiling", bytes < 2_000_000, true);
 }
 
@@ -360,11 +392,60 @@ async function basisChainChecks(deckId: string, commanderOracleId: string) {
   };
   const CURVE = { "1": 8, "2": 14, "7": 2, "9": 1 };
 
+  // --- rung 0: nothing ----------------------------------------------------------------
+  //
+  // LIFTED FIRST, so the empty state is reachable on any database rather than only on one
+  // that has never had a widened index run. Both handles are populated before the write they
+  // cover; the commander's row is restored, the identity row is put back.
+  const [existingIdentity] = await rows<CompositionColumns & {
+    commanders: number; with_composition: number;
+  }>(sql`
+    select avg_land, avg_basic, avg_nonbasic, avg_creature, avg_instant, avg_sorcery,
+           avg_artifact, avg_enchantment, avg_planeswalker, avg_battle, avg_curve,
+           commanders, with_composition
+    from identity_composition where condition = 'W'`);
+  if (existingIdentity) {
+    identityRestore = {
+      condition: "W",
+      row: existingIdentity,
+      commanders: existingIdentity.commanders,
+      withComposition: existingIdentity.with_composition,
+    };
+    await fixture.execute(sql`delete from identity_composition where condition = 'W'`);
+  }
+
+  const [existingCommander] = await rows<CompositionColumns>(sql`
+    select avg_land, avg_basic, avg_nonbasic, avg_creature, avg_instant, avg_sorcery,
+           avg_artifact, avg_enchantment, avg_planeswalker, avg_battle, avg_curve
+    from commander_support where commander_oracle_id = ${commanderOracleId}::uuid`);
+  if (existingCommander) {
+    commanderCleanup = { oracleId: commanderOracleId, before: existingCommander };
+    await fixture.execute(sql`
+      update commander_support
+      set avg_land = null, avg_basic = null, avg_nonbasic = null, avg_creature = null,
+          avg_instant = null, avg_sorcery = null, avg_artifact = null, avg_enchantment = null,
+          avg_planeswalker = null, avg_battle = null
+      where commander_oracle_id = ${commanderOracleId}::uuid`);
+  }
+
+  // An earlier version asserted `fit.basis !== "none" || true` here, which is `true` — a
+  // check that could not fail, over the one figure the basis chain exists to produce.
+  const emptyFit = fitSkeleton(await profileFor(deckId));
+  check(
+    "rung 0: with no composition anywhere, the basis is none and no target is invented",
+    [emptyFit.basis, emptyFit.types.length],
+    ["none", 0],
+  );
+
   // --- rung 3: identity ------------------------------------------------------------------
   // Written FIRST and asserted before the commander row exists, because the chain takes the
   // first hit: with a commander row present this rung is unreachable by construction.
-  identityCleanup = "W";
-  await fixture.execute(sql`
+  // INSERTED, and the cleanup handle comes from the insert's own `returning`. An earlier
+  // version set the handle before an `on conflict do nothing` and then deleted
+  // unconditionally — which removes a row this run did not create, and the state where that
+  // bites is exactly the one this probe exists to anticipate: a database that has had a
+  // widened index run.
+  const [created] = await rows<{ condition: string }>(sql`
     insert into identity_composition
       (condition, avg_land, avg_basic, avg_nonbasic, avg_creature, avg_instant, avg_sorcery,
        avg_artifact, avg_enchantment, avg_planeswalker, avg_battle, avg_curve,
@@ -372,7 +453,10 @@ async function basisChainChecks(deckId: string, commanderOracleId: string) {
     values ('W', ${TARGETS.land}, ${TARGETS.basic}, ${TARGETS.nonbasic}, ${TARGETS.creature},
             ${TARGETS.instant}, ${TARGETS.sorcery}, ${TARGETS.artifact}, ${TARGETS.enchantment},
             ${TARGETS.planeswalker}, ${TARGETS.battle}, ${JSON.stringify(CURVE)}::jsonb, 336, 300)
-    on conflict (condition) do nothing`);
+    on conflict (condition) do nothing
+    returning condition`);
+  if (created) identityCleanup = created.condition;
+  else fail("rung 3: the identity sentinel", "a W row was already present and was not replaced");
 
   const identityFit = fitSkeleton(await profileFor(deckId));
   check("rung 3: an identity row gives basis 'identity'", identityFit.basis, "identity");
@@ -391,14 +475,13 @@ async function basisChainChecks(deckId: string, commanderOracleId: string) {
   );
 
   // --- rung 2: the commander's own page -----------------------------------------------------
-  const [before] = await rows<{ avg_land: number | null; avg_curve: unknown }>(sql`
-    select avg_land, avg_curve from commander_support
-    where commander_oracle_id = ${commanderOracleId}::uuid`);
-  if (!before) {
+  if (!existingCommander) {
     fail("rung 2: the commander's own composition", "no commander_support row for the fixture");
   } else {
-    // Captured BEFORE the write, so a throw below cannot strand a real index row.
-    commanderCleanup = { oracleId: commanderOracleId, avgLand: before.avg_land };
+    // The row was captured and cleared at rung 0 — ALL ELEVEN COLUMNS. An earlier version
+    // captured `avg_land` alone and then "restored" by setting the other nine to null, which
+    // is a delete with extra steps: on any database a widened index run has filled, it drops
+    // that commander off rung 2 permanently.
     await fixture.execute(sql`
       update commander_support
       set avg_land = 34, avg_basic = 12, avg_nonbasic = 22, avg_creature = 30,
@@ -592,18 +675,43 @@ run()
       }],
       ["the commander's composition", async () => {
         if (!commanderCleanup) return;
+        const b = commanderCleanup.before;
         await fixture.execute(sql`
           update commander_support
-          set avg_land = ${commanderCleanup.avgLand}, avg_basic = null, avg_nonbasic = null,
-              avg_creature = null, avg_instant = null, avg_sorcery = null, avg_artifact = null,
-              avg_enchantment = null, avg_planeswalker = null, avg_battle = null
+          set avg_land = ${b.avg_land}, avg_basic = ${b.avg_basic},
+              avg_nonbasic = ${b.avg_nonbasic}, avg_creature = ${b.avg_creature},
+              avg_instant = ${b.avg_instant}, avg_sorcery = ${b.avg_sorcery},
+              avg_artifact = ${b.avg_artifact}, avg_enchantment = ${b.avg_enchantment},
+              avg_planeswalker = ${b.avg_planeswalker}, avg_battle = ${b.avg_battle},
+              avg_curve = ${b.avg_curve === null ? null : JSON.stringify(b.avg_curve)}::jsonb
           where commander_oracle_id = ${commanderCleanup.oracleId}::uuid`);
       }],
       ["the identity sentinel", async () => {
+        // Only a row this run CREATED. The handle is set from the insert's own `returning`,
+        // so a pre-existing row — the state after a widened index run — is never deleted.
         if (!identityCleanup) return;
         await fixture.execute(
           sql`delete from identity_composition where condition = ${identityCleanup}`,
         );
+      }],
+      ["the pre-existing identity row", async () => {
+        if (!identityRestore) return;
+        await fixture.execute(sql`
+          insert into identity_composition
+            (condition, avg_land, avg_basic, avg_nonbasic, avg_creature, avg_instant,
+             avg_sorcery, avg_artifact, avg_enchantment, avg_planeswalker, avg_battle,
+             avg_curve, commanders, with_composition)
+          values (${identityRestore.condition}, ${identityRestore.row.avg_land},
+                  ${identityRestore.row.avg_basic}, ${identityRestore.row.avg_nonbasic},
+                  ${identityRestore.row.avg_creature}, ${identityRestore.row.avg_instant},
+                  ${identityRestore.row.avg_sorcery}, ${identityRestore.row.avg_artifact},
+                  ${identityRestore.row.avg_enchantment}, ${identityRestore.row.avg_planeswalker},
+                  ${identityRestore.row.avg_battle},
+                  ${identityRestore.row.avg_curve === null
+                      ? null
+                      : JSON.stringify(identityRestore.row.avg_curve)}::jsonb,
+                  ${identityRestore.commanders}, ${identityRestore.withComposition})
+          on conflict (condition) do nothing`);
       }],
       // Every step runs even when an earlier one throws — a cleanup that stops at the first
       // failure leaves the rest of the fixture behind, which is how a probe poisons the next

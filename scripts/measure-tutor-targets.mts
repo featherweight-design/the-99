@@ -103,11 +103,19 @@ async function main() {
   };
   console.log(`\n== 2 · the corpus ==`);
   for (const [k, v] of Object.entries(tally)) console.log(`  ${pad(k, 14)}${v}`);
+  // `unreachable` is UNCONSTRUCTIBLE against the current classifier: `kinds` is either "any"
+  // or a non-empty list, because `targetWords` returns null rather than an empty array. It is
+  // printed as a structural invariant rather than as a live guard, and the warning says which.
+  //
+  // The regression it CANNOT see is the likelier one: a word dropped rather than kept gives
+  // `words === null` and lands in the `any` bucket, silently widening every such tutor. Watch
+  // `any` against 129 — that is the figure a dropped-subtype regression moves.
   if (tally.unreachable > 0) {
     console.log(`\n  WARNING: ${tally.unreachable} cards parse to a target that reaches NOTHING.`);
-    console.log(`  That figure was 253 before subtypes were carried through as themselves, and`);
-    console.log(`  the fix was ten lines. Any value above zero is a target phrase the parser`);
-    console.log(`  recognised and then threw away — a clause bug, not a card to add to a list.`);
+    console.log(`  That is unconstructible against the classifier as written, so a non-zero`);
+    console.log(`  figure means \`targetWords\` started returning an empty array — a clause bug,`);
+    console.log(`  never a card to add to a list. The figure was 253 before subtypes were`);
+    console.log(`  carried through as themselves.`);
   }
 
   // ---- 3 · what reaches a real piece ------------------------------------------------------
