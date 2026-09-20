@@ -1102,23 +1102,37 @@ Package manager is **pnpm** (pinned via `packageManager` in package.json) — ne
   read, a four-rung composition chain, a staples join and a Spellbook combo join with three
   rules in its SQL.
 
-  Thirty-five checks. The draft IS the deck, so a card staged into `deck_cards` moves the slot
+  Forty-five checks. The draft IS the deck, so a card staged into `deck_cards` moves the slot
   with no commit. The combo join's three §4.3b rules get one case each, and the
   most consequential is the false-NEGATIVE half: a `mustBeCommander` piece AS the commander
   must slot. A Game Changer COMMANDER counts against every limit — the commanders-are-cards
   rule end to end, on the one card that is a column rather than a row.
 
   **The basis chain needs SENTINELS**, and that is why this probe writes to the catalog at all:
-  local-dev carries neither an `identity_composition` row nor a non-null
-  `commander_support.avg_*`, so without them the chain has exactly ONE reachable state and
-  three of its four rungs are asserted by nobody. Rung 3 is read BEFORE rung 2 is written,
-  because with a commander row present the identity rung is unreachable by construction.
+  local-dev carries neither an `identity_composition` row, a `commander_pair_support` row, nor
+  a non-null `commander_support.avg_*`, so without them the chain has exactly ONE reachable
+  state and three of its four rungs are asserted by nobody. All four are covered. Order
+  matters and the code says why: rung 3 is read BEFORE rung 2 is written, because with a
+  commander row present the identity rung is unreachable by construction; and the PAIR rung is
+  read against its own two-commander deck, because reading it from the same fixture would make
+  it and rung 2 mutually unreachable and one would silently stop being asserted.
+
+  The pair sentinel is also what makes the POPULATION assertable — `of: "pair"`, its
+  declared total, and the deck count beside it, which is the pair the design exists to keep
+  together: a reader shown "200 decks" who believes it is out of 1,200 has been misled.
 
   **Two cleanup shapes, kept distinct because confusing them loses data.** A commander's
   `avg_*` is an UPDATE to a row that exists, so it is capture-before-write and RESTORED; the
   identity row is new, so it is DELETED. Every handle is populated before the write it covers,
   and every cleanup step runs even when an earlier one throws — a cleanup that stops at the
   first failure poisons the next run of itself.
+
+  **`comboReach` is read through the real loader**, not only through hand-built
+  `CandidateFacts`. The loader classifies every card's oracle text and hands the builder a
+  predicate, and a regression there makes the [3,4] lean wrong while every other check passes.
+  BOTH SIDES of the relation are asserted — the piece the tutor can find and the one it cannot
+  — because a reach-only check passes on a build where the predicate always returns true,
+  which is exactly what "every tutor reaches every piece" looks like.
 
   It refuses to start over empty tables, finds every fixture BY QUERY rather than by a name
   that rots with the catalog, and FAILS rather than skipping when a fixture it needs is

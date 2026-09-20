@@ -82,6 +82,8 @@ import { drizzle } from "drizzle-orm/neon-serverless";
 import { sql } from "drizzle-orm";
 import ws from "ws";
 
+import { canonicalPair } from "../src/lib/edhrec/pair";
+import { classifyTutor } from "../src/lib/bracket/tutor-targets";
 import { loadDeckProfile } from "../src/lib/profile/load";
 import { fitSkeleton } from "../src/lib/profile/fit";
 import { slotDeck } from "../src/lib/bracket/slot";
@@ -110,7 +112,11 @@ type CompositionColumns = {
 
 /** The commander sentinel's land target — recognisable, and what every restore checks for. */
 const SENTINEL_LAND = 34;
+/** The pair sentinel's, deliberately different so the two rungs cannot be confused. */
+const SENTINEL_PAIR_LAND = 39;
 let commanderCleanup: { oracleId: string; before: CompositionColumns } | null = null;
+/** A pair row this run created. New, so it is deleted rather than restored. */
+let pairCleanup: { commanderOracleId: string; partnerOracleId: string } | null = null;
 /** Set ONLY when this run created the row — from the insert's own `returning`. */
 let identityCleanup: string | null = null;
 /** A row that was already there, lifted so the chain's empty state is reachable. */
@@ -320,7 +326,7 @@ async function run() {
     );
   }
 
-  await basisChainChecks(deckId, monoWhite.oracle_id);
+  await basisChainChecks(deckId, monoWhite.oracle_id, plain.oracle_id);
 
   // ---- 7 · the push check and the upgrade path ------------------------------------------------
   console.log(`\n== 7 · bracketDelta and upgradePath ==`);
@@ -351,6 +357,20 @@ async function run() {
     false,
   );
   check("which makes the path blocked", path.blocked, true);
+
+  // ---- 7b · the tutor wiring, end to end ----------------------------------------------------
+  //
+  // §7's tutor check builds `CandidateFacts` by hand, so it proves `bracketDelta` and nothing
+  // about the LOADER — which classifies every card's oracle text and hands the builder a
+  // predicate. A regression in that map or that predicate makes the [3,4] lean wrong while
+  // every other check here passes, so this loads a deck holding a real tutor and reads
+  // `comboReach` off the profile.
+  //
+  // BOTH SIDES of the relation. A check that only asserts a reach passes on a build where the
+  // predicate always returns true, which is precisely the regression that matters: that is
+  // what "every tutor reaches every piece" looks like.
+  console.log(`\n== 7b · comboReach through the real loader ==`);
+  await tutorWiringChecks();
 
   // ---- 8 · the payload fits -------------------------------------------------------------------
   //
@@ -393,7 +413,11 @@ async function run() {
  * Both handles are populated BEFORE the write they cover, so a throw part-way through cannot
  * strand catalog state — the rule `probe:review`'s collection block is built on.
  */
-async function basisChainChecks(deckId: string, commanderOracleId: string) {
+async function basisChainChecks(
+  deckId: string,
+  commanderOracleId: string,
+  plainOracleId: string,
+) {
   const TARGETS = {
     land: 37, basic: 17, nonbasic: 20, creature: 26, instant: 11,
     sorcery: 5, artifact: 13, enchantment: 6, planeswalker: 1, battle: 0,
@@ -516,6 +540,62 @@ async function basisChainChecks(deckId: string, commanderOracleId: string) {
     3,
   );
 
+  // --- rung 1: the pair's own page ------------------------------------------------------
+  //
+  // Read against its OWN deck — a second legend in the partner column — rather than against
+  // the fixture the other rungs use. The chain takes the first hit, so a pair row shadows
+  // every rung below it for a PAIR deck and is invisible to a single-commander one; reading
+  // both from one deck would make the two rungs mutually unreachable and one of them would
+  // silently stop being asserted.
+  const [partner] = await rows<CardRow>(sql`
+    select oracle_id, name from cards
+    where commander_legal = true and type_line ilike '%legendary%creature%'
+      and oracle_id <> ${commanderOracleId}::uuid
+    order by oracle_id limit 1`);
+  if (!partner) {
+    fail("rung 1: a pair", "the catalog holds no second legend");
+  } else {
+    const pair = canonicalPair(commanderOracleId, partner.oracle_id);
+    const [pairCreated] = await rows<{ commander_oracle_id: string }>(sql`
+      insert into commander_pair_support
+        (commander_oracle_id, partner_oracle_id, synergy_state, edhrec_total, deck_count,
+         bracket_counts, avg_land, avg_basic, avg_nonbasic, avg_creature, avg_instant,
+         avg_sorcery, avg_artifact, avg_enchantment, avg_planeswalker, avg_battle)
+      -- edhrec_total is required by the table own check: an ok row must carry one,
+      -- because a state that says the page parsed while the total is null is the shape the
+      -- constraint exists to refuse.
+      values (${pair.commanderOracleId}::uuid, ${pair.partnerOracleId}::uuid, 'ok', 40, 1200,
+              ${JSON.stringify({ "1": 4, "2": 30, "3": 120, "4": 40, "5": 6 })}::jsonb,
+              ${SENTINEL_PAIR_LAND}, 15, 21, 28, 10, 6, 11, 5, 0, 0)
+      on conflict do nothing
+      returning commander_oracle_id`);
+    if (!pairCreated) {
+      fail("rung 1: the pair sentinel", "a row for this pair was already present");
+    } else {
+      pairCleanup = pair;
+      const pairDeck = await makeDeck(
+        "probe pair",
+        commanderOracleId,
+        [plainOracleId],
+        partner.oracle_id,
+      );
+      const pairProfile = await profileFor(pairDeck);
+      const pairFit = fitSkeleton(pairProfile);
+      check("rung 1: a pair row outranks every rung below it", pairFit.basis, "pair");
+      check(
+        "and its target is the pair's",
+        pairFit.types.find((t) => t.type === "land")?.target,
+        SENTINEL_PAIR_LAND,
+      );
+      // THE POPULATION, and its own denominator. A reader shown "200 decks" who believes it
+      // is out of 1,200 has been misled by us, so the declared total travels with it.
+      const population = pairProfile.brackets.population;
+      check("the population is the PAIR's", population?.of, "pair");
+      check("its declared total is the sum, not the deck count", population?.declaredTotal, 200);
+      check("and the deck count is carried beside it", population?.deckCount, 1200);
+    }
+  }
+
   // --- rung 2: the commander's own page -----------------------------------------------------
   if (!existingCommander) {
     fail("rung 2: the commander's own composition", "no commander_support row for the fixture");
@@ -541,6 +621,89 @@ async function basisChainChecks(deckId: string, commanderOracleId: string) {
       SENTINEL_LAND,
     );
   }
+}
+
+
+/**
+ * A deck holding a real tutor and two combo pieces it can tell apart.
+ *
+ * Found by query: an untargeted tutor reaches everything and proves only half the relation,
+ * so the fixture wants a TYPED one — and then a combo with one piece of that type and one of
+ * another. A fixture that cannot tell the predicate's two answers apart FAILS rather than
+ * measuring nothing.
+ */
+async function tutorWiringChecks() {
+  const [tutor] = await rows<CardRow & { oracle_text: string }>(sql`
+    select oracle_id, name, oracle_text from cards
+    where commander_legal = true
+      and oracle_text ~* 'search your library for an? (artifact|creature) card'
+      and oracle_text !~* 'basic'
+    order by oracle_id limit 1`);
+  if (!tutor) {
+    fail("the tutor wiring", "the catalog holds no typed tutor to build the fixture from");
+    return;
+  }
+
+  const target = classifyTutor(tutor.oracle_text);
+  if (!target || target.kinds === "any") {
+    fail("the tutor wiring", `${tutor.name} parses as untargeted — it cannot tell pieces apart`);
+    return;
+  }
+  const wanted = target.kinds[0][0][0];
+  const like = `%${wanted}%`;
+
+  const [split] = await rows<{ a: string; b: string }>(sql`
+    select (array_agg(vc.oracle_id order by vc.oracle_id))[1] as a,
+           (array_agg(vc.oracle_id order by vc.oracle_id))[2] as b
+    from spellbook_variants v
+    join spellbook_variant_cards vc on vc.variant_id = v.variant_id
+    join cards c on c.oracle_id = vc.oracle_id
+    where v.card_count = 2 and cardinality(v.requires_template_ids) = 0
+      and not exists (select 1 from spellbook_variant_cards x
+                      where x.variant_id = v.variant_id and x.must_be_commander)
+      and exists (select 1 from unnest(v.produces) p
+                  where p ilike '%infinite%' or p ilike '%win the game%')
+    group by v.variant_id
+    having count(*) = 2
+       and count(*) filter (where c.type_line ilike ${like}) = 1
+    order by v.variant_id limit 1`);
+  if (!split) {
+    fail(
+      "the tutor wiring",
+      `no two-card combo has exactly one ${wanted} piece, so a reach check would measure nothing`,
+    );
+    return;
+  }
+
+  const [legend] = await rows<CardRow>(sql`
+    select oracle_id, name from cards
+    where commander_legal = true and type_line ilike '%legendary%creature%'
+      and oracle_id not in (${split.a}::uuid, ${split.b}::uuid, ${tutor.oracle_id}::uuid)
+    order by oracle_id limit 1`);
+  const deck = await makeDeck("probe tutor wiring", legend.oracle_id, [
+    tutor.oracle_id,
+    split.a,
+    split.b,
+  ]);
+  const profile = await profileFor(deck);
+
+  console.log(`  tutor: ${tutor.name} (searches for a ${wanted})`);
+  check(
+    "the loader classified the tutor",
+    profile.brackets.comboReach.tutors.some((t) => t.oracleId === tutor.oracle_id),
+    true,
+  );
+  check("and the deck assembles the combo", profile.brackets.twoCardCombos.length > 0, true);
+
+  const reached = profile.brackets.comboReach.reaches.map((r) => r.piece.oracleId);
+  const [typed] = await rows<{ oracle_id: string }>(sql`
+    select oracle_id from cards
+    where oracle_id in (${split.a}::uuid, ${split.b}::uuid) and type_line ilike ${like}`);
+  const other = typed.oracle_id === split.a ? split.b : split.a;
+
+  check("it reaches the piece of the type it searches for", reached.includes(typed.oracle_id), true);
+  // The half that fails on "every tutor reaches every piece".
+  check("and NOT the piece of another type", reached.includes(other), false);
 }
 
 /**
@@ -756,6 +919,13 @@ run()
         await fixture.execute(
           sql`delete from identity_composition where condition = ${identityCleanup}`,
         );
+      }],
+      ["the pair sentinel", async () => {
+        if (!pairCleanup) return;
+        await fixture.execute(sql`
+          delete from commander_pair_support
+          where commander_oracle_id = ${pairCleanup.commanderOracleId}::uuid
+            and partner_oracle_id = ${pairCleanup.partnerOracleId}::uuid`);
       }],
       ["the pre-existing identity row", async () => {
         if (!identityRestore) return;
