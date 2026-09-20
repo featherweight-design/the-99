@@ -120,14 +120,22 @@ count — and `hasMetaLine` gains no clause. Cosmetic.
 8. **`--fact` must be declared in all six theme blocks** or `pnpm check:tokens` fails by design —
    an unset custom property fails silently, which is the whole hazard that check exists for. Add
    the `@theme` mapping alongside its siblings if it is consumed as a utility.
-9. Precedence, inherited from the package itself: *"Where a component and this handoff disagree,
+9. **"Three solid glyphs" is a headline shorthand, and the turn-again mark is not solid.** The
+   committed asset and the canvas agree with each other — a stroked arc (`fill="none"`,
+   `stroke-width="2"`) closed by a filled arrowhead — and `README.md:46` describes it correctly as
+   *"a near-closed circle with a solid arrowhead"*. Only the summary line at `:10` and the decision
+   list read as *fully filled*. **Nothing is redrawn**; the rule engineering builds to is
+   *no hairlines, no outline-only glyph* rather than *no strokes at all*, and a 2px stroke at a
+   12px floor is what makes the arc legible there. Raised by review on this PR.
+10. Precedence, inherited from the package itself: *"Where a component and this handoff disagree,
    the component wins and these tables are what to correct"* (`README.md:25`) — which is the licence
    for every erratum above.
 
 ## Decisions that must survive the build
 
-No container, which is semantic rather than stylistic. One ink for all three. Solid glyphs, never
-strokes. The glow as a `filter: drop-shadow` only — never a `box-shadow`, plate, pulse or motion. A
+No container, which is semantic rather than stylistic. One ink for all three. Solid glyphs — with
+the turn-again arc's 2px stroke the one stated exception, per erratum 9; no hairlines and no
+outline-only glyph. The glow as a `filter: drop-shadow` only — never a `box-shadow`, plate, pulse or motion. A
 12px floor with nothing substituted below it. No row or caption grows. No provenance anywhere;
 Round 2 owns it. No tap target, no focus, no native `title`. **The key ships in the same release as
 the marks.**
