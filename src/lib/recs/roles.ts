@@ -1,3 +1,5 @@
+import { isLandFace } from "../cards/facet";
+
 export type Role = "ramp" | "draw" | "removal" | "wipes" | "land";
 export type RoleInput = { typeLine: string; oracleText: string | null; keywords: string[] };
 
@@ -25,8 +27,21 @@ export function classifyRoles(card: RoleInput): Role[] {
   const text = (card.oracleText ?? "").toLowerCase();
   const type = card.typeLine.toLowerCase();
 
-  if (type.includes("land")) roles.push("land");
-  if (!type.includes("land") && RAMP_PATTERNS.some((p) => p.test(text))) roles.push("ramp");
+  // `isLandFace`, not `type.includes("land")`. Two failures in one substring test, and both
+  // are measurable: 82 of 31,830 commander-legal cards disagree between the two, every one an
+  // MDFC whose BACK face is a land — `Fell the Profane // Fell Mire` is an Instant you cast
+  // from hand — and without a word boundary `Lander Rizzi` is a land as well.
+  //
+  // It matters twice over. The land role itself was wrong, and the ramp test below is gated
+  // on the SAME answer, so a land-backed ramp spell was excluded from ramp too.
+  //
+  // `facet.ts`'s own header says both land answers live there "so the two are visibly
+  // different rather than accidentally divergent". This function predated that and never
+  // adopted it, which is how `DeckProfile` ended up able to report `roles.counts.land` and
+  // `counts.land` differently for the same deck.
+  const isLand = isLandFace(card.typeLine);
+  if (isLand) roles.push("land");
+  if (!isLand && RAMP_PATTERNS.some((p) => p.test(text))) roles.push("ramp");
   if (DRAW_PATTERNS.some((p) => p.test(text))) roles.push("draw");
   if (WIPE_PATTERNS.some((p) => p.test(text))) roles.push("wipes");
   if (REMOVAL_PATTERNS.some((p) => p.test(text)) && !NOT_REMOVAL.test(text)) roles.push("removal");

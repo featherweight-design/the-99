@@ -51,3 +51,33 @@ describe("wipes role", () => {
     expect(ROLE_TARGETS.wipes).toBe(3);
   });
 });
+
+// The land test is `isLandFace` — the FRONT face, with a word boundary — not a substring
+// sweep of the whole type line. Measured on the shipped catalog: 82 of 31,830 commander-legal
+// cards disagreed between the two, every one an MDFC with a Land on the back.
+describe("what counts as a land", () => {
+  const roles = (typeLine: string, oracleText: string | null = null) =>
+    classifyRoles({ typeLine, oracleText, keywords: [] });
+
+  it("does not call an MDFC with a land BACK a land", () => {
+    expect(roles("Instant // Land")).not.toContain("land");
+    expect(roles("Artifact // Land")).not.toContain("land");
+  });
+
+  it("still calls a real land a land", () => {
+    expect(roles("Basic Land — Forest")).toContain("land");
+    expect(roles("Legendary Snow Land")).toContain("land");
+  });
+
+  // No word boundary, and `Lander Rizzi` is a land.
+  it("does not call a card a land for containing the letters", () => {
+    expect(roles("Legendary Artifact Creature — Lander Rogue")).not.toContain("land");
+  });
+
+  // The ramp test is gated on the SAME answer, so the substring bug excluded a land-backed
+  // ramp spell from ramp as well as mislabelling it.
+  it("lets a land-backed ramp spell be ramp", () => {
+    expect(roles("Sorcery // Land", "Search your library for a basic land card, put it onto the battlefield tapped, then shuffle.")).toContain("ramp");
+    expect(roles("Sorcery // Land", "Search your library for a basic land card, put it onto the battlefield tapped, then shuffle.")).not.toContain("land");
+  });
+});
