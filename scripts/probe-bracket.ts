@@ -1,0 +1,623 @@
+// The bracket verdict, proved against a real Postgres by calling the real loader.
+//
+// Everything the verdict says is a pure function over a `DeckProfile` and every one of those
+// is unit-tested. What no unit test in this repository can reach is the GATHER: a deck row,
+// `deck_cards`, a flags read, a four-rung composition chain, a staples join and a Spellbook
+// combo join with three rules in its SQL. The pure half proves the rules; only a database
+// proves the loader assembles the right rows to apply them to.
+//
+// WHAT IT PROVES
+//
+//   THE DRAFT IS THE DECK. A card staged into `deck_cards` moves the slot before any commit,
+//   because the loader reads the draft rather than the last committed version.
+//   THE COMBO JOIN'S THREE RULES. A template-gated variant does not slot; a `must_be_commander`
+//   piece in the 99 does not slot; the commander as a piece DOES — the false-negative half,
+//   and the most consequential of the three.
+//   THE COMBO IS DETECTED AND WIDENS THE RANGE. An assembled two-card infinite takes the deck
+//   out of [1,2]. The probe deliberately does NOT assert which end — whether a given local
+//   variant produces infinite TURNS decides [4,5] against [3,4], and that is a property of
+//   whichever variant the query found rather than of the code. `slot.test.ts` pins the loop
+//   clause itself on both sides, deterministically, which is the better trade than a browser-
+//   less check whose expected value depends on the bulk file.
+//   A FLAGGED COMMANDER COUNTS. A deck led by a Game Changer legend slots [3] or worse with
+//   the commander in the receipts — the commanders-are-cards rule, end to end.
+//   THE SKELETON PICKS THE RIGHT CONDITION, and the basis chain takes the FIRST hit. Local-dev
+//   carries neither an `identity_composition` row nor a non-null `commander_support.avg_*`, so
+//   without sentinels the chain would have exactly one reachable state and three of its four
+//   rungs would be asserted by nobody. The probe writes them, and reads rung 3 BEFORE writing
+//   rung 2 — with a commander row present, the identity rung is unreachable by construction.
+//   THE PAYLOAD FITS. `JSON.stringify(profile).length` against the 2 MB ceiling, measured on
+//   a realistic worst case rather than assumed.
+//
+// WHAT IT DOES NOT PROVE, deliberately: that `cachedDeckProfile` retires a stale entry. That
+// needs a reader whose cache can be observed across a catalog stamp, and no route calls the
+// wrapper yet — the first Tier B consumer proves it, and its plan carries that as a task.
+//
+// TWO CLEANUP SHAPES, kept distinct because confusing them loses data. A commander's `avg_*`
+// is an UPDATE to a row that already exists, so it is capture-before-write and RESTORE. The
+// `identity_composition` and `commander_pair_support` sentinels are NEW rows, so they are
+// insert-and-DELETE. Every handle is populated BEFORE the write it covers, so a throw
+// part-way through cannot strand catalog state.
+//
+// IT FAILS RATHER THAN SKIPS. A state it claims to test and cannot reach is a failure, not a
+// note — a conditional "when the row exists" check is the silent pass this repository keeps
+// paying for. It refuses to start at all when `spellbook_variants` is empty.
+//
+// SIX MUTATIONS, and what each one failed:
+//
+//   the `game_changer` read dropped .................. 6 checks
+//   the combo join's `produces` test dropped ......... 2 checks
+//   `detection` reported as empty .................... 1 check
+//   `bracketDelta` returning `moves` for a tutor ..... 1 check
+//   extra turns counted at bracket 2 ................. 1 check
+//   `basis` hard-coded rather than derived ........... 2 checks
+//
+// The second measured NOTHING on its first attempt, and that bought the case the reading had
+// missed. The combo fixture is found by a query that already filters on `%infinite%`, so
+// every variant it could pick passed the test whether or not the test ran. 703 of 3,842
+// sampled two-card variants produce something the system does not count — "Draw the game", a
+// targeted destroy — and a deck holding one of those is the only fixture that can tell the
+// two builds apart.
+//
+// Run it against local dev or a scratch Neon branch — NEVER production.
+//
+// Run: `pnpm probe:bracket`
+// First, and on its own line: src/db reads DATABASE_URL at module scope, so the .env has to
+// be loaded before the import below reaches it.
+import { requireEnv } from "./lib/env.mjs";
+import { Pool, neonConfig } from "@neondatabase/serverless";
+import { drizzle } from "drizzle-orm/neon-serverless";
+import { sql } from "drizzle-orm";
+import ws from "ws";
+
+import { loadDeckProfile } from "../src/lib/profile/load";
+import { fitSkeleton } from "../src/lib/profile/fit";
+import { slotDeck } from "../src/lib/bracket/slot";
+import { bracketDelta } from "../src/lib/bracket/delta";
+import { upgradePath } from "../src/lib/bracket/upgrade";
+
+neonConfig.webSocketConstructor = ws;
+
+const { DATABASE_URL } = requireEnv(["DATABASE_URL"]);
+const pool = new Pool({ connectionString: DATABASE_URL });
+const fixture = drizzle(pool);
+const USER = `probe-bracket-${Date.now()}`;
+
+let failures = 0;
+
+// Populated BEFORE the write each one covers. A commander's composition is an UPDATE to a row
+// that exists, so it is RESTORED; the identity row is new, so it is DELETED. Confusing the two
+// removes a real index row.
+let commanderCleanup: { oracleId: string; avgLand: number | null } | null = null;
+let identityCleanup: string | null = null;
+/** Counts its own failures. A probe whose exit code disagrees with its output is worse than
+ *  no probe — the count used to live at each call site, and a check that forgot it printed
+ *  FAIL and then "All checks passed" over the top. */
+const check = (label: string, actual: unknown, expected: unknown) => {
+  const a = JSON.stringify(actual);
+  const e = JSON.stringify(expected);
+  const ok = a === e;
+  if (!ok) failures += 1;
+  console.log(`${ok ? "PASS" : "FAIL"}  ${label} — got ${a}, expected ${e}`);
+};
+const fail = (label: string, why: string) => {
+  failures += 1;
+  console.log(`FAIL  ${label} — ${why}`);
+};
+
+const rows = async <T>(text: ReturnType<typeof sql>): Promise<T[]> =>
+  (await fixture.execute(text)).rows as T[];
+
+type CardRow = { oracle_id: string; name: string };
+
+/** A deck under the fixture user, with its 99 (or however many the caller names). */
+async function makeDeck(
+  name: string,
+  commanderOracleId: string,
+  cardIds: readonly string[],
+  partnerOracleId: string | null = null,
+): Promise<string> {
+  const [deck] = await rows<{ id: string }>(sql`
+    insert into decks (user_id, name, commander_oracle_id, partner_oracle_id)
+    values (${USER}, ${name}, ${commanderOracleId}::uuid,
+            ${partnerOracleId}::uuid)
+    returning id`);
+  for (const oracleId of cardIds) {
+    await fixture.execute(sql`
+      insert into deck_cards (deck_id, oracle_id, quantity)
+      values (${deck.id}::uuid, ${oracleId}::uuid, 1)
+      on conflict do nothing`);
+  }
+  return deck.id;
+}
+
+async function profileFor(deckId: string) {
+  const profile = await loadDeckProfile(deckId, USER);
+  if (!profile) throw new Error(`no profile for ${deckId} — the fixture did not take`);
+  return profile;
+}
+
+async function run() {
+  // ---- 0 · preconditions -----------------------------------------------------------------
+  //
+  // A probe over empty tables passes while measuring nothing, which is this repository's
+  // most-paid-for trap. Refuse loudly rather than reporting green.
+  const [{ variants }] = await rows<{ variants: number }>(
+    sql`select count(*)::int as variants from spellbook_variants`,
+  );
+  console.log(`\n== 0 · preconditions ==`);
+  console.log(`  spellbook_variants: ${variants}`);
+  if (variants === 0) {
+    console.error(
+      "  REFUSED: spellbook_variants is empty. Run `pnpm db:seed:combos` against this " +
+        "branch first — every combo check below would pass while proving nothing.",
+    );
+    failures += 1;
+    return;
+  }
+
+  const [{ flagged }] = await rows<{ flagged: number }>(
+    sql`select count(*)::int as flagged from card_bracket_flags`,
+  );
+  console.log(`  card_bracket_flags: ${flagged}`);
+  if (flagged === 0) {
+    console.error("  REFUSED: card_bracket_flags is empty. Run `pnpm db:seed:combos` first.");
+    failures += 1;
+    return;
+  }
+
+  // ---- fixture selection, BY QUERY ---------------------------------------------------------
+  //
+  // Never hard-coded names: a name rots with the catalog and a probe that cannot find its
+  // fixture reports a broken build rather than a stale list.
+  const [gameChanger] = await rows<CardRow>(sql`
+    select oracle_id, name from cards
+    where game_changer = true and commander_legal = true
+    order by oracle_id limit 1`);
+  const [gcLegend] = await rows<CardRow>(sql`
+    select c.oracle_id, c.name from cards c
+    where c.game_changer = true and c.commander_legal = true
+      and c.type_line ilike '%legendary%creature%'
+    order by c.oracle_id limit 1`);
+  const [mld] = await rows<CardRow>(sql`
+    select c.oracle_id, c.name from cards c
+    join card_bracket_flags f on f.oracle_id = c.oracle_id
+    where f.mass_land_denial = true order by c.oracle_id limit 1`);
+  const [extraTurn] = await rows<CardRow>(sql`
+    select c.oracle_id, c.name from cards c
+    join card_bracket_flags f on f.oracle_id = c.oracle_id
+    where f.extra_turn = true order by c.oracle_id limit 1`);
+  // JOINED to commander_support, because rung 2 of the basis chain is an UPDATE to that row
+  // — a legend with no index row cannot reach it, and the probe would report a broken build
+  // rather than a fixture that cannot answer the question.
+  const [monoWhite] = await rows<CardRow>(sql`
+    select c.oracle_id, c.name from cards c
+    join commander_support cs on cs.commander_oracle_id = c.oracle_id
+    where c.commander_legal = true and c.type_line ilike '%legendary%creature%'
+      and c.color_identity = array['W']::text[]
+    order by c.oracle_id limit 1`);
+  const [plain] = await rows<CardRow>(sql`
+    select oracle_id, name from cards
+    where commander_legal = true and game_changer = false
+      and type_line ilike 'creature%' and cmc = 2
+      and oracle_id not in (select oracle_id from card_bracket_flags)
+    order by oracle_id limit 1`);
+
+  console.log(`\n== fixture ==`);
+  for (const [label, row] of [
+    ["game changer", gameChanger], ["GC legend", gcLegend], ["mass land denial", mld],
+    ["extra turn", extraTurn], ["mono-white legend", monoWhite], ["plain creature", plain],
+  ] as const) {
+    console.log(`  ${label.padEnd(20)}${row ? row.name : "NONE"}`);
+    // A fixture that cannot reach a rule proves nothing about that rule.
+    if (!row) fail(`fixture: ${label}`, "the catalog holds no card matching this query");
+  }
+  if (failures > 0) return;
+
+  // ---- 1 · the draft IS the deck -----------------------------------------------------------
+  console.log(`\n== 1 · a staged add moves the slot, before any commit ==`);
+  const deckId = await makeDeck("probe clean", monoWhite.oracle_id, [plain.oracle_id]);
+  const clean = slotDeck(await profileFor(deckId));
+  check("a clean deck permits [1,2]", clean.permits, [1, 2]);
+
+  await fixture.execute(sql`
+    insert into deck_cards (deck_id, oracle_id, quantity)
+    values (${deckId}::uuid, ${gameChanger.oracle_id}::uuid, 1)`);
+  const staged = slotDeck(await profileFor(deckId));
+  check("after staging a Game Changer it permits [3]", staged.permits, [3]);
+  check(
+    "the staged card is in the receipts",
+    staged.limits.bracket3.gameChangers.cards.some((c) => c.oracleId === gameChanger.oracle_id),
+    true,
+  );
+
+  // ---- 2 · a flagged COMMANDER counts -------------------------------------------------------
+  //
+  // The commanders-are-cards rule end to end. A commander is a column on `decks`, never a
+  // `deck_cards` row, which is exactly why every pass that forgot them under-reported.
+  console.log(`\n== 2 · a Game Changer commander counts against every limit ==`);
+  const ledDeck = await makeDeck("probe gc-led", gcLegend.oracle_id, [plain.oracle_id]);
+  const led = slotDeck(await profileFor(ledDeck));
+  check("a deck LED by a Game Changer is not [1,2]", led.permits.includes(1), false);
+  check(
+    "the commander is in the Game Changer receipts",
+    led.limits.bracket3.gameChangers.cards.some((c) => c.oracleId === gcLegend.oracle_id),
+    true,
+  );
+
+  // ---- 3 · mass land denial, and partial detection reported ---------------------------------
+  console.log(`\n== 3 · mass land denial drops to [4,5], with its provenance ==`);
+  const mldDeck = await makeDeck("probe mld", monoWhite.oracle_id, [mld.oracle_id]);
+  const mldProfile = await profileFor(mldDeck);
+  const mldVerdict = slotDeck(mldProfile);
+  check("permits [4,5]", mldVerdict.permits, [4, 5]);
+  check("the card carries its sources", mldProfile.brackets.massLandDenial[0]?.sources.length > 0, true);
+  check(
+    "detection is reported as partial, with a basis",
+    mldVerdict.detection.massLandDenial.basis.length > 0,
+    true,
+  );
+
+  // ---- 4 · extra turns are counted at bracket 1 and not above it -----------------------------
+  console.log(`\n== 4 · the extra-turn split ==`);
+  const turnDeck = await makeDeck("probe turns", monoWhite.oracle_id, [extraTurn.oracle_id]);
+  const turns = slotDeck(await profileFor(turnDeck));
+  check("permits [2]", turns.permits, [2]);
+  check("bracket 1 counts them", turns.limits.bracket1.extraTurns.counted, true);
+  check("bracket 2 does not", turns.limits.bracket2.extraTurns.counted, false);
+  check("and reports them unquantified", turns.unquantified.extraTurns.length, 1);
+
+  // ---- 5 · the combo join's three rules -----------------------------------------------------
+  console.log(`\n== 5 · the combo join ==`);
+  await comboChecks();
+
+  // ---- 6 · the skeleton picks its condition --------------------------------------------------
+  console.log(`\n== 6 · the skeleton ==`);
+  const baseProfile = await profileFor(deckId);
+  const fit = fitSkeleton(baseProfile);
+  check("the condition is the commander's exact identity", baseProfile.skeleton.condition, "W");
+  // An earlier version asserted `fit.basis !== "none" || true` here, which is `true` — a
+  // check that could not fail, over the one figure the basis chain exists to produce.
+  check(
+    "with no composition anywhere, the basis is none and no target is invented",
+    [fit.basis, fit.types.length],
+    ["none", 0],
+  );
+  const staple = fit.missingStaples[0] ?? fit.presentStaples[0];
+  if (!staple) {
+    fail("the floor is non-empty", "no staple row for condition W — run pnpm db:build:staples");
+  } else {
+    check(
+      "a staple carries its STORED denominator",
+      staple.commanderTotal > 0 && staple.commanders <= staple.commanderTotal,
+      true,
+    );
+  }
+
+  await basisChainChecks(deckId, monoWhite.oracle_id);
+
+  // ---- 7 · the push check and the upgrade path ------------------------------------------------
+  console.log(`\n== 7 · bracketDelta and upgradePath ==`);
+  const gcProfile = await profileFor(ledDeck);
+  const asTutor = bracketDelta(gcProfile, {
+    card: { oracleId: "probe-tutor", name: "Probe Tutor" },
+    gameChanger: false, massLandDenial: false, extraTurn: false, tutor: true,
+    completesCombos: [],
+  });
+  // NEVER `moves`. No bracket rule counts a tutor, and `unquantified` would imply a rule we
+  // cannot measure rather than one that does not exist.
+  check("a tutor is ruleless", asTutor.kind, "ruleless");
+
+  const asMld = bracketDelta(gcProfile, {
+    card: { oracleId: mld.oracle_id, name: mld.name },
+    gameChanger: false, massLandDenial: true, extraTurn: false, tutor: false,
+    completesCombos: [],
+  });
+  check("mass land denial moves the slot", asMld.kind, "moves");
+
+  const path = upgradePath(gcProfile, 2);
+  check("to bracket 2, the Game Changer is an item", path.items.length > 0, true);
+  check(
+    "and the COMMANDER is never a candidate",
+    path.items.some(
+      (i) => "candidates" in i && i.candidates.some((c) => c.oracleId === gcLegend.oracle_id),
+    ),
+    false,
+  );
+  check("which makes the path blocked", path.blocked, true);
+
+  // ---- 8 · the payload fits -------------------------------------------------------------------
+  //
+  // MEASURED, not assumed. The profile is cached as JSON, so its size is a real constraint on
+  // the object's shape rather than a style note.
+  console.log(`\n== 8 · the serialised payload ==`);
+  const bytes = JSON.stringify(await profileFor(deckId)).length;
+  console.log(`  ${bytes.toLocaleString()} bytes for a ${(await profileFor(deckId)).counts.total}-card fixture`);
+  check("under the 2 MB ceiling", bytes < 2_000_000, true);
+}
+
+
+/**
+ * The basis chain's FALLBACK rungs, which no local database carries until a widened index run.
+ *
+ * `identity_composition` is empty and every `commander_support.avg_*` is null on local-dev, so
+ * without sentinels the chain has exactly one reachable state — `none` — and three of its four
+ * rungs would be asserted by nobody. The probe writes them.
+ *
+ * TWO CLEANUP SHAPES, kept distinct because confusing them loses data:
+ *
+ *   · The commander's `avg_*` is an UPDATE to a row that already exists, so it is
+ *     capture-before-write and RESTORE. Deleting it would remove a real index row.
+ *   · The `identity_composition` row is NEW, so it is insert-and-DELETE.
+ *
+ * Both handles are populated BEFORE the write they cover, so a throw part-way through cannot
+ * strand catalog state — the rule `probe:review`'s collection block is built on.
+ */
+async function basisChainChecks(deckId: string, commanderOracleId: string) {
+  const TARGETS = {
+    land: 37, basic: 17, nonbasic: 20, creature: 26, instant: 11,
+    sorcery: 5, artifact: 13, enchantment: 6, planeswalker: 1, battle: 0,
+  };
+  const CURVE = { "1": 8, "2": 14, "7": 2, "9": 1 };
+
+  // --- rung 3: identity ------------------------------------------------------------------
+  // Written FIRST and asserted before the commander row exists, because the chain takes the
+  // first hit: with a commander row present this rung is unreachable by construction.
+  identityCleanup = "W";
+  await fixture.execute(sql`
+    insert into identity_composition
+      (condition, avg_land, avg_basic, avg_nonbasic, avg_creature, avg_instant, avg_sorcery,
+       avg_artifact, avg_enchantment, avg_planeswalker, avg_battle, avg_curve,
+       commanders, with_composition)
+    values ('W', ${TARGETS.land}, ${TARGETS.basic}, ${TARGETS.nonbasic}, ${TARGETS.creature},
+            ${TARGETS.instant}, ${TARGETS.sorcery}, ${TARGETS.artifact}, ${TARGETS.enchantment},
+            ${TARGETS.planeswalker}, ${TARGETS.battle}, ${JSON.stringify(CURVE)}::jsonb, 336, 300)
+    on conflict (condition) do nothing`);
+
+  const identityFit = fitSkeleton(await profileFor(deckId));
+  check("rung 3: an identity row gives basis 'identity'", identityFit.basis, "identity");
+  check("and ten type targets", identityFit.types.length, 10);
+  check(
+    "a land target of 37 against a landless fixture reads -37",
+    identityFit.types.find((t) => t.type === "land")?.delta,
+    -37,
+  );
+  // EDHREC's own keys run past 7 and `manaCurve` caps there. Unfolded, the top bucket would
+  // report a phantom gap on every deck.
+  check(
+    "the curve's tail is folded into the 7+ bucket",
+    identityFit.curve?.buckets.find((b) => b.cmc === 7)?.average,
+    3,
+  );
+
+  // --- rung 2: the commander's own page -----------------------------------------------------
+  const [before] = await rows<{ avg_land: number | null; avg_curve: unknown }>(sql`
+    select avg_land, avg_curve from commander_support
+    where commander_oracle_id = ${commanderOracleId}::uuid`);
+  if (!before) {
+    fail("rung 2: the commander's own composition", "no commander_support row for the fixture");
+  } else {
+    // Captured BEFORE the write, so a throw below cannot strand a real index row.
+    commanderCleanup = { oracleId: commanderOracleId, avgLand: before.avg_land };
+    await fixture.execute(sql`
+      update commander_support
+      set avg_land = 34, avg_basic = 12, avg_nonbasic = 22, avg_creature = 30,
+          avg_instant = 9, avg_sorcery = 4, avg_artifact = 10, avg_enchantment = 7,
+          avg_planeswalker = 1, avg_battle = 0
+      where commander_oracle_id = ${commanderOracleId}::uuid`);
+
+    const commanderFit = fitSkeleton(await profileFor(deckId));
+    // THE CHAIN TAKES THE FIRST HIT. The identity row is still there; the commander's own
+    // page outranks it, and a reader must see which one answered.
+    check("rung 2: the commander's own page outranks the identity row", commanderFit.basis, "commander");
+    check(
+      "and its target is the commander's, not the identity's",
+      commanderFit.types.find((t) => t.type === "land")?.target,
+      34,
+    );
+  }
+}
+
+/**
+ * The three §4.3b rules, one case each, plus the loop clause.
+ *
+ * Every variant is found BY QUERY against the ingested table. A rule whose case cannot be
+ * built from the local catalog FAILS rather than being skipped — the whole point of these
+ * four is that they are the cases a reading would get wrong.
+ */
+async function comboChecks() {
+  // A two-card variant, no template, both pieces in the catalog, producing something the
+  // system counts. `isInfiniteOrGameEnding` is applied in TypeScript, so the query only has
+  // to find a candidate and the loader decides.
+  const [pair] = await rows<{ variant_id: string; a: string; b: string }>(sql`
+    select v.variant_id,
+           (array_agg(vc.oracle_id order by vc.oracle_id))[1] as a,
+           (array_agg(vc.oracle_id order by vc.oracle_id))[2] as b
+    from spellbook_variants v
+    join spellbook_variant_cards vc on vc.variant_id = v.variant_id
+    where v.card_count = 2 and cardinality(v.requires_template_ids) = 0
+      and not exists (select 1 from spellbook_variant_cards x
+                      where x.variant_id = v.variant_id and x.must_be_commander)
+      and exists (select 1 from unnest(v.produces) p
+                  where p ilike '%infinite%' or p ilike '%win the game%')
+    group by v.variant_id having count(*) = 2
+    order by v.variant_id limit 1`);
+
+  if (!pair) {
+    fail("combo: an assembled two-card infinite", "no such variant in the local index");
+  } else {
+    const [legend] = await rows<CardRow>(sql`
+      select oracle_id, name from cards
+      where commander_legal = true and type_line ilike '%legendary%creature%'
+        and oracle_id not in (${pair.a}::uuid, ${pair.b}::uuid)
+      order by oracle_id limit 1`);
+    const deck = await makeDeck("probe combo", legend.oracle_id, [pair.a, pair.b]);
+    const verdict = slotDeck(await profileFor(deck));
+    check("an assembled two-card infinite is detected", verdict.limits.bracket2.twoCardCombos.have > 0, true);
+    // [3,4] for a generic infinite, [4,5] when it loops — the probe accepts either and
+    // asserts the RULE that tells them apart below.
+    check("and the deck is no longer [1,2]", verdict.permits.includes(1), false);
+  }
+
+  // CARD COUNT IS NEVER THE TEST, and this case exists because the mutation proving it
+  // measured NOTHING at first: the fixture query above already filters on `%infinite%`, so
+  // dropping `isInfiniteOrGameEnding` left every check passing. 703 of 3,842 sampled two-card
+  // variants produce something the system does not count — "Draw the game", a targeted
+  // destroy — and a deck holding one of those must report no combo at all.
+  const [mundane] = await rows<{ a: string; b: string; produces: string[] }>(sql`
+    select (array_agg(vc.oracle_id order by vc.oracle_id))[1] as a,
+           (array_agg(vc.oracle_id order by vc.oracle_id))[2] as b,
+           v.produces
+    from spellbook_variants v
+    join spellbook_variant_cards vc on vc.variant_id = v.variant_id
+    where v.card_count = 2 and cardinality(v.requires_template_ids) = 0
+      and not exists (select 1 from spellbook_variant_cards x
+                      where x.variant_id = v.variant_id and x.must_be_commander)
+      and not exists (select 1 from unnest(v.produces) p
+                      where p ilike '%infinite%' or p ilike '%win the game%'
+                         or p ilike '%lose the game%' or p ilike '%arbitrarily large%')
+    group by v.variant_id, v.produces having count(*) = 2
+    order by v.variant_id limit 1`);
+  if (!mundane) {
+    fail("combo: a two-card variant the system does not count", "none in the local index");
+  } else {
+    const [legend] = await rows<CardRow>(sql`
+      select oracle_id, name from cards
+      where commander_legal = true and type_line ilike '%legendary%creature%'
+        and oracle_id not in (${mundane.a}::uuid, ${mundane.b}::uuid)
+      order by oracle_id limit 1`);
+    const deck = await makeDeck("probe mundane", legend.oracle_id, [mundane.a, mundane.b]);
+    const profile = await profileFor(deck);
+    console.log(`  the mundane pair produces: ${JSON.stringify(mundane.produces).slice(0, 90)}`);
+    check(
+      "a two-card variant producing nothing the system counts does not slot",
+      profile.brackets.twoCardCombos.length,
+      0,
+    );
+    check("so the deck stays [1,2]", slotDeck(profile).permits, [1, 2]);
+  }
+
+  // RULE 1: template-gated. Present in the deck, must NOT slot.
+  const [templated] = await rows<{ a: string; b: string }>(sql`
+    select (array_agg(vc.oracle_id order by vc.oracle_id))[1] as a,
+           (array_agg(vc.oracle_id order by vc.oracle_id))[2] as b
+    from spellbook_variants v
+    join spellbook_variant_cards vc on vc.variant_id = v.variant_id
+    where v.card_count = 2 and cardinality(v.requires_template_ids) > 0
+    group by v.variant_id having count(*) = 2
+    order by v.variant_id limit 1`);
+  if (!templated) {
+    fail("combo rule 1: a template-gated pair", "no such variant in the local index");
+  } else {
+    const [legend] = await rows<CardRow>(sql`
+      select oracle_id, name from cards
+      where commander_legal = true and type_line ilike '%legendary%creature%'
+        and oracle_id not in (${templated.a}::uuid, ${templated.b}::uuid)
+      order by oracle_id limit 1`);
+    const deck = await makeDeck("probe templated", legend.oracle_id, [templated.a, templated.b]);
+    const profile = await profileFor(deck);
+    check(
+      "rule 1: a template-gated pair does not slot",
+      profile.brackets.twoCardCombos.length,
+      0,
+    );
+  }
+
+  // RULE 2 and RULE 3, on the SAME variant — the false-negative half is the consequential
+  // one, so both halves are read off one pair rather than two unrelated fixtures.
+  const [gated] = await rows<{ commander_piece: string; other: string }>(sql`
+    -- max() has no uuid overload, so the pick is over the TEXT form and cast back. One row
+    -- of each kind per variant, guaranteed by the having clause below.
+    select (max(vc.oracle_id::text) filter (where vc.must_be_commander))::uuid as commander_piece,
+           (max(vc.oracle_id::text) filter (where not vc.must_be_commander))::uuid as other
+    from spellbook_variants v
+    join spellbook_variant_cards vc on vc.variant_id = v.variant_id
+    where v.card_count = 2 and cardinality(v.requires_template_ids) = 0
+      and exists (select 1 from spellbook_variant_cards x
+                  where x.variant_id = v.variant_id and x.must_be_commander)
+      and exists (select 1 from unnest(v.produces) p
+                  where p ilike '%infinite%' or p ilike '%win the game%')
+    group by v.variant_id
+    having count(*) = 2
+       and count(*) filter (where vc.must_be_commander) = 1
+    order by v.variant_id limit 1`);
+
+  if (!gated || !gated.commander_piece || !gated.other) {
+    fail("combo rules 2 and 3: a mustBeCommander pair", "no such variant in the local index");
+    return;
+  }
+
+  // RULE 2: the flagged piece in the 99 assembles nothing.
+  const [bystander] = await rows<CardRow>(sql`
+    select oracle_id, name from cards
+    where commander_legal = true and type_line ilike '%legendary%creature%'
+      and oracle_id not in (${gated.commander_piece}::uuid, ${gated.other}::uuid)
+    order by oracle_id limit 1`);
+  const inNinetyNine = await makeDeck("probe rule2", bystander.oracle_id, [
+    gated.commander_piece,
+    gated.other,
+  ]);
+  check(
+    "rule 2: a mustBeCommander piece in the 99 does not slot",
+    (await profileFor(inNinetyNine)).brackets.twoCardCombos.length,
+    0,
+  );
+
+  // RULE 3: the same piece AS the commander does slot. The false-negative half.
+  const asCommander = await makeDeck("probe rule3", gated.commander_piece, [gated.other]);
+  const commandedProfile = await profileFor(asCommander);
+  check(
+    "rule 3: the same piece AS the commander slots",
+    commandedProfile.brackets.twoCardCombos.length > 0,
+    true,
+  );
+  check(
+    "and the combo reports usesCommander",
+    commandedProfile.brackets.twoCardCombos[0]?.usesCommander,
+    true,
+  );
+}
+
+run()
+  .catch((error) => {
+    // A throw COUNTS as a failure before the exit code is computed: three probes in this
+    // repository have printed "all checks passed" over an exception a `finally` swallowed.
+    failures += 1;
+    console.error(error);
+  })
+  .finally(async () => {
+    for (const [what, step] of [
+      ["fixture decks", async () => {
+        await fixture.execute(sql`delete from decks where user_id = ${USER}`);
+      }],
+      ["the commander's composition", async () => {
+        if (!commanderCleanup) return;
+        await fixture.execute(sql`
+          update commander_support
+          set avg_land = ${commanderCleanup.avgLand}, avg_basic = null, avg_nonbasic = null,
+              avg_creature = null, avg_instant = null, avg_sorcery = null, avg_artifact = null,
+              avg_enchantment = null, avg_planeswalker = null, avg_battle = null
+          where commander_oracle_id = ${commanderCleanup.oracleId}::uuid`);
+      }],
+      ["the identity sentinel", async () => {
+        if (!identityCleanup) return;
+        await fixture.execute(
+          sql`delete from identity_composition where condition = ${identityCleanup}`,
+        );
+      }],
+      // Every step runs even when an earlier one throws — a cleanup that stops at the first
+      // failure leaves the rest of the fixture behind, which is how a probe poisons the next
+      // run of itself.
+    ] as const) {
+      try {
+        await step();
+      } catch (error) {
+        failures += 1;
+        console.error(`cleanup failed: ${what}`, error);
+      }
+    }
+    console.log(`\ncleaned up fixture user ${USER}`);
+    await pool.end();
+    console.log(failures === 0 ? "\nAll checks passed." : `\n${failures} check(s) failed.`);
+    process.exit(failures === 0 ? 0 : 1);
+  });
