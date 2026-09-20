@@ -59,6 +59,7 @@
   /* Semantic (3) */
   --success: #6FA368;
   --warning: #DEAA29;
+  --fact: #8FA6BE;
   --danger: #C6533F;
 
   /* Card availability (5). The first two are aliases and must stay aliases —
@@ -107,6 +108,7 @@
   --accent-mid: #D33E7E;
   --success: #6FA368;
   --warning: #E0913C;
+  --fact: #8FA6BE;
   --danger: #C6533F;
   --avail-soft: var(--fg-muted);
   --avail-hard: var(--accent);
@@ -187,6 +189,7 @@
   --accent-mid: #85A22F;
   --success: #5EA990;
   --warning: #E0913C;
+  --fact: #8FA6BE;
   --danger: #C6533F;
   --avail-soft: var(--fg-muted);
   --avail-hard: var(--accent);
@@ -231,6 +234,7 @@
   --accent-mid: #3E665F;
   --success: #6FA368;
   --warning: #E0913C;
+  --fact: #8FA6BE;
   --danger: #C6533F;
   --avail-soft: var(--fg-muted);
   --avail-hard: var(--accent);
@@ -277,6 +281,7 @@
   --accent-mid: #8E6AC4;
   --success: #6FA368;
   --warning: #E0913C;
+  --fact: #8FA6BE;
   --danger: #C6533F;
   --avail-soft: var(--fg-muted);
   --avail-hard: var(--accent);
@@ -321,6 +326,7 @@
   --accent-mid: #486BA3;
   --success: #6FA368;
   --warning: #E0913C;
+  --fact: #8FA6BE;
   --danger: #C6533F;
   --avail-soft: var(--fg-muted);
   --avail-hard: var(--accent);
@@ -359,6 +365,7 @@
   --color-fg-faint: var(--fg-faint);
   --color-fg-locked: var(--fg-locked);
   --color-fg-disabled: var(--fg-disabled);
+  --color-fact: var(--fact);
   --color-accent: var(--accent);
   --color-accent-hover: var(--accent-hover);
   --color-accent-strong: var(--accent-strong);

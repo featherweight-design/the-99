@@ -12,7 +12,7 @@ const CSS = readFileSync(
 );
 const THEMES = parseThemeBlocks(CSS);
 
-// The 37 keys, spelled out rather than derived from :root. Derived, a token
+// The 38 keys, spelled out rather than derived from :root. Derived, a token
 // dropped from every theme at once would still pass.
 const CONTRACT = [
   "bg", "surface", "surface-raised", "surface-rail", "surface-sunken",
@@ -22,6 +22,14 @@ const CONTRACT = [
   "accent", "accent-hover", "accent-strong", "accent-shadow", "accent-dim",
   "accent-mid", "success", "warning", "danger", "avail-soft", "avail-hard",
   "avail-hard-fg", "avail-over-fg", "avail-over-border", "w", "u", "b", "r", "g",
+  // Theme-INDEPENDENT, exactly as the WUBRG pips are: `--fact` marks a standing
+  // bracket fact about a card, and a bracket fact is the format's vocabulary rather
+  // than this app's mood. It is in CONTRACT because every theme must still declare
+  // it — an unset custom property fails silently, which is the hazard check:tokens
+  // exists for. What pins it to ONE VALUE across the six is the cross-theme test at
+  // the foot of this file, NOT the duplicate check: that one rebuilds `seen` per
+  // theme, so it can only ever compare keys within a single block.
+  "fact",
   "font-display-face",
 ];
 
@@ -84,7 +92,7 @@ describe("theme contract", () => {
       return value;
     };
 
-    it("declares exactly the 37 contract keys", () => {
+    it("declares exactly the 38 contract keys", () => {
       expect([...tokens.keys()].sort()).toEqual([...CONTRACT].sort());
     });
 
@@ -132,6 +140,15 @@ describe("theme contract", () => {
       expect(contrast(hex("bg"), hex("accent"))).toBeGreaterThanOrEqual(4.5);
       // The focus ring is the accent, drawn on the canvas.
       expect(contrast(hex("accent"), hex("bg"))).toBeGreaterThanOrEqual(3);
+      // The card mark, on every ground it is drawn on. It is a GRAPHIC, so 3:1 is the
+      // governing floor — but it is also the one mark whose whole legality rests on a
+      // measured figure, so the grounds are named individually rather than swept: a
+      // change to any one of them must fail here rather than in a screenshot nobody
+      // takes. `--elevated-hover` is the darkest and is the floor of record (6.31:1 on
+      // kaldheim, the weakest of the six).
+      for (const ground of ["surface", "surface-rail", "elevated-hover", "bg"]) {
+        expect(contrast(hex("fact"), hex(ground))).toBeGreaterThanOrEqual(3);
+      }
       // --avail-hard-fg exists so the "sleeved elsewhere" count reads as body
       // text rather than as decoration; the accent itself is often too dark.
       expect(contrast(hex("avail-hard-fg"), hex("surface"))).toBeGreaterThanOrEqual(7);
@@ -209,5 +226,24 @@ describe("the display face", () => {
     for (const tokens of THEMES.values()) {
       expect(tokens.has("font-display")).toBe(false);
     }
+  });
+});
+
+// Asserted ACROSS the six themes rather than within one. The duplicate check above
+// runs inside `describe.each`, so it cannot see a token that drifted BETWEEN themes —
+// a different hex for `--fact` under one `[data-theme]` leaves every one of its
+// assertions green.
+//
+// `--fact` alone, deliberately. The WUBRG pips are theme-independent in spirit and
+// not in fact: Canopy shifts `--g` to #527030 where the other five carry #4B7A46,
+// because that theme's accent is itself green and the pip has to stay separable from
+// it — which the hue gate above pins. Listing them here would have failed for a
+// reason that is correct.
+describe("theme-independent tokens", () => {
+  it("declares one value for --fact in all six themes", () => {
+    // A bracket fact is the FORMAT's vocabulary rather than this app's mood, so the
+    // mark reads the same whatever theme the reader is in.
+    const values = new Set(entries.map(([, tokens]) => tokens.get("fact")));
+    expect([...values]).toEqual(["#8FA6BE"]);
   });
 });

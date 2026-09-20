@@ -18,8 +18,14 @@ WCAG AA small text is **4.5:1**; non-text graphics (1.4.11) is **3:1**. The glyp
 | `--elevated-hover` | decklist row, hovered — the darkest ground | **6.7:1** | **6.9:1** |
 | `--bg` | the modal block, the key | **7.5:1** | **7.6:1** |
 
-**Weakest measured: 6.7:1**, `#8FA6BE` on `#201C17`. There is no fifth ground: the mark is never
-drawn on art, on an accent fill, on a status tint or on a scrim.
+**Weakest measured: 6.31:1**, `#8FA6BE` on kaldheim's `--elevated-hover` `#212229`. There is no
+fifth ground: the mark is never drawn on art, on an accent fill, on a status tint or on a scrim.
+
+> **Corrected on the build, 2026-09-20.** This table measures two of the six themes and published
+> 6.7:1 as the floor. Recomputed across all six theme blocks in `globals.css`, the weakest ground
+> is **kaldheim `--elevated-hover` `#212229` at 6.31:1**, with kaldheim `--surface` at 6.54:1. The
+> conclusion is unchanged — 6.31 clears the 3:1 graphics floor by 2.1× and the 4.5:1 text floor
+> outright — and it lands on the very theme this document flags as the one to eyeball.
 
 **Solid glyphs, not outlines**, so the measured ratio is the ratio the eye gets. An outline glyph at
 12px covers so few pixels that its effective contrast is well below its nominal one; a filled
@@ -57,7 +63,14 @@ Two axes separate the card mark from everything on this surface simultaneously:
 1. **It is the only uncontained mark.** Every other mark on these rows sits in a box. That is the
    design rule, not a coincidence — **boxed means "about your copies", bare means "about the
    card"**.
-2. **It is the only cool ink.** Every status colour in both themes is warm.
+2. **It is the only UNCONTAINED mark.** Every neighbouring mark is drawn inside something.
+
+> **Corrected on the build, 2026-09-20.** This read *"it is the only cool ink"*, and that is not
+> true on these same rows: the blue mana pip `--u: #3A6AA5` is theme-independent, drawn inline on
+> the decklist and collection rows, and measures **2.21:1** against `--fact` — the two are close in
+> hue and colour does not separate them. The container axis does, and survives intact: a pip is a
+> filled disc carrying a letter, and this mark is a bare silhouette. Since either axis alone is
+> sufficient, the ruling holds on the one that is true.
 
 Either one alone would be sufficient. Neither depends on the other, and neither depends on the glow.
 

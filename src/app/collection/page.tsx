@@ -49,10 +49,11 @@ export default async function CollectionPage() {
     getCollectionStats(userId),
     // The heaviest read on this page by an order of magnitude, which is why it
     // is the one cached across visits.
-    // "browse-2" because the payload gained `cmc` for the row's cost track: an entry
-    // written before this deploy has no such field, and the row would have read
-    // "mana value undefined" until the hour ceiling expired it. The key is the version.
-    cacheForUser(userId, ["browse-2"], () => loadBrowseCards(userId)),
+    // "browse-3" because the payload gained `facts` for the card mark. Same reason as
+    // "browse-2" before it, which this replaces: an entry written by the previous
+    // deploy carries no such field, so every card would draw no mark until the hour
+    // ceiling expired it, with the loader never running. The key is the version.
+    cacheForUser(userId, ["browse-3"], () => loadBrowseCards(userId)),
     getCollectionLastUpdated(userId),
     // Set names + release dates for the Set ▾ panel (#86).
     loadOwnedSetMeta(userId),
