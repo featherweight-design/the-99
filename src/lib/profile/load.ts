@@ -62,22 +62,32 @@ export async function loadProfileHead(
   deckId: string,
   userId: string,
 ): Promise<ProfileHead | null> {
-  const [deck] = await db
-    .select({
-      commanderOracleId: decks.commanderOracleId,
-      partnerOracleId: decks.partnerOracleId,
-      declaredBracket: decks.declaredBracket,
-    })
-    .from(decks)
-    .where(and(eq(decks.id, deckId), eq(decks.userId, userId)));
-  if (!deck) return null;
+  // ONE read-only `repeatable read` transaction, because these two reads ARE the fingerprint.
+  // Read apart, an edit landing between them gives a head whose commander columns and card
+  // list come from different instants — a deck state that never existed — and the profile is
+  // then filed under a key describing it. `loadDraftState` takes the same snapshot for the
+  // same reason.
+  return db.transaction(
+    async (tx) => {
+      const [deck] = await tx
+        .select({
+          commanderOracleId: decks.commanderOracleId,
+          partnerOracleId: decks.partnerOracleId,
+          declaredBracket: decks.declaredBracket,
+        })
+        .from(decks)
+        .where(and(eq(decks.id, deckId), eq(decks.userId, userId)));
+      if (!deck) return null;
 
-  const rows = await db
-    .select({ oracleId: deckCards.oracleId, quantity: deckCards.quantity })
-    .from(deckCards)
-    .where(eq(deckCards.deckId, deckId));
+      const rows = await tx
+        .select({ oracleId: deckCards.oracleId, quantity: deckCards.quantity })
+        .from(deckCards)
+        .where(eq(deckCards.deckId, deckId));
 
-  return { deckId, userId, ...deck, cards: rows };
+      return { deckId, userId, ...deck, cards: rows };
+    },
+    { isolationLevel: "repeatable read", accessMode: "read only" },
+  );
 }
 
 /**

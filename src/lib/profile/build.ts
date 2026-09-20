@@ -187,8 +187,10 @@ export function manaNeeds(manaCost: string | null): string[][] {
   const needs: string[][] = [];
   for (const [, body] of manaCost.matchAll(/\{([^}]+)\}/g)) {
     const halves = body.toUpperCase().split("/");
-    // EVERY half must be a colour. One that is not — a generic number, `P`, `S` — is a way
-    // to pay this pip without that colour, so the pip demands nothing.
+    // EVERY half must be a colour. A half that is not — the generic number in `{2/W}`, the
+    // `P` in `{W/P}` — is a way to pay this pip WITHOUT that colour, so the pip demands
+    // nothing. (Snow is not one of these: `{S}` is its own symbol and never a hybrid half, so
+    // it has no colour to drop and never reaches this branch.)
     if (!halves.every((h) => (WUBRG as readonly string[]).includes(h))) continue;
     needs.push([...new Set(halves)]);
   }
