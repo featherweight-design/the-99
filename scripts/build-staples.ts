@@ -78,6 +78,16 @@ type StapleRow = {
 };
 
 /**
+ * A `where` clause re-spelled as an `and`, for a query that already has one.
+ *
+ * The restriction arrives as a complete `where …` because every other caller uses it that
+ * way; pasting a second `where` into one query is a syntax error, and dropping the
+ * restriction instead would silently widen the population.
+ */
+const andForm = (restrictTo: string) =>
+  restrictTo ? restrictTo.replace(/^\s*where\b/, "  and") : "";
+
+/**
  * The floor for one KEY EXPRESSION — exact identity, or the colour-count fallback.
  *
  * One function for both, because two copies of a ratified cut drift a round at a time. The
@@ -112,7 +122,13 @@ function floorsQuery(keyExpr: string, restrictTo: string) {
       join commander_support cs using (commander_oracle_id)
       join cards cmd on cmd.oracle_id = cs.commander_oracle_id
       join cards cc on cc.oracle_id = csc.oracle_id
-      ${restrictTo}
+      -- A row with no inclusion figure carries NO WEIGHT, matching
+      -- measure-staples.mts:208. Counted, it lets a commander's whole deck_count promote a
+      -- card on evidence the row does not actually contain — the card would outrank one
+      -- whose breadth is real, in an order that is supposed to be the ratified one.
+      -- avg() already ignores nulls, so this changes the WEIGHT and not the breadth.
+      where csc.inclusion is not null
+      ${andForm(restrictTo)}
       group by 1, cc.oracle_id, cc.name, cc.type_line
     )
     select p.condition, p.oracle_id, p.name, p.commanders,
@@ -151,17 +167,26 @@ function compositionQuery(keyExpr: string, restrictTo: string) {
  * curve has no `"6"` entry contributes 0 to that bucket rather than being absent from it,
  * because an absence would raise the mean for every bucket a minority of decks use.
  */
-async function loadAverageCurves(): Promise<Map<string, Record<string, number>>> {
+async function loadAverageCurves(
+  fallbackOnly: string,
+): Promise<Map<string, Record<string, number>>> {
+  // THE SAME POPULATION AS `compositionQuery`, per branch. The count branch must see only
+  // the commanders an exact bucket cannot serve, exactly as the composition does — averaging
+  // `count:3` over every three-colour commander INCLUDING those already served by their own
+  // identity would put a curve beside targets computed from a different set of decks, on the
+  // same row.
+  const curveOnly = (restrictTo: string) =>
+    restrictTo ? `${restrictTo} and cs.avg_curve is not null` : "where cs.avg_curve is not null";
   const rows = await q<{ condition: string; avg_curve: Record<string, number> | null }>(`
     select ${IDENTITY_KEY} as condition, cs.avg_curve
     from commander_support cs
     join cards cmd on cmd.oracle_id = cs.commander_oracle_id
-    where cs.avg_curve is not null
+    ${curveOnly(NO_STATE_FILTER)}
     union all
     select ${COUNT_KEY} as condition, cs.avg_curve
     from commander_support cs
     join cards cmd on cmd.oracle_id = cs.commander_oracle_id
-    where cs.avg_curve is not null`);
+    ${curveOnly(fallbackOnly)}`);
 
   const sums = new Map<string, { totals: Map<string, number>; n: number }>();
   for (const row of rows) {
@@ -363,6 +388,70 @@ async function main() {
     console.log(`  ${b.inside ? "in " : "out"}  ${pad(b.name, 34)}${num(`${b.incl}%`, 8)}`);
   }
 
+  // ---- 6b · the cut gap, per condition ----------------------------------------------------
+  //
+  // §6 above defends the cut on mono-white in detail. The header promises BOTH SIDES OF EVERY
+  // boundary, and one identity is not every identity — a threshold can discriminate well in
+  // the largest bucket and sit in dead space in the others, which is exactly the claim a
+  // re-ratification has to test. One line per condition: the nearest card admitted and the
+  // nearest refused, with the gap between them.
+  console.log(`\n== 6b · the inclusion cut, per condition ==   (nearest in, nearest out)`);
+  const gaps = await q<{
+    condition: string; in_name: string | null; in_incl: number | null;
+    out_name: string | null; out_incl: number | null;
+  }>(`
+    with per as (
+      select ${IDENTITY_KEY} as condition, cc.name,
+             count(*)::numeric as n, avg(csc.inclusion) as incl
+      from commander_support_cards csc
+      join commander_support cs using (commander_oracle_id)
+      join cards cmd on cmd.oracle_id = cs.commander_oracle_id
+      join cards cc on cc.oracle_id = csc.oracle_id
+      where csc.inclusion is not null and cc.type_line not ilike 'basic land%'
+      group by 1, cc.name
+    ),
+    tot as (
+      select ${IDENTITY_KEY} as condition, count(*)::numeric as t
+      from commander_support cs
+      join cards cmd on cmd.oracle_id = cs.commander_oracle_id
+      group by 1 having count(*) >= ${MIN_COMMANDERS_PER_CONDITION}
+    ),
+    -- Both sides read from the SAME breadth-qualified population, so the pair is two
+    -- neighbours on one ranking rather than two answers to different questions.
+    eligible as (
+      select p.condition, p.name, p.incl
+      from per p join tot t using (condition)
+      where p.n / t.t >= ${BREADTH}
+    ),
+    ins as (
+      -- distinct on rather than a filtered window: FILTER is for aggregates, and
+      -- row_number() with a FILTER clause is a syntax error Postgres reports at the window.
+      select distinct on (condition) condition, name, round(incl::numeric, 1)::float as incl
+      from eligible where incl >= ${INCLUSION} order by condition, incl asc
+    ),
+    outs as (
+      select distinct on (condition) condition, name, round(incl::numeric, 1)::float as incl
+      from eligible where incl < ${INCLUSION} order by condition, incl desc
+    )
+    -- FULL join: a condition may have an admitted card and no refused neighbour, or the
+    -- reverse, and dropping either would quietly shorten the table.
+    select coalesce(i.condition, o.condition) as condition,
+           i.name as in_name, i.incl as in_incl,
+           o.name as out_name, o.incl as out_incl
+    from ins i full join outs o on o.condition = i.condition
+    order by 1`);
+  console.log(`  ${pad("cond", 8)}${pad("nearest in", 34)}${pad("nearest out", 34)}${num("gap", 7)}`);
+  for (const g of gaps) {
+    const gap =
+      g.in_incl !== null && g.out_incl !== null
+        ? `${Math.round((g.in_incl - g.out_incl) * 10) / 10}`
+        : "-";
+    console.log(
+      `  ${pad(g.condition, 8)}${pad(g.in_name ? `${g.in_name} (${g.in_incl}%)` : "-", 34)}` +
+        `${pad(g.out_name ? `${g.out_name} (${g.out_incl}%)` : "-", 34)}${num(gap, 7)}`,
+    );
+  }
+
   // ---- 7 · publish -------------------------------------------------------------------------
   const stapleRows = rows.map((r) => ({
     oracleId: r.oracle_id,
@@ -382,7 +471,7 @@ async function main() {
   // past 7) and a `jsonb_object_agg` over a lateral unnest is a great deal of SQL for a mean.
   // Folding to the app's buckets is NOT done here — `foldCurve` in `src/lib/profile/fit.ts`
   // owns that rule, and applying it twice in two places is how the two drift.
-  const curves = await loadAverageCurves();
+  const curves = await loadAverageCurves(FALLBACK_ONLY);
 
   const comps = [
     ...(await q<Record<string, number | string>>(compositionQuery(IDENTITY_KEY, NO_STATE_FILTER))),
