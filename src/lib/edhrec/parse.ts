@@ -1,5 +1,23 @@
 export type EdhrecTag = { slug: string; label: string; count: number };
 
+/**
+ * The ten per-commander composition counts EDHREC publishes at the payload's top level.
+ *
+ * `basic` and `nonbasic` are a BREAKDOWN of `land`, not two further types: on the live Gisa
+ * capture 29 + 7 = 36 = land, and the eight real types sum to exactly 99. That invariant is
+ * the reason to trust these as a target — EDHREC is publishing a real average deck rather
+ * than a loose statistic.
+ */
+export type CompositionCounts = {
+  land: number; basic: number; nonbasic: number; creature: number; instant: number;
+  sorcery: number; artifact: number; enchantment: number; planeswalker: number; battle: number;
+};
+
+const COMPOSITION_KEYS = [
+  "land", "basic", "nonbasic", "creature", "instant",
+  "sorcery", "artifact", "enchantment", "planeswalker", "battle",
+] as const;
+
 export type EdhrecData = {
   topCards: string[];
   inclusionByName: Record<string, number>;
@@ -16,6 +34,11 @@ export type EdhrecData = {
   deckCount: number | null;
   rank: number | null;
   saltScore: number | null;
+  /** Null, never a zeroed object: a payload predating this parse has NO composition, and a
+   *  zero would read as "this commander's decks run no lands". */
+  composition: CompositionCounts | null;
+  /** `panels.mana_curve`, counts per mana value. Null on the same terms. */
+  manaCurve: Record<string, number> | null;
 };
 
 const finiteOrNull = (v: unknown): number | null => (Number.isFinite(v) ? (v as number) : null);
@@ -52,6 +75,22 @@ function readCounts(v: unknown): Record<string, number> {
   return out;
 }
 
+/**
+ * All ten counts, or null. ALL-OR-NOTHING deliberately: a partial composition cannot be
+ * compared against a deck — a missing `creature` is not a creature count of zero — so one
+ * absent or non-finite field discards the set rather than shipping a target with a hole.
+ */
+function readComposition(payload: unknown): CompositionCounts | null {
+  const p = payload as Record<string, unknown> | null;
+  if (!p) return null;
+  const out = {} as Record<string, number>;
+  for (const k of COMPOSITION_KEYS) {
+    if (!Number.isFinite(p[k])) return null;
+    out[k] = p[k] as number;
+  }
+  return out as CompositionCounts;
+}
+
 export function parseEdhrecPayload(payload: unknown): EdhrecData {
   const p = payload as {
     container?: { json_dict?: { cardlists?: unknown; card?: Record<string, unknown> } };
@@ -68,6 +107,14 @@ export function parseEdhrecPayload(payload: unknown): EdhrecData {
     deckCount: finiteOrNull(card?.num_decks),
     rank: finiteOrNull(card?.rank),
     saltScore: finiteOrNull(card?.salt),
+    composition: readComposition(payload),
+    // `readCounts` already drops a non-finite bucket, which is the same rule the rest of this
+    // file applies to every numeric read.
+    manaCurve: (() => {
+      const mc = (payload as { panels?: { mana_curve?: unknown } } | null)?.panels?.mana_curve;
+      if (typeof mc !== "object" || mc === null || Array.isArray(mc)) return null;
+      return readCounts(mc);
+    })(),
   };
 
   const cardlists = p?.container?.json_dict?.cardlists;

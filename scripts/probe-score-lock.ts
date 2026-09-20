@@ -169,7 +169,7 @@ const buildWithRealClear = (oracleId: string, name: string) =>
         similarNames: [],
         deckCount: 1000,
         rank: 5,
-        saltScore: 1.2,
+        saltScore: 1.2, composition: null, manaCurve: null,
       },
       unreachable: false,
     }),

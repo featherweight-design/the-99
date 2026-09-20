@@ -1,5 +1,6 @@
 import "./lib/env.mjs";
 import { alreadyComputedSince, buildCommanderIndex } from "../src/lib/edhrec/seed-index";
+import { stampCatalogRefresh } from "../src/lib/cache/stamp-catalog";
 
 // RESUME_SINCE is an ISO timestamp set by a re-dispatched workflow run so the
 // retry skips commanders the aborted run already wrote. Absent, everything is
@@ -19,7 +20,7 @@ if (process.env.RESUME_SINCE) {
 buildCommanderIndex({
   loadAlreadyComputed: resumeSince ? () => alreadyComputedSince(resumeSince) : undefined,
 })
-  .then((r) => {
+  .then(async (r) => {
     console.log(
       `Indexed ${r.commanders} commanders (${r.cardRows} support cards); ` +
       `${r.degraded} degraded, ${r.absent} absent, ${r.unresolved} unresolved names, ` +
@@ -51,6 +52,16 @@ buildCommanderIndex({
         process.exit(1);
       }
     }
+    // Retire cached readers. This job now writes PROFILE INPUTS — the per-commander
+    // composition every skeleton target reads — so a refresh that left warm entries in place
+    // would serve targets derived from the previous index for up to the hour ceiling.
+    //
+    // It lives HERE rather than inside `buildCommanderIndex` because every I/O edge of that
+    // function is injectable precisely so the unit tests can drive it; a direct call would
+    // fire a real database write in `seed-index.test.ts`. Non-fatal, as every other ingest's
+    // stamp is: this workflow never runs `db:migrate`, so a database without the table costs
+    // one refresh's staleness and a warning rather than a red job after a good ingest.
+    await stampCatalogRefresh();
     process.exit(0);
   })
   .catch((err) => { console.error(err); process.exit(1); });

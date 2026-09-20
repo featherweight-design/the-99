@@ -21,7 +21,7 @@ const okResult = (topCards: string[]) => ({
     topCards,
     inclusionByName: {}, synergyByName: {},
     tags: [], bracketCounts: {}, budgetCounts: {},
-    similarNames: [], deckCount: 1000, rank: 5, saltScore: 1.2,
+    similarNames: [], deckCount: 1000, rank: 5, saltScore: 1.2, composition: null, manaCurve: null,
   },
   unreachable: false,
 });

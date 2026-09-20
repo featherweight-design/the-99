@@ -4,7 +4,7 @@ import type { EdhrecData } from "./parse";
 
 const EMPTY_WIDE = {
   tags: [], bracketCounts: {}, budgetCounts: {}, similarNames: [],
-  deckCount: null, rank: null, saltScore: null,
+  deckCount: null, rank: null, saltScore: null, composition: null, manaCurve: null,
 };
 const data = (over: Partial<EdhrecData>): EdhrecData => ({
   topCards: [], inclusionByName: {}, synergyByName: {}, ...EMPTY_WIDE, ...over,
@@ -70,7 +70,7 @@ describe("toSupportRows", () => {
           tags: [{ slug: "zombies", label: "Zombies", count: 567 }],
           bracketCounts: { "2": 607 },
           similarNames: ["Ayara, First of Locthwain", "Never Printed"],
-          deckCount: 4332, rank: 648, saltScore: 0.19,
+          deckCount: 4332, rank: 648, saltScore: 0.19, composition: null, manaCurve: null,
         }),
         unreachable: false,
       },

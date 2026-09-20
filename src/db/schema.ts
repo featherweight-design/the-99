@@ -848,6 +848,30 @@ export const commanderSupport = pgTable("commander_support", {
   // without re-reading the generator.
   proseInputHash: text("prose_input_hash"),
   prosePromptVersion: integer("prose_prompt_version"),
+  /**
+   * The per-commander composition EDHREC publishes and this app discarded until 2026-09-20 —
+   * the average deck for this commander, by type.
+   *
+   * NULLABLE, every one: a commander whose payload predates the widened parse has no
+   * composition, and NULL READS AS ABSENT where a zero would read as "this commander's decks
+   * run no lands". The reader falls back down §4A.6b's chain and reports which rung it used.
+   *
+   * `avgBasic + avgNonbasic = avgLand` — they are a BREAKDOWN of the land count, not two
+   * further types. The eight real types sum to exactly 99 on every live payload measured,
+   * which is the invariant that makes these trustworthy as a target rather than a statistic.
+   */
+  avgLand: integer("avg_land"),
+  avgBasic: integer("avg_basic"),
+  avgNonbasic: integer("avg_nonbasic"),
+  avgCreature: integer("avg_creature"),
+  avgInstant: integer("avg_instant"),
+  avgSorcery: integer("avg_sorcery"),
+  avgArtifact: integer("avg_artifact"),
+  avgEnchantment: integer("avg_enchantment"),
+  avgPlaneswalker: integer("avg_planeswalker"),
+  avgBattle: integer("avg_battle"),
+  /** `panels.mana_curve` — counts per mana value. Null on the same terms. */
+  avgCurve: jsonb("avg_curve").$type<Record<string, number>>(),
   computedAt: timestamp("computed_at").notNull().defaultNow(),
 }, (t) => [
   // The enum options above only narrow the TypeScript type; without these the
