@@ -7,7 +7,35 @@ import {
 import { canonicalPair, fetchPair } from "./pair";
 import { edhrecInit } from "./client";
 import { parseEdhrecPayload } from "./parse";
-import type { EdhrecData } from "./parse";
+import type { CompositionCounts, EdhrecData } from "./parse";
+
+/**
+ * ALL-OR-NOTHING, the same rule `readComposition` applies in the parser.
+ *
+ * Substituting 0 for a null turns "we do not know" into a real count, and these ten figures
+ * carry invariants a reader may lean on — `basic + nonbasic = land` among them. A partial
+ * row (a future widening, a hand repair, an ingest interrupted between columns) would
+ * otherwise report a 37-land deck holding no basics and no nonbasics.
+ *
+ * Gating on `avgLand` alone was the same bug in a narrower form: it is the one column whose
+ * absence the previous check could see, and every other null fell through to a zero.
+ */
+export function compositionFrom(header: {
+  avgLand: number | null; avgBasic: number | null; avgNonbasic: number | null;
+  avgCreature: number | null; avgInstant: number | null; avgSorcery: number | null;
+  avgArtifact: number | null; avgEnchantment: number | null;
+  avgPlaneswalker: number | null; avgBattle: number | null;
+}): CompositionCounts | null {
+  const values = {
+    land: header.avgLand, basic: header.avgBasic, nonbasic: header.avgNonbasic,
+    creature: header.avgCreature, instant: header.avgInstant, sorcery: header.avgSorcery,
+    artifact: header.avgArtifact, enchantment: header.avgEnchantment,
+    planeswalker: header.avgPlaneswalker, battle: header.avgBattle,
+  };
+  return Object.values(values).some((v) => v === null)
+    ? null
+    : (values as CompositionCounts);
+}
 
 /**
  * A stored pair's support list, rebuilt into the shape `mergeEdhrecData` would have returned.
@@ -80,23 +108,26 @@ export async function readPairSupport(a: string, b: string): Promise<EdhrecData 
     deckCount: header.deckCount,
     rank: header.rank,
     saltScore: null,
-    composition:
-      header.avgLand === null
-        ? null
-        : {
-            land: header.avgLand,
-            basic: header.avgBasic ?? 0,
-            nonbasic: header.avgNonbasic ?? 0,
-            creature: header.avgCreature ?? 0,
-            instant: header.avgInstant ?? 0,
-            sorcery: header.avgSorcery ?? 0,
-            artifact: header.avgArtifact ?? 0,
-            enchantment: header.avgEnchantment ?? 0,
-            planeswalker: header.avgPlaneswalker ?? 0,
-            battle: header.avgBattle ?? 0,
-          },
+    composition: compositionFrom(header),
     manaCurve: header.avgCurve,
   };
+}
+
+/**
+ * A parse is only an ANSWER when it carries cards.
+ *
+ * `parseEdhrecPayload` degrades to an empty `topCards` on a shape it does not recognise, so
+ * a 200 carrying no cardlists parses to a perfectly non-null `EdhrecData` describing nothing.
+ * `synergyStateFrom` exists because of that, and the same trap reached this path from the
+ * other side: the demand fetch would have RETURNED that empty parse, cached it for thirty
+ * days, and `suggestions-read` prefers a pair result over `mergeEdhrecData` — so one bad
+ * page would have replaced a working merge with an empty list until the TTL expired.
+ *
+ * The same rule was applied to `toPairRows` one round earlier and this sibling was missed.
+ */
+export function usable(payload: unknown): EdhrecData | null {
+  const data = parseEdhrecPayload(payload);
+  return data !== null && data.topCards.length > 0 ? data : null;
 }
 
 /** 30 days, matching the single-commander demand cache. */
@@ -133,13 +164,14 @@ export async function resolvePairEdhrecData(
       ),
     );
   if (cached && Date.now() - cached.fetchedAt.getTime() < PAIR_TTL_MS) {
-    return parseEdhrecPayload(cached.payload);
+    return usable(cached.payload);
   }
 
   const result = await fetchPair(nameA, nameB, (url) => fetch(url, edhrecInit()));
+  const fresh = result.data !== null && result.data.topCards.length > 0 ? result.data : null;
   // Prefer stale over nothing, exactly as `resolveEdhrecData` does: a transient failure on a
   // pair we already have should not cost the reader the data.
-  if (result.data === null) return cached ? parseEdhrecPayload(cached.payload) : null;
+  if (fresh === null) return cached ? usable(cached.payload) : null;
 
   const now = new Date();
   await db
@@ -152,5 +184,5 @@ export async function resolvePairEdhrecData(
     .catch(() => {
       // A cache write failing must not cost the reader the answer it already has.
     });
-  return result.data;
+  return fresh;
 }
