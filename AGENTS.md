@@ -22,6 +22,25 @@ Package manager is **pnpm** (pinned via `packageManager` in package.json) — ne
 
 ## Workflow
 
+- **MEASURE AGAINST `staging`, NOT `local-dev`.** Ruled 2026-09-20. `local-dev` is a probe
+  playground — its accounts are built by fixtures that never commit, never buy and never finish a
+  deck, so any FREQUENCY read off it is an artefact of the fixtures rather than a fact about the
+  app. `staging` carries the real collection and the decks that actually get played, and it is the
+  bar a new change is held to: a threshold, a distribution, a payload delta, a "how often would a
+  reader see this" — all of them are counted there.
+
+  This has already cost measurable work twice. The deck-status marks were designed against a
+  `local-dev` split of 34 of 34 uncommitted decks, where production is 4 of 8, and shipped a phase
+  cascade aimed at a state that barely exists. The commander row's gap line reads 5.4% on the
+  seeded fixture account and 67.2% on the reference account **in the same database** — an edge
+  case on one and the default on the other.
+
+  Read-only measurement against `staging` is free and needs no permission. **What does NOT change
+  is where a probe WRITES**: a script that creates fixtures still points at `local-dev` or a
+  scratch branch, and `probe:arrivals` — whose `replaceCollection` DELETES every collection row
+  for the user it is given — must never be pointed anywhere else. Measure on staging, mutate on
+  local-dev.
+
 - All work happens in worktrees under `.worktrees/<branch>`; copy `.env` from the repo root into a new worktree before running the app. The main checkout stays clean on `main`.
 - Pre-push gate, every push: `pnpm typecheck && pnpm lint && pnpm test` plus the stub-DB build, then `git fetch origin && git rebase origin/main`.
 - Database migrations apply automatically during each Vercel **production** build (`vercel-build` → `scripts/vercel-migrate.ts`). Every Vercel project therefore needs `MIGRATE_DATABASE_URL` set — non-sensitive, Production scope only, same value as that project's `DATABASE_URL` — or its production builds fail by design. Preview deployments skip migrations entirely.
