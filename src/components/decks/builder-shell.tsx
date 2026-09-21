@@ -1010,6 +1010,7 @@ export function BuilderShell({
                     draws something true on the day the tab lands, with the verdict arriving
                     on top of it rather than replacing it. */}
                 <RoleCounterStrip
+                  mix={mix}
                   cards={cards}
                   onSeeShelf={seeShelf}
                   rolesWithShelves={shelvedRoles}
