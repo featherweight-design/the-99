@@ -1,4 +1,4 @@
-import { isLandFace, playableAsLand } from "../cards/facet";
+import { castFaceText, isLandFace, playableAsLand } from "../cards/facet";
 import { manaCurve, type CurveCard } from "../decks/stats";
 import { classifyRoles, ROLE_TARGETS, type Role } from "../recs/roles";
 import type {
@@ -178,8 +178,10 @@ function landCapableRefs(cards: ProfileCardRow[]): CardRef[] {
 
 const ALL_ROLES: Role[] = ["ramp", "draw", "removal", "wipes", "land"];
 
-function rolesOf(cards: ProfileCardRow[]): ProfileRoles {
+function rolesOf(cards: ProfileCardRow[], commanders: Set<string>): ProfileRoles {
   const counts = Object.fromEntries(ALL_ROLES.map((r) => [r, 0])) as Record<Role, number>;
+  const excludingCommanders =
+    Object.fromEntries(ALL_ROLES.map((r) => [r, 0])) as Record<Role, number>;
   const refs = Object.fromEntries(ALL_ROLES.map((r) => [r, [] as CardRef[]])) as Record<
     Role,
     CardRef[]
@@ -189,7 +191,14 @@ function rolesOf(cards: ProfileCardRow[]): ProfileRoles {
     Set<string>
   >;
   for (const c of cards) {
-    for (const role of classifyRoles(c)) {
+    // THE FRONT FACE, through `castFaceText`. `cards.oracle_text` holds BOTH faces joined, so
+    // a land-backed MDFC reads as ramp off the whole string — which is exactly the defect the
+    // role DERIVATION was corrected for (82 commander-legal cards; mean ramp 8.5 against 7.8).
+    // This side never got the same fix, so the deck's own counts classified one way while the
+    // targets they are compared against classified the other, and `delta` reported a surplus
+    // that was an artefact of the two disagreeing about which face to read.
+    const faceText = castFaceText(c.oracleText, c.layout);
+    for (const role of classifyRoles({ ...c, oracleText: faceText })) {
       // The COUNT is copies and the LIST is distinct cards. Three Rampant Growths are three
       // pieces of ramp against a target of ten, and naming the card three times in the
       // receipt would read as three different answers to the same problem.
@@ -197,12 +206,13 @@ function rolesOf(cards: ProfileCardRow[]): ProfileRoles {
       // The count takes every row and the list dedupes on oracle id — a row repeated in the
       // input would otherwise be listed twice while the comment above promised otherwise.
       counts[role] += c.quantity;
+      if (!commanders.has(c.oracleId)) excludingCommanders[role] += c.quantity;
       if (listed[role].has(c.oracleId)) continue;
       listed[role].add(c.oracleId);
       refs[role].push(ref(c));
     }
   }
-  return { counts, cards: refs };
+  return { counts, excludingCommanders, cards: refs };
 }
 
 const WUBRG = ["W", "U", "B", "R", "G"] as const;
@@ -352,7 +362,7 @@ export function buildDeckProfile(input: ProfileInput): DeckProfile {
     })),
     counts: countCards(cards),
     landCapableCards: landCapableRefs(cards),
-    roles: rolesOf(cards),
+    roles: rolesOf(cards, commanders),
     curve: manaCurve(curveCards),
     colours: colours(cards, input.identity),
     skeleton: skeleton(input),

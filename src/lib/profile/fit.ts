@@ -10,12 +10,20 @@ import type {
 /**
  * A deck against the measured skeleton for its condition.
  *
- * NO FUNCTIONAL ROLES APPEAR HERE, and that is structural rather than an omission.
- * `ROLE_TARGETS` (10 ramp, 10 draw, 8 removal, 3 wipes) are ASSERTED constants — a design
- * baseline nobody measured — while these type targets are averages over thousands of real
- * decklists. Mixing them into one fit would launder the asserted numbers through the
- * measured ones' credibility, and a reader shown both in one table cannot tell which is
- * which. `ROLE_TARGETS` is deliberately not imported.
+ * THE FOUR FUNCTIONAL ROLES APPEAR HERE NOW, and the rule that kept them out has ended rather
+ * than been waived. It read "no functional roles appear here, and that is structural", and its
+ * reason was that `ROLE_TARGETS` (10 ramp, 10 draw, 8 removal, 3 wipes) are ASSERTED constants
+ * nobody measured, while the type targets are averages over thousands of real decklists —
+ * mixing them would launder the asserted numbers through the measured ones' credibility.
+ *
+ * Since the role pass the four are DERIVED per commander, per pair and per bucket, from the
+ * same index the type targets come from. The old rule has no subject left.
+ *
+ * THE NARROWER RULE THAT SURVIVES IT: a fit may carry a role target only with `measured`
+ * beside it. A deck whose chain ended at `flat` is still being compared to the asserted
+ * baseline, and a reader shown that figure without being told cannot tell it from one taken
+ * over eight hundred decklists. That is the whole hazard the old rule was built against, and
+ * it is now a per-row fact rather than a whole-module prohibition.
  *
  * Pure: no database, client-safe.
  */
@@ -29,6 +37,24 @@ export type TypeFit = {
   delta: number;
 };
 
+/** One functional role against its target. `delta` is `have - target`, so NEGATIVE is short
+ *  and POSITIVE is over — the same direction as `TypeFit`, and a FACT rather than an
+ *  instruction: nothing here says which is better. */
+export type RoleFit = {
+  role: "ramp" | "draw" | "removal" | "wipes";
+  have: number;
+  target: number;
+  delta: number;
+  /**
+   * Whether this target was DERIVED from decklists or is the asserted baseline.
+   *
+   * False means the chain ended at `flat`. Carried per row rather than inferred from the
+   * basis, because a surface drawing one role is not holding the skeleton — and a figure that
+   * cannot say which it is has the old module-wide prohibition's whole problem.
+   */
+  measured: boolean;
+};
+
 export type CurveFit = {
   buckets: { cmc: number; have: number; average: number; delta: number }[];
 };
@@ -40,9 +66,30 @@ export type SkeletonFit = {
   /** Null when the composition carried no curve. A deck cannot be compared to a curve
    *  nobody measured, and an empty bucket list would read as a flat one. */
   curve: CurveFit | null;
+  /** The four, in `ramp → draw → removal → wipes` order. Always present: the role chain ends
+   *  at the asserted baseline rather than at null, so there is always something to compare. */
+  roles: RoleFit[];
+  /** WHICH rung served the roles. `measured` on each row answers "derived or asserted"; this
+   *  answers "derived from what", which is what a reader needs to tell a commander's own
+   *  figures from a bucket's — and whether `coverage.thinCondition` is about them. */
+  roleBasis: "commander" | "pair" | "identity" | "count" | "flat";
   missingStaples: StapleRef[];
   presentStaples: StapleRef[];
-  coverage: { commanderDeckCount: number | null; thin: boolean };
+  coverage: {
+    commanderDeckCount: number | null;
+    /** THIS COMMANDER's deck count is below `THIN_DECK_COUNT`. */
+    thin: boolean;
+    /**
+     * A bucket serving THIS SKELETON was derived from a below-bar population.
+     *
+     * Deliberately not "the bucket the role targets came from": the role chain can stop at the
+     * commander or pair rung while the TYPE targets still come from a thin identity or count
+     * row, and the caveat is true of the skeleton either way. `roleBasis` below says which
+     * rung served the roles, so a surface drawing one role can tell whether the caveat is
+     * about the figure it is showing.
+     */
+    thinCondition: boolean;
+  };
 };
 
 /**
@@ -161,11 +208,39 @@ export function fitSkeleton(profile: DeckProfile): SkeletonFit {
     (held.has(staple.oracleId) ? presentStaples : missingStaples).push(staple);
   }
 
+  const roleOrder = ["ramp", "draw", "removal", "wipes"] as const;
+  const roleTargets = profile.skeleton.roleTargets;
+  const measured = roleTargets.of !== "flat";
+  const roleHave = measured ? profile.roles.excludingCommanders : profile.roles.counts;
+  const roles: RoleFit[] = roleOrder.map((role) => ({
+    role,
+    // WHICH POPULATION DEPENDS ON WHICH TARGET, and `ProfileRoles` states the rule: the
+    // 99-only view exists to match EDHREC's support lists, which never contain the commander,
+    // so comparing `counts` against a derived target reports a phantom surplus on every deck
+    // led by a card that classifies as one of the four.
+    //
+    // The ASSERTED baseline is not one of those lists. `ROLE_TARGETS` is a design figure for a
+    // DECK, and a deck is a hundred cards including the one in the command zone — so dropping
+    // a role-bearing commander there would under-count the deck against a target that always
+    // meant to include it. One flag decides both, since `measured` is a property of the chain
+    // rather than of a row.
+    have: roleHave[role],
+    target: roleTargets.targets[role],
+    // `have - target`, so a deck holding one wipe against a MEASURED target of 0 reads +1.
+    // That is a surplus and must read as one: 390 commanders measure exactly 0 wipes, and
+    // calling it a shortfall would be the flat target's error wearing a measured number's
+    // authority — the precise failure the old module-wide rule existed to prevent.
+    delta: roleHave[role] - roleTargets.targets[role],
+    measured,
+  }));
+
   const deckCount = profile.skeleton.commanderDeckCount;
   return {
     basis: composition?.of ?? "none",
     types,
     curve,
+    roles,
+    roleBasis: roleTargets.of,
     missingStaples,
     presentStaples,
     coverage: {
@@ -173,6 +248,7 @@ export function fitSkeleton(profile: DeckProfile): SkeletonFit {
       // Null is the THINNEST data there is — no page at all — and must not read as thick
       // merely because there is no figure to compare.
       thin: deckCount === null || deckCount < THIN_DECK_COUNT,
+      thinCondition: profile.skeleton.thinCondition,
     },
   };
 }
