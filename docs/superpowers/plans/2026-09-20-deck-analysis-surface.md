@@ -65,8 +65,10 @@ Named before implementation starts, per the repo's split rule. Nine PRs; none ov
 | **9 — the upgrade path** | Candidate sets, never a pick; the `blocked` reading. | Round 4 design |
 
 PRs 1, 2 and 3 are **unblocked today** and in that order they are the whole spine: a tab that
-loads a profile, a verdict shaped the way the modal needs it, and the one write. PRs 4–6 wait on
-Round 2's build, which is the critical path for everything drawn.
+loads a profile, a verdict shaped the way the modal needs it, and the one write. **PR 4 IS Round
+2's build** — it needs only PR 1's tab to render into, and it is the critical path for everything
+drawn after it, because rounds 3 and 4 sit inside the chrome it establishes. PRs 5 and 6 wait on
+PR 4.
 
 ---
 
