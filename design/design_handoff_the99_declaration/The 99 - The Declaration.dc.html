@@ -1,0 +1,694 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<meta name="design_doc_mode" content="canvas">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@600;700;800&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  /* Token contract from src/app/globals.css, carried verbatim from Round 2's canvas
+     so this document resolves the same names the app does. Every colour is a var(). */
+  :root, [data-theme="amonkhet"] {
+    --bg:#14110E; --surface:#1E1A15; --surface-rail:#1A1611; --surface-sunken:#18140F;
+    --surface-raised:#211D18; --surface-inset:#1B1712; --elevated:#29241F; --elevated-hover:#201C17;
+    --border:#2B241B; --border-strong:#3A3229; --border-dashed:#494037;
+    --fg:#EDE6D8; --fg-body:#C0B8A6; --fg-muted:#A59C89; --fg-faint:#8B8270; --fg-locked:#6E6654; --fg-disabled:#4A4033;
+    --accent:#CF8745; --accent-hover:#DE9757; --accent-mid:#AB6E37; --accent-shadow:#6B482A;
+    --success:#6FA368; --warning:#DEAA29; --danger:#C6533F;
+    --w:#F4E9C4; --u:#3A6AA5; --b:#98748F; --r:#C05A3E; --g:#4B7A46;
+    --display:'Cinzel';
+    --bracket-1:#8A857C; --bracket-2:#A89A74; --bracket-3:#C9AC62; --bracket-4:#E6D08A; --bracket-5:#FBEFC6;
+    --fact:#8FA6BE;
+  }
+  [data-theme="kamigawa"] {
+    --bg:#0E0F14; --surface:#16181F; --surface-raised:#191B22; --surface-rail:#12141B; --surface-sunken:#101219; --surface-inset:#13151C;
+    --elevated:#20222A; --elevated-hover:#181A21; --border:#181C26; --border-strong:#262A35; --border-dashed:#343843;
+    --fg:#E6E8F0; --fg-body:#B1B6C7; --fg-muted:#959AAD; --fg-faint:#6F7486; --fg-locked:#606476; --fg-disabled:#3D404E;
+    --accent:#FF4D9A; --accent-hover:#FF62A9; --accent-mid:#D33E7E; --accent-shadow:#843052;
+    --success:#6FA368; --warning:#E0913C; --danger:#C6533F;
+    --w:#F4E9C4; --u:#3A6AA5; --b:#98748F; --r:#C05A3E; --g:#4B7A46;
+    --display:'Cinzel';
+    --bracket-1:#8A857C; --bracket-2:#A89A74; --bracket-3:#C9AC62; --bracket-4:#E6D08A; --bracket-5:#FBEFC6;
+    --fact:#8FA6BE;
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; }
+  a { color: var(--accent); text-decoration: none; }
+  a:hover { color: var(--accent-hover); }
+</style>
+</helmet>
+
+<div data-theme="{{ theme }}" style="font-family:'IBM Plex Sans',sans-serif;background:var(--bg);color:var(--fg);padding:44px 40px 90px;display:flex;flex-direction:column;gap:56px;">
+
+  <div style="max-width:1180px;display:flex;flex-direction:column;gap:14px;">
+    <div style="display:flex;align-items:center;gap:13px;flex-wrap:wrap;">
+      <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;font-weight:600;color:var(--bg);background:var(--accent);border-radius:6px;padding:4px 10px;letter-spacing:0.08em;">R3</span>
+      <h1 style="font-family:var(--display),serif;font-weight:800;font-size:34px;margin:0;line-height:1.1;color:var(--fg);">The declaration</h1>
+      <span style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--fg-faint);">Round 3 of 5 &middot; the verdict block&rsquo;s sub-line</span>
+    </div>
+    <p style="font-size:15px;line-height:1.7;color:var(--fg-body);margin:0;max-width:900px;text-wrap:pretty;">Round 2 was a report. This is <b style="color:var(--fg);font-weight:600;">the first thing on this surface a player can change, and the first thing the app remembers</b> &mdash; so the whole round lands inside one sentence of a box that has now survived four rounds of review at one size. The ask <i>replaces</i> the ringed <span style="font-family:'IBM Plex Mono',monospace;">?</span>, and the answer is drawn with the bracket&rsquo;s own mark.</p>
+    <p style="font-size:14px;line-height:1.7;color:var(--fg-faint);margin:4px 0 0;max-width:900px;"><a href="#1a">1a</a> the ask, two shapes &middot; <a href="#1b">1b</a> five readings of the sub-line &middot; <a href="#1c">1c</a> the lean, and the homeless <span style="font-family:'IBM Plex Mono',monospace;">&asymp;</span> &middot; <a href="#1d">1d</a> the lean&rsquo;s receipts &middot; <a href="#1e">1e</a> desktop, the whole tab &middot; <a href="#1f">1f</a> 390</p>
+
+    <div style="border:1px solid var(--accent);border-radius:11px;background:color-mix(in oklab,var(--accent) 7%,var(--surface));padding:15px 17px;display:flex;flex-direction:column;gap:9px;margin-top:6px;">
+      <span style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.14em;text-transform:uppercase;color:var(--accent);">R3 &mdash; the suffix reverted &middot; R2 &mdash; drift, and the one you were right about</span>
+      <div style="display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:9px 26px;">
+        <span style="font-size:12.5px;color:var(--fg-body);line-height:1.6;"><b style="color:var(--fg);font-weight:600;">R2 &mdash; drift was drawn impossibly.</b> Only 1/2 and 4/5 are declarable, so <i>you said 3</i> cannot happen &mdash; and the second entrance I drew (a reader overruling the lean) cannot happen either: declaring inside the permitted range is not drift. Drift now has <b style="color:var(--fg);font-weight:600;">one cause and one sentence</b>, and the cause is the player&rsquo;s own re-analysed edit.</span>
+        <span style="font-size:12.5px;color:var(--fg-body);line-height:1.6;"><b style="color:var(--fg);font-weight:600;">R3 &mdash; R2&rsquo;s parenthesised numbers are gone.</b> <b style="color:var(--fg);font-weight:600;">The mark already says the number</b> &mdash; beside a chip or a pill, <i>Optimized (4)</i> prints it twice. The only place a number had to be spelled is the modal heading, where there is no mark, and it is spelled there: <i>How we determined bracket 4</i>.</span>
+        <span style="font-size:12.5px;color:var(--fg-body);line-height:1.6;"><b style="color:var(--fg);font-weight:600;">R2 &mdash; the declared state drops the split.</b> The face becomes the declared bracket&rsquo;s own chip, and <i>change</i> sits inline at the end of the sentence.</span>
+        <span style="font-size:12.5px;color:var(--fg-body);line-height:1.6;"><b style="color:var(--fg);font-weight:600;">R2, also:</b> the split pill is labelled <i>split</i>; <i>why this resolved here</i> is now <b style="color:var(--fg);font-weight:600;">How we determined this bracket</b>; the receipts show real card size and read <i>How we determined bracket 4</i>; the overview is written at the length the space allows.</span>
+      </div>
+    </div>
+
+    <div style="border:1px solid var(--border);border-radius:11px;background:var(--surface);padding:15px 17px;display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px 26px;">
+      <div style="font-size:12.5px;color:var(--fg-muted);line-height:1.6;"><b style="color:var(--fg);font-weight:600;">&sect;4.1 the shape.</b> Two chips carrying the bracket marks, under Round 0&rsquo;s <i>pick one so pods know what to expect</i>. Answering replaces the split face with the one you chose.</div>
+      <div style="font-size:12.5px;color:var(--fg-muted);line-height:1.6;"><b style="color:var(--fg);font-weight:600;">&sect;4.2 the lean.</b> A mono <i>How we determined this bracket</i> label, one sentence, and <i>see the reasoning</i>. Receipts group tutors <b style="color:var(--fg-body);font-weight:600;">by the half they find</b> &mdash; never a tutor total.</div>
+      <div style="font-size:12.5px;color:var(--fg-muted);line-height:1.6;"><b style="color:var(--fg);font-weight:600;">&sect;4.3 drift.</b> Your declaration, an arrow, what your re-analysed cards now permit. No red, no fix. The app re-read the deck; it did not re-declare it.</div>
+      <div style="font-size:12.5px;color:var(--fg-muted);line-height:1.6;"><b style="color:var(--fg);font-weight:600;">&sect;4.4 the ringed <span style="font-family:'IBM Plex Mono',monospace;">&asymp;</span>: retired.</b> It meant <i>not knowable from a list</i>. The boundary it was drawn for now resolves, and the lean is knowable &mdash; every card is in the receipts.</div>
+      <div style="font-size:12.5px;color:var(--fg-muted);line-height:1.6;"><b style="color:var(--fg);font-weight:600;">&sect;4.5 the skip.</b> Permanent. The block keeps the range, states that it was skipped, and never asks again &mdash; a faint <i>say which</i> stays so a player can volunteer later.</div>
+      <div style="font-size:12.5px;color:var(--fg-muted);line-height:1.6;"><b style="color:var(--fg);font-weight:600;">One thing outside &sect;4, flagged.</b> The climb&rsquo;s 4&ndash;5 rung still carries a ringed <span style="font-family:'IBM Plex Mono',monospace;">?</span> from Round 2. Two asks on one surface is a duplication, so it loses the glyph. Drawn in <a href="#1e">1e</a>.</div>
+    </div>
+  </div>
+
+  <template id="__bundler_thumbnail">
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200"><rect width="200" height="200" fill="#14110E"></rect><path d="M100 62 L138 100 L100 138 L62 100 Z" fill="none" stroke="#E6D08A" stroke-width="4"></path><path d="M100 53.4 L146.6 100 L100 146.6 L53.4 100 Z" fill="none" stroke="#E6D08A" stroke-width="2.4" opacity="0.55"></path><path d="M100 36 L105.3 41.3 L100 46.6 L94.7 41.3 Z" fill="none" stroke="#E6D08A" stroke-width="3"></path><path d="M158.7 94.7 L164 100 L158.7 105.3 L153.4 100 Z" fill="none" stroke="#E6D08A" stroke-width="3"></path><path d="M100 153.4 L105.3 158.7 L100 164 L94.7 158.7 Z" fill="none" stroke="#E6D08A" stroke-width="3"></path><path d="M41.3 94.7 L46.6 100 L41.3 105.3 L36 100 Z" fill="none" stroke="#E6D08A" stroke-width="3"></path><text x="100" y="100" text-anchor="middle" dominant-baseline="central" font-family="Georgia,serif" font-weight="700" font-size="42" fill="#E6D08A" dy="1.5">4</text></svg>
+  </template>
+
+  <!-- ========== 1a · THE ASK ========== -->
+  <div id="1a" style="display:flex;flex-direction:column;gap:14px;">
+    <div style="display:flex;align-items:center;gap:11px;flex-wrap:wrap;border-top:1px solid var(--accent);padding-top:18px;">
+      <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;font-weight:600;color:var(--bg);background:var(--accent);border-radius:5px;padding:3px 8px;">1a</span>
+      <span style="font-family:var(--display),serif;font-weight:700;font-size:19px;color:var(--fg);">The ask &mdash; two shapes, and the one adopted</span>
+    </div>
+
+    <div style="display:flex;gap:26px;flex-wrap:wrap;align-items:flex-start;">
+
+      <div style="width:372px;display:flex;flex-direction:column;gap:11px;">
+        <span style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.14em;text-transform:uppercase;color:var(--accent);">A &mdash; two chips &#10003; live, click it</span>
+        <div style="background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:16px 18px;display:flex;flex-direction:column;">
+          <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.14em;text-transform:uppercase;color:var(--fg-faint);">Your bracket</div>
+
+          <sc-if value="{{ isRange }}" hint-placeholder-val="{{ true }}">
+            <div style="font-size:14px;font-weight:600;color:var(--fg);margin-top:9px;">Optimized or cEDH</div>
+            <div style="margin-top:10px;"><span style="display:inline-flex;align-items:center;gap:8px;border:1px solid color-mix(in oklab,var(--bracket-4) 55%,transparent);border-radius:999px;padding:2px 12px 2px 4px;">
+              <svg width="34" height="34" viewBox="0 0 40 40" style="display:block;flex:none;"><path d="M20 8.5 L31.5 20 L20 31.5 L8.5 20 Z" fill="none" stroke="var(--bracket-4)" stroke-width="1.5"></path><path d="M20 5.9 L34.1 20 L20 34.1 L5.9 20 Z" fill="none" stroke="var(--bracket-4)" stroke-width="0.9" opacity="0.55"></path><path d="M20 1.2 L21.6 2.8 L20 4.4 L18.4 2.8 Z" fill="none" stroke="var(--bracket-4)" stroke-width="1.1"></path><path d="M37.2 18.4 L38.8 20 L37.2 21.6 L35.6 20 Z" fill="none" stroke="var(--bracket-4)" stroke-width="1.1"></path><path d="M20 35.6 L21.6 37.2 L20 38.8 L18.4 37.2 Z" fill="none" stroke="var(--bracket-4)" stroke-width="1.1"></path><path d="M2.8 18.4 L4.4 20 L2.8 21.6 L1.2 20 Z" fill="none" stroke="var(--bracket-4)" stroke-width="1.1"></path><text x="20" y="20" text-anchor="middle" dominant-baseline="central" font-family="Cinzel,serif" font-weight="700" font-size="16" fill="var(--bracket-4)" dy="0.5">4</text></svg>
+              <svg width="34" height="34" viewBox="0 0 40 40" style="display:block;flex:none;opacity:0.45;"><path d="M20 8.5 L31.5 20 L20 31.5 L8.5 20 Z" fill="none" stroke="var(--bracket-5)" stroke-width="1.5"></path><path d="M20 5.9 L34.1 20 L20 34.1 L5.9 20 Z" fill="none" stroke="var(--bracket-5)" stroke-width="0.9" opacity="0.55"></path><path d="M20 1.2 L21.6 2.8 L20 4.4 L18.4 2.8 Z" fill="none" stroke="var(--bracket-5)" stroke-width="1.1"></path><path d="M37.2 18.4 L38.8 20 L37.2 21.6 L35.6 20 Z" fill="none" stroke="var(--bracket-5)" stroke-width="1.1"></path><path d="M20 35.6 L21.6 37.2 L20 38.8 L18.4 37.2 Z" fill="none" stroke="var(--bracket-5)" stroke-width="1.1"></path><path d="M2.8 18.4 L4.4 20 L2.8 21.6 L1.2 20 Z" fill="none" stroke="var(--bracket-5)" stroke-width="1.1"></path><text x="20" y="20" text-anchor="middle" dominant-baseline="central" font-family="Cinzel,serif" font-weight="700" font-size="16" fill="var(--bracket-5)" dy="0.5">5</text></svg>
+              <span style="font-family:'IBM Plex Mono',monospace;font-size:9.5px;letter-spacing:0.12em;text-transform:uppercase;color:var(--fg-faint);">split</span>
+            </span></div>
+          </sc-if>
+
+          <sc-if value="{{ isDeclared4 }}" hint-placeholder-val="{{ false }}">
+            <div style="font-size:14px;font-weight:600;color:var(--fg);margin-top:9px;">Optimized</div>
+            <div style="margin-top:10px;"><span style="display:inline-flex;align-items:center;gap:8px;border:1px solid color-mix(in oklab,var(--bracket-4) 55%,transparent);border-radius:999px;padding:2px 13px 2px 4px;">
+              <svg width="34" height="34" viewBox="0 0 40 40" style="display:block;flex:none;"><path d="M20 8.5 L31.5 20 L20 31.5 L8.5 20 Z" fill="none" stroke="var(--bracket-4)" stroke-width="1.5"></path><path d="M20 5.9 L34.1 20 L20 34.1 L5.9 20 Z" fill="none" stroke="var(--bracket-4)" stroke-width="0.9" opacity="0.55"></path><path d="M20 1.2 L21.6 2.8 L20 4.4 L18.4 2.8 Z" fill="none" stroke="var(--bracket-4)" stroke-width="1.1"></path><path d="M37.2 18.4 L38.8 20 L37.2 21.6 L35.6 20 Z" fill="none" stroke="var(--bracket-4)" stroke-width="1.1"></path><path d="M20 35.6 L21.6 37.2 L20 38.8 L18.4 37.2 Z" fill="none" stroke="var(--bracket-4)" stroke-width="1.1"></path><path d="M2.8 18.4 L4.4 20 L2.8 21.6 L1.2 20 Z" fill="none" stroke="var(--bracket-4)" stroke-width="1.1"></path><text x="20" y="20" text-anchor="middle" dominant-baseline="central" font-family="Cinzel,serif" font-weight="700" font-size="16" fill="var(--bracket-4)" dy="0.5">4</text></svg>
+              <span style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--bracket-4);">Optimized</span>
+            </span></div>
+          </sc-if>
+
+          <sc-if value="{{ isDeclared5 }}" hint-placeholder-val="{{ false }}">
+            <div style="font-size:14px;font-weight:600;color:var(--fg);margin-top:9px;">cEDH</div>
+            <div style="margin-top:10px;"><span style="display:inline-flex;align-items:center;gap:8px;border:1px solid color-mix(in oklab,var(--bracket-5) 55%,transparent);border-radius:999px;padding:2px 13px 2px 4px;">
+              <svg width="34" height="34" viewBox="0 0 40 40" style="display:block;flex:none;"><path d="M20 8.5 L31.5 20 L20 31.5 L8.5 20 Z" fill="none" stroke="var(--bracket-5)" stroke-width="1.5"></path><path d="M20 5.9 L34.1 20 L20 34.1 L5.9 20 Z" fill="none" stroke="var(--bracket-5)" stroke-width="0.9" opacity="0.55"></path><path d="M20 1.2 L21.6 2.8 L20 4.4 L18.4 2.8 Z" fill="none" stroke="var(--bracket-5)" stroke-width="1.1"></path><path d="M37.2 18.4 L38.8 20 L37.2 21.6 L35.6 20 Z" fill="none" stroke="var(--bracket-5)" stroke-width="1.1"></path><path d="M20 35.6 L21.6 37.2 L20 38.8 L18.4 37.2 Z" fill="none" stroke="var(--bracket-5)" stroke-width="1.1"></path><path d="M2.8 18.4 L4.4 20 L2.8 21.6 L1.2 20 Z" fill="none" stroke="var(--bracket-5)" stroke-width="1.1"></path><text x="20" y="20" text-anchor="middle" dominant-baseline="central" font-family="Cinzel,serif" font-weight="700" font-size="16" fill="var(--bracket-5)" dy="0.5">5</text></svg>
+              <span style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--bracket-5);">cEDH</span>
+            </span></div>
+          </sc-if>
+
+          <sc-if value="{{ isRange }}" hint-placeholder-val="{{ true }}">
+            <div style="font-size:13px;color:var(--fg-muted);line-height:1.6;margin-top:12px;">Bracket 3 only permits up to three game changers. Four and five have no card limits between them, so which one this is, is how you play it.</div>
+          </sc-if>
+          <sc-if value="{{ isDeclared4 }}" hint-placeholder-val="{{ false }}">
+            <div style="font-size:13px;color:var(--fg-muted);line-height:1.6;margin-top:12px;">Your cards permit Optimized or cEDH &mdash; the two have no card limits between them.</div>
+          </sc-if>
+          <sc-if value="{{ isDeclared5 }}" hint-placeholder-val="{{ false }}">
+            <div style="font-size:13px;color:var(--fg-muted);line-height:1.6;margin-top:12px;">Your cards permit Optimized or cEDH &mdash; the two have no card limits between them.</div>
+          </sc-if>
+
+          <sc-if value="{{ isAsk }}" hint-placeholder-val="{{ true }}">
+            <div style="border-top:1px solid var(--border);margin-top:13px;padding-top:12px;display:flex;flex-direction:column;gap:9px;">
+              <span style="font-size:11.5px;color:var(--fg-faint);line-height:1.5;">Pick one so pods know what to expect.</span>
+              <span style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;">
+                <span onClick="{{ pick4 }}" style="cursor:pointer;display:inline-flex;align-items:center;gap:8px;height:38px;padding:0 13px 0 8px;border-radius:9px;border:1px solid color-mix(in oklab,var(--bracket-4) 45%,var(--border));background:var(--surface-raised);" style-hover="background:var(--elevated);border:1px solid var(--bracket-4);">
+                  <svg width="22" height="22" viewBox="0 0 40 40" style="display:block;flex:none;"><path d="M20 8.5 L31.5 20 L20 31.5 L8.5 20 Z" fill="none" stroke="var(--bracket-4)" stroke-width="1.8"></path><path d="M20 1.2 L21.6 2.8 L20 4.4 L18.4 2.8 Z" fill="none" stroke="var(--bracket-4)" stroke-width="1.4"></path><path d="M37.2 18.4 L38.8 20 L37.2 21.6 L35.6 20 Z" fill="none" stroke="var(--bracket-4)" stroke-width="1.4"></path><path d="M20 35.6 L21.6 37.2 L20 38.8 L18.4 37.2 Z" fill="none" stroke="var(--bracket-4)" stroke-width="1.4"></path><path d="M2.8 18.4 L4.4 20 L2.8 21.6 L1.2 20 Z" fill="none" stroke="var(--bracket-4)" stroke-width="1.4"></path><text x="20" y="20" text-anchor="middle" dominant-baseline="central" font-family="Cinzel,serif" font-weight="700" font-size="17" fill="var(--bracket-4)" dy="0.5">4</text></svg>
+                  <span style="font-size:13px;font-weight:600;color:var(--fg);">Optimized</span>
+                </span>
+                <span onClick="{{ pick5 }}" style="cursor:pointer;display:inline-flex;align-items:center;gap:8px;height:38px;padding:0 13px 0 8px;border-radius:9px;border:1px solid color-mix(in oklab,var(--bracket-5) 45%,var(--border));background:var(--surface-raised);" style-hover="background:var(--elevated);border:1px solid var(--bracket-5);">
+                  <svg width="22" height="22" viewBox="0 0 40 40" style="display:block;flex:none;"><path d="M20 8.5 L31.5 20 L20 31.5 L8.5 20 Z" fill="none" stroke="var(--bracket-5)" stroke-width="1.8"></path><path d="M20 1.2 L21.6 2.8 L20 4.4 L18.4 2.8 Z" fill="none" stroke="var(--bracket-5)" stroke-width="1.4"></path><path d="M37.2 18.4 L38.8 20 L37.2 21.6 L35.6 20 Z" fill="none" stroke="var(--bracket-5)" stroke-width="1.4"></path><path d="M20 35.6 L21.6 37.2 L20 38.8 L18.4 37.2 Z" fill="none" stroke="var(--bracket-5)" stroke-width="1.4"></path><path d="M2.8 18.4 L4.4 20 L2.8 21.6 L1.2 20 Z" fill="none" stroke="var(--bracket-5)" stroke-width="1.4"></path><text x="20" y="20" text-anchor="middle" dominant-baseline="central" font-family="Cinzel,serif" font-weight="700" font-size="17" fill="var(--bracket-5)" dy="0.5">5</text></svg>
+                  <span style="font-size:13px;font-weight:600;color:var(--fg);">cEDH</span>
+                </span>
+                <span onClick="{{ skip }}" style="cursor:pointer;display:inline-flex;align-items:center;height:38px;font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:var(--fg-faint);border-bottom:1px dotted var(--border-dashed);" style-hover="color:var(--fg-body);">skip this</span>
+              </span>
+            </div>
+          </sc-if>
+
+          <sc-if value="{{ isDeclared4 }}" hint-placeholder-val="{{ false }}">
+            <div style="border-top:1px solid var(--border);margin-top:13px;padding-top:12px;">
+              <span style="font-size:13px;color:var(--fg-body);line-height:1.6;">You said <b style="color:var(--fg);font-weight:600;">Optimized</b>. That is what this deck says at a table. <span onClick="{{ reset }}" style="cursor:pointer;font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:var(--accent);border-bottom:1px dotted var(--accent);">change</span></span>
+            </div>
+          </sc-if>
+
+          <sc-if value="{{ isDeclared5 }}" hint-placeholder-val="{{ false }}">
+            <div style="border-top:1px solid var(--border);margin-top:13px;padding-top:12px;">
+              <span style="font-size:13px;color:var(--fg-body);line-height:1.6;">You said <b style="color:var(--fg);font-weight:600;">cEDH</b>. That is what this deck says at a table. <span onClick="{{ reset }}" style="cursor:pointer;font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:var(--accent);border-bottom:1px dotted var(--accent);">change</span></span>
+            </div>
+          </sc-if>
+
+          <sc-if value="{{ isSkipped }}" hint-placeholder-val="{{ false }}">
+            <div style="border-top:1px solid var(--border);margin-top:13px;padding-top:12px;">
+              <span style="font-size:12.5px;color:var(--fg-faint);line-height:1.6;">Not declared. The range stands on its own, and we will leave it there. <span onClick="{{ reset }}" style="cursor:pointer;font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:var(--fg-faint);border-bottom:1px dotted var(--border-dashed);" style-hover="color:var(--accent);">say which</span></span>
+            </div>
+          </sc-if>
+        </div>
+        <div style="font-size:12.5px;color:var(--fg-muted);line-height:1.65;"><b style="color:var(--fg);font-weight:600;">Adopted.</b> The chip is the only shape on the surface that carries a bracket mark <i>and</i> is pressable, so it cannot be mistaken for the verdict&rsquo;s own mark above it. 38px here, <b style="color:var(--fg-body);font-weight:600;">44px at 390</b>. The skip sits on the same line at text weight: available, never a third button.</div>
+        <div style="font-size:12.5px;color:var(--fg-muted);line-height:1.65;"><b style="color:var(--fg);font-weight:600;">Answering resolves the face.</b> The split pill and its <i>split</i> label are replaced by the declared bracket&rsquo;s own chip, and the title line above it goes from <i>Optimized or cEDH</i> to <i>Optimized</i>. The block stops presenting a question the player has closed.</div>
+      </div>
+
+      <div style="width:372px;display:flex;flex-direction:column;gap:11px;">
+        <span style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.14em;text-transform:uppercase;color:var(--fg-faint);">B &mdash; the sentence answers itself</span>
+        <div style="background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:16px 18px;display:flex;flex-direction:column;opacity:0.75;">
+          <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.14em;text-transform:uppercase;color:var(--fg-faint);">Your bracket</div>
+          <div style="font-size:14px;font-weight:600;color:var(--fg);margin-top:9px;">Optimized or cEDH</div>
+          <div style="font-size:13px;color:var(--fg-muted);line-height:1.6;margin-top:12px;">Bracket 3 only permits up to three game changers. Four and five have no card limits between them, so which one this is, is how you play it &mdash; <span style="color:var(--accent);border-bottom:1px solid var(--accent);">Optimized</span> or <span style="color:var(--accent);border-bottom:1px solid var(--accent);">cEDH</span>?</div>
+        </div>
+        <div style="font-size:12.5px;color:var(--fg-muted);line-height:1.65;"><b style="color:var(--fg);font-weight:600;">Rejected on the phone.</b> Two inline words are a 17px target inside a wrapping sentence, and the same treatment already means <i>opens a card</i> everywhere else on this surface. It is also the only reading where a player can answer by accident.</div>
+        <div style="font-size:12.5px;color:var(--fg-muted);line-height:1.65;"><b style="color:var(--fg);font-weight:600;">What both drop:</b> the ringed <span style="font-family:'IBM Plex Mono',monospace;">?</span>. A question mark beside a question is a label on a thing that is already speaking &mdash; and once the player answers, the mark has to become something, which is how a second glyph gets invented.</div>
+        <div style="font-size:12.5px;color:var(--fg-muted);line-height:1.65;"><b style="color:var(--fg);font-weight:600;">The name alone, because the mark carries the number.</b> Every face, chip and rung on this surface is drawn beside its bracket mark, and the mark <i>is</i> the numeral &mdash; so the label is the name. <b style="color:var(--fg-body);font-weight:600;">The modal heading is the one place with no mark</b>, and it names the number instead: <i>How we determined bracket 4</i>, with <i>Optimized</i> beside it.</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ========== 1b · FIVE READINGS ========== -->
+  <div id="1b" style="display:flex;flex-direction:column;gap:14px;">
+    <div style="display:flex;align-items:center;gap:11px;flex-wrap:wrap;border-top:1px solid var(--accent);padding-top:18px;">
+      <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;font-weight:600;color:var(--bg);background:var(--accent);border-radius:5px;padding:3px 8px;">1b</span>
+      <span style="font-family:var(--display),serif;font-weight:700;font-size:19px;color:var(--fg);">Five readings of one sub-line</span>
+    </div>
+
+    <div style="display:flex;gap:20px;flex-wrap:wrap;align-items:flex-start;">
+
+      <div style="width:320px;display:flex;flex-direction:column;gap:10px;">
+        <span style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.14em;text-transform:uppercase;color:var(--fg-faint);">permits [1,2] &middot; unanswered</span>
+        <div style="background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:15px 16px;display:flex;flex-direction:column;">
+          <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.14em;text-transform:uppercase;color:var(--fg-faint);">Your bracket</div>
+          <div style="font-size:14px;font-weight:600;color:var(--fg);margin-top:9px;">Exhibition or Core</div>
+          <div style="margin-top:10px;"><span style="display:inline-flex;align-items:center;gap:8px;border:1px solid color-mix(in oklab,var(--bracket-1) 55%,transparent);border-radius:999px;padding:2px 12px 2px 4px;">
+            <svg width="32" height="32" viewBox="0 0 40 40" style="display:block;flex:none;"><path d="M20 8.5 L31.5 20 L20 31.5 L8.5 20 Z" fill="none" stroke="var(--bracket-1)" stroke-width="1.5"></path><path d="M20 5.9 L34.1 20 L20 34.1 L5.9 20 Z" fill="none" stroke="var(--bracket-1)" stroke-width="0.9" opacity="0.55"></path><text x="20" y="20" text-anchor="middle" dominant-baseline="central" font-family="Cinzel,serif" font-weight="700" font-size="16" fill="var(--bracket-1)" dy="0.5">1</text></svg>
+            <svg width="32" height="32" viewBox="0 0 40 40" style="display:block;flex:none;opacity:0.5;"><path d="M20 8.5 L31.5 20 L20 31.5 L8.5 20 Z" fill="none" stroke="var(--bracket-2)" stroke-width="1.5"></path><path d="M20 5.9 L34.1 20 L20 34.1 L5.9 20 Z" fill="none" stroke="var(--bracket-2)" stroke-width="0.9" opacity="0.55"></path><text x="20" y="20" text-anchor="middle" dominant-baseline="central" font-family="Cinzel,serif" font-weight="700" font-size="16" fill="var(--bracket-2)" dy="0.5">2</text></svg>
+            <span style="font-family:'IBM Plex Mono',monospace;font-size:9.5px;letter-spacing:0.12em;text-transform:uppercase;color:var(--fg-faint);">split</span>
+          </span></div>
+          <div style="font-size:13px;color:var(--fg-muted);line-height:1.6;margin-top:11px;">Nothing in this deck pushes past Core. The two differ in what you are trying to do, so which of them this is, is yours to say.</div>
+          <div style="border-top:1px solid var(--border);margin-top:13px;padding-top:12px;display:flex;flex-direction:column;gap:9px;">
+            <span style="font-size:11.5px;color:var(--fg-faint);line-height:1.5;">Pick one so pods know what to expect.</span>
+            <span style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
+              <span style="display:inline-flex;align-items:center;gap:8px;height:38px;padding:0 13px 0 8px;border-radius:9px;border:1px solid color-mix(in oklab,var(--bracket-1) 45%,var(--border));background:var(--surface-raised);">
+                <svg width="22" height="22" viewBox="0 0 40 40" style="display:block;flex:none;"><path d="M20 8.5 L31.5 20 L20 31.5 L8.5 20 Z" fill="none" stroke="var(--bracket-1)" stroke-width="1.8"></path><text x="20" y="20" text-anchor="middle" dominant-baseline="central" font-family="Cinzel,serif" font-weight="700" font-size="17" fill="var(--bracket-1)" dy="0.5">1</text></svg>
+                <span style="font-size:13px;font-weight:600;color:var(--fg);">Exhibition</span>
+              </span>
+              <span style="display:inline-flex;align-items:center;gap:8px;height:38px;padding:0 13px 0 8px;border-radius:9px;border:1px solid color-mix(in oklab,var(--bracket-2) 45%,var(--border));background:var(--surface-raised);">
+                <svg width="22" height="22" viewBox="0 0 40 40" style="display:block;flex:none;"><path d="M20 8.5 L31.5 20 L20 31.5 L8.5 20 Z" fill="none" stroke="var(--bracket-2)" stroke-width="1.8"></path><text x="20" y="20" text-anchor="middle" dominant-baseline="central" font-family="Cinzel,serif" font-weight="700" font-size="17" fill="var(--bracket-2)" dy="0.5">2</text></svg>
+                <span style="font-size:13px;font-weight:600;color:var(--fg);">Core</span>
+              </span>
+              <span style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:var(--fg-faint);border-bottom:1px dotted var(--border-dashed);">skip this</span>
+            </span>
+          </div>
+        </div>
+        <div style="font-size:12px;color:var(--fg-muted);line-height:1.6;">The other declaration question. Same row, same two chips, different ink &mdash; and the <b style="color:var(--fg-body);font-weight:600;">only</b> other place it appears.</div>
+      </div>
+
+      <div style="width:320px;display:flex;flex-direction:column;gap:10px;">
+        <span style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.14em;text-transform:uppercase;color:var(--accent);">declared &mdash; the face resolves</span>
+        <div style="background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:15px 16px;display:flex;flex-direction:column;">
+          <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.14em;text-transform:uppercase;color:var(--fg-faint);">Your bracket</div>
+          <div style="font-size:14px;font-weight:600;color:var(--fg);margin-top:9px;">Optimized</div>
+          <div style="margin-top:10px;"><span style="display:inline-flex;align-items:center;gap:8px;border:1px solid color-mix(in oklab,var(--bracket-4) 55%,transparent);border-radius:999px;padding:2px 13px 2px 4px;">
+            <svg width="32" height="32" viewBox="0 0 40 40" style="display:block;flex:none;"><path d="M20 8.5 L31.5 20 L20 31.5 L8.5 20 Z" fill="none" stroke="var(--bracket-4)" stroke-width="1.5"></path><path d="M20 5.9 L34.1 20 L20 34.1 L5.9 20 Z" fill="none" stroke="var(--bracket-4)" stroke-width="0.9" opacity="0.55"></path><path d="M20 1.2 L21.6 2.8 L20 4.4 L18.4 2.8 Z" fill="none" stroke="var(--bracket-4)" stroke-width="1.1"></path><path d="M37.2 18.4 L38.8 20 L37.2 21.6 L35.6 20 Z" fill="none" stroke="var(--bracket-4)" stroke-width="1.1"></path><path d="M20 35.6 L21.6 37.2 L20 38.8 L18.4 37.2 Z" fill="none" stroke="var(--bracket-4)" stroke-width="1.1"></path><path d="M2.8 18.4 L4.4 20 L2.8 21.6 L1.2 20 Z" fill="none" stroke="var(--bracket-4)" stroke-width="1.1"></path><text x="20" y="20" text-anchor="middle" dominant-baseline="central" font-family="Cinzel,serif" font-weight="700" font-size="16" fill="var(--bracket-4)" dy="0.5">4</text></svg>
+            <span style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--bracket-4);">Optimized</span>
+          </span></div>
+          <div style="font-size:13px;color:var(--fg-muted);line-height:1.6;margin-top:11px;">Your cards permit Optimized or cEDH &mdash; four and five have no card limits between them, so which one this is, is how you play it.</div>
+          <div style="border-top:1px solid var(--border);margin-top:13px;padding-top:12px;">
+            <span style="font-size:13px;color:var(--fg-body);line-height:1.6;">You said <b style="color:var(--fg);font-weight:600;">Optimized</b>. That is what this deck says at a table. <span style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:var(--accent);border-bottom:1px dotted var(--accent);">change</span></span>
+          </div>
+        </div>
+        <div style="font-size:12px;color:var(--fg-muted);line-height:1.6;"><b style="color:var(--fg-body);font-weight:600;">The face becomes the answer; the range moves into the sentence.</b> A declared deck is not still asking, so it stops drawing a split &mdash; but the permitted range is a fact and does not disappear: it is the line under the chip, which is also where a drifted deck will later show it moving.</div>
+      </div>
+
+      <div style="width:320px;display:flex;flex-direction:column;gap:10px;">
+        <span style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.14em;text-transform:uppercase;color:var(--fg-faint);">skipped &mdash; permanently</span>
+        <div style="background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:15px 16px;display:flex;flex-direction:column;">
+          <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.14em;text-transform:uppercase;color:var(--fg-faint);">Your bracket</div>
+          <div style="font-size:14px;font-weight:600;color:var(--fg);margin-top:9px;">Optimized or cEDH</div>
+          <div style="margin-top:10px;"><span style="display:inline-flex;align-items:center;gap:8px;border:1px solid color-mix(in oklab,var(--bracket-4) 55%,transparent);border-radius:999px;padding:2px 12px 2px 4px;">
+            <svg width="32" height="32" viewBox="0 0 40 40" style="display:block;flex:none;"><path d="M20 8.5 L31.5 20 L20 31.5 L8.5 20 Z" fill="none" stroke="var(--bracket-4)" stroke-width="1.5"></path><path d="M20 5.9 L34.1 20 L20 34.1 L5.9 20 Z" fill="none" stroke="var(--bracket-4)" stroke-width="0.9" opacity="0.55"></path><path d="M20 1.2 L21.6 2.8 L20 4.4 L18.4 2.8 Z" fill="none" stroke="var(--bracket-4)" stroke-width="1.1"></path><path d="M37.2 18.4 L38.8 20 L37.2 21.6 L35.6 20 Z" fill="none" stroke="var(--bracket-4)" stroke-width="1.1"></path><path d="M20 35.6 L21.6 37.2 L20 38.8 L18.4 37.2 Z" fill="none" stroke="var(--bracket-4)" stroke-width="1.1"></path><path d="M2.8 18.4 L4.4 20 L2.8 21.6 L1.2 20 Z" fill="none" stroke="var(--bracket-4)" stroke-width="1.1"></path><text x="20" y="20" text-anchor="middle" dominant-baseline="central" font-family="Cinzel,serif" font-weight="700" font-size="16" fill="var(--bracket-4)" dy="0.5">4</text></svg>
+            <svg width="32" height="32" viewBox="0 0 40 40" style="display:block;flex:none;opacity:0.45;"><path d="M20 8.5 L31.5 20 L20 31.5 L8.5 20 Z" fill="none" stroke="var(--bracket-5)" stroke-width="1.5"></path><path d="M20 5.9 L34.1 20 L20 34.1 L5.9 20 Z" fill="none" stroke="var(--bracket-5)" stroke-width="0.9" opacity="0.55"></path><path d="M20 1.2 L21.6 2.8 L20 4.4 L18.4 2.8 Z" fill="none" stroke="var(--bracket-5)" stroke-width="1.1"></path><path d="M37.2 18.4 L38.8 20 L37.2 21.6 L35.6 20 Z" fill="none" stroke="var(--bracket-5)" stroke-width="1.1"></path><path d="M20 35.6 L21.6 37.2 L20 38.8 L18.4 37.2 Z" fill="none" stroke="var(--bracket-5)" stroke-width="1.1"></path><path d="M2.8 18.4 L4.4 20 L2.8 21.6 L1.2 20 Z" fill="none" stroke="var(--bracket-5)" stroke-width="1.1"></path><text x="20" y="20" text-anchor="middle" dominant-baseline="central" font-family="Cinzel,serif" font-weight="700" font-size="16" fill="var(--bracket-5)" dy="0.5">5</text></svg>
+            <span style="font-family:'IBM Plex Mono',monospace;font-size:9.5px;letter-spacing:0.12em;text-transform:uppercase;color:var(--fg-faint);">split</span>
+          </span></div>
+          <div style="font-size:13px;color:var(--fg-muted);line-height:1.6;margin-top:11px;">Bracket 3 only permits up to three game changers. Four and five have no card limits between them, so which one this is, is how you play it.</div>
+          <div style="border-top:1px solid var(--border);margin-top:13px;padding-top:12px;">
+            <span style="font-size:12.5px;color:var(--fg-faint);line-height:1.6;">Not declared. The range stands on its own, and we will leave it there. <span style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:var(--fg-faint);border-bottom:1px dotted var(--border-dashed);">say which</span></span>
+          </div>
+        </div>
+        <div style="font-size:12px;color:var(--fg-muted);line-height:1.6;"><b style="color:var(--fg-body);font-weight:600;">Permanently means permanently.</b> The split face stays, because the question is genuinely still open &mdash; it is just never asked again. <i>Say which</i> remains because volunteering later is not the same as being asked.</div>
+      </div>
+
+      <div style="width:660px;display:flex;flex-direction:column;gap:10px;">
+        <span style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.14em;text-transform:uppercase;color:var(--accent);">declaredOutsidePermits &mdash; drift, redrawn</span>
+        <div style="display:flex;gap:20px;flex-wrap:wrap;align-items:flex-start;">
+          <div style="width:320px;background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:15px 16px;display:flex;flex-direction:column;">
+            <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.14em;text-transform:uppercase;color:var(--fg-faint);">Your bracket</div>
+            <div style="font-size:14px;font-weight:600;color:var(--fg);margin-top:9px;">Optimized or cEDH</div>
+            <div style="margin-top:10px;"><span style="display:inline-flex;align-items:center;gap:8px;border:1px solid color-mix(in oklab,var(--bracket-4) 55%,transparent);border-radius:999px;padding:2px 12px 2px 4px;">
+              <svg width="32" height="32" viewBox="0 0 40 40" style="display:block;flex:none;"><path d="M20 8.5 L31.5 20 L20 31.5 L8.5 20 Z" fill="none" stroke="var(--bracket-4)" stroke-width="1.5"></path><path d="M20 5.9 L34.1 20 L20 34.1 L5.9 20 Z" fill="none" stroke="var(--bracket-4)" stroke-width="0.9" opacity="0.55"></path><path d="M20 1.2 L21.6 2.8 L20 4.4 L18.4 2.8 Z" fill="none" stroke="var(--bracket-4)" stroke-width="1.1"></path><path d="M37.2 18.4 L38.8 20 L37.2 21.6 L35.6 20 Z" fill="none" stroke="var(--bracket-4)" stroke-width="1.1"></path><path d="M20 35.6 L21.6 37.2 L20 38.8 L18.4 37.2 Z" fill="none" stroke="var(--bracket-4)" stroke-width="1.1"></path><path d="M2.8 18.4 L4.4 20 L2.8 21.6 L1.2 20 Z" fill="none" stroke="var(--bracket-4)" stroke-width="1.1"></path><text x="20" y="20" text-anchor="middle" dominant-baseline="central" font-family="Cinzel,serif" font-weight="700" font-size="16" fill="var(--bracket-4)" dy="0.5">4</text></svg>
+              <svg width="32" height="32" viewBox="0 0 40 40" style="display:block;flex:none;opacity:0.45;"><path d="M20 8.5 L31.5 20 L20 31.5 L8.5 20 Z" fill="none" stroke="var(--bracket-5)" stroke-width="1.5"></path><path d="M20 5.9 L34.1 20 L20 34.1 L5.9 20 Z" fill="none" stroke="var(--bracket-5)" stroke-width="0.9" opacity="0.55"></path><path d="M20 1.2 L21.6 2.8 L20 4.4 L18.4 2.8 Z" fill="none" stroke="var(--bracket-5)" stroke-width="1.1"></path><path d="M37.2 18.4 L38.8 20 L37.2 21.6 L35.6 20 Z" fill="none" stroke="var(--bracket-5)" stroke-width="1.1"></path><path d="M20 35.6 L21.6 37.2 L20 38.8 L18.4 37.2 Z" fill="none" stroke="var(--bracket-5)" stroke-width="1.1"></path><path d="M2.8 18.4 L4.4 20 L2.8 21.6 L1.2 20 Z" fill="none" stroke="var(--bracket-5)" stroke-width="1.1"></path><text x="20" y="20" text-anchor="middle" dominant-baseline="central" font-family="Cinzel,serif" font-weight="700" font-size="16" fill="var(--bracket-5)" dy="0.5">5</text></svg>
+              <span style="font-family:'IBM Plex Mono',monospace;font-size:9.5px;letter-spacing:0.12em;text-transform:uppercase;color:var(--fg-faint);">split</span>
+            </span></div>
+            <div style="font-size:13px;color:var(--fg-muted);line-height:1.6;margin-top:11px;">Bracket 3 only permits up to three game changers. Four and five have no card limits between them, so which one this is, is how you play it.</div>
+            <div style="border-top:1px solid var(--border);margin-top:13px;padding-top:12px;display:flex;flex-direction:column;gap:9px;">
+              <span style="display:flex;align-items:flex-end;gap:10px;">
+                <span style="display:inline-flex;flex-direction:column;align-items:center;gap:3px;">
+                  <svg width="24" height="24" viewBox="0 0 40 40" style="display:block;flex:none;"><path d="M20 8.5 L31.5 20 L20 31.5 L8.5 20 Z" fill="none" stroke="var(--bracket-2)" stroke-width="1.8"></path><text x="20" y="20" text-anchor="middle" dominant-baseline="central" font-family="Cinzel,serif" font-weight="700" font-size="17" fill="var(--bracket-2)" dy="0.5">2</text></svg>
+                  <span style="font-family:'IBM Plex Mono',monospace;font-size:8px;letter-spacing:0.1em;text-transform:uppercase;color:var(--fg-faint);">you said</span>
+                </span>
+                <span style="font-family:'IBM Plex Mono',monospace;font-size:13px;color:var(--fg-faint);padding-bottom:13px;">&rarr;</span>
+                <span style="display:inline-flex;flex-direction:column;align-items:center;gap:3px;">
+                  <span style="display:flex;align-items:center;gap:2px;">
+                    <svg width="24" height="24" viewBox="0 0 40 40" style="display:block;flex:none;"><path d="M20 8.5 L31.5 20 L20 31.5 L8.5 20 Z" fill="none" stroke="var(--bracket-4)" stroke-width="1.8"></path><path d="M20 1.2 L21.6 2.8 L20 4.4 L18.4 2.8 Z" fill="none" stroke="var(--bracket-4)" stroke-width="1.4"></path><path d="M37.2 18.4 L38.8 20 L37.2 21.6 L35.6 20 Z" fill="none" stroke="var(--bracket-4)" stroke-width="1.4"></path><path d="M20 35.6 L21.6 37.2 L20 38.8 L18.4 37.2 Z" fill="none" stroke="var(--bracket-4)" stroke-width="1.4"></path><path d="M2.8 18.4 L4.4 20 L2.8 21.6 L1.2 20 Z" fill="none" stroke="var(--bracket-4)" stroke-width="1.4"></path><text x="20" y="20" text-anchor="middle" dominant-baseline="central" font-family="Cinzel,serif" font-weight="700" font-size="17" fill="var(--bracket-4)" dy="0.5">4</text></svg>
+                    <svg width="24" height="24" viewBox="0 0 40 40" style="display:block;flex:none;opacity:0.5;"><path d="M20 8.5 L31.5 20 L20 31.5 L8.5 20 Z" fill="none" stroke="var(--bracket-5)" stroke-width="1.8"></path><path d="M20 1.2 L21.6 2.8 L20 4.4 L18.4 2.8 Z" fill="none" stroke="var(--bracket-5)" stroke-width="1.4"></path><path d="M37.2 18.4 L38.8 20 L37.2 21.6 L35.6 20 Z" fill="none" stroke="var(--bracket-5)" stroke-width="1.4"></path><path d="M20 35.6 L21.6 37.2 L20 38.8 L18.4 37.2 Z" fill="none" stroke="var(--bracket-5)" stroke-width="1.4"></path><path d="M2.8 18.4 L4.4 20 L2.8 21.6 L1.2 20 Z" fill="none" stroke="var(--bracket-5)" stroke-width="1.4"></path><text x="20" y="20" text-anchor="middle" dominant-baseline="central" font-family="Cinzel,serif" font-weight="700" font-size="17" fill="var(--bracket-5)" dy="0.5">5</text></svg>
+                  </span>
+                  <span style="font-family:'IBM Plex Mono',monospace;font-size:8px;letter-spacing:0.1em;text-transform:uppercase;color:var(--fg-faint);">your cards now permit</span>
+                </span>
+              </span>
+              <span style="font-size:12.5px;color:var(--fg-body);line-height:1.55;">You said <b style="color:var(--fg);font-weight:600;">Core</b>. Your last changes moved this deck past that &mdash; it now permits Optimized or cEDH.</span>
+              <span style="font-size:12px;color:var(--fg-faint);line-height:1.55;">Your declaration stands as you left it. <span style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:var(--accent);border-bottom:1px dotted var(--accent);">change what you said</span></span>
+            </div>
+          </div>
+
+          <div style="width:320px;display:flex;flex-direction:column;gap:10px;">
+            <div style="border:1px solid var(--accent);border-radius:11px;background:color-mix(in oklab,var(--accent) 6%,var(--surface));padding:13px 15px;display:flex;flex-direction:column;gap:8px;">
+              <span style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.12em;text-transform:uppercase;color:var(--accent);">you were right &mdash; R1 drew this impossibly</span>
+              <span style="font-size:12.5px;color:var(--fg-body);line-height:1.6;">R1 showed <i>you said Upgraded</i>. <b style="color:var(--fg);font-weight:600;">Nobody can say 3.</b> Only 1/2 and 4/5 are ever offered, so a declaration is always 1, 2, 4 or 5 &mdash; and drift is always a deck crossing out of the range it was declared inside. The only shapes it can take are <b style="color:var(--fg);font-weight:600;">1 or 2 &rarr; [4,5]</b> and <b style="color:var(--fg);font-weight:600;">4 or 5 &rarr; [1,2]</b>.</span>
+              <span style="font-size:12.5px;color:var(--fg-body);line-height:1.6;">R1&rsquo;s second entrance &mdash; <i>a reader overruled the lean</i> &mdash; is also impossible. Overruling the lean means declaring 5 where the lean said 4, and both are inside <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">[4,5]</span>. That is a declaration, not drift. <b style="color:var(--fg);font-weight:600;">One cause, one sentence, and the <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">driftVoice</span> tweak is gone.</b></span>
+            </div>
+            <div style="font-size:12.5px;color:var(--fg-muted);line-height:1.65;"><b style="color:var(--fg);font-weight:600;">And your sequence is the copy&rsquo;s premise.</b> The player edited, committed, re-analysed; the app re-read the cards and reports what they now permit. So the sentence says <i>your last changes moved this deck</i> &mdash; it credits the player with the movement, which is both true and the reason the state cannot read as a scolding. <b style="color:var(--fg-body);font-weight:600;">The app re-read the deck. It did not re-declare it</b>, and the difference between those two is this whole state.</div>
+            <div style="font-size:12.5px;color:var(--fg-muted);line-height:1.65;">That is also why there is <b style="color:var(--fg);font-weight:600;">no &ldquo;update my declaration&rdquo;</b>. The analysis is automated and the declaration is not; a button that copies one into the other makes the app the author of a sentence the player says at a table. The only control is the <i>change</i> that already exists.</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ========== 1c · THE LEAN ========== -->
+  <div id="1c" style="display:flex;flex-direction:column;gap:14px;">
+    <div style="display:flex;align-items:center;gap:11px;flex-wrap:wrap;border-top:1px solid var(--accent);padding-top:18px;">
+      <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;font-weight:600;color:var(--bg);background:var(--accent);border-radius:5px;padding:3px 8px;">1c</span>
+      <span style="font-family:var(--display),serif;font-weight:700;font-size:19px;color:var(--fg);">The lean &mdash; the reason a verdict resolved</span>
+    </div>
+
+    <div style="display:flex;gap:22px;flex-wrap:wrap;align-items:flex-start;">
+
+      <div style="width:372px;display:flex;flex-direction:column;gap:10px;">
+        <span style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.14em;text-transform:uppercase;color:var(--fg-faint);">reason: reachable &middot; it slotted at 4</span>
+        <div style="background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:15px 16px;display:flex;flex-direction:column;">
+          <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.14em;text-transform:uppercase;color:var(--fg-faint);">Your bracket</div>
+          <div style="font-size:14px;font-weight:600;color:var(--fg);margin-top:9px;">Optimized or cEDH</div>
+          <div style="font-size:13px;color:var(--fg-muted);line-height:1.6;margin-top:11px;">Bracket 3 only permits up to three game changers. Four and five have no card limits between them, so which one this is, is how you play it.</div>
+          <div style="border-top:1px solid var(--border);margin-top:13px;padding-top:11px;display:flex;flex-direction:column;gap:5px;">
+            <span style="font-family:'IBM Plex Mono',monospace;font-size:9px;letter-spacing:0.14em;text-transform:uppercase;color:var(--fg-disabled);">How we determined this bracket</span>
+            <span style="font-size:12.5px;color:var(--fg-muted);line-height:1.6;">Your tutors can find <b style="color:var(--fg-body);font-weight:600;">both halves</b> of <span style="color:var(--fg);border-bottom:1px dotted var(--accent);">Thassa&rsquo;s Oracle</span> + <span style="color:var(--fg);border-bottom:1px dotted var(--accent);">Demonic Consultation</span>, so the pair is part of the plan rather than a draw away. That is what puts this past Upgraded.</span>
+            <span style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--accent);border-bottom:1px dotted var(--accent);align-self:flex-start;margin-top:2px;">see the reasoning</span>
+          </div>
+        </div>
+      </div>
+
+      <div style="width:372px;display:flex;flex-direction:column;gap:10px;">
+        <span style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.14em;text-transform:uppercase;color:var(--fg-faint);">reason: drawOnly &middot; it stayed at 3</span>
+        <div style="background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:15px 16px;display:flex;flex-direction:column;">
+          <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.14em;text-transform:uppercase;color:var(--fg-faint);">Your bracket</div>
+          <div style="font-size:14px;font-weight:600;color:var(--fg);margin-top:9px;">Upgraded</div>
+          <div style="margin-top:10px;"><span style="display:inline-flex;align-items:center;gap:8px;border:1px solid color-mix(in oklab,var(--bracket-3) 55%,transparent);border-radius:999px;padding:2px 13px 2px 4px;">
+            <svg width="32" height="32" viewBox="0 0 40 40" style="display:block;flex:none;"><path d="M20 8.5 L31.5 20 L20 31.5 L8.5 20 Z" fill="none" stroke="var(--bracket-3)" stroke-width="1.5"></path><path d="M20 5.9 L34.1 20 L20 34.1 L5.9 20 Z" fill="none" stroke="var(--bracket-3)" stroke-width="0.9" opacity="0.55"></path><text x="20" y="20" text-anchor="middle" dominant-baseline="central" font-family="Cinzel,serif" font-weight="700" font-size="16" fill="var(--bracket-3)" dy="0.5">3</text></svg>
+            <span style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--bracket-3);">Upgraded</span>
+          </span></div>
+          <div style="font-size:13px;color:var(--fg-muted);line-height:1.6;margin-top:11px;">Two game changers, and Upgraded allows three. Nothing here reaches Optimized.</div>
+          <div style="border-top:1px solid var(--border);margin-top:13px;padding-top:11px;display:flex;flex-direction:column;gap:5px;">
+            <span style="font-family:'IBM Plex Mono',monospace;font-size:9px;letter-spacing:0.14em;text-transform:uppercase;color:var(--fg-disabled);">How we determined this bracket</span>
+            <span style="font-size:12.5px;color:var(--fg-muted);line-height:1.6;">This deck holds <span style="color:var(--fg);border-bottom:1px dotted var(--accent);">Heliod, Sun-Crowned</span> + <span style="color:var(--fg);border-bottom:1px dotted var(--accent);">Walking Ballista</span>, and nothing in it searches for either half &mdash; the pair is a draw away. That is what keeps this at Upgraded.</span>
+            <span style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--accent);border-bottom:1px dotted var(--accent);align-self:flex-start;margin-top:2px;">see the reasoning</span>
+          </div>
+        </div>
+        <div style="font-size:12px;color:var(--fg-muted);line-height:1.6;">A single bracket, and a sub-line that is a reason rather than a question. <b style="color:var(--fg-body);font-weight:600;">Nothing to declare here</b> &mdash; 3 is not a range, so this deck is never asked.</div>
+      </div>
+
+      <div style="width:372px;display:flex;flex-direction:column;gap:10px;">
+        <span style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.14em;text-transform:uppercase;color:var(--fg-faint);">&sect;4.4 &mdash; the ringed &asymp;</span>
+        <div style="border:1px solid var(--border);border-radius:12px;background:var(--surface);padding:15px 16px;display:flex;flex-direction:column;gap:12px;">
+          <div style="display:flex;align-items:center;gap:12px;">
+            <span style="flex:none;width:22px;height:22px;border-radius:999px;border:1px solid var(--fg-disabled);display:flex;align-items:center;justify-content:center;font-family:'IBM Plex Mono',monospace;font-size:12px;font-weight:600;color:var(--fg-disabled);line-height:1;">&asymp;</span>
+            <span style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--fg-disabled);text-decoration:line-through;">not knowable from a list</span>
+            <span style="font-family:'IBM Plex Mono',monospace;font-size:9px;letter-spacing:0.12em;text-transform:uppercase;color:var(--fg-faint);border:1px solid var(--border-strong);border-radius:999px;padding:2px 8px;">retired</span>
+          </div>
+          <div style="font-size:12.5px;color:var(--fg-muted);line-height:1.65;">It was drawn for the <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">3 or 4</span> reading, to say the app could not settle a boundary from a decklist. <b style="color:var(--fg);font-weight:600;">The ruling settles it</b>, so nothing on this surface is unresolved-but-shown any more.</div>
+          <div style="font-size:12.5px;color:var(--fg-muted);line-height:1.65;"><b style="color:var(--fg);font-weight:600;">And it does not fit the lean.</b> The lean is not approximate: it is a judgement with every card behind it in the receipts. An <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">&asymp;</span> would say <i>roughly</i> about the one reading we can show the working for.</div>
+          <div style="font-size:12.5px;color:var(--fg-muted);line-height:1.65;border-top:1px solid var(--border);padding-top:11px;"><b style="color:var(--fg);font-weight:600;">What replaces it is a sentence-shaped label.</b> <span style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--fg-body);">HOW WE DETERMINED THIS BRACKET</span> &mdash; it names the thing the block is about to do rather than asking the reader to interpret a mark, and it is the same 9px mono form the population line uses.</div>
+          <div style="font-size:12.5px;color:var(--fg-muted);line-height:1.65;"><b style="color:var(--fg-body);font-weight:600;">Net after Round 3:</b> two glyphs retire (ringed <span style="font-family:'IBM Plex Mono',monospace;">?</span>, ringed <span style="font-family:'IBM Plex Mono',monospace;">&asymp;</span>), none is added, and <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">MarkKey</span> is untouched by this round.</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ========== 1d · THE RECEIPTS ========== -->
+  <div id="1d" style="display:flex;flex-direction:column;gap:14px;">
+    <div style="display:flex;align-items:center;gap:11px;flex-wrap:wrap;border-top:1px solid var(--accent);padding-top:18px;">
+      <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;font-weight:600;color:var(--bg);background:var(--accent);border-radius:5px;padding:3px 8px;">1d</span>
+      <span style="font-family:var(--display),serif;font-weight:700;font-size:19px;color:var(--fg);">The reasoning, opened &mdash; Round 2&rsquo;s chrome, a third body</span>
+    </div>
+
+    <div style="display:flex;gap:24px;flex-wrap:wrap;align-items:flex-start;">
+      <div style="width:700px;border:1px solid var(--border-strong);border-radius:13px;background:var(--elevated);overflow:hidden;box-shadow:0 18px 40px rgba(0,0,0,0.45);">
+        <div style="padding:14px 18px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:11px;">
+          <svg width="15" height="15" viewBox="0 0 16 16" style="display:block;flex:none;color:var(--fact);"><path d="M5.2 4.9 A 3.1 3.1 0 1 0 5.2 11.1 C 8.3 11.1 7.7 4.9 10.8 4.9 A 3.1 3.1 0 1 1 10.8 11.1 C 7.7 11.1 8.3 4.9 5.2 4.9 Z" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"></path></svg>
+          <span style="font-size:14px;font-weight:600;color:var(--fg);">How we determined bracket 4</span>
+          <span style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--fg-faint);">Optimized &middot; both halves findable</span>
+          <span style="margin-left:auto;font-family:'IBM Plex Mono',monospace;font-size:13px;color:var(--fg-faint);">&times;</span>
+        </div>
+        <div style="padding:16px 18px 18px;display:flex;flex-direction:column;gap:15px;">
+          <div style="font-size:12.5px;color:var(--fg-muted);line-height:1.65;">A deck reaches Optimized when its tutors can cover <b style="color:var(--fg);font-weight:600;">every piece of one combo</b> &mdash; one card that finds both halves, or two that each find a different one. This combo has two pieces, and both are covered.</div>
+          <div style="display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px;">
+            <div style="border:1px solid var(--border);border-radius:10px;background:var(--surface);padding:13px;display:flex;gap:13px;">
+              <span style="flex:none;width:100px;height:140px;border-radius:6px;background:repeating-linear-gradient(135deg,var(--surface-raised),var(--surface-raised) 5px,var(--surface-sunken) 5px,var(--surface-sunken) 10px);border:1px solid var(--border-strong);"></span>
+              <span style="display:flex;flex-direction:column;gap:8px;min-width:0;">
+                <span style="display:flex;flex-direction:column;gap:3px;">
+                  <span style="font-size:13px;font-weight:600;color:var(--fg);line-height:1.3;">Thassa&rsquo;s Oracle</span>
+                  <span style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--fg-faint);">half one &middot; in this list</span>
+                </span>
+                <span style="border-top:1px solid var(--border);padding-top:8px;display:flex;flex-direction:column;gap:5px;">
+                  <span style="font-family:'IBM Plex Mono',monospace;font-size:9px;letter-spacing:0.12em;text-transform:uppercase;color:var(--fg-disabled);">found by</span>
+                  <span style="display:flex;flex-direction:column;gap:4px;align-items:flex-start;">
+                    <span style="font-size:11.5px;color:var(--fg-body);border-bottom:1px dotted var(--accent);">Merchant Scroll</span>
+                    <span style="font-size:11.5px;color:var(--fg-body);border-bottom:1px dotted var(--accent);">Muddle the Mixture</span>
+                  </span>
+                </span>
+              </span>
+            </div>
+            <div style="border:1px solid var(--border);border-radius:10px;background:var(--surface);padding:13px;display:flex;gap:13px;">
+              <span style="flex:none;width:100px;height:140px;border-radius:6px;background:repeating-linear-gradient(135deg,var(--surface-raised),var(--surface-raised) 5px,var(--surface-sunken) 5px,var(--surface-sunken) 10px);border:1px solid var(--border-strong);"></span>
+              <span style="display:flex;flex-direction:column;gap:8px;min-width:0;">
+                <span style="display:flex;flex-direction:column;gap:3px;">
+                  <span style="font-size:13px;font-weight:600;color:var(--fg);line-height:1.3;">Demonic Consultation</span>
+                  <span style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--fg-faint);">half two &middot; in this list</span>
+                </span>
+                <span style="border-top:1px solid var(--border);padding-top:8px;display:flex;flex-direction:column;gap:5px;">
+                  <span style="font-family:'IBM Plex Mono',monospace;font-size:9px;letter-spacing:0.12em;text-transform:uppercase;color:var(--fg-disabled);">found by</span>
+                  <span style="display:flex;flex-direction:column;gap:4px;align-items:flex-start;">
+                    <span style="font-size:11.5px;color:var(--fg-body);border-bottom:1px dotted var(--accent);">Demonic Tutor</span>
+                    <span style="font-size:11.5px;color:var(--fg-body);border-bottom:1px dotted var(--accent);">Vampiric Tutor</span>
+                    <span style="font-size:11.5px;color:var(--fg-body);border-bottom:1px dotted var(--accent);">Grim Tutor</span>
+                  </span>
+                </span>
+              </span>
+            </div>
+          </div>
+          <div style="border-top:1px solid var(--border);padding-top:12px;display:flex;flex-direction:column;gap:6px;">
+            <span style="font-size:12px;color:var(--fg-faint);line-height:1.6;">The threshold is this combo&rsquo;s own two halves. <b style="color:var(--fg-body);font-weight:600;">How many tutors a deck runs is a fact and never a limit</b> &mdash; the count is in the findings, with the rest of what is in this deck.</span>
+            <span style="display:flex;align-items:center;gap:14px;flex-wrap:wrap;">
+              <span style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:var(--fg-faint);">assembled in this list</span>
+              <span style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:var(--accent);border-bottom:1px solid var(--accent);">Commander Spellbook &nearr;</span>
+            </span>
+          </div>
+        </div>
+      </div>
+
+      <div style="width:404px;display:flex;flex-direction:column;gap:11px;">
+        <div style="font-size:12.5px;color:var(--fg-muted);line-height:1.65;"><b style="color:var(--fg);font-weight:600;">Cards at 100&times;140.</b> Round 2&rsquo;s thumbnail was a locator; here the card <i>is</i> the evidence, and a reader checking our working should be able to read the type line without opening anything. Two tiles at this size still fit side by side at 700px, and stack at 390.</div>
+        <div style="font-size:12.5px;color:var(--fg-muted);line-height:1.65;"><b style="color:var(--fg);font-weight:600;">The title names the number.</b> <i>How we determined bracket 4</i>, with <i>Optimized</i> as the qualifier beside it &mdash; same rule as everywhere else on the surface, in the order that suits a heading.</div>
+        <div style="font-size:12.5px;color:var(--fg-muted);line-height:1.65;"><b style="color:var(--fg);font-weight:600;">Tutors are grouped by the half they find, never listed as a set.</b> A flat list of five cards under a combo invites the reading the rules deleted in October 2025 &mdash; that a number of tutors is itself the problem. Grouped, the only figure the eye can take is <i>two halves, both covered</i>. Stacked one per line now that the tile is tall enough to hold them.</div>
+        <div style="font-size:12.5px;color:var(--fg-muted);line-height:1.65;"><b style="color:var(--fg);font-weight:600;">No count anywhere in this body</b> &mdash; no <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">5 tutors</span>, no <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">2 of 2</span> in the header.</div>
+        <div style="font-size:12.5px;color:var(--fg-muted);line-height:1.65;border-top:1px solid var(--border);padding-top:11px;"><b style="color:var(--fg);font-weight:600;">Disagreeing happens in the block, not here.</b> This modal never carries a declare control: a reader who rejects the reasoning closes it and answers the question in the sub-line. The <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">drawOnly</span> body is the identical layout with <i>found by</i> reading <span style="color:var(--fg-body);">nothing in this deck searches for it</span>.</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ========== 1e · DESKTOP ========== -->
+  <div id="1e" style="display:flex;flex-direction:column;gap:14px;">
+    <div style="display:flex;align-items:center;gap:11px;flex-wrap:wrap;border-top:1px solid var(--accent);padding-top:18px;">
+      <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;font-weight:600;color:var(--bg);background:var(--accent);border-radius:5px;padding:3px 8px;">1e</span>
+      <span style="font-family:var(--display),serif;font-weight:700;font-size:19px;color:var(--fg);">Desktop &mdash; HD &middot; Yuriko, undeclared, lean reachable</span>
+    </div>
+
+    <div style="width:1180px;border:1px solid var(--border);border-radius:12px;background:var(--bg);overflow:hidden;">
+      <div style="padding:12px 30px 0;border-bottom:1px solid var(--border);display:flex;align-items:baseline;gap:22px;">
+        <span style="display:flex;align-items:baseline;gap:6px;padding-bottom:10px;"><span style="font-size:14px;font-weight:500;color:var(--fg-faint);">Your deck</span><span style="font-family:'IBM Plex Mono',monospace;font-size:12px;color:var(--fg-faint);">99</span></span>
+        <span style="display:flex;align-items:baseline;gap:6px;padding-bottom:10px;border-bottom:2px solid var(--accent);"><span style="font-size:14px;font-weight:600;color:var(--fg);">Analysis</span></span>
+        <span style="display:flex;align-items:baseline;gap:6px;padding-bottom:10px;"><span style="font-size:14px;font-weight:500;color:var(--fg-faint);">Consider</span><span style="font-family:'IBM Plex Mono',monospace;font-size:12px;color:var(--fg-faint);">72</span></span>
+        <span style="display:flex;align-items:baseline;gap:6px;padding-bottom:10px;"><span style="font-size:14px;font-weight:500;color:var(--fg-faint);">Games</span></span>
+        <span style="display:flex;align-items:baseline;gap:6px;padding-bottom:10px;"><span style="font-size:14px;font-weight:500;color:var(--fg-faint);">Versions</span><span style="font-family:'IBM Plex Mono',monospace;font-size:12px;color:var(--fg-faint);">1</span></span>
+        <span style="margin-left:auto;padding-bottom:10px;font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:var(--fg-faint);">HD &middot; Yuriko &mdash; read from all 99 &middot; 6 minutes ago</span>
+      </div>
+      <div style="padding:22px 30px 26px;display:flex;flex-direction:column;gap:22px;">
+        <div style="display:grid;grid-template-columns:minmax(0,1fr) 340px;gap:30px;align-items:start;">
+          <div>
+            <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.16em;text-transform:uppercase;color:var(--fg-faint);margin-bottom:10px;">Overview</div>
+            <p style="margin:0;font-size:15.5px;line-height:1.7;color:var(--fg-body);text-wrap:pretty;">A ninjutsu deck that converts unblocked one-drops into the top of a very expensive library. <span style="color:var(--fg);border-bottom:1px dotted var(--accent);">Yuriko, the Tiger&rsquo;s Shadow</span> makes every connection a burn spell, so the curve is built upside down: cheap evasive bodies to carry the trigger, and expensive cards behind them to make it hurt. The interaction is free rather than cheap &mdash; <span style="color:var(--fg);border-bottom:1px dotted var(--accent);">Fierce Guardianship</span> and <span style="color:var(--fg);border-bottom:1px dotted var(--accent);">Force of Negation</span> protect the commander on a turn the deck spends its mana elsewhere, which is what lets a two-card win sit on top of a deck that otherwise looks like a tempo list.</p>
+            <p style="margin:11px 0 0;font-size:15.5px;line-height:1.7;color:var(--fg-body);text-wrap:pretty;">Its ceiling comes from the tutor suite rather than the threats: nine searchers across both colours mean the <span style="color:var(--fg);border-bottom:1px dotted var(--accent);">Thassa&rsquo;s Oracle</span> line is available most games, and the commander&rsquo;s own draw keeps refilling toward it. Left alone, the deck kills through damage by turn six; interacted with, it pivots to the combo.</p>
+            <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--fg-faint);margin-top:11px;">written against all 99 &middot; 6 minutes ago</div>
+          </div>
+          <div style="background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:16px 18px;display:flex;flex-direction:column;">
+            <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.14em;text-transform:uppercase;color:var(--fg-faint);">Your bracket</div>
+            <div style="font-size:14px;font-weight:600;color:var(--fg);margin-top:9px;">Optimized or cEDH</div>
+            <div style="display:flex;align-items:center;gap:10px;margin-top:10px;">
+              <span style="display:inline-flex;align-items:center;gap:8px;border:1px solid color-mix(in oklab,var(--bracket-4) 55%,transparent);border-radius:999px;padding:2px 12px 2px 4px;">
+                <svg width="36" height="36" viewBox="0 0 40 40" style="display:block;flex:none;"><path d="M20 8.5 L31.5 20 L20 31.5 L8.5 20 Z" fill="none" stroke="var(--bracket-4)" stroke-width="1.5"></path><path d="M20 5.9 L34.1 20 L20 34.1 L5.9 20 Z" fill="none" stroke="var(--bracket-4)" stroke-width="0.9" opacity="0.55"></path><path d="M20 1.2 L21.6 2.8 L20 4.4 L18.4 2.8 Z" fill="none" stroke="var(--bracket-4)" stroke-width="1.1"></path><path d="M37.2 18.4 L38.8 20 L37.2 21.6 L35.6 20 Z" fill="none" stroke="var(--bracket-4)" stroke-width="1.1"></path><path d="M20 35.6 L21.6 37.2 L20 38.8 L18.4 37.2 Z" fill="none" stroke="var(--bracket-4)" stroke-width="1.1"></path><path d="M2.8 18.4 L4.4 20 L2.8 21.6 L1.2 20 Z" fill="none" stroke="var(--bracket-4)" stroke-width="1.1"></path><text x="20" y="20" text-anchor="middle" dominant-baseline="central" font-family="Cinzel,serif" font-weight="700" font-size="16" fill="var(--bracket-4)" dy="0.5">4</text></svg>
+                <svg width="36" height="36" viewBox="0 0 40 40" style="display:block;flex:none;opacity:0.45;"><path d="M20 8.5 L31.5 20 L20 31.5 L8.5 20 Z" fill="none" stroke="var(--bracket-5)" stroke-width="1.5"></path><path d="M20 5.9 L34.1 20 L20 34.1 L5.9 20 Z" fill="none" stroke="var(--bracket-5)" stroke-width="0.9" opacity="0.55"></path><path d="M20 1.2 L21.6 2.8 L20 4.4 L18.4 2.8 Z" fill="none" stroke="var(--bracket-5)" stroke-width="1.1"></path><path d="M37.2 18.4 L38.8 20 L37.2 21.6 L35.6 20 Z" fill="none" stroke="var(--bracket-5)" stroke-width="1.1"></path><path d="M20 35.6 L21.6 37.2 L20 38.8 L18.4 37.2 Z" fill="none" stroke="var(--bracket-5)" stroke-width="1.1"></path><path d="M2.8 18.4 L4.4 20 L2.8 21.6 L1.2 20 Z" fill="none" stroke="var(--bracket-5)" stroke-width="1.1"></path><text x="20" y="20" text-anchor="middle" dominant-baseline="central" font-family="Cinzel,serif" font-weight="700" font-size="16" fill="var(--bracket-5)" dy="0.5">5</text></svg>
+                <span style="font-family:'IBM Plex Mono',monospace;font-size:9.5px;letter-spacing:0.12em;text-transform:uppercase;color:var(--fg-faint);">split</span>
+              </span>
+            </div>
+            <div style="font-size:13px;color:var(--fg-muted);line-height:1.6;margin-top:12px;">Bracket 3 only permits up to three game changers. Four and five have no card limits between them, so which one this is, is how you play it.</div>
+            <div style="border-top:1px solid var(--border);margin-top:13px;padding-top:11px;display:flex;flex-direction:column;gap:5px;">
+              <span style="font-family:'IBM Plex Mono',monospace;font-size:9px;letter-spacing:0.14em;text-transform:uppercase;color:var(--fg-disabled);">How we determined this bracket</span>
+              <span style="font-size:12.5px;color:var(--fg-muted);line-height:1.6;">Your tutors can find <b style="color:var(--fg-body);font-weight:600;">both halves</b> of <span style="color:var(--fg);border-bottom:1px dotted var(--accent);">Thassa&rsquo;s Oracle</span> + <span style="color:var(--fg);border-bottom:1px dotted var(--accent);">Demonic Consultation</span>, so the pair is part of the plan rather than a draw away. That is what puts this past Upgraded.</span>
+              <span style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--accent);border-bottom:1px dotted var(--accent);align-self:flex-start;margin-top:2px;">see the reasoning</span>
+            </div>
+            <div style="border-top:1px solid var(--border);margin-top:13px;padding-top:12px;display:flex;flex-direction:column;gap:9px;">
+              <span style="font-size:11.5px;color:var(--fg-faint);line-height:1.5;">Pick one so pods know what to expect.</span>
+              <span style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
+                <span style="display:inline-flex;align-items:center;gap:8px;height:38px;padding:0 13px 0 8px;border-radius:9px;border:1px solid color-mix(in oklab,var(--bracket-4) 45%,var(--border));background:var(--surface-raised);">
+                  <svg width="22" height="22" viewBox="0 0 40 40" style="display:block;flex:none;"><path d="M20 8.5 L31.5 20 L20 31.5 L8.5 20 Z" fill="none" stroke="var(--bracket-4)" stroke-width="1.8"></path><path d="M20 1.2 L21.6 2.8 L20 4.4 L18.4 2.8 Z" fill="none" stroke="var(--bracket-4)" stroke-width="1.4"></path><path d="M37.2 18.4 L38.8 20 L37.2 21.6 L35.6 20 Z" fill="none" stroke="var(--bracket-4)" stroke-width="1.4"></path><path d="M20 35.6 L21.6 37.2 L20 38.8 L18.4 37.2 Z" fill="none" stroke="var(--bracket-4)" stroke-width="1.4"></path><path d="M2.8 18.4 L4.4 20 L2.8 21.6 L1.2 20 Z" fill="none" stroke="var(--bracket-4)" stroke-width="1.4"></path><text x="20" y="20" text-anchor="middle" dominant-baseline="central" font-family="Cinzel,serif" font-weight="700" font-size="17" fill="var(--bracket-4)" dy="0.5">4</text></svg>
+                  <span style="font-size:13px;font-weight:600;color:var(--fg);">Optimized</span>
+                </span>
+                <span style="display:inline-flex;align-items:center;gap:8px;height:38px;padding:0 13px 0 8px;border-radius:9px;border:1px solid color-mix(in oklab,var(--bracket-5) 45%,var(--border));background:var(--surface-raised);">
+                  <svg width="22" height="22" viewBox="0 0 40 40" style="display:block;flex:none;"><path d="M20 8.5 L31.5 20 L20 31.5 L8.5 20 Z" fill="none" stroke="var(--bracket-5)" stroke-width="1.8"></path><path d="M20 1.2 L21.6 2.8 L20 4.4 L18.4 2.8 Z" fill="none" stroke="var(--bracket-5)" stroke-width="1.4"></path><path d="M37.2 18.4 L38.8 20 L37.2 21.6 L35.6 20 Z" fill="none" stroke="var(--bracket-5)" stroke-width="1.4"></path><path d="M20 35.6 L21.6 37.2 L20 38.8 L18.4 37.2 Z" fill="none" stroke="var(--bracket-5)" stroke-width="1.4"></path><path d="M2.8 18.4 L4.4 20 L2.8 21.6 L1.2 20 Z" fill="none" stroke="var(--bracket-5)" stroke-width="1.4"></path><text x="20" y="20" text-anchor="middle" dominant-baseline="central" font-family="Cinzel,serif" font-weight="700" font-size="17" fill="var(--bracket-5)" dy="0.5">5</text></svg>
+                  <span style="font-size:13px;font-weight:600;color:var(--fg);">cEDH</span>
+                </span>
+                <span style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:var(--fg-faint);border-bottom:1px dotted var(--border-dashed);">skip this</span>
+              </span>
+            </div>
+            <div style="border-top:1px solid var(--border);margin-top:14px;padding-top:11px;display:flex;flex-direction:column;gap:5px;">
+              <span style="font-family:'IBM Plex Mono',monospace;font-size:9px;letter-spacing:0.14em;text-transform:uppercase;color:var(--fg-disabled);">What other players say</span>
+              <span style="font-size:12px;color:var(--fg-faint);line-height:1.6;">Of the <b style="color:var(--fg-body);font-weight:600;">9,730</b> Yuriko decks that declared a bracket, <b style="color:var(--fg-body);font-weight:600;">3,884</b> said Optimized.</span>
+            </div>
+          </div>
+        </div>
+
+        <div>
+          <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.16em;text-transform:uppercase;color:var(--fg-faint);margin-bottom:11px;">Where you sit, and what moves you</div>
+          <div style="border:1px solid var(--border);border-radius:11px;background:var(--surface);padding:14px;display:flex;flex-direction:column;gap:8px;">
+            <div style="display:grid;grid-template-columns:186px 1fr;align-items:center;gap:14px;padding:10px 12px;border-radius:8px;background:var(--surface-sunken);border:1px solid var(--border);">
+              <span style="display:flex;align-items:center;gap:9px;"><svg width="28" height="28" viewBox="0 0 40 40" style="display:block;flex:none;opacity:0.75;"><path d="M20 8.5 L31.5 20 L20 31.5 L8.5 20 Z" fill="none" stroke="var(--bracket-3)" stroke-width="1.5"></path><path d="M20 5.9 L34.1 20 L20 34.1 L5.9 20 Z" fill="none" stroke="var(--bracket-3)" stroke-width="0.9" opacity="0.55"></path><text x="20" y="20" text-anchor="middle" dominant-baseline="central" font-family="Cinzel,serif" font-weight="700" font-size="16" fill="var(--bracket-3)" dy="0.5">3</text></svg><span style="display:flex;flex-direction:column;gap:2px;"><span style="font-size:12.5px;font-weight:600;color:var(--fg-body);">Upgraded</span><span style="font-family:'IBM Plex Mono',monospace;font-size:9px;letter-spacing:0.1em;text-transform:uppercase;color:var(--fg-faint);">to drop to here</span></span></span>
+              <span style="font-size:12.5px;color:var(--fg-muted);line-height:1.6;"><b style="color:var(--fg);font-weight:600;">Upgraded allows 3 game changers &mdash; you have 5.</b> It has no combo limits.</span>
+            </div>
+            <div style="display:grid;grid-template-columns:186px 1fr;align-items:center;gap:14px;padding:11px 12px;border-radius:8px;background:color-mix(in oklab,var(--bracket-4) 12%,var(--surface));border:1px solid var(--bracket-4);">
+              <span style="display:flex;align-items:center;gap:9px;"><svg width="36" height="36" viewBox="0 0 40 40" style="display:block;flex:none;"><path d="M20 8.5 L31.5 20 L20 31.5 L8.5 20 Z" fill="none" stroke="var(--bracket-4)" stroke-width="1.5"></path><path d="M20 5.9 L34.1 20 L20 34.1 L5.9 20 Z" fill="none" stroke="var(--bracket-4)" stroke-width="0.9" opacity="0.55"></path><path d="M20 1.2 L21.6 2.8 L20 4.4 L18.4 2.8 Z" fill="none" stroke="var(--bracket-4)" stroke-width="1.1"></path><path d="M37.2 18.4 L38.8 20 L37.2 21.6 L35.6 20 Z" fill="none" stroke="var(--bracket-4)" stroke-width="1.1"></path><path d="M20 35.6 L21.6 37.2 L20 38.8 L18.4 37.2 Z" fill="none" stroke="var(--bracket-4)" stroke-width="1.1"></path><path d="M2.8 18.4 L4.4 20 L2.8 21.6 L1.2 20 Z" fill="none" stroke="var(--bracket-4)" stroke-width="1.1"></path><text x="20" y="20" text-anchor="middle" dominant-baseline="central" font-family="Cinzel,serif" font-weight="700" font-size="16" fill="var(--bracket-4)" dy="0.5">4</text></svg><span style="display:flex;flex-direction:column;gap:2px;"><span style="font-size:13.5px;font-weight:600;color:var(--bracket-4);">Optimized</span><span style="font-family:'IBM Plex Mono',monospace;font-size:9px;letter-spacing:0.1em;text-transform:uppercase;color:var(--bracket-4);">where your cards are</span></span></span>
+              <span style="display:flex;flex-wrap:wrap;gap:8px 18px;align-items:center;">
+                <span style="display:inline-flex;align-items:center;gap:7px;"><svg width="12" height="12" viewBox="0 0 16 16" style="display:block;flex:none;color:var(--fact);"><path d="M9.4 1.5 L4.1 8.8 H7.3 L6.6 14.5 L11.9 7.0 H8.7 Z" fill="currentColor"></path></svg><span style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:var(--bracket-4);">Game changers</span><span style="font-family:'IBM Plex Mono',monospace;font-weight:600;font-size:13px;color:var(--bracket-4);">5</span><span style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--fg-faint);">3 allowed</span></span>
+                <span style="display:inline-flex;align-items:center;gap:7px;"><svg width="12" height="12" viewBox="0 0 16 16" style="display:block;flex:none;color:var(--fact);"><path d="M5.2 4.9 A 3.1 3.1 0 1 0 5.2 11.1 C 8.3 11.1 7.7 4.9 10.8 4.9 A 3.1 3.1 0 1 1 10.8 11.1 C 7.7 11.1 8.3 4.9 5.2 4.9 Z" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"></path></svg><span style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:var(--bracket-4);">Two-card infinites</span><span style="font-family:'IBM Plex Mono',monospace;font-weight:600;font-size:13px;color:var(--bracket-4);">1</span><span style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--fg-faint);">reachable</span></span>
+              </span>
+            </div>
+            <div style="display:grid;grid-template-columns:186px 1fr;align-items:center;gap:14px;padding:10px 12px;border-radius:8px;border:1px dashed color-mix(in oklab,var(--bracket-5) 55%,transparent);">
+              <span style="display:flex;align-items:center;gap:9px;"><svg width="28" height="28" viewBox="0 0 40 40" style="display:block;flex:none;opacity:0.75;"><path d="M20 8.5 L31.5 20 L20 31.5 L8.5 20 Z" fill="none" stroke="var(--bracket-5)" stroke-width="1.5"></path><path d="M20 5.9 L34.1 20 L20 34.1 L5.9 20 Z" fill="none" stroke="var(--bracket-5)" stroke-width="0.9" opacity="0.55"></path><path d="M20 1.2 L21.6 2.8 L20 4.4 L18.4 2.8 Z" fill="none" stroke="var(--bracket-5)" stroke-width="1.1"></path><path d="M37.2 18.4 L38.8 20 L37.2 21.6 L35.6 20 Z" fill="none" stroke="var(--bracket-5)" stroke-width="1.1"></path><path d="M20 35.6 L21.6 37.2 L20 38.8 L18.4 37.2 Z" fill="none" stroke="var(--bracket-5)" stroke-width="1.1"></path><path d="M2.8 18.4 L4.4 20 L2.8 21.6 L1.2 20 Z" fill="none" stroke="var(--bracket-5)" stroke-width="1.1"></path><text x="20" y="20" text-anchor="middle" dominant-baseline="central" font-family="Cinzel,serif" font-weight="700" font-size="16" fill="var(--bracket-5)" dy="0.5">5</text></svg><span style="display:flex;flex-direction:column;gap:2px;"><span style="font-size:12.5px;font-weight:600;color:var(--fg-body);">cEDH</span><span style="font-family:'IBM Plex Mono',monospace;font-size:9px;letter-spacing:0.1em;text-transform:uppercase;color:var(--fg-faint);">to claim this</span></span></span>
+              <span style="font-size:12.5px;color:var(--fg-muted);line-height:1.6;"><b style="color:var(--fg);font-weight:600;">Nothing to change.</b> Four and five share their card limits &mdash; the difference is how you play it, and the answer is in the block above.</span>
+            </div>
+            <div style="border-top:1px solid var(--border);padding-top:10px;display:flex;justify-content:flex-end;">
+              <span style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:var(--accent);border-bottom:1px dashed var(--accent);">see all brackets &rarr;</span>
+            </div>
+          </div>
+        </div>
+
+        <div>
+          <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.16em;text-transform:uppercase;color:var(--fg-faint);margin-bottom:11px;">What is in this deck</div>
+          <div style="display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:10px;">
+            <span style="background:var(--surface);border:1px solid var(--border-strong);border-radius:9px;padding:12px 14px;display:flex;flex-direction:column;gap:7px;"><span style="display:flex;align-items:center;gap:7px;"><svg width="13" height="13" viewBox="0 0 16 16" style="display:block;flex:none;color:var(--fact);"><path d="M9.4 1.5 L4.1 8.8 H7.3 L6.6 14.5 L11.9 7.0 H8.7 Z" fill="currentColor"></path></svg><span style="font-family:'IBM Plex Mono',monospace;font-weight:600;font-size:19px;color:var(--fg);line-height:1;">5</span></span><span style="font-size:12px;font-weight:600;color:var(--fg);">Game changers</span><span style="font-size:10.5px;color:var(--fg-muted);">Rhystic Study, Cyclonic Rift, +3</span><span style="font-family:'IBM Plex Mono',monospace;font-size:9.5px;color:var(--accent);border-bottom:1px dotted var(--accent);align-self:flex-start;">see the cards</span></span>
+            <span style="background:var(--surface);border:1px solid var(--border);border-radius:9px;padding:12px 14px;display:flex;flex-direction:column;gap:7px;"><span style="display:flex;align-items:center;gap:7px;opacity:0.35;"><svg width="13" height="13" viewBox="0 0 16 16" style="display:block;flex:none;color:var(--fg-faint);"><path d="M1.4 13.4 L6.2 5.2 L9.4 10.6 L11.2 7.8 L14.6 13.4 Z" fill="currentColor"></path></svg><span style="font-family:'IBM Plex Mono',monospace;font-weight:600;font-size:19px;color:var(--fg-faint);line-height:1;">0</span></span><span style="font-size:12px;font-weight:500;color:var(--fg-muted);">Mass land denial</span><span style="font-size:10.5px;color:var(--fg-disabled);">nothing in the list</span></span>
+            <span style="background:var(--surface);border:1px solid var(--border);border-radius:9px;padding:12px 14px;display:flex;flex-direction:column;gap:7px;"><span style="display:flex;align-items:center;gap:7px;opacity:0.35;"><svg width="13" height="13" viewBox="0 0 16 16" style="display:block;flex:none;color:var(--fg-faint);"><path d="M10.98 3.74 A 5.2 5.2 0 1 1 6.65 2.98" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"></path><path d="M9.0 2.4 L7.1 4.6 L6.2 1.3 Z" fill="currentColor"></path></svg><span style="font-family:'IBM Plex Mono',monospace;font-weight:600;font-size:19px;color:var(--fg-faint);line-height:1;">0</span></span><span style="font-size:12px;font-weight:500;color:var(--fg-muted);">Extra turns</span><span style="font-size:10.5px;color:var(--fg-disabled);">nothing in the list</span></span>
+            <span style="background:var(--surface);border:1px solid var(--border-strong);border-radius:9px;padding:12px 14px;display:flex;flex-direction:column;gap:7px;"><span style="display:flex;align-items:center;gap:7px;"><svg width="13" height="13" viewBox="0 0 16 16" style="display:block;flex:none;color:var(--fact);"><path d="M5.2 4.9 A 3.1 3.1 0 1 0 5.2 11.1 C 8.3 11.1 7.7 4.9 10.8 4.9 A 3.1 3.1 0 1 1 10.8 11.1 C 7.7 11.1 8.3 4.9 5.2 4.9 Z" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"></path></svg><span style="font-family:'IBM Plex Mono',monospace;font-weight:600;font-size:19px;color:var(--fg);line-height:1;">1</span></span><span style="font-size:12px;font-weight:600;color:var(--fg);">Two-card infinites</span><span style="font-size:10.5px;color:var(--fg-muted);">Thassa&rsquo;s Oracle + Demonic Consultation</span><span style="font-family:'IBM Plex Mono',monospace;font-size:9.5px;color:var(--accent);border-bottom:1px dotted var(--accent);align-self:flex-start;">see the combo</span></span>
+            <span style="background:var(--surface);border:1px solid var(--border-strong);border-radius:9px;padding:12px 14px;display:flex;flex-direction:column;gap:7px;"><span style="display:flex;align-items:center;gap:7px;"><svg width="13" height="13" viewBox="0 0 16 16" style="display:block;flex:none;color:var(--fact);"><path d="M1.8 12.2 H14.2 V14.4 H1.8 Z" fill="currentColor"></path><path d="M8 1.3 L11.7 5.7 H9.2 V10.3 H6.8 V5.7 H4.3 Z" fill="currentColor"></path></svg><span style="font-family:'IBM Plex Mono',monospace;font-weight:600;font-size:19px;color:var(--fg);line-height:1;">9</span></span><span style="display:flex;align-items:center;gap:7px;flex-wrap:wrap;"><span style="font-size:12px;font-weight:600;color:var(--fg);">Tutors</span><span style="font-family:'IBM Plex Mono',monospace;font-size:8.5px;letter-spacing:0.1em;text-transform:uppercase;color:var(--fg-faint);border:1px solid var(--border-strong);border-radius:999px;padding:2px 6px;">no limit</span></span><span style="font-size:10.5px;color:var(--fg-muted);">Demonic Tutor, Vampiric Tutor, +7</span><span style="font-family:'IBM Plex Mono',monospace;font-size:9.5px;color:var(--accent);border-bottom:1px dotted var(--accent);align-self:flex-start;">see the cards</span></span>
+          </div>
+          <div style="margin-top:11px;display:flex;align-items:center;gap:9px;">
+            <span style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--fg-faint);border-bottom:1px dotted var(--border-dashed);">How we make these decisions</span>
+            <span style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--fg-faint);">&#9662;</span>
+          </div>
+        </div>
+
+        <div style="border-top:1px solid var(--border);padding-top:16px;display:flex;align-items:center;gap:12px;flex-wrap:wrap;">
+          <span style="font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:0.12em;text-transform:uppercase;color:var(--fg-body);">Recommended mix</span>
+          <span style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:var(--fg-faint);">EDHREC averages</span>
+          <span style="font-size:12.5px;color:var(--fg-disabled);">&mdash; and the ledger below it, both unchanged from Round 0.</span>
+        </div>
+      </div>
+    </div>
+
+    <div style="display:flex;gap:26px;flex-wrap:wrap;align-items:flex-start;max-width:1180px;">
+      <div style="width:566px;font-size:12.5px;color:var(--fg-muted);line-height:1.65;"><b style="color:var(--fg);font-weight:600;">The block grew by two lines and no shapes.</b> Sub-line, then how we determined it, then the ask, then the population line &mdash; four sub-sections in one box, each introduced the same way. The card is 340px here rather than Round 2&rsquo;s 320 so the chip row does not wrap; everything else is Round 2&rsquo;s geometry.</div>
+      <div style="width:566px;font-size:12.5px;color:var(--fg-muted);line-height:1.65;"><b style="color:var(--fg);font-weight:600;">The overview is written long.</b> Two paragraphs against Round 0&rsquo;s two sentences: the column is 740px and was carrying a caption. It should describe the plan, the shape of the curve and the deck&rsquo;s ceiling &mdash; the last of which is the same fact the lean is about, said in prose. <b style="color:var(--fg-body);font-weight:600;">Engineering: the generator&rsquo;s length budget wants raising to match.</b></div>
+      <div style="width:566px;font-size:12.5px;color:var(--fg-muted);line-height:1.65;"><b style="color:var(--fg);font-weight:600;">Two changes to Round 2&rsquo;s climb, both consequences.</b> The 4&ndash;5 rung loses its ringed <span style="font-family:'IBM Plex Mono',monospace;">?</span> and points at the answer instead of repeating the question &mdash; one ask per surface. And the combo figure reads <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">reachable</span> where it read <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">no cap</span>, because after the ruling it is the thing that moved the verdict.</div>
+      <div style="width:566px;font-size:12.5px;color:var(--fg-muted);line-height:1.65;"><b style="color:var(--fg);font-weight:600;">The climb&rsquo;s rung labels are Round 2&rsquo;s, unchanged</b> &mdash; name beside mark, 186px column. The <i>to drop to here</i> rung keeps the R1 audit&rsquo;s ruled wording: it states the limit and never the action.</div>
+    </div>
+  </div>
+
+  <!-- ========== 1f · 390 ========== -->
+  <div id="1f" style="display:flex;flex-direction:column;gap:14px;">
+    <div style="display:flex;align-items:center;gap:11px;flex-wrap:wrap;border-top:1px solid var(--accent);padding-top:18px;">
+      <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;font-weight:600;color:var(--bg);background:var(--accent);border-radius:5px;padding:3px 8px;">1f</span>
+      <span style="font-family:var(--display),serif;font-weight:700;font-size:19px;color:var(--fg);">390 &mdash; the ask at 44px, and the answered states</span>
+    </div>
+
+    <div style="display:flex;gap:22px;flex-wrap:wrap;align-items:flex-start;">
+
+      <div style="width:390px;display:flex;flex-direction:column;gap:10px;">
+        <span style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.14em;text-transform:uppercase;color:var(--fg-faint);">unanswered, with the lean above it</span>
+        <div style="width:390px;border:1px solid var(--border);border-radius:12px;background:var(--bg);overflow:hidden;">
+          <div style="padding:10px 16px 0;border-bottom:1px solid var(--border);display:flex;align-items:baseline;gap:16px;overflow:hidden;">
+            <span style="padding-bottom:9px;font-size:13px;font-weight:500;color:var(--fg-faint);white-space:nowrap;">Your deck</span>
+            <span style="padding-bottom:9px;border-bottom:2px solid var(--accent);font-size:13px;font-weight:600;color:var(--fg);white-space:nowrap;">Analysis</span>
+            <span style="padding-bottom:9px;font-size:13px;font-weight:500;color:var(--fg-faint);white-space:nowrap;">Consider</span>
+            <span style="padding-bottom:9px;font-size:13px;font-weight:500;color:var(--fg-faint);white-space:nowrap;">Games</span>
+          </div>
+          <div style="padding:14px 16px 18px;display:flex;flex-direction:column;gap:16px;">
+            <div style="background:var(--surface);border:1px solid var(--border);border-radius:11px;padding:13px 15px;display:flex;flex-direction:column;">
+              <div style="font-family:'IBM Plex Mono',monospace;font-size:9.5px;letter-spacing:0.14em;text-transform:uppercase;color:var(--fg-faint);">Your bracket</div>
+              <div style="font-size:13.5px;font-weight:600;color:var(--fg);margin-top:8px;">Optimized or cEDH</div>
+              <div style="margin-top:9px;"><span style="display:inline-flex;align-items:center;gap:8px;border:1px solid color-mix(in oklab,var(--bracket-4) 55%,transparent);border-radius:999px;padding:2px 12px 2px 4px;">
+                <svg width="30" height="30" viewBox="0 0 40 40" style="display:block;flex:none;"><path d="M20 8.5 L31.5 20 L20 31.5 L8.5 20 Z" fill="none" stroke="var(--bracket-4)" stroke-width="1.5"></path><path d="M20 5.9 L34.1 20 L20 34.1 L5.9 20 Z" fill="none" stroke="var(--bracket-4)" stroke-width="0.9" opacity="0.55"></path><path d="M20 1.2 L21.6 2.8 L20 4.4 L18.4 2.8 Z" fill="none" stroke="var(--bracket-4)" stroke-width="1.1"></path><path d="M37.2 18.4 L38.8 20 L37.2 21.6 L35.6 20 Z" fill="none" stroke="var(--bracket-4)" stroke-width="1.1"></path><path d="M20 35.6 L21.6 37.2 L20 38.8 L18.4 37.2 Z" fill="none" stroke="var(--bracket-4)" stroke-width="1.1"></path><path d="M2.8 18.4 L4.4 20 L2.8 21.6 L1.2 20 Z" fill="none" stroke="var(--bracket-4)" stroke-width="1.1"></path><text x="20" y="20" text-anchor="middle" dominant-baseline="central" font-family="Cinzel,serif" font-weight="700" font-size="16" fill="var(--bracket-4)" dy="0.5">4</text></svg>
+                <svg width="30" height="30" viewBox="0 0 40 40" style="display:block;flex:none;opacity:0.45;"><path d="M20 8.5 L31.5 20 L20 31.5 L8.5 20 Z" fill="none" stroke="var(--bracket-5)" stroke-width="1.5"></path><path d="M20 5.9 L34.1 20 L20 34.1 L5.9 20 Z" fill="none" stroke="var(--bracket-5)" stroke-width="0.9" opacity="0.55"></path><path d="M20 1.2 L21.6 2.8 L20 4.4 L18.4 2.8 Z" fill="none" stroke="var(--bracket-5)" stroke-width="1.1"></path><path d="M37.2 18.4 L38.8 20 L37.2 21.6 L35.6 20 Z" fill="none" stroke="var(--bracket-5)" stroke-width="1.1"></path><path d="M20 35.6 L21.6 37.2 L20 38.8 L18.4 37.2 Z" fill="none" stroke="var(--bracket-5)" stroke-width="1.1"></path><path d="M2.8 18.4 L4.4 20 L2.8 21.6 L1.2 20 Z" fill="none" stroke="var(--bracket-5)" stroke-width="1.1"></path><text x="20" y="20" text-anchor="middle" dominant-baseline="central" font-family="Cinzel,serif" font-weight="700" font-size="16" fill="var(--bracket-5)" dy="0.5">5</text></svg>
+                <span style="font-family:'IBM Plex Mono',monospace;font-size:9.5px;letter-spacing:0.12em;text-transform:uppercase;color:var(--fg-faint);">split</span>
+              </span></div>
+              <div style="font-size:12.5px;color:var(--fg-muted);line-height:1.55;margin-top:10px;">Bracket 3 only permits up to three game changers. Which of the two this is, is how you play it.</div>
+              <div style="border-top:1px solid var(--border);margin-top:12px;padding-top:10px;display:flex;flex-direction:column;gap:4px;">
+                <span style="font-family:'IBM Plex Mono',monospace;font-size:9px;letter-spacing:0.14em;text-transform:uppercase;color:var(--fg-disabled);">How we determined this bracket</span>
+                <span style="font-size:12px;color:var(--fg-muted);line-height:1.55;">Your tutors can find both halves of <span style="color:var(--fg);border-bottom:1px dotted var(--accent);">Thassa&rsquo;s Oracle</span> + <span style="color:var(--fg);border-bottom:1px dotted var(--accent);">Demonic Consultation</span>, so the pair is part of the plan rather than a draw away.</span>
+                <span style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--accent);border-bottom:1px dotted var(--accent);align-self:flex-start;margin-top:3px;">see the reasoning</span>
+              </div>
+              <div style="border-top:1px solid var(--border);margin-top:12px;padding-top:11px;display:flex;flex-direction:column;gap:9px;">
+                <span style="font-size:11.5px;color:var(--fg-faint);line-height:1.5;">Pick one so pods know what to expect.</span>
+                <span style="display:flex;gap:8px;">
+                  <span style="flex:1;display:inline-flex;align-items:center;justify-content:center;gap:8px;height:44px;border-radius:10px;border:1px solid color-mix(in oklab,var(--bracket-4) 45%,var(--border));background:var(--surface-raised);">
+                    <svg width="24" height="24" viewBox="0 0 40 40" style="display:block;flex:none;"><path d="M20 8.5 L31.5 20 L20 31.5 L8.5 20 Z" fill="none" stroke="var(--bracket-4)" stroke-width="1.8"></path><path d="M20 1.2 L21.6 2.8 L20 4.4 L18.4 2.8 Z" fill="none" stroke="var(--bracket-4)" stroke-width="1.4"></path><path d="M37.2 18.4 L38.8 20 L37.2 21.6 L35.6 20 Z" fill="none" stroke="var(--bracket-4)" stroke-width="1.4"></path><path d="M20 35.6 L21.6 37.2 L20 38.8 L18.4 37.2 Z" fill="none" stroke="var(--bracket-4)" stroke-width="1.4"></path><path d="M2.8 18.4 L4.4 20 L2.8 21.6 L1.2 20 Z" fill="none" stroke="var(--bracket-4)" stroke-width="1.4"></path><text x="20" y="20" text-anchor="middle" dominant-baseline="central" font-family="Cinzel,serif" font-weight="700" font-size="17" fill="var(--bracket-4)" dy="0.5">4</text></svg>
+                    <span style="font-size:13.5px;font-weight:600;color:var(--fg);">Optimized</span>
+                  </span>
+                  <span style="flex:1;display:inline-flex;align-items:center;justify-content:center;gap:8px;height:44px;border-radius:10px;border:1px solid color-mix(in oklab,var(--bracket-5) 45%,var(--border));background:var(--surface-raised);">
+                    <svg width="24" height="24" viewBox="0 0 40 40" style="display:block;flex:none;"><path d="M20 8.5 L31.5 20 L20 31.5 L8.5 20 Z" fill="none" stroke="var(--bracket-5)" stroke-width="1.8"></path><path d="M20 1.2 L21.6 2.8 L20 4.4 L18.4 2.8 Z" fill="none" stroke="var(--bracket-5)" stroke-width="1.4"></path><path d="M37.2 18.4 L38.8 20 L37.2 21.6 L35.6 20 Z" fill="none" stroke="var(--bracket-5)" stroke-width="1.4"></path><path d="M20 35.6 L21.6 37.2 L20 38.8 L18.4 37.2 Z" fill="none" stroke="var(--bracket-5)" stroke-width="1.4"></path><path d="M2.8 18.4 L4.4 20 L2.8 21.6 L1.2 20 Z" fill="none" stroke="var(--bracket-5)" stroke-width="1.4"></path><text x="20" y="20" text-anchor="middle" dominant-baseline="central" font-family="Cinzel,serif" font-weight="700" font-size="17" fill="var(--bracket-5)" dy="0.5">5</text></svg>
+                    <span style="font-size:13.5px;font-weight:600;color:var(--fg);">cEDH</span>
+                  </span>
+                </span>
+                <span style="display:flex;align-items:center;height:32px;font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:var(--fg-faint);border-bottom:1px dotted var(--border-dashed);align-self:flex-start;">skip this</span>
+              </div>
+              <div style="border-top:1px solid var(--border);margin-top:12px;padding-top:10px;display:flex;flex-direction:column;gap:4px;">
+                <span style="font-family:'IBM Plex Mono',monospace;font-size:9px;letter-spacing:0.14em;text-transform:uppercase;color:var(--fg-disabled);">What other players say</span>
+                <span style="font-size:11.5px;color:var(--fg-faint);line-height:1.55;">Of the <b style="color:var(--fg-body);font-weight:600;">9,730</b> Yuriko decks that declared a bracket, <b style="color:var(--fg-body);font-weight:600;">3,884</b> said Optimized.</span>
+              </div>
+            </div>
+            <div style="font-family:'IBM Plex Mono',monospace;font-size:9.5px;color:var(--fg-disabled);">the climb, the findings and the ledger follow, unchanged</div>
+          </div>
+        </div>
+        <div style="font-size:12px;color:var(--fg-muted);line-height:1.6;"><b style="color:var(--fg-body);font-weight:600;">The chips split the width.</b> Two 44px targets, and the skip drops to its own line at text weight rather than becoming a third button &mdash; the one decision the phone forces that the desktop does not.</div>
+      </div>
+
+      <div style="width:390px;display:flex;flex-direction:column;gap:10px;">
+        <span style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.14em;text-transform:uppercase;color:var(--fg-faint);">declared &middot; skipped</span>
+        <div style="background:var(--surface);border:1px solid var(--border);border-radius:11px;padding:13px 15px;display:flex;flex-direction:column;">
+          <div style="font-family:'IBM Plex Mono',monospace;font-size:9.5px;letter-spacing:0.14em;text-transform:uppercase;color:var(--fg-faint);">Your bracket</div>
+          <div style="font-size:13.5px;font-weight:600;color:var(--fg);margin-top:8px;">cEDH</div>
+          <div style="margin-top:9px;"><span style="display:inline-flex;align-items:center;gap:8px;border:1px solid color-mix(in oklab,var(--bracket-5) 55%,transparent);border-radius:999px;padding:2px 13px 2px 4px;">
+            <svg width="30" height="30" viewBox="0 0 40 40" style="display:block;flex:none;"><path d="M20 8.5 L31.5 20 L20 31.5 L8.5 20 Z" fill="none" stroke="var(--bracket-5)" stroke-width="1.5"></path><path d="M20 5.9 L34.1 20 L20 34.1 L5.9 20 Z" fill="none" stroke="var(--bracket-5)" stroke-width="0.9" opacity="0.55"></path><path d="M20 1.2 L21.6 2.8 L20 4.4 L18.4 2.8 Z" fill="none" stroke="var(--bracket-5)" stroke-width="1.1"></path><path d="M37.2 18.4 L38.8 20 L37.2 21.6 L35.6 20 Z" fill="none" stroke="var(--bracket-5)" stroke-width="1.1"></path><path d="M20 35.6 L21.6 37.2 L20 38.8 L18.4 37.2 Z" fill="none" stroke="var(--bracket-5)" stroke-width="1.1"></path><path d="M2.8 18.4 L4.4 20 L2.8 21.6 L1.2 20 Z" fill="none" stroke="var(--bracket-5)" stroke-width="1.1"></path><text x="20" y="20" text-anchor="middle" dominant-baseline="central" font-family="Cinzel,serif" font-weight="700" font-size="16" fill="var(--bracket-5)" dy="0.5">5</text></svg>
+            <span style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--bracket-5);">cEDH</span>
+          </span></div>
+          <div style="font-size:12.5px;color:var(--fg-muted);line-height:1.55;margin-top:10px;">Your cards permit Optimized or cEDH &mdash; the two have no card limits between them.</div>
+          <div style="border-top:1px solid var(--border);margin-top:12px;padding-top:11px;">
+            <span style="font-size:12.5px;color:var(--fg-body);line-height:1.6;">You said <b style="color:var(--fg);font-weight:600;">cEDH</b>. That is what this deck says at a table. <span style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:var(--accent);border-bottom:1px dotted var(--accent);">change</span></span>
+          </div>
+        </div>
+        <div style="background:var(--surface);border:1px solid var(--border);border-radius:11px;padding:13px 15px;display:flex;flex-direction:column;">
+          <div style="font-family:'IBM Plex Mono',monospace;font-size:9.5px;letter-spacing:0.14em;text-transform:uppercase;color:var(--fg-faint);">Your bracket</div>
+          <div style="font-size:13.5px;font-weight:600;color:var(--fg);margin-top:8px;">Optimized or cEDH</div>
+          <div style="font-size:12.5px;color:var(--fg-muted);line-height:1.55;margin-top:10px;">Bracket 3 only permits up to three game changers. Which of the two this is, is how you play it.</div>
+          <div style="border-top:1px solid var(--border);margin-top:12px;padding-top:11px;">
+            <span style="font-size:12px;color:var(--fg-faint);line-height:1.6;">Not declared. The range stands on its own, and we will leave it there. <span style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:var(--fg-faint);border-bottom:1px dotted var(--border-dashed);">say which</span></span>
+          </div>
+        </div>
+        <div style="font-size:12px;color:var(--fg-muted);line-height:1.6;">Both answered states are <b style="color:var(--fg-body);font-weight:600;">shorter than the ask</b>, which is the point: the question occupies the block once and then gets out of the way for the life of the deck. <i>Change</i> and <i>say which</i> sit inline at the end of their sentence, with a 32px row to stand in for the 44px target the tap area gets.</div>
+      </div>
+
+      <div style="width:390px;display:flex;flex-direction:column;gap:10px;">
+        <span style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.14em;text-transform:uppercase;color:var(--accent);">drift, at 390</span>
+        <div style="background:var(--surface);border:1px solid var(--border);border-radius:11px;padding:13px 15px;display:flex;flex-direction:column;">
+          <div style="font-family:'IBM Plex Mono',monospace;font-size:9.5px;letter-spacing:0.14em;text-transform:uppercase;color:var(--fg-faint);">Your bracket</div>
+          <div style="font-size:13.5px;font-weight:600;color:var(--fg);margin-top:8px;">Optimized or cEDH</div>
+          <div style="font-size:12.5px;color:var(--fg-muted);line-height:1.55;margin-top:10px;">Bracket 3 only permits up to three game changers. Which of the two this is, is how you play it.</div>
+          <div style="border-top:1px solid var(--border);margin-top:12px;padding-top:11px;display:flex;flex-direction:column;gap:9px;">
+            <span style="display:flex;align-items:flex-end;gap:10px;">
+              <span style="display:inline-flex;flex-direction:column;align-items:center;gap:3px;">
+                <svg width="24" height="24" viewBox="0 0 40 40" style="display:block;flex:none;"><path d="M20 8.5 L31.5 20 L20 31.5 L8.5 20 Z" fill="none" stroke="var(--bracket-2)" stroke-width="1.8"></path><text x="20" y="20" text-anchor="middle" dominant-baseline="central" font-family="Cinzel,serif" font-weight="700" font-size="17" fill="var(--bracket-2)" dy="0.5">2</text></svg>
+                <span style="font-family:'IBM Plex Mono',monospace;font-size:8px;letter-spacing:0.1em;text-transform:uppercase;color:var(--fg-faint);">you said</span>
+              </span>
+              <span style="font-family:'IBM Plex Mono',monospace;font-size:13px;color:var(--fg-faint);padding-bottom:13px;">&rarr;</span>
+              <span style="display:inline-flex;flex-direction:column;align-items:center;gap:3px;">
+                <span style="display:flex;align-items:center;gap:2px;">
+                  <svg width="24" height="24" viewBox="0 0 40 40" style="display:block;flex:none;"><path d="M20 8.5 L31.5 20 L20 31.5 L8.5 20 Z" fill="none" stroke="var(--bracket-4)" stroke-width="1.8"></path><path d="M20 1.2 L21.6 2.8 L20 4.4 L18.4 2.8 Z" fill="none" stroke="var(--bracket-4)" stroke-width="1.4"></path><path d="M37.2 18.4 L38.8 20 L37.2 21.6 L35.6 20 Z" fill="none" stroke="var(--bracket-4)" stroke-width="1.4"></path><path d="M20 35.6 L21.6 37.2 L20 38.8 L18.4 37.2 Z" fill="none" stroke="var(--bracket-4)" stroke-width="1.4"></path><path d="M2.8 18.4 L4.4 20 L2.8 21.6 L1.2 20 Z" fill="none" stroke="var(--bracket-4)" stroke-width="1.4"></path><text x="20" y="20" text-anchor="middle" dominant-baseline="central" font-family="Cinzel,serif" font-weight="700" font-size="17" fill="var(--bracket-4)" dy="0.5">4</text></svg>
+                  <svg width="24" height="24" viewBox="0 0 40 40" style="display:block;flex:none;opacity:0.5;"><path d="M20 8.5 L31.5 20 L20 31.5 L8.5 20 Z" fill="none" stroke="var(--bracket-5)" stroke-width="1.8"></path><path d="M20 1.2 L21.6 2.8 L20 4.4 L18.4 2.8 Z" fill="none" stroke="var(--bracket-5)" stroke-width="1.4"></path><path d="M37.2 18.4 L38.8 20 L37.2 21.6 L35.6 20 Z" fill="none" stroke="var(--bracket-5)" stroke-width="1.4"></path><path d="M20 35.6 L21.6 37.2 L20 38.8 L18.4 37.2 Z" fill="none" stroke="var(--bracket-5)" stroke-width="1.4"></path><path d="M2.8 18.4 L4.4 20 L2.8 21.6 L1.2 20 Z" fill="none" stroke="var(--bracket-5)" stroke-width="1.4"></path><text x="20" y="20" text-anchor="middle" dominant-baseline="central" font-family="Cinzel,serif" font-weight="700" font-size="17" fill="var(--bracket-5)" dy="0.5">5</text></svg>
+                </span>
+                <span style="font-family:'IBM Plex Mono',monospace;font-size:8px;letter-spacing:0.1em;text-transform:uppercase;color:var(--fg-faint);">your cards now permit</span>
+              </span>
+            </span>
+            <span style="font-size:12.5px;color:var(--fg-body);line-height:1.55;">You said <b style="color:var(--fg);font-weight:600;">Core</b>. Your last changes moved this deck past that &mdash; it now permits Optimized or cEDH.</span>
+            <span style="font-size:12px;color:var(--fg-faint);line-height:1.6;">Your declaration stands as you left it. <span style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:var(--accent);border-bottom:1px dotted var(--accent);">change what you said</span></span>
+          </div>
+        </div>
+        <div style="font-size:12px;color:var(--fg-muted);line-height:1.6;">The two marks and the arrow fit on one line at 390 without shrinking below the 20px floor &mdash; 24px each, and the labels carry the meaning so the arrow never has to.</div>
+        <div style="font-size:12px;color:var(--fg-muted);line-height:1.6;"><b style="color:var(--fg-body);font-weight:600;">The face keeps showing the split</b>, because a drifted deck is once again in a range it has never answered for. The declaration it did make is below, intact, in the player&rsquo;s own words.</div>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{
+  &quot;theme&quot;: { &quot;editor&quot;: &quot;enum&quot;, &quot;options&quot;: [&quot;amonkhet&quot;, &quot;kamigawa&quot;], &quot;default&quot;: &quot;amonkhet&quot;, &quot;tsType&quot;: &quot;\&quot;amonkhet\&quot; | \&quot;kamigawa\&quot;&quot; },
+  &quot;demoState&quot;: { &quot;editor&quot;: &quot;enum&quot;, &quot;options&quot;: [&quot;unanswered&quot;, &quot;declared4&quot;, &quot;declared5&quot;, &quot;skipped&quot;], &quot;default&quot;: &quot;unanswered&quot;, &quot;tsType&quot;: &quot;string&quot;, &quot;section&quot;: &quot;1a — the live card&quot; }
+}">
+class Component extends DCLogic {
+  state = { choice: null };
+
+  renderVals() {
+    const seeded = this.props.demoState || "unanswered";
+    const s = this.state.choice || seeded;
+    const set = (v) => () => this.setState({ choice: v });
+    return {
+      isAsk: s === "unanswered",
+      isSkipped: s === "skipped",
+      isRange: s === "unanswered" || s === "skipped",
+      isDeclared4: s === "declared4",
+      isDeclared5: s === "declared5",
+      pick4: set("declared4"),
+      pick5: set("declared5"),
+      skip: set("skipped"),
+      reset: set("unanswered"),
+    };
+  }
+}
+</script>
+</body>
+</html>
