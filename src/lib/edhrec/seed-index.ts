@@ -5,7 +5,7 @@ import {
   commanderPairSupport, commanderPairSupportCards, decks,
 } from "../../db/schema";
 import { SCORE_INDEX_LOCK } from "../recs/store";
-import { deriveRoleTargets } from "./role-targets";
+import { deriveRoleTargets, roleTargetsPublishable, ROLE_TARGET_FLOOR } from "./role-targets";
 import { isCommanderCandidate } from "../recs/score";
 import { edhrecInit, fetchEdhrecUncached, type EdhrecFetchResult } from "./client";
 import {
@@ -520,13 +520,10 @@ export async function deriveAndWriteRoleTargets(): Promise<{ written: number; ze
     .from(commanderSupport)
     .where(sql`${commanderSupport.synergyState} = 'ok'`);
 
-  // The floor. Below this the derivation reached too little of the index to publish — a
-  // partial set is indistinguishable from a complete one to every reader.
-  const FLOOR = 0.9;
-  if (ok > 0 && targets.size < ok * FLOOR) {
+  if (!roleTargetsPublishable(targets.size, ok)) {
     throw new Error(
       `role targets REFUSED: derived ${targets.size} of ${ok} ok commanders ` +
-      `(floor ${Math.ceil(ok * FLOOR)}). Previous values left standing.`,
+      `(floor ${Math.ceil(ok * ROLE_TARGET_FLOOR)}). Previous values left standing.`,
     );
   }
 

@@ -1,6 +1,10 @@
 import { describe, expect, it } from "vitest";
 
-import { deriveRoleTargets, type RoleDerivationRow } from "./role-targets";
+import {
+  deriveRoleTargets,
+  roleTargetsPublishable,
+  type RoleDerivationRow,
+} from "./role-targets";
 
 const base = { keywords: [] as string[], layout: "normal" };
 const ramp = { ...base, typeLine: "Artifact", oracleText: "{T}: Add {C}." };
@@ -105,5 +109,30 @@ describe("deriveRoleTargets", () => {
     ]);
     // The commander still has a row, with honest zeroes, rather than vanishing from the map.
     expect(out.get("c")).toEqual({ ramp: 0, draw: 0, removal: 0, wipes: 0 });
+  });
+});
+
+describe("roleTargetsPublishable", () => {
+  it("publishes a complete derivation", () => {
+    expect(roleTargetsPublishable(3279, 3279)).toBe(true);
+  });
+
+  it("publishes at the floor and refuses just below it", () => {
+    // The boundary itself, both sides. A floor asserted only far from its edge is a floor
+    // nobody has checked.
+    expect(roleTargetsPublishable(900, 1000)).toBe(true);
+    expect(roleTargetsPublishable(899, 1000)).toBe(false);
+  });
+
+  it("refuses a badly partial run rather than publishing what it has", () => {
+    // The state this exists for: a derivation that reached a tenth of the index leaves the
+    // other nine tenths on stale figures, and no reader can tell the two apart.
+    expect(roleTargetsPublishable(300, 3279)).toBe(false);
+  });
+
+  it("publishes against an empty index", () => {
+    // An empty database is a first run, not a broken one. Refusing here would fail every
+    // build until the index had content, which is the wrong way round.
+    expect(roleTargetsPublishable(0, 0)).toBe(true);
   });
 });

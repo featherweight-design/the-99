@@ -84,3 +84,23 @@ export function deriveRoleTargets(
 
   return out;
 }
+
+/** Below this share of the indexed commanders, a derivation has not reached enough of the
+ *  index to publish. Measured rather than guessed is not available here — it is a refusal
+ *  threshold, not a figure about decks — so it is stated, and stated once. */
+export const ROLE_TARGET_FLOOR = 0.9;
+
+/**
+ * Whether a derivation reached enough of the index to publish.
+ *
+ * Extracted from the writer so it can be tested: the writer is database-bound, and a refusal
+ * that only runs against a real Postgres is a refusal nobody checks. A partial set is
+ * indistinguishable from a complete one to every reader, which is why this refuses rather than
+ * writing what it has.
+ */
+export function roleTargetsPublishable(derived: number, okCommanders: number): boolean {
+  // An index with no `ok` commanders publishes whatever it derived, including nothing. That is
+  // an empty database rather than a broken run, and refusing there would fail every first run.
+  if (okCommanders <= 0) return true;
+  return derived >= okCommanders * ROLE_TARGET_FLOOR;
+}
