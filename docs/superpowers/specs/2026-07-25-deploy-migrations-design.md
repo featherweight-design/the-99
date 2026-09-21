@@ -20,16 +20,27 @@ A **GitHub Action that owns the deploy trigger** (disable Vercel auto-deploy for
 
 ### Credential handling
 
-Both projects mark `DATABASE_URL` as **Sensitive** in Vercel, which makes it readable by the running function but not by the build step. Build steps and sensitive variables are mutually exclusive by design, so the build needs a separate variable.
+Both projects mark `DATABASE_URL` as **Sensitive** in Vercel. This section was written on the
+premise that a build step cannot read a Sensitive variable, and that the build therefore needs a
+separate one.
 
-Each project gets `MIGRATE_DATABASE_URL` — same value as that project's `DATABASE_URL`, **not** marked sensitive, and **scoped to the Production environment only**.
+> **Measured 2026-09-21, and the premise does not hold today.** `MIGRATE_DATABASE_URL` is stored
+> **Sensitive** on both projects and production builds read it: the 14:54Z and 20:46Z builds logged
+> `Applying migrations before build… migrations applied successfully`, and `decideMigration` fails
+> the build outright when the value is absent, so a build that migrated had the value in
+> `process.env`. Whether Vercel changed this behaviour since July or the premise was wrong when
+> written is not established here — only that a Sensitive, Production-scoped variable is readable
+> by the build. The separate variable is kept regardless, for the scoping control below.
+
+Each project gets `MIGRATE_DATABASE_URL` — same value as that project's `DATABASE_URL`, and
+**scoped to the Production environment only**. It is stored Sensitive, like its siblings.
 
 Production-only scoping is the security control that matters: it means a preview build cannot read the variable, so a pull request cannot add a build step that exfiltrates it.
 
 Two exposure questions were checked rather than assumed:
 
 - **Can it reach the client bundle?** No. Next.js 16.2.10 inlines environment variables into browser JavaScript only when prefixed `NEXT_PUBLIC_` (`node_modules/next/dist/docs/01-app/02-guides/environment-variables.md:156,198`: "Non-`NEXT_PUBLIC_` environment variables are only available in the Node.js environment"). Inlining is opt-in by prefix and `MIGRATE_DATABASE_URL` does not carry it.
-- **Can it reach build logs?** Possibly, in a failure. Vercel does not redact non-sensitive values, and a connection error may print host and database name. This is accepted: build logs are visible only to dashboard members, the same audience that can read the variable itself.
+- **Can it reach build logs?** Possibly, in a failure — a connection error may print host and database name. This was accepted on the reasoning that build logs are visible only to dashboard members, the same audience that can read the variable itself. Both projects now store it **Sensitive**, which Vercel redacts from logs and from the dashboard alike, so the exposure this line accepted is narrower than when it was written.
 
 ## Components
 
@@ -61,7 +72,7 @@ Behaviour, in order:
 
 ### 3. Vercel dashboard, both projects
 
-Add `MIGRATE_DATABASE_URL`, non-sensitive, Production scope only, matching that project's `DATABASE_URL`. Manual one-time setup; it cannot be scripted from the repository.
+Add `MIGRATE_DATABASE_URL`, **Production scope and Production alone**, matching that project's `DATABASE_URL`. Manual one-time setup; it cannot be scripted from the repository. Sensitive is fine and is what ships — the build reads it either way — and the SCOPE is the half that breaks production: a Preview-scoped copy is inert, because previews skip migrations, so the build sees nothing and fails closed (2026-09-21, five hours of failed deploys).
 
 ### 4. `AGENTS.md`
 

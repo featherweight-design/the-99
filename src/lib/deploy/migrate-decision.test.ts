@@ -33,6 +33,21 @@ describe("decideMigration", () => {
     expect(d.reason).toContain("MIGRATE_DATABASE_URL");
   });
 
+  it("tells the operator to check the variable's SCOPE, and never calls it non-sensitive", () => {
+    // The one time this fired in anger (2026-09-21) the variable was present in the
+    // dashboard and scoped to Preview, so "is not set" and the screen disagreed and the
+    // fix took five hours. The scope is the first thing to check, and the sensitivity is
+    // a red herring the message used to plant: it said "non-sensitive", which is neither
+    // required nor what ships.
+    const d = decideMigration({ VERCEL_ENV: "production" });
+    if (d.action !== "fail") throw new Error("unreachable");
+    expect(d.reason).toMatch(/scope/i);
+    expect(d.reason).toContain("Preview");
+    // Case-insensitive: "Non-sensitive is fine" at the head of a sentence is the same
+    // advice, and a `toContain` here would wave it through.
+    expect(d.reason).not.toMatch(/non-sensitive/i);
+  });
+
   it("fails a production build when MIGRATE_DATABASE_URL is blank", () => {
     const d = decideMigration({ VERCEL_ENV: "production", MIGRATE_DATABASE_URL: "   " });
     expect(d.action).toBe("fail");

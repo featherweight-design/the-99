@@ -43,7 +43,27 @@ Package manager is **pnpm** (pinned via `packageManager` in package.json) — ne
 
 - All work happens in worktrees under `.worktrees/<branch>`; copy `.env` from the repo root into a new worktree before running the app. The main checkout stays clean on `main`.
 - Pre-push gate, every push: `pnpm typecheck && pnpm lint && pnpm test` plus the stub-DB build, then `git fetch origin && git rebase origin/main`.
-- Database migrations apply automatically during each Vercel **production** build (`vercel-build` → `scripts/vercel-migrate.ts`). Every Vercel project therefore needs `MIGRATE_DATABASE_URL` set — non-sensitive, Production scope only, same value as that project's `DATABASE_URL` — or its production builds fail by design. Preview deployments skip migrations entirely.
+- Database migrations apply automatically during each Vercel **production** build (`vercel-build` → `scripts/vercel-migrate.ts`). Every Vercel project therefore needs `MIGRATE_DATABASE_URL` set — **Production scope, and Production alone** — with the same value as that project's `DATABASE_URL`, or its production builds fail by design. Preview deployments skip migrations entirely.
+
+  **The SCOPE is the half that bites, and the sensitivity is not.** A copy scoped to Preview is
+  inert, because previews skip migrations; production then finds nothing and refuses to build.
+  That is `decideMigration`'s fail-closed branch working — shipping code without its schema is
+  what #70 cost — but the message it prints names the variable rather than the scope, so the
+  failure reads as "never set" when the truth is "set somewhere it is never read".
+
+  Marking it **Sensitive is correct and is what ships** on both projects, and that is a
+  MEASUREMENT rather than a preference: the variable is Sensitive today and production builds
+  read it — the 14:54Z and 20:46Z builds on 2026-09-21 logged `migrations applied successfully`,
+  and this script fails the build outright when the value is absent, so a build that migrated had
+  it. Sensitive additionally keeps the value out of the dashboard, the same treatment
+  `DATABASE_URL`, `CLERK_SECRET_KEY` and `CRON_SECRET` carry. The deploy spec's §Credential
+  handling was written on the opposite premise — that a build step cannot read a Sensitive
+  variable — and carries a note saying so; which of the two was true in July is not established,
+  only what is true now.
+  This line previously said "non-sensitive", which was wrong, and reading it is a plausible
+  route to "re-scope this variable": on 2026-09-21 it moved to Preview on both projects and
+  every production deploy failed for five hours, across seven deployments and five merged PRs.
+  Nothing was down — the running build kept serving — but nothing new shipped either.
 - `GET /api/health` (public, unauthenticated) reports migration state — 200 when the schema matches the build or is ahead of it, 503 when migrations are pending or the ledger is unreadable. Use it to confirm a deploy instead of loading a page that depends on the schema.
 - `pnpm check:scryfall` validates Scryfall's bulk-data contract (index shape + first entry's required fields) without touching a database. The `Upstream contract checks` workflow runs it daily, because the catalog refresh is weekly and an upstream shape change would otherwise go unnoticed until it failed.
 - `pnpm check:manapool` validates ManaPool's price-feed contract (payload shape, a real parse, and
