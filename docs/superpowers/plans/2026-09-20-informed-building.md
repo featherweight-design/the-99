@@ -828,7 +828,7 @@ and already draws. Record instead:
 
 `FillRow.role === "other"` marks the residual, so the split needs no new persistence: the pass
 ledger already carries it. `Undo these 31` then means "clear the suggestions, keep the
-foundation", through `provenance-line.tsx` and `topOffCopy.list.undo(n)` exactly as they stand.
+foundation", through `provenance-line.tsx` and `topOffCopy.ledger.undo(n)` exactly as they stand.
 
 Write the test against the ledger, not the rows:
 
@@ -850,9 +850,9 @@ pass is the regression, and nothing else in the suite can see it.
 - [ ] **Step 5: Check the truncation.** `createDeck` truncates to `bodySize`; confirm it still
 holds at 99 rows across two passes.
 
-- [ ] **Step 5: Run.** `pnpm vitest run src/app/decks/ && pnpm test && pnpm typecheck`
+- [ ] **Step 6: Run.** `pnpm vitest run src/app/decks/ && pnpm test && pnpm typecheck`
 
-- [ ] **Step 6: Commit.**
+- [ ] **Step 7: Commit.**
 
 ---
 

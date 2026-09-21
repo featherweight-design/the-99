@@ -143,7 +143,7 @@ the fill by PASS, and the split it already draws is better than the one being in
 | shipped today | where |
 |---|---|
 | Clear everything auto-added, undoably | `clearAutoCards` / `restoreAutoCards` |
-| **Undo one pass on its own** | `provenance-line.tsx`, labelled by `pass-mark.tsx`, copy `topOffCopy.list.undo(n)` — literally `Undo these {n}` |
+| **Undo one pass on its own** | `provenance-line.tsx`, labelled by `pass-mark.tsx`, copy `topOffCopy.ledger.undo(n)` — literally `Undo these {n}` |
 | Claim a single row out of provenance | `keepAutoCard` (`actions.ts:573`) |
 
 `fill_passes.kind in ('seed', 'top_off')` (`schema.ts:499`) is the layer boundary, it is
