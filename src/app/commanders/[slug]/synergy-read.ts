@@ -15,22 +15,6 @@ import {
   type SynergyCard,
 } from "../../../lib/commanders/synergy-cards";
 
-/** The commanders' full EDHREC support list, ranked by synergy, as the panel
- *  draws it. One query: the support rows joined to the catalog for the name and
- *  type line, with ownership read per card from the collection.
- *
- *  Takes a list of commanders, one for most decks and two for a Partner pair.
- *  A card both commanders support is drawn once, carrying the better of their
- *  two figures.
- *
- *  Inner join to `cards` on purpose. A support row whose oracle id is not in
- *  the catalog has no name and no type line, so there is no row to draw — the
- *  same silent drop `commander_support.edhrec_total` documents, where the
- *  stored total counts names before unresolvable ones are dropped.
- *
- *  The exclusion is applied here rather than in the client because the facet
- *  counts are computed from this list: excluding on the client would count one
- *  list and render another. */
 /** The player's collection, summed per card once, as a joinable subquery. */
 function buildOwnedTotals(userId: string) {
   return db
@@ -44,6 +28,25 @@ function buildOwnedTotals(userId: string) {
     .as("owned_totals");
 }
 
+/** The commanders' full EDHREC support list, ranked by synergy, as the panel
+ *  draws it. The support rows joined to the catalog for the name and type line, with ownership
+ *  read per card from the collection.
+ *
+ *  ONE query for a single commander; a pair issues the pair select first and the merged-singles
+ *  select only if that comes back empty.
+ *
+ *  Takes a list of commanders, one for most decks and two for a Partner pair.
+ *  A card both commanders support is drawn once, carrying the better of their
+ *  two figures.
+ *
+ *  Inner join to `cards` on purpose. A support row whose oracle id is not in
+ *  the catalog has no name and no type line, so there is no row to draw — the
+ *  same silent drop `commander_support.edhrec_total` documents, where the
+ *  stored total counts names before unresolvable ones are dropped.
+ *
+ *  The exclusion is applied here rather than in the client because the facet
+ *  counts are computed from this list: excluding on the client would count one
+ *  list and render another. */
 export async function readSynergyCards(
   userId: string,
   commanderOracleIds: string[],
@@ -76,17 +79,25 @@ export async function readSynergyCards(
   // an approximation of that — the better of what each wants alone — and the two rank the
   // same card differently often enough to matter.
   //
-  // Closing this divergence is the whole of PR 2. `suggestions-read` already preferred the
-  // pair table, so until now the deck suggestions panel and this panel could disagree about
-  // one card for one pair, and the commander detail panel, Role Coverage and the deck
-  // top-off list all read THIS one.
+  // THIS CLOSES THE STORED-ROW HALF OF THE DIVERGENCE, AND NOT THE OTHER HALF. Said plainly
+  // because an earlier draft of this comment claimed the whole of it.
+  //
+  // `suggestions-read` falls back through THREE rungs: the stored pair row, then a DEMAND
+  // fetch of the real pair page (`resolvePairEdhrecData`, itself DB-cached), then the merged
+  // singles. This reader has two — stored, then merged singles. So for a pair with no stored
+  // row the Consider panel still reads the real pair page while this one reads the
+  // approximation, and they still disagree.
+  //
+  // That gap is a FOLLOW-UP rather than a rider here: the demand path returns `EdhrecData`
+  // keyed by NAME, so consuming it needs name resolution, a catalog join and an ownership
+  // join — a third query path on a hot route, which is its own change with its own walk.
   //
   // CANONICAL ON THE READ, not only the write — the same rule `loadPairRow` records. `decks`
   // stores the pair in a meaningful order, primary commander first, while the table stores it
   // canonically, so passing the caller's order straight through misses every row whose
   // primary carries the larger id, silently and forever.
   const pairRows = commanderOracleIds.length === 2
-    ? await readPairSupport(commanderOracleIds[0], commanderOracleIds[1], withImages, ownedTotals)
+    ? await pairSupportQuery(commanderOracleIds[0], commanderOracleIds[1], withImages, ownedTotals)
     : null;
 
   // Length rather than truthiness: an EMPTY pair list is a pair EDHREC has a header for and
@@ -109,7 +120,7 @@ export async function readSynergyCards(
       // the better of the two, exactly as `mergeEdhrecData` merges the live
       // lists. Over one id the grouped max is the row itself.
       //
-      // THE FALLBACK, now that `pairSupportQuery` exists. The merged-singles figure is an
+      // THE FALLBACK, now that the pair query above exists. The merged-singles figure is an
       // APPROXIMATION of a pair: it says "the better of what each commander wants alone",
       // where the pair table says what people actually play with the two together. This
       // branch runs when no pair row is stored — which is every pair until a widened index
@@ -161,18 +172,25 @@ type SupportRow = {
 };
 
 /**
- * The pair's own support list, or null when none is stored.
+ * The pair's own support list, as a QUERY rather than an awaited result.
  *
- * NO AGGREGATION, unlike the merged-singles query: the pair table already holds one row per
- * card for the two commanders together, so there is nothing to take a `max` over and no
- * `group by` to get wrong.
+ * Exported and un-awaited so a test can read the emitted SQL. That is not a convenience: the
+ * canonical ordering below is otherwise UNOBSERVABLE from a mocked `db`, whose `where` discards
+ * its arguments — the first version of this shipped with a test named for the canonical key that
+ * passed identically with `canonicalPair` replaced by the raw arguments.
+ *
+ * CANONICAL ON THE READ, not only the write. `decks` stores the pair in a meaningful order,
+ * primary commander first, while the table stores it canonically — so passing the caller's order
+ * straight through misses every row whose primary carries the larger id, silently and forever.
+ *
+ * Returns rows, never null: an EMPTY list is a pair EDHREC has a header for and no cards under,
+ * and the caller decides what that means.
+ *
+ * NO AGGREGATION, unlike the merged-singles query: the pair table already holds one row per card
+ * for the two commanders together, so there is nothing to take a `max` over and no `group by` to
+ * get wrong.
  */
-async function readPairSupport(
-  a: string,
-  b: string,
-  withImages: boolean,
-  ownedTotals: OwnedTotals,
-): Promise<SupportRow[]> {
+export function pairSupportQuery(a: string, b: string, withImages: boolean, ownedTotals: OwnedTotals) {
   const pair = canonicalPair(a, b);
   return db
     .select({

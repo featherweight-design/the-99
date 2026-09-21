@@ -229,19 +229,4 @@ describe("readSynergyCards — the pair's own list", () => {
     expect(out[0].synergyPts).toBe(10);
   });
 
-  it("orders the pair's key canonically, whichever order the deck stores", async () => {
-    // `decks` stores the primary commander first, meaningfully; the table stores the pair
-    // canonically. Passing the deck's order straight through misses every row whose primary
-    // carries the larger id — silently, and forever. Both orders must reach the same list.
-    pairRows.value = [row({ synergy: 0.9 })];
-    const forward = await readSynergyCards("u", ["aaa", "bbb"], []);
-
-    pairRows.value = [row({ synergy: 0.9 })];
-    sources.value = [];
-    const reverse = await readSynergyCards("u", ["bbb", "aaa"], []);
-
-    expect(forward[0].synergyPts).toBe(90);
-    expect(reverse[0].synergyPts).toBe(90);
-    expect(sources.value).toContain("commander_pair_support_cards");
-  });
 });
