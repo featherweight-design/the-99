@@ -1,0 +1,140 @@
+// The facts a push line needs about a CANDIDATE — for a whole pool, in one read.
+//
+// SERVER-ONLY: it reaches the database. Nothing a `"use client"` component can value-import
+// may reach this file.
+//
+// WHY BATCHED, MEASURED RATHER THAN ASSUMED. The top-off pool is 262 candidates for the
+// average commander, 423 at the widest and 480 for a pair. `pnpm measure:facts-cost` on
+// staging: the whole pool's combo completions in ONE statement is 177-192ms, where the same
+// work candidate by candidate is ~195ms each — 91 to 95 seconds for the pool. One statement
+// is 480 to 540 times cheaper, so this is a batched read or the push line is not shippable.
+//
+// THREE OF THE FOUR FACTS ARE CHEAP. Game changer is a column on `cards`; mass land denial and
+// extra turns are the flags table the profile already loads for the deck's own cards. Only the
+// fourth needs thought.
+//
+// `completesCombos` IS A SET QUESTION, not a per-card one: every two-card variant with exactly
+// one piece already in the deck and the other among the candidates. Asking it per candidate
+// means running the deck's whole combo match again for each one, which is the 91 seconds.
+
+import { inArray, sql } from "drizzle-orm";
+
+import { db } from "../../db";
+import { cards, spellbookVariantCards, spellbookVariants } from "../../db/schema";
+import { loadBracketFlags } from "../bracket/flags-read";
+import { classifyTutor } from "../bracket/tutor-targets";
+import type { CandidateFacts } from "../bracket/delta";
+import type { ComboRef } from "./types";
+
+/**
+ * Every candidate's facts, keyed by oracle id.
+ *
+ * `deckOracleIds` is the deck as it stands — the draft, since that is what the analysis reads.
+ * A candidate already in the deck is not excluded here: whether an add is a re-count is the
+ * caller's question, and answering it here would hide a real completion from a surface that
+ * offers a second copy.
+ */
+export async function loadCandidateFacts(
+  candidateIds: readonly string[],
+  deckOracleIds: readonly string[],
+): Promise<Map<string, CandidateFacts>> {
+  const ids = [...new Set(candidateIds)];
+  if (ids.length === 0) return new Map();
+
+  const [rows, flags, completions] = await Promise.all([
+    db
+      .select({
+        oracleId: cards.oracleId,
+        name: cards.name,
+        gameChanger: cards.gameChanger,
+        oracleText: cards.oracleText,
+      })
+      .from(cards)
+      .where(inArray(cards.oracleId, ids)),
+    loadBracketFlags(ids),
+    completionsFor(ids, deckOracleIds),
+  ]);
+
+  const out = new Map<string, CandidateFacts>();
+  for (const row of rows) {
+    const flag = flags.get(row.oracleId);
+    out.set(row.oracleId, {
+      card: { oracleId: row.oracleId, name: row.name },
+      gameChanger: row.gameChanger ?? false,
+      massLandDenial: flag?.massLandDenial ?? false,
+      extraTurn: flag?.extraTurn ?? false,
+      // The SHIPPED classifier over the same text the profile reads, so a candidate's
+      // reading and the deck's are one rule rather than two that agree today.
+      tutor: classifyTutor(row.oracleText) !== null,
+      completesCombos: completions.get(row.oracleId) ?? [],
+    });
+  }
+  return out;
+}
+
+/**
+ * ONE STATEMENT for the whole pool.
+ *
+ * `held` counts how many pieces of each two-card variant the deck already has; a variant with
+ * exactly one is a variant the deck is one card away from. Joining the candidates back onto
+ * those names which candidate closes which.
+ *
+ * Template-gated variants are excluded here for the reason `assembledCombosQuery` excludes
+ * them: a variant naming a CATEGORY of card is not one a decklist can be said to assemble.
+ */
+async function completionsFor(
+  candidateIds: readonly string[],
+  deckOracleIds: readonly string[],
+): Promise<Map<string, ComboRef[]>> {
+  const out = new Map<string, ComboRef[]>();
+  if (deckOracleIds.length === 0) return out;
+
+  const result = await db.execute(sql`
+    with two_card as (
+      select v.variant_id, v.bracket_tag, v.produces, vc.oracle_id
+      from ${spellbookVariants} v
+      join ${spellbookVariantCards} vc on vc.variant_id = v.variant_id
+      where v.card_count = 2 and cardinality(v.requires_template_ids) = 0
+    ),
+    held as (
+      select variant_id, count(*)::int as n
+      from two_card
+      where oracle_id = any(${sql.param([...deckOracleIds])}::uuid[])
+      group by variant_id
+    )
+    select t.oracle_id as candidate,
+           t.variant_id,
+           t.bracket_tag,
+           t.produces,
+           array_agg(p.oracle_id order by p.oracle_id) as pieces
+    from two_card t
+    join held h on h.variant_id = t.variant_id and h.n = 1
+    join two_card p on p.variant_id = t.variant_id
+    where t.oracle_id = any(${sql.param([...candidateIds])}::uuid[])
+      and t.oracle_id <> all(${sql.param([...deckOracleIds])}::uuid[])
+    group by t.oracle_id, t.variant_id, t.bracket_tag, t.produces
+  `);
+
+  for (const raw of result.rows as {
+    candidate: string;
+    variant_id: string;
+    bracket_tag: string | null;
+    produces: string[] | null;
+    pieces: string[];
+  }[]) {
+    const combo: ComboRef = {
+      variantId: raw.variant_id,
+      // Names are resolved at the DRAW, not here: this read is per pool, and a join onto
+      // `cards` for every piece of every completion is a cost the row does not need until
+      // something draws the pair.
+      cards: raw.pieces.map((oracleId) => ({ oracleId, name: "" })),
+      produces: raw.produces ?? [],
+      bracketTag: raw.bracket_tag ?? "",
+      // A completion is a card the player is ADDING, so no piece of it is in the command
+      // zone by virtue of this add.
+      usesCommander: false,
+    };
+    out.set(raw.candidate, [...(out.get(raw.candidate) ?? []), combo]);
+  }
+  return out;
+}
