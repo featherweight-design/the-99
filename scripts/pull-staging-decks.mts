@@ -104,7 +104,11 @@ if (!EXPECTED) {
   );
   process.exit(1);
 }
-if (!dstId.endsWith(EXPECTED)) {
+// EQUALITY, not a suffix. `endsWith` accepts any branch whose id merely ENDS with what was
+// named — a different database one character longer passes, and the deletes then run against
+// it. `identity()` returns `"<guc>=<value>"`, so the value is compared on its own.
+const dstValue = dstId.slice(dstId.indexOf("=") + 1);
+if (dstValue !== EXPECTED) {
   console.error(
     `Target is ${dstId}, which is not the ${EXPECTED} you named.\n` +
       "Refusing — this script deletes the target user's decks and collection.",
