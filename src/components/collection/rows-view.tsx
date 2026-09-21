@@ -14,6 +14,7 @@ import { availabilityState } from "../../lib/decks/availability";
 import { availabilityCopy } from "../../lib/copy/availability";
 import { AvailabilityMarker, markerAria } from "../ui/availability-marker";
 import { CardFactMark } from "../cards/card-fact-mark";
+import { FactTooltip } from "../cards/fact-tooltip";
 import { CollectionMarkKey } from "./collection-mark-key";
 import { cardFactName, cardMarkCopy } from "../../lib/copy/card-mark";
 import { GhostButton } from "../ui/button";
@@ -124,7 +125,9 @@ export function RowsView({
                   placed there explicitly, after the card's name, rather than being
                   spoken twice out of order. */}
               {(c.facts ?? []).map((fact) => (
-                <CardFactMark key={fact} fact={fact} size={13} silent />
+                <FactTooltip key={fact} fact={fact}>
+                  <CardFactMark fact={fact} size={13} silent />
+                </FactTooltip>
               ))}
               {c.availability && (
                 // `nameless` — /collection is the count-only vantage. No

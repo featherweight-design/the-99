@@ -18,6 +18,7 @@ import { identityGradient } from "../../lib/collection/gradients";
 import { availabilityState } from "../../lib/decks/availability";
 import { AvailabilityMarker } from "../ui/availability-marker";
 import { CardFactMark } from "../cards/card-fact-mark";
+import { FactTooltip } from "../cards/fact-tooltip";
 import { CollectionMarkKey } from "./collection-mark-key";
 import { cardFactName, cardMarkCopy } from "../../lib/copy/card-mark";
 import { CardTileCaption } from "../ui/card-tile-caption";
@@ -126,7 +127,9 @@ export function GridView({
                     text content: the clause is placed explicitly below, after the card's
                     own name, rather than being read out of the meta line before it. */}
                 {(c.facts ?? []).map((fact) => (
-                  <CardFactMark key={fact} fact={fact} size={12} silent />
+                  <FactTooltip key={fact} fact={fact}>
+                    <CardFactMark fact={fact} size={12} silent />
+                  </FactTooltip>
                 ))}
               </>
             }

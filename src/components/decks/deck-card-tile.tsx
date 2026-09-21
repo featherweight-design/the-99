@@ -31,6 +31,9 @@ import type { DeckDetailCard } from "../../lib/decks/grouping";
 import { DECK_REMOVE_FALLBACK_MESSAGE } from "../../lib/decks/mutation-result";
 import { AvailabilityMarker } from "../ui/availability-marker";
 import { CardTileCaption } from "../ui/card-tile-caption";
+import { cardFactName, cardMarkCopy } from "../../lib/copy/card-mark";
+import { CardFactMark } from "../cards/card-fact-mark";
+import { FactTooltip } from "../cards/fact-tooltip";
 import { CostPips } from "../ui/cost-pips";
 import { OwnershipDot } from "../ui/ownership-dot";
 import { BuyTag } from "./buy-tag";
@@ -134,6 +137,10 @@ export function DeckCardTile({
   // document order and skipped entirely by a reader tabbing between controls —
   // which is how most people meet this tile. The row solves it the same way.
   const draftDescriptionId = useId();
+  /** Spoken after the name, in the vocabulary's own order — see the `ariaLabel` below. */
+  const factClause = card.facts?.length
+    ? `, ${cardMarkCopy.rowAria(card.facts.map(cardFactName))}`
+    : "";
   const displayName = printedFaceName(card);
   const fullName = printedNameOf(card);
   // Null unless the string holds symbols this app can draw, so both branches
@@ -199,13 +206,23 @@ export function DeckCardTile({
             // provider compose the label from `name`, which carries the full
             // printed name. The single-copy tile is the common case, and a
             // ternary fixed on one arm alone would leave it on the oracle name.
+            // THE FACT CLAUSE HAS TO BE IN HERE. The mark below is `silent`, and this
+            // `aria-label` REPLACES everything nested inside the trigger — so a mark
+            // drawn in the caption is announced by nothing at all unless the label says
+            // it. /collection's tile composes the same clause for the same reason
+            // (`grid-view.tsx`); the decklist row instead leaves its mark unsilenced,
+            // because that row's name is not a composed string.
             ariaLabel={
               card.quantity > 1 && !proxied
                 // `!proxied` for the same reason the drawn count is suppressed:
               // a quantity the proxy state does not claim must not be claimed to
               // a reader who cannot see that it was withheld.
-              ? `${cardDetailCopy.triggerAria(fullName)}, ${cardTileCopy.copiesAria(card.quantity)}`
-                : undefined
+              ? `${cardDetailCopy.triggerAria(fullName)}, ${cardTileCopy.copiesAria(card.quantity)}${factClause}`
+                // `undefined` keeps the provider's own composition where there is
+                // nothing to add; a fact is the one thing worth composing for.
+                : factClause
+                  ? `${cardDetailCopy.triggerAria(fullName)}${factClause}`
+                  : undefined
             }
             /* The bottom wash deletes with the marks it was holding off the
                art (call D). The 1px inner edge stays — it keeps a pale card
@@ -349,6 +366,23 @@ export function DeckCardTile({
                   </span>
                 )
               )}
+              {/* The standing bracket facts, last on the line — after the occupants that
+                  describe THIS DECK'S SLOT (the dot, the chip, the count) because these
+                  describe the CARD, and are true of it in any deck or none.
+
+                  12px, the floor, this tile being the smallest surface the mark ships on.
+                  `silent` because the caption composes the tile's spoken name, exactly as
+                  /collection's does.
+
+                  This tile drew no mark at first, and the key was suppressed here to match
+                  — which made Card view the one place a reader saw neither the glyphs nor
+                  the words. The fix was always this direction: a surface that shows cards
+                  shows what they are. */}
+              {(card.facts ?? []).map((fact) => (
+                <FactTooltip key={fact} fact={fact}>
+                  <CardFactMark fact={fact} size={12} silent />
+                </FactTooltip>
+              ))}
               {/* Rendered on `pendingMove`, NOT on `draftFigure`. A proxied tile
                   draws no figure and the draft still touched it, so a
                   description nested in the figure's branch would vanish exactly

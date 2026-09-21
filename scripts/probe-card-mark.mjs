@@ -6,7 +6,9 @@
 // can say what the reader gets.
 //
 // WHAT IT MEASURES, at 1300x900 and 390x844:
-//   · the mark's drawn box on each surface, and NEVER below the 12px floor
+//   · the mark's drawn box on each surface — including the deck's CARD VIEW, which is
+//     reached by a press rather than a URL and which a URL-driven sweep therefore missed
+//     entirely, letting it ship with no mark and no key — and NEVER below the 12px floor
 //   · no collision in the row's densest state — measured as intersecting RECTS against the
 //     ownership dot, the availability marker, the buy tag, the pips and the caption
 //   · no row grew — a marked row against an unmarked one on the same surface, measured in
@@ -61,11 +63,23 @@ const DECK = process.env.PROBE_DECK ?? null;
 if (!EMAIL.includes("+clerk_test") && !PASSWORD) throw new Error("Set E2E_AUDIT_USER_PASSWORD.");
 
 const WIDTHS = [
-  { label: 1300, viewport: { width: 1300, height: 900 } },
-  { label: 390, viewport: { width: 390, height: 844 } },
+  { label: 1300, viewport: { width: 1300, height: 900 }, hasTouch: false },
+  // `hasTouch` IS THE PHONE, not the width. A 390px context with Playwright's default
+  // pointer reports `(pointer: fine)`, so the app correctly opens a hover tooltip there
+  // and the phone's "stays silent" check read as a pass only while the tooltip was
+  // broken on every surface — a false green produced by two faults cancelling.
+  { label: 390, viewport: { width: 390, height: 844 }, hasTouch: true },
 ];
 
 const FLOOR = 12;
+/**
+ * A COPY of `OPEN_DELAY_MS` in `fact-tooltip.tsx`, and unavoidably one: this is a node
+ * script and that is a `.tsx` module. Nothing ties them together, so a change to the
+ * component's delay drifts this silently — the wait carries 350ms of headroom for that
+ * reason, and a shortened delay stays covered while a lengthened one fails loudly rather
+ * than reporting "nothing opened".
+ */
+const OPEN_DELAY_MS = 400;
 // Each deck page is a round trip, so the scan is capped — and the cap is REPORTED, because a
 // silent one turns "this account has no marked deck" into a claim about the first eight.
 const DECK_SCAN_LIMIT = 8;
@@ -196,6 +210,25 @@ async function findMarkedDeck(page) {
       `/about, and its specimen deck links read as this account's decks`);
     return null;
   }
+  // WAIT FOR THE LIST, not just for an `h1`. The shell's heading is attached long before
+  // the decks are, so reading the anchors here returned only the `new`/`import` CTAs and
+  // the probe reported "this account owns no decks at all" about an account that owns one.
+  // A race that resolves to an empty list is indistinguishable from an empty list.
+  await page
+    .waitForFunction(
+      (scope) => {
+        const root = document.querySelector(scope);
+        const links = [...(root?.querySelectorAll("a[href^='/decks/']") ?? [])]
+          .map((a) => a.getAttribute("href"))
+          .filter((h) => h && h.split("/").length === 3 && !["new", "import"].includes(h.split("/")[2]));
+        // Either a deck has appeared, or the list has settled with none — the empty state
+        // names itself, so the two are told apart rather than waited through.
+        return links.length > 0 || Boolean(root?.textContent?.includes("No decks"));
+      },
+      PAGE,
+      { timeout: 15_000 },
+    )
+    .catch(() => {});
   const hrefs = await page.evaluate((scope) => {
     const root = document.querySelector(scope);
     return [...new Set([...(root?.querySelectorAll("a[href^='/decks/']") ?? [])]
@@ -219,8 +252,8 @@ async function run() {
   await clerkSetup();
   const browser = await chromium.launch();
   try {
-    for (const { label, viewport } of WIDTHS) {
-      const context = await browser.newContext({ viewport });
+    for (const { label, viewport, hasTouch } of WIDTHS) {
+      const context = await browser.newContext({ viewport, hasTouch });
       const page = await context.newPage();
       await signIn(page);
 
@@ -234,6 +267,77 @@ async function run() {
               ? "this account owns no decks at all — the fixture is missing, not the mark"
               : `none of this account's ${found?.total} deck(s) holds a marked card — the fixture is missing, not the mark`);
       }
+
+      // THE DECK'S CARD VIEW is reached by pressing a toggle rather than by a URL, which is
+      // exactly why the first version of this probe never looked at it — and why it shipped
+      // drawing no mark and no key, with every check here green. A surface reachable only
+      // by a press is a surface a URL-driven sweep cannot see.
+      const cardViewSurface = async () => {
+        if (!deckHref) return;
+        const nav = await goTo(page, deckHref);
+        if (!report(`${label}px · deck card view · reached the deck`, nav.ok,
+            nav.ok ? undefined : `redirected to ${nav.landed}`)) return;
+        const toggle = onPage(page, 'button[aria-label="Card view"]').first();
+        if (!(await toggle.count())) {
+          report(`${label}px · deck card view · found the toggle`, false, "no Card view control");
+          return;
+        }
+        await toggle.click();
+        await page.waitForTimeout(1200);
+        const all = await marks(page);
+        const drawn = all.filter((m) => !m.inKey);
+        const keyed = all.filter((m) => m.inKey && m.onScreen);
+        report(`${label}px · deck card view · the tiles draw the mark`, drawn.length > 0,
+          drawn.length ? `${drawn.length} mark(s)` : "no mark on any tile");
+        if (drawn.length) {
+          const smallest = Math.min(...drawn.map((m) => Math.min(m.w, m.h)));
+          report(`${label}px · deck card view · never below the ${FLOOR}px floor`,
+            smallest >= FLOOR, `smallest ${smallest}px`);
+        }
+        // The pair that shipped broken together: a surface drawing marks with no gloss.
+        // Same relation as the row view rather than a count — the deck is a closed set,
+        // so the key names exactly the facts its cards carry and nothing else.
+        const drawnF = [...new Set(drawn.map((m) => m.fact))].sort();
+        const keyF = [...new Set(keyed.map((m) => m.fact))].sort();
+        report(`${label}px · deck card view · every drawn mark is glossed by a visible key`,
+          keyed.length > 0 && drawnF.every((f) => keyF.includes(f)),
+          keyed.length ? `glosses ${keyF.join(", ")}` : "no visible key");
+        report(`${label}px · deck card view · and glosses NOTHING the deck does not hold`,
+          keyF.every((f) => drawnF.includes(f)),
+          keyF.filter((f) => !drawnF.includes(f)).join(", ") || "exact");
+
+        // THE HOVER HERE TOO. The rule is "every surface that draws the glyph", and this
+        // surface draws it — a tile mount left bare would otherwise be the one the sweep
+        // in the loop above cannot reach, since this view is opened by a press.
+        const tileMark = (await onPage(page, '[data-testid^="card-fact-"]').elementHandles())
+          .length
+          ? await (async () => {
+              for (const h of await onPage(page, '[data-testid^="card-fact-"]').elementHandles()) {
+                if (await h.evaluate((el) => !el.closest('[role="group"]')
+                    && el.getBoundingClientRect().width > 0)) return h;
+              }
+              return null;
+            })()
+          : null;
+        if (!tileMark) {
+          report(`${label}px · deck card view · a tile mark to hover`, false, "none outside the key");
+        } else {
+          const before = await page.evaluate(() => document.body.innerText);
+          const hovered = await tileMark.hover().then(() => true).catch(() => false);
+          await page.waitForTimeout(OPEN_DELAY_MS + 350);
+          const opened =
+            (await page.evaluate(() => document.body.innerText)).length > before.length;
+          if (!hovered) {
+            report(`${label}px · deck card view · the pointer reached the mark`, false, "hover refused");
+          } else if (label === 1300) {
+            report(`${label}px · deck card view · the mark explains itself on hover`, opened,
+              opened ? "a tooltip opened" : "nothing opened after the delay");
+          } else {
+            report(`${label}px · deck card view · no hover tooltip under a coarse pointer`, !opened,
+              opened ? "a tooltip opened on a phone" : "silent, as designed");
+          }
+        }
+      };
 
       for (const [surface, url, search] of [
         ...(deckHref ? [["decklist row", deckHref, null]] : []),
@@ -278,16 +382,83 @@ async function run() {
         report(`${label}px · ${surface} · never below the ${FLOOR}px floor`,
           smallest >= FLOOR, `smallest ${smallest}px`);
 
-        // THE RULE THAT MAKES A WORDLESS MARK LEGAL. A failure, never a note — and it
-        // asserts the key is SEEN rather than merely present: three SVGs in the DOM is
-        // what a hidden, zero-sized or scrolled-past key also produces, and a gloss the
-        // reader cannot see glosses nothing.
-        const keyVisible = keyed.filter((m) => m.onScreen);
-        report(`${label}px · ${surface} · the key is on screen with the marks`,
-          keyVisible.length >= 3,
-          keyed.length >= 3 && keyVisible.length < 3
-            ? `${keyed.length} in the DOM but only ${keyVisible.length} visible`
-            : `${keyVisible.length} key entr(ies) drawn`);
+        // THE KEY IS REACHABLE, which is the strongest true statement available here.
+        //
+        // An earlier version centred the first marked row and demanded the key be visible
+        // WITH it. That is not a property this surface has: `MarkKey` is a static element
+        // above the list, so on a 99-card deck whose marked card sits in a late group the
+        // two cannot share a viewport, and the check would fail a correct build. It passed
+        // only because the fixture deck is short — the fixture was holding the check up.
+        //
+        // So: scroll to the key, and require it to be drawn. Plus the ordering that makes
+        // it a gloss at all — the key PRECEDES the rows it explains, so a reader scrolling
+        // into the list has already passed it.
+        const keyReading = await page.evaluate((scope) => {
+          const root = document.querySelector(scope);
+          const all = [...(root?.querySelectorAll('[data-testid^="card-fact-"]') ?? [])];
+          const keyEl = all.find((m) => m.closest('[role="group"]'));
+          const rowEl = all.find((m) => !m.closest('[role="group"]'));
+          keyEl?.scrollIntoView({ block: "center" });
+          return {
+            hasKey: Boolean(keyEl),
+            // `DOCUMENT_POSITION_FOLLOWING` — the row comes after the key.
+            keyFirst: Boolean(
+              keyEl && rowEl && keyEl.compareDocumentPosition(rowEl) & Node.DOCUMENT_POSITION_FOLLOWING,
+            ),
+          };
+        }, PAGE);
+        await page.waitForTimeout(400);
+        const settled = await marks(page);
+        const keyVisible = settled.filter((m) => m.inKey && m.onScreen);
+        report(`${label}px · ${surface} · the key is drawn where a reader can reach it`,
+          keyVisible.length > 0, `${keyVisible.length} of ${keyed.length} visible`);
+        report(`${label}px · ${surface} · and it precedes the rows it explains`,
+          keyReading.keyFirst, keyReading.hasKey ? "" : "no key at all");
+
+        // THE HOVER, ON EVERY SURFACE THAT DRAWS THE GLYPH. /collection's rows and tiles
+        // shipped the mark bare while the decklist row had the tooltip, so the same glyph
+        // explained itself on one surface and not the other (reported 2026-09-19).
+        //
+        // DESKTOP OPENS, PHONE STAYS SILENT, and the phone half is the rule rather than a
+        // limitation: the tooltip is `(pointer: fine)` and must not exist on a touch
+        // device, so a tap-to-open regression has to fail something.
+        {
+          // NOT `.first()`. The KEY renders before the rows and its samples are exempt
+          // from the tooltip by design — the word it defines is the next element along —
+          // so hovering the first mark in the document hovers a sample that is correct to
+          // stay silent, and reports every surface broken.
+          const handles = await onPage(page, '[data-testid^="card-fact-"]').elementHandles();
+          let mark = null;
+          for (const h of handles) {
+            const rowMark = await h.evaluate(
+              (el) => !el.closest('[role="group"]') && el.getBoundingClientRect().width > 0,
+            );
+            if (rowMark) { mark = h; break; }
+          }
+          const before = await page.evaluate(() => document.body.innerText);
+          // A SWALLOWED HOVER MAKES THE PHONE CHECK VACUOUS. A `.catch(() => {})` turns a
+          // detached, intercepted or off-screen mark into "nothing opened", which the
+          // coarse-pointer branch reads as "silent, as designed" — a pass printed over a
+          // pointer that was never driven. The failure is reported instead.
+          const hovered = mark
+            ? await mark.hover().then(() => true).catch(() => false)
+            : false;
+          // Playwright's hover is a real pointer move, so the open delay is real time.
+          await page.waitForTimeout(OPEN_DELAY_MS + 350);
+          const after = await page.evaluate(() => document.body.innerText);
+          const opened = after.length > before.length;
+          if (!mark) {
+            report(`${label}px · ${surface} · a row mark to hover`, false, "none outside the key");
+          } else if (!hovered) {
+            report(`${label}px · ${surface} · the pointer reached the mark`, false, "hover refused");
+          } else if (label === 1300) {
+            report(`${label}px · ${surface} · the mark explains itself on hover`, opened,
+              opened ? "a tooltip opened" : "nothing opened after the delay");
+          } else {
+            report(`${label}px · ${surface} · no hover tooltip under a coarse pointer`, !opened,
+              opened ? "a tooltip opened on a phone" : "silent, as designed");
+          }
+        }
 
         const glowed = drawn.every((m) => m.filter?.includes("drop-shadow"));
         const shadowed = drawn.some((m) => m.boxShadow && m.boxShadow !== "none");
@@ -330,8 +501,15 @@ async function run() {
         // row on screen and there is nothing to compare it against: the marked row while
         // filtered, the unmarked ones after clearing. Same surface, same viewport.
         //
-        // Rows are CARD BUTTONS. A first version looked for `li`/`tr`, found neither, and
-        // reported "cannot compare" — which failed rather than passing, but proved nothing.
+        // A ROW IS NOT THE SAME ELEMENT ON EVERY SURFACE. /collection's rows are card
+        // BUTTONS; a decklist row is a `div` carrying the click, because the row holds
+        // controls of its own and a button may not nest one. A version that assumed a
+        // button everywhere measured 0 on the decklist and reported "nothing to compare"
+        // — a failure, so not a false green, but it proved nothing for as long as the
+        // fixture search was also broken and the surface never ran.
+        //
+        // `[data-decklist-row]` is a hook the component exposes for exactly this, rather
+        // than a composed class list, which belongs to the caller and changes with it.
         //
         // WHAT THIS CHECK GUARDS, measured rather than assumed. Quadrupling the mark's box:
         //   · collection ROWS grow — 78px against 49px at 1300, 91px against 60px at 390 —
@@ -345,7 +523,8 @@ async function run() {
         // The mutation review proposed — deleting `block` from the mark — moves NEITHER
         // surface: the row's height comes from its own padding rather than the line box.
         // The missing check was real; that particular way of exposing it was not.
-        const markedH = await page.evaluate((scope) => {
+        const rowSel = surface === "decklist row" ? "[data-decklist-row]" : "button";
+        const markedH = await page.evaluate(([scope, rowSel]) => {
           const root = document.querySelector(scope);
           // NOT the first mark in the document: the key renders before the rows and its
           // samples are not inside a button, so `querySelector` returned one of those and
@@ -353,23 +532,25 @@ async function run() {
           // this probe for the same reason.
           const el = [...(root?.querySelectorAll('[data-testid^="card-fact-"]') ?? [])]
             .find((m) => !m.closest('[role="group"]'))
-            ?.closest("button");
+            ?.closest(rowSel);
           return el ? Math.round(el.getBoundingClientRect().height) : 0;
-        }, PAGE);
+        }, [PAGE, rowSel]);
         await searchFor(page, "");
-        const plainH = await page.evaluate((scope) => {
+        const plainH = await page.evaluate(([scope, rowSel]) => {
           const root = document.querySelector(scope);
-          const hs = [...(root?.querySelectorAll("button") ?? [])]
+          const hs = [...(root?.querySelectorAll(rowSel) ?? [])]
             .filter((b) => !b.querySelector('[data-testid^="card-fact-"]'))
             .map((b) => Math.round(b.getBoundingClientRect().height))
             .filter((h) => h > 24);
           return hs.length ? Math.max(...hs) : 0;
-        }, PAGE);
+        }, [PAGE, rowSel]);
         report(`${label}px · ${surface} · no row grew for the mark`,
           Boolean(markedH && plainH) && markedH <= plainH,
           markedH && plainH ? `marked ${markedH}px vs unmarked ${plainH}px`
                             : `marked ${markedH}px, unmarked ${plainH}px — nothing to compare`);
       }
+      await cardViewSurface();
+
       // THE MODAL. The one surface that spells the facts out, and the one whose loader had
       // no route to the two joined flags at all — so a mark drawn everywhere else proves
       // nothing about it.

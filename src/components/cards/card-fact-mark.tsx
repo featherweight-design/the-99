@@ -42,11 +42,12 @@
 // no initial. Same shape of rule as the bracket mark's 20px floor, reached from the
 // other direction: a numeral survives shrinking, a glyph past its floor does not.
 //
-// NO TOOLTIP HERE, YET. The handoff specifies a pointer-fine hover tooltip, and it
-// needs a positioned element with an open delay — which is a SURFACE concern with a
-// real consumer, not a prop on a glyph. It lands with the mounts in the next PRs;
-// `cardMarkCopy.tooltip` is already written and waiting. A prop accepted here with no
-// consumer would read as a wired feature and be silently dead.
+// NO TOOLTIP HERE, AND NOT BECAUSE IT IS UNBUILT. `FactTooltip` wraps this glyph on
+// every surface that draws it, because the hover needs a positioned element and an open
+// delay — a SURFACE concern, not a prop on a glyph. Wrapping rather than nesting is also
+// what keeps the two rules apart: the tooltip is pointer-fine and optional, this mark is
+// neither. Reach for `FactTooltip` when adding a new mount; a mark drawn bare is the
+// defect reported on /collection on 2026-09-19.
 //
 // ABSENCE IS THE DESIGN. A card with no facts renders nothing and reserves nothing.
 // There is no positive claim at any size, because detection on two of the three is

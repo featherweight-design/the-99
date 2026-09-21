@@ -66,7 +66,11 @@ function FinePointerTooltip({ fact, children }: { fact: CardFact; children: Reac
 
   return (
     <span
-      className="relative inline-flex"
+      // `shrink-0` on the WRAPPER, not only on the glyph inside it. Once the mark is
+      // wrapped, this span is the flex item its row measures, and an `inline-flex` with
+      // the default `flex-shrink: 1` squeezes in a crowded name cell while the `shrink-0`
+      // svg inside it keeps its width and overflows.
+      className="relative inline-flex shrink-0"
       onPointerEnter={() => { cancel(); timer.current = setTimeout(() => setOpen(true), OPEN_DELAY_MS); }}
       onPointerLeave={() => { cancel(); setOpen(false); }}
     >

@@ -18,21 +18,53 @@ const card = (over: Partial<DeckDetailCard> = {}): DeckDetailCard =>
   }) as DeckDetailCard;
 
 const ids = (entries: { id: string }[]) => entries.map((e) => e.id);
+const factIds = (entries: { id: string }[]) =>
+  ids(entries).filter((id) => (CARD_FACTS as readonly string[]).includes(id));
 
 describe("the key's composition rule", () => {
-  it("names all three facts on a row list with no marked card present", () => {
-    // Design's stated reason: a player scanning for Game Changers needs the entry to be
-    // there BEFORE they find one. A fact entry defines a glyph and claims nothing about
-    // any row, so it is true of a deck carrying none.
-    const entries = buildMarkKeyEntries({ cards: [card()], filter: "all", inCardView: false });
-    expect(ids(entries)).toEqual([...CARD_FACTS]);
+  it("names NO fact the deck does not hold", () => {
+    // The reported defect, in one line: a deck carrying one extra-turns card advertised
+    // all three. A deck is a closed set of 100 cards, so absence is knowable and total —
+    // an entry for a fact no card holds stops being a decoder and becomes a claim.
+    const entries = buildMarkKeyEntries({
+      cards: [card({ facts: ["extraTurns"] })], filter: "all", inCardView: false,
+    });
+    expect(factIds(entries)).toEqual(["extraTurns"]);
   });
 
-  it("draws NO fact entry in card view, where no tile carries a mark", () => {
-    // The same rule rather than an exception: glossing a glyph that appears nowhere on
-    // screen teaches the reader a mark they cannot find.
-    const entries = buildMarkKeyEntries({ cards: [card()], filter: "all", inCardView: true });
-    expect(ids(entries).filter((id) => (CARD_FACTS as readonly string[]).includes(id))).toEqual([]);
+  it("names every fact the deck does hold, in the vocabulary's own order", () => {
+    const entries = buildMarkKeyEntries({
+      cards: CARD_FACTS.map((f, i) => card({ oracleId: `o-${i}`, facts: [f] })),
+      filter: "all",
+      inCardView: false,
+    });
+    expect(factIds(entries)).toEqual([...CARD_FACTS]);
+  });
+
+  it("draws no fact entry at all for a deck carrying none", () => {
+    const entries = buildMarkKeyEntries({ cards: [card()], filter: "all", inCardView: false });
+    expect(factIds(entries)).toEqual([]);
+  });
+
+  it("glosses the facts in CARD VIEW too, where the tiles draw the same marks", () => {
+    // Card view suppressed these entries while its tiles drew no mark. The premise was
+    // true and the conclusion backwards — the tile draws the mark now, so the surface
+    // that shows cards is the last place to leave unglossed.
+    const entries = buildMarkKeyEntries({
+      cards: [card({ facts: ["gameChanger"] })], filter: "all", inCardView: true,
+    });
+    expect(factIds(entries)).toEqual(["gameChanger"]);
+  });
+
+  it("decides on the SHOWN rows, so a filtered-away fact is not glossed", () => {
+    // `buy` and `proxy` are decided over the filtered set; the facts follow the same set,
+    // so the key glosses the rows the reader is looking at. An owned, unproxied card is
+    // not a shopping row, so the Shopping filter hides it and its fact with it.
+    const cards = [card({ facts: ["massLandDenial"], owned: true, proxied: false })];
+    expect(factIds(buildMarkKeyEntries({ cards, filter: "all", inCardView: false })))
+      .toEqual(["massLandDenial"]);
+    expect(factIds(buildMarkKeyEntries({ cards, filter: "shopping", inCardView: false })))
+      .toEqual([]);
   });
 
   it("keeps proxy conditional — present only when a row is proxied", () => {
@@ -45,7 +77,11 @@ describe("the key's composition rule", () => {
   });
 
   it("words each fact with the rules' own name", () => {
-    const entries = buildMarkKeyEntries({ cards: [card()], filter: "all", inCardView: false });
+    const entries = buildMarkKeyEntries({
+      cards: CARD_FACTS.map((f, i) => card({ oracleId: `o-${i}`, facts: [f] })),
+      filter: "all",
+      inCardView: false,
+    });
     const words = entries.filter((e) => (CARD_FACTS as readonly string[]).includes(e.id));
     expect(words.map((e) => e.word)).toEqual(CARD_FACTS.map((f) => cardMarkCopy[f]));
   });
