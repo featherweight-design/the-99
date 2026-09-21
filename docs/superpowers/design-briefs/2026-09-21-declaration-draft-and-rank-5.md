@@ -40,7 +40,9 @@ Both widths, as always. Nothing else about the declaration is open.
 
 ## §2 Rank 5's mark is rank 4's mark with a 5 in it
 
-Not a question — a reissue. `assets/bracket-5-cedh.svg` and `assets/bracket-4-optimized.svg` are
+Not a question — a reissue. The five marks live with the Round 0 frame, not with this round:
+`design/design_handoff_the99_deck_analysis/assets/`. There,
+`bracket-5-cedh.svg` and `bracket-4-optimized.svg` are
 **byte-identical in every path**; the only differences are the numeral and a kerning nudge on the
 text. Ranks 3 and 4 genuinely differ from each other, so this is rank 5 alone.
 
@@ -49,7 +51,7 @@ the numeral is small and the silhouette is what a reader recognises. Two bracket
 silhouette makes the mark decorative at exactly the sizes it is meant to carry meaning.
 
 Engineering cannot invent the geometry, so the mark is owed before `BracketMark` is built from
-these five files.
+those five files.
 
 ---
 
