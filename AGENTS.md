@@ -1320,6 +1320,20 @@ in one payload when the set of parameters is small enough to precompute.
 - UI work is gated on design handoffs in `design/design_handoff_the99_*` — no UI until the handoff exists and has a READINESS verdict. Backend/API/DB work may proceed without one.
 - Every UI PR passes the design-review skill (property-table enumerate → verify → confirm) before `gh pr create`. Mobile + desktop parity ships in the same PR.
 - Pipeline state lives in `docs/superpowers/design-pipeline-status.md`; plans in `docs/superpowers/plans/`; gap reports in `docs/superpowers/gap-report-*.md`.
+- **A MULTI-ROUND FEATURE LINE BATCHES ITS ABOUT ENTRIES AT THE END OF THE LAUNCH.** Ruled
+  2026-09-21. A line like deck analysis ships five rounds, each a piece of one capability — and
+  an `ABOUT_VERSION` bump puts the page in front of every account with the new entries marked.
+  Bumping once per round spends that attention five times to announce fragments, and the early
+  entries describe a surface the reader cannot use yet. One bump at the end describes the thing
+  as it works.
+
+  This moves WHEN, never whether. The entries are still owed, Design still draws them on the
+  per-entry artboard, and the LINE's close-out does not pass without them. A readiness audit on
+  round N of such a line should not report a missing entry as a finding — it should confirm the
+  line's plan names the batched task, or the requirement quietly evaporates.
+
+  **Everything below applies unchanged to a feature that ships in one round.**
+
 - **No FEATURE launches without an About entry, in the same round that ships it.** `/about` is the
   app's own reference, and it is only true if a feature cannot land without one. Three places carry
   it, and the third is the one that catches what the first two miss:
