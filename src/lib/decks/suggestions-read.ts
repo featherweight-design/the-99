@@ -27,16 +27,14 @@ import { buildSuggestionPayload, suggestDeck, type DeckSuggestion } from "./sugg
 // owned in quantity, and the fill stacks it to what the shelf actually holds.
 // It rides on the pool rather than arriving from a second query because both
 // reads scan the same join under the same predicate.
-/** `layout` is here rather than on `PoolCard` deliberately: `PoolCard` is the scoring engine's
- *  shape too, and the fill is the only consumer that needs to tell a playable land back from
- *  one that merely flips. */
 /**
  * What the owned pool selects, named so a test can assert it rather than trusting a type.
  *
- * `layout` is load-bearing and invisible when absent: without it every `FillCandidate` reads
- * `undefined`, `playableAsLand` returns false for every card, and the fill counts zero modal
- * lands while every unit test passes. The required field on `FillCandidate` catches a dropped
- * MAPPING; this catches a dropped COLUMN.
+ * `layout` is the column worth pinning. Nothing in the fill reads it yet — the land sweeps
+ * adopt it in a later change — but a column that is absent from the projection resolves to
+ * `undefined` on every row rather than failing, so the day it IS read the land count would
+ * simply be zero everywhere with no test able to see it. The required field on
+ * `FillCandidate` catches a dropped MAPPING; this catches a dropped COLUMN.
  */
 export const OWNED_POOL_PROJECTION = {
   oracleId: cards.oracleId, name: cards.name, typeLine: cards.typeLine,
@@ -53,6 +51,9 @@ export const STAPLE_PROJECTION = {
   layout: cards.layout,
 } as const;
 
+/** `layout` is here rather than on `PoolCard` deliberately: `PoolCard` is the scoring engine's
+ *  shape too, and the deck-building path is the only one that needs to tell a playable land
+ *  back from one that merely flips. */
 export type SuggestionPoolCard = PoolCard & {
   manaValue: number; ownedQuantity: number; layout: string;
 };

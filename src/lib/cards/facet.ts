@@ -95,6 +95,11 @@ const FACE_SEPARATOR = "\n//\n";
 /**
  * The text of the spell you actually CAST.
  *
+ * NOT YET CALLED IN PRODUCTION, and that is deliberate rather than an oversight. The derivation
+ * and the fill adopt it when they land; this ships the fact and its tests first so the two
+ * changes can be reviewed apart. Until then `classifyRoles` still sees both faces everywhere,
+ * and the inflation described below is still present in the app.
+ *
  * `cards.oracle_text` holds BOTH FACES, joined by `FACE_SEPARATOR` in `scryfall/transform.ts`,
  * and `isLandFace` reads the front — so for a land-backed MDFC it returns false and
  * `classifyRoles` then reads the land back's `{T}: Add {R}` and calls the card RAMP. 82

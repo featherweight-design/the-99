@@ -88,9 +88,10 @@ describe("playableAsLand", () => {
     expect(playableAsLand("Artifact // Land", "transform")).toBe(false);
   });
 
-  // THE PATHWAY CASE, and the only shape that reaches the `isLandFace` guard. Every other
-  // "refuses" case below returns false at the layout check, so without this one the guard
-  // could be deleted and the suite would stay green.
+  // THE PATHWAY CASE, and the only shape that reaches the `isLandFace` guard. The transform
+  // and single-faced cases stop at the layout check and the Werewolf case stops at the
+  // back-face land test, so without this one the guard could be deleted and the suite would
+  // stay green.
   it("refuses a modal_dfc whose FRONT is already a land", () => {
     expect(isLandFace("Land // Land")).toBe(true);
     expect(playableAsLand("Land // Land", "modal_dfc")).toBe(false);
