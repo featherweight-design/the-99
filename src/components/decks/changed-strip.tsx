@@ -22,11 +22,15 @@ import { deckVersioningCopy } from "../../lib/copy/deck-versioning";
 import type { ShapeCard } from "../../lib/decks/draft-state";
 import { cardTypeGroup, groupByCardType, type CardTypeGroup } from "../../lib/decks/grouping";
 import { averageManaValue } from "../../lib/decks/mana-value";
-import { computeRoleCounts, RECOMMENDED_MIX, ROLE_ORDER } from "../../lib/decks/mix";
+import { computeRoleCounts, ROLE_ORDER, type RecommendedMix } from "../../lib/decks/mix";
 
 const copy = deckVersioningCopy.changed;
 
 type ChangedStripProps = {
+  /** What this deck is compared to, resolved once per request by the route. A PROP rather than
+   *  an import, because the targets are now per-commander — a component reaching for a module
+   *  constant would draw one deck's recommendation on every deck. */
+  mix: RecommendedMix;
   /** The newest committed version's list, and null on a brew — the presence of a
    *  version, not the size of its list, is what says whether there is anything to
    *  compare against. `+12 ramp` against no previous version is a claim about a
@@ -129,7 +133,7 @@ function StripCell({
   );
 }
 
-export function ChangedStrip({ before, after }: ChangedStripProps) {
+export function ChangedStrip({ before, after, mix }: ChangedStripProps) {
   const beforeCounts = computeRoleCounts(before ?? []);
   const afterCounts = computeRoleCounts(after);
 
@@ -198,7 +202,7 @@ export function ChangedStrip({ before, after }: ChangedStripProps) {
           />
         )}
         {ROLE_ORDER.map((role) => {
-          const { label, target } = RECOMMENDED_MIX[role];
+          const { label, target } = mix.cells[role];
           const have = afterCounts[role];
           const was = beforeCounts[role];
           const met = have >= target;

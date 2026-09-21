@@ -10,6 +10,17 @@ import type { DeckDetail } from "../../lib/decks/read";
 import type { DeckSuggestion } from "../../lib/decks/suggest";
 import type { DeckMutationResult } from "../../lib/decks/mutation-result";
 
+const TEST_MIX = {
+  cells: {
+    ramp: { label: "Ramp", target: 10, advisory: false },
+    draw: { label: "Draw", target: 10, advisory: false },
+    removal: { label: "Removal", target: 8, advisory: false },
+    wipes: { label: "Wipes", target: 3, advisory: false },
+    land: { label: "Land", target: 37, advisory: true },
+  },
+  measured: false,
+} as const;
+
 const { addCardToDeck, removeCardFromDeck } = vi.hoisted(() => ({
   addCardToDeck: vi.fn(),
   removeCardFromDeck: vi.fn(),
@@ -98,7 +109,7 @@ function makeDeck(): DeckDetail {
 
 function renderBuilder() {
   return render(
-    <BuilderShell
+    <BuilderShell mix={TEST_MIX}
       deck={makeDeck()}
       suggestions={[suggestion]}
       degraded={false}
@@ -162,7 +173,7 @@ describe("optimistic deck list", () => {
     removeCardFromDeck.mockRejectedValue(new Error("boom"));
 
     render(
-      <BuilderShell
+      <BuilderShell mix={TEST_MIX}
         deck={{ ...makeDeck(), cards: [{ ...makeDeck().cards[0], quantity: 9 }] }}
         suggestions={[suggestion]}
         degraded={false}

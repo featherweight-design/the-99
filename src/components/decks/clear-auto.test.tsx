@@ -471,6 +471,17 @@ describe("SweepReceipt", () => {
 const { BuilderShell } = await import("./builder-shell");
 import type { DeckDetail } from "../../lib/decks/read";
 
+const TEST_MIX = {
+  cells: {
+    ramp: { label: "Ramp", target: 10, advisory: false },
+    draw: { label: "Draw", target: 10, advisory: false },
+    removal: { label: "Removal", target: 8, advisory: false },
+    wipes: { label: "Wipes", target: 3, advisory: false },
+    land: { label: "Land", target: 37, advisory: true },
+  },
+  measured: false,
+} as const;
+
 // One factory for the whole file: vi.mock is hoisted per module path, so a
 // second call on this path would silently replace this one. BuilderShell needs
 // the wider surface, so every action the file touches is stubbed here.
@@ -521,7 +532,7 @@ const card3 = keptCard("swords", "Swords to Plowshares");
 
 function shell(cards: DeckDetailCard[]) {
   return (
-    <BuilderShell
+    <BuilderShell mix={TEST_MIX}
       deck={makeDeck(cards)}
       suggestions={[]}
       degraded={false}

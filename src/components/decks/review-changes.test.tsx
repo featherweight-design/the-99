@@ -19,6 +19,17 @@ import { BREW, COMMITTED } from "./__fixtures__/draft-state";
 import { ReviewChanges } from "./review-changes";
 import { proxyCopy } from "../../lib/copy/proxies";
 
+const TEST_MIX = {
+  cells: {
+    ramp: { label: "Ramp", target: 10, advisory: false },
+    draw: { label: "Draw", target: 10, advisory: false },
+    removal: { label: "Removal", target: 8, advisory: false },
+    wipes: { label: "Wipes", target: 3, advisory: false },
+    land: { label: "Land", target: 37, advisory: true },
+  },
+  measured: false,
+} as const;
+
 const refresh = vi.fn();
 const push = vi.fn();
 vi.mock("next/navigation", () => ({ useRouter: () => ({ refresh, push }) }));
@@ -104,7 +115,7 @@ const PULL_NAME = deckVersioningCopy.review.pullA11y("Sol Ring", "Kykar");
 describe("ReviewChanges", () => {
   it("groups both columns by card type and heads each with its count", () => {
     render(
-      <ReviewChanges
+      <ReviewChanges mix={TEST_MIX}
         deckId="d"
         deckName="Korvold"
         rows={{ in: [row()], out: [row({ oracleId: "o2", name: "Mox", direction: "out", from: 1, to: 0 })] }}
@@ -123,7 +134,7 @@ describe("ReviewChanges", () => {
 
   it("files a quantity move as one row carrying from → to, never a bare name", () => {
     render(
-      <ReviewChanges deckId="d" deckName="Korvold" rows={{ in: [row({ from: 1, to: 2 })], out: [] }} {...SHAPE} state={STATE} cardCount={CARD_COUNT} />,
+      <ReviewChanges mix={TEST_MIX} deckId="d" deckName="Korvold" rows={{ in: [row({ from: 1, to: 2 })], out: [] }} {...SHAPE} state={STATE} cardCount={CARD_COUNT} />,
     );
     expect(screen.getByText(/1 → 2/)).toBeTruthy();
   });
@@ -131,13 +142,13 @@ describe("ReviewChanges", () => {
   // A whole add and a whole cut are what the column heading already says, so a
   // `0 → 1` beside them would restate the column the row is standing in.
   it("says nothing about copies on a card arriving or leaving whole", () => {
-    render(<ReviewChanges deckId="d" deckName="Korvold" rows={{ in: [row()], out: [] }} {...SHAPE} state={STATE} cardCount={CARD_COUNT} />);
+    render(<ReviewChanges mix={TEST_MIX} deckId="d" deckName="Korvold" rows={{ in: [row()], out: [] }} {...SHAPE} state={STATE} cardCount={CARD_COUNT} />);
     expect(screen.queryByText(/\d+ → \d+/)).toBeNull();
   });
 
   it("puts the availability word in the accessible name, not only in colour", () => {
     render(
-      <ReviewChanges
+      <ReviewChanges mix={TEST_MIX}
         deckId="d"
         deckName="Korvold"
         rows={{ in: [row({ bucket: "unowned" })], out: [] }}
@@ -157,7 +168,7 @@ describe("ReviewChanges", () => {
   // `free` on every surface in the app — so there is no colour for a word to be
   // the alternative to.
   it("describes nothing on a row the player already has a free copy of", () => {
-    render(<ReviewChanges deckId="d" deckName="Korvold" rows={{ in: [row()], out: [] }} {...SHAPE} state={STATE} cardCount={CARD_COUNT} />);
+    render(<ReviewChanges mix={TEST_MIX} deckId="d" deckName="Korvold" rows={{ in: [row()], out: [] }} {...SHAPE} state={STATE} cardCount={CARD_COUNT} />);
     expect(
       screen.getByRole("button", { name: /Sol Ring/ }).getAttribute("aria-describedby"),
     ).toBeNull();
@@ -167,7 +178,7 @@ describe("ReviewChanges", () => {
   // two back in the pool, and the same note sits beside a buy count of copies.
   it("states the out column's rule once, in copies, and offers no per-row toggle", () => {
     render(
-      <ReviewChanges
+      <ReviewChanges mix={TEST_MIX}
         deckId="d"
         deckName="Korvold"
         rows={{ in: [], out: [row({ direction: "out", from: 3, to: 1 })] }}
@@ -184,7 +195,7 @@ describe("ReviewChanges", () => {
   // The lede names the version the player is about to cut, not the one they are
   // standing on: the whole page exists to be read before that number exists.
   it("heads the page with the version behind it and the version ahead", () => {
-    render(<ReviewChanges deckId="d" deckName="Korvold" rows={{ in: [row()], out: [] }} {...SHAPE} state={STATE} cardCount={CARD_COUNT} />);
+    render(<ReviewChanges mix={TEST_MIX} deckId="d" deckName="Korvold" rows={{ in: [row()], out: [] }} {...SHAPE} state={STATE} cardCount={CARD_COUNT} />);
     expect(screen.getByText(deckVersioningCopy.review.heading(1, 1))).toBeTruthy();
     expect(screen.getByText(deckVersioningCopy.review.lede(2))).toBeTruthy();
   });
@@ -193,7 +204,7 @@ describe("ReviewChanges", () => {
   // from", and a card leaving the deck is not being sought for it.
   it("offers a pull on a sleeved add and on no removal", () => {
     render(
-      <ReviewChanges
+      <ReviewChanges mix={TEST_MIX}
         deckId="d"
         deckName="Korvold"
         rows={{
@@ -215,7 +226,7 @@ describe("ReviewChanges", () => {
   // nothing pulled — in both cases the buy tag or nothing is the whole row.
   it("offers no pull on a row with no sleeved holder", () => {
     render(
-      <ReviewChanges
+      <ReviewChanges mix={TEST_MIX}
         deckId="d"
         deckName="Korvold"
         rows={{ in: [row(), row({ oracleId: "o2", name: "Mox", bucket: "unowned" })], out: [] }}
@@ -233,7 +244,7 @@ describe("ReviewChanges", () => {
   // reader is being offered nothing from is a fact about somebody else's box.
   it("offers no pull on a free add another deck also holds", () => {
     render(
-      <ReviewChanges
+      <ReviewChanges mix={TEST_MIX}
         deckId="d"
         deckName="Korvold"
         rows={{
@@ -268,7 +279,7 @@ describe("ReviewChanges", () => {
   // with the offer: it is the opposite of what this row is.
   it("describes a pending holder's guard on the row, and offers no control", () => {
     render(
-      <ReviewChanges
+      <ReviewChanges mix={TEST_MIX}
         deckId="d"
         deckName="Korvold"
         rows={{ in: [row({ bucket: "claimed", availability: claimed({ pending: true }) })], out: [] }}
@@ -296,7 +307,7 @@ describe("ReviewChanges", () => {
   // both arms; this is the wiring — the row reads the claim's flags at all.
   it("draws the guard rather than the offer on a commander's copy", () => {
     render(
-      <ReviewChanges
+      <ReviewChanges mix={TEST_MIX}
         deckId="d"
         deckName="Korvold"
         rows={{ in: [row({ bucket: "claimed", availability: claimed({ commander: true }) })], out: [] }}
@@ -312,7 +323,7 @@ describe("ReviewChanges", () => {
   // description — the only focusable thing on this arm — rather than twice.
   it("speaks the commander guard once, from the row's description", () => {
     render(
-      <ReviewChanges
+      <ReviewChanges mix={TEST_MIX}
         deckId="d"
         deckName="Korvold"
         rows={{ in: [row({ bucket: "claimed", availability: claimed({ commander: true }) })], out: [] }}
@@ -331,7 +342,7 @@ describe("ReviewChanges", () => {
   // whose control is refusing to offer one describes an act the page will not do.
   it("describes a commander's copy with the guard rather than the pull", () => {
     render(
-      <ReviewChanges
+      <ReviewChanges mix={TEST_MIX}
         deckId="d"
         deckName="Korvold"
         rows={{ in: [row({ bucket: "claimed", availability: claimed({ commander: true }) })], out: [] }}
@@ -354,7 +365,7 @@ describe("ReviewChanges", () => {
   // answer and not the claim model's.
   it("quotes no price on a row when the claim read failed", () => {
     render(
-      <ReviewChanges
+      <ReviewChanges mix={TEST_MIX}
         deckId="d"
         deckName="Korvold"
         rows={{
@@ -378,7 +389,7 @@ describe("ReviewChanges", () => {
   // price on a row this page's own buy count includes.
   it("prices an add the player owns a copy of but must still buy copies for", () => {
     render(
-      <ReviewChanges
+      <ReviewChanges mix={TEST_MIX}
         deckId="d"
         deckName="Korvold"
         rows={{
@@ -400,7 +411,7 @@ describe("ReviewChanges", () => {
   // are copies, because the buy term beside them is.
   it("counts the bar's released figure in copies", () => {
     render(
-      <ReviewChanges
+      <ReviewChanges mix={TEST_MIX}
         deckId="d"
         deckName="Korvold"
         rows={{ in: [], out: [row({ direction: "out", from: 3, to: 1 })] }}
@@ -422,7 +433,7 @@ describe("ReviewChanges", () => {
       browseCard(oracleId, oracleId === "o1" ? "Sol Ring" : oracleId === "o2" ? "Llanowar Elves" : "Mox"),
     );
     render(
-      <ReviewChanges
+      <ReviewChanges mix={TEST_MIX}
         deckId="d"
         deckName="Korvold"
         rows={{
@@ -455,12 +466,12 @@ describe("ReviewChanges", () => {
     // heading's.
     const segment = deckVersioningCopy.review.groupIn(1);
     const { unmount } = render(
-      <ReviewChanges deckId="d" deckName="Korvold" rows={{ in: [row()], out: [] }} {...SHAPE} state={STATE} cardCount={CARD_COUNT} />,
+      <ReviewChanges mix={TEST_MIX} deckId="d" deckName="Korvold" rows={{ in: [row()], out: [] }} {...SHAPE} state={STATE} cardCount={CARD_COUNT} />,
     );
     expect(screen.queryByRole("button", { name: segment })).toBeNull();
     unmount();
     render(
-      <ReviewChanges
+      <ReviewChanges mix={TEST_MIX}
         deckId="d"
         deckName="Korvold"
         rows={{ in: [row()], out: [row({ oracleId: "o2", name: "Mox", direction: "out", from: 1, to: 0 })] }}
@@ -475,7 +486,7 @@ describe("ReviewChanges", () => {
   // they were editing to know where it goes.
   it("links back to the deck by name", () => {
     render(
-      <ReviewChanges deckId="d7" deckName="Korvold" rows={{ in: [row()], out: [] }} {...SHAPE} state={STATE} cardCount={CARD_COUNT} />,
+      <ReviewChanges mix={TEST_MIX} deckId="d7" deckName="Korvold" rows={{ in: [row()], out: [] }} {...SHAPE} state={STATE} cardCount={CARD_COUNT} />,
     );
     const back = screen.getByRole("link", { name: /Korvold/ });
     expect(back.getAttribute("href")).toBe("/decks/d7");
@@ -487,7 +498,7 @@ describe("ReviewChanges", () => {
   // count of copies and what those copies cost are one fact.
   it("chips the purchase with its total, and draws no chip for a nought", () => {
     render(
-      <ReviewChanges
+      <ReviewChanges mix={TEST_MIX}
         deckId="d"
         deckName="Korvold"
         rows={{ in: [row()], out: [] }}
@@ -510,7 +521,7 @@ describe("ReviewChanges", () => {
   // hangs off has never failed to say.
   it("carries the recount inside the row without naming the card twice", () => {
     render(
-      <ReviewChanges
+      <ReviewChanges mix={TEST_MIX}
         deckId="d"
         deckName="Korvold"
         rows={{ in: [row({ from: 3, to: 1 })], out: [] }}
@@ -525,7 +536,7 @@ describe("ReviewChanges", () => {
   // describes pulls the reader can see on the list below it.
   it("heads each column with its direction and its breakdown", () => {
     render(
-      <ReviewChanges
+      <ReviewChanges mix={TEST_MIX}
         deckId="d"
         deckName="Korvold"
         rows={{ in: [row()], out: [] }}
@@ -542,7 +553,7 @@ describe("ReviewChanges", () => {
   // sheet one click down repeats.
   it("foots the page with the commit and the figures it would freeze", () => {
     render(
-      <ReviewChanges
+      <ReviewChanges mix={TEST_MIX}
         deckId="d"
         deckName="Korvold"
         rows={{ in: [row()], out: [] }}
@@ -580,7 +591,7 @@ describe("ReviewChanges", () => {
   // being drawn under a question about throwing the draft away.
   it("puts the discard confirm in the bar, in place of its controls", () => {
     render(
-      <ReviewChanges
+      <ReviewChanges mix={TEST_MIX}
         deckId="d"
         deckName="Korvold"
         rows={{ in: [row()], out: [] }}
@@ -618,7 +629,7 @@ describe("ReviewChanges", () => {
       (STATE.version?.number ?? 0) + 1,
     );
     render(
-      <ReviewChanges
+      <ReviewChanges mix={TEST_MIX}
         deckId="d"
         deckName="Korvold"
         rows={{ in: [row()], out: [] }}
@@ -633,7 +644,7 @@ describe("ReviewChanges", () => {
 
     cleanup();
     render(
-      <ReviewChanges
+      <ReviewChanges mix={TEST_MIX}
         deckId="d"
         deckName="Korvold"
         rows={{ in: [row()], out: [] }}
@@ -659,7 +670,7 @@ describe("ReviewChanges", () => {
   it("takes ?commit=1 off the URL when the sheet is cancelled", () => {
     history.replaceState(null, "", "/decks/d/changes?commit=1&filter=shopping");
     render(
-      <ReviewChanges
+      <ReviewChanges mix={TEST_MIX}
         deckId="d"
         deckName="Korvold"
         rows={{ in: [row()], out: [] }}
@@ -682,7 +693,7 @@ describe("ReviewChanges", () => {
   // v1, so this pair is the whole page.
   it("names the act rather than a diff on a deck with no version yet", () => {
     render(
-      <ReviewChanges
+      <ReviewChanges mix={TEST_MIX}
         deckId="d"
         deckName="Korvold"
         rows={{ in: [], out: [] }}
@@ -703,7 +714,7 @@ describe("ReviewChanges", () => {
   // retired — basics are rows, so a draft that moved them counts them.
   it("keeps the diff heading when a clean draft is rendered anyway", () => {
     render(
-      <ReviewChanges
+      <ReviewChanges mix={TEST_MIX}
         deckId="d"
         deckName="Korvold"
         rows={{ in: [], out: [] }}
@@ -720,7 +731,7 @@ describe("ReviewChanges", () => {
   // buy" — the one thing the page must not say about a read it could not make.
   it("says the claims were unreadable rather than printing three noughts", () => {
     render(
-      <ReviewChanges
+      <ReviewChanges mix={TEST_MIX}
         deckId="d"
         deckName="Korvold"
         rows={{ in: [row({ bucket: null })], out: [] }}
@@ -739,7 +750,7 @@ describe("ReviewChanges", () => {
   // buy and when the claims could not be read, and only the first is a fact.
   it("drops the footer's purchase term when the claims could not be read", () => {
     render(
-      <ReviewChanges
+      <ReviewChanges mix={TEST_MIX}
         deckId="d"
         deckName="Korvold"
         rows={{ in: [row({ bucket: null })], out: [] }}
@@ -771,7 +782,7 @@ describe("ReviewChanges", () => {
   // the column, and no `md:flex-row` line survives.
   it("gives every type group the column's own width", () => {
     render(
-      <ReviewChanges
+      <ReviewChanges mix={TEST_MIX}
         deckId="d"
         deckName="Korvold"
         rows={{
@@ -809,12 +820,12 @@ describe("ReviewChanges", () => {
       screen.getByRole("heading", { name: deckVersioningCopy.review.groupIn(1) })
         .parentElement as HTMLElement;
     const { unmount } = render(
-      <ReviewChanges deckId="d" deckName="Korvold" rows={{ in: [row()], out: [] }} {...SHAPE} state={STATE} cardCount={CARD_COUNT} />,
+      <ReviewChanges mix={TEST_MIX} deckId="d" deckName="Korvold" rows={{ in: [row()], out: [] }} {...SHAPE} state={STATE} cardCount={CARD_COUNT} />,
     );
     expect(headingOf().className).not.toContain("hidden");
     unmount();
     render(
-      <ReviewChanges
+      <ReviewChanges mix={TEST_MIX}
         deckId="d"
         deckName="Korvold"
         rows={{ in: [row()], out: [row({ oracleId: "o2", name: "Mox", direction: "out", from: 1, to: 0 })] }}
@@ -875,7 +886,7 @@ describe("ReviewChanges", () => {
 
     function mount(rows: { in: Row[]; out: Row[] }) {
       return render(
-        <ReviewChanges
+        <ReviewChanges mix={TEST_MIX}
           deckId="d" deckName="Korvold" rows={rows}
           {...SHAPE} state={STATE} cardCount={CARD_COUNT}
         />,
@@ -967,7 +978,7 @@ describe("ReviewChanges", () => {
       // render's, and only a state that holds the cut has a figure to move.
       const withRemoves = { ...STATE, removes: [{ oracleId: "o2", from: 1, to: 0 }] };
       render(
-        <ReviewChanges
+        <ReviewChanges mix={TEST_MIX}
           deckId="d" deckName="Korvold" rows={{ in: [], out: [cut()] }}
           {...SHAPE} state={withRemoves} cardCount={CARD_COUNT}
         />,
@@ -1069,7 +1080,7 @@ describe("ReviewChanges", () => {
       const held = hold();
       const withRemoves = { ...STATE, removes: [{ oracleId: "o2", from: 1, to: 0 }] };
       render(
-        <ReviewChanges
+        <ReviewChanges mix={TEST_MIX}
           deckId="d" deckName="Korvold" rows={{ in: [], out: [cut()] }}
           {...SHAPE} state={withRemoves} cardCount={CARD_COUNT} commitOpen
         />,
@@ -1179,7 +1190,7 @@ describe("ReviewChanges", () => {
         contested: [] as typeof SHAPE.contested,
       };
       render(
-        <ReviewChanges
+        <ReviewChanges mix={TEST_MIX}
           deckId="d" deckName="Korvold" rows={{ in: [], out: [cut(), cut({ oracleId: "o3", name: "Chrome Mox" })] }}
           {...shape} state={STATE} cardCount={CARD_COUNT}
         />,
@@ -1250,7 +1261,7 @@ describe("ReviewChanges", () => {
       let answer: ((value: unknown) => void) | null = null;
       commitDeckVersion.mockImplementation(() => new Promise((resolve) => { answer = resolve; }));
       render(
-        <ReviewChanges
+        <ReviewChanges mix={TEST_MIX}
           deckId="d" deckName="Korvold" rows={{ in: [], out: [cut()] }}
           {...SHAPE} state={STATE} cardCount={CARD_COUNT} commitOpen
         />,
@@ -1305,7 +1316,7 @@ describe("ReviewChanges", () => {
     it("keeps the page's writes shut after a commit throws, until new rows arrive", async () => {
       commitDeckVersion.mockRejectedValue(new Error("network"));
       const view = render(
-        <ReviewChanges
+        <ReviewChanges mix={TEST_MIX}
           deckId="d" deckName="Korvold" rows={{ in: [], out: [cut()] }}
           {...SHAPE} state={STATE} cardCount={CARD_COUNT} commitOpen
         />,
@@ -1329,7 +1340,7 @@ describe("ReviewChanges", () => {
       // page takes the reader at their word again.
       await act(async () => {
         view.rerender(
-          <ReviewChanges
+          <ReviewChanges mix={TEST_MIX}
             deckId="d" deckName="Korvold" rows={{ in: [], out: [cut()] }}
             {...SHAPE} state={STATE} cardCount={CARD_COUNT}
           />,
@@ -1362,7 +1373,7 @@ describe("ReviewChanges", () => {
 
       await act(async () => {
         view.rerender(
-          <ReviewChanges
+          <ReviewChanges mix={TEST_MIX}
             deckId="d" deckName="Korvold" rows={{ in: [], out: [cut()] }}
             {...SHAPE} state={STATE} cardCount={CARD_COUNT}
           />,
@@ -1409,7 +1420,7 @@ describe("a printed add on the review screen", () => {
     // THE SHIPPED DEFECT. `AvailabilitySlot` opened on `!card.owned`, and a
     // printed card is unowned by design — so this screen quoted a price for a
     // card its owner had decided not to buy.
-    const { container } = render(<ReviewChanges deckId="d" deckName="Korvold" rows={{ in: [proxiedRow()], out: [] }} {...SHAPE} state={STATE} cardCount={CARD_COUNT} />);
+    const { container } = render(<ReviewChanges mix={TEST_MIX} deckId="d" deckName="Korvold" rows={{ in: [proxiedRow()], out: [] }} {...SHAPE} state={STATE} cardCount={CARD_COUNT} />);
     // The GLYPH, drawn: the tag's spoken word is deliberately suppressed on this
     // row, where the full sentence rides `aria-describedby` instead.
     expect(container.textContent).toContain(proxyCopy.tag.glyph);
@@ -1420,7 +1431,7 @@ describe("a printed add on the review screen", () => {
     // The row's visible mark is the tag; its per-row word is read aloud. A bare
     // `proxied` would not say why the row costs nothing, which is the whole
     // reason it is not simply silent like a `free` add.
-    render(<ReviewChanges deckId="d" deckName="Korvold" rows={{ in: [proxiedRow()], out: [] }} {...SHAPE} state={STATE} cardCount={CARD_COUNT} />);
+    render(<ReviewChanges mix={TEST_MIX} deckId="d" deckName="Korvold" rows={{ in: [proxiedRow()], out: [] }} {...SHAPE} state={STATE} cardCount={CARD_COUNT} />);
 
     // Through `aria-describedby`, not merely present in the DOM: a sentence
     // rendered anywhere on the page would satisfy the weaker assertion while
@@ -1439,10 +1450,10 @@ describe("a printed add on the review screen", () => {
   it("is not silent, which a `free` add would have been", () => {
     // Silence was available at no cost — `bucketWord` returns null for `free` —
     // and it is wrong: `free` means the collection has a spare copy for this.
-    render(<ReviewChanges deckId="d" deckName="Korvold" rows={{ in: [proxiedRow()], out: [] }} {...SHAPE} state={STATE} cardCount={CARD_COUNT} />);
+    render(<ReviewChanges mix={TEST_MIX} deckId="d" deckName="Korvold" rows={{ in: [proxiedRow()], out: [] }} {...SHAPE} state={STATE} cardCount={CARD_COUNT} />);
     const freeRow = row({ name: "Sol Ring", bucket: "free" as Row["bucket"] });
     cleanup();
-    render(<ReviewChanges deckId="d" deckName="Korvold" rows={{ in: [freeRow], out: [] }} {...SHAPE} state={STATE} cardCount={CARD_COUNT} />);
+    render(<ReviewChanges mix={TEST_MIX} deckId="d" deckName="Korvold" rows={{ in: [freeRow], out: [] }} {...SHAPE} state={STATE} cardCount={CARD_COUNT} />);
     expect(screen.queryByText(proxyCopy.review.a11y("Sol Ring"))).not.toBeInTheDocument();
   });
 });
@@ -1473,7 +1484,7 @@ describe("ReviewChanges — the second door", () => {
   // next commit discards. The page passes only its in-rows; this pins the component beside it.
   it("hangs the chooser under a contested row, with the caption that separates it from a pull", () => {
     render(
-      <ReviewChanges
+      <ReviewChanges mix={TEST_MIX}
         deckId="d" deckName="Korvold" rows={{ in: [row()], out: [] }}
         {...SHAPE} contested={[contestedCard()]} state={STATE} cardCount={CARD_COUNT}
       />,
@@ -1486,7 +1497,7 @@ describe("ReviewChanges — the second door", () => {
 
   it("counts the contested cards on the strip, in the over state's own ink", () => {
     render(
-      <ReviewChanges
+      <ReviewChanges mix={TEST_MIX}
         deckId="d" deckName="Korvold" rows={{ in: [row()], out: [] }}
         {...SHAPE}
         // TWO cards, one of them asking for three copies. The figure is a count of CARDS —
@@ -1507,7 +1518,7 @@ describe("ReviewChanges — the second door", () => {
 
   it("points the chooser at the caption that says how it differs from Pull it", () => {
     render(
-      <ReviewChanges
+      <ReviewChanges mix={TEST_MIX}
         deckId="d" deckName="Korvold" rows={{ in: [row()], out: [] }}
         {...SHAPE} contested={[contestedCard()]} state={STATE} cardCount={CARD_COUNT}
       />,
@@ -1524,7 +1535,7 @@ describe("ReviewChanges — the second door", () => {
 
   it("drops the chip at nought rather than drawing a nought", () => {
     render(
-      <ReviewChanges
+      <ReviewChanges mix={TEST_MIX}
         deckId="d" deckName="Korvold" rows={{ in: [row()], out: [] }}
         {...SHAPE} state={STATE} cardCount={CARD_COUNT}
       />,
@@ -1534,7 +1545,7 @@ describe("ReviewChanges — the second door", () => {
 
   it("draws no panel on a row nobody is contesting", () => {
     render(
-      <ReviewChanges
+      <ReviewChanges mix={TEST_MIX}
         deckId="d" deckName="Korvold" rows={{ in: [row()], out: [] }}
         {...SHAPE} state={STATE} cardCount={CARD_COUNT}
       />,
@@ -1547,7 +1558,7 @@ describe("ReviewChanges — the second door", () => {
   // geometry below it. Folding the chooser into the row is what the card-row floor refuses.
   it("leaves the decklist row's own controls where they were", () => {
     render(
-      <ReviewChanges
+      <ReviewChanges mix={TEST_MIX}
         deckId="d" deckName="Korvold" rows={{ in: [row()], out: [] }}
         {...SHAPE} contested={[contestedCard()]} state={STATE} cardCount={CARD_COUNT}
       />,
@@ -1569,7 +1580,7 @@ describe("ReviewChanges — the second door", () => {
   // default, and lifting the reader's own deck to the top hides why it lost.
   it("tags the deck being reviewed among the claimants, without promoting it", () => {
     render(
-      <ReviewChanges
+      <ReviewChanges mix={TEST_MIX}
         deckId="d" deckName="Korvold" rows={{ in: [row()], out: [] }}
         {...SHAPE} contested={[contestedCard()]} state={STATE} cardCount={CARD_COUNT}
       />,

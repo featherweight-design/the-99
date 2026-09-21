@@ -10,6 +10,17 @@ import { gameLogCopy } from "../../lib/copy/game-log";
 import type { DeckDetail } from "../../lib/decks/read";
 import type { BuilderView } from "../../lib/decks/builder-view";
 
+const TEST_MIX = {
+  cells: {
+    ramp: { label: "Ramp", target: 10, advisory: false },
+    draw: { label: "Draw", target: 10, advisory: false },
+    removal: { label: "Removal", target: 8, advisory: false },
+    wipes: { label: "Wipes", target: 3, advisory: false },
+    land: { label: "Land", target: 37, advisory: true },
+  },
+  measured: false,
+} as const;
+
 vi.mock("../../app/decks/actions", () => ({
   createDeck: vi.fn(),
   getDeckSuggestions: vi.fn(async () => ({ suggestions: [], degraded: false })),
@@ -58,7 +69,7 @@ const DECK = {
 async function mount(initialView: BuilderView) {
   await act(async () => {
     render(
-      <BuilderShell
+      <BuilderShell mix={TEST_MIX}
         deck={DECK}
         suggestions={[]}
         degraded={false}

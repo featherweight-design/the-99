@@ -13,6 +13,17 @@ import type { DeckDetailCard } from "../../lib/decks/grouping";
 import { synergyCopy } from "../../lib/copy/synergy-discovery";
 import { addPanelCopy } from "../../lib/copy/decks-builder";
 
+const TEST_MIX = {
+  cells: {
+    ramp: { label: "Ramp", target: 10, advisory: false },
+    draw: { label: "Draw", target: 10, advisory: false },
+    removal: { label: "Removal", target: 8, advisory: false },
+    wipes: { label: "Wipes", target: 3, advisory: false },
+    land: { label: "Land", target: 37, advisory: true },
+  },
+  measured: false,
+} as const;
+
 const addCardToDeck = vi.fn(async () => ({ ok: true as const }));
 vi.mock("../../app/decks/actions", () => ({ addCardToDeck }));
 
@@ -51,7 +62,7 @@ const deckCard = (role: DeckDetailCard["role"], quantity = 1) =>
 function Harness(props: Partial<React.ComponentProps<typeof ConsiderPanel>>) {
   const [sort, setSort] = useState<SortKey>("gaps");
   return (
-    <ConsiderPanel
+    <ConsiderPanel mix={TEST_MIX}
       deckId="deck-1"
       suggestions={[suggestion({ name: "Sol Ring" })]}
       deckCards={[]}

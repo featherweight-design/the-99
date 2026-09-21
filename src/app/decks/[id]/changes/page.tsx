@@ -3,6 +3,9 @@
 import { notFound, redirect } from "next/navigation";
 import { requireUserId } from "../../../../lib/auth";
 import { getDeckReviewHeader } from "../../../../lib/decks/read";
+import { indexGeneration } from "../../../../lib/cache/index-generation";
+import { cacheForUser } from "../../../../lib/cache/user-lists";
+import { loadDeckMix } from "../../../../lib/decks/deck-mix";
 import { deckBodySize } from "../../../../lib/decks/deck-size";
 import {
   changeCount, loadDraftRows, loadDraftShape, loadVersionShape,
@@ -11,6 +14,26 @@ import { ReviewChanges } from "../../../../components/decks/review-changes";
 import { loadContestedCards } from "../../../../lib/collection/summary-read";
 import { admitsReview } from "./admits-review";
 import { isUuid } from "../../../../lib/uuid";
+
+// Versioned like every other cached payload here: the key travels with the SHAPE of what it
+// stores, so a mix that grows a field is never read back from an entry that lacks it.
+//
+// WHY A DECK ID IS A SAFE KEY. The mix is a function of the deck's commanders and of the
+// commander index, and neither can move under this entry:
+//
+//   - A deck's `commander_oracle_id` and `partner_oracle_id` are written once, by the two
+//     inserts that create a deck, and by nothing else — there is no UPDATE of either column
+//     anywhere in `src/`. A deck's commanders are immutable for its life. **A feature that
+//     lets a player change a commander breaks that, and would have to drop this entry**;
+//     nothing here would fail loudly if it did not.
+//   - The index moves monthly, and `cacheForUser` carries the CATALOG generation only — a
+//     `Commander index` run does not stamp `catalog_refreshes`. So the index generation goes
+//     in the key here, alongside the deck id. The window it closes is an hour once a month,
+//     which sounds ignorable until you ask WHICH hour: the first run that writes role
+//     averages flips every deck from an asserted baseline to a measured one, and serving the
+//     old figure through that hour, on the page that explains what changed, is the worst
+//     hour of the month to be stale in.
+const DECK_MIX_KEY = ["deck-mix", "1"];
 
 export default async function ChangesPage({
   params,
@@ -109,8 +132,26 @@ export default async function ChangesPage({
       .catch(() => []),
   ]);
 
+  // The same mix the deck page draws, through the one reader that defines it — the
+  // what-changed strip and the deck's own strip are the same five cells about the same deck,
+  // and two independently written reads would be two chances to disagree about what it is
+  // measured against. This route holds only a deck id, so it asks by id; the deck page has
+  // the suggestions payload and takes it from there. `loadDeckMix` never throws.
+  //
+  // CACHED, because this route is revisited: a reader opens the review, goes back to fix a
+  // slot, and returns. The mix is five integers keyed on a deck id, so the entry is tiny and
+  // the basis chain behind it is the ~170ms part of a profile build. Not `cachedDeckProfile`
+  // — that assembles bracket flags, the Spellbook aggregation, tutor classification and the
+  // staples join for the same five integers, measured at 632-831ms steady state.
+  const mix = await cacheForUser(
+    userId,
+    [...DECK_MIX_KEY, id, await indexGeneration()],
+    () => loadDeckMix(id, userId),
+  );
+
   return (
     <ReviewChanges
+      mix={mix}
       deckId={id}
       deckName={detail.name}
       rows={rows}

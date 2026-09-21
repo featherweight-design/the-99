@@ -9,6 +9,17 @@ import type { DeckDetail } from "../../lib/decks/read";
 import type { Availability } from "../../lib/decks/availability";
 import { availabilityCopy } from "../../lib/copy/availability";
 
+const TEST_MIX = {
+  cells: {
+    ramp: { label: "Ramp", target: 10, advisory: false },
+    draw: { label: "Draw", target: 10, advisory: false },
+    removal: { label: "Removal", target: 8, advisory: false },
+    wipes: { label: "Wipes", target: 3, advisory: false },
+    land: { label: "Land", target: 37, advisory: true },
+  },
+  measured: false,
+} as const;
+
 vi.mock("../../app/decks/actions", () => ({
   createDeck: vi.fn(),
   getDeckSuggestions: vi.fn(async () => ({ suggestions: [], degraded: false })),
@@ -79,7 +90,7 @@ function makeDeck(size: number, availabilities: (Avail | undefined)[] = []): Dec
 async function mount(deck: DeckDetail) {
   await act(async () => {
     render(
-      <BuilderShell
+      <BuilderShell mix={TEST_MIX}
         deck={deck}
         suggestions={[]}
         degraded={false}

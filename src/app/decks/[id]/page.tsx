@@ -4,6 +4,7 @@ import { notFound } from "next/navigation";
 import { requireUserId } from "../../../lib/auth";
 import { getDeckDetail, listDecksWithStats } from "../../../lib/decks/read";
 import { cacheForUser } from "../../../lib/cache/user-lists";
+import { indexGeneration } from "../../../lib/cache/index-generation";
 import { loadDeckSuggestions } from "../../../lib/decks/suggestions-read";
 import { BuilderShell } from "../../../components/decks/builder-shell";
 import {
@@ -44,7 +45,16 @@ import { isUuid } from "../../../lib/uuid";
 //
 // The leading element of each key is a version, bumped when a deployment changes
 // what the payload says for unchanged rows — see the note on `cacheForUser`.
-const SUGGESTIONS_KEY = ["deck-suggestions", "1"];
+// Bumped to "2" when `mix` joined the payload: an entry cached under "1" holds no mix, and
+// a reader destructuring one would hand the strip `undefined` and throw on its first cell.
+// A payload's key travels with its SHAPE, not only with its inputs.
+//
+// AND WITH ITS SOURCES. The payload now carries the mix, so it depends on the commander
+// index — which `cacheForUser`'s catalog generation does not observe. `/decks/[id]/changes`
+// keys on the index generation, and a key that did it on one route and not the other would
+// be worse than both being stale: the same deck would report different targets on two
+// surfaces whose whole contract is that they are the same five cells.
+const SUGGESTIONS_KEY = ["deck-suggestions", "2"];
 // "2" since the pair branch: `readSynergyCards` now answers from `commander_pair_support_cards`
 // for a two-commander deck, so the payload says something different for UNCHANGED rows. The
 // cache helper's own rule — a deployment that changes what a payload says for unchanged rows is
@@ -86,8 +96,12 @@ export default async function DeckBuilderPage({
     ]),
   ];
 
+  // Resolved before the wave rather than inside it: it is a 60-second cached read shared by
+  // both cached payloads below, and awaiting it per-entry would serialise them.
+  const indexGen = await indexGeneration();
+
   const [
-    { suggestions, degraded, shoppingFigures },
+    { suggestions, degraded, shoppingFigures, mix },
     allDecks,
     ranked,
     games,
@@ -95,7 +109,7 @@ export default async function DeckBuilderPage({
     draft,
     versions,
   ] = await Promise.all([
-      cacheForUser(userId, [...SUGGESTIONS_KEY, id], () =>
+      cacheForUser(userId, [...SUGGESTIONS_KEY, id, indexGen], () =>
         loadDeckSuggestions(id, userId),
       ),
       // The move-card picker lists every other deck by name, as it always has.
@@ -246,9 +260,17 @@ export default async function DeckBuilderPage({
   // Read once per request rather than at each use, so the tab, the strip's home and the
   // arrival view cannot disagree about which layout this deployment is drawing.
   const analysisEnabled = analysisTabEnabled();
+  // WHAT THIS DECK IS COMPARED TO, taken off the suggestions payload rather than resolved
+  // again here. `loadDeckSuggestions` already ran in the first wave above and already built
+  // this exact mix for its own shelf headers, so reading it back costs nothing and makes the
+  // strip and the Add panel agree BY CONSTRUCTION rather than by two readers happening to
+  // reach the same basis. A `loadDeckProfile` here would have assembled bracket flags, the
+  // Spellbook aggregation, tutor classification and the staples join to produce five integers
+  // the page was already holding.
 
   return (
     <BuilderShell
+      mix={mix}
       deck={{ ...detail, cards }}
       suggestions={pricedSuggestions}
       newestAsOf={priced?.newestAsOf ?? null}

@@ -15,6 +15,17 @@ import { Decklist } from "./decklist";
 import { SuggestionTile } from "./suggestion-tile";
 import { QuickAddBar } from "./quick-add-bar";
 
+const TEST_MIX = {
+  cells: {
+    ramp: { label: "Ramp", target: 10, advisory: false },
+    draw: { label: "Draw", target: 10, advisory: false },
+    removal: { label: "Removal", target: 8, advisory: false },
+    wipes: { label: "Wipes", target: 3, advisory: false },
+    land: { label: "Land", target: 37, advisory: true },
+  },
+  measured: false,
+} as const;
+
 vi.mock("../../app/decks/actions", () => ({
   addCardToDeck: vi.fn(),
   removeCardFromDeck: vi.fn(),
@@ -56,7 +67,7 @@ async function clickTrigger(name: string) {
 describe("deck card-detail triggers", () => {
   it("opens details from a decklist row", async () => {
     const { fetchCard } = renderInProvider(
-      <Decklist
+      <Decklist mix={TEST_MIX}
         deckId="d1"
         commanderOracleId="cmdr"
         deckOracleIds={[]}
@@ -77,7 +88,7 @@ describe("deck card-detail triggers", () => {
   // A stack of basics is one row carrying its count, so it offers one trigger.
   it("gives a multi-copy basic land a single detail trigger", async () => {
     renderInProvider(
-      <Decklist
+      <Decklist mix={TEST_MIX}
         deckId="d1"
         commanderOracleId="cmdr"
         deckOracleIds={[]}
@@ -187,7 +198,7 @@ describe("deck card-detail triggers", () => {
 
   it("hands the decklist its cards in display order so the modal can page", async () => {
     const { fetchCard } = renderInProvider(
-      <Decklist
+      <Decklist mix={TEST_MIX}
         deckId="d1"
         commanderOracleId="cmdr"
         deckOracleIds={[]}

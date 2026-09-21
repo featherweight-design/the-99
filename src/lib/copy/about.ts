@@ -394,7 +394,7 @@ export const aboutEntries: readonly AboutEntry[] = [
     opens: 'opens a deck',
     width: 'plate',
     caption:
-      'A decklist is read by the job a card does, not by type line, because that is how a deck is short: eleven creatures is not a problem, one board wipe is. The recommended mix is EDHREC’s averages, not a rule: a role over its number is fine and says so by saying nothing.',
+      'A decklist is read by the job a card does, not by type line, because that is how a deck is short: eleven creatures is not a problem, one board wipe is. The recommended mix comes from what other decks with your commander actually run, where we have enough of them, and from a common starting point where we do not — the strip says which. Either way it is not a rule: a role over its number is fine and says so by saying nothing.',
     keys: [
       // Named on the cell the figure actually draws. The canvas wrote "5
       // wipes against 3", which was an example rather than a reading — and

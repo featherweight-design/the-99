@@ -4,6 +4,7 @@
 // Owns filter/grouping render; filter and grouping come as props from BuilderShell.
 // §Decklist Group Toggle, §Decklist Group, §Decklist Row (design table).
 
+import type { RecommendedMix } from "../../lib/decks/mix";
 import type { DeckDetailCard, DeckUnresolvedRow } from "../../lib/decks/grouping";
 import { cardCopies, groupByCardType, groupByRole } from "../../lib/decks/grouping";
 import { computeRoleCounts } from "../../lib/decks/mix";
@@ -55,6 +56,8 @@ const SHOPPING_ROLE_LABELS: Record<"ramp" | "draw" | "removal" | "wipes", string
 };
 
 type DecklistProps = {
+  /** Passed straight through to `UnresolvedGroup`. Carried, not computed. */
+  mix: RecommendedMix;
   deckId: string;
   cards: DeckDetailCard[];
   unresolvedRows: DeckUnresolvedRow[];
@@ -232,6 +235,7 @@ export function Decklist({
   pendingChanges = EMPTY_PENDING_CHANGES,
   pendingVersion = null,
   onAnnounce,
+  mix,
 }: DecklistProps) {
   // The view persists and does not touch the URL. It is a reading preference,
   // not a description of what is on screen — `/collection`'s `?view=` answers
@@ -882,6 +886,7 @@ export function Decklist({
 
         {/* Pinned last, after every type or role group. */}
         <UnresolvedGroup
+          mix={mix}
           deckId={deckId}
           rows={visibleUnresolved}
           cards={cards}

@@ -4,8 +4,8 @@ import { deckVersioningCopy } from "../../lib/copy/deck-versioning";
 import type { DeckDetailCard } from "../../lib/decks/grouping";
 import {
   computeRoleCounts,
-  RECOMMENDED_MIX,
-  RECOMMENDED_MIX_SOURCE_LINE,
+  mixSourceLine,
+  type RecommendedMix,
   ROLE_ORDER,
   type MixRole,
 } from "../../lib/decks/mix";
@@ -27,6 +27,10 @@ import { StripRationale } from "./strip-rationale";
  * nothing is the exact defect this prop was added to close.
  */
 type RoleCounterStripProps = {
+  /** What this deck is compared to, resolved once per request by the route. A PROP rather than
+   *  an import, because the targets are now per-commander — a component reaching for a module
+   *  constant would draw one deck's recommendation on every deck. */
+  mix: RecommendedMix;
   cards: DeckDetailCard[];
   /** True when the deck was just filled (`deck.filled && autoCount > 0`). Passed
    *  straight through to each cell so a short cell reads as a short-in-filled-deck
@@ -45,6 +49,7 @@ type RoleCounterStripProps = {
 );
 
 export function RoleCounterStrip({
+  mix,
   cards,
   onSeeShelf,
   rolesWithShelves,
@@ -88,7 +93,7 @@ export function RoleCounterStrip({
           className="hidden md:inline font-mono text-[10.5px]"
           style={{ color: "var(--fg-faint)" }}
         >
-          {RECOMMENDED_MIX_SOURCE_LINE}
+          {mixSourceLine(mix)}
         </span>
 
         {/* §Strip header — the draft sub-run (#389, surface 1). `wasCounts` is
@@ -111,15 +116,15 @@ export function RoleCounterStrip({
         {ROLE_ORDER.map((role) => (
           <RoleCounterCell
             key={role}
-            label={RECOMMENDED_MIX[role].label}
+            label={mix.cells[role].label}
             have={counts[role]}
-            target={RECOMMENDED_MIX[role].target}
-            advisory={RECOMMENDED_MIX[role].advisory}
+            target={mix.cells[role].target}
+            advisory={mix.cells[role].advisory}
             justFilled={justFilled}
             was={wasCounts?.[role] !== counts[role] ? wasCounts?.[role] : undefined}
             onSeeShelf={
               onSeeShelf &&
-              counts[role] < RECOMMENDED_MIX[role].target &&
+              counts[role] < mix.cells[role].target &&
               rolesWithShelves?.has(role)
                 ? () => onSeeShelf(role)
                 : undefined
@@ -134,7 +139,7 @@ export function RoleCounterStrip({
           StripRationale answers the same question about the reader's own deck
           and answers it better. Two explanations of one strip, the permanent
           one weaker than the one behind the disclosure. */}
-      <StripRationale />
+      <StripRationale mix={mix} />
     </section>
   );
 }

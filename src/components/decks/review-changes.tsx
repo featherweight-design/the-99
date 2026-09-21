@@ -13,6 +13,7 @@
 // and already opens the card modal from the name. A fork would have had to be
 // taught all three, and would have got one of them wrong.
 
+import type { RecommendedMix } from "../../lib/decks/mix";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useId, useOptimistic, useRef, useState, useTransition } from "react";
@@ -48,6 +49,9 @@ const copy = deckVersioningCopy.review;
 const restoreCopy = deckVersioningCopy.restore;
 
 type ReviewChangesProps = {
+  /** Passed straight through to the strip below. The route resolves it once; this component
+   *  only carries it, which is why it is not computed here. */
+  mix: RecommendedMix;
   /** The deck being reviewed — the one a pull moves a copy INTO, which is why
    *  every `PullControl` below is given it rather than the holder's id alone. */
   deckId: string;
@@ -470,6 +474,7 @@ function CountChip({
 }
 
 export function ReviewChanges({
+  mix,
   deckId,
   deckName,
   rows,
@@ -887,7 +892,7 @@ export function ReviewChanges({
           {/* Under the lede and above the columns, because it answers the other
               question the page is asked: the columns say which cards moved, and
               this says where the deck's shape went. */}
-          <ChangedStrip before={before} after={liveAfter} />
+          <ChangedStrip before={before} after={liveAfter} mix={mix} />
 
           {/* Desktop only, and a nought is never drawn: an empty chip is a figure
               standing for a purchase, a pull or a column that is not there. */}

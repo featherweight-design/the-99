@@ -10,8 +10,18 @@ import { render, screen } from "@testing-library/react";
 import { describe, expect, it } from "vitest";
 import { deckVersioningCopy } from "../../lib/copy/deck-versioning";
 import type { ShapeCard } from "../../lib/decks/draft-state";
-import { RECOMMENDED_MIX } from "../../lib/decks/mix";
 import { ChangedStrip } from "./changed-strip";
+
+const TEST_MIX = {
+  cells: {
+    ramp: { label: "Ramp", target: 10, advisory: false },
+    draw: { label: "Draw", target: 10, advisory: false },
+    removal: { label: "Removal", target: 8, advisory: false },
+    wipes: { label: "Wipes", target: 3, advisory: false },
+    land: { label: "Land", target: 37, advisory: true },
+  },
+  measured: false,
+} as const;
 
 // The costs matter as much as the counts: the strip averages the curve off these
 // same two lists, so the two-for-two swap below is also what moves it.
@@ -38,15 +48,15 @@ const AFTER: ShapeCard[] = [
 
 describe("ChangedStrip", () => {
   it("draws six cells — mana value, then the shipped five roles", () => {
-    render(<ChangedStrip before={BEFORE} after={AFTER} />);
+    render(<ChangedStrip mix={TEST_MIX} before={BEFORE} after={AFTER} />);
     expect(screen.getByText(deckVersioningCopy.changed.manaValue)).toBeTruthy();
     for (const role of ["ramp", "draw", "removal", "wipes", "land"] as const) {
-      expect(screen.getByText(RECOMMENDED_MIX[role].label)).toBeTruthy();
+      expect(screen.getByText(TEST_MIX.cells[role].label)).toBeTruthy();
     }
   });
 
   it("stands no cell down at the phone's width", () => {
-    render(<ChangedStrip before={BEFORE} after={AFTER} />);
+    render(<ChangedStrip mix={TEST_MIX} before={BEFORE} after={AFTER} />);
     // jsdom applies no media query, so whether a cell is on screen at 390px is
     // the browser probe's question. What is answerable here is the markup that
     // used to hide three of them: a cell classed `hidden md:block` is drawn on
@@ -54,7 +64,7 @@ describe("ChangedStrip", () => {
     const labels = [
       deckVersioningCopy.changed.manaValue,
       ...(["ramp", "draw", "removal", "wipes", "land"] as const).map(
-        (role) => RECOMMENDED_MIX[role].label,
+        (role) => TEST_MIX.cells[role].label,
       ),
     ];
     expect(labels).toHaveLength(6);
@@ -65,22 +75,22 @@ describe("ChangedStrip", () => {
   });
 
   it("reads the curve's direction rather than leaving the reader to subtract", () => {
-    render(<ChangedStrip before={BEFORE} after={AFTER} />);
+    render(<ChangedStrip mix={TEST_MIX} before={BEFORE} after={AFTER} />);
     expect(screen.getByText(deckVersioningCopy.changed.manaValueDown)).toBeTruthy();
   });
 
   it("prints a signed delta per cell, with a real minus sign", () => {
-    render(<ChangedStrip before={BEFORE} after={AFTER} />);
+    render(<ChangedStrip mix={TEST_MIX} before={BEFORE} after={AFTER} />);
     expect(screen.getByText("−2")).toBeTruthy();
   });
 
   it("says nothing about mana value when there is nothing to average", () => {
-    render(<ChangedStrip before={[]} after={[]} />);
+    render(<ChangedStrip mix={TEST_MIX} before={[]} after={[]} />);
     expect(screen.queryByText(deckVersioningCopy.changed.manaValueDown)).toBeNull();
   });
 
   it("states no movement at all against a deck with no version", () => {
-    render(<ChangedStrip before={null} after={AFTER} />);
+    render(<ChangedStrip mix={TEST_MIX} before={null} after={AFTER} />);
     // The figures stand; what is absent is every claim about a comparison — the
     // previous count, the type block and the curve's direction.
     expect(screen.getByText("37")).toBeTruthy();
@@ -90,7 +100,7 @@ describe("ChangedStrip", () => {
   });
 
   it("names only the types whose count moved", () => {
-    render(<ChangedStrip before={BEFORE} after={AFTER} />);
+    render(<ChangedStrip mix={TEST_MIX} before={BEFORE} after={AFTER} />);
     // The pair is two spans, so the assertion is on the row that holds them: the
     // after figure carries the deck's own ink and the before figure does not.
     const pair = screen.getByText("28");
@@ -103,11 +113,11 @@ describe("ChangedStrip", () => {
   });
 
   it("reads a role against its recommendation rather than against its movement", () => {
-    render(<ChangedStrip before={BEFORE} after={AFTER} />);
+    render(<ChangedStrip mix={TEST_MIX} before={BEFORE} after={AFTER} />);
     // Removal arrived at 8 this draft; Wipes has not moved and is still short.
-    expect(screen.getByText(deckVersioningCopy.changed.clears(RECOMMENDED_MIX.removal.target)))
+    expect(screen.getByText(deckVersioningCopy.changed.clears(TEST_MIX.cells.removal.target)))
       .toBeTruthy();
-    expect(screen.getByText(deckVersioningCopy.changed.under(RECOMMENDED_MIX.wipes.target)))
+    expect(screen.getByText(deckVersioningCopy.changed.under(TEST_MIX.cells.wipes.target)))
       .toBeTruthy();
   });
 });

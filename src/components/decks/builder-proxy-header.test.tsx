@@ -4,6 +4,17 @@ import type { DeckDetail } from "../../lib/decks/read";
 import { BuilderShell } from "./builder-shell";
 import { proxyCopy } from "../../lib/copy/proxies";
 
+const TEST_MIX = {
+  cells: {
+    ramp: { label: "Ramp", target: 10, advisory: false },
+    draw: { label: "Draw", target: 10, advisory: false },
+    removal: { label: "Removal", target: 8, advisory: false },
+    wipes: { label: "Wipes", target: 3, advisory: false },
+    land: { label: "Land", target: 37, advisory: true },
+  },
+  measured: false,
+} as const;
+
 vi.mock("next/navigation", () => ({
   useRouter: () => ({ refresh: vi.fn(), push: vi.fn() }),
   usePathname: () => "/decks/d1",
@@ -55,7 +66,7 @@ const card = (over: Record<string, unknown>) => ({
 async function mount(detail: DeckDetail) {
   await act(async () => {
     render(
-      <BuilderShell
+      <BuilderShell mix={TEST_MIX}
         deck={detail}
         suggestions={[]}
         degraded={false}

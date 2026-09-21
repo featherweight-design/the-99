@@ -8,6 +8,17 @@ import { deckVersioningCopy } from "../../lib/copy/deck-versioning";
 import type { DraftState } from "../../lib/decks/draft-shape";
 import type { DeckDetail } from "../../lib/decks/read";
 
+const TEST_MIX = {
+  cells: {
+    ramp: { label: "Ramp", target: 10, advisory: false },
+    draw: { label: "Draw", target: 10, advisory: false },
+    removal: { label: "Removal", target: 8, advisory: false },
+    wipes: { label: "Wipes", target: 3, advisory: false },
+    land: { label: "Land", target: 37, advisory: true },
+  },
+  measured: false,
+} as const;
+
 vi.mock("../../app/decks/actions", () => ({
   createDeck: vi.fn(),
   getDeckSuggestions: vi.fn(async () => ({ suggestions: [], degraded: false })),
@@ -89,7 +100,7 @@ const DRAFT: DraftState = {
 async function mount(draft: DraftState) {
   await act(async () => {
     render(
-      <BuilderShell
+      <BuilderShell mix={TEST_MIX}
         deck={DECK}
         suggestions={[]}
         degraded={false}

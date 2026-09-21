@@ -15,6 +15,17 @@ import { cardTileCopy, viewToggleCopy } from "../../lib/copy/card-surfaces";
 import { proxyCopy } from "../../lib/copy/proxies";
 import { DECK_VIEW_KEY } from "./group-toggle";
 
+const TEST_MIX = {
+  cells: {
+    ramp: { label: "Ramp", target: 10, advisory: false },
+    draw: { label: "Draw", target: 10, advisory: false },
+    removal: { label: "Removal", target: 8, advisory: false },
+    wipes: { label: "Wipes", target: 3, advisory: false },
+    land: { label: "Land", target: 37, advisory: true },
+  },
+  measured: false,
+} as const;
+
 // ── Server-action mocks ───────────────────────────────────────────────────────
 vi.mock("../../app/decks/actions", () => ({
   createDeck: vi.fn(),
@@ -106,7 +117,7 @@ function renderDecklist(
       fetchCard={(opts.fetchCard ?? vi.fn().mockResolvedValue(null)) as never}
     >
       <AddOptimisticCardProvider value={deckEdits}>{withDraft(
-        <Decklist
+        <Decklist mix={TEST_MIX}
           deckId="deck-1"
           cards={cards}
           unresolvedRows={[]}

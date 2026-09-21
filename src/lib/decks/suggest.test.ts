@@ -3,6 +3,11 @@ import { suggestDeck, humanRole, buildSuggestionPayload } from "./suggest";
 import type { PoolCard } from "../recs/score";
 import type { DeckSuggestion, Suggestion } from "./suggest";
 
+import { recommendedMix } from "./mix";
+
+/** The asserted baseline, which is what every case here was written against. */
+const TEST_MIX = recommendedMix(null, false);
+
 // Test helpers for synergyFigure tests. edhrecCandidate and roleCandidate build
 // the payload shape buildSuggestionPayload requires; buildSuggestions maps over
 // an array of them so a test can assert on a specific index.
@@ -43,7 +48,7 @@ function buildSuggestions(
   inclusionByName: Record<string, number | undefined>,
   synergyByName: Record<string, number | undefined>,
 ): DeckSuggestion[] {
-  return candidates.map((c) => buildSuggestionPayload(c, inclusionByName, synergyByName));
+  return candidates.map((c) => buildSuggestionPayload(c, inclusionByName, synergyByName, TEST_MIX));
 }
 
 let n = 0;
@@ -58,33 +63,33 @@ describe("suggestDeck", () => {
   it("prioritizes owned EDHREC top cards, tagging them 'edhrec'", () => {
     const solRing = card({ name: "Sol Ring", typeLine: "Artifact", oracleText: "{T}: Add {C}{C}." });
     const filler = card({ name: "Grizzly Bears" });
-    const out = suggestDeck({ commander, ownedPool: [solRing, filler], edhrecTopCards: ["Sol Ring"], hasPartner: false });
+    const out = suggestDeck({ commander, ownedPool: [solRing, filler], edhrecTopCards: ["Sol Ring"], hasPartner: false, mix: TEST_MIX });
     expect(out[0]).toEqual({ oracleId: solRing.oracleId, reason: "edhrec" });
   });
 
   it("fills roles up to targets from the remaining pool", () => {
     const ramps = Array.from({ length: 15 }, () =>
       card({ typeLine: "Artifact", oracleText: "{T}: Add {C}." }));
-    const out = suggestDeck({ commander, ownedPool: ramps, edhrecTopCards: null, hasPartner: false });
+    const out = suggestDeck({ commander, ownedPool: ramps, edhrecTopCards: null, hasPartner: false, mix: TEST_MIX });
     expect(out.filter((s) => s.reason === "ramp")).toHaveLength(10); // capped at target
   });
 
   it("includes lands tagged 'land'", () => {
     const forest = card({ name: "Forest", typeLine: "Basic Land — Forest" });
-    const out = suggestDeck({ commander, ownedPool: [forest], edhrecTopCards: null, hasPartner: false });
+    const out = suggestDeck({ commander, ownedPool: [forest], edhrecTopCards: null, hasPartner: false, mix: TEST_MIX });
     expect(out).toContainEqual({ oracleId: forest.oracleId, reason: "land" });
   });
 
   it("never suggests more than 99 cards and never duplicates an oracleId", () => {
     const pool = Array.from({ length: 150 }, () => card({ typeLine: "Basic Land — Forest" }));
-    const out = suggestDeck({ commander, ownedPool: pool, edhrecTopCards: null, hasPartner: false });
+    const out = suggestDeck({ commander, ownedPool: pool, edhrecTopCards: null, hasPartner: false, mix: TEST_MIX });
     expect(out.length).toBeLessThanOrEqual(99);
     expect(new Set(out.map((s) => s.oracleId)).size).toBe(out.length);
   });
 
   it("plans a pair to 98 cards", () => {
     const pool = Array.from({ length: 150 }, () => card({ typeLine: "Basic Land — Forest" }));
-    const out = suggestDeck({ commander, ownedPool: pool, edhrecTopCards: null, hasPartner: true });
+    const out = suggestDeck({ commander, ownedPool: pool, edhrecTopCards: null, hasPartner: true, mix: TEST_MIX });
     expect(out.length).toBeLessThanOrEqual(98);
   });
 });
@@ -112,7 +117,7 @@ describe("buildSuggestionPayload", () => {
     >;
 
   it("owned edhrec suggestion with inclusion → EDHREC · N% of decks", () => {
-    const result = buildSuggestionPayload({ ...base, owned: true }, { "sol ring": 71 });
+    const result = buildSuggestionPayload({ ...base, owned: true }, { "sol ring": 71 }, {}, TEST_MIX);
     expect(result.reasonType).toBe("edhrec");
     expect(result.reasonLabel).toBe("EDHREC · 71% of decks");
     expect(result.owned).toBe(true);
@@ -120,7 +125,7 @@ describe("buildSuggestionPayload", () => {
   });
 
   it("owned edhrec suggestion with no inclusion → EDHREC staple", () => {
-    const result = buildSuggestionPayload({ ...base, owned: true }, {});
+    const result = buildSuggestionPayload({ ...base, owned: true }, {}, {}, TEST_MIX);
     expect(result.reasonLabel).toBe("EDHREC staple");
   });
 
@@ -129,7 +134,7 @@ describe("buildSuggestionPayload", () => {
     // suggest.ts looks up s.name.toLowerCase() — these must match.
     const mixedCaseSuggestion = { ...base, oracleId: "abc", name: "Sol Ring", reason: "edhrec" } as const;
     const inclusionByName = { "sol ring": 84.2 }; // stored by parse.ts in lowercase
-    const result = buildSuggestionPayload({ ...mixedCaseSuggestion, owned: true }, inclusionByName);
+    const result = buildSuggestionPayload({ ...mixedCaseSuggestion, owned: true }, inclusionByName, {}, TEST_MIX);
     expect(result.reasonLabel).toBe("EDHREC · 84.2% of decks");
   });
 
@@ -139,32 +144,32 @@ describe("buildSuggestionPayload", () => {
       ...base,
       oracleId: "dfc1", name: "Valki, God of Lies // Tibalt, Cosmic Impostor", reason: "edhrec",
     } as const;
-    const result = buildSuggestionPayload({ ...dfc, owned: true }, { "valki, god of lies": 12 });
+    const result = buildSuggestionPayload({ ...dfc, owned: true }, { "valki, god of lies": 12 }, {}, TEST_MIX);
     expect(result.reasonLabel).toBe("EDHREC · 12% of decks");
   });
 
   it("role-fill suggestion → Fills ramp · rec 10", () => {
     const rampSuggestion = { ...base, oracleId: "xyz", name: "Rampant Growth", reason: "ramp" } as const;
-    const result = buildSuggestionPayload({ ...rampSuggestion, owned: true }, {});
+    const result = buildSuggestionPayload({ ...rampSuggestion, owned: true }, {}, {}, TEST_MIX);
     expect(result.reasonType).toBe("role");
     expect(result.reasonLabel).toBe("Fills ramp · rec 10");
   });
 
   it("carries inclusionPct as a number alongside the unchanged label", () => {
-    const result = buildSuggestionPayload({ ...base, owned: true }, { "sol ring": 71 });
+    const result = buildSuggestionPayload({ ...base, owned: true }, { "sol ring": 71 }, {}, TEST_MIX);
     expect(result.inclusionPct).toBe(71);
     expect(result.reasonLabel).toBe("EDHREC · 71% of decks");
   });
 
   it("edhrec suggestion with no inclusion entry → inclusionPct null", () => {
     // The drawn `no EDHREC figure` state: absent, never a 0% bar.
-    const result = buildSuggestionPayload({ ...base, owned: true }, {});
+    const result = buildSuggestionPayload({ ...base, owned: true }, {}, {}, TEST_MIX);
     expect(result.inclusionPct).toBeNull();
   });
 
   it("role-sourced suggestion → inclusionPct null", () => {
     const rampSuggestion = { ...base, oracleId: "xyz", name: "Rampant Growth", reason: "ramp" } as const;
-    const result = buildSuggestionPayload({ ...rampSuggestion, owned: true }, { "rampant growth": 40 });
+    const result = buildSuggestionPayload({ ...rampSuggestion, owned: true }, { "rampant growth": 40 }, {}, TEST_MIX);
     expect(result.inclusionPct).toBeNull();
   });
 
@@ -173,23 +178,23 @@ describe("buildSuggestionPayload", () => {
       ...base,
       oracleId: "dfc1", name: "Valki, God of Lies // Tibalt, Cosmic Impostor", reason: "edhrec",
     } as const;
-    const result = buildSuggestionPayload({ ...dfc, owned: true }, { "valki, god of lies": 12 });
+    const result = buildSuggestionPayload({ ...dfc, owned: true }, { "valki, god of lies": 12 }, {}, TEST_MIX);
     expect(result.inclusionPct).toBe(12);
   });
 
   it.each([NaN, Infinity])(
     "treats a non-finite inclusion of %p as absent, in both the figure and the label",
     (pct) => {
-      const result = buildSuggestionPayload({ ...base, owned: true }, { "sol ring": pct });
+      const result = buildSuggestionPayload({ ...base, owned: true }, { "sol ring": pct }, {}, TEST_MIX);
       expect(result.inclusionPct).toBeNull();
       expect(result.reasonLabel).toBe("EDHREC staple");
     },
   );
 
   it("passes imageUri through, including null (the `no art on file` state)", () => {
-    expect(buildSuggestionPayload({ ...base, owned: true }, {}).imageUri)
+    expect(buildSuggestionPayload({ ...base, owned: true }, {}, {}, TEST_MIX).imageUri)
       .toBe("https://cards.example/sol-ring.jpg");
-    expect(buildSuggestionPayload({ ...base, imageUri: null, owned: true }, {}).imageUri)
+    expect(buildSuggestionPayload({ ...base, imageUri: null, owned: true }, {}, {}, TEST_MIX).imageUri)
       .toBeNull();
   });
 
@@ -197,32 +202,32 @@ describe("buildSuggestionPayload", () => {
     // Decision 6: surface lift only where positive. A zero or negative figure is
     // not a selling point, and drawing one is worse than the drawn omission.
     it("carries a positive synergy as lift", () => {
-      expect(buildSuggestionPayload({ ...base, owned: true }, {}, { "sol ring": 0.23 }).lift)
+      expect(buildSuggestionPayload({ ...base, owned: true }, {}, { "sol ring": 0.23 }, TEST_MIX).lift)
         .toBe(0.23);
     });
 
     it("resolves zero synergy to null", () => {
-      expect(buildSuggestionPayload({ ...base, owned: true }, {}, { "sol ring": 0 }).lift)
+      expect(buildSuggestionPayload({ ...base, owned: true }, {}, { "sol ring": 0 }, TEST_MIX).lift)
         .toBeNull();
     });
 
     it("resolves negative synergy to null", () => {
-      expect(buildSuggestionPayload({ ...base, owned: true }, {}, { "sol ring": -0.4 }).lift)
+      expect(buildSuggestionPayload({ ...base, owned: true }, {}, { "sol ring": -0.4 }, TEST_MIX).lift)
         .toBeNull();
     });
 
     it("resolves absent synergy to null", () => {
-      expect(buildSuggestionPayload({ ...base, owned: true }, {}, {}).lift).toBeNull();
+      expect(buildSuggestionPayload({ ...base, owned: true }, {}, {}, TEST_MIX).lift).toBeNull();
     });
 
     it("defaults lift to null when no synergy map is supplied at all", () => {
-      expect(buildSuggestionPayload({ ...base, owned: true }, {}).lift).toBeNull();
+      expect(buildSuggestionPayload({ ...base, owned: true }, {}, {}, TEST_MIX).lift).toBeNull();
     });
 
     // The map is a parameter, so this function is its own boundary — parse.ts
     // filtering upstream does not bind a caller who builds a map another way.
     it.each([NaN, Infinity, -Infinity])("resolves a non-finite synergy of %p to null", (synergy) => {
-      expect(buildSuggestionPayload({ ...base, owned: true }, {}, { "sol ring": synergy }).lift)
+      expect(buildSuggestionPayload({ ...base, owned: true }, {}, { "sol ring": synergy }, TEST_MIX).lift)
         .toBeNull();
     });
 
@@ -232,7 +237,7 @@ describe("buildSuggestionPayload", () => {
         oracleId: "dfc1", name: "Valki, God of Lies // Tibalt, Cosmic Impostor", reason: "edhrec",
       } as const;
       expect(
-        buildSuggestionPayload({ ...dfc, owned: true }, {}, { "valki, god of lies": 0.5 }).lift,
+        buildSuggestionPayload({ ...dfc, owned: true }, {}, { "valki, god of lies": 0.5 }, TEST_MIX).lift,
       ).toBe(0.5);
     });
 
@@ -246,5 +251,42 @@ describe("buildSuggestionPayload", () => {
       const [s] = buildSuggestions([roleCandidate("Llanowar Elves", "ramp")], {}, {});
       expect(s.synergyFigure).toBeNull();
     });
+  });
+});
+
+// TASK 18. The shelf header counts against the resolved target and the tile quotes one; before
+// this they read two different sources, so any commander whose measured ramp was not ten got a
+// header of `have / 12` beside tiles reading `rec 10`.
+describe("the tile quotes the resolved target", () => {
+  // Its own card, because `base` is scoped to another describe.
+  const card = {
+    oracleId: "abc", name: "Sol Ring", reason: "ramp" as const,
+    typeLine: "Artifact", cardTypeGroup: "Artifacts" as const, role: "ramp" as const,
+    imageUri: null, manaCost: "{1}", manaValue: 1, owned: true,
+  };
+  const measured = recommendedMix({
+    composition: {
+      of: "commander",
+      targets: { land: 34, basic: 18, nonbasic: 16, creature: 30, instant: 7,
+        sorcery: 6, artifact: 5, enchantment: 4, planeswalker: 1, battle: 0 },
+      averageCurve: null,
+    },
+    roleTargets: { of: "commander", targets: { ramp: 12, draw: 11, removal: 7, wipes: 2 } },
+    condition: "G", thinCondition: false, staples: [], commanderDeckCount: 1000,
+  }, false);
+
+  it("says the measured figure, not the asserted one", () => {
+    const tile = buildSuggestionPayload(
+      card, {}, {}, measured,
+    );
+    expect(tile.reasonLabel).toContain("rec 12");
+    expect(tile.reasonLabel).not.toContain("rec 10");
+  });
+
+  it("and the land tile takes the measured land count", () => {
+    const tile = buildSuggestionPayload(
+      { ...card, reason: "land" as const, role: "land" as const }, {}, {}, measured,
+    );
+    expect(tile.reasonLabel).toContain("rec 34");
   });
 });

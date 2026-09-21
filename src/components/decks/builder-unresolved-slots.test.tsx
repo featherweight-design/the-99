@@ -12,6 +12,17 @@ import { unresolvedCardCount } from "../../lib/decks/grouping";
 import type { DeckUnresolvedRow } from "../../lib/decks/grouping";
 import type { TopOffCandidate } from "../../lib/decks/last-slots";
 
+const TEST_MIX = {
+  cells: {
+    ramp: { label: "Ramp", target: 10, advisory: false },
+    draw: { label: "Draw", target: 10, advisory: false },
+    removal: { label: "Removal", target: 8, advisory: false },
+    wipes: { label: "Wipes", target: 3, advisory: false },
+    land: { label: "Land", target: 37, advisory: true },
+  },
+  measured: false,
+} as const;
+
 vi.mock("../../app/decks/actions", () => ({
   createDeck: vi.fn(),
   getDeckSuggestions: vi.fn(async () => ({ suggestions: [], degraded: false })),
@@ -97,7 +108,7 @@ const candidates: TopOffCandidate[] = Array.from({ length: 12 }, (_, i) => ({
 async function shell(matched: number, unresolvedRows: DeckUnresolvedRow[]) {
   await act(async () => {
     render(
-      <BuilderShell
+      <BuilderShell mix={TEST_MIX}
         deck={makeDeck(matched, unresolvedRows)}
         suggestions={[]}
         degraded={false}

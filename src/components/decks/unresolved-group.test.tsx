@@ -6,6 +6,17 @@ import { CardDetailProvider } from "../cards/card-detail-provider";
 import { Decklist } from "./decklist";
 import { UnresolvedGroup } from "./unresolved-group";
 
+const TEST_MIX = {
+  cells: {
+    ramp: { label: "Ramp", target: 10, advisory: false },
+    draw: { label: "Draw", target: 10, advisory: false },
+    removal: { label: "Removal", target: 8, advisory: false },
+    wipes: { label: "Wipes", target: 3, advisory: false },
+    land: { label: "Land", target: 37, advisory: true },
+  },
+  measured: false,
+} as const;
+
 const copy = deckImportCopy.unresolved;
 
 const row = (over: Partial<DeckUnresolvedRow> = {}): DeckUnresolvedRow => ({
@@ -35,7 +46,7 @@ const card = (over: Partial<DeckDetailCard> = {}): DeckDetailCard => ({
 function renderDecklist(props: Partial<React.ComponentProps<typeof Decklist>> = {}) {
   return render(
     <CardDetailProvider fetchCard={vi.fn().mockResolvedValue(null)}>
-      <Decklist
+      <Decklist mix={TEST_MIX}
         deckId="d1"
         commanderOracleId="cmdr"
         newestAsOf={null}
@@ -56,7 +67,7 @@ function renderDecklist(props: Partial<React.ComponentProps<typeof Decklist>> = 
 
 describe("UnresolvedGroup", () => {
   it("counts its lines, not the copies on them, so it agrees with the banner", () => {
-    render(<UnresolvedGroup deckId="d1" deckOracleIds={[]} rows={[row({ id: "a", quantity: 4 }), row({ id: "b" })]} />);
+    render(<UnresolvedGroup mix={TEST_MIX} deckId="d1" deckOracleIds={[]} rows={[row({ id: "a", quantity: 4 }), row({ id: "b" })]} />);
     const group = screen.getByRole("region");
     expect(group).toHaveAccessibleName(`${copy.groupLabel} · 2`);
     expect(group).not.toHaveAccessibleName(`${copy.groupLabel} · 5`);
@@ -64,7 +75,7 @@ describe("UnresolvedGroup", () => {
 
   it("orders rows by their line in the import, not alphabetically", () => {
     render(
-      <UnresolvedGroup
+      <UnresolvedGroup mix={TEST_MIX}
         deckId="d1"
         deckOracleIds={[]}
         rows={[
@@ -78,13 +89,13 @@ describe("UnresolvedGroup", () => {
   });
 
   it("gives each row its source line and the unmatched tag", () => {
-    render(<UnresolvedGroup deckId="d1" deckOracleIds={[]} rows={[row()]} />);
+    render(<UnresolvedGroup mix={TEST_MIX} deckId="d1" deckOracleIds={[]} rows={[row()]} />);
     expect(screen.getByText("line 41 of the import")).toBeInTheDocument();
     expect(screen.getByText(copy.rowTag)).toBeInTheDocument();
   });
 
   it("offers each row as a disclosure and tells the phone so", () => {
-    render(<UnresolvedGroup deckId="d1" deckOracleIds={[]} rows={[row()]} />);
+    render(<UnresolvedGroup mix={TEST_MIX} deckId="d1" deckOracleIds={[]} rows={[row()]} />);
     expect(
       screen.getByText(`${copy.footnoteMobile} ${copy.footnoteMobileResolve}`),
     ).toBeInTheDocument();
@@ -100,7 +111,7 @@ describe("UnresolvedGroup", () => {
   // true, and it used to stay true forever — the bar never came back.
   it("reports itself collapsed when the filter takes it away mid-expansion", () => {
     const onExpanded = vi.fn();
-    const { rerender } = render(<UnresolvedGroup deckId="d1" deckOracleIds={[]} rows={[row()]} onExpandedChange={onExpanded} />);
+    const { rerender } = render(<UnresolvedGroup mix={TEST_MIX} deckId="d1" deckOracleIds={[]} rows={[row()]} onExpandedChange={onExpanded} />);
     fireEvent.click(screen.getByRole("button", { name: copy.rowAria("Lightning Bolt", 1) }));
     expect(onExpanded).toHaveBeenLastCalledWith(true);
 
@@ -109,7 +120,7 @@ describe("UnresolvedGroup", () => {
   });
 
   it("renders nothing at zero rows", () => {
-    const { container } = render(<UnresolvedGroup deckId="d1" deckOracleIds={[]} rows={[]} />);
+    const { container } = render(<UnresolvedGroup mix={TEST_MIX} deckId="d1" deckOracleIds={[]} rows={[]} />);
     expect(container).toBeEmptyDOMElement();
   });
 });

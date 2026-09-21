@@ -19,6 +19,8 @@ import { readPairSupport, resolvePairEdhrecData } from "../edhrec/pair-read";
 import { type PoolCard } from "../recs/score";
 import { deckBodySize } from "./deck-size";
 import { cardTypeGroup, primaryRole, requireDeck } from "./read";
+import { recommendedMix, type RecommendedMix } from "./mix";
+import { loadSkeletonForCommanders } from "../profile/load";
 import { buildSuggestionPayload, suggestDeck, type DeckSuggestion } from "./suggest";
 
 // The pool carries mana on top of PoolCard so a tile can draw cost pips and the
@@ -130,6 +132,10 @@ export type DeckSuggestionsPayload = {
   suggestions: DeckSuggestion[];
   degraded: boolean;
   shoppingFigures: Record<string, number> | null;
+  /** What this deck is compared to. Carried on the payload rather than resolved again by the
+      deck page, which loads this anyway: the shelf headers here and the strip there are the
+      same five cells about the same deck, and a second read is a second chance to disagree. */
+  mix: RecommendedMix;
 };
 
 /** `shoppingFigures` is null when EDHREC is unreachable, and a map otherwise. An
@@ -139,7 +145,9 @@ export type DeckSuggestionsPayload = {
 export async function loadDeckSuggestions(deckId: string, userId: string): Promise<DeckSuggestionsPayload> {
   const deck = await requireDeck(deckId, userId);
   const [commander] = await db.select().from(cards).where(eq(cards.oracleId, deck.commanderOracleId));
-  if (!commander) return { suggestions: [], degraded: false, shoppingFigures: {} };
+  if (!commander) {
+    return { suggestions: [], degraded: false, shoppingFigures: {}, mix: recommendedMix(null, false) };
+  }
 
   // The partner is a second commander for every purpose below: the pool it
   // legalises and the advice it contributes.
@@ -199,7 +207,22 @@ export async function loadDeckSuggestions(deckId: string, userId: string): Promi
   const ownedByOracleId = new Set(pool.map((c) => c.oracleId));
 
   // Compute owned pool suggestions
-  const raw = suggestDeck({ commander, ownedPool: available, edhrecTopCards: topCards, hasPartner });
+  // THE SAME MIX THE DECK PAGE DRAWS. The Add panel's shelf headers count against these and
+  // its tiles quote them; two sources would disagree by construction on any commander whose
+  // measured ramp is not ten.
+  let mix = recommendedMix(null, hasPartner);
+  try {
+    const { skeleton } = await loadSkeletonForCommanders(
+      commander.oracleId,
+      partner?.oracleId ?? null,
+      [...new Set([...commander.colorIdentity ?? [], ...(partner?.colorIdentity ?? [])])],
+    );
+    mix = recommendedMix(skeleton, hasPartner);
+  } catch (err) {
+    console.warn("loadDeckSuggestions: no skeleton — the panel quotes the asserted targets", err);
+  }
+
+  const raw = suggestDeck({ commander, ownedPool: available, edhrecTopCards: topCards, hasPartner, mix });
 
   // Enrich owned suggestions
   const ownedSuggestions: DeckSuggestion[] = raw.map((s) => {
@@ -218,7 +241,7 @@ export async function loadDeckSuggestions(deckId: string, userId: string): Promi
       },
       inclusionByName,
       synergyByName,
-      hasPartner,
+      mix,
     );
   });
 
@@ -245,7 +268,7 @@ export async function loadDeckSuggestions(deckId: string, userId: string): Promi
         },
         inclusionByName,
         synergyByName,
-        hasPartner,
+        mix,
       ),
     );
   }
@@ -288,5 +311,5 @@ export async function loadDeckSuggestions(deckId: string, userId: string): Promi
     }
   }
 
-  return { suggestions, degraded, shoppingFigures: degraded ? null : shoppingFigures };
+  return { suggestions, degraded, shoppingFigures: degraded ? null : shoppingFigures, mix };
 }
