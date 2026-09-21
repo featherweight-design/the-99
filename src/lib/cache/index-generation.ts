@@ -34,10 +34,21 @@ const UNSTAMPED = "0";
  * raises outside a request, so a script reaching for this answer must not have to rewrite
  * the query to get it.
  *
- * FOUR INPUTS, BECAUSE A TIMESTAMP IS NOT ENOUGH HERE. `loadSkeletonForCommanders` reads
- * `commander_support`, `commander_pair_support` and `identity_composition`, and each moves
- * on its own schedule — the index job rebuilds the first two, `db:build:staples` replaces
- * the third, and it can be run alone.
+ * THE COMPLETE SET, enumerated from the loader rather than named one at a time.
+ * `loadSkeletonForCommanders` makes exactly four reads — `loadPairRow`, `loadCommanderRow`,
+ * `loadCompositionRow` and `loadStaples` — so these are its four tables and there is no
+ * fifth:
+ *
+ *   commander_support        timestamp + role count
+ *   commander_pair_support   timestamp + role count
+ *   identity_composition     timestamp
+ *   format_staples           NO COLUMN EXISTS to observe, and none is needed: it is written
+ *                            by `db:build:staples`, which replaces `identity_composition` in
+ *                            the same run, so that timestamp is its proxy. If the two are
+ *                            ever written separately this stops being true.
+ *
+ * They move on different schedules — the index job rebuilds the first two, `db:build:staples`
+ * replaces the third and fourth, and it can be dispatched alone.
  *
  * The sharper problem is that **the role write carries no timestamp at all.**
  * `deriveAndWriteRoleTargets` sets `avg_ramp`/`avg_draw`/`avg_removal`/`avg_wipes` and does
@@ -60,6 +71,7 @@ export async function readIndexGeneration(): Promise<string> {
   try {
     const [row] = await db.select({
       support: sql<string | null>`(select (extract(epoch from max(computed_at)) * 1000)::bigint from commander_support)`,
+      pair: sql<string | null>`(select (extract(epoch from max(computed_at)) * 1000)::bigint from commander_pair_support)`,
       identity: sql<string | null>`(select (extract(epoch from max(computed_at)) * 1000)::bigint from identity_composition)`,
       supportRoles: sql<string | null>`(select count(*) from commander_support where avg_ramp is not null)`,
       pairRoles: sql<string | null>`(select count(*) from commander_pair_support where avg_ramp is not null)`,
@@ -67,11 +79,12 @@ export async function readIndexGeneration(): Promise<string> {
 
     const parts = [
       generationKey(row?.support),
+      generationKey(row?.pair),
       generationKey(row?.identity),
       generationKey(row?.supportRoles),
       generationKey(row?.pairRoles),
     ];
-    // All four unstamped is the same answer the whole token gives when nothing has been
+    // All of them unstamped is the same answer the whole token gives when nothing has been
     // built, so it collapses to the constant rather than to "0.0.0.0" — one spelling for
     // one state.
     return parts.every((p) => p === UNSTAMPED) ? UNSTAMPED : parts.join(".");

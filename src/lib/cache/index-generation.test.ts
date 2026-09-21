@@ -6,6 +6,7 @@ import { describe, expect, it, vi } from "vitest";
 
 type Row = {
   support: string | null;
+  pair: string | null;
   identity: string | null;
   supportRoles: string | null;
   pairRoles: string | null;
@@ -44,6 +45,7 @@ const { indexGeneration, readIndexGeneration } = await import("./index-generatio
 describe("readIndexGeneration", () => {
   const row = (over: Partial<Row> = {}): Row => ({
     support: "1758326400000",
+    pair: "1758326400000",
     identity: "1758326400000",
     supportRoles: "3279",
     pairRoles: "12",
@@ -54,7 +56,7 @@ describe("readIndexGeneration", () => {
     rows.throws = false;
     rows.value = [row()];
     expect(await readIndexGeneration())
-      .toBe("1758326400000.1758326400000.3279.12");
+      .toBe("1758326400000.1758326400000.1758326400000.3279.12");
   });
 
   // THE CASE THE MODULE EXISTS FOR. `deriveAndWriteRoleTargets` sets the four `avg_*`
@@ -74,6 +76,17 @@ describe("readIndexGeneration", () => {
     expect(before).not.toBe(after);
   });
 
+  it("moves when only the pair support is restamped", async () => {
+    // Its own read in the loader (`loadPairRow`), so its own input here. A pair rebuild that
+    // changed figures while leaving the count alone would otherwise be invisible.
+    rows.throws = false;
+    rows.value = [row()];
+    const before = await readIndexGeneration();
+
+    rows.value = [row({ pair: "1758412800000" })];
+    expect(await readIndexGeneration()).not.toBe(before);
+  });
+
   it("moves when only the identity composition is rebuilt", async () => {
     // `db:build:staples` can be dispatched on its own, replacing `identity_composition`
     // without an index run behind it.
@@ -90,7 +103,9 @@ describe("readIndexGeneration", () => {
     // `max()` over an empty table returns a row whose value is null, not no row — which is
     // every database before the first index build, and it must not key on the string "null".
     rows.throws = false;
-    rows.value = [{ support: null, identity: null, supportRoles: null, pairRoles: null }];
+    rows.value = [{
+      support: null, pair: null, identity: null, supportRoles: null, pairRoles: null,
+    }];
     expect(await readIndexGeneration()).toBe("0");
   });
 
@@ -107,7 +122,7 @@ describe("indexGeneration", () => {
   it("answers the constant rather than throwing outside a request", async () => {
     rows.throws = false;
     rows.value = [{
-      support: "1758326400000", identity: "1758326400000",
+      support: "1758326400000", pair: "1758326400000", identity: "1758326400000",
       supportRoles: "3279", pairRoles: "12",
     }];
     cache.throws = true;
