@@ -1,4 +1,4 @@
-import { castFaceText, playableAsLand } from "../cards/facet";
+import { castFaceText, playableAsLand, isLandFace } from "../cards/facet";
 import type { CompositionTargets, ProfileSkeleton } from "../profile/types";
 import { classifyRoles, ROLE_TARGETS } from "../recs/roles";
 import { preferByTypeGap, tallyTypes, typeDeficits } from "./fill-shape";
@@ -22,7 +22,7 @@ export type FillRole = "ramp" | "draw" | "removal" | "wipes" | "land" | "other";
  * seeds are counts of cards.
  */
 export type HeldCard = Pick<
-  FillCandidate, "typeLine" | "oracleText" | "keywords" | "layout"
+  FillCandidate, "typeLine" | "oracleText" | "keywords" | "layout" | "manaCost"
 > & { quantity?: number };
 
 export type FillCandidate = {
@@ -426,7 +426,13 @@ export function planFill(candidates: FillCandidate[], args: PlanFillArgs): FillP
   // drops — one more than the decklists behind the target ran. The sweeps take the remainder,
   // and the card still keeps its non-land role, which is the §2.5a rule rather than an
   // exception to it: it spends ONE slot and is counted once in each place that counts.
-  const modalDrops = rows.filter((r) => {
+  // HELD CARDS COUNT TOO. A land-backed MDFC already in the deck is already a land drop, so
+  // a plan blind to it takes the whole ceiling again and hands the deck one land too many
+  // while reporting a shortfall it does not have.
+  const heldModalDrops = (held ?? []).reduce(
+    (n, c) => n + (playableAsLand(c.typeLine, c.layout) ? (c.quantity ?? 1) : 0), 0,
+  );
+  const modalDrops = heldModalDrops + rows.filter((r) => {
     if (r.role === "land") return false;
     const c = byOracleId.get(r.oracleId);
     return c ? playableAsLand(c.typeLine, c.layout) : false;
@@ -468,6 +474,13 @@ export function planFill(candidates: FillCandidate[], args: PlanFillArgs): FillP
   // claim eleven Forests off four — so a colour whose basics run out hands its
   // slots back to the colours that can still fill them.
   const pips = new Map<string, number>();
+  // THE DECK'S OWN SPELLS FIRST. The split is proportioned against what the deck will cast,
+  // and a partial fill casts what it already holds as well as what this plan adds — so a deck
+  // of blue spells taking three more lands was splitting them against three costs.
+  for (const card of held ?? []) {
+    if (isLandFace(card.typeLine)) continue;
+    for (let i = 0; i < (card.quantity ?? 1); i += 1) addPips(pips, card.manaCost);
+  }
   for (const row of rows) {
     if (row.role === "land") continue;
     addPips(pips, byOracleId.get(row.oracleId)?.manaCost ?? null);
@@ -557,7 +570,7 @@ export function planFill(candidates: FillCandidate[], args: PlanFillArgs): FillP
   // slot and a land slot, which is the double credit §2.5a forbids.
   // Recomputed over the FINAL rows rather than reusing `modalDrops`: the residual runs after
   // that count is taken and can sleeve modal cards of its own, and those are land drops too.
-  const landCapable = counts.land + rows.filter((r) => {
+  const landCapable = counts.land + heldModalDrops + rows.filter((r) => {
     if (r.role === "land") return false;
     const c = byOracleId.get(r.oracleId);
     return c ? playableAsLand(c.typeLine, c.layout) : false;

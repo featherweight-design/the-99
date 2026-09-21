@@ -617,8 +617,12 @@ describe("TopOffList — the bulk tick", () => {
   // tick the player had made by hand — and the empty set is a real value here, drawn by the
   // clear control, so it cannot double as a failure outcome. It dropped the message too.
   it("keeps the ticks and says why when the choice is refused", async () => {
+    const onAnnounce = vi.fn();
     actions.chooseBulk.mockResolvedValue({ ok: false, message: "Couldn’t work that out." });
-    render(<Harness candidates={[candidate("free-1", true), candidate("free-2", true)]} />);
+    render(<Harness
+      candidates={[candidate("free-1", true), candidate("free-2", true)]}
+      onAnnounce={onAnnounce}
+    />);
 
     const box = screen.getAllByRole("checkbox")[0];
     fireEvent.click(box);
@@ -629,6 +633,9 @@ describe("TopOffList — the bulk tick", () => {
 
     expect(screen.getByTestId("top-off-refusal")).toHaveTextContent("Couldn’t work that out.");
     expect(screen.getAllByRole("checkbox")[0]).toBeChecked();
+    // `RefusalPlate` carries no live role, so drawing the message reaches sighted readers and
+    // nobody else.
+    expect(onAnnounce).toHaveBeenCalledWith("Couldn’t work that out.");
   });
 
   it("draws a refusal rather than going silent when the call throws", async () => {
@@ -640,6 +647,36 @@ describe("TopOffList — the bulk tick", () => {
 
     expect(screen.getByTestId("top-off-refusal"))
       .toHaveTextContent(synergyCopy.lastSlots.topUpFailed);
+  });
+
+  // THE DRAFT MOVES WHILE THE SERVER THINKS. Row toggles, declines, clear and Cancel all stay
+  // live during the request — they consult `inflight`, which is the COMMIT's — so a player can
+  // set a row aside after pressing and before the answer lands. An allow-list captured before
+  // the await describes a draft that no longer exists, and reviving that row is exactly the
+  // undo-with-a-press this control is meant to avoid.
+  it("applies the answer against the draft as it stands when it arrives", async () => {
+    let release: (v: unknown) => void = () => {};
+    actions.chooseBulk.mockReturnValue(new Promise((r) => { release = r; }));
+    render(<Harness candidates={[candidate("free-1", true), candidate("free-2", true)]} />);
+
+    fireEvent.click(screen.getByRole("button", { name: /Tick all/ }));
+
+    // Set one aside AFTER the request is out and BEFORE it answers.
+    fireEvent.click(screen.getByRole("button", {
+      name: topOffCopy.list.declineAria("free-1"),
+    }));
+
+    await act(async () => {
+      release({ ok: true, oracleIds: ["free-1", "free-2"] });
+    });
+
+    // RESTORED, because a declined row leaves the list either way and the question is what
+    // the late answer wrote into the selection behind it. A stale tick is invisible until the
+    // row comes back carrying it.
+    fireEvent.click(screen.getByRole("button", {
+      name: topOffCopy.list.restoreAria("free-1"),
+    }));
+    expect(rowBox("free-1")).not.toBeChecked();
   });
 
   it("does not bring back a row the player set aside", async () => {

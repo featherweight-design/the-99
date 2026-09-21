@@ -2008,6 +2008,51 @@ describe("chooseBulkFill", () => {
     expect(new Set(result.oracleIds).size).toBe(result.oracleIds.length);
   });
 
+  // THE COMMANDER IS A CARD. It is a column on `decks` rather than a `deck_cards` row, and
+  // the profile's own role model already counts it — so a plan blind to it reports a wipe
+  // commander's deck as short of wipes and spends a slot closing a floor the commander closed.
+  //
+  // Observable because the wipes floor is 3: with the commander counted the deck needs two
+  // more, and the third slot has nothing left to close and is dropped with the residual.
+  it("counts the commander as a card the deck already holds", async () => {
+    stub.state.decks.push({ id: "bulk-c", userId: "user_1", commanderOracleId: COMMANDER_ORACLE });
+    stub.state.cards.push(commanderCard({ oracleText: "Destroy all creatures." }));
+    stub.state.collectionItems.push(...Array.from({ length: 3 }, (_, i) => ({
+      oracleId: `wipe-${i.toString().padStart(8, "0")}-aaaa-aaaa-aaaa-aaaaaaaaaaaa`,
+      name: `Wrath ${i}`, typeLine: "Sorcery", oracleText: "Destroy all creatures.",
+      keywords: [], colorIdentity: [], commanderLegal: true, quantity: 1,
+    })));
+
+    const result = await chooseBulkFill("bulk-c", 3);
+
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+    expect(result.oracleIds.length).toBe(2);
+  });
+
+  it("never offers a residual card", async () => {
+    // `planFill` fills whatever `slots` remain with the next cards by preference once the
+    // floors and the mana base are done — right for a CREATE, which owes a whole 99. Here it
+    // was the failure this control exists to end: unmeetable floors meant every open slot
+    // went to "whatever ranked next", which is the synergy ordering in a different hat. A
+    // residual row must never reach the player from this door.
+    stub.state.decks.push({ id: "bulk-r", userId: "user_1", commanderOracleId: COMMANDER_ORACLE });
+    stub.state.cards.push(commanderCard());
+    // Cards that close no floor: vanilla creatures with no ramp, draw, removal or wipe text.
+    stub.state.collectionItems.push(...Array.from({ length: 8 }, (_, i) => ({
+      oracleId: `vani-${i.toString().padStart(8, "0")}-aaaa-aaaa-aaaa-aaaaaaaaaaaa`,
+      name: `Bear ${i}`, typeLine: "Creature — Bear", oracleText: "",
+      keywords: [], colorIdentity: [], commanderLegal: true, quantity: 1,
+    })));
+
+    const result = await chooseBulkFill("bulk-r", 4);
+
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+    // Four slots asked for, nothing that closes a floor: the slots stay open.
+    expect(result.oracleIds).toEqual([]);
+  });
+
   it("refuses rather than throwing for a deck the reader does not own", async () => {
     // `requireDeck` throws for a deck belonging to someone else, or one deleted while the
     // list was open. It used to sit OUTSIDE the `try`, so that rejection escaped a function

@@ -1945,6 +1945,7 @@ export async function chooseBulkFill(
       oracleText: cards.oracleText,
       keywords: cards.keywords,
       layout: cards.layout,
+      manaCost: cards.manaCost,
     }).from(cards).where(inArray(cards.oracleId, heldIds));
     const heldById = new Map(heldCards.map((c) => [c.oracleId, c]));
     const held = heldRows.flatMap((r) => {
@@ -1967,16 +1968,40 @@ export async function chooseBulkFill(
         slots: openSlots,
         // Only what role and type classification read. `HeldCard` asks for no more, because
         // a card already sleeved is past the question of whether to choose it.
-        held: held.map((h) => ({
-          typeLine: h.typeLine, oracleText: h.oracleText,
-          keywords: h.keywords ?? [], layout: h.layout, quantity: h.quantity,
-        })),
+        held: [
+          // THE COMMANDERS ARE HELD CARDS. They are columns on `decks` rather than
+          // `deck_cards` rows, and the profile's own role model already counts them
+          // (`profile/load.ts`, `profile/build.ts`) — so leaving them out here reports a
+          // ramp commander's deck as short of ramp and spends a slot closing a floor the
+          // commander already closed. Quantity 1 each; a commander is one card.
+          ...[commander, partner].filter((c): c is typeof commander => Boolean(c)).map((c) => ({
+            typeLine: c.typeLine, oracleText: c.oracleText,
+            keywords: c.keywords ?? [], layout: c.layout, manaCost: c.manaCost, quantity: 1,
+          })),
+          ...held.map((h) => ({
+            typeLine: h.typeLine, oracleText: h.oracleText,
+            keywords: h.keywords ?? [], layout: h.layout, manaCost: h.manaCost,
+            quantity: h.quantity,
+          })),
+        ],
       },
     );
-    // FEWER THAN THE SLOTS IS A VALID ANSWER. Spending them badly is not: a fill that cannot
-    // meet a floor from the sleeveable pool leaves the slot open rather than filling it with
-    // whatever ranked next, because an open slot can still be fixed and a wrong card cannot.
-    return { ok: true, oracleIds: plan.rows.map((r) => r.oracleId) };
+    // FEWER THAN THE SLOTS IS A VALID ANSWER, and the residual is what made that untrue.
+    //
+    // `planFill` always runs a residual pass after the role and land passes, filling whatever
+    // `slots` remain with the next cards by preference — right for a CREATE, which owes a
+    // whole 99 and would otherwise hand back a part-built deck. Here it is the failure this
+    // control exists to end: with the floors unmeetable from the sleeveable pool, every open
+    // slot went to "whatever ranked next", which is the synergy ordering wearing a different
+    // hat.
+    //
+    // So the residual is dropped and the slot stays open. An open slot can still be fixed by
+    // a player who buys the card the deck wants; a slot spent on a card the deck does not
+    // need cannot be, without undoing it first.
+    return {
+      ok: true,
+      oracleIds: plan.rows.filter((r) => r.role !== "other").map((r) => r.oracleId),
+    };
   } catch (err) {
     console.error("chooseBulkFill failed", err);
     return { ok: false, message: synergyCopy.lastSlots.topUpFailed };

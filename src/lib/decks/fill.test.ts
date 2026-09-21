@@ -584,7 +584,8 @@ describe("held", () => {
   // never because it sorted first. An earlier version of this case had it the other way round
   // and passed with `held` removed entirely.
   const heldRamp = Array.from({ length: 10 }, () => ({
-    typeLine: "Artifact", oracleText: "Add {G}.", keywords: [], layout: "normal", quantity: 1,
+    typeLine: "Artifact", oracleText: "Add {G}.", keywords: [], layout: "normal",
+    manaCost: "{2}", quantity: 1,
   }));
 
   it("takes the role the deck is short of over the one it has already filled", () => {
@@ -600,13 +601,51 @@ describe("held", () => {
     expect(plan.rows.map((r) => r.oracleId)).toEqual(["spare-ramp"]);
   });
 
+  it("counts a held land-backed modal card against the land ceiling", () => {
+    // A card already in the deck whose back is a land is already a land drop. A plan blind to
+    // it takes the whole ceiling again, so the deck ends one land over and reports a shortfall
+    // it does not have.
+    const heldModal = {
+      typeLine: "Sorcery // Land", oracleText: "Draw three cards.\n//\nEnters tapped.",
+      keywords: [], layout: "modal_dfc", manaCost: "{1}{U}", quantity: 1,
+    };
+    const basics = Array.from({ length: 40 }, (_, i) => basic(`f${i}`, 4));
+
+    const withHeld = planFill(basics, { ...FLAT, held: [heldModal] });
+    const without = planFill(basics, FLAT);
+
+    expect(countRole(withHeld, "land")).toBe(countRole(without, "land") - 1);
+    expect(withHeld.landCapable).toBe(without.landCapable);
+  });
+
+  it("splits the basics against the costs the deck already casts", () => {
+    // The split is proportioned against what the deck will CAST, and a partial fill casts what
+    // it holds as well as what this plan adds. A deck of blue spells taking three more lands
+    // was splitting them against three costs.
+    const heldBlue = Array.from({ length: 12 }, () => ({
+      typeLine: "Instant", oracleText: "Draw a card.", keywords: [],
+      layout: "normal", manaCost: "{U}{U}", quantity: 1,
+    }));
+    const pool = [
+      ...Array.from({ length: 20 }, (_, i) => basic(`i${i}`, 1, "Island")),
+      ...Array.from({ length: 20 }, (_, i) => basic(`f${i}`, 1, "Forest")),
+    ];
+
+    const islands = (plan: FillPlan) =>
+      plan.rows.filter((r) => r.oracleId.startsWith("i")).reduce((n, r) => n + r.quantity, 0);
+
+    expect(islands(planFill(pool, { ...FLAT, held: heldBlue })))
+      .toBeGreaterThan(islands(planFill(pool, FLAT)));
+  });
+
   it("counts a stacked row as the cards it holds, not as one row", () => {
     // A basic is nine cards in one row, so a row count would leave a floor open on a deck
     // already at it. Read through the ROLE the slot is spent on rather than through whether
     // anything was placed: the slot is filled either way — the residual takes it when no floor
     // wants it — and which pass claimed it is the whole difference.
     const held = (quantity: number) => [{
-      typeLine: "Artifact", oracleText: "Add {G}.", keywords: [], layout: "normal", quantity,
+      typeLine: "Artifact", oracleText: "Add {G}.", keywords: [], layout: "normal",
+      manaCost: "{2}", quantity,
     }];
 
     // Nine against a floor of ten: still one short, so the card is spent ON ramp.

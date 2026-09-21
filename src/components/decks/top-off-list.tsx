@@ -290,6 +290,14 @@ export function TopOffList({
     .filter((c) => canSeed(c) && !illegal.has(c.oracleId) && !declined.has(c.oracleId))
     .map((c) => c.oracleId);
   const tickable = Math.min(seedableIds.length, Math.max(openSlots, 0));
+  // A LIVE HANDLE ON THE ALLOW-LIST, read after the await rather than closed over before it.
+  // The draft can move while the server thinks — see the bulk control below. Written in an
+  // effect rather than during render, which React forbids: the value it carries is only ever
+  // read from an async continuation, which runs after the commit that this effect follows.
+  const seedableIdsRef = useRef(seedableIds);
+  useEffect(() => {
+    seedableIdsRef.current = seedableIds;
+  });
   const untouched = pool.length - tickedCount - declinedHere;
   // The control's own in-flight state. Separate from `inflight`, which is the COMMIT's: a
   // player pressing this twice while the server thinks would otherwise send two plans.
@@ -567,9 +575,19 @@ export function TopOffList({
                   // empty set is a deliberate value here, drawn by the clear control, so it
                   // must not double as a failure outcome. The message is the action's own.
                   setError(result.message);
+                  // ANNOUNCED AS WELL AS DRAWN. `RefusalPlate` deliberately carries no live
+                  // role, so a message set into it reaches sighted readers and nobody else —
+                  // which is why the commit path beside this announces every refusal it sets.
+                  onAnnounce(result.message);
                   return;
                 }
-                const allowed = new Set(seedableIds);
+                // RE-READ AT APPLY TIME, not at request time. The row toggles, the declines,
+                // the clear and Cancel all stay live while the server thinks — they only
+                // consult `inflight`, which is the COMMIT's — so a player can set a row aside
+                // or clear the lot while this is in flight. Closing over the `seedableIds`
+                // captured before the await would then apply an allow-list describing a draft
+                // that no longer exists, quietly reviving a row they had just put down.
+                const allowed = new Set(seedableIdsRef.current);
                 onTickedChange(new Set(
                   result.oracleIds.filter((id: string) => allowed.has(id)),
                 ));
@@ -578,6 +596,7 @@ export function TopOffList({
                 // failure — is a refusal the player can read, not an unhandled rejection that
                 // clears the spinner and says nothing. `commit()` above has the same catch.
                 setError(synergyCopy.lastSlots.topUpFailed);
+                onAnnounce(synergyCopy.lastSlots.topUpFailed);
               } finally {
                 setChoosing(false);
               }
