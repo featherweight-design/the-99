@@ -24,6 +24,17 @@
 //   node scripts/probe-card-mark.mjs
 //   PROBE_BASE=http://localhost:3600 PROBE_MARKED_CARD="Farewell" node scripts/probe-card-mark.mjs
 //
+// TWO PRECONDITIONS, both of which fail LOUDLY rather than quietly:
+//
+//   1. The account must own a card carrying a fact, and a deck must hold one. 17 of the
+//      reference account's ~2,805 collection rows carry a mark, and most decks hold none.
+//
+//   2. The account must have SEEN the current `ABOUT_VERSION`. The About gate (#658)
+//      redirects a reader below it to /about, so `/decks` silently becomes the About page
+//      — whose own specimen deck links then read as this account's decks. Visit /about once
+//      in the app to clear it. This probe will not clear it for you: doing so writes
+//      `about_version_seen` on your account, and this script makes no writes.
+//
 // Point it at `local-dev`. It makes no writes.
 import { clerkSetup, setupClerkTestingToken } from "@clerk/testing/playwright";
 import { chromium } from "playwright";
@@ -37,10 +48,13 @@ const PASSWORD = process.env.E2E_AUDIT_USER_PASSWORD;
 // has always reached every surface, while the two joined flags are the pair that had no
 // route to the modal at all. The default exercises the path that was broken.
 const CARD = process.env.PROBE_MARKED_CARD ?? "Expropriate";
-// A deck that HOLDS a marked card. Most 99-card decks hold none — the reference account's
-// busiest holds four — so this cannot be any deck, and a run against one that holds none
-// would report "found no mark" about a build that is working.
-const DECK = process.env.PROBE_DECK ?? "da3359f3-4f39-4632-ae74-4f2434d96c45";
+// A deck that HOLDS a marked card — DISCOVERED by asking /decks rather than hardcoded.
+//
+// A hardcoded id was wrong twice over: most decks hold no marked card at all (the busiest
+// on this data holds four of 99), and the ids differ per fixture account, so a literal
+// belonging to one account reports "no mark" on another's perfectly working build. Asking
+// the page cannot drift from it.
+const DECK = process.env.PROBE_DECK ?? null;
 if (!EMAIL.includes("+clerk_test") && !PASSWORD) throw new Error("Set E2E_AUDIT_USER_PASSWORD.");
 
 const WIDTHS = [
@@ -119,6 +133,61 @@ async function searchFor(page, term) {
   await page.waitForTimeout(1200);
 }
 
+/**
+ * Navigate, and REFUSE to measure a page we did not ask for.
+ *
+ * The About gate (#658) redirects a reader below `ABOUT_VERSION` to /about, and it does it
+ * silently: the wait resolves, `h1` is present, and every subsequent query runs happily
+ * against the wrong page. This probe read /about's own specimen deck links as though they
+ * were the account's decks and concluded the fixture was missing.
+ *
+ * `proxy-mark.json` records the same trap by name — "lets the cell count as reached while
+ * photographing the About page". A probe that cannot tell which page it is on cannot report
+ * anything about the one it meant to visit.
+ */
+async function goTo(page, path) {
+  await page.goto(`${BASE}${path}`, { waitUntil: "domcontentloaded" });
+  await onPage(page, "h1").first().waitFor({ state: "attached", timeout: 30_000 });
+  const landed = new URL(page.url()).pathname;
+  const wanted = path.split("?")[0];
+  if (landed !== wanted) {
+    return { ok: false, landed, wanted };
+  }
+  return { ok: true, landed, wanted };
+}
+
+/**
+ * The first deck whose page actually DRAWS a mark.
+ *
+ * Returns the href, or null having tried every deck — which is a real state on an account
+ * whose decks happen to hold none, and is reported as a missing fixture rather than as a
+ * defect. The distinction matters: "no deck holds a marked card" and "the mark stopped
+ * drawing" look identical from a single hardcoded deck, and only one of them is a bug.
+ */
+async function findMarkedDeck(page) {
+  const nav = await goTo(page, "/decks");
+  if (!nav.ok) {
+    report("decklist row · reached /decks", false,
+      `redirected to ${nav.landed} — the About gate sends a reader below ABOUT_VERSION to ` +
+      `/about, and its specimen deck links read as this account's decks`);
+    return null;
+  }
+  const hrefs = await page.evaluate((scope) => {
+    const root = document.querySelector(scope);
+    return [...new Set([...(root?.querySelectorAll("a[href^='/decks/']") ?? [])]
+      .map((a) => a.getAttribute("href"))
+      .filter((h) => h && !h.includes("/new") && h.split("/").length === 3))];
+  }, PAGE);
+  for (const href of hrefs.slice(0, 8)) {
+    const deckNav = await goTo(page, href);
+    if (!deckNav.ok) continue;
+    await page.waitForTimeout(1500);
+    const drawn = (await marks(page)).filter((m) => !m.inKey);
+    if (drawn.length > 0) return href;
+  }
+  return null;
+}
+
 async function run() {
   await clerkSetup();
   const browser = await chromium.launch();
@@ -128,16 +197,23 @@ async function run() {
       const page = await context.newPage();
       await signIn(page);
 
+      const deckHref = DECK ? `/decks/${DECK}` : await findMarkedDeck(page);
+      if (!deckHref) {
+        report(`${label}px · decklist row · a deck that holds a marked card`, false,
+          "no deck on this account draws one — the fixture is missing, not the mark");
+      }
+
       for (const [surface, url, search] of [
-        ["decklist row", `/decks/${DECK}`, null],
+        ...(deckHref ? [["decklist row", deckHref, null]] : []),
         ["collection rows", "/collection?view=rows", CARD],
         ["collection tiles", "/collection", CARD],
       ]) {
-        await page.goto(`${BASE}${url}`, { waitUntil: "domcontentloaded" });
         // `attached`, never `visible`: a collapsed title is zero-width, which Playwright
         // calls hidden, and waiting on visibility turns a layout defect into a 30s timeout
         // that abandons every width after the first.
-        await onPage(page, "h1").first().waitFor({ state: "attached", timeout: 30_000 });
+        const nav = await goTo(page, url);
+        if (!report(`${label}px · ${surface} · reached the route`, nav.ok,
+            nav.ok ? undefined : `redirected to ${nav.landed}`)) continue;
         if (search) await searchFor(page, search);
 
         const all = await marks(page);
@@ -200,8 +276,10 @@ async function run() {
       // THE MODAL. The one surface that spells the facts out, and the one whose loader had
       // no route to the two joined flags at all — so a mark drawn everywhere else proves
       // nothing about it.
-      await page.goto(`${BASE}/collection?view=rows`, { waitUntil: "domcontentloaded" });
-      await onPage(page, "h1").first().waitFor({ state: "attached", timeout: 30_000 });
+      const modalNav = await goTo(page, "/collection?view=rows");
+      if (!modalNav.ok) {
+        report(`${label}px · modal · reached /collection`, false, `redirected to ${modalNav.landed}`);
+      } else {
       await searchFor(page, CARD);
       const trigger = onPage(page, `button:has-text("${CARD}")`).first();
       if (await trigger.count()) {
@@ -223,6 +301,7 @@ async function run() {
           block?.found ? block.items.join(" / ") : "no `In the bracket rules` block");
       } else {
         report(`${label}px · modal · reached a marked card`, false, `no trigger for "${CARD}"`);
+      }
       }
 
       await context.close();

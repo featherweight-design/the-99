@@ -1,0 +1,106 @@
+{
+  "feature": "The card mark \u2014 Game Changer, mass land denial, extra turns",
+  "note": "The surfaces that draw `CardFactMark`, which must draw the SAME one: the decklist row, /collection's row and tile, and the card modal \u2014 plus the two `MarkKey` mounts that gloss it, which are the reason a wordless mark is legal here at all.\n\nPRECONDITION, and it is the one that decides whether this sheet proves anything: the account must OWN a card carrying a fact. Measured 2026-09-20 on both `staging` and `local-dev` \u2014 the reference account owns 8 Game Changers, 1 mass land denial and 8 extra turns out of ~2,805 cards, so a mark IS reachable on both. But 17 marked cards in 2,805 means a sheet taken on an arbitrary page of /collection photographs NO mark and reads as coverage while proving nothing. Every /collection row here searches for a known marked card first rather than trusting the default page \u2014 the same trap `proxy-mark.json` records for `deck_proxies`, arriving by rarity instead of by an empty table.\n\nCARD_MARK_DECK must be a deck that HOLDS a marked card. A deck of 99 cards holding none is the common case, not the exception, so this cannot be any deck.\n\nThe key rows are separate from the mark rows deliberately. `check:shared` reads each row's own `view`, and the key is mounted by two different files \u2014 `decklist.tsx` builds its entries and `collection-mark-key.tsx` builds /collection's. A single row naming one of them would leave the other free to stop glossing while the gate stayed green, which is precisely the failure the deck-status marks shipped with.",
+  "shares": {
+    "module": "src/components/cards/card-fact-mark.tsx",
+    "binding": "CardFactMark",
+    "note": "Every surface renders it as-is \u2014 the tooltip wraps it on the decklist row but does not replace it \u2014 so the check is asked of the file each row already names."
+  },
+  "rows": [
+    {
+      "id": "deck-row",
+      "label": "/decks/[id] \u2014 the mark on a decklist row, after the count",
+      "view": "src/components/decks/decklist-row.tsx",
+      "steps": [
+        {
+          "goto": "/decks/${CARD_MARK_DECK}",
+          "wait": "main, [role=main], h1",
+          "settle": 3500
+        }
+      ]
+    },
+    {
+      "id": "deck-key",
+      "label": "/decks/[id] \u2014 the key that glosses all three, with or without a marked row",
+      "view": "src/components/decks/decklist.tsx",
+      "steps": [
+        {
+          "goto": "/decks/${CARD_MARK_DECK}",
+          "wait": "main, [role=main], h1",
+          "settle": 3500
+        }
+      ]
+    },
+    {
+      "id": "collection-rows",
+      "label": "/collection?view=rows \u2014 the mark after the name, before the availability marker",
+      "view": "src/components/collection/rows-view.tsx",
+      "steps": [
+        {
+          "goto": "/collection?view=rows",
+          "wait": "main, [role=main], h1",
+          "settle": 3000
+        },
+        {
+          "fill": "input[type=search]",
+          "text": "${CARD_MARK_CARD}",
+          "settle": 1500
+        }
+      ]
+    },
+    {
+      "id": "collection-tile",
+      "label": "/collection \u2014 the same mark on a tile's meta line, at the 12px floor",
+      "view": "src/components/collection/grid-view.tsx",
+      "steps": [
+        {
+          "goto": "/collection",
+          "wait": "main, [role=main], h1",
+          "settle": 3000
+        },
+        {
+          "fill": "input[type=search]",
+          "text": "${CARD_MARK_CARD}",
+          "settle": 1500
+        }
+      ]
+    },
+    {
+      "id": "collection-key",
+      "label": "/collection \u2014 the gloss this surface never had",
+      "view": "src/components/collection/collection-mark-key.tsx",
+      "steps": [
+        {
+          "goto": "/collection?view=rows",
+          "wait": "main, [role=main], h1",
+          "settle": 3000
+        }
+      ]
+    },
+    {
+      "id": "modal",
+      "label": "The card modal \u2014 the facts spelled out, between the oracle text and the receipt",
+      "view": "src/components/cards/card-modal.tsx",
+      "steps": [
+        {
+          "goto": "/collection?view=rows",
+          "wait": "main, [role=main], h1",
+          "settle": 3000
+        },
+        {
+          "fill": "input[type=search]",
+          "text": "${CARD_MARK_CARD}",
+          "settle": 1500
+        },
+        {
+          "click": "button",
+          "settle": 1200
+        },
+        {
+          "wait": "[role=dialog]",
+          "settle": 800
+        }
+      ]
+    }
+  ]
+}
