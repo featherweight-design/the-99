@@ -117,8 +117,9 @@ per-combo predicate rather than a second copy of it.
 **PR 3.** `probe:declaration` against a real Postgres, with this repo's fixture discipline — a
 per-run `user_id` deleted in a `finally`, pointed at `local-dev` or a scratch branch, never
 production. Three facts no unit test can reach: a declaration survives a re-import and a
-re-analysis; a skip is never re-asked; and the column's check constraint refuses anything but
-1–5 or null. **The refusal rules matter more than the write**: the app must never default or
+re-analysis; **it is captured into the version at commit and the version's copy never moves
+afterwards**; and the column's check constraint refuses anything but 1–5 or null. **No skip
+case** — there is no skip. **The refusal rules matter more than the write**: the app must never default or
 infer a declaration, and a probe is what proves an action did not quietly write one.
 
 **PRs 4–6.** Both widths in the same PR, per the standing rule. A contact-sheet inventory, and
@@ -160,9 +161,15 @@ written once at launch (PR #770). A plan task at close-out carries the entry and
 
 | | |
 |---|---|
-| median cold build | **625–639ms** across runs |
-| slowest (HD · Gishath, 95 cards) | **1.8–3.0s**, varying with compute warmth |
+| median cold build | **630ms**, over **all 20 decks** |
+| slowest | **1.8–2.2s**, varying with compute warmth |
+| fastest | 559ms |
 | head read alone | ~120ms |
+
+Over every deck rather than a sample, and sized by `sum(quantity)` rather than a row count —
+both corrections from review. Cost depends on combos, staples and the collection as well as
+list length, so a sample ordered by size is the one sample guaranteed not to contain the
+slowest deck.
 
 **So the profile is fetched ON DEMAND, when the tab is pressed** — option 3 above, not option 1.
 Adding half a second to three seconds to every `/decks/<id>` load, for a tab most visits never

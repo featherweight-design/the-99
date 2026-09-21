@@ -51,17 +51,13 @@ that got stronger.
 
 ## §4 Not open
 
-The ask, the declared and skipped READINGS, the lean, the reasoning modal and the climb are all
+The ask, the declared reading, the lean, the reasoning modal and the climb are all
 drawn and settled — R3 is otherwise complete as a set of pictures. Only 1/2 and 4/5 are ever
 ranges. Both widths, as always.
 
-**One caveat on the skip, so nobody reads "settled" too widely:** the skipped *treatment* is
-drawn and needs nothing from Design. What a permanent skip is STORED as is still open — Round 3's
-brief §3.1 and §4.5 leave it so, and the audit confirms there is no state for it: `declared` is a
-nullable integer with a 1–5 check constraint, and null already means "not asked", so it cannot
-also mean "asked and declined". That is an engineering and spec decision (it is the one thing in
-this round that would need a migration), not a redraw — it is named here only so the addendum is
-not read as closing it.
+**The skip is gone.** A declaration may be left unanswered and never dismissed, so the skipped
+treatment and the storage question that came with it are both withdrawn — `declared`'s null means
+*unanswered* and needs to mean nothing else.
 
 ## §5 One thing the audit already fixed, so you do not redraw it
 
