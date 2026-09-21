@@ -1,4 +1,4 @@
-import { fireEvent, render, screen, waitFor } from "@testing-library/react";
+import { act, fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
 import { cardMarkCopy } from "../../lib/copy/card-mark";
@@ -11,6 +11,29 @@ function pointer(fine: boolean) {
     media: q, onchange: null, addListener: vi.fn(), removeListener: vi.fn(),
     addEventListener: vi.fn(), removeEventListener: vi.fn(), dispatchEvent: vi.fn(),
   }));
+}
+
+/**
+ * A matchMedia whose `matches` can be flipped, with the listeners it was given.
+ *
+ * The component reads the pointer through `useSyncExternalStore`, so `subscribe` is a live
+ * code path rather than a formality: a subscribe that never registers its listener passes
+ * every other case here, because the initial snapshot alone decides the first render.
+ */
+function livePointer(initial: boolean) {
+  const listeners = new Set<() => void>();
+  let matches = initial;
+  vi.stubGlobal("matchMedia", (q: string) => ({
+    get matches() { return q.includes("pointer: fine") ? matches : false; },
+    media: q, onchange: null, addListener: vi.fn(), removeListener: vi.fn(),
+    addEventListener: (_: string, fn: () => void) => listeners.add(fn),
+    removeEventListener: (_: string, fn: () => void) => listeners.delete(fn),
+    dispatchEvent: vi.fn(),
+  }));
+  return {
+    set(next: boolean) { matches = next; listeners.forEach((fn) => fn()); },
+    listenerCount: () => listeners.size,
+  };
 }
 
 afterEach(() => vi.unstubAllGlobals());
@@ -62,5 +85,29 @@ describe("FactTooltip", () => {
     expect(container.querySelector("[aria-hidden]")?.textContent).toBe(
       cardMarkCopy.tooltip.extraTurns,
     );
+  });
+
+  it("turns on when a fine pointer arrives, and unsubscribes on unmount", async () => {
+    // The behaviour the store buys over the mount-once read it replaced: docking a laptop to
+    // a mouse now reaches the component. The old effect read once and stayed false forever.
+    const media = livePointer(false);
+    const view = render(<FactTooltip fact="gameChanger"><i data-testid="mark" /></FactTooltip>);
+
+    // Subscribed, not merely rendered — a subscribe that drops its listener passes every
+    // other case in this file, because the first snapshot alone decides the first render.
+    expect(media.listenerCount()).toBe(1);
+
+    await act(async () => { media.set(true); });
+
+    fireEvent.pointerEnter(screen.getByTestId("mark"));
+    await waitFor(
+      () => expect(screen.getByText(cardMarkCopy.tooltip.gameChanger)).toBeTruthy(),
+      { timeout: OPEN_DELAY_MS + 400 },
+    );
+
+    // The teardown React owns. A leaked listener on a module-level media query outlives every
+    // deck row that ever drew a mark.
+    view.unmount();
+    expect(media.listenerCount()).toBe(0);
   });
 });

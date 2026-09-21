@@ -16,23 +16,46 @@
 
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, useSyncExternalStore } from "react";
 
 import { type CardFact, cardMarkCopy } from "../../lib/copy/card-mark";
 
 /** The handoff's figure: long enough not to fire on a pointer crossing the row. */
 export const OPEN_DELAY_MS = 400;
 
+const FINE_POINTER = "(pointer: fine)";
+
+/** Whether the device has a fine pointer right now. `matchMedia` is a browser API and this
+ *  file is imported by a server-rendered tree, so every read is optional-chained. */
+function finePointer(): boolean {
+  return window.matchMedia?.(FINE_POINTER).matches ?? false;
+}
+
+/** No pointer on the server. Hoisted rather than inlined so `useSyncExternalStore` gets a
+ *  stable reference and cannot re-subscribe on every render. */
+function serverFinePointer(): boolean {
+  return false;
+}
+
+function subscribeFinePointer(onChange: () => void): () => void {
+  const query = window.matchMedia?.(FINE_POINTER);
+  if (!query) return () => {};
+  query.addEventListener("change", onChange);
+  return () => query.removeEventListener("change", onChange);
+}
+
 export function FactTooltip({ fact, children }: { fact: CardFact; children: React.ReactNode }) {
   const [open, setOpen] = useState(false);
-  const [fine, setFine] = useState(false);
+  // `useSyncExternalStore` rather than a state-plus-effect, which is what this was: the effect
+  // called `setFine` synchronously on mount, which React 19's `react-hooks/set-state-in-effect`
+  // rejects because it schedules a second render before the first has painted.
+  //
+  // The server snapshot is `false`, which is the behaviour the effect had — the tooltip is a
+  // pointer affordance, so a server render and a touch device both draw the children bare.
+  // Reading it as a store also makes it REACTIVE for free: docking a laptop to a mouse now
+  // turns the tooltip on, where the mount-once read would have stayed false for the session.
+  const fine = useSyncExternalStore(subscribeFinePointer, finePointer, serverFinePointer);
   const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
-
-  useEffect(() => {
-    // Read once on mount rather than at module scope: `matchMedia` is a browser API and
-    // this file is imported by a server-rendered tree.
-    setFine(window.matchMedia?.("(pointer: fine)").matches ?? false);
-  }, []);
 
   useEffect(() => () => { if (timer.current) clearTimeout(timer.current); }, []);
 
