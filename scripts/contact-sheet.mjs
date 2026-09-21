@@ -89,17 +89,29 @@ async function signIn(page) {
  * the first second, and a sheet that photographs skeletons reports success while
  * showing nothing.
  */
+/**
+ * `${VAR}` from the environment, so an inventory can name an id, a deck or a card without
+ * committing one account's data to the repository — where it would 404, or filter a list to
+ * nothing, on anybody else's.
+ *
+ * ONE function for every step that takes a string, rather than one per step. It began on
+ * `goto` alone; `fill` was added when a row typed a literal `${CARD_MARK_CARD}` into a search
+ * box and photographed an empty collection while counting as reached. `clickRole.name` was
+ * still literal one step later, and that row could never click the card it had searched for.
+ * A per-step expander is a list that grows a hole every time a verb is added.
+ */
+function expand(value, where) {
+  return String(value ?? "").replace(/\$\{(\w+)\}/g, (_, name) => {
+    const found = process.env[name];
+    if (!found) throw new Error(`${where} needs ${name} in the environment`);
+    return found;
+  });
+}
+
 async function run(page, steps) {
   for (const step of steps ?? []) {
     if (step.goto !== undefined) {
-      // `${VAR}` in a path comes from the environment, so an inventory can name a
-      // route that needs an id without committing one account's id to the
-      // repository — where it would 404 on anybody else's data.
-      const url = step.goto.replace(/\$\{(\w+)\}/g, (_, name) => {
-        const value = process.env[name];
-        if (!value) throw new Error(`${step.goto} needs ${name} in the environment`);
-        return value;
-      });
+      const url = expand(step.goto, step.goto);
       await page.goto(`${BASE}${url}`, { waitUntil: "domcontentloaded" });
     }
     // EVERY verb reaches page content through `lib/surface.mjs`. The shell
@@ -121,7 +133,7 @@ async function run(page, steps) {
       await onPage(page, step.click).first().click({ timeout: 15_000 });
     }
     if (step.clickRole !== undefined) {
-      await onPageRole(page, step.clickRole, new RegExp(step.name))
+      await onPageRole(page, step.clickRole, new RegExp(expand(step.name, `clickRole ${step.clickRole}`)))
         .first()
         .click({ timeout: 15_000 });
     }
@@ -133,12 +145,7 @@ async function run(page, steps) {
       // search box filters the list to nothing and photographs an empty surface, which
       // counts as a reached cell and reads as coverage. Silent, and indistinguishable from
       // a feature that stopped drawing.
-      const text = (step.text ?? "").replace(/\$\{(\w+)\}/g, (_, name) => {
-        const value = process.env[name];
-        if (!value) throw new Error(`${step.fill} needs ${name} in the environment`);
-        return value;
-      });
-      await onPage(page, step.fill).first().fill(text, { timeout: 15_000 });
+      await onPage(page, step.fill).first().fill(expand(step.text, `fill ${step.fill}`), { timeout: 15_000 });
     }
     // Scoped like the actions above it, and for the same reason: `wait:
     // "[role=dialog]"` is in every inventory, and the shell's account sheet is

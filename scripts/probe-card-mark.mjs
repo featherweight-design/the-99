@@ -66,6 +66,9 @@ const WIDTHS = [
 ];
 
 const FLOOR = 12;
+// Each deck page is a round trip, so the scan is capped — and the cap is REPORTED, because a
+// silent one turns "this account has no marked deck" into a claim about the first eight.
+const DECK_SCAN_LIMIT = 8;
 
 let failures = 0;
 function report(label, ok, detail) {
@@ -162,10 +165,15 @@ async function goTo(page, path) {
 /**
  * The first deck whose page actually DRAWS a mark.
  *
- * Returns the href, or null having tried every deck — which is a real state on an account
- * whose decks happen to hold none, and is reported as a missing fixture rather than as a
- * defect. The distinction matters: "no deck holds a marked card" and "the mark stopped
- * drawing" look identical from a single hardcoded deck, and only one of them is a bug.
+ * Returns the href, or null. Null is a real state on an account whose decks hold none, and
+ * is reported as a MISSING FIXTURE rather than a defect: "no deck holds a marked card" and
+ * "the mark stopped drawing" look identical from one hardcoded deck, and only one is a bug.
+ *
+ * IT STOPS AT `DECK_SCAN_LIMIT`, and says so when it does. Opening a deck page costs a
+ * round trip, so scanning an account with forty of them would dominate the run — but a
+ * silent cap is how "no deck holds one" gets reported about an account whose ninth does.
+ * When the scan is truncated the caller is told, so the difference between "looked
+ * everywhere" and "looked at eight" is never lost.
  */
 async function findMarkedDeck(page) {
   const nav = await goTo(page, "/decks");
@@ -181,14 +189,14 @@ async function findMarkedDeck(page) {
       .map((a) => a.getAttribute("href"))
       .filter((h) => h && !h.includes("/new") && h.split("/").length === 3))];
   }, PAGE);
-  for (const href of hrefs.slice(0, 8)) {
+  for (const href of hrefs.slice(0, DECK_SCAN_LIMIT)) {
     const deckNav = await goTo(page, href);
     if (!deckNav.ok) continue;
     await page.waitForTimeout(1500);
     const drawn = (await marks(page)).filter((m) => !m.inKey);
-    if (drawn.length > 0) return href;
+    if (drawn.length > 0) return { href, truncated: false, seen: 0, total: hrefs.length };
   }
-  return null;
+  return { href: null, truncated: hrefs.length > DECK_SCAN_LIMIT, seen: Math.min(hrefs.length, DECK_SCAN_LIMIT), total: hrefs.length };
 }
 
 async function run() {
@@ -200,10 +208,13 @@ async function run() {
       const page = await context.newPage();
       await signIn(page);
 
-      const deckHref = DECK ? `/decks/${DECK}` : await findMarkedDeck(page);
+      const found = DECK ? { href: `/decks/${DECK}` } : await findMarkedDeck(page);
+      const deckHref = found?.href ?? null;
       if (!deckHref) {
         report(`${label}px · decklist row · a deck that holds a marked card`, false,
-          "no deck on this account draws one — the fixture is missing, not the mark");
+          found?.truncated
+            ? `none among the first ${found.seen} of ${found.total} decks — raise DECK_SCAN_LIMIT or set PROBE_DECK`
+            : `no deck on this account draws one (checked ${found?.seen ?? 0}) — the fixture is missing, not the mark`);
       }
 
       for (const [surface, url, search] of [
