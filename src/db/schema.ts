@@ -890,6 +890,27 @@ export const commanderSupport = pgTable("commander_support", {
   avgBattle: integer("avg_battle"),
   /** `panels.mana_curve` — counts per mana value. Null on the same terms. */
   avgCurve: jsonb("avg_curve").$type<Record<string, number>>(),
+  /**
+   * Expected count of each functional role in a deck for this commander, MEASURED.
+   *
+   * Derived as sum(inclusion) over `commander_support_cards` filtered by the app's own
+   * `classifyRoles` — never a second copy of those patterns — reading the FRONT FACE only, via
+   * `castFaceText`. `oracle_text` holds both faces, so without that split a land-backed MDFC's
+   * `{T}: Add {R}` reads as ramp: the mean ramp target is 8.5 on whole text against 7.8 on the
+   * front face, and the commanders measuring exactly zero wipes rise from 369 to 390.
+   *
+   * NULLABLE, because a row written by an index build older than this derivation carries no
+   * figure and the basis chain must fall through rather than read a fabricated zero.
+   *
+   * UNSCALED, deliberately. EDHREC's list covers 45.2 of the 63.5 non-land cards in an average
+   * deck, a ratio of 0.711 — but scaling by it is NOT earned: measured against 19 human-built
+   * decks, derived beats scaled on three roles of four and removal is the lone exception by
+   * 0.11, which is inside the noise of that sample. Ship the number that was measured.
+   */
+  avgRamp: real("avg_ramp"),
+  avgDraw: real("avg_draw"),
+  avgRemoval: real("avg_removal"),
+  avgWipes: real("avg_wipes"),
   computedAt: timestamp("computed_at").notNull().defaultNow(),
 }, (t) => [
   // The enum options above only narrow the TypeScript type; without these the
@@ -1120,6 +1141,21 @@ export const identityComposition = pgTable("identity_composition", {
   avgPlaneswalker: real("avg_planeswalker").notNull(),
   avgBattle: real("avg_battle").notNull(),
   avgCurve: jsonb("avg_curve").$type<Record<string, number>>(),
+  /**
+   * The same four role targets, for the identity and count rungs of the basis chain.
+   *
+   * A rung that delivered a type composition with no roles beside it would put measured types
+   * next to flat roles on one deck — the exact disagreement §4A.6 of the foundation spec names
+   * as the bug.
+   *
+   * `.default(0)` IS REQUIRED, not cosmetic: `ALTER TABLE ... ADD COLUMN real NOT NULL` with no
+   * default FAILS on a populated table, and this one is populated by the time the migration
+   * runs. Zero is safe because the very next `db:build:staples` overwrites every row.
+   */
+  avgRamp: real("avg_ramp").notNull().default(0),
+  avgDraw: real("avg_draw").notNull().default(0),
+  avgRemoval: real("avg_removal").notNull().default(0),
+  avgWipes: real("avg_wipes").notNull().default(0),
   /** The bucket's size — the sample bar's own witness. */
   commanders: integer("commanders").notNull(),
   /** How many of them actually carried a composition. The denominator behind the averages. */

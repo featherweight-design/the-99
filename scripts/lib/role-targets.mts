@@ -1,0 +1,87 @@
+import { castFaceText } from "../../src/lib/cards/facet";
+import { classifyRoles, type Role } from "../../src/lib/recs/roles";
+
+/**
+ * The four functional role targets, derived per commander.
+ *
+ * `.mts`, not `.ts`: every file in `scripts/lib/` is `.mjs`/`.mts` and `vitest.config.ts`
+ * includes only `scripts/**\/*.test.mts`, so a `.ts` module here would not resolve from its own
+ * test.
+ */
+
+export type RoleDerivationRow = {
+  commanderOracleId: string;
+  oracleId: string;
+  /** EDHREC's own percentage, 0.3 to 100. */
+  inclusion: number;
+  typeLine: string;
+  oracleText: string | null;
+  keywords: string[];
+  /** Scryfall's layout. Decides whether the back face is castable text — see `castFaceText`. */
+  layout: string;
+};
+
+export type RoleTargetRow = { ramp: number; draw: number; removal: number; wipes: number };
+
+const ROLES = ["ramp", "draw", "removal", "wipes"] as const;
+type RoleKey = (typeof ROLES)[number];
+
+/**
+ * The expected number of cards filling each role in a deck for this commander.
+ *
+ * A PROBABILITY SUM, not a count: a card listed at 50% inclusion contributes 0.5 to every role
+ * it satisfies, because that is how many copies of it the average deck holds.
+ *
+ * A card counts toward EVERY role it satisfies. That is what decks contain — an instant that
+ * destroys and draws is one card doing both jobs — and it is why `planFill` counts a placed
+ * card the same way while still spending its slot once. Feeding a double-counted description
+ * into a single-spend floor would make the fill place two cards where the description counted
+ * one.
+ *
+ * THE FRONT FACE ONLY, through `castFaceText`. `cards.oracle_text` holds both faces joined
+ * `"front\n//\nback"`, and `isLandFace` reads the front — so for a land-backed MDFC
+ * `classifyRoles` would otherwise read the land back's `{T}: Add {R}` and call the card RAMP.
+ * 82 commander-legal cards are shaped that way, and the inflation is measurable: mean ramp 8.5
+ * on whole text against 7.8 on the front face.
+ *
+ * @param onClassify Called once per DISTINCT card actually classified. Exists so a test can
+ *   assert the memoisation rather than infer it from two sums that a cacheless version returns
+ *   identically.
+ */
+export function deriveRoleTargets(
+  rows: readonly RoleDerivationRow[],
+  opts: { onClassify?: (oracleId: string) => void } = {},
+): Map<string, RoleTargetRow> {
+  // Classified ONCE per distinct card. `classifyRoles` is pure, so two rows naming the same card
+  // cannot disagree — and the pair-wise form is 892,185 regex passes on staging against ~31,830
+  // distinct commander-legal cards here.
+  const rolesOf = new Map<string, Role[]>();
+  const out = new Map<string, RoleTargetRow>();
+
+  for (const row of rows) {
+    let roles = rolesOf.get(row.oracleId);
+    if (!roles) {
+      roles = classifyRoles({
+        typeLine: row.typeLine,
+        oracleText: castFaceText(row.oracleText, row.layout),
+        keywords: row.keywords,
+      });
+      rolesOf.set(row.oracleId, roles);
+      opts.onClassify?.(row.oracleId);
+    }
+
+    let target = out.get(row.commanderOracleId);
+    if (!target) {
+      // Zero rather than absent. 390 commanders measure a genuine 0 for wipes, and a figure
+      // that cannot tell "none" from "not derived" is one nobody can read.
+      target = { ramp: 0, draw: 0, removal: 0, wipes: 0 };
+      out.set(row.commanderOracleId, target);
+    }
+
+    if (!Number.isFinite(row.inclusion) || row.inclusion <= 0) continue;
+    const p = row.inclusion / 100;
+    for (const role of ROLES) if (roles.includes(role)) target[role as RoleKey] += p;
+  }
+
+  return out;
+}

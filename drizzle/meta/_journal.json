@@ -316,6 +316,13 @@
       "when": 1789887846204,
       "tag": "0044_black_the_leader",
       "breakpoints": true
+    },
+    {
+      "idx": 45,
+      "version": "7",
+      "when": 1789961109168,
+      "tag": "0045_material_diamondback",
+      "breakpoints": true
     }
   ]
 }
