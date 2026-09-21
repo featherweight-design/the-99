@@ -90,18 +90,31 @@ function sd(xs: number[]): number {
  */
 async function deriveTargets(): Promise<Map<string, RoleTargetRow>> {
   const rows = await q<{
-    commander_oracle_id: string; oracle_id: string; inclusion: number;
+    commander_oracle_id: string; oracle_id: string; inclusion: number | null;
     type_line: string; oracle_text: string | null; keywords: string[] | null; layout: string;
   }>(`
     select csc.commander_oracle_id, csc.oracle_id, csc.inclusion,
            c.type_line, c.oracle_text, c.keywords, c.layout
-    from commander_support_cards csc join cards c on c.oracle_id = csc.oracle_id`);
+    from commander_support_cards csc
+    join cards c on c.oracle_id = csc.oracle_id
+    -- THE SAME POPULATION THE WRITER USES, header join and all. This script's whole claim is
+    -- that it reports what the index build would publish, and the writer filters to ok headers
+    -- — the index loop leaves a degraded header's previous cards in place, so without this the
+    -- script counts commanders the writer will never write and its cross-check is false. The
+    -- same failure measure-gap-line.mts already carries a note about: a script that restates
+    -- a rule instead of calling it drifts from it one release at a time. (No backticks in
+    -- here: this comment is INSIDE a template literal and one would close it.)
+    join commander_support cs on cs.commander_oracle_id = csc.commander_oracle_id
+    where cs.synergy_state = 'ok'`);
 
   let distinct = 0;
   const targets = deriveRoleTargets(
     rows.map((r) => ({
       commanderOracleId: r.commander_oracle_id,
       oracleId: r.oracle_id,
+      // Passed through NULL rather than coerced, as the writer does: a stored 0 is a
+      // measurement of "never included" and a null is the index having stored nothing, and
+      // only the second drops the commander from the derivation.
       inclusion: r.inclusion,
       typeLine: r.type_line,
       oracleText: r.oracle_text,

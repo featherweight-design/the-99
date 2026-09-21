@@ -419,7 +419,16 @@ main()
             and edhrec_total = ${PAIR_SENTINEL_TOTAL}`);
       }],
       ["the inserted commanders", async () => {
+        // SCOPED TO THE FIXTURE SHAPE, exactly as the startup sweep is. That sweep already
+        // concedes a stamped id can become a real commander; nothing makes the window between
+        // this run's insert and its `finally` special, and an unconditional delete here would
+        // take the real header and its support cards with it.
         for (const id of fakeCommanders) {
+          const [mine] = await rows<{ id: string }>(sql`
+            select commander_oracle_id as id from ${commanderSupport}
+            where commander_oracle_id = ${id}::uuid and prose = ${STAMP}
+              and deck_count is null and rank is null and tags = '[]'::jsonb`);
+          if (!mine) continue;
           await db.execute(sql`
             delete from commander_support_cards where commander_oracle_id = ${id}::uuid`);
           await db.execute(sql`
