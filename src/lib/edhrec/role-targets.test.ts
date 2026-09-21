@@ -136,3 +136,31 @@ describe("roleTargetsPublishable", () => {
     expect(roleTargetsPublishable(0, 0)).toBe(true);
   });
 });
+
+describe("a commander with no inclusion data anywhere", () => {
+  const card = (oracleId: string, inclusion: number | null) => ({
+    commanderOracleId: "cmd", oracleId, inclusion,
+    typeLine: "Artifact", oracleText: "{T}: Add {C}{C}.",
+    keywords: [] as string[], layout: "normal",
+  });
+
+  // `toSupportRows` deliberately persists a card with no inclusion, so this is reachable from
+  // real data. Coercing it to 0 made the commander indistinguishable from one measuring a
+  // genuine zero: it published four zeroes AND counted toward the 90% coverage floor, so a
+  // derivation that reached nothing could still claim to have reached everything.
+  it("is dropped rather than published as four zeroes", () => {
+    expect(deriveRoleTargets([card("a", null), card("b", null)]).has("cmd")).toBe(false);
+  });
+
+  // The counterpart, and the reason the entry is created before the inclusion check: 390
+  // commanders measure a genuine 0 for wipes, and a figure that cannot tell "none" from "not
+  // derived" is one nobody can read.
+  it("but one usable row is enough to report a measured zero", () => {
+    const t = deriveRoleTargets([
+      card("a", null),
+      { ...card("b", 50), oracleText: "Draw a card.", typeLine: "Instant" },
+    ]);
+    expect(t.get("cmd")?.wipes).toBe(0);
+    expect(t.get("cmd")?.draw).toBeGreaterThan(0);
+  });
+});

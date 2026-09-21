@@ -11,8 +11,14 @@ import { classifyRoles, type Role } from "../recs/roles";
 export type RoleDerivationRow = {
   commanderOracleId: string;
   oracleId: string;
-  /** EDHREC's own percentage, 0.3 to 100. */
-  inclusion: number;
+  /** EDHREC's own percentage, 0.3 to 100 — or NULL where the index stored none.
+   *
+   *  Nullable rather than coerced to 0, because the two are not the same fact and the
+   *  difference decides whether a commander is published at all. `toSupportRows` deliberately
+   *  persists a card with no inclusion, and a commander whose whole list is like that has no
+   *  measurement to report — coercing to 0 made it indistinguishable from one measuring a
+   *  genuine zero, which then published four zeroes AND counted toward the coverage floor. */
+  inclusion: number | null;
   typeLine: string;
   oracleText: string | null;
   keywords: string[];
@@ -75,6 +81,11 @@ export function deriveRoleTargets(
   const rolesOf = classifyCards(rows, opts.onClassify);
   const out = new Map<string, RoleTargetRow>();
 
+  // A commander that contributed at least one row whose inclusion the index actually STORED.
+  // The entry below is created before the inclusion check on purpose — a genuine zero has to be
+  // reportable — so this is what separates "measured 0" from "nothing to measure".
+  const measured = new Set<string>();
+
   for (const row of rows) {
     const roles = rolesOf.get(row.oracleId) ?? [];
 
@@ -86,10 +97,21 @@ export function deriveRoleTargets(
       out.set(row.commanderOracleId, target);
     }
 
-    if (!Number.isFinite(row.inclusion) || row.inclusion <= 0) continue;
+    // A STORED NUMBER IS DATA, even a zero — only `null` is absence. EDHREC reporting 0% is a
+    // measurement of "never included" and the commander's zeroes are then honest; a null is the
+    // index having stored nothing, and four zeroes derived from nothing are not a measurement.
+    // NaN sides with absence: it is corruption, not a reading.
+    if (row.inclusion !== null && Number.isFinite(row.inclusion)) {
+      measured.add(row.commanderOracleId);
+    }
+    if (row.inclusion === null || !Number.isFinite(row.inclusion) || row.inclusion <= 0) continue;
     const p = row.inclusion / 100;
     for (const role of ROLES) if (roles.includes(role)) target[role as RoleKey] += p;
   }
+
+  // Dropped rather than published as zeroes. An absent commander is cleared by the publish and
+  // counts AGAINST the coverage floor, which is the honest reading: nothing was derived for it.
+  for (const id of out.keys()) if (!measured.has(id)) out.delete(id);
 
   return out;
 }

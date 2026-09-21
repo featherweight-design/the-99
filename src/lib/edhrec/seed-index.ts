@@ -502,6 +502,30 @@ export async function buildCommanderIndex(
 }
 
 /**
+ * Clear the role columns on exactly the rows THIS RUN rewrote, on both tables, in one
+ * transaction.
+ *
+ * Shared by both refusals because it is one rule, not two. `computed_at` is stamped per row by
+ * the writes above, so `>= runStartedAt` is precisely the set whose card list this run replaced
+ * — the rows whose averages now describe a list that is no longer beside them. Every other row
+ * still matches its own list and keeps its figures, which is why a refusal does not blank the
+ * table. One transaction for both, since a reader takes the pair rung before the commander rung
+ * and must not find one cleared and the other not.
+ */
+async function clearRolesWrittenSince(runStartedAt: Date) {
+  const NO_ROLES = { avgRamp: null, avgDraw: null, avgRemoval: null, avgWipes: null };
+  return db.transaction(async (tx) => {
+    const c = await tx.update(commanderSupport).set(NO_ROLES)
+      .where(sql`${commanderSupport.computedAt} >= ${runStartedAt}`)
+      .returning({ id: commanderSupport.commanderOracleId });
+    const p = await tx.update(commanderPairSupport).set(NO_ROLES)
+      .where(sql`${commanderPairSupport.computedAt} >= ${runStartedAt}`)
+      .returning({ id: commanderPairSupport.commanderOracleId });
+    return { commanders: c.length, pairs: p.length };
+  });
+}
+
+/**
  * The four role targets, derived from the support lists this run just wrote.
  *
  * A FINAL PASS rather than per-commander work, because the derivation reads
@@ -545,7 +569,7 @@ export async function deriveAndWriteRoleTargets(
     rows.map((r) => ({
       commanderOracleId: r.commanderOracleId,
       oracleId: r.oracleId,
-      inclusion: r.inclusion ?? 0,
+      inclusion: r.inclusion,
       typeLine: r.typeLine ?? "",
       oracleText: r.oracleText,
       keywords: r.keywords ?? [],
@@ -559,18 +583,7 @@ export async function deriveAndWriteRoleTargets(
     .where(sql`${commanderSupport.synergyState} = 'ok'`);
 
   if (!roleTargetsPublishable(targets.size, ok)) {
-    const NO_ROLES = { avgRamp: null, avgDraw: null, avgRemoval: null, avgWipes: null };
-    // ONE transaction for both tables: a reader takes the pair rung before the commander rung,
-    // and must not find one cleared and the other not.
-    const cleared = await db.transaction(async (tx) => {
-      const c = await tx.update(commanderSupport).set(NO_ROLES)
-        .where(sql`${commanderSupport.computedAt} >= ${runStartedAt}`)
-        .returning({ id: commanderSupport.commanderOracleId });
-      const p = await tx.update(commanderPairSupport).set(NO_ROLES)
-        .where(sql`${commanderPairSupport.computedAt} >= ${runStartedAt}`)
-        .returning({ id: commanderPairSupport.commanderOracleId });
-      return { commanders: c.length, pairs: p.length };
-    });
+    const cleared = await clearRolesWrittenSince(runStartedAt);
     throw new Error(
       `role targets REFUSED: derived ${targets.size} of ${ok} ok commanders ` +
       `(floor ${Math.ceil(ok * ROLE_TARGET_FLOOR)}). Cleared the roles on ` +
@@ -605,13 +618,38 @@ export async function deriveAndWriteRoleTargets(
     pairRows.map((r) => ({
       commanderOracleId: `${r.commanderOracleId}|${r.partnerOracleId}`,
       oracleId: r.oracleId,
-      inclusion: r.inclusion ?? 0,
+      inclusion: r.inclusion,
       typeLine: r.typeLine ?? "",
       oracleText: r.oracleText,
       keywords: r.keywords ?? [],
       layout: r.layout ?? "normal",
     })),
   );
+
+  // THE PAIR POPULATION GETS THE SAME REFUSAL, and needs its own because the commander check
+  // above cannot see it: the transaction below clears every pair role column and then fills
+  // only the pairs this derivation reached, so a join that lost half the pair support cards
+  // would publish exactly the partial set this pass claims to refuse — silently, since
+  // `pairsWritten` would report whatever it did write as a success.
+  //
+  // The zero-row case is a LEGITIMATE state rather than a failure, and is why this is not
+  // simply the same call: a database with no indexed pairs at all has nothing to derive and
+  // nothing to lose, and refusing there would fail every run until the first pair is indexed
+  // — the same reasoning `db:build:staples` applies to an empty composition.
+  const [{ okPairs }] = await db
+    .select({ okPairs: sql<number>`count(*)::int` })
+    .from(commanderPairSupport)
+    .where(sql`${commanderPairSupport.synergyState} = 'ok'`);
+  if (okPairs > 0 && !roleTargetsPublishable(pairTargets.size, okPairs)) {
+    const cleared = await clearRolesWrittenSince(runStartedAt);
+    throw new Error(
+      `role targets REFUSED: derived ${pairTargets.size} of ${okPairs} ok PAIRS ` +
+      `(floor ${Math.ceil(okPairs * ROLE_TARGET_FLOOR)}). Cleared the roles on ` +
+      `${cleared.commanders} commander(s) and ${cleared.pairs} pair(s) this run rewrote. ` +
+      `The commander half had already passed its own floor, so publishing would have left ` +
+      `the pair rung partial while every commander read whole.`,
+    );
+  }
 
   // ONE TRANSACTION FOR THE WHOLE PUBLISH, clear then fill — the shape `job=printings` was
   // corrected to in #704, and for the same reason.

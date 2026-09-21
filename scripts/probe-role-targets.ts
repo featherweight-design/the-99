@@ -63,6 +63,9 @@ const rows = async <T>(q: Parameters<typeof db.execute>[0]) =>
 /** Written into `prose` on every commander row this script inserts. The check constraint ties
  *  `prose`, `prose_input_hash` and `prose_prompt_version` together, so all three are set. */
 const STAMP = "probe:role-targets fixture — safe to delete";
+/** The pair sentinel's marker. `commander_pair_support` has no prose column, so its own shape
+ *  is the only thing that identifies it — paired with a stamped id, never used alone. */
+const PAIR_SENTINEL_TOTAL = 200;
 
 type RoleRow = {
   id: string;
@@ -88,18 +91,39 @@ async function main() {
   // the stamped id is the only thing that identifies it. Section 3 builds its pair around one
   // of these ids for exactly this reason: it makes the sweep a key lookup rather than a guess
   // at what a fixture row looks like, and a guess is what deletes somebody's real row.
+  // THE STAMP ALONE IS NOT ENOUGH, and the reason is that the id under it is a REAL CARD's.
+  // A killed run leaves the marker behind; nothing in the index upsert clears `prose`, so if a
+  // later catalog or index run makes that card a genuine commander the stamp is still sitting
+  // on a row that is now somebody's data. The sweep therefore also requires the row to still
+  // LOOK like what this script inserts — the sentinel total, no deck count, and no support
+  // cards — so a row that has become real is left alone and simply loses its marker's meaning
+  // rather than its contents. Stamp for intent, shape for currency; neither on its own.
   const stale = await rows<{ id: string }>(sql`
-    select commander_oracle_id as id from commander_support where prose = ${STAMP}`);
+    select cs.commander_oracle_id as id from commander_support cs
+    where cs.prose = ${STAMP} and cs.edhrec_total = 1 and cs.deck_count is null
+      and not exists (select 1 from commander_support_cards x
+                       where x.commander_oracle_id = cs.commander_oracle_id)`);
   if (stale.length) {
     for (const { id } of stale) {
+      // Scoped to the sentinel's own shape as well as the stamped id. A real pair row could
+      // legitimately name this card once it becomes a commander, and deleting by id alone
+      // would take it and its cards with it.
       await db.execute(sql`
-        delete from commander_pair_support_cards
-        where commander_oracle_id = ${id}::uuid or partner_oracle_id = ${id}::uuid`);
+        delete from commander_pair_support_cards c
+        where (c.commander_oracle_id = ${id}::uuid or c.partner_oracle_id = ${id}::uuid)
+          and exists (select 1 from commander_pair_support p
+                       where p.commander_oracle_id = c.commander_oracle_id
+                         and p.partner_oracle_id = c.partner_oracle_id
+                         and p.edhrec_total = ${PAIR_SENTINEL_TOTAL})`);
       await db.execute(sql`
         delete from commander_pair_support
-        where commander_oracle_id = ${id}::uuid or partner_oracle_id = ${id}::uuid`);
+        where (commander_oracle_id = ${id}::uuid or partner_oracle_id = ${id}::uuid)
+          and edhrec_total = ${PAIR_SENTINEL_TOTAL}`);
     }
-    await db.execute(sql`delete from commander_support where prose = ${STAMP}`);
+    for (const { id } of stale) {
+      await db.execute(sql`
+        delete from commander_support where commander_oracle_id = ${id}::uuid`);
+    }
     note(`swept ${stale.length} commander row(s) and their pairs, left by a killed run`);
   }
 
@@ -193,11 +217,23 @@ async function main() {
     // The check constraint orders the key, so the sentinel has to as well.
     const [a, b] = [lead, anchor].sort();
     pairSentinel = { a, b };
-    await db.execute(sql`
+    // REGISTERED ONLY IF THIS RUN INSERTED IT. `on conflict do nothing` is silent about which
+    // happened, and the cleanup below deletes the pair and every one of its cards — so on a
+    // database that already held this pair, an unconditional registration would delete real
+    // rows and then report a clean cleanup.
+    const inserted = await rows<{ id: string }>(sql`
       insert into commander_pair_support
         (commander_oracle_id, partner_oracle_id, synergy_state, edhrec_total, bracket_counts)
-      values (${a}::uuid, ${b}::uuid, 'ok', 200, '{}'::jsonb)
-      on conflict do nothing`);
+      values (${a}::uuid, ${b}::uuid, 'ok', ${PAIR_SENTINEL_TOTAL}, '{}'::jsonb)
+      on conflict do nothing
+      returning commander_oracle_id as id`);
+    if (inserted.length === 0) {
+      // The handle is dropped rather than kept: the row belongs to somebody else, and the
+      // cleanup's whole job is to remove only what this run created.
+      pairSentinel = null;
+      fail("3 · the fixture",
+        "the chosen pair key already exists — this probe will not write to, or delete, a pair it did not create");
+    } else {
     // Its own card list, taken from a real commander's so the derivation has something to
     // classify. A pair with no cards would land in section 2's branch instead.
     let position = 0;
@@ -226,6 +262,7 @@ async function main() {
       // key is what tells those apart.
       check("the pair's own row carries the value", pair?.avg_ramp !== null, true);
       check("and it landed on the ordered key, not a transposed one", [pair?.id, pair?.partner], [a, b]);
+      }
     }
   }
 
@@ -303,12 +340,21 @@ main()
       ["the pair sentinel", async () => {
         if (!pairSentinel) return;
         const { a, b } = pairSentinel;
+        // SCOPED TO THE SENTINEL'S SHAPE as well as its key. The handle is populated before
+        // the insert, as every handle here is, so a throw part-way through is still covered —
+        // but that means it can name a key this run did not end up creating, and this delete
+        // takes a pair and every one of its cards.
         await db.execute(sql`
-          delete from ${commanderPairSupportCards}
-          where commander_oracle_id = ${a}::uuid and partner_oracle_id = ${b}::uuid`);
+          delete from ${commanderPairSupportCards} c
+          where c.commander_oracle_id = ${a}::uuid and c.partner_oracle_id = ${b}::uuid
+            and exists (select 1 from ${commanderPairSupport} p
+                         where p.commander_oracle_id = ${a}::uuid
+                           and p.partner_oracle_id = ${b}::uuid
+                           and p.edhrec_total = ${PAIR_SENTINEL_TOTAL})`);
         await db.execute(sql`
           delete from ${commanderPairSupport}
-          where commander_oracle_id = ${a}::uuid and partner_oracle_id = ${b}::uuid`);
+          where commander_oracle_id = ${a}::uuid and partner_oracle_id = ${b}::uuid
+            and edhrec_total = ${PAIR_SENTINEL_TOTAL}`);
       }],
       ["the inserted commanders", async () => {
         for (const id of fakeCommanders) {
