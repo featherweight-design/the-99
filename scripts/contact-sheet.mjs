@@ -89,17 +89,34 @@ async function signIn(page) {
  * the first second, and a sheet that photographs skeletons reports success while
  * showing nothing.
  */
+/**
+ * `${VAR}` from the environment, so an inventory can name an id, a deck or a card without
+ * committing one account's data to the repository — where it would 404, or filter a list to
+ * nothing, on anybody else's.
+ *
+ * ONE function for every step that takes a string, rather than one per step. It began on
+ * `goto` alone; `fill` was added when a row typed a literal `${CARD_MARK_CARD}` into a search
+ * box and photographed an empty collection while counting as reached. `clickRole.name` was
+ * still literal one step later, and that row could never click the card it had searched for.
+ * A per-step expander is a list that grows a hole every time a verb is added.
+ */
+function expand(value, where, { forRegex = false } = {}) {
+  return String(value ?? "").replace(/\$\{(\w+)\}/g, (_, name) => {
+    const found = process.env[name];
+    if (!found) throw new Error(`${where} needs ${name} in the environment`);
+    // `clickRole.name` is a REGEX in this runner, so a substituted value is pattern source
+    // rather than text. Card names carry metacharacters — `+2 Mace` starts with `+`, which
+    // is not a valid pattern at all and throws; `Question Elemental?` makes the preceding
+    // character optional and matches the wrong button. The value is escaped and the
+    // author's own pattern around it is left alone, so `^${CARD}$` still anchors.
+    return forRegex ? found.replace(/[.*+?^${}()|[\]\\]/g, "\\$&") : found;
+  });
+}
+
 async function run(page, steps) {
   for (const step of steps ?? []) {
     if (step.goto !== undefined) {
-      // `${VAR}` in a path comes from the environment, so an inventory can name a
-      // route that needs an id without committing one account's id to the
-      // repository — where it would 404 on anybody else's data.
-      const url = step.goto.replace(/\$\{(\w+)\}/g, (_, name) => {
-        const value = process.env[name];
-        if (!value) throw new Error(`${step.goto} needs ${name} in the environment`);
-        return value;
-      });
+      const url = expand(step.goto, step.goto);
       await page.goto(`${BASE}${url}`, { waitUntil: "domcontentloaded" });
     }
     // EVERY verb reaches page content through `lib/surface.mjs`. The shell
@@ -121,14 +138,19 @@ async function run(page, steps) {
       await onPage(page, step.click).first().click({ timeout: 15_000 });
     }
     if (step.clickRole !== undefined) {
-      await onPageRole(page, step.clickRole, new RegExp(step.name))
+      await onPageRole(page, step.clickRole, new RegExp(expand(step.name, `clickRole ${step.clickRole}`, { forRegex: true })))
         .first()
         .click({ timeout: 15_000 });
     }
     // A field a surface only reaches its interesting state through typing — the
     // set panel narrows its list as you type, and an empty field shows every set.
     if (step.fill !== undefined) {
-      await onPage(page, step.fill).first().fill(step.text ?? "", { timeout: 15_000 });
+      // `${VAR}` expands here for the same reason it does in `goto`, and NOT expanding it
+      // was worse than a missing feature: a row typing a literal `${CARD_MARK_CARD}` into a
+      // search box filters the list to nothing and photographs an empty surface, which
+      // counts as a reached cell and reads as coverage. Silent, and indistinguishable from
+      // a feature that stopped drawing.
+      await onPage(page, step.fill).first().fill(expand(step.text, `fill ${step.fill}`), { timeout: 15_000 });
     }
     // Scoped like the actions above it, and for the same reason: `wait:
     // "[role=dialog]"` is in every inventory, and the shell's account sheet is
