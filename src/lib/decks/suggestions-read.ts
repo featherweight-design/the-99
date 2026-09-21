@@ -19,7 +19,7 @@ import { readPairSupport, resolvePairEdhrecData } from "../edhrec/pair-read";
 import { type PoolCard } from "../recs/score";
 import { deckBodySize } from "./deck-size";
 import { cardTypeGroup, primaryRole, requireDeck } from "./read";
-import { recommendedMix } from "./mix";
+import { recommendedMix, type RecommendedMix } from "./mix";
 import { loadSkeletonForCommanders } from "../profile/load";
 import { buildSuggestionPayload, suggestDeck, type DeckSuggestion } from "./suggest";
 
@@ -132,6 +132,10 @@ export type DeckSuggestionsPayload = {
   suggestions: DeckSuggestion[];
   degraded: boolean;
   shoppingFigures: Record<string, number> | null;
+  /** What this deck is compared to. Carried on the payload rather than resolved again by the
+      deck page, which loads this anyway: the shelf headers here and the strip there are the
+      same five cells about the same deck, and a second read is a second chance to disagree. */
+  mix: RecommendedMix;
 };
 
 /** `shoppingFigures` is null when EDHREC is unreachable, and a map otherwise. An
@@ -141,7 +145,9 @@ export type DeckSuggestionsPayload = {
 export async function loadDeckSuggestions(deckId: string, userId: string): Promise<DeckSuggestionsPayload> {
   const deck = await requireDeck(deckId, userId);
   const [commander] = await db.select().from(cards).where(eq(cards.oracleId, deck.commanderOracleId));
-  if (!commander) return { suggestions: [], degraded: false, shoppingFigures: {} };
+  if (!commander) {
+    return { suggestions: [], degraded: false, shoppingFigures: {}, mix: recommendedMix(null, false) };
+  }
 
   // The partner is a second commander for every purpose below: the pool it
   // legalises and the advice it contributes.
@@ -305,5 +311,5 @@ export async function loadDeckSuggestions(deckId: string, userId: string): Promi
     }
   }
 
-  return { suggestions, degraded, shoppingFigures: degraded ? null : shoppingFigures };
+  return { suggestions, degraded, shoppingFigures: degraded ? null : shoppingFigures, mix };
 }

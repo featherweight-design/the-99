@@ -114,6 +114,21 @@ describe("computeRoleCounts", () => {
 });
 
 describe("roleCellState", () => {
+  // A MEASURED TARGET OF ZERO. 390 commanders measure no wipes at all, and 0/0 is NaN —
+  // which reached the cell as `width: NaN%`, a declaration the browser drops, leaving the
+  // fill at auto width: a full bar drawn by accident. Nothing covered a zero target, because
+  // until the targets were measured none could be zero.
+  it("reports 100 for a zero target rather than NaN", () => {
+    const zero = roleCellState({ have: 0, target: 0 });
+    expect(Number.isNaN(zero.pct)).toBe(false);
+    expect(zero.pct).toBe(100);
+    expect(zero.figureColor).toBe("var(--success)");
+  });
+
+  it("does not overflow when a zero target is exceeded", () => {
+    expect(roleCellState({ have: 3, target: 0 }).pct).toBe(100);
+  });
+
   // Design table E4/E5: the figure is the loudest thing in a short cell, not
   // the quietest. It read as body text until #184.
   it("below-rec is an accent figure over an accent-mid bar", () => {

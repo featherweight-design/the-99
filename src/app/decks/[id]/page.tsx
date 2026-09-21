@@ -1,7 +1,5 @@
 // /decks/[id] — Builder page.
 // §Builder Spine, §Role Counter Strip, §Guided Banner, §Degraded Suggestions Banner.
-import { recommendedMix } from "../../../lib/decks/mix";
-import { cachedDeckProfile } from "../../../lib/profile/load";
 import { notFound } from "next/navigation";
 import { requireUserId } from "../../../lib/auth";
 import { getDeckDetail, listDecksWithStats } from "../../../lib/decks/read";
@@ -46,7 +44,10 @@ import { isUuid } from "../../../lib/uuid";
 //
 // The leading element of each key is a version, bumped when a deployment changes
 // what the payload says for unchanged rows — see the note on `cacheForUser`.
-const SUGGESTIONS_KEY = ["deck-suggestions", "1"];
+// Bumped to "2" when `mix` joined the payload: an entry cached under "1" holds no mix, and
+// a reader destructuring one would hand the strip `undefined` and throw on its first cell.
+// A payload's key travels with its SHAPE, not only with its inputs.
+const SUGGESTIONS_KEY = ["deck-suggestions", "2"];
 // "2" since the pair branch: `readSynergyCards` now answers from `commander_pair_support_cards`
 // for a two-commander deck, so the payload says something different for UNCHANGED rows. The
 // cache helper's own rule — a deployment that changes what a payload says for unchanged rows is
@@ -89,7 +90,7 @@ export default async function DeckBuilderPage({
   ];
 
   const [
-    { suggestions, degraded, shoppingFigures },
+    { suggestions, degraded, shoppingFigures, mix },
     allDecks,
     ranked,
     games,
@@ -247,19 +248,14 @@ export default async function DeckBuilderPage({
 
   // Read once per request rather than at each use, so the tab, the strip's home and the
   // arrival view cannot disagree about which layout this deployment is drawing.
-
-
   const analysisEnabled = analysisTabEnabled();
-  // WHAT THIS DECK IS COMPARED TO, resolved once per request and handed down. Through
-  // `cachedDeckProfile` rather than a second uncached read: the profile is keyed on the deck's
-  // own fingerprint, so a page that already warmed it pays nothing here, and a route that did
-  // not pays for one profile rather than for a second chain assembled beside it.
-  //
-  // The mix falls back to the asserted baseline when the profile is unavailable, and says so
-  // through `measured` — a strip drawing figures is better than a strip drawing nothing, as
-  // long as it does not claim they came from EDHREC.
-  const profile = await cachedDeckProfile(id, userId);
-  const mix = recommendedMix(profile?.skeleton ?? null, Boolean(detail.partner));
+  // WHAT THIS DECK IS COMPARED TO, taken off the suggestions payload rather than resolved
+  // again here. `loadDeckSuggestions` already ran in the first wave above and already built
+  // this exact mix for its own shelf headers, so reading it back costs nothing and makes the
+  // strip and the Add panel agree BY CONSTRUCTION rather than by two readers happening to
+  // reach the same basis. A `loadDeckProfile` here would have assembled bracket flags, the
+  // Spellbook aggregation, tutor classification and the staples join to produce five integers
+  // the page was already holding.
 
   return (
     <BuilderShell

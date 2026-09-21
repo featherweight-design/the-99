@@ -3,8 +3,7 @@
 import { notFound, redirect } from "next/navigation";
 import { requireUserId } from "../../../../lib/auth";
 import { getDeckReviewHeader } from "../../../../lib/decks/read";
-import { recommendedMix } from "../../../../lib/decks/mix";
-import { cachedDeckProfile } from "../../../../lib/profile/load";
+import { loadDeckMix } from "../../../../lib/decks/deck-mix";
 import { deckBodySize } from "../../../../lib/decks/deck-size";
 import {
   changeCount, loadDraftRows, loadDraftShape, loadVersionShape,
@@ -111,11 +110,12 @@ export default async function ChangesPage({
       .catch(() => []),
   ]);
 
-  // The same mix the deck page draws, from the same cached profile — the what-changed strip and
-  // the deck's own strip are the same five cells about the same deck, and two reads would be
-  // two chances to disagree about what it is measured against.
-  const profile = await cachedDeckProfile(id, userId);
-  const mix = recommendedMix(profile?.skeleton ?? null, detail.hasPartner);
+  // The same mix the deck page draws, through the one reader that defines it — the
+  // what-changed strip and the deck's own strip are the same five cells about the same deck,
+  // and two independently written reads would be two chances to disagree about what it is
+  // measured against. This route holds only a deck id, so it asks by id; the deck page has
+  // the suggestions payload and takes it from there. `loadDeckMix` never throws.
+  const mix = await loadDeckMix(id, userId);
 
   return (
     <ReviewChanges

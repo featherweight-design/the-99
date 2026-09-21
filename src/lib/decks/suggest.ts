@@ -3,7 +3,7 @@ import type { DeckDetailCard } from "./grouping";
 import type { PriceFact } from "./price";
 import { classifyRoles } from "../recs/roles";
 import type { MixRole, RecommendedMix } from "./mix";
-import { deckBodySize, landTarget } from "./deck-size";
+import { deckBodySize } from "./deck-size";
 import type { PoolCard } from "../recs/score";
 
 export type ReasonType = "edhrec" | "role";

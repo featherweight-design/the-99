@@ -10,7 +10,6 @@ import { render, screen } from "@testing-library/react";
 import { describe, expect, it } from "vitest";
 import { deckVersioningCopy } from "../../lib/copy/deck-versioning";
 import type { ShapeCard } from "../../lib/decks/draft-state";
-import {  } from "../../lib/decks/mix";
 import { ChangedStrip } from "./changed-strip";
 
 const TEST_MIX = {

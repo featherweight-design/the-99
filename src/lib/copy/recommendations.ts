@@ -8,7 +8,8 @@
 //   detail.tsx:312-316  `{n} short of baseline` / `At the {n}-source baseline`
 //                       / `Well past the {n}-source baseline`
 //   detail.tsx:330      `No {role} cards in your pool`
-//   mix.ts:82           RECOMMENDED_MIX_SOURCE_LINE
+//   mix.ts               mixSourceLine() — derived per deck now, so it states what it
+//                        is measured against rather than asserting EDHREC
 //   card-detail-provider.tsx  cardDetailCopy.triggerAria
 //   buy-tag / addPanelCopy.unowned.tag  `buy`
 

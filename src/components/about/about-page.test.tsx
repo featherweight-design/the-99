@@ -27,7 +27,7 @@ import { mixSourceLine, recommendedMix, ROLE_ORDER } from "../../lib/decks/mix";
 const SPECIMEN_MIX = recommendedMix(null, false);
 import { setPageCopy } from "../../lib/copy/set-collections";
 import { PIP_ORDER } from "../../lib/copy/filter-chassis";
-import {  DECK_VERSIONS,
+import { DECK_VERSIONS,
   SHOPPING_ROWS,
   CARDS,
   CONTESTED_ARRIVAL,

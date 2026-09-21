@@ -5,7 +5,7 @@
 // answers the whole strip at once, which is how a player reads it anyway.
 //
 // Four lines for five roles: Removal and Wipes share line 3, as drawn. The
-// bodies are quoted copy; the bold headings are composed from RECOMMENDED_MIX
+// bodies are quoted copy; the bold headings are composed from the deck's own `mix`
 // so the panel can never quote a target the cell above it disagrees with.
 "use client";
 

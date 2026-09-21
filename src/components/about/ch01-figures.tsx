@@ -14,7 +14,7 @@
 // surface wins. A reference page that draws its own version of a row teaches
 // a row the reader will never meet.
 
-import type { RecommendedMix } from "../../lib/decks/mix";
+import { recommendedMix, type RecommendedMix } from "../../lib/decks/mix";
 import {
   IMPORT_SOURCES,
   ISSUE_PARSE_ERROR,
@@ -692,16 +692,12 @@ export function DecklistMarksFigureBody() {
  * for that handler alone — a function cannot cross the server boundary, and
  * the one that tried it is why this module exists.
  */
-const SPECIMEN_MIX: RecommendedMix = {
-  cells: {
-    ramp: { label: "Ramp", target: 10, advisory: false },
-    draw: { label: "Draw", target: 10, advisory: false },
-    removal: { label: "Removal", target: 8, advisory: false },
-    wipes: { label: "Wipes", target: 3, advisory: false },
-    land: { label: "Land", target: 37, advisory: true },
-  },
-  measured: false,
-};
+// The baseline mix, CALLED rather than copied. A literal here agrees only with itself: the
+// About test asserts the labels and the source line against its own `recommendedMix(null,
+// false)` and never the targets, so a transcribed 10/10/8/3/37 would keep drawing those
+// numbers on the day `FLAT_TARGETS` moves, with nothing failing. Client-safe — `mix.ts`
+// imports `deck-size` and a type, and no database.
+const SPECIMEN_MIX: RecommendedMix = recommendedMix(null, false);
 
 export function RolesFigureBody() {
   return (

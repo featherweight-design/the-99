@@ -101,9 +101,9 @@ export const addPanelCopy = {
     rationaleClose: "Hide",
     // The disclosure's four lines, verbatim from the canvas (CV:466-469).
     // Four lines for five roles: Removal and Wipes share line 3 as drawn, so
-    // this is four authored groupings rather than a map over RECOMMENDED_MIX.
+    // this is four authored groupings rather than a map over the mix.
     // Each body opens with the em dash that joins it to its bold heading; the
-    // heading itself is composed from RECOMMENDED_MIX so the panel can never
+    // heading itself is composed from the deck's own mix so the panel can never
     // quote a target the cell above it disagrees with. These are the one
     // surface in the addendum that ships em dashes — the rationale copy is
     // quoted, not rewritten, and must not be "fixed".

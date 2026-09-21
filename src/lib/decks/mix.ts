@@ -8,7 +8,7 @@ import { landTarget } from "./deck-size";
 
 export type MixRole = "ramp" | "draw" | "removal" | "wipes" | "land";
 
-// The order every strip draws the five roles in. It lives beside RECOMMENDED_MIX
+// The order every strip draws the five roles in. It lives beside `recommendedMix`
 // because two surfaces now draw the same five cells — the deck page's mix strip
 // and the review page's what-changed strip — and a second copy of this array is
 // how the two come to disagree about which cell is third.
@@ -151,7 +151,14 @@ export function roleCellState(args: {
   have: number;
   target: number;
 }): { figureColor: string; barColor: string; pct: number } {
-  const pct = Math.min(100, Math.round((args.have / args.target) * 100));
+  // A MEASURED TARGET CAN BE ZERO, and 0/0 is NaN — which reaches the cell as
+  // `width: NaN%`, an invalid declaration the browser drops, leaving the fill at
+  // auto width: a full bar arrived at by accident rather than by arithmetic. Not
+  // an edge case either; 390 commanders measure zero wipes. A zero target is met
+  // by definition, so it is 100 deliberately, which is also what the `have >=
+  // target` branch below already concludes about the colours.
+  const pct =
+    args.target <= 0 ? 100 : Math.min(100, Math.round((args.have / args.target) * 100));
   if (args.have >= args.target)
     return { figureColor: "var(--success)", barColor: "var(--success)", pct };
   // Design table E4/E5: a short cell's figure is accent and its bar accent-mid.

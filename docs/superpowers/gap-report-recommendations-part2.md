@@ -47,11 +47,11 @@ against the spine where an equivalent exists.
 | Caption layout phone flex / space-between / `mb 8px` | ✅ MATCH — `flex items-baseline justify-between … mb-[8px]` (`:66`) |
 | Caption copy desktop mono 11px, ls `.12em`, uppercase, `#C6B79A` | ✅ MATCH (`:71`) |
 | Caption copy phone mono 9px, ls `.1em`, `#8E8269` | ✅ MATCH (`:71`) |
-| Gloss desktop `EDHREC averages · a guide, not a gate` mono 10.5px `#8E8269` | ✅ MATCH — `RECOMMENDED_MIX_SOURCE_LINE` (`mix.ts:82`, rendered `:85-90`) |
+| Gloss desktop `EDHREC averages · a guide, not a gate` mono 10.5px `#8E8269` | ✅ MATCH — `mixSourceLine()` (`mix.ts`, rendered `:85-90`). Since #788 the gloss is derived per deck: `EDHREC averages · a guide, not a gate` only where the commander's targets are measured, and `A common starting point` otherwise |
 | Gloss phone `a guide, not a gate` mono 9px `#6E6353` | ✅ MATCH (`:77-82`) |
 | Cell gap desktop 8px / phone 4px | ✅ MATCH — `gap-[4px] md:gap-[8px]` (`:94`) |
 | Strip decision "untouched" | ✅ MATCH — no layout change was made by this pass; the `StripRationale` disclosure and worked-example callout (`:115-151`) predate it (#184) |
-| Copy-module rule | ❌ MISMATCH — `"Recommended mix"` (`:73`), `"a guide, not a gate"` (`:81`) and `aria-label="Recommended mix"` (`:58`) are hardcoded literals, not copy-module keys. (`RECOMMENDED_MIX_SOURCE_LINE` is explicitly exempted by `recommendations.ts:11`.) |
+| Copy-module rule | ❌ MISMATCH — `"Recommended mix"` (`:73`), `"a guide, not a gate"` (`:81`) and `aria-label="Recommended mix"` (`:58`) are hardcoded literals, not copy-module keys. (`mixSourceLine()` is explicitly exempted by `recommendations.ts:11`.) |
 
 ## 14. Role counter cell — met (state 8)
 
@@ -78,7 +78,7 @@ All rows verified in `src/components/decks/role-counter-cell.tsx`.
 | `rec {n}` phone mono 8px `#6A6152` mt 4px | ⚠️ PARTIAL — size and colour match (`text-[8px] text-fg-locked`, `:130`); the design's phone `margin-top:4px` is absent (the `rec` span carries no margin; the 3px sits on the caption below it, `:145`) |
 | Caption met `—` mono 10px `#4A4033` | ✅ MATCH — `md:text-border-dashed` = `#4A4033` (`globals.css:21`), `:145` |
 | Caption met phone `—` mono 9px `#3A3229` mt 3px | ✅ MATCH — `text-border-strong` = `#3A3229`, `mt-[3px]` (`:145`) |
-| Drawn cells (Ramp 10 · Draw 10 · Removal 8 · Wipes 3 · Land ~37) | ✅ MATCH — `RECOMMENDED_MIX` (`mix.ts:52-77`), order `ramp, draw, removal, wipes, land` (`role-counter-strip.tsx:39`) |
+| Drawn cells (Ramp 10 · Draw 10 · Removal 8 · Wipes 3 · Land ~37) | ✅ MATCH — the baseline cells of `recommendedMix()` (`mix.ts`), order `ramp, draw, removal, wipes, land` (`role-counter-strip.tsx:39`). A commander with measured targets draws its own figures in the same five cells |
 
 ## 15. Role counter cell — short (state 13 / A4)
 
