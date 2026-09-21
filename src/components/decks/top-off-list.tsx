@@ -298,6 +298,23 @@ export function TopOffList({
   useEffect(() => {
     seedableIdsRef.current = seedableIds;
   });
+
+  // A GENERATION FOR THE DRAFT ITSELF, because intersecting against a live allow-list is not
+  // enough. `onTickedChange` REPLACES the selection, so an answer that arrives after the
+  // player has ticked a row by hand, cleared the lot, or pressed Cancel would write the old
+  // server answer over the newer state — reviving a selection they had just cancelled. Every
+  // one of those controls stays live while the request is out, by design: they consult
+  // `inflight`, which is the COMMIT's.
+  //
+  // Bumped on unmount too. Cancel unmounts this list, and a continuation that runs afterwards
+  // is setting state on a component nobody is looking at.
+  const draftGen = useRef(0);
+  useEffect(() => {
+    draftGen.current += 1;
+  }, [ticked, declined]);
+  useEffect(() => () => {
+    draftGen.current += 1;
+  }, []);
   const untouched = pool.length - tickedCount - declinedHere;
   // The control's own in-flight state. Separate from `inflight`, which is the COMMIT's: a
   // player pressing this twice while the server thinks would otherwise send two plans.
@@ -562,8 +579,14 @@ export function TopOffList({
               // text-based role. So the action runs `planFill` on the server and returns ids.
               setChoosing(true);
               setError(null);
+              // The draft as it stands at the moment of the press. Anything that moves it —
+              // or takes the list away — makes this answer describe a deck that no longer
+              // exists, and the right thing to do with it is nothing.
+              const askedAt = draftGen.current;
+              const stale = () => draftGen.current !== askedAt;
               try {
                 const result = await chooseBulkFill(deckId, tickable);
+                if (stale()) return;
                 // Intersected with what this list can actually tick. The action reads the
                 // deck's own pool and the list carries exclusions of its own — a set-aside row,
                 // or one that went illegal while the list was open — and those must not come
@@ -592,12 +615,17 @@ export function TopOffList({
                   result.oracleIds.filter((id: string) => allowed.has(id)),
                 ));
               } catch {
+                if (stale()) return;
                 // A rejected call — a deck deleted while the list was open, or a transport
                 // failure — is a refusal the player can read, not an unhandled rejection that
                 // clears the spinner and says nothing. `commit()` above has the same catch.
                 setError(synergyCopy.lastSlots.topUpFailed);
                 onAnnounce(synergyCopy.lastSlots.topUpFailed);
               } finally {
+                // Cleared even when the answer was dropped: the spinner belongs to the press,
+                // not to the answer, and a stale result still ends the press. Safe after an
+                // unmount — React no-ops a set on an unmounted component and warns about
+                // nothing since 18.
                 setChoosing(false);
               }
             }}

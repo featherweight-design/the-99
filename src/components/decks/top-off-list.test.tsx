@@ -679,6 +679,30 @@ describe("TopOffList — the bulk tick", () => {
     expect(rowBox("free-1")).not.toBeChecked();
   });
 
+  // A NEWER SELECTION WINS. `onTickedChange` REPLACES the selection wholesale, so an answer
+  // arriving after the player has ticked a row by hand would write the server's older view
+  // over their newer one. Every editing control stays live during the request by design —
+  // they consult `inflight`, which is the commit's — so this is reachable by pressing the
+  // bulk control and then ticking anything.
+  it("drops the answer when the player has edited the draft since asking", async () => {
+    let release: (v: unknown) => void = () => {};
+    actions.chooseBulk.mockReturnValue(new Promise((r) => { release = r; }));
+    render(<Harness candidates={[candidate("free-1", true), candidate("free-2", true)]} />);
+
+    fireEvent.click(screen.getByRole("button", { name: /Tick all/ }));
+    // A hand tick, after the request is out and before it answers.
+    fireEvent.click(rowBox("free-2"));
+    expect(rowBox("free-2")).toBeChecked();
+
+    await act(async () => {
+      release({ ok: true, oracleIds: ["free-1"] });
+    });
+
+    // The server's answer named free-1 only. Applying it would have replaced the hand tick.
+    expect(rowBox("free-2")).toBeChecked();
+    expect(rowBox("free-1")).not.toBeChecked();
+  });
+
   it("does not bring back a row the player set aside", async () => {
     // A bulk control that resurrected a decline would undo a choice with a press
     // meant to save presses. The action does not know about this list's declines — it reads
