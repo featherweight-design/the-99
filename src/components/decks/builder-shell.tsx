@@ -36,8 +36,6 @@ import { builderTabSpecs } from "../../lib/decks/builder-tab-specs";
 import { initialBuilderView } from "../../lib/decks/builder-view";
 import { ConsiderPanel, rolesWithShelves } from "./consider-panel";
 import { GamesPanel } from "./games-panel";
-import { gameLogCopy } from "../../lib/copy/game-log";
-import { deckVersioningCopy } from "../../lib/copy/deck-versioning";
 // Types only: `games.ts` reaches for the database, and a value import from a
 // "use client" module would drag drizzle into the browser bundle.
 import type { DeckGame, GameSummary } from "../../lib/decks/games";
