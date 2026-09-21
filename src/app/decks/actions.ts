@@ -36,6 +36,8 @@ import {
   type DeckContextForValidation,
 } from "../../lib/decks/add-validation";
 import { deckAddRejectionMessage, type DeckMutationResult } from "../../lib/decks/mutation-result";
+import type { ProfileSkeleton } from "../../lib/profile/types";
+import { loadSkeletonForCommanders } from "../../lib/profile/load";
 import { dedupeSelectionFromPool, planFill, type FillPlan } from "../../lib/decks/fill";
 import { sanitizeSelection } from "../../lib/decks/selection-param";
 import { recordFillPass, summariseFillPasses, type FillPassKind } from "../../lib/decks/fill-passes";
@@ -92,6 +94,26 @@ export async function buildFillPlan(
   // separate dedupe below is what settles it — for that card and for a selected
   // card the player does not own, which only ever reaches the plan through the
   // staples list. Filtering the pool alone would let either be placed twice.
+  // THE SAME SKELETON THE DECK WILL BE MEASURED AGAINST. Built from the profile loader's own
+  // reads rather than a second chain written for the fill: a deck filled to one set of targets
+  // and then graded against another would disagree with itself from the moment it was created.
+  // DEGRADES to the asserted baseline rather than failing the create. This function already
+  // promises that an unreachable upstream leaves the fill going ahead on the collection alone,
+  // and the same reasoning holds here: a deck built to `ROLE_TARGETS` is the state the app
+  // shipped for a year, while a create that throws leaves the player with an empty deck and no
+  // way to tell why. `planFill` reports `measured: false` for it, so nothing downstream
+  // presents an asserted floor as a derived one.
+  let skeleton: ProfileSkeleton | null = null;
+  try {
+    ({ skeleton } = await loadSkeletonForCommanders(
+      commanders[0].oracleId,
+      commanders[1]?.oracleId ?? null,
+      [...new Set(commanders.flatMap((c) => c.colorIdentity))],
+    ));
+  } catch (err) {
+    console.warn("buildFillPlan: no skeleton — filling to the asserted baseline", err);
+  }
+
   const ownedIds = new Set(pool.map((c) => c.oracleId));
   const staples = dedupeSelectionFromPool(
     data?.topCards
@@ -118,7 +140,7 @@ export async function buildFillPlan(
       layout: c.layout, owned: false, ownedQuantity: 0,
       inclusionPct: inclusionOf(c.name),
     })),
-  ], hasPartner);
+  ], { hasPartner, skeleton });
 }
 
 /** `selectedOracleIds` are the synergy picks the player carried across the

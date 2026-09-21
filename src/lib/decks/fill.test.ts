@@ -1,4 +1,7 @@
 import { describe, expect, it } from "vitest";
+
+/** The asserted baseline, which is what every case here was written against. */
+const FLAT = { hasPartner: false, skeleton: null } as const;
 import { dedupeSelectionFromPool, planFill, type FillCandidate } from "./fill";
 
 const c = (over: Partial<FillCandidate> & { oracleId: string }): FillCandidate => ({
@@ -21,24 +24,27 @@ const nonBasicLand = (id: string) =>
 
 describe("planFill", () => {
   it("stops a role at its target", () => {
-    const plan = planFill(Array.from({ length: 14 }, (_, i) => ramp(`r${i}`, 100 - i)));
+    const plan = planFill(Array.from({ length: 14 }, (_, i) => ramp(`r${i}`, 100 - i)), FLAT);
     expect(plan.rows.filter((r) => r.role === "ramp")).toHaveLength(10);
   });
 
   it("takes the highest inclusion first and absent figures last", () => {
-    const plan = planFill([ramp("low", 10), ramp("none", null), ramp("high", 90)]);
+    const plan = planFill([ramp("low", 10), ramp("none", null), ramp("high", 90)], FLAT);
     expect(plan.rows.map((r) => r.oracleId)).toEqual(["high", "low", "none"]);
   });
 
   it("prefers an owned card to an unowned one whatever the figures say", () => {
-    const plan = planFill([ramp("bought", 99, false), ramp("mine", 3)]);
+    const plan = planFill([ramp("bought", 99, false), ramp("mine", 3)], FLAT);
     expect(plan.rows.map((r) => r.oracleId)).toEqual(["mine", "bought"]);
     expect(plan.bought).toBe(1);
   });
 
+  // The ROLE pass reaches past the collection only where a floor is short. The residual is a
+  // different promise and may buy: a player whose collection cannot finish the deck is owed
+  // the best cards for those slots and told what they cost, rather than handed a short deck.
   it("reaches past the collection only where the role is short", () => {
     const owned = Array.from({ length: 10 }, (_, i) => ramp(`r${i}`, 50));
-    const plan = planFill([...owned, ramp("bought", 99, false)]);
+    const plan = planFill([...owned, ramp("bought", 99, false)], { ...FLAT, slots: 10 });
     expect(plan.rows.some((r) => r.oracleId === "bought")).toBe(false);
     expect(plan.bought).toBe(0);
   });
@@ -48,29 +54,29 @@ describe("planFill", () => {
       oracleId: "dual", name: "dual", typeLine: "Instant",
       oracleText: "Draw a card. Destroy target creature.",
     });
-    const plan = planFill([dual]);
+    const plan = planFill([dual], FLAT);
     expect(plan.rows).toEqual([{ oracleId: "dual", quantity: 1, role: "draw" }]);
   });
 
   it("stacks basics up to the copies owned", () => {
-    const plan = planFill([basic("forest", 12)]);
+    const plan = planFill([basic("forest", 12)], FLAT);
     expect(plan.rows).toEqual([{ oracleId: "forest", quantity: 12, role: "land" }]);
     expect(plan.filled).toBe(12);
   });
 
   it("never stacks past the land target", () => {
-    const plan = planFill([basic("forest", 60)]);
+    const plan = planFill([basic("forest", 60)], FLAT);
     expect(plan.rows[0].quantity).toBe(37);
     expect(plan.filled).toBe(37);
   });
 
   it("gives a non-basic land a single copy however many are owned", () => {
-    const plan = planFill([c({ ...nonBasicLand("command-tower"), ownedQuantity: 4 })]);
+    const plan = planFill([c({ ...nonBasicLand("command-tower"), ownedQuantity: 4 })], FLAT);
     expect(plan.rows[0].quantity).toBe(1);
   });
 
   it("never buys a land", () => {
-    const plan = planFill([c({ ...nonBasicLand("horizon"), owned: false, ownedQuantity: 0 })]);
+    const plan = planFill([c({ ...nonBasicLand("horizon"), owned: false, ownedQuantity: 0 })], FLAT);
     expect(plan.rows).toHaveLength(0);
     expect(plan.bought).toBe(0);
   });
@@ -85,7 +91,7 @@ describe("planFill", () => {
         oracleText: "Destroy all permanents. {T}: Add {C}.",
         owned: false, ownedQuantity: 0,
       }),
-    ]);
+    ], FLAT);
     expect(plan.rows).toHaveLength(0);
     expect(plan.bought).toBe(0);
   });
@@ -96,13 +102,13 @@ describe("planFill", () => {
         oracleId: "mikokoro", name: "mikokoro", typeLine: "Land",
         oracleText: "{T}: Add {C}. {2}, {T}: Draw a card.",
       }),
-    ]);
+    ], FLAT);
     expect(plan.rows).toEqual([{ oracleId: "mikokoro", quantity: 1, role: "land" }]);
   });
 
   it("gives utility lands the first land slots rather than one stacked basic", () => {
     const utility = Array.from({ length: 20 }, (_, i) => nonBasicLand(`u${i}`));
-    const plan = planFill([...utility, basic("forest", 60)]);
+    const plan = planFill([...utility, basic("forest", 60)], FLAT);
     const lands = plan.rows.filter((r) => r.role === "land");
     expect(lands.filter((r) => r.oracleId.startsWith("u"))).toHaveLength(12);
     expect(lands.find((r) => r.oracleId === "forest")!.quantity).toBe(25);
@@ -115,7 +121,7 @@ describe("planFill", () => {
       c({ oracleId: "b0", manaCost: "{B}" }),
       basic("forest", 40, "Forest"),
       basic("swamp", 40, "Swamp"),
-    ]);
+    ], FLAT);
     const quantityOf = (id: string) => plan.rows.find((r) => r.oracleId === id)!.quantity;
     expect(quantityOf("forest")).toBe(32);
     expect(quantityOf("swamp")).toBe(5);
@@ -127,7 +133,7 @@ describe("planFill", () => {
       c({ oracleId: "b0", manaCost: "{B}" }),
       basic("forest", 3, "Forest"),
       basic("swamp", 60, "Swamp"),
-    ]);
+    ], FLAT);
     const quantityOf = (id: string) => plan.rows.find((r) => r.oracleId === id)!.quantity;
     expect(quantityOf("forest")).toBe(3);
     expect(quantityOf("swamp")).toBe(34);
@@ -135,7 +141,7 @@ describe("planFill", () => {
 
   it("reaches past the utility-land cap when the basics run short", () => {
     const utility = Array.from({ length: 40 }, (_, i) => nonBasicLand(`u${i}`));
-    const plan = planFill([...utility, basic("forest", 5)]);
+    const plan = planFill([...utility, basic("forest", 5)], FLAT);
     const lands = plan.rows.filter((r) => r.role === "land");
     expect(lands.find((r) => r.oracleId === "forest")!.quantity).toBe(5);
     expect(lands.reduce((n, r) => n + r.quantity, 0)).toBe(37);
@@ -147,7 +153,7 @@ describe("planFill", () => {
       c({ oracleId: "hybrid", manaCost: "{G/B}" }),
       basic("forest", 40, "Forest"),
       basic("swamp", 40, "Swamp"),
-    ]);
+    ], FLAT);
     const quantityOf = (id: string) => plan.rows.find((r) => r.oracleId === id)!.quantity;
     expect(quantityOf("forest")).toBe(18);
     expect(quantityOf("swamp")).toBe(19);
@@ -159,15 +165,23 @@ describe("planFill", () => {
       c({ oracleId: "g0", manaCost: "{G}" }),
       basic("wastes", 40, "Wastes"),
       basic("forest", 40, "Forest"),
-    ]);
+    ], FLAT);
     const quantityOf = (id: string) => plan.rows.find((r) => r.oracleId === id)!.quantity;
     expect(quantityOf("wastes")).toBe(25);
     expect(quantityOf("forest")).toBe(12);
   });
 
   it("names every role it came up short on, in role order", () => {
-    const plan = planFill([ramp("r0", 5), basic("forest", 37)]);
-    expect(plan.shortfalls).toEqual(["ramp", "draw", "removal", "wipes"]);
+    const plan = planFill([ramp("r0", 5), basic("forest", 37)], FLAT);
+    // Objects rather than bare names: a shortfall can be a ROLE or a TYPE, and a reader told
+    // only "short on ramp" cannot see a deck eight creatures under the decks it is measured
+    // against. With no composition there are no type targets to be short of.
+    expect(plan.shortfalls).toEqual([
+      { kind: "role", role: "ramp" },
+      { kind: "role", role: "draw" },
+      { kind: "role", role: "removal" },
+      { kind: "role", role: "wipes" },
+    ]);
   });
 
   it("reports no shortfall and 68 cards on a complete fill", () => {
@@ -181,13 +195,13 @@ describe("planFill", () => {
         c({ oracleId: `wipe${i}`, name: `wipe${i}`, typeLine: "Sorcery", oracleText: "Destroy all creatures." })),
       basic("forest", 37),
     ];
-    const plan = planFill(full);
+    const plan = planFill(full, FLAT);
     expect(plan.filled).toBe(68);
     expect(plan.shortfalls).toEqual([]);
   });
 
   it("never spends one card twice", () => {
-    const plan = planFill([ramp("r", 50), ramp("r", 50)]);
+    const plan = planFill([ramp("r", 50), ramp("r", 50)], FLAT);
     expect(plan.rows).toHaveLength(1);
   });
 
@@ -195,7 +209,7 @@ describe("planFill", () => {
     const plan = planFill([
       nonBasicLand("tower"), nonBasicLand("tower"),
       basic("forest", 4), basic("forest", 4),
-    ]);
+    ], FLAT);
     expect(plan.rows.filter((r) => r.oracleId === "tower")).toHaveLength(1);
     expect(plan.rows.filter((r) => r.oracleId === "forest")).toHaveLength(1);
     expect(plan.rows.find((r) => r.oracleId === "forest")!.quantity).toBe(4);
