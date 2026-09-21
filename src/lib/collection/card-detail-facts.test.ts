@@ -1,5 +1,6 @@
 import { readFileSync } from "node:fs";
-import { join } from "node:path";
+import { dirname, join } from "node:path";
+import { fileURLToPath } from "node:url";
 import { describe, expect, it } from "vitest";
 
 import { NO_BRACKET_FLAGS, type CardBracketFlags } from "../bracket/flags-read";
@@ -58,7 +59,11 @@ describe("withBracketFacts", () => {
     //
     // A call count rather than a return count: returns nest inside this loader's own
     // IIFEs, so counting them measures the file's shape instead of the rule.
-    const src = readFileSync(join(__dirname, "card-detail.ts"), "utf8");
+    // import.meta.url, not __dirname: Vitest runs tests as ESM, and this repo says so
+    // in globals.test.ts and icon.test.ts. (The shim happens to define __dirname here, so
+    // the convention is what this follows rather than a failure it avoids.)
+    const here = dirname(fileURLToPath(import.meta.url));
+    const src = readFileSync(join(here, "card-detail.ts"), "utf8");
     const body = src.slice(src.indexOf("export const loadCardDetail"));
     expect(body.match(/withBracketFacts\(/g) ?? []).toHaveLength(2);
   });
