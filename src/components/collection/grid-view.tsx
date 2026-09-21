@@ -21,7 +21,7 @@ import { CardFactMark } from "../cards/card-fact-mark";
 import { FactTooltip } from "../cards/fact-tooltip";
 import { CollectionMarkKey } from "./collection-mark-key";
 import { cardFactName, cardMarkCopy } from "../../lib/copy/card-mark";
-import { CardTileCaption } from "../ui/card-tile-caption";
+import { CardTileCaption, TILE_ART_CLIP } from "../ui/card-tile-caption";
 import { GhostButton } from "../ui/button";
 
 export function GridView({
@@ -82,7 +82,11 @@ export function GridView({
             /* The bottom wash is gone with the marks it was holding off the art
                (call D). The 1px inner edge stays: it is not a scrim for a mark,
                it keeps a pale card frame from bleeding into the tile plate. */
-            className="relative shadow-[inset_0_0_0_1px_rgba(0,0,0,0.25)]"
+            /* `TILE_ART_CLIP`: the shell rounds this box's top corners because they are
+               the tile's; the bottom two sit against the caption and were square, so a
+               card whose Scryfall JPEG carries a white corner matte drew a pale notch
+               above the caption. Same defect and same fix as the deck's Card view. */
+            className={`relative shadow-[inset_0_0_0_1px_rgba(0,0,0,0.25)] ${TILE_ART_CLIP}`}
             style={{
               aspectRatio: "63/88",
               background: c.imageUri ? undefined : identityGradient(c.colorIdentity),

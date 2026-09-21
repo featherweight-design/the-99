@@ -13,6 +13,24 @@ order the covering note gives them:
 copy-export shape, same READINESS format). `design_handoff_the99_card_rows/` is the **content**
 sibling: its four calls are carried forward here, two of them amended.
 
+## Errata — the hover preview follows the POINTER, not the row
+
+§5 below describes the preview as *"anchored to the row's vertical centre, 14px outboard,
+opens left of the row, bounded by the decklist pane"*. None of that is what ships, and the
+prose is kept verbatim as the record of what R2 ruled. What to read instead:
+
+| Says | Now | Why |
+|---|---|---|
+| Anchored to the row, opening left | **Beside the POINTER, right by default, flipping left at the window's edge** | A top-off row spans the whole list, so "beside the row" could only resolve to past its far edge — flush right, over TYPE, COST, the availability, SYNERGY and DECKS, which are the figures a reader hovers a row to compare |
+| Bounded by the decklist pane | **Bounded by the WINDOW** | A `fixed` box is; the pane stopped bounding it when the box started following the pointer |
+| Anchored to the row's vertical CENTRE | **Below the pointer where the box fits under it, above where it does not** | The vertical twin of the edge flip. Centred, half the box covered the rows just read and half the rows about to be, and near either end of the window the clamp slid it somewhere neither — so the box's relation to the pointer changed with how far down the list the pointer was. Ruled by Hugh on 2026-09-21 against the built surface |
+| 14px outboard, flipping at `252 + 14px` | **18px** (`GUTTER`), flipping at `252 + 18 + 8px` against the window | The offset is off the POINTER now rather than off the row, and 8px (`MARGIN`) of window edge is kept clear on every side. The same 18px is what the y≈522 figure below is derived from |
+
+At a 900px window a 352px box fits below a cursor down to y≈522 — `900 − 352 − 8 − 18` — so
+the lower two fifths of the screen flip above; "always below" is not available to a box this
+tall. The rest of §5 ships as written: 252×352, radius 12, `--border-strong`, the shadow,
+240/80ms, 0ms row-to-row, no fade, `aria-hidden`, `@media (hover: hover)`.
+
 File: `The 99 - Card Surfaces.dc.html` (canvas — pan/zoom). Read
 `DENSITY-four-hundred-pixels.md` for the measured budget and the answered buy-tag call,
 `STATES-card-surfaces.md` for the matrix as a table, `card-surfaces · copy strings.ts` for the new
