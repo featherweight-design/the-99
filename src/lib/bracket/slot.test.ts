@@ -249,7 +249,30 @@ describe("the lean", () => {
         tutorId === "demonic" && (piece.oracleId === "p1" || piece.oracleId === "p2"),
     });
     expect(v.lean).toMatchObject({ likely: 4, reason: "reachable" });
-    expect(v.lean!.receipts[0].tutors.map((t) => t.oracleId)).toEqual(["demonic"]);
+    // Per PIECE, which is the question the modal asks of each half: both halves are covered,
+    // and both name the tutor that covers them.
+    const pieces = v.lean!.receipts[0].pieces;
+    expect(pieces.map((p) => p.piece.oracleId)).toEqual(["p1", "p2"]);
+    for (const p of pieces) expect(p.tutors.map((t) => t.oracleId)).toEqual(["demonic"]);
+    // And the combo the verdict rests on is named, rather than left to array order.
+    expect(v.lean!.decidedBy?.variantId).toBe("v1");
+  });
+
+  it("names the DECIDING combo when the deck holds one it cannot assemble too", () => {
+    // Two combos, one reachable. The modal draws exactly one, so a consumer picking by array
+    // order would draw the half-covered one and explain a verdict it did not cause.
+    const v = verdict({
+      cards: [card("p1"), card("p2"), card("q1"), card("q2"), card("demonic")],
+      tutorIds: new Set(["demonic"]),
+      twoCardCombos: [
+        combo("unreachable", ["Infinite mana"], ["q1", "q2"]),
+        combo("reachable", ["Infinite mana"], ["p1", "p2"]),
+      ],
+      tutorReaches: (tutorId, piece) =>
+        tutorId === "demonic" && (piece.oracleId === "p1" || piece.oracleId === "p2"),
+    });
+    expect(v.lean).toMatchObject({ likely: 4, reason: "reachable" });
+    expect(v.lean!.decidedBy?.variantId).toBe("reachable");
   });
 
   it("leans 3 when the combo is assembled by drawing alone", () => {
@@ -258,7 +281,12 @@ describe("the lean", () => {
       twoCardCombos: [combo("v1", ["Infinite mana"])],
     });
     expect(v.lean).toMatchObject({ likely: 3, reason: "drawOnly" });
-    expect(v.lean!.receipts[0].tutors).toEqual([]);
+    // EVERY piece still gets a row, with no tutors — a half nothing finds is precisely what
+    // this reading is about, and dropping it would draw a combo that looks wholly covered.
+    expect(v.lean!.receipts[0].pieces.map((p) => p.piece.oracleId)).toEqual(["p1", "p2"]);
+    for (const p of v.lean!.receipts[0].pieces) expect(p.tutors).toEqual([]);
+    // Nothing was assembled, so no combo decided anything.
+    expect(v.lean!.decidedBy).toBeNull();
   });
 });
 
