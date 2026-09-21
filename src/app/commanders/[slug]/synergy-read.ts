@@ -1,6 +1,12 @@
-import { eq, inArray, max, sql } from "drizzle-orm";
+import { and, eq, inArray, max, sql } from "drizzle-orm";
 import { db } from "../../../db";
-import { cards, collectionItems, commanderSupportCards } from "../../../db/schema";
+import {
+  cards,
+  collectionItems,
+  commanderPairSupportCards,
+  commanderSupportCards,
+} from "../../../db/schema";
+import { canonicalPair } from "../../../lib/edhrec/pair";
 import { cardFacet } from "../../../lib/cards/facet";
 import { readCommittedDecks } from "../../../lib/decks/committed";
 import {
@@ -25,6 +31,19 @@ import {
  *  The exclusion is applied here rather than in the client because the facet
  *  counts are computed from this list: excluding on the client would count one
  *  list and render another. */
+/** The player's collection, summed per card once, as a joinable subquery. */
+function buildOwnedTotals(userId: string) {
+  return db
+    .select({
+      oracleId: collectionItems.oracleId,
+      qty: sql<number>`sum(${collectionItems.quantity})::int`.as("qty"),
+    })
+    .from(collectionItems)
+    .where(eq(collectionItems.userId, userId))
+    .groupBy(collectionItems.oracleId)
+    .as("owned_totals");
+}
+
 export async function readSynergyCards(
   userId: string,
   commanderOracleIds: string[],
@@ -50,15 +69,30 @@ export async function readSynergyCards(
   // against two support rows for the same card would fan out and count the
   // copies owned twice. One row per card cannot. `::int` because the driver
   // hands back `sum()` as a string.
-  const ownedTotals = db
-    .select({
-      oracleId: collectionItems.oracleId,
-      qty: sql<number>`sum(${collectionItems.quantity})::int`.as("qty"),
-    })
-    .from(collectionItems)
-    .where(eq(collectionItems.userId, userId))
-    .groupBy(collectionItems.oracleId)
-    .as("owned_totals");
+  const ownedTotals = buildOwnedTotals(userId);
+
+  // THE PAIR'S OWN LIST, where one is stored. `commander_pair_support_cards` holds what
+  // people actually play with the two commanders TOGETHER; the merged-singles query below is
+  // an approximation of that — the better of what each wants alone — and the two rank the
+  // same card differently often enough to matter.
+  //
+  // Closing this divergence is the whole of PR 2. `suggestions-read` already preferred the
+  // pair table, so until now the deck suggestions panel and this panel could disagree about
+  // one card for one pair, and the commander detail panel, Role Coverage and the deck
+  // top-off list all read THIS one.
+  //
+  // CANONICAL ON THE READ, not only the write — the same rule `loadPairRow` records. `decks`
+  // stores the pair in a meaningful order, primary commander first, while the table stores it
+  // canonically, so passing the caller's order straight through misses every row whose
+  // primary carries the larger id, silently and forever.
+  const pairRows = commanderOracleIds.length === 2
+    ? await readPairSupport(commanderOracleIds[0], commanderOracleIds[1], withImages, ownedTotals)
+    : null;
+
+  // Length rather than truthiness: an EMPTY pair list is a pair EDHREC has a header for and
+  // no cards under, which is not a reason to draw nothing — the merged singles are still the
+  // better answer than an empty panel.
+  if (pairRows && pairRows.length > 0) return shapeRows(pairRows, userId, coveredOracleIds);
 
   const rows = await db
     .select({
@@ -75,15 +109,11 @@ export async function readSynergyCards(
       // the better of the two, exactly as `mergeEdhrecData` merges the live
       // lists. Over one id the grouped max is the row itself.
       //
-      // KNOWN DIVERGENCE, deliberately not closed here. `commander_pair_support_cards` now
-      // holds what people actually play with a PAIR, and `suggestions-read` prefers it over
-      // this approximation — so once a widened index run has stored pair data, the deck
-      // suggestions panel and this panel can rank the same card differently for the same
-      // pair. Teaching this query the preference means restructuring an aggregating read on
-      // a hot route (the commander detail panel, its Role Coverage counts and the deck
-      // top-off list all come through here), which is not a change to make without the
-      // route walked. Until then this is invisible: no pair data exists until the monthly
-      // index next runs.
+      // THE FALLBACK, now that `pairSupportQuery` exists. The merged-singles figure is an
+      // APPROXIMATION of a pair: it says "the better of what each commander wants alone",
+      // where the pair table says what people actually play with the two together. This
+      // branch runs when no pair row is stored — which is every pair until a widened index
+      // run reaches it, and every pair EDHREC has no page for.
       inclusion: max(commanderSupportCards.inclusion),
       synergy: max(commanderSupportCards.synergy),
       ownedQuantity: sql<number>`coalesce(${ownedTotals.qty}, 0)`,
@@ -110,6 +140,69 @@ export async function readSynergyCards(
       ownedTotals.qty,
     );
 
+  return shapeRows(rows, userId, coveredOracleIds);
+}
+
+/** The pre-aggregated collection subquery both branches join against. Inferred rather than
+ *  spelled out, so it cannot drift from the builder above. */
+type OwnedTotals = ReturnType<typeof buildOwnedTotals>;
+
+/** One row as either query returns it. The two differ in WHERE the figures come from and
+ *  nowhere else, which is what lets them share the shaping below. */
+type SupportRow = {
+  oracleId: string;
+  name: string;
+  typeLine: string;
+  manaCost: string | null;
+  imageUri: string | null;
+  inclusion: number | null;
+  synergy: number | null;
+  ownedQuantity: number;
+};
+
+/**
+ * The pair's own support list, or null when none is stored.
+ *
+ * NO AGGREGATION, unlike the merged-singles query: the pair table already holds one row per
+ * card for the two commanders together, so there is nothing to take a `max` over and no
+ * `group by` to get wrong.
+ */
+async function readPairSupport(
+  a: string,
+  b: string,
+  withImages: boolean,
+  ownedTotals: OwnedTotals,
+): Promise<SupportRow[]> {
+  const pair = canonicalPair(a, b);
+  return db
+    .select({
+      oracleId: commanderPairSupportCards.oracleId,
+      name: cards.name,
+      typeLine: cards.typeLine,
+      manaCost: cards.manaCost,
+      imageUri: withImages ? cards.imageUri : sql<string | null>`null`,
+      inclusion: commanderPairSupportCards.inclusion,
+      synergy: commanderPairSupportCards.synergy,
+      ownedQuantity: sql<number>`coalesce(${ownedTotals.qty}, 0)`,
+    })
+    .from(commanderPairSupportCards)
+    .innerJoin(cards, eq(cards.oracleId, commanderPairSupportCards.oracleId))
+    .leftJoin(ownedTotals, eq(ownedTotals.oracleId, commanderPairSupportCards.oracleId))
+    .where(
+      and(
+        eq(commanderPairSupportCards.commanderOracleId, pair.commanderOracleId),
+        eq(commanderPairSupportCards.partnerOracleId, pair.partnerOracleId),
+      ),
+    );
+}
+
+/** Shared by both branches, so a figure cannot be rounded one way for a pair and another for
+ *  a single commander. */
+async function shapeRows(
+  rows: SupportRow[],
+  userId: string,
+  coveredOracleIds: string[],
+): Promise<SynergyCard[]> {
   const committed = await readCommittedDecks(userId);
 
   const shaped: SynergyCard[] = rows.map((r) => ({
@@ -125,9 +218,8 @@ export async function readSynergyCards(
     // preview" rather than drawing an empty frame — `usePreviewRow` no-ops on it.
     imageUri: r.imageUri,
     facet: cardFacet(r.typeLine),
-    // `commander_support_cards.inclusion` is already a percentage — parse.ts
-    // stores EDHREC's own `inclusion` field, or derives one as
-    // num_decks / potential_decks * 100. Round only; do not scale.
+    // `inclusion` is already a percentage on BOTH tables — parse.ts stores EDHREC's own
+    // field, or derives one as num_decks / potential_decks * 100. Round only; do not scale.
     inclusionPct: r.inclusion == null ? null : Math.round(r.inclusion),
     // Points, not the fraction. The product has stated synergy in points since
     // suggestion-tile.tsx's Evidence line, and formatting it once here means no
