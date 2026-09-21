@@ -298,19 +298,40 @@ try {
   // The target's existing rows for this user go first, so a re-run is a REPLACE rather than a
   // merge — a merge leaves decks from an older snapshot standing beside the new ones and
   // quietly makes the fixture a thing that never existed on staging.
+  // WHAT THE TARGET ALREADY HOLDS — every user-scoped table, not just decks.
+  //
+  // Gating on the deck count alone left the collection, folders, preferences and upload
+  // receipts of an earlier fixture in place whenever that fixture had no decks, and this
+  // snapshot then MERGED with them — the exact state the refusal exists to prevent, in the
+  // branch its own comment described.
   const existing = (await out.query("select id from decks where user_id = $1", [AS_USER]))
     .rows as { id: string }[];
-  if (existing.length > 0 && !REPLACE) {
+  const USER_TABLES = [
+    "collection_items",
+    "deck_folders",
+    "card_art_preferences",
+    "csv_uploads",
+  ] as const;
+  let otherRows = 0;
+  for (const t of USER_TABLES) {
+    otherRows += Number(
+      ((await out.query(`select count(*)::int as n from ${t} where user_id = $1`, [AS_USER]))
+        .rows as { n: number }[])[0].n,
+    );
+  }
+  const holds = existing.length + otherRows;
+  if (holds > 0 && !REPLACE) {
     await out.query("rollback");
     console.error(
-      `${AS_USER} already holds ${existing.length} deck(s) on the target.\n` +
-        "Refusing — pass --replace to delete them and write this snapshot in their place.",
+      `${AS_USER} already holds ${existing.length} deck(s) and ${otherRows} other row(s) on ` +
+        "the target.\nRefusing — pass --replace to delete them and write this snapshot in " +
+        "their place.",
     );
     process.exit(1);
   }
   console.log(
-    existing.length > 0
-      ? `\nReplacing ${AS_USER}'s ${existing.length} deck(s) on the target…`
+    holds > 0
+      ? `\nReplacing ${AS_USER}'s ${existing.length} deck(s) and ${otherRows} other row(s)…`
       : `\nWriting ${AS_USER}'s rows on the target…`,
   );
   if (existing.length > 0) {
@@ -318,13 +339,11 @@ try {
     await out.query("delete from card_assignments where deck_id = any($1)", [ids]);
     await out.query("delete from decks where id = any($1)", [ids]);
   }
-  // The user-scoped tables are cleared whether or not any deck existed: a previous run could
-  // have left a collection behind with no decks, and merging two collections is the same
-  // never-existed state the deck merge would be.
-  if (REPLACE || existing.length > 0) {
-    for (const t of ["collection_items", "deck_folders", "card_art_preferences", "csv_uploads"]) {
-      await out.query(`delete from ${t} where user_id = $1`, [AS_USER]);
-    }
+  // Cleared unconditionally: reaching here means either the target held nothing (so these are
+  // no-ops) or --replace was given (so they must go). A condition here is what let the rows
+  // survive in the first place.
+  for (const t of USER_TABLES) {
+    await out.query(`delete from ${t} where user_id = $1`, [AS_USER]);
   }
 
   // Order matters: folders before decks (a deck references a folder), decks before their rows,
