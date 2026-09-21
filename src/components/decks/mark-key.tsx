@@ -8,10 +8,24 @@
 // four are booked. The system is: the glyph identifies, the key decodes, and
 // colour only says "there is a mark here".
 //
-// IT RENDERS ONLY WHAT THE VIEW CONTAINS, and nothing at all when the view has
-// no marked rows. An empty legend is furniture, and this app is strict about
-// that. It takes the marks as DATA rather than hardcoding the pair, because it
-// is the surface every future mark is added to.
+// IT RENDERS WHAT IT IS GIVEN, and nothing at all when given nothing — an empty
+// legend is furniture, and this app is strict about that. It takes the marks as
+// DATA rather than hardcoding a set, because it is the surface every future mark
+// is added to.
+//
+// WHAT THE CALLER PASSES IS THE CALLER'S RULE, and the two kinds differ:
+//
+//   `buy` and `proxy` are CONDITIONAL, because they describe the rows below — an
+//   unconditional buy entry prints `not owned` over a deck whose rows the player
+//   owns, which is the falsehood this component was built to prevent.
+//
+//   The three bracket facts are UNCONDITIONAL on a surface that can draw them,
+//   because a fact entry defines a glyph and claims nothing about any row. A
+//   player scanning for Game Changers needs the entry before they find one, and
+//   a collection holding none is not a collection the vocabulary is false for.
+//
+// The rule both obey: never gloss a mark the reader cannot find on this screen.
+// That is why the facts are absent in card view, where no tile draws one.
 
 import type { ReactNode } from "react";
 import { proxyCopy } from "../../lib/copy/proxies";

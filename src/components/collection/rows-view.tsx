@@ -13,6 +13,9 @@ import { spokenManaCost } from "../../lib/copy/card-surfaces";
 import { availabilityState } from "../../lib/decks/availability";
 import { availabilityCopy } from "../../lib/copy/availability";
 import { AvailabilityMarker, markerAria } from "../ui/availability-marker";
+import { CardFactMark } from "../cards/card-fact-mark";
+import { CollectionMarkKey } from "./collection-mark-key";
+import { cardFactName, cardMarkCopy } from "../../lib/copy/card-mark";
 import { GhostButton } from "../ui/button";
 import { ROW_SHELL_GRID } from "../ui/row-shell";
 
@@ -37,6 +40,9 @@ export function RowsView({
   return (
     // §Rows Scroll Container: flex-1, padding 2px 12px 12px mobile / 12px 34px 34px desktop, flex column, gap 6/7px
     <div className="flex-1 flex flex-col gap-[6px] md:gap-[7px] px-[12px] md:px-[34px] pt-[2px] md:pt-[12px] pb-[12px] md:pb-[34px]">
+      {/* The gloss travels WITH the view: a surface drawing a wordless mark carries the
+          thing that decodes it, rather than trusting a caller to mount one above. */}
+      <CollectionMarkKey />
       {cards.map((c) => {
         const state = c.availability ? availabilityState(c.availability) : "free";
         // Addendum 2 §1 gave over-committed a border tint. Card-rows call 4
@@ -74,6 +80,9 @@ export function RowsView({
             // Clause lands LAST, and only when there is one — a free card
             // produces today's exact string, unchanged.
             (c.availability ? markerAria(c.availability, { nameless: true }) : null) ?? undefined,
+            // The facts, spoken once, in the place the reading order wants them. The
+            // glyphs beside the name are aria-hidden so this is the only voicing.
+            c.facts?.length ? cardMarkCopy.rowAria(c.facts.map(cardFactName)) : null,
           )}
           // §Row Container: grid template columns, gap 10/16px, padding 10px 12px / 12px 18px, radius 7px, bg --surface, border 1px --border
           // Background and border are utilities, not inline style: inline values
@@ -104,6 +113,19 @@ export function RowsView({
               >
                 {printedFaceName(c)}
               </span>
+              {/* The standing bracket facts, AFTER the name and BEFORE the availability
+                  marker. Both already live inline in this same `min-w-0` cell, so the
+                  order is the reading order: what the card is, then what this player's
+                  copies are doing. `shrink-0` on the mark and `truncate` on the name
+                  above means the name gives way and the glyph never does.
+
+                  aria-hidden here, unlike the decklist row, because THIS row composes
+                  its own accessible name on the button above — the fact clause is
+                  placed there explicitly, after the card's name, rather than being
+                  spoken twice out of order. */}
+              {(c.facts ?? []).map((fact) => (
+                <CardFactMark key={fact} fact={fact} size={13} silent />
+              ))}
               {c.availability && (
                 // `nameless` — /collection is the count-only vantage. No
                 // `selfExcluded`: there is no deck to stand in here.

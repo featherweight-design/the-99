@@ -255,8 +255,16 @@ export const availabilityCopy = {
       qty: number,
       setAndRarity: string,
       availability?: string | null,
+      /**
+       * The card's standing bracket facts, already joined. Placed straight after the
+       * NAME rather than at the end, because it describes the card and everything
+       * following it describes this player's copies — and the drawn glyph is
+       * aria-hidden precisely so this clause can sit where the reading order wants it.
+       */
+      facts?: string | null,
     ) =>
-      `${name}, ${typeLine}, ${qty === 1 ? "1 copy" : `${qty} copies`}, ${setAndRarity}` +
+      `${name}${facts ? `, ${facts}` : ""}, ${typeLine}, ` +
+      `${qty === 1 ? "1 copy" : `${qty} copies`}, ${setAndRarity}` +
       (availability ? `, ${availability}` : ""),
     // Heads the allocation receipt. Describes a list, never a location. Deck
     // names are NOT in this block's copy: the marker inside it is `nameless` and

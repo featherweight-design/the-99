@@ -17,6 +17,9 @@ import { cssUrl, printedFaceName, printedNameOf } from "../../lib/collection/bro
 import { identityGradient } from "../../lib/collection/gradients";
 import { availabilityState } from "../../lib/decks/availability";
 import { AvailabilityMarker } from "../ui/availability-marker";
+import { CardFactMark } from "../cards/card-fact-mark";
+import { CollectionMarkKey } from "./collection-mark-key";
+import { cardFactName, cardMarkCopy } from "../../lib/copy/card-mark";
 import { CardTileCaption } from "../ui/card-tile-caption";
 import { GhostButton } from "../ui/button";
 
@@ -46,6 +49,9 @@ export function GridView({
        178px floor plus a gap already exceeds, so auto-fill there would collapse
        to a single column. */
     <div className="grid grid-cols-2 md:grid-cols-[repeat(auto-fill,minmax(178px,1fr))] gap-[12px] md:gap-[20px] px-[14px] md:px-[34px] pt-[4px] md:pt-[20px] pb-[14px] md:pb-[34px]">
+      {/* The gloss travels WITH the view: a surface drawing a wordless mark carries the
+          thing that decodes it, rather than trusting a caller to mount one above. */}
+      <CollectionMarkKey className="col-span-full" />
       {cards.map((c) => {
         const state = c.availability ? availabilityState(c.availability) : "free";
         // Addendum 2 §2, matching the row: over-committed keeps its border tint
@@ -107,11 +113,21 @@ export function GridView({
                     now sits beside an availability chip and a set code, so `×1`
                     is the one figure there that tells the reader nothing, said
                     loudest on the most ordinary card in the collection. */}
-                {c.quantity > 1 && (
-                  <span aria-hidden className="flex-none" style={{ color: "var(--fg-body)" }}>
-                    ×{c.quantity}
-                  </span>
-                )}
+                {/* The count has LEFT this line — see `nameTrail` below. The marks take the
+                    room it used: at 157px on a phone the meta line cannot hold a chip, a
+                    count, a set code and up to three glyphs, and the count is the one
+                    occupant that reads just as well beside the name.
+
+                    The standing bracket facts, after the chip. 12px is the
+                    floor and this is the smallest surface the mark ships on, so it draws
+                    at exactly that — below it the mark is withheld rather than shrunk.
+
+                    aria-hidden, because this tile composes its accessible name from its
+                    text content: the clause is placed explicitly below, after the card's
+                    own name, rather than being read out of the meta line before it. */}
+                {(c.facts ?? []).map((fact) => (
+                  <CardFactMark key={fact} fact={fact} size={12} silent />
+                ))}
               </>
             }
             metaTrail={
@@ -133,7 +149,32 @@ export function GridView({
                and nothing moves. */
             name={printedFaceName(c)}
             nameHidden
-            nameSpoken={<span className="sr-only">{printedNameOf(c)}</span>}
+            /* The count, moved off the meta line. `nameTrail` is the name line's own slot
+               and it is FREE on this surface — its only other occupant is the `//` mark,
+               which /collection never draws (spec errata 3). No new prop was needed.
+               Still `aria-hidden`: the tile speaks its name from `nameSpoken`, and the
+               count was never part of that sentence before this move or after it. */
+            nameTrail={
+              c.quantity > 1 ? (
+                <span
+                  aria-hidden
+                  className="flex-none font-mono text-[10px] md:text-[10.5px] tabular-nums"
+                  style={{ color: "var(--fg-faint)" }}
+                >
+                  ×{c.quantity}
+                </span>
+              ) : undefined
+            }
+            nameSpoken={
+              <span className="sr-only">
+                {printedNameOf(c)}
+                {/* The facts ride the SPOKEN name rather than the meta line, so they are
+                    heard straight after the card they describe. The glyphs above are
+                    aria-hidden, which is what lets this sit in the reading order the
+                    sentence wants instead of wherever the layout happens to put them. */}
+                {c.facts?.length ? `, ${cardMarkCopy.rowAria(c.facts.map(cardFactName))}` : ""}
+              </span>
+            }
           />
         </button>
         );

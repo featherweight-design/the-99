@@ -95,16 +95,25 @@ function Cell({
         data-identity={colorIdentity.join(",")}
         style={{ aspectRatio: "63/88", background: identityGradient(colorIdentity) }}
       />
-      {/* The route's caption, with the route's own contents. Nothing sits on
-          the art: `GridView` moved every modifier onto the meta line, and the
-          count is ABSENT at one copy — on a collection one copy is the ordinary
-          case, so `×1` is the one figure there that tells a reader nothing.
-          The figure drew a `×N` badge over the art on every cell, which is a
-          result `/collection` stopped drawing. */}
+      {/* The route's caption, with the route's own contents. Nothing sits on the art:
+          `GridView` moved every modifier off it, and the count is ABSENT at one copy — on a
+          collection one copy is the ordinary case, so `×1` is the one figure there that
+          tells a reader nothing. The figure once drew a `×N` badge over the art on every
+          cell, which is a result `/collection` stopped drawing.
+
+          The count then left the META line too, when the card mark arrived: at 157px that
+          line cannot hold a chip, a count, a set code and up to three glyphs. It rides
+          `nameTrail` now, in the route's own mono treatment — this figure exists to show
+          what `/collection` draws, so a count sitting where the route no longer puts it,
+          in an ink the route no longer uses, is the exact drift it is here to prevent. */}
       <CardTileCaption
-        meta={
+        nameTrail={
           copies > 1 ? (
-            <span aria-hidden className="flex-none" style={{ color: "var(--fg-body)" }}>
+            <span
+              aria-hidden
+              className="flex-none font-mono text-[10px] md:text-[10.5px] tabular-nums"
+              style={{ color: "var(--fg-faint)" }}
+            >
               ×{copies}
             </span>
           ) : undefined
