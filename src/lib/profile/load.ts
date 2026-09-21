@@ -319,6 +319,9 @@ export async function loadDeckProfileFromHead(head: ProfileHead): Promise<DeckPr
   const { candidates, condition, staples, commanderDeckCount } =
     await loadSkeletonForCommanders(
       head.commanderOracleId, head.partnerOracleId ?? null, combinedIdentity,
+      // The rows this function already read, so the skeleton and the population describe one
+      // snapshot and the profile pays for two queries rather than four.
+      { pairRow, commanderRow },
     );
 
   const mldFlags = new Map<string, FlagSource[]>();
@@ -574,6 +577,11 @@ export async function loadSkeletonForCommanders(
   commanderOracleId: string,
   partnerOracleId: string | null,
   combinedIdentity: string[],
+  /** The two support rows, when the caller has already read them. The PROFILE path has —
+   *  `loadDeckProfileFromHead` needs them for the population anyway — and re-reading here cost
+   *  two queries on every profile load AND risked the population and the skeleton coming from
+   *  different snapshots of the same rows. The CREATE path has no profile and passes nothing. */
+  preloaded?: { pairRow: PairRow | null; commanderRow: CommanderRow | null },
 ): Promise<{
   /** Resolved, for a caller with no profile — the CREATE path. */
   skeleton: ProfileSkeleton;
@@ -585,10 +593,12 @@ export async function loadSkeletonForCommanders(
   commanderDeckCount: number | null;
 }> {
   const exactCondition = identityCondition(combinedIdentity);
-  const [pairRow, commanderRow] = await Promise.all([
-    partnerOracleId ? loadPairRow(commanderOracleId, partnerOracleId) : null,
-    loadCommanderRow(commanderOracleId),
-  ]);
+  const [pairRow, commanderRow] = preloaded
+    ? [preloaded.pairRow, preloaded.commanderRow]
+    : await Promise.all([
+        partnerOracleId ? loadPairRow(commanderOracleId, partnerOracleId) : null,
+        loadCommanderRow(commanderOracleId),
+      ]);
   const identityRow = await loadCompositionRow(exactCondition);
   const countRow = identityRow
     ? undefined

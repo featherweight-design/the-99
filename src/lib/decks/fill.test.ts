@@ -457,3 +457,59 @@ describe("the fill does not leave usable cards behind", () => {
     expect(planFill(poolOf(120), { hasPartner: false, skeleton: broken }).measured).toBe(false);
   });
 });
+
+describe("the measured composition reaches the mana base too", () => {
+  const modal = (id: string) => c({
+    oracleId: id, name: id, typeLine: "Sorcery // Land", layout: "modal_dfc",
+    oracleText: "Draw three cards.\n//\nEnters tapped. {T}: Add {G}.", inclusionPct: 99,
+  });
+
+  // `avg_nonbasic` is this exact figure taken over real decklists. Leaving the constant while
+  // every other target became measured is the asserted-number failure this sub-project ends: a
+  // commander measuring seven nonbasics would still take twelve utility lands before a basic.
+  it("caps utility lands at the measured nonbasic target", () => {
+    const utility = Array.from({ length: 20 }, (_, i) =>
+      c({ oracleId: `u${i}`, name: `u${i}`, typeLine: "Land", oracleText: "{T}: Add {G}." }));
+    const plan = planFill(
+      [...utility, ...Array.from({ length: 40 }, (_, i) => basic(`f${i}`, 4))],
+      { hasPartner: false, skeleton: skeletonWith({ land: 36, nonbasic: 7 }) },
+    );
+    const nonbasics = plan.rows.filter(
+      (r) => r.role === "land" && r.oracleId.startsWith("u"),
+    ).reduce((n, r) => n + r.quantity, 0);
+    expect(nonbasics).toBe(7);
+  });
+
+  // A card sleeved as draw whose back is a land is a land DROP, so a target of 36 met by 36
+  // basics PLUS one modal card is 37 drops — one more than the decklists behind it ran. It
+  // still keeps its non-land role: one slot spent, counted once in each place that counts.
+  it("charges a modal land drop to the base rather than adding to it", () => {
+    // A composition that WANTS sorceries, so the tie-break gives the modal card a draw slot
+    // rather than handing all ten to creatures. The case is about a card the fill placed on a
+    // non-land role; one the tie-break passes over never reaches the base at all.
+    const wantsSorceries = skeletonWith({
+      land: 36, creature: 0, instant: 0, artifact: 0, enchantment: 0, sorcery: 40,
+    });
+    const plan = planFill(
+      [modal("m1"), ...poolOf(200), ...Array.from({ length: 40 }, (_, i) => basic(`f${i}`, 4))],
+      { hasPartner: false, skeleton: wantsSorceries },
+    );
+    const placedModal = plan.rows.find((r) => r.oracleId === "m1");
+    expect(placedModal).toBeDefined();
+    expect(placedModal?.role).not.toBe("land");
+    expect(plan.landCapable).toBe(36);
+  });
+
+  // And a base completed by those drops must not report itself short by exactly the cards
+  // that completed it.
+  it("does not report a land shortfall on a base the modal drops completed", () => {
+    const wantsSorceries = skeletonWith({
+      land: 36, creature: 0, instant: 0, artifact: 0, enchantment: 0, sorcery: 40,
+    });
+    const plan = planFill(
+      [modal("m1"), ...poolOf(200), ...Array.from({ length: 40 }, (_, i) => basic(`f${i}`, 4))],
+      { hasPartner: false, skeleton: wantsSorceries },
+    );
+    expect(plan.shortfalls).not.toContainEqual({ kind: "role", role: "land" });
+  });
+});

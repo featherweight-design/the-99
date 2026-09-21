@@ -162,6 +162,25 @@ export function fillBaselineTotal(hasPartner: boolean): number {
     fill the base. */
 const NONBASIC_LAND_CAP = 12;
 
+/**
+ * The same ceiling, MEASURED where the composition carries it.
+ *
+ * `identity_composition.avg_nonbasic` is exactly this figure taken over real decklists, and
+ * leaving the constant in place while every other target became measured is the asserted-number
+ * failure this sub-project exists to end — a mono-colour commander measuring roughly seven
+ * nonbasics would still take twelve utility lands before a basic, so the fill would not be
+ * building the composition it claims to build.
+ *
+ * Rounded and floored at 0, and never above the land ceiling itself: `avg_nonbasic` sits WITHIN
+ * `avg_land`, so a bucket whose two figures disagree cannot be allowed to hand the utility
+ * sweep more slots than the base has.
+ */
+function nonbasicCap(skeleton: ProfileSkeleton | null, landCeiling: number): number {
+  const measured = skeleton?.composition?.targets.nonbasic;
+  if (typeof measured !== "number" || !Number.isFinite(measured)) return NONBASIC_LAND_CAP;
+  return Math.min(landCeiling, Math.max(0, Math.round(measured)));
+}
+
 const BASIC_LAND_COLORS: Record<string, string> = {
   plains: "W", island: "U", swamp: "B", mountain: "R", forest: "G", wastes: "C",
 };
@@ -366,6 +385,18 @@ export function planFill(candidates: FillCandidate[], args: PlanFillArgs): FillP
     if (chosen === candidate) i += 1;
   }
 
+  // MODAL LAND DROPS COUNT AGAINST THE BASE BEFORE THE SWEEPS RUN. A card sleeved as draw whose
+  // back is a land is a land drop, so a target of 36 met by 36 basics PLUS one modal card is 37
+  // drops — one more than the decklists behind the target ran. The sweeps take the remainder,
+  // and the card still keeps its non-land role, which is the §2.5a rule rather than an
+  // exception to it: it spends ONE slot and is counted once in each place that counts.
+  const modalDrops = rows.filter((r) => {
+    if (r.role === "land") return false;
+    const c = byOracleId.get(r.oracleId);
+    return c ? playableAsLand(c.typeLine, c.layout) : false;
+  }).length;
+  const landCeilingAfterModals = Math.max(0, landCeiling - modalDrops);
+
   // Lands come from the collection alone — never bought, at any point below.
   // Drawn from the deduplicated index rather than from `ordered`, because
   // three sweeps read this list and a duplicated oracle id would otherwise be
@@ -390,7 +421,7 @@ export function planFill(candidates: FillCandidate[], args: PlanFillArgs): FillP
   // 37 copies of one basic — the shape this fill used to produce whenever a
   // player owned a playset of anything.
   for (const candidate of lands) {
-    if (counts.land >= Math.min(NONBASIC_LAND_CAP, landCeiling)) break;
+    if (counts.land >= Math.min(nonbasicCap(skeleton, landCeiling), landCeilingAfterModals)) break;
     if (filledSoFar() >= limit) break;
     if (isBasicLand(candidate.typeLine)) continue;
     takeLand(candidate, 1);
@@ -413,11 +444,11 @@ export function planFill(candidates: FillCandidate[], args: PlanFillArgs): FillP
     basicsByColor.set(color, [...(basicsByColor.get(color) ?? []), candidate]);
   }
   const colors = [...basicsByColor.keys()].sort();
-  if (colors.length > 0 && counts.land < landCeiling) {
+  if (colors.length > 0 && counts.land < landCeilingAfterModals) {
     const capacity = new Map(
       colors.map((c) => [c, basicsByColor.get(c)!.reduce((n, b) => n + b.ownedQuantity, 0)]),
     );
-    const allocated = splitByWeight(colors, pips, landCeiling - counts.land);
+    const allocated = splitByWeight(colors, pips, landCeilingAfterModals - counts.land);
     // A colour capped below its share leaves slots on the table; they go to
     // whichever colours still have copies, heaviest first.
     let spare = 0;
@@ -448,7 +479,7 @@ export function planFill(candidates: FillCandidate[], args: PlanFillArgs): FillP
   // The collection had too few basics to finish the base, so the cap lifts and
   // the remaining utility lands take what is left.
   for (const candidate of lands) {
-    if (counts.land >= landCeiling) break;
+    if (counts.land >= landCeilingAfterModals) break;
     if (filledSoFar() >= limit) break;
     if (spent.has(candidate.oracleId)) continue;
     takeLand(candidate, 1);
@@ -466,10 +497,20 @@ export function planFill(candidates: FillCandidate[], args: PlanFillArgs): FillP
         (a, b) => (synergyRank.get(b.oracleId) ?? 0) - (synergyRank.get(a.oracleId) ?? 0),
       )
     : ordered;
+  // The residual runs AFTER the sweeps, so its own modal cards are land drops the base has
+  // already been built without. Tracked here for the same reason the role pass's are charged
+  // to the ceiling: a target of 36 met by 36 basics plus a residual modal card is 37 drops.
+  let residualDrops = 0;
   for (const candidate of residualOrder) {
     if (filledSoFar() >= limit) break;
     if (spent.has(candidate.oracleId)) continue;
     if (rolesOfCandidate(candidate).includes("land")) continue;
+    // A land-capable card is passed over once the base is full. It is not lost — the role pass
+    // above had first refusal on it and took it if a floor was open — and the slot goes to a
+    // card that is only a spell, which is what a deck with its mana base already down wants.
+    if (playableAsLand(candidate.typeLine, candidate.layout)
+      && counts.land + modalDrops + residualDrops >= landCeiling) continue;
+    if (playableAsLand(candidate.typeLine, candidate.layout)) residualDrops += 1;
     spent.add(candidate.oracleId);
     placed.push({ typeLine: candidate.typeLine, quantity: 1 });
     rows.push({ oracleId: candidate.oracleId, quantity: 1, role: "other" });
@@ -478,6 +519,8 @@ export function planFill(candidates: FillCandidate[], args: PlanFillArgs): FillP
   // A modal card whose back is a land is a land DROP even when its front was sleeved as draw —
   // but only when the front was NOT spent on another role, or the same card would take a role
   // slot and a land slot, which is the double credit §2.5a forbids.
+  // Recomputed over the FINAL rows rather than reusing `modalDrops`: the residual runs after
+  // that count is taken and can sleeve modal cards of its own, and those are land drops too.
   const landCapable = counts.land + rows.filter((r) => {
     if (r.role === "land") return false;
     const c = byOracleId.get(r.oracleId);
@@ -495,7 +538,11 @@ export function planFill(candidates: FillCandidate[], args: PlanFillArgs): FillP
     shortfalls: [
       ...NON_LAND_ROLES.filter((r) => counts[r] < floors[r])
         .map((role) => ({ kind: "role" as const, role })),
-      ...(counts.land < landCeiling ? [{ kind: "role" as const, role: "land" as const }] : []),
+      // Against the ceiling the sweeps actually built to, which the modal drops already
+      // reduced — otherwise a base that is complete in PLAY reports itself short by exactly
+      // the cards that completed it.
+      ...(counts.land + modalDrops < landCeiling
+        ? [{ kind: "role" as const, role: "land" as const }] : []),
       // TYPES TOO. A deck can meet every role floor and still sit eight creatures under the
       // decklists it is measured against, and a reader told only about roles cannot see it.
       // THE THREE LAND AXES ARE EXCLUDED, because `placed` only ever holds the non-land rows —

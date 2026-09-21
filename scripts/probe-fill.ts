@@ -24,6 +24,12 @@ import { landTarget } from "../src/lib/decks/deck-size";
 import { loadSkeletonForCommanders } from "../src/lib/profile/load";
 import { castFaceText, playableAsLand } from "../src/lib/cards/facet";
 import { classifyRoles, type Role } from "../src/lib/recs/roles";
+import { readSynergyCards } from "../src/app/commanders/[slug]/synergy-read";
+import { readFileSync } from "node:fs";
+
+/** The production caller's own source. Check 5 proves `planFill` honours a ranking it is
+ *  given; this proves the app gives it one, which is the half that was actually broken. */
+const BUILD_FILL_PLAN_SRC = readFileSync("src/app/decks/actions.ts", "utf8");
 
 neonConfig.webSocketConstructor = ws;
 const { DATABASE_URL } = requireEnv(["DATABASE_URL"]);
@@ -279,19 +285,37 @@ async function main() {
     }
   }
 
-  // ---- 5 · the residual follows the synergy ranking ---------------------------------------
-  console.log("\n5 · the residual is ordered by the ranking it was given");
-  // A ranking the fill cannot have derived from the pool's own order — reversed against
-  // preference — so taking it can only be the `synergyRank` argument doing its job.
-  const ranked = new Map(pool400.map((r, i) => [r.oracle_id, i]));
-  const withRank = planFill(basePool, { hasPartner: false, skeleton, synergyRank: ranked });
-  const residual = withRank.rows.filter((r) => r.role === "other");
-  if (residual.length < 2) {
-    fail("5 · the fixture", `the residual holds ${residual.length} rows — too few to order`);
+  // ---- 5 · the residual follows the REAL synergy ranking -----------------------------------
+  console.log("\n5 · the residual is ordered by the ranking the app actually builds");
+  // THROUGH `readSynergyCards`, the same reader the top-off list calls — not a map this script
+  // invented. The first version built its own from `pool400`'s arbitrary order and passed it in
+  // directly, which proved `planFill` sorts by an argument and nothing about whether the
+  // PRODUCTION caller supplies one. It did not: `buildFillPlan` omitted `synergyRank`
+  // entirely, so every residual row was ordered by inclusion and the create disagreed with the
+  // top-off list about what the commander wanted. A probe that builds its own fixture for the
+  // one input under test cannot see that.
+  const synergy = await readSynergyCards(USER, [cmd.oracle_id], []);
+  if (synergy.length < 2) {
+    fail("5 · the fixture", `readSynergyCards returned ${synergy.length} cards — too few to order`);
   } else {
-    const positions = residual.map((r) => ranked.get(r.oracleId) ?? -1).filter((n) => n >= 0);
-    const descending = positions.every((n, i) => i === 0 || positions[i - 1]! >= n);
-    truthy("the residual runs highest-ranked first", descending);
+    const ranked = new Map(
+      synergy.map((card) => [card.oracleId, card.synergyPts ?? card.inclusionPct ?? 0]),
+    );
+    const withRank = planFill(basePool, { hasPartner: false, skeleton, synergyRank: ranked });
+    const residual = withRank.rows.filter((r) => r.role === "other");
+    const positions = residual
+      .map((r) => ranked.get(r.oracleId))
+      .filter((n): n is number => n !== undefined);
+    if (positions.length < 2) {
+      fail("5 · the fixture", "the residual holds too few ranked rows to order");
+    } else {
+      const descending = positions.every((n, i) => i === 0 || positions[i - 1]! >= n);
+      truthy("the residual runs highest-ranked first", descending);
+      // And the production caller SUPPLIES one. Asserted separately, because the check above
+      // passes on a build where nothing ever passes `synergyRank`.
+      truthy("and `buildFillPlan` passes a ranking at all",
+        BUILD_FILL_PLAN_SRC.includes("synergyRank"));
+    }
   }
 
   // ---- 6 · the flat FALLBACK, not a null skeleton -----------------------------------------

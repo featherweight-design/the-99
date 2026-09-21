@@ -37,6 +37,7 @@ import {
 } from "../../lib/decks/add-validation";
 import { deckAddRejectionMessage, type DeckMutationResult } from "../../lib/decks/mutation-result";
 import type { ProfileSkeleton } from "../../lib/profile/types";
+import { readSynergyCards } from "../commanders/[slug]/synergy-read";
 import { loadSkeletonForCommanders } from "../../lib/profile/load";
 import { dedupeSelectionFromPool, planFill, type FillPlan } from "../../lib/decks/fill";
 import { sanitizeSelection } from "../../lib/decks/selection-param";
@@ -114,6 +115,28 @@ export async function buildFillPlan(
     console.warn("buildFillPlan: no skeleton — filling to the asserted baseline", err);
   }
 
+  // THE SAME RANKING THE TOP-OFF LIST USES, for the residual. Without it the residual falls to
+  // the pool's own owned/inclusion order, and the create disagrees with the list the player is
+  // shown a moment later about which cards this commander wants — two answers to one question,
+  // from one deck, minutes apart.
+  //
+  // Degraded like the skeleton above rather than failing the create: the residual's ORDER is
+  // worth a query and is not worth losing the deck over, and inclusion order is what it fell
+  // back to for the whole life of this function.
+  let synergyRank: Map<string, number> | undefined;
+  try {
+    const synergy = await readSynergyCards(
+      userId,
+      commanders.map((c) => c.oracleId),
+      [],
+    );
+    synergyRank = new Map(
+      synergy.map((card) => [card.oracleId, card.synergyPts ?? card.inclusionPct ?? 0]),
+    );
+  } catch (err) {
+    console.warn("buildFillPlan: no synergy ranking — the residual keeps inclusion order", err);
+  }
+
   const ownedIds = new Set(pool.map((c) => c.oracleId));
   const staples = dedupeSelectionFromPool(
     data?.topCards
@@ -140,7 +163,7 @@ export async function buildFillPlan(
       layout: c.layout, owned: false, ownedQuantity: 0,
       inclusionPct: inclusionOf(c.name),
     })),
-  ], { hasPartner, skeleton });
+  ], { hasPartner, skeleton, synergyRank });
 }
 
 /** `selectedOracleIds` are the synergy picks the player carried across the
