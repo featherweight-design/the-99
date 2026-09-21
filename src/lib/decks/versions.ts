@@ -9,6 +9,7 @@ import { db } from "../../db";
 import {
   cards, deckCards, deckGames, deckUnresolvedRows, deckVersionCards, deckVersions, decks,
 } from "../../db/schema";
+import type { Bracket } from "../profile/types";
 import { type CardQty, draftDiff } from "./draft-diff";
 import { touchDeck } from "./touch";
 import { averageManaValue } from "./mana-value";
@@ -98,20 +99,41 @@ export async function versionCards(versionId: string, tx?: Tx): Promise<CardQty[
  * then commits the result: those two must land or fail together, or the source
  * deck loses the card from its draft while its version still claims it.
  */
+/**
+ * What the deck's verdict said at the moment of the commit.
+ *
+ * COMPUTED BY THE CALLER, never here. Building a profile is six reads and a slot — measured
+ * at 630ms median and 2.2s on the largest deck — and this function runs inside a transaction
+ * holding `for update` on the deck row. Doing it here would hold that lock across the whole
+ * gather.
+ *
+ * Omitted means the version records no declaration and no permits, which is a legitimate
+ * state rather than a failure: every version committed before these columns existed is in it,
+ * and so is any commit made from a surface that has no profile to hand.
+ */
+export type CommitSnapshot = {
+  /** The deck's live declaration, as it stands. */
+  declared: Bracket | null;
+  /** What the cards being committed permit. */
+  permits: Bracket[];
+};
+
 export async function commitVersion(
   deckId: string,
   note: string | null,
   tx?: Tx,
+  snapshot?: CommitSnapshot,
 ): Promise<{ version: DeckVersion; cardCount: number }> {
   return tx
-    ? commitVersionIn(tx, deckId, note)
-    : db.transaction((t) => commitVersionIn(t, deckId, note));
+    ? commitVersionIn(tx, deckId, note, snapshot)
+    : db.transaction((t) => commitVersionIn(t, deckId, note, snapshot));
 }
 
 async function commitVersionIn(
   tx: Tx,
   deckId: string,
   note: string | null,
+  snapshot?: CommitSnapshot,
 ): Promise<{ version: DeckVersion; cardCount: number }> {
   const [deck] = await tx.select().from(decks)
     .where(eq(decks.id, deckId))
@@ -142,6 +164,18 @@ async function commitVersionIn(
     note,
     commanderOracleId: deck.commanderOracleId,
     partnerOracleId: deck.partnerOracleId,
+    // THE DECLARATION IS CARRIED ONLY WHEN THE VERSION'S OWN CARDS PERMIT IT.
+    //
+    // A player who declared cEDH and then tuned the deck down is committing a version whose
+    // cards no longer reach it. Copying the answer anyway would have the version assert a
+    // bracket it contradicts; the version records none instead, and the deck keeps its live
+    // answer — stated, not deleted — so the surface can say the reading moved.
+    declaredBracket:
+      snapshot && snapshot.declared !== null && snapshot.permits.includes(snapshot.declared)
+        ? snapshot.declared
+        : null,
+    // Sorted, so two versions' ranges compare as arrays without either reader sorting first.
+    permits: snapshot ? [...snapshot.permits].sort((a, b) => a - b) : null,
     // `clock_timestamp()` rather than the column's `now()` default, and for the
     // reason `touchDeck` takes it: `now()` is the TRANSACTION's start, read
     // before this commit waited for the deck row's lock above. A commit that
