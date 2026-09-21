@@ -64,8 +64,16 @@ describe("profileFingerprint", () => {
   // There is no `declaredBracket` on the input any more, so this asserts the PROPERTY that
   // makes that safe: a fingerprint is a function of the cards and the commanders, and two
   // decks with the same ones share a key whatever either player declared.
-  it("is a function of the cards and commanders alone", () => {
-    expect(profileFingerprint(base)).toBe(profileFingerprint({ ...base }));
+  it("ignores a declaration even when one is handed to it", () => {
+    // COMPARED AGAINST A DIFFERENT DECLARATION, not a clone of the same input — a clone
+    // hashes the same whether or not the field is read, so it proves nothing. The field is
+    // off the input type now, so it is forced past the compiler: what this asserts is that
+    // a stray `declared_bracket` on the object cannot move the key, which is what makes a
+    // cached profile safe to serve across a declaration.
+    const withDeclaration = { ...base, declaredBracket: 3 } as unknown as typeof base;
+    const withAnother = { ...base, declaredBracket: 5 } as unknown as typeof base;
+    expect(profileFingerprint(withDeclaration)).toBe(profileFingerprint(base));
+    expect(profileFingerprint(withAnother)).toBe(profileFingerprint(withDeclaration));
   });
 
   // Pinned rather than asserted by reading the constant back: the point is that a bump

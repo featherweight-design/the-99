@@ -23,7 +23,6 @@ import { buildDeckProfile, type ProfileCardRow, type ProfileInput } from "./buil
 import { profileFingerprint } from "./fingerprint";
 import { ROLE_TARGETS } from "../recs/roles";
 import type {
-  Bracket,
   BracketPopulation,
   ComboRef,
   CompositionTargets,
@@ -378,12 +377,6 @@ export async function loadDeckProfileFromHead(head: ProfileHead): Promise<DeckPr
   };
 
   return buildDeckProfile(input);
-}
-
-/** 1-5 or null. The check constraint makes a bad write loud; this makes a bad READ
- *  impossible, on a column an older row could already carry anything in. */
-function bracketOf(value: number | null): Bracket | null {
-  return value !== null && value >= 1 && value <= 5 ? (value as Bracket) : null;
 }
 
 function populationFrom(
