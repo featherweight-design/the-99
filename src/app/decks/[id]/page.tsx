@@ -27,7 +27,8 @@ import { deckBodySize } from "../../../lib/decks/deck-size";
 import { hasChanges, loadDraftState, loadVersionShape } from "../../../lib/decks/draft-state";
 import { listVersions } from "../../../lib/decks/versions";
 import { computeRoleCounts } from "../../../lib/decks/mix";
-import { readBuilderView, TAB_PARAM } from "../../../lib/decks/builder-view";
+import { analysisTabEnabled } from "../../../lib/decks/analysis-flag";
+import { initialBuilderView, readBuilderView, TAB_PARAM } from "../../../lib/decks/builder-view";
 import { isUuid } from "../../../lib/uuid";
 
 // The two reads below are the builder's expensive half — measured against the
@@ -242,6 +243,10 @@ export default async function DeckBuilderPage({
     availability: c.owned ? (availability?.get(c.oracleId) ?? null) : null,
   }));
 
+  // Read once per request rather than at each use, so the tab, the strip's home and the
+  // arrival view cannot disagree about which layout this deployment is drawing.
+  const analysisEnabled = analysisTabEnabled();
+
   return (
     <BuilderShell
       deck={{ ...detail, cards }}
@@ -280,7 +285,15 @@ export default async function DeckBuilderPage({
       // never writes it back, so switching tabs still costs no history entry.
       // Nothing in the app produces such a URL now that `/decks/[id]/versions`
       // is retired; see the note in `lib/decks/builder-view.ts`.
-      initialView={readBuilderView(query[TAB_PARAM])}
+      analysisEnabled={analysisEnabled}
+      // Resolved on the SERVER, where the flag is read. A URL naming `analysis` against a
+      // deployment that does not draw it lands on the decklist rather than on an unselected
+      // row above an empty panel — the same rule `versions` already has for a brew.
+      initialView={initialBuilderView(
+        readBuilderView(query[TAB_PARAM]),
+        versions.length,
+        analysisEnabled,
+      )}
     />
   );
 }

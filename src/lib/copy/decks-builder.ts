@@ -35,8 +35,12 @@ export const addPanelCopy = {
   // ── Tabs (replaces the Suggestions | Search tab bar) ──────────────────
   tabs: {
     deck: "Your deck",
+    // Round 0's word for the second tab. No count: the tab carries a verdict rather than a
+    // number of things, and a figure beside it would be read as one of the counts inside.
+    analysis: "Analysis",
     consider: "Consider",
     deckAria: (n: number) => `Your deck, ${plural(n, "card", "cards")}`,
+    analysisAria: "Analysis of this deck",
     considerAria: (n: number) =>
       `Cards to consider, ${plural(n, "suggestion", "suggestions")}`,
     // No `panelAria`: each tabpanel is named by its tab through

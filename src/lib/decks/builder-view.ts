@@ -1,4 +1,4 @@
-// Which of the builder's four tabs a visit lands on, and how a URL says so.
+// Which of the builder's tabs a visit lands on, and how a URL says so.
 //
 // The tab is component state on the builder itself — switching tabs is not a
 // navigation, and making it one would push a history entry per click. The tab
@@ -11,11 +11,14 @@
 // reader switches — which is the same contract it always had, minus the one
 // in-app producer.
 
-export type BuilderView = "deck" | "consider" | "games" | "versions";
+export type BuilderView = "deck" | "analysis" | "consider" | "games" | "versions";
 
 export const TAB_PARAM = "tab";
 
-const VIEWS: readonly BuilderView[] = ["deck", "consider", "games", "versions"];
+// The set of names a URL may ask for. NOT the draw order — `readBuilderView` uses this as a
+// membership test and nothing else, and `builderTabSpecs` owns where each cell lands. Analysis
+// is second on screen because that function puts it there; reordering this array moves nothing.
+const VIEWS: readonly BuilderView[] = ["deck", "analysis", "consider", "games", "versions"];
 
 /** The tab a URL asks for, or "deck" for anything else — including an absent
  *  parameter, a repeated one, and a name no tab answers to. */
@@ -28,6 +31,16 @@ export function readBuilderView(value: string | string[] | undefined): BuilderVi
  *  that has none — an old link to the retired route, or a hand-typed parameter —
  *  and the row draws no Versions cell at zero, so landing there would leave every
  *  cell unselected above an empty panel. */
-export function initialBuilderView(view: BuilderView, versionCount: number): BuilderView {
-  return view === "versions" && versionCount === 0 ? "deck" : view;
+export function initialBuilderView(
+  view: BuilderView,
+  versionCount: number,
+  /** Whether this deployment draws the Analysis tab at all — `ANALYSIS_TAB_ENABLED`. */
+  analysisEnabled = false,
+): BuilderView {
+  // A URL naming a tab the row does not draw would leave every cell unselected above an empty
+  // panel. Two ways that happens: `versions` on a deck with no history, and `analysis` where the
+  // flag is off — including a bookmark made on staging and opened against production.
+  if (view === "versions" && versionCount === 0) return "deck";
+  if (view === "analysis" && !analysisEnabled) return "deck";
+  return view;
 }
