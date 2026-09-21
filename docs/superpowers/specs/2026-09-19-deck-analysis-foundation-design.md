@@ -1606,7 +1606,8 @@ So the cards produce a **permitted range** and the player answers within it:
 | violate nothing | `[1, 2]` | is this built to show something off, or to play? |
 | extra turns only | `[2]` | — |
 | ≤3 Game Changers, a late two-card combo | `[3]` | — |
-| a two-card infinite, nothing else at B3 | `[3, 4]` | does this combo land before turn six? (§6.3) |
+| a two-card infinite the deck can only draw into | `[3]` | — |
+| a two-card infinite the deck's tutors can assemble | `[4]` | — |
 | violate B3's limits | `[4, 5]` | are you playing this competitively? |
 
 **The ask is the feature, not a fallback.** This app's distinguishing asset is what it records
@@ -1694,17 +1695,30 @@ verdict** — breaking §2.1, and erring the way §4.2 names as dangerous: telli
 deck is gentler than it is. The conservative reading is no better; it over-slots a turn-nine
 wincon to Bracket 4 and makes someone cut a card they did not need to.
 
-So a deck whose only B3 issue is a two-card infinite **permits `[3, 4]`** (§6.1a), with the
-combo and its pieces named and the turn-six gloss quoted. This is the same mechanism the 1-vs-2
-and 4-vs-5 boundaries use, for the same reason: the rules leave a question only the player can
-answer.
+**AMENDED 2026-09-20 — the combo boundary RESOLVES, it does not widen.** An earlier revision of
+this section had a deck whose only B3 issue is a two-card infinite permit `[3, 4]`, on the same
+mechanism as the 1-vs-2 and 4-vs-5 boundaries. That shipped, and it was wrong, because **those
+two boundaries are not the same kind of question as this one**.
+
+`[1,2]` and `[4,5]` are ranges because the RULES make them ones: Exhibition and cEDH are
+statements of intent, and two decks with identical contents sit either side of them. No amount
+of reading the list answers that, so the app does not pretend to.
+
+The 3-vs-4 boundary is a question about the DECK, and handing it back as a range asked the
+reader to adjudicate the thing they opened the tab to be told. Ruled 2026-09-20: *"if we start
+splitting 2/3/4 then we're asking too much of the player and the ranking starts to seem
+indecisive."* **Only 1/2 and 4/5 are ever ranges.**
+
+So the combo clause resolves on §6.1b's signal instead — and the player still overrules the
+whole thing by declaring, which is what `declared` is for. A bracket carried to a pod was
+always theirs rather than ours; what the app owes them is every figure behind it.
 
 **But the app does not simply hand the question over.** Ruled 2026-09-19: leaning entirely on
 the reader *"starts to erode the convenience of the ranking"*. §6.1b is the lean.
 
 ### 6.1b The combo lean: can this deck FIND the combo?
 
-Where `permits` is `[3, 4]`, the app states a likely bracket and shows its whole reasoning:
+The signal DECIDES the 3-vs-4 boundary (§6.3, amended), and shows its whole reasoning:
 
 > *"You hold `Thassa's Oracle + Demonic Consultation`, and `Demonic Tutor` and `Vampiric Tutor`
 > each find either piece. **Likely Bracket 4** — a combo you can search for turns up early."*
@@ -1722,11 +1736,34 @@ It needs a **tutor-target classifier** — what a given tutor can search for —
 oracle-text rule and is **measured before it is believed**, exactly as mass land denial and
 extra turns were (§4.2).
 
-**The lean is a lean.** It is labelled as reasoned rather than measured, it only ever
-disambiguates a two-value range the countable rules already produced, and the player can
-correct it — at which point their correction is stored as `declared` (§6.1a). This is not §2.2's
-forbidden power number: it resolves no continuous score, spans no decks, and shows every card
-behind it.
+**The threshold is the COMBO's, not ours — which is what makes this admissible under §2.4a.**
+A deck reaches 4 when its tutors cover EVERY piece of at least one assembled combo: one tutor
+that finds both halves, or two that each find a different one. A tutor reaching one half leaves
+the other to chance, and that deck is a 3.
+
+*"More than N tutors"* would be a number we chose and would have to defend — and it is exactly
+the clause **WotC deleted** in October 2025, having found that not all tutors are created equal.
+"Do this deck's tutors cover this combo" invents no figure: the number of pieces to cover is the
+combo's own.
+
+**A piece in the command zone counts as covered without a tutor, and this is counted PER PIECE.**
+A tutor searches a library and a commander is not in one, so `buildDeckProfile` never records a
+reach against a commander piece — meaning a requirement of "every piece tutored" would make a
+commander combo the single case that could never resolve to 4.
+
+The requirement therefore drops once **for each** piece sitting in the command zone, not once per
+combo. A partner deck whose combo IS its two commanders has two uncoverable pieces and assembles
+it every game; a flat single deduction left that deck needing a tutor it can never have.
+
+**It is still labelled as reasoned rather than measured**, it shows every card behind it, and
+the player can correct it — at which point their correction is stored as `declared` (§6.1a).
+This is not §2.2's forbidden power number: it resolves no continuous score and spans no decks.
+
+**One consequence, recorded rather than resolved here.** With the boundary resolving, a card
+that completes a combo in a deck holding no tutor for it moves the bracket by nothing, so
+`bracketDelta` returns `none` and the push line says nothing at all. The bracket is honestly
+unchanged and the reader has still just acquired a two-card infinite. **Round 4 owns that
+sentence** — the `ruleless` shape beside `moves` exists for facts of exactly this class.
 
 **And it becomes measurable.** Today there is no join from "decks that declared Bracket 4" to
 "what those decks ran" — `bracket_counts` is aggregated per commander, without lists. Once

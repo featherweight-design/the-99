@@ -38,9 +38,12 @@ export const EXTRA_TURN_LIMIT_BRACKET_1 = 0;
  * late game.
  *
  * LATENESS IS NOT COMPUTABLE from a decklist — nothing stored says when a combo lands — so
- * B3's clause WIDENS the permitted range to [3, 4] and never violates. An earlier draft had
- * it violating B3 outright, which would have slotted every deck holding a single infinite
- * as a 4 and made the range meaningless.
+ * the clause never violates B3. What it does instead is RESOLVE, not widen: see
+ * `comboLandsEarly`.
+ *
+ * An earlier draft had it violating B3 outright, which would have slotted every deck holding
+ * a single infinite as a 4. A later one widened the range to [3, 4]; that shipped, and was
+ * overruled 2026-09-20 — see `permitsFor`.
  */
 export const COMBO_POLICY = { 1: "forbidden", 2: "forbidden", 3: "earlyGameOnly" } as const;
 
@@ -57,14 +60,73 @@ export { COMBO_DETECTION, EXTRA_TURN_DETECTION, MLD_DETECTION };
  * no restrictions beyond the banned list — so reading "satisfies 4" as "is a 4" would slot
  * every legal deck at the top. The range opens only as the lower brackets FALL.
  */
+/**
+ * A RANGE IS ONLY EVER A QUESTION FOR THE PLAYER. Ruled 2026-09-20, overturning the
+ * `[3, 4]` range this function used to return.
+ *
+ * `[1, 2]` and `[4, 5]` are ranges because the rules make them ones: Exhibition and cEDH are
+ * statements of intent, and two decks with identical contents can sit either side. Nobody but
+ * the player can answer those, so the app does not pretend to.
+ *
+ * The 3-vs-4 boundary is NOT that. It is a question about the deck, and answering it with a
+ * range asked the reader to adjudicate something they came here to be told — "if we start
+ * splitting 2/3/4 then we're asking too much of the player and the ranking starts to seem
+ * indecisive." So the combo boundary RESOLVES, on whether the deck can assemble the combo
+ * rather than draw into it (`comboLandsEarly`), and the receipts state which tutors decided
+ * it. The player can still overrule the whole thing by declaring; that is what `declared` is
+ * for, and a bracket carried to a pod was always theirs rather than ours.
+ */
 export function permitsFor(input: {
   violatesB1: boolean;
   violatesB2: boolean;
   violatesB3: boolean;
-  hasCombo: boolean;
+  /** `comboLandsEarly` — the deck's tutors can assemble a whole combo. */
+  assemblesCombo: boolean;
 }): Bracket[] {
   if (!input.violatesB1) return [1, 2];
   if (!input.violatesB2) return [2];
-  if (!input.violatesB3) return input.hasCombo ? [3, 4] : [3];
+  if (!input.violatesB3) return input.assemblesCombo ? [4] : [3];
   return [4, 5];
+}
+
+/**
+ * Can this deck ASSEMBLE a combo, rather than draw into it?
+ *
+ * True when the deck's tutors cover EVERY piece of at least one assembled combo — one tutor
+ * that finds both halves, or two that each find a different one. A tutor reaching one half of
+ * a two-card combo leaves the other to chance, which is the deck the boundary calls a 3.
+ *
+ * **This is not an invented threshold, and the distinction matters** (§2.4a): the number of
+ * pieces that must be covered is the COMBO's, not ours. "More than N tutors" would be a
+ * figure we chose and would have to defend — and it is precisely the clause WotC deleted in
+ * October 2025, having found that not all tutors are created equal.
+ *
+ * A piece in the command zone counts as covered without being tutored: `usesCommander` means
+ * it is available every game by the format's own rules, so requiring a tutor for it would
+ * make a commander combo harder to detect than an identical one in the 99.
+ */
+export function comboLandsEarly(
+  combos: readonly {
+    variantId: string;
+    cards: readonly { oracleId: string }[];
+  }[],
+  reaches: readonly { combo: { variantId: string }; piece: { oracleId: string } }[],
+  commanderOracleIds: readonly string[],
+): boolean {
+  const inCommandZone = new Set(commanderOracleIds);
+  return combos.some((combo) => {
+    const reached = new Set(
+      reaches.filter((r) => r.combo.variantId === combo.variantId).map((r) => r.piece.oracleId),
+    );
+    // A piece is covered when a tutor finds it OR it sits in the command zone, where it is
+    // available every game by the format's own rules.
+    //
+    // COUNTED PER PIECE, not deducted once from the total. `buildDeckProfile` skips a reach
+    // for EVERY commander piece, so a partner deck whose combo is its two commanders has two
+    // uncoverable pieces — subtracting a flat one would leave it needing a tutor for a combo
+    // that assembles in the command zone every single game.
+    return combo.cards.every(
+      (c) => reached.has(c.oracleId) || inCommandZone.has(c.oracleId),
+    );
+  });
 }

@@ -48,8 +48,9 @@ export type BracketLimitReport = {
 
 export type BracketLean = {
   likely: 3 | 4;
-  /** `reachable` — a tutor in the deck finds a piece. `drawOnly` — the combo is assembled
-   *  only by drawing into it. */
+  /** `reachable` — the deck's tutors cover EVERY piece of a combo (a commander piece counts,
+   *  being in the zone every game), so it slotted at 4. `drawOnly` — they do not, so it
+   *  stayed at 3 and the combo has to be drawn into. */
   reason: "reachable" | "drawOnly";
   /** Every card behind the lean, so a reader who disagrees can see what it read. */
   receipts: { combo: ComboRef; tutors: CardRef[] }[];
@@ -59,15 +60,17 @@ export type BracketLean = {
 export type UnquantifiedFacts = { extraTurns: FlaggedCardRef[] };
 
 export type BracketVerdict = {
-  /** `[1,2] | [2] | [3] | [3,4] | [4,5]`. A RANGE, because the bracket system does not
-   *  produce a single number and this app never invents one. */
+  /** `[1,2] | [2] | [3] | [4] | [4,5]`. A range ONLY where the rules hand the question to
+   *  the player — 1-vs-2 and 4-vs-5 are statements of intent. The 3-vs-4 boundary is a
+   *  question about the deck and resolves (`comboLandsEarly`); ruled 2026-09-20. */
   permits: Bracket[];
   declared: Bracket | null;
   /** Drift is its own finding: a declaration outside the permitted range is reported, and
    *  the declaration is never corrected, overridden or inferred. */
   declaredOutsidePermits: boolean;
-  /** Only when `permits` is `[3, 4]` — the one place the range is wide enough that a reader
-   *  is owed a reason to prefer one end. */
+  /** Why the combo boundary landed where it did. Drawn when a combo is present and the
+   *  countable rules did not already decide the bracket — the one verdict here that moved on
+   *  a judgement rather than a count, which is why §2.2 demands its cards. */
   lean: BracketLean | null;
   limits: Record<"bracket1" | "bracket2" | "bracket3", BracketLimitReport>;
   violations: Violation[];

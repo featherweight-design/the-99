@@ -71,10 +71,14 @@ resolved in place below. Line numbers checked on `spec/deck-analysis-foundation`
    `deck_cards` plus the live commander columns. The principle (draft, never the committed
    version) stands; the loader reads `deck_cards` + `decks` directly (Task 14).
 4. **§6.1a's table contradicts §6.3 on one row.** Row 3 shows "≤3 Game Changers, a late
-   two-card combo" permitting `[3]` — but lateness is not computable (§6.3's whole point), and
-   row 4 widens any two-card infinite at an otherwise-B3 deck to `[3, 4]`. §6.3 is the argued
-   section and wins: **any** assembled two-card infinite on a deck whose only other B3 state is
-   clean widens the range. Row 3 is implemented as "≤3 Game Changers, no combo → `[3]`".
+   two-card combo" permitting `[3]` — but lateness is not computable, which is §6.3's whole
+   point. §6.3 is the argued section and wins.
+
+   **Restated for the 2026-09-20 amendment**, since the original resolution here was written
+   against the retired range: an assembled two-card infinite on a deck whose only other B3 state
+   is clean does not widen anything. It **RESOLVES** — to `[4]` when the deck's tutors cover every
+   piece of the combo, and to `[3]` when they do not and the combo has to be drawn into. Row 3 is
+   implemented as "≤3 Game Changers, combo the deck cannot assemble → `[3]`".
 5. **§4A.6b overclaims its window.** "It covers every deck during the window before the first
    widened index run" — the identity aggregate is a `GROUP BY` over the same `avg_*` columns
    that run populates, so before the first widened run every deck reads `basis: "none"`. The
@@ -112,7 +116,7 @@ Each entry names the task that implements it.
   shapes, and they differ in evidence: **an assembled combo producing infinite turns is
   Spellbook's measured data** — the profile already holds the combo and its `produces` — so
   at B2/B3 that flags the loop clause as violated, with the combo as the receipt (at B2 the
-  combo rule already fires; B3 is where it bites: `[3,4]` becomes `[4,5]`). **The
+  combo rule already fires; B3 is where it bites: a resolved `[3]`/`[4]` becomes `[4,5]`). **The
   self-recurring-card half (Nexus of Fate looping alone) does not ship**: no published
   definition, no fixture of undisputed cases to measure against, so §2.4a bars authoring it —
   it becomes buildable the honest way once declared brackets accumulate beside decklists
@@ -217,7 +221,7 @@ Each entry names the task that implements it.
   payloads; `resolvePairEdhrecData` follows the 67-byte `{"redirect": …}` stub before caching
   (Task 10).
 - **R21 — `permits` is computed as §6.3 argues** (finding 4): violations per bracket from the
-  countable rules alone; a two-card infinite violates B1/B2 outright and widens `[3] → [3, 4]`;
+  countable rules alone; a two-card infinite violates B1/B2 outright and resolves `[3]` or `[4]` at B3;
   extra turns count only at B1 (Task 17).
 - **R22 (§7.1) — the widened card read is `loadCardDetail` plus one shared helper.**
   `loadBracketFlags(oracleIds): Map<string, CardBracketFlags>` joins the flags table for any
@@ -247,10 +251,28 @@ Each entry names the task that implements it.
 PRs 1–2 and 3–4 are independent chains; 5 needs 2, 3 and 4 merged; 6 needs 5. Each PR passes
 the full gate alone — no stacking, every intermediate state shippable.
 
+> **SUPERSEDED IN PLACE, 2026-09-20.** Every task below that named `[3, 4]` has been corrected
+> rather than annotated, because this file is the EXECUTION plan and an implementer follows its
+> steps rather than its footnotes. A ratification recording the new rule while the steps still
+> said the old one would have rebuilt exactly what the amendment removes. Tasks 14–16's shapes,
+> the `permitsFor` sketch and the worked test names are the ones that moved.
+
 **Walkthrough ratifications (Hugh, 2026-09-19), so no round re-litigates them:** the R3 split
 (combo-half ships, authored half waits for evidence); R18's Tier-B cache proof; R2's
 candidates-not-picks `upgradePath`; `bracketDelta`'s range-to-range shape; and execution as an
 autonomous epic-run through the standard gates.
+
+**Sixth ratification, added 2026-09-20 — it was made during planning and never written down,
+which is why the build shipped the opposite.** ONLY 1/2 AND 4/5 ARE EVER RANGES. Those two
+boundaries are questions the rules hand to the player; the 3-vs-4 boundary is a question about
+the deck, and answering it with a range asks too much of the reader and makes the ranking look
+indecisive. The combo clause therefore RESOLVES on §6.1b's tutor-coverage signal rather than
+widening to `[3, 4]`.
+
+The signal itself WAS documented (§6.1b, as reach) — what was missing is that it decides rather
+than advises, and §6.3 said the opposite in as many words. Spec §6.1a, §6.3 and §6.1b are
+amended, `permitsFor` and `slotDeck` follow, and Round 2's designs already drew it this way and
+had asked for the amendment.
 
 ---
 
@@ -1140,10 +1162,10 @@ export type BracketLean = {
 };
 export type UnquantifiedFacts = { extraTurns: FlaggedCardRef[] };
 export type BracketVerdict = {
-  permits: Bracket[];                // [1,2] | [2] | [3] | [3,4] | [4,5]
+  permits: Bracket[];                // [1,2] | [2] | [3] | [4] | [4,5]
   declared: Bracket | null;
   declaredOutsidePermits: boolean;   // R16 — drift is its own finding (§6.1a)
-  lean: BracketLean | null;          // only when permits is [3,4]
+  lean: BracketLean | null;          // why the combo boundary landed where it did
   limits: Record<"bracket1" | "bracket2" | "bracket3", BracketLimitReport>;
   violations: Violation[];
   unquantified: UnquantifiedFacts;
@@ -1162,7 +1184,7 @@ it("permits [2] on extra turns alone; the same card at B1 is a violation and at 
     not — the split a single shared rule gets wrong at one end (§6.3, §8)", ...)
 it("permits [3] at exactly 3 Game Changers and no combo; Underworld Breach as the 4th
     names the excess and permits [4,5]", ...)
-it("permits [3,4] on a two-card infinite and nothing else at B3, with the lean populated:
+it("permits [3] on a two-card infinite the deck can only draw into, [4] when its tutors cover it:
     reachable when a tutor reaches a piece, drawOnly when none does, receipts naming
     combo, pieces and tutors", ...)
 it("permits [4,5] when the assembled combo produces INFINITE TURNS — the loop clause
@@ -1189,10 +1211,10 @@ const b3 = gc.length > 3 || mld.length > 0 || turnLoops.length > 0;  // R3: loop
   // turns is stated as out at B3, and an assembled infinite-turns combo is a loop by
   // Spellbook's measured data — so it VIOLATES B3 where a generic infinite only widens.
 const permits: Bracket[] =
-  !b1 ? [1, 2] : !b2 ? [2] : !b3 ? (combos.length > 0 ? [3, 4] : [3]) : [4, 5];
+  !b1 ? [1, 2] : !b2 ? [2] : !b3 ? (assemblesCombo ? [4] : [3]) : [4, 5];
 ```
 
-Violations, limits and unquantified assembled from the same inputs; lean only on `[3, 4]`, from `profile.brackets.comboReach`.
+Violations, limits and unquantified assembled from the same inputs; lean wherever a combo decided the bracket, from `profile.brackets.comboReach`.
 - [ ] **Step 4:** PASS. Suite + gate. Commit `feat: slotDeck — the permitted range, the limits table, the combo lean`.
 
 ---
@@ -1223,7 +1245,7 @@ export type BracketDelta =
 export function bracketDelta(profile: DeckProfile, candidate: CandidateFacts): BracketDelta;
 ```
 
-(`from`/`to` are ranges, not single brackets — the spec's own `[3] → [3,4]` widening cannot be written otherwise; a §13.1 type decision this plan makes and names.)
+(`from`/`to` are ranges, not single brackets — `[1,2] → [2]` and `[3] → [4]` both need the array shape; a §13.1 type decision this plan makes and names.)
 - [ ] **Step 1: failing tests** — §7.2's four sentences as four cases, plus the two traps:
 
 ```ts
@@ -1235,10 +1257,10 @@ it("a 3rd extra-turn card on a [3] deck: unquantified — NEVER moves at B2/B3",
 it("an extra-turn card on a [1,2] deck: MOVES to [2] — B1 counts (§7.2's parenthetical)", ...)
 it("an 8th tutor: ruleless — never unquantified, never moves (§8's three-variants trap:
     they read alike in prose and mean different things)", ...)
-it("a card completing a combo on a [3] deck: moves to [3,4]", ...)
+it("a card completing a combo the deck cannot tutor for: moves nothing", ...)
 it("a card completing an INFINITE-TURNS combo on a [3] deck: moves to [4,5] — the loop
     clause, not the widening (R3)", ...)
-it("a second combo on a deck already [3,4]: none", ...)
+it("a second combo on a deck already at [4]: none", ...)
 ```
 
 - [ ] **Step 2: implement.** Recompute `permitsFor` with the candidate folded in, then classify by an EXPLICIT precedence, because one card can fire several rules (Underworld Breach is a Game Changer that completes combos) and the four shapes must never be blurred: (1) permits changed by MLD, an extra turn at a B1-permitting deck, or a completed combo → `moves` with THAT rule and its receipts (a completed infinite-turns combo names the loop rule, R3); (2) the candidate is a Game Changer → `counts` with `to` = the new range, and any co-fired combo completion carried in the rule's `combos` receipts so the Tier B sentence explains the true reason; (3) extra turn at an unmoved range → `unquantified`; (4) tutor → `ruleless`; (5) else `none`. Pure, cheap per row — the property later sub-projects need (§7.2).
