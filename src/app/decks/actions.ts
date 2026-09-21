@@ -39,7 +39,9 @@ import { deckAddRejectionMessage, type DeckMutationResult } from "../../lib/deck
 import type { ProfileSkeleton } from "../../lib/profile/types";
 import { readSynergyCards } from "../commanders/[slug]/synergy-read";
 import { loadSkeletonForCommanders } from "../../lib/profile/load";
-import { dedupeSelectionFromPool, planFill, type FillPlan } from "../../lib/decks/fill";
+import {
+  dedupeSelectionFromPool, planFill, type FillPlan, type PlanFillArgs,
+} from "../../lib/decks/fill";
 import { sanitizeSelection } from "../../lib/decks/selection-param";
 import { recordFillPass, summariseFillPasses, type FillPassKind } from "../../lib/decks/fill-passes";
 import { synergyCopy } from "../../lib/copy/synergy-discovery";
@@ -74,6 +76,9 @@ export async function buildFillPlan(
   // The cards a selection has already placed. Defaults to empty, so `fillDeck`
   // and the no-selection `createDeck` are unchanged.
   excludeOracleIds: Set<string> = new Set(),
+  /** Passed straight to `planFill`. The bulk control names a slot count and a sleeveable-only
+   *  pool; every other caller fills the whole body from everything. */
+  options: Pick<PlanFillArgs, "slots" | "pool"> = {},
 ): Promise<FillPlan> {
   const commander = commanders[0];
   const hasPartner = commanders.length > 1;
@@ -169,7 +174,7 @@ export async function buildFillPlan(
       layout: c.layout, owned: false, ownedQuantity: 0,
       inclusionPct: inclusionOf(c.name),
     })),
-  ], { hasPartner, skeleton, synergyRank });
+  ], { hasPartner, skeleton, synergyRank, ...options });
 }
 
 /** `selectedOracleIds` are the synergy picks the player carried across the
@@ -1879,5 +1884,60 @@ export async function pullCardFromDeck(
     // back, and quoting 0 would announce a finished purchase the server never
     // read. The caller draws the pull and says nothing about buying.
     return { ok: true, buy: null, total: null };
+  }
+}
+
+/**
+ * Which cards the bulk control should tick — chosen by what the deck NEEDS.
+ *
+ * A SERVER ACTION rather than a client-side selection, and not by preference: the list's pool
+ * is `SynergyCard[]`, which carries no `oracleText`, `keywords`, `manaCost` or `ownedQuantity`,
+ * and `planFill` needs all four. `mix.ts` states the rule outright — do not re-run
+ * `classifyRoles` on the client, because `card.role` is derived from real oracle text on the
+ * server and re-classifying with a null text under-counts every text-based role. A control that
+ * tried would tick a ramp spell as "other" and call it a creature.
+ *
+ * THE FAILURE THIS FIXES is a category error rather than a bug. `canSeed` narrows the pool to
+ * what the player can sleeve tonight, and the control then took the top N by SYNERGY within it
+ * — optimising "what can I sleeve" where the player asked "what does this deck need". Short on
+ * creatures, it ticked non-creatures and left the deck worse with no slots left to fix it.
+ *
+ * `canSeed` is kept exactly as it is. It was the right filter and only ever the wrong objective.
+ */
+export async function chooseBulkFill(
+  deckId: string,
+  openSlots: number,
+): Promise<{ ok: true; oracleIds: string[] } | { ok: false; message: string }> {
+  const userId = await requireUserId();
+  const deck = await requireDeck(deckId, userId);
+  if (openSlots <= 0) return { ok: true, oracleIds: [] };
+
+  try {
+    const [commander] = await db.select().from(cards)
+      .where(eq(cards.oracleId, deck.commanderOracleId));
+    if (!commander) return { ok: false, message: synergyCopy.lastSlots.topUpFailed };
+    // The partner legalises the pool alongside the primary, exactly as the create path reads it.
+    const [partner] = deck.partnerOracleId
+      ? await db.select().from(cards).where(eq(cards.oracleId, deck.partnerOracleId))
+      : [];
+    const held = await db.select({ oracleId: deckCards.oracleId })
+      .from(deckCards).where(eq(deckCards.deckId, deckId));
+
+    const plan = await buildFillPlan(
+      userId,
+      partner ? [commander, partner] : [commander],
+      // The deck's own cards are not candidates for filling it.
+      new Set(held.map((r) => r.oracleId)),
+      // SLEEVEABLE ONLY. The control's promise is about cards the player can put in the deck
+      // tonight; a plan that reached past the collection would tick a purchase.
+      { pool: "sleeveable", slots: openSlots },
+    );
+    // FEWER THAN THE SLOTS IS A VALID ANSWER. Spending them badly is not: a fill that cannot
+    // meet a floor from the sleeveable pool leaves the slot open rather than filling it with
+    // whatever ranked next, because an open slot can still be fixed and a wrong card cannot.
+    return { ok: true, oracleIds: plan.rows.map((r) => r.oracleId) };
+  } catch (err) {
+    console.error("chooseBulkFill failed", err);
+    return { ok: false, message: synergyCopy.lastSlots.topUpFailed };
   }
 }

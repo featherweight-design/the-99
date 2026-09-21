@@ -539,3 +539,25 @@ it("never buys a staple over an owned card on type-gap grounds", () => {
   expect(plan.rows.find((r) => r.role === "ramp")?.oracleId).toBe("owned");
   expect(plan.bought).toBe(0);
 });
+
+// The bulk control's promise is about cards the player can sleeve TONIGHT, so its plan runs
+// with `pool: "sleeveable"`. Tested here rather than through the action, because the action's
+// stub supplies no unowned candidates — so the rule would be asserted over a pool that cannot
+// violate it, which is a check measuring nothing.
+describe("pool: sleeveable", () => {
+  const owned = ramp("mine", 10);
+  const staple = ramp("buy", 99, false);
+
+  it("never reaches past the collection", () => {
+    const plan = planFill([staple, owned], { ...FLAT, pool: "sleeveable" });
+    expect(plan.rows.map((r) => r.oracleId)).not.toContain("buy");
+    expect(plan.bought).toBe(0);
+  });
+
+  // And the default still may: the create path buys a staple when a floor is short, which is
+  // the behaviour this option narrows rather than replaces.
+  it("while the default pool still may", () => {
+    const plan = planFill([staple, owned], FLAT);
+    expect(plan.rows.map((r) => r.oracleId)).toContain("buy");
+  });
+});

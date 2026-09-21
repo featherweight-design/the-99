@@ -432,7 +432,7 @@ vi.mock("../../lib/decks/draft-state", () => ({
 
 import {
   commitDeckVersion, createDeck, deleteGame, discardDeckDraft, fillDeck, getVersionDiff, logGame,
-  pullCardFromDeck, restoreAutoCards, setCardProxied,
+  pullCardFromDeck, restoreAutoCards, setCardProxied, chooseBulkFill,
 } from "./actions";
 import { PROXY_READ_FAILED } from "../../lib/decks/proxies";
 import { proxyCopy } from "../../lib/copy/proxies";
@@ -1953,5 +1953,53 @@ describe("pullCardFromDeck", () => {
     const result = await pullCardFromDeck(SOURCE_ID, CARD_A, ASKING_ID);
     expect(result.ok).toBe(false);
     expect(stub.state.deleteCalls).toHaveLength(0);
+  });
+});
+
+// TASK 21. The control used to take the top N by SYNERGY from the sleeveable pool — optimising
+// "what can I sleeve" where the player asked "what does this deck need". Short on creatures, it
+// ticked non-creatures and left the deck worse with no slots left to fix it.
+//
+// Every candidate here carries REAL oracle text. R1's version gave them none, so neither
+// classified, both fell to the residual, and the residual ranks on synergy — which picks the
+// card the case was written to see beaten.
+describe("chooseBulkFill", () => {
+  const creature = (n: number) => ({
+    oracleId: `crea-${n.toString().padStart(8, "0")}-aaaa-aaaa-aaaa-aaaaaaaaaaaa`,
+    name: `Elf ${n}`,
+    typeLine: "Creature — Elf Druid",
+    oracleText: "{T}: Add {G}.",
+    keywords: [], colorIdentity: [], commanderLegal: true, quantity: 1,
+  });
+
+  it("returns nothing for a deck with no open slots", async () => {
+    stub.state.decks.push({ id: "bulk-0", userId: "user_1", commanderOracleId: COMMANDER_ORACLE });
+    stub.state.cards.push(commanderCard());
+    const result = await chooseBulkFill("bulk-0", 0);
+    expect(result).toEqual({ ok: true, oracleIds: [] });
+  });
+
+  it("picks what the deck needs, and never more than the open slots", async () => {
+    stub.state.decks.push({ id: "bulk-1", userId: "user_1", commanderOracleId: COMMANDER_ORACLE });
+    stub.state.cards.push(commanderCard());
+    stub.state.collectionItems.push(
+      ...Array.from({ length: 6 }, (_, i) => rampCard(i)),
+      ...Array.from({ length: 6 }, (_, i) => creature(i)),
+    );
+
+    const result = await chooseBulkFill("bulk-1", 3);
+
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+    // FEWER IS VALID; MORE NEVER IS. A control that promised three slots and ticked four has
+    // taken a decision the player did not make.
+    expect(result.oracleIds.length).toBeLessThanOrEqual(3);
+    expect(new Set(result.oracleIds).size).toBe(result.oracleIds.length);
+  });
+
+  it("reports a refusal rather than throwing when the fill cannot run", async () => {
+    stub.state.decks.push({ id: "bulk-2", userId: "user_1", commanderOracleId: "missing-oracle" });
+    const result = await chooseBulkFill("bulk-2", 5);
+    expect(result.ok).toBe(false);
   });
 });

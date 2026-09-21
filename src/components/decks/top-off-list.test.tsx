@@ -6,8 +6,11 @@ import { stubViewport } from "../../test-utils/stub-viewport";
 import type { TopOffCandidate } from "../../lib/decks/last-slots";
 import { CardDetailProvider, cardDetailCopy } from "../cards/card-detail-provider";
 
-const actions = vi.hoisted(() => ({ commit: vi.fn() }));
-vi.mock("../../app/decks/actions", () => ({ commitTopOff: actions.commit }));
+const actions = vi.hoisted(() => ({ commit: vi.fn(), chooseBulk: vi.fn() }));
+vi.mock("../../app/decks/actions", () => ({
+  commitTopOff: actions.commit,
+  chooseBulkFill: actions.chooseBulk,
+}));
 
 import { TopOffList } from "./top-off-list";
 
@@ -420,6 +423,9 @@ describe("TopOffList", () => {
   // than there are slots must be offered the number it will actually tick —
   // a button that says two and ticks one is wrong on its face and in its name.
   it("names the tick-all by what it will tick, not by what is owned", async () => {
+    // The action answers with the one slot's worth; the LABEL is computed from the list's own
+    // `tickable` and is what this case is about.
+    actions.chooseBulk.mockResolvedValue({ ok: true, oracleIds: ["owned-1"] });
     render(<Harness openSlots={1} />);
 
     const button = screen.getByRole("button", {
@@ -578,16 +584,22 @@ describe("TopOffList — the bulk tick", () => {
     availability: { owned: 1, hard: 1, soft: 0, free: 0, claims: [] },
   });
 
-  it("reaches for what the seed reaches for, and says so", () => {
+  it("reaches for what the seed reaches for, and says so", async () => {
     // The two drifted once already: the seed was narrowed to cards with a free
     // copy while this control kept ticking every owned card, which left a
     // one-click path to the exact mechanic the seed had stopped doing.
+    // The ACTION decides what to tick now — the control no longer slices a synergy ranking —
+    // so the case stubs its answer and asserts the control honours the list's own exclusions
+    // on top of it. Offering a held card and choosing one are different things, and only the
+    // second changed.
+    actions.chooseBulk.mockResolvedValue({ ok: true, oracleIds: ["free-1", "held-1"] });
     render(<Harness candidates={[claimed("held-1"), candidate("free-1", true)]} />);
 
     const bulk = screen.getByRole("button", { name: topOffCopy.list.tickOwnedAria("1") });
     expect(bulk).toHaveTextContent(topOffCopy.list.tickOwned("1"));
 
     fireEvent.click(bulk);
+    await screen.findByRole("button", { name: topOffCopy.list.tickOwnedAria("1") });
     const boxes = screen.getAllByRole("checkbox");
     const byName = (name: string) =>
       boxes.find((b) => (b.getAttribute("aria-label") ?? "").includes(name));
@@ -595,9 +607,12 @@ describe("TopOffList — the bulk tick", () => {
     expect(byName("held-1")).not.toBeChecked();
   });
 
-  it("does not bring back a row the player set aside", () => {
+  it("does not bring back a row the player set aside", async () => {
     // A bulk control that resurrected a decline would undo a choice with a press
-    // meant to save presses.
+    // meant to save presses. The action does not know about this list's declines — it reads
+    // the deck — so the control intersects its answer with what this list can tick, and this
+    // case is that intersection.
+    actions.chooseBulk.mockResolvedValue({ ok: true, oracleIds: ["free-1", "free-2"] });
     render(
       <Harness
         candidates={[candidate("free-1", true), candidate("free-2", true)]}
@@ -606,6 +621,7 @@ describe("TopOffList — the bulk tick", () => {
     );
 
     fireEvent.click(screen.getByRole("button", { name: topOffCopy.list.tickOwnedAria("1") }));
+    await screen.findByRole("button", { name: topOffCopy.list.tickOwnedAria("1") });
     const boxes = screen.getAllByRole("checkbox");
     expect(boxes.filter((b) => (b as HTMLInputElement).checked)).toHaveLength(1);
   });

@@ -17,7 +17,7 @@ import { useEffect, useId, useLayoutEffect, useRef, useState } from "react";
 import { topOffCopy } from "../../lib/copy/top-off";
 import { synergyCopy, synergySignedDisplay } from "../../lib/copy/synergy-discovery";
 import { spokenManaCost } from "../../lib/copy/card-surfaces";
-import { commitTopOff } from "../../app/decks/actions";
+import { commitTopOff, chooseBulkFill } from "../../app/decks/actions";
 import { canSeed, type TopOffCandidate } from "../../lib/decks/last-slots";
 import {
   formatCents,
@@ -286,6 +286,9 @@ export function TopOffList({
     .map((c) => c.oracleId);
   const tickable = Math.min(seedableIds.length, Math.max(openSlots, 0));
   const untouched = pool.length - tickedCount - declinedHere;
+  // The control's own in-flight state. Separate from `inflight`, which is the COMMIT's: a
+  // player pressing this twice while the server thinks would otherwise send two plans.
+  const [choosing, setChoosing] = useState(false);
 
   const buying = pool.filter((c) => live.has(c.oracleId) && !c.owned);
   const buyMoney = summarisePrices(
@@ -535,8 +538,31 @@ export function TopOffList({
 
         <div className="flex flex-wrap gap-[8px] mt-[11px] md:contents">
           <GhostButton
-            onClick={() => onTickedChange(new Set(seedableIds.slice(0, tickable)))}
-            disabled={inflight || tickable === 0}
+            onClick={async () => {
+              // THE REAL FILL DECIDES, not the top of a synergy ranking. `seedableIds` is
+              // ordered by synergy, so slicing it optimised "what can I sleeve" where the
+              // player asked "what does this deck need" — short on creatures, it ticked
+              // non-creatures and left the deck worse with no slots left to fix it.
+              //
+              // The choice cannot be made here: the list's pool is `SynergyCard[]`, which
+              // carries no oracle text, and re-classifying without it under-counts every
+              // text-based role. So the action runs `planFill` on the server and returns ids.
+              setChoosing(true);
+              try {
+                const result = await chooseBulkFill(deckId, tickable);
+                // Intersected with what this list can actually tick. The action reads the
+                // deck's own pool and the list carries exclusions of its own — a set-aside row,
+                // or one that went illegal while the list was open — and those must not come
+                // back ticked because a bulk control was pressed.
+                const allowed = new Set(seedableIds);
+                onTickedChange(new Set(
+                  result.ok ? result.oracleIds.filter((id: string) => allowed.has(id)) : [],
+                ));
+              } finally {
+                setChoosing(false);
+              }
+            }}
+            disabled={inflight || choosing || tickable === 0}
             aria-label={topOffCopy.list.tickOwnedAria(String(tickable))}
             className="flex flex-1 items-center justify-center min-h-[44px] md:inline-flex md:flex-none md:min-h-0 md:h-[30px] md:px-[11px] rounded-[8px] font-mono text-[11px] text-[color:var(--fg-body)] disabled:opacity-50"
           >
