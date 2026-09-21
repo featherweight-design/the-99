@@ -1,4 +1,4 @@
-# The 99 — The declaration (design handoff · R2, Round 3 of 5)
+# The 99 — The declaration (design handoff · R5, Round 3 of 5)
 
 > **Start with `HANDOFF.md`.** This file is the long-form argument: why each state is shaped the
 > way it is, and what was tried and dropped on the way.
@@ -19,6 +19,26 @@ not redrawn.
 interaction, and an interaction argued in static frames is an assertion.
 
 ---
+
+## R5 — what changed from R4
+
+**A declaration belongs to the version it was made on**, and that single move retires most of
+what the last three rounds argued about. Version 1 read as a range and a bracket was chosen for
+it; that record is complete and permanently true about version 1. A re-analysis produces a later
+version with its own reading, and the block's whole job is to state both.
+
+- **The app no longer quotes the player.** *You said X*, *your last changes*, *change what you
+  said* — all withdrawn. The first put words in a player's mouth about a deck they have since
+  edited; the last asked them to revise something that was true when they wrote it. The declared
+  reading is now a statement of record: *Declared **Optimized** for this version.*
+- **The changed-reading state has no control**, because nothing is being corrected.
+- **Direction dissolved rather than being solved.** R4 needed *moved past* / *brought inside*
+  because a claim about the deck can be false in one direction. A comparison of two readings
+  cannot be, so **one sentence covers a deck tuned up and a deck tuned down**.
+- **A later version with a range is asked** — not re-asked. It has never answered a question.
+- **There is no skip.** Two chips are the whole control, and saying nothing leaves the version
+  unanswered. **The permanent-skip state, its copy and its migration are withdrawn**; a nullable
+  `declared` per version is sufficient.
 
 ## R3 — what changed from R2
 
@@ -115,25 +135,24 @@ for it* — an empty slot would read as a clean deck.
 **The modal carries no declare control.** A reader who rejects the reasoning closes it and
 answers in the sub-line: same field, same mechanism.
 
-## 5 · Drift
+## 5 · When a later version reads differently
 
-`declaredOutsidePermits` is the app's best argument for recording a declaration at all — it is
-what a computed number cannot buy — and it is the state most likely to read as a scolding.
+Drawn as **a diff between two versions**: version 1's mark, an arrow, this version's mark or
+marks, under small labels (*version 1* / *this version*). Then one sentence — *This version reads
+as **Upgraded**. Version 1 read as Optimized or cEDH and was declared cEDH.* — and nothing else.
 
-It is drawn as **a movement**: the declared bracket's mark, an arrow, the permitted marks, under
-small labels (*you said* / *your cards now permit*). Then the sentence, then *Your declaration
-stands as you left it.*
+- **No control.** Nothing is being corrected, so there is nothing to press.
+- **No direction, no second person, nothing red.** No `--danger`, warning glyph, toast or badge;
+  no directional or recoloured arrow; no *outdated*, *no longer*, *should*.
+- **Cardinality picks one verb:** a range *permits*, a single bracket *reads as*.
+- **If this version has a range, the ordinary ask follows underneath it.**
 
-- **Nothing red.** No `--danger`, no warning glyph, no toast, no badge on the tab.
-- **No "fix", no "update my declaration".** The analysis is automated; the declaration is not.
-- **No *outdated*, *no longer*, *should*.** Two facts, then stop.
+## 6 · Unanswered, never skipped
 
-## 6 · The skip
-
-Permanent, per deck, stored. One faint line and `say which`, which stays because volunteering
-later is not the same as being asked. **No re-ask** on the next analysis, re-import or version.
-Both answered states are shorter than the ask: the question occupies the block once and then
-gets out of the way for the life of the deck.
+There is no skip control — two chips are the whole row. A player who says nothing leaves the
+version unanswered, and the ask stays on versions that have a range. The declared reading is
+shorter than the ask, which is the point: the question occupies the block once per version, then
+states its answer as a fact and stops.
 
 ## 7 · Three edits to Round 2's drawing
 
@@ -148,20 +167,22 @@ changers — you have 5* — which states the limit and never the action.
 
 ## Notes for engineering
 
-- **The write path is the round's one new mechanism.** `declared` is a column and a server
-  action; the skip is **also stored state**, not a session dismissal — it must survive reload,
-  re-analysis and re-import.
-- **Never default or infer `declared`**, including from `lean.likely` and including after a
-  re-analysis that moves the range.
+- **The write path is the round's one new mechanism**, and it is **scoped to a version**:
+  `declared` belongs to the analysis version it was made on, is never carried forward, and is
+  never rewritten by a later analysis. No skip state is needed or wanted.
+- **Never default or infer `declared`**, including from `lean.likely`, from an earlier version's
+  answer, or after a re-analysis that changes the reading.
+- **`declaredOutsidePermits` may not need to exist.** Per version it is the observation that
+  `v(n)` reads differently from `v(n-1)` — computable at analysis time with nothing stored.
 - **`lean.receipts[].tutors` must arrive per combo piece**, not as one array for the combo. The
   modal groups by half and cannot do it from a flat list without re-deriving coverage on the
   client. **This is the one data-shape change this round adds.**
 - `ComboRef` and `CardRef` must carry oracle ids and image uris — now at card size, not
   thumbnail size.
-- **Live region:** `Analysis ready. Your cards permit Optimized or cEDH. Your tutors can
-  find both halves of one combo, which puts this past Upgraded. Which of the two this is, is
-  yours to say.` On a drifted deck: `Analysis ready. You said Core. Your last changes moved
-  this deck past that — it now permits Optimized or cEDH.`
+- **Live region:** `Analysis ready. Your cards permit Optimized or cEDH. Your tutors can find
+  both halves of one combo, which puts this past Upgraded. Which of the two this is, is yours to
+  say.` On a version that reads differently: `Analysis ready. This version reads as Upgraded.
+  Version 1 read as Optimized or cEDH and was declared cEDH.`
 - **The overview wants a longer generator budget** — two paragraphs, not two sentences. Drawn at
   length in 1e; the column is 740px and was carrying a caption.
 - **The About entry belongs to this surface's release**, with the `ABOUT_VERSION` bump.
