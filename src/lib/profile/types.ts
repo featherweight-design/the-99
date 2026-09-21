@@ -83,6 +83,18 @@ export type ProfileRoles = {
    * about the same deck.
    */
   counts: Record<Role, number>;
+  /**
+   * The same classification over the 99 ALONE.
+   *
+   * It exists because the measured role targets were derived from EDHREC's support lists,
+   * which never contain the commander itself — so comparing `counts` against one of those
+   * targets reads a phantom surplus on every deck led by a draw engine, a removal creature or
+   * a ramp commander. `counts` still folds them in, deliberately, because the stats loader
+   * does and two surfaces disagreeing about the same deck is worse.
+   *
+   * Use this ONLY against a measured target. Anywhere else, `counts` is the deck.
+   */
+  excludingCommanders: Record<Role, number>;
   /** The cards behind each count. A count with no cards is an assertion nobody can check. */
   cards: Record<Role, CardRef[]>;
 };

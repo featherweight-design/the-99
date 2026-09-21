@@ -93,6 +93,21 @@ describe("a role target never travels without saying whether it was measured", (
     },
   });
 
+  // RESTORED from the retired guard test, which was doing double duty: it was the only
+  // assertion anywhere on TYPE_ORDER's membership AND its order, and the surviving type tests
+  // look their axes up by name, so a reordered or duplicated axis shipped green without it.
+  it("still names exactly the ten composition axes, in order", () => {
+    expect(fit(withComposition("commander")).types.map((t) => t.type)).toEqual([
+      "land", "basic", "nonbasic", "creature", "instant",
+      "sorcery", "artifact", "enchantment", "planeswalker", "battle",
+    ]);
+  });
+
+  it("says which rung served the roles, beside whether they were measured", () => {
+    expect(fit(withRoles("identity")).roleBasis).toBe("identity");
+    expect(fit().roleBasis).toBe("flat");
+  });
+
   it("names the four roles in ramp, draw, removal, wipes order", () => {
     expect(fit(withRoles("commander")).roles.map((r) => r.role))
       .toEqual(["ramp", "draw", "removal", "wipes"]);
@@ -124,6 +139,34 @@ describe("a role target never travels without saying whether it was measured", (
     expect(wipes.target).toBe(0);
     expect(wipes.have).toBe(1);
     expect(wipes.delta).toBe(1);
+  });
+
+  // THE TWO SIDES MUST COUNT THE SAME POPULATION, and these are the two ways they did not.
+  //
+  // EDHREC's support lists never contain the commander, so folding it into `have` reports a
+  // surplus on every deck led by a card that classifies as one of the four. The commander here
+  // is a draw engine; with `counts` in place of `excludingCommanders` this reads 1.
+  it("counts the 99 alone against a measured target, never the commander", () => {
+    const f = fit(
+      { ...withRoles("commander", { ramp: 0, draw: 0, removal: 0, wipes: 0 }),
+        commanderOracleIds: ["cmd"] },
+      [row({ oracleId: "cmd", typeLine: "Legendary Creature — Human",
+             oracleText: "Whenever you cast a spell, draw a card." })],
+    );
+    expect(f.roles.find((r) => r.role === "draw")!.have).toBe(0);
+  });
+
+  // `cards.oracle_text` holds BOTH faces joined, and the derivation classifies the FRONT one.
+  // A land-backed MDFC read as ramp off the whole string — the same 82-card defect the
+  // derivation was corrected for, on the side that never was.
+  it("classifies the front face, as the derivation does", () => {
+    const mdfc = row({
+      oracleId: "path", typeLine: "Instant // Land",
+      oracleText: "Destroy target creature.\n//\n{T}: Add {G}.",
+      layout: "modal_dfc",
+    });
+    const f = fit(withRoles("commander", { ramp: 0, draw: 0, removal: 0, wipes: 0 }), [mdfc]);
+    expect(f.roles.find((r) => r.role === "ramp")!.have).toBe(0);
   });
 
   // A different fact from `coverage.thin`, with a different source, which is why the names

@@ -69,14 +69,25 @@ export type SkeletonFit = {
   /** The four, in `ramp → draw → removal → wipes` order. Always present: the role chain ends
    *  at the asserted baseline rather than at null, so there is always something to compare. */
   roles: RoleFit[];
+  /** WHICH rung served the roles. `measured` on each row answers "derived or asserted"; this
+   *  answers "derived from what", which is what a reader needs to tell a commander's own
+   *  figures from a bucket's — and whether `coverage.thinCondition` is about them. */
+  roleBasis: "commander" | "pair" | "identity" | "count" | "flat";
   missingStaples: StapleRef[];
   presentStaples: StapleRef[];
   coverage: {
     commanderDeckCount: number | null;
     /** THIS COMMANDER's deck count is below `THIN_DECK_COUNT`. */
     thin: boolean;
-    /** The BUCKET the targets came from was derived from a below-bar population. A different
-     *  fact with a different source — see `ProfileSkeleton.thinCondition`. */
+    /**
+     * A bucket serving THIS SKELETON was derived from a below-bar population.
+     *
+     * Deliberately not "the bucket the role targets came from": the role chain can stop at the
+     * commander or pair rung while the TYPE targets still come from a thin identity or count
+     * row, and the caveat is true of the skeleton either way. `roleBasis` below says which
+     * rung served the roles, so a surface drawing one role can tell whether the caveat is
+     * about the figure it is showing.
+     */
     thinCondition: boolean;
   };
 };
@@ -202,13 +213,16 @@ export function fitSkeleton(profile: DeckProfile): SkeletonFit {
   const measured = roleTargets.of !== "flat";
   const roles: RoleFit[] = roleOrder.map((role) => ({
     role,
-    have: profile.roles.counts[role],
+    // `excludingCommanders`, never `counts` — see `ProfileRoles`. The targets were derived
+    // from support lists that never contain the commander, so folding it in here would report
+    // a phantom surplus on every deck led by a card that classifies as one of the four.
+    have: profile.roles.excludingCommanders[role],
     target: roleTargets.targets[role],
     // `have - target`, so a deck holding one wipe against a MEASURED target of 0 reads +1.
     // That is a surplus and must read as one: 390 commanders measure exactly 0 wipes, and
     // calling it a shortfall would be the flat target's error wearing a measured number's
     // authority — the precise failure the old module-wide rule existed to prevent.
-    delta: profile.roles.counts[role] - roleTargets.targets[role],
+    delta: profile.roles.excludingCommanders[role] - roleTargets.targets[role],
     measured,
   }));
 
@@ -218,6 +232,7 @@ export function fitSkeleton(profile: DeckProfile): SkeletonFit {
     types,
     curve,
     roles,
+    roleBasis: roleTargets.of,
     missingStaples,
     presentStaples,
     coverage: {
