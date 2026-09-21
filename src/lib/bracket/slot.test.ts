@@ -97,11 +97,11 @@ describe("the permitted range", () => {
     expect(b3!.cards.map((c) => c.oracleId)).toContain("breach");
   });
 
-  // Lateness is not computable from a decklist, so B3's combo clause WIDENS and never
-  // violates. An earlier draft had it violating, which slots every deck holding one
-  // infinite as a 4 and makes the range meaningless.
-  // Ruled 2026-09-20: the 3-vs-4 boundary RESOLVES rather than widening. A range is only ever
-  // a question for the PLAYER, and this is a question about the deck.
+  // Lateness is not computable from a decklist, so B3's combo clause never VIOLATES. Ruled
+  // 2026-09-20, it RESOLVES instead, on whether the deck's tutors can assemble the combo —
+  // a range is only ever a question for the PLAYER, and this is a question about the deck.
+  // (Two earlier readings are history: violating outright, which slotted every deck holding
+  // one infinite as a 4; and widening to [3, 4], which shipped and was overturned.)
   it("permits [3] on a two-card infinite the deck can only draw into", () => {
     const v = verdict({
       cards: [card("p1"), card("p2")],

@@ -1746,10 +1746,14 @@ the clause **WotC deleted** in October 2025, having found that not all tutors ar
 "Do this deck's tutors cover this combo" invents no figure: the number of pieces to cover is the
 combo's own.
 
-**A piece in the command zone counts as covered without a tutor.** A tutor searches a library
-and a commander is not in one, so `buildDeckProfile` never records a reach against a commander
-piece — meaning a requirement of "every piece tutored" would make a commander combo the single
-case that could never resolve to 4. The requirement drops by one piece where `usesCommander`.
+**A piece in the command zone counts as covered without a tutor, and this is counted PER PIECE.**
+A tutor searches a library and a commander is not in one, so `buildDeckProfile` never records a
+reach against a commander piece — meaning a requirement of "every piece tutored" would make a
+commander combo the single case that could never resolve to 4.
+
+The requirement therefore drops once **for each** piece sitting in the command zone, not once per
+combo. A partner deck whose combo IS its two commanders has two uncoverable pieces and assembles
+it every game; a flat single deduction left that deck needing a tutor it can never have.
 
 **It is still labelled as reasoned rather than measured**, it shows every card behind it, and
 the player can correct it — at which point their correction is stored as `declared` (§6.1a).
