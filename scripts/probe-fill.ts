@@ -306,8 +306,15 @@ async function main() {
   if (synergy.length < 2) {
     fail("5 · the fixture", `readSynergyCards returned ${synergy.length} cards — too few to order`);
   } else {
+    // THE RETURNED INDEX, exactly as `actions.ts` builds it. `readSynergyCards` already hands
+    // back `orderBySynergy` order; coalescing `synergyPts ?? inclusionPct` here rebuilds a
+    // DIFFERENT ranking, so the descending assertion below could pass against a map production
+    // never produces — the probe agreeing with itself rather than with the app.
+    //
+    // This is the same defect the production map had one round ago, left in the probe when the
+    // production side was fixed.
     const ranked = new Map(
-      synergy.map((card) => [card.oracleId, card.synergyPts ?? card.inclusionPct ?? 0]),
+      synergy.map((card, index) => [card.oracleId, synergy.length - index]),
     );
     const withRank = planFill(basePool, { hasPartner: false, skeleton, synergyRank: ranked });
     const residual = withRank.rows.filter((r) => r.role === "other");

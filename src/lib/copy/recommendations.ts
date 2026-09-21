@@ -88,13 +88,18 @@ export const recommendationsCopy = {
     // `We’ll fill 68 of the 99` until the fill stopped at the role floors and the mana base.
     // It now continues to the body through its synergy residual, so the old sentence
     // under-promised by 31 cards and its `The rest is yours` named a remainder that no longer
-    // exists. The figure is still derived from `fillBaselineTotal`, so a fill that changes what
-    // it reaches for moves the promise with it — which is how this one went wrong.
-    stickyPromise: (n: string) => `We’ll fill all ${n}`,
+    // exists.
+    //
+    // NO FIGURE, AND A CONDITION. `planFill` stops when its candidate pool is exhausted, and
+    // that pool is the owned collection plus at most a hundred EDHREC staples — so a small
+    // collection or a degraded EDHREC read leaves the deck short, and an unconditional "all 99"
+    // is a promise the action cannot keep. "As far as your collection reaches" is the same
+    // condition the build contract already states.
+    stickyPromise: "We’ll build the whole 99, as far as your collection reaches",
     // Replaces detail.tsx's desktop seed note "Your owned pool will seed the
     // deck builder", which describes a seeding that no longer happens.
-    seedNote: (n: string) =>
-      `We’ll fill all ${n} — roles, lands, then the best of the rest. Change anything.`,
+    seedNote:
+      "We’ll build the whole 99, as far as your collection reaches. Anything we add is yours to clear.",
   },
 
   // ── Surface B · the auto marker ───────────────────────────────────────
