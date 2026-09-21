@@ -3,8 +3,15 @@
 Four surfaces, drawn at **390px** and at desktop. `—` means the position draws nothing, which is a
 state and not an omission.
 
-**Three facts, one order, always:** Game Changer (bolt) → mass land denial (peak stripped) → extra
+**Three facts, one order, always:** game changer (bolt) → mass land denial (peak stripped) → extra
 turns (turn again). Fixed, so a reader scanning a column compares like with like.
+
+**Overruled 2026-09-21 by Hugh, on the built surface** (the two rows below carry it): the mark is
+**16x16 on every surface** and the size is not a per-mount figure, and **all three labels are
+lowercase**. What shipped was four sizes across six mounts and one title-cased member of a set of
+three — the same fact reading as a different mark depending on the list, and `Game Changer` reading
+as a different KIND of thing beside its two neighbours. The Game Changer list keeps its own name
+where it is named AS a list, which is the tooltip's sentence and nowhere else.
 
 **Ordering rule, every surface: copies first, mark last.**
 
@@ -15,10 +22,10 @@ turns (turn again). Fixed, so a reader scanning a column compares like with like
 | glyphs | bolt · peak stripped · turn again — solid, 16px viewBox |
 | container | **none** |
 | ink | `--fact` `#8FA6BE`, theme-independent |
-| glow | `filter: drop-shadow(0 0 Npx color-mix(in oklab, var(--fact) 45%, transparent))` — outside the box model |
-| sizes | 16 modal · 14 decklist row · 14 / 13 collection row · 12 tile |
-| glow radius | 3px modal · 2.5px rows · 2px tile |
-| floor | **12px.** Below it the mark is not drawn and nothing takes its place. |
+| glow | `filter: drop-shadow(0 0 3px color-mix(in srgb, var(--fact) 45%, transparent))` — outside the box model |
+| sizes | **16 everywhere** — modal, decklist row, collection row, tile and key alike (overruled 2026-09-21; was 16 modal · 14 decklist row · 14 / 13 collection row · 12 tile) |
+| glow radius | **3px everywhere** (the per-mount 2.5 / 2 went with the per-mount sizes; one size takes one glow). The interpolation space is `srgb` as shipped, not `oklab` |
+| floor | **Retired 2026-09-21.** There is one size and nothing shrinks the glyph, so nothing reaches a floor; the rule it protected — no dot, no dash, no initial in the mark's place — is kept by there being one size to keep. |
 | target | never |
 
 ## Matrix 1 — the decklist row, `/decks/[id]`
@@ -33,9 +40,10 @@ turns (turn again). Fixed, so a reader scanning a column compares like with like
 | **marked + draft-touched** | mark drawn; the accent inset edge unchanged | same |
 | **marked, densest** | dot · name · `×2` · **⛰** · pips · `short 1` · `$` · `✕` | same |
 
-**The row never grows and the meta line is never touched.** At 14px the mark costs ~18px of the
-name cell, which the cell has at both widths. `hasMetaLine` gains no clause; a marked land needs no
-exception.
+**The row never grows and the meta line is never touched.** At 16px the mark costs ~20px of the
+name cell, which the cell has at both widths — measured on the build rather than argued: a marked
+row and an unmarked one on this surface both draw 52px at 390 and at 1300 (`probe:card-mark`).
+`hasMetaLine` gains no clause; a marked land needs no exception.
 
 **Orthogonal to everything.** The mark composes with the pass mark, pending-change edge, over ring,
 proxy `P`, buy tag and undo receipt — it describes the card, they describe the deck's copy of it.
@@ -52,9 +60,22 @@ There is no combination in which it is suppressed.
 | **marked, two facts** | `⚡ ↻` · `SET · rarity` | name |
 | **marked, no art** | ⛰ · `SET · rarity` | name; art draws the identity gradient |
 
-**Nothing yields.** The rarity stays at both widths and the chip never outranks the mark — chip
-~66px + glyph 12px + set line ~54px inside a 157px caption, with the count on the name line. Both
-of the word version's yield rules are deleted.
+**Nothing yields.** The rarity stays at both widths and the chip never outranks the mark, with the
+count on the name line. Both of the word version's yield rules are deleted.
+
+The 12px arithmetic this paragraph used to carry — chip ~66px + glyph 12px + set line ~54px inside
+a 157px caption — is retired with the per-mount sizes rather than restated at 16, because the sum
+was never the measurement. **Measured** on the built phone tile, 2026-09-21: the meta line is
+155px, three 16px glyphs and the `SET · rarity` trail occupy 24→84px and 163→179px, and the line's
+`scrollWidth` equals its `clientWidth` — nothing overflows, with ~79px unused between the last
+glyph and the trail. `probe:card-mark` reads a marked tile and an unmarked one at 300px at both
+widths, with no mark colliding with the pips, the set line or the count.
+
+**One case is NOT measured and is not claimed here:** a tile drawing the availability chip AND
+three facts. No card in the reference collection carries two facts at all, and no tile on that
+account draws a chip, so the densest caption the design permits cannot be produced on it. The
+arithmetic says it is tight (chip ~66px + three glyphs 60px + gaps + trail against 155px); that is
+a reason to measure it when such a card exists, not a fit anyone should certify from a sum.
 
 **The count lives on the name line** on this surface, so the meta line reads `short 1 ⛰` and the
 name line reads `Armageddon ×2`.
@@ -89,10 +110,12 @@ Placement: the oracle column, **after the oracle text, before the availability r
 
 | State | Entries |
 |---|---|
-| **deck detail, collection grid** | `$ to buy` · `P proxy` · `⚡ Game Changer` · `⛰ mass land denial` · `↻ extra turns` |
+| **deck detail, collection grid** | `$ to buy` · `P proxy` · `⚡ game changer` · `⛰ mass land denial` · `↻ extra turns` |
 
 Always all five, never conditional on what is on screen — the key is a vocabulary, not a legend of
-the current page. Glyph entries render in `--fact`, lit, at 11px.
+the current page. Glyph entries render in `--fact`, lit, at **16px** — the key draws the same mark
+the cards do, which is the whole point of a key, and the 11px here was a per-mount figure retired
+with the rest on 2026-09-21. The words beside them stay mono 10 / 10.5px.
 
 ## Matrix 6 — the hover tooltip
 
@@ -121,7 +144,7 @@ cleared check.
 
 | Fact | Colour | The other carrier |
 |---|---|---|
-| Game Changer | `--fact` (shared) | the **bolt** silhouette, and the key |
+| game changer | `--fact` (shared) | the **bolt** silhouette, and the key |
 | mass land denial | `--fact` (shared) | the **peak** silhouette, and the key |
 | extra turns | `--fact` (shared) | the **arrow** silhouette, and the key |
 

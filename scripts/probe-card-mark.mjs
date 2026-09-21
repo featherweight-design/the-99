@@ -8,7 +8,9 @@
 // WHAT IT MEASURES, at 1300x900 and 390x844:
 //   · the mark's drawn box on each surface — including the deck's CARD VIEW, which is
 //     reached by a press rather than a URL and which a URL-driven sweep therefore missed
-//     entirely, letting it ship with no mark and no key — and NEVER below the 12px floor
+//     entirely, letting it ship with no mark and no key — and ALWAYS exactly 16x16, the
+//     one size the mark draws at anywhere (ruled 2026-09-21, replacing a 12px floor that
+//     let six mounts ship four different sizes)
 //   · no collision in the row's densest state — measured as intersecting RECTS against the
 //     ownership dot, the availability marker, the buy tag, the pips and the caption
 //   · no row grew — a marked row against an unmarked one on the same surface, measured in
@@ -71,7 +73,25 @@ const WIDTHS = [
   { label: 390, viewport: { width: 390, height: 844 }, hasTouch: true },
 ];
 
-const FLOOR = 12;
+/**
+ * ONE SIZE, EVERYWHERE — the glyph, in the key and on a card alike. A FLOOR is what this
+ * used to check, and a floor is what let the mark ship at 12, 13, 14 and 16 across six
+ * mounts while passing: every one of those clears 12. An exact figure is the ruling.
+ */
+const SIZE = 16;
+const SIZE_TOLERANCE_PX = 0.5;
+
+/**
+ * Every DRAWN mark's box, the key's samples included, against the one size. A zero box is
+ * skipped rather than reported: a responsive twin (`hidden md:block`) is in the DOM at both
+ * widths and is not a mark anyone sees at the width it is hidden at.
+ */
+function sizeOffenders(list) {
+  return list
+    .filter((m) => m.w > 0 && m.h > 0)
+    .filter((m) => Math.abs(m.w - SIZE) > SIZE_TOLERANCE_PX || Math.abs(m.h - SIZE) > SIZE_TOLERANCE_PX)
+    .map((m) => `${m.fact} ${m.w}x${m.h}`);
+}
 /**
  * A COPY of `OPEN_DELAY_MS` in `fact-tooltip.tsx`, and unavoidably one: this is a node
  * script and that is a `.tsx` module. Nothing ties them together, so a change to the
@@ -290,9 +310,9 @@ async function run() {
         report(`${label}px · deck card view · the tiles draw the mark`, drawn.length > 0,
           drawn.length ? `${drawn.length} mark(s)` : "no mark on any tile");
         if (drawn.length) {
-          const smallest = Math.min(...drawn.map((m) => Math.min(m.w, m.h)));
-          report(`${label}px · deck card view · never below the ${FLOOR}px floor`,
-            smallest >= FLOOR, `smallest ${smallest}px`);
+          const off = sizeOffenders(all);
+          report(`${label}px · deck card view · every mark is ${SIZE}x${SIZE}`,
+            off.length === 0, off.length ? off.join(", ") : `${drawn.length} at ${SIZE}px`);
         }
         // The pair that shipped broken together: a surface drawing marks with no gloss.
         // Same relation as the row view rather than a count — the deck is a closed set,
@@ -344,8 +364,10 @@ async function run() {
         ["collection rows", "/collection?view=rows", CARD],
         // `?view=grid` EXPLICITLY. With no param the view resolves to
         // `isDesktop ? "grid" : "rows"` and a fresh context stores nothing, so at 390 this
-        // surface rendered the ROWS view — and the tile's 12px mark, the only one drawn at
-        // the floor this probe exists to guard, was never measured at the width that matters.
+        // surface rendered the ROWS view — and the tile, which drew the smallest mark of any
+        // surface when the size was still per-mount, was never measured at the width that
+        // matters. It draws at the same 16 as everything else now; the explicit param stays,
+        // because a surface this check never reaches is a surface it never guards.
         ["collection tiles", "/collection?view=grid", CARD],
       ]) {
         // `attached`, never `visible`: a collapsed title is zero-width, which Playwright
@@ -378,9 +400,9 @@ async function run() {
           continue;
         }
 
-        const smallest = Math.min(...drawn.map((m) => Math.min(m.w, m.h)));
-        report(`${label}px · ${surface} · never below the ${FLOOR}px floor`,
-          smallest >= FLOOR, `smallest ${smallest}px`);
+        const off = sizeOffenders(all);
+        report(`${label}px · ${surface} · every mark is ${SIZE}x${SIZE}`,
+          off.length === 0, off.length ? off.join(", ") : `${drawn.length} at ${SIZE}px`);
 
         // THE KEY IS REACHABLE, which is the strongest true statement available here.
         //

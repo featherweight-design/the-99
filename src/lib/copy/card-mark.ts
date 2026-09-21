@@ -9,15 +9,18 @@
 // that spells them out, and the accessible name each mark carries so a screen reader
 // never depends on either.
 //
-// EVERY VISIBLE STRING IS SOMEONE ELSE'S. "Game Changer" is WotC's proper noun for
-// membership of its own published list; "mass land denial" and "extra turns" are the
-// rules' own names for the two classified categories. Nothing here paraphrases,
-// shortens, pluralises or re-cases them. If a layout cannot fit one, the layout is
-// what changes.
+// EVERY VISIBLE STRING IS SOMEONE ELSE'S. The three names come from WotC's Game
+// Changer list and from the bracket rules' own names for the two classified
+// categories. Nothing here paraphrases, shortens or pluralises them. If a layout
+// cannot fit one, the layout is what changes.
 //
-// The case split carries a fact and is not a typo. `Game Changer` is title case
-// because it is a proper noun naming a list a card is ON; the other two are lowercase
-// because they describe what a card DOES.
+// ONE CASE FOR THE SET. All three labels are lowercase. The earlier split — `Game
+// Changer` title-cased as the proper noun naming a list, the other two lowercase as
+// descriptions — was true of the names and wrong on the surface: the three sit in one
+// key, one modal list and one row, and a single capitalised member of a set of three
+// reads as a different KIND of thing rather than as a proper noun. Ruled by Hugh,
+// 2026-09-21. The list keeps its own name where it is named AS a list, which is the
+// tooltip's sentence and nowhere else.
 
 /** Fixed order wherever more than one appears. */
 export const CARD_FACTS = ["gameChanger", "massLandDenial", "extraTurns"] as const;
@@ -28,7 +31,7 @@ export const cardMarkCopy = {
   // One string each, used in ALL THREE places — the key entry, the modal line and the
   // accessible name. A player who learns "⛰ = mass land denial" from the key hears
   // exactly that phrase in the modal and in VoiceOver. Three surfaces, one vocabulary.
-  gameChanger: "Game Changer",
+  gameChanger: "game changer",
   massLandDenial: "mass land denial",
   extraTurns: "extra turns",
 

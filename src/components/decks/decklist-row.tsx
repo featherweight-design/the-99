@@ -153,7 +153,7 @@ export function DecklistRow({
   // each mark carries its name and the reader hears it once.
   const factMarks = (card.facts ?? []).map((fact) => (
     <FactTooltip key={fact} fact={fact}>
-      <CardFactMark fact={fact} size={14} />
+      <CardFactMark fact={fact} />
     </FactTooltip>
   ));
 
