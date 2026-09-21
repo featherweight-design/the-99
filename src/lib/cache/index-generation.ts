@@ -42,10 +42,22 @@ const UNSTAMPED = "0";
  *   commander_support        timestamp + role count
  *   commander_pair_support   timestamp + role count
  *   identity_composition     timestamp
- *   format_staples           NO COLUMN EXISTS to observe, and none is needed: it is written
- *                            by `db:build:staples`, which replaces `identity_composition` in
- *                            the same run, so that timestamp is its proxy. If the two are
- *                            ever written separately this stops being true.
+ *   format_staples           NO TIMESTAMP COLUMN EXISTS, so its own figures are the
+ *                            observable: a row count and the sum of `commanders`.
+ *
+ * `format_staples` nearly got a one-line proxy instead — `db:build:staples` writes it and
+ * `identity_composition` in the same transaction, so that timestamp looked like enough.
+ * **It is not, and the publish says so in its own comment.** The staples delete-and-insert
+ * is unconditional; the composition one is guarded by `if (compRows.length > 0)`, because
+ * an empty composition is a LEGITIMATE state — no commander carries one until the first
+ * widened index run. So a run in that state replaces every staple row and leaves the
+ * composition timestamp exactly where it was, which is precisely when a proxy has to hold
+ * and precisely when it does not.
+ *
+ * The sum is not a checksum and is not trying to be. It moves when any commander count
+ * moves, which is what a re-derivation does; two different derivations summing alike would
+ * need to be the same size AND offset against each other, and that run rides an index the
+ * timestamps above already observe.
  *
  * They move on different schedules — the index job rebuilds the first two, `db:build:staples`
  * replaces the third and fourth, and it can be dispatched alone.
@@ -73,6 +85,8 @@ export async function readIndexGeneration(): Promise<string> {
       support: sql<string | null>`(select (extract(epoch from max(computed_at)) * 1000)::bigint from commander_support)`,
       pair: sql<string | null>`(select (extract(epoch from max(computed_at)) * 1000)::bigint from commander_pair_support)`,
       identity: sql<string | null>`(select (extract(epoch from max(computed_at)) * 1000)::bigint from identity_composition)`,
+      staples: sql<string | null>`(select count(*) from format_staples)`,
+      staplesWeight: sql<string | null>`(select coalesce(sum(commanders), 0) from format_staples)`,
       supportRoles: sql<string | null>`(select count(*) from commander_support where avg_ramp is not null)`,
       pairRoles: sql<string | null>`(select count(*) from commander_pair_support where avg_ramp is not null)`,
     }).from(sql`(select 1) as _`);
@@ -81,6 +95,8 @@ export async function readIndexGeneration(): Promise<string> {
       generationKey(row?.support),
       generationKey(row?.pair),
       generationKey(row?.identity),
+      generationKey(row?.staples),
+      generationKey(row?.staplesWeight),
       generationKey(row?.supportRoles),
       generationKey(row?.pairRoles),
     ];

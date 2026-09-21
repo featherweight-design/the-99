@@ -8,6 +8,8 @@ type Row = {
   support: string | null;
   pair: string | null;
   identity: string | null;
+  staples: string | null;
+  staplesWeight: string | null;
   supportRoles: string | null;
   pairRoles: string | null;
 };
@@ -47,6 +49,8 @@ describe("readIndexGeneration", () => {
     support: "1758326400000",
     pair: "1758326400000",
     identity: "1758326400000",
+    staples: "777",
+    staplesWeight: "51234",
     supportRoles: "3279",
     pairRoles: "12",
     ...over,
@@ -56,7 +60,7 @@ describe("readIndexGeneration", () => {
     rows.throws = false;
     rows.value = [row()];
     expect(await readIndexGeneration())
-      .toBe("1758326400000.1758326400000.1758326400000.3279.12");
+      .toBe("1758326400000.1758326400000.1758326400000.777.51234.3279.12");
   });
 
   // THE CASE THE MODULE EXISTS FOR. `deriveAndWriteRoleTargets` sets the four `avg_*`
@@ -74,6 +78,29 @@ describe("readIndexGeneration", () => {
     const after = await readIndexGeneration();
 
     expect(before).not.toBe(after);
+  });
+
+  // THE PROXY THAT WOULD HAVE BEEN WRONG. `db:build:staples` replaces `format_staples`
+  // unconditionally but guards the composition write with `if (compRows.length > 0)` —
+  // legitimate, because no commander carries a composition until the first widened index
+  // run. So the staples can be rebuilt with every timestamp in this token standing still,
+  // which is exactly the state a composition-timestamp proxy would have missed.
+  it("moves when the staples are rebuilt and no timestamp changes", async () => {
+    rows.throws = false;
+    rows.value = [row({ staples: "777", staplesWeight: "51234" })];
+    const before = await readIndexGeneration();
+
+    rows.value = [row({ staples: "812", staplesWeight: "55901" })];
+    expect(await readIndexGeneration()).not.toBe(before);
+  });
+
+  it("moves when the staples keep their count but not their figures", async () => {
+    rows.throws = false;
+    rows.value = [row({ staples: "777", staplesWeight: "51234" })];
+    const before = await readIndexGeneration();
+
+    rows.value = [row({ staples: "777", staplesWeight: "52010" })];
+    expect(await readIndexGeneration()).not.toBe(before);
   });
 
   it("moves when only the pair support is restamped", async () => {
@@ -104,7 +131,9 @@ describe("readIndexGeneration", () => {
     // every database before the first index build, and it must not key on the string "null".
     rows.throws = false;
     rows.value = [{
-      support: null, pair: null, identity: null, supportRoles: null, pairRoles: null,
+      support: null, pair: null, identity: null,
+      staples: null, staplesWeight: null,
+      supportRoles: null, pairRoles: null,
     }];
     expect(await readIndexGeneration()).toBe("0");
   });
@@ -123,7 +152,7 @@ describe("indexGeneration", () => {
     rows.throws = false;
     rows.value = [{
       support: "1758326400000", pair: "1758326400000", identity: "1758326400000",
-      supportRoles: "3279", pairRoles: "12",
+      staples: "777", staplesWeight: "51234", supportRoles: "3279", pairRoles: "12",
     }];
     cache.throws = true;
     expect(await indexGeneration()).toBe("0");
