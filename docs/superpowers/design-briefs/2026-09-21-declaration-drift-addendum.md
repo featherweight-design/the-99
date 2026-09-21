@@ -7,6 +7,16 @@ Round 3's brief is `docs/superpowers/design-briefs/2026-09-20-the-declaration.md
 **Verdict: 🟠 Orange on one item.** Everything else in the round was resolved by engineering and
 is recorded in that audit — you do not need to redraw any of it.
 
+> **SUPERSEDED IN PART, 2026-09-21.** Hugh ruled directly to Design after this was written, and
+> two of his rulings change what is being asked for here. **The "you said X / change what you
+> said" framing is dropped entirely** — a declaration now travels with the VERSION it was made
+> for (*Version 1: 4/5 split, chose 4*), so there is no stale claim for a drift row to reconcile
+> and §2's third row largely dissolves with it. **And there is no skip** — a declaration may be
+> left unanswered but not dismissed, so §4's skip caveat is moot and the skip control comes out
+> of every drawn state. What still stands is the narrow half: **the permitted side can be a
+> single bracket** (`[2]`, `[3]`, `[4]`), and §E's split-pill has no reading for one. Read §3
+> item 1 as the live ask; items 2 and 3 are withdrawn.
+
 ## §1 What changed underneath the round
 
 A ruling landed on 2026-09-20, after you drew R3: **the 3-vs-4 boundary resolves rather than

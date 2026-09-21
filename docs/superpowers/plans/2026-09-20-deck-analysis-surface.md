@@ -56,9 +56,9 @@ Named before implementation starts, per the repo's split rule. Nine PRs; none ov
 |---|---|---|
 | **1 — the tab and the payload** | The Analysis tab, **its address** (see below), `cachedDeckProfile` behind it, the mix strip moved in, and the empty / loading / refused readings. No verdict content. | — |
 | **2 — receipts reshaped** | `lean.receipts[].tutors` keyed per piece; the deciding combo marked on `BracketLean`. Pure, unit-testable, no UI. | — |
-| **3 — the declaration's write path** | The server action, its refusal rules (never defaulted, never inferred), the skip state, migration if §3.1 goes persisted, and `probe:declaration`. No UI beyond the control it needs. | — |
-| **4 — the verdict block** | Permitted range, the three limits tables, violations with receipts, the population line. Round 2's chrome, which rounds 3 and 4 then sit inside. | Round 2 build |
-| **5 — the declaration ask and sub-line** | All four readings plus `permits: [4]`, which draws no line. | 3, 4 |
+| **3 — the declaration's write path** | The server action, its refusal rules (never defaulted, never inferred), **`deck_versions.declared_bracket` captured at commit**, and `probe:declaration`. No skip, in any form. | — |
+| **4 — the verdict block** | Permitted range, the three limits tables, violations with receipts, the population line. **This IS Round 2's build** — the chrome rounds 3 and 4 sit inside. | 1 |
+| **5 — the declaration ask and sub-line** | The readings that survive the 2026-09-21 ruling, plus `permits: [4]`, which draws no line. No skip, no "you said". | 3, 4 |
 | **6 — the lean and the reasoning modal** | The lean line, the modal body, the command-zone `found by` reading, and image resolution **at the draw** rather than in the profile. | 2, 4 |
 | **7 — the drift row** | **HELD on Design** — see risks. | Design answer |
 | **8 — the push line** | Wherever Round 4 places it, including the `kind: "none"` sentence. | Round 4 design |
@@ -154,14 +154,69 @@ written once at launch (PR #770). A plan task at close-out carries the entry and
 
 ---
 
-## Measurement owed before PR 1
+## Measured, 2026-09-21 — and it decides PR 1's shape
 
-**How big is a profile payload, and how long does a cold build take?** `cachedDeckProfile` has
-never run in a request. The mix strip's move is justified by ~150px of header; the tab's cost is
-justified by nothing measured yet. `loadDeckProfileFromHead` is the UNCACHED body inside `cachedDeckProfile`, so calling it twice
-measures two cold builds and no cache at all. Measure **`cachedDeckProfile` twice**, and measure
-it against **staging** — it is a read-only measurement and staging is where the real collection
-and the real decks are, which is the standing rule for a bar on new work; `local-dev`'s fixture
-decks would answer a question nobody asked. Record cold and warm here — the same way the navigation-performance work measured `/collection` at 1.6MB
-before deciding anything. A tab that adds a second expensive read to the deck page is a
-regression the decklist's own cache was built to prevent.
+`pnpm measure:profile-cost` against **staging**, on the real decks:
+
+| | |
+|---|---|
+| median cold build | **625–639ms** across runs |
+| slowest (HD · Gishath, 95 cards) | **1.8–3.0s**, varying with compute warmth |
+| head read alone | ~120ms |
+
+**So the profile is fetched ON DEMAND, when the tab is pressed** — option 3 above, not option 1.
+Adding half a second to three seconds to every `/decks/<id>` load, for a tab most visits never
+open, is precisely the regression the decklist's own cache exists to prevent. The figure also
+retires the idea that the head read is the expensive half: it is a fifth of the cost, and it is
+the only part that has to run before the cache can be consulted.
+
+Not measured, and stated rather than implied: a WARM `cachedDeckProfile` hit. That path is
+`cacheForUser`, which needs a request context, so a script calling it would either throw or run
+two cold builds and report the second as a cache. The warm cost is the cache layer's, not this
+gather's.
+
+---
+
+## The 2026-09-21 rulings
+
+Three, all from Hugh, and they simplify this surface rather than growing it.
+
+**1. The tab ships behind `ANALYSIS_TAB_ENABLED`, and so does the mix strip's move.** Read server-side at request time and passed
+down as a prop — never `NEXT_PUBLIC_*`, so there is no build-time inlining and no rebuild to flip
+it. **Defaults off when unset**, so production is unaffected until the variable is set
+deliberately. It gates the LOADER as well as the tab: a hidden tab whose payload still loads is
+the worst of both. Set on the staging Vercel project first; until then the tab is dark
+everywhere, which is a thing to say out loud when PR 1 lands rather than discover.
+
+The strip's move is gated by the SAME flag, because Round 0 pays for the tab with the ~150px the
+`RoleCounterStrip` vacates — and an unconditional move would take that strip off the deck page in
+production, where there is no tab to receive it. Flag off is today's layout exactly; flag on is
+the drawn one. Two real states, both testable.
+
+**2. A declaration belongs to a VERSION, and the "you said" framing is gone.** The copy asking a
+player to *change what they said* is dropped entirely — it read as though the app were holding
+them to a claim. Instead the choice travels with the version it was made for: *Version 1: 4/5
+split, chose 4*; *Version 1: 3, no choice needed*.
+
+Mechanically this is a pattern the schema already has. `deck_versions` captures
+`commander_oracle_id` at commit while `decks.commander_oracle_id` holds the live value, and the
+declaration works the same way: **live on `decks.declared_bracket` while drafting, copied into a
+new `deck_versions.declared_bracket` at commit.** One column, one migration, no deletion.
+
+**ANALYSIS RUNS BETWEEN VERSIONS, and that is a requirement rather than a side effect.** A player
+moves cards around to see what it does to the bracket and commits afterwards, so the analysis
+reads the DRAFT — `deck_cards` plus the live commander columns — exactly as `probe:bracket`
+already pins ("the draft IS the deck"). A version is where a declaration is FROZEN, never a gate
+on the analysis being available.
+
+**3. There is no skip.** A declaration may be left unanswered; it may not be dismissed. That
+retires the storage question the audit raised — `declared_bracket`'s null means *unanswered* and
+needs to mean nothing else — and removes the skip control from every drawn state.
+
+**What this does to the Orange.** The drift row was escalated to Design because a deck tuned DOWN
+out of its declared range read *"moved this deck past that"*, which is false in that direction.
+With the "you said" framing dropped, **there is no stale claim to reconcile and the drift row as
+drawn largely goes with it** — a version holds the answer that was true for it, and the draft
+shows the current analysis. What survives is smaller and still owed: the permitted side can be a
+single bracket, which needs a reading. `docs/superpowers/design-briefs/2026-09-21-declaration-drift-addendum.md`
+carries the correction.
