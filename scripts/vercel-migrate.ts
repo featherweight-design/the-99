@@ -18,9 +18,15 @@ if (decision.action === "fail") {
 
 console.log("Applying migrations before build...");
 
-// drizzle.config.ts reads DATABASE_URL, which is marked sensitive in Vercel and so
-// is unreadable here. Mapping it in the child env keeps the config file as the one
-// source of truth for migration settings and leaves `pnpm db:migrate` unchanged.
+// drizzle.config.ts reads DATABASE_URL, and this maps the migration url onto that
+// name for the child. Keeping the config file as the one source of truth for
+// migration settings leaves `pnpm db:migrate` unchanged, and the mapping means this
+// script never has to restate what that config decides.
+//
+// This comment used to justify the mapping by saying a Sensitive variable is
+// unreadable by a build step. That claim is NOT established: `MIGRATE_DATABASE_URL`
+// is Sensitive on both projects and production builds plainly read it (2026-09-21).
+// The mapping stands on its own reason above.
 const result = spawnSync("pnpm", ["exec", "drizzle-kit", "migrate"], {
   stdio: "inherit",
   env: { ...process.env, DATABASE_URL: decision.databaseUrl },

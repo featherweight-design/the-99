@@ -51,9 +51,15 @@ Package manager is **pnpm** (pinned via `packageManager` in package.json) — ne
   what #70 cost — but the message it prints names the variable rather than the scope, so the
   failure reads as "never set" when the truth is "set somewhere it is never read".
 
-  Marking it **Sensitive is correct and is what ships** on both projects: the build reads it
-  either way, and sensitive additionally means nobody can read the value back out of the
-  dashboard — the same treatment `DATABASE_URL`, `CLERK_SECRET_KEY` and `CRON_SECRET` carry.
+  Marking it **Sensitive is correct and is what ships** on both projects, and that is a
+  MEASUREMENT rather than a preference: the variable is Sensitive today and production builds
+  read it — the 14:54Z and 20:46Z builds on 2026-09-21 logged `migrations applied successfully`,
+  and this script fails the build outright when the value is absent, so a build that migrated had
+  it. Sensitive additionally keeps the value out of the dashboard, the same treatment
+  `DATABASE_URL`, `CLERK_SECRET_KEY` and `CRON_SECRET` carry. The deploy spec's §Credential
+  handling was written on the opposite premise — that a build step cannot read a Sensitive
+  variable — and carries a note saying so; which of the two was true in July is not established,
+  only what is true now.
   This line previously said "non-sensitive", which was wrong, and reading it is a plausible
   route to "re-scope this variable": on 2026-09-21 it moved to Preview on both projects and
   every production deploy failed for five hours, across seven deployments and five merged PRs.

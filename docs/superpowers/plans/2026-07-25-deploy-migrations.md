@@ -1,5 +1,15 @@
 # Deploy-Time Migrations Implementation Plan
 
+> **Errata, 2026-09-21.** This plan is left verbatim as the record of what was executed. Two of its
+> statements no longer describe the shipped system, and `AGENTS.md` plus
+> `specs/2026-07-25-deploy-migrations-design.md` are the current text:
+>
+> - It specifies `MIGRATE_DATABASE_URL` as **non-sensitive**. Both projects store it **Sensitive**;
+>   the build reads it either way, and Sensitive also keeps the value out of the dashboard.
+> - It quotes the refusal message, which now names the variable's **SCOPE** rather than calling it
+>   "not set" — the wording that cost five hours on 2026-09-21, when the variable was present in the
+>   dashboard and scoped to Preview, where previews skip migrations and it is inert.
+
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
 **Goal:** Run `drizzle-kit migrate` during each Vercel production build so a merged migration can never deploy unapplied, and make `/commanders` degrade to a recompute instead of a 500 if a migration is ever late anyway.

@@ -14,6 +14,7 @@ Production stack: **Vercel** (Next.js hosting) + **Neon** (serverless Postgres) 
 | Name | Source | Notes |
 |---|---|---|
 | `DATABASE_URL` | Neon dashboard → connection string | Use the pooled connection string |
+| `MIGRATE_DATABASE_URL` | Same value as this project's `DATABASE_URL` | **Production scope, and Production alone.** The build applies migrations and refuses to build without it. A copy scoped to Preview is inert — previews skip migrations — and the build then reports it missing while the dashboard lists it, which cost five hours on 2026-09-21. Sensitive is fine; the build reads it either way |
 | `NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY` | Clerk dashboard → API keys | `pk_live_…` for production |
 | `CLERK_SECRET_KEY` | Clerk dashboard → API keys | `sk_live_…` for production |
 
@@ -42,4 +43,4 @@ Manual runs: **Actions → Catalog refresh → Run workflow**, choosing `target`
 
 - Deploys are automatic on merge to `main`; PRs get preview deploys.
 - CI gates PRs with typecheck/lint/test/build (`.github/workflows/ci.yml`); Vercel's build is the deploy gate.
-- Database schema changes: commit Drizzle migrations (`pnpm db:generate`), then run `db:migrate` against production manually — migrations are not run automatically at deploy time.
+- Database schema changes: commit Drizzle migrations (`pnpm db:generate`) and merge. **Every Vercel production build applies them** before `next build` (`vercel-build` → `scripts/vercel-migrate.ts`, since #77); there is no manual `db:migrate` step against production, and a build whose migration fails does not deploy. Preview deploys skip migrations entirely. `GET /api/health` reports the applied-versus-expected count if you want to confirm a deploy without loading a page.
