@@ -126,6 +126,11 @@ const TYPE_ORDER: (keyof CompositionTargets)[] = [
   "sorcery", "artifact", "enchantment", "planeswalker", "battle",
 ];
 
+/** The minimum a row needs to be counted by type. Widened from `ProfileCard` so the fill can
+ *  tally its own candidates through this function rather than a second copy of these rules —
+ *  the front-face reading below is subtle enough that two versions of it would drift. */
+export type TypeCountable = { typeLine: string; quantity: number };
+
 /**
  * The deck's own counts on the composition's ten axes.
  *
@@ -133,7 +138,7 @@ const TYPE_ORDER: (keyof CompositionTargets)[] = [
  * them — so the three do not sum to the deck, and a reader adding them would double-count
  * every land.
  */
-function countByType(cards: readonly ProfileCard[]): CompositionTargets {
+export function countByType(cards: readonly TypeCountable[]): CompositionTargets {
   const counts: CompositionTargets = {
     land: 0, basic: 0, nonbasic: 0, creature: 0, instant: 0,
     sorcery: 0, artifact: 0, enchantment: 0, planeswalker: 0, battle: 0,

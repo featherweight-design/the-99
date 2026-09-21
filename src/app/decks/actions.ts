@@ -36,6 +36,9 @@ import {
   type DeckContextForValidation,
 } from "../../lib/decks/add-validation";
 import { deckAddRejectionMessage, type DeckMutationResult } from "../../lib/decks/mutation-result";
+import type { ProfileSkeleton } from "../../lib/profile/types";
+import { readSynergyCards } from "../commanders/[slug]/synergy-read";
+import { loadSkeletonForCommanders } from "../../lib/profile/load";
 import { dedupeSelectionFromPool, planFill, type FillPlan } from "../../lib/decks/fill";
 import { sanitizeSelection } from "../../lib/decks/selection-param";
 import { recordFillPass, summariseFillPasses, type FillPassKind } from "../../lib/decks/fill-passes";
@@ -92,6 +95,54 @@ export async function buildFillPlan(
   // separate dedupe below is what settles it — for that card and for a selected
   // card the player does not own, which only ever reaches the plan through the
   // staples list. Filtering the pool alone would let either be placed twice.
+  // THE SAME SKELETON THE DECK WILL BE MEASURED AGAINST. Built from the profile loader's own
+  // reads rather than a second chain written for the fill: a deck filled to one set of targets
+  // and then graded against another would disagree with itself from the moment it was created.
+  // DEGRADES to the asserted baseline rather than failing the create. This function already
+  // promises that an unreachable upstream leaves the fill going ahead on the collection alone,
+  // and the same reasoning holds here: a deck built to `ROLE_TARGETS` is the state the app
+  // shipped for a year, while a create that throws leaves the player with an empty deck and no
+  // way to tell why. `planFill` reports `measured: false` for it, so nothing downstream
+  // presents an asserted floor as a derived one.
+  let skeleton: ProfileSkeleton | null = null;
+  try {
+    ({ skeleton } = await loadSkeletonForCommanders(
+      commanders[0].oracleId,
+      commanders[1]?.oracleId ?? null,
+      [...new Set(commanders.flatMap((c) => c.colorIdentity))],
+    ));
+  } catch (err) {
+    console.warn("buildFillPlan: no skeleton — filling to the asserted baseline", err);
+  }
+
+  // THE SAME RANKING THE TOP-OFF LIST USES, for the residual. Without it the residual falls to
+  // the pool's own owned/inclusion order, and the create disagrees with the list the player is
+  // shown a moment later about which cards this commander wants — two answers to one question,
+  // from one deck, minutes apart.
+  //
+  // Degraded like the skeleton above rather than failing the create: the residual's ORDER is
+  // worth a query and is not worth losing the deck over, and inclusion order is what it fell
+  // back to for the whole life of this function.
+  let synergyRank: Map<string, number> | undefined;
+  try {
+    const synergy = await readSynergyCards(
+      userId,
+      commanders.map((c) => c.oracleId),
+      [],
+    );
+    // THE ORDER IT RETURNED, as an index — never a scalar recomputed from its fields.
+    // `orderBySynergy` puts an unscored card after every scored one; coalescing
+    // `synergyPts ?? inclusionPct` lets a null-synergy card's inclusion percentage outrank a
+    // scored card, and equal scores fall back to name rather than to this pool's order. Two
+    // rankings built from the same data that disagree is exactly what this argument exists to
+    // prevent. Descending, because `planFill` sorts the residual high-to-low.
+    synergyRank = new Map(
+      synergy.map((card, index) => [card.oracleId, synergy.length - index]),
+    );
+  } catch (err) {
+    console.warn("buildFillPlan: no synergy ranking — the residual keeps inclusion order", err);
+  }
+
   const ownedIds = new Set(pool.map((c) => c.oracleId));
   const staples = dedupeSelectionFromPool(
     data?.topCards
@@ -118,7 +169,7 @@ export async function buildFillPlan(
       layout: c.layout, owned: false, ownedQuantity: 0,
       inclusionPct: inclusionOf(c.name),
     })),
-  ], hasPartner);
+  ], { hasPartner, skeleton, synergyRank });
 }
 
 /** `selectedOracleIds` are the synergy picks the player carried across the
@@ -257,15 +308,38 @@ export async function createDeck(
       }
       if (capped.length > 0) {
         await tx.insert(deckCards).values(capped).onConflictDoNothing();
-        // The seed pass — the ledger's first line, and the only one whose
-        // reversal is the sweep rather than an undo of its own. Recorded in the
-        // same transaction as the rows it describes; a deck that got its cards
-        // and not its pass would show auto rows the ledger cannot account for.
-        // openSlots is the whole body because the deck did not exist a
-        // statement ago.
+
+        // TWO PASSES, NOT ONE, now that the fill reaches the whole body.
+        //
+        // The seed used to be the whole of what a create wrote, because the fill stopped at
+        // the floors and the mana base. Filling to 99 in one go would make that a single
+        // 99-row pass with nothing to undo but all of it — collapsing a separation the app
+        // already ships and already draws, and taking `Undo these 31` with it.
+        //
+        //   seed          the role floors and the mana base — the foundation
+        //   top_off #1    the synergy residual — the suggestions
+        //
+        // `FillRow.role === "other"` marks the residual, so the split needs no new
+        // persistence: the pass ledger already carries it. `Undo these 31` then means
+        // "clear the suggestions, keep the foundation", through `provenance-line.tsx` and
+        // `topOffCopy.ledger.undo(n)` exactly as they stand.
+        const residualIds = new Set(
+          plan.rows.filter((r) => r.role === "other").map((r) => r.oracleId),
+        );
+        const foundation = capped.filter((r) => !residualIds.has(r.oracleId));
+        const residual = capped.filter((r) => residualIds.has(r.oracleId));
+
+        // openSlots is the whole body because the deck did not exist a statement ago.
         await recordFillPass(tx, {
           deckId: deck.id, kind: "seed", openSlots: bodySize,
-          rows: capped.map((r) => ({ oracleId: r.oracleId, quantity: r.quantity })),
+          rows: foundation.map((r) => ({ oracleId: r.oracleId, quantity: r.quantity })),
+        });
+        // Its own openSlots: what was left once the foundation was down, which is what the
+        // ledger line means by the slots this pass was offered.
+        await recordFillPass(tx, {
+          deckId: deck.id, kind: "top_off",
+          openSlots: bodySize - foundation.reduce((n, r) => n + r.quantity, 0),
+          rows: residual.map((r) => ({ oracleId: r.oracleId, quantity: r.quantity })),
         });
       }
       return deck.id;
@@ -552,11 +626,26 @@ export async function fillDeck(deckId: string): Promise<void> {
       await tx.insert(deckCards).values(
         plan.rows.map((r) => ({ deckId, oracleId: r.oracleId, quantity: r.quantity, auto: true })),
       );
-      // The retry's fill is still the seed. openSlots is the whole body because
-      // this path refuses a deck that already holds cards.
+      // THE SAME TWO PASSES THE CREATE RECORDS. This path runs the identical whole-body
+      // `planFill`, so recording it as one seed would make the retry's residual non-undoable
+      // separately — the same 99-row pass with nothing to undo but all of it that the create
+      // was split to avoid, reachable by pressing the banner's retry instead.
+      //
+      // openSlots is the whole body because this path refuses a deck that already holds cards.
+      const retryResidualIds = new Set(
+        plan.rows.filter((r) => r.role === "other").map((r) => r.oracleId),
+      );
+      const retryFoundation = plan.rows.filter((r) => !retryResidualIds.has(r.oracleId));
+      const retryResidual = plan.rows.filter((r) => retryResidualIds.has(r.oracleId));
       await recordFillPass(tx, {
         deckId, kind: "seed", openSlots: deckBodySize(hasPartner),
-        rows: plan.rows.map((r) => ({ oracleId: r.oracleId, quantity: r.quantity })),
+        rows: retryFoundation.map((r) => ({ oracleId: r.oracleId, quantity: r.quantity })),
+      });
+      await recordFillPass(tx, {
+        deckId, kind: "top_off",
+        openSlots: deckBodySize(hasPartner)
+          - retryFoundation.reduce((n, r) => n + r.quantity, 0),
+        rows: retryResidual.map((r) => ({ oracleId: r.oracleId, quantity: r.quantity })),
       });
       // Only where the plan landed rows. A fill that found nothing to add still
       // sets `filled` below — that column answers "was this ever filled" — but

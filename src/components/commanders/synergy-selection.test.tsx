@@ -79,7 +79,9 @@ describe("SynergySelection", () => {
     expect(
       screen.getByText((_content, el) =>
         el?.tagName === "SPAN" &&
-        el.textContent === synergyCopy.select.promise("68", "7", "75"),
+        // 92 and 99, not 68 and 75: the fill continues to the body through its synergy
+        // residual, so seven picks leave ninety-two for it and the deck arrives whole.
+        el.textContent === synergyCopy.select.promise("92", "7", "99"),
       ),
     ).toBeInTheDocument();
   });
@@ -121,13 +123,15 @@ describe("SynergySelection", () => {
     expect(
       screen.getByText((_content, el) =>
         el?.tagName === "SPAN" &&
-        el.textContent === synergyCopy.select.promiseMobile("68", "7", "75"),
+        el.textContent === synergyCopy.select.promiseMobile("92", "7", "99"),
       ),
     ).toBeInTheDocument();
     expect(
       screen.queryByText((_content, el) =>
         el?.tagName === "SPAN" &&
-        el.textContent === synergyCopy.select.promise("68", "7", "75"),
+        // 92 and 99, not 68 and 75: the fill continues to the body through its synergy
+        // residual, so seven picks leave ninety-two for it and the deck arrives whole.
+        el.textContent === synergyCopy.select.promise("92", "7", "99"),
       ),
     ).not.toBeInTheDocument();
   });

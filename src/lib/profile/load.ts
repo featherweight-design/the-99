@@ -21,6 +21,7 @@ import { COMBO_DETECTION, isInfiniteOrGameEnding } from "../spellbook/combo-feat
 import { countCondition, identityCondition } from "../staples/condition";
 import { buildDeckProfile, type ProfileCardRow, type ProfileInput } from "./build";
 import { profileFingerprint } from "./fingerprint";
+import { ROLE_TARGETS } from "../recs/roles";
 import type {
   Bracket,
   BracketPopulation,
@@ -29,6 +30,7 @@ import type {
   DeckProfile,
   FlagSource,
   StapleRef,
+  ProfileSkeleton,
 } from "./types";
 
 /**
@@ -203,7 +205,12 @@ function compositionFrom(row: CompositionRow | undefined) {
     artifact: row.avgArtifact, enchantment: row.avgEnchantment,
     planeswalker: row.avgPlaneswalker, battle: row.avgBattle,
   };
-  if (Object.values(targets).some((v) => v === null)) return null;
+  // Finite for the same reason the role figures are: a non-finite land target does not give a
+  // wrong ceiling, it gives NO ceiling, and the land sweeps then run until the collection is
+  // exhausted. `deck-size.ts` guards that too — both ends, because this one is the root.
+  if (Object.values(targets).some((v) => typeof v !== "number" || !Number.isFinite(v))) {
+    return null;
+  }
   return { targets: targets as CompositionTargets, averageCurve: row.avgCurve };
 }
 
@@ -221,8 +228,14 @@ function roleTargetsFrom(row: CompositionRow | undefined) {
   // right test there because its columns are nullable.
   if (row.withRoles !== undefined && row.withRoles <= 0) return null;
   const { avgRamp: ramp, avgDraw: draw, avgRemoval: removal, avgWipes: wipes } = row;
-  if (ramp === null || draw === null || removal === null || wipes === null) return null;
-  return { ramp, draw, removal, wipes };
+  // FINITE, not merely non-null. A null is what the database returns for "not derived", but a
+  // row that reaches here malformed — undefined fields, a NaN out of a bad cast — walks past a
+  // null check, and what a non-finite floor costs is not a wrong target: every
+  // `counts[role] < floor` comparison against NaN is false, so the role pass finds no role
+  // open and places NOTHING. The whole deck falls to the residual, silently.
+  const four = [ramp, draw, removal, wipes];
+  if (!four.every((v): v is number => typeof v === "number" && Number.isFinite(v))) return null;
+  return { ramp: four[0]!, draw: four[1]!, removal: four[2]!, wipes: four[3]! };
 }
 
 /**
@@ -299,47 +312,17 @@ export async function loadDeckProfileFromHead(head: ProfileHead): Promise<DeckPr
     head.partnerOracleId ? loadPairRow(head.commanderOracleId, head.partnerOracleId) : null,
     loadCommanderRow(head.commanderOracleId),
   ]);
+  // `population` still needs the two rows; the skeleton is assembled from its own reads.
 
   // THE BASIS CHAIN, as four cheap keyed reads. First hit wins, and the discriminant travels
   // with the data — see `ProfileSkeleton`.
-  const identityRow = await loadCompositionRow(exactCondition);
-  const countRow = identityRow
-    ? undefined
-    : await loadCompositionRow(countCondition(combinedIdentity.length));
-
-  // THE ROLE CHAIN NEEDS ITS OWN COUNT CANDIDATE, because the gating above is a fact about the
-  // COMPOSITION chain and not about this one. An identity row that serves the types can carry
-  // no roles at all — `with_roles = 0` is the supported pre-role-pass state — and the two
-  // chains are deliberately separate, so a commander whose identity bucket has types and whose
-  // count bucket has roles would otherwise skip straight to the asserted flat targets while a
-  // measured answer sat one rung below, unread.
-  //
-  // Read only when it can change something: the identity row is absent (already loaded above)
-  // or present with no usable roles. A commander whose identity row carries both pays nothing.
-  const identityRoles = roleTargetsFrom(identityRow ?? undefined);
-  const countRowForRoles = countRow
-    ?? (identityRoles === null
-        ? await loadCompositionRow(countCondition(combinedIdentity.length))
-        : undefined);
-  const countRoles = roleTargetsFrom(countRowForRoles ?? undefined);
-
-  // WHICH BUCKET THE CAVEAT DESCRIBES: the one whose ROLE figures were actually taken when a
-  // bucket supplied them, and otherwise the one serving the TYPES. A caveat naming a row
-  // nobody read would be worse than none.
-  //
-  // Written as a choice rather than a `??` chain, which is what got this wrong: `thin` is a
-  // BOOLEAN, so `??` happily takes a `false` from a row whose roles were never used and never
-  // reaches the row that is actually thin. A thin identity bucket then rendered as non-thin.
-  const roleBucket = identityRoles !== null ? identityRow
-    : countRoles !== null ? countRowForRoles
-    : null;
-  const typeBucket = identityRow ?? countRow ?? null;
-  const thinCondition = Boolean((roleBucket ?? typeBucket)?.thin);
-
-  // The floor's bucket is the one that actually HOLDS rows. A commander whose exact identity
-  // never cleared the sample bar falls to its colour count, and looking up the exact key
-  // regardless would return nothing and report an empty floor as a complete one.
-  const { condition, staples } = await loadStaples(exactCondition, combinedIdentity.length);
+  const { candidates, condition, staples, commanderDeckCount } =
+    await loadSkeletonForCommanders(
+      head.commanderOracleId, head.partnerOracleId ?? null, combinedIdentity,
+      // The rows this function already read, so the skeleton and the population describe one
+      // snapshot and the profile pays for two queries rather than four.
+      { pairRow, commanderRow },
+    );
 
   const mldFlags = new Map<string, FlagSource[]>();
   const extraTurnFlags = new Map<string, FlagSource[]>();
@@ -369,23 +352,12 @@ export async function loadDeckProfileFromHead(head: ProfileHead): Promise<DeckPr
     identity: combinedIdentity,
     declared: bracketOf(head.declaredBracket),
     condition,
-    composition: {
-      pair: compositionFrom(pairRow ?? undefined),
-      commander: compositionFrom(commanderRow ?? undefined),
-      identity: compositionFrom(identityRow ?? undefined),
-      count: compositionFrom(countRow ?? undefined),
-    },
-    roles: {
-      pair: roleTargetsFrom(pairRow ?? undefined),
-      commander: roleTargetsFrom(commanderRow ?? undefined),
-      identity: identityRoles,
-      count: countRoles,
-    },
-    // The bucket the IDENTITY or COUNT rung would serve. The commander and pair rows are
-    // per-commander rather than per-bucket, so neither can be thin in this sense.
-    thinCondition,
+    // All four candidate rungs, the role rungs and the bucket caveat, from the one place that
+    // reads them — so the CREATE path and this one cannot drift about what a deck is measured
+    // against. The first-hit selection is still `build.ts`'s `skeleton()`.
+    ...candidates,
     staples,
-    commanderDeckCount: pairRow?.deckCount ?? commanderRow?.deckCount ?? null,
+    commanderDeckCount,
     population: populationFrom(pairRow, commanderRow),
     mldFlags,
     extraTurnFlags,
@@ -591,3 +563,127 @@ export async function cachedDeckProfile(
     loadDeckProfileFromHead(head),
   );
 }
+
+/**
+ * Everything the basis chain needs for a set of commanders — both chains, the caveat and the
+ * floor — without a deck.
+ *
+ * EXTRACTED so the CREATE path can build against the same skeleton the profile reads. A deck
+ * being filled has no profile yet, and a second copy of this chain written for the fill would
+ * drift from the one the deck is measured against afterwards: the fill would build to one set
+ * of targets and the profile would grade it against another, a round at a time.
+ */
+export async function loadSkeletonForCommanders(
+  commanderOracleId: string,
+  partnerOracleId: string | null,
+  combinedIdentity: string[],
+  /** The two support rows, when the caller has already read them. The PROFILE path has —
+   *  `loadDeckProfileFromHead` needs them for the population anyway — and re-reading here cost
+   *  two queries on every profile load AND risked the population and the skeleton coming from
+   *  different snapshots of the same rows. The CREATE path has no profile and passes nothing. */
+  preloaded?: { pairRow: PairRow | null; commanderRow: CommanderRow | null },
+): Promise<{
+  /** Resolved, for a caller with no profile — the CREATE path. */
+  skeleton: ProfileSkeleton;
+  /** The same reads, unresolved, for `buildDeckProfile` — so the first-hit selection stays in
+   *  `build.ts`'s `skeleton()` rather than being made twice in two places. */
+  candidates: Pick<ProfileInput, "composition" | "roles" | "thinCondition">;
+  condition: string;
+  staples: StapleRef[];
+  commanderDeckCount: number | null;
+}> {
+  const exactCondition = identityCondition(combinedIdentity);
+  const [pairRow, commanderRow] = preloaded
+    ? [preloaded.pairRow, preloaded.commanderRow]
+    : await Promise.all([
+        partnerOracleId ? loadPairRow(commanderOracleId, partnerOracleId) : null,
+        loadCommanderRow(commanderOracleId),
+      ]);
+  const identityRow = await loadCompositionRow(exactCondition);
+  const countRow = identityRow
+    ? undefined
+    : await loadCompositionRow(countCondition(combinedIdentity.length));
+
+  // THE ROLE CHAIN NEEDS ITS OWN COUNT CANDIDATE, because the gating above is a fact about the
+  // COMPOSITION chain and not about this one. An identity row that serves the types can carry
+  // no roles at all — `with_roles = 0` is the supported pre-role-pass state — and the two
+  // chains are deliberately separate, so a commander whose identity bucket has types and whose
+  // count bucket has roles would otherwise skip straight to the asserted flat targets while a
+  // measured answer sat one rung below, unread.
+  //
+  // Read only when it can change something: the identity row is absent (already loaded above)
+  // or present with no usable roles. A commander whose identity row carries both pays nothing.
+  const identityRoles = roleTargetsFrom(identityRow ?? undefined);
+  const countRowForRoles = countRow
+    ?? (identityRoles === null
+        ? await loadCompositionRow(countCondition(combinedIdentity.length))
+        : undefined);
+  const countRoles = roleTargetsFrom(countRowForRoles ?? undefined);
+
+  // WHICH BUCKET THE CAVEAT DESCRIBES: the one whose ROLE figures were actually taken when a
+  // bucket supplied them, and otherwise the one serving the TYPES. A caveat naming a row
+  // nobody read would be worse than none.
+  //
+  // Written as a choice rather than a `??` chain, which is what got this wrong: `thin` is a
+  // BOOLEAN, so `??` happily takes a `false` from a row whose roles were never used and never
+  // reaches the row that is actually thin. A thin identity bucket then rendered as non-thin.
+  const roleBucket = identityRoles !== null ? identityRow
+    : countRoles !== null ? countRowForRoles
+    : null;
+  const typeBucket = identityRow ?? countRow ?? null;
+  const thinCondition = Boolean((roleBucket ?? typeBucket)?.thin);
+
+  // The floor's bucket is the one that actually HOLDS rows. A commander whose exact identity
+  // never cleared the sample bar falls to its colour count, and looking up the exact key
+  // regardless would return nothing and report an empty floor as a complete one.
+  const { condition, staples } = await loadStaples(exactCondition, combinedIdentity.length);
+
+  const chain = [
+    ["pair", compositionFrom(pairRow ?? undefined)],
+    ["commander", compositionFrom(commanderRow ?? undefined)],
+    ["identity", compositionFrom(identityRow ?? undefined)],
+    ["count", compositionFrom(countRow ?? undefined)],
+  ] as const;
+  const hit = chain.find(([, value]) => value != null);
+
+  const roleChain = [
+    ["pair", roleTargetsFrom(pairRow ?? undefined)],
+    ["commander", roleTargetsFrom(commanderRow ?? undefined)],
+    ["identity", identityRoles],
+    ["count", countRoles],
+  ] as const;
+  const roleHit = roleChain.find(([, value]) => value != null);
+
+  const commanderDeckCount = pairRow?.deckCount ?? commanderRow?.deckCount ?? null;
+  return {
+    skeleton: {
+      composition: hit ? { of: hit[0], ...hit[1]! } : null,
+      roleTargets: roleHit
+        ? { of: roleHit[0], targets: roleHit[1]! }
+        : { of: "flat", targets: { ...ROLE_TARGETS } },
+      thinCondition,
+      condition,
+      staples,
+      commanderDeckCount,
+    },
+    candidates: {
+      composition: {
+        pair: compositionFrom(pairRow ?? undefined),
+        commander: compositionFrom(commanderRow ?? undefined),
+        identity: compositionFrom(identityRow ?? undefined),
+        count: compositionFrom(countRow ?? undefined),
+      },
+      roles: {
+        pair: roleTargetsFrom(pairRow ?? undefined),
+        commander: roleTargetsFrom(commanderRow ?? undefined),
+        identity: identityRoles,
+        count: countRoles,
+      },
+      thinCondition,
+    },
+    condition,
+    staples,
+    commanderDeckCount,
+  };
+}
+
