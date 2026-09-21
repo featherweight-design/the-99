@@ -24,7 +24,7 @@
  * `?? DATABASE_URL` fallback, because a fallback is how a one-way script finds the wrong end.
  */
 import "dotenv/config";
-import { neon } from "@neondatabase/serverless";
+import { neon, Pool } from "@neondatabase/serverless";
 
 const SOURCE = process.env.THE_99_NEON_STAGING_DIRECT;
 const TARGET = process.env.PULL_TARGET_URL;
@@ -39,68 +39,142 @@ if (!SOURCE || !TARGET) {
   );
   process.exit(1);
 }
-if (SOURCE === TARGET) {
-  console.error("Source and target are the same database. Refusing — this script only ever writes to the target.");
-  process.exit(1);
-}
-
 const src = neon(SOURCE);
 const dst = neon(TARGET);
 
-/** The staging account to copy. The busiest, unless named. */
-const owner =
-  process.env.PULL_FROM_USER_ID ??
-  (
-    (await src`
-      select user_id, count(*)::int as n from decks group by 1 order by n desc limit 1`) as {
-      user_id: string;
-    }[]
-  )[0]?.user_id;
+/**
+ * THE GUARD COMPARES THE DATABASE, NOT THE STRING.
+ *
+ * Comparing the two URLs byte for byte rejects only the obvious mistake. One database answers
+ * to many connection strings — pooled and direct endpoints, different options, a password
+ * rotated — so a string check can pass and the run then replaces rows in its own SOURCE.
+ *
+ * `neon.branch_id` is the identity that matters here, and the reason is specific: local-dev is
+ * a BRANCH of the same Neon project as staging, so `pg_control_system().system_identifier` is
+ * byte-identical on both (measured: 7664017488641913815 either side) and would wave the run
+ * through. The branch id differs, and `neon.timeline_id` behind it.
+ */
+async function identity(sql: typeof src): Promise<string> {
+  for (const guc of ["neon.branch_id", "neon.timeline_id"]) {
+    try {
+      const r = (await sql`select current_setting(${guc}) as v`) as { v: string }[];
+      if (r[0]?.v) return `${guc}=${r[0].v}`;
+    } catch {
+      // Not a Neon endpoint, or the GUC is unavailable — fall through.
+    }
+  }
+  // Last resort for a plain Postgres: the cluster plus the database name.
+  const r = (await sql`
+    select system_identifier::text || '/' || current_database() as v from pg_control_system()`) as {
+    v: string;
+  }[];
+  return `cluster=${r[0].v}`;
+}
 
-if (!owner) {
-  console.error("No decks on staging to copy.");
+const [srcId, dstId] = await Promise.all([identity(src), identity(dst)]);
+if (srcId === dstId) {
+  console.error(
+    `Source and target are the same database (${srcId}).\n` +
+      "Refusing — this script only ever writes to the target.",
+  );
   process.exit(1);
 }
 
-const decks = (await src`
-  select * from decks where user_id = ${owner} order by created_at`) as Record<string, unknown>[];
-const deckIds = decks.map((d) => d.id as string);
-const collection = (await src`
-  select * from collection_items where user_id = ${owner}`) as Record<string, unknown>[];
-const folders = (await src`
-  select * from deck_folders where user_id = ${owner}`) as Record<string, unknown>[];
+/**
+ * EVERY SOURCE READ IN ONE `repeatable read` TRANSACTION.
+ *
+ * The reads are dependent — decks, then their cards, then their versions, then those versions'
+ * cards — so assembled independently they can combine different instants: a deck committed
+ * between the deck read and the version read lands with a version its snapshot never had. The
+ * result is a target state that never existed on staging, under a script whose whole claim is
+ * that it is a snapshot of one.
+ *
+ * A `Pool` client rather than the http driver, because dependent statements have to share a
+ * connection to share a transaction. `loadProfileHead` takes the same isolation for the same
+ * reason, one deck at a time.
+ */
+const pool = new Pool({ connectionString: SOURCE });
+const client = await pool.connect();
+let owner: string | undefined;
+let decks: Record<string, unknown>[] = [];
+let collection: Record<string, unknown>[] = [];
+let folders: Record<string, unknown>[] = [];
+let cards: Record<string, unknown>[] = [];
+let proxies: Record<string, unknown>[] = [];
+let versions: Record<string, unknown>[] = [];
+let versionCards: Record<string, unknown>[] = [];
+let games: Record<string, unknown>[] = [];
+let gameAxes: Record<string, unknown>[] = [];
+let assignments: Record<string, unknown>[] = [];
+let fillPasses: Record<string, unknown>[] = [];
+let fillPassCards: Record<string, unknown>[] = [];
+let unresolved: Record<string, unknown>[] = [];
+let artPrefs: Record<string, unknown>[] = [];
+let uploads: Record<string, unknown>[] = [];
 
-// Deck-scoped rows, fetched by the ids above rather than by user, because that is how they are
-// keyed. An empty id list would make `in ()` invalid, so each read is guarded.
-const byDeck = async (table: string) =>
-  deckIds.length === 0
-    ? []
-    : ((await src.query(`select * from ${table} where deck_id = any($1)`, [deckIds])) as Record<
-        string,
-        unknown
-      >[]);
+try {
+  await client.query("begin isolation level repeatable read read only");
+  const rows = async (sql: string, params: unknown[] = []) =>
+    (await client.query(sql, params)).rows as Record<string, unknown>[];
 
-const cards = await byDeck("deck_cards");
-const proxies = await byDeck("deck_proxies");
-const versions = await byDeck("deck_versions");
-const games = await byDeck("deck_games");
-const assignments = await byDeck("card_assignments");
-const versionIds = versions.map((v) => v.id as string);
-const versionCards =
-  versionIds.length === 0
-    ? []
-    : ((await src.query(`select * from deck_version_cards where version_id = any($1)`, [
-        versionIds,
-      ])) as Record<string, unknown>[]);
-const artPrefs = (await src`
-  select * from card_art_preferences where user_id = ${owner}`) as Record<string, unknown>[];
+  owner =
+    process.env.PULL_FROM_USER_ID ??
+    (
+      await rows("select user_id, count(*)::int as n from decks group by 1 order by n desc limit 1")
+    )[0]?.user_id as string | undefined;
+  if (!owner) {
+    console.error("No decks on staging to copy.");
+    process.exit(1);
+  }
+
+  decks = await rows("select * from decks where user_id = $1 order by created_at", [owner]);
+  collection = await rows("select * from collection_items where user_id = $1", [owner]);
+  folders = await rows("select * from deck_folders where user_id = $1", [owner]);
+  uploads = await rows("select * from csv_uploads where user_id = $1", [owner]);
+  artPrefs = await rows("select * from card_art_preferences where user_id = $1", [owner]);
+
+  const deckIds = decks.map((d) => d.id as string);
+  const byDeck = async (table: string) =>
+    deckIds.length === 0 ? [] : rows(`select * from ${table} where deck_id = any($1)`, [deckIds]);
+
+  cards = await byDeck("deck_cards");
+  proxies = await byDeck("deck_proxies");
+  versions = await byDeck("deck_versions");
+  games = await byDeck("deck_games");
+  assignments = await byDeck("card_assignments");
+  fillPasses = await byDeck("fill_passes");
+  unresolved = await byDeck("deck_unresolved_rows");
+
+  const versionIds = versions.map((v) => v.id as string);
+  versionCards =
+    versionIds.length === 0
+      ? []
+      : await rows("select * from deck_version_cards where version_id = any($1)", [versionIds]);
+  const gameIds = games.map((g) => g.id as string);
+  gameAxes =
+    gameIds.length === 0
+      ? []
+      : await rows("select * from deck_game_axes where game_id = any($1)", [gameIds]);
+  const passIds = fillPasses.map((f) => f.id as string);
+  fillPassCards =
+    passIds.length === 0
+      ? []
+      : await rows("select * from fill_pass_cards where pass_id = any($1)", [passIds]);
+
+  await client.query("commit");
+} finally {
+  client.release();
+  await pool.end();
+}
 
 console.log(`From staging, account ${owner.slice(0, 12)}…`);
 for (const [name, rows] of [
   ["decks", decks], ["deck_cards", cards], ["deck_versions", versions],
-  ["deck_version_cards", versionCards], ["deck_games", games], ["deck_proxies", proxies],
-  ["deck_folders", folders], ["card_assignments", assignments],
-  ["collection_items", collection], ["card_art_preferences", artPrefs],
+  ["deck_version_cards", versionCards], ["deck_games", games], ["deck_game_axes", gameAxes],
+  ["deck_proxies", proxies], ["deck_folders", folders], ["card_assignments", assignments],
+  ["fill_passes", fillPasses], ["fill_pass_cards", fillPassCards],
+  ["deck_unresolved_rows", unresolved], ["collection_items", collection],
+  ["card_art_preferences", artPrefs], ["csv_uploads", uploads],
 ] as const) {
   console.log(`  ${String(rows.length).padStart(6)}  ${name}`);
 }
@@ -156,6 +230,10 @@ if (existing.length > 0) {
 await dst`delete from collection_items where user_id = ${AS_USER}`;
 await dst`delete from deck_folders where user_id = ${AS_USER}`;
 await dst`delete from card_art_preferences where user_id = ${AS_USER}`;
+// `csv_uploads` is user-scoped metadata the collection reads for its last-updated stamp and its
+// generation fingerprint. Left behind, a re-run pins a receipt from an older snapshot to a
+// collection it never described.
+await dst`delete from csv_uploads where user_id = ${AS_USER}`;
 
 // Order matters: folders before decks (decks reference a folder), decks before their rows,
 // versions before version cards.
@@ -166,9 +244,14 @@ await insert("deck_proxies", proxies);
 await insert("deck_versions", versions);
 await insert("deck_version_cards", versionCards);
 await insert("deck_games", games);
+await insert("deck_game_axes", gameAxes);
 await insert("card_assignments", assignments);
+await insert("fill_passes", fillPasses);
+await insert("fill_pass_cards", fillPassCards);
+await insert("deck_unresolved_rows", unresolved);
 await insert("collection_items", collection);
 await insert("card_art_preferences", artPrefs);
+await insert("csv_uploads", uploads);
 
 const landed = (await dst`select count(*)::int as n from decks where user_id = ${AS_USER}`) as {
   n: number;
