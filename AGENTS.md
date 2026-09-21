@@ -292,7 +292,12 @@ Package manager is **pnpm** (pinned via `packageManager` in package.json) — ne
   any target write, because every read would come back empty and the run would delete the
   target's snapshot and report success.
 
-  **A re-run REPLACES rather than merges** — a merge leaves decks from an older snapshot standing
+  **REPLACING IS OPT-IN.** A run whose target account already holds decks REFUSES; `--replace`
+  is how a caller says they meant it, and the common case — a fresh fixture account — has no
+  destructive path at all. That is a scope decision rather than a guard: three review rounds ran
+  on this file and every finding was about the delete, so the delete stopped being the default.
+
+  **With `--replace` it REPLACES rather than merges** — a merge leaves decks from an older snapshot standing
   beside the new ones and quietly makes the fixture a thing that never existed on staging. Takes
   `--dry-run`, which prints the counts and writes nothing. It is a SNAPSHOT: re-run it before a
   measurement that matters.

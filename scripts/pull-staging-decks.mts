@@ -35,6 +35,16 @@ neonConfig.webSocketConstructor = ws;
 const SOURCE = process.env.THE_99_NEON_STAGING_DIRECT;
 const TARGET = process.env.PULL_TARGET_URL;
 const DRY = process.argv.includes("--dry-run");
+/**
+ * REPLACING IS OPT-IN, and that is a scope decision rather than another guard.
+ *
+ * Three review rounds ran on this file and every finding was about the same surface: the
+ * delete. Patching it a fourth time would be treating a design as a bug, so the destructive
+ * path stops being the default. A run whose target account already holds decks REFUSES, and
+ * `--replace` is how a caller says they meant it. The common case — a fresh fixture account —
+ * now has no destructive path at all.
+ */
+const REPLACE = process.argv.includes("--replace");
 /** The local user the copy lands under. Defaults to the fixture account the probes sign in as. */
 const AS_USER = process.env.PULL_AS_USER_ID ?? "user_3HdjdocERCjunk0zJQFDWyHkTd4";
 
@@ -288,16 +298,33 @@ try {
   // The target's existing rows for this user go first, so a re-run is a REPLACE rather than a
   // merge — a merge leaves decks from an older snapshot standing beside the new ones and
   // quietly makes the fixture a thing that never existed on staging.
-  console.log(`\nReplacing ${AS_USER}'s rows on the target…`);
   const existing = (await out.query("select id from decks where user_id = $1", [AS_USER]))
     .rows as { id: string }[];
+  if (existing.length > 0 && !REPLACE) {
+    await out.query("rollback");
+    console.error(
+      `${AS_USER} already holds ${existing.length} deck(s) on the target.\n` +
+        "Refusing — pass --replace to delete them and write this snapshot in their place.",
+    );
+    process.exit(1);
+  }
+  console.log(
+    existing.length > 0
+      ? `\nReplacing ${AS_USER}'s ${existing.length} deck(s) on the target…`
+      : `\nWriting ${AS_USER}'s rows on the target…`,
+  );
   if (existing.length > 0) {
     const ids = existing.map((d) => d.id);
     await out.query("delete from card_assignments where deck_id = any($1)", [ids]);
     await out.query("delete from decks where id = any($1)", [ids]);
   }
-  for (const t of ["collection_items", "deck_folders", "card_art_preferences", "csv_uploads"]) {
-    await out.query(`delete from ${t} where user_id = $1`, [AS_USER]);
+  // The user-scoped tables are cleared whether or not any deck existed: a previous run could
+  // have left a collection behind with no decks, and merging two collections is the same
+  // never-existed state the deck merge would be.
+  if (REPLACE || existing.length > 0) {
+    for (const t of ["collection_items", "deck_folders", "card_art_preferences", "csv_uploads"]) {
+      await out.query(`delete from ${t} where user_id = $1`, [AS_USER]);
+    }
   }
 
   // Order matters: folders before decks (a deck references a folder), decks before their rows,
