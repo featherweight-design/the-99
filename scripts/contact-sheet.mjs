@@ -100,11 +100,16 @@ async function signIn(page) {
  * still literal one step later, and that row could never click the card it had searched for.
  * A per-step expander is a list that grows a hole every time a verb is added.
  */
-function expand(value, where) {
+function expand(value, where, { forRegex = false } = {}) {
   return String(value ?? "").replace(/\$\{(\w+)\}/g, (_, name) => {
     const found = process.env[name];
     if (!found) throw new Error(`${where} needs ${name} in the environment`);
-    return found;
+    // `clickRole.name` is a REGEX in this runner, so a substituted value is pattern source
+    // rather than text. Card names carry metacharacters — `+2 Mace` starts with `+`, which
+    // is not a valid pattern at all and throws; `Question Elemental?` makes the preceding
+    // character optional and matches the wrong button. The value is escaped and the
+    // author's own pattern around it is left alone, so `^${CARD}$` still anchors.
+    return forRegex ? found.replace(/[.*+?^${}()|[\]\\]/g, "\\$&") : found;
   });
 }
 
@@ -133,7 +138,7 @@ async function run(page, steps) {
       await onPage(page, step.click).first().click({ timeout: 15_000 });
     }
     if (step.clickRole !== undefined) {
-      await onPageRole(page, step.clickRole, new RegExp(expand(step.name, `clickRole ${step.clickRole}`)))
+      await onPageRole(page, step.clickRole, new RegExp(expand(step.name, `clickRole ${step.clickRole}`, { forRegex: true })))
         .first()
         .click({ timeout: 15_000 });
     }
