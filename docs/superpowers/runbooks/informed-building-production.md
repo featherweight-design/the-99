@@ -13,7 +13,15 @@ Two switches, and confusing them is the thing this runbook exists to prevent.
 
 | Switch | Controls | Where it lives |
 |---|---|---|
-| **Role averages in the database** | whether the fill and the strip use the COMMANDER's numbers or an asserted 10/10/8/3 | `commander_support.avg_ramp` etc., written by the `Commander index` workflow |
+| **Role averages in the database** | whether the fill and the strip use **measured** role targets or an asserted 10/10/8/3 | `commander_support.avg_ramp` etc., written by the `Commander index` workflow |
+
+**"Measured" is not the same as "this commander's row."** `loadSkeletonForCommanders` resolves a
+four-rung basis chain and takes the first hit: the **pair**, then the **commander**, then the
+**identity bucket**, then the **count bucket** — and only then the flat baseline. A deck can be
+measured against 200 decks of its exact pair, or against every three-colour commander, and the
+profile reports which through `roleTargets.of`. The index fills the first two rungs;
+`db:build:staples` (a step in the same leg) fills the other two. Read the operator's question as
+*"is this deck compared to real decklists at all"*, never *"does this commander have a row"*.
 | **`ANALYSIS_TAB_ENABLED`** | whether the Analysis tab exists, and whether the Recommended mix strip lives in it or in the deck header | a Vercel environment variable on the `the-99` project |
 
 **Neither gates the other.** The fill, the Add panel ordering and the bulk control all work with
@@ -75,7 +83,7 @@ where c.name = 'Kinnan, Bonder Prodigy';
 
 **What a reader sees change:** the Recommended mix strip's gloss goes from
 `A common starting point` to `EDHREC averages`, and the four role cells stop reading
-10 / 10 / 8 / 3 on every deck. No redeploy is needed — the figures are read per request, and
+10 / 10 / 8 / 3 on every deck — each deck now draws whichever rung of the chain served it. No redeploy is needed — the figures are read per request, and
 the cached payloads carry the index generation in their key, so they retire themselves within
 the hour ceiling at worst.
 
@@ -117,8 +125,8 @@ it wants a look at both widths after the redeploy.
 - **The tab:** unset `ANALYSIS_TAB_ENABLED` (or set it to anything but `true`) and redeploy. It
   defaults OFF, so absent is safe.
 - **The role averages:** there is no un-write. A re-run of the index recomputes them. The app
-  degrades safely in the other direction — a commander whose chain reaches nothing falls back to
-  the asserted baseline and says so — so a partial index is not a broken state, only a mixed one.
+  degrades safely in the other direction — a deck whose chain reaches nothing on any of its four
+  rungs falls back to the asserted baseline and says so — so a partial index is not a broken state, only a mixed one.
 
 ---
 
