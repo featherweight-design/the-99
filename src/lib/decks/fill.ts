@@ -73,6 +73,11 @@ export type FillPlan = {
    * Separate from the land count because they are different facts: a modal card sleeved as
    * draw is still a land drop when the hand needs one, and a mana base measured without it
    * reads short against decklists that counted it.
+   *
+   * A PLACED modal spell counts here AND is charged against the land ceiling, so the sweeps
+   * take one fewer basic for it. That is the §2.5a rule rather than an exception to it: the
+   * card spends ONE slot and is counted once in each place that counts it. What it never does
+   * is take a `role: "land"` row as well, which would be the double credit.
    */
   landCapable: number;
   /** What could not be reached, roles in role order and then types. */
@@ -355,6 +360,11 @@ export function planFill(candidates: FillCandidate[], args: PlanFillArgs): FillP
         if (other === candidate || spent.has(other.oracleId)) continue;
         const otherRoles = rolesOfCandidate(other);
         if (otherRoles.includes("land") || !otherRoles.includes(firstOpen)) continue;
+        // WITHIN THE OWNERSHIP TIER. `byPreference` makes owned the first and absolute
+        // preference, so crossing it here lets the tie-break BUY a staple over a card the
+        // player already has — a type gap is a reason to prefer one card to another, never a
+        // reason to spend money. The owned card would have been left unused.
+        if (other.owned !== candidate.owned) continue;
         const gain = closes(other) - closes(chosen);
         if (gain < 0) { if (--scanned <= 0) break; continue; }
         if (gain > 0) { chosen = other; if (--scanned <= 0) break; continue; }

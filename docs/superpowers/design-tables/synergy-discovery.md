@@ -546,7 +546,12 @@ Same 7px dot/ring as desktop.
 
 **Zero selection (locked strings — unchanged)**
 
-- `recommendationsCopy.build.stickyPromise` — "We'll fill 68 of the 99 — roles and lands. The rest is yours."
+- `recommendationsCopy.build.stickyPromise` — "We’ll build the whole 99, as far as your collection reaches."
+  Was "We'll fill 68 of the 99 — roles and lands. The rest is yours." until the fill stopped
+  stopping at the role floors and the mana base. It reaches the whole body now, so the old
+  sentence under-promised by 31 cards and its "The rest is yours" named a remainder that no
+  longer exists — and an unconditional "all 99" would be a promise the fill cannot keep when
+  the collection runs out, which is what the condition carries.
 - Color: `var(--fg-locked)` (`#6A6152`)
 
 **Non-zero selection, all owned**

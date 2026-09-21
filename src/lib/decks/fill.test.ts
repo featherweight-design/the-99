@@ -441,9 +441,12 @@ describe("the fill does not leave usable cards behind", () => {
     expect(plan.shortfalls.filter((s) => s.kind === "type")
       .map((s) => (s as { type: string }).type))
       .not.toContain("land");
-    expect(plan.shortfalls.filter((s) => s.kind === "type")
-      .map((s) => (s as { type: string }).type))
-      .not.toContain("basic");
+    const types = plan.shortfalls.filter((s) => s.kind === "type")
+      .map((s) => (s as { type: string }).type);
+    // ALL THREE. The contract excludes every land axis, and a regression reintroducing only
+    // `nonbasic` would pass a check that named the other two.
+    expect(types).not.toContain("basic");
+    expect(types).not.toContain("nonbasic");
   });
 
   // A skeleton can NAME a measured rung and still carry figures `roleFloors` rejects. The plan
@@ -512,4 +515,27 @@ describe("the measured composition reaches the mana base too", () => {
     );
     expect(plan.shortfalls).not.toContainEqual({ kind: "role", role: "land" });
   });
+});
+
+// A type gap is a reason to prefer one card to another. It is never a reason to spend money —
+// `byPreference` makes owned the first and absolute preference, and a tie-break that crossed
+// that boundary would buy a staple while a card the player already owns went unused.
+it("never buys a staple over an owned card on type-gap grounds", () => {
+  const wantsCreatures = skeletonWith({
+    land: 0, creature: 40, artifact: 0, instant: 0, sorcery: 0, enchantment: 0,
+    ramp: 1, draw: 0, removal: 0, wipes: 0,
+  });
+  const ownedArtifact = c({
+    oracleId: "owned", name: "owned", typeLine: "Artifact",
+    oracleText: "{T}: Add {C}.", inclusionPct: 50,
+  });
+  const boughtCreature = c({
+    oracleId: "bought", name: "bought", typeLine: "Creature — Elf",
+    oracleText: "{T}: Add {C}.", owned: false, ownedQuantity: 0, inclusionPct: 99,
+  });
+  const plan = planFill([ownedArtifact, boughtCreature], {
+    hasPartner: false, skeleton: wantsCreatures, slots: 1,
+  });
+  expect(plan.rows.find((r) => r.role === "ramp")?.oracleId).toBe("owned");
+  expect(plan.bought).toBe(0);
 });
