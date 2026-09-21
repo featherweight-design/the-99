@@ -1158,6 +1158,41 @@ Package manager is **pnpm** (pinned via `packageManager` in package.json) — ne
   unreachable. Six mutations, all six fail; the counts are in its header. Point it at
   `local-dev` or a scratch Neon branch, **never production**.
 
+- `pnpm probe:role-targets` proves `deriveAndWriteRoleTargets` against a real Postgres — the
+  four measured role targets, per commander and per pair.
+
+  It exists because every one of `seed-index.test.ts`'s 22 cases INJECTS this pass. That is the
+  right trade for those tests — a default reaching the database would make each of them need a
+  real Postgres — and it leaves the writer's whole SQL surface asserted by nobody: the support
+  read, the per-commander UPDATE, the pair key split, the clearing of a row the derivation no
+  longer reaches, and the refusal. The derivation itself is pure and unit tested; none of that
+  is. The cost of the gap is on record in the PR that added it — a comment written with `//`
+  INSIDE a SQL template shipped in `build-staples.ts` and would have failed every run of the
+  derivation, past typecheck, past lint, past 7,456 tests. Running the thing is what caught it,
+  and then caught the first FIX too, which quoted `//` in backticks and closed the template.
+
+  Fifteen checks in four sections. The refusal's is the one that needed designing: a refused
+  publish clears the roles on exactly the rows that run rewrote (`computed_at >= runStartedAt`)
+  and leaves every other commander's standing, so the probe plants a sentinel EITHER SIDE of
+  that line. One row on the recent side alone cannot tell a correct clear from a blanket one —
+  they look identical from there. It reaches the refusal by RAISING the denominator rather than
+  lowering coverage: rows with `synergy_state = 'ok'` and no support cards count in `ok` and
+  derive nothing, so enough of them tips the floor.
+
+  **It stamps every commander row it inserts and sweeps its own debris on the way in**, because
+  a mutation run behind it was killed part-way through and its `finally` never ran, leaving a
+  fixture row that inflated the next run's `ok` count. A STAMP rather than a shape: "an ok
+  commander with no support cards" is exactly what section 2 has to create, so sweeping on that
+  would be a script that deletes a real row the day the catalog produces one. The pair sentinel
+  carries no stamp — `commander_pair_support` has no prose column — so it is ANCHORED on a
+  stamped commander id and swept by key, which is the same rule rather than an exception to it.
+
+  Like `probe:catalog-stamp` it cannot scope itself to a fixture user: the pass operates on the
+  whole table by design. So the four role columns on every commander and pair row are captured
+  first and restored wholesale — restored, never re-derived, since re-running the pass would
+  leave the table holding this script's output rather than what it found. Point it at
+  `local-dev` or a scratch Neon branch, **never production**.
+
 - `pnpm measure:tutors` prints what `classifyTutor` does to the live catalog — the 22-card
   fixture with a reason per card, the corpus splits, reach against a real combo piece, and the
   first 60 parses for reading. Read-only.
