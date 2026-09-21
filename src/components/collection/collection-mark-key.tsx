@@ -2,9 +2,12 @@
 //
 // THE RULE THE WORDLESS MARK RESTS ON: a glyph identifies and cannot teach, so something
 // on the surface has to say the word. The deck-status marks shipped wordless AND unglossed
-// and were retired in a day. `MarkKey` was mounted on the deck surface alone — three call
-// sites, all in `decklist.tsx` — while /collection drew the same three glyphs with nothing
-// to decode them.
+// and were retired in a day.
+//
+// The three glyphs arrive on /collection in the same change that adds this, so there was
+// never a window where they drew unglossed — which is the point. `MarkKey` existed for the
+// deck surface's `buy` and `proxy`, and the gloss for these three is built here rather than
+// reached for from `decklist.tsx`, whose entries are that surface's own.
 //
 // It lives WITH THE VIEWS rather than above them in `browser.tsx`, so a view mounted
 // anywhere else brings its own gloss instead of depending on a caller to remember.
@@ -25,6 +28,14 @@ const ENTRIES = CARD_FACTS.map((fact) => ({
   word: cardFactName(fact),
 }));
 
-export function CollectionMarkKey() {
-  return <MarkKey marks={ENTRIES} regionAria={cardMarkCopy.keyRegionAria} />;
+export function CollectionMarkKey({ className }: { className?: string }) {
+  // The TILE grid needs `col-span-full` here, exactly as its `Show more` button does: a bare
+  // child of that grid takes one CARD CELL — one of two columns at 390px, and one of six
+  // ~178px columns at 1300px, stretched to the tile row's height with its entries wrapped
+  // three deep. The row view is a flex column and needs nothing.
+  return (
+    <div className={className}>
+      <MarkKey marks={ENTRIES} regionAria={cardMarkCopy.keyRegionAria} />
+    </div>
+  );
 }

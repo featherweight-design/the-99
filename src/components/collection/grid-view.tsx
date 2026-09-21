@@ -51,7 +51,7 @@ export function GridView({
     <div className="grid grid-cols-2 md:grid-cols-[repeat(auto-fill,minmax(178px,1fr))] gap-[12px] md:gap-[20px] px-[14px] md:px-[34px] pt-[4px] md:pt-[20px] pb-[14px] md:pb-[34px]">
       {/* The gloss travels WITH the view: a surface drawing a wordless mark carries the
           thing that decodes it, rather than trusting a caller to mount one above. */}
-      <CollectionMarkKey />
+      <CollectionMarkKey className="col-span-full" />
       {cards.map((c) => {
         const state = c.availability ? availabilityState(c.availability) : "free";
         // Addendum 2 §2, matching the row: over-committed keeps its border tint

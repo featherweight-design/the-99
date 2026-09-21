@@ -81,7 +81,8 @@ export function CardTileCaption({
   nameTrail,
   trailing,
 }: {
-  /** The meta line's left group, in order: dot, slot, count. */
+  /** The meta line's left group, in order: dot, slot, and the card's bracket marks. The
+   *  COUNT left this line when the marks arrived — see `nameTrail`. */
   meta?: ReactNode;
   /** Right-aligned on the meta line. `SET · rarity` on `/collection`. */
   metaTrail?: ReactNode;
@@ -94,7 +95,9 @@ export function CardTileCaption({
    */
   nameHidden?: boolean;
   nameSpoken?: ReactNode;
-  /** The `//` mark. Never on `/collection` — spec errata 3. */
+  /** The name line's own trailing slot. The deck's `//` mark, and on `/collection` the
+   *  copy count, which moved here from the meta line to make room for the bracket marks.
+   *  The two never coexist: `/collection` draws no `//` mark (spec errata 3). */
   nameTrail?: ReactNode;
   /** The full-height right column. The deck tile's `✕`. */
   trailing?: ReactNode;

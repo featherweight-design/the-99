@@ -44,13 +44,21 @@ describe("the card mark on /collection", () => {
     expect(cardMarks(container)).toHaveLength(0);
   });
 
-  it("speaks each fact once, in the row's own accessible name after the card's", () => {
+  it("speaks each fact once, straight after the card's name and BEFORE its type", () => {
     // The glyphs are aria-hidden precisely so the clause can sit in the reading order the
-    // sentence wants — the card, then what it is, then what this player's copies do.
-    render(<RowsView cards={[card({ facts: ["massLandDenial"] })]} {...props} />);
+    // sentence wants: the card, then what it IS, then what this player's copies do.
+    //
+    // "after the name" alone does not test that — every position in the string is after
+    // the name, including the end, which is the placement this one was chosen over. The
+    // load-bearing assertion is that it precedes the TYPE LINE and the copy count.
+    render(
+      <RowsView cards={[card({ facts: ["massLandDenial"], quantity: 2 })]} {...props} />,
+    );
     const label = screen.getByRole("button", { name: /Armageddon/ }).getAttribute("aria-label")!;
-    expect(label).toContain(cardMarkCopy.massLandDenial);
-    expect(label.indexOf("Armageddon")).toBeLessThan(label.indexOf(cardMarkCopy.massLandDenial));
+    const at = (needle: string) => label.indexOf(needle);
+    expect(at(cardMarkCopy.massLandDenial)).toBeGreaterThan(at("Armageddon"));
+    expect(at(cardMarkCopy.massLandDenial)).toBeLessThan(at("Sorcery"));
+    expect(at(cardMarkCopy.massLandDenial)).toBeLessThan(at("2 copies"));
     expect(label.match(new RegExp(cardMarkCopy.massLandDenial, "g"))).toHaveLength(1);
   });
 
