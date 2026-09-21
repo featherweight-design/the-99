@@ -16,44 +16,31 @@
 
 "use client";
 
-import { useEffect, useRef, useState, useSyncExternalStore } from "react";
+import { useEffect, useRef, useState } from "react";
+
+import { useMinWidth } from "../ui/use-min-width";
 
 import { type CardFact, cardMarkCopy } from "../../lib/copy/card-mark";
 
 /** The handoff's figure: long enough not to fire on a pointer crossing the row. */
 export const OPEN_DELAY_MS = 400;
 
-const FINE_POINTER = "(pointer: fine)";
-
-/** Whether the device has a fine pointer right now. `matchMedia` is a browser API and this
- *  file is imported by a server-rendered tree, so every read is optional-chained. */
-function finePointer(): boolean {
-  return window.matchMedia?.(FINE_POINTER).matches ?? false;
-}
-
-/** No pointer on the server. Hoisted rather than inlined so `useSyncExternalStore` gets a
- *  stable reference and cannot re-subscribe on every render. */
-function serverFinePointer(): boolean {
-  return false;
-}
-
-function subscribeFinePointer(onChange: () => void): () => void {
-  const query = window.matchMedia?.(FINE_POINTER);
-  if (!query) return () => {};
-  query.addEventListener("change", onChange);
-  return () => query.removeEventListener("change", onChange);
-}
-
 export function FactTooltip({ fact, children }: { fact: CardFact; children: React.ReactNode }) {
-  // `useSyncExternalStore` rather than a state-plus-effect, which is what this was: the effect
-  // called `setFine` synchronously on mount, which React 19's `react-hooks/set-state-in-effect`
-  // rejects because it schedules a second render before the first has painted.
+  // THE REPO'S ONE MEDIA-QUERY SUBSCRIBER, not a second copy. This was a state-plus-effect
+  // whose mount effect called `setFine` synchronously, which React 19's
+  // `react-hooks/set-state-in-effect` rejects — and the first fix for that wrote a private
+  // `useSyncExternalStore` triple here, which is exactly the duplication `use-min-width.ts`'s
+  // own header exists to refuse: "the drift each move was correcting is a second copy of the
+  // subscriber, so there is one, taking the query as an argument."
   //
-  // The server snapshot is `false`, which is the behaviour the effect had — the tooltip is a
-  // pointer affordance, so a server render and a touch device both draw the children bare.
-  // Reading it as a store also makes it REACTIVE, where the mount-once read stayed false for
-  // the session however the device changed.
-  const fine = useSyncExternalStore(subscribeFinePointer, finePointer, serverFinePointer);
+  // The name says min-width and the hook takes any query, which its header states. Renaming it
+  // to `useMediaQuery` is a follow-up rather than a rider on a PR that exists to unblock a red
+  // `main`; the one production caller is `use-is-desktop.ts`.
+  //
+  // Its server snapshot is `false`, which is the behaviour the effect had: a server render and
+  // a touch device both draw the children bare. Subscribing also makes this REACTIVE, where
+  // the mount-once read stayed false for the session however the device changed.
+  const fine = useMinWidth("(pointer: fine)");
 
   // THE HOVER STATE LIVES IN THE CHILD, and that is the whole reason this component splits.
   //

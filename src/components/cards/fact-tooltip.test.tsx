@@ -113,9 +113,7 @@ describe("FactTooltip", () => {
 
   it("does not come back already open after a fine to coarse to fine round trip", async () => {
     // Reachable ONLY because the pointer is now reactive. With `open` and the timer held in
-    // the parent, the coarse branch merely stops drawing the wrapper while both survive, so
-    // the tooltip reappears with no pointerenter and a timer armed before the change can
-    // still fire into the coarse branch.
+    // the parent, the coarse branch merely stops drawing the wrapper while both survive.
     const media = livePointer(true);
     render(<FactTooltip fact="gameChanger"><i data-testid="mark" /></FactTooltip>);
 
@@ -125,17 +123,35 @@ describe("FactTooltip", () => {
       { timeout: OPEN_DELAY_MS + 400 },
     );
 
-    // Mouse unplugged while the tooltip is open.
+    // Mouse unplugged while the tooltip is OPEN.
     await act(async () => { media.set(false); });
     expect(screen.queryByText(cardMarkCopy.tooltip.gameChanger)).toBeNull();
 
-    // Plugged back in. The child remounts with fresh state, so nothing is open until the
+    // Plugged back in: the child remounts with fresh state, so nothing is open until the
     // pointer enters again.
     await act(async () => { media.set(true); });
     expect(screen.queryByText(cardMarkCopy.tooltip.gameChanger)).toBeNull();
+  });
 
-    // And wait past the old delay: a timer armed before the transition would land here.
-    await new Promise((r) => setTimeout(r, OPEN_DELAY_MS + 150));
+  it("drops a timer that was still pending when the pointer went coarse", async () => {
+    // THE OTHER HALF, and the first version of this file did not reach it: after a `waitFor`
+    // the 400ms timer has already fired, so asserting again afterwards only restates the
+    // previous line and would hold on a build where a pending timer DOES fire into the coarse
+    // branch. The timer has to still be in flight at the transition.
+    const media = livePointer(true);
+    render(<FactTooltip fact="gameChanger"><i data-testid="mark" /></FactTooltip>);
+
+    fireEvent.pointerEnter(screen.getByTestId("mark"));
+    // Deliberately do NOT wait for it to open — the timer is armed and has not fired.
+    await act(async () => { media.set(false); });
+
+    // Past the delay the armed timer would have fired at, still coarse.
+    await new Promise((r) => setTimeout(r, OPEN_DELAY_MS + 200));
+    expect(screen.queryByText(cardMarkCopy.tooltip.gameChanger)).toBeNull();
+
+    // And back to fine: a surviving timer would open a tooltip nobody pointed at.
+    await act(async () => { media.set(true); });
+    await new Promise((r) => setTimeout(r, 50));
     expect(screen.queryByText(cardMarkCopy.tooltip.gameChanger)).toBeNull();
   });
 });
