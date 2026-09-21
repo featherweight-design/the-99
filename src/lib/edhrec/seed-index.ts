@@ -512,6 +512,11 @@ export async function buildCommanderIndex(
  * table. One transaction for both, since a reader takes the pair rung before the commander rung
  * and must not find one cleared and the other not.
  */
+/** Rows per UPDATE inside the publish transaction. Large enough that the round trips stop
+ *  dominating, small enough that one statement's parameter list stays sane — six parameters a
+ *  row puts a 500-row chunk at 3,000, well inside Postgres's 65,535 limit. */
+const ROLE_WRITE_CHUNK = 500;
+
 async function clearRolesWrittenSince(runStartedAt: Date) {
   const NO_ROLES = { avgRamp: null, avgDraw: null, avgRemoval: null, avgWipes: null };
   return db.transaction(async (tx) => {
@@ -563,7 +568,27 @@ export async function deriveAndWriteRoleTargets(
       layout: cards.layout,
     })
     .from(commanderSupportCards)
-    .innerJoin(cards, eq(cards.oracleId, commanderSupportCards.oracleId));
+    .innerJoin(cards, eq(cards.oracleId, commanderSupportCards.oracleId))
+    // RESTRICTED TO `ok` HEADERS, so the numerator counts the same population the floor's
+    // denominator does. Without it the derivation reads the card rows of every header — and
+    // the loop above leaves a `degraded` row AND its previous cards in place — so those stale
+    // commanders inflate `targets.size` against an `ok`-only denominator, and a run that
+    // reached well under 90% of the current `ok` commanders sails past the floor.
+    //
+    // The denominator stays `ok` rather than moving to "headers with cards", which would make
+    // the two agree the other way round and look tidier. It would also make the floor
+    // worthless against the failure it exists for: a join that loses half the card rows drops
+    // the numerator and the denominator together, and the run reports full coverage.
+    //
+    // The cost is that a non-`ok` header keeps its type columns and loses its roles — the
+    // §4A.6 disagreement in miniature. It is accepted because that header is unreachable by
+    // construction here: `degraded` is never written (the loop `continue`s before the write),
+    // and every row on staging and local-dev is `ok`.
+    .innerJoin(
+      commanderSupport,
+      eq(commanderSupport.commanderOracleId, commanderSupportCards.commanderOracleId),
+    )
+    .where(sql`${commanderSupport.synergyState} = 'ok'`);
 
   const targets = deriveRoleTargets(
     rows.map((r) => ({
@@ -610,7 +635,16 @@ export async function deriveAndWriteRoleTargets(
       layout: cards.layout,
     })
     .from(commanderPairSupportCards)
-    .innerJoin(cards, eq(cards.oracleId, commanderPairSupportCards.oracleId));
+    .innerJoin(cards, eq(cards.oracleId, commanderPairSupportCards.oracleId))
+    // The same restriction, for the same reason — the pair floor below counts `ok` pairs.
+    .innerJoin(
+      commanderPairSupport,
+      and(
+        eq(commanderPairSupport.commanderOracleId, commanderPairSupportCards.commanderOracleId),
+        eq(commanderPairSupport.partnerOracleId, commanderPairSupportCards.partnerOracleId),
+      ),
+    )
+    .where(sql`${commanderPairSupport.synergyState} = 'ok'`);
 
   // Keyed on the pair, not the primary: `deriveRoleTargets` groups by whatever id it is given,
   // and two pairs sharing a primary commander would otherwise fold into one set of figures.
@@ -666,20 +700,36 @@ export async function deriveAndWriteRoleTargets(
     await tx.update(commanderSupport).set(NO_ROLES);
     await tx.update(commanderPairSupport).set(NO_ROLES);
 
-    for (const [commanderOracleId, t] of entries) {
-      await tx.update(commanderSupport)
-        .set({ avgRamp: t.ramp, avgDraw: t.draw, avgRemoval: t.removal, avgWipes: t.wipes })
-        .where(eq(commanderSupport.commanderOracleId, commanderOracleId));
+    // BATCHED, one statement per ROLE_WRITE_CHUNK rows rather than one per commander. The
+    // single transaction above is required — a per-slice commit publishes the partial state
+    // this pass refuses — but 3,279 round trips is what made holding it expensive, and the
+    // transaction's duration is the whole cost a reader elsewhere pays for it.
+    for (let i = 0; i < entries.length; i += ROLE_WRITE_CHUNK) {
+      const slice = entries.slice(i, i + ROLE_WRITE_CHUNK);
+      const tuples = slice.map(([id, t]) =>
+        sql`(${id}::uuid, ${t.ramp}::real, ${t.draw}::real, ${t.removal}::real, ${t.wipes}::real)`);
+      await tx.execute(sql`
+        update ${commanderSupport} as cs
+           set avg_ramp = v.ramp, avg_draw = v.draw,
+               avg_removal = v.removal, avg_wipes = v.wipes
+          from (values ${sql.join(tuples, sql`, `)}) as v(id, ramp, draw, removal, wipes)
+         where cs.commander_oracle_id = v.id`);
     }
 
-    for (const [key, t] of pairTargets) {
-      const [a, b] = key.split("|");
-      await tx.update(commanderPairSupport)
-        .set({ avgRamp: t.ramp, avgDraw: t.draw, avgRemoval: t.removal, avgWipes: t.wipes })
-        .where(and(
-          eq(commanderPairSupport.commanderOracleId, a),
-          eq(commanderPairSupport.partnerOracleId, b),
-        ));
+    const pairEntries = [...pairTargets];
+    for (let i = 0; i < pairEntries.length; i += ROLE_WRITE_CHUNK) {
+      const tuples = pairEntries.slice(i, i + ROLE_WRITE_CHUNK).map(([key, t]) => {
+        const [a, b] = key.split("|");
+        return sql`(${a}::uuid, ${b}::uuid, ${t.ramp}::real, ${t.draw}::real,
+                    ${t.removal}::real, ${t.wipes}::real)`;
+      });
+      await tx.execute(sql`
+        update ${commanderPairSupport} as ps
+           set avg_ramp = v.ramp, avg_draw = v.draw,
+               avg_removal = v.removal, avg_wipes = v.wipes
+          from (values ${sql.join(tuples, sql`, `)})
+            as v(id, partner, ramp, draw, removal, wipes)
+         where ps.commander_oracle_id = v.id and ps.partner_oracle_id = v.partner`);
     }
   });
 

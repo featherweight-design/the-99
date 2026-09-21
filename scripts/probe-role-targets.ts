@@ -98,11 +98,14 @@ async function main() {
   // LOOK like what this script inserts — the sentinel total, no deck count, and no support
   // cards — so a row that has become real is left alone and simply loses its marker's meaning
   // rather than its contents. Stamp for intent, shape for currency; neither on its own.
+  // The shape is the columns a real index row always fills and this script never does —
+  // `tags`, `deck_count`, `rank`. Deliberately NOT "has no support cards": section 2b's
+  // fixture carries some on purpose, so that clause would leave exactly the row a killed run
+  // is most likely to strand.
   const stale = await rows<{ id: string }>(sql`
     select cs.commander_oracle_id as id from commander_support cs
-    where cs.prose = ${STAMP} and cs.edhrec_total = 1 and cs.deck_count is null
-      and not exists (select 1 from commander_support_cards x
-                       where x.commander_oracle_id = cs.commander_oracle_id)`);
+    where cs.prose = ${STAMP}
+      and cs.deck_count is null and cs.rank is null and cs.tags = '[]'::jsonb`);
   if (stale.length) {
     for (const { id } of stale) {
       // Scoped to the sentinel's own shape as well as the stamped id. A real pair row could
@@ -121,6 +124,8 @@ async function main() {
           and edhrec_total = ${PAIR_SENTINEL_TOTAL}`);
     }
     for (const { id } of stale) {
+      await db.execute(sql`
+        delete from commander_support_cards where commander_oracle_id = ${id}::uuid`);
       await db.execute(sql`
         delete from commander_support where commander_oracle_id = ${id}::uuid`);
     }
@@ -202,11 +207,68 @@ async function main() {
     check("a commander with no support cards is cleared", after[0]?.avg_ramp, null);
   }
 
-  // ---- 3 · the pair rung and its key split -------------------------------------------
-  console.log("\n3 · the pair rung");
-  const pairCards = await rows<{ commander_oracle_id: string; oracle_id: string }>(sql`
+  // Read once and shared by 2b and 3: both need real support cards to borrow, and reading the
+  // table twice after 2b has written to it would give them different sets.
+  const pairCardSource = await rows<{ commander_oracle_id: string; oracle_id: string }>(sql`
     select commander_oracle_id, oracle_id from commander_support_cards
     order by commander_oracle_id limit 40`);
+
+  // ---- 2b · a header that is not `ok` is not derived for ------------------------------
+  console.log("\n2b · a non-ok header carrying cards gets no roles");
+  // The derivation reads `commander_support_cards`, and the index loop leaves a degraded
+  // header AND its previous cards in place — so without a restriction those stale commanders
+  // count toward a floor whose denominator is `ok` alone, and a run reaching well under 90% of
+  // the current `ok` commanders passes it. Unreachable on any database today (every row on
+  // staging and local-dev is `ok`, and `degraded` is never written), so the state has to be
+  // BUILT or this rule is asserted by nobody.
+  const [spare2] = await rows<{ oracle_id: string }>(sql`
+    select c.oracle_id from cards c
+    left join commander_support cs on cs.commander_oracle_id = c.oracle_id
+    where cs.commander_oracle_id is null and c.type_line ilike '%legendary%creature%'
+    limit 1`);
+  const donor = pairCardSource[0];
+  if (!spare2 || !donor) {
+    fail("2b · the fixture", "no spare commander, or no support cards to borrow");
+  } else {
+    fakeCommanders.push(spare2.oracle_id);
+    // `absent` rather than `degraded` only because the check constraint ties `edhrec_total` to
+    // `ok`; what is under test is "not ok", and both states take the same branch.
+    await db.execute(sql`
+      insert into commander_support
+        (commander_oracle_id, synergy_state, edhrec_total, tags, bracket_counts,
+         budget_counts, similar_oracle_ids, avg_ramp,
+         prose, prose_input_hash, prose_prompt_version)
+      values (${spare2.oracle_id}::uuid, 'absent', null, '[]'::jsonb, '{}'::jsonb, '{}'::jsonb,
+              '{}'::uuid[], 7, ${STAMP}, ${STAMP}, 0)`);
+    let placed = 0;
+    for (const card of pairCardSource.slice(0, 20)) {
+      await db.execute(sql`
+        insert into commander_support_cards (commander_oracle_id, oracle_id, inclusion)
+        values (${spare2.oracle_id}::uuid, ${card.oracle_id}::uuid, 60)
+        on conflict do nothing`);
+      placed += 1;
+    }
+    check("2b · the fixture carries support cards", placed > 0, true);
+    const before = await rows<{ n: number }>(sql`
+      select count(*)::int as n from commander_support_cards
+      where commander_oracle_id = ${spare2.oracle_id}::uuid`);
+    check("and they are readable", (before[0]?.n ?? 0) > 0, true);
+
+    const res2 = await deriveAndWriteRoleTargets(new Date(Date.now() - 60_000));
+    const [after2] = await rows<{ avg_ramp: number | null }>(sql`
+      select avg_ramp from commander_support where commander_oracle_id = ${spare2.oracle_id}::uuid`);
+    // Its cards would classify perfectly well — the point is that its HEADER excludes it.
+    check("a non-ok header gets no roles despite its cards", after2?.avg_ramp, null);
+    // And it is not counted into the floor's numerator either, which is the half that lets a
+    // thin run pass. `ok` has not changed, so a correct numerator still equals it.
+    check("and does not inflate the derived count", res2.written, ok);
+    await db.execute(sql`
+      delete from commander_support_cards where commander_oracle_id = ${spare2.oracle_id}::uuid`);
+  }
+
+  // ---- 3 · the pair rung and its key split -------------------------------------------
+  console.log("\n3 · the pair rung");
+  const pairCards = pairCardSource;
   const lead = pairCards[0]?.commander_oracle_id;
   // The other half is section 2's STAMPED row, so the startup sweep can find this pair by key
   // after a killed run. A pair row carries no stamp of its own.
@@ -358,6 +420,8 @@ main()
       }],
       ["the inserted commanders", async () => {
         for (const id of fakeCommanders) {
+          await db.execute(sql`
+            delete from commander_support_cards where commander_oracle_id = ${id}::uuid`);
           await db.execute(sql`
             delete from ${commanderSupport} where commander_oracle_id = ${id}::uuid`);
         }

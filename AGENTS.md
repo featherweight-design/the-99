@@ -1171,7 +1171,16 @@ Package manager is **pnpm** (pinned via `packageManager` in package.json) — ne
   derivation, past typecheck, past lint, past 7,456 tests. Running the thing is what caught it,
   and then caught the first FIX too, which quoted `//` in backticks and closed the template.
 
-  Fifteen checks in four sections. The refusal's is the one that needed designing: a refused
+  Nineteen checks in five sections. Two of them need a state no database here carries, so the
+  probe BUILDS it: a header that is not `ok` while still carrying support cards. The derivation
+  reads `commander_support_cards`, and the index loop leaves a degraded header and its previous
+  cards in place — so without a restriction those stale commanders count toward a floor whose
+  denominator is `ok` alone, and a run reaching well under 90% of the current `ok` commanders
+  passes it. Every row on staging and local-dev is `ok` and `degraded` is never written, so
+  nothing would assert that rule otherwise; with the restriction reverted the run reads
+  `written: 3280` against 3,279.
+
+  The refusal's is the one that needed designing: a refused
   publish clears the roles on exactly the rows that run rewrote (`computed_at >= runStartedAt`)
   and leaves every other commander's standing, so the probe plants a sentinel EITHER SIDE of
   that line. One row on the recent side alone cannot tell a correct clear from a blanket one —
