@@ -234,9 +234,17 @@ async function measureSurface(page, label, surface) {
 
   // The FIRST white-matte printing on screen. Black-matte cards cannot show the defect, so
   // a run that measured one would pass on a broken build.
+  //
+  // EVERY box is examined rather than a leading slice of them. A cap looked harmless — the
+  // matte is white on 5 of 12 printings sampled, so the first few tiles almost always carry
+  // one — but "almost always" is the shape of a check that fails for a reason unrelated to
+  // the code, on the one grid whose first N happen to be black. It costs nothing to be sure:
+  // the loop stops at the first white matte, and the images are already decoded by the page.
   let fixture = null;
   let tainted = 0;
-  for (const box of boxes.slice(0, 24)) {
+  let examined = 0;
+  for (const box of boxes) {
+    examined += 1;
     const white = await hasWhiteMatte(page, box.url);
     if (white === null) tainted += 1;
     if (white) { fixture = box; break; }
@@ -245,8 +253,8 @@ async function measureSurface(page, label, surface) {
     `${label}px · ${surface} · a white-matte printing is on screen to measure`,
     fixture !== null,
     fixture
-      ? `${Math.round(fixture.w)}x${Math.round(fixture.h)}px box, radius ${fixture.radius}, ${fixture.url.slice(-28)}`
-      : `none among ${Math.min(boxes.length, 24)} tiles${tainted ? `, ${tainted} unreadable` : ""}`,
+      ? `${Math.round(fixture.w)}x${Math.round(fixture.h)}px box, radius ${fixture.radius}, ${fixture.url.slice(-28)} (${examined} examined)`
+      : `none among ${examined} tiles${tainted ? `, ${tainted} unreadable` : ""}`,
   )) {
     return;
   }
