@@ -126,7 +126,7 @@ export function RowsView({
                   spoken twice out of order. */}
               {(c.facts ?? []).map((fact) => (
                 <FactTooltip key={fact} fact={fact}>
-                  <CardFactMark fact={fact} size={13} silent />
+                  <CardFactMark fact={fact} silent />
                 </FactTooltip>
               ))}
               {c.availability && (

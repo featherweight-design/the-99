@@ -38,9 +38,9 @@
 // cannot say "the round comes back around", and mass land denial's growth marks
 // are strokes lifted off the peak. Both are stated exceptions (verdict erratum 9).
 //
-// 12PX IS THE FLOOR, and NOTHING takes the mark's place below it — no dot, no dash,
-// no initial. Same shape of rule as the bracket mark's 20px floor, reached from the
-// other direction: a numeral survives shrinking, a glyph past its floor does not.
+// ONE SIZE — 16x16, on every surface, and not a prop. NOTHING takes the mark's place
+// and nothing shrinks it: a numeral survives shrinking, a glyph does not, so the rule
+// the old 12px floor protected is now kept by there being nothing to shrink.
 //
 // NO TOOLTIP HERE, AND NOT BECAUSE IT IS UNBUILT. `FactTooltip` wraps this glyph on
 // every surface that draws it, because the hover needs a positioned element and an open
@@ -58,8 +58,18 @@
 
 import { type CardFact, cardFactName } from "../../lib/copy/card-mark";
 
-/** Below this the mark is not drawn and nothing is substituted. */
-export const CARD_FACT_MARK_FLOOR_PX = 12;
+/**
+ * ONE SIZE, EVERYWHERE. The mark is 16x16 on every surface that draws it, and the
+ * size is not a prop — a per-mount figure is a per-mount drift, and the set shipped
+ * at 12, 13, 14 and 16 across six mounts, so the same fact read as a different mark
+ * depending on which list a player was looking at. Ruled by Hugh, 2026-09-21.
+ *
+ * This supersedes the handoff's 12px floor, which existed so a dense surface could
+ * shrink the glyph rather than withhold it. Nothing shrinks it now, so nothing
+ * reaches the floor: the rule it protected — no dot, no dash, no initial in the
+ * mark's place — is kept by there being one size to keep.
+ */
+export const CARD_FACT_MARK_PX = 16;
 
 /** The glow sits OUTSIDE the box model: it costs no layout and grows no row. */
 const GLOW = "drop-shadow(0 0 3px color-mix(in srgb, var(--fact) 45%, transparent))";
@@ -101,7 +111,6 @@ function Glyph({ fact }: { fact: CardFact }) {
 
 export function CardFactMark({
   fact,
-  size,
   /**
    * Set where the SURFACE composes its own accessible name — /collection's row
    * (explicit aria-label) and tile (text content) — so the fact is spoken once, in
@@ -110,15 +119,13 @@ export function CardFactMark({
   silent = false,
 }: {
   fact: CardFact;
-  size: number;
   silent?: boolean;
 }) {
-  if (size < CARD_FACT_MARK_FLOOR_PX) return null;
   const name = cardFactName(fact);
   return (
     <svg
-      width={size}
-      height={size}
+      width={CARD_FACT_MARK_PX}
+      height={CARD_FACT_MARK_PX}
       viewBox="0 0 16 16"
       // `block` so the glyph does not sit on the text baseline and lift the line box:
       // no row and no caption may grow for this mark.

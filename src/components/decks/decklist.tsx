@@ -192,7 +192,7 @@ export function buildMarkKeyEntries({
       if (!shown.some((c) => c.facts?.includes(fact))) continue;
       entries.push({
         id: fact,
-        sample: <CardFactMark fact={fact} size={14} silent />,
+        sample: <CardFactMark fact={fact} silent />,
         word: cardFactName(fact),
       });
     }

@@ -221,7 +221,7 @@ export function BracketFactsDetail({ card }: { card: BrowseCard }) {
           <li key={fact} className="flex items-center gap-[10px]">
             {/* The name beside it IS the accessible name, so the glyph goes silent rather
                 than saying it twice. */}
-            <CardFactMark fact={fact} size={16} silent />
+            <CardFactMark fact={fact} silent />
             <span className="text-[13.5px] md:text-[15px]" style={{ color: "var(--fg-body)" }}>
               {cardFactName(fact)}
             </span>

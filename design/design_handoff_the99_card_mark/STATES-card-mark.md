@@ -3,8 +3,15 @@
 Four surfaces, drawn at **390px** and at desktop. `—` means the position draws nothing, which is a
 state and not an omission.
 
-**Three facts, one order, always:** Game Changer (bolt) → mass land denial (peak stripped) → extra
+**Three facts, one order, always:** game changer (bolt) → mass land denial (peak stripped) → extra
 turns (turn again). Fixed, so a reader scanning a column compares like with like.
+
+**Overruled 2026-09-21 by Hugh, on the built surface** (the two rows below carry it): the mark is
+**16x16 on every surface** and the size is not a per-mount figure, and **all three labels are
+lowercase**. What shipped was four sizes across six mounts and one title-cased member of a set of
+three — the same fact reading as a different mark depending on the list, and `Game Changer` reading
+as a different KIND of thing beside its two neighbours. The Game Changer list keeps its own name
+where it is named AS a list, which is the tooltip's sentence and nowhere else.
 
 **Ordering rule, every surface: copies first, mark last.**
 
@@ -16,9 +23,9 @@ turns (turn again). Fixed, so a reader scanning a column compares like with like
 | container | **none** |
 | ink | `--fact` `#8FA6BE`, theme-independent |
 | glow | `filter: drop-shadow(0 0 Npx color-mix(in oklab, var(--fact) 45%, transparent))` — outside the box model |
-| sizes | 16 modal · 14 decklist row · 14 / 13 collection row · 12 tile |
+| sizes | **16 everywhere** — modal, decklist row, collection row, tile and key alike (overruled 2026-09-21; was 16 modal · 14 decklist row · 14 / 13 collection row · 12 tile) |
 | glow radius | 3px modal · 2.5px rows · 2px tile |
-| floor | **12px.** Below it the mark is not drawn and nothing takes its place. |
+| floor | **Retired 2026-09-21.** There is one size and nothing shrinks the glyph, so nothing reaches a floor; the rule it protected — no dot, no dash, no initial in the mark's place — is kept by there being one size to keep. |
 | target | never |
 
 ## Matrix 1 — the decklist row, `/decks/[id]`
@@ -89,7 +96,7 @@ Placement: the oracle column, **after the oracle text, before the availability r
 
 | State | Entries |
 |---|---|
-| **deck detail, collection grid** | `$ to buy` · `P proxy` · `⚡ Game Changer` · `⛰ mass land denial` · `↻ extra turns` |
+| **deck detail, collection grid** | `$ to buy` · `P proxy` · `⚡ game changer` · `⛰ mass land denial` · `↻ extra turns` |
 
 Always all five, never conditional on what is on screen — the key is a vocabulary, not a legend of
 the current page. Glyph entries render in `--fact`, lit, at 11px.
@@ -121,7 +128,7 @@ cleared check.
 
 | Fact | Colour | The other carrier |
 |---|---|---|
-| Game Changer | `--fact` (shared) | the **bolt** silhouette, and the key |
+| game changer | `--fact` (shared) | the **bolt** silhouette, and the key |
 | mass land denial | `--fact` (shared) | the **peak** silhouette, and the key |
 | extra turns | `--fact` (shared) | the **arrow** silhouette, and the key |
 

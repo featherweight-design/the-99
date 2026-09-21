@@ -370,7 +370,7 @@ export function DeckCardTile({
                   describe THIS DECK'S SLOT (the dot, the chip, the count) because these
                   describe the CARD, and are true of it in any deck or none.
 
-                  12px, the floor, this tile being the smallest surface the mark ships on.
+                  16px, the one size the mark draws at on every surface.
                   `silent` because the caption composes the tile's spoken name, exactly as
                   /collection's does.
 
@@ -380,7 +380,7 @@ export function DeckCardTile({
                   shows what they are. */}
               {(card.facts ?? []).map((fact) => (
                 <FactTooltip key={fact} fact={fact}>
-                  <CardFactMark fact={fact} size={12} silent />
+                  <CardFactMark fact={fact} silent />
                 </FactTooltip>
               ))}
               {/* Rendered on `pendingMove`, NOT on `draftFigure`. A proxied tile

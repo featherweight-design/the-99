@@ -119,16 +119,16 @@ export function GridView({
                     count, a set code and up to three glyphs, and the count is the one
                     occupant that reads just as well beside the name.
 
-                    The standing bracket facts, after the chip. 12px is the
-                    floor and this is the smallest surface the mark ships on, so it draws
-                    at exactly that — below it the mark is withheld rather than shrunk.
+                    The standing bracket facts, after the chip. 16px, the one size
+                    the mark draws at on every surface — a dense caption does not get a
+                    smaller one, because the same fact would then read as two marks.
 
                     aria-hidden, because this tile composes its accessible name from its
                     text content: the clause is placed explicitly below, after the card's
                     own name, rather than being read out of the meta line before it. */}
                 {(c.facts ?? []).map((fact) => (
                   <FactTooltip key={fact} fact={fact}>
-                    <CardFactMark fact={fact} size={12} silent />
+                    <CardFactMark fact={fact} silent />
                   </FactTooltip>
                 ))}
               </>

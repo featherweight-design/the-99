@@ -24,7 +24,7 @@ import { MarkKey } from "../decks/mark-key";
 
 const ENTRIES = CARD_FACTS.map((fact) => ({
   id: fact,
-  sample: <CardFactMark fact={fact} size={13} silent />,
+  sample: <CardFactMark fact={fact} silent />,
   word: cardFactName(fact),
 }));
 
