@@ -546,32 +546,42 @@ separately from card count.
 
 ---
 
-## 3A. The About entry
+## 3A. The About entries — DEFERRED by Hugh, 2026-09-20
 
-**`CLAUDE.md` makes this a hard rule and the spec omitted it**, which plan review caught: "No
-FEATURE launches without an About entry, in the same round that ships it."
+`CLAUDE.md` makes an About entry a launch gate: "No FEATURE launches without an About entry, in
+the same round that ships it." **Hugh suspended that for this sub-project**, to be picked up as
+a follow-up once everything has shipped:
 
-This sub-project ships two things a reader could discover, and **both are edits to entries that
-already exist** rather than new ones:
+**Hugh deferred every entry in this sub-project on 2026-09-20**, and `AGENTS.md` has since
+generalised the ruling: *"A MULTI-ROUND FEATURE LINE BATCHES ITS ABOUT ENTRIES AT THE END OF
+THE LAUNCH."* His words at the time:
+
+> Don't worry about any About entries during these features. We'll follow-up with any entries
+> once it's all shipped.
+
+Recorded here rather than left implied, because the rule is a gate and a silently skipped gate
+is indistinguishable from a forgotten one. What the batch owes, and **both are edits to entries
+that already exist** rather than new ones:
 
 | feature | entry |
 |---|---|
 | Build fills the whole 99 rather than 68 | edits the existing build entry; the capability changed |
 | The two bulk controls on the top-off list | edits the existing top-off entry |
 
-An earlier draft listed a third — the layered clear — as the one **new** entry, and it was the
-only thing here forcing a version bump. §2.2 removed it: there is no new control, only the
+An earlier revision listed a third — the layered clear — as the one **new** entry, and it was
+the only thing here forcing a bump. §2.2 deleted that control: there is no new control, only the
 fill recording two passes instead of one, and the per-pass undo it feeds is already described.
 
-**Whether the build change earns a bump is Hugh's call**, and the rule points both ways: a copy
-edit is not a bump, but "we now build the whole deck rather than two thirds of it" is a real
-capability change every account would want to know about. **Default: bump it**, in the PR that
-lands the build promise, and let him overrule.
+So nothing in PRs 1 through 9 touches `src/lib/copy/about.ts`, and no `ABOUT_VERSION` bump lands
+here. Whether "we now build the whole deck rather than two thirds of it" is worth a bump when the
+batch is written is that batch's call, and Hugh's.
 
-`src/lib/copy/about.test.ts` pins a content hash against `ABOUT_VERSION`, so any About copy edit
-forces either a deliberate bump or a deliberate re-pin. **Design draws the entries; Hugh decides
-which features owe one**, and he may rule that the first two are covered by the entries they
-edit.
+**A readiness audit on a round of this line must not report a missing entry as a finding** —
+`AGENTS.md` says to confirm the line's plan names the batched task instead, which this section
+is.
+
+`about.test.ts` pins a content hash against `ABOUT_VERSION`, so the follow-up's edits will force
+a deliberate re-pin. Nothing in PRs 1 through 9 touches `src/lib/copy/about.ts`.
 
 ---
 

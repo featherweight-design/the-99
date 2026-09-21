@@ -949,17 +949,18 @@ run · commit.**
 
 ### Task 19: The build promise and the About entries
 
-**Files:** Modify `src/lib/copy/recommendations.ts`, `src/components/commanders/detail.tsx` (`:542`, `:657`), `src/components/commanders/synergy-selection.tsx` (`:109`, `:228`), `src/lib/decks/fill.ts`, `src/lib/copy/about.ts` **[R2]**
+**Files:** Modify `src/lib/copy/recommendations.ts`, `src/components/commanders/detail.tsx` (`:542`, `:657`), `src/components/commanders/synergy-selection.tsx` (`:109`, `:228`), `src/lib/decks/fill.ts`
 
-**[R2] The About edits are a named task, per `CLAUDE.md`'s hard rule**, which R1 omitted
-entirely. This PR edits the existing build entry: the capability changed from two thirds of the
-deck to all of it. The top-off entry is edited in PR 9b.
+**[R4] NO ABOUT WORK IN THIS SUB-PROJECT — THIS IS THE BATCHED TASK.** Hugh deferred every entry
+on 2026-09-20, and `AGENTS.md` has since generalised it: a multi-round feature line batches its
+About entries at the end of the launch. Nothing in PRs 1 through 9 touches
+`src/lib/copy/about.ts`, and no `ABOUT_VERSION` bump lands here.
 
-**[R3] Both are EDITS; there is no new entry.** R2 had the layered clear owing the one new entry
-and carrying the single `ABOUT_VERSION` bump, and [R3] deleted that control. The rule says a copy
-edit is not a bump — but "we now build the whole deck" is a real capability change every account
-would want to know about, so **bump it here** and let Hugh overrule. `about.test.ts:76` pins a
-content hash, so the edit forces a deliberate re-pin either way.
+The entries are still OWED, and naming them here is what keeps the requirement from quietly
+evaporating — `AGENTS.md` says a readiness audit on a round of such a line should confirm the
+plan names the batched task rather than report a missing entry. It does: two edits, the build
+entry and the top-off entry, written once when the line closes. R2 had this task editing the
+build entry and R3 had it bumping the version; both are removed.
 
 - [ ] **Step 1: Replace the copy.** Both lose their `(n: string)` parameter:
 
@@ -973,11 +974,9 @@ content hash, so the edit forces a deliberate re-pin either way.
 
 - [ ] **Step 3: Delete `fillBaselineTotal`** and its test — it now equals `deckBodySize`.
 
-- [ ] **Step 4: Edit the About build entry and re-pin the hash.**
+- [ ] **Step 4: Run.** `pnpm check:copy-drift && pnpm test && pnpm typecheck`
 
-- [ ] **Step 5: Run.** `pnpm check:copy-drift && pnpm test && pnpm typecheck`
-
-- [ ] **Step 6: Commit and open PR 7.**
+- [ ] **Step 5: Commit and open PR 7.**
 
 ---
 
@@ -1046,8 +1045,7 @@ fails. Record it.
 
 Do not start until a handoff with a READINESS verdict exists. Adds a second control whose pool is
 the whole candidate list, labelled with its cost, beside the first labelled with what it
-compromised. Also edits the About top-off entry.
-
+compromised. 
 Already built and not to be rebuilt: the list has no facet filter; it draws `BuyTag` and prices
 on unowned rows; it computes `buyCount` and `buyMoney`; and `planFill` already buys.
 
