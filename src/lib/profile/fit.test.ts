@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 
 import { buildDeckProfile, type ProfileCardRow, type ProfileInput } from "./build";
+import { ROLE_TARGETS } from "../recs/roles";
 import { fitSkeleton, foldCurve, THIN_DECK_COUNT } from "./fit";
 import type { CompositionTargets, DetectionCoverage, FlagSource, StapleRef } from "./types";
 
@@ -19,6 +20,9 @@ const staple = (oracleId: string): StapleRef => ({
   oracleId, name: oracleId, commanders: 200, commanderTotal: 336,
   avgInclusion: 40.5, weightedRank: 3,
 });
+
+/** Any four figures that are not `ROLE_TARGETS`, so a test cannot pass by coincidence. */
+const FOUR = { ramp: 9, draw: 11, removal: 7, wipes: 2 };
 
 const row = (over: Partial<ProfileCardRow> & { oracleId: string }): ProfileCardRow => ({
   name: over.oracleId, typeLine: "Creature — Human", oracleText: null, keywords: [],
@@ -73,23 +77,61 @@ describe("basis", () => {
   });
 });
 
-// The fit compares MEASURED type targets. `ROLE_TARGETS` — 10 ramp, 10 draw, 8 removal,
-// 3 wipes — are asserted design constants nobody measured, and putting them in the same
-// table would launder them through the measured numbers' credibility.
-describe("no functional roles appear here", () => {
-  it("names only the ten composition axes", () => {
-    const f = fit(withComposition("commander"));
-    expect(f.types.map((t) => t.type)).toEqual([
-      "land", "basic", "nonbasic", "creature", "instant",
-      "sorcery", "artifact", "enchantment", "planeswalker", "battle",
-    ]);
+// THE RULE THAT REPLACED "no functional roles appear here". That one was structural and its
+// reason has ended: the four are derived per commander, per pair and per bucket now, from the
+// same index the type targets come from. What survives is narrower and per-row — a fit may
+// carry a role target only with `measured` beside it, because a deck whose chain ended at
+// `flat` is still being compared to the asserted baseline and a reader shown that figure
+// without being told cannot tell it from one taken over eight hundred decklists.
+describe("a role target never travels without saying whether it was measured", () => {
+  const withRoles = (of: "commander" | "identity", targets = FOUR) => ({
+    roles: {
+      pair: null,
+      commander: of === "commander" ? targets : null,
+      identity: of === "identity" ? targets : null,
+      count: null,
+    },
   });
 
-  it("carries no role key anywhere in the result", () => {
-    const serialised = JSON.stringify(fit(withComposition("commander")));
-    for (const role of ["ramp", "draw", "removal", "wipes"]) {
-      expect(serialised).not.toContain(role);
-    }
+  it("names the four roles in ramp, draw, removal, wipes order", () => {
+    expect(fit(withRoles("commander")).roles.map((r) => r.role))
+      .toEqual(["ramp", "draw", "removal", "wipes"]);
+  });
+
+  it("marks a derived target measured", () => {
+    expect(fit(withRoles("commander")).roles.every((r) => r.measured)).toBe(true);
+  });
+
+  // The chain ends at `ROLE_TARGETS` rather than at null, so the rows are always there — and
+  // this is the case the whole `measured` flag exists for.
+  it("marks the asserted fallback NOT measured, and still reports it", () => {
+    const f = fit();
+    expect(f.roles.every((r) => !r.measured)).toBe(true);
+    expect(f.roles.map((r) => r.target))
+      .toEqual([ROLE_TARGETS.ramp, ROLE_TARGETS.draw, ROLE_TARGETS.removal, ROLE_TARGETS.wipes]);
+  });
+
+  // 390 commanders measure exactly 0 wipes on front-face text. A deck holding one is OVER,
+  // and reporting that as a shortfall would be the flat target's error wearing a measured
+  // number's authority — precisely what the retired module-wide rule existed to prevent.
+  it("reports a surplus against a measured zero, not a shortfall", () => {
+    const wipe = row({
+      oracleId: "wrath", typeLine: "Sorcery",
+      oracleText: "Destroy all creatures.", manaCost: "{2}{W}{W}",
+    });
+    const f = fit(withRoles("commander", { ramp: 9, draw: 11, removal: 7, wipes: 0 }), [wipe]);
+    const wipes = f.roles.find((r) => r.role === "wipes")!;
+    expect(wipes.target).toBe(0);
+    expect(wipes.have).toBe(1);
+    expect(wipes.delta).toBe(1);
+  });
+
+  // A different fact from `coverage.thin`, with a different source, which is why the names
+  // differ — this one is about the BUCKET's population, that one about this commander's.
+  it("carries the bucket's caveat separately from the commander's", () => {
+    const f = fit({ ...withRoles("identity"), thinCondition: true });
+    expect(f.coverage.thinCondition).toBe(true);
+    expect(f.coverage.thin).toBe(false);
   });
 });
 
@@ -211,7 +253,7 @@ describe("coverage", () => {
   // there is no figure to compare.
   it("treats a null deck count as thin", () => {
     const f = fit({ commanderDeckCount: null });
-    expect(f.coverage).toEqual({ commanderDeckCount: null, thin: true });
+    expect(f.coverage).toEqual({ commanderDeckCount: null, thin: true, thinCondition: false });
   });
 
   // Thin is reported BESIDE the floor, never instead of it: a small sample is still the
