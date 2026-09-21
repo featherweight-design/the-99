@@ -311,11 +311,18 @@ export function TopOffList({
   const draftGen = useRef(0);
   useEffect(() => {
     draftGen.current += 1;
-    // `openSlots` is in here because the DECK moves too, and not only the selection. A
-    // quick-add or a removal elsewhere changes how many slots are open without touching
-    // `ticked` or `declined` — and a plan chosen for the old slot count, applied to the new
-    // deck, reintroduces a selection made for a deck that is no longer in front of anyone.
-  }, [ticked, declined, openSlots]);
+    // THE DECK IS IN HERE TOO, and both halves of it are needed.
+    //
+    // `openSlots` catches an add or a removal that changes how many slots are open. It is not
+    // enough on its own: a SWAP leaves the count where it was while the contents move, and
+    // `chooseBulkFill` seeds its role counts from those contents — so the plan would be stale
+    // in exactly the way this feature is about, with the count unchanged to hide it.
+    //
+    // `deckOracleIds` is the list's optimistic copy, memoised on the deck's cards, so it takes
+    // a new identity when and only when they move — a quick-add bumps it in the same frame as
+    // the click. A prop rebuilt every render would bump this constantly and drop every answer,
+    // which is why it is this one rather than a fresh set assembled here.
+  }, [ticked, declined, openSlots, deckOracleIds]);
   useEffect(() => () => {
     draftGen.current += 1;
   }, []);

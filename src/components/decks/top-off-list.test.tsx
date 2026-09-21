@@ -724,6 +724,29 @@ describe("TopOffList — the bulk tick", () => {
     expect(rowBox("free-2")).not.toBeChecked();
   });
 
+  // A SWAP MOVES THE CONTENTS AND NOT THE COUNT. `chooseBulkFill` seeds its role counts from
+  // the deck's cards, so a plan made before the swap is stale in precisely the way this
+  // feature is about — with `openSlots` unchanged to hide it.
+  it("drops the answer when the deck's cards have changed since asking", async () => {
+    let release: (v: unknown) => void = () => {};
+    actions.chooseBulk.mockReturnValue(new Promise((r) => { release = r; }));
+    const cards = [candidate("free-1", true), candidate("free-2", true)];
+    const { rerender } = render(
+      <Harness deckOracleIds={new Set(["in-deck-a"])} candidates={cards} />,
+    );
+
+    fireEvent.click(screen.getByRole("button", { name: /Tick all/ }));
+    // One card out, one in: the same number of open slots, a different deck.
+    rerender(<Harness deckOracleIds={new Set(["in-deck-b"])} candidates={cards} />);
+
+    await act(async () => {
+      release({ ok: true, oracleIds: ["free-1", "free-2"] });
+    });
+
+    expect(rowBox("free-1")).not.toBeChecked();
+    expect(rowBox("free-2")).not.toBeChecked();
+  });
+
   it("does not bring back a row the player set aside", async () => {
     // A bulk control that resurrected a decline would undo a choice with a press
     // meant to save presses. The action does not know about this list's declines — it reads
