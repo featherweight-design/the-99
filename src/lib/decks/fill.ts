@@ -109,6 +109,11 @@ function rolesOfCandidate(c: FillCandidate) {
 function roleFloors(skeleton: ProfileSkeleton | null): Record<typeof NON_LAND_ROLES[number], number> {
   const t = skeleton?.roleTargets.targets;
   if (!t) return { ...ROLE_TARGETS };
+  // The last line of defence, symmetric with `landTarget`'s. A NaN floor is not a wrong
+  // number — it is no floor at all, and the role pass places nothing.
+  if (!Object.values(t).every((v) => typeof v === "number" && Number.isFinite(v))) {
+    return { ...ROLE_TARGETS };
+  }
   return {
     ramp: Math.round(t.ramp), draw: Math.round(t.draw),
     removal: Math.round(t.removal), wipes: Math.round(t.wipes),
@@ -278,12 +283,25 @@ export function planFill(candidates: FillCandidate[], args: PlanFillArgs): FillP
     // the SAME first open role and prefers the one closing the larger type gap.
     const deficits = typeDeficits(typeTargets, tallyTypes(placed));
     const role = open[0];
+    /** How many still-open floors this card would close in its one slot. §2.5a: the targets
+     *  describe decks with a card counted under each role it fills, so a card closing two of
+     *  them is not a tie with one that closes one — it is a strictly better use of the slot,
+     *  and it outranks the type gap for that reason. Without this the tie-break could hand the
+     *  slot to a single-role card on type grounds and then spend a SECOND slot on the floor the
+     *  dual-role card would have closed for free. */
+    const closes = (x: FillCandidate) => {
+      const r = rolesOfCandidate(x);
+      return NON_LAND_ROLES.filter((n) => r.includes(n) && counts[n] < floors[n]).length;
+    };
     let chosen = candidate;
     if (deficits.size > 0) {
       for (const other of ordered) {
         if (other === candidate || spent.has(other.oracleId)) continue;
         const otherRoles = rolesOfCandidate(other);
         if (otherRoles.includes("land") || !otherRoles.includes(role)) continue;
+        const gain = closes(other) - closes(chosen);
+        if (gain < 0) { if (--scanned <= 0) break; continue; }
+        if (gain > 0) { chosen = other; if (--scanned <= 0) break; continue; }
         if (preferByTypeGap(other, chosen, deficits) < 0) chosen = other;
         // BOUNDED. The pool is the player's whole legal collection and this runs once per
         // placed card; scanning it whole would be quadratic on a large one. The window is

@@ -279,15 +279,38 @@ export async function createDeck(
       }
       if (capped.length > 0) {
         await tx.insert(deckCards).values(capped).onConflictDoNothing();
-        // The seed pass — the ledger's first line, and the only one whose
-        // reversal is the sweep rather than an undo of its own. Recorded in the
-        // same transaction as the rows it describes; a deck that got its cards
-        // and not its pass would show auto rows the ledger cannot account for.
-        // openSlots is the whole body because the deck did not exist a
-        // statement ago.
+
+        // TWO PASSES, NOT ONE, now that the fill reaches the whole body.
+        //
+        // The seed used to be the whole of what a create wrote, because the fill stopped at
+        // the floors and the mana base. Filling to 99 in one go would make that a single
+        // 99-row pass with nothing to undo but all of it — collapsing a separation the app
+        // already ships and already draws, and taking `Undo these 31` with it.
+        //
+        //   seed          the role floors and the mana base — the foundation
+        //   top_off #1    the synergy residual — the suggestions
+        //
+        // `FillRow.role === "other"` marks the residual, so the split needs no new
+        // persistence: the pass ledger already carries it. `Undo these 31` then means
+        // "clear the suggestions, keep the foundation", through `provenance-line.tsx` and
+        // `topOffCopy.ledger.undo(n)` exactly as they stand.
+        const residualIds = new Set(
+          plan.rows.filter((r) => r.role === "other").map((r) => r.oracleId),
+        );
+        const foundation = capped.filter((r) => !residualIds.has(r.oracleId));
+        const residual = capped.filter((r) => residualIds.has(r.oracleId));
+
+        // openSlots is the whole body because the deck did not exist a statement ago.
         await recordFillPass(tx, {
           deckId: deck.id, kind: "seed", openSlots: bodySize,
-          rows: capped.map((r) => ({ oracleId: r.oracleId, quantity: r.quantity })),
+          rows: foundation.map((r) => ({ oracleId: r.oracleId, quantity: r.quantity })),
+        });
+        // Its own openSlots: what was left once the foundation was down, which is what the
+        // ledger line means by the slots this pass was offered.
+        await recordFillPass(tx, {
+          deckId: deck.id, kind: "top_off",
+          openSlots: bodySize - foundation.reduce((n, r) => n + r.quantity, 0),
+          rows: residual.map((r) => ({ oracleId: r.oracleId, quantity: r.quantity })),
         });
       }
       return deck.id;

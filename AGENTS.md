@@ -1257,6 +1257,43 @@ Package manager is **pnpm** (pinned via `packageManager` in package.json) — ne
   leave the table holding this script's output rather than what it found. Point it at
   `local-dev` or a scratch Neon branch, **never production**.
 
+- `pnpm probe:fill` proves `planFill` against a real Postgres and the real catalog — thirteen
+  checks in seven sections, one per rule the fill gained when it stopped building to four
+  asserted constants.
+
+  Every rule is unit tested against a hand-built pool, and a hand-built pool is exactly what
+  cannot answer these. Four checks turn on facts only the CATALOG holds — which cards are
+  `modal_dfc` against `transform`, which land-backed spells exist at all — and two more on a
+  skeleton assembled from five reads down a four-rung chain. A fixture stating those facts
+  would be asserting the answer it was built to check.
+
+  **It writes a composition sentinel and restores it**, for the reason `probe:bracket` writes
+  its own: local-dev carries no composition columns at all, so without one the skeleton has a
+  single reachable state and six of the seven sections are asserted by nobody. The sentinel's
+  land count is deliberately NOT 37 — the whole of check 1 is that the measured figure replaced
+  the asserted constant, and a sentinel of 37 passes on a build that never read the skeleton.
+
+  **Three defects in the probe itself, each found by running it, and each the same shape — a
+  fixture chosen by what a query matched rather than by what the code under test would say.**
+  Its ramp creature came from `oracle_text ilike '%search your library for a%land%'` and drew
+  `Spider-Bot`, which `classifyRoles` gives NO role, so the tie-break case measured an artifact
+  beating an ineligible card. Its `limit 1` queries carried no `order by`, so the fixture
+  changed between runs. And a fixture left at the pool's own inclusion sorts wherever it sorts
+  — the body is 99 slots and the card was never reached, reporting "never placed" about a build
+  that was working. Fixtures are picked THROUGH `classifyRoles` now, ordered, and weighted.
+
+  **Check 6 tested nothing for its first three runs.** It passed `skeleton: null`, which
+  bypasses the flat fallback rather than exercising it, so removing that fallback failed
+  nothing. It nulls the sentinel's four role columns and reloads instead — the state of every
+  commander on a database indexed before the role pass — and asserts the TYPE chain still
+  serves beside it, since a fallback dragging both would pass a check watching only the roles.
+
+  Seven mutations for seven sections, all seven fail: `landTarget` back to the flat 37, the
+  type tie-break removed, `playableAsLand` reduced to a type-line test, `castFaceText` out of
+  the fill, the residual ignoring its ranking, the flat fallback removed from the skeleton, and
+  `layout` dropped where the land-capable count reads it. Point it at `local-dev` or a scratch
+  Neon branch, **never production**.
+
 - `pnpm measure:tutors` prints what `classifyTutor` does to the live catalog — the 22-card
   fixture with a reason per card, the corpus splits, reach against a real combo piece, and the
   first 60 parses for reading. Read-only.

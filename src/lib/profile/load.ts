@@ -205,7 +205,12 @@ function compositionFrom(row: CompositionRow | undefined) {
     artifact: row.avgArtifact, enchantment: row.avgEnchantment,
     planeswalker: row.avgPlaneswalker, battle: row.avgBattle,
   };
-  if (Object.values(targets).some((v) => v === null)) return null;
+  // Finite for the same reason the role figures are: a non-finite land target does not give a
+  // wrong ceiling, it gives NO ceiling, and the land sweeps then run until the collection is
+  // exhausted. `deck-size.ts` guards that too — both ends, because this one is the root.
+  if (Object.values(targets).some((v) => typeof v !== "number" || !Number.isFinite(v))) {
+    return null;
+  }
   return { targets: targets as CompositionTargets, averageCurve: row.avgCurve };
 }
 
@@ -223,8 +228,14 @@ function roleTargetsFrom(row: CompositionRow | undefined) {
   // right test there because its columns are nullable.
   if (row.withRoles !== undefined && row.withRoles <= 0) return null;
   const { avgRamp: ramp, avgDraw: draw, avgRemoval: removal, avgWipes: wipes } = row;
-  if (ramp === null || draw === null || removal === null || wipes === null) return null;
-  return { ramp, draw, removal, wipes };
+  // FINITE, not merely non-null. A null is what the database returns for "not derived", but a
+  // row that reaches here malformed — undefined fields, a NaN out of a bad cast — walks past a
+  // null check, and what a non-finite floor costs is not a wrong target: every
+  // `counts[role] < floor` comparison against NaN is false, so the role pass finds no role
+  // open and places NOTHING. The whole deck falls to the residual, silently.
+  const four = [ramp, draw, removal, wipes];
+  if (!four.every((v): v is number => typeof v === "number" && Number.isFinite(v))) return null;
+  return { ramp: four[0]!, draw: four[1]!, removal: four[2]!, wipes: four[3]! };
 }
 
 /**

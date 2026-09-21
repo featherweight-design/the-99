@@ -594,6 +594,49 @@ describe("createDeck — filled baseline", () => {
       .toEqual(placed.map((r) => [r.oracleId, r.quantity]));
   });
 
+  // TWO PASSES once the fill reaches the whole body. The seed used to be the whole of what a
+  // create wrote, because the fill stopped at the floors and the mana base; filling to 99 in
+  // one go would make that a single 99-row pass with nothing to undo but all of it, collapsing
+  // a separation the app already ships and already draws. `Undo these 31` has to keep meaning
+  // "clear the suggestions, keep the foundation".
+  //
+  // Written against the LEDGER rather than the rows, because the split is only real if the
+  // ledger carries it — the deck_cards rows look identical either way.
+  it("records the foundation and the residual as separate passes", async () => {
+    stub.state.cards.push(commanderCard());
+    stub.state.collectionItems.push(
+      // More ramp than the floor wants, so the surplus has nowhere to go but the residual.
+      ...Array.from({ length: 30 }, (_, i) => rampCard(i)),
+      ...Array.from({ length: 40 }, (_, i) => forestCard(i, 4)),
+    );
+
+    await runCreate();
+
+    const passes = stub.state.insertCalls
+      .filter((c) => c.table === "fill_passes")
+      .map((c) => c.values as Record<string, unknown>);
+    expect(passes.map((p) => p.kind)).toEqual(["seed", "top_off"]);
+    // Each is ordinal 1 OF ITS OWN KIND — `recordFillPass` counts per deck and per kind, so
+    // the residual is "top-off 1" and a later hand top-off is 2.
+    expect(passes.every((p) => p.ordinal === 1)).toBe(true);
+
+    // The residual was offered what the foundation left, not the whole body. A ledger line
+    // claiming 99 open slots for a pass that was handed 62 would misstate what it did.
+    expect(passes[0]!.openSlots).toBe(99);
+    expect(passes[1]!.openSlots).toBeLessThan(99);
+
+    // And the split is a real partition: every placed row belongs to exactly one pass.
+    const memberCalls = stub.state.insertCalls.filter((c) => c.table === "fill_pass_cards");
+    expect(memberCalls).toHaveLength(2);
+    const counts = memberCalls.map(
+      (c) => (c.values as Array<Record<string, unknown>>).length,
+    );
+    const placed = stub.state.insertCalls.find((c) => c.table === "deck_cards")!
+      .values as Array<Record<string, unknown>>;
+    expect(counts[0]! + counts[1]!).toBe(placed.length);
+    expect(counts[1]!).toBeGreaterThan(0);
+  });
+
   // Gate 6, "fires once": the fill-failed banner's retry is the one path that
   // can run a seed fill against a deck that already exists, so it is the one
   // path that could write a second seed pass.
