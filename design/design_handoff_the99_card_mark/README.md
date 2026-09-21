@@ -17,6 +17,24 @@ measurement §3 asks for before the build, `READINESS.md` the one dependency.
 **The one-line summary:** *one ink says a bracket fact is present, the glyph says which one, and
 the key already on the page says what it means.*
 
+## Errata — the 2026-09-21 overrule (read this before the tables below)
+
+Hugh ruled on the built surface: **the mark is 16x16 on every surface, and all three labels are
+lowercase.** Design's prose below is left verbatim as the record of what R1 ruled — the precedence
+line at §"Where a component and this handoff disagree" is what makes that the right way round —
+so these rows are what to read instead of it. `STATES-card-mark.md` carries the same overrule in
+its own tables.
+
+| Says | Now |
+|---|---|
+| Sizes table: 16 modal · 14 decklist row · 14/13 collection row · 12 tile | **16 everywhere**, including the key. `CARD_FACT_MARK_PX`; not a prop, so a mount cannot pick its own |
+| Glow: 3px @ 45% · 2.5px · 2px | **3px everywhere**, `color-mix(in srgb, …)` as shipped |
+| *"12px is the floor. Below it the mark is not drawn"* | **Retired.** Nothing shrinks the glyph, so nothing reaches a floor. The rule it protected — no dot, no dash, no initial in the mark's place — is kept by there being one size to keep |
+| *"At ~14px the mark costs about 18px of the name cell"* | ~20px at 16, and the claim it supports is now measured rather than summed: a marked decklist row and an unmarked one both draw 52px, at 390 and at 1300 |
+| The tile's *"chip ~66px + glyph 12px + set ~54px inside a 157px caption"* | The sum is retired, not restated. Measured on the phone tile: three 16px glyphs and the trail sit inside a 155px line with no overflow. The chip-plus-three-facts case is **not measured** — no card in the reference collection carries two facts, and no tile on that account draws a chip |
+| Key row `⚡ Game Changer` and *"`Game Changer` title case as a proper noun"* | `⚡ game changer`. One case for a set of three: a single capitalised member beside two lowercase ones reads as a different KIND of thing, whatever the name's provenance. The list keeps its own name where it is named AS a list — the tooltip's `This card is on the Game Changer list.` and nowhere else |
+| `CONTRAST-the-card-mark.md`'s *"The glyph floor is 12px on the collection tile"* | The tile draws 16px. Every contrast figure in that document was measured at or below the size that now ships, so its conclusions hold with more margin, not less — no figure there is restated on the strength of that |
+
 ## What Design read
 
 The brief, and six components at `main`: `ui/card-tile-caption.tsx`, `collection/grid-view.tsx`,

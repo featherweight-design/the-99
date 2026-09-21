@@ -364,8 +364,10 @@ async function run() {
         ["collection rows", "/collection?view=rows", CARD],
         // `?view=grid` EXPLICITLY. With no param the view resolves to
         // `isDesktop ? "grid" : "rows"` and a fresh context stores nothing, so at 390 this
-        // surface rendered the ROWS view — and the tile's 12px mark, the only one drawn at
-        // the floor this probe exists to guard, was never measured at the width that matters.
+        // surface rendered the ROWS view — and the tile, which drew the smallest mark of any
+        // surface when the size was still per-mount, was never measured at the width that
+        // matters. It draws at the same 16 as everything else now; the explicit param stays,
+        // because a surface this check never reaches is a surface it never guards.
         ["collection tiles", "/collection?view=grid", CARD],
       ]) {
         // `attached`, never `visible`: a collapsed title is zero-width, which Playwright
