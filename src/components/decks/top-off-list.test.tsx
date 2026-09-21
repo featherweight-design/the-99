@@ -1,4 +1,4 @@
-import { act, fireEvent, render, screen } from "@testing-library/react";
+import { act, fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { useState } from "react";
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import { topOffCopy } from "../../lib/copy/top-off";
@@ -604,11 +604,16 @@ describe("TopOffList — the bulk tick", () => {
     expect(bulk).toHaveTextContent(topOffCopy.list.tickOwned("1"));
 
     fireEvent.click(bulk);
-    await screen.findByRole("button", { name: topOffCopy.list.tickOwnedAria("1") });
-    const boxes = screen.getAllByRole("checkbox");
+    // WAITED ON THE TICK, not on the button. This control became ASYNC in #798 — it awaits a
+    // server action before it ticks anything — and the `findByRole` that used to sit here
+    // named the button that was already in the document two lines above, so it resolved on
+    // the first tick without waiting for the action to settle. The assertions then raced the
+    // state update: green locally, red at random on a loaded CI runner, on whoever's PR ran
+    // next. Re-queried inside the wait rather than closing over a snapshot taken before it.
     const byName = (name: string) =>
-      boxes.find((b) => (b.getAttribute("aria-label") ?? "").includes(name));
-    expect(byName("free-1")).toBeChecked();
+      screen.getAllByRole("checkbox")
+        .find((b) => (b.getAttribute("aria-label") ?? "").includes(name));
+    await waitFor(() => expect(byName("free-1")).toBeChecked());
     expect(byName("held-1")).not.toBeChecked();
   });
 
@@ -761,9 +766,12 @@ describe("TopOffList — the bulk tick", () => {
     );
 
     fireEvent.click(screen.getByRole("button", { name: topOffCopy.list.tickOwnedAria("1") }));
-    await screen.findByRole("button", { name: topOffCopy.list.tickOwnedAria("1") });
-    const boxes = screen.getAllByRole("checkbox");
-    expect(boxes.filter((b) => (b as HTMLInputElement).checked)).toHaveLength(1);
+    // The same false wait as above, for the same reason — see that comment.
+    await waitFor(() => {
+      const checked = screen.getAllByRole("checkbox")
+        .filter((b) => (b as HTMLInputElement).checked);
+      expect(checked).toHaveLength(1);
+    });
   });
 });
 
