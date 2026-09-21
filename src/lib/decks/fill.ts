@@ -142,21 +142,6 @@ function roleFloors(skeleton: ProfileSkeleton | null): {
   };
 }
 
-/**
- * What a fill reaches for, and the number the commander page promises before any query has run.
- *
- * THE WHOLE BODY NOW. It used to be the four role targets plus the land target — the fill
- * stopped there, so 68 was both the ceiling and an honest promise. The fill continues to the
- * body size through its synergy residual, so 68 would under-promise by 31 cards and a player
- * told "we'll fill 68 of the 99" would watch 99 arrive.
- *
- * Derived rather than written down, because a promise that stops tracking what the fill does is
- * how this one went wrong.
- */
-export function fillBaselineTotal(hasPartner: boolean): number {
-  return deckBodySize(hasPartner);
-}
-
 /** How many of the land slots non-basics may take before basics get the
     rest. A deck of nothing but basics is hamstrung, but so is one with no
     basics at all: many non-basics fix colours only by reaching for a basic, or

@@ -24,7 +24,7 @@ import React, {
   type ReactNode,
 } from "react";
 import Link from "next/link";
-import { fillBaselineTotal } from "../../lib/decks/fill";
+import { deckBodySize } from "../../lib/decks/deck-size";
 import { MAX_SELECTION } from "../../lib/decks/selection-param";
 import { synergyCopy } from "../../lib/copy/synergy-discovery";
 import { SynergyPanel } from "./synergy-panel";
@@ -106,7 +106,10 @@ export function SynergySelection({ selectedCards, onClear, width }: SynergySelec
   //
   // Single-commander throughout: this page is one commander's, and a partner is
   // chosen later in the create picker, against a deck that does not exist yet.
-  const filled = Math.min(fillBaselineTotal(false), 99 - picked);
+  // The fill reaches the whole body now, so what it fills is simply what the picks left.
+  // `fillBaselineTotal` existed to say "68 of 99" and equalled `deckBodySize` by the time it
+  // was deleted — a helper whose whole content was a second name for another function.
+  const filled = Math.max(0, deckBodySize(false) - picked);
   const total = picked + filled;
   const unownedCount = selectedCards.filter((c) => !c.owned).length;
   const full = filled === 0;
@@ -225,7 +228,7 @@ export function SelectableBuildButton({
 export function SelectableLiveAnnouncer({ cards }: { cards: SynergyCard[] }) {
   const { selected } = useSynergySelection();
   const picked = cards.filter((c) => selected.has(c.oracleId)).length;
-  const total = Math.min(99, fillBaselineTotal(false) + picked);
+  const total = deckBodySize(false);
 
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [announcement, setAnnouncement] = useState("");
