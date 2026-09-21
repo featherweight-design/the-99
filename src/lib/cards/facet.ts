@@ -95,10 +95,14 @@ const FACE_SEPARATOR = "\n//\n";
 /**
  * The text of the spell you actually CAST.
  *
- * NOT YET CALLED IN PRODUCTION, and that is deliberate rather than an oversight. The derivation
- * and the fill adopt it when they land; this ships the fact and its tests first so the two
- * changes can be reviewed apart. Until then `classifyRoles` still sees both faces everywhere,
- * and the inflation described below is still present in the app.
+ * THE CANONICAL READING FOR ROLE CLASSIFICATION, on both sides of it: the derivation
+ * (`classifyCards` in `edhrec/role-targets.ts`) and the deck's own counts (`rolesOf` in
+ * `profile/build.ts`). Those two are compared against each other, so a caller classifying
+ * roles off raw `oracle_text` puts a surplus on the board that is an artefact of the two
+ * sides disagreeing about which face to read.
+ *
+ * `classifyRoles` itself still takes whatever text it is handed — it is given a face, it does
+ * not pick one — so a NEW role-classifying caller has to route through here deliberately.
  *
  * `cards.oracle_text` holds BOTH FACES, joined by `FACE_SEPARATOR` in `scryfall/transform.ts`,
  * and `isLandFace` reads the front — so for a land-backed MDFC it returns false and

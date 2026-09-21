@@ -211,18 +211,26 @@ export function fitSkeleton(profile: DeckProfile): SkeletonFit {
   const roleOrder = ["ramp", "draw", "removal", "wipes"] as const;
   const roleTargets = profile.skeleton.roleTargets;
   const measured = roleTargets.of !== "flat";
+  const roleHave = measured ? profile.roles.excludingCommanders : profile.roles.counts;
   const roles: RoleFit[] = roleOrder.map((role) => ({
     role,
-    // `excludingCommanders`, never `counts` — see `ProfileRoles`. The targets were derived
-    // from support lists that never contain the commander, so folding it in here would report
-    // a phantom surplus on every deck led by a card that classifies as one of the four.
-    have: profile.roles.excludingCommanders[role],
+    // WHICH POPULATION DEPENDS ON WHICH TARGET, and `ProfileRoles` states the rule: the
+    // 99-only view exists to match EDHREC's support lists, which never contain the commander,
+    // so comparing `counts` against a derived target reports a phantom surplus on every deck
+    // led by a card that classifies as one of the four.
+    //
+    // The ASSERTED baseline is not one of those lists. `ROLE_TARGETS` is a design figure for a
+    // DECK, and a deck is a hundred cards including the one in the command zone — so dropping
+    // a role-bearing commander there would under-count the deck against a target that always
+    // meant to include it. One flag decides both, since `measured` is a property of the chain
+    // rather than of a row.
+    have: roleHave[role],
     target: roleTargets.targets[role],
     // `have - target`, so a deck holding one wipe against a MEASURED target of 0 reads +1.
     // That is a surplus and must read as one: 390 commanders measure exactly 0 wipes, and
     // calling it a shortfall would be the flat target's error wearing a measured number's
     // authority — the precise failure the old module-wide rule existed to prevent.
-    delta: profile.roles.excludingCommanders[role] - roleTargets.targets[role],
+    delta: roleHave[role] - roleTargets.targets[role],
     measured,
   }));
 

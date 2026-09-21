@@ -156,6 +156,21 @@ describe("a role target never travels without saying whether it was measured", (
     expect(f.roles.find((r) => r.role === "draw")!.have).toBe(0);
   });
 
+  // THE MIRROR, and the reason the population is chosen by target rather than fixed.
+  // `ROLE_TARGETS` is a design figure for a DECK, and a deck is a hundred cards including the
+  // one in the command zone — so the flat baseline counts the commander, where a derived
+  // target must not. Dropping it here would under-count against a target that always meant to
+  // include it, which is the same class of error as the phantom surplus above, inverted.
+  it("counts the commander against the ASSERTED baseline", () => {
+    const f = fit(
+      { commanderOracleIds: ["cmd"] },
+      [row({ oracleId: "cmd", typeLine: "Legendary Creature — Human",
+             oracleText: "Whenever you cast a spell, draw a card." })],
+    );
+    expect(f.roles.every((r) => !r.measured)).toBe(true);
+    expect(f.roles.find((r) => r.role === "draw")!.have).toBe(1);
+  });
+
   // `cards.oracle_text` holds BOTH faces joined, and the derivation classifies the FRONT one.
   // A land-backed MDFC read as ramp off the whole string — the same 82-card defect the
   // derivation was corrected for, on the side that never was.
