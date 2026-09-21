@@ -1,7 +1,15 @@
 import { describe, expect, it } from "vitest";
 
 import { COMBO_DETECTION, EXTRA_TURN_DETECTION, MLD_DETECTION } from "../bracket/rules";
-import { BRACKET_NAMES, bracketFace, bracketPhrase, deckAnalysisCopy } from "./deck-analysis";
+import {
+  BRACKET_NAMES,
+  bracketFace,
+  bracketPhrase,
+  deckAnalysisCopy,
+  nameList,
+  numberWord,
+  ordinal,
+} from "./deck-analysis";
 
 describe("the bracket names", () => {
   it("uses the Commander Format Panel's own words", () => {
@@ -67,5 +75,37 @@ describe("the detection statements", () => {
   it("says why the panel exists", () => {
     // Without it the four rows read as trivia.
     expect(deckAnalysisCopy.detection.why).toContain("disagrees");
+  });
+});
+
+describe("the shared helpers", () => {
+  it("joins names without an Oxford comma, because these are read aloud", () => {
+    expect(nameList([])).toBe("");
+    expect(nameList(["A"])).toBe("A");
+    expect(nameList(["A", "B"])).toBe("A and B");
+    expect(nameList(["A", "B", "C"])).toBe("A, B and C");
+  });
+
+  it("words a small count and gives up past twelve", () => {
+    expect(numberWord(0)).toBe("zero");
+    expect(numberWord(1)).toBe("one");
+    expect(numberWord(12)).toBe("twelve");
+    // The point where a word stops being easier to read than a digit.
+    expect(numberWord(13)).toBe("13");
+    expect(numberWord(99)).toBe("99");
+  });
+
+  it("ordinals the teens correctly, which is the case naive versions get wrong", () => {
+    expect(ordinal(1)).toBe("1st");
+    expect(ordinal(2)).toBe("2nd");
+    expect(ordinal(3)).toBe("3rd");
+    expect(ordinal(4)).toBe("4th");
+    // 11, 12 and 13 end in 1, 2 and 3 and still take `th` — and a deck can hold eleven
+    // game changers, so this is reachable rather than defensive.
+    expect(ordinal(11)).toBe("11th");
+    expect(ordinal(12)).toBe("12th");
+    expect(ordinal(13)).toBe("13th");
+    expect(ordinal(21)).toBe("21st");
+    expect(ordinal(112)).toBe("112th");
   });
 });
