@@ -10,15 +10,26 @@
 // actually asks.
 import { describe, expect, it } from "vitest";
 
-import { pairSupportQuery } from "./synergy-read";
+import { buildOwnedTotals, pairSupportQuery } from "./synergy-read";
 
-/** The joined collection subquery, shaped as the real builder expects. */
-const owned = { oracleId: "owned.oracle_id", qty: "owned.qty" } as never;
+/**
+ * THE REAL SUBQUERY, not a stand-in.
+ *
+ * A plain object cast through `never` does not throw here — which is how the first version of
+ * this file passed — but Drizzle renders a non-subquery join target as a BIND PARAMETER:
+ * `left join $2 on $3 = …`, with `coalesce($1, 0)` where the column belongs. That SQL could
+ * never execute, so every assertion over it was reading a query the app does not run.
+ */
+const owned = buildOwnedTotals("user_1");
 
 describe("pairSupportQuery", () => {
-  it("reads the pair table", () => {
-    expect(pairSupportQuery("aaa", "bbb", false, owned).toSQL().sql)
-      .toContain("commander_pair_support_cards");
+  it("reads the pair table, and joins the collection as a real subquery", () => {
+    const sql = pairSupportQuery("aaa", "bbb", false, owned).toSQL().sql;
+    expect(sql).toContain("commander_pair_support_cards");
+    // The join target is rendered, not bound. A stand-in object emits `left join $n`, which is
+    // the shape that made the first version of this file assert over unexecutable SQL.
+    expect(sql).toContain("owned_totals");
+    expect(sql).not.toMatch(/left join \$\d/);
   });
 
   it("orders the pair key canonically, whichever order the caller passes", () => {

@@ -15,8 +15,12 @@ import {
   type SynergyCard,
 } from "../../../lib/commanders/synergy-cards";
 
-/** The player's collection, summed per card once, as a joinable subquery. */
-function buildOwnedTotals(userId: string) {
+/** The player's collection, summed per card once, as a joinable subquery.
+ *
+ *  Exported for the SQL test. A hand-rolled stand-in cannot substitute: Drizzle renders a
+ *  non-subquery join target as a BIND PARAMETER (`left join $2 on $3 = …`), so the emitted SQL
+ *  is not the SQL the app runs and an assertion over it proves nothing about the real query. */
+export function buildOwnedTotals(userId: string) {
   return db
     .select({
       oracleId: collectionItems.oracleId,

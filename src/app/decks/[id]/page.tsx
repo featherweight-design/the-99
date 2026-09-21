@@ -44,7 +44,13 @@ import { isUuid } from "../../../lib/uuid";
 // The leading element of each key is a version, bumped when a deployment changes
 // what the payload says for unchanged rows — see the note on `cacheForUser`.
 const SUGGESTIONS_KEY = ["deck-suggestions", "1"];
-const SYNERGY_KEY = ["deck-synergy", "1"];
+// "2" since the pair branch: `readSynergyCards` now answers from `commander_pair_support_cards`
+// for a two-commander deck, so the payload says something different for UNCHANGED rows. The
+// cache helper's own rule — a deployment that changes what a payload says for unchanged rows is
+// an input to the key — and without the bump an entry assembled by the previous deployment goes
+// on being served for up to the hour ceiling, to a reader who writes nothing, with the pair
+// branch invisible after deploy.
+const SYNERGY_KEY = ["deck-synergy", "2"];
 
 export default async function DeckBuilderPage({
   params,
