@@ -71,10 +71,14 @@ resolved in place below. Line numbers checked on `spec/deck-analysis-foundation`
    `deck_cards` plus the live commander columns. The principle (draft, never the committed
    version) stands; the loader reads `deck_cards` + `decks` directly (Task 14).
 4. **§6.1a's table contradicts §6.3 on one row.** Row 3 shows "≤3 Game Changers, a late
-   two-card combo" permitting `[3]` — but lateness is not computable (§6.3's whole point), and
-   row 4 RESOLVES any two-card infinite at an otherwise-B3 deck on tutor coverage. §6.3 is the argued
-   section and wins: **any** assembled two-card infinite on a deck whose only other B3 state is
-   clean widens the range. Row 3 is implemented as "≤3 Game Changers, no combo → `[3]`".
+   two-card combo" permitting `[3]` — but lateness is not computable, which is §6.3's whole
+   point. §6.3 is the argued section and wins.
+
+   **Restated for the 2026-09-20 amendment**, since the original resolution here was written
+   against the retired range: an assembled two-card infinite on a deck whose only other B3 state
+   is clean does not widen anything. It **RESOLVES** — to `[4]` when the deck's tutors cover every
+   piece of the combo, and to `[3]` when they do not and the combo has to be drawn into. Row 3 is
+   implemented as "≤3 Game Changers, combo the deck cannot assemble → `[3]`".
 5. **§4A.6b overclaims its window.** "It covers every deck during the window before the first
    widened index run" — the identity aggregate is a `GROUP BY` over the same `avg_*` columns
    that run populates, so before the first widened run every deck reads `basis: "none"`. The
