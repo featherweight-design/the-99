@@ -17,8 +17,13 @@
  * A SNAPSHOT, and it says so. Decks move; a copy taken today answers for today. Re-run before
  * a measurement that matters.
  *
- *   PULL_TARGET_URL=<local-dev>  pnpm pull:staging            # writes
- *   PULL_TARGET_URL=<local-dev>  pnpm pull:staging --dry-run  # counts only
+ * Both variables are required, and so is naming the branch the target is expected to be —
+ * there is no default for any of them, because a default is how a one-way copy finds the
+ * wrong end.
+ *
+ *   PULL_TARGET_URL=<local-dev> PULL_TARGET_BRANCH=br-… pnpm pull:staging --dry-run
+ *   PULL_TARGET_URL=<local-dev> PULL_TARGET_BRANCH=br-… pnpm pull:staging
+ *   …same, plus --replace   # only when the target account already holds rows
  *
  * The source is `THE_99_NEON_STAGING_DIRECT`. The target must be named explicitly — there is no
  * `?? DATABASE_URL` fallback, because a fallback is how a one-way script finds the wrong end.

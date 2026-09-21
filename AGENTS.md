@@ -275,6 +275,10 @@ Package manager is **pnpm** (pinned via `packageManager` in package.json) — ne
   a local account leaves the data — the long deck names, the contested copies, the decks with
   three Game Changers and the decks with none — exactly as it is on staging.
 
+  ```
+  PULL_TARGET_URL=<local-dev> PULL_TARGET_BRANCH=br-… pnpm pull:staging [--dry-run] [--replace]
+  ```
+
   **ONE WAY, AND IT FAILS CLOSED.** Source and target are separate variables
   (`THE_99_NEON_STAGING_DIRECT`, `PULL_TARGET_URL`), the target is never defaulted, and the
   caller must NAME the target with `PULL_TARGET_BRANCH` — checked against the branch the target
