@@ -187,7 +187,10 @@ async function findMarkedDeck(page) {
     const root = document.querySelector(scope);
     return [...new Set([...(root?.querySelectorAll("a[href^='/decks/']") ?? [])]
       .map((a) => a.getAttribute("href"))
-      .filter((h) => h && !h.includes("/new") && h.split("/").length === 3))];
+      // `/decks/new` and `/decks/import` are CTAs, not decks, and both match a naive
+      // "three segments" test — an account with no decks at all returned two of them and
+      // the scan reported "checked 0" rather than "this account has none".
+      .filter((h) => h && h.split("/").length === 3 && !["new", "import"].includes(h.split("/")[2])))];
   }, PAGE);
   for (const href of hrefs.slice(0, DECK_SCAN_LIMIT)) {
     const deckNav = await goTo(page, href);
@@ -214,7 +217,9 @@ async function run() {
         report(`${label}px · decklist row · a deck that holds a marked card`, false,
           found?.truncated
             ? `none among the first ${found.seen} of ${found.total} decks — raise DECK_SCAN_LIMIT or set PROBE_DECK`
-            : `no deck on this account draws one (checked ${found?.seen ?? 0}) — the fixture is missing, not the mark`);
+            : found?.total === 0
+              ? "this account owns no decks at all — the fixture is missing, not the mark"
+              : `none of this account's ${found?.total} deck(s) holds a marked card — the fixture is missing, not the mark`);
       }
 
       for (const [surface, url, search] of [
