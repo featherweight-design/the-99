@@ -1,3 +1,4 @@
+import type { CardBracketFlags } from "../bracket/flags-read";
 // One card's full detail, for surfaces that hold nothing but an oracle id — the decklist,
 // the Add panel and the builder spine (#127, #91). loadBrowseCards cannot serve them: it is
 // rooted in collection_items, and a deck routinely lists cards the user does not own.
@@ -191,9 +192,18 @@ async function proxyingDecks(userId: string, oracleId: string): Promise<Proxying
  * losing the card. An absent flag row means neither fact applies and nothing more — it is
  * never a claim that the card is clear.
  */
-async function withBracketFacts(card: BrowseCard): Promise<BrowseCard> {
+export async function withBracketFacts(
+  card: BrowseCard,
+  /**
+   * The flags read, injected so the assembly is testable without a database — the same
+   * seam `attachBracketFacts` takes, and for the same reason: without it, deleting this
+   * function leaves the whole suite green while the modal silently loses two of the three
+   * facts on both branches.
+   */
+  read?: (ids: readonly string[]) => Promise<Map<string, CardBracketFlags>>,
+): Promise<BrowseCard> {
   try {
-    const { loadBracketFlags } = await import("../bracket/flags-read");
+    const loadBracketFlags = read ?? (await import("../bracket/flags-read")).loadBracketFlags;
     const { factsFor } = await import("../bracket/facts");
     const flags = await loadBracketFlags([card.oracleId]);
     const facts = factsFor(
