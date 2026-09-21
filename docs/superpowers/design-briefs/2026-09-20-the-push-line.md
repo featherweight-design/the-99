@@ -49,9 +49,15 @@ rather than widen, and `permitsFor` (`src/lib/bracket/rules.ts:79-90`) now retur
 
 **What survives is the range-to-range GRAMMAR, not that example.** `from` and `to` on
 `BracketDelta` are both `Bracket[]` (`delta.ts:43-46`), so the sentence still has to render a
-range on either side — `[1,2] → [2]` and `[3] → [4]` are both real, and the second is a single
-mark on both sides. **Design should draw a push line that reads correctly when either side is one
-bracket or two**, which Round 3's sub-line had to learn the hard way.
+range on either side. **Design should draw a push line that reads correctly when either side is
+one bracket or two**, which Round 3's sub-line had to learn the hard way.
+
+**One example worth NOT using: `[3] → [4]` cannot happen today**, and the reason is §6's hole seen
+from the other side. `bracketDelta` reads the reaches `buildDeckProfile` computed over the combos
+the deck ALREADY holds, so no reach can name a variant the deck is still one card away from —
+`delta.test.ts:77-85` records that case as unreachable by construction rather than testing it.
+Reachable transitions to draw against are `[1,2] → [2]`, `[3] → [4,5]` (a completed infinite-turns
+combo, which violates B3 outright) and `[1,2] → [4,5]`.
 
 ---
 
@@ -105,10 +111,15 @@ Round 0's addendum, not open.
 
 1. **Where the push line lives, and whether it is the Consider tab's.** Round 0 answered the
    altitude question — deck analysis lives on its own tab — but it **never placed the push line**.
-   It fires at the moment of an add, and adds happen on the deck's Add panel, in the top-off list,
-   and on `/commanders/[slug]`'s synergy rows. Is the push line one treatment that travels to all
-   three, a treatment on the analysis tab that the add surfaces link to, or something that only
-   exists on one of them? *This is the round's biggest call.*
+   It fires at the moment of an add, and there are **two** such surfaces: the deck's Add panel
+   and the top-off list. Is the push line one treatment that travels to both, a treatment on the
+   analysis tab that they link to, or something that only exists on one? *This is the round's
+   biggest call.*
+
+   **`/commanders/[slug]`'s synergy rows are NOT a third.** Their toggle updates a selection and
+   the page's Build link carries those ids into deck CREATION — there is no deck and no profile
+   there, so `bracketDelta` has nothing to evaluate against. Drawing a push preview for that
+   surface would specify something the current flow cannot compute.
 2. **Whether the upgrade path is a list, a checklist, or a set of rows that act.** The app names
    candidates and refuses to choose. Does the player tick them off, remove from here, or read and
    go elsewhere? A control that removes would put a write on this surface, which nothing else on
