@@ -81,8 +81,17 @@ export function CardTileCaption({
   nameTrail,
   trailing,
 }: {
-  /** The meta line's left group, in order: dot, slot, and the card's bracket marks. The
-   *  COUNT left this line when the marks arrived — see `nameTrail`. */
+  /**
+   * The meta line's left group. Its contents are the CALLER's, and the two callers differ:
+   * the deck tile draws the availability chip, the collapsed `$`, the proxy `P` and its
+   * count here, while `/collection` draws the chip and the card's bracket marks and puts
+   * its count on the name line instead (`nameTrail`) — at 157px that line cannot hold a
+   * chip, a count, a set code and up to three glyphs.
+   *
+   * Left generic deliberately: this component is shared, and a doc describing one surface's
+   * arrangement as though it were the prop's contract is how the other surface's author is
+   * misled.
+   */
   meta?: ReactNode;
   /** Right-aligned on the meta line. `SET · rarity` on `/collection`. */
   metaTrail?: ReactNode;
@@ -95,9 +104,11 @@ export function CardTileCaption({
    */
   nameHidden?: boolean;
   nameSpoken?: ReactNode;
-  /** The name line's own trailing slot. The deck's `//` mark, and on `/collection` the
-   *  copy count, which moved here from the meta line to make room for the bracket marks.
-   *  The two never coexist: `/collection` draws no `//` mark (spec errata 3). */
+  /**
+   * The name line's own trailing slot. The deck's `//` mark, and on `/collection` the copy
+   * count, which moved here from the meta line to make room for the bracket marks. The two
+   * never coexist: `/collection` draws no `//` mark (spec errata 3).
+   */
   nameTrail?: ReactNode;
   /** The full-height right column. The deck tile's `✕`. */
   trailing?: ReactNode;
