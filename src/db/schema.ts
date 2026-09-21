@@ -436,8 +436,37 @@ export const deckVersions = pgTable("deck_versions", {
   // two mirror for the columns that are not deck_cards rows.
   commanderSince: timestamp("commander_since").notNull().defaultNow(),
   partnerSince: timestamp("partner_since"),
+  /**
+   * What the player declared FOR THIS VERSION, copied from the deck at commit.
+   *
+   * The same shape as `commander_oracle_id` above and for the same reason: the deck carries
+   * the live answer while a draft is being worked on, and a version carries the answer that
+   * was true when it was committed. That is what lets a version say "Version 1: 4/5 split,
+   * chose 4" forever, and it is why nothing ever asks a player to change what they said —
+   * the old answer is history rather than a live claim.
+   *
+   * COPIED ONLY WHEN IT FITS. A declaration outside the permitted range of the version being
+   * committed is not carried: the version records no declaration rather than one its own
+   * cards contradict. The deck-level answer is left standing — stated, not deleted.
+   */
+  declaredBracket: integer("declared_bracket"),
+  /**
+   * What that version's cards permitted, as a sorted list, snapshotted at commit.
+   *
+   * Stored rather than recomputed because the alternative is building a second whole profile
+   * from `deck_version_cards` and slotting it — measured at 630ms median and 2.2s on the
+   * largest deck — every time a reader looks at a version comparison. Two column reads
+   * instead.
+   */
+  permits: integer("permits").array(),
 }, (t) => [
   unique("deck_versions_deck_number_key").on(t.deckId, t.number),
+  // The same guard `decks.declared_bracket` carries. A bracket is 1-5 or unanswered, and a
+  // check constraint makes a bad write loud where a bad read can only be defended against.
+  check(
+    "deck_versions_declared_bracket_range",
+    sql`${t.declaredBracket} is null or ${t.declaredBracket} between 1 and 5`,
+  ),
   index("deck_versions_deck_number_idx").on(t.deckId, t.number),
   // `max(committed_at)` per deck, which Home's resume block asks for once per
   // deck on every load. The index above is ordered by `number` and cannot answer
