@@ -264,6 +264,32 @@ Package manager is **pnpm** (pinned via `packageManager` in package.json) — ne
   code review's eyes and not in Next's. All three of the check's failure paths were run
   against it before it was believed: a dropped route, a wrong `dynamic` flag, and a stale
   route that no longer reads the collection.
+- `pnpm pull:staging` copies a player's real decks and collection from **staging** into a local
+  database, so a browser probe measures the decks that actually get played rather than a fixture
+  built by a script that never buys, never commits and never finishes one. It is the answer to
+  the gap that let the card mark ship drawing nothing in the deck's card view: every signed-in
+  surface is verified against whatever the fixture account happens to own, and no agent can sign
+  in as Hugh.
+
+  **Only the Clerk identity changes.** Every surface reads by `user_id`, so re-owning the rows to
+  a local account leaves the data — the long deck names, the contested copies, the decks with
+  three Game Changers and the decks with none — exactly as it is on staging.
+
+  **ONE WAY, and it refuses to go the other.** Source and target are separate variables
+  (`THE_99_NEON_STAGING_DIRECT` and `PULL_TARGET_URL`), the target is never defaulted, and a run
+  whose two URLs name the same database exits before writing. A `?? DATABASE_URL` fallback is how
+  a one-way script finds the wrong end, and `probe:arrivals` alone would delete every collection
+  row for the user it is given.
+
+  **A re-run REPLACES rather than merges** — a merge leaves decks from an older snapshot standing
+  beside the new ones and quietly makes the fixture a thing that never existed on staging. Takes
+  `--dry-run`, which prints the counts and writes nothing. It is a SNAPSHOT: re-run it before a
+  measurement that matters.
+
+  Inserts are batched 500 rows to a statement, because the first version issued one per row over
+  ~6,400 rows and did not finish inside two minutes — the cost here is round trips to a
+  serverless Postgres, not work.
+
 - `pnpm probe:claims` proves the deck claim model against a real Postgres by calling the real
   `loadAvailability` — a committed version holds its cards against every other deck's draft, an
   uncommitted removal still claims, and per-card `since` decides between two committed decks. The
