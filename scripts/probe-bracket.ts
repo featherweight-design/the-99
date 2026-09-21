@@ -112,11 +112,22 @@ type CompositionColumns = {
   avg_curve: Record<string, number> | null;
 };
 
+/** The four ROLE columns, captured and cleared beside the type ones and for the same reason
+ *  the header gives about the composition rungs: the role chain reads commander before
+ *  identity, so a fixture commander carrying real role figures makes the identity role rung
+ *  unreachable and whatever is asserted there stops being asserted. */
+type RoleColumns = {
+  avg_ramp: number | null; avg_draw: number | null;
+  avg_removal: number | null; avg_wipes: number | null;
+};
+
 /** The commander sentinel's land target — recognisable, and what every restore checks for. */
 const SENTINEL_LAND = 34;
 /** The pair sentinel's, deliberately different so the two rungs cannot be confused. */
 const SENTINEL_PAIR_LAND = 39;
-let commanderCleanup: { oracleId: string; before: CompositionColumns } | null = null;
+let commanderCleanup: {
+  oracleId: string; before: CompositionColumns & RoleColumns;
+} | null = null;
 /** A pair row this run created. New, so it is deleted rather than restored. */
 let pairCleanup: { commanderOracleId: string; partnerOracleId: string } | null = null;
 /** Set ONLY when this run created the row — from the insert's own `returning`. */
@@ -496,9 +507,10 @@ async function basisChainChecks(
     await fixture.execute(sql`delete from identity_composition where condition = 'W'`);
   }
 
-  const [existingCommander] = await rows<CompositionColumns>(sql`
+  const [existingCommander] = await rows<CompositionColumns & RoleColumns>(sql`
     select avg_land, avg_basic, avg_nonbasic, avg_creature, avg_instant, avg_sorcery,
-           avg_artifact, avg_enchantment, avg_planeswalker, avg_battle, avg_curve
+           avg_artifact, avg_enchantment, avg_planeswalker, avg_battle, avg_curve,
+           avg_ramp, avg_draw, avg_removal, avg_wipes
     from commander_support where commander_oracle_id = ${commanderOracleId}::uuid`);
   if (existingCommander) {
     commanderCleanup = { oracleId: commanderOracleId, before: existingCommander };
@@ -506,7 +518,8 @@ async function basisChainChecks(
       update commander_support
       set avg_land = null, avg_basic = null, avg_nonbasic = null, avg_creature = null,
           avg_instant = null, avg_sorcery = null, avg_artifact = null, avg_enchantment = null,
-          avg_planeswalker = null, avg_battle = null
+          avg_planeswalker = null, avg_battle = null,
+          avg_ramp = null, avg_draw = null, avg_removal = null, avg_wipes = null
       where commander_oracle_id = ${commanderOracleId}::uuid`);
   }
 
@@ -539,6 +552,33 @@ async function basisChainChecks(
     returning condition`);
   if (created) identityCleanup = created.condition;
   else fail("rung 3: the identity sentinel", "a W row was already present and was not replaced");
+
+  // THE ROLE CHAIN IS SEPARATE FROM THE TYPE CHAIN, and this sentinel is the one fixture that
+  // can show it. `identity_composition.avg_ramp` and its three siblings are `NOT NULL DEFAULT
+  // 0` where the commander and pair columns are nullable, so a bucket derived before the role
+  // pass reads back four honest-looking ZEROES rather than nulls — and a reader checking
+  // nullity alone accepts them, stopping the chain at `identity` with a measurement nobody
+  // took. The row inserted above carries exactly that shape: `with_roles = 0`.
+  const preRole = await profileFor(deckId);
+  check(
+    "an identity row with no role denominator falls through to the flat targets",
+    preRole.skeleton.roleTargets.of,
+    "flat",
+  );
+  check("and the type chain is unaffected by it", preRole.skeleton.composition?.of, "identity");
+
+  // Now give the SAME row a denominator and real figures: the role chain must take it.
+  await fixture.execute(sql`
+    update identity_composition
+       set avg_ramp = 9, avg_draw = 11, avg_removal = 7, avg_wipes = 2, with_roles = 200
+     where condition = 'W'`);
+  const withRole = await profileFor(deckId);
+  check("with a denominator, the identity bucket serves the roles", withRole.skeleton.roleTargets.of, "identity");
+  check("and the figures are the bucket's", withRole.skeleton.roleTargets.targets.ramp, 9);
+  await fixture.execute(sql`
+    update identity_composition
+       set avg_ramp = 0, avg_draw = 0, avg_removal = 0, avg_wipes = 0, with_roles = 0
+     where condition = 'W'`);
 
   const identityFit = fitSkeleton(await profileFor(deckId));
   check("rung 3: an identity row gives basis 'identity'", identityFit.basis, "identity");
@@ -947,7 +987,9 @@ run()
               avg_instant = ${b.avg_instant}, avg_sorcery = ${b.avg_sorcery},
               avg_artifact = ${b.avg_artifact}, avg_enchantment = ${b.avg_enchantment},
               avg_planeswalker = ${b.avg_planeswalker}, avg_battle = ${b.avg_battle},
-              avg_curve = ${b.avg_curve === null ? null : JSON.stringify(b.avg_curve)}::jsonb
+              avg_curve = ${b.avg_curve === null ? null : JSON.stringify(b.avg_curve)}::jsonb,
+              avg_ramp = ${b.avg_ramp}, avg_draw = ${b.avg_draw},
+              avg_removal = ${b.avg_removal}, avg_wipes = ${b.avg_wipes}
           where commander_oracle_id = ${commanderCleanup.oracleId}::uuid`);
       }],
       ["the identity sentinel", async () => {

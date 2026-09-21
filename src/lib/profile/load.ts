@@ -178,8 +178,19 @@ type CompositionRow = {
   avgCurve: Record<string, number> | null;
   avgRamp: number | null; avgDraw: number | null;
   avgRemoval: number | null; avgWipes: number | null;
-  /** Only `identity_composition` carries this; the commander and pair rows pass `false`. */
+  /** Only `identity_composition` carries these two; the commander and pair rows omit them. */
   thin?: boolean;
+  /**
+   * How many commanders in this bucket carried role figures.
+   *
+   * REQUIRED to read that bucket's role targets, and the null check below cannot stand in for
+   * it: `identity_composition.avg_ramp` and its three siblings are `NOT NULL DEFAULT 0`, where
+   * the commander and pair columns are nullable. So a bucket derived before the role pass
+   * existed reads back four honest-looking zeroes rather than nulls, and a check on nullity
+   * alone would accept them — stopping the chain at `identity` or `count` with a measurement
+   * nobody took, exactly where it should fall through to the asserted `flat` targets.
+   */
+  withRoles?: number;
 };
 
 /** ALL-OR-NOTHING, the same rule the parser and the pair reader apply: a 0 substituted for a
@@ -205,6 +216,10 @@ function compositionFrom(row: CompositionRow | undefined) {
  */
 function roleTargetsFrom(row: CompositionRow | undefined) {
   if (!row) return null;
+  // The BUCKET rows carry their own denominator and it is the only honest test for them — see
+  // `withRoles` above. A commander or pair row omits the field entirely, and nullity is the
+  // right test there because its columns are nullable.
+  if (row.withRoles !== undefined && row.withRoles <= 0) return null;
   const { avgRamp: ramp, avgDraw: draw, avgRemoval: removal, avgWipes: wipes } = row;
   if (ramp === null || draw === null || removal === null || wipes === null) return null;
   return { ramp, draw, removal, wipes };
@@ -481,6 +496,7 @@ async function loadCompositionRow(condition: string): Promise<CompositionRow | n
       // bucket that reaches a reader indistinguishable from a ratified one is the whole thing
       // the column was added to prevent.
       thin: identityComposition.thin,
+      withRoles: identityComposition.withRoles,
     })
     .from(identityComposition)
     .where(eq(identityComposition.condition, condition));
