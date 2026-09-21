@@ -35,6 +35,8 @@ import { BuyTag } from "./buy-tag";
 import { ProxyTag } from "./proxy-tag";
 import { cardTileCopy } from "../../lib/copy/card-surfaces";
 import { MarkKey, type MarkKeyEntry } from "./mark-key";
+import { CardFactMark } from "../cards/card-fact-mark";
+import { CARD_FACTS, cardFactName } from "../../lib/copy/card-mark";
 import { deckRowTag } from "../../lib/decks/row-tag";
 import { proxyCopy } from "../../lib/copy/proxies";
 import { useMemo } from "react";
@@ -241,6 +243,25 @@ export function Decklist({
     }
     if (shown.some((c) => c.proxied)) {
       entries.push({ id: "proxy", sample: <ProxyTag variant="row" />, word: proxyCopy.key.proxy });
+    }
+    // THE THREE FACTS ARE UNCONDITIONAL, where `buy` and `proxy` above are not, and the
+    // asymmetry is deliberate rather than an oversight.
+    //
+    // The handoff asked for all five always. That cannot be: this component refuses an
+    // empty legend by design, and an unconditional `buy` entry prints `not owned` over a
+    // deck whose rows the player owns — the exact falsehood this key's own ruling forbids.
+    //
+    // But Design's REASON holds for the facts and only for them: "a player scanning for
+    // Game Changers needs the entry to be there BEFORE they find one." A fact entry makes
+    // no claim about any row — it defines a glyph — so it is true whether or not a card
+    // below carries it. `buy` and `proxy` describe the rows themselves, which is why they
+    // stay conditional.
+    for (const fact of CARD_FACTS) {
+      entries.push({
+        id: fact,
+        sample: <CardFactMark fact={fact} size={14} silent />,
+        word: cardFactName(fact),
+      });
     }
     return entries;
   }, [cards, filter, inCardView]);

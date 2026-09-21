@@ -26,6 +26,8 @@ import { allocateClaims } from "../../lib/decks/allocate";
 import { AvailabilityMarker } from "../ui/availability-marker";
 import { clearCardArtPreference, setCardArtPreference } from "../../app/collection/actions";
 import { ManaCost } from "./mana-pips";
+import { CardFactMark } from "./card-fact-mark";
+import { cardFactName, cardMarkCopy } from "../../lib/copy/card-mark";
 import { PrintingRegion, OVERFLOW_THRESHOLD, printingEntryCount, printingKey } from "./printing-region";
 import { PriceTag } from "./price-tag";
 import { cheapestLiveCents, priceFor, priceKeyFor } from "../../lib/cards/price-lookup";
@@ -180,6 +182,52 @@ function ProxyDetail({ card }: { card: BrowseCard }) {
       <p className="m-0 mt-[8px] text-[13px]" style={{ color: "var(--fg-muted)" }}>
         {c.note(decks.length)}
       </p>
+    </div>
+  );
+}
+
+/**
+ * The three standing bracket facts, spelled out.
+ *
+ * ITS OWN BLOCK between the oracle text and the availability receipt, because these are facts
+ * about the CARD with no deck in scope — true on a tile for a card sleeved nowhere — while
+ * everything below it describes this player's copies.
+ *
+ * The modal is the one surface with room to say the words, so it does: this is where a reader
+ * who never met the key learns the vocabulary. Glyph plus name per line and nothing else.
+ *
+ * NO PROVENANCE. "Flagged by both sources" and its siblings are Round 2's, which designs the
+ * slot for the three detection sentences — writing one here would hand that round a slot it
+ * did not design. And NO EMPTY STATE: a card with no facts renders null, exactly as
+ * `AvailabilityDetail` does rather than saying "nothing to report". A drawn absence would read
+ * as a cleared check, and detection on two of the three is measured and partial.
+ */
+function BracketFactsDetail({ card }: { card: BrowseCard }) {
+  const facts = card.facts ?? [];
+  if (facts.length === 0) return null;
+  return (
+    <div
+      className="rounded-[10px] mt-[16px] md:mt-[22px] p-[14px_16px] md:p-[18px_20px]"
+      style={{ background: "var(--bg)", border: "1px solid var(--border)" }}
+    >
+      <h3
+        className="font-mono text-[9.5px] md:text-[10px] uppercase tracking-[0.14em] mb-[10px]"
+        style={{ color: "var(--fg-faint)" }}
+      >
+        {cardMarkCopy.modalHeading}
+      </h3>
+      <ul className="flex flex-col gap-[8px]">
+        {facts.map((fact) => (
+          <li key={fact} className="flex items-center gap-[10px]">
+            {/* The name beside it IS the accessible name, so the glyph goes silent rather
+                than saying it twice. */}
+            <CardFactMark fact={fact} size={16} silent />
+            <span className="text-[13.5px] md:text-[15px]" style={{ color: "var(--fg-body)" }}>
+              {cardFactName(fact)}
+            </span>
+          </li>
+        ))}
+      </ul>
     </div>
   );
 }
@@ -1514,6 +1562,7 @@ export function CardModal({
               </div>
             )}
 
+            <BracketFactsDetail card={card} />
             <AvailabilityDetail card={card} />
             <ProxyDetail card={card} />
 

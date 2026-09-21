@@ -15,6 +15,7 @@ const WUBRG_ORDER: Record<string, number> = { W: 0, U: 1, B: 2, R: 3, G: 4 };
  * could not represent that, which is why the modal caption reads set + collector number here.
  */
 import type { PrintingPrices } from "../cards/price-lookup";
+import { factsFor } from "../bracket/facts";
 import type { CardBracketFlags } from "../bracket/flags-read";
 import type { CardFact } from "../copy/card-mark";
 
@@ -923,15 +924,13 @@ export async function attachBracketFacts(
   if (!flags) return cards;
   if (flags.size === 0) return cards;
   for (const card of cards) {
-    const row = flags.get(card.oracleId);
-    if (!row) continue;
-    const extra: CardFact[] = [];
-    if (row.massLandDenial) extra.push("massLandDenial");
-    if (row.extraTurn) extra.push("extraTurns");
-    if (extra.length === 0) continue;
-    // Fixed order wherever more than one appears: gameChanger, massLandDenial,
-    // extraTurns — which is the order `CARD_FACTS` states and the key lists.
-    card.facts = [...(card.facts ?? []), ...extra];
+    // One assembly for every surface (`factsFor`), rather than a second copy of the rule
+    // here: the ORDER is part of the contract — gameChanger, massLandDenial, extraTurns,
+    // which is what the key lists and every surface draws — and two implementations of an
+    // ordering is how it drifts. `gameChanger` is already on the card from the row query,
+    // so it is re-derived from the list rather than re-read.
+    const facts = factsFor(card.facts?.includes("gameChanger") ?? false, flags.get(card.oracleId));
+    if (facts) card.facts = facts;
   }
   return cards;
 }

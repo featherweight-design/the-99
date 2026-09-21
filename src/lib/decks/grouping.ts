@@ -1,3 +1,4 @@
+import type { CardFact } from "../copy/card-mark";
 // Pure grouping helpers + card shapes shared by client components.
 // Must stay free of db/server imports — client components import these as values.
 
@@ -22,6 +23,16 @@ export type DeckDetailCard = {
    * is `notNull` with a default of 0, so there is no null to model.
    */
   cmc: number;
+  /**
+   * The standing bracket facts this card carries — Game Changer, mass land denial, extra
+   * turns. Optional and OMITTED WHEN EMPTY, like `availability` beside it and for the same
+   * reasons: six sites build this literal without a catalog to ask, and most cards carry
+   * nothing.
+   *
+   * Absent is silence, never a claim the card is clear. Detection on two of the three is
+   * measured and partial.
+   */
+  facts?: CardFact[];
   owned: boolean;
   /**
    * This deck prints its copy of the card. **Never folded into `owned`**, which

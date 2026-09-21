@@ -1,6 +1,8 @@
 import { and, asc, desc, eq, inArray, sql } from "drizzle-orm";
 import { alias } from "drizzle-orm/pg-core";
 import { db } from "../../db";
+import { factsFor } from "../bracket/facts";
+import { loadBracketFlags, type CardBracketFlags } from "../bracket/flags-read";
 import {
   cards,
   collectionItems,
@@ -261,6 +263,7 @@ export async function getDeckDetail(deckId: string, userId: string): Promise<Dec
       cmc: cards.cmc,
       imageUri: cards.imageUri,
       layout: cards.layout,
+      gameChanger: cards.gameChanger,
       owned: ownedSql,
       quantity: deckCards.quantity,
       auto: deckCards.auto,
@@ -322,6 +325,14 @@ export async function getDeckDetail(deckId: string, userId: string): Promise<Dec
       printedName: own?.printedName ?? null,
     };
   };
+  // The two bracket facts that are not columns on `cards`. FAIL-SOFT for exactly the reason
+  // the proxy read above is: a mark is decoration on a page that must render without it, and
+  // a transient failure here would otherwise 500 a readable deck over three glyphs. An empty
+  // map costs the marks and nothing else.
+  const bracketFlags = await loadBracketFlags(cardRows.map((r) => r.oracleId)).catch(
+    () => new Map<string, CardBracketFlags>(),
+  );
+
   const commander = asCommander(commanderRow);
   const partner = partnerRow ? asCommander(partnerRow) : null;
 
@@ -333,6 +344,7 @@ export async function getDeckDetail(deckId: string, userId: string): Promise<Dec
     role: primaryRole({ typeLine: row.typeLine, oracleText: row.oracleText, keywords: row.keywords }),
     cmc: row.cmc,
     owned: row.owned,
+    facts: factsFor(row.gameChanger, bracketFlags.get(row.oracleId)),
     proxied: proxiedIds.has(row.oracleId),
     quantity: row.quantity,
     auto: row.auto,
