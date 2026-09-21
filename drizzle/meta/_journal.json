@@ -323,6 +323,20 @@
       "when": 1789961109168,
       "tag": "0045_material_diamondback",
       "breakpoints": true
+    },
+    {
+      "idx": 46,
+      "version": "7",
+      "when": 1789963810576,
+      "tag": "0046_steep_lionheart",
+      "breakpoints": true
+    },
+    {
+      "idx": 47,
+      "version": "7",
+      "when": 1789963888754,
+      "tag": "0047_polite_cargill",
+      "breakpoints": true
     }
   ]
 }

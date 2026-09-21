@@ -1,4 +1,4 @@
-import { eq, sql } from "drizzle-orm";
+import { and, eq, sql } from "drizzle-orm";
 import { db } from "../../db";
 import {
   cards, commanderScores, commanderSupport, commanderSupportCards,
@@ -34,7 +34,7 @@ export type BuildIndexOptions = {
   clearScores?: () => Promise<void>;
   /** The role-target pass, injectable for the same reason as every other edge here: the whole
       build is unit-testable without a database or a network. */
-  deriveRoleTargets?: () => Promise<{ written: number; zeroWipes: number }>;
+  deriveRoleTargets?: () => Promise<RoleTargetPassResult>;
   /**
    * The pair pass's three I/O edges, injectable for the same reason every other edge here is:
    * this function is unit-tested, and a default that reaches the database would make every
@@ -48,11 +48,20 @@ export type BuildIndexOptions = {
   sleep?: (ms: number) => Promise<void>;
 };
 
+/** What the role pass reports back. */
+export type RoleTargetPassResult = {
+  written: number;
+  pairsWritten: number;
+  zeroWipes: number;
+};
+
 export type BuildIndexResult = {
   /** Headers actually written — `ok` plus `absent`. Degraded ones are not written. */
   commanders: number;
   /** Commanders whose four role targets were derived and written by the final pass. */
   roleTargets: number;
+  /** Pairs whose four role targets were derived and written by the same pass. */
+  pairRoleTargets: number;
   cardRows: number;
   degraded: number; absent: number; unresolved: number;
   skipped: number; failed: number;
@@ -223,6 +232,16 @@ async function writeToDb(header: SupportHeader, cardRows: SupportCard[]): Promis
           avgEnchantment: sql`excluded.avg_enchantment`,
           avgPlaneswalker: sql`excluded.avg_planeswalker`,
           avgBattle: sql`excluded.avg_battle`,
+          // THE ROLE COLUMNS RESET HERE TOO, and leaving them out was a fabricated figure.
+          // A commander whose page goes `absent` on a re-run has its type composition nulled
+          // from `excluded` and its `commander_support_cards` deleted — so the role pass, which
+          // derives from those cards, never reaches it. Without this line it would keep the
+          // PREVIOUS run's positive avg_ramp beside null types: a measured-looking number with
+          // nothing behind it, which is exactly what the NULLABLE note on these columns forbids.
+          avgRamp: sql`excluded.avg_ramp`,
+          avgDraw: sql`excluded.avg_draw`,
+          avgRemoval: sql`excluded.avg_removal`,
+          avgWipes: sql`excluded.avg_wipes`,
           avgCurve: sql`excluded.avg_curve`,
           computedAt: sql`excluded.computed_at`,
         },
@@ -296,7 +315,7 @@ export async function buildCommanderIndex(
   const already = opts.loadAlreadyComputed ? await opts.loadAlreadyComputed() : new Set<string>();
 
   const r: BuildIndexResult = {
-    commanders: 0, roleTargets: 0, cardRows: 0, degraded: 0, absent: 0,
+    commanders: 0, roleTargets: 0, pairRoleTargets: 0, cardRows: 0, degraded: 0, absent: 0,
     unresolved: 0, skipped: 0, failed: 0,
     pairs: 0, pairCardRows: 0, pairsFailed: 0, pairsDegraded: 0, pairsUnresolved: 0,
   };
@@ -469,9 +488,10 @@ export async function buildCommanderIndex(
   // run reports a failure — which is the state an operator needs to see.
   const roles = await deriveRoles();
   r.roleTargets = roles.written;
+  r.pairRoleTargets = roles.pairsWritten;
   console.log(
-    `commander-index: role targets written for ${roles.written} commander(s) · ` +
-    `${roles.zeroWipes} measure exactly 0 wipes`,
+    `commander-index: role targets written for ${roles.written} commander(s) and ` +
+    `${roles.pairsWritten} pair(s) · ${roles.zeroWipes} measure exactly 0 wipes`,
   );
 
   return r;
@@ -489,7 +509,7 @@ export async function buildCommanderIndex(
  * run below the floor leaves every previous value standing and throws. Same discipline as
  * `db:build:staples`.
  */
-export async function deriveAndWriteRoleTargets(): Promise<{ written: number; zeroWipes: number }> {
+export async function deriveAndWriteRoleTargets(): Promise<RoleTargetPassResult> {
   const rows = await db
     .select({
       commanderOracleId: commanderSupportCards.commanderOracleId,
@@ -538,8 +558,50 @@ export async function deriveAndWriteRoleTargets(): Promise<{ written: number; ze
     });
   }
 
+  // THE PAIR RUNG TOO. Its own table, its own cards, and read BEFORE the commander rung by the
+  // basis chain — so a pair left without role targets is a partner deck getting measured types
+  // with no roles beside them, which is the one shape these columns exist to prevent.
+  const pairRows = await db
+    .select({
+      commanderOracleId: commanderPairSupportCards.commanderOracleId,
+      partnerOracleId: commanderPairSupportCards.partnerOracleId,
+      oracleId: commanderPairSupportCards.oracleId,
+      inclusion: commanderPairSupportCards.inclusion,
+      typeLine: cards.typeLine,
+      oracleText: cards.oracleText,
+      keywords: cards.keywords,
+      layout: cards.layout,
+    })
+    .from(commanderPairSupportCards)
+    .innerJoin(cards, eq(cards.oracleId, commanderPairSupportCards.oracleId));
+
+  // Keyed on the pair, not the primary: `deriveRoleTargets` groups by whatever id it is given,
+  // and two pairs sharing a primary commander would otherwise fold into one set of figures.
+  const pairTargets = deriveRoleTargets(
+    pairRows.map((r) => ({
+      commanderOracleId: `${r.commanderOracleId}|${r.partnerOracleId}`,
+      oracleId: r.oracleId,
+      inclusion: r.inclusion ?? 0,
+      typeLine: r.typeLine ?? "",
+      oracleText: r.oracleText,
+      keywords: r.keywords ?? [],
+      layout: r.layout ?? "normal",
+    })),
+  );
+
+  for (const [key, t] of pairTargets) {
+    const [a, b] = key.split("|");
+    await db.update(commanderPairSupport)
+      .set({ avgRamp: t.ramp, avgDraw: t.draw, avgRemoval: t.removal, avgWipes: t.wipes })
+      .where(and(
+        eq(commanderPairSupport.commanderOracleId, a),
+        eq(commanderPairSupport.partnerOracleId, b),
+      ));
+  }
+
   return {
     written: targets.size,
+    pairsWritten: pairTargets.size,
     zeroWipes: entries.filter(([, t]) => t.wipes === 0).length,
   };
 }

@@ -984,6 +984,22 @@ export const commanderPairSupport = pgTable("commander_pair_support", {
   avgEnchantment: integer("avg_enchantment"),
   avgPlaneswalker: integer("avg_planeswalker"),
   avgBattle: integer("avg_battle"),
+  /**
+   * The four role targets for the PAIR, derived from `commander_pair_support_cards`.
+   *
+   * Here because the basis chain's pair rung is read BEFORE the commander rung, so without
+   * them a partner deck resolves `of: "pair"` and gets measured types with no roles beside
+   * them — which is the precise disagreement these columns exist to prevent, arriving through
+   * the one rung that had been left out.
+   *
+   * Nullable for the same reason as the commander rung's: a pair row written before this
+   * derivation existed carries no figure, and the chain must fall through rather than read a
+   * fabricated zero.
+   */
+  avgRamp: real("avg_ramp"),
+  avgDraw: real("avg_draw"),
+  avgRemoval: real("avg_removal"),
+  avgWipes: real("avg_wipes"),
   avgCurve: jsonb("avg_curve").$type<Record<string, number>>(),
   computedAt: timestamp("computed_at").notNull().defaultNow(),
 }, (t) => [
@@ -1158,8 +1174,18 @@ export const identityComposition = pgTable("identity_composition", {
   avgWipes: real("avg_wipes").notNull().default(0),
   /** The bucket's size — the sample bar's own witness. */
   commanders: integer("commanders").notNull(),
-  /** How many of them actually carried a composition. The denominator behind the averages. */
+  /** How many of them actually carried a composition. The denominator behind the TYPE
+   *  averages, and only those. */
   withComposition: integer("with_composition").notNull(),
+  /**
+   * How many carried ROLE figures — the denominator behind `avg_ramp` and its three siblings.
+   *
+   * Its own column rather than sharing `with_composition`, because the two populations are
+   * genuinely different until one index run has covered both: a commander row written before
+   * the role pass existed carries a composition and no roles. Sharing the denominator would
+   * publish a mean over ten commanders while the row claimed two hundred.
+   */
+  withRoles: integer("with_roles").notNull().default(0),
   computedAt: timestamp("computed_at").notNull().defaultNow(),
 }, (t) => [
   // An average over nothing is not an average. A bucket where no commander carried a

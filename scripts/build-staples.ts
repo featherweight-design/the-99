@@ -19,6 +19,9 @@ import { sql } from "drizzle-orm";
 import { db } from "../src/db";
 import { formatStaples, identityComposition } from "../src/db/schema";
 import { MIN_COMMANDERS_PER_CONDITION } from "../src/lib/staples/condition";
+// Imported, never restated: a literal here goes silently wrong the day the flat targets move,
+// and this line's whole job is to sit beside the derived figures as their baseline.
+import { ROLE_TARGETS } from "../src/lib/recs/roles";
 
 /** The ratified cut (spec §4A.1, re-ratified on the identity axis 2026-09-19). */
 const BREADTH = 0.5;
@@ -138,6 +141,13 @@ function floorsQuery(keyExpr: string, restrictTo: string) {
 /** Composition averages for one key expression, over the commanders that carry one. */
 function compositionQuery(keyExpr: string, restrictTo: string) {
   const avg = (col: string) => `avg(cs.${col}) filter (where cs.avg_land is not null) as ${col}`;
+  // THE ROLE COLUMNS CARRY THEIR OWN DENOMINATOR, and sharing `with_composition` would have
+  // been a lie about them. `avg(cs.avg_ramp) filter (where cs.avg_land is not null)` skips a
+  // null `avg_ramp` INSIDE the filter, so on a database whose commander rows predate the role
+  // pass a bucket with 200 composition-carrying commanders and 10 role-carrying ones publishes
+  // a mean over 10 while the row says 200. The two populations are genuinely different until
+  // one index run has covered both, so the row states both.
+  const avgRole = (col: string) => `avg(cs.${col}) filter (where cs.${col} is not null) as ${col}`;
   return `
     select ${keyExpr} as condition,
            count(*)::int as commanders,
@@ -145,16 +155,17 @@ function compositionQuery(keyExpr: string, restrictTo: string) {
            ${["avg_land", "avg_basic", "avg_nonbasic", "avg_creature", "avg_instant",
               "avg_sorcery", "avg_artifact", "avg_enchantment", "avg_planeswalker",
               "avg_battle",
-              // The four FUNCTIONAL targets, carried on the same row as the ten type targets.
-              // A rung that delivered types with no roles beside them would put measured types
-              // next to flat roles on one deck — the disagreement §4A.6 names as the bug.
-              //
-              // The `filter (where cs.avg_land is not null)` each of these inherits is
+              // The `filter (where cs.avg_land is not null)` each of these carries is
               // load-bearing and must not become a `where`: that would narrow the `commanders`
               // denominator with it, which is the null-policy mistake this script's header
               // records making once already.
-              "avg_ramp", "avg_draw", "avg_removal", "avg_wipes"]
-              .map(avg).join(",\n           ")}
+              ].map(avg).join(",\n           ")},
+           // The four FUNCTIONAL targets, on the same row as the ten type targets: a rung that
+           // delivered types with no roles beside them would put measured types next to flat
+           // roles on one deck, which is the disagreement §4A.6 names as the bug.
+           ${["avg_ramp", "avg_draw", "avg_removal", "avg_wipes"]
+              .map(avgRole).join(",\n           ")},
+           count(*) filter (where cs.avg_ramp is not null)::int as with_roles
     from commander_support cs
     join cards cmd on cmd.oracle_id = cs.commander_oracle_id
     ${restrictTo}
@@ -497,6 +508,7 @@ async function main() {
     // overwrites.
     avgRamp: Number(c.avg_ramp ?? 0), avgDraw: Number(c.avg_draw ?? 0),
     avgRemoval: Number(c.avg_removal ?? 0), avgWipes: Number(c.avg_wipes ?? 0),
+    withRoles: Number(c.with_roles ?? 0),
     avgCurve: curves.get(String(c.condition)) ?? null,
   }));
 
@@ -537,7 +549,9 @@ async function main() {
     // argues with — a threshold nobody can see the working for is an asserted constant with
     // extra steps.
     console.log(
-      `\n== role targets per condition ==   flat: ramp 10 · draw 10 · removal 8 · wipes 3`,
+      `\n== role targets per condition ==   flat: ` +
+      `ramp ${ROLE_TARGETS.ramp} · draw ${ROLE_TARGETS.draw} · ` +
+      `removal ${ROLE_TARGETS.removal} · wipes ${ROLE_TARGETS.wipes}`,
     );
     console.log(
       `${pad("condition", 12)}${num("land", 7)}${num("creature", 10)}` +
