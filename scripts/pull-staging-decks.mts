@@ -24,7 +24,13 @@
  * `?? DATABASE_URL` fallback, because a fallback is how a one-way script finds the wrong end.
  */
 import "dotenv/config";
-import { neon, Pool } from "@neondatabase/serverless";
+import { neon, neonConfig, Pool } from "@neondatabase/serverless";
+import ws from "ws";
+
+// `Pool` speaks WebSocket, and Node has no global one — every other Pool caller here does this
+// (`src/db/index.ts`, `scripts/probe-folders.ts`). Without it the source read fails before its
+// first query.
+neonConfig.webSocketConstructor = ws;
 
 const SOURCE = process.env.THE_99_NEON_STAGING_DIRECT;
 const TARGET = process.env.PULL_TARGET_URL;
@@ -81,6 +87,32 @@ if (srcId === dstId) {
 }
 
 /**
+ * FAIL CLOSED ON THE TARGET, because "not the source" is not the same as "safe to delete from".
+ *
+ * The block below deletes a user's decks and collection outright, so a mistyped or pasted URL
+ * that happens to name some OTHER database passes a difference check and destroys whatever it
+ * found. The caller therefore has to NAME the database it means, and the name is checked against
+ * what the target actually reports: a typo in the URL no longer matches the stated branch, and
+ * the run stops before any write.
+ */
+const EXPECTED = process.env.PULL_TARGET_BRANCH;
+if (!EXPECTED) {
+  console.error(
+    `Set PULL_TARGET_BRANCH to the branch this target is expected to be.\n` +
+      `The target currently reports: ${dstId}\n` +
+      "It is checked before anything is deleted, so a mistyped URL fails closed.",
+  );
+  process.exit(1);
+}
+if (!dstId.endsWith(EXPECTED)) {
+  console.error(
+    `Target is ${dstId}, which is not the ${EXPECTED} you named.\n` +
+      "Refusing — this script deletes the target user's decks and collection.",
+  );
+  process.exit(1);
+}
+
+/**
  * EVERY SOURCE READ IN ONE `repeatable read` TRANSACTION.
  *
  * The reads are dependent — decks, then their cards, then their versions, then those versions'
@@ -117,13 +149,32 @@ try {
   const rows = async (sql: string, params: unknown[] = []) =>
     (await client.query(sql, params)).rows as Record<string, unknown>[];
 
-  owner =
-    process.env.PULL_FROM_USER_ID ??
-    (
-      await rows("select user_id, count(*)::int as n from decks group by 1 order by n desc limit 1")
-    )[0]?.user_id as string | undefined;
-  if (!owner) {
-    console.error("No decks on staging to copy.");
+  // WHOSE DECKS. Named, or inferred only when there is NOTHING TO INFER BETWEEN.
+  //
+  // Picking "the account with the most decks" is a silent choice on a shared database, and
+  // ties are decided by whatever order the planner returns — so it could copy a second
+  // player's private collection into the target without ever saying whose it was.
+  const owners = (await rows(
+    "select user_id, count(*)::int as n from decks group by 1 order by n desc",
+  )) as { user_id: string; n: number }[];
+  const named = process.env.PULL_FROM_USER_ID;
+  if (named) {
+    owner = named;
+  } else if (owners.length === 1) {
+    owner = owners[0].user_id;
+  } else {
+    console.error(
+      owners.length === 0
+        ? "No decks on the source to copy."
+        : `The source holds decks for ${owners.length} accounts. Name one with ` +
+          `PULL_FROM_USER_ID — this script will not choose between players.`,
+    );
+    process.exit(1);
+  }
+  // A NAMED ACCOUNT THAT DOES NOT EXIST is truthy, and every read below then comes back empty —
+  // so the run would delete the target's snapshot and report "Done. 0 deck(s)" as a success.
+  if (!owners.some((o) => o.user_id === owner)) {
+    console.error(`No decks on the source for ${owner}. Refusing before any target write.`);
     process.exit(1);
   }
 
@@ -189,72 +240,91 @@ const reown = (row: Record<string, unknown>) =>
   "user_id" in row ? { ...row, user_id: AS_USER } : row;
 
 /**
- * BATCHED, because a row at a time is not a copy of this size. The first version issued one
- * INSERT per row over ~6,400 rows and did not finish inside two minutes; each statement is a
- * round trip to a serverless Postgres, so the cost is latency rather than work. 500 rows per
- * statement puts it under a handful of trips per table.
+ * THE WHOLE TARGET WRITE IS ONE TRANSACTION.
+ *
+ * The delete and the inserts were separate autocommit requests, so an insert failing part way
+ * left the old snapshot already deleted and a PREFIX of the new one in its place — a deck list
+ * that never existed on staging, under a script whose claim is that it is a snapshot of one.
+ * Now it is begin / delete / insert / commit, and a failure rolls the target back to what it
+ * had.
+ *
+ * BATCHED, because a row at a time is not a copy of this size: the first version issued one
+ * INSERT per row over ~6,400 rows and did not finish inside two minutes. The cost is round
+ * trips, so 500 rows to a statement puts each table within a handful.
+ *
+ * NO `on conflict do nothing`. A conflict means the target already holds that id — most likely
+ * under a DIFFERENT user — and skipping the parent silently would attach this snapshot's child
+ * rows to that stranger's deck. It is an error, and it should be seen.
  */
 const CHUNK = 500;
-const insert = async (table: string, rows: Record<string, unknown>[]) => {
-  if (rows.length === 0) return;
-  const cols = Object.keys(rows[0]);
-  const quoted = cols.map((c) => `"${c}"`).join(", ");
-  for (let i = 0; i < rows.length; i += CHUNK) {
-    const slice = rows.slice(i, i + CHUNK).map(reown);
-    const values: unknown[] = [];
-    const tuples = slice.map((row) => {
-      const placeholders = cols.map((c) => {
-        values.push(row[c]);
-        return `$${values.length}`;
+
+const pool2 = new Pool({ connectionString: TARGET });
+const out = await pool2.connect();
+try {
+  await out.query("begin");
+
+  const insert = async (table: string, rowsIn: Record<string, unknown>[]) => {
+    if (rowsIn.length === 0) return;
+    const cols = Object.keys(rowsIn[0]);
+    const quoted = cols.map((c) => `"${c}"`).join(", ");
+    for (let i = 0; i < rowsIn.length; i += CHUNK) {
+      const slice = rowsIn.slice(i, i + CHUNK).map(reown);
+      const values: unknown[] = [];
+      const tuples = slice.map((row) => {
+        const placeholders = cols.map((c) => {
+          values.push(row[c]);
+          return `$${values.length}`;
+        });
+        return `(${placeholders.join(", ")})`;
       });
-      return `(${placeholders.join(", ")})`;
-    });
-    await dst.query(
-      `insert into ${table} (${quoted}) values ${tuples.join(", ")} on conflict do nothing`,
-      values,
-    );
+      await out.query(`insert into ${table} (${quoted}) values ${tuples.join(", ")}`, values);
+    }
+  };
+
+  // The target's existing rows for this user go first, so a re-run is a REPLACE rather than a
+  // merge — a merge leaves decks from an older snapshot standing beside the new ones and
+  // quietly makes the fixture a thing that never existed on staging.
+  console.log(`\nReplacing ${AS_USER}'s rows on the target…`);
+  const existing = (await out.query("select id from decks where user_id = $1", [AS_USER]))
+    .rows as { id: string }[];
+  if (existing.length > 0) {
+    const ids = existing.map((d) => d.id);
+    await out.query("delete from card_assignments where deck_id = any($1)", [ids]);
+    await out.query("delete from decks where id = any($1)", [ids]);
   }
-};
+  for (const t of ["collection_items", "deck_folders", "card_art_preferences", "csv_uploads"]) {
+    await out.query(`delete from ${t} where user_id = $1`, [AS_USER]);
+  }
 
-// The target's existing rows for this user go first, so a re-run is a REPLACE rather than a
-// merge — a merge would leave decks from an older snapshot standing beside the new ones and
-// quietly make the fixture a thing that never existed on staging.
-console.log(`\nReplacing ${AS_USER}'s rows on the target…`);
-const existing = (await dst`select id from decks where user_id = ${AS_USER}`) as { id: string }[];
-if (existing.length > 0) {
-  const ids = existing.map((d) => d.id);
-  // Children first where no cascade covers them; the rest follow the deck.
-  await dst.query(`delete from card_assignments where deck_id = any($1)`, [ids]);
-  await dst.query(`delete from decks where id = any($1)`, [ids]);
+  // Order matters: folders before decks (a deck references a folder), decks before their rows,
+  // versions before version cards, games before axes, passes before pass cards.
+  await insert("deck_folders", folders);
+  await insert("decks", decks);
+  await insert("deck_cards", cards);
+  await insert("deck_proxies", proxies);
+  await insert("deck_versions", versions);
+  await insert("deck_version_cards", versionCards);
+  await insert("deck_games", games);
+  await insert("deck_game_axes", gameAxes);
+  await insert("card_assignments", assignments);
+  await insert("fill_passes", fillPasses);
+  await insert("fill_pass_cards", fillPassCards);
+  await insert("deck_unresolved_rows", unresolved);
+  await insert("collection_items", collection);
+  await insert("card_art_preferences", artPrefs);
+  await insert("csv_uploads", uploads);
+
+  const landed = (await out.query("select count(*)::int as n from decks where user_id = $1", [
+    AS_USER,
+  ])).rows as { n: number }[];
+  await out.query("commit");
+  console.log(`Done. ${landed[0].n} deck(s) now under ${AS_USER} on the target.`);
+  console.log("This is a SNAPSHOT — re-run it before a measurement that matters.");
+} catch (error) {
+  await out.query("rollback").catch(() => {});
+  console.error("\nThe target write failed and was rolled back — it holds what it held before.");
+  throw error;
+} finally {
+  out.release();
+  await pool2.end();
 }
-await dst`delete from collection_items where user_id = ${AS_USER}`;
-await dst`delete from deck_folders where user_id = ${AS_USER}`;
-await dst`delete from card_art_preferences where user_id = ${AS_USER}`;
-// `csv_uploads` is user-scoped metadata the collection reads for its last-updated stamp and its
-// generation fingerprint. Left behind, a re-run pins a receipt from an older snapshot to a
-// collection it never described.
-await dst`delete from csv_uploads where user_id = ${AS_USER}`;
-
-// Order matters: folders before decks (decks reference a folder), decks before their rows,
-// versions before version cards.
-await insert("deck_folders", folders);
-await insert("decks", decks);
-await insert("deck_cards", cards);
-await insert("deck_proxies", proxies);
-await insert("deck_versions", versions);
-await insert("deck_version_cards", versionCards);
-await insert("deck_games", games);
-await insert("deck_game_axes", gameAxes);
-await insert("card_assignments", assignments);
-await insert("fill_passes", fillPasses);
-await insert("fill_pass_cards", fillPassCards);
-await insert("deck_unresolved_rows", unresolved);
-await insert("collection_items", collection);
-await insert("card_art_preferences", artPrefs);
-await insert("csv_uploads", uploads);
-
-const landed = (await dst`select count(*)::int as n from decks where user_id = ${AS_USER}`) as {
-  n: number;
-}[];
-console.log(`Done. ${landed[0].n} deck(s) now under ${AS_USER} on the target.`);
-console.log("This is a SNAPSHOT — re-run it before a measurement that matters.");
