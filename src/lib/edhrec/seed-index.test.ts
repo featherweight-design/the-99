@@ -36,6 +36,9 @@ it("writes one header per commander and one child row per resolved card", async 
     // pair projection has its own suite. A default that reached the database would make every
     // one of these tests need a real Postgres.
     loadPairs: async () => [],
+    // Same reasoning for the role-target pass, which is the run's other database-reaching
+    // default.
+    deriveRoleTargets: async () => ({ written: 0, zeroWipes: 0 }),
     loadCommanders: async () => [commander("Ghoulcaller Gisa", "g")],
     loadNameIndex: async () => [
       { oracleId: "g", name: "Ghoulcaller Gisa" },
@@ -64,6 +67,9 @@ it("counts an unresolvable name without dropping it from edhrecTotal", async () 
     // pair projection has its own suite. A default that reached the database would make every
     // one of these tests need a real Postgres.
     loadPairs: async () => [],
+    // Same reasoning for the role-target pass, which is the run's other database-reaching
+    // default.
+    deriveRoleTargets: async () => ({ written: 0, zeroWipes: 0 }),
     loadCommanders: async () => [commander("Ghoulcaller Gisa", "g")],
     loadNameIndex: async () => [{ oracleId: "s", name: "Sol Ring" }],
     fetch: async () => okResult(["Sol Ring", "A Card We Do Not Have"]),
@@ -87,6 +93,9 @@ it("does not write at all when EDHREC is unreachable", async () => {
     // pair projection has its own suite. A default that reached the database would make every
     // one of these tests need a real Postgres.
     loadPairs: async () => [],
+    // Same reasoning for the role-target pass, which is the run's other database-reaching
+    // default.
+    deriveRoleTargets: async () => ({ written: 0, zeroWipes: 0 }),
     loadCommanders: async () => [commander("Ghoulcaller Gisa", "g")],
     loadNameIndex: async () => [],
     fetch: async () => ({ data: null, unreachable: true }),
@@ -108,6 +117,9 @@ it("writes an absent header when EDHREC genuinely has no page", async () => {
     // pair projection has its own suite. A default that reached the database would make every
     // one of these tests need a real Postgres.
     loadPairs: async () => [],
+    // Same reasoning for the role-target pass, which is the run's other database-reaching
+    // default.
+    deriveRoleTargets: async () => ({ written: 0, zeroWipes: 0 }),
     loadCommanders: async () => [commander("Obscure Legend", "o")],
     loadNameIndex: async () => [],
     fetch: async () => ({ data: null, unreachable: false }),
@@ -127,6 +139,9 @@ it("does not abort the run when one commander throws", async () => {
     // pair projection has its own suite. A default that reached the database would make every
     // one of these tests need a real Postgres.
     loadPairs: async () => [],
+    // Same reasoning for the role-target pass, which is the run's other database-reaching
+    // default.
+    deriveRoleTargets: async () => ({ written: 0, zeroWipes: 0 }),
     loadCommanders: async () => [commander("A", "a"), commander("B", "b")],
     loadNameIndex: async () => [],
     fetch: async (name) => {
@@ -148,6 +163,9 @@ it("skips commanders already computed after the run start when resuming", async 
     // pair projection has its own suite. A default that reached the database would make every
     // one of these tests need a real Postgres.
     loadPairs: async () => [],
+    // Same reasoning for the role-target pass, which is the run's other database-reaching
+    // default.
+    deriveRoleTargets: async () => ({ written: 0, zeroWipes: 0 }),
     loadCommanders: async () => [commander("A", "a"), commander("B", "b")],
     loadNameIndex: async () => [],
     loadAlreadyComputed: async () => new Set(["a"]),
@@ -167,6 +185,9 @@ it("waits delayMs between fetches so EDHREC is not hammered", async () => {
     // pair projection has its own suite. A default that reached the database would make every
     // one of these tests need a real Postgres.
     loadPairs: async () => [],
+    // Same reasoning for the role-target pass, which is the run's other database-reaching
+    // default.
+    deriveRoleTargets: async () => ({ written: 0, zeroWipes: 0 }),
     loadCommanders: async () => [commander("A", "a"), commander("B", "b")],
     loadNameIndex: async () => [],
     fetch: async () => okResult([]),
@@ -189,6 +210,9 @@ it("clears persisted scores once, after a run that wrote something", async () =>
     // pair projection has its own suite. A default that reached the database would make every
     // one of these tests need a real Postgres.
     loadPairs: async () => [],
+    // Same reasoning for the role-target pass, which is the run's other database-reaching
+    // default.
+    deriveRoleTargets: async () => ({ written: 0, zeroWipes: 0 }),
     loadCommanders: async () => [commander("A", "a"), commander("B", "b")],
     loadNameIndex: async () => [],
     fetch: async () => okResult(["Sol Ring"]),
@@ -207,6 +231,9 @@ it("leaves persisted scores alone when the run wrote nothing", async () => {
     // pair projection has its own suite. A default that reached the database would make every
     // one of these tests need a real Postgres.
     loadPairs: async () => [],
+    // Same reasoning for the role-target pass, which is the run's other database-reaching
+    // default.
+    deriveRoleTargets: async () => ({ written: 0, zeroWipes: 0 }),
     loadCommanders: async () => [commander("A", "a")],
     loadNameIndex: async () => [],
     // A `degraded` header is not written, so nothing reached the table.
@@ -229,6 +256,9 @@ it("clears persisted scores on a resume that wrote nothing but skipped work", as
     // pair projection has its own suite. A default that reached the database would make every
     // one of these tests need a real Postgres.
     loadPairs: async () => [],
+    // Same reasoning for the role-target pass, which is the run's other database-reaching
+    // default.
+    deriveRoleTargets: async () => ({ written: 0, zeroWipes: 0 }),
     loadCommanders: async () => [commander("A", "a"), commander("B", "b")],
     loadNameIndex: async () => [],
     loadAlreadyComputed: async () => new Set(["a", "b"]),
@@ -248,6 +278,9 @@ it("leaves scores alone when every commander failed and none was skipped", async
     // pair projection has its own suite. A default that reached the database would make every
     // one of these tests need a real Postgres.
     loadPairs: async () => [],
+    // Same reasoning for the role-target pass, which is the run's other database-reaching
+    // default.
+    deriveRoleTargets: async () => ({ written: 0, zeroWipes: 0 }),
     loadCommanders: async () => [commander("A", "a")],
     loadNameIndex: async () => [],
     fetch: async () => { throw new Error("boom"); },
@@ -289,6 +322,9 @@ it("clears scores under an exclusive index lock, in a transaction", async () => 
     // pair projection has its own suite. A default that reached the database would make every
     // one of these tests need a real Postgres.
     loadPairs: async () => [],
+    // Same reasoning for the role-target pass, which is the run's other database-reaching
+    // default.
+    deriveRoleTargets: async () => ({ written: 0, zeroWipes: 0 }),
     loadCommanders: async () => [commander("A", "a")],
     loadNameIndex: async () => [],
     fetch: async () => okResult(["Sol Ring"]),
@@ -309,6 +345,9 @@ describe("buildCommanderIndex — the pair pass", () => {
     loadCommanders: async () => [],
     loadNameIndex: async () => [{ oracleId: "aaaaaaaa-0000-4000-8000-000000000001", name: "Sol Ring" }],
     clearScores: async () => {},
+    // Injected for the same reason as `clearScores`: the default reaches a real database, and
+    // this suite proves the BUILD without one.
+    deriveRoleTargets: async () => ({ written: 0, zeroWipes: 0 }),
     sleep: async () => {},
     delayMs: 0,
   };
@@ -428,6 +467,8 @@ describe("the score clear runs before the pair pass", () => {
       clearScores: async () => {
         cleared++;
       },
+      // Same reasoning as `clearScores`: the default reaches a real database.
+      deriveRoleTargets: async () => ({ written: 0, zeroWipes: 0 }),
       delayMs: 0,
     });
     expect(cleared).toBe(0);

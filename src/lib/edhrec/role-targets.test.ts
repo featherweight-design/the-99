@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { deriveRoleTargets, type RoleDerivationRow } from "./role-targets.mts";
+import { deriveRoleTargets, type RoleDerivationRow } from "./role-targets";
 
 const base = { keywords: [] as string[], layout: "normal" };
 const ramp = { ...base, typeLine: "Artifact", oracleText: "{T}: Add {C}." };

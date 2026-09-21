@@ -1,12 +1,11 @@
-import { castFaceText } from "../../src/lib/cards/facet";
-import { classifyRoles, type Role } from "../../src/lib/recs/roles";
+import { castFaceText } from "../cards/facet";
+import { classifyRoles, type Role } from "../recs/roles";
 
 /**
  * The four functional role targets, derived per commander.
  *
- * `.mts`, not `.ts`: every file in `scripts/lib/` is `.mjs`/`.mts` and `vitest.config.ts`
- * includes only `scripts/**\/*.test.mts`, so a `.ts` module here would not resolve from its own
- * test.
+ * Lives in `src/lib/edhrec/` rather than under `scripts/`, because `seed-index.ts` is its
+ * consumer and `src/` importing from `scripts/` is the dependency pointing the wrong way.
  */
 
 export type RoleDerivationRow = {

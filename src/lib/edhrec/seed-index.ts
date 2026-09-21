@@ -5,6 +5,7 @@ import {
   commanderPairSupport, commanderPairSupportCards, decks,
 } from "../../db/schema";
 import { SCORE_INDEX_LOCK } from "../recs/store";
+import { deriveRoleTargets } from "./role-targets";
 import { isCommanderCandidate } from "../recs/score";
 import { edhrecInit, fetchEdhrecUncached, type EdhrecFetchResult } from "./client";
 import {
@@ -31,6 +32,9 @@ export type BuildIndexOptions = {
   /** Injectable for the same reason as `write`: the build is unit-tested
       without a database, and this is the run's last write. */
   clearScores?: () => Promise<void>;
+  /** The role-target pass, injectable for the same reason as every other edge here: the whole
+      build is unit-testable without a database or a network. */
+  deriveRoleTargets?: () => Promise<{ written: number; zeroWipes: number }>;
   /**
    * The pair pass's three I/O edges, injectable for the same reason every other edge here is:
    * this function is unit-tested, and a default that reaches the database would make every
@@ -47,6 +51,8 @@ export type BuildIndexOptions = {
 export type BuildIndexResult = {
   /** Headers actually written — `ok` plus `absent`. Degraded ones are not written. */
   commanders: number;
+  /** Commanders whose four role targets were derived and written by the final pass. */
+  roleTargets: number;
   cardRows: number;
   degraded: number; absent: number; unresolved: number;
   skipped: number; failed: number;
@@ -278,6 +284,7 @@ export async function buildCommanderIndex(
   const writePairFn = opts.writePair ?? writePair;
   const sleep = opts.sleep ?? defaultSleep;
   const delayMs = opts.delayMs ?? DEFAULT_DELAY_MS;
+  const deriveRoles = opts.deriveRoleTargets ?? deriveAndWriteRoleTargets;
 
   const [commanders, nameRows] = await Promise.all([load(), loadNames()]);
   const nameIndex = buildNameIndex(nameRows);
@@ -289,7 +296,7 @@ export async function buildCommanderIndex(
   const already = opts.loadAlreadyComputed ? await opts.loadAlreadyComputed() : new Set<string>();
 
   const r: BuildIndexResult = {
-    commanders: 0, cardRows: 0, degraded: 0, absent: 0,
+    commanders: 0, roleTargets: 0, cardRows: 0, degraded: 0, absent: 0,
     unresolved: 0, skipped: 0, failed: 0,
     pairs: 0, pairCardRows: 0, pairsFailed: 0, pairsDegraded: 0, pairsUnresolved: 0,
   };
@@ -455,7 +462,89 @@ export async function buildCommanderIndex(
     }
   }
 
+  // ---- THE ROLE TARGETS --------------------------------------------------------------
+  //
+  // Last, because it reads every support row this run wrote. It REFUSES rather than
+  // publishing a partial set, so a throw here leaves the previous figures standing and the
+  // run reports a failure — which is the state an operator needs to see.
+  const roles = await deriveRoles();
+  r.roleTargets = roles.written;
+  console.log(
+    `commander-index: role targets written for ${roles.written} commander(s) · ` +
+    `${roles.zeroWipes} measure exactly 0 wipes`,
+  );
+
   return r;
+}
+
+/**
+ * The four role targets, derived from the support lists this run just wrote.
+ *
+ * A FINAL PASS rather than per-commander work, because the derivation reads
+ * `commander_support_cards` — which only exists in its final shape once the loop above has
+ * finished — and writes `commander_support` columns, which this module owns.
+ *
+ * REFUSES rather than publishing a partial set. A derivation that reached only some commanders
+ * would leave the rest on stale figures with no way for a reader to tell which is which, so a
+ * run below the floor leaves every previous value standing and throws. Same discipline as
+ * `db:build:staples`.
+ */
+export async function deriveAndWriteRoleTargets(): Promise<{ written: number; zeroWipes: number }> {
+  const rows = await db
+    .select({
+      commanderOracleId: commanderSupportCards.commanderOracleId,
+      oracleId: commanderSupportCards.oracleId,
+      inclusion: commanderSupportCards.inclusion,
+      typeLine: cards.typeLine,
+      oracleText: cards.oracleText,
+      keywords: cards.keywords,
+      layout: cards.layout,
+    })
+    .from(commanderSupportCards)
+    .innerJoin(cards, eq(cards.oracleId, commanderSupportCards.oracleId));
+
+  const targets = deriveRoleTargets(
+    rows.map((r) => ({
+      commanderOracleId: r.commanderOracleId,
+      oracleId: r.oracleId,
+      inclusion: r.inclusion ?? 0,
+      typeLine: r.typeLine ?? "",
+      oracleText: r.oracleText,
+      keywords: r.keywords ?? [],
+      layout: r.layout ?? "normal",
+    })),
+  );
+
+  const [{ ok }] = await db
+    .select({ ok: sql<number>`count(*)::int` })
+    .from(commanderSupport)
+    .where(sql`${commanderSupport.synergyState} = 'ok'`);
+
+  // The floor. Below this the derivation reached too little of the index to publish — a
+  // partial set is indistinguishable from a complete one to every reader.
+  const FLOOR = 0.9;
+  if (ok > 0 && targets.size < ok * FLOOR) {
+    throw new Error(
+      `role targets REFUSED: derived ${targets.size} of ${ok} ok commanders ` +
+      `(floor ${Math.ceil(ok * FLOOR)}). Previous values left standing.`,
+    );
+  }
+
+  const entries = [...targets];
+  for (let i = 0; i < entries.length; i += CARD_BATCH_SIZE) {
+    await db.transaction(async (tx) => {
+      for (const [commanderOracleId, t] of entries.slice(i, i + CARD_BATCH_SIZE)) {
+        await tx.update(commanderSupport)
+          .set({ avgRamp: t.ramp, avgDraw: t.draw, avgRemoval: t.removal, avgWipes: t.wipes })
+          .where(eq(commanderSupport.commanderOracleId, commanderOracleId));
+      }
+    });
+  }
+
+  return {
+    written: targets.size,
+    zeroWipes: entries.filter(([, t]) => t.wipes === 0).length,
+  };
 }
 
 /**
