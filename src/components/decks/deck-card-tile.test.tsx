@@ -3,6 +3,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { addPanelCopy } from "../../lib/copy/decks-builder";
 import { availabilityCopy } from "../../lib/copy/availability";
 import { cardTileCopy, manaCopy, spokenManaCost } from "../../lib/copy/card-surfaces";
+import { cardMarkCopy } from "../../lib/copy/card-mark";
 import type { Availability } from "../../lib/decks/availability";
 import type { DeckDetailCard } from "../../lib/decks/grouping";
 import { CardDetailProvider, cardDetailCopy } from "../cards/card-detail-provider";
@@ -494,5 +495,59 @@ describe("DeckCardTile — a proxied card the draft also touched", () => {
     expect(document.getElementById(id!)?.textContent).toBe(
       deckVersioningCopy.pending.addMarkRecountedA11y(1, 2),
     );
+  });
+});
+
+describe("the bracket marks the tile draws", () => {
+  // The mark is `silent`, and `CardDetailTrigger`'s aria-label REPLACES everything
+  // nested inside it — so a fact drawn in the caption reaches a screen reader only if
+  // this label says it. Shipped once with neither, which is the state this pins.
+  it("speaks each fact in the trigger's own accessible name", () => {
+    renderTile(
+      <DeckCardTile
+        deckId="d1"
+        card={{ ...card, facts: ["gameChanger", "extraTurns"] } as DeckDetailCard}
+      />,
+    );
+    const trigger = screen.getByRole("button", {
+      name: new RegExp(cardMarkCopy.gameChanger, "i"),
+    });
+    expect(trigger.getAttribute("aria-label")).toContain(cardMarkCopy.extraTurns);
+  });
+
+  it("draws one glyph per fact", () => {
+    renderTile(
+      <DeckCardTile
+        deckId="d1"
+        card={{ ...card, facts: ["gameChanger", "extraTurns"] } as DeckDetailCard}
+      />,
+    );
+    expect(screen.getByTestId("card-fact-gameChanger")).toBeTruthy();
+    expect(screen.getByTestId("card-fact-extraTurns")).toBeTruthy();
+  });
+
+  it("keeps the provider's own name, and draws no glyph, for a card with no facts", () => {
+    // The `undefined` arm: there is nothing to add, so nothing is composed.
+    renderTile(<DeckCardTile deckId="d1" card={card} />);
+    expect(screen.queryByTestId("card-fact-gameChanger")).toBeNull();
+    expect(
+      screen.getByRole("button", { name: cardDetailCopy.triggerAria("Sol Ring") }),
+    ).toBeTruthy();
+  });
+
+  it("keeps the copies clause AND the facts when both apply", () => {
+    // The two-copy arm composes its own label; a fix that only handled the
+    // single-copy arm would drop the fact for every multi-copy card.
+    renderTile(
+      <DeckCardTile
+        deckId="d1"
+        card={{ ...card, quantity: 3, facts: ["massLandDenial"] } as DeckDetailCard}
+      />,
+    );
+    const label = screen
+      .getByRole("button", { name: new RegExp(cardMarkCopy.massLandDenial, "i") })
+      .getAttribute("aria-label");
+    expect(label).toContain(cardTileCopy.copiesAria(3));
+    expect(label).toContain(cardMarkCopy.massLandDenial);
   });
 });

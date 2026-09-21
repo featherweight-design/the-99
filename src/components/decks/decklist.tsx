@@ -167,31 +167,34 @@ export function buildMarkKeyEntries({
     if (shown.some((c) => c.proxied)) {
       entries.push({ id: "proxy", sample: <ProxyTag variant="row" />, word: proxyCopy.key.proxy });
     }
-    // THE THREE FACTS ARE UNCONDITIONAL ON THE ROW LIST, where `buy` and `proxy` are not.
+    // THE FACT ENTRIES FOLLOW THE CARDS, exactly as `buy` and `proxy` do.
     //
-    // The handoff asked for all five always. That cannot be: this component refuses an
-    // empty legend by design, and an unconditional `buy` entry prints `not owned` over a
-    // deck whose rows the player owns — the exact falsehood this key's own ruling forbids.
+    // The handoff asked for all five always, and its reason — "a player scanning for Game
+    // Changers needs the entry to be there BEFORE they find one" — is sound on a surface
+    // whose contents stream in. /collection is that surface: a paged, filtered window on
+    // thousands of cards, where "no Game Changer on this page" is not "none in your
+    // collection", so `CollectionMarkKey` stays unconditional.
     //
-    // Design's REASON holds for the facts and only for them: "a player scanning for Game
-    // Changers needs the entry to be there BEFORE they find one." A fact entry makes no
-    // claim about any row — it defines a glyph — so it is true whether or not a card below
-    // carries one. `buy` and `proxy` describe the rows themselves, which is why they stay
-    // conditional.
+    // A DECK IS A CLOSED SET. All 100 cards are here, so absence is knowable and total —
+    // there is no later card to find. An entry for a fact the deck does not hold stops
+    // being a decoder and becomes a claim, which is how a deck with one extra-turns card
+    // came to advertise all three. Reported 2026-09-19.
     //
-    // BUT NOT IN CARD VIEW, and that is the same rule rather than an exception to it. The
-    // card tiles draw no fact mark (`deck-card-tile.tsx` mounts none), so glossing the
-    // three there would teach three glyphs that appear nowhere on the screen — which is
-    // what this key exists to prevent. Unconditional means "before the reader finds one",
-    // not "where there is none to find".
-    if (!inCardView) {
-      for (const fact of CARD_FACTS) {
-        entries.push({
-          id: fact,
-          sample: <CardFactMark fact={fact} size={14} silent />,
-          word: cardFactName(fact),
-        });
-      }
+    // Computed over `shown` rather than `cards`, so the key glosses the rows the reader is
+    // actually looking at — the same set `buy` and `proxy` are decided on.
+    //
+    // IN CARD VIEW TOO. An earlier version suppressed them there, on the reasoning that the
+    // tiles drew no mark so glossing three glyphs would teach marks the reader cannot find.
+    // The premise was true and the conclusion was backwards: Card view is a surface that
+    // shows cards, so the fix was to draw the mark on the tile rather than to remove the
+    // words. Suppressing the key made Card view the one place a reader met neither.
+    for (const fact of CARD_FACTS) {
+      if (!shown.some((c) => c.facts?.includes(fact))) continue;
+      entries.push({
+        id: fact,
+        sample: <CardFactMark fact={fact} size={14} silent />,
+        word: cardFactName(fact),
+      });
     }
     return entries;
 }
