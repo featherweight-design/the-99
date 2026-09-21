@@ -1988,11 +1988,34 @@ export async function chooseBulkFill(
       return card ? [{ ...card, quantity: r.quantity }] : [];
     });
 
+    // WHAT THE PLAYER CAN SLEEVE TONIGHT, decided before planning rather than after.
+    //
+    // `pool: "sleeveable"` filters on `FillCandidate.owned`, and `ownedColorLegalPool` marks
+    // every row owned whether or not a copy is FREE — so a card with every copy claimed by
+    // another deck could close a floor here, and the client then stripped it through
+    // `canSeed`. The tick never appeared, and the free card that could have closed the same
+    // floor was never considered, because the plan had already spent that slot: fewer ticks
+    // than the deck could take, with nothing on screen to say why.
+    //
+    // The predicate is `canSeed`'s, deliberately — owned, and free unless nothing is known
+    // about it. `excludeDeckId` is this deck: its own claims are not competition for itself.
+    //
+    // Degraded rather than fatal. Without this read the plan is as wide as it was before, and
+    // the client's own intersection still keeps a claimed card from being ticked.
+    const availability = await loadAvailability(userId, { excludeDeckId: deckId })
+      .catch(() => null);
+    const unavailable = new Set<string>();
+    if (availability) {
+      for (const [oracleId, a] of availability) {
+        if (a.free <= 0) unavailable.add(oracleId);
+      }
+    }
+
     const plan = await buildFillPlan(
       userId,
       partner ? [commander, partner] : [commander],
       // The deck's own cards are not candidates for filling it.
-      new Set(heldIds),
+      new Set([...heldIds, ...unavailable]),
       // SLEEVEABLE ONLY. The control's promise is about cards the player can put in the deck
       // tonight; a plan that reached past the collection would tick a purchase.
       {

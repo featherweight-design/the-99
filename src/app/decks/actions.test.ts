@@ -2032,6 +2032,28 @@ describe("chooseBulkFill", () => {
     expect(result.oracleIds.length).toBe(3);
   });
 
+  // A CLAIMED CARD MUST NOT TAKE A SLOT A FREE ONE COULD FILL. `pool: "sleeveable"` only
+  // filters on `owned`, and every row from the owned pool is owned whether or not a copy is
+  // free — so a card claimed by another deck closed the floor here and was then stripped
+  // client-side, leaving the tick missing and the free card never considered.
+  it("plans around a card whose every copy is claimed elsewhere", async () => {
+    stub.state.decks.push({ id: "bulk-a", userId: "user_1", commanderOracleId: COMMANDER_ORACLE });
+    stub.state.cards.push(commanderCard());
+    const claimed = rampCard(70);
+    const free = rampCard(71);
+    stub.state.collectionItems.push(claimed, free);
+    vi.mocked(loadAvailability).mockResolvedValue(new Map([
+      [claimed.oracleId as string, { free: 0, claims: [] }],
+    ]) as never);
+
+    const result = await chooseBulkFill("bulk-a", 1);
+
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+    expect(result.oracleIds).toContain(free.oracleId);
+    expect(result.oracleIds).not.toContain(claimed.oracleId);
+  });
+
   it("never offers a residual card", async () => {
     // `planFill` fills whatever `slots` remain with the next cards by preference once the
     // floors and the mana base are done — right for a CREATE, which owes a whole 99. Here it
