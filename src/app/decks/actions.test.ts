@@ -432,7 +432,7 @@ vi.mock("../../lib/decks/draft-state", () => ({
 
 import {
   commitDeckVersion, createDeck, deleteGame, discardDeckDraft, fillDeck, getVersionDiff, logGame,
-  pullCardFromDeck, restoreAutoCards, setCardProxied,
+  pullCardFromDeck, restoreAutoCards, setCardProxied, chooseBulkFill,
 } from "./actions";
 import { PROXY_READ_FAILED } from "../../lib/decks/proxies";
 import { proxyCopy } from "../../lib/copy/proxies";
@@ -1953,5 +1953,119 @@ describe("pullCardFromDeck", () => {
     const result = await pullCardFromDeck(SOURCE_ID, CARD_A, ASKING_ID);
     expect(result.ok).toBe(false);
     expect(stub.state.deleteCalls).toHaveLength(0);
+  });
+});
+
+// TASK 21. The control used to take the top N by SYNERGY from the sleeveable pool — optimising
+// "what can I sleeve" where the player asked "what does this deck need". Short on creatures, it
+// ticked non-creatures and left the deck worse with no slots left to fix it.
+//
+// Every candidate here carries REAL oracle text. R1's version gave them none, so neither
+// classified, both fell to the residual, and the residual ranks on synergy — which picks the
+// card the case was written to see beaten.
+describe("chooseBulkFill", () => {
+  const creature = (n: number) => ({
+    oracleId: `crea-${n.toString().padStart(8, "0")}-aaaa-aaaa-aaaa-aaaaaaaaaaaa`,
+    name: `Elf ${n}`,
+    typeLine: "Creature — Elf Druid",
+    oracleText: "{T}: Add {G}.",
+    keywords: [], colorIdentity: [], commanderLegal: true, quantity: 1,
+  });
+
+  it("returns nothing for a deck with no open slots", async () => {
+    stub.state.decks.push({ id: "bulk-0", userId: "user_1", commanderOracleId: COMMANDER_ORACLE });
+    stub.state.cards.push(commanderCard());
+    const result = await chooseBulkFill("bulk-0", 0);
+    expect(result).toEqual({ ok: true, oracleIds: [] });
+  });
+
+  // WHAT THIS LEVEL CAN PROVE, and what it cannot.
+  //
+  // The rule Task 21 is about — take the role the deck is SHORT of, not the one it has already
+  // filled — is proved in `fill.test.ts` under `describe("held")`, where `planFill` takes the
+  // deck's contents as a plain argument and the counterfactual can be run beside it. It is not
+  // provable here: this stub answers a `deck_cards` read with rows it holds for the deck id,
+  // and an earlier version of this case claimed the rule while actually discriminating on
+  // `byPreference`'s `name.localeCompare` tail — renaming a fixture flipped it.
+  //
+  // What belongs at this level is the action's own contract: it caps at the slots asked for,
+  // it never repeats an id, and it answers rather than throwing.
+  it("never offers more than the open slots, and never twice", async () => {
+    stub.state.decks.push({ id: "bulk-1", userId: "user_1", commanderOracleId: COMMANDER_ORACLE });
+    stub.state.cards.push(commanderCard());
+    stub.state.collectionItems.push(
+      ...Array.from({ length: 6 }, (_, i) => rampCard(i)),
+      ...Array.from({ length: 6 }, (_, i) => creature(i)),
+    );
+
+    const result = await chooseBulkFill("bulk-1", 3);
+
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+    // FEWER IS VALID; MORE NEVER IS. A control that promised three slots and ticked four has
+    // taken a decision the player did not make.
+    expect(result.oracleIds.length).toBeLessThanOrEqual(3);
+    expect(new Set(result.oracleIds).size).toBe(result.oracleIds.length);
+  });
+
+  // THE COMMANDER IS NOT COUNTED HERE, and this pins the direction rather than leaving it to
+  // whichever round argued last. The measured role targets come from EDHREC's support lists,
+  // which never contain the commander — `profile/types.ts` carries a second classification
+  // "over the 99 ALONE" for exactly this, with the instruction to use it ONLY against a
+  // measured target.
+  //
+  // Observable because the wipes floor is 3: a wipe commander that closed a unit of it would
+  // leave two to fill, and the third slot would come back empty.
+  it("does not count the commander toward a measured floor", async () => {
+    stub.state.decks.push({ id: "bulk-c", userId: "user_1", commanderOracleId: COMMANDER_ORACLE });
+    stub.state.cards.push(commanderCard({ oracleText: "Destroy all creatures." }));
+    stub.state.collectionItems.push(...Array.from({ length: 3 }, (_, i) => ({
+      oracleId: `wipe-${i.toString().padStart(8, "0")}-aaaa-aaaa-aaaa-aaaaaaaaaaaa`,
+      name: `Wrath ${i}`, typeLine: "Sorcery", oracleText: "Destroy all creatures.",
+      keywords: [], colorIdentity: [], commanderLegal: true, quantity: 1,
+    })));
+
+    const result = await chooseBulkFill("bulk-c", 3);
+
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+    expect(result.oracleIds.length).toBe(3);
+  });
+
+  it("never offers a residual card", async () => {
+    // `planFill` fills whatever `slots` remain with the next cards by preference once the
+    // floors and the mana base are done — right for a CREATE, which owes a whole 99. Here it
+    // was the failure this control exists to end: unmeetable floors meant every open slot
+    // went to "whatever ranked next", which is the synergy ordering in a different hat. A
+    // residual row must never reach the player from this door.
+    stub.state.decks.push({ id: "bulk-r", userId: "user_1", commanderOracleId: COMMANDER_ORACLE });
+    stub.state.cards.push(commanderCard());
+    // Cards that close no floor: vanilla creatures with no ramp, draw, removal or wipe text.
+    stub.state.collectionItems.push(...Array.from({ length: 8 }, (_, i) => ({
+      oracleId: `vani-${i.toString().padStart(8, "0")}-aaaa-aaaa-aaaa-aaaaaaaaaaaa`,
+      name: `Bear ${i}`, typeLine: "Creature — Bear", oracleText: "",
+      keywords: [], colorIdentity: [], commanderLegal: true, quantity: 1,
+    })));
+
+    const result = await chooseBulkFill("bulk-r", 4);
+
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+    // Four slots asked for, nothing that closes a floor: the slots stay open.
+    expect(result.oracleIds).toEqual([]);
+  });
+
+  it("refuses rather than throwing for a deck the reader does not own", async () => {
+    // `requireDeck` throws for a deck belonging to someone else, or one deleted while the
+    // list was open. It used to sit OUTSIDE the `try`, so that rejection escaped a function
+    // documented and tested as answering a refusal — and the click handler had no catch.
+    const result = await chooseBulkFill("not-a-deck-of-mine", 3);
+    expect(result.ok).toBe(false);
+  });
+
+  it("reports a refusal rather than throwing when the fill cannot run", async () => {
+    stub.state.decks.push({ id: "bulk-2", userId: "user_1", commanderOracleId: "missing-oracle" });
+    const result = await chooseBulkFill("bulk-2", 5);
+    expect(result.ok).toBe(false);
   });
 });

@@ -539,3 +539,120 @@ it("never buys a staple over an owned card on type-gap grounds", () => {
   expect(plan.rows.find((r) => r.role === "ramp")?.oracleId).toBe("owned");
   expect(plan.bought).toBe(0);
 });
+
+// The bulk control's promise is about cards the player can sleeve TONIGHT, so its plan runs
+// with `pool: "sleeveable"`. Tested here rather than through the action, because the action's
+// stub supplies no unowned candidates — so the rule would be asserted over a pool that cannot
+// violate it, which is a check measuring nothing.
+describe("pool: sleeveable", () => {
+  const owned = ramp("mine", 10);
+  const staple = ramp("buy", 99, false);
+
+  it("never reaches past the collection", () => {
+    const plan = planFill([staple, owned], { ...FLAT, pool: "sleeveable" });
+    expect(plan.rows.map((r) => r.oracleId)).not.toContain("buy");
+    expect(plan.bought).toBe(0);
+  });
+
+  // And the default still may: the create path buys a staple when a floor is short, which is
+  // the behaviour this option narrows rather than replaces.
+  it("while the default pool still may", () => {
+    const plan = planFill([staple, owned], FLAT);
+    expect(plan.rows.map((r) => r.oracleId)).toContain("buy");
+  });
+});
+
+// WHAT THE DECK ALREADY HOLDS.
+//
+// Every caller before the bulk control filled an EMPTY deck — `createDeck` starts with nothing
+// and `fillDeck` returns early the moment one `deck_cards` row exists — so role counts starting
+// at zero was right and nothing had to know better. `chooseBulkFill` is the first caller to
+// plan for a deck that already has cards, and without this it asked for four slots and got the
+// first four placements of a from-scratch 99.
+describe("held", () => {
+  const rampSpell = c({
+    oracleId: "spare-ramp", name: "Aaa Ramp",
+    typeLine: "Artifact", oracleText: "Add {G}.",
+  });
+  const drawSpell = c({
+    oracleId: "want-draw", name: "Zzz Draw",
+    typeLine: "Instant", oracleText: "Draw three cards.",
+  });
+  // Named so the RAMP card wins every tie-break available — `byPreference` falls through to
+  // `name.localeCompare`, and with both floors open the first name decides. That is what makes
+  // the pair discriminating: the draw card can only be chosen because the ramp floor is shut,
+  // never because it sorted first. An earlier version of this case had it the other way round
+  // and passed with `held` removed entirely.
+  const heldRamp = Array.from({ length: 10 }, () => ({
+    typeLine: "Artifact", oracleText: "Add {G}.", keywords: [], layout: "normal",
+    manaCost: "{2}", quantity: 1,
+  }));
+
+  it("takes the role the deck is short of over the one it has already filled", () => {
+    const plan = planFill([rampSpell, drawSpell], { ...FLAT, slots: 1, held: heldRamp });
+    expect(plan.rows.map((r) => r.oracleId)).toEqual(["want-draw"]);
+  });
+
+  it("and without it, plans for a deck that does not exist", () => {
+    // The counterfactual, and the reason the case above means anything: the same pool and the
+    // same single slot, with the deck's own contents withheld, spends it on a role the deck
+    // has ten of.
+    const plan = planFill([rampSpell, drawSpell], { ...FLAT, slots: 1 });
+    expect(plan.rows.map((r) => r.oracleId)).toEqual(["spare-ramp"]);
+  });
+
+  it("counts a held land-backed modal card against the land ceiling", () => {
+    // A card already in the deck whose back is a land is already a land drop. A plan blind to
+    // it takes the whole ceiling again, so the deck ends one land over and reports a shortfall
+    // it does not have.
+    const heldModal = {
+      typeLine: "Sorcery // Land", oracleText: "Draw three cards.\n//\nEnters tapped.",
+      keywords: [], layout: "modal_dfc", manaCost: "{1}{U}", quantity: 1,
+    };
+    const basics = Array.from({ length: 40 }, (_, i) => basic(`f${i}`, 4));
+
+    const withHeld = planFill(basics, { ...FLAT, held: [heldModal] });
+    const without = planFill(basics, FLAT);
+
+    expect(countRole(withHeld, "land")).toBe(countRole(without, "land") - 1);
+    expect(withHeld.landCapable).toBe(without.landCapable);
+  });
+
+  it("splits the basics against the costs the deck already casts", () => {
+    // The split is proportioned against what the deck will CAST, and a partial fill casts what
+    // it holds as well as what this plan adds. A deck of blue spells taking three more lands
+    // was splitting them against three costs.
+    const heldBlue = Array.from({ length: 12 }, () => ({
+      typeLine: "Instant", oracleText: "Draw a card.", keywords: [],
+      layout: "normal", manaCost: "{U}{U}", quantity: 1,
+    }));
+    const pool = [
+      ...Array.from({ length: 20 }, (_, i) => basic(`i${i}`, 1, "Island")),
+      ...Array.from({ length: 20 }, (_, i) => basic(`f${i}`, 1, "Forest")),
+    ];
+
+    const islands = (plan: FillPlan) =>
+      plan.rows.filter((r) => r.oracleId.startsWith("i")).reduce((n, r) => n + r.quantity, 0);
+
+    expect(islands(planFill(pool, { ...FLAT, held: heldBlue })))
+      .toBeGreaterThan(islands(planFill(pool, FLAT)));
+  });
+
+  it("counts a stacked row as the cards it holds, not as one row", () => {
+    // A basic is nine cards in one row, so a row count would leave a floor open on a deck
+    // already at it. Read through the ROLE the slot is spent on rather than through whether
+    // anything was placed: the slot is filled either way — the residual takes it when no floor
+    // wants it — and which pass claimed it is the whole difference.
+    const held = (quantity: number) => [{
+      typeLine: "Artifact", oracleText: "Add {G}.", keywords: [], layout: "normal",
+      manaCost: "{2}", quantity,
+    }];
+
+    // Nine against a floor of ten: still one short, so the card is spent ON ramp.
+    expect(planFill([rampSpell], { ...FLAT, slots: 1, held: held(9) }).rows[0].role)
+      .toBe("ramp");
+    // Ten: the floor is shut, and the same card falls through to the residual.
+    expect(planFill([rampSpell], { ...FLAT, slots: 1, held: held(10) }).rows[0].role)
+      .toBe("other");
+  });
+});

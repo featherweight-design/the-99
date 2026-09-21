@@ -17,7 +17,7 @@ import { useEffect, useId, useLayoutEffect, useRef, useState } from "react";
 import { topOffCopy } from "../../lib/copy/top-off";
 import { synergyCopy, synergySignedDisplay } from "../../lib/copy/synergy-discovery";
 import { spokenManaCost } from "../../lib/copy/card-surfaces";
-import { commitTopOff } from "../../app/decks/actions";
+import { commitTopOff, chooseBulkFill } from "../../app/decks/actions";
 import { canSeed, type TopOffCandidate } from "../../lib/decks/last-slots";
 import {
   formatCents,
@@ -269,14 +269,19 @@ export function TopOffList({
   const declinedHere = pool.filter((c) => declined.has(c.oracleId)).length;
   const allDeclined = pool.length > 0 && declinedHere === pool.length;
 
-  // What the tick-all will actually tick. It replaces the selection wholesale
-  // and clamps to the open slots, so a player owning twelve candidates for three
-  // slots is offered three — the figure both the face and the accessible name
-  // carry, because a button that says twelve and ticks three is lying twice.
-  // The bulk control reaches for what the SEED reaches for — `canSeed`, the one
-  // predicate — so the two cannot say different things about the same card. A
-  // card owned with every copy sleeved elsewhere stays in the list and stays
-  // tickable by hand; what neither of these does is choose it for the player.
+  // WHAT THE TICK-ALL MAY TICK, which is no longer the same as what it will.
+  //
+  // This was the selection: a slice of it, clamped to the open slots. It is now an ALLOW-LIST
+  // intersected against the action's answer, so the count actually ticked can be lower than
+  // `tickable` — the fill leaves a slot open rather than spending it on a card no floor wants.
+  // The figure on the face and in the accessible name is still the number of slots, because
+  // that is what the button offers to fill; what changed is that offering is not promising.
+  // The bulk control reaches for what the SEED reaches for — `canSeed`, the one predicate —
+  // so the two cannot say different things about which cards are ELIGIBLE. They no longer
+  // agree on which of those to choose: the seed still takes the top N by synergy while this
+  // asks the real fill. See the note at `last-slots-strip.tsx`. A card owned with every copy
+  // sleeved elsewhere stays in the list and stays tickable by hand; what neither of these does
+  // is choose it for the player.
   //
   // It carries `ownedIds`' own exclusions as well, and they are not decoration:
   // a row the player has SET ASIDE, or one that went illegal while the list was
@@ -285,7 +290,46 @@ export function TopOffList({
     .filter((c) => canSeed(c) && !illegal.has(c.oracleId) && !declined.has(c.oracleId))
     .map((c) => c.oracleId);
   const tickable = Math.min(seedableIds.length, Math.max(openSlots, 0));
+  // A LIVE HANDLE ON THE ALLOW-LIST, read after the await rather than closed over before it.
+  // The draft can move while the server thinks — see the bulk control below. Written in an
+  // effect rather than during render, which React forbids: the value it carries is only ever
+  // read from an async continuation, which runs after the commit that this effect follows.
+  const seedableIdsRef = useRef(seedableIds);
+  useEffect(() => {
+    seedableIdsRef.current = seedableIds;
+  });
+
+  // A GENERATION FOR THE DRAFT ITSELF, because intersecting against a live allow-list is not
+  // enough. `onTickedChange` REPLACES the selection, so an answer that arrives after the
+  // player has ticked a row by hand, cleared the lot, or pressed Cancel would write the old
+  // server answer over the newer state — reviving a selection they had just cancelled. Every
+  // one of those controls stays live while the request is out, by design: they consult
+  // `inflight`, which is the COMMIT's.
+  //
+  // Bumped on unmount too. Cancel unmounts this list, and a continuation that runs afterwards
+  // is setting state on a component nobody is looking at.
+  const draftGen = useRef(0);
+  useEffect(() => {
+    draftGen.current += 1;
+    // THE DECK IS IN HERE TOO, and both halves of it are needed.
+    //
+    // `openSlots` catches an add or a removal that changes how many slots are open. It is not
+    // enough on its own: a SWAP leaves the count where it was while the contents move, and
+    // `chooseBulkFill` seeds its role counts from those contents — so the plan would be stale
+    // in exactly the way this feature is about, with the count unchanged to hide it.
+    //
+    // `deckOracleIds` is the list's optimistic copy, memoised on the deck's cards, so it takes
+    // a new identity when and only when they move — a quick-add bumps it in the same frame as
+    // the click. A prop rebuilt every render would bump this constantly and drop every answer,
+    // which is why it is this one rather than a fresh set assembled here.
+  }, [ticked, declined, openSlots, deckOracleIds]);
+  useEffect(() => () => {
+    draftGen.current += 1;
+  }, []);
   const untouched = pool.length - tickedCount - declinedHere;
+  // The control's own in-flight state. Separate from `inflight`, which is the COMMIT's: a
+  // player pressing this twice while the server thinks would otherwise send two plans.
+  const [choosing, setChoosing] = useState(false);
 
   const buying = pool.filter((c) => live.has(c.oracleId) && !c.owned);
   const buyMoney = summarisePrices(
@@ -535,8 +579,68 @@ export function TopOffList({
 
         <div className="flex flex-wrap gap-[8px] mt-[11px] md:contents">
           <GhostButton
-            onClick={() => onTickedChange(new Set(seedableIds.slice(0, tickable)))}
-            disabled={inflight || tickable === 0}
+            onClick={async () => {
+              // THE REAL FILL DECIDES, not the top of a synergy ranking. `seedableIds` is
+              // ordered by synergy, so slicing it optimised "what can I sleeve" where the
+              // player asked "what does this deck need" — short on creatures, it ticked
+              // non-creatures and left the deck worse with no slots left to fix it.
+              //
+              // The choice cannot be made here: the list's pool is `SynergyCard[]`, which
+              // carries no oracle text, and re-classifying without it under-counts every
+              // text-based role. So the action runs `planFill` on the server and returns ids.
+              setChoosing(true);
+              setError(null);
+              // The draft as it stands at the moment of the press. Anything that moves it —
+              // or takes the list away — makes this answer describe a deck that no longer
+              // exists, and the right thing to do with it is nothing.
+              const askedAt = draftGen.current;
+              const stale = () => draftGen.current !== askedAt;
+              try {
+                const result = await chooseBulkFill(deckId, tickable);
+                if (stale()) return;
+                // Intersected with what this list can actually tick. The action reads the
+                // deck's own pool and the list carries exclusions of its own — a set-aside row,
+                // or one that went illegal while the list was open — and those must not come
+                // back ticked because a bulk control was pressed.
+                if (!result.ok) {
+                  // THE REFUSAL CHANGES NOTHING, which is the rule the commit path beside
+                  // this one states in its own words. Replacing the selection with an empty
+                  // set would throw away every tick the player had made by hand — and the
+                  // empty set is a deliberate value here, drawn by the clear control, so it
+                  // must not double as a failure outcome. The message is the action's own.
+                  setError(result.message);
+                  // ANNOUNCED AS WELL AS DRAWN. `RefusalPlate` deliberately carries no live
+                  // role, so a message set into it reaches sighted readers and nobody else —
+                  // which is why the commit path beside this announces every refusal it sets.
+                  onAnnounce(result.message);
+                  return;
+                }
+                // RE-READ AT APPLY TIME, not at request time. The row toggles, the declines,
+                // the clear and Cancel all stay live while the server thinks — they only
+                // consult `inflight`, which is the COMMIT's — so a player can set a row aside
+                // or clear the lot while this is in flight. Closing over the `seedableIds`
+                // captured before the await would then apply an allow-list describing a draft
+                // that no longer exists, quietly reviving a row they had just put down.
+                const allowed = new Set(seedableIdsRef.current);
+                onTickedChange(new Set(
+                  result.oracleIds.filter((id: string) => allowed.has(id)),
+                ));
+              } catch {
+                if (stale()) return;
+                // A rejected call — a deck deleted while the list was open, or a transport
+                // failure — is a refusal the player can read, not an unhandled rejection that
+                // clears the spinner and says nothing. `commit()` above has the same catch.
+                setError(synergyCopy.lastSlots.topUpFailed);
+                onAnnounce(synergyCopy.lastSlots.topUpFailed);
+              } finally {
+                // Cleared even when the answer was dropped: the spinner belongs to the press,
+                // not to the answer, and a stale result still ends the press. Safe after an
+                // unmount — React no-ops a set on an unmounted component and warns about
+                // nothing since 18.
+                setChoosing(false);
+              }
+            }}
+            disabled={inflight || choosing || tickable === 0}
             aria-label={topOffCopy.list.tickOwnedAria(String(tickable))}
             className="flex flex-1 items-center justify-center min-h-[44px] md:inline-flex md:flex-none md:min-h-0 md:h-[30px] md:px-[11px] rounded-[8px] font-mono text-[11px] text-[color:var(--fg-body)] disabled:opacity-50"
           >

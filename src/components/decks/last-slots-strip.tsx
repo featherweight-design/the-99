@@ -168,9 +168,18 @@ function LastSlotsStripInner({
 
   const ownedIds = candidates.filter((c) => c.owned).map((c) => c.oracleId);
 
-  // What the SEED may reach for, which is narrower than what the player may
-  // tick. The rule is `canSeed`, shared with the list's bulk control so the two
-  // cannot drift — they already did once, in the round that narrowed this.
+  // What the SEED may reach for, which is narrower than what the player may tick. The rule is
+  // `canSeed`, shared with the list's bulk control.
+  //
+  // THEY SHARE THE FILTER AND NO LONGER SHARE THE OBJECTIVE. The bulk control now asks
+  // `chooseBulkFill`, which runs the real fill and answers with what the deck NEEDS; the seed
+  // below still takes the top N of this list by synergy, which is what the control used to do
+  // and what Task 21 calls a category error — optimising "what can I sleeve" where the player
+  // asked "what does this deck need". Task 21 names only the control's slice, so the seed is
+  // left as it is rather than changed under a task that did not scope it.
+  //
+  // It is the more visible half: the seed runs on first open, so the selection a player is
+  // actually shown by default is still the synergy ranking. Owed as its own change.
   const seedableIds = candidates.filter(canSeed).map((c) => c.oracleId);
 
   const closeRef = useRef<HTMLButtonElement>(null);

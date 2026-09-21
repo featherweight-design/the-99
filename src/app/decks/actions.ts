@@ -39,7 +39,9 @@ import { deckAddRejectionMessage, type DeckMutationResult } from "../../lib/deck
 import type { ProfileSkeleton } from "../../lib/profile/types";
 import { readSynergyCards } from "../commanders/[slug]/synergy-read";
 import { loadSkeletonForCommanders } from "../../lib/profile/load";
-import { dedupeSelectionFromPool, planFill, type FillPlan } from "../../lib/decks/fill";
+import {
+  dedupeSelectionFromPool, planFill, type FillPlan, type PlanFillArgs,
+} from "../../lib/decks/fill";
 import { sanitizeSelection } from "../../lib/decks/selection-param";
 import { recordFillPass, summariseFillPasses, type FillPassKind } from "../../lib/decks/fill-passes";
 import { synergyCopy } from "../../lib/copy/synergy-discovery";
@@ -58,6 +60,10 @@ export type TopOffResult =
   | { ok: false; message: string };
 
 
+/** Thrown to step over a read this mode cannot use, so the skip and a real failure do not
+ *  share a log line. Never escapes `buildFillPlan`. */
+class SkipRead extends Error {}
+
 /** Gathers the pool (quantities included) and the unowned EDHREC staples, then
     plans the fill. The EDHREC call is not the failure to guard: `getEdhrecData`
     degrades an unreachable upstream to `{ data: null }` and the fill goes ahead
@@ -74,6 +80,9 @@ export async function buildFillPlan(
   // The cards a selection has already placed. Defaults to empty, so `fillDeck`
   // and the no-selection `createDeck` are unchanged.
   excludeOracleIds: Set<string> = new Set(),
+  /** Passed straight to `planFill`. The bulk control names a slot count and a sleeveable-only
+   *  pool; every other caller fills the whole body from everything. */
+  options: Pick<PlanFillArgs, "slots" | "pool" | "held"> = {},
 ): Promise<FillPlan> {
   const commander = commanders[0];
   const hasPartner = commanders.length > 1;
@@ -123,8 +132,27 @@ export async function buildFillPlan(
   // Degraded like the skeleton above rather than failing the create: the residual's ORDER is
   // worth a query and is not worth losing the deck over, and inclusion order is what it fell
   // back to for the whole life of this function.
+  // NEITHER OF THE NEXT TWO READS CAN CHANGE A SLEEVEABLE ANSWER, so neither is made.
+  //
+  // `synergyRank` orders the RESIDUAL, and the one caller asking for a sleeveable pool drops
+  // every residual row before answering. `staples` are unowned by definition, and
+  // `pool: "sleeveable"` filters them straight back out.
+  //
+  // Skipping them is not only the two queries. `unownedStaples` is awaited without a guard of
+  // its own — deliberately, because a create that cannot see the staples has lost something
+  // real — so on that path a staples outage turned a perfectly good owned-pool fill into the
+  // generic refusal, over work whose result was going to be discarded.
+  //
+  // NOT ASSERTED, and for the same reason the slot clamp is not: the OUTPUT is identical
+  // either way, because the staples this skips were being filtered out by `pool: "sleeveable"`
+  // and the ranking ordered rows the caller drops. What changes is the work done and the
+  // failures that can reach the player. `getEdhrecData` above is deliberately NOT skipped —
+  // its `inclusionByName` orders the owned pool, so that read earns its place on this path.
+  const sleeveableOnly = options.pool === "sleeveable";
+
   let synergyRank: Map<string, number> | undefined;
   try {
+    if (sleeveableOnly) throw new SkipRead();
     const synergy = await readSynergyCards(
       userId,
       commanders.map((c) => c.oracleId),
@@ -140,12 +168,14 @@ export async function buildFillPlan(
       synergy.map((card, index) => [card.oracleId, synergy.length - index]),
     );
   } catch (err) {
-    console.warn("buildFillPlan: no synergy ranking — the residual keeps inclusion order", err);
+    if (!(err instanceof SkipRead)) {
+      console.warn("buildFillPlan: no synergy ranking — the residual keeps inclusion order", err);
+    }
   }
 
   const ownedIds = new Set(pool.map((c) => c.oracleId));
   const staples = dedupeSelectionFromPool(
-    data?.topCards
+    data?.topCards && !sleeveableOnly
       ? await unownedStaples(
           commanders,
           data.topCards,
@@ -169,7 +199,7 @@ export async function buildFillPlan(
       layout: c.layout, owned: false, ownedQuantity: 0,
       inclusionPct: inclusionOf(c.name),
     })),
-  ], { hasPartner, skeleton, synergyRank });
+  ], { hasPartner, skeleton, synergyRank, ...options });
 }
 
 /** `selectedOracleIds` are the synergy picks the player carried across the
@@ -1879,5 +1909,156 @@ export async function pullCardFromDeck(
     // back, and quoting 0 would announce a finished purchase the server never
     // read. The caller draws the pull and says nothing about buying.
     return { ok: true, buy: null, total: null };
+  }
+}
+
+/**
+ * Which cards the bulk control should tick — chosen by what the deck NEEDS.
+ *
+ * A SERVER ACTION rather than a client-side selection, and not by preference: the list's pool
+ * is `SynergyCard[]`, which carries no `oracleText`, `keywords`, `manaCost` or `ownedQuantity`,
+ * and `planFill` needs all four. `mix.ts` states the rule outright — do not re-run
+ * `classifyRoles` on the client, because `card.role` is derived from real oracle text on the
+ * server and re-classifying with a null text under-counts every text-based role. A control that
+ * tried would tick a ramp spell as "other" and call it a creature.
+ *
+ * THE FAILURE THIS FIXES is a category error rather than a bug. `canSeed` narrows the pool to
+ * what the player can sleeve tonight, and the control then took the top N by SYNERGY within it
+ * — optimising "what can I sleeve" where the player asked "what does this deck need". Short on
+ * creatures, it ticked non-creatures and left the deck worse with no slots left to fix it.
+ *
+ * `canSeed` is kept exactly as it is. It was the right filter and only ever the wrong objective.
+ */
+export async function chooseBulkFill(
+  deckId: string,
+  openSlots: number,
+): Promise<{ ok: true; oracleIds: string[] } | { ok: false; message: string }> {
+  // A SERVER ACTION IS A PUBLIC ENDPOINT, and `openSlots` arrives from the caller. `<= 0` is
+  // not enough on its own: `NaN` passes it (every comparison with NaN is false), and reaches
+  // `planFill` as `slots: NaN`, where `filledSoFar() >= limit` is false forever — so the guard
+  // meant to cap the answer at a handful of slots instead lets it plan a whole 99. A
+  // fractional 1.5 has a smaller version of the same problem, admitting two rows before the
+  // check bites.
+  if (!Number.isInteger(openSlots) || openSlots <= 0) return { ok: true, oracleIds: [] };
+
+  // EVERY READ IS INSIDE THE `try`, including the two guards. `requireDeck` throws
+  // `deck not found` for a deck the reader does not own or one deleted while the list was
+  // open, and the caller is a click handler that reports a refusal — a rejection escaping
+  // here is an unhandled promise on a surface documented as never throwing.
+  try {
+    const userId = await requireUserId();
+    const deck = await requireDeck(deckId, userId);
+    const [commander] = await db.select().from(cards)
+      .where(eq(cards.oracleId, deck.commanderOracleId));
+    if (!commander) return { ok: false, message: synergyCopy.lastSlots.topUpFailed };
+    // The partner legalises the pool alongside the primary, exactly as the create path reads it.
+    const [partner] = deck.partnerOracleId
+      ? await db.select().from(cards).where(eq(cards.oracleId, deck.partnerOracleId))
+      : [];
+    // THE DECK AS IT STANDS, not just its ids. `planFill` counts role coverage from zero
+    // unless it is told otherwise, and every caller before this one filled an empty deck —
+    // so asking for four slots returned the first four placements of a from-scratch 99. A
+    // deck holding twenty ramp sources and no draw was offered four more ramp, which is the
+    // exact failure this control exists to end.
+    const heldRows = await db.select({
+      oracleId: deckCards.oracleId,
+      quantity: deckCards.quantity,
+    }).from(deckCards).where(eq(deckCards.deckId, deckId));
+
+    // A SECOND READ rather than a join, because the two questions are different: the rows say
+    // what the deck holds, the catalog says what those cards ARE. A held card need not be in
+    // the collection at all — sold, traded, or never owned and proxied — so this cannot come
+    // off the owned pool that the candidates are drawn from.
+    const heldIds = heldRows.map((r) => r.oracleId);
+    const heldCards = heldIds.length === 0 ? [] : await db.select({
+      oracleId: cards.oracleId,
+      typeLine: cards.typeLine,
+      oracleText: cards.oracleText,
+      keywords: cards.keywords,
+      layout: cards.layout,
+      manaCost: cards.manaCost,
+    }).from(cards).where(inArray(cards.oracleId, heldIds));
+    const heldById = new Map(heldCards.map((c) => [c.oracleId, c]));
+    const heldCount = heldRows.reduce((n, r) => n + r.quantity, 0);
+    const held = heldRows.flatMap((r) => {
+      const card = heldById.get(r.oracleId);
+      // A row whose card the catalog no longer resolves is dropped rather than counted as a
+      // typeless, textless card: classifying that would credit no role and tally no type,
+      // which is a silent undercount dressed as data.
+      return card ? [{ ...card, quantity: r.quantity }] : [];
+    });
+
+    const plan = await buildFillPlan(
+      userId,
+      partner ? [commander, partner] : [commander],
+      // The deck's own cards are not candidates for filling it.
+      new Set(heldIds),
+      // SLEEVEABLE ONLY. The control's promise is about cards the player can put in the deck
+      // tonight; a plan that reached past the collection would tick a purchase.
+      {
+        pool: "sleeveable",
+        // BOUNDED BY THE DECK, not only by the caller. `Number.isInteger` accepts 1e308, and
+        // the shape guard above says nothing about size.
+        //
+        // NOT ASSERTED, and the reason is worth keeping: the ANSWER is already bounded by the
+        // residual filter below, which drops every row past the floors and the mana base — so
+        // no value of `slots` can make this return an unbounded id list, and a test on the
+        // returned ids passes with or without this line. What it bounds is the WORK: without
+        // it `planFill` places and scans across the whole owned pool before those rows are
+        // thrown away. That is not observable through the action's return value, so it is
+        // stated here rather than pinned by a case that would measure nothing.
+        slots: Math.min(
+          openSlots,
+          Math.max(0, deckBodySize(Boolean(deck.partnerOracleId)) - heldCount),
+        ),
+        // Only what role and type classification read. `HeldCard` asks for no more, because
+        // a card already sleeved is past the question of whether to choose it.
+        // THE COMMANDERS ARE NOT IN HERE, and the codebase had already ruled it: the measured
+        // role targets come from EDHREC's support lists, which never contain the commander,
+        // so a floor of ten ramp describes the 99 rather than the 100. `profile/types.ts`
+        // carries a whole second field for exactly this — the classification "over the 99
+        // ALONE" — with the instruction to use it ONLY against a measured target, because
+        // `counts` folds commanders in to match the stats loader.
+        //
+        // An earlier round of this PR asked for them to be added, citing the path where they
+        // ARE folded in. That path answers a different question. Counting a ramp commander
+        // here closed a unit of a floor the support lists never asked it to close, and
+        // returned one fewer real card for the deck.
+        held: held.map((h) => ({
+          typeLine: h.typeLine, oracleText: h.oracleText,
+          keywords: h.keywords ?? [], layout: h.layout, manaCost: h.manaCost,
+          quantity: h.quantity,
+        })),
+      },
+    );
+    // FEWER THAN THE SLOTS IS A VALID ANSWER, and the residual is what made that untrue.
+    //
+    // `planFill` always runs a residual pass after the role and land passes, filling whatever
+    // `slots` remain with the next cards by preference — right for a CREATE, which owes a
+    // whole 99 and would otherwise hand back a part-built deck. Here it is the failure this
+    // control exists to end: with the floors unmeetable from the sleeveable pool, every open
+    // slot went to "whatever ranked next", which is the synergy ordering wearing a different
+    // hat.
+    //
+    // So the residual is dropped and the slot stays open. An open slot can still be fixed by
+    // a player who buys the card the deck wants; a slot spent on a card the deck does not
+    // need cannot be, without undoing it first.
+    // ONE TICK IS ONE CARD, so a stacked row cannot be expressed here. `plan.rows` is
+    // quantity-aware — the land sweep puts several copies of one basic in a single row — while
+    // this answers with ids and `runTopOff` inserts each at quantity 1. Returning a row of
+    // three Forests as one id would promise three cards and sleeve one, and the count on the
+    // button would be wrong in the player's favour, which is the worse direction.
+    //
+    // Dropped rather than expanded into repeats: the list this feeds ticks each candidate at
+    // most once, so three copies have nowhere to go on that surface either.
+    return {
+      ok: true,
+      oracleIds: plan.rows
+        .filter((r) => r.role !== "other" && r.quantity === 1)
+        .map((r) => r.oracleId),
+    };
+  } catch (err) {
+    console.error("chooseBulkFill failed", err);
+    return { ok: false, message: synergyCopy.lastSlots.topUpFailed };
   }
 }

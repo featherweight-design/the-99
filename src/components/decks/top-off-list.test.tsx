@@ -2,12 +2,16 @@ import { act, fireEvent, render, screen } from "@testing-library/react";
 import { useState } from "react";
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import { topOffCopy } from "../../lib/copy/top-off";
+import { synergyCopy } from "../../lib/copy/synergy-discovery";
 import { stubViewport } from "../../test-utils/stub-viewport";
 import type { TopOffCandidate } from "../../lib/decks/last-slots";
 import { CardDetailProvider, cardDetailCopy } from "../cards/card-detail-provider";
 
-const actions = vi.hoisted(() => ({ commit: vi.fn() }));
-vi.mock("../../app/decks/actions", () => ({ commitTopOff: actions.commit }));
+const actions = vi.hoisted(() => ({ commit: vi.fn(), chooseBulk: vi.fn() }));
+vi.mock("../../app/decks/actions", () => ({
+  commitTopOff: actions.commit,
+  chooseBulkFill: actions.chooseBulk,
+}));
 
 import { TopOffList } from "./top-off-list";
 
@@ -111,6 +115,10 @@ beforeEach(() => {
   actions.commit
     .mockReset()
     .mockResolvedValue({ ok: true, added: 2, total: 98, passId: "p1", boughtDelta: 0 });
+  // RESET TOO, or a `mockResolvedValue` set by one case answers every later one. A case that
+  // presses the bulk control without stubbing it would inherit the previous case's ids rather
+  // than `undefined`, and read as passing on an answer it never asked for.
+  actions.chooseBulk.mockReset();
 });
 
 afterEach(() => {
@@ -420,6 +428,9 @@ describe("TopOffList", () => {
   // than there are slots must be offered the number it will actually tick —
   // a button that says two and ticks one is wrong on its face and in its name.
   it("names the tick-all by what it will tick, not by what is owned", async () => {
+    // The action answers with the one slot's worth; the LABEL is computed from the list's own
+    // `tickable` and is what this case is about.
+    actions.chooseBulk.mockResolvedValue({ ok: true, oracleIds: ["owned-1"] });
     render(<Harness openSlots={1} />);
 
     const button = screen.getByRole("button", {
@@ -578,16 +589,22 @@ describe("TopOffList — the bulk tick", () => {
     availability: { owned: 1, hard: 1, soft: 0, free: 0, claims: [] },
   });
 
-  it("reaches for what the seed reaches for, and says so", () => {
+  it("reaches for what the seed reaches for, and says so", async () => {
     // The two drifted once already: the seed was narrowed to cards with a free
     // copy while this control kept ticking every owned card, which left a
     // one-click path to the exact mechanic the seed had stopped doing.
+    // The ACTION decides what to tick now — the control no longer slices a synergy ranking —
+    // so the case stubs its answer and asserts the control honours the list's own exclusions
+    // on top of it. Offering a held card and choosing one are different things, and only the
+    // second changed.
+    actions.chooseBulk.mockResolvedValue({ ok: true, oracleIds: ["free-1", "held-1"] });
     render(<Harness candidates={[claimed("held-1"), candidate("free-1", true)]} />);
 
     const bulk = screen.getByRole("button", { name: topOffCopy.list.tickOwnedAria("1") });
     expect(bulk).toHaveTextContent(topOffCopy.list.tickOwned("1"));
 
     fireEvent.click(bulk);
+    await screen.findByRole("button", { name: topOffCopy.list.tickOwnedAria("1") });
     const boxes = screen.getAllByRole("checkbox");
     const byName = (name: string) =>
       boxes.find((b) => (b.getAttribute("aria-label") ?? "").includes(name));
@@ -595,9 +612,147 @@ describe("TopOffList — the bulk tick", () => {
     expect(byName("held-1")).not.toBeChecked();
   });
 
-  it("does not bring back a row the player set aside", () => {
+  // A REFUSAL CHANGES NOTHING, which is the rule state 15 states for the commit beside this.
+  // The handler used to hand `onTickedChange` an empty set on `ok: false`, throwing away every
+  // tick the player had made by hand — and the empty set is a real value here, drawn by the
+  // clear control, so it cannot double as a failure outcome. It dropped the message too.
+  it("keeps the ticks and says why when the choice is refused", async () => {
+    const onAnnounce = vi.fn();
+    actions.chooseBulk.mockResolvedValue({ ok: false, message: "Couldn’t work that out." });
+    render(<Harness
+      candidates={[candidate("free-1", true), candidate("free-2", true)]}
+      onAnnounce={onAnnounce}
+    />);
+
+    const box = screen.getAllByRole("checkbox")[0];
+    fireEvent.click(box);
+    expect(box).toBeChecked();
+
+    fireEvent.click(screen.getByRole("button", { name: /Tick all/ }));
+    await screen.findByTestId("top-off-refusal");
+
+    expect(screen.getByTestId("top-off-refusal")).toHaveTextContent("Couldn’t work that out.");
+    expect(screen.getAllByRole("checkbox")[0]).toBeChecked();
+    // `RefusalPlate` carries no live role, so drawing the message reaches sighted readers and
+    // nobody else.
+    expect(onAnnounce).toHaveBeenCalledWith("Couldn’t work that out.");
+  });
+
+  it("draws a refusal rather than going silent when the call throws", async () => {
+    actions.chooseBulk.mockRejectedValue(new Error("network"));
+    render(<Harness candidates={[candidate("free-1", true)]} />);
+
+    fireEvent.click(screen.getByRole("button", { name: /Tick all/ }));
+    await screen.findByTestId("top-off-refusal");
+
+    expect(screen.getByTestId("top-off-refusal"))
+      .toHaveTextContent(synergyCopy.lastSlots.topUpFailed);
+  });
+
+  // THE DRAFT MOVES WHILE THE SERVER THINKS. Row toggles, declines, clear and Cancel all stay
+  // live during the request — they consult `inflight`, which is the COMMIT's — so a player can
+  // set a row aside after pressing and before the answer lands. An allow-list captured before
+  // the await describes a draft that no longer exists, and reviving that row is exactly the
+  // undo-with-a-press this control is meant to avoid.
+  it("applies the answer against the draft as it stands when it arrives", async () => {
+    let release: (v: unknown) => void = () => {};
+    actions.chooseBulk.mockReturnValue(new Promise((r) => { release = r; }));
+    render(<Harness candidates={[candidate("free-1", true), candidate("free-2", true)]} />);
+
+    fireEvent.click(screen.getByRole("button", { name: /Tick all/ }));
+
+    // Set one aside AFTER the request is out and BEFORE it answers.
+    fireEvent.click(screen.getByRole("button", {
+      name: topOffCopy.list.declineAria("free-1"),
+    }));
+
+    await act(async () => {
+      release({ ok: true, oracleIds: ["free-1", "free-2"] });
+    });
+
+    // RESTORED, because a declined row leaves the list either way and the question is what
+    // the late answer wrote into the selection behind it. A stale tick is invisible until the
+    // row comes back carrying it.
+    fireEvent.click(screen.getByRole("button", {
+      name: topOffCopy.list.restoreAria("free-1"),
+    }));
+    expect(rowBox("free-1")).not.toBeChecked();
+  });
+
+  // A NEWER SELECTION WINS. `onTickedChange` REPLACES the selection wholesale, so an answer
+  // arriving after the player has ticked a row by hand would write the server's older view
+  // over their newer one. Every editing control stays live during the request by design —
+  // they consult `inflight`, which is the commit's — so this is reachable by pressing the
+  // bulk control and then ticking anything.
+  it("drops the answer when the player has edited the draft since asking", async () => {
+    let release: (v: unknown) => void = () => {};
+    actions.chooseBulk.mockReturnValue(new Promise((r) => { release = r; }));
+    render(<Harness candidates={[candidate("free-1", true), candidate("free-2", true)]} />);
+
+    fireEvent.click(screen.getByRole("button", { name: /Tick all/ }));
+    // A hand tick, after the request is out and before it answers.
+    fireEvent.click(rowBox("free-2"));
+    expect(rowBox("free-2")).toBeChecked();
+
+    await act(async () => {
+      release({ ok: true, oracleIds: ["free-1"] });
+    });
+
+    // The server's answer named free-1 only. Applying it would have replaced the hand tick.
+    expect(rowBox("free-2")).toBeChecked();
+    expect(rowBox("free-1")).not.toBeChecked();
+  });
+
+  // THE DECK MOVES TOO, not only the selection. A quick-add or a removal elsewhere changes how
+  // many slots are open without touching `ticked` or `declined` — so an answer planned for the
+  // old slot count would be applied to a deck that is no longer the one it was asked about.
+  it("drops the answer when the deck's open slots have changed since asking", async () => {
+    let release: (v: unknown) => void = () => {};
+    actions.chooseBulk.mockReturnValue(new Promise((r) => { release = r; }));
+    const cards = [candidate("free-1", true), candidate("free-2", true)];
+    const { rerender } = render(<Harness openSlots={3} candidates={cards} />);
+
+    fireEvent.click(screen.getByRole("button", { name: /Tick all/ }));
+    // Two slots now, because something was added to the deck while the server was thinking.
+    rerender(<Harness openSlots={2} candidates={cards} />);
+
+    await act(async () => {
+      release({ ok: true, oracleIds: ["free-1", "free-2"] });
+    });
+
+    expect(rowBox("free-1")).not.toBeChecked();
+    expect(rowBox("free-2")).not.toBeChecked();
+  });
+
+  // A SWAP MOVES THE CONTENTS AND NOT THE COUNT. `chooseBulkFill` seeds its role counts from
+  // the deck's cards, so a plan made before the swap is stale in precisely the way this
+  // feature is about — with `openSlots` unchanged to hide it.
+  it("drops the answer when the deck's cards have changed since asking", async () => {
+    let release: (v: unknown) => void = () => {};
+    actions.chooseBulk.mockReturnValue(new Promise((r) => { release = r; }));
+    const cards = [candidate("free-1", true), candidate("free-2", true)];
+    const { rerender } = render(
+      <Harness deckOracleIds={new Set(["in-deck-a"])} candidates={cards} />,
+    );
+
+    fireEvent.click(screen.getByRole("button", { name: /Tick all/ }));
+    // One card out, one in: the same number of open slots, a different deck.
+    rerender(<Harness deckOracleIds={new Set(["in-deck-b"])} candidates={cards} />);
+
+    await act(async () => {
+      release({ ok: true, oracleIds: ["free-1", "free-2"] });
+    });
+
+    expect(rowBox("free-1")).not.toBeChecked();
+    expect(rowBox("free-2")).not.toBeChecked();
+  });
+
+  it("does not bring back a row the player set aside", async () => {
     // A bulk control that resurrected a decline would undo a choice with a press
-    // meant to save presses.
+    // meant to save presses. The action does not know about this list's declines — it reads
+    // the deck — so the control intersects its answer with what this list can tick, and this
+    // case is that intersection.
+    actions.chooseBulk.mockResolvedValue({ ok: true, oracleIds: ["free-1", "free-2"] });
     render(
       <Harness
         candidates={[candidate("free-1", true), candidate("free-2", true)]}
@@ -606,6 +761,7 @@ describe("TopOffList — the bulk tick", () => {
     );
 
     fireEvent.click(screen.getByRole("button", { name: topOffCopy.list.tickOwnedAria("1") }));
+    await screen.findByRole("button", { name: topOffCopy.list.tickOwnedAria("1") });
     const boxes = screen.getAllByRole("checkbox");
     expect(boxes.filter((b) => (b as HTMLInputElement).checked)).toHaveLength(1);
   });
