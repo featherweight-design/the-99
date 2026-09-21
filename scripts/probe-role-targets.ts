@@ -67,6 +67,10 @@ const STAMP = "probe:role-targets fixture — safe to delete";
  *  is the only thing that identifies it — paired with a stamped id, never used alone. */
 const PAIR_SENTINEL_TOTAL = 200;
 
+/** A pass that replaced no support list owns no row, so a refusal inside it clears nothing.
+ *  Every section but the refusal one derives without having written, which is exactly this. */
+const OWNS_NOTHING = { commanders: [] as string[], pairs: [] as [string, string][] };
+
 type RoleRow = {
   id: string;
   partner: string | null;
@@ -160,7 +164,7 @@ async function main() {
     select count(avg_ramp)::int as n from commander_support`);
   check("the fixture starts with no role values at all", blanked, 0);
 
-  const first = await deriveAndWriteRoleTargets(new Date(Date.now() - 60_000));
+  const first = await deriveAndWriteRoleTargets(OWNS_NOTHING);
   check("the pass writes a value for every ok commander", first.written, ok);
 
   const [filled] = await rows<{ n: number; neg: number; ramp: number }>(sql`
@@ -201,7 +205,7 @@ async function main() {
       select avg_ramp from commander_support where commander_oracle_id = ${spare.oracle_id}::uuid`);
     check("2 · the fixture starts with a stale value", before[0]?.avg_ramp, 7);
 
-    await deriveAndWriteRoleTargets(new Date(Date.now() - 60_000));
+    await deriveAndWriteRoleTargets(OWNS_NOTHING);
     const after = await rows<{ avg_ramp: number | null }>(sql`
       select avg_ramp from commander_support where commander_oracle_id = ${spare.oracle_id}::uuid`);
     check("a commander with no support cards is cleared", after[0]?.avg_ramp, null);
@@ -254,7 +258,7 @@ async function main() {
       where commander_oracle_id = ${spare2.oracle_id}::uuid`);
     check("and they are readable", (before[0]?.n ?? 0) > 0, true);
 
-    const res2 = await deriveAndWriteRoleTargets(new Date(Date.now() - 60_000));
+    const res2 = await deriveAndWriteRoleTargets(OWNS_NOTHING);
     const [after2] = await rows<{ avg_ramp: number | null }>(sql`
       select avg_ramp from commander_support where commander_oracle_id = ${spare2.oracle_id}::uuid`);
     // Its cards would classify perfectly well — the point is that its HEADER excludes it.
@@ -310,7 +314,7 @@ async function main() {
     if (position === 0) {
       fail("3 · the fixture", "the borrowed commander carries no support cards");
     } else {
-      const res = await deriveAndWriteRoleTargets(new Date(Date.now() - 60_000));
+      const res = await deriveAndWriteRoleTargets(OWNS_NOTHING);
       check("the pass reports the pair it wrote", res.pairsWritten, 1);
       const [pair] = await rows<RoleRow>(sql`
         select commander_oracle_id as id, partner_oracle_id as partner,
@@ -353,29 +357,29 @@ async function main() {
                 ${STAMP}, ${STAMP}, 0)`);
     }
 
-    // TWO SENTINELS either side of the line the refusal draws. A refusal clears the roles on
-    // the rows THIS RUN rewrote — `computed_at >= runStartedAt` — and must leave every other
-    // commander's alone, because those still match their own card list. One sentinel each side
-    // is the only way to tell a correct clear from a blanket one, which look identical from
-    // the recent row alone.
-    const line = new Date();
-    const [recent] = await rows<{ id: string }>(sql`
+    // TWO SENTINELS, one OWNED by the simulated run and one not. A refusal clears the roles on
+    // exactly the rows that run replaced and must leave every other commander's alone, because
+    // those still match their own card list. One sentinel on the owned side alone cannot tell
+    // a correct clear from a blanket one — they look identical from there.
+    //
+    // Ownership is the ID LIST the run carries, not a timestamp. The earlier version stamped
+    // `computed_at` either side of a line and scoped the clear to it, which looks like the same
+    // test and is weaker: a time range also covers a CONCURRENT build's rows, and this check
+    // would have passed while a refusal wiped that build's freshly derived roles.
+    const [owned] = await rows<{ id: string }>(sql`
       select commander_oracle_id as id from commander_support
       where synergy_state = 'ok' and avg_ramp is not null limit 1`);
-    const [old] = await rows<{ id: string }>(sql`
+    const [other] = await rows<{ id: string }>(sql`
       select commander_oracle_id as id from commander_support
       where synergy_state = 'ok' and avg_ramp is not null
-        and commander_oracle_id <> ${recent.id}::uuid limit 1`);
+        and commander_oracle_id <> ${owned.id}::uuid limit 1`);
     await db.execute(sql`
-      update commander_support set avg_ramp = 9, computed_at = ${new Date(line.getTime() + 1000)}
-      where commander_oracle_id = ${recent.id}::uuid`);
-    await db.execute(sql`
-      update commander_support set avg_ramp = 9, computed_at = ${new Date(line.getTime() - 86_400_000)}
-      where commander_oracle_id = ${old.id}::uuid`);
+      update commander_support set avg_ramp = 9
+      where commander_oracle_id in (${owned.id}::uuid, ${other.id}::uuid)`);
 
     let threw = false;
     try {
-      await deriveAndWriteRoleTargets(line);
+      await deriveAndWriteRoleTargets({ commanders: [owned.id], pairs: [] });
     } catch (e) {
       threw = true;
       const msg = e instanceof Error ? e.message : String(e);
@@ -383,11 +387,11 @@ async function main() {
     }
     check("a derivation under the floor throws rather than publishing", threw, true);
 
-    const [after] = await rows<{ recent: number | null; old: number | null }>(sql`
-      select (select avg_ramp from commander_support where commander_oracle_id = ${recent.id}::uuid) as recent,
-             (select avg_ramp from commander_support where commander_oracle_id = ${old.id}::uuid) as old`);
-    check("the row this run rewrote loses its roles", after.recent, null);
-    check("the row it never touched keeps them", after.old, 9);
+    const [after] = await rows<{ owned: number | null; other: number | null }>(sql`
+      select (select avg_ramp from commander_support where commander_oracle_id = ${owned.id}::uuid) as owned,
+             (select avg_ramp from commander_support where commander_oracle_id = ${other.id}::uuid) as other`);
+    check("the row this run rewrote loses its roles", after.owned, null);
+    check("the row it never touched keeps them", after.other, 9);
   }
 
   if (!fakeCommanders.length && !pairSentinel) note("nothing was inserted into the catalog");

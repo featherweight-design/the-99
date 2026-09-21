@@ -183,7 +183,12 @@ async function main() {
            avg(per.cov_nonland / nullif(99 - cs.avg_land, 0))::float as ratio,
            stddev(per.cov_nonland / nullif(99 - cs.avg_land, 0))::float as ratio_sd
     from per join commander_support cs on cs.commander_oracle_id = per.cid
-    where cs.avg_land is not null`);
+    -- THE SAME POPULATION AS SECTION 1 AND AS THE WRITER. A null check on avg_land alone keeps
+    -- a degraded header, whose previous composition and previous cards both survive an index
+    -- run that could not reach it — so after a partial run this section would report coverage
+    -- over commanders the writer explicitly excludes, and the two halves of one script would
+    -- describe different populations while reading as one cross-check.
+    where cs.avg_land is not null and cs.synergy_state = 'ok'`);
 
   console.log(`\n== 2 · what the 56.9-of-99 gap is made of ==`);
   if (!Number.isFinite(cov?.ratio)) {
@@ -276,9 +281,11 @@ async function main() {
       from collection_items ci join cards c on c.oracle_id = ci.oracle_id
       where c.commander_legal and ci.user_id = (select user_id from owner)),
     cmd as (
+      -- The ok filter, for the same reason section 2 carries it: one script, one
+      -- population, and the writer's.
       select c.oracle_id as cid, c.color_identity as ci from cards c
       join commander_support cs on cs.commander_oracle_id = c.oracle_id
-      where cs.avg_land is not null),
+      where cs.avg_land is not null and cs.synergy_state = 'ok'),
     -- LEFT join, so a commander whose identity the collection holds NO legal card for still
     -- reaches the count with four zeroes instead of being dropped. An inner join silently
     -- narrows the denominator to commanders the collection can build for, which is the

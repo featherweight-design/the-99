@@ -1171,7 +1171,13 @@ Package manager is **pnpm** (pinned via `packageManager` in package.json) — ne
   derivation, past typecheck, past lint, past 7,456 tests. Running the thing is what caught it,
   and then caught the first FIX too, which quoted `//` in backticks and closed the template.
 
-  Nineteen checks in five sections. Two of them need a state no database here carries, so the
+  Nineteen checks in five sections. Its refusal case turns on OWNERSHIP: a refused publish
+  clears the roles on exactly the rows that run replaced — the ids it recorded as it replaced
+  them — and leaves every other commander's standing. Ids rather than a `computed_at` range,
+  which looks like the same rule and is weaker: a range also covers a CONCURRENT build's rows,
+  so a refusal keyed on time would clear that build's freshly derived roles and leave its
+  support lists without targets. The probe plants a sentinel on each side, because one on the
+  owned side alone cannot tell a correct clear from a blanket one. Two of them need a state no database here carries, so the
   probe BUILDS it: a header that is not `ok` while still carrying support cards. The derivation
   reads `commander_support_cards`, and the index loop leaves a degraded header and its previous
   cards in place — so without a restriction those stale commanders count toward a floor whose

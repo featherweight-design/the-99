@@ -516,44 +516,39 @@ describe("buildCommanderIndex — the role-target pass", () => {
   });
 });
 
-// THE RUN'S START STAMP. The role pass refuses rather than publishing a partial set, and its
-// refusal clears the roles on exactly the rows this run rewrote — `computed_at >= runStartedAt`.
-// That set is only correct if the stamp is taken BEFORE the first write: taken at the pass
-// instead, it matches every commander the run touched AND nothing, depending on clock skew, and
-// taken after the loop it matches nothing at all, which would leave every self-contradicting row
-// standing while the error claimed otherwise.
-it("stamps the run's start before any write and hands it to the role pass", async () => {
-  let handed: Date | null = null;
-  let firstWriteAt: number | null = null;
+// THE RUN'S OWNERSHIP RECORD. A refusal in the role pass clears the roles on exactly the rows
+// this run replaced, so the pass has to be handed those ids — and only those. The earlier
+// version passed a timestamp and scoped the clear to `computed_at >= runStartedAt`, which
+// LOOKS like ownership and is a time range: a second build running concurrently has its rows
+// fall inside it, so a refusal here would clear that build's freshly derived roles and leave
+// its support lists without targets.
+it("hands the role pass exactly the commanders it wrote, and no others", async () => {
+  let handed: { commanders: readonly string[] } | null = null;
   await buildCommanderIndex({
     loadPairs: async () => [],
-    deriveRoleTargets: async (runStartedAt) => {
-      handed = runStartedAt;
+    deriveRoleTargets: async (written) => {
+      handed = written;
       return { written: 0, pairsWritten: 0, zeroWipes: 0 };
     },
-    // Waits either side of the first write, so the three readings are strictly ordered rather
-    // than landing in one millisecond together.
-    loadCommanders: async () => {
-      await new Promise((r) => setTimeout(r, 12));
-      return [commander("Ghoulcaller Gisa", "g")];
-    },
+    loadCommanders: async () => [
+      commander("Ghoulcaller Gisa", "g"),
+      commander("Sidisi, Undead Vizier", "v"),
+    ],
     loadNameIndex: async () => [
       { oracleId: "g", name: "Ghoulcaller Gisa" },
+      { oracleId: "v", name: "Sidisi, Undead Vizier" },
       { oracleId: "s", name: "Sol Ring" },
     ],
-    fetch: async () => okResult(["Sol Ring", "Ghoulcaller Gisa"]),
-    // The whole run finishes inside ONE MILLISECOND, and the first version of this test was
-    // vacuous for exactly that reason: a stamp taken at the pass still read equal to the write's
-    // clock, so `<=` passed the mutation it exists to catch. The wait moves the clock far enough
-    // for the two readings to differ, and the assertion below is STRICT.
-    write: async () => {
-      firstWriteAt ??= Date.now();
-      await new Promise((r) => setTimeout(r, 12));
-    },
+    // The second commander FAILS its fetch, so the run writes one of the two. A pass handed
+    // both would clear a row this run never touched.
+    fetch: async (name: string) =>
+      name === "Ghoulcaller Gisa"
+        ? okResult(["Sol Ring", "Ghoulcaller Gisa"])
+        : Promise.reject(new Error("unreachable")),
+    write: async () => {},
     clearScores: async () => {},
     delayMs: 0,
   });
-  expect(handed).toBeInstanceOf(Date);
-  expect(firstWriteAt).not.toBeNull();
-  expect(handed!.getTime()).toBeLessThan(firstWriteAt!);
+  expect(handed).not.toBeNull();
+  expect([...handed!.commanders]).toEqual(["g"]);
 });
