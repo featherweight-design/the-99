@@ -70,8 +70,13 @@ function bestGap(typeLine: string, deficits: TypeDeficits): number {
     if (!new RegExp(`\\b${axis}\\b`).test(front)) continue;
     best = Math.max(best, deficits.get(axis) ?? 0);
   }
-  // A card on none of the seven axes — a land, or a type nothing measures — has no claim
-  // either way and must not sort above or below one that does.
+  // A card on none of the seven axes — a land, or a type nothing measures — scores 0, which
+  // is NOT the same as neutral and an earlier comment here said it was. Zero sits above every
+  // card whose best axis is in SURPLUS (a negative gap) and below every card closing one.
+  //
+  // That ordering is the one to want, which is why it stays: of two cards closing the same
+  // role, one that deepens an existing surplus is a worse slot than one that touches no
+  // measured axis at all. What was wrong was the claim of neutrality, not the number.
   return best === Number.NEGATIVE_INFINITY ? 0 : best;
 }
 

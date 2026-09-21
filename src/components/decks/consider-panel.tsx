@@ -125,22 +125,47 @@ export function rolesWithShelves(suggestions: DeckSuggestion[]): ReadonlySet<Mix
  * THE OTHER BRANCHES KEEP THEIR MEANING. `cheapest` is a promise about mana value and synergy
  * is a promise about EDHREC's figure; neither is "the deck's shape", and re-ordering them by
  * type would quietly break a control the player is using to ask a different question.
+ *
+ * AND TWO SHELVES ARE EXEMPT FROM `gaps` ENTIRELY, because their order is their claim. The
+ * synergy shelf is built by sorting on `synergyFigure` and says so on its face — `ranked by
+ * synergy · {n} to consider` — and the unowned append is EDHREC's own top picks. `gaps` is
+ * the DEFAULT sort (`builder-shell.tsx`), so re-ordering them here would have shipped a
+ * synergy shelf ordered by type under a heading claiming otherwise, to every reader, before
+ * they touched the control. Before this change `gaps` was a pass-through and both were safe
+ * by accident; now they are safe on purpose.
  */
 function sortWithin(
   suggestions: DeckSuggestion[],
   sort: SortKey,
   mix: RecommendedMix,
   deckCards: DeckDetailCard[],
+  shelfKey: ShelfKey,
 ): DeckSuggestion[] {
   if (sort === "gaps") {
-    // `preferByTypeGap` from `fill-shape.ts`, never a second copy: the fill orders its own
-    // candidates by this rule, and two implementations would have the panel recommend one card
-    // while the fill takes another.
+    if (shelfKey === "synergy" || shelfKey === "unowned") return suggestions;
+    // `preferByTypeGap` from `fill-shape.ts`, never a second copy — one definition of "which
+    // of these two cards closes more of the deck's shape".
+    //
+    // THAT IS NOT THE SAME AS AGREEING WITH THE FILL, and an earlier comment here claimed it
+    // was. `planFill` uses this only as a TIE-BREAK: it orders by `closes()` first, so a
+    // dual-role card covering two open floors outranks a bigger type gap; it stays inside an
+    // ownership tier; it scans a bounded window; and it recomputes deficits after every
+    // placement. Ramp shelf with a creature that is ramp alone against an artifact that is
+    // ramp and draw with both floors open — the panel offers the creature, the fill takes the
+    // artifact. Both are right about their own question. The panel ranks what is worth
+    // considering NOW, against the deck as it stands; the fill builds a sequence.
+    //
+    // What sharing the function buys is that the two never disagree about the COMPARISON.
+    // Task 20 asks for exactly that and no more.
     const deficits = typeDeficits(
       mix.types,
-      // Defaulted, because a row reaching here without a type line is a fixture or a payload
-      // shape this panel does not control, and a crash in an ORDERING is a page the reader
-      // cannot open over a preference they cannot see.
+      // Defaulted, and honestly: `typeLine` and `quantity` are both REQUIRED on
+      // `DeckDetailCard` (`grouping.ts`), so no production row can arrive without them and
+      // this is unreachable there. What reaches it is this file's own `deckCard()` helper,
+      // which casts `{ role, quantity }` through `as DeckDetailCard`. The default stays
+      // because a crash inside an ORDERING is a page the reader cannot open over a
+      // preference they cannot see — but it is belt-and-braces on a required field, not
+      // cover for a payload shape that exists.
       tallyTypes(deckCards.map((c) => ({
         typeLine: c.typeLine ?? "", quantity: c.quantity ?? 1,
       }))),
@@ -341,7 +366,7 @@ export function ConsiderPanel({
   const shelves = useMemo(
     () => buildShelves(suggestions, deckCards, mix).map((shelf) => ({
       ...shelf,
-      suggestions: sortWithin(shelf.suggestions, sort, mix, deckCards),
+      suggestions: sortWithin(shelf.suggestions, sort, mix, deckCards, shelf.key),
     })),
     // `mix` is a dependency: `buildShelves` counts coverage against its targets, so a
     // refreshed mix with the same suggestions and cards would otherwise leave every shelf

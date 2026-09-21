@@ -630,11 +630,16 @@ describe("ordering within a shelf", () => {
   // artifacts it needs, so the creature closes the larger gap.
   const creature = suggestion({
     name: "Elf", typeLine: "Creature — Elf", cardTypeGroup: "Creatures",
-    role: "ramp", reason: "ramp", manaValue: 2,
+    // THE TWO ORDERS MUST DISAGREE, or neither case below measures anything. With the
+    // creature both the larger type gap AND the cheaper card, `cheapest` and `gaps` produce
+    // the same list and the "leaves `cheapest` alone" guard passes whether or not the type
+    // sort leaked into it. The creature is the dearer card now, so `gaps` puts it first and
+    // `cheapest` puts it second.
+    role: "ramp", reason: "ramp", manaValue: 3,
   });
   const artifact = suggestion({
     name: "Rock", typeLine: "Artifact", cardTypeGroup: "Artifacts",
-    role: "ramp", reason: "ramp", manaValue: 3,
+    role: "ramp", reason: "ramp", manaValue: 2,
   });
   const wantsCreatures = recommendedMix({
     composition: {
@@ -657,11 +662,43 @@ describe("ordering within a shelf", () => {
 
   // Its own render, deliberately: a second assertion inside the first test would read a DOM
   // the first render left behind, and the case is about two independent orderings.
+  // THE SYNERGY SHELF IS EXEMPT FROM `gaps`, and this needs a mix carrying TYPES to reach.
+  // With no composition `typeDeficits` is empty and `sortWithin` returns early, so the
+  // existing synergy-order case passes over a build that reorders the shelf — it did,
+  // while this was broken. A commander with a measured composition is exactly the state
+  // this sub-project creates, and `gaps` is the DEFAULT sort, so the reader would have met
+  // a shelf ordered by type under a heading reading `ranked by synergy`.
+  it("leaves the synergy shelf in synergy order under `gaps`", () => {
+    mount({
+      mix: wantsCreatures,
+      sort: "gaps",
+      commanderShortName: "Atraxa",
+      commanderOracleId: "cmd-atraxa",
+      suggestions: [
+        // The artifact carries the HIGHER synergy and the SMALLER type gap, so the two
+        // rules disagree and the case can tell them apart.
+        suggestion({
+          name: "Rocky", typeLine: "Artifact", cardTypeGroup: "Artifacts",
+          owned: true, synergyFigure: 0.9,
+        }),
+        suggestion({
+          name: "Elfie", typeLine: "Creature — Elf", cardTypeGroup: "Creatures",
+          owned: true, synergyFigure: 0.1,
+        }),
+      ],
+    });
+    const shelf = screen.getByRole("region", { name: synergyCopy.shelf.label("Atraxa") });
+    const names = within(shelf).getAllByRole("listitem").map((li) => (
+      within(li).getAllByRole("button")[0].getAttribute("aria-label") ?? ""
+    ).replace(/^View details for /, ""));
+    expect(names).toEqual(["Rocky", "Elfie"]);
+  });
+
   it("leaves `cheapest` alone", () => {
     mount({ mix: wantsCreatures, sort: "cheapest", suggestions: [artifact, creature] });
-    // The creature is cheaper, so it leads here too — but for its mana value, not its type.
-    // What the case pins is that the artifact is not promoted past it by the type gap and that
-    // the branch still answers the question its control asks.
-    expect(tiles()).toEqual(["elf", "rock"]);
+    // The artifact is the cheaper card and the deck wants creatures, so the two rules
+    // disagree — which is what makes this a guard rather than a coincidence. `gaps` would
+    // answer ["elf","rock"]; `cheapest` must answer the question its own control asks.
+    expect(tiles()).toEqual(["rock", "elf"]);
   });
 });
