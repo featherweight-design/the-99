@@ -28,7 +28,10 @@
 // `local-dev` or a scratch Neon branch, NEVER production.
 //
 //   DATABASE_URL=<local-dev> pnpm probe:declaration
-import "dotenv/config";
+// First, and on its own line: the helper's import loads `.env`, and anything reading
+// `DATABASE_URL` at module scope needs it already loaded. `scripts/lib/env.test.mts` enforces
+// that no script under `scripts/` reaches a secret any other way.
+import { requireEnv } from "./lib/env.mjs";
 import { Pool, neonConfig } from "@neondatabase/serverless";
 import { drizzle } from "drizzle-orm/neon-serverless";
 import { sql } from "drizzle-orm";
@@ -38,8 +41,7 @@ import { commitVersion } from "../src/lib/decks/versions";
 
 neonConfig.webSocketConstructor = ws;
 
-const { DATABASE_URL } = process.env;
-if (!DATABASE_URL) throw new Error("DATABASE_URL is not set");
+const { DATABASE_URL } = requireEnv(["DATABASE_URL"]);
 
 const pool = new Pool({ connectionString: DATABASE_URL });
 const fixture = drizzle(pool);
