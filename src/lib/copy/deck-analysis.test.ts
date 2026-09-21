@@ -36,7 +36,11 @@ describe("the detection statements", () => {
   it("builds the land-denial sentence from MLD_DETECTION, never from a literal", () => {
     const { from } = deckAnalysisCopy.detection.landDenial;
     expect(from).toContain(MLD_DETECTION.basis);
-    expect(from).toContain(String(MLD_DETECTION.sources));
+    // THE PHRASE, not the bare numeral. `sources` is 2 and `basis` is "22 of 24 on a curated
+    // set", so `toContain("2")` is satisfied by the basis alone and passes with the source
+    // interpolation deleted — a test measuring nothing, in the file written to stop exactly
+    // that. Asserting the slot the number sits in cannot be satisfied by another string.
+    expect(from).toContain(`${MLD_DETECTION.sources} community-maintained`);
     // The figure the drop got wrong, stated as a property rather than as "22 of 24".
     expect(from).not.toContain("23 of");
   });
