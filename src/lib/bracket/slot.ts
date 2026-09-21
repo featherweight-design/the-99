@@ -163,17 +163,44 @@ function leanFor(
     combos.length > 0 && permits.length === 1 && (permits[0] === 3 || permits[0] === 4);
   if (!decidedByCombo) return null;
 
-  const receipts = combos.map((combo) => ({
-    combo,
-    tutors: [
-      ...new Map(
-        profile.brackets.comboReach.reaches
-          .filter((r) => r.combo.variantId === combo.variantId)
-          .map((r) => [r.tutor.oracleId, r.tutor]),
-      ).values(),
-    ],
-  }));
+  // Grouped by PIECE, from the association the profile already carries. `reaches` is
+  // `{ tutor, combo, piece }`; the previous shape threw `piece` away while deduping tutors, so
+  // the modal had to ask "what finds this half?" of a list that had forgotten which half each
+  // tutor was found for.
+  const receipts = combos.map((combo) => {
+    const forCombo = profile.brackets.comboReach.reaches.filter(
+      (r) => r.combo.variantId === combo.variantId,
+    );
+    // Every piece of the combo gets a row, including the ones nothing finds: a half with no
+    // tutor is exactly what the `drawOnly` reading is about, and omitting it would leave the
+    // modal drawing a combo that looks wholly covered.
+    const pieces = combo.cards.map((piece) => ({
+      piece,
+      tutors: [
+        ...new Map(
+          forCombo
+            .filter((r) => r.piece.oracleId === piece.oracleId)
+            .map((r) => [r.tutor.oracleId, r.tutor]),
+        ).values(),
+      ],
+    }));
+    return { combo, pieces };
+  });
 
   const reachable = permits[0] === 4;
-  return { likely: reachable ? 4 : 3, reason: reachable ? "reachable" : "drawOnly", receipts };
+  // THE DECIDING COMBO, through the same predicate that decided the bracket rather than a
+  // second copy of it: `comboLandsEarly` answers "can the deck assemble ANY of these", and the
+  // one it answers `true` for is the one the verdict rests on. Re-asking it per combo keeps
+  // one rule; writing the coverage test again here is how two copies drift.
+  const decidedBy = reachable
+    ? (combos.find((combo) =>
+        comboLandsEarly([combo], profile.brackets.comboReach.reaches, profile.commanderOracleIds),
+      ) ?? null)
+    : null;
+  return {
+    likely: reachable ? 4 : 3,
+    reason: reachable ? "reachable" : "drawOnly",
+    decidedBy,
+    receipts,
+  };
 }

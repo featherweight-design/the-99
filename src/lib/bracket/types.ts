@@ -52,8 +52,22 @@ export type BracketLean = {
    *  being in the zone every game), so it slotted at 4. `drawOnly` — they do not, so it
    *  stayed at 3 and the combo has to be drawn into. */
   reason: "reachable" | "drawOnly";
-  /** Every card behind the lean, so a reader who disagrees can see what it read. */
-  receipts: { combo: ComboRef; tutors: CardRef[] }[];
+  /**
+   * WHICH combo decided it. A deck can hold several and the reasoning modal draws exactly one,
+   * so without this a consumer has no rule for choosing and would pick by array order — which
+   * is the order the combo join returned, not the order anything reasoned in.
+   *
+   * Null when the lean is `drawOnly`: nothing was assembled, so no combo decided anything.
+   */
+  decidedBy: ComboRef | null;
+  /**
+   * Every card behind the lean, so a reader who disagrees can see what it read — keyed BY THE
+   * PIECE each tutor can find, because that is the question the modal asks of each half of a
+   * combo ("what finds this one?"). A flat tutor list per combo cannot answer it, and the
+   * association is not re-derived: `ComboReach.reaches` already carries `{ tutor, combo, piece }`
+   * and the previous shape discarded `piece` while deduping.
+   */
+  receipts: { combo: ComboRef; pieces: { piece: CardRef; tutors: CardRef[] }[] }[];
 };
 
 /** Facts the system reports and refuses to score. */
