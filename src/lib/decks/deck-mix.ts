@@ -25,6 +25,11 @@ import { recommendedMix, type RecommendedMix } from "./mix";
     so through `measured` — a strip drawing figures beats a strip drawing nothing, as long as
     it does not claim they came from EDHREC. */
 export async function loadDeckMix(deckId: string, userId: string): Promise<RecommendedMix> {
+  // HOISTED, because the fallback needs it. `landTarget` subtracts a slot for a partner, so a
+  // pair deck whose chain fails mid-read would otherwise fall back to 37 lands where every
+  // other pair surface says 36 — a disagreement that appears only on the degraded path, which
+  // is where nobody is looking.
+  let hasPartner = false;
   try {
     const [deck] = await db
       .select({
@@ -33,7 +38,8 @@ export async function loadDeckMix(deckId: string, userId: string): Promise<Recom
       })
       .from(decks)
       .where(and(eq(decks.id, deckId), eq(decks.userId, userId)));
-    if (!deck || !deck.commanderOracleId) return recommendedMix(null, false);
+    if (!deck || !deck.commanderOracleId) return recommendedMix(null, hasPartner);
+    hasPartner = Boolean(deck.partnerOracleId);
 
     const ids = [deck.commanderOracleId, deck.partnerOracleId].filter(
       (v): v is string => typeof v === "string",
@@ -46,7 +52,6 @@ export async function loadDeckMix(deckId: string, userId: string): Promise<Recom
     const identity = new Set<string>();
     for (const r of rows) for (const c of r.colorIdentity ?? []) identity.add(c);
 
-    const hasPartner = Boolean(deck.partnerOracleId);
     const { skeleton } = await loadSkeletonForCommanders(
       deck.commanderOracleId,
       deck.partnerOracleId ?? null,
@@ -55,6 +60,6 @@ export async function loadDeckMix(deckId: string, userId: string): Promise<Recom
     return recommendedMix(skeleton, hasPartner);
   } catch (err) {
     console.warn("loadDeckMix: no skeleton — the strip quotes the asserted targets", err);
-    return recommendedMix(null, false);
+    return recommendedMix(null, hasPartner);
   }
 }

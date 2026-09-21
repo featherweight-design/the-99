@@ -47,11 +47,11 @@ against the spine where an equivalent exists.
 | Caption layout phone flex / space-between / `mb 8px` | ✅ MATCH — `flex items-baseline justify-between … mb-[8px]` (`:66`) |
 | Caption copy desktop mono 11px, ls `.12em`, uppercase, `#C6B79A` | ✅ MATCH (`:71`) |
 | Caption copy phone mono 9px, ls `.1em`, `#8E8269` | ✅ MATCH (`:71`) |
-| Gloss desktop `EDHREC averages · a guide, not a gate` mono 10.5px `#8E8269` | ✅ MATCH — `mixSourceLine()` (`mix.ts`, rendered `:85-90`). Since #788 the gloss is derived per deck: `EDHREC averages · a guide, not a gate` only where the commander's targets are measured, and `A common starting point` otherwise |
-| Gloss phone `a guide, not a gate` mono 9px `#6E6353` | ✅ MATCH (`:77-82`) |
+| Gloss desktop `EDHREC averages · a guide, not a gate` mono 10.5px `#8E8269` | ⚠️ SUPERSEDED — the `· a guide, not a gate` half was dropped before this PR (the two said the same thing; see `role-counter-strip.tsx:89`). `mixSourceLine()` now returns `EDHREC averages` where the commander's targets are measured and `A common starting point` where they are not, so the gloss states its own provenance instead of asserting one |
+| Gloss phone `a guide, not a gate` mono 9px `#6E6353` | ⚠️ SUPERSEDED — the phone draws no gloss at all: both spans are `hidden md:inline` (`role-counter-strip.tsx:93,106`) |
 | Cell gap desktop 8px / phone 4px | ✅ MATCH — `gap-[4px] md:gap-[8px]` (`:94`) |
 | Strip decision "untouched" | ✅ MATCH — no layout change was made by this pass; the `StripRationale` disclosure and worked-example callout (`:115-151`) predate it (#184) |
-| Copy-module rule | ❌ MISMATCH — `"Recommended mix"` (`:73`), `"a guide, not a gate"` (`:81`) and `aria-label="Recommended mix"` (`:58`) are hardcoded literals, not copy-module keys. (`mixSourceLine()` is explicitly exempted by `recommendations.ts:11`.) |
+| Copy-module rule | ❌ MISMATCH — `"Recommended mix"` (`:73`), `aria-label="Recommended mix"` (`:58`) are hardcoded literals, not copy-module keys. (`mixSourceLine()` is explicitly exempted by `recommendations.ts:11`.) |
 
 ## 14. Role counter cell — met (state 8)
 

@@ -3,6 +3,7 @@
 import { notFound, redirect } from "next/navigation";
 import { requireUserId } from "../../../../lib/auth";
 import { getDeckReviewHeader } from "../../../../lib/decks/read";
+import { cacheForUser } from "../../../../lib/cache/user-lists";
 import { loadDeckMix } from "../../../../lib/decks/deck-mix";
 import { deckBodySize } from "../../../../lib/decks/deck-size";
 import {
@@ -12,6 +13,10 @@ import { ReviewChanges } from "../../../../components/decks/review-changes";
 import { loadContestedCards } from "../../../../lib/collection/summary-read";
 import { admitsReview } from "./admits-review";
 import { isUuid } from "../../../../lib/uuid";
+
+// Versioned like every other cached payload here: the key travels with the SHAPE of what it
+// stores, so a mix that grows a field is never read back from an entry that lacks it.
+const DECK_MIX_KEY = ["deck-mix", "1"];
 
 export default async function ChangesPage({
   params,
@@ -115,7 +120,13 @@ export default async function ChangesPage({
   // and two independently written reads would be two chances to disagree about what it is
   // measured against. This route holds only a deck id, so it asks by id; the deck page has
   // the suggestions payload and takes it from there. `loadDeckMix` never throws.
-  const mix = await loadDeckMix(id, userId);
+  //
+  // CACHED, because this route is revisited: a reader opens the review, goes back to fix a
+  // slot, and returns. The mix is five integers keyed on a deck id, so the entry is tiny and
+  // the basis chain behind it is the ~170ms part of a profile build. Not `cachedDeckProfile`
+  // — that assembles bracket flags, the Spellbook aggregation, tutor classification and the
+  // staples join for the same five integers, measured at 632-831ms steady state.
+  const mix = await cacheForUser(userId, [...DECK_MIX_KEY, id], () => loadDeckMix(id, userId));
 
   return (
     <ReviewChanges
