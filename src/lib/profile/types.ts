@@ -234,8 +234,13 @@ export type ProfileBrackets = {
   /** Absent, not zero, for the 27 commanders EDHREC has no counts for. */
   population: BracketPopulation | null;
   detection: DetectionCoverage;
-  /** What the player told us. NEVER inferred and never defaulted. */
-  declared: Bracket | null;
+  // NO `declared` HERE, deliberately. What the player told us is not a property of the
+  // deck's cards, and the profile is a CACHED document keyed on a fingerprint over them —
+  // so carrying it meant a declaration retired the whole cache and forced a rebuild of the
+  // flags, combos, staples, composition and population, none of which can have moved.
+  // Measured at 630ms median and 2.2s on the largest deck, to recompute a page of figures
+  // that are identical either side of the press. It is handed to `slotDeck` at the draw
+  // instead, where the two lines that read it live.
 };
 
 /**

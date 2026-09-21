@@ -53,12 +53,19 @@ describe("profileFingerprint", () => {
     );
   });
 
-  // The declaration is an INPUT to the verdict, not a label on it: a cached profile built
-  // under the old declaration would keep reporting the old drift.
-  it("moves with the declared bracket", () => {
-    expect(profileFingerprint({ ...base, declaredBracket: 3 })).not.toBe(
-      profileFingerprint(base),
-    );
+  // THE DECLARATION IS NOT AN INPUT HERE, and this is the case that says so.
+  //
+  // It used to be: the fingerprint read it, so one press retired the whole cached profile
+  // and rebuilt the flags, combos, staples, composition and population — 630ms median and
+  // 2.2s on the largest deck — to recompute figures that are identical either side of it.
+  // Nothing the profile computes reads the declaration; only the verdict does, and the
+  // verdict is a pure function handed it at the draw.
+  //
+  // There is no `declaredBracket` on the input any more, so this asserts the PROPERTY that
+  // makes that safe: a fingerprint is a function of the cards and the commanders, and two
+  // decks with the same ones share a key whatever either player declared.
+  it("is a function of the cards and commanders alone", () => {
+    expect(profileFingerprint(base)).toBe(profileFingerprint({ ...base }));
   });
 
   // Pinned rather than asserted by reading the constant back: the point is that a bump

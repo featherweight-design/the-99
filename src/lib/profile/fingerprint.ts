@@ -27,7 +27,6 @@ import { PROFILE_VERSION } from "./version";
 export function profileFingerprint(input: {
   commanderOracleId: string;
   partnerOracleId: string | null;
-  declaredBracket: number | null;
   cards: readonly { oracleId: string; quantity: number }[];
 }): string {
   // Sorted, so row order out of the database cannot move the hash. Two decks with the same
@@ -42,7 +41,6 @@ export function profileFingerprint(input: {
         v: PROFILE_VERSION,
         commander: input.commanderOracleId,
         partner: input.partnerOracleId,
-        declared: input.declaredBracket,
         cards: rows,
       }),
     )

@@ -26,7 +26,7 @@ const combo = (variantId: string, produces: string[]): ComboRef => ({
 function profile(over: Partial<ProfileInput> = {}) {
   return buildDeckProfile({
     deckId: "d", fingerprint: "f", cards: [], commanderOracleIds: ["cmd"], identity: ["G"],
-    declared: null, condition: "G",
+    condition: "G",
     composition: { pair: null, commander: null, identity: null, count: null },
     roles: { pair: null, commander: null, identity: null, count: null },
     thinCondition: false,

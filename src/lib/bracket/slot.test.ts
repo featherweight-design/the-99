@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 
 import { buildDeckProfile, type ProfileCardRow, type ProfileInput } from "../profile/build";
-import type { ComboRef, DetectionCoverage, FlagSource } from "../profile/types";
+import type { Bracket, ComboRef, DetectionCoverage, FlagSource } from "../profile/types";
 import { slotDeck } from "./slot";
 
 const DETECTION: DetectionCoverage = {
@@ -35,14 +35,14 @@ const combo = (variantId: string, produces: string[], pieces = ["p1", "p2"]): Co
 // The verdict is a pure function over a profile, so every case is built as a real profile
 // rather than a hand-written object. A hand-written one can hold a state the builder cannot
 // produce, and then the test proves something about a deck that cannot exist.
-function verdict(over: Partial<ProfileInput> = {}) {
+function verdict(over: Partial<ProfileInput> & { declared?: Bracket | null } = {}) {
+  const { declared = null, ...rest } = over;
   const input: ProfileInput = {
     deckId: "d",
     fingerprint: "f",
     cards: [],
     commanderOracleIds: ["cmd"],
     identity: ["G"],
-    declared: null,
     condition: "G",
     composition: { pair: null, commander: null, identity: null, count: null },
     roles: { pair: null, commander: null, identity: null, count: null },
@@ -56,9 +56,11 @@ function verdict(over: Partial<ProfileInput> = {}) {
     twoCardCombos: [],
     tutorIds: new Set<string>(),
     detection: DETECTION,
-    ...over,
+    ...rest,
   };
-  return slotDeck(buildDeckProfile(input));
+  // The declaration is handed to the verdict, not baked into the profile — it is not a
+  // property of the deck's cards. `over.declared` is lifted out before the input is built.
+  return slotDeck(buildDeckProfile(input), declared);
 }
 
 describe("the permitted range", () => {
@@ -304,11 +306,19 @@ describe("the declaration", () => {
   });
 
   it("is not drift when the declaration is inside the range", () => {
-    expect(verdict({ declared: 2 }).declaredOutsidePermits).toBe(false);
+    const v = verdict({ declared: 2 });
+    expect(v.declaredOutsidePermits).toBe(false);
+    // ALSO that the declaration arrived. `false` is what an ignored declaration gives too,
+    // so without this the case passes on a verdict that dropped the value on the floor —
+    // which is exactly the mutation this file exists to catch now that it travels as an
+    // argument rather than on the profile.
+    expect(v.declared).toBe(2);
   });
 
   it("no declaration is never drift", () => {
-    expect(verdict({ declared: null }).declaredOutsidePermits).toBe(false);
+    const v = verdict({ declared: null });
+    expect(v.declaredOutsidePermits).toBe(false);
+    expect(v.declared).toBeNull();
   });
 });
 

@@ -350,7 +350,6 @@ export async function loadDeckProfileFromHead(head: ProfileHead): Promise<DeckPr
     cards: rows,
     commanderOracleIds: commanderIds,
     identity: combinedIdentity,
-    declared: bracketOf(head.declaredBracket),
     condition,
     // All four candidate rungs, the role rungs and the bucket caveat, from the one place that
     // reads them — so the CREATE path and this one cannot drift about what a deck is measured
