@@ -703,6 +703,27 @@ describe("TopOffList — the bulk tick", () => {
     expect(rowBox("free-1")).not.toBeChecked();
   });
 
+  // THE DECK MOVES TOO, not only the selection. A quick-add or a removal elsewhere changes how
+  // many slots are open without touching `ticked` or `declined` — so an answer planned for the
+  // old slot count would be applied to a deck that is no longer the one it was asked about.
+  it("drops the answer when the deck's open slots have changed since asking", async () => {
+    let release: (v: unknown) => void = () => {};
+    actions.chooseBulk.mockReturnValue(new Promise((r) => { release = r; }));
+    const cards = [candidate("free-1", true), candidate("free-2", true)];
+    const { rerender } = render(<Harness openSlots={3} candidates={cards} />);
+
+    fireEvent.click(screen.getByRole("button", { name: /Tick all/ }));
+    // Two slots now, because something was added to the deck while the server was thinking.
+    rerender(<Harness openSlots={2} candidates={cards} />);
+
+    await act(async () => {
+      release({ ok: true, oracleIds: ["free-1", "free-2"] });
+    });
+
+    expect(rowBox("free-1")).not.toBeChecked();
+    expect(rowBox("free-2")).not.toBeChecked();
+  });
+
   it("does not bring back a row the player set aside", async () => {
     // A bulk control that resurrected a decline would undo a choice with a press
     // meant to save presses. The action does not know about this list's declines — it reads

@@ -311,7 +311,11 @@ export function TopOffList({
   const draftGen = useRef(0);
   useEffect(() => {
     draftGen.current += 1;
-  }, [ticked, declined]);
+    // `openSlots` is in here because the DECK moves too, and not only the selection. A
+    // quick-add or a removal elsewhere changes how many slots are open without touching
+    // `ticked` or `declined` — and a plan chosen for the old slot count, applied to the new
+    // deck, reintroduces a selection made for a deck that is no longer in front of anyone.
+  }, [ticked, declined, openSlots]);
   useEffect(() => () => {
     draftGen.current += 1;
   }, []);

@@ -1954,6 +1954,7 @@ export async function chooseBulkFill(
       manaCost: cards.manaCost,
     }).from(cards).where(inArray(cards.oracleId, heldIds));
     const heldById = new Map(heldCards.map((c) => [c.oracleId, c]));
+    const heldCount = heldRows.reduce((n, r) => n + r.quantity, 0);
     const held = heldRows.flatMap((r) => {
       const card = heldById.get(r.oracleId);
       // A row whose card the catalog no longer resolves is dropped rather than counted as a
@@ -1971,7 +1972,20 @@ export async function chooseBulkFill(
       // tonight; a plan that reached past the collection would tick a purchase.
       {
         pool: "sleeveable",
-        slots: openSlots,
+        // BOUNDED BY THE DECK, not only by the caller. `Number.isInteger` accepts 1e308, and
+        // the shape guard above says nothing about size.
+        //
+        // NOT ASSERTED, and the reason is worth keeping: the ANSWER is already bounded by the
+        // residual filter below, which drops every row past the floors and the mana base — so
+        // no value of `slots` can make this return an unbounded id list, and a test on the
+        // returned ids passes with or without this line. What it bounds is the WORK: without
+        // it `planFill` places and scans across the whole owned pool before those rows are
+        // thrown away. That is not observable through the action's return value, so it is
+        // stated here rather than pinned by a case that would measure nothing.
+        slots: Math.min(
+          openSlots,
+          Math.max(0, deckBodySize(Boolean(deck.partnerOracleId)) - heldCount),
+        ),
         // Only what role and type classification read. `HeldCard` asks for no more, because
         // a card already sleeved is past the question of whether to choose it.
         held: [
