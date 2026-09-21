@@ -63,9 +63,17 @@ const rows = async <T>(q: Parameters<typeof db.execute>[0]) =>
 /** Written into `prose` on every commander row this script inserts. The check constraint ties
  *  `prose`, `prose_input_hash` and `prose_prompt_version` together, so all three are set. */
 const STAMP = "probe:role-targets fixture — safe to delete";
-/** The pair sentinel's marker. `commander_pair_support` has no prose column, so its own shape
- *  is the only thing that identifies it — paired with a stamped id, never used alone. */
-const PAIR_SENTINEL_TOTAL = 200;
+/**
+ * The pair sentinel's PROVENANCE marker, in the one free-form column that table has.
+ *
+ * `commander_pair_support` carries no prose column, so the commander side's stamp has nowhere
+ * to go here. An earlier version used `edhrec_total = 200`, which is not provenance at all: a
+ * real pair can legitimately have that total, so a stranded fixture whose endpoint later became
+ * a real commander could take a real pair and its cards with it. `bracket_counts` is written by
+ * the real writer from EDHREC's own buckets and can never hold this key — and if the real
+ * writer ever rewrites the row, the marker is gone and the sweep correctly leaves it alone.
+ */
+const PAIR_PROVENANCE = { "probe:role-targets": 1 };
 
 /** A pass that replaced no support list owns no row, so a refusal inside it clears nothing.
  *  Every section but the refusal one derives without having written, which is exactly this. */
@@ -121,11 +129,11 @@ async function main() {
           and exists (select 1 from commander_pair_support p
                        where p.commander_oracle_id = c.commander_oracle_id
                          and p.partner_oracle_id = c.partner_oracle_id
-                         and p.edhrec_total = ${PAIR_SENTINEL_TOTAL})`);
+                         and p.bracket_counts = ${JSON.stringify(PAIR_PROVENANCE)}::jsonb)`);
       await db.execute(sql`
         delete from commander_pair_support
         where (commander_oracle_id = ${id}::uuid or partner_oracle_id = ${id}::uuid)
-          and edhrec_total = ${PAIR_SENTINEL_TOTAL}`);
+          and bracket_counts = ${JSON.stringify(PAIR_PROVENANCE)}::jsonb`);
     }
     for (const { id } of stale) {
       await db.execute(sql`
@@ -290,7 +298,7 @@ async function main() {
     const inserted = await rows<{ id: string }>(sql`
       insert into commander_pair_support
         (commander_oracle_id, partner_oracle_id, synergy_state, edhrec_total, bracket_counts)
-      values (${a}::uuid, ${b}::uuid, 'ok', ${PAIR_SENTINEL_TOTAL}, '{}'::jsonb)
+      values (${a}::uuid, ${b}::uuid, 'ok', 200, ${JSON.stringify(PAIR_PROVENANCE)}::jsonb)
       on conflict do nothing
       returning commander_oracle_id as id`);
     if (inserted.length === 0) {
@@ -416,11 +424,11 @@ main()
             and exists (select 1 from ${commanderPairSupport} p
                          where p.commander_oracle_id = ${a}::uuid
                            and p.partner_oracle_id = ${b}::uuid
-                           and p.edhrec_total = ${PAIR_SENTINEL_TOTAL})`);
+                           and p.bracket_counts = ${JSON.stringify(PAIR_PROVENANCE)}::jsonb)`);
         await db.execute(sql`
           delete from ${commanderPairSupport}
           where commander_oracle_id = ${a}::uuid and partner_oracle_id = ${b}::uuid
-            and edhrec_total = ${PAIR_SENTINEL_TOTAL}`);
+            and bracket_counts = ${JSON.stringify(PAIR_PROVENANCE)}::jsonb`);
       }],
       ["the inserted commanders", async () => {
         // SCOPED TO THE FIXTURE SHAPE, exactly as the startup sweep is. That sweep already

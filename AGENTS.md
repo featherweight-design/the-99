@@ -1186,11 +1186,7 @@ Package manager is **pnpm** (pinned via `packageManager` in package.json) — ne
   nothing would assert that rule otherwise; with the restriction reverted the run reads
   `written: 3280` against 3,279.
 
-  The refusal's is the one that needed designing: a refused
-  publish clears the roles on exactly the rows that run rewrote (`computed_at >= runStartedAt`)
-  and leaves every other commander's standing, so the probe plants a sentinel EITHER SIDE of
-  that line. One row on the recent side alone cannot tell a correct clear from a blanket one —
-  they look identical from there. It reaches the refusal by RAISING the denominator rather than
+  It reaches the refusal by RAISING the denominator rather than
   lowering coverage: rows with `synergy_state = 'ok'` and no support cards count in `ok` and
   derive nothing, so enough of them tips the floor.
 
