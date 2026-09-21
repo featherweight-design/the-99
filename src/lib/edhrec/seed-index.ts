@@ -232,16 +232,17 @@ async function writeToDb(header: SupportHeader, cardRows: SupportCard[]): Promis
           avgEnchantment: sql`excluded.avg_enchantment`,
           avgPlaneswalker: sql`excluded.avg_planeswalker`,
           avgBattle: sql`excluded.avg_battle`,
-          // THE ROLE COLUMNS RESET HERE TOO, and leaving them out was a fabricated figure.
-          // A commander whose page goes `absent` on a re-run has its type composition nulled
-          // from `excluded` and its `commander_support_cards` deleted — so the role pass, which
-          // derives from those cards, never reaches it. Without this line it would keep the
-          // PREVIOUS run's positive avg_ramp beside null types: a measured-looking number with
-          // nothing behind it, which is exactly what the NULLABLE note on these columns forbids.
-          avgRamp: sql`excluded.avg_ramp`,
-          avgDraw: sql`excluded.avg_draw`,
-          avgRemoval: sql`excluded.avg_removal`,
-          avgWipes: sql`excluded.avg_wipes`,
+          // THE ROLE COLUMNS ARE DELIBERATELY ABSENT HERE. They belong to
+          // `deriveAndWriteRoleTargets`, which clears and fills them in ONE transaction at the
+          // end of the run — so a refusal there leaves every previous figure standing, exactly
+          // as its message claims.
+          //
+          // An earlier version reset them from `excluded` alongside the type columns. That
+          // fixed the absent-commander case and broke a larger one: these upserts land per
+          // commander, hundreds of transactions before the pass gets to validate its coverage,
+          // so a refusal afterwards left the rewritten commanders cleared and the untouched
+          // ones intact — the mixed dataset the refusal exists to prevent, under a message
+          // saying nothing had changed.
           avgCurve: sql`excluded.avg_curve`,
           computedAt: sql`excluded.computed_at`,
         },
@@ -548,15 +549,6 @@ export async function deriveAndWriteRoleTargets(): Promise<RoleTargetPassResult>
   }
 
   const entries = [...targets];
-  for (let i = 0; i < entries.length; i += CARD_BATCH_SIZE) {
-    await db.transaction(async (tx) => {
-      for (const [commanderOracleId, t] of entries.slice(i, i + CARD_BATCH_SIZE)) {
-        await tx.update(commanderSupport)
-          .set({ avgRamp: t.ramp, avgDraw: t.draw, avgRemoval: t.removal, avgWipes: t.wipes })
-          .where(eq(commanderSupport.commanderOracleId, commanderOracleId));
-      }
-    });
-  }
 
   // THE PAIR RUNG TOO. Its own table, its own cards, and read BEFORE the commander rung by the
   // basis chain — so a pair left without role targets is a partner deck getting measured types
@@ -589,15 +581,37 @@ export async function deriveAndWriteRoleTargets(): Promise<RoleTargetPassResult>
     })),
   );
 
-  for (const [key, t] of pairTargets) {
-    const [a, b] = key.split("|");
-    await db.update(commanderPairSupport)
-      .set({ avgRamp: t.ramp, avgDraw: t.draw, avgRemoval: t.removal, avgWipes: t.wipes })
-      .where(and(
-        eq(commanderPairSupport.commanderOracleId, a),
-        eq(commanderPairSupport.partnerOracleId, b),
-      ));
-  }
+  // ONE TRANSACTION FOR THE WHOLE PUBLISH, clear then fill — the shape `job=printings` was
+  // corrected to in #704, and for the same reason.
+  //
+  // Two failures this closes. A per-slice loop commits as it goes, so a transient failure on a
+  // later slice leaves earlier commanders on new figures and the rest on the previous run's:
+  // the partial state the refusal above exists to prevent, published anyway. And the CLEAR
+  // belongs here rather than in the per-commander upsert, so a commander whose page went
+  // `absent` — its support cards deleted, so this derivation never reaches it — loses its stale
+  // roles at the same instant everyone else gains theirs, rather than hundreds of transactions
+  // earlier and irrespective of whether this pass ever succeeds.
+  await db.transaction(async (tx) => {
+    const NO_ROLES = { avgRamp: null, avgDraw: null, avgRemoval: null, avgWipes: null };
+    await tx.update(commanderSupport).set(NO_ROLES);
+    await tx.update(commanderPairSupport).set(NO_ROLES);
+
+    for (const [commanderOracleId, t] of entries) {
+      await tx.update(commanderSupport)
+        .set({ avgRamp: t.ramp, avgDraw: t.draw, avgRemoval: t.removal, avgWipes: t.wipes })
+        .where(eq(commanderSupport.commanderOracleId, commanderOracleId));
+    }
+
+    for (const [key, t] of pairTargets) {
+      const [a, b] = key.split("|");
+      await tx.update(commanderPairSupport)
+        .set({ avgRamp: t.ramp, avgDraw: t.draw, avgRemoval: t.removal, avgWipes: t.wipes })
+        .where(and(
+          eq(commanderPairSupport.commanderOracleId, a),
+          eq(commanderPairSupport.partnerOracleId, b),
+        ));
+    }
+  });
 
   return {
     written: targets.size,

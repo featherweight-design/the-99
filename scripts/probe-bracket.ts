@@ -125,7 +125,13 @@ let identityCleanup: string | null = null;
 let identityRestore:
   | {
       condition: string;
-      row: CompositionColumns;
+      /** The ROLE columns are carried beside the type ones because they restore differently:
+       *  a dropped nullable type column reads as absent, while these default to 0, which reads
+       *  as a measurement nobody took. */
+      row: CompositionColumns & {
+        avg_ramp: number; avg_draw: number; avg_removal: number; avg_wipes: number;
+        with_roles: number;
+      };
       commanders: number;
       withComposition: number;
       computedAt: string;
@@ -465,10 +471,18 @@ async function basisChainChecks(
   // DEFAULT and every probe run silently re-stamps the row as freshly generated — a restore
   // that changes the one field a freshness consumer reads is not a restore.
   const [existingIdentity] = await rows<CompositionColumns & {
+    avg_ramp: number; avg_draw: number; avg_removal: number; avg_wipes: number;
+    with_roles: number;
     commanders: number; with_composition: number; computed_at: string;
   }>(sql`
     select avg_land, avg_basic, avg_nonbasic, avg_creature, avg_instant, avg_sorcery,
            avg_artifact, avg_enchantment, avg_planeswalker, avg_battle, avg_curve,
+           -- THE ROLE COLUMNS AND THEIR DENOMINATOR. Captured because this cleanup RESTORES a
+           -- row it deleted, and a restore that omits a column writes that column's DEFAULT —
+           -- so on a database whose index has run, omitting these would put back a row with
+           -- every measured role target silently zeroed. The type columns are nullable and a
+           -- dropped one reads as absent; these default to 0, which reads as a measurement.
+           avg_ramp, avg_draw, avg_removal, avg_wipes, with_roles,
            commanders, with_composition, computed_at
     from identity_composition where condition = 'W'`);
   if (existingIdentity) {
@@ -976,7 +990,8 @@ run()
           insert into identity_composition
             (condition, avg_land, avg_basic, avg_nonbasic, avg_creature, avg_instant,
              avg_sorcery, avg_artifact, avg_enchantment, avg_planeswalker, avg_battle,
-             avg_curve, commanders, with_composition, computed_at)
+             avg_curve, avg_ramp, avg_draw, avg_removal, avg_wipes, with_roles,
+             commanders, with_composition, computed_at)
           values (${identityRestore.condition}, ${identityRestore.row.avg_land},
                   ${identityRestore.row.avg_basic}, ${identityRestore.row.avg_nonbasic},
                   ${identityRestore.row.avg_creature}, ${identityRestore.row.avg_instant},
@@ -986,6 +1001,9 @@ run()
                   ${identityRestore.row.avg_curve === null
                       ? null
                       : JSON.stringify(identityRestore.row.avg_curve)}::jsonb,
+                  ${identityRestore.row.avg_ramp}, ${identityRestore.row.avg_draw},
+                  ${identityRestore.row.avg_removal}, ${identityRestore.row.avg_wipes},
+                  ${identityRestore.row.with_roles},
                   ${identityRestore.commanders}, ${identityRestore.withComposition},
                   ${identityRestore.computedAt}::timestamp)
           on conflict (condition) do nothing`);
