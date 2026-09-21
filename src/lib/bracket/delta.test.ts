@@ -68,12 +68,13 @@ describe("moves", () => {
   // The bracket is honestly unchanged, but "nothing happens" is not the whole truth, and the
   // `ruleless` shape beside this one exists for exactly this class of fact. Recorded in the
   // spec amendment rather than patched here, because the push line is a designed surface.
-  it("a card completing a combo moves nothing when the deck cannot tutor for it", () => {
-    const d = bracketDelta(
-      atThree(),
-      candidate({ completesCombos: [combo("v1", ["Infinite mana"])] }),
-    );
-    expect(d).toEqual({ kind: "none" });
+  it("a card completing a combo the deck cannot tutor for is INERT, not silent", () => {
+    // The hole this shape exists to close. The range does not move, so this used to return
+    // `none` — and the reader was told nothing at the moment they put a two-card combo in
+    // their deck. A silence that follows a real event is the worst reading available.
+    const c = combo("v1", ["Infinite mana"]);
+    const d = bracketDelta(atThree(), candidate({ completesCombos: [c] }));
+    expect(d).toEqual({ kind: "inert", fact: "combo", combos: [c], to: [3] });
   });
 
   // DELIBERATELY NOT TESTED HERE: "the add makes the combo assemblable, so the push check
@@ -110,15 +111,57 @@ describe("counts", () => {
   // §7.2's own second example. It MOVES as well, and the count is still the sentence a
   // reader needs — "4 of 3", not "the range widened".
   it("a fourth Game Changer counts, even though it also moves", () => {
+    // It CROSSED bracket 3, so that is the allowance the count is measured against —
+    // "your 4th game changer, and Upgraded allows 3", which is §7.2's own example.
     expect(bracketDelta(atThree(), candidate({ gameChanger: true }))).toEqual({
-      kind: "counts", rule: "gameChangers", now: 4, limit: 3, to: [4, 5], combos: [],
+      kind: "counts", rule: "gameChangers", now: 4,
+      bindingBracket: 3, limit: 3,
+      from: [3], to: [4, 5], combos: [],
     });
   });
 
   it("a second Game Changer counts and does not move", () => {
     const p = profile({ cards: [card("gc1")], gameChangerIds: new Set(["gc1"]) });
     expect(bracketDelta(p, candidate({ gameChanger: true }))).toEqual({
-      kind: "counts", rule: "gameChangers", now: 2, limit: 3, to: [3], combos: [],
+      kind: "counts", rule: "gameChangers", now: 2,
+      bindingBracket: 3, limit: 3,
+      from: [3], to: [3], combos: [],
+    });
+  });
+
+  it("names the limit that BIT, not bracket 3's, when the first one costs Exhibition", () => {
+    // The defect the field replaces: `limit` was bracket 3's always, so a deck losing
+    // Exhibition on its FIRST Game Changer read "your 1st, and Upgraded allows 3" — naming
+    // an allowance it was nowhere near and staying silent about the one it crossed.
+    const d = bracketDelta(profile({ cards: [card("x")] }), candidate({ gameChanger: true }));
+    expect(d).toMatchObject({ kind: "counts", now: 1, bindingBracket: 2, limit: 0, from: [1, 2] });
+  });
+
+  it("names NO limit on a deck already past every bracket that states one", () => {
+    // The state the binding bracket can be null in, and the one with no sentence before it:
+    // a [4,5] deck adding a Game Changer crosses nothing, and nothing up there states an
+    // allowance. The count is still true; there is simply no figure to measure it against.
+    const p = profile({
+      cards: Array.from({ length: 4 }, (_, i) => card(`gc${i}`)),
+      gameChangerIds: new Set(["gc0", "gc1", "gc2", "gc3"]),
+    });
+    expect(bracketDelta(p, candidate({ gameChanger: true }))).toMatchObject({
+      kind: "counts", now: 5, bindingBracket: null, limit: null, from: [4, 5], to: [4, 5],
+    });
+  });
+
+  it("a tutor on a deck whose tutors already assemble a combo says so", () => {
+    // `ruleless` is returned either way; the FLAG is what lets the sentence stop asserting an
+    // absence that is not there.
+    const ids = ["demonic"];
+    const p = profile({
+      cards: [card("p1"), card("p2"), card("demonic")],
+      tutorIds: new Set(ids),
+      twoCardCombos: [combo("v1", ["Infinite mana"])],
+      tutorReaches: () => true,
+    });
+    expect(bracketDelta(p, candidate({ tutor: true }))).toMatchObject({
+      kind: "ruleless", coversACombo: true,
     });
   });
 
@@ -159,7 +202,7 @@ describe("ruleless", () => {
     const ids = Array.from({ length: 7 }, (_, i) => `t${i}`);
     const p = profile({ cards: ids.map(card), tutorIds: new Set(ids) });
     expect(bracketDelta(p, candidate({ tutor: true }))).toEqual({
-      kind: "ruleless", fact: "tutors", now: 8,
+      kind: "ruleless", fact: "tutors", now: 8, coversACombo: false,
     });
   });
 });
@@ -169,13 +212,21 @@ describe("none", () => {
     expect(bracketDelta(atThree(), candidate())).toEqual({ kind: "none" });
   });
 
-  it("a second combo on a deck already at [3,4] changes nothing", () => {
+  it("a second combo on a deck that already holds one is inert, and says which", () => {
     const p = profile({
       cards: [card("p1"), card("p2")],
       twoCardCombos: [combo("v1", ["Infinite mana"])],
     });
-    expect(bracketDelta(p, candidate({ completesCombos: [combo("v2", ["Infinite mana"])] })))
-      .toEqual({ kind: "none" });
+    const added = combo("v2", ["Infinite mana"]);
+    const d = bracketDelta(p, candidate({ completesCombos: [added] }));
+    // The COMPLETED combo, not the one the deck already had — the sentence names what the
+    // card just did, and naming the standing one would describe a different event.
+    expect(d).toMatchObject({ kind: "inert", fact: "combo", combos: [added] });
+  });
+
+  it("an ordinary card is still silent — `none` survives as a drawn absence", () => {
+    // `inert` widens what speaks; it must not swallow the case that should say nothing.
+    expect(bracketDelta(atThree(), candidate())).toEqual({ kind: "none" });
   });
 });
 

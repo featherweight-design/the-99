@@ -46,7 +46,22 @@ export type BracketDelta =
       kind: "counts";
       rule: "gameChangers";
       now: number;
-      limit: number;
+      /**
+       * The bracket whose allowance is the one that BITS, and its figure.
+       *
+       * `limit` used to be bracket 3's always, so a deck losing Exhibition on its FIRST Game
+       * Changer read "your 1st game changer, and Upgraded allows 3" — naming a limit it was
+       * nowhere near and staying silent about the one it had just crossed. The binding
+       * bracket is the lowest the deck's current reading still permits, which is the one
+       * whose allowance the count is measured against.
+       *
+       * Null above bracket 3: nothing there states a Game Changer allowance at all, so
+       * there is no figure to name and the sentence says so instead.
+       */
+      bindingBracket: Bracket | null;
+      limit: number | null;
+      /** The reading before the add, so a row can draw the pair without a second verdict. */
+      from: Bracket[];
       to: Bracket[];
       /**
        * Combos this candidate ALSO completes.
@@ -59,7 +74,33 @@ export type BracketDelta =
       combos: ComboRef[];
     }
   | { kind: "unquantified"; rule: "extraTurns"; now: number; bracket: Bracket }
-  | { kind: "ruleless"; fact: "tutors"; now: number }
+  | {
+      kind: "ruleless";
+      fact: "tutors";
+      now: number;
+      /**
+       * Whether the deck's tutors ALREADY cover a whole combo.
+       *
+       * The sentence branches on it, and without the field it cannot: "your tutors can't
+       * find every piece of a combo this deck holds — yet" is false of a deck reading `[4]`,
+       * which is exactly a deck whose tutors can. A tutor added there is still `ruleless`,
+       * and the clause asserting an absence would be asserting one that is not there.
+       */
+      coversACombo: boolean;
+    }
+  /**
+   * A combo COMPLETED, moving nothing.
+   *
+   * The sixth shape, and the one the round was chartered to add. Adding a piece that finishes
+   * a two-card combo, to a deck whose tutors cannot assemble it, moves the permitted range by
+   * nothing — so `none` would have been returned and the reader told nothing at the moment
+   * they put a combo in their deck. A silence that follows a real event is the worst reading
+   * available.
+   *
+   * It is a shape of its own rather than a widening of `none`, because the union exists so
+   * these do not blur: `none` is a drawn absence and this is a drawn event.
+   */
+  | { kind: "inert"; fact: "combo"; combos: ComboRef[]; to: Bracket[] }
   | { kind: "none" };
 
 export function bracketDelta(profile: DeckProfile, candidate: CandidateFacts): BracketDelta {
@@ -135,11 +176,28 @@ export function bracketDelta(profile: DeckProfile, candidate: CandidateFacts): B
   //     fourth Game Changer, and the sentence a reader needs there is "4 of 3", not "the
   //     range widened".
   if (candidate.gameChanger) {
+    // WHICH ALLOWANCE THE COUNT IS MEASURED AGAINST.
+    //
+    // If the card moved the reading, it is the limit the deck just CROSSED — the highest
+    // bracket it no longer permits. A deck losing Exhibition and Core on its first Game
+    // Changer is measured against Core's nought, not against the allowance of the bracket it
+    // landed in: "your 1st game changer, and Upgraded allows 3" names a limit it is nowhere
+    // near and stays silent about the one it crossed.
+    //
+    // If the card moved nothing, no limit was crossed, and the count is measured against the
+    // bracket the deck sits in.
+    //
+    // Null above 3 either way: nothing there states a Game Changer allowance at all, so
+    // there is no figure to name.
+    const crossed = to[0] > from[0] ? to[0] - 1 : to[0];
+    const bounded = crossed === 1 || crossed === 2 || crossed === 3 ? crossed : null;
     return {
       kind: "counts",
       rule: "gameChangers",
       now: gc,
-      limit: GAME_CHANGER_LIMIT[3],
+      bindingBracket: bounded,
+      limit: bounded === null ? null : GAME_CHANGER_LIMIT[bounded],
+      from,
       to,
       combos: candidate.completesCombos,
     };
@@ -153,7 +211,25 @@ export function bracketDelta(profile: DeckProfile, candidate: CandidateFacts): B
   // 4 · A tutor. No bracket rule counts one, and saying so is the point — `unquantified`
   //     would imply a rule exists that we cannot measure, and `none` would hide the fact.
   if (candidate.tutor) {
-    return { kind: "ruleless", fact: "tutors", now: profile.brackets.comboReach.tutors.length + 1 };
+    return {
+      kind: "ruleless",
+      fact: "tutors",
+      now: profile.brackets.comboReach.tutors.length + 1,
+      // Asked of the deck as it stands, through the same predicate that decides the bracket
+      // rather than a second copy of it.
+      coversACombo: comboLandsEarly(
+        b.twoCardCombos,
+        b.comboReach.reaches,
+        profile.commanderOracleIds,
+      ),
+    };
+  }
+
+  // 5 · A combo completed that moved nothing. AFTER the counted and reported facts, because
+  //     those describe what the card IS; this describes what it did. A Game Changer that
+  //     also completes a combo keeps its count and carries the combo on its own line.
+  if (candidate.completesCombos.length > 0) {
+    return { kind: "inert", fact: "combo", combos: candidate.completesCombos, to };
   }
 
   return { kind: "none" };
