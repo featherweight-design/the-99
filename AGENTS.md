@@ -130,6 +130,17 @@ Package manager is **pnpm** (pinned via `packageManager` in package.json) — ne
   a green job. Since #704 the publish clears and fills in one transaction, so a refused run
   leaves the previous denominators standing and EXITS NON-ZERO instead. Dispatch `job=all`
   unless you have a reason not to; the run takes about a minute either way.
+- **A `reversible_card` printing is ingested from its FACES**, since 2026-09-21. Scryfall gives
+  that layout no top-level `oracle_id`, no `image_uris` and no `flavor_name` — all three sit on
+  the faces — so the obvious read produces an FK orphan, and the ingest used to drop the whole
+  layout. What that cost is a printing a player OWNS and the catalog denies: the art then
+  resolves to the set's representative printing, which is a different collector number with a
+  different picture, silently. All 82 that exist carry the SAME oracle id on both faces (one
+  card printed on both sides, not two cards sharing stock), which is what makes face 0 an
+  answer rather than a guess; the skip is kept for faces that disagree, which is a different
+  thing and exists nowhere today. `skippedReversible` in the ingest report is therefore a
+  narrow counter now, not a constant ~82.
+
 - **Each ingest stamps `catalog_refreshes`, and every cached list payload is keyed on it**
   (#705). That is how a refresh retires readers' caches: `revalidateUserLists` takes a user
   id and a weekly job has no list of readers, so the generation goes in the key instead and

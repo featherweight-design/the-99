@@ -257,6 +257,11 @@ export async function seedPrintings(): Promise<SeedPrintingsResult> {
 
   for await (const value of streamBulkEntries(index)) {
     const result = classifyPrinting(value);
+    // NOW A NARROW COUNTER, and a spike in it is a real signal rather than a constant. It
+    // used to count every `reversible_card` — ~82 of them, every run — because the layout
+    // was dropped wholesale for carrying no top-level oracle id. They are ingested from
+    // their faces since 2026-09-21, so this counts only the case the transform will not
+    // guess at: faces naming different oracles, of which there are none today.
     if (result.kind === "skipped-reversible") { skippedReversible++; continue; }
     // Digital-only printings are dropped entirely — neither a printing nor worth a ledger row.
     if (result.kind === "skipped-digital") continue;

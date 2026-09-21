@@ -104,9 +104,26 @@ export function classifyPrinting(raw: Raw): PrintingClassification {
       },
     };
   }
-  // reversible_card carries no top-level oracle_id (~81 exist); counted separately from FK
-  // orphans so a skip spike stays diagnosable.
-  if (layout === "reversible_card") return { kind: "skipped-reversible" };
+  // REVERSIBLE CARDS ARE READ FROM THEIR FACES, not skipped.
+  //
+  // Scryfall gives this layout no top-level `oracle_id` — it sits on each face — so the
+  // obvious read produces a row with no FK target, and the original rule dropped the layout
+  // wholesale rather than store an orphan. What that cost is a printing the player owns and
+  // the catalog denies: Hugh's `sld/2214` foil, whose art resolved to the set's
+  // representative printing (`sld/1721`) and drew a different card's picture under his
+  // collection row. Reported 2026-09-21.
+  //
+  // Both faces carry the SAME oracle id on every one of the 82 that exist (measured against
+  // Scryfall the same day), which is what makes face 0 an answer rather than a guess: this
+  // layout is one card printed on both sides, not two cards sharing stock. The skip is kept
+  // for the case that would be a guess — faces naming different oracles — which exists
+  // nowhere today and would be a different thing entirely if it ever shipped.
+  const reversible = layout === "reversible_card";
+  if (reversible) {
+    const revFaces = (raw.card_faces as Raw[] | undefined) ?? [];
+    const oracleIds = new Set(revFaces.map((f) => f.oracle_id).filter(Boolean));
+    if (oracleIds.size !== 1) return { kind: "skipped-reversible" };
+  }
   // MTGO/Arena-only printings would pollute the representative pick.
   if (raw.digital === true) return { kind: "skipped-digital" };
 
@@ -128,7 +145,11 @@ export function classifyPrinting(raw: Raw): PrintingClassification {
     kind: "printing",
     row: {
       scryfallId: requiredString(raw, "id"),
-      oracleId: requiredString(raw, "oracle_id"),
+      // The face's id for a reversible card, whose top level has none. Checked above to be
+      // the one id both faces agree on.
+      oracleId: reversible
+        ? requiredString(faces?.[0] ?? {}, "oracle_id")
+        : requiredString(raw, "oracle_id"),
       setCode: requiredString(raw, "set").toLowerCase(),
       collectorNumber: requiredString(raw, "collector_number"),
       imageUri,
@@ -139,9 +160,11 @@ export function classifyPrinting(raw: Raw): PrintingClassification {
         ? raw.finishes
         : ["nonfoil"],
       isVariant: isVariant(raw),
-      flavorName: typeof raw.flavor_name === "string" && raw.flavor_name !== ""
-        ? raw.flavor_name
-        : null,
+      // A reversible card's printed name is on its FACE — `Mimir's Ancient Wisdom` over
+      // `Teferi's Ageless Insight` — and the top level carries none, so reading only there
+      // would ingest the printing and still draw the oracle's name on it. Same shape as the
+      // image fallbacks above: ask the top level, then the face.
+      flavorName: firstString(raw.flavor_name) ?? firstString(faces?.[0]?.flavor_name),
       // NULL, not false, when the key is absent: the column is nullable precisely so
       // "nobody has classified this" stays distinct from "this is not in a booster", and
       // writing false would file an unknown printing under extras.
@@ -149,6 +172,11 @@ export function classifyPrinting(raw: Raw): PrintingClassification {
       rarity: typeof raw.rarity === "string" && raw.rarity !== "" ? raw.rarity : null,
     },
   };
+}
+
+/** A non-empty string, or null — the shape every optional Scryfall text field wants. */
+function firstString(value: unknown): string | null {
+  return typeof value === "string" && value !== "" ? value : null;
 }
 
 /** Every digit in a collector number, non-digits stripped, or null when it has none ("★"). */
