@@ -1,4 +1,4 @@
-# The 99 — The declaration (design handoff · R5, Round 3 of 5)
+# The 99 — The declaration (design handoff · R6, Round 3 of 5)
 
 > **Start with `HANDOFF.md`.** This file is the long-form argument: why each state is shaped the
 > way it is, and what was tried and dropped on the way.
@@ -19,6 +19,35 @@ not redrawn.
 interaction, and an interaction argued in static frames is an assertion.
 
 ---
+
+## R6 — what changed from R5
+
+**Two items, one of them a correction to R5's own mechanism sentence.**
+
+**A declaration lives on the draft.** The analysis reads `deck_cards`, the live commander columns
+and `decks.declaredBracket` in one snapshot, so *"a re-analysis produces a later version with its
+own reading"* — R5's phrasing, in this file and in HANDOFF — was wrong. **A re-analysis produces
+no version at all.** What R5 got right is that a declaration is about exactly one deck state;
+what it got wrong is which. The draft holds it, and the commit copies it into a version.
+
+That produces the state the audit found, reachable pre-commit on every declared deck:
+
+- **The ask returns** when the draft's reading moves outside what is declared on it — with the
+  superseded answer stated once, faint, at 22px, passive (*Core was declared, and this deck has
+  since moved out of it*). **Not a comparison row:** §E compares two committed readings that
+  nobody can still edit, and a draft is one moving reading. A diff there would invent a second
+  one, and `versionChange.line` would print a version number with no value.
+- **The wording follows the stage:** *Declared **Optimized**.* on a draft; *Declared **Optimized**
+  for version 2.* once committed. One string, one conditional clause.
+- **On a single-bracket draft** (declared Core, draft reads `[4]`) the line stands alone — no
+  chips, because 4 is not a choice.
+- **At commit,** copy the declaration into the version only if it is inside that version's
+  permits; otherwise the version records no declaration.
+
+**Rank 5's mark is reissued.** `bracket-5-cedh.svg` was `bracket-4-optimized.svg` with a 5 in it,
+all ten paths byte-identical. Rank 5 now joins rank 4's four studs into a **third closed ring** —
+same points, same weight, footprint unchanged — so the silhouettes differ at 22px, where the
+numeral is already gone. §3b draws the set at 40 / 28 / 22.
 
 ## R5 — what changed from R4
 
@@ -135,7 +164,7 @@ for it* — an empty slot would read as a clean deck.
 **The modal carries no declare control.** A reader who rejects the reasoning closes it and
 answers in the sub-line: same field, same mechanism.
 
-## 5 · When a later version reads differently
+## 5 · When a later **committed** version reads differently
 
 Drawn as **a diff between two versions**: version 1's mark, an arrow, this version's mark or
 marks, under small labels (*version 1* / *this version*). Then one sentence — *This version reads
@@ -167,9 +196,10 @@ changers — you have 5* — which states the limit and never the action.
 
 ## Notes for engineering
 
-- **The write path is the round's one new mechanism**, and it is **scoped to a version**:
-  `declared` belongs to the analysis version it was made on, is never carried forward, and is
-  never rewritten by a later analysis. No skip state is needed or wanted.
+- **The write path is the round's one new mechanism**, and it writes to the **draft**:
+  `decks.declaredBracket`, as today. The commit copies it into the version — and **only when it
+  is inside that version's permits.** A later analysis never rewrites it. No skip state is needed
+  or wanted.
 - **Never default or infer `declared`**, including from `lean.likely`, from an earlier version's
   answer, or after a re-analysis that changes the reading.
 - **`declaredOutsidePermits` may not need to exist.** Per version it is the observation that

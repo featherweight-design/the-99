@@ -2,8 +2,11 @@
 // Adds only, with two stated exceptions at the bottom (both consequences of this round).
 //
 // Rules this block is written under:
-//   · a declaration is made ON A VERSION. v1's answer is permanently true about v1, so the app
-//     never revisits it, never carries it forward, and NEVER QUOTES THE PLAYER ("you said…")
+//   · a declaration is made on ONE DECK STATE — the DRAFT while it is being edited, and the
+//     version once a commit copies it there. The analysis reads deck_cards and
+//     decks.declaredBracket in one snapshot (load.ts:77), so a re-analysis produces NO version.
+//     The app never revisits a committed answer, never carries one forward, and NEVER QUOTES
+//     THE PLAYER ("you said…")
 //   · the app never argues with a declaration and never writes one the player did not make
 //   · a bracket is named by NAME ALONE. Every string below is rendered beside that bracket's
 //     mark, and the mark is the numeral — "Optimized (4)" prints it twice. The sole
@@ -33,7 +36,12 @@ export const declarationCopy = {
     // R5 removed "You said X. That is what this deck says at a table.": the app does not
     // quote the player, and a declaration made on v1 is never stale, because it was never a
     // claim about any version but v1.
-    line: (declared: BracketNumber) => \`Declared \${bracketLabel(declared)} for this version.\`,
+    // "for version n" ONLY once a commit exists to name. On a draft the clause is omitted —
+    // naming a version that does not exist is the error R5 made in prose.
+    line: (declared: BracketNumber, version: number | null) =>
+      version === null
+        ? \`Declared \${bracketLabel(declared)}.\`
+        : \`Declared \${bracketLabel(declared)} for version \${version}.\`,
     // Inline at the end of that sentence. Edits THIS version's answer while it is current;
     // it is deliberately one word, and deliberately not "change what you said".
     change: "change",
@@ -44,7 +52,24 @@ export const declarationCopy = {
         : \`Your cards permit \${permitsPhrase} — the two differ in what you are trying to do.\`,
   },
 
-  // Replaces the whole R2–R4 `drift` block.
+  // THE DRAFT moved outside what is declared on it, with no commit since (§A5).
+  //
+  // NOT a comparison: a diff needs two settled readings and a draft is one moving one, so
+  // versionChange.line would have to print a version number that has no value. The question
+  // itself changed — Core is not an answer to "4 or 5" — so the draft is UNANSWERED rather
+  // than wrongly answered, and ask.lead + the chips follow this line whenever the draft's
+  // reading is a range. On a single-bracket draft there is nothing to ask and it stands alone.
+  //
+  // PASSIVE ON PURPOSE. "was declared" reports the record; "you said" would put the sentence
+  // back in the player's mouth. And the superseded answer is STATED rather than deleted — a
+  // declaration vanishing unexplained is worse than being asked again.
+  draftMovedOut: {
+    line: (declared: BracketNumber) =>
+      \`\${bracketLabel(declared)} was declared, and this deck has since moved out of it.\`,
+    // No control of its own.
+  },
+
+  // Replaces the whole R2–R4 `drift` block. COMMITTED versions only.
   //
   // WITHDRAWN with it: "You said X", "Your last changes moved this deck past that",
   // "brought this deck inside", "Your declaration stands as you left it",
@@ -120,6 +145,10 @@ export const declarationCopy = {
 //   "Analysis ready. Your cards permit Optimized or cEDH. Your tutors can find both
 //    halves of one combo, which puts this past Upgraded. Which of the two this is, is
 //    yours to say."
-// On a drifted deck, the movement is announced and the declaration is not:
-//   "Analysis ready. You said Core. Your last changes moved this deck past that — it now
-//    permits Optimized or cEDH."
+// On a COMMITTED version that reads differently from the last one:
+//   "Analysis ready. This version reads as Upgraded. Version 1 read as Optimized or cEDH and
+//    was declared cEDH."
+// On a DRAFT whose reading has moved outside what is declared on it (§3a) — the ask returns,
+// so the announcement ends on the question rather than on the comparison:
+//   "Analysis ready. Your cards permit Optimized or cEDH. Core was declared, and this deck has
+//    since moved out of it. Which of the two this is, is yours to say."
