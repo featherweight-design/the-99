@@ -60,13 +60,12 @@
 | **8** | 20 | Add panel orders within a shelf by type gap | no |
 | **9a** | 21 | The existing bulk control runs the real fill | no |
 | **9b** | 22 | A second bulk control, and the concession labels | **yes** |
-| **10** | 23 | The layered clear | **yes** |
 
 **[R2] `landTarget` and `planFill` are now ONE PR.** R1 changed `landTarget`'s signature in PR 5 and left `fill.ts`'s two call sites to PR 6, so PR 5 did not compile.
 
-**[R2] PR 10 is no longer a UI-only change.** The layer boundary it draws does not exist in the database. Task 23 scopes the persistence change.
+**[R3] PR 10 is GONE, and its absence is the point.** It proposed a layered clear; the app already separates the fill by PASS and already draws a per-pass undo (`provenance-line.tsx`, `pass-mark.tsx`, `Undo these {n}`). Filling to 99 in one pass would have collapsed that, so the fix is Task 14 recording the residual as its own pass — no control, no migration, no backfill, no Design round. See spec §2.2.
 
-Only 9b and 10 are blocked on Design, and one round covers both. Emit the brief when PR 6 merges.
+Only 9b is blocked on Design now. Emit the brief when PR 6 merges.
 
 ---
 
@@ -816,12 +815,44 @@ Re-derive the nonbasic cap from `skeleton.composition.targets.nonbasic` where on
 - [ ] **Step 3: Wire it into `buildFillPlan`**, with a synergy ranking from `readSynergyCards`
 so the fill's residual and the top-off list cannot disagree.
 
-- [ ] **Step 4: Check the truncation.** `createDeck` truncates to `bodySize`; confirm it still
-holds at 99 rows and that `recordFillPass` records the larger set.
+- [ ] **Step 4: Record TWO passes, not one. [R3]** This replaces the whole of the deleted PR 10.
 
-- [ ] **Step 5: Run.** `pnpm vitest run src/app/decks/ && pnpm test && pnpm typecheck`
+`createDeck` records a single `seed` pass today. With the body filled in one go that becomes one
+99-row pass with nothing to undo but all of it — collapsing a separation the app already ships
+and already draws. Record instead:
 
-- [ ] **Step 6: Commit.**
+| pass | holds |
+|---|---|
+| `seed` | the role floors and the mana base |
+| `top_off` ordinal 1 | the synergy residual |
+
+`FillRow.role === "other"` marks the residual, so the split needs no new persistence: the pass
+ledger already carries it. `Undo these 31` then means "clear the suggestions, keep the
+foundation", through `provenance-line.tsx` and `topOffCopy.ledger.undo(n)` exactly as they stand.
+
+Write the test against the ledger, not the rows:
+
+```ts
+it("records the foundation and the residual as separate passes", async () => {
+  await createDeck({ commanderOracleId: "c", deckName: "d" });
+  const passes = await readFillPasses(deckId);
+  expect(passes.map((p) => p.kind)).toEqual(["seed", "top_off"]);
+  // The seed holds the floors and the lands; the residual is its own undo unit.
+  expect(passes[0].live).toBeGreaterThan(0);
+  expect(passes[1].live).toBeGreaterThan(0);
+  expect(passes[0].live + passes[1].live).toBe(99);
+});
+```
+
+**Mutation:** record one pass as today and confirm this test fails. A build that emits a single
+pass is the regression, and nothing else in the suite can see it.
+
+- [ ] **Step 5: Check the truncation.** `createDeck` truncates to `bodySize`; confirm it still
+holds at 99 rows across two passes.
+
+- [ ] **Step 6: Run.** `pnpm vitest run src/app/decks/ && pnpm test && pnpm typecheck`
+
+- [ ] **Step 7: Commit.**
 
 ---
 
@@ -921,10 +952,14 @@ run · commit.**
 **Files:** Modify `src/lib/copy/recommendations.ts`, `src/components/commanders/detail.tsx` (`:542`, `:657`), `src/components/commanders/synergy-selection.tsx` (`:109`, `:228`), `src/lib/decks/fill.ts`, `src/lib/copy/about.ts` **[R2]**
 
 **[R2] The About edits are a named task, per `CLAUDE.md`'s hard rule**, which R1 omitted
-entirely. This PR edits the existing build entry (the capability changed from 68 to the whole
-99). The top-off entry is edited in PR 9b and the **new** layered-clear entry with the single
-`ABOUT_VERSION` bump lands in PR 10. `about.test.ts:76` pins a content hash, so each edit forces
-a deliberate re-pin.
+entirely. This PR edits the existing build entry: the capability changed from two thirds of the
+deck to all of it. The top-off entry is edited in PR 9b.
+
+**[R3] Both are EDITS; there is no new entry.** R2 had the layered clear owing the one new entry
+and carrying the single `ABOUT_VERSION` bump, and [R3] deleted that control. The rule says a copy
+edit is not a bump — but "we now build the whole deck" is a real capability change every account
+would want to know about, so **bump it here** and let Hugh overrule. `about.test.ts:76` pins a
+content hash, so the edit forces a deliberate re-pin either way.
 
 - [ ] **Step 1: Replace the copy.** Both lose their `(n: string)` parameter:
 
@@ -1018,51 +1053,36 @@ on unowned rows; it computes `buyCount` and `buyMoney`; and `planFill` already b
 
 ---
 
-### Task 23: The layered clear — PR 10 · BLOCKED ON DESIGN
-
-**[R2] This is not a UI-only change, and R1 said the opposite.** It claimed "the layer boundary
-is `FillRow.role`, already on every row the fill writes". `FillRow.role` exists **only in
-memory**: `createDeck` inserts `{deckId, oracleId, quantity, auto}` and `fill_pass_cards` stores
-`{oracleId, quantity}`. Neither table has a role column, so the three layers cannot be told apart
-after the write — and re-deriving with `classifyRoles` cannot separate "placed to close the ramp
-floor" from "residual that happens to ramp".
-
-**Scope this PR must carry:** a `role` column on `fill_pass_cards` (the fill's own ledger, which
-is where provenance belongs, rather than on `deck_cards` which the player also writes), a
-migration with a default, and a backfill decision for existing passes — most likely `null`
-meaning "recorded before layers existed", with the clear offering only "everything" for those.
-
-Also: the **new** About entry and the single `ABOUT_VERSION` bump.
-
----
-
 ## Design brief · emit when PR 6 merges
 
-Two surfaces, both owned by this sub-project and neither on the analysis tab.
+ONE surface, owned by this sub-project and not on the analysis tab.
 
-1. **The top-off list's bulk controls** (Task 22): one control becomes two, each carrying a
-   concession figure computed before the press. Needs the two labels, their treatment when a
-   figure is zero or unavailable, and the phone layout where two controls share a row the
-   quick-add dock already occupies.
-2. **The deck page's clear control** (Task 23): one button becomes three choices. Needs whether
-   it stays a button, the wording of the three layers, the confirm (the action is undoable, so a
-   heavy confirm overstates it), and the state for a deck whose passes predate the role column.
+**The top-off list's bulk controls** (Task 22): one control becomes two, each carrying a
+concession figure computed before the press. Needs the two labels, their treatment when a figure
+is zero or unavailable, and the phone layout where two controls share a row the quick-add dock
+already occupies.
 
-Both need an About entry; the brief should carry them.
+**[R3] The deck page's clear control is NOT in this brief.** An earlier revision asked Design to
+draw a three-way layered clear; spec §2.2 removed it, because the app already separates the fill
+by pass and already draws a per-pass undo. Task 14 records the residual as its own pass and the
+shipped control does the rest.
+
+It needs an About entry — an edit to the existing top-off entry, not a new one.
 
 ---
 
 ## Self-review
 
-**Spec coverage.** §2.1 → Tasks 13–14. §2.2 → Task 23. §2.3 → Tasks 11, 13. §2.4 → Tasks 8–9.
+**Spec coverage.** §2.1 → Tasks 13–14. §2.2 → Task 14 (step 4). §2.3 → Tasks 11, 13. §2.4 → Tasks 8–9.
 §2.5 → Tasks 5–7, 9–10, 16. §2.5a → Tasks 1, 6, 13. §2.6 → Tasks 21–22. §2.7 → Task 20.
-§2.8 → Tasks 1–3. §2.9 → Task 19. §3A → Tasks 19, 22, 23. §6 → Tasks 1–4. §7 → Task 15.
+§2.8 → Tasks 1–3. §2.9 → Task 19. §3A → Tasks 19, 22. §6 → Tasks 1–4. §7 → Task 15.
 
 **What revision 1 got wrong, and where it is fixed.** All 34 findings are addressed; the
 load-bearing ones are §2.5a's both-faces correction (Tasks 1, 6, 13), the PR 5/6 compile break
 (Tasks 12–13 merged), the migration default (Task 5), `layout` never reaching the pool (Task 3),
-the thin branch shadowing `count:3` (Task 8), the missing route read (Task 17), the About rule
-(Tasks 19, 22, 23), and the layered clear's absent persistence (Task 23).
+the thin branch shadowing `count:3` (Task 8), the missing route read (Task 17), and the About rule
+(Tasks 19, 22). The layered clear's absent persistence stopped mattering when [R3] deleted the
+control: the app already persists the boundary as a fill pass.
 
 **Type consistency.** `ProfileSkeleton.roleTargets` is read by `fitSkeleton` (10), `landTarget`
 (12), `planFill` (13), `recommendedMix` (16) and the bulk action (21) under one name.

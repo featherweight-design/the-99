@@ -39,28 +39,11 @@ import { requireEnv } from "./lib/env.mjs";
 import { Pool, neonConfig } from "@neondatabase/serverless";
 import ws from "ws";
 import { classifyRoles, ROLE_TARGETS, type Role } from "../src/lib/recs/roles";
-
-/**
- * The text of the spell you actually CAST.
- *
- * `cards.oracle_text` holds BOTH FACES joined "front\n//\nback" (`scryfall/transform.ts:19`),
- * and `isLandFace` reads the front — so for a land-backed MDFC it returns false and
- * `classifyRoles` then reads the land back's `{T}: Add {R}` and calls the card RAMP. 82
- * commander-legal cards are shaped that way, and the inflation is measurable: the mean ramp
- * target reads 8.5 on whole text against 7.8 on the front face.
- *
- * `transform` is included as well as `modal_dfc`. Both are cast as their front face; the back
- * arrives later or never. Excluding it would leave 32 of the 82 still inflating the figure.
- *
- * SPLIT, ADVENTURE and PREPARE are excluded deliberately: both halves are castable, so
- * dropping the second would lose a real mode.
- */
-function castFaceText(oracleText: string | null, layout: string): string | null {
-  if (oracleText === null) return null;
-  if (layout !== "modal_dfc" && layout !== "transform") return oracleText;
-  const halves = oracleText.split("\n//\n");
-  return halves.length < 2 ? oracleText : halves[0];
-}
+// Imported rather than restated. This script held its own copy of the front-face split for
+// exactly one commit, which is one commit longer than two definitions of a rule should ever
+// coexist — `facet.ts`'s own header is about keeping its three land answers visibly different
+// rather than accidentally divergent, and a private fourth defeats that.
+import { castFaceText } from "../src/lib/cards/facet";
 
 neonConfig.webSocketConstructor = ws;
 const { DATABASE_URL } = requireEnv(["DATABASE_URL"]);

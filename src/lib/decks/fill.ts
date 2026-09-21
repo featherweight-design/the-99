@@ -11,6 +11,17 @@ export type FillCandidate = {
       which are what the basic-land split is proportioned against. */
   manaCost: string | null;
   owned: boolean;
+  /**
+   * Scryfall's own layout, e.g. `normal`, `modal_dfc`, `transform`.
+   *
+   * `planFill` DOES NOT READ THIS YET. It is carried so the pool, the mapping and this shape
+   * agree before the land sweeps start counting land-capable cards, which is a separate change.
+   *
+   * REQUIRED rather than optional, and that is the point of carrying it early: a pool query
+   * that forgets to select it is a compile error here and now, rather than a silent
+   * `undefined` discovered later by a land count that is quietly always zero.
+   */
+  layout: string;
   /** Total copies owned, summed across printings. 0 for an unowned card. */
   ownedQuantity: number;
   inclusionPct: number | null;

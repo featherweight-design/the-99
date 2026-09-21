@@ -12,7 +12,7 @@ const DETECTION: DetectionCoverage = {
 
 const card = (oracleId: string): ProfileCardRow => ({
   oracleId, name: oracleId, typeLine: "Creature — Human", oracleText: null, keywords: [],
-  cmc: 2, colorIdentity: [], manaCost: "{1}{G}", quantity: 1, commanderLegal: true,
+  cmc: 2, colorIdentity: [], manaCost: "{1}{G}", quantity: 1, commanderLegal: true, layout: "normal",
 });
 
 const combo = (variantId: string, produces: string[]): ComboRef => ({
