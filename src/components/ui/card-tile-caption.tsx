@@ -79,8 +79,9 @@ export const CARD_TILE_SLOT_BOX =
  * on 2026-09-21 against the deck's Card view.
  *
  * THE RULE, for any box drawing a full card image: its radius must be at least **3.1% of
- * its rendered width**, which is the card's own corner arc (15px at Scryfall's 488px
- * width). Measured on the build: the art box is 179px on the deck's Card view and 176px
+ * its rendered width**, which is the card's own corner arc — 14–16px across printings at
+ * Scryfall's 488px width, so 3.1% is the conservative end of the range rather than one
+ * card's figure. Measured on the build: the art box is 179px on the deck's Card view and 176px
  * on `/collection`'s grid at 1300, 171 and 173 at 390 — so 5.6px is the figure to beat and
  * the shell's own 9/10px clears it with room. It is stated as the shell's radius rather
  * than as a percentage so the two ends of the tile round by the same amount; a percentage
