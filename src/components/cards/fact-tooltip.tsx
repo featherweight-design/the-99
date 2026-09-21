@@ -18,25 +18,49 @@
 
 import { useEffect, useRef, useState } from "react";
 
+import { useMinWidth } from "../ui/use-min-width";
+
 import { type CardFact, cardMarkCopy } from "../../lib/copy/card-mark";
 
 /** The handoff's figure: long enough not to fire on a pointer crossing the row. */
 export const OPEN_DELAY_MS = 400;
 
 export function FactTooltip({ fact, children }: { fact: CardFact; children: React.ReactNode }) {
+  // THE REPO'S ONE MEDIA-QUERY SUBSCRIBER, not a second copy. This was a state-plus-effect
+  // whose mount effect called `setFine` synchronously, which React 19's
+  // `react-hooks/set-state-in-effect` rejects — and the first fix for that wrote a private
+  // `useSyncExternalStore` triple here, which is exactly the duplication `use-min-width.ts`'s
+  // own header exists to refuse: "the drift each move was correcting is a second copy of the
+  // subscriber, so there is one, taking the query as an argument."
+  //
+  // The name says min-width and the hook takes any query, which its header states. Renaming it
+  // to `useMediaQuery` is a follow-up rather than a rider on a PR that exists to unblock a red
+  // `main`; the one production caller is `use-is-desktop.ts`.
+  //
+  // Its server snapshot is `false`, which is the behaviour the effect had: a server render and
+  // a touch device both draw the children bare. Subscribing also makes this REACTIVE, where
+  // the mount-once read stayed false for the session however the device changed.
+  const fine = useMinWidth("(pointer: fine)");
+
+  // THE HOVER STATE LIVES IN THE CHILD, and that is the whole reason this component splits.
+  //
+  // Making the pointer reactive made a transition reachable that never was before: fine →
+  // coarse → fine. With `open` and the timer held HERE, the coarse branch would merely stop
+  // drawing the wrapper while both survived — so a tooltip open at the moment a mouse was
+  // unplugged came back already open when it was plugged in again, with no `pointerenter`,
+  // and a timer armed before the change could still fire into the coarse branch.
+  //
+  // Unmounting is the fix rather than a reset effect, because React discarding the child's
+  // state cannot be forgotten the way a dependency list can.
+  if (!fine) return <>{children}</>;
+  return <FinePointerTooltip fact={fact}>{children}</FinePointerTooltip>;
+}
+
+function FinePointerTooltip({ fact, children }: { fact: CardFact; children: React.ReactNode }) {
   const [open, setOpen] = useState(false);
-  const [fine, setFine] = useState(false);
   const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  useEffect(() => {
-    // Read once on mount rather than at module scope: `matchMedia` is a browser API and
-    // this file is imported by a server-rendered tree.
-    setFine(window.matchMedia?.("(pointer: fine)").matches ?? false);
-  }, []);
-
   useEffect(() => () => { if (timer.current) clearTimeout(timer.current); }, []);
-
-  if (!fine) return <>{children}</>;
 
   const cancel = () => { if (timer.current) { clearTimeout(timer.current); timer.current = null; } };
 
