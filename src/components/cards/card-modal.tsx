@@ -202,7 +202,7 @@ function ProxyDetail({ card }: { card: BrowseCard }) {
  * `AvailabilityDetail` does rather than saying "nothing to report". A drawn absence would read
  * as a cleared check, and detection on two of the three is measured and partial.
  */
-function BracketFactsDetail({ card }: { card: BrowseCard }) {
+export function BracketFactsDetail({ card }: { card: BrowseCard }) {
   const facts = card.facts ?? [];
   if (facts.length === 0) return null;
   return (

@@ -1,47 +1,52 @@
-import { render, screen } from "@testing-library/react";
 import { describe, expect, it } from "vitest";
 
 import { CARD_FACTS, cardMarkCopy } from "../../lib/copy/card-mark";
-import { CardFactMark } from "../cards/card-fact-mark";
-import { MarkKey, type MarkKeyEntry } from "./mark-key";
+import type { DeckDetailCard } from "../../lib/decks/grouping";
+import { buildMarkKeyEntries } from "./decklist";
 
 /**
- * The key's composition rule, which is where the handoff and the shipped component
- * disagreed. Design asked for all five entries unconditionally; this component refuses an
- * empty legend and an unconditional `buy` entry prints `not owned` over rows the player
- * owns. The resolution is an asymmetry: facts unconditional, buy/proxy conditional.
+ * Tested against the SHIPPED builder, not a rebuilt copy of it. The first version of this
+ * file constructed the three entries itself and handed them to `MarkKey`, so deleting the
+ * rule under test left every assertion green — it proved `MarkKey` renders what it is
+ * given, which was never in doubt.
  */
-const factEntries = (): MarkKeyEntry[] =>
-  CARD_FACTS.map((fact) => ({
-    id: fact,
-    sample: <CardFactMark fact={fact} size={14} silent />,
-    word: cardMarkCopy[fact],
-  }));
+const card = (over: Partial<DeckDetailCard> = {}): DeckDetailCard =>
+  ({
+    oracleId: "o-1", name: "Sol Ring", typeLine: "Artifact", cardTypeGroup: "Artifacts",
+    role: "ramp", cmc: 1, owned: true, proxied: false, quantity: 1, auto: false,
+    manaCost: "{1}", imageUri: null, ...over,
+  }) as DeckDetailCard;
 
-describe("the key's fact entries", () => {
-  it("names all three facts with no marked card on screen", () => {
-    // Design's stated reason, verbatim: a player scanning for Game Changers needs the
-    // entry to be there BEFORE they find one. A fact entry defines a glyph and makes no
-    // claim about any row, so it is true of an empty deck.
-    render(<MarkKey marks={factEntries()} />);
-    for (const fact of CARD_FACTS) {
-      expect(screen.getByText(cardMarkCopy[fact])).toBeTruthy();
-    }
+const ids = (entries: { id: string }[]) => entries.map((e) => e.id);
+
+describe("the key's composition rule", () => {
+  it("names all three facts on a row list with no marked card present", () => {
+    // Design's stated reason: a player scanning for Game Changers needs the entry to be
+    // there BEFORE they find one. A fact entry defines a glyph and claims nothing about
+    // any row, so it is true of a deck carrying none.
+    const entries = buildMarkKeyEntries({ cards: [card()], filter: "all", inCardView: false });
+    expect(ids(entries)).toEqual([...CARD_FACTS]);
   });
 
-  it("still renders nothing at all when given no entries", () => {
-    // The component's own ruling survives: an empty legend is furniture. Facts are
-    // unconditional on a surface that CAN draw them, which is not the same as the key
-    // rendering itself on a surface with no marks in its vocabulary.
-    const { container } = render(<MarkKey marks={[]} />);
-    expect(container.innerHTML).toBe("");
+  it("draws NO fact entry in card view, where no tile carries a mark", () => {
+    // The same rule rather than an exception: glossing a glyph that appears nowhere on
+    // screen teaches the reader a mark they cannot find.
+    const entries = buildMarkKeyEntries({ cards: [card()], filter: "all", inCardView: true });
+    expect(ids(entries).filter((id) => (CARD_FACTS as readonly string[]).includes(id))).toEqual([]);
   });
 
-  it("speaks each fact once — the sample is silent, the word carries it", () => {
-    // The glyph goes silent in the key because the word beside it IS the accessible name.
-    // A speaking sample would say "Game Changer Game Changer".
-    render(<MarkKey marks={factEntries()} />);
-    expect(screen.queryByRole("img", { name: cardMarkCopy.gameChanger })).toBeNull();
-    expect(screen.getAllByText(cardMarkCopy.gameChanger)).toHaveLength(1);
+  it("keeps proxy conditional — present only when a row is proxied", () => {
+    const without = buildMarkKeyEntries({ cards: [card()], filter: "all", inCardView: false });
+    expect(ids(without)).not.toContain("proxy");
+    const with_ = buildMarkKeyEntries({
+      cards: [card({ proxied: true })], filter: "all", inCardView: false,
+    });
+    expect(ids(with_)).toContain("proxy");
+  });
+
+  it("words each fact with the rules' own name", () => {
+    const entries = buildMarkKeyEntries({ cards: [card()], filter: "all", inCardView: false });
+    const words = entries.filter((e) => (CARD_FACTS as readonly string[]).includes(e.id));
+    expect(words.map((e) => e.word)).toEqual(CARD_FACTS.map((f) => cardMarkCopy[f]));
   });
 });

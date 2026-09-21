@@ -180,6 +180,33 @@ async function proxyingDecks(userId: string, oracleId: string): Promise<Proxying
 }
 
 /**
+ * The two bracket facts that are not columns on `cards`, for ONE card.
+ *
+ * The modal is the surface that spells the facts out, so it is the one that most needs
+ * them complete — and it is reached from `/collection`, a deck page and the card view
+ * alike, on a click. `gameChanger` already rides whichever row produced the card; this
+ * adds the joined pair.
+ *
+ * FAIL-SOFT, like every other read on this path: a failure omits the block rather than
+ * losing the card. An absent flag row means neither fact applies and nothing more — it is
+ * never a claim that the card is clear.
+ */
+async function withBracketFacts(card: BrowseCard): Promise<BrowseCard> {
+  try {
+    const { loadBracketFlags } = await import("../bracket/flags-read");
+    const { factsFor } = await import("../bracket/facts");
+    const flags = await loadBracketFlags([card.oracleId]);
+    const facts = factsFor(
+      card.facts?.includes("gameChanger") ?? false,
+      flags.get(card.oracleId),
+    );
+    return facts ? { ...card, facts } : card;
+  } catch {
+    return card;
+  }
+}
+
+/**
  * Server query — the owned view of a card when the user has one, else the catalog view.
  * Returns null only when the oracle id is not in `cards` at all.
  *
@@ -219,7 +246,7 @@ export const loadCardDetail = cache(async function loadCardDetail(
       pricesFor(oracleId),
       proxyingDecks(userId, oracleId),
     ]);
-    return { ...owned[0], availability, prices, proxiedBy };
+    return withBracketFacts({ ...owned[0], availability, prices, proxiedBy });
   }
 
   const { db } = await import("../../db");
@@ -235,6 +262,7 @@ export const loadCardDetail = cache(async function loadCardDetail(
       manaCost: cards.manaCost,
       oracleText: cards.oracleText,
       keywords: cards.keywords,
+      gameChanger: cards.gameChanger,
       rarity: cards.rarity,
       colorIdentity: cards.colorIdentity,
       imageUri: cards.imageUri,
@@ -270,7 +298,15 @@ export const loadCardDetail = cache(async function loadCardDetail(
     // sets.code is the primary key, so this is at most 1:1 and multiplies no rows.
     .leftJoin(sets, eq(sets.code, printings.setCode))
     .where(eq(printings.oracleId, oracleId));
-  return { ...catalogCard(card, printingRows), prices: await prices, proxiedBy: await proxiedBy };
+  // The unowned branch synthesises its card from the catalog, so `gameChanger` comes off
+  // the `cards` row rather than from an aggregation — and without this the block never drew
+  // for an unowned Game Changer at all.
+  return withBracketFacts({
+    ...catalogCard(card, printingRows),
+    facts: card.gameChanger ? ["gameChanger"] : undefined,
+    prices: await prices,
+    proxiedBy: await proxiedBy,
+  });
 });
 
 /**
