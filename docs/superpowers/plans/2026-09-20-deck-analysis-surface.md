@@ -61,7 +61,8 @@ Named before implementation starts, per the repo's split rule. Nine PRs; none ov
 | **5 — the declaration ask and sub-line** | The readings that survive the 2026-09-21 ruling, plus `permits: [4]`, which draws no line. No skip, no "you said". | 3, 4 |
 | **6 — the lean and the reasoning modal** | The lean line, the modal body, the command-zone `found by` reading, and image resolution **at the draw** rather than in the profile. | 2, 4 |
 | **7 — the drift row** | **HELD on Design** — see risks. | Design answer |
-| **8 — the push line** | Wherever Round 4 places it, including the `kind: "none"` sentence. | Round 4 design |
+| **8a — the facts payload** | The profile threaded into the builder shell and the top-off list, and a BATCHED `CandidateFacts` read for the whole pool. Measured above; Round 4's own list does not contain it. | — |
+| **8b — the push line** | The atom at two densities, on the quick-add row, the Consider tile and the top-off row. | 8a |
 | **9 — the upgrade path** | Candidate sets, never a pick; the `blocked` reading. | Round 4 design |
 
 PRs 1, 2 and 3 are **unblocked today** and in that order they are the whole spine: a tab that
@@ -183,6 +184,32 @@ Not measured, and stated rather than implied: a WARM `cachedDeckProfile` hit. Th
 `cacheForUser`, which needs a request context, so a script calling it would either throw or run
 two cold builds and report the second as a cache. The warm cost is the cache layer's, not this
 gather's.
+
+---
+
+## Measured, 2026-09-21 — what a row of push-line facts costs
+
+`pnpm measure:facts-cost` against **staging**, on the two biggest real decks:
+
+| | |
+|---|---|
+| the profile, cold | 0.9–1.9s (the floor, paid once) |
+| `completesCombos` for a **480-candidate pool, one statement** | **177–192ms** |
+| the same, candidate by candidate | ~195ms each → **91–95s** |
+
+**One statement is 480–540× cheaper than a query per candidate**, so the facts payload is a
+batched read or it is not shippable. That settles the shape of the PR that Round 4's own
+engineering list does not contain: every two-card variant with exactly one piece already in the
+deck and the other among the candidates, expressed as a set rather than as a diff of two runs
+per candidate.
+
+The other three flags — game changer, mass land denial, extra turn — are column reads on `cards`
+and a flags table the profile already loads. They are not the question.
+
+**The measurement seeds the pool with real completions first**, because a pool of arbitrary
+catalog cards matches nothing and an empty match is cheaper than a real one. Its first version
+did exactly that and reported `0 completions` beside its timing — pricing the empty case under a
+heading claiming it priced the real one.
 
 ---
 
