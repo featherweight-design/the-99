@@ -609,6 +609,28 @@ async function basisChainChecks(
     // The TYPE chain must not follow it — it still has an identity row, and a fix that moved
     // both would pass a check watching only the roles.
     check("while the type chain stays on the identity row", fellThrough.skeleton.composition?.of, "identity");
+
+    // THE CAVEAT NAMES A BUCKET SOMEBODY READ. With NEITHER bucket supplying roles, the flag
+    // has to come from the one serving the TYPES — and `thin` is a boolean, so a `??` chain
+    // takes a `false` off the count row whose roles were never used and never reaches the
+    // identity row that is actually thin. A thin bucket then renders as non-thin.
+    await fixture.execute(sql`
+      update identity_composition set with_roles = 0, avg_ramp = 0, avg_draw = 0,
+             avg_removal = 0, avg_wipes = 0, thin = false where condition = 'count:1'`);
+    await fixture.execute(sql`
+      update identity_composition set thin = true where condition = 'W'`);
+    const thinRead = await profileFor(deckId);
+    check("no bucket supplies roles, so the flat targets serve", thinRead.skeleton.roleTargets.of, "flat");
+    check(
+      "and the caveat comes from the bucket serving the types",
+      thinRead.skeleton.thinCondition,
+      true,
+    );
+    await fixture.execute(sql`
+      update identity_composition set thin = false where condition = 'W'`);
+    await fixture.execute(sql`
+      update identity_composition set with_roles = 380, avg_ramp = 6, avg_draw = 5,
+             avg_removal = 4, avg_wipes = 3 where condition = 'count:1'`);
   } else {
     fail("the count sentinel", "a count:1 row was already present and was not replaced");
   }

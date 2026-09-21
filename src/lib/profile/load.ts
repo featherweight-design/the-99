@@ -316,10 +316,25 @@ export async function loadDeckProfileFromHead(head: ProfileHead): Promise<DeckPr
   //
   // Read only when it can change something: the identity row is absent (already loaded above)
   // or present with no usable roles. A commander whose identity row carries both pays nothing.
+  const identityRoles = roleTargetsFrom(identityRow ?? undefined);
   const countRowForRoles = countRow
-    ?? (roleTargetsFrom(identityRow ?? undefined) === null
+    ?? (identityRoles === null
         ? await loadCompositionRow(countCondition(combinedIdentity.length))
         : undefined);
+  const countRoles = roleTargetsFrom(countRowForRoles ?? undefined);
+
+  // WHICH BUCKET THE CAVEAT DESCRIBES: the one whose ROLE figures were actually taken when a
+  // bucket supplied them, and otherwise the one serving the TYPES. A caveat naming a row
+  // nobody read would be worse than none.
+  //
+  // Written as a choice rather than a `??` chain, which is what got this wrong: `thin` is a
+  // BOOLEAN, so `??` happily takes a `false` from a row whose roles were never used and never
+  // reaches the row that is actually thin. A thin identity bucket then rendered as non-thin.
+  const roleBucket = identityRoles !== null ? identityRow
+    : countRoles !== null ? countRowForRoles
+    : null;
+  const typeBucket = identityRow ?? countRow ?? null;
+  const thinCondition = Boolean((roleBucket ?? typeBucket)?.thin);
 
   // The floor's bucket is the one that actually HOLDS rows. A commander whose exact identity
   // never cleared the sample bar falls to its colour count, and looking up the exact key
@@ -363,17 +378,12 @@ export async function loadDeckProfileFromHead(head: ProfileHead): Promise<DeckPr
     roles: {
       pair: roleTargetsFrom(pairRow ?? undefined),
       commander: roleTargetsFrom(commanderRow ?? undefined),
-      identity: roleTargetsFrom(identityRow ?? undefined),
-      count: roleTargetsFrom(countRowForRoles ?? undefined),
+      identity: identityRoles,
+      count: countRoles,
     },
     // The bucket the IDENTITY or COUNT rung would serve. The commander and pair rows are
     // per-commander rather than per-bucket, so neither can be thin in this sense.
-    // The bucket whose ROLE figures were actually taken, when one was, and otherwise the one
-    // serving the types — a caveat that named a row nobody read would be worse than none.
-    thinCondition: Boolean(
-      (roleTargetsFrom(identityRow ?? undefined) !== null ? identityRow?.thin : undefined)
-      ?? countRowForRoles?.thin ?? identityRow?.thin ?? countRow?.thin ?? false,
-    ),
+    thinCondition,
     staples,
     commanderDeckCount: pairRow?.deckCount ?? commanderRow?.deckCount ?? null,
     population: populationFrom(pairRow, commanderRow),
