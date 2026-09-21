@@ -6,18 +6,34 @@ mark is the numeral. **The one place a number is spelled is the reasoning modal'
 (*How we determined bracket 4*), which is the only bracket reference on the surface with no mark
 beside it.
 
-## A · The sub-line — four readings, one box
+## 0 · Where a declaration lives
 
-**A declaration is made on a version.** Version 1's answer is a complete, permanently true record
-about version 1. A later analysis creates a later version with its own reading, and the block
-never revisits the earlier answer — so no reading here quotes the player back to themselves.
+**On the draft, until a commit copies it into a version.** The analysis reads `deck_cards`, the
+live commander columns and `decks.declaredBracket` in one snapshot — so a declaration is made on
+the draft, and **a re-analysis produces no version at all.** R5's mechanism sentence was wrong
+about which deck state owns the record; it was right that only one ever does.
+
+| stage | the declared sentence | when the reading moves |
+|---|---|---|
+| **draft** | *Declared **Optimized**.* — no *for this version* | **§A5** — the ask returns |
+| **committed** | *Declared **Optimized** for version 2.* | **§E** — the version comparison |
+
+One string with a conditional clause, not two states. The clause needs the version number the
+reader is looking at, which the tab already has.
+
+## A · The sub-line — five readings, one box
+
+**A declaration is about one deck state.** A draft's answer describes the draft; a commit copies
+it into the version, where it is a permanently true record about that version. No reading quotes
+the player back to themselves.
 
 | `permits` | `declared` (this version) | Face + pill | Sub-line |
 |---|---|---|---|
 | `[1,2]` | `null` | *Exhibition or Core* · split pill, labelled `split` | lead + chips **Exhibition** / **Core** |
 | `[4,5]` | `null` | *Optimized or cEDH* · split pill, labelled `split` | lead + chips **Optimized** / **cEDH** |
-| `[1,2]` / `[4,5]` | set | **the declared bracket alone** · single chip | *Declared **Optimized** for this version.* `change` inline |
+| `[1,2]` / `[4,5]` | set, inside `permits` | **the declared bracket alone** · single chip | *Declared **Optimized**.* — `for version n` only once committed. `change` inline |
 | `[2]` / `[3]` / `[4]` | — | the single bracket | **no declaration line** — a single bracket is not a question |
+| **A5 · draft moved out** — any | set, **outside** `permits` | this version's face, as above | one faint line + 22px mark (*Core was declared, and this deck has since moved out of it*), **then the ordinary ask** if the reading is a range; nothing further if it is a single bracket |
 
 **There is no skip and no skipped reading.** A player who says nothing leaves the version
 unanswered, and the ask stays on the versions that have a range. `change` exists only while the
@@ -87,6 +103,42 @@ reads as, and what the last one read as.**
 version it is the observation that `v(n)` reads differently from `v(n-1)`, computable at analysis
 time with nothing stored.
 
+## A5 · The draft, after the reading moves — why the ask and not a diff
+
+**Precedence, first: a version comparison suppresses this line.** A commit refuses to copy a
+declaration that sits outside the new version's permits, so both states are true at once and say
+the same thing in two voices. §E's row wins — it names the old declaration *and* the new reading
+*and* carries a date. One test, not two states:
+
+```
+if (versionChange)      → §E row
+else if (draftMovedOut) → §A5 line
+then if (permits.length > 1) → the ask
+```
+
+*Stated, not deleted* still holds: the row is the statement. It is simply not made twice.
+
+§E compares two **committed** readings, neither still editable; that is what makes a comparison
+honest there. A draft is one deck state, and it is moving. Drawing *this version vs last version*
+would invent a second reading, and `versionChange.line` would print a version number with no
+value.
+
+So: **the question changed, therefore it is asked.** Core is not an answer to *4 or 5*, so the
+draft is **unanswered, not wrongly answered** — and the ask is the mechanism the round already
+has for an unanswered range. The superseded answer is **stated, not deleted**: one faint line and
+a 22px mark, passive (*was declared*), never *you said*.
+
+- **Range on the draft** → the line, then the chips, at both widths. The line sits **above** the
+  ask, so the answer being given is the last thing in the box.
+- **Single bracket on the draft** (e.g. declared Core, draft reads `[4]`) → mark, reading, lean,
+  **then** the line, and **no chips** — 4 is not a choice. Same order at both widths; nothing
+  reflows, because there is no control to place. Drawn in §3a.
+- Answering writes the draft's declaration; an existing version's snapshot is untouched, and §E
+  still draws that comparison after the next commit.
+- **At commit:** copy `declared_bracket` into the version **only if it is inside that version's
+  permits**. Otherwise the version records no declaration, because the draft never answered its
+  own question.
+
 ## F · What the surface never draws
 
 - A declaration the player did not make, including one inferred from the lean or carried forward
@@ -98,5 +150,8 @@ time with nothing stored.
 - A tutor count in the lean or its receipts.
 - A ringed `?` or a ringed `≈`, anywhere on the tab.
 - A bracket name without its mark, except the reasoning modal's heading.
+- *for this version* / *for version n* on a draft that has not been committed.
+- A version comparison on a draft — there is no second reading to compare with.
+- A superseded declaration deleted silently, or restated in the second person.
 - A version row whose arrow, colour or geometry changes with the direction of the change.
 - The ask and the lean in one card — the ask needs a range, the lean needs a single bracket.

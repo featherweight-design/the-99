@@ -1,10 +1,48 @@
 # Readiness — the declaration (Round 3 of 5)
 
-**Self-assessed: 🟡 Yellow.** R5 re-frames the declaration as per-version, which removes the
+**Self-assessed: 🟡 Yellow.** R6 answers the audit's Orange — the draft state is drawn at both
+widths in §3a, and rank 5's mark is reissued in §3b with two new asset files. Yellow for the
+coverage gaps below, none of which blocks building what is drawn. R5 re-framed the declaration as
+per-state, which removes the
 round's only migration and most of its copy risk. The audit's one orange item is answered in **2a** — drift's four
 shapes, both widths, with the downward sentence the round was missing. Yellow, not green, for the
 skip's storage and the coverage gaps below; every item the audit resolved without Design is left
 to engineering as recorded.
+
+## Fixed in R7, from the R6 review
+
+- **Precedence drawn (§3c): a version row suppresses the draft's out-of-range line.** The commit
+  that refuses to copy an out-of-range declaration leaves both true; the row wins, because it
+  names the old declaration and the new reading and carries a date. One test —
+  `if (versionChange) row else if (draftMovedOut) line` — then the ask if the reading is a range.
+- **The single-bracket draft is drawn** at both widths (§3a), in the order mark → reading → lean →
+  superseded line, with no chips.
+- **§3b's ranks 1 and 2 redrawn to match the files** (rank 1 had a mid ring it does not have,
+  rank 2 two ticks it does not have), and the chip rule restated to the one that ships: it sheds
+  the mid ring, and each rank keeps its own distinguisher. The collision is 1-vs-2, caused by the
+  mid ring — not by ticks (R6) and not three wide (R7's first pass).
+
+## Fixed in R6, from the R2 audit
+
+- **The draft state is drawn** (§3a, both widths). The audit is right and R5's mechanism sentence
+  was wrong: the analysis reads `deck_cards`, the live commander columns and
+  `decks.declaredBracket` in one snapshot, so a re-analysis produces **no version**. A
+  declaration is made on the **draft**; the commit copies it into a version.
+- **The call: the ask returns, not a comparison.** §E compares two committed readings neither
+  party can still edit — that is what makes a diff honest there. A draft is one moving reading,
+  so a comparison would invent a second one and print a version number with no value. The
+  question changed, so it is asked; the superseded answer is stated once, faint, passive.
+- **The wording follows the stage.** *Declared Optimized.* on a draft, *…for version 2* once
+  committed — one string with a conditional clause, so *for this version* never appears on a
+  deck state that is not one.
+- **At commit:** copy the declaration into the version only if it is inside that version's
+  permits. Otherwise the version records no declaration, because the draft never answered its
+  own question.
+- **Rank 5's mark reissued** (§3b) — `bracket-5-cedh-reissued.svg` and a 22–24px chip form, in
+  the Round 0 assets folder beside the originals. Rank 4's four studs become a third closed ring:
+  same points, same weight, footprint unchanged, silhouette different at chip size.
+- **Both withdrawn artefacts removed** (audit items 3 and 4): the *"You said Core…"* live-region
+  line in the copy file, and the `change what you said` control still drawn on §1b.
 
 ## Fixed in R5, from review
 
@@ -63,19 +101,24 @@ to engineering as recorded.
    round no longer needs a migration.** What it does need is that `declared` be scoped to an
    analysis version and never carried forward.
 
-1. **`lean.receipts[].tutors` is the wrong shape for what this draws** — flat per combo, where
+1. **The `permits` snapshot, per the audit.** §E needs the previous version's *reading*, and
+   nothing stores it — producing it means a second `ProfileInput` from `deck_version_cards` plus
+   another `buildDeckProfile` + `slotDeck` pass, measured at 625ms. My *"a version-history read,
+   not a flag"* under-described that by an order of magnitude, and the audit's fix is the right
+   one: **snapshot the version's `permits` at commit**, alongside `declared_bracket`, and §E
+   becomes two column reads. Both belong in one migration.
+2. **`lean.receipts[].tutors` is the wrong shape for what this draws** — flat per combo, where
    the receipts group tutors **by the combo half they find**. That grouping is the entire defence
    against the deleted "too many tutors" clause. **Corrected by the audit, in our favour:** the
    profile already carries `{ tutor, combo, piece }` on `comboReach.reaches` and `leanFor`
    discards `piece` when it dedupes, so this is a projection and not the re-derivation I billed
    it as. Still owed, still blocking the modal; cheaper than stated.
-2. **A permanent skip needs its own stored state.** A nullable `declared` cannot express *asked
-   and declined*, and the brief's §6 state list does not mention one. Second column or sentinel,
-   engineering's call — but it must survive re-import and re-analysis.
-3. **`declaredOutsidePermits` may not need to exist at all.** Per version it is the observation
-   that `v(n)` reads differently from `v(n-1)`, computable at analysis time with nothing stored.
-   The drawing needs the previous version's reading and its declaration — **a version-history
-   read, not a flag** — which is the one thing R5 adds to the data it needs.
+3. **`declaredOutsidePermits` carries two different states and should probably carry neither.**
+   `slot.ts:130` sets it on the **draft** comparison, which §A5 draws as a returning ask; the
+   **committed** comparison §E draws is a different observation (`v(n)` vs `v(n-1)`) that no
+   flag stores. Both are computable at analysis time — the draft one from `permits` and the live
+   `declared`, the committed one from the version's two snapshotted columns. **If the flag
+   survives, it needs to name which of the two it means.**
 
 ## Withdrawn — claims of mine the audit disproved
 
@@ -96,8 +139,8 @@ between them" must be conditional on the range.
 
 ## Coverage
 
-Drawn at both widths: the ask, all four sub-line readings, the lean, and (new in R4) drift's four
-shapes. Still prose-only, carried from the audit and **not** closed by 2a:
+Drawn at both widths: the ask, every sub-line reading, the lean, drift's four shapes (R4) and the
+draft state (R6). Still prose-only, carried from the audit and not closed by §3a or §3b:
 
 - the reasoning modal at 390, and the `drawOnly` modal body at either width;
 - the command-zone `found by` reading — a half covered by the commander currently prints
@@ -105,6 +148,18 @@ shapes. Still prose-only, carried from the audit and **not** closed by 2a:
   (audit item 5). A third reading is owed;
 - **no loading, in-flight, failed or refused reading for the declaration's write.** Round 0 drew
   five synopsis states; this round's new write has none, so an implementer would invent one.
+  Worth noting alongside the audit's cache finding: `profileFingerprint` includes
+  `declaredBracket`, so **the one write this surface makes costs a full rebuild on the next
+  read** — which is exactly the case an in-flight reading exists for, and it is the strongest
+  argument yet for drawing one;
+- **ranks 1 and 2 collide at chip size, on the mid ring.** R6 blamed rank 2's ticks and R7 then
+  over-corrected to a three-wide collision; both were wrong. `bracket-1-exhibition.svg` draws
+  **one** path (the inner diamond alone), `bracket-2-core.svg` draws two (inner + mid), and
+  **neither carries a tick** — the ticks arrive at rank 3. The chip form sheds **the mid ring**
+  and each rank keeps its own distinguisher at a heavier weight, so 3, 4 and 5 stay distinct and
+  **rank 2's only distinguisher is the thing the chip drops.** Still deliberately not fixed: rank
+  2 needs a distinguisher that survives 22px, which is a Round 0 conversation this brief does not
+  scope;
 
 All four are Design's to draw when asked. None blocks building what is drawn.
 
@@ -119,20 +174,27 @@ All four are Design's to draw when asked. None blocks building what is drawn.
 6. **The lean's receipts group tutors by half**, print no count, carry no fraction, and show
    cards at 100×140.
 7. **The reasoning modal carries no declare control.**
-8. **The skip is permanent and stored**, with `say which` surviving.
-9. **Three edits to Round 2's climb** — the 4–5 rung's copy, `reachable`, numbered rung labels.
-10. **The overview is drawn at two paragraphs**, which is a generator-budget change for
-    engineering rather than a design one.
-11. **A changed reading is one row, one sentence, no control** — no direction, no second person,
+8. **Three edits to Round 2's climb** — the 4–5 rung's copy, `reachable`, numbered rung labels.
+9. **The overview is drawn at two paragraphs**, which is a generator-budget change for
+   engineering rather than a design one.
+10. **A changed reading is one row, one sentence, no control** — no direction, no second person,
     with *permits* / *reads as* for cardinality. A range on the new version is asked.
-13. **No skip.** Two chips are the whole control.
-14. **`change` stays on the declared reading** — it edits this version's answer while the version
-    is current, and it is deliberately not *change what you said*.
-12. **1e and 1f are captioned, not redrawn** — §5 agreed.
+11. **No skip.** Two chips are the whole control.
+12. **`change` stays on the declared reading** — it edits the current answer, and it is
+    deliberately not *change what you said*.
+13. **1e and 1f are captioned, not redrawn** — the ask and the lean cannot co-occur.
+14. **The ask returns on a draft that has moved out**, rather than a comparison row; the
+    superseded answer is stated once, passive, above the chips.
+15. **The declared sentence names a version only once one exists** — *Declared Optimized.* on a
+    draft, *…for version 2* after the commit.
+16. **Rank 5 closes the ring** rather than gaining a fifth ornament — an escalation the cardinal
+    points cannot carry at 22px.
 
 ## Data dependencies
 
-- `lean.receipts[].tutors` keyed by combo piece (blocker 1). New this round.
+- **`deck_versions.declared_bracket` and a `permits` snapshot**, copied at commit, the copy
+  conditional on the declaration being inside that version's permits (blocker 1). New this round.
+- **The version number the reader is looking at**, for the *for version n* clause — the tab has it.
 - Stored permanent skip (blocker 2). New this round.
 - `ComboRef` / `CardRef` with oracle ids and image uris, now at card size.
 - `declared` writes: never defaulted, never inferred, never written by the client from a lean or
@@ -140,9 +202,11 @@ All four are Design's to draw when asked. None blocks building what is drawn.
 
 ## Errata carried, not corrected
 
-- **Round 0's `bracket-5-cedh.svg` is rank 4's geometry with rank 5's numeral** — confirmed in
-  the R1 audit. This canvas draws marks to match the Round 0 document, so the discrepancy is
-  carried rather than silently fixed.
+- ~~**Round 0's `bracket-5-cedh.svg` is rank 4's geometry with rank 5's numeral.**~~
+  **Corrected in R6**, not carried: `bracket-5-cedh-reissued.svg` plus a chip form sit beside
+  the originals in the Round 0 assets folder, and §3b draws the set at 40 / 28 / 22. The shipped
+  file is left in place rather than overwritten, since it belongs to the Round 0 package —
+  **engineering takes the reissued pair.**
 - **Round 2's package claims tutors live in `UnquantifiedFacts`** — the audit corrected this to
   `profile.brackets.comboReach.tutors`. The findings tile here inherits the corrected source.
 
@@ -160,8 +224,13 @@ Round 3 draws no sentence for that case — Round 4 owns it.
 
 ## Engineering list, in dependency order
 
-0. `declared` scoped to the analysis version, never carried forward (replaces the withdrawn
-   skip migration), and a read of the previous version's reading + declaration for the diff.
+0. **One migration:** `deck_versions.declared_bracket integer` with the same `between 1 and 5`
+   check `decks.declared_bracket` carries, **plus the `permits` snapshot**, both copied at commit
+   exactly as `commander_oracle_id` already is — and the copy is conditional on the declaration
+   being inside that version's permits. My earlier claim that a nullable per-version `declared`
+   "was already in place" is **withdrawn**: the existing column is deck-scoped, and
+   `deck_versions` has no such column.
+0b. **Rank 5's reissued mark**, before `BracketMark` is built from the five files.
 
 1. The `declared` write path — column, server action, and the **permanent skip** beside it.
 2. `lean.receipts` reshaped to tutors-per-piece.
