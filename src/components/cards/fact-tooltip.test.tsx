@@ -110,4 +110,32 @@ describe("FactTooltip", () => {
     view.unmount();
     expect(media.listenerCount()).toBe(0);
   });
+
+  it("does not come back already open after a fine to coarse to fine round trip", async () => {
+    // Reachable ONLY because the pointer is now reactive. With `open` and the timer held in
+    // the parent, the coarse branch merely stops drawing the wrapper while both survive, so
+    // the tooltip reappears with no pointerenter and a timer armed before the change can
+    // still fire into the coarse branch.
+    const media = livePointer(true);
+    render(<FactTooltip fact="gameChanger"><i data-testid="mark" /></FactTooltip>);
+
+    fireEvent.pointerEnter(screen.getByTestId("mark"));
+    await waitFor(
+      () => expect(screen.getByText(cardMarkCopy.tooltip.gameChanger)).toBeTruthy(),
+      { timeout: OPEN_DELAY_MS + 400 },
+    );
+
+    // Mouse unplugged while the tooltip is open.
+    await act(async () => { media.set(false); });
+    expect(screen.queryByText(cardMarkCopy.tooltip.gameChanger)).toBeNull();
+
+    // Plugged back in. The child remounts with fresh state, so nothing is open until the
+    // pointer enters again.
+    await act(async () => { media.set(true); });
+    expect(screen.queryByText(cardMarkCopy.tooltip.gameChanger)).toBeNull();
+
+    // And wait past the old delay: a timer armed before the transition would land here.
+    await new Promise((r) => setTimeout(r, OPEN_DELAY_MS + 150));
+    expect(screen.queryByText(cardMarkCopy.tooltip.gameChanger)).toBeNull();
+  });
 });

@@ -45,21 +45,35 @@ function subscribeFinePointer(onChange: () => void): () => void {
 }
 
 export function FactTooltip({ fact, children }: { fact: CardFact; children: React.ReactNode }) {
-  const [open, setOpen] = useState(false);
   // `useSyncExternalStore` rather than a state-plus-effect, which is what this was: the effect
   // called `setFine` synchronously on mount, which React 19's `react-hooks/set-state-in-effect`
   // rejects because it schedules a second render before the first has painted.
   //
   // The server snapshot is `false`, which is the behaviour the effect had — the tooltip is a
   // pointer affordance, so a server render and a touch device both draw the children bare.
-  // Reading it as a store also makes it REACTIVE for free: docking a laptop to a mouse now
-  // turns the tooltip on, where the mount-once read would have stayed false for the session.
+  // Reading it as a store also makes it REACTIVE, where the mount-once read stayed false for
+  // the session however the device changed.
   const fine = useSyncExternalStore(subscribeFinePointer, finePointer, serverFinePointer);
+
+  // THE HOVER STATE LIVES IN THE CHILD, and that is the whole reason this component splits.
+  //
+  // Making the pointer reactive made a transition reachable that never was before: fine →
+  // coarse → fine. With `open` and the timer held HERE, the coarse branch would merely stop
+  // drawing the wrapper while both survived — so a tooltip open at the moment a mouse was
+  // unplugged came back already open when it was plugged in again, with no `pointerenter`,
+  // and a timer armed before the change could still fire into the coarse branch.
+  //
+  // Unmounting is the fix rather than a reset effect, because React discarding the child's
+  // state cannot be forgotten the way a dependency list can.
+  if (!fine) return <>{children}</>;
+  return <FinePointerTooltip fact={fact}>{children}</FinePointerTooltip>;
+}
+
+function FinePointerTooltip({ fact, children }: { fact: CardFact; children: React.ReactNode }) {
+  const [open, setOpen] = useState(false);
   const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => () => { if (timer.current) clearTimeout(timer.current); }, []);
-
-  if (!fine) return <>{children}</>;
 
   const cancel = () => { if (timer.current) { clearTimeout(timer.current); timer.current = null; } };
 
