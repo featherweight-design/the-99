@@ -27,17 +27,42 @@ import { buildSuggestionPayload, suggestDeck, type DeckSuggestion } from "./sugg
 // owned in quantity, and the fill stacks it to what the shelf actually holds.
 // It rides on the pool rather than arriving from a second query because both
 // reads scan the same join under the same predicate.
-export type SuggestionPoolCard = PoolCard & { manaValue: number; ownedQuantity: number };
+/** `layout` is here rather than on `PoolCard` deliberately: `PoolCard` is the scoring engine's
+ *  shape too, and the fill is the only consumer that needs to tell a playable land back from
+ *  one that merely flips. */
+/**
+ * What the owned pool selects, named so a test can assert it rather than trusting a type.
+ *
+ * `layout` is load-bearing and invisible when absent: without it every `FillCandidate` reads
+ * `undefined`, `playableAsLand` returns false for every card, and the fill counts zero modal
+ * lands while every unit test passes. The required field on `FillCandidate` catches a dropped
+ * MAPPING; this catches a dropped COLUMN.
+ */
+export const OWNED_POOL_PROJECTION = {
+  oracleId: cards.oracleId, name: cards.name, typeLine: cards.typeLine,
+  oracleText: cards.oracleText, keywords: cards.keywords, colorIdentity: cards.colorIdentity,
+  imageUri: cards.imageUri, artCropUri: cards.artCropUri,
+  manaCost: cards.manaCost, manaValue: cards.cmc, layout: cards.layout,
+} as const;
+
+/** What the unowned-staples query selects. Same reasoning as `OWNED_POOL_PROJECTION`. */
+export const STAPLE_PROJECTION = {
+  oracleId: cards.oracleId, name: cards.name, colorIdentity: cards.colorIdentity,
+  typeLine: cards.typeLine, oracleText: cards.oracleText, keywords: cards.keywords,
+  imageUri: cards.imageUri, manaCost: cards.manaCost, manaValue: cards.cmc,
+  layout: cards.layout,
+} as const;
+
+export type SuggestionPoolCard = PoolCard & {
+  manaValue: number; ownedQuantity: number; layout: string;
+};
 
 // Takes every commander rather than one: a pair's legal pool is the union of
 // both identities, and neither commander belongs in its own deck's suggestions.
 export async function ownedColorLegalPool(userId: string, commanders: Pick<PoolCard, "oracleId" | "colorIdentity">[]): Promise<SuggestionPoolCard[]> {
   const owned = await db
     .select({
-      oracleId: cards.oracleId, name: cards.name, typeLine: cards.typeLine,
-      oracleText: cards.oracleText, keywords: cards.keywords, colorIdentity: cards.colorIdentity,
-      imageUri: cards.imageUri, artCropUri: cards.artCropUri,
-      manaCost: cards.manaCost, manaValue: cards.cmc,
+      ...OWNED_POOL_PROJECTION,
       ownedQuantity: sql<number>`sum(${collectionItems.quantity})::int`,
     })
     .from(collectionItems)
@@ -57,7 +82,7 @@ export async function ownedColorLegalPool(userId: string, commanders: Pick<PoolC
 type UnownedStapleCard = {
   oracleId: string; name: string; typeLine: string;
   oracleText: string | null; keywords: string[];
-  imageUri: string | null; manaCost: string | null; manaValue: number;
+  imageUri: string | null; manaCost: string | null; manaValue: number; layout: string;
 };
 
 /** Unowned EDHREC staples, ordered by EDHREC rank, that fit the deck's colour
@@ -74,17 +99,7 @@ export async function unownedStaples(
   if (topCards.length === 0) return [];
   const lowerTopCards = topCards.slice(0, 100).map((n) => n.toLowerCase());
   const candidateCards = await db
-    .select({
-      oracleId: cards.oracleId,
-      name: cards.name,
-      colorIdentity: cards.colorIdentity,
-      typeLine: cards.typeLine,
-      oracleText: cards.oracleText,
-      keywords: cards.keywords,
-      imageUri: cards.imageUri,
-      manaCost: cards.manaCost,
-      manaValue: cards.cmc,
-    })
+    .select(STAPLE_PROJECTION)
     .from(cards)
     .where(
       and(

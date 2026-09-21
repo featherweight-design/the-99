@@ -11,6 +11,14 @@ export type FillCandidate = {
       which are what the basic-land split is proportioned against. */
   manaCost: string | null;
   owned: boolean;
+  /**
+   * Scryfall's own layout, e.g. `normal`, `modal_dfc`, `transform`.
+   *
+   * REQUIRED rather than optional, and that is the check. A pool query that forgets to select
+   * it is a compile error here; an optional field defaulting to `normal` would leave every
+   * modal land invisible to the land count while every unit test passed.
+   */
+  layout: string;
   /** Total copies owned, summed across printings. 0 for an unowned card. */
   ownedQuantity: number;
   inclusionPct: number | null;

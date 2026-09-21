@@ -3,7 +3,8 @@ import { dedupeSelectionFromPool, planFill, type FillCandidate } from "./fill";
 
 const c = (over: Partial<FillCandidate> & { oracleId: string }): FillCandidate => ({
   name: over.oracleId, typeLine: "Artifact", oracleText: "{T}: Add {C}.",
-  keywords: [], manaCost: null, owned: true, ownedQuantity: 1, inclusionPct: null, ...over,
+  keywords: [], manaCost: null, layout: "normal", owned: true, ownedQuantity: 1,
+  inclusionPct: null, ...over,
 });
 
 const ramp = (id: string, pct: number | null, owned = true) =>
