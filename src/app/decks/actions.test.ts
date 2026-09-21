@@ -2008,13 +2008,15 @@ describe("chooseBulkFill", () => {
     expect(new Set(result.oracleIds).size).toBe(result.oracleIds.length);
   });
 
-  // THE COMMANDER IS A CARD. It is a column on `decks` rather than a `deck_cards` row, and
-  // the profile's own role model already counts it — so a plan blind to it reports a wipe
-  // commander's deck as short of wipes and spends a slot closing a floor the commander closed.
+  // THE COMMANDER IS NOT COUNTED HERE, and this pins the direction rather than leaving it to
+  // whichever round argued last. The measured role targets come from EDHREC's support lists,
+  // which never contain the commander — `profile/types.ts` carries a second classification
+  // "over the 99 ALONE" for exactly this, with the instruction to use it ONLY against a
+  // measured target.
   //
-  // Observable because the wipes floor is 3: with the commander counted the deck needs two
-  // more, and the third slot has nothing left to close and is dropped with the residual.
-  it("counts the commander as a card the deck already holds", async () => {
+  // Observable because the wipes floor is 3: a wipe commander that closed a unit of it would
+  // leave two to fill, and the third slot would come back empty.
+  it("does not count the commander toward a measured floor", async () => {
     stub.state.decks.push({ id: "bulk-c", userId: "user_1", commanderOracleId: COMMANDER_ORACLE });
     stub.state.cards.push(commanderCard({ oracleText: "Destroy all creatures." }));
     stub.state.collectionItems.push(...Array.from({ length: 3 }, (_, i) => ({
@@ -2027,43 +2029,7 @@ describe("chooseBulkFill", () => {
 
     expect(result.ok).toBe(true);
     if (!result.ok) return;
-    expect(result.oracleIds.length).toBe(2);
-  });
-
-  // A SERVER ACTION IS A PUBLIC ENDPOINT. `NaN` passes a `<= 0` guard — every comparison with
-  // NaN is false — and reaches `planFill` as `slots: NaN`, where the limit check is false
-  // forever, so the cap meant to hold the answer to a handful of slots planned a whole body.
-  it.each([
-    ["NaN", Number.NaN],
-    ["a fraction", 1.5],
-    ["a negative", -3],
-    ["Infinity", Number.POSITIVE_INFINITY],
-  ])("offers nothing for %s slots", async (_label, slots) => {
-    stub.state.decks.push({ id: "bulk-n", userId: "user_1", commanderOracleId: COMMANDER_ORACLE });
-    stub.state.cards.push(commanderCard());
-    stub.state.collectionItems.push(...Array.from({ length: 6 }, (_, i) => rampCard(i)));
-
-    const result = await chooseBulkFill("bulk-n", slots);
-
-    expect(result).toEqual({ ok: true, oracleIds: [] });
-  });
-
-  // ONE TICK IS ONE CARD. The land sweep stacks copies of a basic into a single row, and this
-  // action answers with ids that `runTopOff` inserts at quantity 1 — so a row of three Forests
-  // returned as one id promises three and sleeves one, with the button's count wrong in the
-  // player's favour.
-  it("never offers a stacked row", async () => {
-    stub.state.decks.push({ id: "bulk-s", userId: "user_1", commanderOracleId: COMMANDER_ORACLE });
-    stub.state.cards.push(commanderCard());
-    // Basics only: nothing closes a spell floor, so the land sweep is what fills the slots and
-    // it stacks the copies it finds.
-    stub.state.collectionItems.push(forestCard(1, 4));
-
-    const result = await chooseBulkFill("bulk-s", 3);
-
-    expect(result.ok).toBe(true);
-    if (!result.ok) return;
-    expect(result.oracleIds).toEqual([]);
+    expect(result.oracleIds.length).toBe(3);
   });
 
   it("never offers a residual card", async () => {

@@ -60,6 +60,10 @@ export type TopOffResult =
   | { ok: false; message: string };
 
 
+/** Thrown to step over a read this mode cannot use, so the skip and a real failure do not
+ *  share a log line. Never escapes `buildFillPlan`. */
+class SkipRead extends Error {}
+
 /** Gathers the pool (quantities included) and the unowned EDHREC staples, then
     plans the fill. The EDHREC call is not the failure to guard: `getEdhrecData`
     degrades an unreachable upstream to `{ data: null }` and the fill goes ahead
@@ -128,8 +132,27 @@ export async function buildFillPlan(
   // Degraded like the skeleton above rather than failing the create: the residual's ORDER is
   // worth a query and is not worth losing the deck over, and inclusion order is what it fell
   // back to for the whole life of this function.
+  // NEITHER OF THE NEXT TWO READS CAN CHANGE A SLEEVEABLE ANSWER, so neither is made.
+  //
+  // `synergyRank` orders the RESIDUAL, and the one caller asking for a sleeveable pool drops
+  // every residual row before answering. `staples` are unowned by definition, and
+  // `pool: "sleeveable"` filters them straight back out.
+  //
+  // Skipping them is not only the two queries. `unownedStaples` is awaited without a guard of
+  // its own — deliberately, because a create that cannot see the staples has lost something
+  // real — so on that path a staples outage turned a perfectly good owned-pool fill into the
+  // generic refusal, over work whose result was going to be discarded.
+  //
+  // NOT ASSERTED, and for the same reason the slot clamp is not: the OUTPUT is identical
+  // either way, because the staples this skips were being filtered out by `pool: "sleeveable"`
+  // and the ranking ordered rows the caller drops. What changes is the work done and the
+  // failures that can reach the player. `getEdhrecData` above is deliberately NOT skipped —
+  // its `inclusionByName` orders the owned pool, so that read earns its place on this path.
+  const sleeveableOnly = options.pool === "sleeveable";
+
   let synergyRank: Map<string, number> | undefined;
   try {
+    if (sleeveableOnly) throw new SkipRead();
     const synergy = await readSynergyCards(
       userId,
       commanders.map((c) => c.oracleId),
@@ -145,12 +168,14 @@ export async function buildFillPlan(
       synergy.map((card, index) => [card.oracleId, synergy.length - index]),
     );
   } catch (err) {
-    console.warn("buildFillPlan: no synergy ranking — the residual keeps inclusion order", err);
+    if (!(err instanceof SkipRead)) {
+      console.warn("buildFillPlan: no synergy ranking — the residual keeps inclusion order", err);
+    }
   }
 
   const ownedIds = new Set(pool.map((c) => c.oracleId));
   const staples = dedupeSelectionFromPool(
-    data?.topCards
+    data?.topCards && !sleeveableOnly
       ? await unownedStaples(
           commanders,
           data.topCards,
@@ -1988,22 +2013,22 @@ export async function chooseBulkFill(
         ),
         // Only what role and type classification read. `HeldCard` asks for no more, because
         // a card already sleeved is past the question of whether to choose it.
-        held: [
-          // THE COMMANDERS ARE HELD CARDS. They are columns on `decks` rather than
-          // `deck_cards` rows, and the profile's own role model already counts them
-          // (`profile/load.ts`, `profile/build.ts`) — so leaving them out here reports a
-          // ramp commander's deck as short of ramp and spends a slot closing a floor the
-          // commander already closed. Quantity 1 each; a commander is one card.
-          ...[commander, partner].filter((c): c is typeof commander => Boolean(c)).map((c) => ({
-            typeLine: c.typeLine, oracleText: c.oracleText,
-            keywords: c.keywords ?? [], layout: c.layout, manaCost: c.manaCost, quantity: 1,
-          })),
-          ...held.map((h) => ({
-            typeLine: h.typeLine, oracleText: h.oracleText,
-            keywords: h.keywords ?? [], layout: h.layout, manaCost: h.manaCost,
-            quantity: h.quantity,
-          })),
-        ],
+        // THE COMMANDERS ARE NOT IN HERE, and the codebase had already ruled it: the measured
+        // role targets come from EDHREC's support lists, which never contain the commander,
+        // so a floor of ten ramp describes the 99 rather than the 100. `profile/types.ts`
+        // carries a whole second field for exactly this — the classification "over the 99
+        // ALONE" — with the instruction to use it ONLY against a measured target, because
+        // `counts` folds commanders in to match the stats loader.
+        //
+        // An earlier round of this PR asked for them to be added, citing the path where they
+        // ARE folded in. That path answers a different question. Counting a ramp commander
+        // here closed a unit of a floor the support lists never asked it to close, and
+        // returned one fewer real card for the deck.
+        held: held.map((h) => ({
+          typeLine: h.typeLine, oracleText: h.oracleText,
+          keywords: h.keywords ?? [], layout: h.layout, manaCost: h.manaCost,
+          quantity: h.quantity,
+        })),
       },
     );
     // FEWER THAN THE SLOTS IS A VALID ANSWER, and the residual is what made that untrue.
