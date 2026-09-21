@@ -74,6 +74,11 @@ export const cardMarkCopy = {
   // Joined with ", " because the names are self-describing; a connective ("and also")
   // would be the app narrating its own UI.
   rowAria: (marks: string[]) => marks.join(", "),
+
+  // The key's own group label on /collection. The decklist's default names the marks
+  // under a DECK list; this surface is the collection, and the same words there would
+  // describe a list the reader is not looking at.
+  keyRegionAria: "What the marks on these cards mean",
 } as const;
 
 /** The fact's own name, which is its key entry, its modal line and its spoken name. */
