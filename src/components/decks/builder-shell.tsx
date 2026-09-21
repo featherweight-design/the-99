@@ -32,6 +32,7 @@ import {
 } from "../../app/decks/actions";
 import { Decklist } from "./decklist";
 import { BuilderTabs, type BuilderView } from "./builder-tabs";
+import { builderTabSpecs } from "../../lib/decks/builder-tab-specs";
 import { initialBuilderView } from "../../lib/decks/builder-view";
 import { ConsiderPanel, rolesWithShelves } from "./consider-panel";
 import { GamesPanel } from "./games-panel";
@@ -156,6 +157,9 @@ interface BuilderShellProps {
   /** The tab this visit lands on, read off the URL by the route. Only the
       arrival: switching tabs stays component state, so nothing writes it back. */
   initialView?: BuilderView;
+  /** `ANALYSIS_TAB_ENABLED` — whether this deployment draws the Analysis tab AND moves the
+   *  Recommended mix strip into it. Off is today's layout, exactly. */
+  analysisEnabled?: boolean;
 }
 
 // The Games tab's default: a deck nobody has logged against. Hoisted so the
@@ -191,12 +195,13 @@ export function BuilderShell({
   versionCards,
   versions = [],
   initialView = "deck",
+  analysisEnabled = false,
 }: BuilderShellProps) {
   // UI state
   const [filter, setFilter] = useState<"all" | "shopping">("all");
   const [grouping, setGrouping] = useState<"type" | "role">("type");
   const [view, setView] = useState<BuilderView>(
-    initialBuilderView(initialView, versions.length),
+    initialBuilderView(initialView, versions.length, analysisEnabled),
   );
   const [sort, setSort] = useState<SortKey>("gaps");
   const [exportOpen, setExportOpen] = useState(false);
@@ -945,14 +950,21 @@ export function BuilderShell({
                 the explanation of why the counts do not add up. */}
             <UnresolvedBanner count={unresolvedRows.length} onTakeALook={seeUnresolved} />
 
-            {/* Role Counter Strip — shown when deck has cards (mid-build) or always per design */}
-            <RoleCounterStrip
-              cards={cards}
-              onSeeShelf={seeShelf}
-              rolesWithShelves={shelvedRoles}
-              justFilled={deck.filled && autoCount > 0}
-              wasCounts={wasCounts}
-            />
+            {/* Role Counter Strip — shown when deck has cards (mid-build) or always per design.
+                IT LEAVES THIS SPINE when Analysis is on, and that move is what PAYS for the tab:
+                Round 0 costs the tab at roughly 150px of net vertical above the tabs, all of it
+                the strip's. Gated on the same flag as the tab, because an unconditional move
+                would take the strip off the deck page wherever the tab is off, with nothing to
+                receive it. */}
+            {!analysisEnabled && (
+              <RoleCounterStrip
+                cards={cards}
+                onSeeShelf={seeShelf}
+                rolesWithShelves={shelvedRoles}
+                justFilled={deck.filled && autoCount > 0}
+                wasCounts={wasCounts}
+              />
+            )}
 
             {/* No degraded banner here. The old one ("Synergy data offline")
                 fired alongside Consider's own ("EDHREC isn't answering right
@@ -966,44 +978,13 @@ export function BuilderShell({
             {/* The decklist and Consider as peer tabs. The desktop toolbar rides
                 this row; at phone width Consider draws its own toolbar row. */}
             <BuilderTabs
-              tabs={[
-                {
-                  id: "deck",
-                  label: addPanelCopy.tabs.deck,
-                  count: built,
-                  accessibleName: addPanelCopy.tabs.deckAria(built),
-                },
-                {
-                  id: "consider",
-                  label: addPanelCopy.tabs.consider,
-                  count: suggestions.length,
-                  accessibleName: addPanelCopy.tabs.considerAria(suggestions.length),
-                },
-                {
-                  id: "games",
-                  label: gameLogCopy.tab.label,
-                  // Omitted rather than zero: a tab reading "Games · 0"
-                  // advertises its own emptiness.
-                  count: games.length > 0 ? games.length : undefined,
-                  accessibleName:
-                    games.length > 0
-                      ? gameLogCopy.tab.aria(String(games.length))
-                      : gameLogCopy.tab.ariaNone,
-                },
-                // Absent on a brew rather than empty: a deck with no version has
-                // no history, and a tab saying so advertises its own emptiness
-                // (§Decisions 4).
-                ...(versions.length > 0
-                  ? [
-                      {
-                        id: "versions" as const,
-                        label: deckVersioningCopy.history.tab,
-                        count: versions.length,
-                        accessibleName: deckVersioningCopy.history.tabAria(versions.length),
-                      },
-                    ]
-                  : []),
-              ]}
+              tabs={builderTabSpecs({
+                built,
+                suggestionCount: suggestions.length,
+                gameCount: games.length,
+                versionCount: versions.length,
+                analysisEnabled,
+              })}
               view={view}
               onViewChange={setView}
             >
@@ -1018,7 +999,21 @@ export function BuilderShell({
               )}
             </BuilderTabs>
 
-            {view === "games" ? (
+            {view === "analysis" ? (
+              <div id="panel-analysis" role="tabpanel" aria-labelledby="tab-analysis">
+                {/* The strip in its new home. It is REAL analysis content rather than a
+                    placeholder — Round 0 moves it here on purpose — which is why this panel
+                    draws something true on the day the tab lands, with the verdict arriving
+                    on top of it rather than replacing it. */}
+                <RoleCounterStrip
+                  cards={cards}
+                  onSeeShelf={seeShelf}
+                  rolesWithShelves={shelvedRoles}
+                  justFilled={deck.filled && autoCount > 0}
+                  wasCounts={wasCounts}
+                />
+              </div>
+            ) : view === "games" ? (
               <div id="panel-games" role="tabpanel" aria-labelledby="tab-games">
                 <GamesPanel deckId={deck.id} games={games} summary={gameSummary} />
               </div>
