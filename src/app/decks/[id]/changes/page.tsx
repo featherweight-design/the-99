@@ -16,6 +16,19 @@ import { isUuid } from "../../../../lib/uuid";
 
 // Versioned like every other cached payload here: the key travels with the SHAPE of what it
 // stores, so a mix that grows a field is never read back from an entry that lacks it.
+//
+// WHY A DECK ID IS A SAFE KEY. The mix is a function of the deck's commanders and of the
+// commander index, and neither can move under this entry:
+//
+//   - A deck's `commander_oracle_id` and `partner_oracle_id` are written once, by the two
+//     inserts that create a deck, and by nothing else — there is no UPDATE of either column
+//     anywhere in `src/`. A deck's commanders are immutable for its life. **A feature that
+//     lets a player change a commander breaks that, and would have to drop this entry**;
+//     nothing here would fail loudly if it did not.
+//   - The index moves monthly. `cacheForUser` carries the CATALOG generation in its key, and
+//     a `Commander index` run does not stamp `catalog_refreshes` — so a rebuild is not in the
+//     key and is bounded by the hour ceiling instead. One hour of a month is the staleness
+//     being bought, on figures whose whole point is that they are averages.
 const DECK_MIX_KEY = ["deck-mix", "1"];
 
 export default async function ChangesPage({
