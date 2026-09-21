@@ -2,13 +2,16 @@
 // Adds only, with two stated exceptions at the bottom (both consequences of this round).
 //
 // Rules this block is written under:
+//   · a declaration is made ON A VERSION. v1's answer is permanently true about v1, so the app
+//     never revisits it, never carries it forward, and NEVER QUOTES THE PLAYER ("you said…")
 //   · the app never argues with a declaration and never writes one the player did not make
 //   · a bracket is named by NAME ALONE. Every string below is rendered beside that bracket's
 //     mark, and the mark is the numeral — "Optimized (4)" prints it twice. The sole
 //     exception is reasoning.title, a heading with no mark beside it.
 //   · no copy may imply a tutor COUNT matters — the threshold is the combo's piece count,
 //     and the "too many tutors" clause was deleted in October 2025
-//   · drift reports a movement the PLAYER caused; it never grades, warns, or offers to fix
+//   · a later version reading differently is a DIFF between two versions — not a movement, not
+//     a fault, and not addressed to anyone. No direction, no control, no second person.
 
 // Names come from deckAnalysisCopy.brackets (WotC's, verbatim) and are never re-typed here.
 const bracketLabel = (n: BracketNumber) => BRACKET_NAMES[n];
@@ -19,45 +22,55 @@ export const declarationCopy = {
     lead: "Pick one so pods know what to expect.",
     // Chip labels are the bracket NAME alone — the mark beside them draws the numeral.
     // Names come from deckAnalysisCopy.brackets (WotC's, verbatim), never re-typed here.
-    skip: "skip this",
-    // Shown once skipped, and after that forever. Not "not now": the skip is permanent and
-    // the copy must not promise a later ask.
-    skipped: "Not declared. The range stands on its own, and we will leave it there.",
-    volunteer: "say which",
+    //
+    // R5: there is NO skip. Two chips are the entire control. A player who says nothing leaves
+    // this version unanswered, and a later version with a range is asked on its own account —
+    // so there is no "skipped" copy, no "say which", and nothing to store for a refusal.
   },
 
   declared: {
-    // "at a table" rather than "to other players": the declaration's value is that it is the
-    // sentence the player says out loud before a game.
-    line: (declared: BracketNumber) =>
-      \`You said \${bracketLabel(declared)}. That is what this deck says at a table.\`,
-    // Sits INLINE at the end of that sentence, not on its own row.
+    // A statement of record, scoped to the version it was made on — NOT testimony.
+    // R5 removed "You said X. That is what this deck says at a table.": the app does not
+    // quote the player, and a declaration made on v1 is never stale, because it was never a
+    // claim about any version but v1.
+    line: (declared: BracketNumber) => \`Declared \${bracketLabel(declared)} for this version.\`,
+    // Inline at the end of that sentence. Edits THIS version's answer while it is current;
+    // it is deliberately one word, and deliberately not "change what you said".
     change: "change",
-    // The face resolves to the declared bracket, so the permitted range moves here.
-    permitsBelow: (permitsPhrase: string) =>
-      \`Your cards permit \${permitsPhrase} — the two have no card limits between them.\`,
+    permitsBelow: (permitsPhrase: string, isTopRange: boolean) =>
+      isTopRange
+        ? \`Your cards permit \${permitsPhrase} — the two have no card limits between them.\`
+        // 1/2 DO differ by a card limit (the extra-turn limit), per the R1 audit.
+        : \`Your cards permit \${permitsPhrase} — the two differ in what you are trying to do.\`,
   },
 
-  // declaredOutsidePermits.
+  // Replaces the whole R2–R4 `drift` block.
   //
-  // ONE cause. A declaration is only ever 1, 2, 4 or 5, so drift is always a deck crossing
-  // out of the range it was declared inside: 1|2 -> [4,5], or 4|5 -> [1,2]. It is reached by
-  // the player editing, committing and re-analysing — so the sentence credits them with the
-  // movement, which is both true and why the state cannot read as a scolding.
+  // WITHDRAWN with it: "You said X", "Your last changes moved this deck past that",
+  // "brought this deck inside", "Your declaration stands as you left it",
+  // "change what you said", and the up/down sentence pair. All of them existed to soften a
+  // claim the app should never have been making — that the player's standing statement had
+  // gone out of date. A declaration is made ON A VERSION, so nothing goes out of date.
   //
-  // REMOVED in R2: a second "the reader overruled the lean" sentence. Declaring 5 where the
-  // lean said 4 is a declaration INSIDE [4,5] — it can never set this flag.
-  drift: {
-    markLabelDeclared: "you said",
-    markLabelPermits: "your cards now permit",
-    line: (declared: BracketNumber, permitsPhrase: string) =>
-      \`You said \${bracketLabel(declared)}. Your last changes moved this deck past that — it now permits \${permitsPhrase}.\`,
-    // The load-bearing line of the state. The app re-read the deck; it did not re-declare it.
-    stands: "Your declaration stands as you left it.",
-    change: "change what you said",
-    // Deliberately absent: any string meaning "update", "fix", "out of date", "no longer
-    // accurate", or "we recommend". The analysis is automated and the declaration is not;
-    // a control that copies one into the other makes the app the author of the player's line.
+  // What is left is a diff. One sentence, no direction (a comparison of two readings cannot
+  // be false in one direction), no control, no second person. Cardinality picks one verb.
+  versionChange: {
+    markLabelPrevious: (v: number) => \`version \${v}\`,
+    markLabelCurrent: "this version",
+    line: (
+      current: { phrase: string; isRange: boolean },
+      previous: { version: number; phrase: string; declared: BracketNumber | null },
+    ) => {
+      const now = current.isRange
+        ? \`This version permits \${current.phrase}.\`
+        : \`This version reads as \${current.phrase}.\`;
+      const then = previous.declared === null
+        ? \`Version \${previous.version} read as \${previous.phrase}.\`
+        : \`Version \${previous.version} read as \${previous.phrase} and was declared \${bracketLabel(previous.declared)}.\`;
+      return \`\${now} \${then}\`;
+    },
+    // No control of any kind. If `current.isRange`, ask.lead + the chips follow underneath,
+    // because this version has never answered a question — that is not a re-ask.
   },
 
   // §6.1b as amended on feat/combo-decides. The lean explains a RESOLVED verdict.
@@ -103,7 +116,7 @@ export const declarationCopy = {
   },
 } as const;
 
-// Live region, on a deck with a lean and no declaration:
+// Live region, on a version with a lean and no declaration:
 //   "Analysis ready. Your cards permit Optimized or cEDH. Your tutors can find both
 //    halves of one combo, which puts this past Upgraded. Which of the two this is, is
 //    yours to say."

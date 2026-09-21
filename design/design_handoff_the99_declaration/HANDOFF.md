@@ -1,4 +1,4 @@
-# The declaration — handoff package (R2, Round 3 of 5)
+# The declaration — handoff package (R5, Round 3 of 5)
 
 **Canvas:** `The 99 - The Declaration.dc.html`. One turn, sections 1a–1f; `theme` switches
 amonkhet / kamigawa in Tweaks, `demoState` seeds 1a's live card.
@@ -15,12 +15,30 @@ amonkhet / kamigawa in Tweaks, `demoState` seeds 1a's live card.
 | In the sub-line | When | Drawn |
 |---|---|---|
 | **The ask** | `permits` is `[1,2]` or `[4,5]` and `declared` is null | lead line, two chips carrying the bracket marks, a text-weight `skip this` |
-| **The answer** | `declared` is set and inside `permits` | the face resolves to that bracket's own chip + *You said X (n)* with `change` **inline** |
-| **Skipped** | the player skipped, ever | one faint line + `say which`. **Never asked again** |
-| **Drift** | `declaredOutsidePermits` | declared mark → permitted marks, one sentence naming the player's own changes, *your declaration stands*, `change what you said` |
+| **The answer** | `declared` is set for this version | the face resolves to that bracket's own chip + *Declared **X** for this version.* with `change` **inline** |
+| **Unanswered** | the player says nothing | nothing extra — the ask stays on versions that have a range. **There is no skip** |
+| **A later version reads differently** | this version's reading ≠ the last one's | version 1's mark → arrow → this version's mark(s); **one sentence, no control**; if this version has a range, the ordinary ask follows — see STATES §E |
 | **The lean** | `lean` is non-null | **`HOW WE DETERMINED THIS BRACKET`**, one sentence, `see the reasoning` → the modal |
 
 **No new glyph. Two retire:** the ringed `?` and the ringed `≈` (§4.4). `MarkKey` is untouched.
+
+## The declaration belongs to the version it was made on
+
+This is the frame everything else follows from. Version 1 read as a range and a bracket was
+chosen for it; that record is **complete and permanently true about version 1**. A re-analysis
+produces a later version with its own reading, and the block's only job is to state both.
+
+Consequences, all of them removals:
+
+- **No copy quotes the player.** *You said X*, *your last changes*, *change what you said* are
+  all withdrawn. A declaration is never stale, because it was never a claim about any version
+  but its own.
+- **The changed-reading state has no control.** Nothing is being corrected.
+- **Direction disappears.** R4's two sentences (*moved past* / *brought inside*) existed because
+  a claim about the deck can be false in one direction; a comparison of two readings cannot be.
+- **There is no skip.** Two chips are the whole control; saying nothing leaves the version
+  unanswered, and a version with a range is asked. **The permanent-skip state, its copy and the
+  migration it needed are all withdrawn** — a nullable `declared` per version is sufficient.
 
 ## Naming: the name, because the mark carries the number
 
@@ -37,9 +55,9 @@ bracket 4*, with *Optimized* as its qualifier.
 2. **Answering resolves the face.** The split pill and its `split` label are replaced by the
    declared bracket's chip; the permitted range moves into the description line rather than
    disappearing. A declared deck is not still asking.
-3. **Drift has exactly one cause.** Only 1/2 and 4/5 are declarable, so drift is always a deck
-   crossing out of the range it was declared inside, always caused by the player's own
-   re-analysed edit. There is no "we disagree" entrance and no `driftVoice`.
+3. **A changed reading is a diff, not a verdict on the player.** One row, one sentence, no
+   control, no direction. Cardinality is the only axis: a range *permits*, a single bracket
+   *reads as*. If this version has a range, the ordinary ask follows underneath it.
 4. **Drift has no "update" button.** The analysis is automated; the declaration is not. A control
    that copies one into the other makes the app the author of a sentence the player says at a
    table.
@@ -61,12 +79,26 @@ anything.
 
 **No copy on this surface may imply "too many tutors."** That clause was deleted in October 2025.
 
+## Drift and the lean DO co-occur
+
+`leanFor` fires iff `permits.length === 1`, so a drift reading whose permitted side is a single
+mark (`[2]`, `[3]`, `[4]`) also carries the lean line — except `[2]`, which has no lean reason.
+Order: description, lean, drift row. Drawn on three of 2a's cards.
+
+## The ask and the lean never co-occur
+
+The ask needs a permitted **range**; the lean only fires on a **single** bracket. Frames 1e and
+1f draw them in one card to fix size, order and label form — **that composition is not a
+producible state.** Ship the ask on `[1,2]`/`[4,5]` and the lean on `[3]`/`[4]`, with two
+live-region announcements. Both frames carry this caveat inline.
+
 ## Three things most likely to get broken in build
 
 1. **Do not default `declared`, and do not write it from the lean or from a re-analysis.**
 2. **Do not re-ask after a skip** — stored, permanent, per deck; survives re-import and
    re-analysis.
-3. **Do not give drift an alarm treatment.** No `--danger`, no warning glyph, no toast, no badge.
+3. **Do not give the changed-reading row an alarm treatment.** No `--danger`, no warning glyph,
+   no toast, no badge, no directional or recoloured arrow — and no second-person copy.
 
 ## One for the backlog, not this round
 

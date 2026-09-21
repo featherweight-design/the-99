@@ -1,8 +1,40 @@
 # Readiness — the declaration (Round 3 of 5)
 
-**Self-assessed: 🟡 Yellow.** All five §4 calls are made, both widths are drawn, and drift — the
-round's new state — is drawn for the first time in the line, and now drawn *possibly*. Yellow for
-one data-shape change this round requires and two facts I cannot supply myself.
+**Self-assessed: 🟡 Yellow.** R5 re-frames the declaration as per-version, which removes the
+round's only migration and most of its copy risk. The audit's one orange item is answered in **2a** — drift's four
+shapes, both widths, with the downward sentence the round was missing. Yellow, not green, for the
+skip's storage and the coverage gaps below; every item the audit resolved without Design is left
+to engineering as recorded.
+
+## Fixed in R5, from review
+
+- **The declaration is scoped to the version it was made on**, and the app stops quoting the
+  player. *You said X*, *your last changes* and *change what you said* are withdrawn; the
+  declared reading is a statement of record, and a later version's differing reading is a
+  two-line diff with **no control**.
+- **Direction is gone with it.** R4's up/down sentence pair existed because a claim about the
+  deck can be false in one direction; a comparison of two readings cannot be. One sentence now
+  covers every shape, and cardinality (*permits* / *reads as*) is the only axis left.
+- **A later version with a range is asked** — not re-asked, since it has never answered.
+- **There is no skip.** Removed from the UI, the matrices and the copy.
+  **Blocker 0 below is withdrawn with it:** no skip state, no migration. A nullable `declared`
+  per version is sufficient, which was already in place.
+
+## Fixed in R4, from the R1 audit's one orange item
+
+- **Drift, re-drawn — four shapes, not two.** After the 2026-09-20 ruling `permitsFor` returns
+  `[1,2] [2] [3] [4] [4,5]`, so the permitted side can be a single mark and the deck can have
+  moved **down**. One row treatment for all four; two sentences chosen by `max(permits)` vs
+  `declared` (*moved past* / *brought inside*); one word for cardinality (*permits* / *reads
+  as*). The downward line ends on what the work bought — *it no longer needs the higher bracket*
+  — because cutting a deck down is the harder edit and R3's *past* was simply false in that
+  direction. Drawn at both widths in **2a**.
+- **§5 agreed:** the ask and the lean cannot co-occur. 1e and 1f are captioned rather than
+  redrawn — the composition is the only false part of either frame.
+- **And the converse, caught in review:** drift and the lean *do* co-occur whenever the permitted
+  side is a single mark, since `leanFor` fires iff `permits.length === 1`. 2a's `[3]` and `[4]`
+  cards draw the labelled lean sub-section above the drift row; only the `[2]` card omits it,
+  because 2 has no lean reason. **Drift never suppresses the lean.**
 
 ## Fixed in R3, from review
 
@@ -26,26 +58,55 @@ one data-shape change this round requires and two facts I cannot supply myself.
 
 ## What blocks a green
 
-1. **`lean.receipts[].tutors` is the wrong shape for what this draws.** The contract on
-   `feat/combo-decides` gives `{ combo, tutors: CardRef[] }` — flat per combo. The receipts group
-   tutors **by the combo half they find**, and that grouping is the entire defence against the
-   deleted "too many tutors" clause. Deriving it client-side means re-running coverage in the
-   browser, which this surface must not do. **Needs `tutors` keyed by piece** — small change to
-   the shape, none to the detection.
+0. ~~**A permanent skip has nowhere to live.**~~ **Withdrawn in R5** — there is no skip. Saying
+   nothing leaves the version unanswered, which a nullable `declared` already expresses. **The
+   round no longer needs a migration.** What it does need is that `declared` be scoped to an
+   analysis version and never carried forward.
+
+1. **`lean.receipts[].tutors` is the wrong shape for what this draws** — flat per combo, where
+   the receipts group tutors **by the combo half they find**. That grouping is the entire defence
+   against the deleted "too many tutors" clause. **Corrected by the audit, in our favour:** the
+   profile already carries `{ tutor, combo, piece }` on `comboReach.reaches` and `leanFor`
+   discards `piece` when it dedupes, so this is a projection and not the re-derivation I billed
+   it as. Still owed, still blocking the modal; cheaper than stated.
 2. **A permanent skip needs its own stored state.** A nullable `declared` cannot express *asked
    and declined*, and the brief's §6 state list does not mention one. Second column or sentinel,
    engineering's call — but it must survive re-import and re-analysis.
-3. **`declaredOutsidePermits` has no timestamp anywhere I can find.** The drawing survives
-   without one — no date is printed, and *your last changes* is true regardless — but if a later
-   round wants *you said this in March*, the column is not there today.
+3. **`declaredOutsidePermits` may not need to exist at all.** Per version it is the observation
+   that `v(n)` reads differently from `v(n-1)`, computable at analysis time with nothing stored.
+   The drawing needs the previous version's reading and its declaration — **a version-history
+   read, not a flag** — which is the one thing R5 adds to the data it needs.
 
-## Open with engineering, not with design
+## Withdrawn — claims of mine the audit disproved
 
-**The contract's doc comment is stale against the ruling.** `types.ts:58-61` still reads
-*"Only when `permits` is `[3, 4]` — the one place the range is wide enough…"*, and `permits` is
-still typed with `[3,4]` in the union. **The comment and the union both need to follow the
-amendment**, or the next reader of the contract will rebuild the range this round deleted —
-and with it the impossible drift state R1 drew.
+Recorded so they are not re-litigated. I read an older commit than I thought:
+
+- *"The contract comment still reads `[3,4]`"* — already amended on `main` and on
+  `feat/combo-decides` (#765).
+- *"`permits` is typed with `[3,4]` in a union"* — no such union exists; `permits: Bracket[]`.
+- *"Tutors-per-piece means re-running coverage client-side"* — the association is already on the
+  profile (blocker 1 above).
+- *"`ComboRef`/`CardRef` carry image uris"* — they do not, and per the audit they must not grow
+  them: the profile is fingerprint-cached, so art resolves at the draw instead. **The 100×140
+  tiles in 1d are unaffected as a drawing**, but the modal owns its own image loading.
+
+One correction of my own, from the audit: **`declared.permitsBelow`'s trailing clause is false
+for `[1,2]`** — Exhibition and Core differ by exactly the extra-turn limit, so "no card limits
+between them" must be conditional on the range.
+
+## Coverage
+
+Drawn at both widths: the ask, all four sub-line readings, the lean, and (new in R4) drift's four
+shapes. Still prose-only, carried from the audit and **not** closed by 2a:
+
+- the reasoning modal at 390, and the `drawOnly` modal body at either width;
+- the command-zone `found by` reading — a half covered by the commander currently prints
+  *nothing in this deck searches for it* under a header saying both halves are findable
+  (audit item 5). A third reading is owed;
+- **no loading, in-flight, failed or refused reading for the declaration's write.** Round 0 drew
+  five synopsis states; this round's new write has none, so an implementer would invent one.
+
+All four are Design's to draw when asked. None blocks building what is drawn.
 
 ## Called, not asked
 
@@ -62,6 +123,12 @@ and with it the impossible drift state R1 drew.
 9. **Three edits to Round 2's climb** — the 4–5 rung's copy, `reachable`, numbered rung labels.
 10. **The overview is drawn at two paragraphs**, which is a generator-budget change for
     engineering rather than a design one.
+11. **A changed reading is one row, one sentence, no control** — no direction, no second person,
+    with *permits* / *reads as* for cardinality. A range on the new version is asked.
+13. **No skip.** Two chips are the whole control.
+14. **`change` stays on the declared reading** — it edits this version's answer while the version
+    is current, and it is deliberately not *change what you said*.
+12. **1e and 1f are captioned, not redrawn** — §5 agreed.
 
 ## Data dependencies
 
@@ -93,6 +160,9 @@ Round 3 draws no sentence for that case — Round 4 owns it.
 
 ## Engineering list, in dependency order
 
+0. `declared` scoped to the analysis version, never carried forward (replaces the withdrawn
+   skip migration), and a read of the previous version's reading + declaration for the diff.
+
 1. The `declared` write path — column, server action, and the **permanent skip** beside it.
 2. `lean.receipts` reshaped to tutors-per-piece.
 3. The sub-line's readings as one component — ask, declared (face resolves), skipped, drift, and
@@ -100,7 +170,8 @@ Round 3 draws no sentence for that case — Round 4 owns it.
 4. The ask row: chips at 38 / 44px, text-weight skip, no selected state.
 5. The lean line and its label, on both `reachable` and `drawOnly`.
 6. The reasoning body inside Round 2's existing modal chrome — a third body, not a component.
-7. The drift row: two marks, arrow, labels, sentence, `change what you said`.
+7. The version-change row: previous version's mark, arrow, this version's mark(s), one sentence,
+   no control — plus the ordinary ask when this version has a range.
 8. Round 2's three climb edits.
 9. Live region updates for the lean and the drift states.
 10. The overview generator's length budget.
