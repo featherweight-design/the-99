@@ -1,7 +1,15 @@
 import { describe, expect, it } from "vitest";
 
 import { buildDeckProfile, manaNeeds, type ProfileCardRow, type ProfileInput } from "./build";
-import type { ComboRef, DetectionCoverage, FlagSource } from "./types";
+import type { ComboRef, CompositionTargets, DetectionCoverage, FlagSource } from "./types";
+import { ROLE_TARGETS } from "../recs/roles";
+
+/** Any complete composition — this block is about the ROLE chain, and only needs the type
+ *  chain to be resolvable so the two can be shown not to move together. */
+const COMPOSITION: CompositionTargets = {
+  land: 37, basic: 20, nonbasic: 17, creature: 28, instant: 8,
+  sorcery: 7, artifact: 9, enchantment: 6, planeswalker: 1, battle: 0,
+};
 
 const DETECTION: DetectionCoverage = {
   massLandDenial: { sources: 2, basis: "test" },
@@ -35,6 +43,8 @@ function input(over: Partial<ProfileInput> = {}): ProfileInput {
     declared: null,
     condition: "G",
     composition: { pair: null, commander: null, identity: null, count: null },
+    roles: { pair: null, commander: null, identity: null, count: null },
+    thinCondition: false,
     staples: [],
     commanderDeckCount: null,
     population: null,
@@ -582,5 +592,63 @@ describe("a tutor reaches only what it can find", () => {
     );
     expect(p.brackets.comboReach.tutors).toHaveLength(1);
     expect(p.brackets.comboReach.reaches).toEqual([]);
+  });
+});
+
+// THE ROLE CHAIN. Read down the same order as the composition and resolved SEPARATELY — the
+// two populations differ until one index run has covered both, so a commander indexed before
+// the role pass carries a composition and four nulls.
+describe("roleTargets", () => {
+  const FOUR = { ramp: 9, draw: 11, removal: 7, wipes: 2 };
+  const OTHER = { ramp: 1, draw: 2, removal: 3, wipes: 4 };
+  const withRoles = (roles: Partial<ProfileInput["roles"]>, thinCondition = false) =>
+    buildDeckProfile(input({
+      roles: { pair: null, commander: null, identity: null, count: null, ...roles },
+      thinCondition,
+    })).skeleton;
+
+  it("prefers the commander's own figures over a bucket's", () => {
+    const s = withRoles({ commander: FOUR, identity: OTHER, count: OTHER });
+    expect(s.roleTargets).toEqual({ of: "commander", targets: FOUR });
+  });
+
+  it("prefers a pair's over the commander's", () => {
+    expect(withRoles({ pair: FOUR, commander: OTHER }).roleTargets.of).toBe("pair");
+  });
+
+  it("falls to the identity bucket, then the count bucket", () => {
+    expect(withRoles({ identity: FOUR, count: OTHER }).roleTargets.of).toBe("identity");
+    expect(withRoles({ count: FOUR }).roleTargets.of).toBe("count");
+  });
+
+  // `flat` is a real answer rather than an absence: it is the asserted baseline this whole
+  // sub-project replaces, and a deck falling back to it is being told something true.
+  it("ends at the flat asserted targets rather than null", () => {
+    const s = withRoles({});
+    expect(s.roleTargets.of).toBe("flat");
+    expect(s.roleTargets.targets).toEqual({ ...ROLE_TARGETS });
+  });
+
+  // THE INDEPENDENCE, which is the whole reason there are two chains rather than one. Folding
+  // them would drag a perfectly good composition to flat over role figures nobody measured.
+  it("resolves independently of the composition", () => {
+    const s = buildDeckProfile(input({
+      composition: {
+        pair: null,
+        commander: { targets: COMPOSITION, averageCurve: null },
+        identity: null,
+        count: null,
+      },
+    })).skeleton;
+    expect(s.composition?.of).toBe("commander");
+    expect(s.roleTargets.of).toBe("flat");
+  });
+
+  // Surfaced WITHOUT inventing a basis value: a below-bar bucket is still an `identity` or
+  // `count` basis, and the caveat travels beside it rather than replacing it.
+  it("carries thinCondition without changing the basis", () => {
+    const s = withRoles({ identity: FOUR }, true);
+    expect(s.thinCondition).toBe(true);
+    expect(s.roleTargets.of).toBe("identity");
   });
 });

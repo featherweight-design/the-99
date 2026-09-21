@@ -19,7 +19,7 @@ import { sql } from "drizzle-orm";
 import { db } from "../src/db";
 import { formatStaples, identityComposition } from "../src/db/schema";
 import {
-  MIN_COMMANDERS_PER_CONDITION, THIN_COLOR_COUNTS, identityCondition,
+  MIN_COMMANDERS_PER_CONDITION, THIN_COLOR_COUNTS, thinCondition,
 } from "../src/lib/staples/condition";
 // Imported, never restated: a literal here goes silently wrong the day the flat targets move,
 // and this line's whole job is to sit beside the derived figures as their baseline.
@@ -206,13 +206,23 @@ function compositionQuery(
  * the chain finds it on the identity rung, while a four-colour commander's identity key is one
  * of five exact strings none of which is written, so it falls through to `count:4`.
  */
+/** GENERATED FROM `thinCondition`, one arm per count, rather than hand-written beside it. The
+ *  previous version shared only the count LIST and wrote the key mapping a second time in SQL,
+ *  so changing the colourless arm in TypeScript would have left this branch writing the old key
+ *  and the reader looking up one no row carries — silently, every time, for every such deck. */
 const THIN_KEY = `
-  case when cardinality(cmd.color_identity) = 0 then '${identityCondition([])}'
-       else 'count:' || cardinality(cmd.color_identity) end`;
-// Interpolated from `THIN_COLOR_COUNTS` rather than written out, so this restriction and the
-// `thinCondition` the reader is unit-tested against cannot disagree. Three's absence from that
-// list is the rule; a literal here is a second place to get it wrong.
-const THIN_ONLY = `where cardinality(cmd.color_identity) in (${THIN_COLOR_COUNTS.join(", ")})`;
+  case ${THIN_COLOR_COUNTS
+    .map((n) => `when cardinality(cmd.color_identity) = ${n} then '${thinCondition(n)}'`)
+    .join("\n       ")} end`;
+/** The fallback restriction too, so this branch reads the SAME population `loadAverageCurves`
+ *  computes its `count:N` curves over. Inert while no exact identity at these counts clears the
+ *  bar — none does — but the moment one did, this row's type averages would cover commanders
+ *  the identity rung already serves while its curve covered only those it does not, which is
+ *  the mismatch that function's own header forbids. */
+const thinOnly = (fallbackOnly: string) =>
+  fallbackOnly
+    ? `${fallbackOnly} and cardinality(cmd.color_identity) in (${THIN_COLOR_COUNTS.join(", ")})`
+    : `where cardinality(cmd.color_identity) in (${THIN_COLOR_COUNTS.join(", ")})`;
 const THIN_HAVING = `count(*) < ${MIN_COMMANDERS_PER_CONDITION}`;
 
 /**
@@ -529,7 +539,7 @@ async function main() {
   const curves = await loadAverageCurves(FALLBACK_ONLY);
 
   type Comp = Record<string, number | string>;
-  const thinComps = await q<Comp>(compositionQuery(THIN_KEY, THIN_ONLY, THIN_HAVING));
+  const thinComps = await q<Comp>(compositionQuery(THIN_KEY, thinOnly(FALLBACK_ONLY), THIN_HAVING));
   const comps: { row: Comp; thin: boolean }[] = [
     ...(await q<Comp>(compositionQuery(IDENTITY_KEY, NO_STATE_FILTER)))
       .map((row) => ({ row, thin: false })),
@@ -613,12 +623,16 @@ async function main() {
       `removal ${ROLE_TARGETS.removal} · wipes ${ROLE_TARGETS.wipes}`,
     );
     console.log(
-      `${pad("condition", 12)}${num("land", 7)}${num("creature", 10)}` +
+      `${pad("condition", 18)}${num("land", 7)}${num("creature", 10)}` +
       `${num("ramp", 7)}${num("draw", 7)}${num("removal", 9)}${num("wipes", 7)}`,
     );
     for (const c of compRows) {
       console.log(
-        pad(c.condition, 12) + num(c.avgLand.toFixed(1), 7) + num(c.avgCreature.toFixed(1), 10) +
+        // MARKED, because this table mixes the two. The thin block above prints them apart,
+        // but these rows land in one list with the ratified ones, and a reader scanning it
+        // cannot otherwise tell a mean over 16 commanders from a mean over 800.
+        pad(c.thin ? `${c.condition} (thin)` : c.condition, 18) +
+        num(c.avgLand.toFixed(1), 7) + num(c.avgCreature.toFixed(1), 10) +
         num(c.avgRamp.toFixed(1), 7) + num(c.avgDraw.toFixed(1), 7) +
         num(c.avgRemoval.toFixed(1), 9) + num(c.avgWipes.toFixed(1), 7),
       );

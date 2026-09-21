@@ -60,9 +60,20 @@ export const MIN_COMMANDERS_PER_CONDITION = 100;
  *
  * A commander needs a thin bucket when its EXACT identity is under
  * `MIN_COMMANDERS_PER_CONDITION` and its colour-COUNT key is under it too. Measured on staging
- * 2026-09-20 over the 3,279 commanders with `synergy_state = 'ok'`: colourless 58,
- * four-colour 16, five-colour 60 — 134 commanders that resolve to no composition row at all,
- * which is the count that query returns today.
+ * 2026-09-21 over the 3,380 commanders that index carries with `synergy_state = 'ok'`:
+ * colourless 58, four-colour 16, five-colour 60 — 134 commanders that resolve to no
+ * composition row at all today, which is their sum.
+ *
+ * THE MEASUREMENT FILTERED ON `synergy_state = 'ok'`; THE BRANCH DOES NOT. `build-staples`
+ * applies no state filter anywhere, deliberately — the ratified floors were derived without
+ * one — so these figures and the branch's own `count(*)` agree exactly while every row is
+ * `ok`, which is true of staging and local-dev today. On a partially degraded index they
+ * would not, and the branch's count is the one that decides.
+ *
+ * THE 46 QUOTED FOR COLOURLESS ABOVE is the same bucket on the SMALLER index the ratified
+ * floors were measured against. Both are true of their own corpus and neither corrects the
+ * other — a bucket's size moves with every index run, which is why each figure here carries
+ * the corpus it was taken over.
  *
  * THREE IS ABSENT, and that is the whole reason this is a named list rather than
  * "every count under the bar". All ten three-colour identities are under it, but `count:3` is

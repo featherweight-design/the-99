@@ -176,6 +176,10 @@ type CompositionRow = {
   avgArtifact: number | null; avgEnchantment: number | null;
   avgPlaneswalker: number | null; avgBattle: number | null;
   avgCurve: Record<string, number> | null;
+  avgRamp: number | null; avgDraw: number | null;
+  avgRemoval: number | null; avgWipes: number | null;
+  /** Only `identity_composition` carries this; the commander and pair rows pass `false`. */
+  thin?: boolean;
 };
 
 /** ALL-OR-NOTHING, the same rule the parser and the pair reader apply: a 0 substituted for a
@@ -190,6 +194,20 @@ function compositionFrom(row: CompositionRow | undefined) {
   };
   if (Object.values(targets).some((v) => v === null)) return null;
   return { targets: targets as CompositionTargets, averageCurve: row.avgCurve };
+}
+
+/**
+ * The four role figures off a candidate row, or null when the row carries none.
+ *
+ * ALL-OR-NOTHING like the composition, and for the same reason — a 0 substituted for a null
+ * turns "nobody measured this" into "this deck wants no wipes". Read INDEPENDENTLY of the
+ * composition: a commander indexed before the role pass carries one and not the other.
+ */
+function roleTargetsFrom(row: CompositionRow | undefined) {
+  if (!row) return null;
+  const { avgRamp: ramp, avgDraw: draw, avgRemoval: removal, avgWipes: wipes } = row;
+  if (ramp === null || draw === null || removal === null || wipes === null) return null;
+  return { ramp, draw, removal, wipes };
 }
 
 /**
@@ -313,6 +331,15 @@ export async function loadDeckProfileFromHead(head: ProfileHead): Promise<DeckPr
       identity: compositionFrom(identityRow ?? undefined),
       count: compositionFrom(countRow ?? undefined),
     },
+    roles: {
+      pair: roleTargetsFrom(pairRow ?? undefined),
+      commander: roleTargetsFrom(commanderRow ?? undefined),
+      identity: roleTargetsFrom(identityRow ?? undefined),
+      count: roleTargetsFrom(countRow ?? undefined),
+    },
+    // The bucket the IDENTITY or COUNT rung would serve. The commander and pair rows are
+    // per-commander rather than per-bucket, so neither can be thin in this sense.
+    thinCondition: Boolean(identityRow?.thin ?? countRow?.thin ?? false),
     staples,
     commanderDeckCount: pairRow?.deckCount ?? commanderRow?.deckCount ?? null,
     population: populationFrom(pairRow, commanderRow),
@@ -386,6 +413,8 @@ const COMPOSITION_COLUMNS = {
   avgArtifact: commanderSupport.avgArtifact, avgEnchantment: commanderSupport.avgEnchantment,
   avgPlaneswalker: commanderSupport.avgPlaneswalker, avgBattle: commanderSupport.avgBattle,
   avgCurve: commanderSupport.avgCurve,
+  avgRamp: commanderSupport.avgRamp, avgDraw: commanderSupport.avgDraw,
+  avgRemoval: commanderSupport.avgRemoval, avgWipes: commanderSupport.avgWipes,
 } as const;
 
 async function loadCommanderRow(oracleId: string): Promise<CommanderRow | null> {
@@ -418,6 +447,8 @@ async function loadPairRow(a: string, b: string): Promise<PairRow | null> {
       avgPlaneswalker: commanderPairSupport.avgPlaneswalker,
       avgBattle: commanderPairSupport.avgBattle,
       avgCurve: commanderPairSupport.avgCurve,
+      avgRamp: commanderPairSupport.avgRamp, avgDraw: commanderPairSupport.avgDraw,
+      avgRemoval: commanderPairSupport.avgRemoval, avgWipes: commanderPairSupport.avgWipes,
       deckCount: commanderPairSupport.deckCount,
       bracketCounts: commanderPairSupport.bracketCounts,
     })
@@ -444,6 +475,12 @@ async function loadCompositionRow(condition: string): Promise<CompositionRow | n
       avgPlaneswalker: identityComposition.avgPlaneswalker,
       avgBattle: identityComposition.avgBattle,
       avgCurve: identityComposition.avgCurve,
+      avgRamp: identityComposition.avgRamp, avgDraw: identityComposition.avgDraw,
+      avgRemoval: identityComposition.avgRemoval, avgWipes: identityComposition.avgWipes,
+      // SELECTED, because the column exists to be shown. A row published from a below-bar
+      // bucket that reaches a reader indistinguishable from a ratified one is the whole thing
+      // the column was added to prevent.
+      thin: identityComposition.thin,
     })
     .from(identityComposition)
     .where(eq(identityComposition.condition, condition));

@@ -45,6 +45,8 @@ function verdict(over: Partial<ProfileInput> = {}) {
     declared: null,
     condition: "G",
     composition: { pair: null, commander: null, identity: null, count: null },
+    roles: { pair: null, commander: null, identity: null, count: null },
+    thinCondition: false,
     staples: [],
     commanderDeckCount: null,
     population: null,
