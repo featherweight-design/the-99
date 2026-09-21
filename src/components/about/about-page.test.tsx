@@ -20,15 +20,14 @@ import { COSTS } from "../../lib/about/fixtures";
 import { addPanelCopy } from "../../lib/copy/decks-builder";
 import { DECK_GROUPING_LABELS, deckSortOrderLabel } from "../../lib/copy/deck-sort";
 import { viewToggleCopy } from "../../lib/copy/card-surfaces";
-import {
-  RECOMMENDED_MIX,
-  RECOMMENDED_MIX_SOURCE_LINE,
-  ROLE_ORDER,
-} from "../../lib/decks/mix";
+import { mixSourceLine, recommendedMix, ROLE_ORDER } from "../../lib/decks/mix";
+
+/** The specimen's own mix — `ch01-figures.tsx` draws the strip with no deck behind it, so the
+ *  figures are the asserted baseline and the source line says so. */
+const SPECIMEN_MIX = recommendedMix(null, false);
 import { setPageCopy } from "../../lib/copy/set-collections";
 import { PIP_ORDER } from "../../lib/copy/filter-chassis";
-import {
-  DECK_VERSIONS,
+import {  DECK_VERSIONS,
   SHOPPING_ROWS,
   CARDS,
   CONTESTED_ARRIVAL,
@@ -518,9 +517,9 @@ describe("the figures", () => {
     for (const role of ROLE_ORDER) {
       // The cell uppercases with CSS, so the text node carries the label as
       // `mix.ts` writes it.
-      expect(plate.textContent).toContain(RECOMMENDED_MIX[role].label);
+      expect(plate.textContent).toContain(SPECIMEN_MIX.cells[role].label);
     }
-    expect(plate.textContent).toContain(RECOMMENDED_MIX_SOURCE_LINE);
+    expect(plate.textContent).toContain(mixSourceLine(SPECIMEN_MIX));
 
     // The two readings the key lines name, each on the cell that draws it. The
     // surplus is read by its COLOUR rather than by its figure: `12 / 10` is

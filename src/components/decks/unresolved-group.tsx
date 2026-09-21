@@ -22,7 +22,7 @@ import {
 } from "../../lib/decks/grouping";
 import {
   computeRoleCounts,
-  RECOMMENDED_MIX,
+  type RecommendedMix,
   type MixRole,
 } from "../../lib/decks/mix";
 import { useIsDesktop } from "../ui/use-is-desktop";
@@ -33,6 +33,10 @@ const copy = deckImportCopy.unresolved;
 const resolveCopy = deckImportCopy.resolve;
 
 interface UnresolvedGroupProps {
+  /** What this deck is compared to, resolved once per request by the route. A PROP rather than
+   *  an import: the targets are per-commander now, and a component reaching for a module
+   *  constant would draw one deck's recommendation on every deck. */
+  mix: RecommendedMix;
   deckId: string;
   rows: DeckUnresolvedRow[];
   /** The deck's cards, for the figures the live note quotes. */
@@ -50,6 +54,7 @@ interface UnresolvedGroupProps {
 }
 
 export function UnresolvedGroup({
+  mix,
   deckId,
   rows,
   cards = [],
@@ -123,13 +128,13 @@ export function UnresolvedGroup({
             : 1;
     const built = deckCounts(cards).built + added;
     const remaining = rows.length - 1;
-    const mix = RECOMMENDED_MIX[result.role as MixRole] as
-      (typeof RECOMMENDED_MIX)[MixRole] | undefined;
-    const role = mix
+    const cell = mix.cells[result.role as MixRole] as
+      RecommendedMix["cells"][MixRole] | undefined;
+    const role = cell
       ? resolveCopy.roleClause(
-          mix.label,
+          cell.label,
           computeRoleCounts(cards)[result.role as MixRole] + added,
-          mix.target,
+          cell.target,
         )
       : undefined;
 

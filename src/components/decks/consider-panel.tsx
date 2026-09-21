@@ -13,7 +13,7 @@ import type { DeckDetailCard } from "../../lib/decks/grouping";
 import { shelfRoleOf, type DeckSuggestion } from "../../lib/decks/suggest";
 import { addPanelCopy } from "../../lib/copy/decks-builder";
 import { synergyCopy } from "../../lib/copy/synergy-discovery";
-import { computeRoleCounts, RECOMMENDED_MIX, type MixRole } from "../../lib/decks/mix";
+import { computeRoleCounts, type MixRole, type RecommendedMix } from "../../lib/decks/mix";
 import type { ProvenanceForm } from "../../lib/decks/price";
 import { SuggestionTile } from "./suggestion-tile";
 import { ConsiderToolbar, type SortKey } from "./consider-toolbar";
@@ -47,7 +47,7 @@ type Shelf = {
   coverage: { have: number; target: number } | null;
 };
 
-function buildShelves(suggestions: DeckSuggestion[], deckCards: DeckDetailCard[]): Shelf[] {
+function buildShelves(suggestions: DeckSuggestion[], deckCards: DeckDetailCard[], mix: RecommendedMix): Shelf[] {
   const counts = computeRoleCounts(deckCards);
   // A coverage shelf says "you have 2 of 10", which is a claim about cards you
   // can play tonight — so the unowned staples never mix into one.
@@ -57,7 +57,7 @@ function buildShelves(suggestions: DeckSuggestion[], deckCards: DeckDetailCard[]
     suggestions: owned.filter((s) => shelfRoleOf(s) === role),
     coverage: role === "other"
       ? null
-      : { have: counts[role], target: RECOMMENDED_MIX[role].target },
+      : { have: counts[role], target: mix.cells[role].target },
   })).filter((shelf) => shelf.suggestions.length > 0);
 
   // Most-short-of first; the targetless shelf sorts last because it cannot be
@@ -248,6 +248,10 @@ function ShelfSection({
 }
 
 interface ConsiderPanelProps {
+  /** What this deck is compared to, resolved once per request by the route. A PROP rather than
+   *  an import: the targets are per-commander now, and a component reaching for a module
+   *  constant would draw one deck's recommendation on every deck. */
+  mix: RecommendedMix;
   deckId: string;
   suggestions: DeckSuggestion[];
   /**
@@ -284,6 +288,7 @@ interface ConsiderPanelProps {
 }
 
 export function ConsiderPanel({
+  mix,
   deckId, suggestions, deckCards, deckOracleIds, commanderOracleId, commanderShortName, degraded,
   sort, onSortChange, newestAsOf, provenance = null,
 }: ConsiderPanelProps) {
@@ -297,7 +302,7 @@ export function ConsiderPanel({
     [deckOracleIds, commanderOracleId],
   );
   const shelves = useMemo(
-    () => buildShelves(suggestions, deckCards).map((shelf) => ({
+    () => buildShelves(suggestions, deckCards, mix).map((shelf) => ({
       ...shelf,
       suggestions: sortWithin(shelf.suggestions, sort),
     })),

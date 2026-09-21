@@ -7,6 +7,17 @@ import type { DeckDetail } from "../../lib/decks/read";
 import type { FillPassSummary } from "../../lib/decks/fill-passes";
 import { topOffCopy } from "../../lib/copy/top-off";
 
+const TEST_MIX = {
+  cells: {
+    ramp: { label: "Ramp", target: 10, advisory: false },
+    draw: { label: "Draw", target: 10, advisory: false },
+    removal: { label: "Removal", target: 8, advisory: false },
+    wipes: { label: "Wipes", target: 3, advisory: false },
+    land: { label: "Land", target: 37, advisory: true },
+  },
+  measured: false,
+} as const;
+
 vi.mock("../../app/decks/actions", () => ({
   createDeck: vi.fn(),
   getDeckSuggestions: vi.fn(async () => ({ suggestions: [], degraded: false })),
@@ -75,7 +86,7 @@ async function mount(deck: DeckDetail, fillPasses: FillPassSummary[] = []) {
   let view!: ReturnType<typeof render>;
   await act(async () => {
     view = render(
-      <BuilderShell
+      <BuilderShell mix={TEST_MIX}
         deck={deck}
         suggestions={[]}
         degraded={false}
@@ -159,7 +170,7 @@ describe("BuilderShell — the mark", () => {
     // held has to go with it, or the decklist keeps an edge nothing can clear.
     await act(async () => {
       view.rerender(
-        <BuilderShell
+        <BuilderShell mix={TEST_MIX}
           deck={deck}
           suggestions={[]}
           degraded={false}

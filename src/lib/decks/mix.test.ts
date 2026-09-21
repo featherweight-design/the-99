@@ -1,17 +1,83 @@
 import { describe, expect, it } from "vitest";
-import { computeRoleCounts, RECOMMENDED_MIX, roleCellState } from "./mix";
+import { computeRoleCounts, mixSourceLine, recommendedMix, roleCellState } from "./mix";
+import type { ProfileSkeleton } from "../profile/types";
 
-describe("RECOMMENDED_MIX", () => {
-  it("locks the four role targets and the advisory land target", () => {
-    expect(RECOMMENDED_MIX.ramp.target).toBe(10);
-    expect(RECOMMENDED_MIX.draw.target).toBe(10);
-    expect(RECOMMENDED_MIX.removal.target).toBe(8);
-    expect(RECOMMENDED_MIX.wipes.target).toBe(3);
-    expect(RECOMMENDED_MIX.land.target).toBe(37);
-    expect(RECOMMENDED_MIX.land.advisory).toBe(true);
+const skel = (over: {
+  land?: number; ramp?: number; draw?: number; removal?: number; wipes?: number;
+  of?: "commander" | "pair" | "flat";
+  composition?: boolean;
+} = {}): ProfileSkeleton => ({
+  composition: over.composition === false ? null : {
+    of: "commander",
+    targets: {
+      land: over.land ?? 34, basic: 18, nonbasic: 16, creature: 30, instant: 7,
+      sorcery: 6, artifact: 5, enchantment: 4, planeswalker: 1, battle: 0,
+    },
+    averageCurve: null,
+  },
+  roleTargets: {
+    of: over.of ?? "commander",
+    targets: {
+      ramp: over.ramp ?? 9, draw: over.draw ?? 11,
+      removal: over.removal ?? 7, wipes: over.wipes ?? 2,
+    },
+  },
+  condition: "G", thinCondition: false, staples: [], commanderDeckCount: 1000,
+});
+
+describe("recommendedMix", () => {
+  it("takes the measured targets over the asserted ones", () => {
+    const m = recommendedMix(skel(), false);
+    expect(m.cells.ramp.target).toBe(9);
+    expect(m.cells.draw.target).toBe(11);
+    expect(m.cells.removal.target).toBe(7);
+    expect(m.cells.wipes.target).toBe(2);
+    expect(m.cells.land.target).toBe(34);
+    expect(m.measured).toBe(true);
+  });
+
+  // A bucket's mean is a `real` and a strip cannot draw 8.4 of a card.
+  it("rounds to whole cards, half-up", () => {
+    expect(recommendedMix(skel({ ramp: 8.4, draw: 8.5 }), false).cells.ramp.target).toBe(8);
+    expect(recommendedMix(skel({ ramp: 8.4, draw: 8.5 }), false).cells.draw.target).toBe(9);
+  });
+
+  // 390 commanders measure exactly 0 wipes on front-face text. A fallback treating 0 as "no
+  // answer" would replace the figure the index is most certain about with an asserted 3.
+  it("keeps a measured zero at zero", () => {
+    expect(recommendedMix(skel({ wipes: 0 }), false).cells.wipes.target).toBe(0);
+  });
+
+  it("falls back to the asserted baseline, and says so", () => {
+    const m = recommendedMix(null, false);
+    expect(m.cells.ramp.target).toBe(10);
+    expect(m.cells.land.target).toBe(37);
+    expect(m.measured).toBe(false);
+  });
+
+  // The two chains resolve independently, so a skeleton can carry one and not the other — and
+  // a line claiming EDHREC over four asserted constants is the provenance failure this whole
+  // sub-project exists to end.
+  it("does not claim measured when only the land count is", () => {
+    const m = recommendedMix(skel({ of: "flat" }), false);
+    expect(m.cells.land.target).toBe(34);
+    expect(m.cells.ramp.target).toBe(10);
+    expect(m.measured).toBe(false);
+  });
+
+  it("keeps land advisory and the four roles not", () => {
+    const m = recommendedMix(skel(), false);
+    expect(m.cells.land.advisory).toBe(true);
     for (const role of ["ramp", "draw", "removal", "wipes"] as const) {
-      expect(RECOMMENDED_MIX[role].advisory).toBe(false);
+      expect(m.cells[role].advisory).toBe(false);
     }
+  });
+});
+
+describe("mixSourceLine", () => {
+  it("names EDHREC only when the numbers came from there", () => {
+    expect(mixSourceLine(recommendedMix(skel(), false))).toBe("EDHREC averages");
+    expect(mixSourceLine(recommendedMix(null, false))).not.toBe("EDHREC averages");
   });
 });
 

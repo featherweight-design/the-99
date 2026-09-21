@@ -62,7 +62,7 @@ import { PendingChangeProvider } from "./pending-change";
 // `draft-shape`, not `draft-state`: the latter holds the reads and imports `db`.
 import type { DraftState } from "../../lib/decks/draft-shape";
 import { cardCopies, deckCounts, unresolvedCardCount, type DeckDetailCard } from "../../lib/decks/grouping";
-import { computeRoleCounts, RECOMMENDED_MIX, type MixRole } from "../../lib/decks/mix";
+import { computeRoleCounts, type MixRole, type RecommendedMix } from "../../lib/decks/mix";
 import { useIsDesktop } from "../ui/use-is-desktop";
 import type { ProvenanceForm } from "../../lib/decks/price";
 import type { TopOffCandidate } from "../../lib/decks/last-slots";
@@ -89,6 +89,10 @@ function scrollToUnresolved() {
 }
 
 interface BuilderShellProps {
+  /** What this deck is compared to, resolved once per request by the route. A PROP rather than
+   *  an import: the targets are per-commander now, and a component reaching for a module
+   *  constant would draw one deck's recommendation on every deck. */
+  mix: RecommendedMix;
   deck: DeckDetail;
   suggestions: DeckSuggestion[];
   degraded: boolean;
@@ -173,6 +177,7 @@ const NO_GAMES: GameSummary = {
 };
 
 export function BuilderShell({
+  mix,
   deck,
   suggestions,
   degraded,
@@ -463,17 +468,17 @@ export function BuilderShell({
       addOptimisticCard(card);
       const before = cards;
       const nextBuilt = deckCounts(before).built + card.quantity;
-      const mix = RECOMMENDED_MIX[card.role as MixRole] as
-        | (typeof RECOMMENDED_MIX)[MixRole]
+      const cell = mix.cells[card.role as MixRole] as
+        | RecommendedMix["cells"][MixRole]
         | undefined;
       setAnnouncement(
-        mix
+        cell
           ? addPanelCopy.announce.added(
               card.name,
               nextBuilt,
-              mix.label,
+              cell.label,
               computeRoleCounts(before)[card.role as MixRole] + card.quantity,
-              mix.target,
+              cell.target,
               bodySize,
             )
           : addPanelCopy.announce.addedNoRole(card.name, nextBuilt, bodySize),
@@ -956,6 +961,7 @@ export function BuilderShell({
                 receive it. */}
             {!analysisEnabled && (
               <RoleCounterStrip
+                mix={mix}
                 cards={cards}
                 onSeeShelf={seeShelf}
                 rolesWithShelves={shelvedRoles}
@@ -1021,6 +1027,7 @@ export function BuilderShell({
               </div>
             ) : view === "consider" ? (
               <ConsiderPanel
+              mix={mix}
                 deckId={deck.id}
                 suggestions={suggestions}
                 deckCards={cards}
@@ -1181,6 +1188,7 @@ export function BuilderShell({
                  within it the provider would have to be repeated in each. */
               <PendingChangeProvider value={pendingChange}>
               <Decklist
+              mix={mix}
                 deckId={deck.id}
                 cards={cards}
                 unresolvedRows={unresolvedRows}

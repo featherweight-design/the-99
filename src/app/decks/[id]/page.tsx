@@ -1,5 +1,7 @@
 // /decks/[id] — Builder page.
 // §Builder Spine, §Role Counter Strip, §Guided Banner, §Degraded Suggestions Banner.
+import { recommendedMix } from "../../../lib/decks/mix";
+import { cachedDeckProfile } from "../../../lib/profile/load";
 import { notFound } from "next/navigation";
 import { requireUserId } from "../../../lib/auth";
 import { getDeckDetail, listDecksWithStats } from "../../../lib/decks/read";
@@ -245,10 +247,23 @@ export default async function DeckBuilderPage({
 
   // Read once per request rather than at each use, so the tab, the strip's home and the
   // arrival view cannot disagree about which layout this deployment is drawing.
+
+
   const analysisEnabled = analysisTabEnabled();
+  // WHAT THIS DECK IS COMPARED TO, resolved once per request and handed down. Through
+  // `cachedDeckProfile` rather than a second uncached read: the profile is keyed on the deck's
+  // own fingerprint, so a page that already warmed it pays nothing here, and a route that did
+  // not pays for one profile rather than for a second chain assembled beside it.
+  //
+  // The mix falls back to the asserted baseline when the profile is unavailable, and says so
+  // through `measured` — a strip drawing figures is better than a strip drawing nothing, as
+  // long as it does not claim they came from EDHREC.
+  const profile = await cachedDeckProfile(id, userId);
+  const mix = recommendedMix(profile?.skeleton ?? null, Boolean(detail.partner));
 
   return (
     <BuilderShell
+      mix={mix}
       deck={{ ...detail, cards }}
       suggestions={pricedSuggestions}
       newestAsOf={priced?.newestAsOf ?? null}

@@ -10,7 +10,7 @@
 "use client";
 
 import { useId, useRef, useState } from "react";
-import { RECOMMENDED_MIX, type MixRole } from "../../lib/decks/mix";
+import { type MixRole, type RecommendedMix } from "../../lib/decks/mix";
 import { addPanelCopy } from "../../lib/copy/decks-builder";
 
 const LINES: { key: keyof typeof addPanelCopy.strip.rationaleBodies; roles: MixRole[] }[] = [
@@ -20,15 +20,15 @@ const LINES: { key: keyof typeof addPanelCopy.strip.rationaleBodies; roles: MixR
   { key: "land", roles: ["land"] },
 ];
 
-const heading = (roles: MixRole[]) =>
+const heading = (roles: MixRole[], mix: RecommendedMix) =>
   roles
     .map((role) => {
-      const mix = RECOMMENDED_MIX[role];
-      return `${mix.label} ${mix.advisory ? "~" : ""}${mix.target}`;
+      const cell = mix.cells[role];
+      return `${cell.label} ${cell.advisory ? "~" : ""}${cell.target}`;
     })
     .join(" · ");
 
-export function StripRationale() {
+export function StripRationale({ mix }: { mix: RecommendedMix }) {
   const [open, setOpen] = useState(false);
   // Per instance, not per module: two strips on one page would otherwise share
   // an id, and `aria-describedby` resolves to whichever element the document
@@ -114,7 +114,7 @@ export function StripRationale() {
         >
           {LINES.map((line) => (
             <p key={line.key} className="text-[12px] leading-[1.55] text-fg-body">
-              <b className="font-semibold text-fg">{heading(line.roles)}</b>{" "}
+              <b className="font-semibold text-fg">{heading(line.roles, mix)}</b>{" "}
               {addPanelCopy.strip.rationaleBodies[line.key]}
             </p>
           ))}

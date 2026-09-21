@@ -15,6 +15,17 @@ import { COST_TRACK } from "../ui/cost-pips";
 import { proxyCopy } from "../../lib/copy/proxies";
 import { markerAria } from "../ui/availability-marker";
 
+const TEST_MIX = {
+  cells: {
+    ramp: { label: "Ramp", target: 10, advisory: false },
+    draw: { label: "Draw", target: 10, advisory: false },
+    removal: { label: "Removal", target: 8, advisory: false },
+    wipes: { label: "Wipes", target: 3, advisory: false },
+    land: { label: "Land", target: 37, advisory: true },
+  },
+  measured: false,
+} as const;
+
 const { addCardToDeck, removeCardFromDeck, keepAutoCard } = vi.hoisted(() => ({
   addCardToDeck: vi.fn(),
   removeCardFromDeck: vi.fn(),
@@ -338,7 +349,7 @@ function makeDeck(cards: DeckDetailCard[] = [solRing, arcaneSignet]): DeckDetail
 
 function shell(cards?: DeckDetailCard[]) {
   return (
-    <BuilderShell
+    <BuilderShell mix={TEST_MIX}
       deck={makeDeck(cards)}
       suggestions={[]}
       degraded={false}

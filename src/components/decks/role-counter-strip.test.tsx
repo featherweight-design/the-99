@@ -9,11 +9,22 @@
 import { fireEvent, render, screen, within } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
 import type { DeckDetailCard } from "../../lib/decks/grouping";
-import { RECOMMENDED_MIX, type MixRole } from "../../lib/decks/mix";
+import {  type MixRole } from "../../lib/decks/mix";
 import { addPanelCopy } from "../../lib/copy/decks-builder";
 import { deckVersioningCopy } from "../../lib/copy/deck-versioning";
 import { RoleCounterStrip } from "./role-counter-strip";
 import { RoleCounterCell } from "./role-counter-cell";
+
+const TEST_MIX = {
+  cells: {
+    ramp: { label: "Ramp", target: 10, advisory: false },
+    draw: { label: "Draw", target: 10, advisory: false },
+    removal: { label: "Removal", target: 8, advisory: false },
+    wipes: { label: "Wipes", target: 3, advisory: false },
+    land: { label: "Land", target: 37, advisory: true },
+  },
+  measured: false,
+} as const;
 
 const ROLES: MixRole[] = ["ramp", "draw", "removal", "wipes", "land"];
 
@@ -37,7 +48,7 @@ const card = (role: DeckDetailCard["role"], i: number): DeckDetailCard => ({
 
 /** Enough of one role to sit ON target, leaving every other role short. */
 const atTarget = (role: MixRole) =>
-  Array.from({ length: RECOMMENDED_MIX[role].target }, (_, i) => card(role, i));
+  Array.from({ length: TEST_MIX.cells[role].target }, (_, i) => card(role, i));
 
 /** Every role at target — the forced state where no cell is a control. */
 const allAtTarget = ROLES.flatMap(atTarget);
@@ -45,47 +56,47 @@ const allAtTarget = ROLES.flatMap(atTarget);
 const cellFor = (role: MixRole, have: number) =>
   screen.queryByRole("button", {
     name: addPanelCopy.strip.cellLinkAria(
-      RECOMMENDED_MIX[role].label,
+      TEST_MIX.cells[role].label,
       have,
-      RECOMMENDED_MIX[role].target,
+      TEST_MIX.cells[role].target,
     ),
   });
 
 describe("role counter strip — a short cell is the control", () => {
   it("makes a cell under target a button whose name carries both figures", () => {
-    render(<RoleCounterStrip cards={[]} onSeeShelf={vi.fn()} rolesWithShelves={ALL_SHELVES} />);
+    render(<RoleCounterStrip mix={TEST_MIX} cards={[]} onSeeShelf={vi.fn()} rolesWithShelves={ALL_SHELVES} />);
     expect(cellFor("ramp", 0)).toBeInTheDocument();
     expect(cellFor("ramp", 0)).toHaveTextContent(addPanelCopy.strip.cellLink);
   });
 
   it("names the role's shelf, so five cells in a row are told apart", () => {
     const onSeeShelf = vi.fn();
-    render(<RoleCounterStrip cards={[]} onSeeShelf={onSeeShelf} rolesWithShelves={ALL_SHELVES} />);
+    render(<RoleCounterStrip mix={TEST_MIX} cards={[]} onSeeShelf={onSeeShelf} rolesWithShelves={ALL_SHELVES} />);
     fireEvent.click(cellFor("draw", 0)!);
     expect(onSeeShelf).toHaveBeenCalledWith("draw");
   });
 
   it("draws no anchor anywhere — the cell replaced the link, it did not join it", () => {
-    render(<RoleCounterStrip cards={[]} onSeeShelf={vi.fn()} rolesWithShelves={ALL_SHELVES} />);
+    render(<RoleCounterStrip mix={TEST_MIX} cards={[]} onSeeShelf={vi.fn()} rolesWithShelves={ALL_SHELVES} />);
     expect(screen.queryAllByRole("link")).toHaveLength(0);
   });
 
   // Six targets, not ten: at most five cells plus the one strip disclosure.
   it("draws one control per short cell plus a single disclosure", () => {
-    render(<RoleCounterStrip cards={[]} onSeeShelf={vi.fn()} rolesWithShelves={ALL_SHELVES} />);
+    render(<RoleCounterStrip mix={TEST_MIX} cards={[]} onSeeShelf={vi.fn()} rolesWithShelves={ALL_SHELVES} />);
     expect(screen.getAllByRole("button")).toHaveLength(ROLES.length + 1);
   });
 });
 
 describe("role counter strip — a met cell is a figure", () => {
   it("gives a met cell no button and no consider caption", () => {
-    render(<RoleCounterStrip cards={atTarget("ramp")} onSeeShelf={vi.fn()} rolesWithShelves={ALL_SHELVES} />);
-    expect(cellFor("ramp", RECOMMENDED_MIX.ramp.target)).toBeNull();
+    render(<RoleCounterStrip mix={TEST_MIX} cards={atTarget("ramp")} onSeeShelf={vi.fn()} rolesWithShelves={ALL_SHELVES} />);
+    expect(cellFor("ramp", TEST_MIX.cells.ramp.target)).toBeNull();
     const met = screen.getByRole("figure", {
       name: addPanelCopy.strip.cellStaticAria(
-        RECOMMENDED_MIX.ramp.label,
-        RECOMMENDED_MIX.ramp.target,
-        RECOMMENDED_MIX.ramp.target,
+        TEST_MIX.cells.ramp.label,
+        TEST_MIX.cells.ramp.target,
+        TEST_MIX.cells.ramp.target,
       ),
     });
     expect(met).not.toHaveTextContent(addPanelCopy.strip.cellLink);
@@ -95,12 +106,12 @@ describe("role counter strip — a met cell is a figure", () => {
   });
 
   it("leaves a met cell out of the tab order", () => {
-    render(<RoleCounterStrip cards={atTarget("ramp")} onSeeShelf={vi.fn()} rolesWithShelves={ALL_SHELVES} />);
+    render(<RoleCounterStrip mix={TEST_MIX} cards={atTarget("ramp")} onSeeShelf={vi.fn()} rolesWithShelves={ALL_SHELVES} />);
     const met = screen.getByRole("figure", {
       name: addPanelCopy.strip.cellStaticAria(
-        RECOMMENDED_MIX.ramp.label,
-        RECOMMENDED_MIX.ramp.target,
-        RECOMMENDED_MIX.ramp.target,
+        TEST_MIX.cells.ramp.label,
+        TEST_MIX.cells.ramp.target,
+        TEST_MIX.cells.ramp.target,
       ),
     });
     expect(met).not.toHaveAttribute("tabindex");
@@ -111,7 +122,7 @@ describe("role counter strip — a met cell is a figure", () => {
   // Forced state: every role met. Nothing in the strip is a control except the
   // disclosure, and no cell offers a shelf it cannot deliver.
   it("draws no cell controls at all when every role is met", () => {
-    render(<RoleCounterStrip cards={allAtTarget} onSeeShelf={vi.fn()} rolesWithShelves={ALL_SHELVES} />);
+    render(<RoleCounterStrip mix={TEST_MIX} cards={allAtTarget} onSeeShelf={vi.fn()} rolesWithShelves={ALL_SHELVES} />);
     expect(screen.getAllByRole("figure")).toHaveLength(ROLES.length);
     expect(screen.getAllByRole("button")).toHaveLength(1);
     expect(screen.getByRole("button")).toHaveAccessibleName(
@@ -121,7 +132,7 @@ describe("role counter strip — a met cell is a figure", () => {
 
   // Forced state: every role short. Five controls, one disclosure, six targets.
   it("draws a control on every cell when every role is short", () => {
-    render(<RoleCounterStrip cards={[]} onSeeShelf={vi.fn()} rolesWithShelves={ALL_SHELVES} />);
+    render(<RoleCounterStrip mix={TEST_MIX} cards={[]} onSeeShelf={vi.fn()} rolesWithShelves={ALL_SHELVES} />);
     expect(screen.queryAllByRole("figure")).toHaveLength(0);
     for (const role of ROLES) expect(cellFor(role, 0)).toBeInTheDocument();
   });
@@ -129,7 +140,7 @@ describe("role counter strip — a met cell is a figure", () => {
   // Without a handler there is nowhere to send anyone, so a short cell has to
   // fall back to the figure rather than render a button that does nothing.
   it("falls back to a figure when the strip is given nowhere to send the user", () => {
-    render(<RoleCounterStrip cards={[]} />);
+    render(<RoleCounterStrip mix={TEST_MIX} cards={[]} />);
     expect(screen.getAllByRole("figure")).toHaveLength(ROLES.length);
     expect(screen.getAllByRole("button")).toHaveLength(1);
   });
@@ -139,7 +150,7 @@ describe("role counter strip — a met cell is a figure", () => {
   // scroll to and the click would only switch tabs.
   it("leaves a short cell a figure when Consider draws no shelf for that role", () => {
     render(
-      <RoleCounterStrip
+      <RoleCounterStrip mix={TEST_MIX}
         cards={[]}
         onSeeShelf={vi.fn()}
         rolesWithShelves={new Set<MixRole>(["draw"])}
@@ -153,7 +164,7 @@ describe("role counter strip — a met cell is a figure", () => {
 
 describe("role counter strip — one disclosure for the whole strip", () => {
   it("starts closed with the trigger and no panel", () => {
-    render(<RoleCounterStrip cards={[]} onSeeShelf={vi.fn()} rolesWithShelves={ALL_SHELVES} />);
+    render(<RoleCounterStrip mix={TEST_MIX} cards={[]} onSeeShelf={vi.fn()} rolesWithShelves={ALL_SHELVES} />);
     const trigger = screen.getByRole("button", {
       name: addPanelCopy.strip.rationaleToggle,
     });
@@ -162,7 +173,7 @@ describe("role counter strip — one disclosure for the whole strip", () => {
   });
 
   it("opens one panel carrying every role's rationale", () => {
-    render(<RoleCounterStrip cards={[]} onSeeShelf={vi.fn()} rolesWithShelves={ALL_SHELVES} />);
+    render(<RoleCounterStrip mix={TEST_MIX} cards={[]} onSeeShelf={vi.fn()} rolesWithShelves={ALL_SHELVES} />);
     fireEvent.click(
       screen.getByRole("button", { name: addPanelCopy.strip.rationaleToggle }),
     );
@@ -172,12 +183,12 @@ describe("role counter strip — one disclosure for the whole strip", () => {
     }
     // Four lines for five roles: Removal and Wipes share one, as drawn.
     expect(panel.querySelectorAll("p")).toHaveLength(4);
-    // Headings quote RECOMMENDED_MIX, so the panel can never disagree with the
+    // Headings quote TEST_MIX.cells, so the panel can never disagree with the
     // cell above it about a target.
     expect(panel).toHaveTextContent(
-      `${RECOMMENDED_MIX.removal.label} ${RECOMMENDED_MIX.removal.target} · ${RECOMMENDED_MIX.wipes.label} ${RECOMMENDED_MIX.wipes.target}`,
+      `${TEST_MIX.cells.removal.label} ${TEST_MIX.cells.removal.target} · ${TEST_MIX.cells.wipes.label} ${TEST_MIX.cells.wipes.target}`,
     );
-    expect(panel).toHaveTextContent(`${RECOMMENDED_MIX.land.label} ~${RECOMMENDED_MIX.land.target}`);
+    expect(panel).toHaveTextContent(`${TEST_MIX.cells.land.label} ~${TEST_MIX.cells.land.target}`);
   });
 
   // WCAG 2.5.3: the accessible name has to contain the words on screen, so the
@@ -185,7 +196,7 @@ describe("role counter strip — one disclosure for the whole strip", () => {
   // control open — "Show why each role has the target it has" is false once the
   // panel below is already showing the answer.
   it("names the control by its drawn text, and only offers to Show while closed", () => {
-    render(<RoleCounterStrip cards={[]} onSeeShelf={vi.fn()} rolesWithShelves={ALL_SHELVES} />);
+    render(<RoleCounterStrip mix={TEST_MIX} cards={[]} onSeeShelf={vi.fn()} rolesWithShelves={ALL_SHELVES} />);
     const trigger = screen.getByRole("button", { name: addPanelCopy.strip.rationaleToggle });
     expect(trigger).toHaveAccessibleDescription(addPanelCopy.strip.rationaleToggleAria);
 
@@ -201,7 +212,7 @@ describe("role counter strip — one disclosure for the whole strip", () => {
   // they opened the panel — right before the content they asked for arrived.
   // Same node in both states is what keeps the caret where they left it.
   it("keeps focus on the trigger across a toggle", () => {
-    render(<RoleCounterStrip cards={[]} onSeeShelf={vi.fn()} rolesWithShelves={ALL_SHELVES} />);
+    render(<RoleCounterStrip mix={TEST_MIX} cards={[]} onSeeShelf={vi.fn()} rolesWithShelves={ALL_SHELVES} />);
     const trigger = screen.getByRole("button", { name: addPanelCopy.strip.rationaleToggle });
     trigger.focus();
 
@@ -217,7 +228,7 @@ describe("role counter strip — one disclosure for the whole strip", () => {
   // Hide unmounts itself, so without a hand-off the caret lands on
   // `document.body` — the same defect as the toggle above, one control over.
   it("hands focus back to the trigger when Hide unmounts itself", () => {
-    render(<RoleCounterStrip cards={[]} onSeeShelf={vi.fn()} rolesWithShelves={ALL_SHELVES} />);
+    render(<RoleCounterStrip mix={TEST_MIX} cards={[]} onSeeShelf={vi.fn()} rolesWithShelves={ALL_SHELVES} />);
     const trigger = screen.getByRole("button", { name: addPanelCopy.strip.rationaleToggle });
     fireEvent.click(trigger);
 
@@ -231,7 +242,7 @@ describe("role counter strip — one disclosure for the whole strip", () => {
   });
 
   it("closes again from Hide", () => {
-    render(<RoleCounterStrip cards={[]} onSeeShelf={vi.fn()} rolesWithShelves={ALL_SHELVES} />);
+    render(<RoleCounterStrip mix={TEST_MIX} cards={[]} onSeeShelf={vi.fn()} rolesWithShelves={ALL_SHELVES} />);
     const trigger = screen.getByRole("button", {
       name: addPanelCopy.strip.rationaleToggle,
     });
@@ -248,7 +259,7 @@ describe("role counter strip — one disclosure for the whole strip", () => {
   // for is not in that class — it is deliberately inert. The affordance lives
   // on the cell that has it, which prints `consider →` and nothing else does.
   it("annotates the cells with no header hint", () => {
-    const { container } = render(<RoleCounterStrip cards={[]} onSeeShelf={vi.fn()} rolesWithShelves={ALL_SHELVES} />);
+    const { container } = render(<RoleCounterStrip mix={TEST_MIX} cards={[]} onSeeShelf={vi.fn()} rolesWithShelves={ALL_SHELVES} />);
     expect(addPanelCopy.strip).not.toHaveProperty("hint");
     expect(JSON.stringify(addPanelCopy.strip)).not.toContain("shelf below");
     expect(container.textContent).not.toContain("Click a cell for rationale");
@@ -262,14 +273,14 @@ describe("role counter strip — unresolved rows", () => {
   // has no oracle ID and so belongs to no role at all.
   it("gains no cell and no asterisk from unresolved rows", () => {
     const { container } = render(
-      <RoleCounterStrip cards={atTarget("ramp")} onSeeShelf={vi.fn()} rolesWithShelves={ALL_SHELVES} />,
+      <RoleCounterStrip mix={TEST_MIX} cards={atTarget("ramp")} onSeeShelf={vi.fn()} rolesWithShelves={ALL_SHELVES} />,
     );
     const cells = within(screen.getByLabelText("Recommended mix")).getAllByRole(
       "figure",
       { hidden: true },
     ).length;
     expect(cells + screen.getAllByRole("button").length - 1).toBe(
-      Object.keys(RECOMMENDED_MIX).length,
+      Object.keys(TEST_MIX.cells).length,
     );
     expect(container.textContent).not.toMatch(/unresolved/i);
     expect(container.textContent).not.toContain("*");
@@ -282,14 +293,14 @@ describe("role counter strip — the draft sub-run (#389, surface 1)", () => {
   // `wasCounts` IS the draft's presence, so the note has no second flag to get
   // out of step with: a deck with something pending says which list it counted.
   it("names the list the figures came from while a draft exists", () => {
-    render(<RoleCounterStrip cards={[]} wasCounts={ZERO} />);
+    render(<RoleCounterStrip mix={TEST_MIX} cards={[]} wasCounts={ZERO} />);
     expect(screen.getByText(deckVersioningCopy.pending.mixStripDraftNote)).toBeInTheDocument();
   });
 
   // On a clean deck there is only one list to have counted, and naming it would
   // raise a question the reader does not have.
   it("says nothing on a deck with nothing pending", () => {
-    render(<RoleCounterStrip cards={[]} />);
+    render(<RoleCounterStrip mix={TEST_MIX} cards={[]} />);
     expect(
       screen.queryByText(deckVersioningCopy.pending.mixStripDraftNote),
     ).toBeNull();
@@ -299,7 +310,7 @@ describe("role counter strip — the draft sub-run (#389, surface 1)", () => {
   // where it came from, so the reader can see the edit in the mix rather than
   // only the mix it left behind.
   it("names the version's figure on a role the draft moved", () => {
-    render(<RoleCounterStrip cards={[]} wasCounts={{ ...ZERO, ramp: 3 }} />);
+    render(<RoleCounterStrip mix={TEST_MIX} cards={[]} wasCounts={{ ...ZERO, ramp: 3 }} />);
     expect(
       screen.getByText(deckVersioningCopy.pending.mixCellWas(3)),
     ).toBeInTheDocument();
@@ -308,7 +319,7 @@ describe("role counter strip — the draft sub-run (#389, surface 1)", () => {
   // A caption inside a figure is not part of its accessible name, so the move
   // would otherwise be visual only.
   it("carries the version's figure in the cell's accessible name", () => {
-    render(<RoleCounterStrip cards={[]} wasCounts={{ ...ZERO, ramp: 3 }} />);
+    render(<RoleCounterStrip mix={TEST_MIX} cards={[]} wasCounts={{ ...ZERO, ramp: 3 }} />);
     expect(
       screen.getByRole("figure", {
         name: new RegExp(`${deckVersioningCopy.pending.mixCellWas(3)}$`),
@@ -323,7 +334,7 @@ describe("role counter strip — the draft sub-run (#389, surface 1)", () => {
   it("says nothing on a role the draft left where it was", () => {
     // Both figures 0, which is what unmoved means here. The fixture above holds
     // a role that moved 3 → 0, where `was 0` was never the string in question.
-    render(<RoleCounterStrip cards={[]} wasCounts={ZERO} />);
+    render(<RoleCounterStrip mix={TEST_MIX} cards={[]} wasCounts={ZERO} />);
     expect(
       screen.queryByText(deckVersioningCopy.pending.mixCellWas(0)),
     ).toBeNull();
@@ -332,7 +343,7 @@ describe("role counter strip — the draft sub-run (#389, surface 1)", () => {
   // Brass, and beside the EDHREC line rather than under it — the two sub-runs
   // read as one sentence about where the numbers come from.
   it("draws the note in accent, at the source line's size and breakpoint", () => {
-    render(<RoleCounterStrip cards={[]} wasCounts={ZERO} />);
+    render(<RoleCounterStrip mix={TEST_MIX} cards={[]} wasCounts={ZERO} />);
     const note = screen.getByText(deckVersioningCopy.pending.mixStripDraftNote);
     expect(note.getAttribute("style")).toContain("var(--accent)");
     expect(note.className).toContain("text-[10.5px]");

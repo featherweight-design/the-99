@@ -10,8 +10,19 @@ import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
 import type { DeckDetail } from "../../lib/decks/read";
 import type { DeckSuggestion } from "../../lib/decks/suggest";
-import { RECOMMENDED_MIX } from "../../lib/decks/mix";
+import {  } from "../../lib/decks/mix";
 import { addPanelCopy } from "../../lib/copy/decks-builder";
+
+const TEST_MIX = {
+  cells: {
+    ramp: { label: "Ramp", target: 10, advisory: false },
+    draw: { label: "Draw", target: 10, advisory: false },
+    removal: { label: "Removal", target: 8, advisory: false },
+    wipes: { label: "Wipes", target: 3, advisory: false },
+    land: { label: "Land", target: 37, advisory: true },
+  },
+  measured: false,
+} as const;
 
 vi.mock("../../app/decks/actions", () => ({
   createDeck: vi.fn(),
@@ -80,7 +91,7 @@ const suggestions: DeckSuggestion[] = [
 describe("coverage cell arrival", () => {
   it("switches to Consider and lands focus on the role's shelf heading", async () => {
     render(
-      <BuilderShell
+      <BuilderShell mix={TEST_MIX}
         deck={deck}
         suggestions={suggestions}
         degraded={false}
@@ -93,9 +104,9 @@ describe("coverage cell arrival", () => {
     fireEvent.click(
       screen.getByRole("button", {
         name: addPanelCopy.strip.cellLinkAria(
-          RECOMMENDED_MIX.ramp.label,
+          TEST_MIX.cells.ramp.label,
           0,
-          RECOMMENDED_MIX.ramp.target,
+          TEST_MIX.cells.ramp.target,
         ),
       }),
     );

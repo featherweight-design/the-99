@@ -3,6 +3,8 @@
 import { notFound, redirect } from "next/navigation";
 import { requireUserId } from "../../../../lib/auth";
 import { getDeckReviewHeader } from "../../../../lib/decks/read";
+import { recommendedMix } from "../../../../lib/decks/mix";
+import { cachedDeckProfile } from "../../../../lib/profile/load";
 import { deckBodySize } from "../../../../lib/decks/deck-size";
 import {
   changeCount, loadDraftRows, loadDraftShape, loadVersionShape,
@@ -109,8 +111,15 @@ export default async function ChangesPage({
       .catch(() => []),
   ]);
 
+  // The same mix the deck page draws, from the same cached profile — the what-changed strip and
+  // the deck's own strip are the same five cells about the same deck, and two reads would be
+  // two chances to disagree about what it is measured against.
+  const profile = await cachedDeckProfile(id, userId);
+  const mix = recommendedMix(profile?.skeleton ?? null, detail.hasPartner);
+
   return (
     <ReviewChanges
+      mix={mix}
       deckId={id}
       deckName={detail.name}
       rows={rows}

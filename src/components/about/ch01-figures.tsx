@@ -14,6 +14,7 @@
 // surface wins. A reference page that draws its own version of a row teaches
 // a row the reader will never meet.
 
+import type { RecommendedMix } from "../../lib/decks/mix";
 import {
   IMPORT_SOURCES,
   ISSUE_PARSE_ERROR,
@@ -691,9 +692,24 @@ export function DecklistMarksFigureBody() {
  * for that handler alone — a function cannot cross the server boundary, and
  * the one that tried it is why this module exists.
  */
+const SPECIMEN_MIX: RecommendedMix = {
+  cells: {
+    ramp: { label: "Ramp", target: 10, advisory: false },
+    draw: { label: "Draw", target: 10, advisory: false },
+    removal: { label: "Removal", target: 8, advisory: false },
+    wipes: { label: "Wipes", target: 3, advisory: false },
+    land: { label: "Land", target: 37, advisory: true },
+  },
+  measured: false,
+};
+
 export function RolesFigureBody() {
   return (
     <RoleCounterStrip
+      // A FIXTURE mix, because this is a specimen of the strip rather than a real deck: the
+      // page has no commander to resolve one for, and the figures exist to show the cells.
+      // `measured: false` keeps the source line honest — the specimen quotes EDHREC at nobody.
+      mix={SPECIMEN_MIX}
       cards={ROLE_MIX_CARDS}
       onSeeShelf={() => {}}
       rolesWithShelves={new Set(["wipes", "land"])}

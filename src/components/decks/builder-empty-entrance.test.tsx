@@ -14,6 +14,17 @@ import { describe, expect, it, vi } from "vitest";
 import type { DeckDetail } from "../../lib/decks/read";
 import { recommendationsCopy } from "../../lib/copy/recommendations";
 
+const TEST_MIX = {
+  cells: {
+    ramp: { label: "Ramp", target: 10, advisory: false },
+    draw: { label: "Draw", target: 10, advisory: false },
+    removal: { label: "Removal", target: 8, advisory: false },
+    wipes: { label: "Wipes", target: 3, advisory: false },
+    land: { label: "Land", target: 37, advisory: true },
+  },
+  measured: false,
+} as const;
+
 vi.mock("../../app/decks/actions", () => ({
   createDeck: vi.fn(),
   getDeckSuggestions: vi.fn(async () => ({ suggestions: [], degraded: false })),
@@ -57,7 +68,7 @@ const sweptDeck: DeckDetail = {
 describe("empty builder", () => {
   const renderEmpty = () =>
     render(
-      <BuilderShell
+      <BuilderShell mix={TEST_MIX}
         deck={emptyDeck}
         suggestions={[]}
         degraded={false}
@@ -88,7 +99,7 @@ describe("empty builder", () => {
 describe("swept-empty branch", () => {
   const renderSwept = () =>
     render(
-      <BuilderShell
+      <BuilderShell mix={TEST_MIX}
         deck={sweptDeck}
         suggestions={[]}
         degraded={false}
@@ -100,7 +111,7 @@ describe("swept-empty branch", () => {
 
   const renderNeverFilled = () =>
     render(
-      <BuilderShell
+      <BuilderShell mix={TEST_MIX}
         deck={emptyDeck}
         suggestions={[]}
         degraded={false}
@@ -149,7 +160,7 @@ describe("swept-empty branch", () => {
 describe("fill-failed banner on an empty deck", () => {
   const renderWith = (deck: DeckDetail) =>
     render(
-      <BuilderShell
+      <BuilderShell mix={TEST_MIX}
         deck={deck}
         suggestions={[]}
         degraded={false}
