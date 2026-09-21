@@ -40,7 +40,6 @@ function input(over: Partial<ProfileInput> = {}): ProfileInput {
     cards: [],
     commanderOracleIds: ["cmd"],
     identity: ["G"],
-    declared: null,
     condition: "G",
     composition: { pair: null, commander: null, identity: null, count: null },
     roles: { pair: null, commander: null, identity: null, count: null },

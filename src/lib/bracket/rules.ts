@@ -76,6 +76,18 @@ export { COMBO_DETECTION, EXTRA_TURN_DETECTION, MLD_DETECTION };
  * it. The player can still overrule the whole thing by declaring; that is what `declared` is
  * for, and a bracket carried to a pod was always theirs rather than ours.
  */
+/**
+ * A stored `declared_bracket` column, validated into a `Bracket`.
+ *
+ * The check constraint makes a bad WRITE loud; this makes a bad READ impossible, on a column
+ * an older row could already carry anything in. It lives here rather than in the profile
+ * loader because the declaration is handed to `slotDeck` at the draw — so whoever reads the
+ * column is whoever needs this, and the alternative is each caller writing its own cast.
+ */
+export function bracketOf(value: number | null): Bracket | null {
+  return value !== null && value >= 1 && value <= 5 ? (value as Bracket) : null;
+}
+
 export function permitsFor(input: {
   violatesB1: boolean;
   violatesB2: boolean;

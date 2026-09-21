@@ -8,6 +8,7 @@ import {
   permitsFor,
 } from "./rules";
 import type {
+  Bracket,
   BracketLean,
   BracketLimitReport,
   BracketVerdict,
@@ -26,7 +27,23 @@ import type {
  *
  * THE SLOT IS THE LOWEST SATISFIED BRACKET. See `permitsFor`.
  */
-export function slotDeck(profile: DeckProfile): BracketVerdict {
+export function slotDeck(
+  profile: DeckProfile,
+  /**
+   * What the player told us — handed in AT THE DRAW rather than read off the profile.
+   *
+   * It is not a property of the deck's cards, and the profile is a cached document keyed on
+   * a fingerprint over them. Carrying it there meant one declaration retired the whole cache
+   * and rebuilt the flags, combos, staples, composition and population — 630ms median, 2.2s
+   * on the largest deck — to recompute figures that are identical either side of the press.
+   * Here it costs nothing: this function is pure, and these are the only two lines that read
+   * it.
+   *
+   * NEVER inferred and never defaulted. The default is null because "not asked" is the
+   * honest absence, not because any caller may omit an answer the player gave.
+   */
+  declared: Bracket | null = null,
+): BracketVerdict {
   const b = profile.brackets;
   const gc = b.gameChangers;
   const mld = b.massLandDenial;
@@ -126,8 +143,8 @@ export function slotDeck(profile: DeckProfile): BracketVerdict {
 
   return {
     permits,
-    declared: b.declared,
-    declaredOutsidePermits: b.declared !== null && !permits.includes(b.declared),
+    declared,
+    declaredOutsidePermits: declared !== null && !permits.includes(declared),
     lean: leanFor(profile, permits, combos),
     limits: { bracket1: limitsFor(1), bracket2: limitsFor(2), bracket3: limitsFor(3) },
     violations,

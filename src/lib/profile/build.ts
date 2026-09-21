@@ -69,7 +69,6 @@ export type ProfileInput = {
   commanderOracleIds: string[];
   /** The commanders' colour identity, as stored. Sorted here. */
   identity: string[];
-  declared: Bracket | null;
   condition: string;
   composition: CompositionCandidates;
   roles: RoleCandidates;
@@ -374,7 +373,6 @@ export function buildDeckProfile(input: ProfileInput): DeckProfile {
       comboReach: { tutors, reaches },
       population: input.population,
       detection: input.detection,
-      declared: input.declared,
     },
     legality: {
       banned: uniqueRefs(cards.filter((c) => !c.commanderLegal)),

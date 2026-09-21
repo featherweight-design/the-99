@@ -33,7 +33,7 @@ const row = (over: Partial<ProfileCardRow> & { oracleId: string }): ProfileCardR
 function fit(over: Partial<ProfileInput> = {}, cards: ProfileCardRow[] = []) {
   const profile = buildDeckProfile({
     deckId: "d", fingerprint: "f", cards, commanderOracleIds: ["cmd"], identity: ["G"],
-    declared: null, condition: "G",
+    condition: "G",
     composition: { pair: null, commander: null, identity: null, count: null },
     roles: { pair: null, commander: null, identity: null, count: null },
     thinCondition: false,
@@ -336,7 +336,7 @@ describe("the land test agrees with the rest of the profile", () => {
   const profileFor = (cards: ProfileCardRow[]) =>
     buildDeckProfile({
       deckId: "d", fingerprint: "f", cards, commanderOracleIds: ["cmd"], identity: ["G"],
-      declared: null, condition: "G",
+      condition: "G",
       // A composition is required or `types` is empty and every assertion below reads
       // `undefined` — which is a check measuring nothing rather than a check passing.
       composition: {
