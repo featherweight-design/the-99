@@ -23,7 +23,6 @@ import { sql } from "drizzle-orm";
 import { unstable_cache } from "next/cache";
 
 import { db } from "../../db";
-import { commanderSupport } from "../../db/schema";
 import { generationKey } from "./catalog-generation";
 
 /** Used when the stamp cannot be read, and when no index run has ever completed. */

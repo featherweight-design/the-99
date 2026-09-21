@@ -269,14 +269,19 @@ export function TopOffList({
   const declinedHere = pool.filter((c) => declined.has(c.oracleId)).length;
   const allDeclined = pool.length > 0 && declinedHere === pool.length;
 
-  // What the tick-all will actually tick. It replaces the selection wholesale
-  // and clamps to the open slots, so a player owning twelve candidates for three
-  // slots is offered three — the figure both the face and the accessible name
-  // carry, because a button that says twelve and ticks three is lying twice.
-  // The bulk control reaches for what the SEED reaches for — `canSeed`, the one
-  // predicate — so the two cannot say different things about the same card. A
-  // card owned with every copy sleeved elsewhere stays in the list and stays
-  // tickable by hand; what neither of these does is choose it for the player.
+  // WHAT THE TICK-ALL MAY TICK, which is no longer the same as what it will.
+  //
+  // This was the selection: a slice of it, clamped to the open slots. It is now an ALLOW-LIST
+  // intersected against the action's answer, so the count actually ticked can be lower than
+  // `tickable` — the fill leaves a slot open rather than spending it on a card no floor wants.
+  // The figure on the face and in the accessible name is still the number of slots, because
+  // that is what the button offers to fill; what changed is that offering is not promising.
+  // The bulk control reaches for what the SEED reaches for — `canSeed`, the one predicate —
+  // so the two cannot say different things about which cards are ELIGIBLE. They no longer
+  // agree on which of those to choose: the seed still takes the top N by synergy while this
+  // asks the real fill. See the note at `last-slots-strip.tsx`. A card owned with every copy
+  // sleeved elsewhere stays in the list and stays tickable by hand; what neither of these does
+  // is choose it for the player.
   //
   // It carries `ownedIds`' own exclusions as well, and they are not decoration:
   // a row the player has SET ASIDE, or one that went illegal while the list was
@@ -548,16 +553,31 @@ export function TopOffList({
               // carries no oracle text, and re-classifying without it under-counts every
               // text-based role. So the action runs `planFill` on the server and returns ids.
               setChoosing(true);
+              setError(null);
               try {
                 const result = await chooseBulkFill(deckId, tickable);
                 // Intersected with what this list can actually tick. The action reads the
                 // deck's own pool and the list carries exclusions of its own — a set-aside row,
                 // or one that went illegal while the list was open — and those must not come
                 // back ticked because a bulk control was pressed.
+                if (!result.ok) {
+                  // THE REFUSAL CHANGES NOTHING, which is the rule the commit path beside
+                  // this one states in its own words. Replacing the selection with an empty
+                  // set would throw away every tick the player had made by hand — and the
+                  // empty set is a deliberate value here, drawn by the clear control, so it
+                  // must not double as a failure outcome. The message is the action's own.
+                  setError(result.message);
+                  return;
+                }
                 const allowed = new Set(seedableIds);
                 onTickedChange(new Set(
-                  result.ok ? result.oracleIds.filter((id: string) => allowed.has(id)) : [],
+                  result.oracleIds.filter((id: string) => allowed.has(id)),
                 ));
+              } catch {
+                // A rejected call — a deck deleted while the list was open, or a transport
+                // failure — is a refusal the player can read, not an unhandled rejection that
+                // clears the spinner and says nothing. `commit()` above has the same catch.
+                setError(synergyCopy.lastSlots.topUpFailed);
               } finally {
                 setChoosing(false);
               }

@@ -2,6 +2,7 @@ import { act, fireEvent, render, screen } from "@testing-library/react";
 import { useState } from "react";
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import { topOffCopy } from "../../lib/copy/top-off";
+import { synergyCopy } from "../../lib/copy/synergy-discovery";
 import { stubViewport } from "../../test-utils/stub-viewport";
 import type { TopOffCandidate } from "../../lib/decks/last-slots";
 import { CardDetailProvider, cardDetailCopy } from "../cards/card-detail-provider";
@@ -114,6 +115,10 @@ beforeEach(() => {
   actions.commit
     .mockReset()
     .mockResolvedValue({ ok: true, added: 2, total: 98, passId: "p1", boughtDelta: 0 });
+  // RESET TOO, or a `mockResolvedValue` set by one case answers every later one. A case that
+  // presses the bulk control without stubbing it would inherit the previous case's ids rather
+  // than `undefined`, and read as passing on an answer it never asked for.
+  actions.chooseBulk.mockReset();
 });
 
 afterEach(() => {
@@ -605,6 +610,36 @@ describe("TopOffList — the bulk tick", () => {
       boxes.find((b) => (b.getAttribute("aria-label") ?? "").includes(name));
     expect(byName("free-1")).toBeChecked();
     expect(byName("held-1")).not.toBeChecked();
+  });
+
+  // A REFUSAL CHANGES NOTHING, which is the rule state 15 states for the commit beside this.
+  // The handler used to hand `onTickedChange` an empty set on `ok: false`, throwing away every
+  // tick the player had made by hand — and the empty set is a real value here, drawn by the
+  // clear control, so it cannot double as a failure outcome. It dropped the message too.
+  it("keeps the ticks and says why when the choice is refused", async () => {
+    actions.chooseBulk.mockResolvedValue({ ok: false, message: "Couldn’t work that out." });
+    render(<Harness candidates={[candidate("free-1", true), candidate("free-2", true)]} />);
+
+    const box = screen.getAllByRole("checkbox")[0];
+    fireEvent.click(box);
+    expect(box).toBeChecked();
+
+    fireEvent.click(screen.getByRole("button", { name: /Tick all/ }));
+    await screen.findByTestId("top-off-refusal");
+
+    expect(screen.getByTestId("top-off-refusal")).toHaveTextContent("Couldn’t work that out.");
+    expect(screen.getAllByRole("checkbox")[0]).toBeChecked();
+  });
+
+  it("draws a refusal rather than going silent when the call throws", async () => {
+    actions.chooseBulk.mockRejectedValue(new Error("network"));
+    render(<Harness candidates={[candidate("free-1", true)]} />);
+
+    fireEvent.click(screen.getByRole("button", { name: /Tick all/ }));
+    await screen.findByTestId("top-off-refusal");
+
+    expect(screen.getByTestId("top-off-refusal"))
+      .toHaveTextContent(synergyCopy.lastSlots.topUpFailed);
   });
 
   it("does not bring back a row the player set aside", async () => {

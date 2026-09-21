@@ -10,6 +10,21 @@ import { deckBodySize, landTarget } from "./deck-size";
  *  would claim a measurement nobody made. */
 export type FillRole = "ramp" | "draw" | "removal" | "wipes" | "land" | "other";
 
+/**
+ * A card already in the deck.
+ *
+ * Deliberately NOT a `FillCandidate`. That shape carries `owned`, `ownedQuantity` and
+ * `inclusionPct`, every one of which is a fact about whether a card should be CHOSEN — and a
+ * card already sleeved is past being chosen. Requiring them would have the caller invent
+ * three values nothing reads, which is how a fixture starts asserting its own defaults.
+ *
+ * `quantity` is here because a stacked basic is nine cards in one row and the counts this
+ * seeds are counts of cards.
+ */
+export type HeldCard = Pick<
+  FillCandidate, "typeLine" | "oracleText" | "keywords" | "layout"
+> & { quantity?: number };
+
 export type FillCandidate = {
   oracleId: string; name: string; typeLine: string;
   oracleText: string | null; keywords: string[];
@@ -58,6 +73,20 @@ export type PlanFillArgs = {
   slots?: number;
   /** `sleeveable` takes only what the collection can supply. */
   pool?: "all" | "sleeveable";
+  /**
+   * WHAT THE DECK ALREADY HOLDS, so a partial fill plans against the deck in front of it.
+   *
+   * Every caller before the bulk control filled an EMPTY deck — `createDeck` starts with
+   * nothing and `fillDeck` returns early if a single `deck_cards` row exists — so counts
+   * starting at zero was right, and nothing here had to know better. `chooseBulkFill` is the
+   * first caller to plan for a deck that already has cards, and with this absent it asked for
+   * four slots and got the first four placements of a from-scratch 99: a deck holding twenty
+   * ramp sources and no draw was offered four more ramp.
+   *
+   * Counted exactly as placement counts, or the two disagree at the boundary: a card credits
+   * EVERY role it satisfies (§2.5a), and its type line joins the tie-break's tally.
+   */
+  held?: readonly HeldCard[];
 };
 
 export type FillPlan = {
@@ -256,7 +285,7 @@ export function dedupeSelectionFromPool<T extends { oracleId: string }>(
 }
 
 export function planFill(candidates: FillCandidate[], args: PlanFillArgs): FillPlan {
-  const { hasPartner, skeleton, synergyRank, slots, pool = "all" } = args;
+  const { hasPartner, skeleton, synergyRank, slots, pool = "all", held } = args;
   const { floors, measured } = roleFloors(skeleton);
   const landCeiling = landTarget(hasPartner, skeleton);
   const bodySize = deckBodySize(hasPartner);
@@ -279,13 +308,25 @@ export function planFill(candidates: FillCandidate[], args: PlanFillArgs): FillP
   const counts: Record<FillRole, number> = {
     ramp: 0, draw: 0, removal: 0, wipes: 0, land: 0, other: 0,
   };
+  // Seeded from the deck's own cards before a single candidate is considered, so `counts[r] <
+  // floors[r]` below asks "is this role still short IN THIS DECK" rather than "in a deck that
+  // does not exist". A held card is credited to every role it satisfies, the same rule the
+  // placement loop applies at :377.
+  for (const card of held ?? []) {
+    const roles = classifyRoles({
+      ...card, oracleText: castFaceText(card.oracleText, card.layout),
+    });
+    for (const role of roles) counts[role] += card.quantity ?? 1;
+  }
 
   // THE TYPE TIE-BREAK's inputs, recomputed as cards are placed. Role floors and type targets
   // are different axes that collide through the cards satisfying both: in a large collection
   // ten ramp is ten mana rocks, while the median commander wants eleven artifacts in the WHOLE
   // deck. The ramp slot alone can spend the entire artifact budget, and an overshoot is
   // permanent — a later pass can add a missing creature, nothing removes a surplus artifact.
-  const placed: { typeLine: string; quantity: number }[] = [];
+  const placed: { typeLine: string; quantity: number }[] = (held ?? []).map((c) => ({
+    typeLine: c.typeLine, quantity: c.quantity ?? 1,
+  }));
   const typeTargets = skeleton?.composition?.targets ?? null;
   let scanned = TIE_BREAK_WINDOW;
 

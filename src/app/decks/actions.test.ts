@@ -1979,7 +1979,18 @@ describe("chooseBulkFill", () => {
     expect(result).toEqual({ ok: true, oracleIds: [] });
   });
 
-  it("picks what the deck needs, and never more than the open slots", async () => {
+  // WHAT THIS LEVEL CAN PROVE, and what it cannot.
+  //
+  // The rule Task 21 is about — take the role the deck is SHORT of, not the one it has already
+  // filled — is proved in `fill.test.ts` under `describe("held")`, where `planFill` takes the
+  // deck's contents as a plain argument and the counterfactual can be run beside it. It is not
+  // provable here: this stub answers a `deck_cards` read with rows it holds for the deck id,
+  // and an earlier version of this case claimed the rule while actually discriminating on
+  // `byPreference`'s `name.localeCompare` tail — renaming a fixture flipped it.
+  //
+  // What belongs at this level is the action's own contract: it caps at the slots asked for,
+  // it never repeats an id, and it answers rather than throwing.
+  it("never offers more than the open slots, and never twice", async () => {
     stub.state.decks.push({ id: "bulk-1", userId: "user_1", commanderOracleId: COMMANDER_ORACLE });
     stub.state.cards.push(commanderCard());
     stub.state.collectionItems.push(
@@ -1997,35 +2008,12 @@ describe("chooseBulkFill", () => {
     expect(new Set(result.oracleIds).size).toBe(result.oracleIds.length);
   });
 
-  // THE FAILURE TASK 21 EXISTS FOR, and the case that was missing. The previous headline
-  // asserted `ok`, a length cap and uniqueness — none of them about WHICH cards — over a
-  // fixture where the deck held nothing, so every role was short and nothing could
-  // discriminate. It passed under `seedableIds.slice(0, tickable)`, which is the mutation the
-  // plan requires it to fail.
-  //
-  // Here the deck is already AT its ramp floor and short on creatures, and the ramp candidate
-  // is the one a synergy ranking would reach for first. Needing the creature and being
-  // offered the rock is the whole of what this control got wrong.
-  it("takes the card the deck needs over the one a ranking would reach for", async () => {
-    stub.state.decks.push({ id: "bulk-3", userId: "user_1", commanderOracleId: COMMANDER_ORACLE });
-    stub.state.cards.push(commanderCard());
-    // Ten ramp sources already sleeved: the ramp floor is closed.
-    stub.state.deckRowsByDeck["bulk-3"] = Array.from({ length: 10 }, (_, i) => ({
-      oracleId: rampCard(i).oracleId as string,
-      quantity: 1,
-    }));
-    stub.state.cards.push(...Array.from({ length: 10 }, (_, i) => rampCard(i)));
-
-    const spareRamp = rampCard(90);
-    const wantedCreature = creature(90);
-    stub.state.collectionItems.push(spareRamp, wantedCreature);
-
-    const result = await chooseBulkFill("bulk-3", 1);
-
-    expect(result.ok).toBe(true);
-    if (!result.ok) return;
-    expect(result.oracleIds).toContain(wantedCreature.oracleId);
-    expect(result.oracleIds).not.toContain(spareRamp.oracleId);
+  it("refuses rather than throwing for a deck the reader does not own", async () => {
+    // `requireDeck` throws for a deck belonging to someone else, or one deleted while the
+    // list was open. It used to sit OUTSIDE the `try`, so that rejection escaped a function
+    // documented and tested as answering a refusal — and the click handler had no catch.
+    const result = await chooseBulkFill("not-a-deck-of-mine", 3);
+    expect(result.ok).toBe(false);
   });
 
   it("reports a refusal rather than throwing when the fill cannot run", async () => {

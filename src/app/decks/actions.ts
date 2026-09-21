@@ -78,7 +78,7 @@ export async function buildFillPlan(
   excludeOracleIds: Set<string> = new Set(),
   /** Passed straight to `planFill`. The bulk control names a slot count and a sleeveable-only
    *  pool; every other caller fills the whole body from everything. */
-  options: Pick<PlanFillArgs, "slots" | "pool"> = {},
+  options: Pick<PlanFillArgs, "slots" | "pool" | "held"> = {},
 ): Promise<FillPlan> {
   const commander = commanders[0];
   const hasPartner = commanders.length > 1;
@@ -1908,11 +1908,15 @@ export async function chooseBulkFill(
   deckId: string,
   openSlots: number,
 ): Promise<{ ok: true; oracleIds: string[] } | { ok: false; message: string }> {
-  const userId = await requireUserId();
-  const deck = await requireDeck(deckId, userId);
   if (openSlots <= 0) return { ok: true, oracleIds: [] };
 
+  // EVERY READ IS INSIDE THE `try`, including the two guards. `requireDeck` throws
+  // `deck not found` for a deck the reader does not own or one deleted while the list was
+  // open, and the caller is a click handler that reports a refusal — a rejection escaping
+  // here is an unhandled promise on a surface documented as never throwing.
   try {
+    const userId = await requireUserId();
+    const deck = await requireDeck(deckId, userId);
     const [commander] = await db.select().from(cards)
       .where(eq(cards.oracleId, deck.commanderOracleId));
     if (!commander) return { ok: false, message: synergyCopy.lastSlots.topUpFailed };
@@ -1920,17 +1924,54 @@ export async function chooseBulkFill(
     const [partner] = deck.partnerOracleId
       ? await db.select().from(cards).where(eq(cards.oracleId, deck.partnerOracleId))
       : [];
-    const held = await db.select({ oracleId: deckCards.oracleId })
-      .from(deckCards).where(eq(deckCards.deckId, deckId));
+    // THE DECK AS IT STANDS, not just its ids. `planFill` counts role coverage from zero
+    // unless it is told otherwise, and every caller before this one filled an empty deck —
+    // so asking for four slots returned the first four placements of a from-scratch 99. A
+    // deck holding twenty ramp sources and no draw was offered four more ramp, which is the
+    // exact failure this control exists to end.
+    const heldRows = await db.select({
+      oracleId: deckCards.oracleId,
+      quantity: deckCards.quantity,
+    }).from(deckCards).where(eq(deckCards.deckId, deckId));
+
+    // A SECOND READ rather than a join, because the two questions are different: the rows say
+    // what the deck holds, the catalog says what those cards ARE. A held card need not be in
+    // the collection at all — sold, traded, or never owned and proxied — so this cannot come
+    // off the owned pool that the candidates are drawn from.
+    const heldIds = heldRows.map((r) => r.oracleId);
+    const heldCards = heldIds.length === 0 ? [] : await db.select({
+      oracleId: cards.oracleId,
+      typeLine: cards.typeLine,
+      oracleText: cards.oracleText,
+      keywords: cards.keywords,
+      layout: cards.layout,
+    }).from(cards).where(inArray(cards.oracleId, heldIds));
+    const heldById = new Map(heldCards.map((c) => [c.oracleId, c]));
+    const held = heldRows.flatMap((r) => {
+      const card = heldById.get(r.oracleId);
+      // A row whose card the catalog no longer resolves is dropped rather than counted as a
+      // typeless, textless card: classifying that would credit no role and tally no type,
+      // which is a silent undercount dressed as data.
+      return card ? [{ ...card, quantity: r.quantity }] : [];
+    });
 
     const plan = await buildFillPlan(
       userId,
       partner ? [commander, partner] : [commander],
       // The deck's own cards are not candidates for filling it.
-      new Set(held.map((r) => r.oracleId)),
+      new Set(heldIds),
       // SLEEVEABLE ONLY. The control's promise is about cards the player can put in the deck
       // tonight; a plan that reached past the collection would tick a purchase.
-      { pool: "sleeveable", slots: openSlots },
+      {
+        pool: "sleeveable",
+        slots: openSlots,
+        // Only what role and type classification read. `HeldCard` asks for no more, because
+        // a card already sleeved is past the question of whether to choose it.
+        held: held.map((h) => ({
+          typeLine: h.typeLine, oracleText: h.oracleText,
+          keywords: h.keywords ?? [], layout: h.layout, quantity: h.quantity,
+        })),
+      },
     );
     // FEWER THAN THE SLOTS IS A VALID ANSWER. Spending them badly is not: a fill that cannot
     // meet a floor from the sleeveable pool leaves the slot open rather than filling it with
