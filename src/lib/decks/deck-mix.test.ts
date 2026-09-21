@@ -30,6 +30,39 @@ beforeEach(() => {
 });
 
 describe("loadDeckMix", () => {
+  it("passes both commanders and the combined identity, and returns the measured mix", async () => {
+    reads(pairDeck, [
+      { oracleId: "o-cmd", colorIdentity: ["U", "R"] },
+      { oracleId: "o-partner", colorIdentity: ["R", "G"] },
+    ]);
+    loadSkeletonForCommanders.mockResolvedValue({
+      skeleton: {
+        roleTargets: {
+          of: "pair",
+          targets: { ramp: 9, draw: 13, removal: 6, wipes: 2 },
+        },
+        composition: { of: "pair", targets: { land: 35 } },
+      },
+    });
+
+    const mix = await loadDeckMix("d-1", "u-1");
+
+    // The ARGUMENTS, because a mix built from the wrong commander is a plausible mix: it
+    // draws five sensible integers and nothing downstream can tell they describe another
+    // deck. Identity is the union of both, deduped — `R` appears on each.
+    const [commanderId, partnerId, identity] = loadSkeletonForCommanders.mock.calls[0];
+    expect(commanderId).toBe("o-cmd");
+    expect(partnerId).toBe("o-partner");
+    expect([...identity].sort()).toEqual(["G", "R", "U"]);
+
+    // And the result, mapped through rather than around: measured targets reach the cells,
+    // and the pair's own land figure is kept instead of the asserted 37.
+    expect(mix.measured).toBe(true);
+    expect(mix.cells.ramp.target).toBe(9);
+    expect(mix.cells.draw.target).toBe(13);
+    expect(mix.cells.land.target).toBe(35);
+  });
+
   it("keeps the partner's land target when the chain throws", async () => {
     reads(pairDeck, [
       { oracleId: "o-cmd", colorIdentity: ["U"] },

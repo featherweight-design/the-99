@@ -3,6 +3,7 @@
 import { notFound, redirect } from "next/navigation";
 import { requireUserId } from "../../../../lib/auth";
 import { getDeckReviewHeader } from "../../../../lib/decks/read";
+import { indexGeneration } from "../../../../lib/cache/index-generation";
 import { cacheForUser } from "../../../../lib/cache/user-lists";
 import { loadDeckMix } from "../../../../lib/decks/deck-mix";
 import { deckBodySize } from "../../../../lib/decks/deck-size";
@@ -25,10 +26,13 @@ import { isUuid } from "../../../../lib/uuid";
 //     anywhere in `src/`. A deck's commanders are immutable for its life. **A feature that
 //     lets a player change a commander breaks that, and would have to drop this entry**;
 //     nothing here would fail loudly if it did not.
-//   - The index moves monthly. `cacheForUser` carries the CATALOG generation in its key, and
-//     a `Commander index` run does not stamp `catalog_refreshes` — so a rebuild is not in the
-//     key and is bounded by the hour ceiling instead. One hour of a month is the staleness
-//     being bought, on figures whose whole point is that they are averages.
+//   - The index moves monthly, and `cacheForUser` carries the CATALOG generation only — a
+//     `Commander index` run does not stamp `catalog_refreshes`. So the index generation goes
+//     in the key here, alongside the deck id. The window it closes is an hour once a month,
+//     which sounds ignorable until you ask WHICH hour: the first run that writes role
+//     averages flips every deck from an asserted baseline to a measured one, and serving the
+//     old figure through that hour, on the page that explains what changed, is the worst
+//     hour of the month to be stale in.
 const DECK_MIX_KEY = ["deck-mix", "1"];
 
 export default async function ChangesPage({
@@ -139,7 +143,11 @@ export default async function ChangesPage({
   // the basis chain behind it is the ~170ms part of a profile build. Not `cachedDeckProfile`
   // — that assembles bracket flags, the Spellbook aggregation, tutor classification and the
   // staples join for the same five integers, measured at 632-831ms steady state.
-  const mix = await cacheForUser(userId, [...DECK_MIX_KEY, id], () => loadDeckMix(id, userId));
+  const mix = await cacheForUser(
+    userId,
+    [...DECK_MIX_KEY, id, await indexGeneration()],
+    () => loadDeckMix(id, userId),
+  );
 
   return (
     <ReviewChanges

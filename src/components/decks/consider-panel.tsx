@@ -306,7 +306,10 @@ export function ConsiderPanel({
       ...shelf,
       suggestions: sortWithin(shelf.suggestions, sort),
     })),
-    [suggestions, deckCards, sort],
+    // `mix` is a dependency: `buildShelves` counts coverage against its targets, so a
+    // refreshed mix with the same suggestions and cards would otherwise leave every shelf
+    // reading against the previous commander's figures.
+    [suggestions, deckCards, sort, mix],
   );
 
   return (
