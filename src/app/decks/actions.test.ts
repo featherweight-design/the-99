@@ -637,6 +637,27 @@ describe("createDeck — filled baseline", () => {
     expect(counts[1]!).toBeGreaterThan(0);
   });
 
+  // THE RETRY PATH GETS THE SAME SPLIT. It runs the identical whole-body `planFill`, so
+  // recording it as one seed would make its residual non-undoable separately — the same 99-row
+  // pass the create was split to avoid, reachable by pressing the banner's retry instead.
+  it("records two passes on the retry path as well", async () => {
+    stub.state.decks.push({ id: "deck-2", userId: "user_1", commanderOracleId: COMMANDER_ORACLE });
+    stub.state.cards.push(commanderCard());
+    // MORE ramp than the floor wants, so a residual exists at all — the neighbouring case
+    // gives exactly ten and therefore records one pass, correctly.
+    stub.state.collectionItems.push(
+      ...Array.from({ length: 30 }, (_, i) => rampCard(i)),
+      ...Array.from({ length: 40 }, (_, i) => forestCard(i, 4)),
+    );
+
+    await fillDeck("deck-2");
+
+    const kinds = stub.state.insertCalls
+      .filter((c) => c.table === "fill_passes")
+      .map((c) => (c.values as Record<string, unknown>).kind);
+    expect(kinds).toEqual(["seed", "top_off"]);
+  });
+
   // Gate 6, "fires once": the fill-failed banner's retry is the one path that
   // can run a seed fill against a deck that already exists, so it is the one
   // path that could write a second seed pass.

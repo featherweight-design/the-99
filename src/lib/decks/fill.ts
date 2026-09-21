@@ -541,7 +541,10 @@ export function planFill(candidates: FillCandidate[], args: PlanFillArgs): FillP
       // Against the ceiling the sweeps actually built to, which the modal drops already
       // reduced — otherwise a base that is complete in PLAY reports itself short by exactly
       // the cards that completed it.
-      ...(counts.land + modalDrops < landCeiling
+      // `landCapable` rather than `counts.land + modalDrops`: the residual runs after that
+      // count is taken and can sleeve modal cards of its own, so a base the residual completed
+      // still reported itself short by exactly the cards that completed it.
+      ...(landCapable < landCeiling
         ? [{ kind: "role" as const, role: "land" as const }] : []),
       // TYPES TOO. A deck can meet every role floor and still sit eight creatures under the
       // decklists it is measured against, and a reader told only about roles cannot see it.

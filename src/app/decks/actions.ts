@@ -130,8 +130,14 @@ export async function buildFillPlan(
       commanders.map((c) => c.oracleId),
       [],
     );
+    // THE ORDER IT RETURNED, as an index — never a scalar recomputed from its fields.
+    // `orderBySynergy` puts an unscored card after every scored one; coalescing
+    // `synergyPts ?? inclusionPct` lets a null-synergy card's inclusion percentage outrank a
+    // scored card, and equal scores fall back to name rather than to this pool's order. Two
+    // rankings built from the same data that disagree is exactly what this argument exists to
+    // prevent. Descending, because `planFill` sorts the residual high-to-low.
     synergyRank = new Map(
-      synergy.map((card) => [card.oracleId, card.synergyPts ?? card.inclusionPct ?? 0]),
+      synergy.map((card, index) => [card.oracleId, synergy.length - index]),
     );
   } catch (err) {
     console.warn("buildFillPlan: no synergy ranking — the residual keeps inclusion order", err);
@@ -620,11 +626,26 @@ export async function fillDeck(deckId: string): Promise<void> {
       await tx.insert(deckCards).values(
         plan.rows.map((r) => ({ deckId, oracleId: r.oracleId, quantity: r.quantity, auto: true })),
       );
-      // The retry's fill is still the seed. openSlots is the whole body because
-      // this path refuses a deck that already holds cards.
+      // THE SAME TWO PASSES THE CREATE RECORDS. This path runs the identical whole-body
+      // `planFill`, so recording it as one seed would make the retry's residual non-undoable
+      // separately — the same 99-row pass with nothing to undo but all of it that the create
+      // was split to avoid, reachable by pressing the banner's retry instead.
+      //
+      // openSlots is the whole body because this path refuses a deck that already holds cards.
+      const retryResidualIds = new Set(
+        plan.rows.filter((r) => r.role === "other").map((r) => r.oracleId),
+      );
+      const retryFoundation = plan.rows.filter((r) => !retryResidualIds.has(r.oracleId));
+      const retryResidual = plan.rows.filter((r) => retryResidualIds.has(r.oracleId));
       await recordFillPass(tx, {
         deckId, kind: "seed", openSlots: deckBodySize(hasPartner),
-        rows: plan.rows.map((r) => ({ oracleId: r.oracleId, quantity: r.quantity })),
+        rows: retryFoundation.map((r) => ({ oracleId: r.oracleId, quantity: r.quantity })),
+      });
+      await recordFillPass(tx, {
+        deckId, kind: "top_off",
+        openSlots: deckBodySize(hasPartner)
+          - retryFoundation.reduce((n, r) => n + r.quantity, 0),
+        rows: retryResidual.map((r) => ({ oracleId: r.oracleId, quantity: r.quantity })),
       });
       // Only where the plan landed rows. A fill that found nothing to add still
       // sets `filled` below — that column answers "was this ever filled" — but

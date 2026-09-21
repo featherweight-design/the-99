@@ -27,9 +27,17 @@ import { classifyRoles, type Role } from "../src/lib/recs/roles";
 import { readSynergyCards } from "../src/app/commanders/[slug]/synergy-read";
 import { readFileSync } from "node:fs";
 
-/** The production caller's own source. Check 5 proves `planFill` honours a ranking it is
- *  given; this proves the app gives it one, which is the half that was actually broken. */
-const BUILD_FILL_PLAN_SRC = readFileSync("src/app/decks/actions.ts", "utf8");
+/**
+ * The production caller's own source, WITH COMMENTS STRIPPED.
+ *
+ * Check 5 proves `planFill` honours a ranking it is given; this proves the app gives it one,
+ * which is the half that was actually broken. The first version searched the raw file for
+ * `synergyRank` — and the comment explaining the argument contains that word, so the check was
+ * satisfied by its own prose and would have passed with the argument deleted.
+ */
+const BUILD_FILL_PLAN_SRC = readFileSync("src/app/decks/actions.ts", "utf8")
+  .replace(/\/\*[\s\S]*?\*\//g, "")
+  .replace(/^\s*\/\/.*$/gm, "");
 
 neonConfig.webSocketConstructor = ws;
 const { DATABASE_URL } = requireEnv(["DATABASE_URL"]);
@@ -313,8 +321,10 @@ async function main() {
       truthy("the residual runs highest-ranked first", descending);
       // And the production caller SUPPLIES one. Asserted separately, because the check above
       // passes on a build where nothing ever passes `synergyRank`.
+      // The ARGUMENT, in code rather than in prose: `synergyRank` reached as a property of the
+      // object handed to `planFill`, or assigned on the way to it.
       truthy("and `buildFillPlan` passes a ranking at all",
-        BUILD_FILL_PLAN_SRC.includes("synergyRank"));
+        /synergyRank\s*[,}]/.test(BUILD_FILL_PLAN_SRC));
     }
   }
 
