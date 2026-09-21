@@ -1997,6 +1997,37 @@ describe("chooseBulkFill", () => {
     expect(new Set(result.oracleIds).size).toBe(result.oracleIds.length);
   });
 
+  // THE FAILURE TASK 21 EXISTS FOR, and the case that was missing. The previous headline
+  // asserted `ok`, a length cap and uniqueness — none of them about WHICH cards — over a
+  // fixture where the deck held nothing, so every role was short and nothing could
+  // discriminate. It passed under `seedableIds.slice(0, tickable)`, which is the mutation the
+  // plan requires it to fail.
+  //
+  // Here the deck is already AT its ramp floor and short on creatures, and the ramp candidate
+  // is the one a synergy ranking would reach for first. Needing the creature and being
+  // offered the rock is the whole of what this control got wrong.
+  it("takes the card the deck needs over the one a ranking would reach for", async () => {
+    stub.state.decks.push({ id: "bulk-3", userId: "user_1", commanderOracleId: COMMANDER_ORACLE });
+    stub.state.cards.push(commanderCard());
+    // Ten ramp sources already sleeved: the ramp floor is closed.
+    stub.state.deckRowsByDeck["bulk-3"] = Array.from({ length: 10 }, (_, i) => ({
+      oracleId: rampCard(i).oracleId as string,
+      quantity: 1,
+    }));
+    stub.state.cards.push(...Array.from({ length: 10 }, (_, i) => rampCard(i)));
+
+    const spareRamp = rampCard(90);
+    const wantedCreature = creature(90);
+    stub.state.collectionItems.push(spareRamp, wantedCreature);
+
+    const result = await chooseBulkFill("bulk-3", 1);
+
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+    expect(result.oracleIds).toContain(wantedCreature.oracleId);
+    expect(result.oracleIds).not.toContain(spareRamp.oracleId);
+  });
+
   it("reports a refusal rather than throwing when the fill cannot run", async () => {
     stub.state.decks.push({ id: "bulk-2", userId: "user_1", commanderOracleId: "missing-oracle" });
     const result = await chooseBulkFill("bulk-2", 5);
