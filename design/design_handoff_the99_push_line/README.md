@@ -1,199 +1,165 @@
-# The 99 — The push line and the upgrade path (design handoff · R1, Round 4 of 5)
+# The 99 — The push line and the upgrade path (design handoff · R2, Round 4 of 5)
 
-> **Start with `HANDOFF.md`.** This file is the long-form argument: why each object is shaped the
-> way it is, and what was tried and dropped on the way.
+> **Start with `HANDOFF.md`.** This file is the long-form argument. `READINESS.md` carries the
+> point-by-point response to the R1 audit.
+
+**Revised against the R1 audit (PR #793).** Six findings, all corrected rather than argued, plus
+one premise re-made. **Placement, the `inert` union member, and the whole upgrade path are
+unchanged** — the audit confirmed those, and this revision does not reopen them.
 
 **Source of truth:** `docs/superpowers/design-briefs/2026-09-20-the-push-line.md` on `main`.
-Spec §6.1a–c, §7.2, §11.1 as amended 2026-09-20 (the boundary ruling). **Contract verified
-against `src/lib/bracket/delta.ts`, `upgrade.ts` and `rules.ts` on `main`** — every shape drawn
-here exists today, and the one addition is named as an addition.
+Spec §6.1a–c, §7.2, §11.1 as amended 2026-09-20. Contract verified against
+`src/lib/bracket/delta.ts`, `upgrade.ts`, `rules.ts`. **Mark placement read from
+`design_handoff_the99_card_mark/READINESS.md`, which is the authority this round should have read
+the first time.**
 
 **Frame:** Round 0 (`design_handoff_the99_deck_analysis/`). **Chrome:** Round 2
-(`design_handoff_the99_verdict/`) and Round 3 (`design_handoff_the99_declaration/`), both carried
-and neither redrawn. **Hosts:** `design_handoff_the99_add_panel/` (quick add + Consider) and
-`design_handoff_the99_top_off/` (the candidate list) — the push line is drawn *into* their shipped
-rows, and no row geometry changes.
+(`design_handoff_the99_verdict/`) and Round 3 (`design_handoff_the99_declaration/`). **Marks:**
+Round 1 (`design_handoff_the99_card_mark/`). **Hosts:** `design_handoff_the99_add_panel/` and
+`design_handoff_the99_top_off/`. **None of them is reopened, amended or redrawn.**
 
-**File:** `The 99 - The Push Line.dc.html` — canvas (pan/zoom). Tweaks: `theme`
-(amonkhet · kamigawa), `showRejected`. Every colour is a `var()`.
+**File:** `The 99 - The Push Line.dc.html` — canvas (pan/zoom). Sections 1a–1g plus 2a (the marks)
+and 2b (the top-off premise). Tweaks: `theme`, `showRejected`.
 
 ---
 
 ## 1 · Two objects, and the placement call
 
 **The push line is a property of a candidate card. The upgrade path is a property of a target.**
-That sentence decides both placements and most of the rest.
+That sentence decides both placements.
 
 ### The push line goes on the candidate, on every surface that can commit one
 
-Round 0 placed *deck analysis*; it never placed this. The brief names two add surfaces and asks
-whether the treatment travels. **It travels — as one slot with two densities.**
-
 | Host | Density | Why |
 |---|---|---|
-| **Quick add, result row** | the **sentence** | the row has the width, and quick add is where a player adds exactly one card on purpose — the event the push line previews |
-| **Consider, tile** | **the shape's name + its mark**, ≤3 words | 168px cannot hold a sentence, and a wrapped one makes six tiles of ragged height. The full sentence prints in the card's own detail modal, which the art and the name already open (`CardDetailTrigger`) |
-| **Top-off, candidate row** | the **sentence**, on a second line | 38 rows, and almost all of them are silent — which is what makes the slot legible rather than noisy here |
+| **Quick add, result row** | the **sentence** | the row has the width, and quick add is where a player adds exactly one card on purpose |
+| **Consider, tile** | **a clause**, ≤3 words | 168px cannot hold a sentence; the full sentence prints in the card detail modal, which the art and the name already open |
+| **Top-off, candidate row** | the **sentence**, on a second line | a marked row is rare in any screenful, so the slot reads as a flag rather than as furniture (see §7) |
 
-**`/commanders/[slug]` is not a third host**, and the reason is arithmetic rather than taste: the
-synergy rows toggle a selection a Build link carries into deck *creation*, so there is no deck and
-no profile for `bracketDelta` to evaluate against.
+**`/commanders/[slug]` is not a third host**, and the reason is arithmetic: its synergy rows carry
+a selection into deck *creation*, so there is no deck and no profile for `bracketDelta` to evaluate
+against.
 
-**It is not on the analysis tab, and it does not link there.** The tab's whole authority is that it
-describes the deck the player has; the link would promise an explanation of a change that has not
-happened. **And it does not persist after the add** (§4.5): the card is in the deck, and the verdict
-block is the record. No toast, no afterglow, no tab badge.
+**Not on the analysis tab, and no link to it.** The tab's authority is that it describes the deck
+the player has; the link would promise an explanation of a change that has not happened. **And it
+does not persist after the add** (§4.5).
 
 ### The upgrade path opens from the climb's lower rung
 
-Round 2's climb already draws the bracket below under *To downgrade your deck*, with one sentence
-of reason. **The upgrade path is that rung's full answer**, so it is a disclosure on the rung rather
-than a fifth block on the tab — which also means **the rungs are the target selector** and no new
-control can invent a target the rules do not offer. `target` is `1 | 2 | 3`; the chips only ever
-show brackets below this deck's reading.
+Round 2's climb already draws the bracket below under *To downgrade your deck*. **The upgrade path
+is that rung's full answer**, so it is a disclosure on the rung rather than a fifth block — which
+makes **the rungs the target selector** and stops any control inventing a target the rules do not
+offer. `target` is `1 | 2 | 3`.
 
-## 2 · One rule orders the five sentences: a mark means movement
+## 2 · The marks are Round 1's, and this round moves nothing
+
+**R1's largest error.** It placed the fact marks on a line above the name, "per the shipped card
+row", three times. No shipped surface does that: `/collection`'s row and tile draw them inline
+after the name, and the decklist row draws them inline after the count, under Round 1's stated
+ordering rule *copies first, mark last, on every surface*.
+
+**These three hosts keep the inline placement**, and the correction is not a compromise: relocating
+a shipped mark on three surfaces to suit a fourth is a Round 1 amendment, and nothing here
+justifies opening one.
+
+**Three marks, not five.** Bolt, stripped peak and turn again ship. The lemniscate and drawn-up are
+Round 2 design and unbuilt, so **a combo piece and a tutor carry no mark on these surfaces** — the
+sentence says what they are. If Round 2 ships them, they appear in the same inline slot for free.
+
+**The Consider tile is back as it ships**, mana pips and art ownership dot included. This round
+adds one clause above the Add and touches nothing else on any shipped surface.
+
+## 3 · One rule orders the sentences: a mark means movement
 
 `moves`, and a `counts` that moved, draw bracket marks either side of an arrow. **A fact draws
-none** — `unquantified`, `ruleless` and the new `inert` are inked `--fact` under a mono label
-saying what kind of fact it is (*Reported, not scored* / *A fact, not a limit* / *A combo, and no
-change*). A reader can tell "this changes your bracket" from "this is true and changes nothing"
-without finishing either sentence.
-
-**Round 2's five fact marks travel with the card, here as everywhere** — bolt, stripped peak, turn again, **the lemniscate** and drawn up, bare and in `--fact` at 16×16. **On a row or a tile they take their own line above the name, led by the ownership dot** (the shipped card-row convention); in prose — the atom's sentence, the path's candidate lists — they follow the name inline. A card carries every mark true of it (Underworld Breach is bolt *and* knot; a loop combo's halves are knot *and* turn again) and a card that fires no rule carries none — the atom's own rule, applied to the glyphs.
-
-Every atom wears the same 9px mono label, **`IF YOU ADD THIS`** — one slot, one label, five bodies.
-The label form is Round 2's (*What other players say*, *How we determined this bracket*).
+none** and is inked `--fact` under a label naming the kind of fact. Every atom wears the same 9px
+mono label, **`IF YOU ADD THIS`**.
 
 **Range-to-range grammar, never a slot.** The sentence says *what your cards permit* and names
-brackets, so it stays true when either side is one bracket or two — including the case that breaks
-any *from N to M* phrasing: `[1,2] → [2]`, where Core is on both sides. `Violation.bracket` is
-never printed as a numeral; the rule is stated and the number stays in the mark.
+brackets, so it stays true with one or two brackets on either side — including `[1,2] → [2]`,
+where Core is on both sides. `Violation.bracket` is never printed as a numeral.
 
-Drawn transitions: `[1,2] → [4,5]` (mass land denial), `[1,2] → [2]` (an extra turn at the one
-bracket that counts them), `[3] → [4,5]` (a completed loop, and a fourth Game Changer). Together
-they exercise every one/two combination the grammar can meet; `[3] → [4]` cannot happen today and
-is not drawn.
+## 4 · `counts` — two clauses, the count leads, and it names the bracket that bit
 
-## 3 · `counts` — two clauses, and the count leads
+1. **The count**, with the **binding bracket** and its figure: *That would be your 1st game
+   changer, and Exhibition allows none.*
+2. **The consequence**, with the marks — omitted entirely when nothing moved.
+3. **The evidence**, only when `combos` is non-empty: a third `--fact` line under *Combo changes*.
 
-1. **The count.** *That would be your 4th game changer, and Upgraded allows 3.*
-2. **The consequence**, with the marks. *It moves what your cards permit from Upgraded to Optimized
-   or cEDH.*
-3. **The evidence, only when `combos` is non-empty** — a third line in `--fact` under *Combo
-   changes*: *Completes Underworld Breach + Brain Freeze.*
+**Audit 6.** Quoting Upgraded's 3 unconditionally told a deck losing Exhibition a true fact about
+the wrong bracket. `bindingBracket` is the lowest bracket in `from` whose limit the new count
+breaks; when nothing moves, it is the lowest bracket in the deck's current reading. *allows none*
+rather than *allows 0*, matching the upgrade path's phrasing for the same rule.
 
-The count leads because it is the only thing here a player can act on, and because `delta.ts`
-routes a Game Changer through `counts` even when it moves for exactly that reason. **When it does
-not move, clause 2 is absent** and nothing replaces it — no *your bracket stays at Upgraded*.
+## 5 · The two fact shapes each gained a second form
 
-**Rejected: one line.** *Your 4th game changer of 3 allowed moves you from Upgraded to Optimized or
-cEDH* — four figures and two claims in a breath, and *4 of 3* prints a fraction a reader will try to
-satisfy.
+Both had one sentence doing the work of two, and each was false on one side of the deck's own
+reading. **Which form prints is decidable from `to` and the profile the row already holds.**
 
-## 4 · The silence, answered — a sixth shape
+- **`unquantified`** (audit 5). Form A names the chaining rule at binding bracket 2 or 3. **Form B
+  applies at 4 or 5, where no extra-turn rule exists**: *Neither Optimized nor cEDH has a rule
+  about extra turns.* The closing clause is identical in both — the shape's meaning never changed,
+  only the rule it cited.
+- **`ruleless`** (audit 4). Form A keeps *and yours can't, yet*. **Form B applies when coverage is
+  present**: *What your tutors can already find is counted in this deck's bracket, and one more
+  doesn't add to it.* Dropping the clause was the other option and is worse — it would say nothing
+  about the one way tutors do reach a bracket, which is the reconciliation 2026-09-20 requires.
+
+## 6 · The silence, answered — three clauses, and it speaks first
 
 **Adding a card that completes a combo to a deck that cannot tutor for it moves the bracket by
 nothing, and silence there is the worst reading available**: the player will next be asked at a pod
 what is in the deck, and the answer includes a two-card infinite the app watched them assemble
 without a word.
 
-So it speaks, as a fact and never as a consequence — two clauses: the event, then why the verdict is
-unmoved.
+**Three second-clauses** (audit 2), chosen from `to`:
 
-> This completes **Heliod, Sun-Crowned** + **Walking Ballista**, a two-card infinite. **It doesn't
-> change your bracket** — this deck already permits Optimized or cEDH, and there is no lower
-> bracket left for it to rule out.
+| `to` | The clause |
+|---|---|
+| `[4,5]` | this deck already permits Optimized or cEDH, and there's no lower bracket left for it to rule out |
+| `[3]` | nothing in this deck searches for either half, so Upgraded still permits it as a late-game finish |
+| `[4]` | a combo you can already assemble is what sets this deck's bracket, and one you can't assemble doesn't add to it |
 
-The second clause has two forms, and which prints is decidable from data the client holds: *already
-at the top* when `to` is `[4,5]`; *nothing in this deck searches for either half* when the deck
-sits at 3 and coverage is absent.
+The third is new. Both older clauses were **false** there: one claims a `[4,5]` reading, the other
+claims Upgraded still permits a deck that has already left it.
 
-**It is a sixth shape, not a field on `none`:** `{ kind: "inert"; fact: "combo"; combos: ComboRef[];
-to: Bracket[] }`, with precedence after `ruleless` and before `none`. A speaking `none` would be a
-shape that reads alike and means differently, which is the thing `delta.ts`'s own header says the
-union exists to prevent. **This is the round's one data-shape change.**
+**And it now outranks `ruleless`** (audit 3). The canonical piece *is* a tutor, so the old order
+returned the tutor sentence on the exact add this round exists to speak for. The rule behind the
+flip: **an event outranks a standing count.** Full order: `moves`, `counts`, `inert`, `ruleless`,
+`unquantified`, `none`.
 
-**`none` stays silent, and is drawn as an absence.** A *nothing changes* line on 38 rows trains a
-reader to skip the slot, and then they miss the one row that moved their bracket. The atom's value
-is that its presence is information.
+**It remains a sixth shape, not a field on `none`** — `{ kind: "inert"; fact: "combo"; combos;
+to }`. `none` stays silent and draws nothing.
 
-## 5 · The upgrade path reads; it does not act
+## 7 · The top-off premise, re-made
 
-Per item: a mono rule label, the requirement at its own cardinality, and the candidates as card
-names on the dotted underline that opens a card everywhere else in the app.
+R1 costed the list at *up to 38 rows*, which is the number of cards a player is **adding**, not the
+number the list **draws**: 262 for the average commander, 423 at the widest, 480 for a pair.
 
-- **No tick boxes.** A checklist claims the app is tracking progress toward a target the player
-  never set — and because `upgradePath` lists a card under every rule it violates, overlapping items
-  would make a counter that cannot be right.
-- **No remove control.** It would be the only write on a surface built to report, with no undo, next
-  to five names the reader has not finished.
-- **Cardinality picks the phrasing.** `candidates > removeCount` → *any 2 of these 5*;
-  `candidates === removeCount` → the cards are named and the *any* is dropped, because *any 1 of
-  these 1* dresses a certainty as a choice. **Naming a forced card is not the app choosing** — the
-  rules chose.
-- **The combo item never says "remove".** *Either half breaks it* states the requirement at the
-  combo's cardinality; *remove any 1 of these 2* would read as if the pair were interchangeable with
-  the counts above.
-- **The overlap is stated once, in the foot** (*two of these five are also the combo*). Cheaper than
-  de-duplicating items, which would hide a rule.
+- **Legibility.** The unit is the **viewport, not the list**. A reader meets ten to fourteen rows at
+  a time, of which the marked ones are a handful — and that ratio is a property of the *rules*, not
+  the pool. A larger pool improves it. **What would break it is a filter that concentrates them**;
+  none exists today.
+- **Cost.** `bracketDelta` is **pure and synchronous over data the page already holds**, true at
+  480 as at 38. **What 480 changes is where it may be called**: compute inside the windowed row,
+  memoized by `(oracleId, profileVersion)`. An eager map over the pool is 480 pure calls per
+  keystroke.
 
-## 6 · `blocked`, without a scold or a dead end
+## 8 · The upgrade path reads; it does not act
 
-Three things carry it:
-
-1. **The cuttable candidates are still listed** — the block is still useful for the part of the
-   target that removals *can* answer.
-2. **The commander is drawn in the list on a dashed edge**, labelled *your commander*, rather than
-   omitted. `upgradePath` excludes it from `candidates`; showing why the count is short beats a
-   sentence about an invisible card.
-3. **The nearest reachable target is named and one tap away.** `upgradePath` is callable per target,
-   so the exit is derived rather than a consolation prize.
-
-*It would take a different commander* is the plainest true statement available and is not advice.
-**No `--danger`, no warning glyph, no *impossible*, no *sorry*.**
-
-**`items: []`** is drawn too: *Nothing would have to go. Your cards already sit inside Core —
-whether this deck is Exhibition or Core is yours to say*, which hands the reader to the declaration,
-the only thing left that can answer it.
-
-## Notes for engineering
-
-- **One data-shape change: the `inert` member of `BracketDelta`** (§4), with `to` carried so the
-  client picks the second clause without re-deriving the slot. `delta.test.ts:77-85` currently
-  records this case as unreachable-by-construction; it is reachable as a non-move whenever the deck
-  already holds a combo or already reads `[4,5]`.
-- **`counts` carries `to` and no `from`**, so the client decides *moved* by comparing `to` with the
-  profile's own `permits`. Either ship `from` on `counts` or guarantee the profile the row was
-  rendered against is the one the delta was computed from — **do not let the row compare against a
-  re-fetched profile.**
-- **`CandidateFacts.completesCombos` must arrive with oracle ids and image uris**, like every other
-  `ComboRef` in the analysis surfaces — the sentence names both halves and the names open cards.
-- **A tutor add can never move the range today**, because reaches are precomputed over the combos
-  the deck already holds and a candidate contributes none. That is what makes `ruleless` safe to
-  print as "no limit" — **and it is exactly why the copy says *tutors reach your bracket only when
-  they can find every piece of a combo this deck already holds*** rather than "tutors don't
-  matter". If reaches ever become candidate-aware, this sentence needs a move clause.
-- **The push line runs per row, so it must stay cheap.** `bracketDelta` is pure and per-candidate;
-  the quick-add list is ≤10 rows, Consider is a grid, and top-off is up to 38. No fetch per row.
-- **The Consider tile's three-word clause is a separate string per shape**, not a truncation of the
-  sentence. See the copy file.
-- **The upgrade path is a disclosure on the climb's lower rung** — `aria-expanded`/`aria-controls`,
-  the shipped `CoverageDisclosure` contract, local state, never persisted, and it does not move
-  focus.
-- **Target chips are the brackets below the deck's reading, and nothing else.** A deck reading
-  `[1,2]` shows one chip (Exhibition) or none.
-- **Live region, on an add:** the verdict block's existing region already announces the new reading
-  after re-analysis. **The push line itself is not announced on hover or focus of a row**; it is part
-  of the row's accessible description (`aria-describedby` → the atom), so a screen reader meets it
-  when it meets the row and never as an interruption.
-- **The About entry belongs to this surface's release**, with the `ABOUT_VERSION` bump.
+- **No tick boxes**, **no remove control** — the path is derived, and a write here would be the
+  tab's only one.
+- **Cardinality picks the phrasing**: *any 2 of these 5*; the cards are named when
+  `candidates === removeCount`. **Naming a forced card is the rules choosing, not us.**
+- **The combo item never says "remove"** — *Either half breaks it*.
+- **The overlap is stated once, in the foot.**
+- **`blocked`** lists what can come out, draws the commander on a dashed edge, and names the
+  nearest reachable target. No `--danger`, no *impossible*.
 
 ## Files
-- `The 99 - The Push Line.dc.html` — the canvas, sections 1a–1g.
+- `The 99 - The Push Line.dc.html` — the canvas: 1a–1g, 2a (the marks), 2b (the premise).
 - `HANDOFF.md` — settled decisions and build guardrails. Start here.
-- `README.md` — this file.
-- `STATES-push-line.md` — the atom's states, the path's states, and the host matrix.
-- `push-line · copy strings.ts` — every string, with reasoning inline.
-- `READINESS.md` — self-assessment, what was called rather than asked, the engineering list.
+- `READINESS.md` — the audit response, the engineering list, the open items.
+- `STATES-push-line.md` — 14 atom states, 8 path states, the host matrix.
+- `push-line - copy strings.ts` — every string, with the audit reasoning inline.
 - `brand/` — brand sheet, for self-containment. Not a colour source; tokens are.
