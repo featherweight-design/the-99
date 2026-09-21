@@ -30,20 +30,28 @@
 //       fallback under the commander rung. Section 5 asks whether one global row could serve
 //       them, and answers no.
 //
-// THE CLASSIFIER IS IMPORTED, NEVER REIMPLEMENTED. `classifyRoles` is the app's own, and a
-// second copy of those regexes in SQL would drift from it a round at a time — which is the
-// exact failure `measure-gap-line.mts` was corrected for, twice, when it restated a rule
-// instead of calling it.
+// THE DERIVATION IS IMPORTED, NEVER REIMPLEMENTED. This calls `deriveRoleTargets` — the same
+// function the index build writes from — rather than restating the probability sum, the
+// front-face split or the classifier. `measure-gap-line.mts` was corrected for exactly that,
+// twice, and `facet.ts`'s own header exists to stop a second copy of one rule.
+//
+// The cost is worth naming: the two were briefly separate implementations, and running them
+// side by side on 2026-09-20 was a real cross-check — both read ramp 7.8, draw 8.2, removal
+// 5.1, wipes 0.7 over local-dev's 3,279 commanders. That reading is recorded here because it
+// cannot be re-run now. An ongoing drift risk is the worse trade: a duplicate that drifted
+// would make THIS script's output stop describing what the app actually writes, which is the
+// one thing it exists to show.
 
 import { requireEnv } from "./lib/env.mjs";
 import { Pool, neonConfig } from "@neondatabase/serverless";
 import ws from "ws";
-import { classifyRoles, ROLE_TARGETS, type Role } from "../src/lib/recs/roles";
-// Imported rather than restated. This script held its own copy of the front-face split for
-// exactly one commit, which is one commit longer than two definitions of a rule should ever
-// coexist — `facet.ts`'s own header is about keeping its three land answers visibly different
-// rather than accidentally divergent, and a private fourth defeats that.
-import { castFaceText } from "../src/lib/cards/facet";
+import { ROLE_TARGETS } from "../src/lib/recs/roles";
+import {
+  classifyCards,
+  deriveRoleTargets,
+  type RoleTargetRow,
+} from "../src/lib/edhrec/role-targets";
+import type { Role } from "../src/lib/recs/roles";
 
 neonConfig.webSocketConstructor = ws;
 const { DATABASE_URL } = requireEnv(["DATABASE_URL"]);
@@ -73,61 +81,64 @@ function sd(xs: number[]): number {
 }
 
 /**
- * The catalog, classified ONCE.
+ * Expected count of each role per commander, through the SHIPPED derivation.
  *
- * Deliberately not per (commander, card) pair: that is 892,185 rows on staging against ~31,830
- * distinct commander-legal cards here. `classifyRoles` is pure, so two rows naming the same
- * card cannot disagree, and the pair-wise form would spend 28x the work to prove it.
+ * Calls `deriveRoleTargets` — the same function the index build writes from — rather than
+ * restating the probability sum, the front-face split or the classifier. Classification is
+ * memoised inside it per distinct card, so this stays one pass over ~31,830 cards rather than
+ * 892,185.
  */
+async function deriveTargets(): Promise<Map<string, RoleTargetRow>> {
+  const rows = await q<{
+    commander_oracle_id: string; oracle_id: string; inclusion: number;
+    type_line: string; oracle_text: string | null; keywords: string[] | null; layout: string;
+  }>(`
+    select csc.commander_oracle_id, csc.oracle_id, csc.inclusion,
+           c.type_line, c.oracle_text, c.keywords, c.layout
+    from commander_support_cards csc join cards c on c.oracle_id = csc.oracle_id`);
+
+  let distinct = 0;
+  const targets = deriveRoleTargets(
+    rows.map((r) => ({
+      commanderOracleId: r.commander_oracle_id,
+      oracleId: r.oracle_id,
+      inclusion: r.inclusion,
+      typeLine: r.type_line,
+      oracleText: r.oracle_text,
+      keywords: r.keywords ?? [],
+      layout: r.layout,
+    })),
+    { onClassify: () => { distinct += 1; } },
+  );
+  classifiedCount = distinct;
+  return targets;
+}
+
+/** How many DISTINCT cards the last derivation classified, for the section-1 header. */
+let classifiedCount = 0;
+
+/** The per-card role map sections 3 and 4 read. The SAME classifier the derivation uses, via
+ *  the same exported helper — not a second pass with its own rules. */
 async function classifyCatalog(): Promise<Map<string, Role[]>> {
   const rows = await q<{
     oracle_id: string; type_line: string; oracle_text: string | null;
     keywords: string[] | null; layout: string;
   }>(`select oracle_id, type_line, oracle_text, keywords, layout from cards where commander_legal`);
-  const out = new Map<string, Role[]>();
-  for (const row of rows) {
-    out.set(row.oracle_id, classifyRoles({
-      typeLine: row.type_line,
-      oracleText: castFaceText(row.oracle_text, row.layout),
-      keywords: row.keywords ?? [],
-    }));
-  }
-  return out;
-}
-
-/** Expected count of each role in a deck for each commander, as a probability sum. */
-async function deriveTargets(
-  roleOf: Map<string, Role[]>,
-): Promise<Map<string, Record<RoleKey, number>>> {
-  const rows = await q<{ commander_oracle_id: string; oracle_id: string; inclusion: number }>(
-    `select commander_oracle_id, oracle_id, inclusion from commander_support_cards`);
-  const out = new Map<string, Record<RoleKey, number>>();
-  for (const row of rows) {
-    let target = out.get(row.commander_oracle_id);
-    if (!target) {
-      // Zero rather than absent. A commander whose listed cards contain no wipe measures a
-      // genuine 0 — a figure that cannot tell "none" from "not derived" is one nobody can read.
-      target = { ramp: 0, draw: 0, removal: 0, wipes: 0 };
-      out.set(row.commander_oracle_id, target);
-    }
-    const roles = roleOf.get(row.oracle_id);
-    if (!roles) continue;
-    if (!Number.isFinite(row.inclusion) || row.inclusion <= 0) continue;
-    const p = row.inclusion / 100;
-    for (const role of ROLES) if (roles.includes(role)) target[role] += p;
-  }
-  return out;
+  return classifyCards(rows.map((r) => ({
+    oracleId: r.oracle_id, typeLine: r.type_line, oracleText: r.oracle_text,
+    keywords: r.keywords ?? [], layout: r.layout,
+  })));
 }
 
 async function main() {
   const [{ branch }] = await q<{ branch: string }>(`select current_database() as branch`);
   console.log(`\nmeasure-role-targets · database ${branch}`);
 
+  const targets = await deriveTargets();
   const roleOf = await classifyCatalog();
-  const targets = await deriveTargets(roleOf);
 
   // 1 · the derivation
-  console.log(`\n== 1 · the derivation ==   ${targets.size} commanders, ${roleOf.size} cards classified`);
+  console.log(`\n== 1 · the derivation ==   ${targets.size} commanders, ${classifiedCount} cards classified`);
   console.log(`${pad("", 10)}${num("mean", 8)}${num("median", 8)}${num("min", 8)}${num("max", 8)}${num("sd", 8)}${num("flat", 8)}`);
   for (const role of ROLES) {
     const xs = [...targets.values()].map((t) => t[role]).sort((a, b) => a - b);

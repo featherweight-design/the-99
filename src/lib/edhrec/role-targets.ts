@@ -47,6 +47,24 @@ type RoleKey = (typeof ROLES)[number];
  *   assert the memoisation rather than infer it from two sums that a cacheless version returns
  *   identically.
  */
+export function classifyCards(
+  rows: readonly Pick<RoleDerivationRow, "oracleId" | "typeLine" | "oracleText" | "layout" | "keywords">[],
+  onClassify?: (oracleId: string) => void,
+): Map<string, Role[]> {
+  const out = new Map<string, Role[]>();
+  for (const row of rows) {
+    if (out.has(row.oracleId)) continue;
+    out.set(row.oracleId, classifyRoles({
+      typeLine: row.typeLine,
+      // THE FRONT FACE. `oracle_text` holds both, so a land-backed MDFC otherwise reads as ramp.
+      oracleText: castFaceText(row.oracleText, row.layout),
+      keywords: row.keywords,
+    }));
+    onClassify?.(row.oracleId);
+  }
+  return out;
+}
+
 export function deriveRoleTargets(
   rows: readonly RoleDerivationRow[],
   opts: { onClassify?: (oracleId: string) => void } = {},
@@ -54,20 +72,11 @@ export function deriveRoleTargets(
   // Classified ONCE per distinct card. `classifyRoles` is pure, so two rows naming the same card
   // cannot disagree — and the pair-wise form is 892,185 regex passes on staging against ~31,830
   // distinct commander-legal cards here.
-  const rolesOf = new Map<string, Role[]>();
+  const rolesOf = classifyCards(rows, opts.onClassify);
   const out = new Map<string, RoleTargetRow>();
 
   for (const row of rows) {
-    let roles = rolesOf.get(row.oracleId);
-    if (!roles) {
-      roles = classifyRoles({
-        typeLine: row.typeLine,
-        oracleText: castFaceText(row.oracleText, row.layout),
-        keywords: row.keywords,
-      });
-      rolesOf.set(row.oracleId, roles);
-      opts.onClassify?.(row.oracleId);
-    }
+    const roles = rolesOf.get(row.oracleId) ?? [];
 
     let target = out.get(row.commanderOracleId);
     if (!target) {
