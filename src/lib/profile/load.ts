@@ -176,6 +176,21 @@ type CompositionRow = {
   avgArtifact: number | null; avgEnchantment: number | null;
   avgPlaneswalker: number | null; avgBattle: number | null;
   avgCurve: Record<string, number> | null;
+  avgRamp: number | null; avgDraw: number | null;
+  avgRemoval: number | null; avgWipes: number | null;
+  /** Only `identity_composition` carries these two; the commander and pair rows omit them. */
+  thin?: boolean;
+  /**
+   * How many commanders in this bucket carried role figures.
+   *
+   * REQUIRED to read that bucket's role targets, and the null check below cannot stand in for
+   * it: `identity_composition.avg_ramp` and its three siblings are `NOT NULL DEFAULT 0`, where
+   * the commander and pair columns are nullable. So a bucket derived before the role pass
+   * existed reads back four honest-looking zeroes rather than nulls, and a check on nullity
+   * alone would accept them — stopping the chain at `identity` or `count` with a measurement
+   * nobody took, exactly where it should fall through to the asserted `flat` targets.
+   */
+  withRoles?: number;
 };
 
 /** ALL-OR-NOTHING, the same rule the parser and the pair reader apply: a 0 substituted for a
@@ -190,6 +205,24 @@ function compositionFrom(row: CompositionRow | undefined) {
   };
   if (Object.values(targets).some((v) => v === null)) return null;
   return { targets: targets as CompositionTargets, averageCurve: row.avgCurve };
+}
+
+/**
+ * The four role figures off a candidate row, or null when the row carries none.
+ *
+ * ALL-OR-NOTHING like the composition, and for the same reason — a 0 substituted for a null
+ * turns "nobody measured this" into "this deck wants no wipes". Read INDEPENDENTLY of the
+ * composition: a commander indexed before the role pass carries one and not the other.
+ */
+function roleTargetsFrom(row: CompositionRow | undefined) {
+  if (!row) return null;
+  // The BUCKET rows carry their own denominator and it is the only honest test for them — see
+  // `withRoles` above. A commander or pair row omits the field entirely, and nullity is the
+  // right test there because its columns are nullable.
+  if (row.withRoles !== undefined && row.withRoles <= 0) return null;
+  const { avgRamp: ramp, avgDraw: draw, avgRemoval: removal, avgWipes: wipes } = row;
+  if (ramp === null || draw === null || removal === null || wipes === null) return null;
+  return { ramp, draw, removal, wipes };
 }
 
 /**
@@ -274,6 +307,35 @@ export async function loadDeckProfileFromHead(head: ProfileHead): Promise<DeckPr
     ? undefined
     : await loadCompositionRow(countCondition(combinedIdentity.length));
 
+  // THE ROLE CHAIN NEEDS ITS OWN COUNT CANDIDATE, because the gating above is a fact about the
+  // COMPOSITION chain and not about this one. An identity row that serves the types can carry
+  // no roles at all — `with_roles = 0` is the supported pre-role-pass state — and the two
+  // chains are deliberately separate, so a commander whose identity bucket has types and whose
+  // count bucket has roles would otherwise skip straight to the asserted flat targets while a
+  // measured answer sat one rung below, unread.
+  //
+  // Read only when it can change something: the identity row is absent (already loaded above)
+  // or present with no usable roles. A commander whose identity row carries both pays nothing.
+  const identityRoles = roleTargetsFrom(identityRow ?? undefined);
+  const countRowForRoles = countRow
+    ?? (identityRoles === null
+        ? await loadCompositionRow(countCondition(combinedIdentity.length))
+        : undefined);
+  const countRoles = roleTargetsFrom(countRowForRoles ?? undefined);
+
+  // WHICH BUCKET THE CAVEAT DESCRIBES: the one whose ROLE figures were actually taken when a
+  // bucket supplied them, and otherwise the one serving the TYPES. A caveat naming a row
+  // nobody read would be worse than none.
+  //
+  // Written as a choice rather than a `??` chain, which is what got this wrong: `thin` is a
+  // BOOLEAN, so `??` happily takes a `false` from a row whose roles were never used and never
+  // reaches the row that is actually thin. A thin identity bucket then rendered as non-thin.
+  const roleBucket = identityRoles !== null ? identityRow
+    : countRoles !== null ? countRowForRoles
+    : null;
+  const typeBucket = identityRow ?? countRow ?? null;
+  const thinCondition = Boolean((roleBucket ?? typeBucket)?.thin);
+
   // The floor's bucket is the one that actually HOLDS rows. A commander whose exact identity
   // never cleared the sample bar falls to its colour count, and looking up the exact key
   // regardless would return nothing and report an empty floor as a complete one.
@@ -313,6 +375,15 @@ export async function loadDeckProfileFromHead(head: ProfileHead): Promise<DeckPr
       identity: compositionFrom(identityRow ?? undefined),
       count: compositionFrom(countRow ?? undefined),
     },
+    roles: {
+      pair: roleTargetsFrom(pairRow ?? undefined),
+      commander: roleTargetsFrom(commanderRow ?? undefined),
+      identity: identityRoles,
+      count: countRoles,
+    },
+    // The bucket the IDENTITY or COUNT rung would serve. The commander and pair rows are
+    // per-commander rather than per-bucket, so neither can be thin in this sense.
+    thinCondition,
     staples,
     commanderDeckCount: pairRow?.deckCount ?? commanderRow?.deckCount ?? null,
     population: populationFrom(pairRow, commanderRow),
@@ -386,6 +457,8 @@ const COMPOSITION_COLUMNS = {
   avgArtifact: commanderSupport.avgArtifact, avgEnchantment: commanderSupport.avgEnchantment,
   avgPlaneswalker: commanderSupport.avgPlaneswalker, avgBattle: commanderSupport.avgBattle,
   avgCurve: commanderSupport.avgCurve,
+  avgRamp: commanderSupport.avgRamp, avgDraw: commanderSupport.avgDraw,
+  avgRemoval: commanderSupport.avgRemoval, avgWipes: commanderSupport.avgWipes,
 } as const;
 
 async function loadCommanderRow(oracleId: string): Promise<CommanderRow | null> {
@@ -418,6 +491,8 @@ async function loadPairRow(a: string, b: string): Promise<PairRow | null> {
       avgPlaneswalker: commanderPairSupport.avgPlaneswalker,
       avgBattle: commanderPairSupport.avgBattle,
       avgCurve: commanderPairSupport.avgCurve,
+      avgRamp: commanderPairSupport.avgRamp, avgDraw: commanderPairSupport.avgDraw,
+      avgRemoval: commanderPairSupport.avgRemoval, avgWipes: commanderPairSupport.avgWipes,
       deckCount: commanderPairSupport.deckCount,
       bracketCounts: commanderPairSupport.bracketCounts,
     })
@@ -444,6 +519,13 @@ async function loadCompositionRow(condition: string): Promise<CompositionRow | n
       avgPlaneswalker: identityComposition.avgPlaneswalker,
       avgBattle: identityComposition.avgBattle,
       avgCurve: identityComposition.avgCurve,
+      avgRamp: identityComposition.avgRamp, avgDraw: identityComposition.avgDraw,
+      avgRemoval: identityComposition.avgRemoval, avgWipes: identityComposition.avgWipes,
+      // SELECTED, because the column exists to be shown. A row published from a below-bar
+      // bucket that reaches a reader indistinguishable from a ratified one is the whole thing
+      // the column was added to prevent.
+      thin: identityComposition.thin,
+      withRoles: identityComposition.withRoles,
     })
     .from(identityComposition)
     .where(eq(identityComposition.condition, condition));

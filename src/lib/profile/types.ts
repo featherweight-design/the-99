@@ -128,6 +128,19 @@ export type StapleRef = CardRef & {
   weightedRank: number;
 };
 
+/**
+ * The four functional targets and WHERE THEY CAME FROM, on the same object for the same reason
+ * the composition's basis is: there is no state in which a target exists with no provenance.
+ *
+ * `flat` is its own rung rather than a null, because `ROLE_TARGETS` is a real answer — the
+ * asserted baseline this whole sub-project exists to replace, and a deck falling back to it is
+ * being told something true about what it is being measured against.
+ */
+export type ProfileRoleTargets = {
+  of: "commander" | "pair" | "identity" | "count" | "flat";
+  targets: { ramp: number; draw: number; removal: number; wipes: number };
+};
+
 export type ProfileSkeleton = {
   /**
    * The measured standard, and WHERE IT CAME FROM, travelling together.
@@ -141,8 +154,26 @@ export type ProfileSkeleton = {
     targets: CompositionTargets;
     averageCurve: Record<string, number> | null;
   } | null;
+  /**
+   * The four functional targets, resolved down the SAME chain as the composition but
+   * INDEPENDENTLY of it.
+   *
+   * Two rungs, not one: a commander indexed before the role pass existed carries a composition
+   * and four nulls, and folding the two would drag its whole skeleton to `flat` over figures
+   * that are perfectly good. Never null — the chain ends at `ROLE_TARGETS`.
+   */
+  roleTargets: ProfileRoleTargets;
   /** The floor's bucket. Always present, even when no composition was found. */
   condition: string;
+  /**
+   * The bucket this row came from was derived from FEWER commanders than a ratified floor
+   * requires, and a surface showing its figures owes the player that context.
+   *
+   * `thinCondition`, NOT `thin`: `SkeletonFit.coverage.thin` already exists and means something
+   * else entirely — that THIS COMMANDER's deck count is below `THIN_DECK_COUNT`. Two
+   * differently-sourced `thin`s on one object is a trap, so the names differ.
+   */
+  thinCondition: boolean;
   staples: StapleRef[];
   /** The denominator behind all of it. */
   commanderDeckCount: number | null;

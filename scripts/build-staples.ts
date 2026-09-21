@@ -18,7 +18,9 @@ requireEnv(["DATABASE_URL"]);
 import { sql } from "drizzle-orm";
 import { db } from "../src/db";
 import { formatStaples, identityComposition } from "../src/db/schema";
-import { MIN_COMMANDERS_PER_CONDITION } from "../src/lib/staples/condition";
+import {
+  MIN_COMMANDERS_PER_CONDITION, THIN_COLOR_COUNTS, thinCondition,
+} from "../src/lib/staples/condition";
 // Imported, never restated: a literal here goes silently wrong the day the flat targets move,
 // and this line's whole job is to sit beside the derived figures as their baseline.
 import { ROLE_TARGETS } from "../src/lib/recs/roles";
@@ -139,7 +141,16 @@ function floorsQuery(keyExpr: string, restrictTo: string) {
 }
 
 /** Composition averages for one key expression, over the commanders that carry one. */
-function compositionQuery(keyExpr: string, restrictTo: string) {
+/**
+ * `having` is parameterised for the THIN branch alone, which inverts it. Everything else about
+ * the three branches is identical, and a second copy of this 30-line query written to flip one
+ * comparison is how the role columns and the type columns drift apart a release at a time.
+ */
+function compositionQuery(
+  keyExpr: string,
+  restrictTo: string,
+  having = `count(*) >= ${MIN_COMMANDERS_PER_CONDITION}`,
+) {
   const avg = (col: string) => `avg(cs.${col}) filter (where cs.avg_land is not null) as ${col}`;
   // THE ROLE COLUMNS CARRY THEIR OWN DENOMINATOR, and sharing `with_composition` would have
   // been a lie about them. `avg(cs.avg_ramp) filter (where cs.avg_land is not null)` skips a
@@ -174,9 +185,45 @@ function compositionQuery(keyExpr: string, restrictTo: string) {
     join cards cmd on cmd.oracle_id = cs.commander_oracle_id
     ${restrictTo}
     group by 1
-    having count(*) >= ${MIN_COMMANDERS_PER_CONDITION}
+    having ${having}
        and count(*) filter (where cs.avg_land is not null) > 0`;
 }
+
+/**
+ * The three buckets that get a composition nobody else will serve.
+ *
+ * A commander is here when its EXACT identity is under the bar AND its colour-COUNT key is too
+ * — colourless, four-colour and five-colour. Measured on staging 2026-09-20: 58, 16 and 60.
+ *
+ * THREE-COLOUR IS EXCLUDED, and that is the load-bearing half. Every one of the ten
+ * three-colour identities is under the bar, so a branch that simply emitted "every bucket under
+ * 100" would publish them — and the basis chain reads the identity rung BEFORE the count rung,
+ * so each of those rows would SHADOW the ratified `count:3` row for the largest orphan group in
+ * the table. A silent basis change, from a measured bucket to a below-bar one.
+ *
+ * Colourless is keyed by IDENTITY (`'C'`) and the other two by COUNT, because that is the key
+ * each one's commanders actually look up: a colourless commander's identity key is `'C'` and
+ * the chain finds it on the identity rung, while a four-colour commander's identity key is one
+ * of five exact strings none of which is written, so it falls through to `count:4`.
+ */
+/** GENERATED FROM `thinCondition`, one arm per count, rather than hand-written beside it. The
+ *  previous version shared only the count LIST and wrote the key mapping a second time in SQL,
+ *  so changing the colourless arm in TypeScript would have left this branch writing the old key
+ *  and the reader looking up one no row carries — silently, every time, for every such deck. */
+const THIN_KEY = `
+  case ${THIN_COLOR_COUNTS
+    .map((n) => `when cardinality(cmd.color_identity) = ${n} then '${thinCondition(n)}'`)
+    .join("\n       ")} end`;
+/** The fallback restriction too, so this branch reads the SAME population `loadAverageCurves`
+ *  computes its `count:N` curves over. Inert while no exact identity at these counts clears the
+ *  bar — none does — but the moment one did, this row's type averages would cover commanders
+ *  the identity rung already serves while its curve covered only those it does not, which is
+ *  the mismatch that function's own header forbids. */
+const thinOnly = (fallbackOnly: string) =>
+  fallbackOnly
+    ? `${fallbackOnly} and cardinality(cmd.color_identity) in (${THIN_COLOR_COUNTS.join(", ")})`
+    : `where cardinality(cmd.color_identity) in (${THIN_COLOR_COUNTS.join(", ")})`;
+const THIN_HAVING = `count(*) < ${MIN_COMMANDERS_PER_CONDITION}`;
 
 /**
  * The mean curve per condition, over the commanders that carry one.
@@ -491,12 +538,30 @@ async function main() {
   // owns that rule, and applying it twice in two places is how the two drift.
   const curves = await loadAverageCurves(FALLBACK_ONLY);
 
-  const comps = [
-    ...(await q<Record<string, number | string>>(compositionQuery(IDENTITY_KEY, NO_STATE_FILTER))),
-    ...(await q<Record<string, number | string>>(compositionQuery(COUNT_KEY, FALLBACK_ONLY))),
+  type Comp = Record<string, number | string>;
+  const thinComps = await q<Comp>(compositionQuery(THIN_KEY, thinOnly(FALLBACK_ONLY), THIN_HAVING));
+  const comps: { row: Comp; thin: boolean }[] = [
+    ...(await q<Comp>(compositionQuery(IDENTITY_KEY, NO_STATE_FILTER)))
+      .map((row) => ({ row, thin: false })),
+    ...(await q<Comp>(compositionQuery(COUNT_KEY, FALLBACK_ONLY)))
+      .map((row) => ({ row, thin: false })),
+    ...thinComps.map((row) => ({ row, thin: true })),
   ];
 
-  const compRows = comps.map((c) => ({
+  // PRINTED SEPARATELY, never folded into the ratified list above. These figures rest on tens
+  // of commanders rather than hundreds, and a reader scanning one table cannot tell which is
+  // which — which is the same reason the column exists at all.
+  console.log(`\n---- thin buckets (under ${MIN_COMMANDERS_PER_CONDITION}, served by nothing else) ----`);
+  if (thinComps.length === 0) {
+    console.log("  none — every bucket either clears the bar or is served by its colour count");
+  }
+  for (const t of thinComps) {
+    console.log(`  ${String(t.condition).padEnd(9)} ${String(t.commanders).padStart(4)} commanders  ` +
+      `land ${Number(t.avg_land).toFixed(1)}  creature ${Number(t.avg_creature).toFixed(1)}`);
+  }
+
+  const compRows = comps.map(({ row: c, thin }) => ({
+    thin,
     condition: String(c.condition),
     commanders: Number(c.commanders),
     withComposition: Number(c.with_composition),
@@ -558,12 +623,16 @@ async function main() {
       `removal ${ROLE_TARGETS.removal} · wipes ${ROLE_TARGETS.wipes}`,
     );
     console.log(
-      `${pad("condition", 12)}${num("land", 7)}${num("creature", 10)}` +
+      `${pad("condition", 18)}${num("land", 7)}${num("creature", 10)}` +
       `${num("ramp", 7)}${num("draw", 7)}${num("removal", 9)}${num("wipes", 7)}`,
     );
     for (const c of compRows) {
       console.log(
-        pad(c.condition, 12) + num(c.avgLand.toFixed(1), 7) + num(c.avgCreature.toFixed(1), 10) +
+        // MARKED, because this table mixes the two. The thin block above prints them apart,
+        // but these rows land in one list with the ratified ones, and a reader scanning it
+        // cannot otherwise tell a mean over 16 commanders from a mean over 800.
+        pad(c.thin ? `${c.condition} (thin)` : c.condition, 18) +
+        num(c.avgLand.toFixed(1), 7) + num(c.avgCreature.toFixed(1), 10) +
         num(c.avgRamp.toFixed(1), 7) + num(c.avgDraw.toFixed(1), 7) +
         num(c.avgRemoval.toFixed(1), 9) + num(c.avgWipes.toFixed(1), 7),
       );

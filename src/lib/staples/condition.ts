@@ -54,3 +54,48 @@ export function isCountCondition(condition: string): boolean {
  * failure §4A exists to correct.
  */
 export const MIN_COMMANDERS_PER_CONDITION = 100;
+
+/**
+ * The colour counts whose commanders no ratified bucket serves.
+ *
+ * A commander needs a thin bucket when its EXACT identity is under
+ * `MIN_COMMANDERS_PER_CONDITION` and its colour-COUNT key is under it too. Measured on staging
+ * 2026-09-21 over the 3,380 commanders that index carries with `synergy_state = 'ok'`:
+ * colourless 58, four-colour 16, five-colour 60 — 134 commanders that resolve to no
+ * composition row at all today, which is their sum.
+ *
+ * THE MEASUREMENT FILTERED ON `synergy_state = 'ok'`; THE BRANCH DOES NOT. `build-staples`
+ * applies no state filter anywhere, deliberately — the ratified floors were derived without
+ * one — so these figures and the branch's own `count(*)` agree exactly while every row is
+ * `ok`, which is true of staging and local-dev today. On a partially degraded index they
+ * would not, and the branch's count is the one that decides.
+ *
+ * THE 46 QUOTED FOR COLOURLESS ABOVE is the same bucket on the SMALLER index the ratified
+ * floors were measured against. Both are true of their own corpus and neither corrects the
+ * other — a bucket's size moves with every index run, which is why each figure here carries
+ * the corpus it was taken over.
+ *
+ * THREE IS ABSENT, and that is the whole reason this is a named list rather than
+ * "every count under the bar". All ten three-colour identities are under it, but `count:3` is
+ * a RATIFIED row that already serves them — and the basis chain reads the identity rung before
+ * the count rung, so a thin three-colour row would shadow that ratified row for the largest
+ * orphan group in the table: a silent basis change, from a measured bucket to a below-bar one.
+ *
+ * Here beside the other condition keys for the reason this module's header gives: the
+ * derivation interpolates this list into its SQL and the reader looks the resulting rows up,
+ * so the two agree by construction rather than by being written the same way twice.
+ */
+export const THIN_COLOR_COUNTS = [0, 4, 5] as const;
+
+/**
+ * The key a thin bucket is written under, or `null` for a commander that has a ratified bucket.
+ *
+ * Colourless is keyed by IDENTITY and the other two by COUNT, because that is the key each
+ * one's commanders actually look up: a colourless commander's identity key is `'C'` and the
+ * chain finds it on the identity rung, while a four-colour commander's identity key is one of
+ * five exact strings none of which is ever written, so it falls through to `count:4`.
+ */
+export function thinCondition(colorCount: number): string | null {
+  if (!(THIN_COLOR_COUNTS as readonly number[]).includes(colorCount)) return null;
+  return colorCount === 0 ? identityCondition([]) : countCondition(colorCount);
+}

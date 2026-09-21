@@ -28,6 +28,8 @@ function profile(over: Partial<ProfileInput> = {}) {
     deckId: "d", fingerprint: "f", cards: [], commanderOracleIds: ["cmd"], identity: ["G"],
     declared: null, condition: "G",
     composition: { pair: null, commander: null, identity: null, count: null },
+    roles: { pair: null, commander: null, identity: null, count: null },
+    thinCondition: false,
     staples: [], commanderDeckCount: null, population: null,
     mldFlags: new Map<string, FlagSource[]>(), extraTurnFlags: new Map<string, FlagSource[]>(),
     gameChangerIds: new Set<string>(), twoCardCombos: [], tutorIds: new Set<string>(),

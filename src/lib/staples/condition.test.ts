@@ -5,6 +5,7 @@ import {
   identityCondition,
   isCountCondition,
   MIN_COMMANDERS_PER_CONDITION,
+  thinCondition,
 } from "./condition";
 
 describe("identityCondition", () => {
@@ -59,5 +60,26 @@ describe("countCondition", () => {
 describe("MIN_COMMANDERS_PER_CONDITION", () => {
   it("is the stated bar", () => {
     expect(MIN_COMMANDERS_PER_CONDITION).toBe(100);
+  });
+});
+
+describe("thinCondition", () => {
+  it("keys colourless by identity and four/five by count", () => {
+    expect(thinCondition(0)).toBe("C");
+    expect(thinCondition(4)).toBe("count:4");
+    expect(thinCondition(5)).toBe("count:5");
+  });
+
+  // THE LOAD-BEARING CASE. Every one of the ten three-colour identities is under the bar, so a
+  // rule reading "every bucket under 100" would emit them — and because the basis chain reads
+  // the identity rung BEFORE the count rung, each would shadow the ratified `count:3` row for
+  // the largest orphan group in the table. Nothing else in this repository checks that.
+  it("refuses three-colour, which count:3 already serves", () => {
+    expect(thinCondition(3)).toBeNull();
+  });
+
+  it("refuses the counts whose exact identities cleared the bar", () => {
+    expect(thinCondition(1)).toBeNull();
+    expect(thinCondition(2)).toBeNull();
   });
 });

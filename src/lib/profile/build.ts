@@ -1,6 +1,6 @@
 import { isLandFace, playableAsLand } from "../cards/facet";
 import { manaCurve, type CurveCard } from "../decks/stats";
-import { classifyRoles, type Role } from "../recs/roles";
+import { classifyRoles, ROLE_TARGETS, type Role } from "../recs/roles";
 import type {
   Bracket,
   BracketPopulation,
@@ -52,6 +52,15 @@ export type CompositionCandidates = {
   count: { targets: CompositionTargets; averageCurve: Record<string, number> | null } | null;
 };
 
+/** The role candidates, read down the same chain and resolved separately. */
+export type RoleCandidates = {
+  pair: RoleFour | null;
+  commander: RoleFour | null;
+  identity: RoleFour | null;
+  count: RoleFour | null;
+};
+type RoleFour = { ramp: number; draw: number; removal: number; wipes: number };
+
 export type ProfileInput = {
   deckId: string;
   fingerprint: string;
@@ -63,6 +72,9 @@ export type ProfileInput = {
   declared: Bracket | null;
   condition: string;
   composition: CompositionCandidates;
+  roles: RoleCandidates;
+  /** Whether the bucket serving this deck was derived from a below-bar population. */
+  thinCondition: boolean;
   staples: StapleRef[];
   commanderDeckCount: number | null;
   population: BracketPopulation | null;
@@ -261,8 +273,27 @@ function skeleton(input: ProfileInput): ProfileSkeleton {
     ["count", input.composition.count],
   ] as const;
   const hit = chain.find(([, value]) => value != null);
+
+  // THE SAME ORDER, READ SEPARATELY. Folding the two would let a missing role figure drag a
+  // perfectly good composition to `flat`, and a missing composition hide role figures that
+  // were measured — the two populations differ until one index run has covered both.
+  const roleChain = [
+    ["pair", input.roles.pair],
+    ["commander", input.roles.commander],
+    ["identity", input.roles.identity],
+    ["count", input.roles.count],
+  ] as const;
+  const roleHit = roleChain.find(([, value]) => value != null);
+
   return {
     composition: hit ? { of: hit[0], ...hit[1]! } : null,
+    // Never null: `ROLE_TARGETS` is a real answer rather than an absence — the asserted
+    // baseline this sub-project replaces — and a deck falling back to it is being told
+    // something true about what it is measured against.
+    roleTargets: roleHit
+      ? { of: roleHit[0], targets: roleHit[1]! }
+      : { of: "flat", targets: { ...ROLE_TARGETS } },
+    thinCondition: input.thinCondition,
     condition: input.condition,
     staples: input.staples,
     commanderDeckCount: input.commanderDeckCount,

@@ -1186,6 +1186,33 @@ export const identityComposition = pgTable("identity_composition", {
    * publish a mean over ten commanders while the row claimed two hundred.
    */
   withRoles: integer("with_roles").notNull().default(0),
+  /**
+   * This row was derived from FEWER commanders than a ratified floor requires, and a reader
+   * showing its figures owes the player that context.
+   *
+   * EXACTLY THREE BUCKETS carry it, and the rule selecting them is narrower than "every bucket
+   * under the bar": a commander whose exact identity does not clear `MIN_COMMANDERS_PER_CONDITION`
+   * AND whose colour-COUNT key does not either. Measured on staging 2026-09-21 over the 3,380
+   * commanders that index carries with `synergy_state = 'ok'`: colourless 58, four-colour 16,
+   * five-colour 60 — 134 commanders
+   * that resolve to no composition row at all today, which is their sum. That measurement
+   * filtered on `synergy_state = 'ok'`; the derivation does not, because `build-staples`
+   * applies no state filter anywhere by design. The two agree exactly while every row is
+   * `ok`, which is true of staging and local-dev today. The 46 quoted for
+   * colourless in `countCondition` above is the SAME bucket on the smaller index the
+   * ratified floors were measured against; both are true of their own corpus, and neither
+   * is a correction of the other.
+   *
+   * A three-colour identity is deliberately EXCLUDED even though every one of the ten is under
+   * the bar, because `count:3` is a ratified row that already serves them — and the basis chain
+   * reads the identity rung BEFORE the count rung, so publishing thin exact-identity rows would
+   * SHADOW that ratified row for the largest orphan group in the table. A silent basis change,
+   * from a measured bucket to a below-bar one, for every three-colour commander.
+   *
+   * A single global row was rejected on the same measurement: the three differ from each other
+   * far more than any of them differs from its own members.
+   */
+  thin: boolean("thin").notNull().default(false),
   computedAt: timestamp("computed_at").notNull().defaultNow(),
 }, (t) => [
   // An average over nothing is not an average. A bucket where no commander carried a
