@@ -1,0 +1,1 @@
+ALTER TABLE "identity_composition" ADD COLUMN "thin" boolean DEFAULT false NOT NULL;

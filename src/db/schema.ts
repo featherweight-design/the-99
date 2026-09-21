@@ -1185,6 +1185,25 @@ export const identityComposition = pgTable("identity_composition", {
    * the role pass existed carries a composition and no roles. Sharing the denominator would
    * publish a mean over ten commanders while the row claimed two hundred.
    */
+  /**
+   * This row was derived from FEWER commanders than a ratified floor requires, and a reader
+   * showing its figures owes the player that context.
+   *
+   * EXACTLY THREE BUCKETS carry it, and the rule selecting them is narrower than "every bucket
+   * under the bar": a commander whose exact identity does not clear `MIN_COMMANDERS_PER_CONDITION`
+   * AND whose colour-COUNT key does not either. Measured on staging 2026-09-20 over the 3,279
+   * commanders with `synergy_state = 'ok'`: colourless 58, four-colour 16, five-colour 60.
+   *
+   * A three-colour identity is deliberately EXCLUDED even though every one of the ten is under
+   * the bar, because `count:3` is a ratified row that already serves them — and the basis chain
+   * reads the identity rung BEFORE the count rung, so publishing thin exact-identity rows would
+   * SHADOW that ratified row for the largest orphan group in the table. A silent basis change,
+   * from a measured bucket to a below-bar one, for every three-colour commander.
+   *
+   * A single global row was rejected on the same measurement: the three differ from each other
+   * far more than any of them differs from its own members.
+   */
+  thin: boolean("thin").notNull().default(false),
   withRoles: integer("with_roles").notNull().default(0),
   computedAt: timestamp("computed_at").notNull().defaultNow(),
 }, (t) => [
