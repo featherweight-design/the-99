@@ -44,8 +44,13 @@ export function bracketFace(bracket: Bracket): string {
   return `${bracket} ${BRACKET_NAMES[bracket]}`;
 }
 
-/** "Wave of Vitriol and Cataclysm" — an Oxford-free list, because these are read aloud. */
-function nameList(names: readonly string[]): string {
+/**
+ * "Wave of Vitriol and Cataclysm" — an Oxford-free list, because these are read aloud.
+ *
+ * Exported because Round 4's copy reaches for it: a helper that is private here is one every
+ * other copy module writes again, and two implementations of a joiner drift on the comma.
+ */
+export function nameList(names: readonly string[]): string {
   if (names.length === 0) return "";
   if (names.length === 1) return names[0];
   if (names.length === 2) return `${names[0]} and ${names[1]}`;
@@ -101,3 +106,44 @@ export const deckAnalysisCopy = {
       "of these four. Knowing which one we are least sure of is how you settle it.",
   },
 } as const;
+
+/**
+ * A small count as a word. "one game changer", not "1 game changer".
+ *
+ * PROSE, NOT DATA. A figure a reader is meant to weigh stays a numeral — every count on the
+ * verdict block does, and its denominator with it. This is for a count inside a SENTENCE,
+ * where a digit reads as a field someone forgot to format.
+ *
+ * It gives up past twelve and hands back the numeral, which is the ordinary typographic line
+ * and the point where a word stops being easier to read than a digit.
+ */
+const NUMBER_WORDS = [
+  "zero", "one", "two", "three", "four", "five", "six",
+  "seven", "eight", "nine", "ten", "eleven", "twelve",
+] as const;
+
+export function numberWord(n: number): string {
+  return Number.isInteger(n) && n >= 0 && n < NUMBER_WORDS.length ? NUMBER_WORDS[n] : String(n);
+}
+
+/**
+ * "1st", "2nd", "3rd", "4th" — for "that would be your 4th game changer".
+ *
+ * US English, which is the app's throughout. The teens are the exception every naive
+ * implementation gets wrong: 11, 12 and 13 take `th` despite ending in 1, 2 and 3, and they
+ * are reachable here — a deck can hold eleven game changers.
+ */
+export function ordinal(n: number): string {
+  const rem100 = n % 100;
+  if (rem100 >= 11 && rem100 <= 13) return `${n}th`;
+  switch (n % 10) {
+    case 1:
+      return `${n}st`;
+    case 2:
+      return `${n}nd`;
+    case 3:
+      return `${n}rd`;
+    default:
+      return `${n}th`;
+  }
+}
