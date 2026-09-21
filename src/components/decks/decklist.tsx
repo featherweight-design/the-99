@@ -35,6 +35,8 @@ import { BuyTag } from "./buy-tag";
 import { ProxyTag } from "./proxy-tag";
 import { cardTileCopy } from "../../lib/copy/card-surfaces";
 import { MarkKey, type MarkKeyEntry } from "./mark-key";
+import { CardFactMark } from "../cards/card-fact-mark";
+import { CARD_FACTS, cardFactName } from "../../lib/copy/card-mark";
 import { deckRowTag } from "../../lib/decks/row-tag";
 import { proxyCopy } from "../../lib/copy/proxies";
 import { useMemo } from "react";
@@ -134,6 +136,66 @@ type DecklistProps = {
   onAnnounce?: (message: string) => void;
 };
 
+/**
+ * The key's entries for a decklist view — EXPORTED so the composition rule is testable
+ * against the shipped function rather than a copy of it. A test that rebuilt these
+ * entries itself would stay green with the rule deleted, which is exactly what the first
+ * version of its test did.
+ */
+export function buildMarkKeyEntries({
+  cards,
+  filter,
+  inCardView,
+}: {
+  cards: DeckDetailCard[];
+  filter: string;
+  inCardView: boolean;
+}): MarkKeyEntry[] {
+    const shown = filter === "shopping" ? cards.filter(isShoppingCard) : cards;
+    const entries: MarkKeyEntry[] = [];
+    if (shown.some((c) => deckRowTag(c, filter === "shopping" && isSpokenFor(c)) === "buy")) {
+      entries.push({
+        id: "buy",
+        // The word the surface beneath it already speaks. The tile's `$` carries
+        // `cardTileCopy.slotUnownedAria`; the row's carries the shop. The SAMPLE
+        // is the row variant on both, unchanged — the key's own box is not the
+        // caption's, and nothing here redraws it.
+        sample: <BuyTag variant="row" density="collapsed" price={null} />,
+        word: inCardView ? cardTileCopy.slotUnownedAria : proxyCopy.key.buy,
+      });
+    }
+    if (shown.some((c) => c.proxied)) {
+      entries.push({ id: "proxy", sample: <ProxyTag variant="row" />, word: proxyCopy.key.proxy });
+    }
+    // THE THREE FACTS ARE UNCONDITIONAL ON THE ROW LIST, where `buy` and `proxy` are not.
+    //
+    // The handoff asked for all five always. That cannot be: this component refuses an
+    // empty legend by design, and an unconditional `buy` entry prints `not owned` over a
+    // deck whose rows the player owns — the exact falsehood this key's own ruling forbids.
+    //
+    // Design's REASON holds for the facts and only for them: "a player scanning for Game
+    // Changers needs the entry to be there BEFORE they find one." A fact entry makes no
+    // claim about any row — it defines a glyph — so it is true whether or not a card below
+    // carries one. `buy` and `proxy` describe the rows themselves, which is why they stay
+    // conditional.
+    //
+    // BUT NOT IN CARD VIEW, and that is the same rule rather than an exception to it. The
+    // card tiles draw no fact mark (`deck-card-tile.tsx` mounts none), so glossing the
+    // three there would teach three glyphs that appear nowhere on the screen — which is
+    // what this key exists to prevent. Unconditional means "before the reader finds one",
+    // not "where there is none to find".
+    if (!inCardView) {
+      for (const fact of CARD_FACTS) {
+        entries.push({
+          id: fact,
+          sample: <CardFactMark fact={fact} size={14} silent />,
+          word: cardFactName(fact),
+        });
+      }
+    }
+    return entries;
+}
+
 /** Module-scoped, so the default does not hand a fresh map to the provider on
  *  every render and remount the rows under it. */
 const EMPTY_PENDING_CHANGES: ReadonlyMap<string, PendingChangeMove> = new Map();
@@ -225,25 +287,10 @@ export function Decklist({
   // that is stored.
   const inCardView = filter === "all" && view === "card";
 
-  const markKey = useMemo((): MarkKeyEntry[] => {
-    const shown = filter === "shopping" ? cards.filter(isShoppingCard) : cards;
-    const entries: MarkKeyEntry[] = [];
-    if (shown.some((c) => deckRowTag(c, filter === "shopping" && isSpokenFor(c)) === "buy")) {
-      entries.push({
-        id: "buy",
-        // The word the surface beneath it already speaks. The tile's `$` carries
-        // `cardTileCopy.slotUnownedAria`; the row's carries the shop. The SAMPLE
-        // is the row variant on both, unchanged — the key's own box is not the
-        // caption's, and nothing here redraws it.
-        sample: <BuyTag variant="row" density="collapsed" price={null} />,
-        word: inCardView ? cardTileCopy.slotUnownedAria : proxyCopy.key.buy,
-      });
-    }
-    if (shown.some((c) => c.proxied)) {
-      entries.push({ id: "proxy", sample: <ProxyTag variant="row" />, word: proxyCopy.key.proxy });
-    }
-    return entries;
-  }, [cards, filter, inCardView]);
+  const markKey = useMemo(
+    () => buildMarkKeyEntries({ cards, filter, inCardView }),
+    [cards, filter, inCardView],
+  );
 
   // One label, computed beside the entries and passed to every instance: the
   // three call sites are three branches of one surface, and a label chosen per

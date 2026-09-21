@@ -27,6 +27,8 @@ import { isSpokenFor } from "../../lib/decks/shopping";
 import { AutoTag } from "./auto-tag";
 import { BuyTag } from "./buy-tag";
 import { CardDetailTrigger, useCardDetail } from "../cards/card-detail-provider";
+import { CardFactMark } from "../cards/card-fact-mark";
+import { FactTooltip } from "../cards/fact-tooltip";
 import { TwoFacedMark } from "../cards/two-faced-mark";
 import { usePreviewRow } from "./hover-preview";
 import { MutationError } from "./mutation-error";
@@ -141,6 +143,19 @@ export function DecklistRow({
   // not hold at all. Only the former has a pair to print, and it prints the same
   // pair whichever way the count went.
   const recounted = pendingMove && pendingMove.from > 0 && pendingMove.to > 0 ? pendingMove : null;
+
+  // The standing bracket facts, inline after the count. `flex-none` in a name block that is
+  // already `flex-auto min-w-0` with ellipsis, so the name shrinks and the marks never do —
+  // and the row does not grow, because the glow is a filter and sits outside the box model.
+  //
+  // Not aria-hidden, unlike the count beside it: nothing else on this row speaks the fact,
+  // and the row's accessible name is the trigger's own rather than a composed string, so
+  // each mark carries its name and the reader hears it once.
+  const factMarks = (card.facts ?? []).map((fact) => (
+    <FactTooltip key={fact} fact={fact}>
+      <CardFactMark fact={fact} size={14} />
+    </FactTooltip>
+  ));
 
   // Multi-copy count (addendum C5): one row per card, the count inline after
   // the name. aria-hidden because the ✕ beside it already speaks the same
@@ -406,6 +421,7 @@ export function DecklistRow({
               </CardDetailTrigger>
               <TwoFacedMark layout={card.layout} />
               {quantityGlyph}
+              {factMarks}
             </div>
             {/* The phone meta line, and the only two things that ever ride it:
                 the cost, then the EDHREC figure. Nothing else joins it. */}
@@ -454,6 +470,7 @@ export function DecklistRow({
             </CardDetailTrigger>
             <TwoFacedMark layout={card.layout} />
             {quantityGlyph}
+            {factMarks}
           </div>
         )}
 
