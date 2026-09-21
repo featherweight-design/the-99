@@ -317,6 +317,32 @@ Package manager is **pnpm** (pinned via `packageManager` in package.json) — ne
   ~6,400 rows and did not finish inside two minutes — the cost here is round trips to a
   serverless Postgres, not work.
 
+- `pnpm probe:declaration` proves the declaration's STORAGE against a real Postgres — the two
+  columns a commit writes onto a version, and the rule that decides what goes in them.
+
+  The rule is pure and unit-tested; what no unit test here can reach is whether the transaction
+  wrote it. Five facts live there. A declaration inside the committed version's permits is
+  CARRIED into it, which is the ruling the round rests on: the choice travels with the version
+  it was made for, so nothing ever asks a player to change what they said. A declaration the
+  version's own cards do NOT permit is not carried — the version records none rather than
+  asserting a bracket it contradicts, while the deck keeps its live answer, stated and not
+  deleted. **The version's copy never moves afterwards**, which is the whole point of the
+  column: without it a version's answer would follow the deck and *Version 1: chose 4* would
+  become a lie the moment the player chose again. A commit with no snapshot records neither
+  column, which is where every version committed before the migration already is. And the check
+  constraint refuses anything but 1–5 or null on BOTH tables.
+
+  **It proves the storage, not the surface.** Nothing draws a declaration yet, so there is no
+  action to call and no reader to observe; the header says so rather than letting the name imply
+  more.
+
+  Two mutations were run against it and both fail: carrying the declaration unconditionally, and
+  skipping the sort on the permits snapshot. Its first run also found that local-dev had never
+  had the migration applied — the column did not exist.
+
+  Same fixture discipline as `probe:claims`: a per-run `user_id` deleted in a `finally`, pointed
+  at `local-dev` or a scratch branch, **never production**.
+
 - `pnpm probe:claims` proves the deck claim model against a real Postgres by calling the real
   `loadAvailability` — a committed version holds its cards against every other deck's draft, an
   uncommitted removal still claims, and per-card `since` decides between two committed decks. The

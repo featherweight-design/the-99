@@ -35,6 +35,7 @@
     "probe:card-art-corners": "node scripts/probe-card-art-corners.mjs",
     "probe:commander-availability": "tsx scripts/probe-commander-availability.mjs",
     "probe:fit-parity": "tsx scripts/probe-fit-parity.mts",
+    "probe:declaration": "tsx scripts/probe-declaration.ts",
     "probe:claims": "tsx scripts/probe-claim-model.ts",
     "probe:proxies": "tsx scripts/probe-proxies.ts",
     "probe:sets": "node scripts/probe-sets.mjs",
