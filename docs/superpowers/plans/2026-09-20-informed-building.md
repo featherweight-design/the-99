@@ -1065,7 +1065,8 @@ draw a three-way layered clear; spec §2.2 removed it, because the app already s
 by pass and already draws a per-pass undo. Task 14 records the residual as its own pass and the
 shipped control does the rest.
 
-It needs an About entry — an edit to the existing top-off entry, not a new one.
+**No About entry is owed in this round** — see the batching rule above and spec §3A. The
+top-off entry is edited once, with the rest, when the line closes.
 
 ---
 

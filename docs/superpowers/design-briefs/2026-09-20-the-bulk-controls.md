@@ -3,7 +3,12 @@
 **Feature:** informed building (sub-project 2 of the deck-analysis suite)
 **Spec:** `docs/superpowers/specs/2026-09-20-informed-building-design.md` §2.6
 **Surface:** the top-off list on `/decks/[id]` — `src/components/decks/top-off-list.tsx`
-**Status:** brief locked, awaiting Design
+**Status:** brief locked · **R1 returned and audited 🟢 Green to build** (2026-09-20)
+
+> The handoff is `design/design_handoff_the99_bulk_controls/`, on branch
+> `design/bulk-controls-handoff`. Its READINESS self-assessed Yellow with three open items; all
+> three were eng's to close and Design said so for two, so nothing returned to Design. The audit
+> is appended to that READINESS file. **Task 22 is unblocked.**
 
 ---
 
