@@ -12,17 +12,11 @@ import type { DeckSuggestion } from "../../lib/decks/suggest";
 import type { DeckDetailCard } from "../../lib/decks/grouping";
 import { synergyCopy } from "../../lib/copy/synergy-discovery";
 import { addPanelCopy } from "../../lib/copy/decks-builder";
+import { recommendedMix } from "../../lib/decks/mix";
 
-const TEST_MIX = {
-  cells: {
-    ramp: { label: "Ramp", target: 10, advisory: false },
-    draw: { label: "Draw", target: 10, advisory: false },
-    removal: { label: "Removal", target: 8, advisory: false },
-    wipes: { label: "Wipes", target: 3, advisory: false },
-    land: { label: "Land", target: 37, advisory: true },
-  },
-  measured: false,
-} as const;
+/** The asserted baseline, through the real function rather than restated — a hand-built
+ *  literal drifts from the type the moment a field is added, which is how 120 of these broke. */
+const TEST_MIX = recommendedMix(null, false);
 
 const addCardToDeck = vi.fn(async () => ({ ok: true as const }));
 vi.mock("../../app/decks/actions", () => ({ addCardToDeck }));
@@ -620,5 +614,91 @@ describe("rolesWithShelves — which cells have somewhere to go", () => {
       suggestion({ name: "Cultivate", role: "removal", reason: "ramp", reasonType: "role" }),
     ]);
     expect([...roles]).toEqual(["ramp"]);
+  });
+});
+
+// TASK 20. The `gaps` order is the pass-through today, so within one shelf the player is shown
+// whatever the pool happened to produce. Role floors and type targets are different axes that
+// collide through the cards satisfying both — so of two cards that close the same role, the one
+// closing the larger TYPE gap is the better slot, and `gaps` is where that belongs.
+//
+// The OTHER branches keep their meaning: `cheapest` is a promise about mana value and synergy
+// is a promise about EDHREC's figure. Neither is "the deck's shape", and quietly re-ordering
+// them by type would break a control the player is using to answer a different question.
+describe("ordering within a shelf", () => {
+  // Two ramp cards, identical but for type. The composition wants creatures and has all the
+  // artifacts it needs, so the creature closes the larger gap.
+  const creature = suggestion({
+    name: "Elf", typeLine: "Creature — Elf", cardTypeGroup: "Creatures",
+    // THE TWO ORDERS MUST DISAGREE, or neither case below measures anything. With the
+    // creature both the larger type gap AND the cheaper card, `cheapest` and `gaps` produce
+    // the same list and the "leaves `cheapest` alone" guard passes whether or not the type
+    // sort leaked into it. The creature is the dearer card now, so `gaps` puts it first and
+    // `cheapest` puts it second.
+    role: "ramp", reason: "ramp", manaValue: 3,
+  });
+  const artifact = suggestion({
+    name: "Rock", typeLine: "Artifact", cardTypeGroup: "Artifacts",
+    role: "ramp", reason: "ramp", manaValue: 2,
+  });
+  const wantsCreatures = recommendedMix({
+    composition: {
+      of: "commander",
+      targets: { land: 35, basic: 20, nonbasic: 15, creature: 40, instant: 0,
+        sorcery: 0, artifact: 0, enchantment: 0, planeswalker: 0, battle: 0 },
+      averageCurve: null,
+    },
+    roleTargets: { of: "commander", targets: { ramp: 10, draw: 10, removal: 8, wipes: 3 } },
+    condition: "G", thinCondition: false, staples: [], commanderDeckCount: 1000,
+  }, false);
+
+  const tiles = () =>
+    screen.getAllByTestId("suggestion-tile").map((el) => el.getAttribute("data-oracle-id"));
+
+  it("offers the larger type gap first under `gaps`", () => {
+    mount({ mix: wantsCreatures, sort: "gaps", suggestions: [artifact, creature] });
+    expect(tiles()[0]).toBe("elf");
+  });
+
+  // Its own render, deliberately: a second assertion inside the first test would read a DOM
+  // the first render left behind, and the case is about two independent orderings.
+  // THE SYNERGY SHELF IS EXEMPT FROM `gaps`, and this needs a mix carrying TYPES to reach.
+  // With no composition `typeDeficits` is empty and `sortWithin` returns early, so the
+  // existing synergy-order case passes over a build that reorders the shelf — it did,
+  // while this was broken. A commander with a measured composition is exactly the state
+  // this sub-project creates, and `gaps` is the DEFAULT sort, so the reader would have met
+  // a shelf ordered by type under a heading reading `ranked by synergy`.
+  it("leaves the synergy shelf in synergy order under `gaps`", () => {
+    mount({
+      mix: wantsCreatures,
+      sort: "gaps",
+      commanderShortName: "Atraxa",
+      commanderOracleId: "cmd-atraxa",
+      suggestions: [
+        // The artifact carries the HIGHER synergy and the SMALLER type gap, so the two
+        // rules disagree and the case can tell them apart.
+        suggestion({
+          name: "Rocky", typeLine: "Artifact", cardTypeGroup: "Artifacts",
+          owned: true, synergyFigure: 0.9,
+        }),
+        suggestion({
+          name: "Elfie", typeLine: "Creature — Elf", cardTypeGroup: "Creatures",
+          owned: true, synergyFigure: 0.1,
+        }),
+      ],
+    });
+    const shelf = screen.getByRole("region", { name: synergyCopy.shelf.label("Atraxa") });
+    const names = within(shelf).getAllByRole("listitem").map((li) => (
+      within(li).getAllByRole("button")[0].getAttribute("aria-label") ?? ""
+    ).replace(/^View details for /, ""));
+    expect(names).toEqual(["Rocky", "Elfie"]);
+  });
+
+  it("leaves `cheapest` alone", () => {
+    mount({ mix: wantsCreatures, sort: "cheapest", suggestions: [artifact, creature] });
+    // The artifact is the cheaper card and the deck wants creatures, so the two rules
+    // disagree — which is what makes this a guard rather than a coincidence. `gaps` would
+    // answer ["elf","rock"]; `cheapest` must answer the question its own control asks.
+    expect(tiles()).toEqual(["rock", "elf"]);
   });
 });

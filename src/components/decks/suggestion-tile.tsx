@@ -202,6 +202,11 @@ export function SuggestionTile({
     // The tile keeps its slot once added: pulling it out reflows the grid under
     // the pointer, so the next click lands on a card the user never chose.
     <li
+      // For the ORDER tests alone. Neither this component nor the panel carries a testid, so a
+      // test asserting which card comes first had nothing to query — and a test that queries
+      // an attribute nobody renders fails for the wrong reason, or passes over an empty list.
+      data-testid="suggestion-tile"
+      data-oracle-id={suggestion.oracleId}
       className="group flex flex-col gap-[8px] rounded-[10px] p-[9px] pb-[10px] transition-colors border bg-[color:var(--surface)] border-[color:var(--border)] hover:bg-[color:var(--elevated-hover)] hover:border-[color:var(--border-strong)]"
       style={{ opacity: noArt ? 0.55 : 1 }}
     >

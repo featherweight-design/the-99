@@ -1,4 +1,4 @@
-import type { ProfileSkeleton } from "../profile/types";
+import type { CompositionTargets, ProfileSkeleton } from "../profile/types";
 
 import { landTarget } from "./deck-size";
 
@@ -61,6 +61,15 @@ export type MixCell = {
 
 export type RecommendedMix = {
   cells: Record<MixRole, MixCell>;
+  /**
+   * The ten TYPE targets, when the skeleton carried a composition.
+   *
+   * The five cells above are ROLES; these are the other axis. Carried on the same object
+   * because a surface reasoning about both — the Add panel orders a shelf by role and then by
+   * type gap — would otherwise take two props that can disagree about which deck they describe.
+   * Null when nothing was derivable, which is what stops a caller inventing a surplus.
+   */
+  types: CompositionTargets | null;
   /** Whether these targets came from decklists or from the asserted baseline. The same per-plan
    *  honesty `FillPlan.measured` and `RoleFit.measured` carry, for the same reason: a reader
    *  shown a figure cannot tell one taken over eight hundred decks from a constant. */
@@ -121,6 +130,7 @@ export function recommendedMix(
         { label: LABELS[role], target: target(role), advisory: role === "land" },
       ]),
     ) as Record<MixRole, MixCell>,
+    types: skeleton?.composition?.targets ?? null,
     // BOTH halves, or the line overclaims. A deck whose land count is measured and whose roles
     // are not is not being compared to EDHREC averages on four of its five cells.
     measured: rolesUsable && landMeasured,
