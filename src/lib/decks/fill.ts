@@ -20,12 +20,15 @@ export type FillCandidate = {
   /**
    * Scryfall's own layout, e.g. `normal`, `modal_dfc`, `transform`.
    *
-   * `planFill` DOES NOT READ THIS YET. It is carried so the pool, the mapping and this shape
+   * READ TWICE by `planFill`: `castFaceText` uses it to decide which face is classified, and
+   * `playableAsLand` to decide whether the card counts as a land drop. It is carried so the
+   * pool, the mapping and this shape
    * agree before the land sweeps start counting land-capable cards, which is a separate change.
    *
-   * REQUIRED rather than optional, and that is the point of carrying it early: a pool query
-   * that forgets to select it is a compile error here and now, rather than a silent
-   * `undefined` discovered later by a land count that is quietly always zero.
+   * REQUIRED rather than optional: a pool query that forgets to select it is a compile error
+   * here and now, rather than a silent `undefined` discovered later by a land count that is
+   * quietly always zero. READ TWICE — `castFaceText` decides which face is classified, and
+   * `playableAsLand` decides whether the card counts as a land drop.
    */
   layout: string;
   /** Total copies owned, summed across printings. 0 for an unowned card. */
@@ -81,13 +84,14 @@ export type FillPlan = {
 
 const NON_LAND_ROLES = ["ramp", "draw", "removal", "wipes"] as const;
 
-/** The floors this fill builds to, MEASURED where the skeleton has them and asserted where it
- *  does not. Rounded for the same reason `landTarget` is: a bucket's mean is a `real`, and a
- *  fractional floor cannot be met by whole cards. */
-/** How far the tie-break looks for a better card for the SAME role. The pool is the player's
- *  whole legal collection and this runs once per placed card, so an unbounded scan is
- *  quadratic on a large one. Wide enough to hold real alternatives, small enough to stay
- *  linear in practice. */
+/**
+ * How many CANDIDATES the tie-break may weigh for one slot.
+ *
+ * It bounds the comparisons, not the walk: the loop still steps over cards that cannot close
+ * the role, because deciding that is a map lookup, and only a card it actually weighs spends
+ * from the window. That is the cost worth bounding — the pool is the player's whole legal
+ * collection and this runs once per placed card.
+ */
 const TIE_BREAK_WINDOW = 200;
 
 /**
@@ -106,27 +110,46 @@ function rolesOfCandidate(c: FillCandidate) {
   return roles;
 }
 
-function roleFloors(skeleton: ProfileSkeleton | null): Record<typeof NON_LAND_ROLES[number], number> {
+/** The floors this fill builds to, MEASURED where the skeleton has them and asserted where it
+ *  does not. Rounded for the same reason `landTarget` is: a bucket's mean is a `real`, and a
+ *  fractional floor cannot be met by whole cards. */
+function roleFloors(skeleton: ProfileSkeleton | null): {
+  floors: Record<typeof NON_LAND_ROLES[number], number>;
+  /** Whether those floors came from the skeleton. Reported rather than inferred from
+   *  `roleTargets.of`: a skeleton can NAME a measured rung and still carry figures this
+   *  function rejects, and a plan built to the asserted constants while claiming `measured`
+   *  is the provenance lie the flag exists to prevent. */
+  measured: boolean;
+} {
   const t = skeleton?.roleTargets.targets;
-  if (!t) return { ...ROLE_TARGETS };
+  if (!t) return { floors: { ...ROLE_TARGETS }, measured: false };
   // The last line of defence, symmetric with `landTarget`'s. A NaN floor is not a wrong
   // number — it is no floor at all, and the role pass places nothing.
   if (!Object.values(t).every((v) => typeof v === "number" && Number.isFinite(v))) {
-    return { ...ROLE_TARGETS };
+    return { floors: { ...ROLE_TARGETS }, measured: false };
   }
   return {
-    ramp: Math.round(t.ramp), draw: Math.round(t.draw),
-    removal: Math.round(t.removal), wipes: Math.round(t.wipes),
+    floors: {
+      ramp: Math.round(t.ramp), draw: Math.round(t.draw),
+      removal: Math.round(t.removal), wipes: Math.round(t.wipes),
+    },
+    measured: skeleton!.roleTargets.of !== "flat",
   };
 }
 
-/** What a fill reaches for: every role target plus the land target. `planFill`
-    stops at each target and never exceeds it, so this is the plan's ceiling and
-    the number the commander page can promise before any query has run. Derived
-    rather than written down, because a target that moves must move the promise
-    with it. */
+/**
+ * What a fill reaches for, and the number the commander page promises before any query has run.
+ *
+ * THE WHOLE BODY NOW. It used to be the four role targets plus the land target — the fill
+ * stopped there, so 68 was both the ceiling and an honest promise. The fill continues to the
+ * body size through its synergy residual, so 68 would under-promise by 31 cards and a player
+ * told "we'll fill 68 of the 99" would watch 99 arrive.
+ *
+ * Derived rather than written down, because a promise that stops tracking what the fill does is
+ * how this one went wrong.
+ */
 export function fillBaselineTotal(hasPartner: boolean): number {
-  return NON_LAND_ROLES.reduce((n, r) => n + ROLE_TARGETS[r], 0) + landTarget(hasPartner);
+  return deckBodySize(hasPartner);
 }
 
 /** How many of the land slots non-basics may take before basics get the
@@ -225,7 +248,7 @@ export function dedupeSelectionFromPool<T extends { oracleId: string }>(
 
 export function planFill(candidates: FillCandidate[], args: PlanFillArgs): FillPlan {
   const { hasPartner, skeleton, synergyRank, slots, pool = "all" } = args;
-  const floors = roleFloors(skeleton);
+  const { floors, measured } = roleFloors(skeleton);
   const landCeiling = landTarget(hasPartner, skeleton);
   const bodySize = deckBodySize(hasPartner);
   const limit = slots ?? bodySize;
@@ -240,6 +263,9 @@ export function planFill(candidates: FillCandidate[], args: PlanFillArgs): FillP
     if (!byOracleId.has(candidate.oracleId)) byOracleId.set(candidate.oracleId, candidate);
   }
   const spent = new Set<string>();
+  /** CARDS, not rows — a stacked basic is nine cards in one row, and a limit counted in rows
+   *  would let a `slots: 5` build arrive with forty. One definition, read by every pass. */
+  const filledSoFar = () => rows.reduce((n, r) => n + r.quantity, 0);
   const rows: FillRow[] = [];
   const counts: Record<FillRole, number> = {
     ramp: 0, draw: 0, removal: 0, wipes: 0, land: 0, other: 0,
@@ -254,13 +280,24 @@ export function planFill(candidates: FillCandidate[], args: PlanFillArgs): FillP
   const typeTargets = skeleton?.composition?.targets ?? null;
   let scanned = TIE_BREAK_WINDOW;
 
-  for (const candidate of ordered) {
+  // AN INDEX, NOT A `for…of`, and the difference is a whole role going unfilled. The tie-break
+  // can spend a DIFFERENT card than the one under the cursor, and a `for…of` then advances past
+  // the candidate anyway — so with ten ramp cards, a floor of ten and a tie-break that prefers
+  // five of them, the pass places five, reports a ramp shortfall, and leaves the other five
+  // unspent for the residual to sleeve as `other`. The cursor advances only when the card under
+  // it was actually taken.
+  //
+  // It still terminates: every iteration either advances the cursor or spends a card, and both
+  // are bounded by the pool.
+  let i = 0;
+  while (i < ordered.length) {
+    const candidate = ordered[i]!;
     // Every non-land role is closed, so the rest of the pool can only be
     // classified and discarded — and the pool is the player's whole legal
     // collection, which for a large one is thousands of candidates.
     if (NON_LAND_ROLES.every((r) => counts[r] >= floors[r])) break;
-    if (rows.length >= limit) break;
-    if (spent.has(candidate.oracleId)) continue;
+    if (filledSoFar() >= limit) break;
+    if (spent.has(candidate.oracleId)) { i += 1; continue; }
     const roles = rolesOfCandidate(candidate);
     // Spent on the first role it can close, in ramp→draw→removal→wipes order —
     // the coverage-panel order. This deliberately diverges from suggestDeck's
@@ -274,15 +311,15 @@ export function planFill(candidates: FillCandidate[], args: PlanFillArgs): FillP
     // here — bought, if the player does not own it, against the promise the
     // land pass makes below — and then skipped as spent, leaving the mana base
     // short by exactly the cards that should have filled it.
-    if (roles.includes("land")) continue;
+    if (roles.includes("land")) { i += 1; continue; }
     const open = NON_LAND_ROLES.filter((r) => roles.includes(r) && counts[r] < floors[r]);
-    if (open.length === 0) continue;
+    if (open.length === 0) { i += 1; continue; }
 
     // THE BEST REMAINING CARD FOR THIS ROLE, not merely the next one that fits. The pool is
     // already in preference order, so this looks ahead only among the cards that could close
     // the SAME first open role and prefers the one closing the larger type gap.
     const deficits = typeDeficits(typeTargets, tallyTypes(placed));
-    const role = open[0];
+    const firstOpen = open[0];
     /** How many still-open floors this card would close in its one slot. §2.5a: the targets
      *  describe decks with a card counted under each role it fills, so a card closing two of
      *  them is not a tie with one that closes one — it is a strictly better use of the slot,
@@ -298,7 +335,7 @@ export function planFill(candidates: FillCandidate[], args: PlanFillArgs): FillP
       for (const other of ordered) {
         if (other === candidate || spent.has(other.oracleId)) continue;
         const otherRoles = rolesOfCandidate(other);
-        if (otherRoles.includes("land") || !otherRoles.includes(role)) continue;
+        if (otherRoles.includes("land") || !otherRoles.includes(firstOpen)) continue;
         const gain = closes(other) - closes(chosen);
         if (gain < 0) { if (--scanned <= 0) break; continue; }
         if (gain > 0) { chosen = other; if (--scanned <= 0) break; continue; }
@@ -311,14 +348,22 @@ export function planFill(candidates: FillCandidate[], args: PlanFillArgs): FillP
       scanned = TIE_BREAK_WINDOW;
     }
 
+    // THE ROW'S ROLE IS THE FIRST FLOOR *THIS CARD* CLOSES, recomputed for `chosen` rather than
+    // inherited from the candidate under the cursor. They differ whenever the tie-break swaps:
+    // a chosen card that closes ramp as well as draw was being filed under draw, because `draw`
+    // was the first open role of a different card.
+    const chosenRoles = rolesOfCandidate(chosen);
+    const role = NON_LAND_ROLES.find((r) => chosenRoles.includes(r) && counts[r] < floors[r])
+      ?? firstOpen;
+
     spent.add(chosen.oracleId);
     // EVERY ROLE IT SATISFIES, one slot spent. Spec §2.5a: the targets describe decks with a
     // card counted under each role it fills, so crediting one role would make this fill place
     // two cards where the decklists behind the target counted one.
-    for (const r of NON_LAND_ROLES) if (rolesOfCandidate(chosen).includes(r)) counts[r]++;
+    for (const r of NON_LAND_ROLES) if (chosenRoles.includes(r)) counts[r]++;
     placed.push({ typeLine: chosen.typeLine, quantity: 1 });
-    // The row's role is the first one it CLOSED, which is what a reader is shown.
     rows.push({ oracleId: chosen.oracleId, quantity: 1, role });
+    if (chosen === candidate) i += 1;
   }
 
   // Lands come from the collection alone — never bought, at any point below.
@@ -328,10 +373,17 @@ export function planFill(candidates: FillCandidate[], args: PlanFillArgs): FillP
   const lands = [...byOracleId.values()].filter(
     (c) => c.owned && !spent.has(c.oracleId) && rolesOfCandidate(c).includes("land"),
   );
-  const takeLand = (candidate: FillCandidate, quantity: number): void => {
+  /** Returns what it actually took. THE LIMIT BINDS HERE TOO: `slots` means "fill this many
+   *  cards", and a sweep that ignored it made `slots: 5` return 42 — the three land passes
+   *  between the role pass and the residual were the only ones not reading it. */
+  const takeLand = (candidate: FillCandidate, quantity: number): number => {
+    const room = Math.max(0, limit - filledSoFar());
+    const take = Math.min(quantity, room);
+    if (take <= 0) return 0;
     spent.add(candidate.oracleId);
-    counts.land += quantity;
-    rows.push({ oracleId: candidate.oracleId, quantity, role: "land" });
+    counts.land += take;
+    rows.push({ oracleId: candidate.oracleId, quantity: take, role: "land" });
+    return take;
   };
 
   // Utility lands first, one copy each and capped, so the mana base is not
@@ -339,6 +391,7 @@ export function planFill(candidates: FillCandidate[], args: PlanFillArgs): FillP
   // player owned a playset of anything.
   for (const candidate of lands) {
     if (counts.land >= Math.min(NONBASIC_LAND_CAP, landCeiling)) break;
+    if (filledSoFar() >= limit) break;
     if (isBasicLand(candidate.typeLine)) continue;
     takeLand(candidate, 1);
   }
@@ -385,10 +438,9 @@ export function planFill(candidates: FillCandidate[], args: PlanFillArgs): FillP
     for (const color of colors) {
       let room = allocated.get(color)!;
       for (const candidate of basicsByColor.get(color)!) {
-        if (room <= 0) break;
+        if (room <= 0 || filledSoFar() >= limit) break;
         const quantity = Math.min(candidate.ownedQuantity, room);
-        room -= quantity;
-        takeLand(candidate, quantity);
+        room -= takeLand(candidate, quantity);
       }
     }
   }
@@ -397,6 +449,7 @@ export function planFill(candidates: FillCandidate[], args: PlanFillArgs): FillP
   // the remaining utility lands take what is left.
   for (const candidate of lands) {
     if (counts.land >= landCeiling) break;
+    if (filledSoFar() >= limit) break;
     if (spent.has(candidate.oracleId)) continue;
     takeLand(candidate, 1);
   }
@@ -414,7 +467,7 @@ export function planFill(candidates: FillCandidate[], args: PlanFillArgs): FillP
       )
     : ordered;
   for (const candidate of residualOrder) {
-    if (rows.reduce((n, r) => n + r.quantity, 0) >= limit) break;
+    if (filledSoFar() >= limit) break;
     if (spent.has(candidate.oracleId)) continue;
     if (rolesOfCandidate(candidate).includes("land")) continue;
     spent.add(candidate.oracleId);
@@ -438,15 +491,21 @@ export function planFill(candidates: FillCandidate[], args: PlanFillArgs): FillP
     filled: rows.reduce((n, r) => n + r.quantity, 0),
     bought: rows.filter((r) => boughtIds.has(r.oracleId)).reduce((n, r) => n + r.quantity, 0),
     landCapable,
-    measured: skeleton?.roleTargets.of !== undefined && skeleton.roleTargets.of !== "flat",
+    measured,
     shortfalls: [
       ...NON_LAND_ROLES.filter((r) => counts[r] < floors[r])
         .map((role) => ({ kind: "role" as const, role })),
       ...(counts.land < landCeiling ? [{ kind: "role" as const, role: "land" as const }] : []),
       // TYPES TOO. A deck can meet every role floor and still sit eight creatures under the
       // decklists it is measured against, and a reader told only about roles cannot see it.
+      // THE THREE LAND AXES ARE EXCLUDED, because `placed` only ever holds the non-land rows —
+      // the role pass and the residual both skip lands, so `land`, `basic` and `nonbasic` read
+      // 0 whatever the mana base did, and a deck that met its land target exactly still
+      // reported all three short. The land shortfall is the `role: "land"` row above, which is
+      // measured against the count the sweeps actually took.
       ...(typeTargets
         ? (Object.keys(typeTargets) as (keyof CompositionTargets)[])
+            .filter((type) => type !== "land" && type !== "basic" && type !== "nonbasic")
             .filter((type) => haveTypes[type] < typeTargets[type])
             .map((type) => ({ kind: "type" as const, type }))
         : []),

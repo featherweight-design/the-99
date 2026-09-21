@@ -1257,7 +1257,7 @@ Package manager is **pnpm** (pinned via `packageManager` in package.json) — ne
   leave the table holding this script's output rather than what it found. Point it at
   `local-dev` or a scratch Neon branch, **never production**.
 
-- `pnpm probe:fill` proves `planFill` against a real Postgres and the real catalog — thirteen
+- `pnpm probe:fill` proves `planFill` against a real Postgres and the real catalog — fourteen
   checks in seven sections, one per rule the fill gained when it stopped building to four
   asserted constants.
 

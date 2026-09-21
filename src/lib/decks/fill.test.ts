@@ -396,3 +396,64 @@ describe("planFill against a measured skeleton", () => {
     expect(roles.indexOf("other")).toBeGreaterThan(roles.lastIndexOf("land"));
   });
 });
+
+// THE FOUR THE PRE-OPEN PASS FOUND, each verified as a concrete repro before it was fixed.
+describe("the fill does not leave usable cards behind", () => {
+  // The tie-break can spend a DIFFERENT card than the one under the cursor, and a `for…of`
+  // advances past the candidate anyway. Ten ramp cards, a floor of ten, and a composition that
+  // prefers five of them: the pass placed five, reported a ramp shortfall, and left the other
+  // five for the residual to sleeve as `other`.
+  it("reconsiders a candidate the tie-break passed over", () => {
+    const wantsCreatures = skeletonWith({
+      land: 0, creature: 40, artifact: 0, instant: 0, sorcery: 0, enchantment: 0,
+      ramp: 10, draw: 0, removal: 0, wipes: 0,
+    });
+    const pool = [
+      ...Array.from({ length: 5 }, (_, i) =>
+        c({ oracleId: `a${i}`, name: `a${i}`, typeLine: "Artifact", oracleText: "{T}: Add {C}." })),
+      ...Array.from({ length: 5 }, (_, i) =>
+        c({ oracleId: `e${i}`, name: `e${i}`, typeLine: "Creature — Elf",
+            oracleText: "{T}: Add {C}." })),
+    ];
+    const plan = planFill(pool, { hasPartner: false, skeleton: wantsCreatures });
+    expect(countRole(plan, "ramp")).toBe(10);
+    expect(plan.shortfalls).not.toContainEqual({ kind: "role", role: "ramp" });
+  });
+
+  // `slots` means "fill this many CARDS". The three land sweeps between the role pass and the
+  // residual were the only passes not reading it, so a five-slot ask returned 42 cards.
+  it("stops every pass at the slot count, land sweeps included", () => {
+    const pool = [
+      ...Array.from({ length: 10 }, (_, i) => ramp(`r${i}`, 50)),
+      ...Array.from({ length: 10 }, (_, i) => basic(`f${i}`, 10)),
+    ];
+    const plan = planFill(pool, { ...FLAT, slots: 5 });
+    expect(plan.filled).toBe(5);
+  });
+
+  // `placed` only ever holds the non-land rows, so the three land axes read 0 whatever the
+  // mana base did — a deck meeting its land target exactly still reported all three short.
+  it("never reports a land axis as a type shortfall", () => {
+    const plan = planFill(
+      [...poolOf(200), ...Array.from({ length: 40 }, (_, i) => basic(`f${i}`, 4))],
+      { hasPartner: false, skeleton: skeletonWithLand(36) },
+    );
+    expect(plan.shortfalls.filter((s) => s.kind === "type")
+      .map((s) => (s as { type: string }).type))
+      .not.toContain("land");
+    expect(plan.shortfalls.filter((s) => s.kind === "type")
+      .map((s) => (s as { type: string }).type))
+      .not.toContain("basic");
+  });
+
+  // A skeleton can NAME a measured rung and still carry figures `roleFloors` rejects. The plan
+  // was then built entirely to the asserted constants while claiming to be measured.
+  it("does not claim measured when it fell back to the asserted floors", () => {
+    const broken = skeletonWith({});
+    broken.roleTargets = {
+      of: "commander",
+      targets: { ramp: undefined as unknown as number, draw: 10, removal: 8, wipes: 3 },
+    };
+    expect(planFill(poolOf(120), { hasPartner: false, skeleton: broken }).measured).toBe(false);
+  });
+});

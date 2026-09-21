@@ -91,3 +91,37 @@ it("falls back rather than propagating a non-finite measured target", () => {
   };
   expect(landTarget(false, broken)).toBe(37);
 });
+
+// Both halves of the cap, each a repro the pre-open pass produced.
+it("rounds each role target before summing, as roleFloors does", () => {
+  const s = {
+    composition: {
+      of: "commander" as const,
+      targets: { land: 90, basic: 0, nonbasic: 0, creature: 0, instant: 0, sorcery: 0,
+        artifact: 0, enchantment: 0, planeswalker: 0, battle: 0 },
+      averageCurve: null,
+    },
+    roleTargets: { of: "commander" as const, targets: { ramp: 10.5, draw: 10.5, removal: 10.5, wipes: 10.5 } },
+    condition: "G", thinCondition: false, staples: [], commanderDeckCount: 1000,
+  };
+  // Each rounds to 11, so the floors sum to 44 — rounding the SUM gives 42 and lets the land
+  // target plus the floors exceed the body the fill has to fit them all into.
+  expect(landTarget(false, s)).toBe(99 - 44);
+});
+
+it("falls back rather than returning a NaN cap from non-finite role targets", () => {
+  const s = {
+    composition: {
+      of: "commander" as const,
+      targets: { land: 34, basic: 0, nonbasic: 0, creature: 0, instant: 0, sorcery: 0,
+        artifact: 0, enchantment: 0, planeswalker: 0, battle: 0 },
+      averageCurve: null,
+    },
+    roleTargets: {
+      of: "commander" as const,
+      targets: { ramp: undefined as unknown as number, draw: 10, removal: 8, wipes: 3 },
+    },
+    condition: "G", thinCondition: false, staples: [], commanderDeckCount: 1000,
+  };
+  expect(landTarget(false, s)).toBe(37);
+});

@@ -45,6 +45,16 @@ export function landTarget(hasPartner: boolean, skeleton?: ProfileSkeleton | nul
   if (!Number.isFinite(measured)) return hasPartner ? 36 : 37;
   const pairBasis = composition.of === "pair";
   const adjusted = Math.round(measured) - (hasPartner && !pairBasis ? 1 : 0);
-  const roleFloor = Object.values(skeleton!.roleTargets.targets).reduce((a, b) => a + b, 0);
-  return Math.max(0, Math.min(adjusted, deckBodySize(hasPartner) - Math.round(roleFloor)));
+  // EACH TARGET ROUNDED BEFORE SUMMING, which is what `roleFloors` in `fill.ts` does — rounding
+  // the sum instead lets the two disagree about the same skeleton: four targets of 10.5 floor
+  // to 44 there and to 42 here, and the cap then permits a land count that leaves the fill
+  // unable to meet the floors it is about to build to.
+  const roleValues = Object.values(skeleton!.roleTargets.targets);
+  // And the same finite guard the land figure gets. Without it the cap is NaN and `Math.min`
+  // propagates it — the function returns the very thing the comment above says it prevents.
+  if (!roleValues.every((v) => typeof v === "number" && Number.isFinite(v))) {
+    return hasPartner ? 36 : 37;
+  }
+  const roleFloor = roleValues.reduce((a, b) => a + Math.round(b), 0);
+  return Math.max(0, Math.min(adjusted, deckBodySize(hasPartner) - roleFloor));
 }

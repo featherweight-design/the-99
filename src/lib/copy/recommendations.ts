@@ -85,11 +85,16 @@ export const recommendationsCopy = {
     // Replaces the mobile sticky bar's "{n} cards in your pool". The button
     // now keeps a promise, so the line states the promise.
     stickyLabel: 'READY TO BUILD',
-    stickyPromise: (n: string) => `We’ll fill ${n} of the 99`,
+    // `We’ll fill 68 of the 99` until the fill stopped at the role floors and the mana base.
+    // It now continues to the body through its synergy residual, so the old sentence
+    // under-promised by 31 cards and its `The rest is yours` named a remainder that no longer
+    // exists. The figure is still derived from `fillBaselineTotal`, so a fill that changes what
+    // it reaches for moves the promise with it — which is how this one went wrong.
+    stickyPromise: (n: string) => `We’ll fill all ${n}`,
     // Replaces detail.tsx's desktop seed note "Your owned pool will seed the
     // deck builder", which describes a seeding that no longer happens.
     seedNote: (n: string) =>
-      `We’ll fill ${n} of the 99 — roles and lands. The rest is yours.`,
+      `We’ll fill all ${n} — roles, lands, then the best of the rest. Change anything.`,
   },
 
   // ── Surface B · the auto marker ───────────────────────────────────────
