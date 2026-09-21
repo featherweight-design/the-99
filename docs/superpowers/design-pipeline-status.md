@@ -119,8 +119,9 @@ Holds items whose readiness verdict was 🟠 Orange — per `design-pipeline.md`
 
 | # / handoff | Verdict PR | Blockers to close | Effort |
 |---|---|---|---|
+| **The declaration — Round 3** (deck analysis) — `design/design_handoff_the99_declaration/` | #773, verdict in that folder's `READINESS-r1-audit.md` | **Drift has three more reachable shapes than the two §E draws**, and in one the round's only drift sentence is FALSE — a deck tuned **down** out of its declared range reads *"moved this deck past that"*. Caused by #765 amending `permitsFor` AFTER the round was drawn, so `[3,4]` no longer exists and `[2]`/`[3]`/`[4]` are all reachable permitted sides. Design owes: the drift row with a **single** bracket on the permitted side, the downward sentence, and whether the two directions share one treatment. **Everything else in the round is resolved eng-side** — eight findings in the audit, the load-bearing one being that the ask and the lean cannot co-occur (frames 1e/1f draw a state the code cannot produce). | One light pass; no other round blocked — Round 4 is briefed (#774) and Tier B planned (#775), and neither reads `declared` |
 
-_Currently empty — #52's R1 Orange was closed by its R2 revision (✅ shipped below), and #105's by its R3 (shipped below). Work that is built and awaiting a ratification rather than a Design round belongs under ⚖️, not here._
+_Previously empty — #52's R1 Orange was closed by its R2 revision (✅ shipped below), and #105's by its R3 (shipped below). Work that is built and awaiting a ratification rather than a Design round belongs under ⚖️, not here._
 
 ---
 
