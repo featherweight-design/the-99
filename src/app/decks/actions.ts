@@ -82,11 +82,15 @@ export async function buildFillPlan(
   excludeOracleIds: Set<string> = new Set(),
   /** Passed straight to `planFill`. The bulk control names a slot count and a sleeveable-only
    *  pool; every other caller fills the whole body from everything. */
-  options: Pick<PlanFillArgs, "slots" | "pool" | "held"> = {},
+  options: Pick<PlanFillArgs, "slots" | "pool" | "held"> & {
+    /** The deck being filled, so its OWN claims are not counted against it when
+     *  `pool: "sleeveable"` narrows to cards with a free copy. */
+    excludeDeckId?: string;
+  } = {},
 ): Promise<FillPlan> {
   const commander = commanders[0];
   const hasPartner = commanders.length > 1;
-  const pool = dedupeSelectionFromPool(
+  let pool = dedupeSelectionFromPool(
     await ownedColorLegalPool(userId, commanders),
     excludeOracleIds,
   );
@@ -149,6 +153,32 @@ export async function buildFillPlan(
   // failures that can reach the player. `getEdhrecData` above is deliberately NOT skipped —
   // its `inclusionByName` orders the owned pool, so that read earns its place on this path.
   const sleeveableOnly = options.pool === "sleeveable";
+
+  // SLEEVEABLE MEANS SLEEVEABLE, and `planFill`'s own filter cannot say so: it tests
+  // `FillCandidate.owned`, and every row from `ownedColorLegalPool` is owned whether or not a
+  // copy is FREE. A card with every copy claimed by another deck would close a floor here, and
+  // the caller's client then strips it — the tick never appears, and the free card that could
+  // have closed the same floor was never considered because the slot was already spent.
+  //
+  // Narrowed HERE rather than at the call site, and scoped to the pool. The unscoped aggregate
+  // builds the claims JSON for every non-basic card and every claim in the account, which is a
+  // lot of work per click to answer a question about a few hundred candidates.
+  //
+  // The predicate is `canSeed`'s rather than a second one written from memory: owned, and free
+  // unless nothing is known about it. Degraded rather than fatal — without the read the pool
+  // is as wide as it was before.
+  if (sleeveableOnly && pool.length > 0) {
+    const seen = await loadAvailability(userId, {
+      oracleIds: pool.map((c) => c.oracleId),
+      excludeDeckId: options.excludeDeckId,
+    }).catch(() => null);
+    if (seen) {
+      pool = pool.filter((c) => {
+        const a = seen.get(c.oracleId);
+        return a === undefined || a.free > 0;
+      });
+    }
+  }
 
   let synergyRank: Map<string, number> | undefined;
   try {
@@ -1997,6 +2027,9 @@ export async function chooseBulkFill(
       // tonight; a plan that reached past the collection would tick a purchase.
       {
         pool: "sleeveable",
+        // So this deck's own claims are not counted as competition for itself when the pool
+        // is narrowed to cards with a free copy.
+        excludeDeckId: deckId,
         // BOUNDED BY THE DECK, not only by the caller. `Number.isInteger` accepts 1e308, and
         // the shape guard above says nothing about size.
         //

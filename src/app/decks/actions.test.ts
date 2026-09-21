@@ -2032,6 +2032,42 @@ describe("chooseBulkFill", () => {
     expect(result.oracleIds.length).toBe(3);
   });
 
+  // A CLAIMED CARD MUST NOT TAKE A SLOT A FREE ONE COULD FILL. `pool: "sleeveable"` only
+  // filters on `owned`, and every row from the owned pool is owned whether or not a copy is
+  // free — so a card claimed by another deck closed the floor here and was then stripped
+  // client-side, leaving the tick missing and the free card never considered.
+  it("plans around a card whose every copy is claimed elsewhere", async () => {
+    stub.state.decks.push({ id: "bulk-a", userId: "user_1", commanderOracleId: COMMANDER_ORACLE });
+    stub.state.cards.push(commanderCard());
+    const claimed = rampCard(70);
+    const free = rampCard(71);
+    stub.state.collectionItems.push(claimed, free);
+    // BOTH CARDS ARE IN THE MAP. With only the claimed one present the free card passes
+    // through the `a === undefined` arm — the "nothing is known about it" case — and the
+    // `a.free > 0` branch this exists for is never reached.
+    vi.mocked(loadAvailability).mockResolvedValue(new Map([
+      [claimed.oracleId as string, { free: 0, claims: [] }],
+      [free.oracleId as string, { free: 2, claims: [] }],
+    ]) as never);
+
+    const result = await chooseBulkFill("bulk-a", 1);
+
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+    expect(result.oracleIds).toContain(free.oracleId);
+    expect(result.oracleIds).not.toContain(claimed.oracleId);
+    // ASKED THE RIGHT QUESTION, not just handed the right answer. The mock ignores its
+    // arguments, so without this the deck's own claims could be counted against it and every
+    // assertion above would still hold.
+    expect(vi.mocked(loadAvailability)).toHaveBeenCalledWith(
+      "user_1",
+      expect.objectContaining({
+        excludeDeckId: "bulk-a",
+        oracleIds: expect.arrayContaining([free.oracleId, claimed.oracleId]),
+      }),
+    );
+  });
+
   it("never offers a residual card", async () => {
     // `planFill` fills whatever `slots` remain with the next cards by preference once the
     // floors and the mana base are done — right for a CREATE, which owes a whole 99. Here it
