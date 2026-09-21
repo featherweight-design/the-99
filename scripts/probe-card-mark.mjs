@@ -13,8 +13,8 @@
 //     two passes because the search that finds the marked card leaves nothing to compare
 //     it against. LIVE on the collection row and inert on the tile, whose height its art
 //     fixes; the body of that check says so rather than implying it guards both
-//   · the key is on screen wherever a mark is, which is the rule that makes a wordless mark
-//     legal at all, and a FAILURE rather than a note
+//   · the key is on screen wherever a mark is — SEEN, not merely present in the DOM, since
+//     a hidden or zero-sized key produces the same three SVGs — and a FAILURE, never a note
 //   · the glow is a `filter`, never a `box-shadow` — a shadow would be in the box model and
 //     every "nothing grew" check above would start lying
 //
@@ -128,6 +128,19 @@ async function marks(page) {
         filter: cs.filter,
         boxShadow: cs.boxShadow,
         inKey: Boolean(el.closest('[role="group"]')),
+        // PRESENCE IS NOT VISIBILITY. A key hidden, collapsed to zero or scrolled past
+        // still puts three SVGs in the DOM, and the check that makes a wordless mark legal
+        // would pass over a gloss no reader can see.
+        onScreen:
+          r.width > 0 &&
+          r.height > 0 &&
+          cs.visibility !== "hidden" &&
+          cs.display !== "none" &&
+          Number(cs.opacity) > 0 &&
+          r.bottom > 0 &&
+          r.right > 0 &&
+          r.top < window.innerHeight &&
+          r.left < window.innerWidth,
       };
     });
   }, PAGE);
@@ -265,9 +278,16 @@ async function run() {
         report(`${label}px · ${surface} · never below the ${FLOOR}px floor`,
           smallest >= FLOOR, `smallest ${smallest}px`);
 
-        // THE RULE THAT MAKES A WORDLESS MARK LEGAL. A failure, never a note.
+        // THE RULE THAT MAKES A WORDLESS MARK LEGAL. A failure, never a note — and it
+        // asserts the key is SEEN rather than merely present: three SVGs in the DOM is
+        // what a hidden, zero-sized or scrolled-past key also produces, and a gloss the
+        // reader cannot see glosses nothing.
+        const keyVisible = keyed.filter((m) => m.onScreen);
         report(`${label}px · ${surface} · the key is on screen with the marks`,
-          keyed.length >= 3, `${keyed.length} key entr(ies)`);
+          keyVisible.length >= 3,
+          keyed.length >= 3 && keyVisible.length < 3
+            ? `${keyed.length} in the DOM but only ${keyVisible.length} visible`
+            : `${keyVisible.length} key entr(ies) drawn`);
 
         const glowed = drawn.every((m) => m.filter?.includes("drop-shadow"));
         const shadowed = drawn.some((m) => m.boxShadow && m.boxShadow !== "none");
