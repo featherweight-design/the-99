@@ -1,10 +1,11 @@
-import { eq, sql } from "drizzle-orm";
+import { and, eq, inArray, sql } from "drizzle-orm";
 import { db } from "../../db";
 import {
   cards, commanderScores, commanderSupport, commanderSupportCards,
   commanderPairSupport, commanderPairSupportCards, decks,
 } from "../../db/schema";
 import { SCORE_INDEX_LOCK } from "../recs/store";
+import { deriveRoleTargets, roleTargetsPublishable, ROLE_TARGET_FLOOR } from "./role-targets";
 import { isCommanderCandidate } from "../recs/score";
 import { edhrecInit, fetchEdhrecUncached, type EdhrecFetchResult } from "./client";
 import {
@@ -31,6 +32,9 @@ export type BuildIndexOptions = {
   /** Injectable for the same reason as `write`: the build is unit-tested
       without a database, and this is the run's last write. */
   clearScores?: () => Promise<void>;
+  /** The role-target pass, injectable for the same reason as every other edge here: the whole
+      build is unit-testable without a database or a network. */
+  deriveRoleTargets?: (written: RunWrites) => Promise<RoleTargetPassResult>;
   /**
    * The pair pass's three I/O edges, injectable for the same reason every other edge here is:
    * this function is unit-tested, and a default that reaches the database would make every
@@ -44,9 +48,20 @@ export type BuildIndexOptions = {
   sleep?: (ms: number) => Promise<void>;
 };
 
+/** What the role pass reports back. */
+export type RoleTargetPassResult = {
+  written: number;
+  pairsWritten: number;
+  zeroWipes: number;
+};
+
 export type BuildIndexResult = {
   /** Headers actually written — `ok` plus `absent`. Degraded ones are not written. */
   commanders: number;
+  /** Commanders whose four role targets were derived and written by the final pass. */
+  roleTargets: number;
+  /** Pairs whose four role targets were derived and written by the same pass. */
+  pairRoleTargets: number;
   cardRows: number;
   degraded: number; absent: number; unresolved: number;
   skipped: number; failed: number;
@@ -217,6 +232,17 @@ async function writeToDb(header: SupportHeader, cardRows: SupportCard[]): Promis
           avgEnchantment: sql`excluded.avg_enchantment`,
           avgPlaneswalker: sql`excluded.avg_planeswalker`,
           avgBattle: sql`excluded.avg_battle`,
+          // THE ROLE COLUMNS ARE DELIBERATELY ABSENT HERE. They belong to
+          // `deriveAndWriteRoleTargets`, which clears and fills them in ONE transaction at the
+          // end of the run — so a refusal there leaves every previous figure standing, exactly
+          // as its message claims.
+          //
+          // An earlier version reset them from `excluded` alongside the type columns. That
+          // fixed the absent-commander case and broke a larger one: these upserts land per
+          // commander, hundreds of transactions before the pass gets to validate its coverage,
+          // so a refusal afterwards left the rewritten commanders cleared and the untouched
+          // ones intact — the mixed dataset the refusal exists to prevent, under a message
+          // saying nothing had changed.
           avgCurve: sql`excluded.avg_curve`,
           computedAt: sql`excluded.computed_at`,
         },
@@ -278,7 +304,13 @@ export async function buildCommanderIndex(
   const writePairFn = opts.writePair ?? writePair;
   const sleep = opts.sleep ?? defaultSleep;
   const delayMs = opts.delayMs ?? DEFAULT_DELAY_MS;
+  const deriveRoles = opts.deriveRoleTargets ?? deriveAndWriteRoleTargets;
 
+  // Exactly the rows this run replaced, accumulated as it replaces them. A refusal clears
+  // these and nothing else — see the note at the commander write for why a timestamp range
+  // cannot stand in for it.
+  const writtenCommanders: string[] = [];
+  const writtenPairs: [string, string][] = [];
   const [commanders, nameRows] = await Promise.all([load(), loadNames()]);
   const nameIndex = buildNameIndex(nameRows);
   // Spec §4/§10: state the candidate count before spending ~3,000 serial
@@ -289,7 +321,7 @@ export async function buildCommanderIndex(
   const already = opts.loadAlreadyComputed ? await opts.loadAlreadyComputed() : new Set<string>();
 
   const r: BuildIndexResult = {
-    commanders: 0, cardRows: 0, degraded: 0, absent: 0,
+    commanders: 0, roleTargets: 0, pairRoleTargets: 0, cardRows: 0, degraded: 0, absent: 0,
     unresolved: 0, skipped: 0, failed: 0,
     pairs: 0, pairCardRows: 0, pairsFailed: 0, pairsDegraded: 0, pairsUnresolved: 0,
   };
@@ -307,6 +339,12 @@ export async function buildCommanderIndex(
       // stale but true — in place and let the run summary report the count.
       if (header.synergyState === "degraded") { r.degraded++; continue; }
       await write(header, cardRows);
+      // THE RUN'S OWN OWNERSHIP RECORD. `computed_at >= runStartedAt` looks like one and is
+      // not: it is a time RANGE, so a second build running concurrently has its rows fall
+      // inside it, and a refusal here would clear that build's freshly derived roles while
+      // leaving its support lists behind. These are the rows this run replaced, and nothing
+      // else is.
+      writtenCommanders.push(commander.oracleId);
       r.commanders++;
       r.cardRows += cardRows.length;
       r.unresolved += unresolved;
@@ -417,6 +455,30 @@ export async function buildCommanderIndex(
   // A pair nobody has built is served by the demand cache instead.
   //
   // Inside the same serial walk, with the same delay, for the same reason.
+  // EVERYTHING FROM HERE IS BEHIND AN ERROR CLEANUP. The commander upserts above have already
+  // committed, so a throw anywhere after them — `loadPairsFn`, a pair write, the role publish
+  // itself — leaves rewritten support lists beside the PREVIOUS role averages, which is the
+  // self-contradicting row the explicit refusal exists to prevent, arriving by a path the
+  // refusal never sees. The clear is the same one both refusals use, and it runs before the
+  // error is rethrown so the caller still fails.
+  try {
+    return await finishIndexRun();
+  } catch (err) {
+    try {
+      const cleared = await clearRolesFor({ commanders: writtenCommanders, pairs: writtenPairs });
+      console.error(
+        `commander-index: run failed after writing — cleared the roles on ` +
+        `${cleared.commanders} commander(s) and ${cleared.pairs} pair(s) it had replaced, ` +
+        `so no row is left carrying averages for a card list it no longer has.`,
+      );
+    } catch (cleanupErr) {
+      // Reported, never rethrown: the original failure is the one the operator needs.
+      console.error("commander-index: the post-failure role clear ALSO failed", cleanupErr);
+    }
+    throw err;
+  }
+
+  async function finishIndexRun(): Promise<BuildIndexResult> {
   const pairs = await loadPairsFn();
   if (pairs.length > 0) {
     console.log(`commander-index: ${pairs.length} partner pair(s) present in decks`);
@@ -447,6 +509,7 @@ export async function buildCommanderIndex(
       // run where every commander was skipped — exit 1, "EDHREC is unreachable", after a good run.
       if (header.synergyState === "degraded") { r.pairsDegraded++; continue; }
       await writePairFn(header, pairCards);
+      writtenPairs.push([header.commanderOracleId, header.partnerOracleId]);
       r.pairs++;
       r.pairCardRows += pairCards.length;
     } catch (err) {
@@ -455,7 +518,277 @@ export async function buildCommanderIndex(
     }
   }
 
+  // ---- THE ROLE TARGETS --------------------------------------------------------------
+  //
+  // Last, because it reads every support row this run wrote. It REFUSES rather than
+  // publishing a partial set, so a throw here leaves the previous figures standing and the
+  // run reports a failure — which is the state an operator needs to see.
+  const roles = await deriveRoles({ commanders: writtenCommanders, pairs: writtenPairs });
+  r.roleTargets = roles.written;
+  r.pairRoleTargets = roles.pairsWritten;
+  console.log(
+    `commander-index: role targets written for ${roles.written} commander(s) and ` +
+    `${roles.pairsWritten} pair(s) · ${roles.zeroWipes} measure exactly 0 wipes`,
+  );
+
   return r;
+  }
+}
+
+/** Rows per UPDATE inside the publish transaction. Large enough that the round trips stop
+ *  dominating, small enough that one statement's parameter list stays sane — six parameters a
+ *  row puts a 500-row chunk at 3,000, well inside Postgres's 65,535 limit. */
+const ROLE_WRITE_CHUNK = 500;
+
+/** The rows a run actually replaced — its ownership record, and the only thing a refusal may
+ *  clear. Ids rather than a time range: a range is not ownership. A second build running
+ *  concurrently has its rows fall inside one, so a refusal keyed on time would clear that
+ *  build's freshly derived roles and leave its support lists without targets. */
+export type RunWrites = {
+  commanders: readonly string[];
+  pairs: readonly (readonly [string, string])[];
+};
+
+/**
+ * Clear the role columns on exactly the rows this run rewrote, on both tables, in one
+ * transaction.
+ *
+ * Shared by both refusals AND by the error path, because it is one rule rather than three.
+ * These are the rows whose averages now describe a card list that is no longer beside them;
+ * every other row still matches its own list and keeps its figures, which is why a refusal
+ * does not blank the table. One transaction for both, since a reader takes the pair rung
+ * before the commander rung and must not find one cleared and the other not.
+ */
+async function clearRolesFor(written: RunWrites) {
+  if (written.commanders.length === 0 && written.pairs.length === 0) {
+    return { commanders: 0, pairs: 0 };
+  }
+  const NO_ROLES = { avgRamp: null, avgDraw: null, avgRemoval: null, avgWipes: null };
+  return db.transaction(async (tx) => {
+    let c: { id: string }[] = [];
+    if (written.commanders.length > 0) {
+      c = await tx.update(commanderSupport).set(NO_ROLES)
+        .where(inArray(commanderSupport.commanderOracleId, [...written.commanders]))
+        .returning({ id: commanderSupport.commanderOracleId });
+    }
+    let p: { id: string }[] = [];
+    if (written.pairs.length > 0) {
+      const keys = written.pairs.map(([a, b]) => sql`(${a}::uuid, ${b}::uuid)`);
+      p = await tx.update(commanderPairSupport).set(NO_ROLES)
+        .where(sql`(${commanderPairSupport.commanderOracleId}, ${commanderPairSupport.partnerOracleId}) in (${sql.join(keys, sql`, `)})`)
+        .returning({ id: commanderPairSupport.commanderOracleId });
+    }
+    return { commanders: c.length, pairs: p.length };
+  });
+}
+
+/**
+ * The four role targets, derived from the support lists this run just wrote.
+ *
+ * A FINAL PASS rather than per-commander work, because the derivation reads
+ * `commander_support_cards` — which only exists in its final shape once the loop above has
+ * finished — and writes `commander_support` columns, which this module owns.
+ *
+ * REFUSES rather than publishing a partial set. A derivation that reached only some commanders
+ * would leave the rest on stale figures with no way for a reader to tell which is which, so a
+ * run below the floor leaves every previous value standing and throws. Same discipline as
+ * `db:build:staples`.
+ *
+ * WHAT "STANDING" MAY NOT MEAN: a row whose own card list this run already replaced. These four
+ * columns are derived from `commander_support_cards`, and the loop above commits each
+ * commander's list as it goes — so by the time a refusal happens, some rows carry averages
+ * describing a list that no longer exists beside them. That is not stale data a reader can
+ * discount; it is a row contradicting itself, and nothing on it says which half is current.
+ *
+ * So the refusal CLEARS the roles on exactly those rows and leaves every other commander's
+ * alone. `written` is what draws the line — the ids the run replaced, recorded as it replaced
+ * them. A commander the run never reached keeps averages that still match its own list, which
+ * is the whole reason the refusal does not simply blank the table.
+ */
+export async function deriveAndWriteRoleTargets(
+  written: RunWrites,
+): Promise<RoleTargetPassResult> {
+  const rows = await db
+    .select({
+      commanderOracleId: commanderSupportCards.commanderOracleId,
+      oracleId: commanderSupportCards.oracleId,
+      inclusion: commanderSupportCards.inclusion,
+      typeLine: cards.typeLine,
+      oracleText: cards.oracleText,
+      keywords: cards.keywords,
+      layout: cards.layout,
+    })
+    .from(commanderSupportCards)
+    .innerJoin(cards, eq(cards.oracleId, commanderSupportCards.oracleId))
+    // RESTRICTED TO `ok` HEADERS, so the numerator counts the same population the floor's
+    // denominator does. Without it the derivation reads the card rows of every header — and
+    // the loop above leaves a `degraded` row AND its previous cards in place — so those stale
+    // commanders inflate `targets.size` against an `ok`-only denominator, and a run that
+    // reached well under 90% of the current `ok` commanders sails past the floor.
+    //
+    // The denominator stays `ok` rather than moving to "headers with cards", which would make
+    // the two agree the other way round and look tidier. It would also make the floor
+    // worthless against the failure it exists for: a join that loses half the card rows drops
+    // the numerator and the denominator together, and the run reports full coverage.
+    //
+    // The cost is that a non-`ok` header keeps its type columns and loses its roles — the
+    // §4A.6 disagreement in miniature. It is accepted because that header is unreachable by
+    // construction here: `degraded` is never written (the loop `continue`s before the write),
+    // and every row on staging and local-dev is `ok`.
+    .innerJoin(
+      commanderSupport,
+      eq(commanderSupport.commanderOracleId, commanderSupportCards.commanderOracleId),
+    )
+    .where(sql`${commanderSupport.synergyState} = 'ok'`);
+
+  const targets = deriveRoleTargets(
+    rows.map((r) => ({
+      commanderOracleId: r.commanderOracleId,
+      oracleId: r.oracleId,
+      inclusion: r.inclusion,
+      typeLine: r.typeLine ?? "",
+      oracleText: r.oracleText,
+      keywords: r.keywords ?? [],
+      layout: r.layout ?? "normal",
+    })),
+  );
+
+  const [{ ok }] = await db
+    .select({ ok: sql<number>`count(*)::int` })
+    .from(commanderSupport)
+    .where(sql`${commanderSupport.synergyState} = 'ok'`);
+
+  if (!roleTargetsPublishable(targets.size, ok)) {
+    const cleared = await clearRolesFor(written);
+    throw new Error(
+      `role targets REFUSED: derived ${targets.size} of ${ok} ok commanders ` +
+      `(floor ${Math.ceil(ok * ROLE_TARGET_FLOOR)}). Cleared the roles on ` +
+      `${cleared.commanders} commander(s) and ${cleared.pairs} pair(s) this run rewrote — ` +
+      `their averages described a card list that no longer exists. Every other row is ` +
+      `untouched and still matches its own list.`,
+    );
+  }
+
+  const entries = [...targets];
+
+  // THE PAIR RUNG TOO. Its own table, its own cards, and read BEFORE the commander rung by the
+  // basis chain — so a pair left without role targets is a partner deck getting measured types
+  // with no roles beside them, which is the one shape these columns exist to prevent.
+  const pairRows = await db
+    .select({
+      commanderOracleId: commanderPairSupportCards.commanderOracleId,
+      partnerOracleId: commanderPairSupportCards.partnerOracleId,
+      oracleId: commanderPairSupportCards.oracleId,
+      inclusion: commanderPairSupportCards.inclusion,
+      typeLine: cards.typeLine,
+      oracleText: cards.oracleText,
+      keywords: cards.keywords,
+      layout: cards.layout,
+    })
+    .from(commanderPairSupportCards)
+    .innerJoin(cards, eq(cards.oracleId, commanderPairSupportCards.oracleId))
+    // The same restriction, for the same reason — the pair floor below counts `ok` pairs.
+    .innerJoin(
+      commanderPairSupport,
+      and(
+        eq(commanderPairSupport.commanderOracleId, commanderPairSupportCards.commanderOracleId),
+        eq(commanderPairSupport.partnerOracleId, commanderPairSupportCards.partnerOracleId),
+      ),
+    )
+    .where(sql`${commanderPairSupport.synergyState} = 'ok'`);
+
+  // Keyed on the pair, not the primary: `deriveRoleTargets` groups by whatever id it is given,
+  // and two pairs sharing a primary commander would otherwise fold into one set of figures.
+  const pairTargets = deriveRoleTargets(
+    pairRows.map((r) => ({
+      commanderOracleId: `${r.commanderOracleId}|${r.partnerOracleId}`,
+      oracleId: r.oracleId,
+      inclusion: r.inclusion,
+      typeLine: r.typeLine ?? "",
+      oracleText: r.oracleText,
+      keywords: r.keywords ?? [],
+      layout: r.layout ?? "normal",
+    })),
+  );
+
+  // THE PAIR POPULATION GETS THE SAME REFUSAL, and needs its own because the commander check
+  // above cannot see it: the transaction below clears every pair role column and then fills
+  // only the pairs this derivation reached, so a join that lost half the pair support cards
+  // would publish exactly the partial set this pass claims to refuse — silently, since
+  // `pairsWritten` would report whatever it did write as a success.
+  //
+  // The zero-row case is a LEGITIMATE state rather than a failure, and is why this is not
+  // simply the same call: a database with no indexed pairs at all has nothing to derive and
+  // nothing to lose, and refusing there would fail every run until the first pair is indexed
+  // — the same reasoning `db:build:staples` applies to an empty composition.
+  const [{ okPairs }] = await db
+    .select({ okPairs: sql<number>`count(*)::int` })
+    .from(commanderPairSupport)
+    .where(sql`${commanderPairSupport.synergyState} = 'ok'`);
+  if (okPairs > 0 && !roleTargetsPublishable(pairTargets.size, okPairs)) {
+    const cleared = await clearRolesFor(written);
+    throw new Error(
+      `role targets REFUSED: derived ${pairTargets.size} of ${okPairs} ok PAIRS ` +
+      `(floor ${Math.ceil(okPairs * ROLE_TARGET_FLOOR)}). Cleared the roles on ` +
+      `${cleared.commanders} commander(s) and ${cleared.pairs} pair(s) this run rewrote. ` +
+      `The commander half had already passed its own floor, so publishing would have left ` +
+      `the pair rung partial while every commander read whole.`,
+    );
+  }
+
+  // ONE TRANSACTION FOR THE WHOLE PUBLISH, clear then fill — the shape `job=printings` was
+  // corrected to in #704, and for the same reason.
+  //
+  // Two failures this closes. A per-slice loop commits as it goes, so a transient failure on a
+  // later slice leaves earlier commanders on new figures and the rest on the previous run's:
+  // the partial state the refusal above exists to prevent, published anyway. And the CLEAR
+  // belongs here rather than in the per-commander upsert, so a commander whose page went
+  // `absent` — its support cards deleted, so this derivation never reaches it — loses its stale
+  // roles at the same instant everyone else gains theirs, rather than hundreds of transactions
+  // earlier and irrespective of whether this pass ever succeeds.
+  await db.transaction(async (tx) => {
+    const NO_ROLES = { avgRamp: null, avgDraw: null, avgRemoval: null, avgWipes: null };
+    await tx.update(commanderSupport).set(NO_ROLES);
+    await tx.update(commanderPairSupport).set(NO_ROLES);
+
+    // BATCHED, one statement per ROLE_WRITE_CHUNK rows rather than one per commander. The
+    // single transaction above is required — a per-slice commit publishes the partial state
+    // this pass refuses — but 3,279 round trips is what made holding it expensive, and the
+    // transaction's duration is the whole cost a reader elsewhere pays for it.
+    for (let i = 0; i < entries.length; i += ROLE_WRITE_CHUNK) {
+      const slice = entries.slice(i, i + ROLE_WRITE_CHUNK);
+      const tuples = slice.map(([id, t]) =>
+        sql`(${id}::uuid, ${t.ramp}::real, ${t.draw}::real, ${t.removal}::real, ${t.wipes}::real)`);
+      await tx.execute(sql`
+        update ${commanderSupport} as cs
+           set avg_ramp = v.ramp, avg_draw = v.draw,
+               avg_removal = v.removal, avg_wipes = v.wipes
+          from (values ${sql.join(tuples, sql`, `)}) as v(id, ramp, draw, removal, wipes)
+         where cs.commander_oracle_id = v.id`);
+    }
+
+    const pairEntries = [...pairTargets];
+    for (let i = 0; i < pairEntries.length; i += ROLE_WRITE_CHUNK) {
+      const tuples = pairEntries.slice(i, i + ROLE_WRITE_CHUNK).map(([key, t]) => {
+        const [a, b] = key.split("|");
+        return sql`(${a}::uuid, ${b}::uuid, ${t.ramp}::real, ${t.draw}::real,
+                    ${t.removal}::real, ${t.wipes}::real)`;
+      });
+      await tx.execute(sql`
+        update ${commanderPairSupport} as ps
+           set avg_ramp = v.ramp, avg_draw = v.draw,
+               avg_removal = v.removal, avg_wipes = v.wipes
+          from (values ${sql.join(tuples, sql`, `)})
+            as v(id, partner, ramp, draw, removal, wipes)
+         where ps.commander_oracle_id = v.id and ps.partner_oracle_id = v.partner`);
+    }
+  });
+
+  return {
+    written: targets.size,
+    pairsWritten: pairTargets.size,
+    zeroWipes: entries.filter(([, t]) => t.wipes === 0).length,
+  };
 }
 
 /**

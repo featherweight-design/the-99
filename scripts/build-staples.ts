@@ -19,6 +19,9 @@ import { sql } from "drizzle-orm";
 import { db } from "../src/db";
 import { formatStaples, identityComposition } from "../src/db/schema";
 import { MIN_COMMANDERS_PER_CONDITION } from "../src/lib/staples/condition";
+// Imported, never restated: a literal here goes silently wrong the day the flat targets move,
+// and this line's whole job is to sit beside the derived figures as their baseline.
+import { ROLE_TARGETS } from "../src/lib/recs/roles";
 
 /** The ratified cut (spec §4A.1, re-ratified on the identity axis 2026-09-19). */
 const BREADTH = 0.5;
@@ -138,13 +141,35 @@ function floorsQuery(keyExpr: string, restrictTo: string) {
 /** Composition averages for one key expression, over the commanders that carry one. */
 function compositionQuery(keyExpr: string, restrictTo: string) {
   const avg = (col: string) => `avg(cs.${col}) filter (where cs.avg_land is not null) as ${col}`;
+  // THE ROLE COLUMNS CARRY THEIR OWN DENOMINATOR, and sharing `with_composition` would have
+  // been a lie about them. `avg(cs.avg_ramp) filter (where cs.avg_land is not null)` skips a
+  // null `avg_ramp` INSIDE the filter, so on a database whose commander rows predate the role
+  // pass a bucket with 200 composition-carrying commanders and 10 role-carrying ones publishes
+  // a mean over 10 while the row says 200. The two populations are genuinely different until
+  // one index run has covered both, so the row states both.
+  const avgRole = (col: string) => `avg(cs.${col}) filter (where cs.${col} is not null) as ${col}`;
   return `
     select ${keyExpr} as condition,
            count(*)::int as commanders,
            count(*) filter (where cs.avg_land is not null)::int as with_composition,
            ${["avg_land", "avg_basic", "avg_nonbasic", "avg_creature", "avg_instant",
               "avg_sorcery", "avg_artifact", "avg_enchantment", "avg_planeswalker",
-              "avg_battle"].map(avg).join(",\n           ")}
+              "avg_battle",
+              // The `filter (where cs.avg_land is not null)` each of these carries is
+              // load-bearing and must not become a `where`: that would narrow the `commanders`
+              // denominator with it, which is the null-policy mistake this script's header
+              // records making once already.
+              ].map(avg).join(",\n           ")},
+           -- The four FUNCTIONAL targets, on the same row as the ten type targets: a rung
+           -- that delivered types with no roles beside them would put measured types next to
+           -- flat roles on one deck, which is the disagreement §4A.6 names as the bug.
+           -- Written as SQL comments rather than the TypeScript form, and that is not a
+           -- style choice: this text is INSIDE the template and is sent to Postgres, which
+           -- has no double-slash comment and fails the whole derivation on one. The comments
+           -- above it sit inside an interpolation, so they are TypeScript and stay that way.
+           ${["avg_ramp", "avg_draw", "avg_removal", "avg_wipes"]
+              .map(avgRole).join(",\n           ")},
+           count(*) filter (where cs.avg_ramp is not null)::int as with_roles
     from commander_support cs
     join cards cmd on cmd.oracle_id = cs.commander_oracle_id
     ${restrictTo}
@@ -480,6 +505,14 @@ async function main() {
     avgInstant: Number(c.avg_instant), avgSorcery: Number(c.avg_sorcery),
     avgArtifact: Number(c.avg_artifact), avgEnchantment: Number(c.avg_enchantment),
     avgPlaneswalker: Number(c.avg_planeswalker), avgBattle: Number(c.avg_battle),
+    // `?? 0` rather than `Number(undefined)`: a commander row indexed before the role
+    // derivation existed carries nulls, so the bucket's average over them is null too, and
+    // NaN in a `real NOT NULL` column is a write that fails at the database rather than a
+    // figure anybody can read. Zero is what the column defaults to and what the next run
+    // overwrites.
+    avgRamp: Number(c.avg_ramp ?? 0), avgDraw: Number(c.avg_draw ?? 0),
+    avgRemoval: Number(c.avg_removal ?? 0), avgWipes: Number(c.avg_wipes ?? 0),
+    withRoles: Number(c.with_roles ?? 0),
     avgCurve: curves.get(String(c.condition)) ?? null,
   }));
 
@@ -515,6 +548,39 @@ async function main() {
   console.log(`\npublished ${stapleRows.length} staple rows across ${byCondition.size} conditions`);
   if (compRows.length > 0) {
     console.log(`published ${compRows.length} identity composition rows`);
+    // THE DERIVATION IS THE REVIEW, which is this script's own standing rule. Sub-project 2
+    // builds the fill against these numbers, so the output is what anyone disputing them
+    // argues with — a threshold nobody can see the working for is an asserted constant with
+    // extra steps.
+    console.log(
+      `\n== role targets per condition ==   flat: ` +
+      `ramp ${ROLE_TARGETS.ramp} · draw ${ROLE_TARGETS.draw} · ` +
+      `removal ${ROLE_TARGETS.removal} · wipes ${ROLE_TARGETS.wipes}`,
+    );
+    console.log(
+      `${pad("condition", 12)}${num("land", 7)}${num("creature", 10)}` +
+      `${num("ramp", 7)}${num("draw", 7)}${num("removal", 9)}${num("wipes", 7)}`,
+    );
+    for (const c of compRows) {
+      console.log(
+        pad(c.condition, 12) + num(c.avgLand.toFixed(1), 7) + num(c.avgCreature.toFixed(1), 10) +
+        num(c.avgRamp.toFixed(1), 7) + num(c.avgDraw.toFixed(1), 7) +
+        num(c.avgRemoval.toFixed(1), 9) + num(c.avgWipes.toFixed(1), 7),
+      );
+    }
+    const allZero = compRows.every(
+      (c) => c.avgRamp === 0 && c.avgDraw === 0 && c.avgRemoval === 0 && c.avgWipes === 0,
+    );
+    if (allZero) {
+      // NOT a refusal: it is the legitimate state of a database whose index predates the role
+      // derivation, and the columns default to 0 for exactly that reason. But a table of
+      // zeroes read as targets would tell every deck it wants no ramp, so it says which.
+      console.log(
+        `\n  EVERY role target is 0. That is the pre-derivation state — no commander row ` +
+        `carries\n  avg_ramp yet — and NOT a measurement. Run db:build:index first; these ` +
+        `columns are\n  overwritten by the next run.`,
+      );
+    }
   } else {
     console.log(
       `derived NO composition rows — the previous ones (if any) are left standing rather ` +

@@ -154,6 +154,12 @@ const insertScore = (
 // clear the loop reaches afterwards, not the loop.
 const buildWithRealClear = (oracleId: string, name: string) =>
   buildCommanderIndex({
+    // The role pass is injected empty for the same reason the pair pass is: this probe is
+    // about the LOCK. Letting the default run would load the whole
+    // `commander_support_cards` x `cards` join and UPDATE every `commander_support` row on
+    // each call, and on a partially seeded scratch branch it aborts with `role targets
+    // REFUSED` for a reason that has nothing to do with what is under test.
+    deriveRoleTargets: async () => ({ written: 0, pairsWritten: 0, zeroWipes: 0 }),
     loadCommanders: async () => [
       { oracleId, name, colorIdentity: [], typeLine: "Legendary Creature", oracleText: "" },
     ],

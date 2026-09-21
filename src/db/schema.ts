@@ -890,6 +890,27 @@ export const commanderSupport = pgTable("commander_support", {
   avgBattle: integer("avg_battle"),
   /** `panels.mana_curve` — counts per mana value. Null on the same terms. */
   avgCurve: jsonb("avg_curve").$type<Record<string, number>>(),
+  /**
+   * Expected count of each functional role in a deck for this commander, MEASURED.
+   *
+   * Derived as sum(inclusion) over `commander_support_cards` filtered by the app's own
+   * `classifyRoles` — never a second copy of those patterns — reading the FRONT FACE only, via
+   * `castFaceText`. `oracle_text` holds both faces, so without that split a land-backed MDFC's
+   * `{T}: Add {R}` reads as ramp: the mean ramp target is 8.5 on whole text against 7.8 on the
+   * front face, and the commanders measuring exactly zero wipes rise from 369 to 390.
+   *
+   * NULLABLE, because a row written by an index build older than this derivation carries no
+   * figure and the basis chain must fall through rather than read a fabricated zero.
+   *
+   * UNSCALED, deliberately. EDHREC's list covers 45.2 of the 63.5 non-land cards in an average
+   * deck, a ratio of 0.711 — but scaling by it is NOT earned: measured against 19 human-built
+   * decks, derived beats scaled on three roles of four and removal is the lone exception by
+   * 0.11, which is inside the noise of that sample. Ship the number that was measured.
+   */
+  avgRamp: real("avg_ramp"),
+  avgDraw: real("avg_draw"),
+  avgRemoval: real("avg_removal"),
+  avgWipes: real("avg_wipes"),
   computedAt: timestamp("computed_at").notNull().defaultNow(),
 }, (t) => [
   // The enum options above only narrow the TypeScript type; without these the
@@ -963,6 +984,22 @@ export const commanderPairSupport = pgTable("commander_pair_support", {
   avgEnchantment: integer("avg_enchantment"),
   avgPlaneswalker: integer("avg_planeswalker"),
   avgBattle: integer("avg_battle"),
+  /**
+   * The four role targets for the PAIR, derived from `commander_pair_support_cards`.
+   *
+   * Here because the basis chain's pair rung is read BEFORE the commander rung, so without
+   * them a partner deck resolves `of: "pair"` and gets measured types with no roles beside
+   * them — which is the precise disagreement these columns exist to prevent, arriving through
+   * the one rung that had been left out.
+   *
+   * Nullable for the same reason as the commander rung's: a pair row written before this
+   * derivation existed carries no figure, and the chain must fall through rather than read a
+   * fabricated zero.
+   */
+  avgRamp: real("avg_ramp"),
+  avgDraw: real("avg_draw"),
+  avgRemoval: real("avg_removal"),
+  avgWipes: real("avg_wipes"),
   avgCurve: jsonb("avg_curve").$type<Record<string, number>>(),
   computedAt: timestamp("computed_at").notNull().defaultNow(),
 }, (t) => [
@@ -1120,10 +1157,35 @@ export const identityComposition = pgTable("identity_composition", {
   avgPlaneswalker: real("avg_planeswalker").notNull(),
   avgBattle: real("avg_battle").notNull(),
   avgCurve: jsonb("avg_curve").$type<Record<string, number>>(),
+  /**
+   * The same four role targets, for the identity and count rungs of the basis chain.
+   *
+   * A rung that delivered a type composition with no roles beside it would put measured types
+   * next to flat roles on one deck — the exact disagreement §4A.6 of the foundation spec names
+   * as the bug.
+   *
+   * `.default(0)` IS REQUIRED, not cosmetic: `ALTER TABLE ... ADD COLUMN real NOT NULL` with no
+   * default FAILS on a populated table, and this one is populated by the time the migration
+   * runs. Zero is safe because the very next `db:build:staples` overwrites every row.
+   */
+  avgRamp: real("avg_ramp").notNull().default(0),
+  avgDraw: real("avg_draw").notNull().default(0),
+  avgRemoval: real("avg_removal").notNull().default(0),
+  avgWipes: real("avg_wipes").notNull().default(0),
   /** The bucket's size — the sample bar's own witness. */
   commanders: integer("commanders").notNull(),
-  /** How many of them actually carried a composition. The denominator behind the averages. */
+  /** How many of them actually carried a composition. The denominator behind the TYPE
+   *  averages, and only those. */
   withComposition: integer("with_composition").notNull(),
+  /**
+   * How many carried ROLE figures — the denominator behind `avg_ramp` and its three siblings.
+   *
+   * Its own column rather than sharing `with_composition`, because the two populations are
+   * genuinely different until one index run has covered both: a commander row written before
+   * the role pass existed carries a composition and no roles. Sharing the denominator would
+   * publish a mean over ten commanders while the row claimed two hundred.
+   */
+  withRoles: integer("with_roles").notNull().default(0),
   computedAt: timestamp("computed_at").notNull().defaultNow(),
 }, (t) => [
   // An average over nothing is not an average. A bucket where no commander carried a

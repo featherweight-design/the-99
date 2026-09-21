@@ -1158,6 +1158,52 @@ Package manager is **pnpm** (pinned via `packageManager` in package.json) — ne
   unreachable. Six mutations, all six fail; the counts are in its header. Point it at
   `local-dev` or a scratch Neon branch, **never production**.
 
+- `pnpm probe:role-targets` proves `deriveAndWriteRoleTargets` against a real Postgres — the
+  four measured role targets, per commander and per pair.
+
+  It exists because every one of `seed-index.test.ts`'s 22 cases INJECTS this pass. That is the
+  right trade for those tests — a default reaching the database would make each of them need a
+  real Postgres — and it leaves the writer's whole SQL surface asserted by nobody: the support
+  read, the per-commander UPDATE, the pair key split, the clearing of a row the derivation no
+  longer reaches, and the refusal. The derivation itself is pure and unit tested; none of that
+  is. The cost of the gap is on record in the PR that added it — a comment written with `//`
+  INSIDE a SQL template shipped in `build-staples.ts` and would have failed every run of the
+  derivation, past typecheck, past lint, past 7,456 tests. Running the thing is what caught it,
+  and then caught the first FIX too, which quoted `//` in backticks and closed the template.
+
+  Nineteen checks in five sections. Its refusal case turns on OWNERSHIP: a refused publish
+  clears the roles on exactly the rows that run replaced — the ids it recorded as it replaced
+  them — and leaves every other commander's standing. Ids rather than a `computed_at` range,
+  which looks like the same rule and is weaker: a range also covers a CONCURRENT build's rows,
+  so a refusal keyed on time would clear that build's freshly derived roles and leave its
+  support lists without targets. The probe plants a sentinel on each side, because one on the
+  owned side alone cannot tell a correct clear from a blanket one. Two of them need a state no database here carries, so the
+  probe BUILDS it: a header that is not `ok` while still carrying support cards. The derivation
+  reads `commander_support_cards`, and the index loop leaves a degraded header and its previous
+  cards in place — so without a restriction those stale commanders count toward a floor whose
+  denominator is `ok` alone, and a run reaching well under 90% of the current `ok` commanders
+  passes it. Every row on staging and local-dev is `ok` and `degraded` is never written, so
+  nothing would assert that rule otherwise; with the restriction reverted the run reads
+  `written: 3280` against 3,279.
+
+  It reaches the refusal by RAISING the denominator rather than
+  lowering coverage: rows with `synergy_state = 'ok'` and no support cards count in `ok` and
+  derive nothing, so enough of them tips the floor.
+
+  **It stamps every commander row it inserts and sweeps its own debris on the way in**, because
+  a mutation run behind it was killed part-way through and its `finally` never ran, leaving a
+  fixture row that inflated the next run's `ok` count. A STAMP rather than a shape: "an ok
+  commander with no support cards" is exactly what section 2 has to create, so sweeping on that
+  would be a script that deletes a real row the day the catalog produces one. The pair sentinel
+  carries no stamp — `commander_pair_support` has no prose column — so it is ANCHORED on a
+  stamped commander id and swept by key, which is the same rule rather than an exception to it.
+
+  Like `probe:catalog-stamp` it cannot scope itself to a fixture user: the pass operates on the
+  whole table by design. So the four role columns on every commander and pair row are captured
+  first and restored wholesale — restored, never re-derived, since re-running the pass would
+  leave the table holding this script's output rather than what it found. Point it at
+  `local-dev` or a scratch Neon branch, **never production**.
+
 - `pnpm measure:tutors` prints what `classifyTutor` does to the live catalog — the 22-card
   fixture with a reason per card, the corpus splits, reach against a real combo piece, and the
   first 60 parses for reading. Read-only.

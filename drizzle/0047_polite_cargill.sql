@@ -1,0 +1,1 @@
+ALTER TABLE "identity_composition" ADD COLUMN "with_roles" integer DEFAULT 0 NOT NULL;
