@@ -7,6 +7,16 @@ Round 3's brief is `docs/superpowers/design-briefs/2026-09-20-the-declaration.md
 **Verdict: 🟠 Orange on one item.** Everything else in the round was resolved by engineering and
 is recorded in that audit — you do not need to redraw any of it.
 
+> **SUPERSEDED IN PART, 2026-09-21.** Hugh ruled directly to Design after this was written, and
+> two of his rulings change what is being asked for here. **The "you said X / change what you
+> said" framing is dropped entirely** — a declaration now travels with the VERSION it was made
+> for (*Version 1: 4/5 split, chose 4*), so there is no stale claim for a drift row to reconcile
+> and §2's third row largely dissolves with it. **And there is no skip** — a declaration may be
+> left unanswered but not dismissed, so §4's skip caveat is moot and the skip control comes out
+> of every drawn state. What still stands is the narrow half: **the permitted side can be a
+> single bracket** (`[2]`, `[3]`, `[4]`), and §E's split-pill has no reading for one. Read §3
+> item 1 as the live ask; items 2 and 3 are withdrawn.
+
 ## §1 What changed underneath the round
 
 A ruling landed on 2026-09-20, after you drew R3: **the 3-vs-4 boundary resolves rather than
@@ -41,17 +51,13 @@ that got stronger.
 
 ## §4 Not open
 
-The ask, the declared and skipped READINGS, the lean, the reasoning modal and the climb are all
+The ask, the declared reading, the lean, the reasoning modal and the climb are all
 drawn and settled — R3 is otherwise complete as a set of pictures. Only 1/2 and 4/5 are ever
 ranges. Both widths, as always.
 
-**One caveat on the skip, so nobody reads "settled" too widely:** the skipped *treatment* is
-drawn and needs nothing from Design. What a permanent skip is STORED as is still open — Round 3's
-brief §3.1 and §4.5 leave it so, and the audit confirms there is no state for it: `declared` is a
-nullable integer with a 1–5 check constraint, and null already means "not asked", so it cannot
-also mean "asked and declined". That is an engineering and spec decision (it is the one thing in
-this round that would need a migration), not a redraw — it is named here only so the addendum is
-not read as closing it.
+**The skip is gone.** A declaration may be left unanswered and never dismissed, so the skipped
+treatment and the storage question that came with it are both withdrawn — `declared`'s null means
+*unanswered* and needs to mean nothing else.
 
 ## §5 One thing the audit already fixed, so you do not redraw it
 
