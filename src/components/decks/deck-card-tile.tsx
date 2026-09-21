@@ -30,7 +30,7 @@ import { availabilityState } from "../../lib/decks/availability";
 import type { DeckDetailCard } from "../../lib/decks/grouping";
 import { DECK_REMOVE_FALLBACK_MESSAGE } from "../../lib/decks/mutation-result";
 import { AvailabilityMarker } from "../ui/availability-marker";
-import { CardTileCaption } from "../ui/card-tile-caption";
+import { CardTileCaption, TILE_ART_CLIP } from "../ui/card-tile-caption";
 import { cardFactName, cardMarkCopy } from "../../lib/copy/card-mark";
 import { CardFactMark } from "../cards/card-fact-mark";
 import { FactTooltip } from "../cards/fact-tooltip";
@@ -228,7 +228,11 @@ export function DeckCardTile({
                art (call D). The 1px inner edge stays — it keeps a pale card
                frame from bleeding into the tile plate, which is a job nothing
                else does. */
-            className="block w-full shadow-[inset_0_0_0_1px_rgba(0,0,0,0.25)]"
+            /* `TILE_ART_CLIP` rounds the art's BOTTOM corners, which the shell does not:
+               they sit against the caption rather than against the tile's edge, so a
+               card whose Scryfall JPEG carries a white corner matte drew a pale notch
+               there. The 1px inner edge follows the radius with it. */
+            className={`block w-full shadow-[inset_0_0_0_1px_rgba(0,0,0,0.25)] ${TILE_ART_CLIP}`}
             style={{
               aspectRatio: TILE_ART_RATIO,
               // A card with no art draws a plate rather than a colour-identity

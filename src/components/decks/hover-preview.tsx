@@ -83,16 +83,36 @@ const PreviewContext = createContext<PreviewApi | null>(null);
  *
  * Right of the cursor by default, flipping left when the box would cross the
  * viewport's edge — a fixed box is bounded by the window, not by the list, so
- * the pane no longer bounds it. Vertically centred on the cursor and clamped to
- * the window with the same margin.
+ * the pane no longer bounds it.
+ *
+ * THE SAME RULE ON THE OTHER AXIS: below the cursor when the box fits under it,
+ * above when it does not. It used to be CENTRED on the cursor and clamped, which
+ * put half the box over the rows the reader had just read and half over the ones
+ * they were about to — and near either end of the window the clamp slid it
+ * somewhere neither, so the box's relationship to the pointer changed with how
+ * far down the list the pointer happened to be. Below-or-above keeps one
+ * relationship at every height: the box hangs off the cursor on whichever side
+ * has room for it. Ruled by Hugh on 2026-09-21 against the built surface.
+ *
+ * At a 900px window a 352px box fits below a cursor down to y≈522, so the lower
+ * two fifths of the screen flip above. That is the rule working rather than a
+ * fallback — "always below" is not available to a box this tall.
+ *
+ * Both sides are still clamped to the margin, because a window shorter than the
+ * box has no side that fits and the box must not sit half off-screen.
  */
 function place(x: number, y: number): PreviewBox {
   const rightward = x + GUTTER;
   const left = rightward + WIDTH + MARGIN <= window.innerWidth
     ? rightward
     : Math.max(MARGIN, x - GUTTER - WIDTH);
-  const centred = y - HEIGHT / 2;
-  const top = clamp(centred, MARGIN, window.innerHeight - HEIGHT - MARGIN);
+  const below = y + GUTTER;
+  const downward = below + HEIGHT + MARGIN <= window.innerHeight;
+  const top = clamp(
+    downward ? below : y - GUTTER - HEIGHT,
+    MARGIN,
+    window.innerHeight - HEIGHT - MARGIN,
+  );
   return { top, left };
 }
 

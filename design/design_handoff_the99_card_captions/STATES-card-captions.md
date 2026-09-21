@@ -73,6 +73,7 @@ renamed front face.
 |---|---|---|
 | tile radius | 10px | 9px |
 | art | 63/88, **no scrim**, `inset 0 0 0 1px rgba(0,0,0,0.25)` only | same |
+| art bottom corners | **10px radius** (`TILE_ART_CLIP`, added 2026-09-21) | **9px** |
 | art height | 249px | 244px |
 | caption height | **46px** fixed | **52px** fixed |
 | meta line | mono 9.5px, 14px box, gap 6 | mono 9px |
@@ -80,6 +81,16 @@ renamed front face.
 | name | 13px / 600, one line, never clamped | 12px / 600 |
 | `//` | mono 11px, gap 6 | mono 11px |
 | caption pad | left 10px; right 3px with the `✕`, 10px without | left 9px; right 3 / 9px |
+
+**The art's BOTTOM corners round themselves**, added 2026-09-21 against the built surface. The
+tile's own radius covers the top two, because they are the tile's corners; the bottom two sit
+against the caption and were square. Scryfall's `normal` images are JPEGs and carry no alpha, so
+the area outside the card's rounded corner is a painted matte — WHITE on 5 of 12 printings
+sampled — and a square bottom corner drew it as a pale notch right above the caption. The rule
+for any box drawing a full card image is **radius ≥ 3.1% of its rendered width**, the card's own
+corner arc; this box measures 179px on the deck's Card view and 176px on `/collection` at 1300,
+so 5.6px is the figure to beat and the tile's own radius clears it. `probe:card-art-corners`
+reads the painted pixel rather than the class.
 | `✕` | 32×32, tile-hover reveal | **44×44**, always drawn |
 | tile total | **295px** | **296px** |
 | draft edge | `inset 2px 0 0 0 --accent` on the caption | same |

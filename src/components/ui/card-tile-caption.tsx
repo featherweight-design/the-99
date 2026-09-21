@@ -64,6 +64,30 @@ export const CARD_TILE_SLOT_BOX =
   "inline-flex items-center gap-[4px] flex-none rounded-[4px] px-[5px] py-[3px] " +
   "font-mono font-semibold text-[8.5px] md:text-[9px]";
 
+/**
+ * THE ART BOX'S OWN BOTTOM CORNERS, on every tile that pairs art with this caption.
+ *
+ * Scryfall's `normal` images are JPEGs, so they carry no alpha and the area outside the
+ * card's rounded corner is a painted MATTE — and the matte colour is not consistent. Of
+ * twelve printings sampled on 2026-09-21, five are white (`Dokuchi Silencer`,
+ * `Mystical Tutor`, `Pact of Negation`, `The Ozolith`, `Aggravated Assault`) and seven
+ * black. On a white one the corner reads as a pale notch against the tile plate.
+ *
+ * The tile's own shell rounds the art's TOP corners, because they are the tile's corners.
+ * The bottom two are not: the caption sits directly under them, so nothing clipped the
+ * matte and it drew as a ~6px white band immediately above the caption — reported by Hugh
+ * on 2026-09-21 against the deck's Card view.
+ *
+ * THE RULE, for any box drawing a full card image: its radius must be at least **3.1% of
+ * its rendered width**, which is the card's own corner arc (15px at Scryfall's 488px
+ * width). Measured on the build: the art box is 179px on the deck's Card view and 176px
+ * on `/collection`'s grid at 1300, 171 and 173 at 390 — so 5.6px is the figure to beat and
+ * the shell's own 9/10px clears it with room. It is stated as the shell's radius rather
+ * than as a percentage so the two ends of the tile round by the same amount; a percentage
+ * radius would be elliptical on a 63:88 box and differ top from bottom.
+ */
+export const TILE_ART_CLIP = "rounded-b-[9px] md:rounded-b-[10px]";
+
 /** Draws an occupant's edge inside its box instead of around it. */
 export function slotOutline(colour: string, dashed = false) {
   return {

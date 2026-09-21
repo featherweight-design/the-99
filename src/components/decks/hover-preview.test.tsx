@@ -182,15 +182,42 @@ describe("HoverPreviewProvider", () => {
     expect(preview()).toBeNull();
   });
 
-  it("opens right of the pointer, vertically centred on it", () => {
+  it("opens right of the pointer and below it, where the box fits under it", () => {
+    render(<Harness rows={[{ name: "a", imageUri: ART, box: LEFT_COLUMN }]} />);
+
+    fireEvent.mouseEnter(screen.getByTestId("a"), { clientX: 300, clientY: 200 });
+    act(() => void vi.advanceTimersByTime(240));
+
+    // 300 + 18, and 200 + 18. In a 768px window 218 + 352 + 8 is 578, so it fits.
+    expect(preview()?.style.left).toBe("318px");
+    expect(preview()?.style.top).toBe("218px");
+  });
+
+  it("flips above the pointer when the box does not fit under it", () => {
+    // The vertical twin of the edge flip: one relationship to the pointer at
+    // every height, rather than a centred box that the clamp slid around.
     render(<Harness rows={[{ name: "a", imageUri: ART, box: LEFT_COLUMN }]} />);
 
     fireEvent.mouseEnter(screen.getByTestId("a"), { clientX: 300, clientY: 400 });
     act(() => void vi.advanceTimersByTime(240));
 
-    // 300 + 18, and 400 − 176.
-    expect(preview()?.style.left).toBe("318px");
-    expect(preview()?.style.top).toBe("224px");
+    // 418 + 352 + 8 is 778, past the 768px window, so 400 − 18 − 352.
+    expect(preview()?.style.top).toBe("30px");
+  });
+
+  it("puts the flip at the last y that fits, and not before it", () => {
+    // y + GUTTER + HEIGHT + MARGIN <= 768 makes 390 the last downward cursor:
+    // 768 − 352 − 8 − 18. One pixel further and the box moves 387px, which is
+    // the jump a boundary written the wrong way round would hide.
+    render(<Harness rows={[{ name: "a", imageUri: ART, box: LEFT_COLUMN }]} />);
+
+    fireEvent.mouseEnter(screen.getByTestId("a"), { clientX: 300, clientY: 390 });
+    act(() => void vi.advanceTimersByTime(240));
+    expect(preview()?.style.top).toBe("408px");
+
+    fireEvent.mouseMove(screen.getByTestId("a"), { clientX: 300, clientY: 391 });
+    flushFrames();
+    expect(preview()?.style.top).toBe("21px");
   });
 
   it("flips left of the pointer at the window's right edge", () => {
@@ -206,16 +233,29 @@ describe("HoverPreviewProvider", () => {
   });
 
   it("holds the box inside the window at either end", () => {
+    // The clamp survives the below-or-above rule, because neither side fits for
+    // a cursor close enough to an edge: above it at y=10 would be −360.
     render(<Harness rows={[{ name: "a", imageUri: ART, box: LEFT_COLUMN }]} />);
 
     fireEvent.mouseEnter(screen.getByTestId("a"), { clientX: 300, clientY: 10 });
     act(() => void vi.advanceTimersByTime(240));
-    expect(preview()?.style.top).toBe("8px");
+    // 10 + 18 fits under a 768px window, so this one is the rule rather than the
+    // clamp — and it is 20px clear of the clamp's own 8px floor.
+    expect(preview()?.style.top).toBe("28px");
 
     fireEvent.mouseMove(screen.getByTestId("a"), { clientX: 300, clientY: 760 });
     flushFrames();
-    // 768 − 352 − 8.
-    expect(preview()?.style.top).toBe("408px");
+    // Above: 760 − 18 − 352 = 390, inside the window and under the 408px ceiling.
+    expect(preview()?.style.top).toBe("390px");
+
+    // A window shorter than the box has no side that fits, and the clamp is what
+    // stops the box hanging off the top.
+    const height = window.innerHeight;
+    Object.defineProperty(window, "innerHeight", { value: 300, configurable: true });
+    fireEvent.mouseMove(screen.getByTestId("a"), { clientX: 300, clientY: 280 });
+    flushFrames();
+    expect(preview()?.style.top).toBe("8px");
+    Object.defineProperty(window, "innerHeight", { value: height, configurable: true });
   });
 
   it("follows the pointer while it is open", () => {
@@ -231,7 +271,8 @@ describe("HoverPreviewProvider", () => {
     flushFrames();
 
     expect(preview()?.style.left).toBe("518px");
-    expect(preview()?.style.top).toBe("124px");
+    // 300 + 18: still under the cursor, because 318 + 352 + 8 fits in 768.
+    expect(preview()?.style.top).toBe("318px");
   });
 
   it("writes once per frame however often the pointer reports", () => {

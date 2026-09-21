@@ -718,6 +718,15 @@ on this row.
 | aspect-ratio | 63/88 | 63/88 |
 | position | relative | relative |
 | box-shadow | `inset 0 0 0 1px rgba(0,0,0,0.25)` | `inset 0 0 0 1px rgba(0,0,0,0.25)` |
+| border-bottom-left-radius / -right | 9px | 10px |
+
+> **The art box rounds its own BOTTOM corners** (`TILE_ART_CLIP`, 2026-09-21). The tile's shell
+> rounds the top two, because they are the tile's corners; the bottom two sit against the caption
+> and were square. Scryfall's `normal` images are JPEGs with no alpha, so the area outside the
+> card's rounded corner is a painted matte — white on 5 of 12 printings sampled — and a square
+> bottom corner drew that matte as a pale notch above the caption. The rule for any box drawing a
+> full card image: **radius ≥ 3.1% of its rendered width**, the card's own corner arc. Measured on
+> the build, this box is 176px at 1300 and 173px at 390, so 5.5px is the figure to beat.
 
 > **The bottom wash is gone — card captions (R1), call D.** It was
 > `inset 0 -40px 40px -30px rgba(0,0,0,0.6)` at the phone and `-50px/-34px` above `md:`, and it
