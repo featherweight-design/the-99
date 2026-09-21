@@ -546,7 +546,7 @@ Same 7px dot/ring as desktop.
 
 **Zero selection (locked strings — unchanged)**
 
-- `recommendationsCopy.build.stickyPromise` — "We’ll build the whole 99, as far as your collection reaches."
+- `recommendationsCopy.build.stickyPromise` — "We’ll build the whole 99, as far as your collection reaches"
   Was "We'll fill 68 of the 99 — roles and lands. The rest is yours." until the fill stopped
   stopping at the role floors and the mana base. It reaches the whole body now, so the old
   sentence under-promised by 31 cards and its "The rest is yours" named a remainder that no
