@@ -1908,7 +1908,13 @@ export async function chooseBulkFill(
   deckId: string,
   openSlots: number,
 ): Promise<{ ok: true; oracleIds: string[] } | { ok: false; message: string }> {
-  if (openSlots <= 0) return { ok: true, oracleIds: [] };
+  // A SERVER ACTION IS A PUBLIC ENDPOINT, and `openSlots` arrives from the caller. `<= 0` is
+  // not enough on its own: `NaN` passes it (every comparison with NaN is false), and reaches
+  // `planFill` as `slots: NaN`, where `filledSoFar() >= limit` is false forever — so the guard
+  // meant to cap the answer at a handful of slots instead lets it plan a whole 99. A
+  // fractional 1.5 has a smaller version of the same problem, admitting two rows before the
+  // check bites.
+  if (!Number.isInteger(openSlots) || openSlots <= 0) return { ok: true, oracleIds: [] };
 
   // EVERY READ IS INSIDE THE `try`, including the two guards. `requireDeck` throws
   // `deck not found` for a deck the reader does not own or one deleted while the list was
@@ -1998,9 +2004,19 @@ export async function chooseBulkFill(
     // So the residual is dropped and the slot stays open. An open slot can still be fixed by
     // a player who buys the card the deck wants; a slot spent on a card the deck does not
     // need cannot be, without undoing it first.
+    // ONE TICK IS ONE CARD, so a stacked row cannot be expressed here. `plan.rows` is
+    // quantity-aware — the land sweep puts several copies of one basic in a single row — while
+    // this answers with ids and `runTopOff` inserts each at quantity 1. Returning a row of
+    // three Forests as one id would promise three cards and sleeve one, and the count on the
+    // button would be wrong in the player's favour, which is the worse direction.
+    //
+    // Dropped rather than expanded into repeats: the list this feeds ticks each candidate at
+    // most once, so three copies have nowhere to go on that surface either.
     return {
       ok: true,
-      oracleIds: plan.rows.filter((r) => r.role !== "other").map((r) => r.oracleId),
+      oracleIds: plan.rows
+        .filter((r) => r.role !== "other" && r.quantity === 1)
+        .map((r) => r.oracleId),
     };
   } catch (err) {
     console.error("chooseBulkFill failed", err);

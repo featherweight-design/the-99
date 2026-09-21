@@ -2030,6 +2030,42 @@ describe("chooseBulkFill", () => {
     expect(result.oracleIds.length).toBe(2);
   });
 
+  // A SERVER ACTION IS A PUBLIC ENDPOINT. `NaN` passes a `<= 0` guard — every comparison with
+  // NaN is false — and reaches `planFill` as `slots: NaN`, where the limit check is false
+  // forever, so the cap meant to hold the answer to a handful of slots planned a whole body.
+  it.each([
+    ["NaN", Number.NaN],
+    ["a fraction", 1.5],
+    ["a negative", -3],
+    ["Infinity", Number.POSITIVE_INFINITY],
+  ])("offers nothing for %s slots", async (_label, slots) => {
+    stub.state.decks.push({ id: "bulk-n", userId: "user_1", commanderOracleId: COMMANDER_ORACLE });
+    stub.state.cards.push(commanderCard());
+    stub.state.collectionItems.push(...Array.from({ length: 6 }, (_, i) => rampCard(i)));
+
+    const result = await chooseBulkFill("bulk-n", slots);
+
+    expect(result).toEqual({ ok: true, oracleIds: [] });
+  });
+
+  // ONE TICK IS ONE CARD. The land sweep stacks copies of a basic into a single row, and this
+  // action answers with ids that `runTopOff` inserts at quantity 1 — so a row of three Forests
+  // returned as one id promises three and sleeves one, with the button's count wrong in the
+  // player's favour.
+  it("never offers a stacked row", async () => {
+    stub.state.decks.push({ id: "bulk-s", userId: "user_1", commanderOracleId: COMMANDER_ORACLE });
+    stub.state.cards.push(commanderCard());
+    // Basics only: nothing closes a spell floor, so the land sweep is what fills the slots and
+    // it stacks the copies it finds.
+    stub.state.collectionItems.push(forestCard(1, 4));
+
+    const result = await chooseBulkFill("bulk-s", 3);
+
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+    expect(result.oracleIds).toEqual([]);
+  });
+
   it("never offers a residual card", async () => {
     // `planFill` fills whatever `slots` remain with the next cards by preference once the
     // floors and the mana base are done — right for a CREATE, which owes a whole 99. Here it
