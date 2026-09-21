@@ -9,17 +9,11 @@ import { useState } from "react";
 import type { SearchResult } from "../../app/decks/[id]/search-action";
 import { deckImportCopy } from "../../lib/copy/deck-import";
 import { deckCounts, type DeckDetailCard, type DeckUnresolvedRow } from "../../lib/decks/grouping";
+import { recommendedMix } from "../../lib/decks/mix";
 
-const TEST_MIX = {
-  cells: {
-    ramp: { label: "Ramp", target: 10, advisory: false },
-    draw: { label: "Draw", target: 10, advisory: false },
-    removal: { label: "Removal", target: 8, advisory: false },
-    wipes: { label: "Wipes", target: 3, advisory: false },
-    land: { label: "Land", target: 37, advisory: true },
-  },
-  measured: false,
-} as const;
+/** The asserted baseline, through the real function rather than restated — a hand-built
+ *  literal drifts from the type the moment a field is added, which is how 120 of these broke. */
+const TEST_MIX = recommendedMix(null, false);
 
 const searchCards = vi.fn();
 const resolveUnresolvedRow = vi.fn(async () => ({ ok: true as const }));

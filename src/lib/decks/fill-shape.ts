@@ -62,7 +62,9 @@ export function tallyTypes(rows: readonly TypeCountable[]): CompositionTargets {
  * is an Instant you cast.
  */
 function bestGap(typeLine: string, deficits: TypeDeficits): number {
-  const front = typeLine.split(" // ")[0].toLowerCase();
+  // Defaulted: this is a comparator, and a row with no type line must sort neutrally rather
+  // than throw. A crash inside a sort takes the whole surface down over an ordering.
+  const front = (typeLine ?? "").split(" // ")[0].toLowerCase();
   let best = Number.NEGATIVE_INFINITY;
   for (const axis of GAP_AXES) {
     if (!new RegExp(`\\b${axis}\\b`).test(front)) continue;
