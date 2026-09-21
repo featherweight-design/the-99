@@ -4,6 +4,13 @@ const rows = vi.hoisted(() => ({ value: [] as unknown[] }));
 const committed = vi.hoisted(() => ({ value: new Map<string, { id: string; name: string }>() }));
 const selected = vi.hoisted(() => ({ value: [] as Record<string, unknown>[] }));
 const grouped = vi.hoisted(() => ({ value: [] as unknown[][] }));
+/** Which table each select read FROM. The pair branch and the merged-singles branch differ
+ *  in their source before they differ in anything a shaped row can show, so a test that only
+ *  read the projection could not tell them apart. */
+const sources = vi.hoisted(() => ({ value: [] as string[] }));
+/** Rows the PAIR query resolves to, separately from the singles. One fixture for both would
+ *  make every pair test short-circuit on the singles' rows and assert nothing. */
+const pairRows = vi.hoisted(() => ({ value: null as unknown[] | null }));
 
 // One chainable builder answers both queries this module builds: the ownership
 // subquery, which ends at `.as`, and the outer select, which is awaited at
@@ -17,9 +24,29 @@ vi.mock("../../../db", () => {
     as: () => ({ oracleId: "owned.oracle_id", qty: "owned.qty" }),
     then: (resolve: (value: unknown) => void) => resolve(rows.value),
   };
-  for (const step of ["from", "innerJoin", "leftJoin", "where"]) {
+  for (const step of ["innerJoin", "leftJoin", "where"]) {
     chain[step] = () => chain;
   }
+  // Drizzle tables carry their SQL name on a symbol; the mock reads the one property a test
+  // can name instead, so a rename in schema.ts surfaces here rather than passing silently.
+  chain.from = (table: unknown) => {
+    // Drizzle keeps the SQL name on a symbol, `Symbol(drizzle:Name)`. Read it by description
+    // rather than importing a private export, so this survives a Drizzle minor.
+    const named = Object.getOwnPropertySymbols(table as object)
+      .find((sym) => sym.description === "drizzle:Name");
+    const name = named ? String((table as Record<symbol, unknown>)[named]) : String(table);
+    sources.value.push(name);
+    // The pair query is awaited at `.where`, the singles at `.groupBy`, so the pair branch
+    // needs its own resolution rather than the shared `then` below.
+    if (name === "commander_pair_support_cards" && pairRows.value !== null) {
+      const pairChain: Record<string, unknown> = {
+        then: (resolve: (v: unknown) => void) => resolve(pairRows.value),
+      };
+      for (const step of ["innerJoin", "leftJoin", "where"]) pairChain[step] = () => pairChain;
+      return pairChain;
+    }
+    return chain;
+  };
   // The group-by's arguments are captured for the same reason the projection is:
   // the image column has to be grouped exactly when it is selected, and those two
   // drifted apart once — the projection went opt-in while the group-by kept
@@ -53,6 +80,8 @@ beforeEach(() => {
   committed.value = new Map();
   selected.value = [];
   grouped.value = [];
+  sources.value = [];
+  pairRows.value = null;
 });
 
 /** The outer select's projection — the second `db.select` this module makes. */
@@ -158,4 +187,46 @@ describe("readSynergyCards", () => {
     const out = await readSynergyCards("user", ["cmdr"], []);
     expect(out.map((c) => c.committedTo)).toEqual(["Atraxa", null]);
   });
+});
+
+describe("readSynergyCards — the pair's own list", () => {
+  const row = (over: Record<string, unknown> = {}) => ({
+    oracleId: "c1", name: "Card One", typeLine: "Creature — Human", manaCost: "{1}{G}",
+    imageUri: null, inclusion: 40, synergy: 0.5, ownedQuantity: 0, ...over,
+  });
+
+  it("reads the pair table for two commanders when a pair list is stored", async () => {
+    pairRows.value = [row({ synergy: 0.9 })];
+    rows.value = [row({ synergy: 0.1 })];
+
+    const out = await readSynergyCards("u", ["a", "b"], []);
+
+    expect(sources.value).toContain("commander_pair_support_cards");
+    // The FIGURE, not just the table: reading the right table and then shaping the other
+    // query's rows would pass a source assertion and ship the wrong ranking.
+    expect(out[0].synergyPts).toBe(90);
+  });
+
+  it("falls back to the merged singles when no pair list is stored", async () => {
+    // An empty pair list is a pair EDHREC has a header for and no cards under. The merged
+    // singles are still a better answer than an empty panel.
+    pairRows.value = [];
+    rows.value = [row({ synergy: 0.1 })];
+
+    const out = await readSynergyCards("u", ["a", "b"], []);
+
+    expect(sources.value).toContain("commander_support_cards");
+    expect(out[0].synergyPts).toBe(10);
+  });
+
+  it("never reads the pair table for a single commander", async () => {
+    pairRows.value = [row({ synergy: 0.9 })];
+    rows.value = [row({ synergy: 0.1 })];
+
+    const out = await readSynergyCards("u", ["a"], []);
+
+    expect(sources.value).not.toContain("commander_pair_support_cards");
+    expect(out[0].synergyPts).toBe(10);
+  });
+
 });
