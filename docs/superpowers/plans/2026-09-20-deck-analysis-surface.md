@@ -54,7 +54,7 @@ Named before implementation starts, per the repo's split rule. Nine PRs; none ov
 
 | PR | What | Blocked by |
 |---|---|---|
-| **1 — the tab and the payload** | The Analysis tab in `builder-tabs.tsx`, the route segment, `cachedDeckProfile` as its loader, the mix strip moved in, and the empty / loading / refused readings. No verdict content. | — |
+| **1 — the tab and the payload** | The Analysis tab, **its address** (see below), `cachedDeckProfile` behind it, the mix strip moved in, and the empty / loading / refused readings. No verdict content. | — |
 | **2 — receipts reshaped** | `lean.receipts[].tutors` keyed per piece; the deciding combo marked on `BracketLean`. Pure, unit-testable, no UI. | — |
 | **3 — the declaration's write path** | The server action, its refusal rules (never defaulted, never inferred), the skip state, migration if §3.1 goes persisted, and `probe:declaration`. No UI beyond the control it needs. | — |
 | **4 — the verdict block** | Permitted range, the three limits tables, violations with receipts, the population line. Round 2's chrome, which rounds 3 and 4 then sit inside. | Round 2 build |
@@ -70,13 +70,46 @@ Round 2's build, which is the critical path for everything drawn.
 
 ---
 
+## PR 1's first decision: the tab has no address, and the profile is expensive
+
+**`BuilderTabs` is client state.** `builder-view.ts` says so in its own header — switching tabs is
+not a navigation, because making it one would push a history entry per click, and **nothing in the
+app produces a `?tab=` URL**; the page reads the parameter on arrival only. So the obvious shape —
+a route loader that fetches the profile when the Analysis tab is active — **cannot work**: no
+navigation happens when the reader presses the tab, and the loader never re-runs.
+
+That leaves three shapes, and PR 1 has to pick one deliberately rather than discover it:
+
+1. **Fetch on the server, unconditionally**, adding `cachedDeckProfile` to the deck page's
+   existing `Promise.all`. Simple, and **every deck visit pays the profile's cost whether or not
+   the reader opens Analysis** — which is the regression the deck page's own cache exists to
+   prevent.
+2. **Give Analysis a real route segment.** Round 0 argued for a tab partly on the grounds that a
+   collapsed section is "a tab with worse ergonomics and **no address**", so an address is
+   something the frame already wants. Costs a navigation per tab press unless the segment is
+   nested so the shell persists.
+3. **Fetch on demand from the client** when the tab is first pressed, through a server action or
+   route handler, cached in component state for the visit — the pattern
+   `useDiscoveryCache` already establishes for a list a reader flips between.
+
+**Recommendation: 3, unless the measurement below says the profile is cheap enough for 1.** It
+keeps the tab free for every reader who never opens it, needs no new route, and the repo already
+has the caching convention for it.
+
+---
+
 ## What each PR must prove
 
 **PR 1.** A probe that presses the tab rather than visiting a URL — the reason the card mark
 shipped broken into Card view is that the probe swept by URL and the surface was reached by a
 press. It must read the mix strip in its NEW home and assert it is gone from the header, or the
-move is invisible to every check. And it must assert the cache is retired by an edit: build a
-profile, edit the deck, read again, and prove the second read is not the first payload.
+move is invisible to every check.
+
+And it must retire the cache with an input the FINGERPRINT ACTUALLY READS.
+`profileFingerprint` deliberately excludes `auto` and takes no deck name, so "edit the deck"
+is not a proof — a rename or a fill can leave the fingerprint byte-identical while the cache is
+working perfectly, and the check would pass either way. Change a card's quantity, a commander, or
+the declaration, and assert the second read differs from the first.
 
 **PR 2.** Pure unit tests, mutation-proved. The deciding-combo rule reuses `comboLandsEarly`'s
 per-combo predicate rather than a second copy of it.
@@ -125,8 +158,10 @@ written once at launch (PR #770). A plan task at close-out carries the entry and
 
 **How big is a profile payload, and how long does a cold build take?** `cachedDeckProfile` has
 never run in a request. The mix strip's move is justified by ~150px of header; the tab's cost is
-justified by nothing measured yet. Before PR 1 opens, measure a cold and warm
-`loadDeckProfileFromHead` against `local-dev` and against a real 100-card deck, and record both
-figures here — the same way the navigation-performance work measured `/collection` at 1.6MB
+justified by nothing measured yet. `loadDeckProfileFromHead` is the UNCACHED body inside `cachedDeckProfile`, so calling it twice
+measures two cold builds and no cache at all. Measure **`cachedDeckProfile` twice**, and measure
+it against **staging** — it is a read-only measurement and staging is where the real collection
+and the real decks are, which is the standing rule for a bar on new work; `local-dev`'s fixture
+decks would answer a question nobody asked. Record cold and warm here — the same way the navigation-performance work measured `/collection` at 1.6MB
 before deciding anything. A tab that adds a second expensive read to the deck page is a
 regression the decklist's own cache was built to prevent.
