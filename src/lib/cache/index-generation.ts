@@ -34,18 +34,47 @@ const UNSTAMPED = "0";
  * raises outside a request, so a script reaching for this answer must not have to rewrite
  * the query to get it.
  *
- * `max(computed_at)` rather than a single row: this table has one row per commander, and the
- * job stamps each as it writes. Epoch millis computed in SQL, because the column carries no
- * zone and a `Date` built from its rendering takes the reading host's clock with it.
+ * FOUR INPUTS, BECAUSE A TIMESTAMP IS NOT ENOUGH HERE. `loadSkeletonForCommanders` reads
+ * `commander_support`, `commander_pair_support` and `identity_composition`, and each moves
+ * on its own schedule — the index job rebuilds the first two, `db:build:staples` replaces
+ * the third, and it can be run alone.
+ *
+ * The sharper problem is that **the role write carries no timestamp at all.**
+ * `deriveAndWriteRoleTargets` sets `avg_ramp`/`avg_draw`/`avg_removal`/`avg_wipes` and does
+ * not touch `computed_at` — deliberately, because `computed_at >= runStartedAt` is the index
+ * run's own ownership record and moving it in a later pass would corrupt that. So a token
+ * built from `max(computed_at)` alone would sit still through the single event this module
+ * exists for: the first run that writes role averages and flips every deck in the app from
+ * an asserted baseline to a measured one.
+ *
+ * The role COUNTS close that. They go 0 to ~3,279 at the flip and move on any later
+ * re-derivation that reaches a different number of commanders, which is every one that
+ * matters. Not a checksum — two derivations covering the same commanders with different
+ * figures read alike — and the timestamps carry those, since a re-derivation is part of an
+ * index run that stamps them.
+ *
+ * Epoch millis computed in SQL, because the columns carry no zone and a `Date` built from
+ * their rendering takes the reading host's clock with it.
  */
 export async function readIndexGeneration(): Promise<string> {
   try {
-    const [row] = await db
-      .select({
-        millis: sql<string | null>`(extract(epoch from max(${commanderSupport.computedAt})) * 1000)::bigint`,
-      })
-      .from(commanderSupport);
-    return generationKey(row?.millis);
+    const [row] = await db.select({
+      support: sql<string | null>`(select (extract(epoch from max(computed_at)) * 1000)::bigint from commander_support)`,
+      identity: sql<string | null>`(select (extract(epoch from max(computed_at)) * 1000)::bigint from identity_composition)`,
+      supportRoles: sql<string | null>`(select count(*) from commander_support where avg_ramp is not null)`,
+      pairRoles: sql<string | null>`(select count(*) from commander_pair_support where avg_ramp is not null)`,
+    }).from(sql`(select 1) as _`);
+
+    const parts = [
+      generationKey(row?.support),
+      generationKey(row?.identity),
+      generationKey(row?.supportRoles),
+      generationKey(row?.pairRoles),
+    ];
+    // All four unstamped is the same answer the whole token gives when nothing has been
+    // built, so it collapses to the constant rather than to "0.0.0.0" — one spelling for
+    // one state.
+    return parts.every((p) => p === UNSTAMPED) ? UNSTAMPED : parts.join(".");
   } catch {
     return UNSTAMPED;
   }

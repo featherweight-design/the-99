@@ -4,6 +4,7 @@ import { notFound } from "next/navigation";
 import { requireUserId } from "../../../lib/auth";
 import { getDeckDetail, listDecksWithStats } from "../../../lib/decks/read";
 import { cacheForUser } from "../../../lib/cache/user-lists";
+import { indexGeneration } from "../../../lib/cache/index-generation";
 import { loadDeckSuggestions } from "../../../lib/decks/suggestions-read";
 import { BuilderShell } from "../../../components/decks/builder-shell";
 import {
@@ -47,6 +48,12 @@ import { isUuid } from "../../../lib/uuid";
 // Bumped to "2" when `mix` joined the payload: an entry cached under "1" holds no mix, and
 // a reader destructuring one would hand the strip `undefined` and throw on its first cell.
 // A payload's key travels with its SHAPE, not only with its inputs.
+//
+// AND WITH ITS SOURCES. The payload now carries the mix, so it depends on the commander
+// index — which `cacheForUser`'s catalog generation does not observe. `/decks/[id]/changes`
+// keys on the index generation, and a key that did it on one route and not the other would
+// be worse than both being stale: the same deck would report different targets on two
+// surfaces whose whole contract is that they are the same five cells.
 const SUGGESTIONS_KEY = ["deck-suggestions", "2"];
 // "2" since the pair branch: `readSynergyCards` now answers from `commander_pair_support_cards`
 // for a two-commander deck, so the payload says something different for UNCHANGED rows. The
@@ -89,6 +96,10 @@ export default async function DeckBuilderPage({
     ]),
   ];
 
+  // Resolved before the wave rather than inside it: it is a 60-second cached read shared by
+  // both cached payloads below, and awaiting it per-entry would serialise them.
+  const indexGen = await indexGeneration();
+
   const [
     { suggestions, degraded, shoppingFigures, mix },
     allDecks,
@@ -98,7 +109,7 @@ export default async function DeckBuilderPage({
     draft,
     versions,
   ] = await Promise.all([
-      cacheForUser(userId, [...SUGGESTIONS_KEY, id], () =>
+      cacheForUser(userId, [...SUGGESTIONS_KEY, id, indexGen], () =>
         loadDeckSuggestions(id, userId),
       ),
       // The move-card picker lists every other deck by name, as it always has.
