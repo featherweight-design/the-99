@@ -127,7 +127,7 @@ player has cut from draws it exactly as today.
 99 as your collection supports, which is usually most of it. The rest is yours to fill."* The
 68 on the commander page is the line that disagrees with the rest of the app.
 
-### 2.2 The choice lives after the fill, not before it
+### 2.2 The choice lives after the fill, and the app already draws it
 
 There is no build-time "how much should I fill" control, and the reason is not implementation
 cost. At the moment of pressing build the player has a commander name and nothing else: no
@@ -135,34 +135,43 @@ deck, no list, no sense of what the fill would even pick. **You cannot answer "h
 you want" before you have seen the help.** And "66 or 99" is a question about this project's
 internals rather than about the player's intent.
 
-Instead the deck page's existing clear control becomes **layered**:
+**The control that answers it already ships, and an earlier draft of this section reinvented
+it.** That draft proposed making `clearAutoCards` "layered" — three actions splitting the fill
+into lands, role floors and residual — and it was wrong twice over. The app already separates
+the fill by PASS, and the split it already draws is better than the one being invented:
 
-| action | keeps |
+| shipped today | where |
 |---|---|
-| Clear the suggestions | lands and the role floors |
-| Clear everything but the lands | the mana base |
-| Clear everything | the commander only |
+| Clear everything auto-added, undoably | `clearAutoCards` / `restoreAutoCards` |
+| **Undo one pass on its own** | `provenance-line.tsx`, labelled by `pass-mark.tsx`, copy `topOffCopy.list.undo(n)` — literally `Undo these {n}` |
+| Claim a single row out of provenance | `keepAutoCard` (`actions.ts:573`) |
 
-**Why layered rather than the single button that ships today.** `clearAutoCards`
-(`src/app/decks/actions.ts:642`) is all-or-nothing and takes the **lands** with it. The mana
-base is the part nobody wants to hand-build, the part the measured skeleton is best at, and
-pure bookkeeping. A player who wants to choose the interesting cards themselves should not have
-to rebuild 35 lands to do it.
+`fill_passes.kind in ('seed', 'top_off')` (`schema.ts:499`) is the layer boundary, it is
+persisted, and it is already on screen with its own label and its own undo.
 
-**The machinery is already there, and it already models the fill as an operation rather than a
-one-shot.** `fillDeck` fills an existing empty deck and refuses one holding cards.
-`clearAutoCards` returns the swept rows and `restoreAutoCards` puts them back, so it is
-undoable. `keepAutoCard` (`actions.ts:573`) already claims a single row as the player's. And
-`fill_passes.kind in ('seed', 'top_off')` (`src/db/schema.ts:499`) already records which kind
-of pass a set of rows came from.
+**Filling to 99 would have COLLAPSED that separation, which is the real hazard §2.1 introduces.**
+Today a fresh build leaves a seed pass plus whatever top-offs the player ran, each undoable
+alone. Fill the whole body in one seed pass and there is a single 99-row pass and nothing to
+undo but all of it — the exact loss the layered control was invented to prevent, caused by the
+change that invented it.
 
-The three layers map onto genuinely different authority:
+**So the fill records its residual as its own pass.** Seed = the role floors and the mana base.
+Top-off ordinal 1 = the synergy residual. `Undo these 31` then means precisely "clear the
+suggestions, keep the foundation", through the ledger, the labels, the copy and the undo that
+already ship.
 
-| layer | source | authority | who wants to own it |
-|---|---|---|---|
-| Lands (~35) | measured, per commander | high | nobody, it is bookkeeping |
-| Role floors (31) | asserted, or measured after §2.5 | rule of thumb | sometimes |
-| Residual to 99 | synergy ranked | suggestion | the builder |
+| pass | holds | undo reads |
+|---|---|---|
+| seed | role floors + the mana base | `Undo these 68` |
+| top-off 1 | the synergy residual | `Undo these 31` |
+
+**What this costs: nothing new.** No control, no migration, no `role` column, no backfill policy
+for decks built before it, and no Design round. One change of intent inside `createDeck`, which
+records two passes where it recorded one.
+
+**And it deletes a decision that was never needed.** An earlier draft asked what a deck built
+before the layers should offer. There are no new layers, so there is nothing to ask: every deck
+that has ever been filled already carries its passes.
 
 ### 2.3 Types decide which card closes each role; floors never yield
 
@@ -542,16 +551,22 @@ separately from card count.
 **`CLAUDE.md` makes this a hard rule and the spec omitted it**, which plan review caught: "No
 FEATURE launches without an About entry, in the same round that ships it."
 
-This sub-project ships at least three things a reader could discover:
+This sub-project ships two things a reader could discover, and **both are edits to entries that
+already exist** rather than new ones:
 
 | feature | entry |
 |---|---|
 | Build fills the whole 99 rather than 68 | edits the existing build entry; the capability changed |
 | The two bulk controls on the top-off list | edits the existing top-off entry |
-| The layered clear | **new entry** |
 
-`ABOUT_VERSION` is bumped once, in the PR that lands the layered clear, since a new entry always
-forces a bump. The earlier two are ordinary edits to entries that already exist.
+An earlier draft listed a third — the layered clear — as the one **new** entry, and it was the
+only thing here forcing a version bump. §2.2 removed it: there is no new control, only the
+fill recording two passes instead of one, and the per-pass undo it feeds is already described.
+
+**Whether the build change earns a bump is Hugh's call**, and the rule points both ways: a copy
+edit is not a bump, but "we now build the whole deck rather than two thirds of it" is a real
+capability change every account would want to know about. **Default: bump it**, in the PR that
+lands the build promise, and let him overrule.
 
 `src/lib/copy/about.test.ts` pins a content hash against `ABOUT_VERSION`, so any About copy edit
 forces either a deliberate bump or a deliberate re-pin. **Design draws the entries; Hugh decides
