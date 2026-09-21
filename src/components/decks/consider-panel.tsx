@@ -173,6 +173,8 @@ function ShelfSection({
 
   return (
     <section
+      data-testid="consider-shelf"
+      data-shelf-key={shelf.key}
       aria-labelledby={headingId}
       className={`md:mt-0 md:mb-[20px] ${first ? "" : "mt-[16px]"}`}
     >
