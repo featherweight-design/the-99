@@ -19,6 +19,8 @@ import { readPairSupport, resolvePairEdhrecData } from "../edhrec/pair-read";
 import { type PoolCard } from "../recs/score";
 import { deckBodySize } from "./deck-size";
 import { cardTypeGroup, primaryRole, requireDeck } from "./read";
+import { recommendedMix } from "./mix";
+import { loadSkeletonForCommanders } from "../profile/load";
 import { buildSuggestionPayload, suggestDeck, type DeckSuggestion } from "./suggest";
 
 // The pool carries mana on top of PoolCard so a tile can draw cost pips and the
@@ -199,7 +201,22 @@ export async function loadDeckSuggestions(deckId: string, userId: string): Promi
   const ownedByOracleId = new Set(pool.map((c) => c.oracleId));
 
   // Compute owned pool suggestions
-  const raw = suggestDeck({ commander, ownedPool: available, edhrecTopCards: topCards, hasPartner });
+  // THE SAME MIX THE DECK PAGE DRAWS. The Add panel's shelf headers count against these and
+  // its tiles quote them; two sources would disagree by construction on any commander whose
+  // measured ramp is not ten.
+  let mix = recommendedMix(null, hasPartner);
+  try {
+    const { skeleton } = await loadSkeletonForCommanders(
+      commander.oracleId,
+      partner?.oracleId ?? null,
+      [...new Set([...commander.colorIdentity ?? [], ...(partner?.colorIdentity ?? [])])],
+    );
+    mix = recommendedMix(skeleton, hasPartner);
+  } catch (err) {
+    console.warn("loadDeckSuggestions: no skeleton — the panel quotes the asserted targets", err);
+  }
+
+  const raw = suggestDeck({ commander, ownedPool: available, edhrecTopCards: topCards, hasPartner, mix });
 
   // Enrich owned suggestions
   const ownedSuggestions: DeckSuggestion[] = raw.map((s) => {
@@ -218,7 +235,7 @@ export async function loadDeckSuggestions(deckId: string, userId: string): Promi
       },
       inclusionByName,
       synergyByName,
-      hasPartner,
+      mix,
     );
   });
 
@@ -245,7 +262,7 @@ export async function loadDeckSuggestions(deckId: string, userId: string): Promi
         },
         inclusionByName,
         synergyByName,
-        hasPartner,
+        mix,
       ),
     );
   }

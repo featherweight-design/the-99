@@ -1,7 +1,8 @@
 import type { Availability } from "./availability";
 import type { DeckDetailCard } from "./grouping";
 import type { PriceFact } from "./price";
-import { classifyRoles, ROLE_TARGETS } from "../recs/roles";
+import { classifyRoles } from "../recs/roles";
+import type { MixRole, RecommendedMix } from "./mix";
 import { deckBodySize, landTarget } from "./deck-size";
 import type { PoolCard } from "../recs/score";
 
@@ -82,9 +83,11 @@ export function buildSuggestionPayload(
   // Sparse: a name EDHREC never reported is simply absent from either map.
   inclusionByName: Record<string, number | undefined>,
   synergyByName: Record<string, number | undefined> = {},
-  // Only the `rec N` half of a role label reads this, and only the land role
-  // moves: a pair deck runs one fewer land and the same everything else.
-  hasPartner = false,
+  // THE RESOLVED TARGETS, not the asserted ones. The tile says `rec 10` and the shelf header
+  // above it says `have / 12`; before this they read two different sources and disagreed by
+  // construction on any commander whose measured ramp was not ten. Carries the pair adjustment
+  // too, which is why `hasPartner` no longer needs to come separately.
+  mix: RecommendedMix,
 ): DeckSuggestion {
   let reasonType: ReasonType;
   let reasonLabel: string;
@@ -116,8 +119,7 @@ export function buildSuggestionPayload(
     reasonLabel = inclusion != null ? `EDHREC · ${inclusion}% of decks` : "EDHREC staple";
   } else {
     reasonType = "role";
-    const lands = landTarget(hasPartner);
-    const target = s.reason === "land" ? lands : (ROLE_TARGETS[s.reason] ?? lands);
+    const target = mix.cells[s.reason as MixRole]?.target ?? mix.cells.land.target;
     reasonLabel = `Fills ${humanRole(s.reason)} · rec ${target}`;
   }
 
@@ -149,9 +151,11 @@ export function suggestDeck(args: {
   // to 99 cards and 37 lands, which is the one mistake this argument exists to
   // make impossible.
   hasPartner: boolean;
+  /** The same targets the tiles quote and the shelf headers count against. */
+  mix: RecommendedMix;
 }): Suggestion[] {
   const max = deckBodySize(args.hasPartner);
-  const lands = landTarget(args.hasPartner);
+  const lands = args.mix.cells.land.target;
   const out: Suggestion[] = [];
   const used = new Set<string>();
   const add = (oracleId: string, reason: Suggestion["reason"]) => {
@@ -187,7 +191,7 @@ export function suggestDeck(args: {
   for (const c of args.ownedPool) {
     if (used.has(c.oracleId)) continue;
     for (const role of classifyRoles(c)) {
-      const target = role === "land" ? lands : ROLE_TARGETS[role];
+      const target = role === "land" ? lands : args.mix.cells[role].target;
       if (counts[role] < target) { add(c.oracleId, role); counts[role]++; break; }
     }
   }
