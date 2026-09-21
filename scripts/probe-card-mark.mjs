@@ -9,7 +9,10 @@
 //   · the mark's drawn box on each surface, and NEVER below the 12px floor
 //   · no collision in the row's densest state — measured as intersecting RECTS against the
 //     ownership dot, the availability marker, the buy tag, the pips and the caption
-//   · no row or caption grew — a marked row against an unmarked one on the same surface
+//   · no row grew — a marked row against an unmarked one on the same surface, measured in
+//     two passes because the search that finds the marked card leaves nothing to compare
+//     it against. LIVE on the collection row and inert on the tile, whose height its art
+//     fixes; the body of that check says so rather than implying it guards both
 //   · the key is on screen wherever a mark is, which is the rule that makes a wordless mark
 //     legal at all, and a FAILURE rather than a note
 //   · the glow is a `filter`, never a `box-shadow` — a shadow would be in the box model and
@@ -206,7 +209,11 @@ async function run() {
       for (const [surface, url, search] of [
         ...(deckHref ? [["decklist row", deckHref, null]] : []),
         ["collection rows", "/collection?view=rows", CARD],
-        ["collection tiles", "/collection", CARD],
+        // `?view=grid` EXPLICITLY. With no param the view resolves to
+        // `isDesktop ? "grid" : "rows"` and a fresh context stores nothing, so at 390 this
+        // surface rendered the ROWS view — and the tile's 12px mark, the only one drawn at
+        // the floor this probe exists to guard, was never measured at the width that matters.
+        ["collection tiles", "/collection?view=grid", CARD],
       ]) {
         // `attached`, never `visible`: a collapsed title is zero-width, which Playwright
         // calls hidden, and waiting on visibility turns a layout defect into a 30s timeout
@@ -234,7 +241,7 @@ async function run() {
             + `is not drawing marks (the modal check below tells the two apart: it passing `
             + `means the card is owned and reachable)`;
         if (!report(`${label}px · ${surface} · found a marked card`, drawn.length > 0,
-            drawn.length ? `${drawn.length} mark(s)` : why)) {
+            drawn.length ? `${drawn.length} mark(s) on ${surface === "decklist row" ? url : `"${CARD}"`}` : why)) {
           continue;
         }
 
@@ -258,8 +265,15 @@ async function run() {
           for (const mark of root.querySelectorAll('[data-testid^="card-fact-"]')) {
             if (mark.closest('[role="group"]')) continue;
             const a = mark.getBoundingClientRect();
-            const line = mark.closest("span, div");
-            for (const other of line?.parentElement?.querySelectorAll("span, img, svg, button") ?? []) {
+            // Sweep the whole ROW, not the mark's immediate line. The tooltip wraps each
+            // mark in its own `relative inline-flex` span wherever `(pointer: fine)` matches
+            // — which headless Chromium reports at both widths — so `closest("span,div")`
+            // landed on that wrapper and its parent was the name block. The sweep then saw
+            // the name, the two-faced mark and the count, and never the pip track, the
+            // availability marker, the buy tag or the meta caption the ruling names. A mark
+            // overlapping the fixed pip track reported `clear`.
+            const row = mark.closest("li, tr, [class*='grid-cols'], [class*='flex']")?.closest("li, tr") ?? mark.closest("li, tr") ?? mark.parentElement?.parentElement?.parentElement;
+            for (const other of row?.querySelectorAll("span, img, svg, button") ?? []) {
               if (other === mark || other.contains(mark) || mark.contains(other)) continue;
               if (other.querySelector('[data-testid^="card-fact-"]')) continue;
               const b = other.getBoundingClientRect();
@@ -272,6 +286,53 @@ async function run() {
         }, PAGE);
         report(`${label}px · ${surface} · no collision with its neighbours`,
           overlap.length === 0, overlap.length ? `overlaps ${overlap.length}: ${overlap[0]}` : "clear");
+
+        // NOTHING GREW. The glow is a `filter` and the mark is `shrink-0`, so a marked row
+        // must be exactly as tall as an unmarked one on the same surface at the same width.
+        //
+        // Measured in TWO PASSES, because the search that finds the marked card leaves one
+        // row on screen and there is nothing to compare it against: the marked row while
+        // filtered, the unmarked ones after clearing. Same surface, same viewport.
+        //
+        // Rows are CARD BUTTONS. A first version looked for `li`/`tr`, found neither, and
+        // reported "cannot compare" — which failed rather than passing, but proved nothing.
+        //
+        // WHAT THIS CHECK GUARDS, measured rather than assumed. Quadrupling the mark's box:
+        //   · collection ROWS grow — 78px against 49px at 1300, 91px against 60px at 390 —
+        //     so the check is live there.
+        //   · collection TILES do NOT — 298px either way. A tile's height comes from its
+        //     art's aspect-ratio and a fixed caption, so no mark inside the caption can move
+        //     it, and this check is structurally inert on that surface.
+        // It is kept for both because the rows earn it and the tiles cost nothing, but a
+        // green tile row here is not evidence about the tile.
+        //
+        // The mutation review proposed — deleting `block` from the mark — moves NEITHER
+        // surface: the row's height comes from its own padding rather than the line box.
+        // The missing check was real; that particular way of exposing it was not.
+        const markedH = await page.evaluate((scope) => {
+          const root = document.querySelector(scope);
+          // NOT the first mark in the document: the key renders before the rows and its
+          // samples are not inside a button, so `querySelector` returned one of those and
+          // `closest("button")` was null. The key's own marks are excluded everywhere in
+          // this probe for the same reason.
+          const el = [...(root?.querySelectorAll('[data-testid^="card-fact-"]') ?? [])]
+            .find((m) => !m.closest('[role="group"]'))
+            ?.closest("button");
+          return el ? Math.round(el.getBoundingClientRect().height) : 0;
+        }, PAGE);
+        await searchFor(page, "");
+        const plainH = await page.evaluate((scope) => {
+          const root = document.querySelector(scope);
+          const hs = [...(root?.querySelectorAll("button") ?? [])]
+            .filter((b) => !b.querySelector('[data-testid^="card-fact-"]'))
+            .map((b) => Math.round(b.getBoundingClientRect().height))
+            .filter((h) => h > 24);
+          return hs.length ? Math.max(...hs) : 0;
+        }, PAGE);
+        report(`${label}px · ${surface} · no row grew for the mark`,
+          Boolean(markedH && plainH) && markedH <= plainH,
+          markedH && plainH ? `marked ${markedH}px vs unmarked ${plainH}px`
+                            : `marked ${markedH}px, unmarked ${plainH}px — nothing to compare`);
       }
       // THE MODAL. The one surface that spells the facts out, and the one whose loader had
       // no route to the two joined flags at all — so a mark drawn everywhere else proves

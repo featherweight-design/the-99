@@ -128,7 +128,17 @@ async function run(page, steps) {
     // A field a surface only reaches its interesting state through typing — the
     // set panel narrows its list as you type, and an empty field shows every set.
     if (step.fill !== undefined) {
-      await onPage(page, step.fill).first().fill(step.text ?? "", { timeout: 15_000 });
+      // `${VAR}` expands here for the same reason it does in `goto`, and NOT expanding it
+      // was worse than a missing feature: a row typing a literal `${CARD_MARK_CARD}` into a
+      // search box filters the list to nothing and photographs an empty surface, which
+      // counts as a reached cell and reads as coverage. Silent, and indistinguishable from
+      // a feature that stopped drawing.
+      const text = (step.text ?? "").replace(/\$\{(\w+)\}/g, (_, name) => {
+        const value = process.env[name];
+        if (!value) throw new Error(`${step.fill} needs ${name} in the environment`);
+        return value;
+      });
+      await onPage(page, step.fill).first().fill(text, { timeout: 15_000 });
     }
     // Scoped like the actions above it, and for the same reason: `wait:
     // "[role=dialog]"` is in every inventory, and the shell's account sheet is
