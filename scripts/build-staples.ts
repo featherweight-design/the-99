@@ -160,9 +160,13 @@ function compositionQuery(keyExpr: string, restrictTo: string) {
               // denominator with it, which is the null-policy mistake this script's header
               // records making once already.
               ].map(avg).join(",\n           ")},
-           // The four FUNCTIONAL targets, on the same row as the ten type targets: a rung that
-           // delivered types with no roles beside them would put measured types next to flat
-           // roles on one deck, which is the disagreement §4A.6 names as the bug.
+           -- The four FUNCTIONAL targets, on the same row as the ten type targets: a rung
+           -- that delivered types with no roles beside them would put measured types next to
+           -- flat roles on one deck, which is the disagreement §4A.6 names as the bug.
+           -- Written as SQL comments rather than the TypeScript form, and that is not a
+           -- style choice: this text is INSIDE the template and is sent to Postgres, which
+           -- has no double-slash comment and fails the whole derivation on one. The comments
+           -- above it sit inside an interpolation, so they are TypeScript and stay that way.
            ${["avg_ramp", "avg_draw", "avg_removal", "avg_wipes"]
               .map(avgRole).join(",\n           ")},
            count(*) filter (where cs.avg_ramp is not null)::int as with_roles

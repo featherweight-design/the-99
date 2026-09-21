@@ -34,7 +34,7 @@ export type BuildIndexOptions = {
   clearScores?: () => Promise<void>;
   /** The role-target pass, injectable for the same reason as every other edge here: the whole
       build is unit-testable without a database or a network. */
-  deriveRoleTargets?: () => Promise<RoleTargetPassResult>;
+  deriveRoleTargets?: (runStartedAt: Date) => Promise<RoleTargetPassResult>;
   /**
    * The pair pass's three I/O edges, injectable for the same reason every other edge here is:
    * this function is unit-tested, and a default that reaches the database would make every
@@ -306,6 +306,9 @@ export async function buildCommanderIndex(
   const delayMs = opts.delayMs ?? DEFAULT_DELAY_MS;
   const deriveRoles = opts.deriveRoleTargets ?? deriveAndWriteRoleTargets;
 
+  // Stamped BEFORE the first write, so `>= runStartedAt` is exactly the set this run rewrote.
+  // The role pass's refusal uses it to tell a row it invalidated from one it never touched.
+  const runStartedAt = new Date();
   const [commanders, nameRows] = await Promise.all([load(), loadNames()]);
   const nameIndex = buildNameIndex(nameRows);
   // Spec §4/§10: state the candidate count before spending ~3,000 serial
@@ -487,7 +490,7 @@ export async function buildCommanderIndex(
   // Last, because it reads every support row this run wrote. It REFUSES rather than
   // publishing a partial set, so a throw here leaves the previous figures standing and the
   // run reports a failure — which is the state an operator needs to see.
-  const roles = await deriveRoles();
+  const roles = await deriveRoles(runStartedAt);
   r.roleTargets = roles.written;
   r.pairRoleTargets = roles.pairsWritten;
   console.log(
@@ -509,8 +512,22 @@ export async function buildCommanderIndex(
  * would leave the rest on stale figures with no way for a reader to tell which is which, so a
  * run below the floor leaves every previous value standing and throws. Same discipline as
  * `db:build:staples`.
+ *
+ * WHAT "STANDING" MAY NOT MEAN: a row whose own card list this run already replaced. These four
+ * columns are derived from `commander_support_cards`, and the loop above commits each
+ * commander's list as it goes — so by the time a refusal happens, some rows carry averages
+ * describing a list that no longer exists beside them. That is not stale data a reader can
+ * discount; it is a row contradicting itself, and nothing on it says which half is current.
+ *
+ * So the refusal CLEARS the roles on exactly those rows and leaves every other commander's
+ * alone. `runStartedAt` is what draws the line: `computed_at` is stamped per commander by the
+ * write above, so `>= runStartedAt` is precisely the set this run rewrote. A commander the run
+ * never reached keeps averages that still match its own list, which is the whole reason the
+ * refusal does not simply blank the table.
  */
-export async function deriveAndWriteRoleTargets(): Promise<RoleTargetPassResult> {
+export async function deriveAndWriteRoleTargets(
+  runStartedAt: Date,
+): Promise<RoleTargetPassResult> {
   const rows = await db
     .select({
       commanderOracleId: commanderSupportCards.commanderOracleId,
@@ -542,9 +559,24 @@ export async function deriveAndWriteRoleTargets(): Promise<RoleTargetPassResult>
     .where(sql`${commanderSupport.synergyState} = 'ok'`);
 
   if (!roleTargetsPublishable(targets.size, ok)) {
+    const NO_ROLES = { avgRamp: null, avgDraw: null, avgRemoval: null, avgWipes: null };
+    // ONE transaction for both tables: a reader takes the pair rung before the commander rung,
+    // and must not find one cleared and the other not.
+    const cleared = await db.transaction(async (tx) => {
+      const c = await tx.update(commanderSupport).set(NO_ROLES)
+        .where(sql`${commanderSupport.computedAt} >= ${runStartedAt}`)
+        .returning({ id: commanderSupport.commanderOracleId });
+      const p = await tx.update(commanderPairSupport).set(NO_ROLES)
+        .where(sql`${commanderPairSupport.computedAt} >= ${runStartedAt}`)
+        .returning({ id: commanderPairSupport.commanderOracleId });
+      return { commanders: c.length, pairs: p.length };
+    });
     throw new Error(
       `role targets REFUSED: derived ${targets.size} of ${ok} ok commanders ` +
-      `(floor ${Math.ceil(ok * ROLE_TARGET_FLOOR)}). Previous values left standing.`,
+      `(floor ${Math.ceil(ok * ROLE_TARGET_FLOOR)}). Cleared the roles on ` +
+      `${cleared.commanders} commander(s) and ${cleared.pairs} pair(s) this run rewrote — ` +
+      `their averages described a card list that no longer exists. Every other row is ` +
+      `untouched and still matches its own list.`,
     );
   }
 
