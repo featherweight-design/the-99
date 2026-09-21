@@ -132,6 +132,8 @@ let commanderCleanup: {
 let pairCleanup: { commanderOracleId: string; partnerOracleId: string } | null = null;
 /** Set ONLY when this run created the row — from the insert's own `returning`. */
 let identityCleanup: string | null = null;
+/** The `count:1` sentinel, created only by this run. Same ownership rule as the identity one. */
+let countCleanup: string | null = null;
 /** A row that was already there, lifted so the chain's empty state is reachable. */
 let identityRestore:
   | {
@@ -580,6 +582,37 @@ async function basisChainChecks(
        set avg_ramp = 0, avg_draw = 0, avg_removal = 0, avg_wipes = 0, with_roles = 0
      where condition = 'W'`);
 
+  // THE ROLE CHAIN FALLS THROUGH TO THE COUNT BUCKET ON ITS OWN. The composition chain only
+  // loads a count row when the identity row is ABSENT, which is right for types and wrong for
+  // roles: an identity row can serve the types and carry no roles at all, and the measured
+  // answer then sits one rung below where nothing would read it. A `count:1` row with roles,
+  // beside the identity row above which has none, is the only fixture that shows it.
+  const [countCreated] = await rows<{ condition: string }>(sql`
+    insert into identity_composition
+      (condition, avg_land, avg_basic, avg_nonbasic, avg_creature, avg_instant, avg_sorcery,
+       avg_artifact, avg_enchantment, avg_planeswalker, avg_battle,
+       commanders, with_composition, avg_ramp, avg_draw, avg_removal, avg_wipes, with_roles)
+    values ('count:1', ${TARGETS.land}, ${TARGETS.basic}, ${TARGETS.nonbasic}, ${TARGETS.creature},
+            ${TARGETS.instant}, ${TARGETS.sorcery}, ${TARGETS.artifact}, ${TARGETS.enchantment},
+            ${TARGETS.planeswalker}, ${TARGETS.battle}, 400, 380, 6, 5, 4, 3, 380)
+    on conflict (condition) do nothing
+    returning condition`);
+  if (countCreated) {
+    countCleanup = countCreated.condition;
+    const fellThrough = await profileFor(deckId);
+    check(
+      "the role chain reaches the count bucket past an identity row with no roles",
+      fellThrough.skeleton.roleTargets.of,
+      "count",
+    );
+    check("and takes its figures", fellThrough.skeleton.roleTargets.targets.ramp, 6);
+    // The TYPE chain must not follow it — it still has an identity row, and a fix that moved
+    // both would pass a check watching only the roles.
+    check("while the type chain stays on the identity row", fellThrough.skeleton.composition?.of, "identity");
+  } else {
+    fail("the count sentinel", "a count:1 row was already present and was not replaced");
+  }
+
   const identityFit = fitSkeleton(await profileFor(deckId));
   check("rung 3: an identity row gives basis 'identity'", identityFit.basis, "identity");
   check("and ten type targets", identityFit.types.length, 10);
@@ -991,6 +1024,12 @@ run()
               avg_ramp = ${b.avg_ramp}, avg_draw = ${b.avg_draw},
               avg_removal = ${b.avg_removal}, avg_wipes = ${b.avg_wipes}
           where commander_oracle_id = ${commanderCleanup.oracleId}::uuid`);
+      }],
+      ["the count sentinel", async () => {
+        if (!countCleanup) return;
+        await fixture.execute(
+          sql`delete from identity_composition where condition = ${countCleanup}`,
+        );
       }],
       ["the identity sentinel", async () => {
         // Only a row this run CREATED. The handle is set from the insert's own `returning`,
