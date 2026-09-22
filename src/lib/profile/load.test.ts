@@ -23,20 +23,33 @@ const rendered = () =>
     .sql.replace(/\s+/g, " ");
 
 describe("the assembled-combo query", () => {
-  // THE MODAL'S FOUR FIELDS, in the select AND in the group by. The group-by half is
-  // self-catching — Postgres refuses an ungrouped column — but the SELECT half is not: drop a
-  // column there and the loader's `?? null` maps it to null on every row, so every combo in
-  // the app reads "no mana needed, no steps, no prerequisites" behind a passing suite. That is
-  // the same silent-null shape the ingest's `fieldCollapse` floors guard from the other end.
+  // THE MODAL'S FOUR FIELDS, in the projection. Drop one and the loader's `?? null` maps it to
+  // null on every row, so every combo in the app reads "no mana needed, no steps, no
+  // prerequisites" behind a passing suite — the same silent-null shape the ingest's
+  // `fieldCollapse` floors guard from the other end.
   it.each(["mana_needed", "mana_value_needed", "steps", "notable_prerequisites"])(
-    "selects and groups %s, which the reasoning modal draws",
+    "projects %s, which the reasoning modal draws",
     (column) => {
-      const sql = rendered();
-      expect(sql).toContain(`v.${column}`);
-      // Twice: once in the projection, once in the group by.
-      expect(sql.split(`v.${column}`).length - 1).toBeGreaterThanOrEqual(2);
+      expect(rendered()).toContain(`v.${column}`);
     },
   );
+
+  // AND THE GROUP KEY STAYS ON THE PRIMARY KEY ALONE.
+  //
+  // This assertion used to require each column TWICE — projection and group by — on the
+  // reasoning that the group-by half was self-catching because Postgres refuses an ungrouped
+  // column. It does not refuse one that is functionally dependent on a grouped primary key, so
+  // the second half was never load-bearing; it just pinned a needlessly wide aggregate key,
+  // with `steps` averaging 395 characters in it. Review caught the same defect in
+  // `completionsQuery` one round earlier and this half was missed.
+  it("groups on the primary key alone, never on a 395-character string", () => {
+    const sql = rendered();
+    const group = sql.slice(sql.indexOf("group by"));
+    expect(group).toContain("group by v.variant_id");
+    for (const wide of ["v.steps", "v.mana_needed", "v.notable_prerequisites", "v.produces"]) {
+      expect(group).not.toContain(wide);
+    }
+  });
 
   // RULE 1. A template-gated variant names a CATEGORY of card — "a creature with flying" —
   // not a card, so a decklist cannot be said to assemble it. Dropping this admits thousands

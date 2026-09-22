@@ -135,7 +135,12 @@ export function toVariantRows(raw: Record<string, unknown>, known: Set<string>):
       // NOT `nonEmpty`, and not `|| null`: 0 is the answer for 59% of variants — the combo
       // needs no mana — and coercing it to null would turn the most informative reading on
       // this record into "we do not know".
-      manaValueNeeded: Number.isFinite(raw.manaValueNeeded)
+      // INTEGER, not merely finite. The column is `integer`, so a 2.5 would either fail the
+      // insert or be coerced by the driver in a way nobody chose — and a refused batch takes
+      // the whole ingest down, which is a high price for one malformed record. A non-integer
+      // stores null instead: the modal then draws no mana figure for that combo rather than a
+      // wrong one, and the population floor sees it.
+      manaValueNeeded: Number.isInteger(raw.manaValueNeeded)
         ? (raw.manaValueNeeded as number)
         : null,
       steps: nonEmpty(raw.description),

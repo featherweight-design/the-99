@@ -195,3 +195,24 @@ describe("toVariantRows — the reasoning modal's fields", () => {
     expect(row({ manaValueNeeded: null }).manaValueNeeded).toBeNull();
   });
 });
+
+// The column is `integer`. A non-integer would either fail the insert — taking the whole batch,
+// and with it the ingest, down over one malformed record — or be coerced by the driver in a way
+// nobody chose. Null instead: the modal draws no mana figure for that combo rather than a wrong
+// one, and the population floor sees it.
+describe("toVariantRows — a non-integer mana value", () => {
+  it("stores null rather than risking the insert", () => {
+    const ORACLE = "66d41377-626d-4ae6-ba86-17bf0c8b3362";
+    const OTHER = "b0a54050-3493-4ff6-8eca-e43b92c1f3d3";
+    const out = toVariantRows({
+      id: "1-2", bracketTag: "E", identity: "R",
+      legalities: { commander: true },
+      uses: [{ card: { oracleId: ORACLE } }, { card: { oracleId: OTHER } }],
+      produces: [{ feature: { name: "Infinite mana" } }],
+      manaValueNeeded: 2.5,
+      description: "Go off.",
+    }, new Set([ORACLE, OTHER]));
+    if (out.kind !== "row") throw new Error(`dropped: ${out.reason}`);
+    expect(out.variant.manaValueNeeded).toBeNull();
+  });
+});

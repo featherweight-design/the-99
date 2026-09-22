@@ -117,8 +117,13 @@ export function assembledCombosQuery(ids: readonly string[], commanders: readonl
         and exists (select 1 from ${spellbookVariantCards} vc2
                     where vc2.variant_id = v.variant_id
                       and vc2.oracle_id = any(${sql.param([...ids])}::uuid[]))
-      group by v.variant_id, v.bracket_tag, v.produces,
-               v.mana_needed, v.mana_value_needed, v.steps, v.notable_prerequisites
+      -- GROUPED ON THE PRIMARY KEY ALONE. Every other column of spellbook_variants is
+      -- functionally dependent on it, which Postgres recognises for a grouped PK, so naming
+      -- them here would only widen the aggregate key -- and steps averages 395 characters
+      -- against a max of 754, so it would widen it by a lot. The same defect was fixed in
+      -- completionsQuery one review round earlier and this half was missed; both reads draw
+      -- into the same modal. No backticks in here: this is inside a template literal.
+      group by v.variant_id
       -- TWO ROWS, not merely a card_count of 2. That column keeps UPSTREAM's own uses
       -- length while spellbook_variant_cards is deduped by oracle id, so a variant naming
       -- one card twice passes the column test, aggregates to a single piece, and a deck
