@@ -125,10 +125,21 @@ rank 4 exhausts that budget, so rank 5 **joins rank 4's four studs into a third 
 same points `(20,1.2) (38.8,20) (20,38.8) (1.2,20)`, same `1.1` weight, footprint unchanged.
 Silhouette: 4 is two rings and four dots, 5 is three rings.
 
-New files, beside the Round 0 set: `bracket-5-cedh-reissued.svg` and
-`bracket-5-cedh-reissued-chip.svg` (22–24px form). Canvas §3b draws the set at 40 / 28 / 22.
-**Ranks 1 and 2 have the same collision at chip size and are deliberately not fixed here** —
-out of scope, flagged in READINESS.
+**The whole set now lives in one place:** Round 0's `design_handoff_the99_deck_analysis/assets/`,
+ten files — five full marks and five chip forms, `bracket-{rank}-{name}.svg` and `-chip.svg`.
+`bracket-5-cedh.svg` **is** the reissue; the old file is gone and there is no `-reissued` suffix
+to choose between. This package carries no assets folder of its own. See `assets/ASSETS.md` there
+for the reduction rule and the open collisions. Canvas §3b draws the set at 40 / 28 / 22.
+
+**The chip rule, stated as it ships: keep only the newest ornament.** The chip sheds the mid ring
+*and* every ornament below the rank's own — 3 is ticks, 4 is studs, 5 is the closed ring, each on
+the inner diamond at 1.8. Earlier rounds' wording ("each rank keeps its own distinguisher") read as
+cumulative and was contradicted by the one chip that shipped; the two-path rank-5 chip is correct
+and the other four are built to match it.
+
+**Two collisions at 22px, neither fixed here** — 1 vs 2 (rank 2's only ornament is the thing the
+chip drops) and **3 vs 4** (both place four marks at the cardinal points, ticks vs studs, which is
+thinner separation than 4-vs-5 got and was never tested at size). Both are Round 0 conversations.
 
 ## Three things most likely to get broken in build
 

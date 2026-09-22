@@ -12,8 +12,7 @@ deck page already carries, and what the synopsis's slot does when there is no se
 Rounds 1–4 are briefed against this frame.
 
 **Source of truth:** `docs/superpowers/design-briefs/2026-09-19-where-deck-analysis-lives.md` on
-`main` (merged in PR #746; read at `ea00e8c8` on `spec/deck-analysis-foundation`, the branch it was
-drawn against). Spec:
+`spec/deck-analysis-foundation` (PR #746, open), read at `ea00e8c8`. Spec:
 `docs/superpowers/specs/2026-09-19-deck-analysis-foundation-design.md`, §11.1 for the round structure.
 
 **File:** `The 99 - Deck Analysis Frame.dc.html` — canvas (pan/zoom), with a **theme prop**:
@@ -253,6 +252,14 @@ only sizes the document draws** (383 marks, audited): 22 is the height of `Statu
 mark sits beside in both the tile footer and the deck-page meta row, so **22 is the size at both
 altitudes** — there is no separate band size. **22px is derived, not chosen:** it
 is the height of `StatusPillBadge`, which the mark sits beside in the deck tile’s footer row.
+
+**Two forms, ten files, one folder.** `assets/` holds the full mark and a chip form for each rank —
+`bracket-{rank}-{name}.svg` and `-chip.svg`. The full mark is drawn at 26 / 36 / 44; **at 22 the chip
+form is drawn instead.** `bracket-5-cedh.svg` is the R6 reissue (rank 4's studs closed into a third
+ring); the pre-reissue file is gone. **The chip rule is: keep only the newest ornament** — the chip
+sheds the mid ring *and* every ornament below the rank's own, so 3 is ticks, 4 is studs, 5 is the
+closed ring. Full statement, plus the two unresolved 22px collisions (1-vs-2 and 3-vs-4), in
+`assets/ASSETS.md`.
 
 **The floor is 20px, and it is a hard one.** A numeral has to fit the inscribed square of a
 45°-rotated core — about 0.70 × core — so the mark cannot hold a readable digit below ~20px however

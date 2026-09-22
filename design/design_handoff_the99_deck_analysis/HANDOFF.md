@@ -1,8 +1,10 @@
 # Deck analysis — handoff package (R1, Round 0 of 5)
 
 **Canvas:** `The 99 - Deck Analysis Frame.dc.html` (pan/zoom; `theme` prop: amonkhet · kamigawa).
-**Assets:** `assets/` — five mark SVGs on `currentColor`, plus `bracket-marks.html`, a standalone
-sheet of every mark, chip and palette swatch you can open, copy from, or screenshot.
+**Assets:** `assets/` — **the mark set's only home.** Ten SVGs on `currentColor` (five full marks,
+five chip forms), `ASSETS.md` for the reduction rule and the open collisions, and
+`bracket-marks.html`, a standalone sheet of every mark and chip you can open, copy from, or
+screenshot. No other handoff package carries bracket assets.
 
 ---
 

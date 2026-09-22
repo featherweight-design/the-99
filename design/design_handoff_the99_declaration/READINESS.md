@@ -38,9 +38,10 @@ to engineering as recorded.
 - **At commit:** copy the declaration into the version only if it is inside that version's
   permits. Otherwise the version records no declaration, because the draft never answered its
   own question.
-- **Rank 5's mark reissued** (§3b) — `bracket-5-cedh-reissued.svg` and a 22–24px chip form, in
-  the Round 0 assets folder beside the originals. Rank 4's four studs become a third closed ring:
-  same points, same weight, footprint unchanged, silhouette different at chip size.
+- **Rank 5's mark reissued** (§3b) — rank 4's four studs become a third closed ring: same points,
+  same weight, footprint unchanged, silhouette different at chip size. **R8 consolidated the set:**
+  ten files (five full, five chip) in Round 0's `assets/`, `bracket-5-cedh.svg` **is** the reissue,
+  no `-reissued` suffix, and this package no longer carries an assets folder.
 - **Both withdrawn artefacts removed** (audit items 3 and 4): the *"You said Core…"* live-region
   line in the copy file, and the `change what you said` control still drawn on §1b.
 
@@ -155,11 +156,16 @@ draft state (R6). Still prose-only, carried from the audit and not closed by §3
 - **ranks 1 and 2 collide at chip size, on the mid ring.** R6 blamed rank 2's ticks and R7 then
   over-corrected to a three-wide collision; both were wrong. `bracket-1-exhibition.svg` draws
   **one** path (the inner diamond alone), `bracket-2-core.svg` draws two (inner + mid), and
-  **neither carries a tick** — the ticks arrive at rank 3. The chip form sheds **the mid ring**
-  and each rank keeps its own distinguisher at a heavier weight, so 3, 4 and 5 stay distinct and
-  **rank 2's only distinguisher is the thing the chip drops.** Still deliberately not fixed: rank
-  2 needs a distinguisher that survives 22px, which is a Round 0 conversation this brief does not
-  scope;
+  **neither carries a tick** — the ticks arrive at rank 3. **The chip rule, as R8 states it: keep
+  only the newest ornament** — the chip sheds the mid ring *and* every ornament below the rank's
+  own (3 is ticks, 4 is studs, 5 is the closed ring), which is what the shipped two-path rank-5
+  chip has always drawn. So **rank 2's only ornament is the thing the chip drops.** Still
+  deliberately not fixed: rank 2 needs an ornament that survives 22px, a Round 0 conversation this
+  brief does not scope;
+- **ranks 3 and 4 collide at chip size too, and this was never asked.** Both place four marks at
+  the cardinal points — ticks at radius 4.1–5.2, studs at 1.2–4.4. They separate on radius and on
+  nub-vs-open-diamond, thinner than the separation 4-vs-5 was given, and untested at 22px.
+  Candidates in `assets/ASSETS.md`; same Round 0 conversation as 1-vs-2;
 
 All four are Design's to draw when asked. None blocks building what is drawn.
 
@@ -203,10 +209,9 @@ All four are Design's to draw when asked. None blocks building what is drawn.
 ## Errata carried, not corrected
 
 - ~~**Round 0's `bracket-5-cedh.svg` is rank 4's geometry with rank 5's numeral.**~~
-  **Corrected in R6**, not carried: `bracket-5-cedh-reissued.svg` plus a chip form sit beside
-  the originals in the Round 0 assets folder, and §3b draws the set at 40 / 28 / 22. The shipped
-  file is left in place rather than overwritten, since it belongs to the Round 0 package —
-  **engineering takes the reissued pair.**
+  **Corrected in R6, consolidated in R8:** `bracket-5-cedh.svg` in Round 0's `assets/` **is** the
+  reissued geometry — the old file is replaced, not kept beside it, so there is no current-file
+  question. §3b draws the set at 40 / 28 / 22.
 - **Round 2's package claims tutors live in `UnquantifiedFacts`** — the audit corrected this to
   `profile.brackets.comboReach.tutors`. The findings tile here inherits the corrected source.
 
