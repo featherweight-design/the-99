@@ -57,7 +57,7 @@ export function VerdictBlock({
       <p className="mt-2 text-[13.5px] font-semibold text-[color:var(--fg)] md:mt-[9px] md:text-[14px]">
         {head.face}
       </p>
-      <div className="mt-[9px] md:mt-[10px]">
+      <div className="mt-[9px] md:mt-[10px] md:flex md:items-center md:gap-[10px]">
         {/*
           ONE PILL, INKED BY THE LOWER MEMBER. A range draws both marks inside it — the one that
           holds at full strength, the one above it at 0.45 — with the border and the label in the
@@ -142,7 +142,7 @@ function SubLine({
     );
   }
   return (
-    <p className="mt-[10px] text-[12.5px] leading-[1.55] text-[color:var(--fg-muted)] md:mt-3 md:leading-[1.6]">
+    <p className="mt-[10px] text-[12.5px] leading-[1.55] text-[color:var(--fg-muted)] md:mt-3 md:text-[13px] md:leading-[1.6]">
       {reading.kind === "assembled"
         ? `${copy.ruledOutAssembled(BRACKET_NAMES[reading.below])}. ${copy.nothingFurther}`
         : `${ruledOutClause(reading.below, reading.reasons)} ${copy.nothingFurther}`}
