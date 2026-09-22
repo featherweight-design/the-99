@@ -7,9 +7,13 @@ import { isInfiniteOrGameEnding } from "../spellbook/combo-features";
  * SERVER-ONLY. The near-miss reads — a two-card combo with exactly one piece missing.
  *
  * `loadAssembledCombos` answers "what does this deck already do"; this answers "what is it one
- * card away from", which is the same index traversed the other way. The `spellbook_variant_cards`
- * oracle index exists for exactly this: the primary key leads on `variant_id` and cannot serve
- * a card-first question.
+ * card away from", which is the same index traversed the other way.
+ *
+ * `spellbook_variant_cards_oracle_idx` is what makes that affordable, and specifically the
+ * `exists` prune inside each CTE: the primary key leads on `variant_id`, so finding the
+ * variants that mention ANY of a set of cards is a card-first question the primary key cannot
+ * answer. Without the prune every two-card variant in the index is grouped on every call and
+ * then discarded, on a path that runs per page of the collection.
  *
  * ALL THREE §4.3b RULES APPLY UNCHANGED, and rule 2 is the one that matters most here. A piece
  * flagged `must_be_commander` only works from the command zone, so a card that would complete a
@@ -64,14 +68,20 @@ function pairsWithOnePiece(args: {
   const commanders = sql.param([...args.commanders]);
   return sql`
     with pair as (
-      select v.variant_id, v.produces, v.popularity,
-             array_agg(vc.oracle_id order by vc.oracle_id) as pieces
+      select v.variant_id, v.produces, v.popularity
       from ${spellbookVariants} v
       join ${spellbookVariantCards} vc on vc.variant_id = v.variant_id
       -- RULE 1: a template-gated variant names a CATEGORY of card, not a card, so no decklist
       -- and no collection can be said to be one card away from it.
       where v.card_count = 2
         and cardinality(v.requires_template_ids) = 0
+        -- PRUNE BEFORE THE GROUP, as the shipped reference does. A predicate on a non-grouping
+        -- column cannot be pushed through the aggregate, so without this every two-card
+        -- variant in the index — 5,031 of them — is grouped on every call and then thrown
+        -- away. This runs per page of the collection.
+        and exists (select 1 from ${spellbookVariantCards} vc2
+                    where vc2.variant_id = v.variant_id
+                      and vc2.oracle_id = any(${present}::uuid[]))
       group by v.variant_id
       -- TWO ROWS, not merely a card_count of 2 — that column keeps upstream's own uses
       -- length while this table is deduped by oracle id, so a variant naming one card twice
@@ -118,16 +128,10 @@ function pairsWithOnePiece(args: {
  * count may ever appear beside it. The one chosen is the most popular, with `variantId` as the
  * tail so the choice cannot move between two reads of an unchanged collection.
  */
-export function bestPartnerPerCard(rows: PairRow[], opts: { requireCastable: boolean }): Map<string, ComboPartner> {
+export function bestPartnerPerCard(rows: PairRow[]): Map<string, ComboPartner> {
   const best = new Map<string, ComboPartner>();
   for (const r of rows) {
     if (!isInfiniteOrGameEnding(r.produces)) continue;
-    // RULE 2, on the MISSING piece. A card that completes a combo only from the command zone
-    // is not completed by adding it to the 99, and `completes with X` there would be the false
-    // positive this design cannot survive. Not applied to a collection read, where the claim is
-    // about owning both halves rather than about assembling anything.
-    if (opts.requireCastable && r.missing_must_be_commander) continue;
-
     const candidate: ComboPartner = {
       oracleId: r.present_id,
       partnerOracleId: r.missing_id,
@@ -147,6 +151,27 @@ function morePopular(a: ComboPartner, b: ComboPartner): boolean {
   const bp = b.popularity ?? -1;
   if (ap !== bp) return ap > bp;
   return a.variantId < b.variantId;
+}
+
+/**
+ * RULE 2, ON THE CANDIDATE, AND IT MUST RUN BEFORE THE FLIP.
+ *
+ * In the query the reader HAS `present` and LACKS `want`, so `want.must_be_commander` says
+ * whether the candidate completes this combo only from the command zone — in which case adding
+ * it to the 99 completes nothing, and `completes with X` on that row is the false positive this
+ * design cannot survive.
+ *
+ * `loadCompletionPartners` then FLIPS which piece is called "missing", because the row on
+ * screen is the candidate and the card being named is the one already in the deck. A filter
+ * applied after that flip reads the other card's flag: the first version did exactly that and
+ * the rule silently did nothing.
+ *
+ * Its own function, and exported, because the version that lived inline was covered by no test
+ * — the suite exercised a `requireCastable` flag on `bestPartnerPerCard` that no production
+ * caller ever passed, so replacing the real filter with `rows` left every case green.
+ */
+export function castableCandidates(rows: readonly PairRow[]): PairRow[] {
+  return rows.filter((r) => !r.missing_must_be_commander);
 }
 
 /**
@@ -172,14 +197,8 @@ export async function loadCompletionPartners(args: {
     }),
   )).rows as PairRow[];
 
-  // RULE 2, ON THE CANDIDATE, AND BEFORE THE FLIP BELOW.
-  //
-  // `want` is the candidate, so `want.must_be_commander` says whether it completes this combo
-  // only from the command zone — in which case adding it to the 99 completes nothing and
-  // `completes with X` would be the false positive this design cannot survive. The flip
-  // rewrites which piece is "missing", so a check applied afterwards reads the wrong card's
-  // flag; the first version of this did exactly that and the rule silently did nothing.
-  const castable = rows.filter((r) => !r.missing_must_be_commander);
+  // RULE 2, ON THE CANDIDATE, AND BEFORE THE FLIP BELOW. See `castableCandidates`.
+  const castable = castableCandidates(rows);
 
   // NOW FLIP. The row on screen is the CANDIDATE and the card being NAMED is the one already
   // in the deck, which is the opposite of how the query reads: there, what the reader has is
@@ -195,7 +214,7 @@ export async function loadCompletionPartners(args: {
     // applied to that piece by the query.
     missing_must_be_commander: false,
   }));
-  return bestPartnerPerCard(relabelled, { requireCastable: false });
+  return bestPartnerPerCard(relabelled);
 }
 
 async function nameMap(oracleIds: readonly string[]): Promise<Map<string, string>> {
@@ -242,6 +261,12 @@ export async function loadOwnBothPartners(args: {
       from ${spellbookVariants} v
       join ${spellbookVariantCards} vc on vc.variant_id = v.variant_id
       where v.card_count = 2 and cardinality(v.requires_template_ids) = 0
+        -- Pruned before the group for the same reason as the deck read: a predicate on a
+        -- non-grouping column cannot reach through the aggregate, and this one runs per page
+        -- of a collection that may hold thousands of cards.
+        and exists (select 1 from ${spellbookVariantCards} vc2
+                    where vc2.variant_id = v.variant_id
+                      and vc2.oracle_id = any(${ids}::uuid[]))
       group by v.variant_id
       having count(*) = 2
     )
@@ -279,5 +304,5 @@ export async function loadOwnBothPartners(args: {
       )
   `)).rows as PairRow[];
 
-  return bestPartnerPerCard(rows, { requireCastable: false });
+  return bestPartnerPerCard(rows);
 }
