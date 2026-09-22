@@ -1,16 +1,17 @@
 import { describe, expect, it } from "vitest";
 import { readFileSync, readdirSync } from "node:fs";
 
+import { EXPECTED as FILES, SOURCE, TARGET as DIR, strip } from "./lib/bracket-marks.mjs";
+
 // The COPIES, asserted rather than the copier. What matters is that `public/brackets/` holds ten
 // drawable marks — a script that runs cleanly over an empty source would satisfy any test of the
 // script itself.
+//
+// The names come from `markAsset`'s OWN table, never a list spelled here. A third copy would let
+// a rename leave these assertions green against the old files while the renderer resolves a path
+// that 404s, which is the whole failure this asset step exists to prevent.
 
-const DIR = "public/brackets";
-const SLUGS = [
-  "bracket-1-exhibition", "bracket-2-core", "bracket-3-upgraded",
-  "bracket-4-optimized", "bracket-5-cedh",
-];
-const FILES = SLUGS.flatMap((s) => [`${s}.svg`, `${s}-chip.svg`]);
+
 
 describe("the bracket marks in public/", () => {
   it("has all ten, and nothing else", () => {
@@ -32,6 +33,18 @@ describe("the bracket marks in public/", () => {
   // stays in `design/`, which is its home.
   it.each(FILES)("%s carries no provenance blob", (file) => {
     expect(readFileSync(`${DIR}/${file}`, "utf8")).not.toContain("<metadata>");
+  });
+
+  // THE COMMITTED COPY IS THE CURRENT SOURCE, which is the one thing every check above misses.
+  // They all read `public/` alone, so a mark Design reissued after the last `assets:brackets` run
+  // satisfies every one of them — the old file is still ten files, still drawable, still stripped,
+  // still distinct. `pnpm test` runs in CI and `assets:brackets` does not, so without this a
+  // reissue ships the previous drawing indefinitely and nothing says so. Comparing a stripped
+  // SOURCE against the committed TARGET is what closes it, and it uses the copier's own `strip`
+  // rather than a second implementation that could drift into agreeing wrongly.
+  it.each(FILES)("%s matches the current design source", (file) => {
+    const expected = strip(readFileSync(`${SOURCE}/${file}`, "utf8"));
+    expect(readFileSync(`${DIR}/${file}`, "utf8")).toBe(expected);
   });
 
   // Each rank's own art: a copier that wrote one file ten times would pass every check above.
