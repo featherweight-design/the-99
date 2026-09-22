@@ -1417,6 +1417,40 @@ export type CommitResult =
   | { ok: false; message: string };
 
 /**
+ * The declaration a commit should carry into its version, or `undefined` when there is none.
+ *
+ * ONE COPY, SHARED BY BOTH COMMIT PATHS. `commitVersion` takes this optionally and for a while
+ * NEITHER caller passed it, so both declaration columns were written null on every real commit.
+ * Wiring only the deliberate commit left the pull path — which auto-commits the source deck —
+ * still writing nulls, which is the same defect surviving its own fix.
+ *
+ * GATED ON THE DECK HAVING DECLARED ANYTHING. Deriving permits needs a whole profile — 630ms
+ * median, 2.2s on the slowest real deck — and a deck with no live declaration has nothing to
+ * carry, which is every deck until a player answers.
+ *
+ * BUILT OUTSIDE THE CALLER'S TRANSACTION, deliberately: a 630ms build inside one holds the
+ * deck's row lock for that long while every concurrent edit and claim read queues behind a
+ * measurement. The race that buys is benign in the right direction — if the cards move between
+ * this read and the lock, `permitsDeclaration` fails and the version records NO declaration
+ * rather than one its own cards contradict.
+ */
+async function commitSnapshotFor(
+  deckId: string,
+  userId: string,
+): Promise<CommitSnapshot | undefined> {
+  // The column under its own name rather than through a projection alias: the shape then does
+  // not depend on the alias surviving a driver or a test's select stub.
+  const [live] = await db
+    .select({ declaredBracket: decks.declaredBracket })
+    .from(decks)
+    .where(and(eq(decks.id, deckId), eq(decks.userId, userId)));
+  const declared = bracketOf(live?.declaredBracket ?? null);
+  if (declared === null) return undefined;
+  const profile = await cachedDeckProfile(deckId, userId);
+  return profile ? { declared, permits: slotDeck(profile).permits } : undefined;
+}
+
+/**
  * Freeze the draft as the next version and say what it costs.
  *
  * The two lists are computed BEFORE the write, against the version being
@@ -1450,36 +1484,8 @@ export async function commitDeckVersion(
     return { ok: false, message: "We couldn't find that deck." };
   }
 
-  // THE COMMIT SNAPSHOT, and it is built here rather than inside the transaction.
-  //
-  // `deck_versions.declared_bracket` and `.permits` exist so a version can say "chose 4" about
-  // its own cards forever. Both were being written NULL on every real commit: `commitVersion`
-  // takes an optional snapshot and neither production caller passed one, so the column shipped
-  // dead and only an injected probe path ever exercised it.
-  //
-  // GATED ON THE DECK HAVING DECLARED ANYTHING. Deriving `permits` needs a whole profile —
-  // 630ms median, 2.2s on the slowest real deck — and a deck with no live declaration has
-  // nothing to carry, which is every deck until a player answers. So the cost is paid by the
-  // decks it is for, on the one action it is for.
-  //
-  // OUTSIDE THE TRANSACTION, deliberately: a 630ms build inside it would hold the deck's row
-  // lock for that long, and every concurrent edit and claim read would queue behind a
-  // measurement. The race that buys is benign in the right direction — if the cards move between
-  // this read and the lock below, `permitsDeclaration` fails and the version records NO
-  // declaration rather than one its own cards contradict, which is the rule the column already
-  // follows.
-  let snapshot: CommitSnapshot | undefined;
-  // The column under its own name rather than through a projection alias: the shape then does
-  // not depend on the alias surviving a driver or a test's select stub.
-  const [live] = await db
-    .select({ declaredBracket: decks.declaredBracket })
-    .from(decks)
-    .where(and(eq(decks.id, deckId), eq(decks.userId, userId)));
-  const declaredLive = bracketOf(live?.declaredBracket ?? null);
-  if (declaredLive !== null) {
-    const profile = await cachedDeckProfile(deckId, userId);
-    if (profile) snapshot = { declared: declaredLive, permits: slotDeck(profile).permits };
-  }
+
+  const snapshot = await commitSnapshotFor(deckId, userId);
 
   const result = await db.transaction<CommitResult>(async (tx) => {
     const [deck] = await tx.select().from(decks).where(eq(decks.id, deckId)).for("update");
@@ -1770,6 +1776,10 @@ export async function pullCardFromDeck(
   // owner never asked for — the exact case the pending-changes guard exists to
   // prevent. The write is in here for its own reason: a delete that lands
   // without its commit leaves the draft short of a card the version claims.
+  // The source deck auto-commits below, so it carries its declaration too. Built before the
+  // transaction for the reason the helper gives.
+  const pullSnapshot = await commitSnapshotFor(sourceDeckId, userId);
+
   const outcome = await db.transaction<DeckMutationResult>(async (tx) => {
     // EVERY party's deck row, locked in sorted id order, before anything is read.
     // The asking deck is locked because this transaction authorizes itself against
@@ -1943,7 +1953,7 @@ export async function pullCardFromDeck(
     // leaving Home to read this row as `committed` or `edited`. Both are true of
     // a pull, so neither is worth engineering for; see the note in `touched.ts`.
     await touchDeck(tx, sourceDeckId);
-    await commitVersion(sourceDeckId, "Pulled a card for another deck", tx);
+    await commitVersion(sourceDeckId, "Pulled a card for another deck", tx, pullSnapshot);
     return { ok: true };
   });
   if (!outcome.ok) return outcome;

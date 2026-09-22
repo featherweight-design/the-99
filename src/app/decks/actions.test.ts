@@ -1244,6 +1244,7 @@ const aVersion = () => ({
 });
 
 const { cachedDeckProfile } = await import("../../lib/profile/load");
+const { slotDeck } = await import("../../lib/bracket/slot");
 
 describe("commitDeckVersion", () => {
   beforeEach(() => {
@@ -1898,7 +1899,29 @@ describe("pullCardFromDeck", () => {
     expect(stub.state.deleteCalls).toContainEqual({ table: "deck_cards", id: SOURCE_ID });
     // The third argument is the caller's transaction: the delete above and this
     // commit land together, or the draft loses a card its version still claims.
-    expect(commitVersion).toHaveBeenCalledWith(SOURCE_ID, expect.any(String), expect.anything());
+    // The third argument is the caller's transaction; the FOURTH is the commit snapshot, and it
+    // is `undefined` here because this source deck has declared nothing. Stated rather than
+    // loosened: an accidental snapshot should fail.
+    expect(commitVersion).toHaveBeenCalledWith(
+      SOURCE_ID, expect.any(String), expect.anything(), undefined,
+    );
+    expect(cachedDeckProfile).not.toHaveBeenCalled();
+  });
+
+  // BOTH COMMIT PATHS CARRY THE DECLARATION, because wiring only one is how this defect survived
+  // its own fix: a pull auto-commits the SOURCE deck, so a declared source deck was still getting
+  // a version with both columns null after every pull.
+  it("carries the source deck's declaration through the auto-commit", async () => {
+    stub.state.deckRows.push({ oracleId: CARD_A, quantity: 1 });
+    vi.mocked(versionCards).mockResolvedValue([{ oracleId: CARD_A, quantity: 1 }]);
+    stub.state.decks[0] = { ...stub.state.decks[0], declaredBracket: 4 };
+    vi.mocked(cachedDeckProfile).mockResolvedValue({ brackets: {} } as never);
+    vi.mocked(slotDeck).mockReturnValue({ permits: [4, 5] } as never);
+    const result = await pullCardFromDeck(SOURCE_ID, CARD_A, ASKING_ID);
+    expect(result.ok).toBe(true);
+    expect(commitVersion).toHaveBeenCalledWith(
+      SOURCE_ID, expect.any(String), expect.anything(), { declared: 4, permits: [4, 5] },
+    );
   });
 
   // A pull takes one copy. A deck sleeving four Relentless Rats that lends one
