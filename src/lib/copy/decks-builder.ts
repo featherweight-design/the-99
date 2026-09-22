@@ -229,6 +229,10 @@ export const addPanelCopy = {
     rowAddActive: "↵ add",
     rowInDeck: "✓ In deck",
     rowOwned: (qty: number) => `×${qty} owned`,
+    // The phone row's short form, used ONLY on a row that also carries a combo partner: that
+    // line holds the type, the count and the partner at 390px, and the word is what gives.
+    // Ruled by Hugh 2026-09-22 (quick-add combo row, option E). Every other row keeps `rowOwned`.
+    rowOwnedShort: (qty: number) => `×${qty}`,
     rowNotOwned: "not owned",
     // `availability` is one of the availabilityCopy.marker.*Aria strings, or
     // null. It is prose, not the visual label: the eye reads "none free — in

@@ -150,6 +150,27 @@ this package ships. Both readings are wrong, and either would cost a round. That
 uncommitted on `main` when this was written, so it is cited by name and the quotations are
 what it said at that moment.
 
+## 5 · Matrix 4 is overruled for the quick-add row — Hugh, 2026-09-22
+
+Matrix 4 has the clause **replace the meta line**. On a phone that line is the only place the
+row draws the type line and the owned count, and dropping the type line at phone width is the
+shortcut this row was already fixed for once (`card-search-row.tsx`, above the name cell). It
+also assumes an ownership **dot** the shipped row has never had — ownership there is the words
+`×1 owned` / `not owned` — so built as drawn, a combo row would say nothing about ownership.
+
+Eight placements were rendered at the app's real widths and tokens and put to Hugh
+(artifact `CnpK132dk9nLDD4kAHx2xe`). **He chose:**
+
+- **Phone — option E, the glyph is the verb.** The partner JOINS the meta line as the 16px
+  lemniscate plus the partner's name, with no `completes with`: `Enchantment · ×1 · ∞ Sanguine
+  Bond`. The count takes its short form (`rowOwnedShort`) on those rows only. The meta yields
+  before the partner's name does, which is the priority `ComboClause` gives its own halves.
+  The words the glyph replaces are in the row's accessible name.
+- **Desktop — option G, the partner under the name.** The full clause goes on its own line in
+  the name cell, which the 52px row already has room for; the type column keeps the type.
+
+Neither grows the row. Rows with no partner are unchanged at both widths.
+
 ## Also outstanding, and not a deviation
 
 **The feature has no browser probe.** Several of its rules are facts about a laid-out page —
@@ -157,8 +178,10 @@ whether the clause shortens rather than clipping, whether the state sits under t
 name at 390px, whether four 16px marks fit a 157px tile — and jsdom produces no layout, so
 they are asserted by class list alone. Hugh ruled on 2026-09-22 to ship without one.
 
-**Matrix 4, the quick-add result row, is not built.** Its results come from a per-keystroke
-search action, and the combo read measures **~305ms against a real staging deck**, flat
-regardless of result count — the cost is the deck-side prune rather than the candidates. That
-is hundreds of milliseconds on every keystroke, so it was measured and returned rather than
-shipped.
+**Matrix 4, the quick-add result row, was built after this list was written** — see §5 for
+its placement. What held it back is worth keeping: the per-keystroke combo read measured
+**~305ms against a real staging deck**, flat regardless of result count, and that flatness was
+the answer rather than the obstacle. The cost is the deck side of the index walk, which no
+keystroke changes, so the read runs ONCE when the field is first focused and every keystroke
+is answered from the map. The whole-deck map is 4 to 114 entries across staging's 20 decks,
+median 26.

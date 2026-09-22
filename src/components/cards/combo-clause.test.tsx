@@ -61,8 +61,12 @@ describe("ComboClause", () => {
     expect(lead, "the app's words are not their own element").toBeTruthy();
     expect(name, "the partner name is not its own element").toBeTruthy();
     // The lead gives way first; both truncate, so neither can overflow its host.
-    expect(lead!.className).toContain("shrink-[999]");
-    expect(name!.className).not.toContain("shrink-[999]");
+    // The lead has NO BASE SIZE: it fills only what the name leaves, so nothing shrinks while
+    // the name fits. A shrink weight leaves the name a sub-pixel share, which is enough for the
+    // ellipsis to eat two letters — measured, not assumed.
+    expect(lead!.className).toMatch(/\bbasis-0\b/);
+    expect(lead!.className).toMatch(/\bmax-w-max\b/);
+    expect(name!.className).not.toMatch(/\bbasis-0\b/);
     expect(name!.className).toContain("truncate");
     // And the sentence still reads as one.
     expect(clause).toHaveTextContent(comboAwarenessCopy.clause.completes("Isochron Scepter"));
