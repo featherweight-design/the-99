@@ -749,6 +749,28 @@ describe("filterCards", () => {
     expect(order.indexOf("Lightning Bolt")).toBeLessThan(order.indexOf("Mimir's Ancient Wisdom"));
   });
 
+  it("breaks a tie on the drawn name too, where the primary key is equal", () => {
+    // The tiebreak is a SECOND call site and was asserted by nothing: every other case
+    // sorts on `name`, where the primary comparator already resolves the printed name, so
+    // the tiebreak is never reached with unequal names. Sorting on quantity with the
+    // quantities equal is what reaches it.
+    // The two names have to order DIFFERENTLY or the case cannot tell the versions apart:
+    // `Mimir's` < `Sol Ring` < `Teferi's`, so the drawn name puts the rename first and the
+    // oracle name puts it last. A first version paired it with `Zzz Placeholder`, where
+    // both orders agree, and passed with the tiebreak reverted.
+    const tied = [
+      listCard({ oracleId: "a", name: "Sol Ring", quantity: 4 }),
+      listCard({
+        oracleId: "e",
+        name: "Teferi's Ageless Insight",
+        printedName: "Mimir's Ancient Wisdom",
+        quantity: 4,
+      }),
+    ];
+    const order = sortCards(tied, "quantity", "desc").map((c) => c.oracleId);
+    expect(order).toEqual(["e", "a"]);
+  });
+
   it("survives a printed name that is ABSENT, not merely null", () => {
     // `printedName` is typed `string | null` and omitted altogether by fixtures across
     // nineteen files, so a `!== null` test admits `undefined` and the `.toLowerCase()`
@@ -761,6 +783,10 @@ describe("filterCards", () => {
       filterCards(withAbsent, { search, colors: [], types: [], setCodes: [] })
         .map((c) => c.oracleId);
 
+    // The RENAMED card is searched in the same pass, so this case also fails when the
+    // printed name is not consulted at all — without that clause it passes with the whole
+    // change reverted, pinning an intermediate implementation nobody shipped.
+    expect(ids("mimir")).toEqual(["e"]);
     expect(ids("birds")).toEqual(["f"]);
     expect(ids("sol")).toEqual(["a"]);
     expect(ids("zzz")).toEqual([]);

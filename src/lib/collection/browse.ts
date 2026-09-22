@@ -776,10 +776,11 @@ export function printingCaption(
  */
 function matchesName(card: Pick<BrowseCard, "name" | "printedName">, search: string): boolean {
   // THROUGH `printedNameOf`, not a null test of its own. `printedName` is typed
-  // `string | null` and is ABSENT on fixtures across nineteen files, so `!== null` admits
-  // `undefined` and the `.toLowerCase()` after it throws — which took out the whole
-  // collection browser, not just its search. `printedNameOf` has always answered that
-  // with `??`, and a card with no printed name simply tests its own name twice.
+  // `string | null` and is ABSENT — not null — on the card literals ten test files build,
+  // so `!== null` admits `undefined` and the `.toLowerCase()` after it throws, which took
+  // out the whole collection browser rather than just its search. `printedNameOf` has
+  // answered that with `??` since it was written, and a card with no printed name simply
+  // tests its own name twice.
   return printedNameOf(card).toLowerCase().includes(search)
     || card.name.toLowerCase().includes(search);
 }
@@ -794,7 +795,7 @@ export function filterCards(list: BrowseListCard[], f: BrowseFilters): BrowseLis
     // name on the card in the box and the name on screen — `Mimir's Ancient Wisdom` over
     // `Teferi's Ageless Insight` — so a search that read the oracle name alone found
     // nothing for what the reader was looking at, and found a row under a name that is
-    // not printed anywhere on it. Reported by Hugh on 2026-09-22.
+    // not printed anywhere on it. Reported by Hugh on 2026-09-21.
     //
     // The oracle name keeps matching: it is what every other printing of the card is
     // called, what the rules text is filed under, and what a player who knows the card
@@ -837,7 +838,12 @@ const SORT_COMPARATORS: Record<SortKey, (a: BrowseListCard, b: BrowseListCard) =
   // there — the same defect as the search reading that name alone, and found by sweeping
   // for it. Affects ~0.1% of rows, and every one of them is a row whose drawn name
   // disagreed with its position.
-  name: (a, b) => printedNameOf(a).localeCompare(printedNameOf(b)),
+  // `"en"` PINNED, as `sort-cards.ts`, `sort.ts` and `touched.ts` each pin it and for
+  // their reason: this component is statically imported, so this runs in Node for the SSR
+  // pass and again in the browser, and an unpinned collation can order the two differently
+  // — a list that reshuffles on hydration. The strings it now keys on are Secret Lair
+  // renames, which carry exactly the punctuation and diacritics collations disagree about.
+  name: (a, b) => printedNameOf(a).localeCompare(printedNameOf(b), "en"),
   quantity: (a, b) => a.quantity - b.quantity,
   set: (a, b) => a.primarySetCode.localeCompare(b.primarySetCode),
   rarity: (a, b) => RARITY_ORDER[a.rarity] - RARITY_ORDER[b.rarity],
@@ -868,7 +874,7 @@ export function sortCards(
   // user asked to reverse, and flipping it would shuffle every equal-quantity
   // run on a direction change for no reason the user could name.
   return [...list].sort((a, b) => sign * primary(a, b)
-    || printedNameOf(a).localeCompare(printedNameOf(b)));
+    || printedNameOf(a).localeCompare(printedNameOf(b), "en"));
 }
 
 /**
