@@ -2,9 +2,7 @@ import { act, render, screen } from "@testing-library/react";
 import { describe, expect, it } from "vitest";
 import type { BrowseCard } from "../../lib/collection/browse";
 import { comboAwarenessCopy } from "../../lib/copy/combo-awareness";
-import { MODAL_COMBO_CAP_DESKTOP } from "../../lib/combos/modal-block";
 import type { ModalComboPartner } from "../../lib/combos/near-miss";
-import { stubViewport } from "../../test-utils/stub-viewport";
 import { ComboPartnersDetail } from "./combo-partners-detail";
 
 const partner = (over: Partial<ModalComboPartner> = {}): ModalComboPartner => ({
@@ -15,6 +13,12 @@ const card = (partners?: ModalComboPartner[]): BrowseCard =>
   ({ oracleId: "c-1", name: "Dramatic Reversal", comboPartners: partners }) as BrowseCard;
 
 describe("the card modal's combo block", () => {
+  const open = async () => {
+    await act(async () => {
+      screen.getByRole("button", { name: /Two-card combos/ }).click();
+    });
+  };
+
   // ABSENT ENTIRELY when nothing is detected — no heading, no empty state, no reserved
   // height. A drawn absence would read as a cleared check, and detection here is bounded.
   it("draws nothing at all for a card with no detected partner", () => {
@@ -24,7 +28,7 @@ describe("the card modal's combo block", () => {
     expect(empty.firstChild).toBeNull();
   });
 
-  it("names each partner and its state", () => {
+  it("names each partner and its state", async () => {
     render(
       <ComboPartnersDetail
         card={card([
@@ -33,6 +37,7 @@ describe("the card modal's combo block", () => {
         ])}
       />,
     );
+    await open();
     // MATCHED ACROSS ELEMENTS: the line is two spans now — the app's words at `--fg-body`
     // and the partner's NAME at 600 in `--fg`, which is what the addendum sets.
     const lineOf = (name: string) =>
@@ -51,91 +56,104 @@ describe("the card modal's combo block", () => {
     expect(screen.getByText(comboAwarenessCopy.modal.state.notOwned)).toBeInTheDocument();
   });
 
-  // NO COUNT IN THE HEADING. `+8 more` is a fact about what is HIDDEN; `Two-card combos · 14`
-  // would be a claim about what EXISTS, and detection excludes template-gated variants.
-  it("prints no figure in the heading", () => {
-    render(<ComboPartnersDetail card={card([partner(), partner({ oracleId: "b" })])} />);
-    expect(screen.getByText(comboAwarenessCopy.modal.heading).textContent).toBe(
-      comboAwarenessCopy.modal.heading,
-    );
-  });
 
-  // THE BOUND IS TIED TO THE BLOCK, so a screen reader hears it with the heading — and it is
-  // rendered whether or not it is open, or `aria-describedby` would dangle.
-  it("describes the block with the bound, open or closed", () => {
-    const { container } = render(<ComboPartnersDetail card={card([partner()])} />);
-    // ON THE HEADING: a reader navigating by heading is the one who needs the bound, and a
-    // relation on the wrapping container is not reliably announced with the h3 inside it.
-    const heading = screen.getByText(comboAwarenessCopy.modal.heading);
-    const described = heading.getAttribute("aria-describedby");
-    expect(described).toBeTruthy();
-    expect(document.getElementById(described!)?.textContent).toBe(
-      comboAwarenessCopy.modal.qualifier,
-    );
-  });
 
-  // A REAL TARGET, and the sentence opens IN PLACE. Round 1 could refuse a tap route because
-  // the key and the modal carried the words; here the modal IS the last surface.
-  it("opens the bound in place when its marker is pressed", async () => {
-    const { container } = render(<ComboPartnersDetail card={card([partner()])} />);
-    const marker = screen.getByRole("button", {
-      name: comboAwarenessCopy.modal.boundMarkerAria,
-    });
-    expect(marker.getAttribute("aria-expanded")).toBe("false");
-    const bound = document.getElementById(
-      screen.getByText(comboAwarenessCopy.modal.heading).getAttribute("aria-describedby")!,
-    )!;
-    expect(bound.className).toContain("sr-only");
 
-    await act(async () => {
-      marker.click();
-    });
-    expect(marker.getAttribute("aria-expanded")).toBe("true");
-    expect(bound.className).not.toContain("sr-only");
-  });
 
-  // THE COMMON CASE DISCLOSES NOTHING: 49% of pieces have exactly one partner.
-  it("offers no disclosure below the cap", () => {
-    render(<ComboPartnersDetail card={card([partner()])} />);
-    expect(screen.queryByText(/more|Show all/)).toBeNull();
-  });
-
-  // THE BLOCK GROWS IN PLACE. It does not scroll inside itself and does not open a second
-  // surface, so every partner is in the document once expanded.
-  it("caps, discloses, and grows in place", async () => {
-    stubViewport(1300);
-    const many = Array.from({ length: MODAL_COMBO_CAP_DESKTOP + 3 }, (_, i) =>
-      partner({ oracleId: `p${i}`, name: `Partner ${i}`, popularity: 1000 - i }),
-    );
-    render(<ComboPartnersDetail card={card(many)} />);
-
-    const lines = () =>
-      screen.getAllByRole("listitem").filter((li) => li.textContent?.includes("with Partner"));
-    expect(lines()).toHaveLength(MODAL_COMBO_CAP_DESKTOP);
-    const more = screen.getByRole("button", {
-      name: comboAwarenessCopy.modal.showAllAria(many.length),
-    });
-    expect(more).toHaveTextContent(comboAwarenessCopy.modal.more(3));
-
-    await act(async () => {
-      more.click();
-    });
-    expect(lines()).toHaveLength(many.length);
-    // AND IT SAYS WHAT PRESSING IT NOW DOES. A control whose label still reads `Show all N`
-    // while `aria-expanded` is true announces one state and offers the other.
-    expect(more).toHaveTextContent(comboAwarenessCopy.modal.collapse);
-    expect(more.getAttribute("aria-expanded")).toBe("true");
-  });
 
   // AT 390px THE STATE WRAPS UNDER THE NAME rather than truncating it — the app's words move
   // before the card's name does, which is this feature's rule everywhere.
   //
+  // CLOSED AT EVERY COUNT, INCLUDING ONE. A block that is sometimes a row and sometimes a
+  // list is a block whose position the reader cannot learn.
+  it("starts closed even with a single partner, and lists nothing", () => {
+    render(<ComboPartnersDetail card={card([partner()])} />);
+    const row = screen.getByRole("button", { name: /Two-card combos/ });
+    expect(row.getAttribute("aria-expanded")).toBe("false");
+    expect(screen.queryByRole("list")).toBeNull();
+  });
+
+  // THE COUNTS ARE THE ONE PLACE A COUNT IS LEGAL: they describe this list, not what exists.
+  // `in this deck` leads and is the only part in colour, because it is the only urgent part.
+  it("counts by state, in deck first, and omits a state it has none of", () => {
+    render(
+      <ComboPartnersDetail
+        card={card([
+          partner({ oracleId: "a", state: "notOwned" }),
+          partner({ oracleId: "b", state: "inDeck" }),
+          partner({ oracleId: "c", state: "notOwned" }),
+        ])}
+      />,
+    );
+    const text = screen.getByRole("button", { name: /Two-card combos/ }).textContent ?? "";
+    expect(text).toContain(comboAwarenessCopy.modal.summary.inDeck(1));
+    expect(text).toContain(comboAwarenessCopy.modal.summary.notOwned(2));
+    expect(text, "a zero state was printed").not.toContain("you own");
+    expect(text.indexOf("in this deck")).toBeLessThan(text.indexOf("you don"));
+  });
+
+  // THE WHOLE ROW IS THE TARGET, and the six/four cap is withdrawn: a closed block already
+  // stops a fourteen-line one, and a reader who asked for the list is not served by a second
+  // disclosure inside it.
+  it("opens on the row and lists every partner, with no second disclosure", async () => {
+    const many = Array.from({ length: 12 }, (_, i) =>
+      partner({ oracleId: `p${i}`, name: `Partner ${i}` }),
+    );
+    render(<ComboPartnersDetail card={card(many)} />);
+    await open();
+    expect(screen.getAllByRole("listitem")).toHaveLength(12);
+    expect(screen.queryByText(/more$|^Show all/)).toBeNull();
+  });
+
+  // THE `*` IS NOT DRAWN WHILE CLOSED, and when it appears it REVEALS the sentence — the one
+  // place this feature states its own limits. An earlier revision deleted that paragraph
+  // outright and every test stayed green, because the case only asserted the MARKER existed.
+  it("reveals the bound only once open, outside the row's button", async () => {
+    render(<ComboPartnersDetail card={card([partner()])} />);
+    const row = screen.getByRole("button", { name: /Two-card combos/ });
+    expect(row.getAttribute("aria-controls")).toBeNull();
+    expect(
+      screen.queryByRole("button", { name: comboAwarenessCopy.modal.boundMarkerAria }),
+    ).toBeNull();
+
+    await open();
+    const marker = screen.getByRole("button", {
+      name: comboAwarenessCopy.modal.boundMarkerAria,
+    });
+    const described = row.getAttribute("aria-describedby");
+    expect(described, "the row describes nothing").toBeTruthy();
+    expect(document.getElementById(described!)?.textContent).toBe(
+      comboAwarenessCopy.modal.qualifier,
+    );
+    expect(document.getElementById(row.getAttribute("aria-controls")!)).toBeTruthy();
+    // NO INTERACTIVE NESTING: a control inside a native button announces two as one. Asserted
+    // from the ROW, because `marker.closest("button")` returns the marker either way.
+    expect(row.contains(marker), "the marker is nested inside the row's button").toBe(false);
+  });
+
+  // THE BLOCK STAYS IN THE MODAL'S HEADING OUTLINE, beside `In the bracket rules`.
+  it("keeps a level-3 heading around its toggle", () => {
+    render(<ComboPartnersDetail card={card([partner()])} />);
+    const heading = screen.getByRole("heading", { level: 3 });
+    expect(heading.textContent).toContain(comboAwarenessCopy.modal.heading);
+    expect(heading.contains(screen.getByRole("button", { name: /Two-card combos/ }))).toBe(true);
+  });
+
+  // THE ROW SPEAKS ITS COUNTS, so a reader who cannot see it learns what opening it shows.
+  it("names the toggle with the label and the counts", () => {
+    render(<ComboPartnersDetail card={card([partner({ state: "owned" })])} />);
+    expect(
+      screen.getByRole("button", { name: /Two-card combos/ }).getAttribute("aria-label"),
+    ).toBe(comboAwarenessCopy.modal.toggleAria(comboAwarenessCopy.modal.summary.owned(1)));
+  });
+
   // ASSERTED STRUCTURALLY, and that is a weaker check than it looks: jsdom lays nothing out,
   // so removing `flex-wrap` changes no measurement here and only the class list can be read.
   // A class assertion agrees with itself. The real proof is a browser probe, and this feature
   // has none yet — recorded as a follow-up rather than implied by a green test.
-  it("stacks the state under the NAME below sm, not under the glyph", () => {
+  it("stacks the state under the NAME below sm, not under the glyph", async () => {
     const { container } = render(<ComboPartnersDetail card={card([partner()])} />);
+    await open();
     const li = container.querySelector("li")!;
     // The glyph stays beside a column that holds the name and the state, so the state lands
     // under the name rather than at the row's left edge beneath the lemniscate.
@@ -154,10 +172,11 @@ describe("the card modal's combo block", () => {
   // THE THREE STATES AND NOTHING ELSE. No price, no copy count, no availability marker —
   // those are facts about your copies of the card you OPENED, and the modal has two blocks
   // for them already.
-  it("carries no money and no copy count", () => {
+  it("carries no money and no copy count", async () => {
     const { container } = render(
       <ComboPartnersDetail card={card([partner({ state: "notOwned" })])} />,
     );
+    await open();
     const block = container.querySelector("[data-testid='combo-partners-block']")!;
     expect(block.textContent).not.toMatch(/\$|×\d/);
   });

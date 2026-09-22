@@ -101,10 +101,24 @@ export const comboAwarenessCopy = {
       owned: 'you own it',
       notOwned: "you don't own it",
     },
-    /** The shipped disclosure atoms. Cap is 6 desktop / 4 phone. */
-    more: (n: number) => `+${n} more`,
-    showAll: (n: number) => `Show all ${n}`,
-    showAllAria: (n: number) => `Show all ${n} combo partners`,
+    /**
+     * The closed row's summary. The block is closed by default at EVERY count, so this is what
+     * most readers ever see — and it is the one place in this feature a count is legal: it
+     * describes this list, not what exists. The same licence `+N more` had.
+     *
+     *   `1 in this deck · 1 you own · 4 you don’t`
+     *
+     * A state with a count of zero is omitted entirely: `4 you don’t` alone, or
+     * `1 in this deck · 4 you don’t` — never `0 you own`.
+     */
+    summary: {
+      inDeck: (n: number) => `${n} in this deck`,
+      owned: (n: number) => `${n} you own`,
+      notOwned: (n: number) => `${n} you don’t`,
+      join: ' · ',
+    },
+    /** The closed row is a button; its name is the label plus the counts as words. */
+    toggleAria: (summarySpoken: string) => `Two-card combos, ${summarySpoken}`,
     /** The shipped disclosure's own collapse word, so a toggle never announces one state
      *  while offering the other. */
     collapse: 'Show fewer',
