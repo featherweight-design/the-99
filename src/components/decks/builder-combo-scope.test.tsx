@@ -1,6 +1,7 @@
 import { act, fireEvent, render, screen } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
 import type { DeckDetail } from "../../lib/decks/read";
+import { EMPTY_NOTE_COUNTS } from "../../lib/bracket/card-note";
 import { recommendedMix } from "../../lib/decks/mix";
 
 /**
@@ -35,6 +36,11 @@ function makeDeck(): DeckDetail {
     id: "deck-1",
     name: "Korvold",
     createdAt: new Date("2026-01-01"),
+    // Both arrived on `DeckDetail` in #854 while this file was being edited in #852. Neither
+    // PR could see the other: CI typechecks a branch against its own base, so each was green
+    // and the merge result was not.
+    declaredBracket: null,
+    noteCounts: EMPTY_NOTE_COUNTS,
     commander: {
       oracleId: "korvold",
       name: "Korvold, Fae-Cursed King",
