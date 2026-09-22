@@ -5,8 +5,14 @@ import { topOffCopy } from "../../lib/copy/top-off";
 import type { TopOffCandidate } from "../../lib/decks/last-slots";
 import { topOffDraftKey } from "../../lib/decks/top-off-draft";
 
-const actions = vi.hoisted(() => ({ commit: vi.fn() }));
-vi.mock("../../app/decks/actions", () => ({ commitTopOff: actions.commit }));
+const actions = vi.hoisted(() => ({ commit: vi.fn(), chooseBulk: vi.fn() }));
+vi.mock("../../app/decks/actions", () => ({
+  commitTopOff: actions.commit,
+  // THE SEED ASKS THE REAL FILL NOW. It used to slice this list by synergy, which is the
+  // "what can I sleeve" thinking the button stopped doing — so the strip calls the same
+  // action the button does, and these cases stub its answer.
+  chooseBulkFill: actions.chooseBulk,
+}));
 
 import { LastSlotsStrip } from "./last-slots-strip";
 
@@ -63,6 +69,11 @@ beforeEach(() => {
   actions.commit
     .mockReset()
     .mockResolvedValue({ ok: true, added: 1, total: 97, passId: "p1", boughtDelta: 0 });
+  // The seed's default answer: both owned candidates. Reset per case, or a
+  // `mockResolvedValue` set in one leaks into every later one.
+  actions.chooseBulk
+    .mockReset()
+    .mockResolvedValue({ ok: true, oracleIds: ["owned-1", "owned-2"] });
 });
 
 describe("LastSlotsStrip", () => {
@@ -110,7 +121,7 @@ describe("LastSlotsStrip", () => {
 
   it("names the owned candidates in the door note before any pass", () => {
     render(<LastSlotsStrip {...base} />);
-    expect(screen.getByText(topOffCopy.strip.doorNote("2"))).toBeInTheDocument();
+    expect(screen.getAllByText(topOffCopy.strip.doorNote("2"))).toHaveLength(2);
   });
 
   // The note promises what will arrive ticked, and the seed clamps to the open
@@ -118,8 +129,8 @@ describe("LastSlotsStrip", () => {
   // two is a promise the open cannot keep.
   it("clamps the door note's promise to the slots the seed can fill", () => {
     render(<LastSlotsStrip {...base} openSlots={1} />);
-    expect(screen.getByText(topOffCopy.strip.doorNote("1"))).toBeInTheDocument();
-    expect(screen.queryByText(topOffCopy.strip.doorNote("2"))).toBeNull();
+    expect(screen.getAllByText(topOffCopy.strip.doorNote("1"))).toHaveLength(2);
+    expect(screen.queryAllByText(topOffCopy.strip.doorNote("2"))).toHaveLength(0);
   });
 
   // A player who owns none of the candidates seeds no ticks, and the note has
@@ -167,7 +178,7 @@ describe("LastSlotsStrip", () => {
     // One, not three: the note states what will arrive ticked, so it reads the
     // same list the seed does or it overstates by exactly the cards whose every
     // copy is sleeved elsewhere.
-    expect(screen.getByText(topOffCopy.strip.doorNote("1"))).toBeInTheDocument();
+    expect(screen.getAllByText(topOffCopy.strip.doorNote("1"))).toHaveLength(2);
     expect(screen.queryByText(topOffCopy.strip.doorNote("3"))).toBeNull();
   });
 
@@ -189,11 +200,138 @@ describe("LastSlotsStrip", () => {
     expect(screen.queryByText(topOffCopy.strip.doorNoteNoneFree)).toBeNull();
   });
 
+  // THE SEED ASKS WHAT THE DECK NEEDS, which is the whole of this change. It used to take the
+  // top N of this list by synergy — "what can I sleeve" where the player asked "what does this
+  // deck need" — and #798 fixed that on the BUTTON while leaving it here, on the half a player
+  // is actually shown.
+  //
+  // The fixture is ordered so the two rules disagree: `owned-1` leads the list by synergy, and
+  // the action names `owned-2`. A seed still slicing the ranking ticks the first; one asking
+  // the fill ticks what it was told.
+  it("seeds what the fill chose, not the top of the synergy ranking", async () => {
+    actions.chooseBulk.mockResolvedValue({ ok: true, oracleIds: ["owned-2"] });
+    render(<LastSlotsStrip {...base} openSlots={1} />);
+
+    await click(screen.getByRole("button", { name: doorName("1") }));
+
+    expect(actions.chooseBulk).toHaveBeenCalledWith("deck-1", 1);
+    const byName = (name: string) =>
+      screen.getAllByRole("checkbox")
+        .find((b) => (b.getAttribute("aria-label") ?? "").includes(name));
+    expect(byName("owned-2")).toBeChecked();
+    expect(byName("owned-1")).not.toBeChecked();
+  });
+
+  // UNMOUNT IS NOT A CLOSE, and the strip unmounts on its own — the deck page drops it the
+  // moment `openSlots` reaches 0, which a quick-add can do while a seed is still out. The live
+  // region belongs to the PARENT and outlives this component, so a continuation that announces
+  // here describes a list that is no longer on screen to a screen reader that has no way to
+  // know that. Bumping only the draft generation is not enough: it stops the ticks and routes
+  // the continuation into the draft-moved branch, which announces.
+  it("says nothing when the seed lands after the strip unmounted", async () => {
+    let release: (v: unknown) => void = () => {};
+    actions.chooseBulk.mockReturnValue(
+      new Promise((r) => {
+        release = r;
+      }),
+    );
+    const onAnnounce = vi.fn();
+    const { unmount } = render(<LastSlotsStrip {...base} onAnnounce={onAnnounce} />);
+
+    await click(screen.getByRole("button", { name: doorName("3") }));
+    onAnnounce.mockClear();
+
+    unmount();
+    await act(async () => {
+      release({ ok: true, oracleIds: ["a"] });
+    });
+
+    expect(onAnnounce).not.toHaveBeenCalled();
+  });
+
+  // A refused seed leaves the list open with nothing ticked, and says nothing about it. The
+  // player did not ask for the pre-tick, so a failure of it is not theirs to read.
+  it("opens with nothing ticked when the fill refuses", async () => {
+    actions.chooseBulk.mockResolvedValue({ ok: false, message: "nope" });
+    const onAnnounce = vi.fn();
+    render(<LastSlotsStrip {...base} onAnnounce={onAnnounce} />);
+
+    await click(screen.getByRole("button", { name: doorName("3") }));
+
+    expect(screen.queryAllByRole("checkbox", { checked: true })).toHaveLength(0);
+    expect(onAnnounce).toHaveBeenCalledTimes(1);
+    expect(onAnnounce.mock.calls[0][0]).toContain(topOffCopy.announce.opened("3", "3", "0"));
+  });
+
+  // THE OPEN IS ALWAYS ANNOUNCED, even when the answer is dropped. A seed that lands after the
+  // player has acted must not tick — those cards were chosen for a deck nobody is looking at
+  // any more — but the open still happened, and swallowing its message leaves a screen reader
+  // with no account of a list that is now on screen.
+  it("announces the open even when the seed is dropped as stale", async () => {
+    let release: (v: unknown) => void = () => {};
+    actions.chooseBulk.mockReturnValue(new Promise((r) => { release = r; }));
+    const onAnnounce = vi.fn();
+    render(<LastSlotsStrip {...base} onAnnounce={onAnnounce} />);
+
+    await click(screen.getByRole("button", { name: doorName("3") }));
+    // The player ticks by hand while the server thinks, which moves the draft.
+    await click(screen.getAllByRole("checkbox")[0]);
+    onAnnounce.mockClear();
+
+    await act(async () => {
+      release({ ok: true, oracleIds: ["owned-1", "owned-2"] });
+    });
+
+    expect(onAnnounce).toHaveBeenCalledTimes(1);
+    expect(onAnnounce.mock.calls[0][0]).toContain(topOffCopy.announce.opened("3", "3", "1"));
+  });
+
+  // ONE MESSAGE PER OPEN. Closing and reopening announces for itself on the reopen path; an
+  // answer from the first open arriving afterwards would put a second message in the live
+  // region for one open, and the first of the pair is the zero the deferral exists to avoid.
+  it("does not announce twice when the list is reopened before the seed lands", async () => {
+    let release: (v: unknown) => void = () => {};
+    actions.chooseBulk.mockReturnValue(new Promise((r) => { release = r; }));
+    const onAnnounce = vi.fn();
+    render(<LastSlotsStrip {...base} onAnnounce={onAnnounce} />);
+
+    await click(screen.getByRole("button", { name: doorName("3") }));
+    await click(screen.getAllByRole("button", { name: topOffCopy.strip.close })[0]);
+    await click(screen.getByRole("button", { name: doorName("3") }));
+    const afterReopen = onAnnounce.mock.calls.length;
+
+    await act(async () => {
+      release({ ok: true, oracleIds: ["owned-1", "owned-2"] });
+    });
+
+    expect(onAnnounce).toHaveBeenCalledTimes(afterReopen);
+  });
+
+  // A REFUSED SEED LEAVES IT OWED. Nothing happened, so a reopen may ask again — where a stale
+  // one does not, because the player has acted and re-seeding would write over them.
+  it("tries again on reopen after the seed is refused", async () => {
+    actions.chooseBulk.mockResolvedValue({ ok: false, message: "nope" });
+    render(<LastSlotsStrip {...base} />);
+
+    await click(screen.getByRole("button", { name: doorName("3") }));
+    expect(actions.chooseBulk).toHaveBeenCalledTimes(1);
+
+    await click(screen.getAllByRole("button", { name: topOffCopy.strip.close })[0]);
+    actions.chooseBulk.mockResolvedValue({ ok: true, oracleIds: ["owned-1"] });
+    await click(screen.getByRole("button", { name: doorName("3") }));
+
+    expect(actions.chooseBulk).toHaveBeenCalledTimes(2);
+  });
+
   it("leaves a claimed card unticked when the list opens", async () => {
     // The door-note checks above read `seedCount`, which is derived from the same
     // list the seed is — so a regression that seeded from `ownedIds` while the
     // note kept reading `seedableIds` would pass every one of them with claimed
     // rows pre-ticked again. This opens the list and reads the boxes.
+    // The ACTION offers both, so what keeps the claimed row unticked is the strip's own
+    // intersection against `canSeed` rather than the stub being tidy. A seed that took the
+    // answer wholesale would tick a card the player cannot sleeve.
+    actions.chooseBulk.mockResolvedValue({ ok: true, oracleIds: ["held-1", "free-1"] });
     render(
       <LastSlotsStrip {...base} candidates={[claimed("held-1"), spare("free-1")]} />,
     );
@@ -212,7 +350,7 @@ describe("LastSlotsStrip", () => {
     // let one failed read silently empty the promise the strip makes.
     render(<LastSlotsStrip {...base} candidates={[candidate("unread", true)]} />);
 
-    expect(screen.getByText(topOffCopy.strip.doorNote("1"))).toBeInTheDocument();
+    expect(screen.getAllByText(topOffCopy.strip.doorNote("1"))).toHaveLength(2);
   });
 
   it("does not claim nothing was ranked when the tail was simply cut", () => {
@@ -377,7 +515,7 @@ describe("LastSlotsStrip", () => {
     await click(screen.getByRole("button", { name: topOffCopy.commit.addAria("2", "98", 99) }));
 
     expect(await screen.findByText(topOffCopy.strip.doorNoteAgainOwned("2", "3"))).toBeInTheDocument();
-    expect(screen.queryByText(topOffCopy.strip.doorNote("2"))).toBeNull();
+    expect(screen.queryAllByText(topOffCopy.strip.doorNote("2"))).toHaveLength(0);
   });
 
   // Cancelling adds nothing, but it does not discard the selection either: the
@@ -390,7 +528,7 @@ describe("LastSlotsStrip", () => {
     await click(screen.getByRole("button", { name: topOffCopy.strip.close }));
 
     expect(screen.getByText(topOffCopy.strip.doorNoteAgainOwned("2", "3"))).toBeInTheDocument();
-    expect(screen.queryByText(topOffCopy.strip.doorNote("2"))).toBeNull();
+    expect(screen.queryAllByText(topOffCopy.strip.doorNote("2"))).toHaveLength(0);
   });
 
   // The strip is the last thing on the builder page, so at 390px the list opens
@@ -461,14 +599,14 @@ describe("LastSlotsStrip", () => {
     // survives the reload, that promise is about a seed that already happened.
     it("greets a returning player with the reopen note, not the first-open one", async () => {
       const first = render(<LastSlotsStrip {...base} />);
-      expect(screen.getByText(topOffCopy.strip.doorNote("2"))).toBeInTheDocument();
+      expect(screen.getAllByText(topOffCopy.strip.doorNote("2"))).toHaveLength(2);
       await click(screen.getByRole("button", { name: doorName("3") }));
       await click(screen.getByRole("button", { name: topOffCopy.strip.close }));
       first.unmount();
 
       render(<LastSlotsStrip {...base} />);
       expect(screen.getByText(topOffCopy.strip.doorNoteAgainOwned("2", "3"))).toBeInTheDocument();
-      expect(screen.queryByText(topOffCopy.strip.doorNote("2"))).toBeNull();
+      expect(screen.queryAllByText(topOffCopy.strip.doorNote("2"))).toHaveLength(0);
     });
 
     it("does not restore another deck's selection", async () => {
@@ -477,7 +615,7 @@ describe("LastSlotsStrip", () => {
       first.unmount();
 
       render(<LastSlotsStrip {...base} deckId="deck-2" />);
-      expect(screen.getByText(topOffCopy.strip.doorNote("2"))).toBeInTheDocument();
+      expect(screen.getAllByText(topOffCopy.strip.doorNote("2"))).toHaveLength(2);
     });
 
     // What survives a reload is an *uncommitted* selection. A landed pass has
@@ -492,7 +630,7 @@ describe("LastSlotsStrip", () => {
       first.unmount();
 
       render(<LastSlotsStrip {...base} />);
-      expect(screen.getByText(topOffCopy.strip.doorNote("2"))).toBeInTheDocument();
+      expect(screen.getAllByText(topOffCopy.strip.doorNote("2"))).toHaveLength(2);
       await click(screen.getByRole("button", { name: doorName("3") }));
       expect(screen.getAllByRole("checkbox", { checked: true })).toHaveLength(2);
     });
