@@ -17,7 +17,8 @@ import { useEffect, useId, useLayoutEffect, useRef, useState } from "react";
 import { topOffCopy } from "../../lib/copy/top-off";
 import { synergyCopy, synergySignedDisplay } from "../../lib/copy/synergy-discovery";
 import { spokenManaCost } from "../../lib/copy/card-surfaces";
-import { commitTopOff, chooseBulkFill } from "../../app/decks/actions";
+import { commitTopOff } from "../../app/decks/actions";
+import { chooseBulkTicks } from "../../lib/decks/bulk-choice";
 import { canSeed, type TopOffCandidate } from "../../lib/decks/last-slots";
 import {
   formatCents,
@@ -596,35 +597,36 @@ export function TopOffList({
               const askedAt = draftGen.current;
               const stale = () => draftGen.current !== askedAt;
               try {
-                const result = await chooseBulkFill(deckId, tickable);
+                // THE SHARED PATH. The seed on `last-slots-strip.tsx` calls this same
+                // function, so the two cannot disagree about which cards a bulk selection
+                // ticks — which is exactly how they drifted before: they shared `canSeed`,
+                // which decides what is ELIGIBLE, and nothing about what to choose.
+                //
+                // The allow-list is read at APPLY time rather than captured before the await.
+                // The row toggles, the declines, the clear and Cancel all stay live while the
+                // server thinks — they consult `inflight`, which is the COMMIT's — so a
+                // player can set a row aside mid-request, and an allow-list from before it
+                // describes a draft that no longer exists.
+                const result = await chooseBulkTicks({
+                  deckId,
+                  slots: tickable,
+                  allowed: new Set(seedableIdsRef.current),
+                });
                 if (stale()) return;
-                // Intersected with what this list can actually tick. The action reads the
-                // deck's own pool and the list carries exclusions of its own — a set-aside row,
-                // or one that went illegal while the list was open — and those must not come
-                // back ticked because a bulk control was pressed.
                 if (!result.ok) {
                   // THE REFUSAL CHANGES NOTHING, which is the rule the commit path beside
                   // this one states in its own words. Replacing the selection with an empty
                   // set would throw away every tick the player had made by hand — and the
                   // empty set is a deliberate value here, drawn by the clear control, so it
-                  // must not double as a failure outcome. The message is the action's own.
+                  // must not double as a failure outcome.
+                  //
+                  // ANNOUNCED AS WELL AS DRAWN: `RefusalPlate` carries no live role, so a
+                  // message set into it reaches sighted readers and nobody else.
                   setError(result.message);
-                  // ANNOUNCED AS WELL AS DRAWN. `RefusalPlate` deliberately carries no live
-                  // role, so a message set into it reaches sighted readers and nobody else —
-                  // which is why the commit path beside this announces every refusal it sets.
                   onAnnounce(result.message);
                   return;
                 }
-                // RE-READ AT APPLY TIME, not at request time. The row toggles, the declines,
-                // the clear and Cancel all stay live while the server thinks — they only
-                // consult `inflight`, which is the COMMIT's — so a player can set a row aside
-                // or clear the lot while this is in flight. Closing over the `seedableIds`
-                // captured before the await would then apply an allow-list describing a draft
-                // that no longer exists, quietly reviving a row they had just put down.
-                const allowed = new Set(seedableIdsRef.current);
-                onTickedChange(new Set(
-                  result.oracleIds.filter((id: string) => allowed.has(id)),
-                ));
+                onTickedChange(result.ticks);
               } catch {
                 if (stale()) return;
                 // A rejected call — a deck deleted while the list was open, or a transport

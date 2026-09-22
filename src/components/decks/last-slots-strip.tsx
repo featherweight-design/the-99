@@ -14,6 +14,7 @@
 
 import { type Ref, useEffect, useId, useRef, useState } from "react";
 import { synergyCopy } from "../../lib/copy/synergy-discovery";
+import { chooseBulkTicks } from "../../lib/decks/bulk-choice";
 import { topOffCopy } from "../../lib/copy/top-off";
 import { canSeed, type TopOffCandidate } from "../../lib/decks/last-slots";
 import { useIsDesktop } from "../ui/use-is-desktop";
@@ -166,6 +167,18 @@ function LastSlotsStripInner({
   // restored selection is that same selection, so it is never seeded over.
   const seeded = useRef(false);
 
+  // THE SAME STALENESS RULE THE LIST APPLIES to its own bulk control, because the seed is now
+  // the same asynchronous act. The draft can move while the server thinks — a hand tick, a
+  // decline, a quick-add closing a slot — and a seed that landed on top of it would overwrite
+  // a choice the player had just made, which is the one thing a CONVENIENCE must never do.
+  const draftGen = useRef(0);
+  useEffect(() => {
+    draftGen.current += 1;
+  }, [ticked, declined, openSlots, deckOracleIds]);
+  useEffect(() => () => {
+    draftGen.current += 1;
+  }, []);
+
   const ownedIds = candidates.filter((c) => c.owned).map((c) => c.oracleId);
 
   // What the SEED may reach for, which is narrower than what the player may tick. The rule is
@@ -187,39 +200,72 @@ function LastSlotsStripInner({
   const rootRef = useRef<HTMLDivElement>(null);
   const moveFocus = useRef(false);
 
+  /** What the list will actually show ticked, derived the way `TopOffList` derives it —
+   *  pool order, minus what is declined or already in the deck, clipped to the slots left. */
+  function liveTickCount(from: ReadonlySet<string>): number {
+    return candidates
+      .map((c) => c.oracleId)
+      .filter((id) => from.has(id) && !declined.has(id) && !deckOracleIds.has(id))
+      .slice(0, Math.max(openSlots, 0)).length;
+  }
+
+  function announceOpen(tickCount: number) {
+    // One message per settle, and opening at phone settles two facts at once — so they are
+    // one message. Two calls would leave only the second in the live region, and the one
+    // that would survive is the lesser of the two.
+    const opened = topOffCopy.announce.opened(
+      String(candidates.length),
+      String(openSlots),
+      String(tickCount),
+    );
+    onAnnounce(isDesktop ? opened : `${opened} ${topOffCopy.dock.retiredAnnounce}`);
+  }
+
   function openList() {
-    let seedTicked = ticked;
-    // A restored selection is one the player already made, so the seed would
-    // be writing over their choices — including the choice to clear every one
-    // of them, which reads as an empty selection and not as an absent one.
-    if (!seeded.current && !restored) {
-      seeded.current = true;
-      seedTicked = new Set(seedableIds.slice(0, openSlots));
-      setTicked(seedTicked);
-    }
+    // A restored selection is one the player already made, so the seed would be writing over
+    // their choices — including the choice to clear every one of them, which reads as an
+    // empty selection and not as an absent one.
+    const owed = !seeded.current && !restored;
+    if (owed) seeded.current = true;
+
     moveFocus.current = true;
     setOpen(true);
     setVisitedThisMount(true);
     onOpenChange?.(true);
-    // The selection survives a close, and the deck does not stand still while
-    // the list is shut: slots can close under it and a card can join the deck
-    // from the quick-add dock. A reopen therefore announces what the list will
-    // actually show, derived the way TopOffList derives it — pool order, minus
-    // what is declined or already in the deck, clipped to the slots left. On a
-    // first open this is the seed itself, so one expression serves both.
-    const liveTicks = candidates
-      .map((c) => c.oracleId)
-      .filter((id) => seedTicked.has(id) && !declined.has(id) && !deckOracleIds.has(id))
-      .slice(0, Math.max(openSlots, 0)).length;
-    // One message per settle, and opening at phone settles two facts at once —
-    // so they are one message. Two calls would leave only the second in the
-    // live region, and the one that would survive is the lesser of the two.
-    const opened = topOffCopy.announce.opened(
-      String(candidates.length),
-      String(openSlots),
-      String(liveTicks),
-    );
-    onAnnounce(isDesktop ? opened : `${opened} ${topOffCopy.dock.retiredAnnounce}`);
+
+    if (!owed) {
+      // The selection survives a close, and the deck does not stand still while the list is
+      // shut: slots can close under it and a card can join the deck from the quick-add dock.
+      // A reopen therefore announces what the list will actually show.
+      announceOpen(liveTickCount(ticked));
+      return;
+    }
+
+    // THE SEED ASKS THE REAL FILL, through the same function the list's own bulk control
+    // calls. It used to take the top N of this list by synergy — "what can I sleeve" where
+    // the player asked "what does this deck need" — which is the failure #798 fixed on the
+    // button while leaving it here, on the half a player is actually shown.
+    //
+    // It cannot be synchronous, so the list opens with nothing ticked and the ticks arrive.
+    // The alternative was computing the plan on the deck page for every deck with an open
+    // slot, which is a fill per page load to prepare for a press that may never come.
+    const askedAt = draftGen.current;
+    void chooseBulkTicks({
+      deckId,
+      slots: Math.max(openSlots, 0),
+      allowed: new Set(seedableIds),
+    }).then((result) => {
+      // Dropped rather than applied if the draft moved while the answer was coming.
+      if (draftGen.current !== askedAt) return;
+      const ticks = result.ok ? result.ticks : new Set<string>();
+      if (result.ok) setTicked(ticks);
+      // ANNOUNCED HERE rather than at the open, and only on this first one: the figure is the
+      // point of the message, and announcing zero and then three is two messages where the
+      // first is never true. A refused seed announces the open with nothing ticked, which is
+      // what the player is looking at — and draws no refusal, because a convenience they did
+      // not ask for should not report its own failure at them.
+      announceOpen(liveTickCount(ticks));
+    });
   }
 
   function closeList() {

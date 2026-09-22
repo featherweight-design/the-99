@@ -5,8 +5,14 @@ import { topOffCopy } from "../../lib/copy/top-off";
 import type { TopOffCandidate } from "../../lib/decks/last-slots";
 import { topOffDraftKey } from "../../lib/decks/top-off-draft";
 
-const actions = vi.hoisted(() => ({ commit: vi.fn() }));
-vi.mock("../../app/decks/actions", () => ({ commitTopOff: actions.commit }));
+const actions = vi.hoisted(() => ({ commit: vi.fn(), chooseBulk: vi.fn() }));
+vi.mock("../../app/decks/actions", () => ({
+  commitTopOff: actions.commit,
+  // THE SEED ASKS THE REAL FILL NOW. It used to slice this list by synergy, which is the
+  // "what can I sleeve" thinking the button stopped doing — so the strip calls the same
+  // action the button does, and these cases stub its answer.
+  chooseBulkFill: actions.chooseBulk,
+}));
 
 import { LastSlotsStrip } from "./last-slots-strip";
 
@@ -63,6 +69,11 @@ beforeEach(() => {
   actions.commit
     .mockReset()
     .mockResolvedValue({ ok: true, added: 1, total: 97, passId: "p1", boughtDelta: 0 });
+  // The seed's default answer: both owned candidates. Reset per case, or a
+  // `mockResolvedValue` set in one leaks into every later one.
+  actions.chooseBulk
+    .mockReset()
+    .mockResolvedValue({ ok: true, oracleIds: ["owned-1", "owned-2"] });
 });
 
 describe("LastSlotsStrip", () => {
@@ -189,11 +200,51 @@ describe("LastSlotsStrip", () => {
     expect(screen.queryByText(topOffCopy.strip.doorNoteNoneFree)).toBeNull();
   });
 
+  // THE SEED ASKS WHAT THE DECK NEEDS, which is the whole of this change. It used to take the
+  // top N of this list by synergy — "what can I sleeve" where the player asked "what does this
+  // deck need" — and #798 fixed that on the BUTTON while leaving it here, on the half a player
+  // is actually shown.
+  //
+  // The fixture is ordered so the two rules disagree: `owned-1` leads the list by synergy, and
+  // the action names `owned-2`. A seed still slicing the ranking ticks the first; one asking
+  // the fill ticks what it was told.
+  it("seeds what the fill chose, not the top of the synergy ranking", async () => {
+    actions.chooseBulk.mockResolvedValue({ ok: true, oracleIds: ["owned-2"] });
+    render(<LastSlotsStrip {...base} openSlots={1} />);
+
+    await click(screen.getByRole("button", { name: doorName("1") }));
+
+    expect(actions.chooseBulk).toHaveBeenCalledWith("deck-1", 1);
+    const byName = (name: string) =>
+      screen.getAllByRole("checkbox")
+        .find((b) => (b.getAttribute("aria-label") ?? "").includes(name));
+    expect(byName("owned-2")).toBeChecked();
+    expect(byName("owned-1")).not.toBeChecked();
+  });
+
+  // A refused seed leaves the list open with nothing ticked, and says nothing about it. The
+  // player did not ask for the pre-tick, so a failure of it is not theirs to read.
+  it("opens with nothing ticked when the fill refuses", async () => {
+    actions.chooseBulk.mockResolvedValue({ ok: false, message: "nope" });
+    const onAnnounce = vi.fn();
+    render(<LastSlotsStrip {...base} onAnnounce={onAnnounce} />);
+
+    await click(screen.getByRole("button", { name: doorName("3") }));
+
+    expect(screen.queryAllByRole("checkbox", { checked: true })).toHaveLength(0);
+    expect(onAnnounce).toHaveBeenCalledTimes(1);
+    expect(onAnnounce.mock.calls[0][0]).toContain(topOffCopy.announce.opened("3", "3", "0"));
+  });
+
   it("leaves a claimed card unticked when the list opens", async () => {
     // The door-note checks above read `seedCount`, which is derived from the same
     // list the seed is — so a regression that seeded from `ownedIds` while the
     // note kept reading `seedableIds` would pass every one of them with claimed
     // rows pre-ticked again. This opens the list and reads the boxes.
+    // The ACTION offers both, so what keeps the claimed row unticked is the strip's own
+    // intersection against `canSeed` rather than the stub being tidy. A seed that took the
+    // answer wholesale would tick a card the player cannot sleeve.
+    actions.chooseBulk.mockResolvedValue({ ok: true, oracleIds: ["held-1", "free-1"] });
     render(
       <LastSlotsStrip {...base} candidates={[claimed("held-1"), spare("free-1")]} />,
     );
