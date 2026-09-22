@@ -33,7 +33,20 @@ describe("the card modal's combo block", () => {
         ])}
       />,
     );
-    expect(screen.getByText(comboAwarenessCopy.modal.line("Isochron Scepter"))).toBeInTheDocument();
+    // MATCHED ACROSS ELEMENTS: the line is two spans now — the app's words at `--fg-body`
+    // and the partner's NAME at 600 in `--fg`, which is what the addendum sets.
+    const lineOf = (name: string) =>
+      screen.getAllByRole("listitem").find((li) =>
+        li.textContent?.includes(comboAwarenessCopy.modal.line(name)),
+      );
+    expect(lineOf("Isochron Scepter")).toBeTruthy();
+    // And the name is the half that is set apart.
+    expect(
+      [...lineOf("Isochron Scepter")!.querySelectorAll("span")].some(
+        (el) => el.textContent === "Isochron Scepter" && el.className.includes("font-semibold"),
+      ),
+      "the partner name is not set apart from the app's words",
+    ).toBe(true);
     expect(screen.getByText(comboAwarenessCopy.modal.state.owned)).toBeInTheDocument();
     expect(screen.getByText(comboAwarenessCopy.modal.state.notOwned)).toBeInTheDocument();
   });
@@ -96,7 +109,9 @@ describe("the card modal's combo block", () => {
     );
     render(<ComboPartnersDetail card={card(many)} />);
 
-    expect(screen.getAllByText(/^with Partner/)).toHaveLength(MODAL_COMBO_CAP_DESKTOP);
+    const lines = () =>
+      screen.getAllByRole("listitem").filter((li) => li.textContent?.includes("with Partner"));
+    expect(lines()).toHaveLength(MODAL_COMBO_CAP_DESKTOP);
     const more = screen.getByRole("button", {
       name: comboAwarenessCopy.modal.showAllAria(many.length),
     });
@@ -105,11 +120,35 @@ describe("the card modal's combo block", () => {
     await act(async () => {
       more.click();
     });
-    expect(screen.getAllByText(/^with Partner/)).toHaveLength(many.length);
+    expect(lines()).toHaveLength(many.length);
     // AND IT SAYS WHAT PRESSING IT NOW DOES. A control whose label still reads `Show all N`
     // while `aria-expanded` is true announces one state and offers the other.
     expect(more).toHaveTextContent(comboAwarenessCopy.modal.collapse);
     expect(more.getAttribute("aria-expanded")).toBe("true");
+  });
+
+  // AT 390px THE STATE WRAPS UNDER THE NAME rather than truncating it — the app's words move
+  // before the card's name does, which is this feature's rule everywhere.
+  //
+  // ASSERTED STRUCTURALLY, and that is a weaker check than it looks: jsdom lays nothing out,
+  // so removing `flex-wrap` changes no measurement here and only the class list can be read.
+  // A class assertion agrees with itself. The real proof is a browser probe, and this feature
+  // has none yet — recorded as a follow-up rather than implied by a green test.
+  it("stacks the state under the NAME below sm, not under the glyph", () => {
+    const { container } = render(<ComboPartnersDetail card={card([partner()])} />);
+    const li = container.querySelector("li")!;
+    // The glyph stays beside a column that holds the name and the state, so the state lands
+    // under the name rather than at the row's left edge beneath the lemniscate.
+    const column = li.lastElementChild!;
+    expect(column.className, "the name and state do not share a column").toContain(
+      "flex-col",
+    );
+    expect(column.className, "the column never returns to a row").toContain("sm:flex-row");
+    expect(
+      column.querySelector('[data-testid="combo-glyph"]'),
+      "the glyph was pulled into the text column",
+    ).toBeNull();
+    expect(column.textContent).toContain("Isochron Scepter");
   });
 
   // THE THREE STATES AND NOTHING ELSE. No price, no copy count, no availability marker —

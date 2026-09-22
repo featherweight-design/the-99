@@ -1,3 +1,5 @@
+import { CARD_FACT_MARK_PX } from "./card-fact-mark";
+
 /**
  * The lemniscate — a two-card combo, as a glyph.
  *
@@ -7,31 +9,45 @@
  * `CARD_FACTS` for exactly that reason: the fact vocabulary, its fixed order and its key entry
  * are Round 2's surface, and a fourth member added from here would change all three.
  *
- * Drawn to the spec in `STATES-combo-awareness.md` — stroked, 16px viewBox, `stroke-width 1.8`,
- * `linecap round` — so that when Round 2 ships its own it is the same figure and this module
- * becomes a re-export rather than a second drawing.
+ * THE PATH IS THE CANVAS'S OWN, lifted verbatim from `The 99 - Combo Awareness.dc.html`,
+ * where it appears seven times — so when Round 2 ships its own it is the same figure and this
+ * module becomes a re-export rather than a second drawing.
+ *
+ * The first version was hand-authored from the prose spec in `STATES-combo-awareness.md`
+ * ("stroked, 16px viewBox, `stroke-width 1.8`, `linecap round`") without checking whether the
+ * canvas carried a path. It did. Four arcs with the wrong sweep flags drew a pretzel — two
+ * discs fused at the middle rather than a figure eight — which is what shipped.
+ *
+ * A prose spec describes a glyph; it does not define one. Read the canvas.
  *
  * The glow sits OUTSIDE the box model, as Round 1's marks do: it costs no layout, so no row and
  * no caption grows for it.
  */
-const GLOW = "drop-shadow(0 0 2px color-mix(in srgb, var(--fact) 45%, transparent))";
+/** The glow sits OUTSIDE the box model: it costs no layout and grows no row. `oklab` is the
+ *  canvas's own interpolation for this glyph. */
+const GLOW = "drop-shadow(0 0 3px color-mix(in oklab, var(--fact) 45%, transparent))";
 
 /**
- * 12px on every host; the modal block draws it at 16.
+ * ONE SIZE, EVERYWHERE, and NOT A PROP — `CARD_FACT_MARK_PX`, the same 16 every other mark in
+ * the app draws at.
  *
- * DELIBERATELY NOT `CARD_FACT_MARK_PX` (16). Round 1's marks sit on a name line at 16 and
- * this clause leads a SECONDARY line of 9.5–10.5px mono, where a 16px glyph is taller than
- * the text it introduces. `STATES-combo-awareness.md` sets both figures by name — "glyph
- * size: 12px on every host. 16px in the modal block" — so the two sizes are the spec rather
- * than drift from it, and the modal's own 16 is why this is a parameter at all.
+ * The handoff sets two figures by name ("12px on every host. 16px in the modal block") and
+ * this component shipped obeying them. That was already superseded: the fact marks shipped at
+ * 12, 13, 14 and 16 across six mounts, so the same fact read as a different mark depending on
+ * which list a player was looking at, and Hugh ruled one size on 2026-09-21 —
+ * `card-fact-mark.tsx` records the ruling AND records that it supersedes this handoff's floor.
+ *
+ * A reviewer raised exactly this on #840. I declined it, citing the handoff, and recorded the
+ * decline in that PR's `## Settled` — which is how a ruling already in the tree was overridden
+ * by a document it had already superseded. Read the code's rulings before settling against one.
  */
-export const COMBO_GLYPH_PX = 12;
+export const COMBO_GLYPH_PX = CARD_FACT_MARK_PX;
 
-export function ComboGlyph({ size = COMBO_GLYPH_PX }: { size?: number }) {
+export function ComboGlyph() {
   return (
     <svg
-      width={size}
-      height={size}
+      width={COMBO_GLYPH_PX}
+      height={COMBO_GLYPH_PX}
       viewBox="0 0 16 16"
       // `block` so the glyph does not sit on the text baseline and lift the line box.
       className="block shrink-0"
@@ -43,7 +59,9 @@ export function ComboGlyph({ size = COMBO_GLYPH_PX }: { size?: number }) {
       data-testid="combo-glyph"
     >
       <path
-        d="M4.2 8 A 2.3 2.3 0 1 1 6.5 8 A 2.3 2.3 0 1 0 11.1 8 A 2.3 2.3 0 1 1 8.8 8 A 2.3 2.3 0 1 0 4.2 8 Z"
+        // LIFTED VERBATIM from the handoff's canvas, where it appears seven times. Two arcs
+        // joined by cubic curves, which is what makes the crossing read as a crossing.
+        d="M5.2 4.9 A 3.1 3.1 0 1 0 5.2 11.1 C 8.3 11.1 7.7 4.9 10.8 4.9 A 3.1 3.1 0 1 1 10.8 11.1 C 7.7 11.1 8.3 4.9 5.2 4.9 Z"
         fill="none"
         stroke="currentColor"
         strokeWidth="1.8"

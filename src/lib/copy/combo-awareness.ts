@@ -23,6 +23,8 @@
  * avoid.
  */
 const COMPLETES_LEAD = 'completes with ';
+/** The modal line's own lead, for the same reason: its two halves are set differently. */
+const MODAL_LINE_LEAD = 'with ';
 
 export const comboAwarenessCopy = {
   /**
@@ -66,8 +68,15 @@ export const comboAwarenessCopy = {
   /** The card modal's block — the ONE surface in this feature that enumerates. */
   modal: {
     heading: 'Two-card combos',
-    /** One line per detected partner. Ordered: inDeck, then owned, then unowned. */
-    line: (partner: string) => `with ${partner}`,
+    /**
+     * One line per detected partner. Ordered: inDeck, then owned, then unowned.
+     *
+     * `lineLead` is exported because the addendum sets the two halves in DIFFERENT type: the
+     * words at `--fg-body`, the partner's name at weight 600 in `--fg`. Composing `line` from
+     * it keeps one source, so the sentence and its parts cannot disagree.
+     */
+    lineLead: MODAL_LINE_LEAD,
+    line: (partner: string) => `${MODAL_LINE_LEAD}${partner}`,
     state: {
       inDeck: 'in this deck',
       owned: 'you own it',
