@@ -41,7 +41,16 @@ export function ComboClause({
       // `inline-flex`, because this IS an inline clause: a host may put it in inline flow
       // beside other text, and a block-level flex wrapper would force a line break there. The
       // repo's other glyph-plus-text atoms are inline for the same reason.
-      className={`inline-flex items-center gap-[4px] min-w-0 ${className ?? ""}`}
+      //
+      // `max-w-full`, because inline flow is also what defeated every shrink rule below. An
+      // inline-level box in a BLOCK parent sizes to at least its min-content, and the
+      // min-content of text that cannot wrap is the whole sentence, so the clause never shrank
+      // at all — `min-w-0` only governs a flex ITEM. The top-off row and the Consider tile both
+      // host it in a block, and both overflowed from the day they shipped: measured at 390px,
+      // `completes with Thassa's Oracle` ran 24px into the synergy figures, and a long partner
+      // ran ~105px past a tile. Capped at the parent's width, the lead gives way first as
+      // intended and the line stops at its cell, on every host.
+      className={`inline-flex items-center gap-[4px] min-w-0 max-w-full ${className ?? ""}`}
     >
       <ComboGlyph />
       {state === "completes" ? (
