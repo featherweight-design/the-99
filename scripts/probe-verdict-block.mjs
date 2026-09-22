@@ -26,7 +26,11 @@
 // second layer removed so the file's own numeral survives under the HTML one (2), and the
 // denominator taken out of the population sentence (2).
 //
-// Makes no writes to any deck. Signs in through Clerk's dev instance — see the local-auth note in memory.
+// IT WRITES ONE ROW: the signed-in account's `user_prefs.about_version_seen`, raised with
+// `greatest(...)` so it can only ever move forward. That is the convention
+// `probe-card-captions.mjs` set and records the reason for — the flag is true once this has
+// run, and clearing it would re-break every other probe on this account. It touches no deck,
+// no collection and no catalog row. Signs in through Clerk's dev instance — see the local-auth note in memory.
 // Needs a server with ANALYSIS_TAB_ENABLED=true. Point it at `local-dev`, never production.
 //
 //   PROBE_BASE=http://localhost:3010 node scripts/probe-verdict-block.mjs
@@ -291,6 +295,10 @@ async function run() {
     await signIn(scout);
     const href = await findDeck(scout);
     await first.close();
+    // A MISSING FIXTURE IS A FAILURE, AND IT HAS TO REACH THE EXIT CODE. An earlier version
+    // returned here, which skipped the summary and the `process.exitCode` line below the
+    // `finally` — so the run printed one ` FAIL ` and then exited 0, and no CI job or manual
+    // run could act on it. The summary now lives outside `run()` and every path reaches it.
     if (!href) {
       report("a deck to walk", false, "this account owns no decks — the fixture is missing");
       return;
@@ -348,11 +356,11 @@ async function run() {
   } finally {
     await browser.close();
   }
-  // `process.exit` OUTSIDE the `finally`, because inside one it swallows a throw and prints
-  // "all checks passed" over a run that never reached its checks. Three probes here have been
-  // written with that bug.
-  console.log(failures === 0 ? "\nAll checks passed." : `\n${failures} check(s) failed.`);
-  process.exitCode = failures === 0 ? 0 : 1;
 }
 
 await run();
+// THE SUMMARY IS OUTSIDE `run()`, so no early return can skip it — and `process.exit` is not
+// used at all, because inside a `finally` it swallows a throw and prints "all checks passed"
+// over a run that never reached its checks. Three probes here have been written with that bug.
+console.log(failures === 0 ? "\nAll checks passed." : `\n${failures} check(s) failed.`);
+process.exitCode = failures === 0 ? 0 : 1;

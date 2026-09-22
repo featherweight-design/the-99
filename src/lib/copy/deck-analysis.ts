@@ -57,6 +57,17 @@ export function nameList(names: readonly string[]): string {
   return `${names.slice(0, -1).join(", ")} and ${names[names.length - 1]}`;
 }
 
+/**
+ * A grouped figure, pinned to `en-US`.
+ *
+ * NOT the runtime's default locale. These sentences are rendered on the server and hydrated on
+ * the client, so a reader whose browser reports a locale that groups with `.` gets a server
+ * string reading `9,730` and a client one reading `9.730` — a hydration mismatch inside the one
+ * figure the population line exists to carry. Every other copy module here pins it the same way;
+ * `card-assignments.ts` and `collection.ts` call the helper `fmt` and `count`.
+ */
+const fmt = (n: number) => n.toLocaleString("en-US");
+
 const mldMisses = nameList(MLD_DETECTION.knownMisses);
 
 export const deckAnalysisCopy = {
@@ -216,8 +227,8 @@ export const deckAnalysisCopy = {
   population: {
     label: "What other players say",
     line: (declared: number, commander: string, said: number, name: string) =>
-      `Of the ${declared.toLocaleString()} ${commander} decks that declared a bracket, `
-      + `${said.toLocaleString()} said ${name}.`,
+      `Of the ${fmt(declared)} ${commander} decks that declared a bracket, `
+      + `${fmt(said)} said ${name}.`,
     /**
      * The same sentence, split so the two figures can carry the emphasis the canvas gives them.
      *
@@ -232,9 +243,9 @@ export const deckAnalysisCopy = {
       name: string,
     ): { text: string; strong?: boolean }[] => [
       { text: "Of the " },
-      { text: declared.toLocaleString(), strong: true },
+      { text: fmt(declared), strong: true },
       { text: ` ${commander} decks that declared a bracket, ` },
-      { text: said.toLocaleString(), strong: true },
+      { text: fmt(said), strong: true },
       { text: ` said ${name}.` },
     ],
     /** The 27 commanders EDHREC has no declarations for. ABSENT, never zero: a zero reads as
