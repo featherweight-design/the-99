@@ -1,0 +1,9 @@
+<svg width="40" height="40" viewBox="0 0 40 40" xmlns="http://www.w3.org/2000/svg" xmlns:c2pa="http://c2pa.org/manifest">
+  
+  <path d="M20 8.5 L31.5 20 L20 31.5 L8.5 20 Z" fill="none" stroke="currentColor" stroke-width="1.8"></path>
+  <path d="M20 1.2 L21.6 2.8 L20 4.4 L18.4 2.8 Z" fill="none" stroke="currentColor" stroke-width="1.4"></path>
+  <path d="M37.2 18.4 L38.8 20 L37.2 21.6 L35.6 20 Z" fill="none" stroke="currentColor" stroke-width="1.4"></path>
+  <path d="M20 35.6 L21.6 37.2 L20 38.8 L18.4 37.2 Z" fill="none" stroke="currentColor" stroke-width="1.4"></path>
+  <path d="M2.8 18.4 L4.4 20 L2.8 21.6 L1.2 20 Z" fill="none" stroke="currentColor" stroke-width="1.4"></path>
+  <text x="20" y="20" text-anchor="middle" dominant-baseline="central" font-family="Cinzel,serif" font-weight="700" font-size="17" fill="currentColor" dy="0.5">4</text>
+</svg>

@@ -88,7 +88,8 @@
     "measure:roles": "tsx scripts/measure-role-targets.mts",
     "probe:card-mark": "node scripts/probe-card-mark.mjs",
     "probe:role-targets": "tsx scripts/probe-role-targets.ts",
-    "probe:fill": "tsx scripts/probe-fill.ts"
+    "probe:fill": "tsx scripts/probe-fill.ts",
+    "assets:brackets": "tsx scripts/copy-bracket-marks.mts"
   },
   "dependencies": {
     "@clerk/nextjs": "^7.5.20",
