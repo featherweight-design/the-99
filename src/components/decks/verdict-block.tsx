@@ -73,7 +73,7 @@ export function VerdictBlock({
             <>
               <span
                 aria-hidden="true"
-                className="font-mono text-[12px] opacity-70"
+                className="font-mono text-[11px] opacity-70 md:text-[12px]"
                 style={{ color: bracketInk(low) }}
               >
                 /
@@ -107,7 +107,7 @@ function SubLine({
   if (reading.kind === "intent") {
     const low = reading.low;
     return (
-      <div className="mt-3 flex items-start gap-2 md:mt-[12px]">
+      <div className="mt-[10px] flex items-start gap-2 md:mt-3">
         {/*
           THE RINGED `?`, IN THE LOWER BRACKET'S INK. It asks the question a range poses and
           carries no other meaning, so it is drawn only here — the climb's own declare rung is
@@ -117,7 +117,7 @@ function SubLine({
           <span
             aria-label={copy.declareGlyphAria}
             role="img"
-            className="mt-0.5 flex h-[15px] w-[15px] flex-none items-center justify-center rounded-full border font-mono text-[9.5px] font-semibold leading-none"
+            className="mt-0.5 flex h-[14px] w-[14px] flex-none items-center justify-center rounded-full border font-mono text-[9px] font-semibold leading-none md:h-[15px] md:w-[15px] md:text-[9.5px]"
             style={{ borderColor: bracketInk(glyphBracket), color: bracketInk(glyphBracket) }}
           >
             ?
