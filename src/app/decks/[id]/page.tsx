@@ -275,7 +275,15 @@ export default async function DeckBuilderPage({
         detail.commander.oracleId,
         ...(detail.partner ? [detail.partner.oracleId] : []),
       ],
-      candidateOracleIds: candidateCards.map((c) => c.oracleId),
+      // BOTH LISTS IN ONE READ. The Add panel's suggestions and the Last 31's candidates are
+      // two different rankings over the same question, and asking twice would pay the join
+      // twice for an overlapping set of ids.
+      candidateOracleIds: [
+        ...new Set([
+          ...candidateCards.map((c) => c.oracleId),
+          ...suggestions.map((s) => s.oracleId),
+        ]),
+      ],
     }).catch(() => null),
   ]);
 
@@ -292,6 +300,13 @@ export default async function DeckBuilderPage({
   const pricedSuggestions = suggestions.map((s) => ({
     ...withPrice(s),
     availability: s.owned ? (availability?.get(s.oracleId) ?? null) : null,
+    // Declared on `DeckSuggestion`, so a consumer is forced to read it rather than inheriting
+    // it untyped through this spread — which is the dead-payload shape the candidate-facts
+    // note above refuses.
+    comboPartner: (() => {
+      const hit = completions?.get(s.oracleId);
+      return hit ? { oracleId: hit.partnerOracleId, name: hit.partnerName } : null;
+    })(),
   }));
 
   // First-run: user's only deck and it has no cards yet.
