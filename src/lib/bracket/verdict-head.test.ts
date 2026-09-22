@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 
 import { populationLine, populationSubject, verdictHead, verdictSubLine } from "./verdict-head";
 import type { Bracket } from "./types";
+import { BRACKET_NAMES } from "../copy/deck-analysis";
 
 /** Every shape `permitsFor` can return, so no case here is hypothetical. */
 const REACHABLE: readonly Bracket[][] = [[1, 2], [2], [3], [4], [4, 5]];
@@ -9,16 +10,39 @@ const REACHABLE: readonly Bracket[][] = [[1, 2], [2], [3], [4], [4, 5]];
 describe("verdictHead", () => {
   it("names both brackets on a range, and draws the split chip", () => {
     expect(verdictHead([1, 2])).toEqual({
-      face: "Exhibition or Core", split: true, glyphBracket: 1,
+      face: "Exhibition or Core", split: true, chip: 1,
     });
     expect(verdictHead([4, 5])).toEqual({
-      face: "Optimized or cEDH", split: true, glyphBracket: 4,
+      face: "Optimized or cEDH", split: true, chip: 4,
     });
   });
 
-  it("names the one bracket on a single, with no chip and no glyph", () => {
-    expect(verdictHead([3])).toEqual({ face: "Upgraded", split: false, glyphBracket: null });
-    expect(verdictHead([2])).toEqual({ face: "Core", split: false, glyphBracket: null });
+  it("names the one bracket on a single, with no split", () => {
+    expect(verdictHead([3])).toEqual({ face: "Upgraded", split: false, chip: 3 });
+    expect(verdictHead([2])).toEqual({ face: "Core", split: false, chip: 2 });
+  });
+
+  // ROUND 3: ANSWERING RESOLVES THE FACE. Every member of both ranges, because `[1]` and `[5]`
+  // are not reachable `permits` shapes, so a face built by re-reading the answer as a
+  // single-bracket range would throw on exactly those two.
+  it("resolves a range to the answer's own face and chip", () => {
+    for (const permits of [[1, 2], [4, 5]] as Bracket[][]) {
+      for (const answered of permits) {
+        const head = verdictHead(permits, answered);
+        expect(head.split).toBe(false);
+        expect(head.chip).toBe(answered);
+        expect(head.face).toBe(BRACKET_NAMES[answered]);
+      }
+    }
+    expect(verdictHead([4, 5], 5).face).toBe("cEDH");
+    expect(verdictHead([1, 2], 1).face).toBe("Exhibition");
+  });
+
+  // An answer the range does not hold is drift, and a single bracket asks nothing. A caller
+  // passing either has re-derived `declarationAsk` wrongly, and a confident face would hide it.
+  it("refuses an answer that does not answer the range", () => {
+    expect(() => verdictHead([4, 5], 2)).toThrow();
+    expect(() => verdictHead([3], 3)).toThrow();
   });
 
   // EXACTLY TWO OF THE FIVE REACHABLE SHAPES ARE RANGES. Swept rather than asserted one at a
@@ -29,14 +53,10 @@ describe("verdictHead", () => {
     expect(split).toEqual([[1, 2], [4, 5]]);
   });
 
-  // THE GLYPH TAKES THE LOWER MEMBER'S INK, derived rather than listed — so a range that does
-  // not exist today could not arrive drawing nothing.
-  it("inks the glyph from the lower member, on every range", () => {
-    for (const permits of REACHABLE) {
-      const head = verdictHead(permits);
-      if (head.split) expect(head.glyphBracket).toBe(permits[0]);
-      else expect(head.glyphBracket).toBeNull();
-    }
+  // THE PILL TAKES THE LOWER MEMBER'S INK on a range, derived rather than listed — so a range
+  // that does not exist today could not arrive drawing nothing.
+  it("inks the pill from the lower member, on every shape", () => {
+    for (const permits of REACHABLE) expect(verdictHead(permits).chip).toBe(permits[0]);
   });
 
   // A face is never a numeral: the mark beside it draws that, and a face carrying one would

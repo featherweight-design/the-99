@@ -152,8 +152,6 @@ export const deckAnalysisCopy = {
     heading: "Your bracket",
     /** On the chip beside the two marks. A range is two brackets the RULES hand the player. */
     splitChip: "Split",
-    /** The ringed `?`. It asks the question a range poses, and carries no other meaning. */
-    declareGlyphAria: "Yours to declare",
 
     /**
      * The intent sub-lines, for the two ranges.
@@ -283,13 +281,14 @@ export const deckAnalysisCopy = {
 
     aboveAllowed: "Nothing rules it out. It permits more than this deck uses.",
     /**
-     * The 4-5 rung. The one ringed `?` left on the climb, and the only rung with a glyph.
+     * The 4-5 rung. It points at the answer rather than asking: Round 3 moved the ask into the
+     * verdict block and retired the ringed `?` that sat here, so there is one ask per surface.
      *
      * No em dash: this repo's shipping strings carry none, and the clause joins on a colon.
      */
     declare:
       "Nothing to change. Four and five share their card limits: the difference is how you play "
-      + "it, and it is yours to declare.",
+      + "it, and the answer is in the block above.",
 
     /** Beside the figure, in `--fg-faint`. Short on purpose - the rung already names the
      *  bracket, so `3 allowed` cannot mean anything else. */

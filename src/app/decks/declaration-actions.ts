@@ -6,6 +6,7 @@ import { decks } from "../../db/schema";
 import { requireUserId } from "../../lib/auth";
 import { isUuid } from "../../lib/uuid";
 import { revalidatePath } from "next/cache";
+import { after } from "next/server";
 import { declarationRefusal, type DeclarationRefusal } from "../../lib/bracket/declaration";
 import type { Bracket } from "../../lib/bracket/types";
 import { cachedDeckProfile } from "../../lib/profile/load";
@@ -89,7 +90,15 @@ export async function declareBracket(deckId: string, value: number): Promise<Dec
   // The declaration is NOT in `profileFingerprint` (#797) — the profile does not read it — so no
   // cached profile goes stale here and nothing about this write needs one rebuilt. What does
   // change is what the deck's own surfaces draw, which is what these paths are for.
-  for (const path of deckSurfaces(deckId)) revalidatePath(path);
+  //
+  // DEFERRED INTO `after()`. A Server Action that revalidates during its own run re-renders the
+  // route it was called from into its reply (`probe:printing-pick` measured 1.6 MB against 122
+  // bytes), and this one is called from the deck page to change one column. The caller already
+  // draws the answer it sent — `useDeclaration` holds it for the visit — so the fresh page would
+  // buy nothing but bytes. The paths are still retired, for the next visit.
+  after(() => {
+    for (const path of deckSurfaces(deckId)) revalidatePath(path);
+  });
 
   return { ok: true, declared: value as Bracket };
 }

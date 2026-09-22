@@ -17,6 +17,8 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 
 const stub = vi.hoisted(() => ({
   paths: [] as string[],
+  /** Work handed to `after()`, held until the test runs it — the reply is sent before it. */
+  deferred: [] as (() => void)[],
   updates: [] as unknown[],
   /** The update's WHERE, rendered. Recorded rather than discarded: the ownership half of this
    *  statement is otherwise asserted by nobody, and the header below claims it is not. */
@@ -29,6 +31,12 @@ const stub = vi.hoisted(() => ({
 vi.mock("next/cache", () => ({
   revalidatePath: (path: string) => {
     stub.paths.push(path);
+  },
+}));
+
+vi.mock("next/server", () => ({
+  after: (fn: () => void) => {
+    stub.deferred.push(fn);
   },
 }));
 
@@ -69,6 +77,7 @@ const DECK = "11111111-1111-4111-8111-111111111111";
 
 beforeEach(() => {
   stub.paths = [];
+  stub.deferred = [];
   stub.updates = [];
   stub.wheres = [];
   stub.profile = { brackets: {} };
@@ -81,6 +90,10 @@ describe("declareBracket", () => {
     const result = await declareBracket(DECK, 2);
     expect(result).toEqual({ ok: true, declared: 2 });
     expect(stub.updates).toEqual([{ declaredBracket: 2 }]);
+    // NOTHING IS REVALIDATED WHILE THE ACTION RUNS. A revalidation inside it would re-render the
+    // deck page into the reply, and the page drawing the answer already has it.
+    expect(stub.paths).toEqual([]);
+    for (const fn of stub.deferred) fn();
     expect(stub.paths).toEqual([`/decks/${DECK}`, "/decks", "/"]);
   });
 
@@ -117,6 +130,7 @@ describe("declareBracket", () => {
     expect(result).toEqual({ ok: false, reason });
     expect(stub.updates).toEqual([]);
     expect(stub.paths).toEqual([]);
+    expect(stub.deferred).toEqual([]);
   });
 
   // A deck the reader does not own is ABSENT rather than forbidden: the profile read is scoped
@@ -135,6 +149,7 @@ describe("declareBracket", () => {
     stub.updateReturns = [];
     expect(await declareBracket(DECK, 1)).toEqual({ ok: false, reason: "not-found" });
     expect(stub.paths).toEqual([]);
+    expect(stub.deferred).toEqual([]);
   });
 
   // THE APP NEVER DEFAULTS. There is no call shape that writes a bracket the caller did not

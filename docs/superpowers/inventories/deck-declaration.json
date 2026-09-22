@@ -1,0 +1,191 @@
+{
+  "feature": "Deck analysis \u2014 the declaration ask, its answer, and the drift line (PR 5)",
+  "note": "Round 3's \u00a7A and \u00a7B inside the verdict block from #851. Every row reaches the surface by a PRESS \u2014 the Analysis tab is client state and has no address \u2014 and then presses Analyze, which is what the settles are sized for.\n\nPRECONDITION: a server running with ANALYSIS_TAB_ENABLED=true, or every cell photographs a deck page with no Analysis tab.\n\nFIXTURES are five brews on local-dev owned by the e2e account, each reaching its reading through game changers alone, because a deck in each STATE is what the sheet photographs and one deck can only be in one: DECL_ASK_LOW (d...d5a1, [1,2], unanswered), DECL_ASK_HIGH (d...d5a2, four game changers, [4,5], unanswered), DECL_ANSWERED (d...d5a3, [1,2], declared Core), DECL_DRIFT_RANGE (d...d5a4, [1,2], declared Optimized \u2014 outside its range, written to the column directly because no control produces drift on purpose) and DECL_DRIFT_SINGLE (d...d5a5, one game changer, [3], declared Exhibition). The full ids are d0000000-0000-4000-8000-00000000d5a1 through ...d5a5.\n\nNO ROW PRESSES A CHIP. A press WRITES the declaration, so a sheet that answered the ask would photograph the answer on its next run and the ask never again. The write and its round trip are `probe:declaration-ask`'s, which builds its own fixtures and deletes them. The `change` row presses `change`, which is local state and writes nothing.\n\nNO `shares` BLOCK: one mount. `analysis-panel.tsx` renders the verdict block and nothing else does.",
+  "rows": [
+    {
+      "id": "ask-low",
+      "label": "/decks/[id] Analysis \u2014 the ask on [1,2]: lead line and two chips",
+      "view": "src/components/decks/analysis-panel.tsx",
+      "steps": [
+        {
+          "goto": "/decks/${DECL_ASK_LOW}",
+          "wait": "[role=tablist]",
+          "settle": 1500
+        },
+        {
+          "clickRole": "tab",
+          "name": "Analysis",
+          "settle": 600
+        },
+        {
+          "clickRole": "button",
+          "name": "Analyze this deck",
+          "settle": 400
+        },
+        {
+          "wait": "section[aria-label='Your bracket']",
+          "settle": 1200
+        },
+        {
+          "scrollTo": "section[aria-label='Your bracket']",
+          "settle": 300
+        }
+      ]
+    },
+    {
+      "id": "ask-high",
+      "label": "/decks/[id] Analysis \u2014 the ask on [4,5]",
+      "view": "src/components/decks/analysis-panel.tsx",
+      "steps": [
+        {
+          "goto": "/decks/${DECL_ASK_HIGH}",
+          "wait": "[role=tablist]",
+          "settle": 1500
+        },
+        {
+          "clickRole": "tab",
+          "name": "Analysis",
+          "settle": 600
+        },
+        {
+          "clickRole": "button",
+          "name": "Analyze this deck",
+          "settle": 400
+        },
+        {
+          "wait": "section[aria-label='Your bracket']",
+          "settle": 1200
+        },
+        {
+          "scrollTo": "section[aria-label='Your bracket']",
+          "settle": 300
+        }
+      ]
+    },
+    {
+      "id": "answered",
+      "label": "/decks/[id] Analysis \u2014 answered: the face resolves, the range moves into the description, Declared Core with change",
+      "view": "src/components/decks/analysis-panel.tsx",
+      "steps": [
+        {
+          "goto": "/decks/${DECL_ANSWERED}",
+          "wait": "[role=tablist]",
+          "settle": 1500
+        },
+        {
+          "clickRole": "tab",
+          "name": "Analysis",
+          "settle": 600
+        },
+        {
+          "clickRole": "button",
+          "name": "Analyze this deck",
+          "settle": 400
+        },
+        {
+          "wait": "section[aria-label='Your bracket']",
+          "settle": 1200
+        },
+        {
+          "scrollTo": "section[aria-label='Your bracket']",
+          "settle": 300
+        }
+      ]
+    },
+    {
+      "id": "answered-change",
+      "label": "/decks/[id] Analysis \u2014 change pressed: the same range asked again",
+      "view": "src/components/decks/analysis-panel.tsx",
+      "steps": [
+        {
+          "goto": "/decks/${DECL_ANSWERED}",
+          "wait": "[role=tablist]",
+          "settle": 1500
+        },
+        {
+          "clickRole": "tab",
+          "name": "Analysis",
+          "settle": 600
+        },
+        {
+          "clickRole": "button",
+          "name": "Analyze this deck",
+          "settle": 400
+        },
+        {
+          "wait": "section[aria-label='Your bracket']",
+          "settle": 1200
+        },
+        {
+          "clickRole": "button",
+          "name": "change",
+          "settle": 300
+        },
+        {
+          "scrollTo": "section[aria-label='Your bracket']",
+          "settle": 300
+        }
+      ]
+    },
+    {
+      "id": "drift-range",
+      "label": "/decks/[id] Analysis \u2014 the draft moved out, on a range: the faint mark and line, then the ask",
+      "view": "src/components/decks/analysis-panel.tsx",
+      "steps": [
+        {
+          "goto": "/decks/${DECL_DRIFT_RANGE}",
+          "wait": "[role=tablist]",
+          "settle": 1500
+        },
+        {
+          "clickRole": "tab",
+          "name": "Analysis",
+          "settle": 600
+        },
+        {
+          "clickRole": "button",
+          "name": "Analyze this deck",
+          "settle": 400
+        },
+        {
+          "wait": "section[aria-label='Your bracket']",
+          "settle": 1200
+        },
+        {
+          "scrollTo": "section[aria-label='Your bracket']",
+          "settle": 300
+        }
+      ]
+    },
+    {
+      "id": "drift-single",
+      "label": "/decks/[id] Analysis \u2014 the draft moved out, on a single bracket: the line and nothing further",
+      "view": "src/components/decks/analysis-panel.tsx",
+      "steps": [
+        {
+          "goto": "/decks/${DECL_DRIFT_SINGLE}",
+          "wait": "[role=tablist]",
+          "settle": 1500
+        },
+        {
+          "clickRole": "tab",
+          "name": "Analysis",
+          "settle": 600
+        },
+        {
+          "clickRole": "button",
+          "name": "Analyze this deck",
+          "settle": 400
+        },
+        {
+          "wait": "section[aria-label='Your bracket']",
+          "settle": 1200
+        },
+        {
+          "scrollTo": "section[aria-label='Your bracket']",
+          "settle": 300
+        }
+      ]
+    }
+  ]
+}

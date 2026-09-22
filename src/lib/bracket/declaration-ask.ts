@@ -19,8 +19,14 @@ import { permitsDeclaration } from "./declaration";
 export type DeclarationAsk =
   /** A range with no answer: draw the split face and ask. */
   | { kind: "ask"; permits: readonly Bracket[] }
-  /** A range answered from inside it: the one bracket, and `change`. */
-  | { kind: "answered"; declared: Bracket }
+  /**
+   * A range answered from inside it: the one bracket, and `change`.
+   *
+   * `permits` rides along because `change` re-asks the SAME range and the description line
+   * names it. Without it the component would rebuild the range from the answer, which is a
+   * second copy of `permitsFor`'s shapes in a place nothing re-measures.
+   */
+  | { kind: "answered"; declared: Bracket; permits: readonly Bracket[] }
   /** One permitted bracket: not a question, so no line at all. */
   | { kind: "none" }
   /**
@@ -45,5 +51,5 @@ export function declarationAsk(
     return { kind: "drifted", declared, permits, stillAsking: range };
   }
   if (!range) return { kind: "none" };
-  return declared === null ? { kind: "ask", permits } : { kind: "answered", declared };
+  return declared === null ? { kind: "ask", permits } : { kind: "answered", declared, permits };
 }

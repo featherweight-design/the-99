@@ -5,8 +5,7 @@ import type { Bracket, RuleId } from "./types";
  * What the verdict block's head draws, from the permitted range alone.
  *
  * PURE, AND SEPARATE FROM THE COMPONENT, because every one of these readings is a rule rather
- * than a layout: which face, whether a split chip is drawn, whether the ringed `?` appears and
- * in which bracket's ink. A component test renders one of them at a time and cannot say the set
+ * than a layout: which face, whether a split chip is drawn, and in which bracket's ink. A component test renders one of them at a time and cannot say the set
  * is complete; this can.
  */
 export type VerdictHead = {
@@ -15,13 +14,14 @@ export type VerdictHead = {
   /** A range is two brackets the RULES hand to the player, so the chip says so. */
   split: boolean;
   /**
-   * The ringed `?`, in the LOWER bracket's ink.
+   * The bracket the pill is drawn for: its only mark, or its lower one on a range, whose ink
+   * the border and the label take.
    *
-   * Drawn only on a range, because it asks the question a range poses. `--bracket-1` on `[1,2]`
-   * and `--bracket-4` on `[4,5]`, which is the lower member either way — so the token is derived
-   * rather than listed, and a third range could not arrive with no ink.
+   * On an ANSWERED range it is the answer. Round 3: answering resolves the face — the split
+   * pill becomes the declared bracket's own chip and the title becomes that bracket, while the
+   * permitted range moves into the description line rather than disappearing.
    */
-  glyphBracket: Bracket | null;
+  chip: Bracket;
 };
 
 /**
@@ -41,7 +41,14 @@ export type VerdictHead = {
  */
 const REACHABLE = new Set(["1,2", "2", "3", "4", "4,5"]);
 
-export function verdictHead(permits: readonly Bracket[]): VerdictHead {
+export function verdictHead(
+  permits: readonly Bracket[],
+  /**
+   * The player's answer, passed ONLY when `declarationAsk` read it as answered — inside a
+   * range. Anything else is a caller holding a second copy of that rule, and fails closed.
+   */
+  answered: Bracket | null = null,
+): VerdictHead {
   const [low, high] = [permits[0], permits[permits.length - 1]];
   // ONE OR TWO, AND NOTHING ELSE. `permitsFor` returns only those shapes, so anything else was
   // hand-built by a caller — and the failure is not loud on its own: reading `[0]` and `[-1]`
@@ -54,15 +61,26 @@ export function verdictHead(permits: readonly Bracket[]): VerdictHead {
       + `reading`,
     );
   }
+  if (answered !== null) {
+    // A single bracket is not a question, and an answer outside the range is drift, which
+    // keeps the range's own face. Neither resolves anything.
+    if (permits.length === 1 || !permits.includes(answered)) {
+      throw new Error(
+        `verdictHead: ${answered} does not answer [${permits.join(", ")}] — only a declaration `
+        + `inside a range resolves the face`,
+      );
+    }
+    return { face: BRACKET_NAMES[answered], split: false, chip: answered };
+  }
   if (permits.length === 1) {
-    return { face: BRACKET_NAMES[low], split: false, glyphBracket: null };
+    return { face: BRACKET_NAMES[low], split: false, chip: low };
   }
   return {
     face: `${BRACKET_NAMES[low]} or ${BRACKET_NAMES[high!]}`,
     split: true,
     // THE LOWER MEMBER, derived rather than listed. `[1,2]` takes `--bracket-1` and `[4,5]`
     // takes `--bracket-4`; listing the two pairs would leave a third range inkless.
-    glyphBracket: low,
+    chip: low,
   };
 }
 
@@ -111,7 +129,7 @@ export function populationLine(
  * `ruledOut` as a parameter precisely because the package expects it to be supplied from code.
  */
 export type VerdictSubLine =
-  /** A range. The ink and the ringed `?` come from `VerdictHead`, not from here. */
+  /** A range, unanswered. The ink comes from `VerdictHead`, not from here. */
   | { kind: "intent"; low: Bracket }
   /** A limit was passed at the bracket below, and these are the rules that passed it. */
   | { kind: "ruledOut"; below: Bracket; reasons: RuledOutReason[] }

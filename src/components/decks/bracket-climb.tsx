@@ -194,27 +194,11 @@ function RungBody({
     );
   }
   if (role === "above") {
-    if (!declares) {
-      return (
-        <span className="pl-[7px] text-[12px] leading-[1.55] text-[color:var(--fg-muted)] md:pl-0 md:text-[12.5px] md:leading-[1.6]">
-          {copy.aboveAllowed}
-        </span>
-      );
-    }
+    // THE 4-5 RUNG POINTS AT THE ANSWER rather than asking a second time. Round 3 moved the ask
+    // into the verdict block and retired the ringed `?` with it: one ask per surface.
     return (
-      <span className="flex items-start gap-[7px] pl-[5px] md:gap-2 md:pl-0">
-        {/* The one ringed `?` left on the climb, and the only glyph in it. */}
-        <span
-          role="img"
-          aria-label={deckAnalysisCopy.verdict.declareGlyphAria}
-          className="mt-px flex h-[13px] w-[13px] flex-none items-center justify-center rounded-full border font-mono text-[8.5px] font-semibold leading-none md:h-[14px] md:w-[14px] md:text-[9px]"
-          style={{ borderColor: bracketInk(bracket), color: bracketInk(bracket) }}
-        >
-          ?
-        </span>
-        <span className="text-[12px] leading-[1.55] text-[color:var(--fg-muted)] md:text-[12.5px] md:leading-[1.6]">
-          {copy.declare}
-        </span>
+      <span className="pl-[7px] text-[12px] leading-[1.55] text-[color:var(--fg-muted)] md:pl-0 md:text-[12.5px] md:leading-[1.6]">
+        {declares ? copy.declare : copy.aboveAllowed}
       </span>
     );
   }

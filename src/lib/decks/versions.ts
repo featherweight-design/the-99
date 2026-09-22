@@ -341,6 +341,15 @@ export type VersionSummary = DeckVersion & {
    *  Null when the catalog no longer describes that commander. */
   commanderName: string | null;
   partnerName: string | null;
+  /**
+   * What the player declared FOR this version, copied at commit only when its own cards
+   * permitted it, and the range those cards permitted. Both null on a version committed before
+   * the snapshot columns existed — "recorded nothing", which is not the same as a reading.
+   * Optional because a hand-built summary (the About page's specimens) need not carry them, and
+   * an absent value reads exactly as a null one does.
+   */
+  declaredBracket?: Bracket | null;
+  permits?: Bracket[] | null;
 };
 
 /**
@@ -417,6 +426,9 @@ export async function listVersions(deckId: string): Promise<VersionSummary[]> {
       partnerName: version.partnerOracleId === null
         ? null
         : nameBy.get(version.partnerOracleId) ?? null,
+      // The check constraints hold both to 1-5, so the narrowing is a type fact, not a guess.
+      declaredBracket: (version.declaredBracket as Bracket | null) ?? null,
+      permits: (version.permits as Bracket[] | null) ?? null,
     };
   }).reverse();
 }

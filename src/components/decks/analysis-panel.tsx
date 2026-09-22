@@ -6,6 +6,7 @@ import { slotDeck } from "../../lib/bracket/slot";
 import { deckAnalysisCopy } from "../../lib/copy/deck-analysis";
 import type { ProfileState } from "./use-deck-profile";
 import { BracketClimb } from "./bracket-climb";
+import type { DeclarationControl } from "./declaration";
 import { FindingsBlock } from "./findings-block";
 import { ProvenancePanel } from "./provenance-panel";
 import type { FindingArt } from "./receipt-modal";
@@ -30,12 +31,15 @@ import { VerdictBlock } from "./verdict-block";
 export function AnalysisPanel({
   state,
   onRequest,
+  declaration,
   synopsis,
   art = EMPTY_ART,
   children,
 }: {
   state: ProfileState;
   onRequest: () => void;
+  /** The player's answer and the control to give one, held by the shell. */
+  declaration?: DeclarationControl;
   /**
    * The art and printed name for every card the findings can name, from the deck page's own
    * rows. See `FindingArt` for why it is resolved here rather than carried on the profile.
@@ -59,12 +63,13 @@ export function AnalysisPanel({
         THE VERDICT IS DRAWN FROM THE PROFILE THE READER ASKED FOR, and only then. Every other
         reading above is about the ask itself; this is the answer.
 
-        `slotDeck` TAKES NO DECLARATION HERE, deliberately. Nothing 4a draws reads one — the
-        face, the chips and the population line are all functions of the permitted range — and
-        the declaration's own surface is PR 5's. Defaulting one would be the thing the round's
-        rulings forbid outright: never inferred, never defaulted.
+        `slotDeck` STILL TAKES NO DECLARATION. The declaration is handed to the verdict block at
+        the draw (#797): the profile does not read it, so a player's answer never busts the
+        cached profile and never waits on a rebuild.
       */}
-      {state.kind === "ready" ? <Verdict profile={state.profile} art={art} /> : null}
+      {state.kind === "ready" ? (
+        <Verdict profile={state.profile} art={art} declaration={declaration} />
+      ) : null}
       {children}
     </div>
   );
@@ -80,14 +85,16 @@ export function AnalysisPanel({
 function Verdict({
   profile,
   art,
+  declaration,
 }: {
   profile: import("../../lib/profile/types").DeckProfile;
   art: FindingArt;
+  declaration?: DeclarationControl;
 }) {
   const verdict = slotDeck(profile);
   return (
     <>
-      <VerdictBlock verdict={verdict} profile={profile} />
+      <VerdictBlock verdict={verdict} profile={profile} declaration={declaration} />
       <BracketClimb verdict={verdict} profile={profile} />
       <FindingsBlock profile={profile} art={art} />
       <ProvenancePanel />

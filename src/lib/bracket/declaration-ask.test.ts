@@ -14,8 +14,8 @@ describe("declarationAsk", () => {
   });
 
   it("draws the one bracket once a range is answered from inside it", () => {
-    expect(declarationAsk([1, 2], 2)).toEqual({ kind: "answered", declared: 2 });
-    expect(declarationAsk([4, 5], 5)).toEqual({ kind: "answered", declared: 5 });
+    expect(declarationAsk([1, 2], 2)).toEqual({ kind: "answered", declared: 2, permits: [1, 2] });
+    expect(declarationAsk([4, 5], 5)).toEqual({ kind: "answered", declared: 5, permits: [4, 5] });
   });
 
   // A SINGLE BRACKET IS NOT A QUESTION, so there is no line at all — not an empty one, and not
