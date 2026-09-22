@@ -742,13 +742,20 @@ export function InformedBuildFigureBody() {
  * shows what the feature is: a pair fact, three readings of where the other half is, and no
  * count anywhere. The inline clause the lists draw is one line of the same idea.
  *
- * A FIXTURE, and named as one — these are real cards and a real pairing, but the states are
- * chosen to show all three at once rather than read off anyone's collection.
+ * REAL PARTNERS OF A REAL CARD, read off the shipped index rather than invented: Basalt
+ * Monolith records twelve two-card partners producing something unbounded, and these are
+ * three of them. Only the STATES are chosen, so all three appear at once.
+ *
+ * The first version made the subject its own partner — `Isochron Scepter` listed among
+ * `Isochron Scepter`'s partners — which is a relationship the data can never return, since a
+ * card is the subject and cannot be its own other half. The block does not draw the subject's
+ * name, so nothing on screen contradicted itself and it would have taught the wrong shape
+ * quietly.
  */
 const COMBO_SPECIMEN = [
-  { oracleId: "a", name: "Isochron Scepter", state: "inDeck" as const, popularity: 900 },
-  { oracleId: "b", name: "Dramatic Reversal", state: "owned" as const, popularity: 800 },
-  { oracleId: "c", name: "Basalt Monolith", state: "notOwned" as const, popularity: 700 },
+  { oracleId: "a", name: "Power Artifact", state: "inDeck" as const, popularity: 900 },
+  { oracleId: "b", name: "Rings of Brighthearth", state: "owned" as const, popularity: 800 },
+  { oracleId: "c", name: "Kinnan, Bonder Prodigy", state: "notOwned" as const, popularity: 700 },
 ];
 
 export function ComboAwarenessFigureBody() {
@@ -757,7 +764,7 @@ export function ComboAwarenessFigureBody() {
       card={
         {
           oracleId: "about-combo",
-          name: "Isochron Scepter",
+          name: "Basalt Monolith",
           comboPartners: COMBO_SPECIMEN,
         } as never
       }
