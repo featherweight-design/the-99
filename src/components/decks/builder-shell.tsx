@@ -362,7 +362,14 @@ export function BuilderShell({
   /** What the combo block counts as "in this deck": the 99 AND the commanders (§4.3b rule 3).
    *  Its own function, because this is a prop and nothing downstream can see what went into
    *  it — inline, dropping the commanders left the whole suite green. */
-  const comboScope = useMemo(() => comboScopeIds(deck), [deck]);
+  const comboScope = useMemo(
+    // `cards`, NOT `deck.cards`: the shell has already replaced the server snapshot with the
+    // optimistic list the visible deck is drawn from, and `proxyEligibleIds` above reads that
+    // one for the same reason. On the snapshot, a card just removed stayed `in this deck` and
+    // one just added was not classified at all, until the revalidate landed.
+    () => comboScopeIds({ cards, commander: deck.commander, partner: deck.partner }),
+    [cards, deck.commander, deck.partner],
+  );
 
   // The top-off list's own copy, and deliberately the OPTIMISTIC list. It uses
   // this to name a row that went illegal while the list was open, so a quick-add
