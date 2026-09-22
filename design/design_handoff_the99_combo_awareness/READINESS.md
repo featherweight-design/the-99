@@ -80,3 +80,62 @@ places on a `--surface` row:
 
 The 16×16 `/collection` marker is Round 1's own size, so nothing new is measured there. The tile's
 `SET · rarity` is untouched now that the yield is withdrawn.
+
+---
+
+# ENG ERRATA — R2/R3 build, 2026-09-22
+
+Recorded rather than edited into the drawings: those are Design's, and this section is eng's.
+Four items, two of them decisions Hugh took that depart from the package.
+
+## 1 · Dependency 8 is DECLINED — the block stays closed on every card
+
+The addendum asks for the open state to be remembered **per reader**: a player who opens the
+block once has told us they care, so the next modal opens with it already open. Hugh ruled
+against it on 2026-09-22 and the block is closed on every card.
+
+What that costs is stated in the addendum itself and stands: an interested reader pays a tap
+per card rather than a tap ever. Nothing else in the block changes — the closed row, its
+counts and its ordering are all as drawn.
+
+## 2 · One mark size, 16px, which supersedes the 12/16 split
+
+`READINESS.md` above still specifies *"Round 2's lemniscate at 12px"* for the decision hosts
+and 16px for the modal. **Built at 16 everywhere**, which is not a deviation but an older
+ruling this package had not caught up with: `card-fact-mark.tsx` records Hugh's 2026-09-21
+decision that the fact marks shipped at 12, 13, 14 and 16 across six mounts — the same fact
+reading as a different mark depending on which list a player was looking at — and says in as
+many words that it supersedes this handoff's floor. Restated directly on 2026-09-22.
+
+Worth recording how it was nearly missed: a reviewer raised exactly this on #840, and eng
+declined it citing this package, which is how a ruling already in the tree was overridden by
+a document it had already superseded.
+
+## 3 · `markerTooltip.ownBothMore` emitted `and 1 others`
+
+The copy file's string is `and ${others} others` unconditionally, so a card with exactly two
+partners read ungrammatically — and two is the MEDIAN shape on the reference collection, not
+an edge. Corrected in code to a singular at one. No other string moved.
+
+## 4 · The partner link does not return to the card it was followed from
+
+The addendum says the name opens the partner **replacing** the current modal, and that the
+back gesture returns to the card you started from. The first half ships; the second does not.
+`load` replaces the provider's card and keeps no history, so closing from a partner closes
+the modal.
+
+Giving it a return means deciding what CLOSE means while a partner is open — back, or shut —
+which is a design call rather than an omission, so it is flagged here rather than invented.
+
+## Also outstanding, and not a deviation
+
+**The feature has no browser probe.** Several of its rules are facts about a laid-out page —
+whether the clause shortens rather than clipping, whether the state sits under the partner's
+name at 390px, whether four 16px marks fit a 157px tile — and jsdom produces no layout, so
+they are asserted by class list alone. Hugh ruled on 2026-09-22 to ship without one.
+
+**Matrix 4, the quick-add result row, is not built.** Its results come from a per-keystroke
+search action, and the combo read measures **~305ms against a real staging deck**, flat
+regardless of result count — the cost is the deck-side prune rather than the candidates. That
+is hundreds of milliseconds on every keystroke, so it was measured and returned rather than
+shipped.
