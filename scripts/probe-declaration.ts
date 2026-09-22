@@ -20,8 +20,15 @@
 //   THE PERMITS SNAPSHOT IS STORED AND SORTED, so a version comparison is two column reads
 //   rather than a second profile build — measured at 630ms median, 2.2s on the largest deck.
 //
-// WHAT IT DOES NOT PROVE, deliberately: the surface. Nothing draws a declaration yet, so there
-// is no server action to call and no reader to observe. This proves the storage the surface
+// WHAT IT DOES NOT PROVE, deliberately: the surface, and now also the ACTION.
+//
+// `declareBracket` exists as of the declaration write path, and this probe still cannot call it:
+// a server action needs a request and a signed-in reader. So the action's refusal rules are
+// asserted where a test can reach them — `declarationRefusal` is pure and unit-tested, and
+// `declaration-actions.test.ts` covers the wiring — and this script proves the STORAGE those
+// refusals protect, by writing the columns directly.
+//
+// There is still no READER to observe: nothing draws a declaration yet. This proves the storage the surface
 // will stand on.
 //
 // It writes a fixture under a per-run `user_id` and deletes it in a `finally`. Point it at

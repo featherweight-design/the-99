@@ -412,6 +412,12 @@ vi.mock("../commanders/[slug]/synergy-read", () => ({
 // it. Teaching it those shapes would re-test round trips `pnpm probe:claims`
 // already proves against a real Postgres. What these tests own is the actions'
 // guards, their arithmetic and their revalidation.
+// The commit snapshot's two reads. Stubbed rather than run: `cachedDeckProfile` assembles a whole
+// profile — 630ms against a real database — and what is under test is whether the snapshot
+// REACHES `commitVersion`, which is exactly what shipped broken.
+vi.mock("../../lib/profile/load", () => ({ cachedDeckProfile: vi.fn() }));
+vi.mock("../../lib/bracket/slot", () => ({ slotDeck: vi.fn(() => ({ permits: [1, 2] })) }));
+
 vi.mock("../../lib/decks/versions", () => ({
   newestVersion: vi.fn(),
   versionLiveAt: vi.fn(),
@@ -1237,6 +1243,9 @@ const aVersion = () => ({
   partnerSince: null,
 });
 
+const { cachedDeckProfile } = await import("../../lib/profile/load");
+const { slotDeck } = await import("../../lib/bracket/slot");
+
 describe("commitDeckVersion", () => {
   beforeEach(() => {
     vi.clearAllMocks();
@@ -1258,6 +1267,33 @@ describe("commitDeckVersion", () => {
     expect(commitVersion).not.toHaveBeenCalled();
   });
 
+  // THE SNAPSHOT REACHES `commitVersion`, which is the whole defect: that function has taken an
+  // optional snapshot since the declaration columns landed and NEITHER production caller passed
+  // one — so `declared_bracket` and `permits` were written null on every real commit and the
+  // columns shipped dead. Only an injected probe path ever exercised them.
+  it("carries the live declaration and the permitted range into the version", async () => {
+    stub.state.decks.push({
+      id: DECK_ID, userId: USER_ID, commanderOracleId: CMD, declaredBracket: 2,
+    });
+    vi.mocked(cachedDeckProfile).mockResolvedValue({ brackets: {} } as never);
+    await commitDeckVersion(DECK_ID, null);
+    expect(commitVersion).toHaveBeenCalledWith(
+      DECK_ID, null, expect.anything(), { declared: 2, permits: [1, 2] },
+    );
+  });
+
+  // GATED ON HAVING DECLARED ANYTHING. Deriving permits costs a whole profile — 630ms median,
+  // 2.2s on the slowest real deck — and a deck with no declaration has nothing to carry, which
+  // is every deck until a player answers. The profile must not be built at all.
+  it("builds no profile for a deck that has declared nothing", async () => {
+    stub.state.decks.push({
+      id: DECK_ID, userId: USER_ID, commanderOracleId: CMD, declaredBracket: null,
+    });
+    await commitDeckVersion(DECK_ID, null);
+    expect(cachedDeckProfile).not.toHaveBeenCalled();
+    expect(commitVersion).toHaveBeenCalledWith(DECK_ID, null, expect.anything(), undefined);
+  });
+
   // A Server Action's arguments are wire input, so the signature is a claim about
   // the caller and not a guarantee. Without the guard the value reaches
   // `note.trim()` and throws a TypeError, which the action has no result shape for.
@@ -1272,7 +1308,7 @@ describe("commitDeckVersion", () => {
     stub.state.decks.push({ id: DECK_ID, userId: USER_ID, commanderOracleId: CMD });
     const result = await commitDeckVersion(DECK_ID, undefined as unknown as string);
     expect(result.ok).toBe(true);
-    expect(commitVersion).toHaveBeenCalledWith(DECK_ID, null, expect.anything());
+    expect(commitVersion).toHaveBeenCalledWith(DECK_ID, null, expect.anything(), undefined);
   });
 
   it("revalidates claim surfaces, because a commit moves every other deck's figures", async () => {
@@ -1436,7 +1472,7 @@ describe("commitDeckVersion", () => {
     await commitDeckVersion(DECK_ID, "   ");
     // The third argument is the caller's transaction: the diff behind the
     // receipt and the snapshot it describes are read under one lock.
-    expect(commitVersion).toHaveBeenCalledWith(DECK_ID, null, expect.anything());
+    expect(commitVersion).toHaveBeenCalledWith(DECK_ID, null, expect.anything(), undefined);
   });
 });
 
@@ -1863,8 +1899,18 @@ describe("pullCardFromDeck", () => {
     expect(stub.state.deleteCalls).toContainEqual({ table: "deck_cards", id: SOURCE_ID });
     // The third argument is the caller's transaction: the delete above and this
     // commit land together, or the draft loses a card its version still claims.
+    // The third argument is the caller's transaction, and there is NO fourth: this path passes
+    // no snapshot at all, because it removes a card before committing and a snapshot taken
+    // beforehand describes a deck one card ago.
     expect(commitVersion).toHaveBeenCalledWith(SOURCE_ID, expect.any(String), expect.anything());
+    // NO PROFILE AND NO SNAPSHOT ON THIS PATH. The transaction removes a card before it
+    // commits, so a snapshot taken beforehand describes a deck one card ago — and removing a
+    // card can change what the rest permit. The version records no declaration rather than one
+    // its own rows may not permit; the declaration stays live and the next deliberate commit
+    // carries it.
+    expect(cachedDeckProfile).not.toHaveBeenCalled();
   });
+
 
   // A pull takes one copy. A deck sleeving four Relentless Rats that lends one
   // keeps three, so the row is decremented and never deleted.

@@ -1,6 +1,9 @@
 "use server";
 
 import { and, desc, eq, gt, inArray, lt, lte, sql } from "drizzle-orm";
+import { bracketOf } from "../../lib/bracket/rules";
+import { slotDeck } from "../../lib/bracket/slot";
+import { cachedDeckProfile } from "../../lib/profile/load";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { db } from "../../db";
@@ -14,7 +17,7 @@ import { getEdhrecData } from "../../lib/edhrec/client";
 import { loadAvailability } from "../../lib/decks/availability-query";
 import { hardDecks, pullSources } from "../../lib/decks/availability";
 import {
-  commitVersion, loadVersionDiff, newestVersion, restoreDraftFromVersion, versionCards,
+  type CommitSnapshot, commitVersion, loadVersionDiff, newestVersion, restoreDraftFromVersion, versionCards,
   versionLiveAt, type VersionDiffCard,
 } from "../../lib/decks/versions";
 import {
@@ -1414,6 +1417,45 @@ export type CommitResult =
   | { ok: false; message: string };
 
 /**
+ * The declaration a commit should carry into its version, or `undefined` when there is none.
+ *
+ * ONE COPY, SHARED BY BOTH COMMIT PATHS. `commitVersion` takes this optionally and for a while
+ * NEITHER caller passed it, so both declaration columns were written null on every real commit.
+ * Wiring only the deliberate commit left the pull path — which auto-commits the source deck —
+ * still writing nulls, which is the same defect surviving its own fix.
+ *
+ * GATED ON THE DECK HAVING DECLARED ANYTHING. Deriving permits needs a whole profile — 630ms
+ * median, 2.2s on the slowest real deck — and a deck with no live declaration has nothing to
+ * carry, which is every deck until a player answers.
+ *
+ * CALL IT UNDER THE CALLER'S LOCK. An earlier version built it before the transaction and
+ * called the resulting race benign, on the reasoning that `permitsDeclaration` would reject a
+ * declaration the cards no longer permit. That was wrong: `commitVersion` takes
+ * `snapshot.permits` ON TRUST and never compares them to the rows it is writing, so a stale
+ * permit list is simply believed — and the version records a declaration its own cards may not
+ * permit, which is the gate the column exists to be.
+ *
+ * It costs a 630ms-to-2.2s profile build inside a transaction, which is real. It is paid only by
+ * a deck that has DECLARED something — none of them until a player answers — and only on a
+ * deliberate commit.
+ */
+async function commitSnapshotFor(
+  deckId: string,
+  userId: string,
+): Promise<CommitSnapshot | undefined> {
+  // The column under its own name rather than through a projection alias: the shape then does
+  // not depend on the alias surviving a driver or a test's select stub.
+  const [live] = await db
+    .select({ declaredBracket: decks.declaredBracket })
+    .from(decks)
+    .where(and(eq(decks.id, deckId), eq(decks.userId, userId)));
+  const declared = bracketOf(live?.declaredBracket ?? null);
+  if (declared === null) return undefined;
+  const profile = await cachedDeckProfile(deckId, userId);
+  return profile ? { declared, permits: slotDeck(profile).permits } : undefined;
+}
+
+/**
  * Freeze the draft as the next version and say what it costs.
  *
  * The two lists are computed BEFORE the write, against the version being
@@ -1446,6 +1488,7 @@ export async function commitDeckVersion(
   } catch {
     return { ok: false, message: "We couldn't find that deck." };
   }
+
 
   const result = await db.transaction<CommitResult>(async (tx) => {
     const [deck] = await tx.select().from(decks).where(eq(decks.id, deckId)).for("update");
@@ -1572,7 +1615,20 @@ export async function commitDeckVersion(
     // than being counted here from `draft`: a path that inserts a card the deck
     // did not hold takes no row lock this transaction holds, so the two reads can
     // legitimately differ and only the snapshot's is the version's own figure.
-    const { version, cardCount } = await commitVersion(deckId, note?.trim() || null, tx);
+    // THE SNAPSHOT IS BUILT UNDER THE LOCK, and the cost is deliberate.
+    //
+    // Built before the transaction, it described the deck as it was BEFORE the row and draft
+    // locks — and `commitVersion` trusts `snapshot.permits` without comparing them to the rows
+    // it is writing. So an edit landing in that window could persist a declaration the committed
+    // cards do not permit, which is the gate this column exists to be. Calling that race
+    // "benign" was wrong: the permits are taken on trust, so nothing downstream catches it.
+    //
+    // It costs a 630ms-to-2.2s profile build inside the transaction — but ONLY for a deck that
+    // has declared something, which is none of them until a player answers, and only on a
+    // deliberate commit. Correctness of the one column the version exists to freeze is worth
+    // that on the rare path that reaches it.
+    const snapshot = await commitSnapshotFor(deckId, userId);
+    const { version, cardCount } = await commitVersion(deckId, note?.trim() || null, tx, snapshot);
     return { ok: true, number: version.number, cardCount, buy, pull: removes };
   });
   if (!result.ok) return result;
@@ -1909,6 +1965,23 @@ export async function pullCardFromDeck(
     // leaving Home to read this row as `committed` or `edited`. Both are true of
     // a pull, so neither is worth engineering for; see the note in `touched.ts`.
     await touchDeck(tx, sourceDeckId);
+    // NO SNAPSHOT ON THIS PATH, and the reason is not cost.
+    //
+    // This transaction REMOVES a card and then commits, so any snapshot taken before it
+    // describes the deck as it was one card ago — and removing a card can change what the
+    // remaining cards permit ([4,5] to [1,2], say). `commitVersion` trusts `snapshot.permits`,
+    // so passing one here could persist a declaration the committed rows do not permit, which
+    // is precisely the gate that column exists to be.
+    //
+    // Recomputing after the removal means a 630ms-to-2.2s profile build inside a transaction
+    // holding the deck's row lock, which is not a price a pull should pay. So this version
+    // records no declaration, and nothing is lost: the declaration stays live on the deck and
+    // the next DELIBERATE commit carries it. A pull is the system auto-committing because a
+    // card left, not a player answering a question.
+    //
+    // This is different from `commitDeckVersion`, which mutates nothing between its snapshot
+    // and its commit — there, only a concurrent edit can diverge, and that race is benign in
+    // the direction it fails.
     await commitVersion(sourceDeckId, "Pulled a card for another deck", tx);
     return { ok: true };
   });
