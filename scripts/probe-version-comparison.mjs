@@ -103,6 +103,7 @@ async function buildFixtures(userId, made) {
     select oracle_id from cards
     where type_line ilike '%legendary creature%' and not game_changer
     order by name limit 1`;
+  if (!commander) throw new Error("the catalog cannot build these fixtures: no legend to lead them");
   const gcs = await sql`
     select oracle_id from cards where game_changer and type_line not ilike '%legendary creature%'
     order by name limit 4`;
