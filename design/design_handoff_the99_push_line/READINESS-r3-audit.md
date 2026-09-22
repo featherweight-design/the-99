@@ -87,6 +87,9 @@ for. No defect there; the two files disagree about a parameter neither of them u
 
 ## Two copy defects, and they must not ship
 
+*A third — a subject-verb agreement error — is below, with the reason none of the three is fixed
+by editing Design's files.*
+
 **1 · THE COPY IS BRITISH, IN 28 PLACES.** `analyse`, `analysed`, `reanalyse` — including three
 strings the package marks production-final:
 
@@ -117,6 +120,21 @@ audit found the same class of defect. It is mechanical every time, and it is wor
 pattern rather than fixing quietly: a copy module is the one artefact engineering transcribes
 rather than reads, so a broken import is discovered at the end of a build instead of the start.
 
+## A third copy defect, and why none of the three is fixed in this PR
+
+**3 · A subject-verb agreement error in a section title.** The canvas reads *"the two registers
+that makes"* — `make`, not `makes`. Found by review rather than by this audit, which had read the
+states file and the readiness doc and not the canvas's own headings.
+
+**Design's files are left exactly as delivered.** All three defects are named here and fixed when
+engineering transcribes the copy, not by editing the handoff. A handoff is the historical record
+of what Design delivered; rewriting one inside an engineering PR destroys the only evidence of
+what was handed over, and the next reader cannot then tell a correction from an original.
+
+So the errata list is the instruction and the package stays the artefact. The one thing this
+costs is that a builder who reads `card-note - copy strings.ts` and not this file transcribes
+`analyse` and a broken import — which is why all three are in the PR body as well.
+
 ## One copy call this audit makes
 
 **`about two seconds` stays.** The median is 630ms, so the label over-states the typical case by
@@ -139,6 +157,7 @@ token, glyph or colour.
 ## Clear to build
 
 PRs 8b and 9 may start. What they carry from this pass: the US English fix, the corrected import,
+the `make`/`makes` agreement fix,
 `21 Sep` through `formatDeckDate` rather than a hand-written date, the confirmed snapshot, and
 `ordinal` as already shipped rather than as owed.
 
