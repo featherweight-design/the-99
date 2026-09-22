@@ -5,7 +5,6 @@ import { upgradePath } from "./upgrade";
 import {
   downgradeTargets,
   heldCount,
-  minimumCuts,
   nearestReachable,
   overlapCount,
   thingsToGo,
@@ -114,49 +113,6 @@ describe("nearestReachable's order", () => {
   });
 });
 
-describe("minimumCuts", () => {
-  // A game changer that is also half the combo answers both lines with one cut.
-  it("counts a card that answers two items once", () => {
-    const profile = gcDeck(["a", "b"], {
-      cards: [COMMANDER, profileCard("a", "a"), profileCard("b", "b"), profileCard("z", "z")],
-      twoCardCombos: [combo("a", "z")],
-    });
-    const path = upgradePath(profile, 2);
-    expect(thingsToGo(path)).toBe(3);
-    expect(minimumCuts(path)).toBe(2);
-  });
-
-  it("charges a combo with no shared card one more cut", () => {
-    const profile = gcDeck(["a"], { twoCardCombos: [combo("x", "y")] });
-    expect(minimumCuts(upgradePath(profile, 2))).toBe(2);
-  });
-});
-
-describe("minimumCuts across count rules", () => {
-  // A game changer that is ALSO mass land denial answers both count rules with one cut.
-  it("counts a card in two count rules once", () => {
-    const profile = deckProfile({
-      cards: [COMMANDER, profileCard("a", "a")],
-      gameChangerIds: new Set(["a"]),
-      mldFlags: new Map([["a", ["oracle_rule"] as FlagSource[]]]),
-    });
-    const path = upgradePath(profile, 2);
-    expect(path.items).toHaveLength(2);
-    expect(minimumCuts(path)).toBe(1);
-  });
-});
 
 
-describe("minimumCuts at any size", () => {
-  // TWENTY-FIVE game changers, one of them also mass land denial: at Core every one must go, and
-  // the land-denial line is answered by a card already cut. No size cap overstates it.
-  it("stays exact past twenty cards", () => {
-    const ids = Array.from({ length: 25 }, (_, i) => `g${i}`);
-    const profile = deckProfile({
-      cards: [COMMANDER, ...ids.map((id) => profileCard(id, id))],
-      gameChangerIds: new Set(ids),
-      mldFlags: new Map([["g0", ["oracle_rule"] as FlagSource[]]]),
-    });
-    expect(minimumCuts(upgradePath(profile, 2))).toBe(25);
-  });
-});
+

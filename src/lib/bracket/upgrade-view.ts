@@ -109,62 +109,6 @@ export function targetLimit(
   return rule === "gameChangers" ? GAME_CHANGER_LIMIT[target] : 0;
 }
 
-/**
- * The fewest cards that answer every item at once — what "n cards would have to go" counts.
- *
- * NOT `thingsToGo`. One card can answer two lines: a game changer that is also mass land denial,
- * or also half a combo. So this is a small covering problem — each count rule needs `removeCount`
- * of its candidates, each combo one of its halves.
- *
- * EXACT AT ANY SIZE, because cards that belong to exactly the same lines are interchangeable. They
- * are grouped by that membership, so the search is over how many to take from each GROUP rather
- * than over subsets of cards — and a deck has only a handful of lines, so only a handful of
- * groups, however many cards it holds.
- */
-export function minimumCuts(path: UpgradePath): number {
-  const needs: { ids: string[]; count: number }[] = [];
-  for (const item of path.items) {
-    if (item.rule === "twoCardCombos") {
-      for (const c of item.combos) needs.push({ ids: c.candidates.map((x) => x.oracleId), count: 1 });
-    } else {
-      needs.push({ ids: item.candidates.map((x) => x.oracleId), count: item.removeCount });
-    }
-  }
-  // A need cannot ask for more than its candidates hold: the rest is in the command zone, and no
-  // cut reaches it.
-  const req = needs.map((n) => Math.min(n.count, n.ids.length));
-  const membership = new Map<string, number[]>();
-  needs.forEach((n, i) => {
-    for (const id of n.ids) membership.set(id, [...(membership.get(id) ?? []), i]);
-  });
-  const groups = new Map<string, { needs: number[]; size: number }>();
-  for (const list of membership.values()) {
-    const key = list.join(",");
-    const g = groups.get(key);
-    if (g) g.size += 1;
-    else groups.set(key, { needs: list, size: 1 });
-  }
-  const gs = [...groups.values()];
-  let best = req.reduce((a, b) => a + b, 0);
-  const left = [...req];
-  const search = (g: number, taken: number) => {
-    if (taken >= best) return;
-    if (left.every((r) => r <= 0)) {
-      best = taken;
-      return;
-    }
-    if (g === gs.length) return;
-    const { needs: ns, size } = gs[g];
-    const useful = Math.min(size, Math.max(0, ...ns.map((i) => left[i])));
-    for (let k = useful; k >= 0; k--) {
-      for (const i of ns) left[i] -= k;
-      search(g + 1, taken + k);
-      for (const i of ns) left[i] += k;
-    }
-  };
-  search(0, 0);
-  return best;
-}
 
 /**
  * What a blocked count rule leaves behind once every cuttable card is gone: the copies over the

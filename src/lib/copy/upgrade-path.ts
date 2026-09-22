@@ -94,7 +94,14 @@ export const upgradePathCopy = {
     comboShortfall: (bracket: Bracket) =>
       `Both halves of this combo are in your command zone, so no removal breaks it. `
       + `${name(bracket)} isn't reachable by removing cards. It would take a different commander.`,
+    /**
+     * `n` is the same figure the heading prints once that target is pressed — copies to lose plus
+     * one per combo — so the line and the panel it opens can never disagree. It counts THINGS,
+     * not cards: one card can answer two lines, and the fewest cards is a covering problem the
+     * surface does not solve on every render.
+     */
     nearest: (bracket: Bracket, n: number) =>
-      `${name(bracket)} is reachable, ${numberWord(n)} ${n === 1 ? "card" : "cards"} would have to go.`,
+      `${name(bracket)} is reachable, ${n === 1 ? "one thing" : `${numberWord(n)} things`} would `
+      + `have to go.`,
   },
 } as const;

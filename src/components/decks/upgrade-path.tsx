@@ -6,7 +6,6 @@ import { upgradePath, type UpgradeItem, type UpgradePath } from "../../lib/brack
 import {
   heldCount,
   leftInCommandZone,
-  minimumCuts,
   nearestReachable,
   overlapCount,
   targetLimit,
@@ -507,7 +506,7 @@ function Blocked({
           >
             <BracketMark bracket={nearest.target} px={22} />
             <span className="border-b border-dotted border-[color:var(--accent)] text-[color:var(--accent)]">
-              {upgradePathCopy.blocked.nearest(nearest.target, minimumCuts(nearest.path))}
+              {upgradePathCopy.blocked.nearest(nearest.target, thingsToGo(nearest.path))}
             </span>
           </button>
         ) : null}
