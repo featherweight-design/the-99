@@ -836,8 +836,10 @@ const SORT_COMPARATORS: Record<SortKey, (a: BrowseListCard, b: BrowseListCard) =
   // Sorting on the oracle name filed `Mimir's Ancient Wisdom` under T, so a reader
   // scanning an A-Z list looked where the name they could see belonged and it was not
   // there — the same defect as the search reading that name alone, and found by sweeping
-  // for it. Affects ~0.1% of rows, and every one of them is a row whose drawn name
-  // disagreed with its position.
+  // for it. Measured on STAGING, which is where this repo counts a frequency: 9 of 3,235
+  // collection rows resolve a printing that renames the card (0.28%), out of 634 renamed
+  // printings in 103,309 (0.61%). Small, and every one of them is a row whose drawn name
+  // disagreed with its own position in the list.
   // `"en"` PINNED, as `sort-cards.ts`, `sort.ts` and `touched.ts` each pin it and for
   // their reason: this component is statically imported, so this runs in Node for the SSR
   // pass and again in the browser, and an unpinned collation can order the two differently

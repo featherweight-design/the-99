@@ -772,10 +772,12 @@ describe("filterCards", () => {
   });
 
   it("survives a printed name that is ABSENT, not merely null", () => {
-    // `printedName` is typed `string | null` and omitted altogether by fixtures across
-    // nineteen files, so a `!== null` test admits `undefined` and the `.toLowerCase()`
-    // after it throws — taking out the whole browser rather than just its search, which
-    // is how `browser-clear.test.tsx` caught it. Both shapes are covered here.
+    // `printedName` is typed `string | null` and omitted altogether by the card literals
+    // ten test files build, so a `!== null` test admits `undefined` and the
+    // `.toLowerCase()` after it throws — taking out the whole browser rather than just its
+    // search, which is how `browser-clear.test.tsx` caught it. Both shapes are covered
+    // here. (The nineteen-file figure next door counts `BrowsePrinting` literals, which is
+    // a different set.)
     const absent = { ...listCard({ oracleId: "f", name: "Birds of Paradise" }) };
     delete (absent as { printedName?: string | null }).printedName;
     const withAbsent = [...renamed, absent];
