@@ -3,8 +3,7 @@
 import { useState } from "react";
 import type { BrowseCard } from "../../lib/collection/browse";
 import { comboAwarenessCopy } from "../../lib/copy/combo-awareness";
-import { capModalPartners } from "../../lib/combos/modal-block";
-import { useIsDesktop } from "../ui/use-is-desktop";
+import { orderModalPartners, summariseByState } from "../../lib/combos/modal-block";
 import { ComboGlyph } from "./combo-glyph";
 
 const STATE_INK: Record<string, string> = {
@@ -39,12 +38,17 @@ const STATE_INK: Record<string, string> = {
 export function ComboPartnersDetail({ card }: { card: BrowseCard }) {
   const [expanded, setExpanded] = useState(false);
   const [boundOpen, setBoundOpen] = useState(false);
-  const desktop = useIsDesktop();
   const partners = card.comboPartners ?? [];
   if (partners.length === 0) return null;
 
-  const { shown, hidden } = capModalPartners(partners, { desktop, expanded });
+  const summary = summariseByState(partners);
   const boundId = `combo-bound-${card.oracleId}`;
+  const listId = `combo-list-${card.oracleId}`;
+  // The accessible name is the label plus the counts AS WORDS, so a reader who cannot see the
+  // row still learns what opening it would show.
+  const spokenSummary = summary
+    .map((row) => comboAwarenessCopy.modal.summary[row.state](row.count))
+    .join(comboAwarenessCopy.modal.summary.join);
 
   return (
     <div
@@ -52,50 +56,92 @@ export function ComboPartnersDetail({ card }: { card: BrowseCard }) {
       className="rounded-[10px] mt-[16px] md:mt-[22px] p-[14px_16px] md:p-[18px_20px]"
       style={{ background: "var(--bg)", border: "1px solid var(--border)" }}
     >
-      <div className="flex items-center gap-[6px] mb-[10px]">
-        {/* ON THE HEADING, not on the wrapper. The bound describes the LIST, and a reader
-            navigating by heading is the one who needs it — a relation hung on a generic
-            container is not reliably announced with the `h3` inside it. */}
-        {/* `AvailabilityDetail`'s heading verbatim, which is what the addendum names — mono
-            10px at 0.1em. The first version copied `BracketFactsDetail`'s instead
-            (9.5/10px at 0.14em), which is the block above this one and a different spec. */}
-        <h3
-          aria-describedby={boundId}
-          className="font-mono text-[10px] uppercase tracking-[0.1em]"
-          style={{ color: "var(--fg-faint)" }}
-        >
-          {comboAwarenessCopy.modal.heading}
+      <div className="flex items-center">
+        {/* THE HEADING WRAPS THE BUTTON, which is the accordion pattern and the only valid
+            nesting of the two: `<button>` takes phrasing content, so an `<h3>` inside it is
+            invalid, while a heading around it keeps this block in the modal's heading outline
+            beside `In the bracket rules`. */}
+        <h3 className="flex-auto min-w-0 m-0">
+          {/* THE WHOLE ROW IS THE TARGET, not the chevron — 52px, one row, at both widths. A
+              reader reaching for a disclosure reaches for the thing that says what it hides. */}
+          <button
+            type="button"
+            onClick={() => setExpanded((v) => !v)}
+            aria-expanded={expanded}
+            aria-controls={expanded ? listId : undefined}
+            aria-describedby={expanded ? boundId : undefined}
+            aria-label={comboAwarenessCopy.modal.toggleAria(spokenSummary)}
+            className="flex w-full items-center gap-[10px] min-h-[52px] p-0 bg-transparent border-none cursor-pointer text-left font-normal"
+          >
+            <ComboGlyph />
+            {/* At 390px the label and the counts STACK inside the same 52px row rather than
+                competing for it; above that they sit on one line. */}
+            <span className="flex flex-auto min-w-0 flex-col sm:flex-row sm:items-center sm:gap-[10px]">
+              <span
+                className="font-mono text-[10px] uppercase tracking-[0.1em]"
+                style={{ color: "var(--fg-faint)" }}
+              >
+                {comboAwarenessCopy.modal.heading}
+              </span>
+              {/* THE COUNTS, and `in this deck` leads and is the only part in colour: it is
+                  the only part that is ever urgent, so it is what decides whether to open. */}
+              <span
+                className="font-mono text-[10px] sm:text-[10.5px] truncate"
+                style={{ color: "var(--fg-muted)" }}
+              >
+                {summary.map((row, i2) => (
+                  <span
+                    key={row.state}
+                    style={row.state === "inDeck" ? { color: "var(--success)" } : undefined}
+                  >
+                    {i2 > 0 ? comboAwarenessCopy.modal.summary.join : ""}
+                    {comboAwarenessCopy.modal.summary[row.state](row.count)}
+                  </span>
+                ))}
+              </span>
+            </span>
+            <span
+              aria-hidden
+              className="flex-none font-mono text-[12px]"
+              style={{ color: "var(--fg-faint)" }}
+            >
+              ▾
+            </span>
+          </button>
         </h3>
-        {/* THE BOUND IS A MARKER, NOT A LINE UNDER EVERY BLOCK. It is a property of the whole
-            list — what is missing from it — rather than of any partner in it, so it sits on
-            the heading and `aria-describedby` ties the sentence to the block.
-
-            A REAL TARGET at 44px, and the sentence opens IN PLACE below rather than in a
-            tooltip. Round 1 could refuse a tap route because the key and the modal carried
-            the words; here the modal IS the last surface, so it cannot. */}
-        <button
-          type="button"
-          onClick={() => setBoundOpen((v) => !v)}
-          aria-expanded={boundOpen}
-          aria-label={comboAwarenessCopy.modal.boundMarkerAria}
-          // Colour through a utility rather than inline: an inline value outranks the
-          // `hover:` variant and kills the hover state silently.
-          className="flex items-center justify-center min-w-[44px] min-h-[44px] -my-[14px] p-0 bg-transparent border-none cursor-pointer font-mono text-[11px] text-accent hover:text-accent-hover"
-        >
-          *
-        </button>
+        {/* THE `*` IS A SIBLING OF THE ROW, never nested inside it: a control inside a native
+            `<button>` is invalid nesting and announces two controls as one. NOT DRAWN WHILE
+            CLOSED — a closed block is not making a claim yet. */}
+        {expanded && (
+          <button
+            type="button"
+            onClick={() => setBoundOpen((v) => !v)}
+            aria-expanded={boundOpen}
+            aria-label={comboAwarenessCopy.modal.boundMarkerAria}
+            className="flex flex-none items-center justify-center min-w-[44px] min-h-[52px] p-0 bg-transparent border-none cursor-pointer font-mono text-[11px] text-accent hover:text-accent-hover"
+          >
+            *
+          </button>
+        )}
       </div>
-      {/* Rendered whether or not it is open, so `aria-describedby` always resolves: a screen
-          reader hears the bound with the heading, where a sighted reader presses for it. */}
-      <p
-        id={boundId}
-        className={`font-mono text-[11px] leading-[1.45] mb-[10px] ${boundOpen ? "" : "sr-only"}`}
-        style={{ color: "var(--fg-muted)" }}
-      >
-        {comboAwarenessCopy.modal.qualifier}
-      </p>
-      <ul className="flex flex-col gap-[8px]">
-        {shown.map((p) => (
+      {/* THE BOUND, rendered with the open state so `aria-describedby` never dangles. It is
+          the ONE place this feature states its own limits. */}
+      {expanded && (
+        <p
+          id={boundId}
+          className={`font-mono text-[11px] leading-[1.45] mt-[8px] ${
+            boundOpen ? "" : "sr-only"
+          }`}
+          style={{ color: "var(--fg-muted)" }}
+        >
+          {comboAwarenessCopy.modal.qualifier}
+        </p>
+      )}
+      {/* IT GROWS IN PLACE, downward. Not an accordion — no sibling closes — and the scroll
+          position does not move. */}
+      {expanded && (
+      <ul id={listId} className="flex flex-col gap-[8px] mt-[10px]">
+        {orderModalPartners(partners).map((p) => (
           /* AT 390px THE STATE STACKS UNDER THE NAME, not under the glyph. `flex-wrap` with a
              full-width state put it at the `<li>`'s left edge, beneath the lemniscate, where
              it read as a second line of the row rather than as this partner's state — so the
@@ -126,29 +172,6 @@ export function ComboPartnersDetail({ card }: { card: BrowseCard }) {
           </li>
         ))}
       </ul>
-      {/* THE SHIPPED DISCLOSURE, and the block GROWS IN PLACE — it does not scroll inside
-          itself and it does not open a second surface. `+N more` is legal where a count in
-          the heading is not: it describes what is HIDDEN rather than what exists. */}
-      {(hidden > 0 || expanded) && (
-        <button
-          type="button"
-          onClick={() => setExpanded((v) => !v)}
-          aria-expanded={expanded}
-          aria-label={
-            expanded ? undefined : comboAwarenessCopy.modal.showAllAria(partners.length)
-          }
-          className="mt-[10px] p-0 font-mono text-[11px] cursor-pointer border-none bg-transparent text-accent hover:text-accent-hover"
-        >
-          {/* EXPANDED, IT SAYS WHAT PRESSING IT DOES. The first version kept `Show all N` on
-              an already-expanded control, so its label and its `aria-expanded` state
-              contradicted each other. `Show fewer` is the shipped disclosure's own collapse
-              word, which is the atom this reuses. */}
-          {expanded
-            ? comboAwarenessCopy.modal.collapse
-            : desktop
-              ? comboAwarenessCopy.modal.more(hidden)
-              : comboAwarenessCopy.modal.showAll(partners.length)}
-        </button>
       )}
     </div>
   );

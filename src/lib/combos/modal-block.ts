@@ -8,9 +8,12 @@ import type { ModalComboPartner } from "./near-miss";
  * one-line change if another says otherwise.
  */
 
-/** Cap before the shipped disclosure takes over. Desktop 6, phone 4. */
-export const MODAL_COMBO_CAP_DESKTOP = 6;
-export const MODAL_COMBO_CAP_PHONE = 4;
+/*
+ * THE SIX/FOUR CAP AND ITS `+N more` ARE WITHDRAWN, and the reason is the closed row above
+ * them: the cap existed to stop a fourteen-line block, and a block that is closed by default
+ * already does. A reader who explicitly asked for the list is not served by a second
+ * disclosure inside it.
+ */
 
 const STATE_RANK = { inDeck: 0, owned: 1, notOwned: 2 } as const;
 
@@ -34,25 +37,21 @@ export function orderModalPartners(
 }
 
 /**
- * How many lines to draw, and how many are left over.
+ * The closed row's counts, in the order it draws them.
  *
- * Measured on the reference collection: median 2 partners, 49% have exactly one, and 21 of
- * 249 owned pieces exceed ten. So the common case shows everything with no disclosure at all,
- * and the cap exists for the 8% that would otherwise open a modal twenty lines tall.
+ * `in this deck` LEADS AND IS THE ONLY PART IN COLOUR, because it is the only part that is
+ * ever urgent — a reader deciding whether to open the block is deciding whether they care,
+ * and a partner already on the table is the fact that answers that.
  *
- * `hidden` is a fact about WHAT IS NOT DRAWN, which is why `+N more` is legal where a count in
- * the heading is not: detection excludes template-gated variants by design, so
- * `Two-card combos · 14` would be a claim about what EXISTS and this is not.
+ * A STATE WITH A COUNT OF ZERO IS NOT DRAWN. `4 you don't` alone, or
+ * `1 in this deck · 4 you don't`, never `0 you own` — a zero is a state the reader does not
+ * have, and printing it spends a third of the line saying so.
  */
-export function capModalPartners(
+export function summariseByState(
   partners: readonly ModalComboPartner[],
-  args: { desktop: boolean; expanded: boolean },
-): { shown: ModalComboPartner[]; hidden: number } {
-  const ordered = orderModalPartners(partners);
-  if (args.expanded) return { shown: ordered, hidden: 0 };
-  const cap = args.desktop ? MODAL_COMBO_CAP_DESKTOP : MODAL_COMBO_CAP_PHONE;
-  // A list exactly at the cap draws in full rather than showing `+0 more`, which would be a
-  // disclosure that discloses nothing.
-  if (ordered.length <= cap) return { shown: ordered, hidden: 0 };
-  return { shown: ordered.slice(0, cap), hidden: ordered.length - cap };
+): { state: ModalComboPartner["state"]; count: number }[] {
+  const order = ["inDeck", "owned", "notOwned"] as const;
+  return order
+    .map((state) => ({ state, count: partners.filter((p) => p.state === state).length }))
+    .filter((row) => row.count > 0);
 }
