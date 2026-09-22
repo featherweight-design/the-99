@@ -58,5 +58,8 @@ pressed; a test pins the parts joined to the sentence. Written here:
 does not draw — `lean.oneHalf` and `reasoning.qualifierOneHalf`. `leanFor` reads `drawOnly`
 whenever coverage falls short of every piece, so a pair with one half tutored (or in the command
 zone) got "nothing in it searches for either half" over a modal listing the tutor that finds one.
-The pre-open pass found it. On a draw-only deck the pair named is now the best covered, not the
+The pre-open pass found it. Round 1 found its mirror on the reachable side: "your tutors can
+find both halves" is false of a commander half, so `lean.reachableCommander` (one half in the
+zone) and `lean.reachableZone` (both, a partner pair) carry it, and the threshold gains
+`reasoning.thresholdCommander`. On a draw-only deck the pair named is now the best covered, not the
 join's first, because draw-only combos are not alike.

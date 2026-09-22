@@ -137,8 +137,22 @@ describe("the lean", () => {
     expect(screen.getByTestId("lean-line").textContent).toContain(copy.lean.oneHalf("c", "d"));
   });
 
-  it("joins the one-half parts into its sentence", () => {
-    expect(copy.lean.oneHalfParts("a", "b").join("")).toBe(copy.lean.oneHalf("a", "b"));
+  it("joins every reading's parts into its sentence", () => {
+    for (const k of ["reachable", "reachableCommander", "reachableZone", "oneHalf", "drawOnly"] as const) {
+      expect(copy.lean[`${k}Parts`]("a", "b").join("")).toBe(copy.lean[k]("a", "b"));
+    }
+  });
+
+  // A commander half is covered by the zone, not a tutor, and the sentence must not say otherwise.
+  it("credits the command zone, not the tutors, with a commander half", () => {
+    const profile = COMMANDER_HALF();
+    expect(slotDeck(profile).permits).toEqual([4]);
+    draw(profile);
+    const lean = screen.getByTestId("lean-line");
+    expect(lean.dataset.reading).toBe("reachableCommander");
+    expect(lean.textContent).toContain(copy.lean.reachableCommander(COMMANDER.oracleId, "lash"));
+    fireEvent.click(within(lean).getByRole("button", { name: copy.lean.open }));
+    expect(screen.getByTestId("receipt-modal").textContent).toContain(copy.reasoning.thresholdCommander);
   });
 
   it("joins its parts into the sentence the copy file states", () => {

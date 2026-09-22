@@ -42,11 +42,13 @@ export function LeanLine({
   const { receipt, reading } = read;
   const [a, b] = receipt.combo.cards;
   const nameOf = (c: CardRef) => art.get(c.oracleId)?.name ?? c.name;
-  const parts = (
-    reading === "reachable" ? copy.lean.reachableParts
-    : reading === "oneHalf" ? copy.lean.oneHalfParts
-    : copy.lean.drawOnlyParts
-  )(nameOf(a), nameOf(b));
+  const parts = {
+    reachable: copy.lean.reachableParts,
+    reachableCommander: copy.lean.reachableCommanderParts,
+    reachableZone: copy.lean.reachableZoneParts,
+    oneHalf: copy.lean.oneHalfParts,
+    neither: copy.lean.drawOnlyParts,
+  }[reading](nameOf(a), nameOf(b));
   const siblings = receipt.combo.cards.map((c) => c.oracleId);
 
   return (
@@ -101,7 +103,7 @@ export function LeanLine({
   );
 }
 
-export type LeanReading = "reachable" | "oneHalf" | "neither";
+export type LeanReading = "reachable" | "reachableCommander" | "reachableZone" | "oneHalf" | "neither";
 
 /**
  * Which pair the lean names, and which of three things is true of it.
@@ -126,7 +128,14 @@ export function leanReading(
   if (lean.reason === "reachable") {
     const receipt =
       lean.receipts.find((r) => r.combo.variantId === lean.decidedBy?.variantId) ?? lean.receipts[0];
-    return receipt ? { receipt, reading: "reachable" } : null;
+    if (!receipt) return null;
+    // "Your tutors can find both halves" is false of a commander half, which the command zone
+    // covers with no tutor — so the reachable sentence counts them, as coverage does.
+    const inZone = receipt.pieces.filter((p) => commanderOracleIds.includes(p.piece.oracleId)).length;
+    return {
+      receipt,
+      reading: inZone >= 2 ? "reachableZone" : inZone === 1 ? "reachableCommander" : "reachable",
+    };
   }
   let best: BracketLean["receipts"][number] | null = null;
   for (const r of lean.receipts) if (!best || covered(r) > covered(best)) best = r;
@@ -157,10 +166,12 @@ function ReasoningModal({
   onClose: () => void;
 }) {
   const title = copy.reasoning.title(bracket);
+  // "Both halves findable" is true of all three reachable readings: a commander half is found
+  // by the command zone, which is what the body's `found by` says of it.
   const qualifier =
-    reading === "reachable" ? copy.reasoning.qualifierReachable(bracket)
-    : reading === "oneHalf" ? copy.reasoning.qualifierOneHalf(bracket)
-    : copy.reasoning.qualifierDrawOnly(bracket);
+    reading === "oneHalf" ? copy.reasoning.qualifierOneHalf(bracket)
+    : reading === "neither" ? copy.reasoning.qualifierDrawOnly(bracket)
+    : copy.reasoning.qualifierReachable(bracket);
   const siblings = [
     ...new Set(receipt.pieces.flatMap((p) => [p.piece.oracleId, ...p.tutors.map((t) => t.oracleId)])),
   ];
@@ -184,6 +195,9 @@ function ReasoningModal({
         </span>
         <p className="m-0 text-[12.5px] leading-[1.65]" style={{ color: "var(--fg-muted)" }}>
           {copy.reasoning.threshold(4)}
+          {receipt.pieces.some((p) => commanderOracleIds.includes(p.piece.oracleId))
+            ? ` ${copy.reasoning.thresholdCommander}`
+            : null}
         </p>
         <ul className="m-0 p-0 list-none grid grid-cols-1 md:grid-cols-2 gap-[14px]" data-testid="reasoning-pieces">
           {receipt.pieces.map(({ piece, tutors }, i) => {
