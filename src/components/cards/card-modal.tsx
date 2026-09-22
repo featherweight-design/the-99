@@ -963,11 +963,31 @@ export function CardModal({
   //
   // A printing's own back image is POSITIVE EVIDENCE of two-sided stock, and
   // stronger than the layout word, which describes the card in general. The layout
-  // gate stays for the oracle-level column beside it: `faces.ts` refuses to infer
-  // two-sidedness from a `//` in a name, and a split or adventure printing answers
-  // null here because its faces share one image.
+  // gate stays for the ORACLE-LEVEL column beside it: a back image on `cards` under a
+  // one-sided layout is not evidence that the copy in hand has two sides, and taking
+  // it as one is the guess `faces.ts` refuses to make from a `//` in a name.
+  //
+  // What excludes an ordinary split or adventure printing is its own null back art,
+  // NOT the layout word: Scryfall gives those layouts one image between both halves,
+  // so `card_faces[1]` carries no `image_uris` and the transform stores null. A
+  // reversible printing OF an adventure card is a different thing and turns over
+  // correctly — `tdm/381` prints Bloomvine Regent and Claim Territory on two sides,
+  // and each side has its own art.
   const twoFaced = Boolean(backImage)
     && (isTwoFaced(card.layout) || Boolean(resolved?.backImageUri));
+  // CLAMPED TO WHAT EXISTS, not to what the reader last asked for.
+  //
+  // `flipped` survives a printing pick by design — only a card change remounts this —
+  // and since the turn began taking a PRINTING's own back art as its signal, a pick
+  // can take that art away underneath a turned card. Turn `sld/2214` over, pick the
+  // M21 printing, and `backImage` goes null: the art fell back to the colour-identity
+  // gradient and `turningArt` returned nothing, so there was no control left to turn
+  // back with. Exactly the lie the gate's own comment above says it prevents, reached
+  // from a direction that did not exist before — a `transform` oracle always carries
+  // `cards.back_image_uri` as a fallback, so `backImage` could not go null under a pick.
+  //
+  // The reader's intent stays in `flipped`; every drawn decision reads this instead.
+  const showingBack = twoFaced && flipped;
   // The faces of the name on screen, which is the printed one when the copy in
   // hand carries a printed name. The title above and this announcement must
   // name the same card.
@@ -1016,7 +1036,7 @@ export function CardModal({
 
   function onArtTurnSettled(e: React.TransitionEvent<HTMLDivElement>) {
     if (e.target !== e.currentTarget || e.propertyName !== "transform") return;
-    const face = shownLabel(flipped);
+    const face = shownLabel(showingBack);
     // NOT while the zoom is up. A reader who turns the art and opens the zoom
     // inside the 320ms turn leaves this transition still running underneath a
     // layer that deliberately opens on the FRONT — and `openZoom` clears the
@@ -1062,7 +1082,7 @@ export function CardModal({
     // The zoom draws the card and no line rather than a line with nothing in it.
     : null;
 
-  const faceImage = flipped ? backImage : resolved?.imageUri;
+  const faceImage = showingBack ? backImage : resolved?.imageUri;
   const artStyle: React.CSSProperties = faceImage
     ? { backgroundImage: cssUrl(faceImage), backgroundSize: "cover", backgroundPosition: "center" }
     : { background: identityGradient(card.colorIdentity) };
@@ -1150,12 +1170,12 @@ export function CardModal({
       <div
         aria-hidden
         data-testid="modal-art-turn"
-        data-face={flipped ? "back" : "front"}
+        data-face={showingBack ? "back" : "front"}
         className={`absolute inset-0 ${radius} anim-card-turn`}
         onTransitionEnd={onArtTurnSettled}
         style={{
           transformStyle: "preserve-3d",
-          transform: flipped ? "rotateY(180deg)" : undefined,
+          transform: showingBack ? "rotateY(180deg)" : undefined,
         }}
       >
         <CardFaces
@@ -1216,7 +1236,7 @@ export function CardModal({
       </p>
       {twoFaced && (
         <FlipControl
-          flipAria={flipLabel(!flipped)}
+          flipAria={flipLabel(!showingBack)}
           onFlip={onFlip}
           // A real 44px target on the phone. 32 on the desktop, where the column
           // below the art is 97px tall at the drawn dialog height and this stack

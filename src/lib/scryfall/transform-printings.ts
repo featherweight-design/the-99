@@ -143,10 +143,12 @@ export function classifyPrinting(raw: Raw): PrintingClassification {
   //     `isTwoFaced(card.layout)` alone, which is oracle-level and reads `normal` here.
   //
   //     What is still deliberately absent is the `//` MARK on rows and tiles, which
-  //     stays keyed to the layout word. A reversible card has no back face in play:
-  //     both sides are the same card, so there is nothing to turn over at the table and
-  //     the mark would promise a face the rules do not have. The modal's control is
-  //     about seeing the OTHER ART, and its label says so.
+  //     stays keyed to the layout word. That mark says the CARD turns over in play,
+  //     and a Secret Lair printing does not change what a card does: `sld/2214` is a
+  //     one-faced enchantment printed twice, and `tdm/381` is an adventure card whose
+  //     two halves are one object at the table however the drop arranged them on the
+  //     stock. Neither turns over in a game. The modal's control is about seeing the
+  //     OTHER ART, which is why its label says art rather than naming a face.
   const reversible = layout === "reversible_card";
   let reversibleOracleId: string | null = null;
   if (reversible) {

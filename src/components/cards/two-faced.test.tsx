@@ -18,6 +18,7 @@ const { CardModal } = await import("./card-modal");
 
 const FRONT = "https://x/front.jpg";
 const BACK = "https://x/back.jpg";
+const OTHER = "https://x/other-printing.jpg";
 
 const delver: BrowseCard = {
   oracleId: "o1",
@@ -114,11 +115,13 @@ describe("CardModal flip control", () => {
   });
 
   it("offers no control for a split card", () => {
-    // The printing carries no back art either, which is what a split printing looks
-    // like: Scryfall gives `split`, `adventure` and `prepare` one image between both
-    // halves, so `card_faces[1]` has no `image_uris` and the transform stores null.
-    // Checked against the catalog on 2026-09-22 — every printing holding its own back
-    // art is a two-sided layout or a reversible printing, and none is a split.
+    // The printing carries no back art either, and THAT is what excludes it rather
+    // than the layout word: Scryfall gives `split`, `adventure` and `prepare` one image
+    // between both halves, so `card_faces[1]` has no `image_uris` and the transform
+    // stores null. A reversible printing of one of those layouts does carry two images
+    // and does turn over — the `tdm/381` case below. Checked against the catalog on
+    // 2026-09-22: every printing holding its own back art is a two-sided layout or a
+    // reversible printing, and none is an ordinary split.
     mount({
       ...delver,
       name: "Fire // Ice",
@@ -149,6 +152,60 @@ describe("CardModal flip control", () => {
     settle();
     expect(screen.getByText(twoFacedCopy.flippedSideAria("back"))).toBeTruthy();
     expect(screen.getAllByLabelText(twoFacedCopy.flipToSideAria("front")).length).toBeGreaterThan(0);
+  });
+
+  it("does not strand a turned card when the pick has no back art", () => {
+    // Reachable only since a PRINTING's own back art became a turn signal. `flipped`
+    // survives a printing pick by design, so turning `sld/2214` over and then picking
+    // the M21 printing took the back image away underneath a turned card: the art fell
+    // back to the colour-identity gradient and the control disappeared with it, leaving
+    // no way back. The drawn state is clamped to what exists now.
+    mount({
+      ...delver,
+      name: "Teferi's Ageless Insight",
+      layout: "normal",
+      backImageUri: null,
+      quantity: 2,
+      printings: [
+        { setCode: "SLD", setName: "Secret Lair", collectorNumber: "2214",
+          releasedAt: "2025-10-27", quantity: 1, finishes: { foil: 1 }, imageUri: FRONT,
+          backImageUri: BACK, flavorName: "Mimir's Ancient Wisdom" },
+        { setCode: "M21", setName: "Core Set 2021", collectorNumber: "76",
+          releasedAt: "2020-07-03", quantity: 1, finishes: { nonfoil: 1 }, imageUri: OTHER,
+          backImageUri: null, flavorName: null },
+      ],
+      setCodes: ["SLD", "M21"],
+      primarySetCode: "SLD",
+    });
+
+    fireEvent.click(screen.getAllByLabelText(twoFacedCopy.flipToSideAria("back"))[0]);
+    expect(wash().style.backgroundImage).toContain(BACK);
+
+    // Through the real picker rather than by prop, because the bug lives in the state
+    // that SURVIVES the pick.
+    fireEvent.click(screen.getAllByLabelText(/printings owned/i)[0]);
+    const m21 = screen.getAllByLabelText(/Core Set 2021/i)[0];
+    fireEvent.click(m21);
+
+    // The M21 art, never the gradient — and nothing claims a back to turn to.
+    expect(wash().style.backgroundImage).toContain(OTHER);
+    expect(wash().style.background ?? "").not.toContain("linear-gradient");
+    expect(screen.queryAllByLabelText(/Turn over/)).toHaveLength(0);
+  });
+
+  it("keeps the LAYOUT half of the gate, for an oracle-level back with no printing art", () => {
+    // Distinguishes the two-signal gate from `Boolean(backImage)` alone: an oracle-level
+    // back image on a one-sided layout is not evidence that the copy in hand has two
+    // sides, and inferring a turn from it is the same guess `faces.ts` refuses to make
+    // from a `//` in a name.
+    mount({
+      ...delver,
+      name: "Fire // Ice",
+      layout: "split",
+      backImageUri: BACK,
+      printings: [{ ...delver.printings[0], backImageUri: null }],
+    });
+    expect(screen.queryAllByLabelText(/Turn over/)).toHaveLength(0);
   });
 
   it("still names the FACES of a reversible printing whose sides differ", () => {
