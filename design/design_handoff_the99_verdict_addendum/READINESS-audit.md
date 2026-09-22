@@ -24,7 +24,7 @@ need nothing.
 | at **0.60** | 3.0128 | 0 of 12 |
 | at **0.65** | **3.2963** | 0 of 12 |
 | the climb's neighbour rungs at 0.75 | 3.1401 | 0 of 60 |
-| the rung that holds, full opacity on its own `color-mix` | 3.8410 | 0 of 30 |
+| the rung that holds, full opacity on its own `color-mix` (mixed in OKLab, as declared) | 3.9006 | 0 of 30 |
 
 0.65 stands, 0.7 is not needed, and the size-step fallback is not reached. The 0.60 reading
 confirms the addendum's own reason for rejecting it: 3.0128 is not a margin to spend across six

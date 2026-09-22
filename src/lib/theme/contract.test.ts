@@ -2,7 +2,8 @@ import { readFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { describe, expect, it } from "vitest";
-import { chroma, contrast, deltaEOk, hueGap } from "./color";
+import { chroma, contrast, deltaEOk, hueGap, mixOklab } from "./color";
+import { NEIGHBOUR_OPACITY, YOURS_TINT } from "../../components/decks/bracket-climb";
 import { DIM_OPACITY } from "../../components/decks/bracket-mark";
 import { parseThemeBlocks } from "./parse-css";
 
@@ -289,6 +290,15 @@ describe("theme-independent tokens", () => {
   // ink. The tests above cover the text tokens; this pair covers the mark.
   const GROUNDS = ["surface", "surface-sunken"] as const;
 
+  // `opacity` composites in the PAINTED space, sRGB, not in OKLab: an element at alpha a is
+  // `fg * a + bg * (1 - a)` per 8-bit channel. Distinct from `mixOklab`, which is what a
+  // `color-mix(in oklab, …)` declaration paints.
+  const hex = (h: string) => [1, 3, 5].map((i) => parseInt(h.slice(i, i + 2), 16));
+  const over = (fg: string, bg: string, a: number) =>
+    "#" + hex(fg)
+      .map((c, i) => Math.round(c * a + hex(bg)[i] * (1 - a)).toString(16).padStart(2, "0"))
+      .join("");
+
   it("clears 3:1 for every rank on every ground a mark is drawn on", () => {
     // Swept WIDER than GROUNDS deliberately: these clear everywhere, so the broader domain is
     // free strength rather than an invented claim. Narrowing an assertion that passes costs
@@ -320,13 +330,8 @@ describe("theme-independent tokens", () => {
   // COMPOSITED, not compared raw. An `opacity` on the element is not a colour change: what a
   // reader sees is the ink mixed with whatever is behind it, so the ratio has to be taken
   // against the composite. Comparing `--bracket-2` to `--surface` and calling that the dimmed
-  // reading would report 4.83 for a mark drawing at 3.30.
+  // reading would report 5.8939 for kaldheim, the pair that draws at 3.2963.
   it("holds the dimmed upper member of a range at 3:1", () => {
-    const hex = (h: string) => [1, 3, 5].map((i) => parseInt(h.slice(i, i + 2), 16));
-    const over = (fg: string, bg: string, a: number) =>
-      "#" + hex(fg)
-        .map((c, i) => Math.round(c * a + hex(bg)[i] * (1 - a)).toString(16).padStart(2, "0"))
-        .join("");
     const failures: string[] = [];
     let floor = Infinity;
     for (const [theme, tokens] of entries) {
@@ -345,5 +350,43 @@ describe("theme-independent tokens", () => {
     // The floor at full precision, so a regression from 3.2963 to 3.01 fails here rather than
     // passing the bar above and being discovered by a screenshot.
     expect(floor).toBeGreaterThanOrEqual(3.296);
+  });
+
+  // THE CLIMB'S TWO OTHER GROUNDS, which the sweep above does not reach because neither is a
+  // token read at full strength.
+  //
+  // A NEIGHBOUR RUNG draws its mark at `NEIGHBOUR_OPACITY` — composited, for the reason the
+  // dimmed test gives. Swept over every ground rather than the two the rungs sit on today,
+  // because the rung's own ground is a class string and a ground change there would not move
+  // this test. Floor measured 2026-09-22: 3.1401, kaldheim rank 1 on `--surface`.
+  it("holds a neighbour rung's mark at 3:1, composited", () => {
+    const failures: string[] = [];
+    for (const [theme, tokens] of entries) {
+      for (const rank of [1, 2, 3, 4, 5]) {
+        for (const ground of ["surface", "surface-sunken", "bg"]) {
+          const bg = tokens.get(ground)!;
+          const ink = over(tokens.get(`bracket-${rank}`)!, bg, NEIGHBOUR_OPACITY);
+          const ratio = contrast(ink, bg);
+          if (ratio < 3) failures.push(`${theme} bracket-${rank}/${ground} ${ratio.toFixed(4)}`);
+        }
+      }
+    }
+    expect(failures).toEqual([]);
+  });
+
+  // THE RUNG A DECK SITS ON is tinted with its own rank's ink, so the mark on it stands on a
+  // ground that is partly itself. That ground is `color-mix(in oklab, ink YOURS_TINT, --surface)`
+  // and exists in no stylesheet, which is why no token sweep can reach it.
+  // Floor measured 2026-09-22: 3.9006, kaldheim rank 1.
+  it("holds the mark at 3:1 on its own tinted rung", () => {
+    const failures: string[] = [];
+    for (const [theme, tokens] of entries) {
+      for (const rank of [1, 2, 3, 4, 5]) {
+        const ink = tokens.get(`bracket-${rank}`)!;
+        const ratio = contrast(ink, mixOklab(ink, tokens.get("surface")!, YOURS_TINT));
+        if (ratio < 3) failures.push(`${theme} bracket-${rank} ${ratio.toFixed(4)}`);
+      }
+    }
+    expect(failures).toEqual([]);
   });
 });

@@ -27,6 +27,16 @@ import { BracketMark, bracketInk } from "./bracket-mark";
  * mark twice — 22 is the CHIP form and 26 the full one, so they resolve to different files and
  * one element cannot serve both widths. The rung that HOLDS is 26 / 36, both full, and needs one.
  */
+/**
+ * The neighbour rungs' marks draw at this opacity, so the rung a reader sits on is the one that
+ * reads first. Exported because the theme contract holds the COMPOSITE at 3:1: an opacity is not
+ * a colour change, and a figure that lived only in a class string had no assertion behind it.
+ */
+export const NEIGHBOUR_OPACITY = 0.75;
+
+/** How much of the rank's ink tints the rung a deck sits on. Exported for the same reason. */
+export const YOURS_TINT = 0.12;
+
 export function BracketClimb({
   verdict,
   profile,
@@ -87,7 +97,7 @@ function Rung({
       }
       style={
         role === "yours"
-          ? { background: `color-mix(in oklab, ${ink} 12%, var(--surface))`, borderColor: ink }
+          ? { background: `color-mix(in oklab, ${ink} ${YOURS_TINT * 100}%, var(--surface))`, borderColor: ink }
           : declares
             ? { borderColor: `color-mix(in oklab, ${ink} 55%, transparent)` }
             : undefined
@@ -105,11 +115,11 @@ function Rung({
               refuses an `mdPx` that crosses a form boundary rather than drawing the wrong art at
               one of the two widths.
             */}
-            <span className="md:hidden">
-              <BracketMark bracket={bracket} px={22} className="opacity-75" />
+            <span className="md:hidden" style={{ opacity: NEIGHBOUR_OPACITY }}>
+              <BracketMark bracket={bracket} px={22} />
             </span>
-            <span className="hidden md:inline-flex">
-              <BracketMark bracket={bracket} px={26} className="opacity-75" />
+            <span className="hidden md:inline-flex" style={{ opacity: NEIGHBOUR_OPACITY }}>
+              <BracketMark bracket={bracket} px={26} />
             </span>
           </>
         )}
