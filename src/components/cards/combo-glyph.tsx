@@ -16,7 +16,15 @@
  */
 const GLOW = "drop-shadow(0 0 2px color-mix(in srgb, var(--fact) 45%, transparent))";
 
-/** 12px on every host; the modal block draws it at 16. */
+/**
+ * 12px on every host; the modal block draws it at 16.
+ *
+ * DELIBERATELY NOT `CARD_FACT_MARK_PX` (16). Round 1's marks sit on a name line at 16 and
+ * this clause leads a SECONDARY line of 9.5–10.5px mono, where a 16px glyph is taller than
+ * the text it introduces. `STATES-combo-awareness.md` sets both figures by name — "glyph
+ * size: 12px on every host. 16px in the modal block" — so the two sizes are the spec rather
+ * than drift from it, and the modal's own 16 is why this is a parameter at all.
+ */
 export const COMBO_GLYPH_PX = 12;
 
 export function ComboGlyph({ size = COMBO_GLYPH_PX }: { size?: number }) {

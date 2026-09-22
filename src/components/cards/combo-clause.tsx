@@ -62,7 +62,11 @@ export function ComboClause({
         // give this clause a full secondary line, so the narrow case is reachable only at
         // 390px behind a long partner name. Recorded for the host PR, where the widths are
         // real and can be measured rather than guessed at.
-        className="truncate font-mono text-[9.5px] md:text-[10.5px]"
+        // `min-w-0` ON THE FLEX ITEM ITSELF, not only on the row. A flex item's default
+        // `min-width: auto` is its min-content width, so `truncate` never engages and the
+        // clause pushes its row wide instead of ellipsing — the pairing this repo already
+        // relies on wherever a flex child truncates.
+        className="truncate min-w-0 font-mono text-[9.5px] md:text-[10.5px]"
         style={{ color: "var(--fg-body)" }}
       >
         {text}

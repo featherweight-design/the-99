@@ -45,9 +45,22 @@ describe("ComboClause", () => {
 
   // NO COUNT, ANYWHERE. Detection excludes template-gated variants by design, so a number
   // beside this sentence would be the first thing on the surface that is not true.
-  it("prints no number", () => {
+  //
+  // Asserted as "nothing but the sentence" rather than "no digits": a card name may contain
+  // one — `1996 World Champion` is a real card — so a digit sweep would fail on a legitimate
+  // partner while still passing a `· 4` appended to a name that happens to have none.
+  it("prints the sentence and nothing appended to it", () => {
     render(<ComboClause partnerName="Grim Monolith" state="completes" />);
-    expect(screen.getByTestId("combo-clause").textContent ?? "").not.toMatch(/\d/);
+    expect(screen.getByTestId("combo-clause").textContent).toBe(
+      comboAwarenessCopy.clause.completes("Grim Monolith"),
+    );
+  });
+
+  it("appends nothing to a partner whose name carries a digit", () => {
+    render(<ComboClause partnerName="1996 World Champion" state="ownBoth" />);
+    expect(screen.getByTestId("combo-clause").textContent).toBe(
+      comboAwarenessCopy.clause.ownBoth("1996 World Champion"),
+    );
   });
 
   it("speaks the state rather than the glyph", () => {
