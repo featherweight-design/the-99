@@ -3,6 +3,7 @@ import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { describe, expect, it } from "vitest";
 import { chroma, contrast, deltaEOk, hueGap } from "./color";
+import { DIM_OPACITY } from "../../components/decks/bracket-mark";
 import { parseThemeBlocks } from "./parse-css";
 
 // import.meta.url, not __dirname: Vitest runs tests as ESM.
@@ -267,86 +268,82 @@ describe("theme-independent tokens", () => {
     expect([...values]).toEqual([hex]);
   });
 
-  // RANK 1 DOES NOT CLEAR 4.5:1 ON THE GROUND THE VERDICT BLOCK DRAWS IT ON.
+  // THE BRACKET MARK IS A GRAPHICAL OBJECT, HELD TO 3:1 — ruled by the verdict addendum,
+  // 2026-09-22, and it answers a question that had been unanswerable as posed.
   //
-  // `HANDOFF.md` states of palette 2e Ignition: "Every rung clears 4.5:1 on all twelve
-  // grounds" — TWELVE being `--surface-inset` and `--surface-sunken` across the six themes,
-  // which its README names, and on which the claim holds (4.6795 is the worst of them). The
-  // reasoning is §2's: "The numeral inside the mark is text, so every
-  // rung owes 4.5:1. That puts a hard floor under rank 1: it cannot be made quiet by being
-  // made darker." 4.5 rather than the 3:1 a graphic would owe, because of that numeral;
-  // `--fact` above is held to 3 for exactly the opposite reason.
+  // `HANDOFF.md` reasoned the mark to 4.5:1 from its numeral: "the numeral inside the mark is
+  // text, so every rung owes 4.5:1". The addendum overturns the premise rather than the figure.
+  // The mark is NEVER THE SOLE CARRIER of its meaning — `Core`, `Upgraded`, `Optimized or cEDH`
+  // are written beside it every time it appears, at full opacity — so a reader who cannot
+  // resolve the diamond has lost decoration, not information. That is WCAG 1.4.11's definition
+  // of a non-text object, and its bar is 3:1.
   //
-  // Measured here with this file's own `contrast()`: `--bracket-1` (#8A857C) reads 4.4768 on
-  // kaldheim `--surface`, which is the ground the verdict block draws it on and is not one of
-  // the twelve. Ranks 2 through 5 clear on every ground in every theme.
+  // WHY THE 4.5 CHASE COULD NOT BE WON, which is the argument rather than the excuse: a
+  // one-step lightening of `#8A857C` buys `--surface` (4.5372) and loses `--surface-raised`
+  // (4.2631), and the next ground a later round adds restarts it. The palette was cut for two
+  // grounds. Holding a graphic to a text bar is what made the game unwinnable.
   //
-  // THE GROUNDS ARE MEASURED NOW, NOT BORROWED. The list was `--fact`'s four while nothing
-  // drew a bracket mark; `BracketMark` ships in PR 4a and the verdict block is the only
-  // surface that mounts one, on its own box — `background: var(--surface)`, and nothing
-  // else. So the real domain is one token, and it is named here rather than swept: five
-  // more surface tokens would be a claim about mounts that do not exist. The list grows
-  // when a surface adds a ground, which is 4b's climb (`--surface-sunken` on the rung
-  // below, and a `color-mix` of the rank's own ink on the rung that holds).
-  //
-  // WHAT THE MEASUREMENT SETTLED, and it is not what the provisional list feared. It is
-  // better: kaldheim `--elevated-hover` (4.3204) is NOT a ground the mark sits on, and
-  // `--elevated` (3.6857, the worst anywhere) is not either. The real floor is kaldheim
-  // `--surface` at 4.4768.
-  //
-  // AND THE HANDOFF'S CLAIM IS TRUE AS WRITTEN. `design_handoff_the99_deck_analysis`'s
-  // README names the twelve grounds it measured — "`--surface-inset` and `--surface-sunken`
-  // × six themes" — and rank 1 clears 4.5:1 on all twelve (4.6795 is the worst of them).
-  // `--surface` is a THIRTEENTH ground, introduced by this component, and the palette was
-  // never cut for it. That is a question for Design rather than a defect in the drop, and
-  // it is recorded rather than quietly absorbed: the shortfall is 0.0232, on one theme.
-  //
-  // WHAT THIS DOES NOT COVER, and it is a drawing decision rather than a hole here: a RANGE
-  // draws its upper member at `opacity: 0.45`, which the canvas specifies. Composited over
-  // `--surface` that numeral reads 2.2533-2.3116 for rank 2 on `[1,2]` and 3.9807-4.0928 for
-  // rank 5 on `[4,5]`. No rung clears 4.5 in that state and none can, so asserting it here
-  // would fail a build that is exactly as drawn.
-  //
-  // It is not a contrast failure in the WCAG sense either: the upper bracket's NAME is in the
-  // face line directly above, at `--fg` and 600, so the dimmed numeral repeats information that
-  // is already available as full-contrast text. Recorded rather than asserted, and named to
-  // Design beside the rank-1 question, because "what strength may a mark's numeral draw at" is
-  // the same conversation as "which grounds may it sit on".
-  const GROUNDS = ["surface"] as const;
+  // WHAT STILL OWES 4.5, and the scope is recorded here so it cannot quietly narrow: every
+  // bracket NAME, every count, every allowance and every sentence. Those are text, they carry
+  // the meaning, and they are drawn at full opacity in `--fg`, `--fg-body` or the rank's own
+  // ink. The tests above cover the text tokens; this pair covers the mark.
+  const GROUNDS = ["surface", "surface-sunken"] as const;
 
-  it("clears 4.5:1 for ranks 2-5 on every ground in every theme", () => {
-    // Swept WIDER than GROUNDS deliberately: these clear everywhere, so the broader domain
-    // is free strength rather than an invented claim. Narrowing an assertion that passes
-    // costs coverage and buys nothing.
+  it("clears 3:1 for every rank on every ground a mark is drawn on", () => {
+    // Swept WIDER than GROUNDS deliberately: these clear everywhere, so the broader domain is
+    // free strength rather than an invented claim. Narrowing an assertion that passes costs
+    // coverage and buys nothing.
     const wide = [
       "bg", "surface", "surface-raised", "surface-rail",
       "surface-sunken", "surface-inset", "elevated", "elevated-hover",
     ];
     const failures: string[] = [];
     for (const [theme, tokens] of entries) {
-      for (const rank of [2, 3, 4, 5]) {
+      for (const rank of [1, 2, 3, 4, 5]) {
         for (const ground of wide) {
           const ratio = contrast(tokens.get(`bracket-${rank}`)!, tokens.get(ground)!);
-          if (ratio < 4.5) failures.push(`${theme} bracket-${rank}/${ground} ${ratio.toFixed(2)}`);
+          if (ratio < 3) failures.push(`${theme} bracket-${rank}/${ground} ${ratio.toFixed(2)}`);
         }
       }
     }
     expect(failures).toEqual([]);
   });
 
-  it("holds rank 1 at its measured floor, which is under the stated 4.5:1", () => {
-    const ratios = entries.flatMap(([, tokens]) =>
-      GROUNDS.map((ground) => contrast(tokens.get("bracket-1")!, tokens.get(ground)!)),
-    );
-    // No worse than today, at FULL PRECISION rather than rounded. kaldheim `--surface` is
-    // the weakest of the grounds the mark is actually drawn on, and a floor written as 4.47
-    // would wave through a regression from 4.4768 to 4.471 — "no worse than today" has to
-    // mean today's number, or the gate permits exactly the drift it exists to catch.
-    // `contrast()` is pure over two fixed hexes, so this is deterministic; the day it
-    // legitimately moves, it fails loudly and is re-measured rather than absorbing a loss.
-    expect(Math.min(...ratios)).toBeGreaterThanOrEqual(4.47683985932081);
-    // And still short of the claim, so this assertion is not quietly satisfied by a fix
-    // nobody then notices — the day rank 1 clears, this line fails and comes out.
-    expect(Math.min(...ratios)).toBeLessThan(4.5);
+  // THE DIMMED HALF OF A RANGE, which is the state the 3:1 bar actually bites on.
+  //
+  // `BracketMark`'s `dim` draws the upper member of a range behind the one that holds. At the
+  // canvas's 0.45, rank 2 composited over `--surface` read 2.2533 on kaldheim — 6 of 12
+  // theme×rank pairs under 3. The addendum raised it to 0.65, measured here: the floor is
+  // 3.2963, still kaldheim rank 2. 0.6 was measured too and reads 3.0128, which is not a margin
+  // to spend across six themes.
+  //
+  // COMPOSITED, not compared raw. An `opacity` on the element is not a colour change: what a
+  // reader sees is the ink mixed with whatever is behind it, so the ratio has to be taken
+  // against the composite. Comparing `--bracket-2` to `--surface` and calling that the dimmed
+  // reading would report 4.83 for a mark drawing at 3.30.
+  it("holds the dimmed upper member of a range at 3:1", () => {
+    const hex = (h: string) => [1, 3, 5].map((i) => parseInt(h.slice(i, i + 2), 16));
+    const over = (fg: string, bg: string, a: number) =>
+      "#" + hex(fg)
+        .map((c, i) => Math.round(c * a + hex(bg)[i] * (1 - a)).toString(16).padStart(2, "0"))
+        .join("");
+    const failures: string[] = [];
+    let floor = Infinity;
+    for (const [theme, tokens] of entries) {
+      for (const ground of GROUNDS) {
+        const bg = tokens.get(ground)!;
+        // Ranks 2 and 5 are the only ones a range can draw dimmed: `permitsFor` returns
+        // `[1,2]` and `[4,5]` and nothing else, so the upper member is one of those two.
+        for (const rank of [2, 5]) {
+          const ratio = contrast(over(tokens.get(`bracket-${rank}`)!, bg, DIM_OPACITY), bg);
+          floor = Math.min(floor, ratio);
+          if (ratio < 3) failures.push(`${theme} bracket-${rank}/${ground} ${ratio.toFixed(4)}`);
+        }
+      }
+    }
+    expect(failures).toEqual([]);
+    // The floor at full precision, so a regression from 3.2963 to 3.01 fails here rather than
+    // passing the bar above and being discovered by a screenshot.
+    expect(floor).toBeGreaterThanOrEqual(3.296);
   });
 });
