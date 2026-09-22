@@ -55,7 +55,7 @@ describe("FullCardTrigger", () => {
     const fetchCard = renderTrigger();
     await click(screen.getByRole("button", { name: "View card details" }));
 
-    expect(fetchCard).toHaveBeenCalledWith("o-atraxa");
+    expect(fetchCard).toHaveBeenCalledWith("o-atraxa", undefined);
     await waitFor(() => {
       expect(screen.getByRole("dialog")).toBeInTheDocument();
     });
@@ -93,7 +93,7 @@ describe("FullCardTrigger", () => {
     await act(async () => {
       fireEvent.click(band as Element);
     });
-    expect(fetchCard).toHaveBeenCalledWith("o-atraxa");
+    expect(fetchCard).toHaveBeenCalledWith("o-atraxa", undefined);
   });
 });
 

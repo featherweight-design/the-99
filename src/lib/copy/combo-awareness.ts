@@ -88,6 +88,16 @@ export const comboAwarenessCopy = {
   modal: {
     heading: 'Two-card combos',
     /**
+     * Deck-scoped only, and it takes over from the counts on the open header rather than
+     * adding a line — so the block gains no chrome by opening.
+     *
+     * A combo is a PAIR fact, so this block alone among the modal's reads differently
+     * depending on where it was opened from: opened from a deck a partner can be
+     * `in this deck`, and opened from `/collection` that sentence has no referent. The scope
+     * line is what makes that visible instead of looking like an inconsistency.
+     */
+    scope: (deckName: string) => `against ${deckName}`,
+    /**
      * One line per detected partner. Ordered: inDeck, then owned, then unowned.
      *
      * `lineLead` is exported because the addendum sets the two halves in DIFFERENT type: the

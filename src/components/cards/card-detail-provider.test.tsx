@@ -46,11 +46,15 @@ async function click(el: HTMLElement) {
 }
 
 function renderTriggers(
-  fetchCard: (oracleId: string) => Promise<BrowseCard | null>,
+  fetchCard: (
+    oracleId: string,
+    deckOracleIds?: readonly string[],
+  ) => Promise<BrowseCard | null>,
   siblings?: string[],
+  comboDeckOracleIds?: readonly string[],
 ) {
   return render(
-    <CardDetailProvider fetchCard={fetchCard}>
+    <CardDetailProvider fetchCard={fetchCard} comboDeckOracleIds={comboDeckOracleIds}>
       <CardDetailTrigger oracleId="o-signet" name="Arcane Signet" siblings={siblings}>
         Arcane Signet
       </CardDetailTrigger>
@@ -80,12 +84,65 @@ function Evicter({ oracleId }: { oracleId: string }) {
 }
 
 describe("CardDetailProvider", () => {
+  // THE PARTNER LINK REACHES `load`, which is the last link in this chain and the fourth
+  // place it has been possible to lose a value between two tested ends.
+  //
+  // `card-modal-combo.test.tsx` mounts `CardModal` directly with a spy, so it proves the
+  // modal calls what it is given and nothing about what the PROVIDER gives it: removing
+  // `onSelectCard` at this mount site left that file green while pressing a partner did
+  // nothing at all.
+  it("opens a partner through the provider's own load", async () => {
+    const withPartner = {
+      ...SIGNET,
+      comboPartners: [
+        { oracleId: "o-sol", name: "Sol Ring", state: "owned" as const, popularity: 9 },
+      ],
+    };
+    const fetchCard = vi.fn(async (id: string) => (id === "o-sol" ? SOL : withPartner));
+    renderTriggers(fetchCard);
+    await click(screen.getByText("Arcane Signet"));
+
+    await act(async () => {
+      screen.getByRole("button", { name: /Two-card combos/ }).click();
+    });
+    await act(async () => {
+      screen.getByRole("button", { name: "Sol Ring" }).click();
+    });
+
+    // The provider fetched the PARTNER, which is what `load` does and a spy on the modal
+    // cannot see.
+    expect(fetchCard).toHaveBeenCalledWith("o-sol", undefined);
+  });
+
+  // THE COMBO SCOPE REACHES THE READ. It is what makes `in this deck` sayable and the scope
+  // line renderable, and it is the deck page's alone — every other route sends nothing.
+  //
+  // Nothing asserted it before: the other cases all check the `undefined` a route with no
+  // deck sends, so removing the argument here — or handing over the PROXY-ELIGIBLE set,
+  // which answers a different question — left the suite green while every deck modal lost
+  // its most useful state.
+  it("sends the deck's cards with the read, and nothing without a deck", async () => {
+    const fetchCard = vi.fn().mockResolvedValue(SIGNET);
+    const { unmount } = renderTriggers(fetchCard, undefined, ["a", "b"]);
+    await click(screen.getByText("Arcane Signet"));
+    expect(fetchCard).toHaveBeenCalledWith("o-signet", ["a", "b"]);
+    unmount();
+
+    const plain = vi.fn().mockResolvedValue(SIGNET);
+    renderTriggers(plain);
+    await click(screen.getByText("Arcane Signet"));
+    expect(plain).toHaveBeenCalledWith("o-signet", undefined);
+  });
+
   it("opens the modal for the clicked card", async () => {
     const fetchCard = vi.fn().mockResolvedValue(SIGNET);
     renderTriggers(fetchCard);
     await click(screen.getByRole("button", { name: cardDetailCopy.triggerAria("Arcane Signet") }));
 
-    expect(fetchCard).toHaveBeenCalledWith("o-signet");
+    // The second argument is the COMBO SCOPE — the deck's own cards — and is `undefined` on
+    // every route but the deck page. Asserted rather than loosened to `expect.anything()`, so
+    // a scope leaking onto a route that has no deck would fail here.
+    expect(fetchCard).toHaveBeenCalledWith("o-signet", undefined);
     const dialog = await screen.findByRole("dialog");
     expect(dialog).toHaveAccessibleName("Arcane Signet");
   });
@@ -586,7 +643,7 @@ describe("CardDetailProvider card cache", () => {
 
     // The art pick the reader makes in that still-open modal.
     await click(screen.getByRole("button", { name: "evict" }));
-    await waitFor(() => expect(fetchCard).toHaveBeenCalledWith("o-signet"));
+    await waitFor(() => expect(fetchCard).toHaveBeenCalledWith("o-signet", undefined));
     expect(fetchCard.mock.calls.filter(([id]) => id === "o-signet")).toHaveLength(2);
   });
 
@@ -845,7 +902,7 @@ describe("CardDetailProvider open-at-printing scope", () => {
     expect(art().some((b) => b.includes("rvr-24"))).toBe(true);
 
     await click(screen.getAllByRole("button", { name: "Next card" })[0]);
-    await waitFor(() => expect(fetchCard).toHaveBeenCalledWith("o-sol"));
+    await waitFor(() => expect(fetchCard).toHaveBeenCalledWith("o-sol", undefined));
     // Arcane Signet is still the card on screen, and still wearing the printing that was
     // clicked. The page did not happen.
     expect(art().some((b) => b.includes("rvr-24"))).toBe(true);
@@ -938,7 +995,7 @@ describe("CardDetailProvider open-at-printing scope", () => {
 
     // The open fails, so nothing is painted and its printing is owed to a read that is over.
     await click(screen.getByRole("button", { name: "open sol at M21" }));
-    await waitFor(() => expect(fetchCard).toHaveBeenCalledWith("o-sol"));
+    await waitFor(() => expect(fetchCard).toHaveBeenCalledWith("o-sol", undefined));
 
     // The same card, opened again with NO printing. It must arrive wearing none.
     failNext = false;

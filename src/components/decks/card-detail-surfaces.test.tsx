@@ -76,7 +76,7 @@ describe("deck card-detail triggers", () => {
        newestAsOf={null}/>,
     );
     await clickTrigger("Arcane Signet");
-    expect(fetchCard).toHaveBeenCalledWith("o-signet");
+    expect(fetchCard).toHaveBeenCalledWith("o-signet", undefined);
   });
 
   // A stack of basics is one row carrying its count, so it offers one trigger.
@@ -128,7 +128,7 @@ describe("deck card-detail triggers", () => {
     await act(async () => {
       fireEvent.click(triggers[0]);
     });
-    expect(fetchCard).toHaveBeenCalledWith("o-sol");
+    expect(fetchCard).toHaveBeenCalledWith("o-sol", undefined);
   });
 
   // The one deliberate exception to #127. A quick-add row is a listbox option
@@ -190,7 +190,7 @@ describe("deck card-detail triggers", () => {
     await act(async () => {
       fireEvent.click(triggers[0]);
     });
-    expect(fetchCard).toHaveBeenCalledWith("o-muldrotha");
+    expect(fetchCard).toHaveBeenCalledWith("o-muldrotha", undefined);
   });
 
   it("hands the decklist its cards in display order so the modal can page", async () => {

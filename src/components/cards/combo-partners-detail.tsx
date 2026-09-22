@@ -28,14 +28,22 @@ const STATE_INK: Record<string, string> = {
  * are facts about YOUR COPIES OF THE CARD YOU OPENED, and the modal already has two blocks
  * for them. A second money figure about a card you are not looking at reads as a basket.
  *
- * NOT YET DRAWN, and both are the handoff's own dependencies rather than omissions:
- *   · the SCOPE LINE and the `in this deck` state, which need the deck the modal was opened
- *     from — `fetchCard` takes an oracle id alone (dependency 5);
- *   · the PRESSABLE PARTNER NAME, which replaces the modal with the partner's (ledger 14).
- * Unscoped, the block draws the two states that have a referent, which is the `/collection`
- * face the design already specifies.
+ * THE SCOPE LINE AND `in this deck` need the deck the modal was opened from, which the
+ * card-detail fetch now carries (dependency 5); without one the block draws the two states
+ * that have a referent and omits the scope line, which is the `/collection` face the design
+ * specifies. The partner's name opens that partner in place (ledger 14).
  */
-export function ComboPartnersDetail({ card }: { card: BrowseCard }) {
+export function ComboPartnersDetail({
+  card,
+  /** The deck the modal was opened from, if any — what makes the scope line sayable. */
+  deckName = null,
+  /** Opens a partner's own modal, replacing this one. */
+  onSelectPartner,
+}: {
+  card: BrowseCard;
+  deckName?: string | null;
+  onSelectPartner?: (oracleId: string) => void;
+}) {
   const [expanded, setExpanded] = useState(false);
   const [boundOpen, setBoundOpen] = useState(false);
   const partners = card.comboPartners ?? [];
@@ -83,8 +91,18 @@ export function ComboPartnersDetail({ card }: { card: BrowseCard }) {
               >
                 {comboAwarenessCopy.modal.heading}
               </span>
-              {/* THE COUNTS, and `in this deck` leads and is the only part in colour: it is
-                  the only part that is ever urgent, so it is what decides whether to open. */}
+              {/* THE SCOPE LINE TAKES OVER FROM THE COUNTS when the block opens, on the
+                  header itself — so the block gains no chrome by opening, and the one thing
+                  that varies by route is visible instead of looking like an inconsistency.
+                  Absent without a deck, which is the `/collection` face. */}
+              {expanded && deckName ? (
+                <span
+                  className="font-mono text-[10px] sm:text-[10.5px] truncate"
+                  style={{ color: "var(--fg-locked)" }}
+                >
+                  {comboAwarenessCopy.modal.scope(deckName)}
+                </span>
+              ) : expanded ? null : (
               <span
                 className="font-mono text-[10px] sm:text-[10.5px] truncate"
                 style={{ color: "var(--fg-muted)" }}
@@ -99,6 +117,7 @@ export function ComboPartnersDetail({ card }: { card: BrowseCard }) {
                   </span>
                 ))}
               </span>
+              )}
             </span>
             <span
               aria-hidden
@@ -150,17 +169,48 @@ export function ComboPartnersDetail({ card }: { card: BrowseCard }) {
             <ComboGlyph />
             {/* TWO WEIGHTS, one sentence. The addendum sets the app's words at `--fg-body`
                 and the partner's NAME at 600 in `--fg`: the name is the half a reader is
-                looking for, and it is also what will become pressable when ledger 14 lands.
+                looking for, and it is also the half that is pressable.
                 13px, not the 13.5/15 the block above this one uses. */}
             <span className="flex flex-auto min-w-0 flex-col sm:flex-row sm:items-center sm:gap-[10px]">
+              {/* THE TRUNCATION IS ON EACH HALF, not on this wrapper. `truncate` sets
+                  `overflow: hidden`, so a wrapper carrying it CLIPS the partner button's
+                  44px touch area — the padding that buys the height sits outside the line
+                  box. Each half clips itself instead, and the row can hold a taller child. */}
               <span
-                className="min-w-0 truncate text-[13px] sm:flex-auto"
+                className="flex min-w-0 items-center text-[13px] sm:flex-auto"
                 style={{ color: "var(--fg-body)" }}
               >
+                <span className="flex-none">
                 {comboAwarenessCopy.modal.lineLead}
-                <span className="font-semibold" style={{ color: "var(--fg)" }}>
-                  {p.name}
                 </span>
+                {/* THE ONLY TARGET IN THE BLOCK. A pair fact read from one end wants the
+                    other end, and the name is the half a reader is looking for — it REPLACES
+                    this modal rather than stacking on it, which the addendum refuses by name.
+
+                    WHAT IT DOES NOT DO YET is return: `load` replaces the provider's card and
+                    keeps no history, so closing from a partner closes the modal rather than
+                    going back to the card you followed it from. The addendum asks for that
+                    return, and giving it one means deciding what CLOSE means on a partner —
+                    back, or shut — which is a design call rather than an omission. Flagged
+                    rather than invented. */}
+                {onSelectPartner ? (
+                  <button
+                    type="button"
+                    onClick={() => onSelectPartner(p.oracleId)}
+                    // A REAL 44px TARGET ON TOUCH, which the addendum asks for by name. An
+                    // `inline` button keeps only the text's intrinsic height — about 13px —
+                    // so the link was operable with a pointer and effectively not with a
+                    // thumb. `inline-block` with vertical padding and a negative margin buys
+                    // the height without moving the line it sits on.
+                    className="flex min-w-0 min-h-[44px] sm:min-h-0 items-center truncate p-0 bg-transparent border-none cursor-pointer font-semibold text-left underline decoration-[color:var(--accent-shadow)] underline-offset-[3px] text-[color:var(--fg)]"
+                  >
+                    {p.name}
+                  </button>
+                ) : (
+                  <span className="min-w-0 truncate font-semibold" style={{ color: "var(--fg)" }}>
+                    {p.name}
+                  </span>
+                )}
               </span>
               <span
                 className="flex-none font-mono text-[10px] sm:text-right"

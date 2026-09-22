@@ -1,5 +1,5 @@
 import { act, render, screen } from "@testing-library/react";
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 import type { BrowseCard } from "../../lib/collection/browse";
 import { comboAwarenessCopy } from "../../lib/copy/combo-awareness";
 import type { ModalComboPartner } from "../../lib/combos/near-miss";
@@ -167,6 +167,74 @@ describe("the card modal's combo block", () => {
       "the glyph was pulled into the text column",
     ).toBeNull();
     expect(column.textContent).toContain("Isochron Scepter");
+  });
+
+  // THE SCOPE LINE TAKES OVER FROM THE COUNTS when the block opens — on the header itself,
+  // so the block gains no chrome by opening — and it is absent without a deck, which is the
+  // `/collection` face.
+  it("names the deck once open, and only when there is one", async () => {
+    const { rerender } = render(
+      <ComboPartnersDetail card={card([partner()])} deckName="Kykar, Wind's Fury" />,
+    );
+    expect(screen.queryByText(/against Kykar/)).toBeNull();
+    await open();
+    expect(
+      screen.getByText(comboAwarenessCopy.modal.scope("Kykar, Wind's Fury")),
+    ).toBeInTheDocument();
+
+    rerender(<ComboPartnersDetail card={card([partner()])} />);
+    expect(screen.queryByText(/against /)).toBeNull();
+  });
+
+  // THE PARTNER NAME IS THE ONLY TARGET IN THE BLOCK, and it REPLACES this modal rather than
+  // stacking on it. A pair fact read from one end wants the other end.
+  it("opens the partner from its name, and nothing else is pressable", async () => {
+    const onSelectPartner = vi.fn();
+    render(
+      <ComboPartnersDetail
+        card={card([partner({ oracleId: "p-1", name: "Isochron Scepter" })])}
+        onSelectPartner={onSelectPartner}
+      />,
+    );
+    await open();
+    await act(async () => {
+      screen.getByRole("button", { name: "Isochron Scepter" }).click();
+    });
+    expect(onSelectPartner).toHaveBeenCalledWith("p-1");
+    // The row's toggle, the bound marker and the partner — and nothing more.
+    expect(screen.getAllByRole("button")).toHaveLength(3);
+  });
+
+  // THE TOUCH TARGET IS NOT CLIPPED BY AN ANCESTOR. `truncate` sets `overflow: hidden`, so a
+  // wrapper carrying it clips whatever buys the button its 44px — the height was there and
+  // unreachable. Each half truncates itself instead.
+  it("keeps the partner button out of a truncating ancestor", async () => {
+    render(
+      <ComboPartnersDetail
+        card={card([partner({ name: "Power Artifact" })])}
+        onSelectPartner={() => {}}
+      />,
+    );
+    await open();
+    const button = screen.getByRole("button", { name: "Power Artifact" });
+    expect(button.className, "the button has no touch height of its own").toContain(
+      "min-h-[44px]",
+    );
+    // No ancestor between the button and the row clips it.
+    let el: HTMLElement | null = button.parentElement;
+    while (el && el.tagName !== "LI") {
+      expect(el.className, `a clipping ancestor: ${el.className}`).not.toContain("truncate");
+      el = el.parentElement;
+    }
+  });
+
+  // WITHOUT A HANDLER IT IS NOT A TARGET, rather than a dead button: `/collection` opens this
+  // modal too, and a control that does nothing is worse than emphasis.
+  it("leaves the name as emphasis when nothing can open a partner", async () => {
+    render(<ComboPartnersDetail card={card([partner({ name: "Basalt Monolith" })])} />);
+    await open();
+    expect(screen.queryByRole("button", { name: "Basalt Monolith" })).toBeNull();
+    expect(screen.getByText("Basalt Monolith")).toBeInTheDocument();
   });
 
   // THE THREE STATES AND NOTHING ELSE. No price, no copy count, no availability marker —

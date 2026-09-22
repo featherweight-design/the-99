@@ -45,6 +45,7 @@ import { ConsiderToolbar, type SortKey } from "./consider-toolbar";
 import { QuickAddBar } from "./quick-add-bar";
 import { ExportDialog } from "./export-dialog";
 import { CardDetailProvider } from "../cards/card-detail-provider";
+import { comboScopeIds } from "../../lib/decks/combo-scope";
 import { AddOptimisticCardProvider, useOptimisticDeckCards } from "./optimistic-deck";
 import { MutationError } from "./mutation-error";
 import { DECK_REMOVE_FALLBACK_MESSAGE } from "../../lib/decks/mutation-result";
@@ -358,6 +359,17 @@ export function BuilderShell({
   // wiping the refusal before the user can read it. Rows still show their own
   // optimistic "✓ In deck", so nothing is lost by keeping this one committed.
   const deckOracleIds = useMemo(() => deck.cards.map((c) => c.oracleId), [deck.cards]);
+  /** What the combo block counts as "in this deck": the 99 AND the commanders (§4.3b rule 3).
+   *  Its own function, because this is a prop and nothing downstream can see what went into
+   *  it — inline, dropping the commanders left the whole suite green. */
+  const comboScope = useMemo(
+    // `cards`, NOT `deck.cards`: the shell has already replaced the server snapshot with the
+    // optimistic list the visible deck is drawn from, and `proxyEligibleIds` above reads that
+    // one for the same reason. On the snapshot, a card just removed stayed `in this deck` and
+    // one just added was not classified at all, until the revalidate landed.
+    () => comboScopeIds({ cards, commander: deck.commander, partner: deck.partner }),
+    [cards, deck.commander, deck.partner],
+  );
 
   // The top-off list's own copy, and deliberately the OPTIMISTIC list. It uses
   // this to name a row that went illegal while the list was open, so a quick-add
@@ -750,6 +762,15 @@ export function BuilderShell({
       deckId={deck.id}
       deckName={deck.name}
       deckOracleIds={proxyEligibleIds}
+      // THE DECK'S OWN CARDS, PLUS ITS COMMANDERS — §4.3b rule 3, which the combo reader's
+      // own parameter doc states: a commander counts as held. `deckOracleIds` is
+      // `deck.cards` alone, so without them a partner that IS the commander read `you own
+      // it` with the scope line naming that very commander directly above it, and a brew
+      // holding only its commander misclassified every partner it had.
+      //
+      // Still a different set from `proxyEligibleIds` above, which answers a different
+      // question — passing that one would call a card in-deck because it is proxyable.
+      comboDeckOracleIds={comboScope}
     >
       <AddOptimisticCardProvider value={deckEdits}>
         <PassMarkProvider value={passMark}>
