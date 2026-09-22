@@ -45,7 +45,10 @@ export function ComboClause({
       data-testid="combo-clause"
       // `min-w-0` so the clause is the thing that shrinks; the truncation below then eats the
       // app's words before the card's name, which is the rule the design states.
-      className={`flex items-center gap-[4px] min-w-0 ${className ?? ""}`}
+      // `inline-flex`, because this IS an inline clause: a host may put it in inline flow
+      // beside other text, and a block-level flex wrapper would force a line break there. The
+      // repo's other glyph-plus-text atoms are inline for the same reason.
+      className={`inline-flex items-center gap-[4px] min-w-0 ${className ?? ""}`}
     >
       <ComboGlyph />
       <span
