@@ -141,7 +141,12 @@ export function classifyPrinting(raw: Raw): PrintingClassification {
   let reversibleOracleId: string | null = null;
   if (reversible) {
     const revFaces = (raw.card_faces as Raw[] | undefined) ?? [];
-    const faceIds = revFaces.map((f) => (typeof f.oracle_id === "string" ? f.oracle_id : null));
+    // `firstString`, not a `typeof` test: an `oracle_id: ""` is as absent as a missing one,
+    // and a type check calls it present. It would then agree with itself across both faces,
+    // pass this guard, and be stored as a printing with an EMPTY oracle id — which the FK
+    // check counts as an orphan, and one orphan refuses the whole run's base-set sizing.
+    // The same shape as the `filter(Boolean)` hole above it, one notch narrower.
+    const faceIds = revFaces.map((f) => firstString(f.oracle_id));
     // EVERY face must name one, and they must agree. Sizing a set of the ids that are
     // PRESENT is the version that looks right and is not: a first face carrying no id and a
     // second carrying one gives a set of size 1, passes, and then throws on the row's own

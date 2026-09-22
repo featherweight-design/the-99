@@ -223,6 +223,17 @@ describe("classifyPrinting", () => {
     expect(classifyPrinting(headless).kind).toBe("skipped-reversible");
   });
 
+  it("treats an EMPTY face oracle id as absent rather than as a value", () => {
+    // `oracle_id: ""` passes a `typeof` test, agrees with itself across both faces, and is
+    // stored as a printing with an empty oracle id — which the FK check counts as an orphan,
+    // and one orphan refuses the whole run's base-set sizing. Raised by review.
+    const blank = {
+      ...reversible,
+      card_faces: reversible.card_faces.map((f) => ({ ...f, oracle_id: "" })),
+    };
+    expect(classifyPrinting(blank).kind).toBe("skipped-reversible");
+  });
+
   it("skips digital-only printings", () => {
     expect(classifyPrinting({ ...plains, digital: true }).kind).toBe("skipped-digital");
   });
