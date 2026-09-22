@@ -46,11 +46,15 @@ async function click(el: HTMLElement) {
 }
 
 function renderTriggers(
-  fetchCard: (oracleId: string) => Promise<BrowseCard | null>,
+  fetchCard: (
+    oracleId: string,
+    deckOracleIds?: readonly string[],
+  ) => Promise<BrowseCard | null>,
   siblings?: string[],
+  comboDeckOracleIds?: readonly string[],
 ) {
   return render(
-    <CardDetailProvider fetchCard={fetchCard}>
+    <CardDetailProvider fetchCard={fetchCard} comboDeckOracleIds={comboDeckOracleIds}>
       <CardDetailTrigger oracleId="o-signet" name="Arcane Signet" siblings={siblings}>
         Arcane Signet
       </CardDetailTrigger>
@@ -80,6 +84,26 @@ function Evicter({ oracleId }: { oracleId: string }) {
 }
 
 describe("CardDetailProvider", () => {
+  // THE COMBO SCOPE REACHES THE READ. It is what makes `in this deck` sayable and the scope
+  // line renderable, and it is the deck page's alone — every other route sends nothing.
+  //
+  // Nothing asserted it before: the other cases all check the `undefined` a route with no
+  // deck sends, so removing the argument here — or handing over the PROXY-ELIGIBLE set,
+  // which answers a different question — left the suite green while every deck modal lost
+  // its most useful state.
+  it("sends the deck's cards with the read, and nothing without a deck", async () => {
+    const fetchCard = vi.fn().mockResolvedValue(SIGNET);
+    const { unmount } = renderTriggers(fetchCard, undefined, ["a", "b"]);
+    await click(screen.getByText("Arcane Signet"));
+    expect(fetchCard).toHaveBeenCalledWith("o-signet", ["a", "b"]);
+    unmount();
+
+    const plain = vi.fn().mockResolvedValue(SIGNET);
+    renderTriggers(plain);
+    await click(screen.getByText("Arcane Signet"));
+    expect(plain).toHaveBeenCalledWith("o-signet", undefined);
+  });
+
   it("opens the modal for the clicked card", async () => {
     const fetchCard = vi.fn().mockResolvedValue(SIGNET);
     renderTriggers(fetchCard);
