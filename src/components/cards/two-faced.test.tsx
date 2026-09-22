@@ -142,7 +142,10 @@ describe("CardModal flip control", () => {
       printedName: "Mimir's Ancient Wisdom",
       layout: "normal",
       backImageUri: null,
-      printings: [{ ...delver.printings[0], backImageUri: BACK, flavorName: "Mimir's Ancient Wisdom" }],
+      printings: [{
+        ...delver.printings[0], backImageUri: BACK, hasOwnBack: true,
+        flavorName: "Mimir's Ancient Wisdom",
+      }],
     });
     // Labelled by SIDE, not by name: both faces print `Mimir's Ancient Wisdom`, so
     // `Turn over to Mimir's Ancient Wisdom` would name the card already on screen.
@@ -169,7 +172,7 @@ describe("CardModal flip control", () => {
       printings: [
         { setCode: "SLD", setName: "Secret Lair", collectorNumber: "2214",
           releasedAt: "2025-10-27", quantity: 1, finishes: { foil: 1 }, imageUri: FRONT,
-          backImageUri: BACK, flavorName: "Mimir's Ancient Wisdom" },
+          backImageUri: BACK, hasOwnBack: true, flavorName: "Mimir's Ancient Wisdom" },
         { setCode: "M21", setName: "Core Set 2021", collectorNumber: "76",
           releasedAt: "2020-07-03", quantity: 1, finishes: { nonfoil: 1 }, imageUri: OTHER,
           backImageUri: null, flavorName: null },
@@ -190,6 +193,22 @@ describe("CardModal flip control", () => {
     // The M21 art, never the gradient — and nothing claims a back to turn to.
     expect(wash().style.backgroundImage).toContain(OTHER);
     expect(wash().style.background ?? "").not.toContain("linear-gradient");
+    expect(screen.queryAllByLabelText(/Turn over/)).toHaveLength(0);
+  });
+
+  it("does not turn on an ORACLE-LEVEL back that the loader copied onto the printing", () => {
+    // `resolveBackImageUri` hands a printing with no back of its own the oracle's image, so
+    // `backImageUri` on a printing row is not evidence the printing has two sides. Reading
+    // it as such put a turn control on a one-sided printing whose back belongs to another
+    // printing entirely — and the case passed its first test, because that fixture built
+    // props by hand rather than through the loader. `hasOwnBack` carries the provenance.
+    mount({
+      ...delver,
+      name: "Teferi's Ageless Insight",
+      layout: "normal",
+      backImageUri: BACK,
+      printings: [{ ...delver.printings[0], backImageUri: BACK, hasOwnBack: false }],
+    });
     expect(screen.queryAllByLabelText(/Turn over/)).toHaveLength(0);
   });
 
@@ -217,7 +236,7 @@ describe("CardModal flip control", () => {
       name: "Bloomvine Regent // Claim Territory",
       layout: "adventure",
       backImageUri: null,
-      printings: [{ ...delver.printings[0], backImageUri: BACK }],
+      printings: [{ ...delver.printings[0], backImageUri: BACK, hasOwnBack: true }],
     });
     expect(flipTo("Claim Territory").length).toBeGreaterThan(0);
   });

@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import {
   resolveArtCropUri,
+  backImageIsOwn,
   resolveBackImageUri,
   aggregateCollection,
   cssUrl,
@@ -94,6 +95,38 @@ describe("resolveFlavorName — the name follows the art, tier for tier", () => 
 
 // Both faces off one printing, or a flip turns to another printing's back — the failure
 // this tier order exists to close.
+describe("backImageIsOwn — provenance, for the one reader that needs it", () => {
+  // `resolveBackImageUri` answers what to DRAW; this answers whose back it is. The card
+  // modal's turn control needs the second, because a printing handed the oracle's back has
+  // no second side of its own and a control there turns to another printing's picture.
+  const base = {
+    exactImageUri: null, representativeImageUri: null,
+    exactBackImageUri: null, representativeBackImageUri: null,
+  };
+  it("is true only when the tier that supplied the FRONT had its own back", () => {
+    expect(backImageIsOwn({ ...base, exactImageUri: "e.png", exactBackImageUri: "eb.png" }))
+      .toBe(true);
+    expect(backImageIsOwn({
+      ...base, representativeImageUri: "r.png", representativeBackImageUri: "rb.png",
+    })).toBe(true);
+  });
+  it("is false where the oracle fallback is what `resolveBackImageUri` would return", () => {
+    // Each of these three is a case that function answers with `backImageUri`, and the
+    // whole point is that a caller cannot tell from the returned string which it got.
+    expect(backImageIsOwn({ ...base, exactImageUri: "e.png" })).toBe(false);
+    expect(backImageIsOwn({ ...base, representativeImageUri: "r.png" })).toBe(false);
+    expect(backImageIsOwn(base)).toBe(false);
+  });
+  it("does not borrow a lower tier's back, exactly as the resolver does not", () => {
+    // Drifting from the resolver is the failure mode: one printing's front against
+    // another's back, and now with a control inviting the reader to look.
+    expect(backImageIsOwn({
+      ...base, exactImageUri: "e.png", representativeImageUri: "r.png",
+      representativeBackImageUri: "rb.png",
+    })).toBe(false);
+  });
+});
+
 describe("resolveBackImageUri — the back follows the art, tier for tier", () => {
   const base = {
     exactImageUri: null, representativeImageUri: null,

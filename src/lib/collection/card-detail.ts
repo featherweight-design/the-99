@@ -86,6 +86,9 @@ export function catalogCard(
           representativeBackImageUri: null,
           backImageUri: card.backImageUri,
         }),
+        // This row IS the exact printing, so its own column answers directly — no need
+        // for `backImageIsOwn`'s tiering, which exists for the aggregate's three tiers.
+        hasOwnBack: p.backImageUri !== null,
         flavorName: p.flavorName,
       } satisfies BrowsePrinting,
     }))

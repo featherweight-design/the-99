@@ -961,11 +961,15 @@ export function CardModal({
   // was ingested (#811), stored, and unreachable — 81 printings carry their own
   // back image under a one-sided oracle layout, all of them reversibles.
   //
-  // A printing's own back image is POSITIVE EVIDENCE of two-sided stock, and
-  // stronger than the layout word, which describes the card in general. The layout
-  // gate stays for the ORACLE-LEVEL column beside it: a back image on `cards` under a
-  // one-sided layout is not evidence that the copy in hand has two sides, and taking
-  // it as one is the guess `faces.ts` refuses to make from a `//` in a name.
+  // A printing's own back image is POSITIVE EVIDENCE of two-sided stock, and stronger
+  // than the layout word, which describes the card in general.
+  //
+  // `hasOwnBack` RATHER THAN `backImageUri`, and the difference is the whole guard:
+  // `resolveBackImageUri` hands a printing with no back of its own the ORACLE's image,
+  // so the resolved string cannot say whose back it is. Reading it here put a turn on a
+  // one-sided printing whose back belongs to another printing entirely — and the first
+  // version of this gate did exactly that while passing its own test, because the
+  // fixture built props by hand rather than through the loader. Raised by review.
   //
   // What excludes an ordinary split or adventure printing is its own null back art,
   // NOT the layout word: Scryfall gives those layouts one image between both halves,
@@ -974,7 +978,7 @@ export function CardModal({
   // correctly — `tdm/381` prints Bloomvine Regent and Claim Territory on two sides,
   // and each side has its own art.
   const twoFaced = Boolean(backImage)
-    && (isTwoFaced(card.layout) || Boolean(resolved?.backImageUri));
+    && (isTwoFaced(card.layout) || Boolean(resolved?.hasOwnBack));
   // CLAMPED TO WHAT EXISTS, not to what the reader last asked for.
   //
   // `flipped` survives a printing pick by design — only a card change remounts this —
