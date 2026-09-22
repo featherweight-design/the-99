@@ -194,6 +194,15 @@ describe("toVariantRows — the reasoning modal's fields", () => {
     expect(row({ manaValueNeeded: "2" }).manaValueNeeded).toBeNull();
     expect(row({ manaValueNeeded: null }).manaValueNeeded).toBeNull();
   });
+
+  // `Number.isInteger` admits -1, and a negative cost to execute a combo is not a small error:
+  // it is a figure the modal would draw. Zero is kept in the same case, because zero is the
+  // answer for most variants and the most informative one.
+  it("rejects a negative mana value and keeps zero", () => {
+    expect(row({ manaValueNeeded: -1 }).manaValueNeeded).toBeNull();
+    expect(row({ manaValueNeeded: -99 }).manaValueNeeded).toBeNull();
+    expect(row({ manaValueNeeded: 0 }).manaValueNeeded).toBe(0);
+  });
 });
 
 // The column is `integer`. A non-integer would either fail the insert — taking the whole batch,

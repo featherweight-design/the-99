@@ -140,9 +140,13 @@ export function toVariantRows(raw: Record<string, unknown>, known: Set<string>):
       // the whole ingest down, which is a high price for one malformed record. A non-integer
       // stores null instead: the modal then draws no mana figure for that combo rather than a
       // wrong one, and the population floor sees it.
-      manaValueNeeded: Number.isInteger(raw.manaValueNeeded)
-        ? (raw.manaValueNeeded as number)
-        : null,
+      // A NON-NEGATIVE INTEGER. `Number.isInteger` alone admits -1, and a negative cost to
+      // execute a combo is not a small error — it is a figure the modal would draw. Zero stays,
+      // because zero is the answer for 59% of variants and the most informative one.
+      manaValueNeeded:
+        Number.isInteger(raw.manaValueNeeded) && (raw.manaValueNeeded as number) >= 0
+          ? (raw.manaValueNeeded as number)
+          : null,
       steps: nonEmpty(raw.description),
       notablePrerequisites: nonEmpty(raw.notablePrerequisites),
     },
