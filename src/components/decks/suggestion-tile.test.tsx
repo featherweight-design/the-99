@@ -37,7 +37,7 @@ function mount(availability: Availability | null, selfClaimed = false) {
         suggestion={suggestion(availability)}
         deckId="d1"
         declaredBracket={null}
-        noteCounts={{ gameChanger: 0, massLandDenial: 0, extraTurns: 0, tutor: 0 }}
+        noteCounts={{ gameChanger: 0, extraTurns: 0, tutor: 0 }}
         inDeck={false}
         newestAsOf={null}
         siblings={["o-sol"]}
@@ -83,7 +83,7 @@ function mountTile(
         suggestion={makeSuggestion(over)}
         deckId="d1"
         declaredBracket={null}
-        noteCounts={{ gameChanger: 0, massLandDenial: 0, extraTurns: 0, tutor: 0 }}
+        noteCounts={{ gameChanger: 0, extraTurns: 0, tutor: 0 }}
         inDeck={false}
         siblings={["o-test"]}
         commanderShortName="Muldrotha"

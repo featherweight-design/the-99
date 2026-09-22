@@ -471,7 +471,6 @@ export function countNoteKinds(
 ): NoteCounts {
   const counts = {
     gameChanger: 0,
-    massLandDenial: flags === null ? null : 0,
     extraTurns: flags === null ? null : 0,
     tutor: 0,
   } as NoteCounts;
@@ -481,7 +480,7 @@ export function countNoteKinds(
   ) => {
     const flag = flags?.get(row.oracleId);
     if (row.gameChanger) counts.gameChanger += copies;
-    if (flag?.massLandDenial && counts.massLandDenial !== null) counts.massLandDenial += copies;
+    // Mass land denial is NOT counted: its sentence takes no ordinal. See `NoteCounts`.
     if (flag?.extraTurn && counts.extraTurns !== null) counts.extraTurns += copies;
     // The SHIPPED classifier over the same text `loadCandidateFacts` reads, so a card's
     // reading cannot differ depending on which side of the add it is on.

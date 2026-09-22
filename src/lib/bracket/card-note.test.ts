@@ -241,14 +241,21 @@ describe("cardNoteSentences", () => {
   // separate read that can succeed while the deck's fails. Without this, a correctly detected
   // mass land denial is introduced as `your 1st` to a deck already holding three.
   describe("a count nobody has", () => {
-    const unknown = { ...EMPTY_NOTE_COUNTS, massLandDenial: null, extraTurns: null };
+    const unknown = { ...EMPTY_NOTE_COUNTS, extraTurns: null };
 
-    it("draws no mass-land-denial sentence when the deck's count is unknown", () => {
-      expect(draw({ facts: facts({ massLandDenial: true }), counts: unknown })).toEqual([]);
+    it("draws no extra-turn sentence when the deck's count is unknown", () => {
+      expect(draw({ facts: facts({ extraTurn: true }), counts: unknown })).toEqual([]);
     });
 
-    it("draws no extra-turn sentence either", () => {
-      expect(draw({ facts: facts({ extraTurn: true }), counts: unknown })).toEqual([]);
+    // MASS LAND DENIAL IS NOT SUPPRESSED, and that is the correction: its sentence carries no
+    // ordinal, so a failed flags read on the DECK takes nothing away from it. The card fact
+    // comes from the candidate's own read and the rules fact is the rules'. Withheld in #854
+    // by a guard written for the two kinds that do carry a count.
+    it("still draws the mass-land-denial sentence, which needs no count", () => {
+      expect(draw({ facts: facts({ massLandDenial: true }), counts: unknown })).toEqual([
+        cardNote.massLandDenial.plain,
+        cardNote.massLandDenial.disclaimer,
+      ]);
     });
 
     // The other two kinds survive that failure: a game changer is a column on `cards` and a
@@ -262,12 +269,12 @@ describe("cardNoteSentences", () => {
       ]);
     });
 
-    // And an unknown kind does not spend a slot on the way past: a row whose first two facts
-    // are unknown still draws the two it can count.
+    // And an unknown kind does not spend a slot on the way past: the row's two-fact cap is
+    // filled by the two it CAN draw rather than by one it cannot.
     it("does not spend the cap on a kind it cannot draw", () => {
       expect(
         draw({
-          facts: facts({ gameChanger: true, massLandDenial: true, extraTurn: true, tutor: true }),
+          facts: facts({ gameChanger: true, extraTurn: true, tutor: true }),
           counts: unknown,
           density: "row",
         }),

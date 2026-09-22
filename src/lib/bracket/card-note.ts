@@ -42,21 +42,25 @@ export type NoteCounts = {
   /**
    * `null` where the DECK's flags read failed — unknown, and not the same claim as zero.
    *
-   * These two kinds are the only ones that come off `card_bracket_flags`; a game changer is a
-   * column on `cards` and a tutor is read off oracle text, so both survive that failure. The
-   * candidate's own facts come from a SEPARATE flags read, which can succeed while this one
-   * fails — and then a card correctly detected as mass land denial would be introduced as
+   * ONLY THIS ONE, and mass land denial is deliberately absent from this type. Every count
+   * here exists to fill an ORDINAL, and the mass-land-denial sentence takes none: it reads
+   * `We read this as mass land denial. Nothing below Optimized allows it.` — a card fact and
+   * a rules fact, with nothing about how many the deck holds. Counting it bought nothing and
+   * cost a real sentence, because the same guard then withheld it whenever the flags read
+   * failed. Shipped that way in #854 and corrected here.
+   *
+   * Extra turns DO carry one (`your 3rd`), and they come off `card_bracket_flags` — which the
+   * candidate's own facts do not, they come from a separate read that can succeed while this
+   * one fails. So a card correctly detected as an extra-turn card would be introduced as
    * `your 1st` to a deck already holding three. An ordinal is a count, and a count nobody has
    * is not zero.
    */
-  massLandDenial: number | null;
   extraTurns: number | null;
   tutor: number;
 };
 
 export const EMPTY_NOTE_COUNTS: NoteCounts = {
   gameChanger: 0,
-  massLandDenial: 0,
   extraTurns: 0,
   tutor: 0,
 };
@@ -142,7 +146,10 @@ export function cardNoteSentences({
     );
   }
 
-  if (facts.massLandDenial && counts.massLandDenial !== null) {
+  // NO COUNT GUARD HERE, unlike the two below: this sentence carries no ordinal, so a failed
+  // flags read on the DECK takes nothing away from it. The card fact comes from the
+  // candidate's own read and the rules fact is the rules'.
+  if (facts.massLandDenial) {
     // The disclaimer rides with the sentence rather than being a fact of its own: it is the
     // second half of one attributed claim, and `STATES-card-note.md` caps facts rather than
     // sentences for this reason.
