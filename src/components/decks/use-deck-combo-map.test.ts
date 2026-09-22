@@ -62,6 +62,24 @@ describe("useDeckComboMap", () => {
     expect(result.current.map).toBeNull();
   });
 
+  it("a failed RE-read clears the map rather than leaving the old deck's up", async () => {
+    let rejectSecond: (e: Error) => void = () => {};
+    const load = vi
+      .fn<(id: string) => Promise<Record<string, { oracleId: string; name: string }>>>()
+      .mockResolvedValueOnce(BLOOD)
+      .mockImplementationOnce(() => new Promise((_, reject) => (rejectSecond = reject)));
+    const { result, rerender } = renderHook(({ key }) => useDeckComboMap("deck-1", key, load), {
+      initialProps: { key: "a,sanguine-bond" },
+    });
+    act(() => result.current.start());
+    await waitFor(() => expect(result.current.map).toEqual(BLOOD));
+    // Sanguine Bond removed: the held map now names a card the deck no longer has.
+    rerender({ key: "a" });
+    await waitFor(() => expect(load).toHaveBeenCalledTimes(2));
+    await act(async () => rejectSecond(new Error("transient")));
+    expect(result.current.map).toBeNull();
+  });
+
   it("a failed read draws no partners and does not throw", async () => {
     const load = vi.fn(async () => {
       throw new Error("boom");
