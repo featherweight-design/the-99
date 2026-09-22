@@ -582,6 +582,13 @@ export function aggregateCollection(rows: RawCollectionRow[]): BrowseCard[] {
       // the image line above.
       seen.flavorName ??= printing.flavorName;
       seen.backImageUri ??= printing.backImageUri;
+      // `||=`, beside the line above rather than instead of it: coalescing the back art
+      // and leaving the provenance behind is the one way these two can end up disagreeing,
+      // and a filled back with a false flag reads as "this printing has no second side" on
+      // a row that has one. Both finishes of one printing resolve through the same tiers,
+      // so this can only ever set true onto true — belt and braces, in the same spirit,
+      // and it means no future caller has to remember the pair travels together.
+      seen.hasOwnBack ||= printing.hasOwnBack;
       seen.artCropUri ??= printing.artCropUri;
       // NOT `??=`, unlike the two lines above. Two finishes of one printing normally
       // share a catalog id, but the import path already records that they can

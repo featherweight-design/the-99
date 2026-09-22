@@ -294,6 +294,28 @@ describe("aggregateCollection", () => {
     expect(agg.printings[0].quantity).toBe(3);
   });
 
+  it("keeps the back's provenance across the two finishes of one printing", () => {
+    // The pair `backImageUri` + `hasOwnBack` has to survive the collapse TOGETHER.
+    // Coalescing the art while leaving the flag behind reads as "no second side" on a
+    // printing that has one, and the card modal's turn control reads the flag.
+    //
+    // ASYMMETRIC ON PURPOSE, and synthetic: both finishes of one printing resolve through
+    // the same tiers in real data, so the symmetric fixture cannot tell the merge from its
+    // absence — it passes with the line deleted, which is a test measuring nothing. This
+    // shape is the same belt-and-braces case the `backImageUri ??=` line above it exists
+    // for, written so the OR is what carries it. `exactImageUri` is what makes the exact
+    // back this printing's own: provenance follows the tier that supplied the FRONT.
+    const [agg] = aggregateCollection([
+      raw({ finish: "nonfoil", quantity: 2, representativeImageUri: "rep-front.png" }),
+      raw({ finish: "foil", quantity: 1,
+            exactImageUri: "own-front.png", exactBackImageUri: "own-back.png" }),
+    ]);
+
+    expect(agg.printings).toHaveLength(1);
+    expect(agg.printings[0].backImageUri).toBe("own-back.png");
+    expect(agg.printings[0].hasOwnBack).toBe(true);
+  });
+
   it("drops the id where two rows of one printing disagree about it", () => {
     // The import path already rules this: rows that share oracle, set, collector
     // number and finish but name different printings cannot both be right, and null
