@@ -228,7 +228,6 @@ export const deckAnalysisCopy = {
     heading: "Where you sit, and what moves you",
 
     /** The rung labels, in 9px mono above each bracket's name. */
-    roleBelow: "to drop to here",
     roleHere: "where your cards are",
     /** 390 only. The rung already names the bracket, so the shorter form loses nothing. */
     roleHereShort: "your cards",

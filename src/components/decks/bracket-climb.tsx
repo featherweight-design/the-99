@@ -1,12 +1,15 @@
-import type { ReactNode } from "react";
+import { useId, useState, type ReactNode } from "react";
 
 import { climb } from "../../lib/bracket/climb";
 import type { Bracket, BracketLimitReport, BracketVerdict, RuleId } from "../../lib/bracket/types";
 import { upgradePath, type UpgradePath } from "../../lib/bracket/upgrade";
 import type { DeckProfile } from "../../lib/profile/types";
 import { BRACKET_NAMES, deckAnalysisCopy, nameList } from "../../lib/copy/deck-analysis";
+import { downgradeTargets } from "../../lib/bracket/upgrade-view";
+import { upgradePathCopy } from "../../lib/copy/upgrade-path";
 import { BracketMark, bracketInk } from "./bracket-mark";
 import { FindingMark } from "./finding-mark";
+import { UpgradePathPanel } from "./upgrade-path";
 
 /**
  * "Where you sit, and what moves you" — the bracket below, yours, and the one above.
@@ -16,8 +19,11 @@ import { FindingMark } from "./finding-mark";
  * block SHORTER on a high-bracket deck than a low one, which is the opposite of what the
  * five-rung version did. `climb` decides which three; a deck at 1 or at 5 draws two.
  *
- * NOTHING IN IT OPENS. One rule governs the whole tab — the climb states, the findings open —
- * and it is the reason every figure here is plain text. Two things opening the same receipt is
+ * NOTHING IN IT OPENS A SHEET. One rule governs the whole tab — the climb states, the findings
+ * open — and it is the reason every figure here is plain text. The one control is Round 4's:
+ * the lower rung's `what would have to go`, a disclosure that expands the upgrade path IN PLACE
+ * below the rungs. That rung's sentence is the short answer; the path is its full one, so it
+ * opens from the rung rather than becoming a block of its own. Two things opening the same receipt is
  * how the duplication came back last time, which `HANDOFF.md` lists first among the three things
  * most likely to get broken in build.
  *
@@ -39,12 +45,20 @@ export const YOURS_TINT = 0.12;
 export function BracketClimb({
   verdict,
   profile,
+  onOpenDecklist,
 }: {
   verdict: BracketVerdict;
   profile: DeckProfile;
+  /** The path's `open your decklist`: the decklist is where a player acts on it. */
+  onOpenDecklist?: () => void;
 }) {
   const copy = deckAnalysisCopy.climb;
   const rungs = climb(verdict.permits);
+  // THE PATH'S DISCLOSURE. Local, not persisted, and no focus move on open (§D): the reader
+  // stays on the control they pressed, and the panel is announced by `aria-expanded`.
+  const [open, setOpen] = useState(false);
+  const panelId = useId();
+  const targets = downgradeTargets(verdict.permits);
   return (
     <section className="flex flex-col gap-[9px] md:gap-[11px]">
       <h3 className="font-mono text-[9.5px] uppercase tracking-[0.14em] text-[color:var(--fg-faint)] md:text-[10px] md:tracking-[0.16em]">
@@ -52,9 +66,29 @@ export function BracketClimb({
       </h3>
       <div className="flex flex-col gap-[7px] rounded-[11px] border border-[color:var(--border)] bg-[color:var(--surface)] p-[11px] md:gap-2 md:p-[14px]">
         {rungs.map((rung) => (
-          <Rung key={rung.bracket} bracket={rung.bracket} role={rung.role} verdict={verdict} profile={profile} />
+          <Rung
+            key={rung.bracket}
+            bracket={rung.bracket}
+            role={rung.role}
+            verdict={verdict}
+            profile={profile}
+            path={
+              rung.role === "below" && targets.length > 0
+                ? { open, controls: panelId, onToggle: () => setOpen((o) => !o) }
+                : null
+            }
+          />
         ))}
       </div>
+      {open && targets.length > 0 ? (
+        <UpgradePathPanel
+          id={panelId}
+          profile={profile}
+          verdict={verdict}
+          targets={targets}
+          onOpenDecklist={onOpenDecklist}
+        />
+      ) : null}
     </section>
   );
 }
@@ -64,11 +98,14 @@ function Rung({
   role,
   verdict,
   profile,
+  path,
 }: {
   bracket: Bracket;
   role: "below" | "yours" | "above";
   verdict: BracketVerdict;
   profile: DeckProfile;
+  /** The lower rung's disclosure, or null on every other rung. */
+  path: { open: boolean; controls: string; onToggle: () => void } | null;
 }) {
   const copy = deckAnalysisCopy.climb;
   const ink = bracketInk(bracket);
@@ -144,7 +181,7 @@ function Rung({
             style={{ color: role === "yours" ? ink : "var(--fg-faint)" }}
           >
             {role === "below" ? (
-              copy.roleBelow
+              upgradePathCopy.rungLabel
             ) : role === "yours" ? (
               <>
                 {/* `display:none` is not announced, so exactly one reaches a screen reader. */}
@@ -159,7 +196,20 @@ function Rung({
           </span>
         </span>
       </span>
-      <RungBody bracket={bracket} role={role} declares={declares} verdict={verdict} profile={profile} />
+      <span className="flex flex-col gap-1.5">
+        <RungBody bracket={bracket} role={role} declares={declares} verdict={verdict} profile={profile} />
+        {path ? (
+          <button
+            type="button"
+            aria-expanded={path.open}
+            aria-controls={path.controls}
+            onClick={path.onToggle}
+            className="ml-[7px] w-fit border-b border-dotted border-[color:var(--accent)] font-mono text-[11px] text-[color:var(--accent)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[color:var(--accent)] md:ml-0"
+          >
+            {upgradePathCopy.open} <span aria-hidden="true">{path.open ? "↑" : "→"}</span>
+          </button>
+        ) : null}
+      </span>
     </div>
   );
 }

@@ -1069,6 +1069,12 @@ export function BuilderShell({
                 <AnalysisPanel
                   state={profile.state}
                   onRequest={profile.request}
+                  // The WHOLE list: a Shopping filter left on from earlier would open the deck tab
+                  // on a subset, and the path's candidates might not be in it.
+                  onOpenDecklist={() => {
+                    setFilter("all");
+                    setView("deck");
+                  }}
                   declaration={{
                     declared: declaration.declared,
                     // `for version n` only when the answer on screen IS what version n recorded.

@@ -217,10 +217,13 @@ describe("the marks", () => {
 });
 
 // "The climb states, the findings open." Two things opening the same receipt is how the
-// duplication came back last time.
-it("has nothing to press", () => {
+// duplication came back last time. The ONE control is Round 4's: the lower rung's disclosure,
+// which expands the upgrade path in place rather than opening anything.
+it("has nothing to press but the path's own disclosure", () => {
   draw("3");
-  expect(screen.queryAllByRole("button")).toHaveLength(0);
+  const buttons = screen.queryAllByRole("button");
+  expect(buttons).toHaveLength(1);
+  expect(buttons[0].getAttribute("aria-expanded")).toBe("false");
   expect(screen.queryAllByRole("link")).toHaveLength(0);
 });
 
