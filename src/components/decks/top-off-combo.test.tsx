@@ -74,19 +74,18 @@ describe("combo awareness states 2 and 3 on the Last 31", () => {
   // and the clause sits in the name cell instead.
   it("suppresses the phone pip track on a clause row and nowhere else", () => {
     stubViewport(390);
-    // Located as `CostPips` draws them — round spans inside the run — because the component
-    // carries no test id of its own and the row mounts the track twice, once per width.
-    const pips = (c: HTMLElement) => c.querySelectorAll("span.rounded-full").length;
+    // THROUGH THE COST TRACK'S OWN HOOK, never by pip shape. The row's `OwnershipDot` is
+    // also a `rounded-full` span, so a shape-based count is satisfied by the dot alone — and
+    // a build suppressing the pips at BOTH widths passed this case until it was named.
+    const pips = (c: HTMLElement) =>
+      c.querySelector("[data-top-off-cost]")?.querySelectorAll("span.rounded-full").length ?? 0;
 
     const withClause = list({ comboPartner: PARTNER });
-    const clauseRowPips = pips(withClause.container);
+    expect(pips(withClause.container), "the clause row kept its pips").toBe(0);
     withClause.unmount();
 
     const without = list({});
-    expect(
-      clauseRowPips,
-      "the clause row kept as many pips as a row without one",
-    ).toBeLessThan(pips(without.container));
+    expect(pips(without.container), "a row with no clause lost its pips").toBeGreaterThan(0);
   });
 
   // DESKTOP KEEPS ITS PIPS. The clause takes the name cell's tail there, and the four fixed
@@ -96,7 +95,8 @@ describe("combo awareness states 2 and 3 on the Last 31", () => {
     stubViewport(1300);
     const { container } = list({ comboPartner: PARTNER });
     expect(
-      container.querySelectorAll("span.rounded-full").length,
+      container.querySelector("[data-top-off-cost]")?.querySelectorAll("span.rounded-full")
+        .length ?? 0,
       "the desktop cost column was suppressed too",
     ).toBeGreaterThan(0);
     expect(container.textContent).toContain(
@@ -113,8 +113,12 @@ describe("combo awareness states 2 and 3 on the Last 31", () => {
     expect(box.getAttribute("aria-label") ?? "").toContain(
       comboAwarenessCopy.a11y.completes("Isochron Scepter"),
     );
+    // ASSERTED, not optional-chained. `drawn?.closest(...)` on an absent clause yields
+    // `undefined`, which is not null — so the check passed on a build that drew no clause at
+    // all and could only ever fail for a missing `aria-hidden`.
     const drawn = container.querySelector('[data-testid="combo-clause"]');
-    expect(drawn?.closest("[aria-hidden]")).not.toBeNull();
+    expect(drawn, "no clause was drawn, so nothing was hidden").not.toBeNull();
+    expect(drawn!.closest("[aria-hidden]")).not.toBeNull();
   });
 
   it("says nothing at all for a candidate with no combo", () => {

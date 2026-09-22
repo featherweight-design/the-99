@@ -194,6 +194,7 @@ function CostTrack({ cost }: { cost: string | null }) {
     return (
       <span
         aria-hidden
+        data-top-off-cost
         className="hidden md:block flex-none md:order-4"
         style={{ width: COST_TRACK }}
       />
@@ -204,7 +205,10 @@ function CostTrack({ cost }: { cost: string | null }) {
     // above lists the same eight slots in the same order, and the two have to be
     // read together — a change here with no change there puts every heading to
     // the right of the data it names.
-    <span className="flex-none md:order-4">
+    // Named for the same reason the type column is: a test looking for pips by their shape
+    // finds the row's own OWNERSHIP DOT, which is also a `rounded-full` span — so a check
+    // that the cost survived passes on a build that suppressed it.
+    <span data-top-off-cost className="flex-none md:order-4">
       <CostPips cost={cost} size={13} className="flex gap-[3px] md:hidden" />
       <CostPips
         cost={cost}
@@ -1379,14 +1383,23 @@ function CandidateRow({
             name={c.name}
             siblings={siblings}
             title={c.name}
-            // WITH A CLAUSE BESIDE IT THE NAME GOES `flex-none`, so the CLAUSE is what
-            // ellipses. That is the design's rule and it is the right way round: the card's
-            // name is the one thing in this row a reader cannot reconstruct from anywhere
-            // else, and the app's words can give way. Without a clause the name keeps the
-            // whole cell, exactly as before.
-            className={`md:order-2 min-w-0 text-left truncate text-[13.5px] [color:var(--fg)] ${
-              c.comboPartner ? "flex-none" : "flex-auto"
-            }`}
+            // THE CLAUSE ELLIPSES BEFORE THE NAME DOES, which is the design's rule, and the
+            // name stays SHRINKABLE, which is how that rule is delivered without breaking
+            // the row.
+            //
+            // `flex-none` is the literal reading and it does not work: it sets
+            // `flex-shrink: 0` with `flex-basis: auto`, so the `truncate` beside it can never
+            // engage and a long name renders at full max-content width. The clause shrinks to
+            // zero first and then nothing on the row can give — the eight fixed columns and
+            // their gaps come to 535px — so the row overflows a box that is
+            // `md:overflow-y-auto`, which computes overflow-x to `auto`, and the reader gets
+            // a horizontal scrollbar with the decline control outside it.
+            //
+            // Shrink PRIORITY does the same job safely: the clause carries a far larger
+            // `flex-shrink`, so it absorbs essentially all of the reduction and the name only
+            // begins to give once the clause is spent — at which point the name still
+            // truncates rather than overflowing.
+            className="md:order-2 flex-auto min-w-0 text-left truncate text-[13.5px] [color:var(--fg)]"
           >
             {c.name}
           </CardDetailTrigger>
@@ -1395,7 +1408,13 @@ function CandidateRow({
             line 2, where there is room for a sentence. `flex-1 min-w-0` is what makes it the
             item that shrinks; the four fixed columns after it do not move. */}
         {isDesktop && c.comboPartner && (
-          <span aria-hidden className="md:order-2 flex-1 min-w-0">
+          <span
+            aria-hidden
+            // `shrink-[999]` against the name's default 1: flex distributes shrinkage in
+            // proportion, so the clause gives up ~999 units for every one the name does and
+            // is effectively spent before the name moves at all.
+            className="md:order-2 flex-1 shrink-[999] min-w-0"
+          >
             <ComboClause partnerName={c.comboPartner.name} state="completes" />
           </span>
         )}
