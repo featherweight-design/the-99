@@ -127,6 +127,25 @@ the modal.
 Giving it a return means deciding what CLOSE means while a partner is open — back, or shut —
 which is a design call rather than an omission, so it is flagged here rather than invented.
 
+**RESOLVED 2026-09-22, by a later Design package rather than by this one.**
+`design_handoff_the99_verdict_addendum`, drawn for the verdict receipt, rules on modal depth
+from the other side: *"Depth stops at two, and this is a hard rule. Nothing inside the card
+modal opens a third sheet — no related-card link, no jump to another combo,"* and
+*"back-navigation must pop one level, not the stack."*
+
+The shipped behaviour satisfies both packages. That rule is about receipt to card, where the
+card modal DOES stack; this one is about partner to partner inside the card modal, where the
+link replaces in place and opens nothing. A replacement is not a third sheet, so the partner
+link is admitted by the hard rule rather than excepted from it — and there is no level between
+two partners for a back gesture to pop. Closing from a partner closing the modal is the one
+level popping, correctly.
+
+The two documents agree and neither says so, which is why this is recorded. Read alone, this
+item reads as an open behaviour someone may change, and that rule reads as forbidding a link
+this package ships. Both readings are wrong, and either would cost a round. That package was
+uncommitted on `main` when this was written, so it is cited by name and the quotations are
+what it said at that moment.
+
 ## Also outstanding, and not a deviation
 
 **The feature has no browser probe.** Several of its rules are facts about a laid-out page —
