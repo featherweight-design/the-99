@@ -16,6 +16,7 @@ const WUBRG_ORDER: Record<string, number> = { W: 0, U: 1, B: 2, R: 3, G: 4 };
  */
 import type { PrintingPrices } from "../cards/price-lookup";
 import { factsFor } from "../bracket/facts";
+import type { ModalComboPartner } from "../combos/near-miss";
 import type { CardBracketFlags } from "../bracket/flags-read";
 import type { CardFact } from "../copy/card-mark";
 
@@ -181,6 +182,17 @@ export type BrowseCard = {
    * be the first thing on the surface that is not true.
    */
   comboPartner?: { oracleId: string; name: string };
+  /**
+   * EVERY two-card combo partner of this card, for the modal's `Two-card combos` block.
+   *
+   * Distinct from `comboPartner` above, which is ONE partner for the inline clause on a list
+   * row. The block enumerates; the clause never does, and no surface draws both.
+   *
+   * Set by the card-detail loader alone, which is the only reader that fetches one card. A
+   * list payload never carries it — 65 cards times their partners is a large field to ship
+   * for a modal most rows are never opened into.
+   */
+  comboPartners?: ModalComboPartner[];
   availability?: Availability | null;
   /**
    * The decks printing this card, which is NOT part of `availability.claims` and
