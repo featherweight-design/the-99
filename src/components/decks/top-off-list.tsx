@@ -608,7 +608,7 @@ export function TopOffList({
                 const result = await chooseBulkTicks({
                   deckId,
                   slots: tickable,
-                  allowed: new Set(seedableIdsRef.current),
+                  allowed: () => new Set(seedableIdsRef.current),
                 });
                 if (stale()) return;
                 if (!result.ok) {

@@ -23,8 +23,26 @@ export async function chooseBulkTicks(args: {
   deckId: string;
   /** How many slots the control is offering to fill. */
   slots: number;
-  /** What this surface can actually tick — `canSeed`, plus its own exclusions. */
-  allowed: ReadonlySet<string>;
+  /**
+   * What this surface can actually tick — `canSeed`, plus its own exclusions.
+   *
+   * A THUNK, and that is the whole of it: it is called after the await, never before. The
+   * editing controls stay live while the server thinks, so a row set aside mid-request is gone
+   * from this set by the time the answer lands, and a Set captured at the call site describes a
+   * draft that no longer exists.
+   *
+   * NOT ASSERTED, and the reason is worth keeping. The obvious case — decline a row mid-request,
+   * then restore it — cannot tell the two apart, because a restored row returns UNTICKED by
+   * design: the tick was dropped when it was declined. So the stale tick is written and then
+   * normalised away by the path you would observe it through. I wrote that case, watched it pass
+   * against the capture-early mutation, and deleted it rather than ship a guard that cannot fail.
+   *
+   * What remains reachable is the other exclusion — a row that goes ILLEGAL while the list is
+   * open stays visible and is dropped from this set — and no fixture here can make a card go
+   * illegal mid-request. The correctness argument is the ordering itself, which the signature
+   * now enforces: a caller cannot pass a value, only a way to read one.
+   */
+  allowed: () => ReadonlySet<string>;
 }): Promise<BulkChoice> {
   try {
     const result = await chooseBulkFill(args.deckId, args.slots);
@@ -33,9 +51,10 @@ export async function chooseBulkTicks(args: {
     // surface carries exclusions of its own — a row set aside, or one that went illegal
     // while the list was open — and those must not come back ticked because a bulk
     // selection was made.
+    const allowed = args.allowed();
     return {
       ok: true,
-      ticks: new Set(result.oracleIds.filter((id) => args.allowed.has(id))),
+      ticks: new Set(result.oracleIds.filter((id) => allowed.has(id))),
     };
   } catch {
     return { ok: false, message: synergyCopy.lastSlots.topUpFailed };

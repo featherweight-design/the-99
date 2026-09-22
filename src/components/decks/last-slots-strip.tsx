@@ -264,7 +264,7 @@ function LastSlotsStripInner({
     void chooseBulkTicks({
       deckId,
       slots: Math.max(openSlots, 0),
-      allowed: new Set(seedableIds),
+      allowed: () => new Set(seedableIds),
     }).then((result) => {
       // SUPERSEDED. The list was closed, or closed and opened again — and a reopen announces
       // for itself on the `!owed` path above. Answering here as well would put two messages in
