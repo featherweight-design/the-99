@@ -119,7 +119,8 @@ describe("the sub-line", () => {
   it("asks for intent at the bottom of the low range and the top of the high one", () => {
     draw("1,2");
     expect(screen.getByText(deckAnalysisCopy.verdict.intentLow)).toBeTruthy();
-    expect(screen.getByRole("img", { name: deckAnalysisCopy.verdict.declareGlyphAria })).toBeTruthy();
+    // ROUND 3 RETIRED THE RINGED `?`: the declaration's own chips ask the question now.
+    expect(screen.queryByText("?")).toBeNull();
   });
 
   // Both forms are in the DOM and exactly one is displayed; `display:none` is not announced, so
@@ -188,7 +189,7 @@ describe("the sub-line", () => {
 
   it("draws no ringed glyph on an exact reading", () => {
     draw("3");
-    expect(screen.queryByRole("img", { name: deckAnalysisCopy.verdict.declareGlyphAria })).toBeNull();
+    expect(screen.queryByText("?")).toBeNull();
   });
 });
 

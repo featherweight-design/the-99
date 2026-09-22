@@ -10,7 +10,10 @@ import {
 import type { Bracket, BracketVerdict } from "../../lib/bracket/types";
 import type { DeckProfile } from "../../lib/profile/types";
 import { deckAnalysisCopy, BRACKET_NAMES, nameList } from "../../lib/copy/deck-analysis";
+import { declarationAsk } from "../../lib/bracket/declaration-ask";
+import { declarationCopy } from "../../lib/copy/declaration";
 import { BracketMark, bracketInk } from "./bracket-mark";
+import { DeclarationSection, type DeclarationControl } from "./declaration";
 
 /**
  * The verdict block — the bracket, its mark, one sentence saying why, and what other players say.
@@ -37,13 +40,23 @@ const MARK_PX_MD = 36;
 export function VerdictBlock({
   verdict,
   profile,
+  declaration,
 }: {
   verdict: BracketVerdict;
   profile: Pick<DeckProfile, "cards" | "commanderOracleIds" | "brackets">;
+  /**
+   * The player's own answer and the control to give one. Absent draws the block as Round 2
+   * drew it — no ask, no answer — which is what a surface with no deck to write to gets.
+   */
+  declaration?: DeclarationControl;
 }) {
-  const head = verdictHead(verdict.permits);
+  // THE DECLARATION'S READING, from its rule. It is handed the verdict's own range, never a
+  // range this component works out, and everything below that turns on it reads `ask`.
+  const ask = declaration ? declarationAsk(verdict.permits, declaration.declared) : null;
+  const answered = ask?.kind === "answered" ? ask.declared : null;
+  const head = verdictHead(verdict.permits, answered);
   const subLine = verdictSubLine(verdict);
-  const low = verdict.permits[0];
+  const low = head.chip;
   const high = verdict.permits[verdict.permits.length - 1];
   const copy = deckAnalysisCopy.verdict;
   return (
@@ -61,8 +74,8 @@ export function VerdictBlock({
         {/*
           ONE PILL, INKED BY THE LOWER MEMBER. A range draws both marks inside it — the one that
           holds at full strength, the one above it at 0.65 — with the border and the label in the
-          lower bracket's ink, which is the same derivation `verdictHead.glyphBracket` makes for
-          the ringed `?`. Listing the two ranges instead would leave a third inkless.
+          lower bracket's ink — `verdictHead.chip`, which on an answered range is the answer and
+          draws one mark. Listing the two ranges instead would leave a third inkless.
         */}
         <span
           className="inline-flex items-center gap-[7px] rounded-full border py-0.5 pl-1 pr-[11px]"
@@ -89,56 +102,44 @@ export function VerdictBlock({
           </span>
         </span>
       </div>
-      <SubLine reading={subLine} glyphBracket={head.glyphBracket} />
+      {answered === null ? (
+        <SubLine reading={subLine} />
+      ) : (
+        // THE RANGE MOVES HERE rather than disappearing. The face now names the answer, so the
+        // two brackets the cards permit are said once, in the description line.
+        <p className="mt-[10px] text-[12.5px] leading-[1.55] text-[color:var(--fg-muted)] md:mt-[11px] md:text-[13px] md:leading-[1.6]">
+          {declarationCopy.declared.permitsBelow(verdict.permits)}
+        </p>
+      )}
+      {ask && declaration ? <DeclarationSection ask={ask} control={declaration} /> : null}
       <Population verdict={verdict} profile={profile} />
     </section>
   );
 }
 
-function SubLine({
-  reading,
-  glyphBracket,
-}: {
-  reading: ReturnType<typeof verdictSubLine>;
-  glyphBracket: Bracket | null;
-}) {
+function SubLine({ reading }: { reading: ReturnType<typeof verdictSubLine> }) {
   const copy = deckAnalysisCopy.verdict;
   if (reading.kind === "none") return null;
   if (reading.kind === "intent") {
     const low = reading.low;
     return (
-      <div className="mt-[10px] flex items-start gap-2 md:mt-3">
+      // NO RINGED `?`. Round 3 retired it: the question a range poses is asked by the
+      // declaration's own chips below, and one ask per surface is the rule.
+      <p className="mt-[10px] text-[12.5px] leading-[1.55] text-[color:var(--fg-muted)] md:mt-3 md:text-[13px] md:leading-[1.6]">
         {/*
-          THE RINGED `?`, IN THE LOWER BRACKET'S INK. It asks the question a range poses and
-          carries no other meaning, so it is drawn only here — the climb's own declare rung is
-          the one other place, and nothing else on the tab may borrow it.
+          THE SHORT FORM BELOW 768px, and only the `[4,5]` line has one. `display:none` is not
+          announced, so exactly one of the two reaches a screen reader — this is a narrower
+          sentence at a narrower width rather than two mounts of the same block.
         */}
-        {glyphBracket === null ? null : (
-          <span
-            aria-label={copy.declareGlyphAria}
-            role="img"
-            className="mt-0.5 flex h-[14px] w-[14px] flex-none items-center justify-center rounded-full border font-mono text-[9px] font-semibold leading-none md:h-[15px] md:w-[15px] md:text-[9.5px]"
-            style={{ borderColor: bracketInk(glyphBracket), color: bracketInk(glyphBracket) }}
-          >
-            ?
-          </span>
+        {low === 1 ? (
+          copy.intentLow
+        ) : (
+          <>
+            <span className="md:hidden">{copy.intentHighShort}</span>
+            <span className="hidden md:inline">{copy.intentHigh}</span>
+          </>
         )}
-        <p className="text-[12.5px] leading-[1.55] text-[color:var(--fg-muted)] md:text-[13px] md:leading-[1.6]">
-          {/*
-            THE SHORT FORM BELOW 768px, and only the `[4,5]` line has one. `display:none` is not
-            announced, so exactly one of the two reaches a screen reader — this is a narrower
-            sentence at a narrower width rather than two mounts of the same block.
-          */}
-          {low === 1 ? (
-            copy.intentLow
-          ) : (
-            <>
-              <span className="md:hidden">{copy.intentHighShort}</span>
-              <span className="hidden md:inline">{copy.intentHigh}</span>
-            </>
-          )}
-        </p>
-      </div>
+      </p>
     );
   }
   return (

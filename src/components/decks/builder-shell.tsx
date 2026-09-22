@@ -16,6 +16,7 @@ import type { DeckSuggestionWithFacts } from "../../lib/decks/suggest";
 import { BuilderSpine } from "./builder-spine";
 import { AnalysisPanel, SynopsisSlot } from "./analysis-panel";
 import { useDeckProfile } from "./use-deck-profile";
+import { useDeclaration } from "./use-declaration";
 import { RoleCounterStrip } from "./role-counter-strip";
 import { ArrivalStrip } from "./arrival-strip";
 import { UpdateStrip } from "./update-strip";
@@ -63,7 +64,7 @@ import { VersionRail } from "./version-history";
 import type { VersionSummary } from "../../lib/decks/versions";
 import { PendingChangeProvider } from "./pending-change";
 // `draft-shape`, not `draft-state`: the latter holds the reads and imports `db`.
-import type { DraftState } from "../../lib/decks/draft-shape";
+import { hasChanges, type DraftState } from "../../lib/decks/draft-shape";
 import { cardCopies, deckCounts, unresolvedCardCount, type DeckDetailCard } from "../../lib/decks/grouping";
 import { computeRoleCounts, type MixRole, type RecommendedMix } from "../../lib/decks/mix";
 import { useIsDesktop } from "../ui/use-is-desktop";
@@ -218,6 +219,9 @@ export function BuilderShell({
   // It fetches on a PRESS, never on tab activation: Round 4's ruling 7 forbids an auto-run on
   // tab open, and it is newer and more specific than the plan's shape-3 choice.
   const profile = useDeckProfile(deck.id);
+  // The deck's declaration for the whole shell: the verdict draws and takes it, and the card
+  // note on Consider and the top-off list reads it — one owner, so they cannot disagree.
+  const declaration = useDeclaration(deck.id, deck.declaredBracket);
   const [sort, setSort] = useState<SortKey>("gaps");
   const [exportOpen, setExportOpen] = useState(false);
   const [unresolvedExpanded, setUnresolvedExpanded] = useState(false);
@@ -925,7 +929,7 @@ export function BuilderShell({
               allNegative={candidatesAllNegative}
               deckOracleIds={topOffDeckOracleIds}
               newestAsOf={newestAsOf}
-              declaredBracket={deck.declaredBracket}
+              declaredBracket={declaration.declared}
               noteCounts={deck.noteCounts}
               onAnnounce={setAnnouncement}
               onInflight={setFillInflight}
@@ -1056,6 +1060,16 @@ export function BuilderShell({
                 <AnalysisPanel
                   state={profile.state}
                   onRequest={profile.request}
+                  declaration={{
+                    declared: declaration.declared,
+                    // `for version n` only when the deck IS version n: committed, and the draft
+                    // holding no change since. A draft with edits is not that version, and a brew
+                    // has none to name.
+                    version:
+                      draft?.version && !hasChanges(draft) ? draft.version.number : null,
+                    onDeclare: declaration.declare,
+                    refused: declaration.refused,
+                  }}
                   synopsis={<SynopsisSlot />}
                   art={findingArt}
                 >
@@ -1085,7 +1099,7 @@ export function BuilderShell({
               <ConsiderPanel
               mix={mix}
                 deckId={deck.id}
-                declaredBracket={deck.declaredBracket}
+                declaredBracket={declaration.declared}
                 noteCounts={deck.noteCounts}
                 suggestions={suggestions}
                 deckCards={cards}

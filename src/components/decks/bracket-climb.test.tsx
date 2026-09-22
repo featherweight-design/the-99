@@ -172,15 +172,14 @@ describe("the rung above", () => {
     expect(within(above).queryByRole("img")).toBeNull();
   });
 
-  // THE ONE RINGED `?` LEFT ON THE CLIMB, and it is the `above` rung of a range — the bracket
-  // the player may CLAIM, not one they are short of.
-  it("offers the declare line on a range, with the only glyph in the climb", () => {
+  // THE `above` RUNG OF A RANGE POINTS AT THE ANSWER rather than asking. Round 3 moved the ask
+  // into the verdict block and retired the ringed `?` that sat here: one ask per surface.
+  it("points the declare rung at the block above, with no glyph", () => {
     draw("4,5");
     const above = rungs().find((r) => r.dataset.role === "above")!;
     expect(within(above).getByText(copy.declare)).toBeTruthy();
-    expect(
-      within(above).getByRole("img", { name: deckAnalysisCopy.verdict.declareGlyphAria }),
-    ).toBeTruthy();
+    expect(within(above).queryByRole("img")).toBeNull();
+    expect(within(above).queryByText("?")).toBeNull();
     expect(within(above).getByText(copy.roleDeclare)).toBeTruthy();
   });
 
