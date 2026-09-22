@@ -121,7 +121,10 @@ export function foldCurve(raw: Record<string, number>): Map<number, number> {
   return folded;
 }
 
-const TYPE_ORDER: (keyof CompositionTargets)[] = [
+/** The ten axes in their reporting order. Exported so a surface ordering by something else —
+ *  the bulk controls order by how far short each axis is — has a DETERMINISTIC tie-break to
+ *  fall back on rather than whatever order an array happened to arrive in. */
+export const TYPE_ORDER: (keyof CompositionTargets)[] = [
   "land", "basic", "nonbasic", "creature", "instant",
   "sorcery", "artifact", "enchantment", "planeswalker", "battle",
 ];

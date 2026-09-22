@@ -158,27 +158,7 @@ export const topOffCopy = {
       `${ticked} of ${plural(n, 'slot', 'slots')} ticked · ${plural(cand, 'candidate', 'candidates')}, ${untouched} untouched`,
     headMobile: (ticked: string, n: string) => `${ticked} of ${n} ticked`,
 
-    /** The figure and the words are both what this press would TICK, not what
-     *  the player owns.
-     *
-     *  `tickable`, which is the seedable count CLAMPED to the open slots — the
-     *  list has a separate `seedableIds.length` that is not clamped, and the two
-     *  differ whenever a player can sleeve more candidates than the deck has
-     *  room for. What the button promises is what pressing it does.
-     *
-     *  `I own` was true of the control that ticked every owned candidate, and
-     *  stopped being true when the seed narrowed to cards with a free copy and
-     *  this followed it: a player owning 31 candidates with 19 of them sleeved
-     *  in other decks would read `Tick the 12 I own` and be told they own 12.
-     *
-     *  `I can sleeve` is the same register as the rest of this surface — what
-     *  the player can do tonight, with the cards in front of them — and it is
-     *  the one phrase that stays true whether the shortfall is ownership or
-     *  somebody else's claim on a copy. */
-    tickOwned: (tickable: string) => `Tick the ${tickable} I can sleeve`,
-    tickOwnedAria: (tickable: string) =>
-      `Tick all ${plural(tickable, 'candidate', 'candidates')} you can sleeve now`,
-    clearTicks: 'Clear all ticks',
+        clearTicks: 'Clear all ticks',
 
     /** Column headers. The two figures sit under them at both widths on
      *  desktop; at phone they are labelled by the aria name instead. */
@@ -262,6 +242,62 @@ export const topOffCopy = {
       declined === '1'
         ? 'Put the declined candidate back on the list'
         : `Put all ${plural(declined, 'declined candidate', 'declined candidates')} back on the list`,
+  },
+
+  // ── The bulk pair ─────────────────────────────────────────────────────
+  //
+  // Transcribed verbatim from `design_handoff_the99_bulk_controls/bulk-controls - copy
+  // strings.ts` (§5.1 / §5.2). Two controls that SELECT and never commit — nothing is added
+  // to the deck until `Add N cards`, exactly as for a hand-made selection.
+  //
+  // The rules this block is written to, all inherited rather than invented:
+  //   · every count carries its denominator or its noun in the same string;
+  //   · a missing price drops the FIGURE and keeps the COUNT (`src/lib/copy/price.ts`);
+  //   · a nil concession is a sentence, never an empty slot;
+  //   · nothing is claimed from absent data — an unmeasurable mix says so;
+  //   · the accessible name carries the concession, because a sibling note is read after the
+  //     choice on a linear pass.
+  bulk: {
+    /** The pool is named; the concession is not. Both labels state the same count — the open
+     *  slots — because both fills take every one of them. */
+    collection: (n: string) => `Select ${n} from my collection`,
+    best: (n: string) => `Select the ${n} this deck needs`,
+
+    /** Label AND concession. The visible note is `aria-hidden`, so this is the only place the
+     *  figure is spoken, and it is spoken before the press. */
+    collectionAria: (n: string, concession: string) =>
+      `Select ${n} cards from your collection — ${concession}`,
+    bestAria: (n: string, concession: string) =>
+      `Select the ${n} cards this deck needs — ${concession}`,
+
+    /** Nil, and still a sentence. The player came to find out whether the cheap option costs
+     *  anything; 'no' is the answer, not the absence of one. */
+    gapNone: 'matches every recommendation',
+    gapOne: (n: string, type: string) => `${n} ${type} short of recommendations`,
+    gapTwo: (n: string, type: string, m: string, other: string) =>
+      `${n} ${type} and ${m} ${other} short of recommendations`,
+    /** Three or more axes. A line naming five types is a table with no headings, and the worst
+     *  gap is what decides whether the concession is acceptable. */
+    gapMany: (types: string, worst: string, worstType: string) =>
+      `short on ${types} types · ${worstType} worst at ${worst}`,
+    /** `SkeletonFit.basis === 'none'`, or no composition at all. '0 short' would be the
+     *  strongest possible claim made from no data. */
+    gapUnmeasured: 'no recommendation for this commander',
+
+    /** b3: the two pools produced the same rows, so the buy control is absent and this clause
+     *  says why. Appended to whichever gap string applies. */
+    andNothingToBuy: (gap: string) => `${gap} · nothing to buy`,
+
+    /** Identical in shape to the shipped `commit.toBuy`, deliberately: the bar restates this
+     *  pair of figures against the selected set a moment later, and two spellings of one fact
+     *  would read as two facts. */
+    buy: (n: string, money: string | null) =>
+      money === null ? `${n} to buy` : `${n} to buy · ${money}`,
+
+    /** b11. While a hand-made selection fills the slots, replacing it is the whole of what a
+     *  press does, and that outranks the figure. Both notes take it. */
+    replaces: (selected: string) => `replaces your ${selected} selections`,
+    replacesOne: 'replaces your 1 selection',
   },
 
   // ── The commit row ────────────────────────────────────────────────────
@@ -533,3 +569,24 @@ export const topOffCopy = {
 //   manaCopy.costAria .......................... the cost, spoken uncapped
 //   the count-only availability strings ........ the marker in the slot
 //   synergyCopy.lastSlots.heading .............. the heading
+
+/**
+ * `CompositionTargets`' ten keys, pluralised for a count — the nouns the gap strings take.
+ *
+ * `basic` and `nonbasic` are WITHIN land in `fit.ts`, so a note must never print `land`
+ * beside either or it double-counts in front of the player. Nothing here enforces that;
+ * `planFill` excludes all three land axes from its type shortfalls, which is where the rule
+ * is kept.
+ */
+export const MIX_TYPE_NOUN: Record<string, [one: string, many: string]> = {
+  land: ['land', 'lands'],
+  basic: ['basic', 'basics'],
+  nonbasic: ['nonbasic land', 'nonbasic lands'],
+  creature: ['creature', 'creatures'],
+  instant: ['instant', 'instants'],
+  sorcery: ['sorcery', 'sorceries'],
+  artifact: ['artifact', 'artifacts'],
+  enchantment: ['enchantment', 'enchantments'],
+  planeswalker: ['planeswalker', 'planeswalkers'],
+  battle: ['battle', 'battles'],
+};
