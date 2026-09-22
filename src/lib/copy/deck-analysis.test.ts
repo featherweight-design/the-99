@@ -44,11 +44,19 @@ describe("the detection statements", () => {
   it("builds the land-denial sentence from MLD_DETECTION, never from a literal", () => {
     const { from } = deckAnalysisCopy.detection.landDenial;
     expect(from).toContain(MLD_DETECTION.basis);
-    // THE PHRASE, not the bare numeral. `sources` is 2 and `basis` is "22 of 24 on a curated
-    // set", so `toContain("2")` is satisfied by the basis alone and passes with the source
-    // interpolation deleted — a test measuring nothing, in the file written to stop exactly
-    // that. Asserting the slot the number sits in cannot be satisfied by another string.
-    expect(from).toContain(`${MLD_DETECTION.sources} community-maintained`);
+    // EVERY METHOD BY NAME, and the fabricated phrase forbidden.
+    //
+    // This assertion used to read `toContain(`${MLD_DETECTION.sources} community-maintained`)`,
+    // and it was written carefully: its own comment explains that `toContain("2")` would be
+    // satisfied by "22 of 24" alone, so it pinned the surrounding phrase instead. It pinned a
+    // FALSE phrase. There are no two community-maintained lists — there is Spellbook's estimate
+    // and there is us — so the test held a claim we could not support firmly in place, in the
+    // file written to stop tests that measure nothing.
+    //
+    // A careful test on a false premise is not a weak test. It is a strong one pointed the
+    // wrong way, and nothing about its construction would ever have revealed that.
+    for (const method of MLD_DETECTION.methods) expect(from).toContain(method);
+    expect(from).not.toContain("community-maintained");
     // The figure the drop got wrong, stated as a property rather than as "22 of 24".
     expect(from).not.toContain("23 of");
   });

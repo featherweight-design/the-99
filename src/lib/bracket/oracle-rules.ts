@@ -148,7 +148,23 @@ export const isExtraTurn = (text: string | null): boolean => classifyExtraTurn(t
  * the profile builder populates `detection` and needs one definition to read.
  */
 export const MLD_DETECTION = {
-  sources: 2,
+  /**
+   * THE METHODS, NAMED — never a bare count.
+   *
+   * These are our two DETECTION MECHANISMS (`FlagSource` is `"spellbook_sweep" | "oracle_rule"`),
+   * and they are written out because the count alone fabricated a claim. `sources: 2` invited a
+   * copy string to say we read the rules text "against 2 community-maintained ones", which is
+   * false — there is no second list, there is Spellbook's own estimate and there is us. That
+   * sentence shipped, travelled into a design prompt, came back drawn as two citation slots, and
+   * was then put to Hugh as a request for two URLs that do not exist.
+   *
+   * A number cannot say what was counted, so the next reader supplies it and may be wrong. A
+   * name can only be wrong on purpose.
+   */
+  methods: [
+    "Commander Spellbook's own bracket estimate",
+    "our reading of the rules text",
+  ],
   basis: "22 of 24 on a curated set",
   /** BOTH misses. `basis` says two and an earlier version named one, leaving the other
    *  unaccounted for in the only place a reader would look for it. */
@@ -156,6 +172,10 @@ export const MLD_DETECTION = {
 } as const;
 
 export const EXTRA_TURN_DETECTION = {
-  sources: 2,
+  /** The same two mechanisms. Named for the reason above. */
+  methods: [
+    "Commander Spellbook's own bracket estimate",
+    "our reading of the rules text",
+  ],
   basis: "no misses among the 56 cards whose text mentions one",
 } as const;
