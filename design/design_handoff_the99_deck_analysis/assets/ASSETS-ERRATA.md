@@ -20,7 +20,9 @@ than 4-vs-5 got and never tested at size.
 | 4 | core + **four studs**, detached, floating at the rim | `M20 1.2 L21.6 2.8 L20 4.4 L18.4 2.8 Z` |
 | 5 | core + closed outer ring | unchanged |
 
-`16.5 / 11.5 = 1.43`, so Design's "43% apart in linear size" is exactly right. Ranks 3 and 4 both
+`16.5 / 11.5 = 1.4348`, which rounds to the "43% apart in linear size" the asset note states —
+the figure is Design's rounding of a real ratio, not an exact one, and this errata said "exactly
+right" until review caught it. Ranks 3 and 4 both
 draw five paths over the same core, and the difference is structural rather than a matter of
 degree: rank 3's ornaments are LINES that bridge core to rim, rank 4's are CLOSED shapes that
 touch neither.
@@ -35,7 +37,17 @@ where a label will not fit. Recorded because a later reader will have the same i
 **This unblocks PR 5.** Round 3's declaration draws chips throughout — the `[1,2]` ask is
 "lead + chips **Exhibition** / **Core**", which was precisely the 1-vs-2 collision.
 
-## 2 · The declaration canvas contradicts this file
+## 2 · Two files in this package still describe the pre-R9 geometry
+
+`README.md` (lines ~259-262) still says rank 3 uses ticks and calls both 22px collisions
+unresolved; `HANDOFF.md` (lines ~4-6) still calls them open. `ASSETS.md` is the amended document
+and the one this folder is the home for, so it wins — but a reader arriving through either of the
+others gets the pre-R9 geometry and the pre-R9 status.
+
+Design's files are not edited here, so the correction is owed whenever that package is next
+touched: either bring them forward or mark them historical.
+
+## 3 · The declaration canvas contradicts this file
 
 The declaration handoff's canvas says ranks 3, 4 and 5 stay distinct at 22px. That was written
 before R9 and happens to be true of the amended files; it was not true of the ones it described.
