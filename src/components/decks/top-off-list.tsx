@@ -40,6 +40,11 @@ import { canSeed, type TopOffCandidateWithFacts } from "../../lib/decks/last-slo
 type RowCandidate = TopOffCandidateWithFacts;
 import { ComboClause, comboClauseSpoken } from "../cards/combo-clause";
 import { CardNote, cardNoteSpoken } from "./card-note";
+import { AddSurfaceMarkKey } from "./add-surface-mark-key";
+import { CardFactMark } from "../cards/card-fact-mark";
+import { FactTooltip } from "../cards/fact-tooltip";
+import { factsFromCandidate } from "../../lib/bracket/facts";
+import { cardFactName } from "../../lib/copy/card-mark";
 import type { NoteCounts } from "../../lib/bracket/card-note";
 import type { Bracket } from "../../lib/bracket/types";
 import {
@@ -172,6 +177,13 @@ function rowLabel(
     density: "row",
   });
   const noteClause = note ? ` ${note}` : "";
+  // THE MARKS ARE SPOKEN HERE and nowhere else, for the reason every other atom on this row
+  // is: the row's one accessible name is where all of it is heard. They come BEFORE the note,
+  // because the mark says WHICH kind and the note says how many and what the rules make of
+  // it — which is the order a reader can follow, and the order they are drawn in.
+  const markWords = factsFromCandidate(c.facts) ?? [];
+  const marksClause =
+    markWords.length > 0 ? ` ${markWords.map(cardFactName).join(", ")}.` : "";
   // THE COMBO IS SPOKEN HERE and nowhere else. Its glyph is aria-hidden and its sentence is
   // drawn aria-hidden too, because on the phone it stands in for the PIP TRACK and on desktop
   // it sits in the name cell's tail — neither of which a reader hears in a useful order. It
@@ -193,7 +205,7 @@ function rowLabel(
       : synergyCopy.figure.inclusion(String(c.inclusionPct));
   const cost = spokenManaCost(c.manaCost);
   if (c.synergyPts !== null && c.synergyPts >= 0) {
-    return `${cost}. ${type}. ${topOffCopy.list.rowAria(c.name, clause, String(c.synergyPts), inclusion)}${combo}${noteClause}`;
+    return `${cost}. ${type}. ${topOffCopy.list.rowAria(c.name, clause, String(c.synergyPts), inclusion)}${combo}${marksClause}${noteClause}`;
   }
   const synergy =
     c.synergyPts === null
@@ -204,7 +216,7 @@ function rowLabel(
     clause.replace(/\.$/, ""),
     synergy,
     inclusion,
-  )}${combo}${noteClause}`;
+  )}${combo}${marksClause}${noteClause}`;
 }
 
 /** Mounted twice, and only here. The phone track is uncapped and unshingled
@@ -977,6 +989,12 @@ export function TopOffList({
         </p>
       </div>
 
+      {/* THE KEY, above the rows, so the vocabulary is met before the first glyph. See
+          `AddSurfaceMarkKey` for why it is unconditional here and conditional on the
+          decklist: this list ranks a pool of 262 candidates for the average commander and
+          shows a window on it. */}
+      <AddSurfaceMarkKey className="px-[8px] md:px-[9px] pb-[10px]" />
+
       {/* ── The rows (§4) ──────────────────────────────────────────────── */}
       {/* One preview for the whole list, as the decklist mounts one for its
           ninety-nine: 262 rows each carrying a positioned 252x352 box and a
@@ -1284,6 +1302,33 @@ function CandidateRow({
   onToggle: () => void;
   onDecline: () => void;
 }) {
+  // The three standing facts, adapted from the candidate's own read. `undefined` for a card
+  // with none and for a failed read alike — both draw nothing, the same rendering.
+  const marks = factsFromCandidate(c.facts) ?? [];
+  /**
+   * THE FACT MARKS, inline after the name — `STATES-push-line.md` §C2, and Round 1's rule for
+   * a card row. `silent`, and spoken once in `rowLabel` like every other atom here.
+   *
+   * MOUNTED ONCE PER WIDTH, guarded by `isDesktop`, which is the pattern the NAME beside them
+   * already uses rather than a second one. The two widths put the name in different places —
+   * the phone's is a text span inside the tick's label, the desktop's a `CardDetailTrigger`
+   * outside it — so "after the name" is two different positions in the tree. Rendered once
+   * outside the label, the marks landed on the phone's SECOND line: measured at 73px from the
+   * row's left against a name ending at 251px, which is a different line rather than a gap.
+   *
+   * Not a CSS `hidden`/`md:hidden` pair: `isDesktop` mounts one of the two, so there is no
+   * duplicated subtree to keep in step.
+   */
+  const factMarks =
+    marks.length > 0 ? (
+      <span aria-hidden className="flex-none flex items-center gap-[4px]">
+        {marks.map((fact) => (
+          <FactTooltip key={fact} fact={fact}>
+            <CardFactMark fact={fact} silent />
+          </FactTooltip>
+        ))}
+      </span>
+    ) : null;
   // The decklist's own preview, borrowed rather than redrawn: one instance for
   // the whole list owns the image, the geometry and the two delays, and the row
   // only reports that a pointer arrived. A null `imageUri` is a no-op inside it,
@@ -1403,15 +1448,23 @@ function CandidateRow({
               takes the trigger instead, below, where a pointer can tell the two
               apart and a hover says which is which. */}
           {!isDesktop && (
-            <span
-              // Named for the probe, for the reason `data-top-off-type` below is: the note
-              // indents to THIS column, and recognising it by its type size would pick up
-              // whatever else on the row happens to be set at 12.5px.
-              data-testid="top-off-name"
-              className="flex-auto min-w-0 text-[12.5px]"
-              style={{ color: "var(--fg)" }}
-            >
-              {c.name}
+            /* THE NAME AND ITS MARKS ARE ONE GROUP, and the wrapper carries the `flex-auto`
+               the name used to. "Inline after the name" is about the TEXT: with the name
+               growing to fill the cell, a `flex-none` mark after it lands at the far right of
+               the column beside the buy tag. Measured before this wrapper existed: the glyph
+               sat 87px past the end of `Mu Yanling` at 390 and 535px past it at 1300. */
+            <span className="flex-auto min-w-0 flex items-center gap-[7px]">
+              <span
+                // Named for the probe, for the reason `data-top-off-type` below is: the note
+                // indents to THIS column, and recognising it by its type size would pick up
+                // whatever else on the row happens to be set at 12.5px.
+                data-testid="top-off-name"
+                className="min-w-0 text-[12.5px]"
+                style={{ color: "var(--fg)" }}
+              >
+                {c.name}
+              </span>
+              {factMarks}
             </span>
           )}
           <span
@@ -1447,7 +1500,12 @@ function CandidateRow({
             placed against, recorded in the addendum. `md:contents` on the parent
             makes this a direct child of the row's flex context, so `order` puts
             it back beside the dot however the DOM is arranged. */}
+        {/* THE NAME AND ITS MARKS ARE ONE GROUP, carrying the `md:order-2` and the `flex-auto`
+            the trigger used to own — so the shrink competition against the clause below is
+            unchanged, and the glyph follows the TEXT rather than the cell. Measured before
+            this wrapper existed: 535px past the end of `Mu Yanling` at 1300. */}
         {isDesktop && (
+          <span className="md:order-2 flex-auto min-w-0 flex items-center gap-[7px]">
           <CardDetailTrigger
             oracleId={c.oracleId}
             name={c.name}
@@ -1470,10 +1528,16 @@ function CandidateRow({
             // begins to give once the clause is spent — at which point the name still
             // truncates rather than overflowing.
             testId="top-off-name"
-            className="md:order-2 flex-auto min-w-0 text-left truncate text-[13.5px] [color:var(--fg)]"
+            // NOT `flex-auto` any more: the GROUP above owns the growing now. Left on the
+            // trigger it fills the group and the mark lands at the group's far edge again,
+            // which is the 535px this wrapper exists to close — the fix measured as no fix
+            // until the grow moved up one level.
+            className="min-w-0 text-left truncate text-[13.5px] [color:var(--fg)]"
           >
             {c.name}
           </CardDetailTrigger>
+          {factMarks}
+          </span>
         )}
         {/* The clause, in the name cell's TAIL. Desktop only — the phone draws it leading
             line 2, where there is room for a sentence. `flex-1 min-w-0` is what makes it the

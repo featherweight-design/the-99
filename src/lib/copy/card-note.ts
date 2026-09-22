@@ -57,10 +57,44 @@ export const cardNote = {
    * be wrong without pretending the rules might be.
    */
   massLandDenial: {
-    plain: "We read this as mass land denial, which no bracket with limits allows.",
+    /**
+     * THE CONSEQUENCE, NOT THE ABSTRACTION. Ruled 2026-09-22, through `/copy-review`.
+     *
+     * The drop's clause was "which no bracket with limits allows" — true, and a rules fact
+     * the reader has to convert into a fact about their deck. Mass land denial is the one
+     * detection where that conversion needs NOTHING: it is forbidden outright at 1, 2 and 3,
+     * so there is no threshold to compute and no dependence on the rest of the list. Where the
+     * card puts you is therefore as knowable as the rules clause, and it is what a player
+     * deciding whether to add it actually wants.
+     *
+     * NOT the same as the push line. "Adding this moves your permitted range" needs a live
+     * verdict per candidate and was withdrawn on 2026-09-21; this needs none, because it is a
+     * property of the CARD against the RULES and is true of every deck.
+     *
+     * It does not generalise to the other two, and is deliberately not applied to them. Extra
+     * turns are counted at bracket 1 alone, so the consequence rules out one bracket of five
+     * and takes more words than the current form. A game changer's consequence depends on the
+     * COUNT, which is exactly the verdict the ruling removed.
+     */
+    plain: "We read this as mass land denial. Nothing below Optimized allows it.",
+    /**
+     * With a declaration, their own bracket is the more useful half of that sentence, so it
+     * replaces the general rule rather than being appended to it. At a declared 4 or 5 the
+     * flat form is used — there the rule is permission rather than a warning, and naming it
+     * is still the honest reading.
+     */
     declared: (declared: Bracket) =>
-      `We read this as mass land denial, which no bracket with limits allows, including the ${declaredName(declared)} you declared.`,
-    /** Appended on the add surfaces where the row has room for it. */
+      `We read this as mass land denial. The ${declaredName(declared)} you declared doesn't allow it.`,
+    /**
+     * Appended on the add surfaces where the row has room for it.
+     *
+     * THE TOP-OFF ROW, AND NOT THE CONSIDER TILE. The hedge is a fixed two-line cost and the
+     * tile is 173px wide at 390, where it made this the only note on the surface drawing six
+     * lines against every other note's three. The row draws it on one line above `md:`. Where
+     * the hedge cannot fit, the marks now carry the same admission structurally: the glyph and
+     * its key say a reading is present, the modal spells all three detections out in full, and
+     * both name the detection as ours.
+     */
     disclaimer: "If that's wrong for how you play it, the reading is ours, not the rules'.",
   },
 

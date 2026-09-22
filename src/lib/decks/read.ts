@@ -446,8 +446,8 @@ export async function readNoteFlags(
 }
 
 /**
- * The card note's four counts over the deck as it stands — the DRAFT, since that is what the
- * analysis reads and what a player is looking at while they add.
+ * The card note's three ordinal counts over the deck as it stands — the DRAFT, since that is
+ * what the analysis reads and what a player is looking at while they add.
  *
  * EXPORTED for its own test. Every renderer test injects `NoteCounts`, so the denominator
  * behind every ordinal on the surface was asserted by nobody: a regression returning zeros,
@@ -469,9 +469,10 @@ export function countNoteKinds(
    *  that found nothing, which is a different claim and counts as zero. */
   flags: Map<string, CardBracketFlags> | null,
 ): NoteCounts {
+  // THREE, not four: mass land denial is absent from `NoteCounts` because its sentence
+  // carries no ordinal. See that type for why counting it withheld a true sentence.
   const counts = {
     gameChanger: 0,
-    massLandDenial: flags === null ? null : 0,
     extraTurns: flags === null ? null : 0,
     tutor: 0,
   } as NoteCounts;
@@ -481,7 +482,7 @@ export function countNoteKinds(
   ) => {
     const flag = flags?.get(row.oracleId);
     if (row.gameChanger) counts.gameChanger += copies;
-    if (flag?.massLandDenial && counts.massLandDenial !== null) counts.massLandDenial += copies;
+    // Mass land denial is NOT counted: its sentence takes no ordinal. See `NoteCounts`.
     if (flag?.extraTurn && counts.extraTurns !== null) counts.extraTurns += copies;
     // The SHIPPED classifier over the same text `loadCandidateFacts` reads, so a card's
     // reading cannot differ depending on which side of the add it is on.

@@ -60,7 +60,7 @@ function Harness(props: Partial<React.ComponentProps<typeof ConsiderPanel>>) {
     <ConsiderPanel mix={TEST_MIX}
       deckId="deck-1"
       declaredBracket={null}
-      noteCounts={{ gameChanger: 0, massLandDenial: 0, extraTurns: 0, tutor: 0 }}
+      noteCounts={{ gameChanger: 0, extraTurns: 0, tutor: 0 }}
       suggestions={[suggestion({ name: "Sol Ring" })]}
       deckCards={[]}
       deckOracleIds={[]}

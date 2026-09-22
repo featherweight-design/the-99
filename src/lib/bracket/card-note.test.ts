@@ -96,34 +96,61 @@ describe("cardNoteSentences", () => {
   });
 
   describe("n3 / n4 — mass land denial", () => {
-    it("n4: undeclared states the rules clause flat, and appends the disclaimer", () => {
+    it("n4: undeclared states the consequence flat, and appends the disclaimer on a row", () => {
       expect(draw({ facts: facts({ massLandDenial: true }) })).toEqual([
         cardNote.massLandDenial.plain,
         cardNote.massLandDenial.disclaimer,
       ]);
     });
 
-    it("n3: a declared bracket 2 names the declaration", () => {
+    // THE HEDGE IS THE ROW'S. A 173px tile drew six lines here against every other note's
+    // three, which is the only note on the surface that did. The row has the width for it.
+    it("drops the disclaimer on a tile and keeps it on a row", () => {
+      expect(draw({ facts: facts({ massLandDenial: true }), density: "tile" })).toEqual([
+        cardNote.massLandDenial.plain,
+      ]);
+      expect(draw({ facts: facts({ massLandDenial: true }), density: "row" })).toHaveLength(2);
+    });
+
+    it("n3: a declared bracket 2 names the declaration as the thing that refuses it", () => {
       const drawn = draw({ facts: facts({ massLandDenial: true }), declared: 2 });
-      expect(drawn[0]).toBe("We read this as mass land denial, which no bracket with limits allows, including the Core you declared.");
+      expect(drawn[0]).toBe(
+        "We read this as mass land denial. The Core you declared doesn't allow it.",
+      );
       expect(drawn[1]).toBe(cardNote.massLandDenial.disclaimer);
     });
 
-    // "including the Optimized you declared" is false: 4 and 5 have no limits, so they are not
-    // brackets the flat clause is talking about.
-    it("a declared bracket 4 takes the flat clause, which stays true up there", () => {
-      expect(draw({ facts: facts({ massLandDenial: true }), declared: 4 })[0]).toBe(
-        cardNote.massLandDenial.plain,
-      );
+    // At 4 and 5 their own bracket ALLOWS it, so naming it would read as a refusal that is
+    // not happening. The flat clause states where the card sits and stays true up there.
+    it("a declared bracket 4 states where the card sits rather than refusing it", () => {
+      const [sentence] = draw({ facts: facts({ massLandDenial: true }), declared: 4 });
+      expect(sentence).toBe(cardNote.massLandDenial.plain);
+      expect(sentence).not.toContain("you declared");
     });
 
-    // The hedge attaches to the DETECTION and nothing else: the rules half is quoted rules
-    // text and is not in doubt, at any bracket and declared or not.
+    // The hedge attaches to the DETECTION and nothing else: what follows it is the rules'
+    // consequence and is not in doubt, at any bracket and declared or not.
     it("attributes the reading and never the rule", () => {
       for (const declared of [null, 1, 2, 3, 4, 5] as const) {
         const [sentence] = draw({ facts: facts({ massLandDenial: true }), declared });
         expect(sentence).toContain("We read this as");
-        expect(sentence).toContain("no bracket with limits allows");
+        expect(sentence).toMatch(/allows? it|allow it/);
+      }
+    });
+
+    // THE CONSEQUENCE, NOT THE ABSTRACTION. Mass land denial is forbidden outright at 1, 2
+    // and 3, so where the card puts you needs no verdict and no count — which is what makes
+    // this sentence available at all, and what separates it from the withdrawn push line.
+    it("says where the card puts you, at every reading", () => {
+      for (const declared of [null, 4, 5] as const) {
+        expect(draw({ facts: facts({ massLandDenial: true }), declared })[0]).toContain(
+          "Nothing below Optimized",
+        );
+      }
+      for (const declared of [1, 2, 3] as const) {
+        expect(draw({ facts: facts({ massLandDenial: true }), declared })[0]).toContain(
+          "you declared",
+        );
       }
     });
   });
@@ -191,13 +218,13 @@ describe("cardNoteSentences", () => {
       expect(draw({ facts: all, density: "tile" })).toEqual(["A game changer, and your 1st."]);
     });
 
-    // The cap counts FACTS. Mass land denial is one fact carrying two sentences, and a cap
-    // written over sentences would cut its disclaimer off on a tile and admit only one more
-    // fact beside it on a row.
-    it("mass land denial alone fills one fact slot and keeps both its sentences on a tile", () => {
-      expect(draw({ facts: facts({ massLandDenial: true, tutor: true }), density: "tile" })).toEqual([
+    // The cap counts FACTS. Mass land denial is one fact carrying two sentences on a row, and
+    // a cap written over sentences would admit only one more fact beside it there.
+    it("mass land denial fills one fact slot, both its sentences included", () => {
+      expect(draw({ facts: facts({ massLandDenial: true, tutor: true }), density: "row" })).toEqual([
         cardNote.massLandDenial.plain,
         cardNote.massLandDenial.disclaimer,
+        "A tutor, and your 1st. No bracket limits how many you play.",
       ]);
     });
 
@@ -214,14 +241,21 @@ describe("cardNoteSentences", () => {
   // separate read that can succeed while the deck's fails. Without this, a correctly detected
   // mass land denial is introduced as `your 1st` to a deck already holding three.
   describe("a count nobody has", () => {
-    const unknown = { ...EMPTY_NOTE_COUNTS, massLandDenial: null, extraTurns: null };
+    const unknown = { ...EMPTY_NOTE_COUNTS, extraTurns: null };
 
-    it("draws no mass-land-denial sentence when the deck's count is unknown", () => {
-      expect(draw({ facts: facts({ massLandDenial: true }), counts: unknown })).toEqual([]);
+    it("draws no extra-turn sentence when the deck's count is unknown", () => {
+      expect(draw({ facts: facts({ extraTurn: true }), counts: unknown })).toEqual([]);
     });
 
-    it("draws no extra-turn sentence either", () => {
-      expect(draw({ facts: facts({ extraTurn: true }), counts: unknown })).toEqual([]);
+    // MASS LAND DENIAL IS NOT SUPPRESSED, and that is the correction: its sentence carries no
+    // ordinal, so a failed flags read on the DECK takes nothing away from it. The card fact
+    // comes from the candidate's own read and the rules fact is the rules'. Withheld in #854
+    // by a guard written for the two kinds that do carry a count.
+    it("still draws the mass-land-denial sentence, which needs no count", () => {
+      expect(draw({ facts: facts({ massLandDenial: true }), counts: unknown })).toEqual([
+        cardNote.massLandDenial.plain,
+        cardNote.massLandDenial.disclaimer,
+      ]);
     });
 
     // The other two kinds survive that failure: a game changer is a column on `cards` and a
@@ -235,12 +269,12 @@ describe("cardNoteSentences", () => {
       ]);
     });
 
-    // And an unknown kind does not spend a slot on the way past: a row whose first two facts
-    // are unknown still draws the two it can count.
+    // And an unknown kind does not spend a slot on the way past: the row's two-fact cap is
+    // filled by the two it CAN draw rather than by one it cannot.
     it("does not spend the cap on a kind it cannot draw", () => {
       expect(
         draw({
-          facts: facts({ gameChanger: true, massLandDenial: true, extraTurn: true, tutor: true }),
+          facts: facts({ gameChanger: true, extraTurn: true, tutor: true }),
           counts: unknown,
           density: "row",
         }),

@@ -17,6 +17,7 @@ import { computeRoleCounts, type MixRole, type RecommendedMix } from "../../lib/
 import { preferByTypeGap, tallyTypes, typeDeficits } from "../../lib/decks/fill-shape";
 import type { ProvenanceForm } from "../../lib/decks/price";
 import { SuggestionTile } from "./suggestion-tile";
+import { AddSurfaceMarkKey } from "./add-surface-mark-key";
 import type { Bracket } from "../../lib/bracket/types";
 import type { NoteCounts } from "../../lib/bracket/card-note";
 import { ConsiderToolbar, type SortKey } from "./consider-toolbar";
@@ -473,6 +474,15 @@ export function ConsiderPanel({
               degraded={degraded}
             />
           </div>
+
+          {/* THE KEY, once for the panel rather than once per shelf — the marks are one
+              vocabulary and a reader learns it once. Above the shelves, so it is met before
+              the first glyph rather than after the last.
+
+              Unconditional, unlike the decklist's: a shelf is a WINDOW capped at `SHELF_CAP`
+              behind a `Show all`, so "no Game Changer on this screen" is not "none among the
+              candidates". See `AddSurfaceMarkKey`. */}
+          <AddSurfaceMarkKey className="mb-[14px]" />
 
           {shelves.map((shelf, i) => (
             <ShelfSection

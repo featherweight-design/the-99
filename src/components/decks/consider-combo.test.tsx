@@ -45,7 +45,7 @@ function mount(over: Partial<DeckSuggestionWithFacts> = {}, deckOracleIds: strin
       <ConsiderPanel
         deckId="deck-1"
         declaredBracket={null}
-        noteCounts={{ gameChanger: 0, massLandDenial: 0, extraTurns: 0, tutor: 0 }}
+        noteCounts={{ gameChanger: 0, extraTurns: 0, tutor: 0 }}
         suggestions={[suggestion(over)]}
         deckCards={[]}
         deckOracleIds={deckOracleIds}

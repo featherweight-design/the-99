@@ -343,7 +343,7 @@ describe("deckIsFlippable reads coverage", () => {
 // to get right: copies rather than rows, the commanders folded in, the flags map consulted,
 // and the tutor read through the SHIPPED classifier rather than a second rule.
 // ---------------------------------------------------------------------------
-const NONE = { gameChanger: 0, massLandDenial: 0, extraTurns: 0, tutor: 0 };
+const NONE = { gameChanger: 0, extraTurns: 0, tutor: 0 };
 const row = (over: Partial<Parameters<typeof countNoteKinds>[0][number]> = {}) => ({
   oracleId: "o-plain",
   gameChanger: false,
@@ -384,7 +384,7 @@ describe("countNoteKinds", () => {
     expect(counts.gameChanger).toBe(2);
   });
 
-  it("reads mass land denial and extra turns off the flags map", () => {
+  it("reads extra turns off the flags map", () => {
     const flags = new Map([
       ["o-mld", { massLandDenial: true, extraTurn: false }],
       ["o-turn", { massLandDenial: false, extraTurn: true }],
@@ -395,7 +395,6 @@ describe("countNoteKinds", () => {
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       flags as any,
     );
-    expect(counts.massLandDenial).toBe(1);
     expect(counts.extraTurns).toBe(2);
   });
 
@@ -417,19 +416,28 @@ describe("countNoteKinds", () => {
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       new Map([["o-all", { massLandDenial: true, extraTurn: true }]]) as any,
     );
-    expect(counts).toEqual({ gameChanger: 2, massLandDenial: 2, extraTurns: 2, tutor: 2 });
+    expect(counts).toEqual({ gameChanger: 2, extraTurns: 2, tutor: 2 });
   });
 });
 
 // A FAILED flags read is not an empty one. `getDeckDetail` degrades that read to `null`
 // rather than to an empty map, because the marks can afford absence and an ordinal cannot:
 // the candidate's own facts come from a separate read that can succeed while this one
-// fails, and a flattened failure introduces a real mass land denial as `your 1st`.
+// fails, and a flattened failure introduces a real extra-turn card as `your 1st`.
 describe("countNoteKinds — a failed flags read", () => {
-  it("reports the two flag-derived counts as unknown, not as zero", () => {
-    const counts = countNoteKinds([row({ gameChanger: true })], [], null);
-    expect(counts.massLandDenial).toBeNull();
-    expect(counts.extraTurns).toBeNull();
+  it("reports the flag-derived count as unknown, not as zero", () => {
+    expect(countNoteKinds([row({ gameChanger: true })], [], null).extraTurns).toBeNull();
+  });
+
+  // MASS LAND DENIAL IS NOT COUNTED AT ALL, and its absence from `NoteCounts` is the fix
+  // rather than an oversight: its sentence carries no ordinal, so counting it bought nothing
+  // and the guard that came with the count withheld a true sentence on every failed read.
+  it("does not count mass land denial, which needs no ordinal", () => {
+    const counts = countNoteKinds(
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      [row({ oracleId: "o-mld" })], [], new Map([["o-mld", { massLandDenial: true, extraTurn: false }]]) as any,
+    );
+    expect(counts).not.toHaveProperty("massLandDenial");
   });
 
   it("still counts the two kinds that were never in the flags map", () => {
@@ -445,7 +453,7 @@ describe("countNoteKinds — a failed flags read", () => {
   // An EMPTY map is a successful read that found nothing, which is a real zero. The two
   // must not be the same value or the distinction the null exists for is unreachable.
   it("an empty map is a real zero, not unknown", () => {
-    expect(countNoteKinds([row()], [], new Map()).massLandDenial).toBe(0);
+    expect(countNoteKinds([row()], [], new Map()).extraTurns).toBe(0);
   });
 });
 

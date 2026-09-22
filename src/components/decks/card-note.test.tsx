@@ -25,7 +25,7 @@ vi.mock("../../app/decks/actions", () => ({
   chooseBulkTicks: vi.fn(),
 }));
 
-const NONE: NoteCounts = { gameChanger: 0, massLandDenial: 0, extraTurns: 0, tutor: 0 };
+const NONE: NoteCounts = { gameChanger: 0, extraTurns: 0, tutor: 0 };
 
 const facts = (over: Partial<CandidateFacts>): CandidateFacts => ({
   card: { oracleId: "o-test", name: "Test Card" },

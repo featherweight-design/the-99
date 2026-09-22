@@ -31,6 +31,32 @@ row. The quick-add result row is PR 8c, named in the surface plan.
 
 ## Gaps, five, all named rather than closed quietly
 
+**CLOSED 2026-09-22, by the follow-up PR: gaps 2 and 5, and §C2's marks.** Hugh asked two
+questions of the shipped tile — *"why aren't we using the mass land denial mark to say this
+without words?"* and *"shouldn't About this card have relevance to the deck?"* — and both
+landed on real omissions. What the follow-up shipped:
+
+- **§C2's three fact marks, on both add surfaces, with their key.** They were specified for
+  exactly these surfaces (*"Card row (quick add, top-off): inline after the name"*; *"Consider
+  tile: own line above the name"*) and drew on NEITHER. `CardFactMark` rendered on the decklist
+  row, the deck card tile, both `/collection` views and the card modal — every surface showing a
+  card you already have, and none of the three showing a card you are deciding to add. The note
+  was carrying the whole load on the one surface where the glyph was meant to lead.
+- **A key, which neither surface had at all.** `ComboClause` already drew `ComboGlyph` on both,
+  and neither clause sentence contains the word "combo" — so the lemniscate had been arriving
+  unglossed since sub-project 3. That is the rule the deck-status marks were retired in a day
+  for breaking. The key is unconditional here, unlike the decklist's: these are windows on a
+  ranked pool, so absence on screen is not absence among the candidates.
+- **The mass-land-denial note states the CONSEQUENCE** — *"Nothing below Optimized allows it"* —
+  which is what gap 2 was really about. It is available with no verdict because MLD is forbidden
+  outright at 1, 2 and 3: there is no threshold to compute and no dependence on the rest of the
+  deck, which is what separates it from the withdrawn push line. **74px, the same as every other
+  note**, against the 124px the hedged form measured.
+- **The hedge moved to the row**, which draws it on one line above `md:`. That closes gap 2's
+  "two short sentences" question without inventing a string: the tile no longer needs one.
+
+Routed through `/copy-review` rather than Design — the box is the same box.
+
 **1 — n8, the combo completion, is not drawn.** `STATES-card-note.md` n8 says a candidate that
 completes a two-card combo prints *This completes A + B, a two-card infinite.* Sub-project 3
 shipped the same statement on the same two rows first, as `comboAwarenessCopy.clause.completes`
@@ -39,14 +65,13 @@ with the lemniscate beside it and a key entry glossing the glyph, and both hosts
 is a defect; the shipped one is shorter and glossed. The string is transcribed and says in its
 own comment what draws the fact instead. **Engineering's call, recorded in the surface plan.**
 
-**2 — the tile's "two short sentences" arrive as the fact plus its disclaimer, not as a
-shortened first sentence.** README §3 says register 2 *"truncates to `we read this as mass land
-denial`"* on the tile. The production-final copy module carries no such string, and inventing one
-would be authoring copy rather than transcribing it. What ships instead uses only shipped
-strings: the tile draws ONE fact, and where that fact is mass land denial it draws
-`massLandDenial.plain` plus `massLandDenial.disclaimer` — two short sentences, inside
-`HANDOFF.md` §Geometry's *"two sentences max"* for the tile. **If Design wants the shortened
-form it is one new string, and nothing else changes.**
+**2 — CLOSED. The tile draws ONE sentence, so the question is moot.**
+It was: README §3 says register 2 *"truncates to `we read this as mass land denial`"* on the
+tile, and the production-final module carries no such string. What shipped first was the full
+sentence plus its disclaimer — two sentences, inside §Geometry's *"two sentences max"*, and at
+124px the only note on the surface drawing six lines. The follow-up moved the hedge to the row
+and restated the fact as a consequence, so the tile now draws one sentence at 74px and needs no
+shortened string at all.
 
 **3 — the row's indent is 49px at 390 and 46px above `md`, not the handoff's 27px.**
 `HANDOFF.md` §Geometry states `padding-left:27px` for the 390 note; §C's host matrix states the
@@ -63,7 +88,8 @@ yet.** Round 3's ask UI is PR 5. Until it lands every note ships in its undeclar
 is drawn and deliberately plain rather than a placeholder — `READINESS.md` gap 1, unchanged and
 still accurate. Both branches are built and unit-tested; only one is reachable in the app today.
 
-**5 — the tutor detection has no mark and no key entry.** `STATES-push-line.md` §C2 puts the
+**5 — PARTLY CLOSED. The three shipped facts now have their marks and a key on both add
+surfaces. The TUTOR still has neither**, and that half stands: `STATES-push-line.md` §C2 puts the
 drawn-up glyph in Round 2's design and says so: *"if they land later, they appear at call sites
 that already exist with no other change."* The note names the tutor in words, which needs no
 glyph — but a reader who sees `A tutor, and your 6th` on a row has nothing marking that card on
