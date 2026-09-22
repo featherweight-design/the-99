@@ -211,9 +211,12 @@ export type BracketPopulation = {
  * the classifiers they describe and are re-measured when a classifier changes.
  */
 export type DetectionCoverage = {
-  massLandDenial: { sources: number; basis: string; knownMisses?: readonly string[] };
-  extraTurn: { sources: number; basis: string };
-  twoCardCombos: { sources: number; basis: string };
+  // `methods` rather than a `sources` count: a number cannot say what it counted, and the one
+  // that used to sit here was read as "community-maintained lists" and shipped as a claim we
+  // could not support. See `MLD_DETECTION.methods`.
+  massLandDenial: { methods: readonly string[]; basis: string; knownMisses?: readonly string[] };
+  extraTurn: { methods: readonly string[]; basis: string };
+  twoCardCombos: { methods: readonly string[]; basis: string };
 };
 
 export type ComboReach = {

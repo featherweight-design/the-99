@@ -12,9 +12,9 @@ const COMPOSITION: CompositionTargets = {
 };
 
 const DETECTION: DetectionCoverage = {
-  massLandDenial: { sources: 2, basis: "test" },
-  extraTurn: { sources: 2, basis: "test" },
-  twoCardCombos: { sources: 1, basis: "test" },
+  massLandDenial: { methods: ["m"], basis: "test" },
+  extraTurn: { methods: ["m"], basis: "test" },
+  twoCardCombos: { methods: ["m"], basis: "test" },
 };
 
 function card(over: Partial<ProfileCardRow> & { oracleId: string }): ProfileCardRow {

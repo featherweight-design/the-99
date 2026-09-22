@@ -5,9 +5,9 @@ import type { Bracket, ComboRef, DetectionCoverage, FlagSource } from "../profil
 import { slotDeck } from "./slot";
 
 const DETECTION: DetectionCoverage = {
-  massLandDenial: { sources: 2, basis: "22 of 24 on a curated set" },
-  extraTurn: { sources: 2, basis: "no misses among the 56" },
-  twoCardCombos: { sources: 1, basis: "Spellbook's index" },
+  massLandDenial: { methods: ["m"], basis: "22 of 24 on a curated set" },
+  extraTurn: { methods: ["m"], basis: "no misses among the 56" },
+  twoCardCombos: { methods: ["m"], basis: "Spellbook's index" },
 };
 
 const card = (oracleId: string): ProfileCardRow => ({

@@ -6,9 +6,9 @@ import { fitSkeleton, foldCurve, THIN_DECK_COUNT } from "./fit";
 import type { CompositionTargets, DetectionCoverage, FlagSource, StapleRef } from "./types";
 
 const DETECTION: DetectionCoverage = {
-  massLandDenial: { sources: 2, basis: "t" },
-  extraTurn: { sources: 2, basis: "t" },
-  twoCardCombos: { sources: 1, basis: "t" },
+  massLandDenial: { methods: ["m"], basis: "t" },
+  extraTurn: { methods: ["m"], basis: "t" },
+  twoCardCombos: { methods: ["m"], basis: "t" },
 };
 
 const TARGETS: CompositionTargets = {

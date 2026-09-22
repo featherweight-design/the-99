@@ -58,6 +58,8 @@ export function producesInfiniteTurns(features: readonly string[]): boolean {
  * module that does not exist yet.
  */
 export const COMBO_DETECTION = {
-  sources: 1,
+  /** One method, and unlike the other two it is entirely external. Named for the reason on
+   *  `MLD_DETECTION.methods`. */
+  methods: ["Commander Spellbook's combo index"],
   basis: "Spellbook's index, excluding template-gated variants",
 } as const;

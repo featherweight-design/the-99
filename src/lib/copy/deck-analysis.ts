@@ -75,10 +75,13 @@ export const deckAnalysisCopy = {
       source: "the Commander Format Panel's bracket rules",
     },
     landDenial: {
+      // NAMED, never counted. The previous form said we read the rules text against
+      // "2 community-maintained ones" — built from `MLD_DETECTION.sources`, and false: there is
+      // no second list. The two are Spellbook's estimate and our own reading, and saying so is
+      // both true and more use to a reader deciding how much to trust the figure.
       from:
-        `There is no official list, so we read the rules text against ` +
-        `${MLD_DETECTION.sources} community-maintained ones. Between them they name ` +
-        `${MLD_DETECTION.basis}.`,
+        `There is no official list, so we combine ${nameList(MLD_DETECTION.methods)}. ` +
+        `Between them they name ${MLD_DETECTION.basis}.`,
       // Guarded on the ASSEMBLED string rather than on the array's length: `knownMisses` is a
       // `const` tuple, so comparing its length to 0 is a comparison TypeScript can prove false
       // and refuses to compile. If the list is ever emptied this reads as null rather than as
