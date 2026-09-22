@@ -49,7 +49,12 @@ export default async function CollectionPage() {
     getCollectionStats(userId),
     // The heaviest read on this page by an order of magnitude, which is why it
     // is the one cached across visits.
-    // "browse-4" because the payload gained `comboPartner` for combo awareness state 1.
+    // "browse-5" because the payload gained `comboOtherPartners`, the figure the marker's
+    // tooltip counts. An entry written by the previous deploy carries no such field, so every
+    // marker would say `You own both` where it should say `and 3 others` until the hour
+    // ceiling expired it, with the loader never running.
+    //
+    // "browse-4" before it, because the payload gained `comboPartner` for state 1.
     // Same reason as "browse-3" before it, which added `facts`, and "browse-2" before that:
     // an entry written by the previous deploy carries no such field, so every card would
     // draw no clause until the hour ceiling expired it, with the loader never running. The
@@ -61,7 +66,7 @@ export default async function CollectionPage() {
     // `revalidateClaims`, which calls `revalidateUserLists`, which drops exactly the tag
     // `cacheForUser` put on this entry. Building a deck holding both pieces retires the
     // clause on the spot rather than at the hour ceiling.
-    cacheForUser(userId, ["browse-4"], () => loadBrowseCards(userId)),
+    cacheForUser(userId, ["browse-5"], () => loadBrowseCards(userId)),
     getCollectionLastUpdated(userId),
     // Set names + release dates for the Set ▾ panel (#86).
     loadOwnedSetMeta(userId),

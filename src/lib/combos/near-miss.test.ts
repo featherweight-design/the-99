@@ -90,4 +90,27 @@ describe("bestPartnerPerCard", () => {
     expect(out.get("card-a")?.partnerName).toBe("For A");
     expect(out.get("card-b")?.partnerName).toBe("For B");
   });
+
+  // THE COUNT OF OTHERS, which the marker's tooltip reports as what it is NOT naming.
+  //
+  // Counted on DISTINCT partner ids rather than on rows: a pair recorded in two variants is
+  // one partner, and counting rows would inflate the figure on exactly the cards that have
+  // the most combos.
+  it("counts the other partners, once each", () => {
+    const out = bestPartnerPerCard([
+      row({ variant_id: "a", popularity: 900, missing_id: "chosen", missing_name: "Chosen" }),
+      // The SAME partner again through a second variant — one partner, not two.
+      row({ variant_id: "b", popularity: 800, missing_id: "chosen", missing_name: "Chosen" }),
+      row({ variant_id: "c", popularity: 700, missing_id: "other-1", missing_name: "Other 1" }),
+      row({ variant_id: "d", popularity: 600, missing_id: "other-2", missing_name: "Other 2" }),
+    ]);
+    const hit = out.get("card-a")!;
+    expect(hit.partnerName).toBe("Chosen");
+    expect(hit.otherPartners, "a duplicate variant was counted as a partner").toBe(2);
+  });
+
+  it("reports no others when the card has exactly one partner", () => {
+    const out = bestPartnerPerCard([row({ missing_id: "only", missing_name: "Only" })]);
+    expect(out.get("card-a")!.otherPartners).toBe(0);
+  });
 });

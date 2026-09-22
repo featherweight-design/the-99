@@ -75,9 +75,16 @@ export const comboAwarenessCopy = {
   markerTooltip: {
     /** State 1, one partner. */
     ownBoth: (partner: string) => `Two-card combo with ${partner}. You own both.`,
-    /** Several partners — a count of what the tooltip is NOT naming, never of what exists. */
+    /**
+     * Several partners — a count of what the tooltip is NOT naming, never of what exists.
+     *
+     * SINGULAR AT ONE. The handoff's string is `and ${others} others` unconditionally, which
+     * emits `and 1 others` for a card with exactly two partners — and two partners is the
+     * common shape, not an edge: the median piece has two. Corrected here and flagged to
+     * Design rather than left to ship.
+     */
     ownBothMore: (partner: string, others: number) =>
-      `Two-card combo with ${partner}, and ${others} others.`,
+      `Two-card combo with ${partner}, and ${others} ${others === 1 ? "other" : "others"}.`,
   },
 
   /** The card modal's block — the ONE surface in this feature that enumerates. */

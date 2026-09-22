@@ -53,6 +53,16 @@ describe("ComboMark", () => {
     );
   });
 
+  // SINGULAR AT ONE. The handoff's string is `and N others` unconditionally, so a card with
+  // exactly two partners read `and 1 others` — and two is the MEDIAN shape, not an edge.
+  it("says 'and 1 other', not 'and 1 others'", async () => {
+    stubPointer(true);
+    render(<ComboMark partnerName="Demonic Consultation" otherPartners={1} />);
+    await hover();
+    await waitFor(() => expect(screen.getByText(/and 1 other\./)).toBeTruthy());
+    expect(screen.queryByText(/and 1 others/)).toBeNull();
+  });
+
   // A LONE PARTNER GETS THE PLAIN SENTENCE, never `and 0 others`.
   it("does not say 'and 0 others'", async () => {
     stubPointer(true);
