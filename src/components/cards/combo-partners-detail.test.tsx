@@ -127,6 +127,24 @@ describe("the card modal's combo block", () => {
     expect(more.getAttribute("aria-expanded")).toBe("true");
   });
 
+  // AT 390px THE STATE WRAPS UNDER THE NAME rather than truncating it — the app's words move
+  // before the card's name does, which is this feature's rule everywhere.
+  //
+  // ASSERTED STRUCTURALLY, and that is a weaker check than it looks: jsdom lays nothing out,
+  // so removing `flex-wrap` changes no measurement here and only the class list can be read.
+  // A class assertion agrees with itself. The real proof is a browser probe, and this feature
+  // has none yet — recorded as a follow-up rather than implied by a green test.
+  it("gives the state its own full-width row below sm", () => {
+    const { container } = render(<ComboPartnersDetail card={card([partner()])} />);
+    const li = container.querySelector("li")!;
+    expect(li.className, "the line cannot wrap").toContain("flex-wrap");
+    const state = li.lastElementChild!;
+    expect(state.className, "the state does not take its own row on the phone").toContain(
+      "w-full",
+    );
+    expect(state.className, "the state stays full width on desktop").toContain("sm:w-auto");
+  });
+
   // THE THREE STATES AND NOTHING ELSE. No price, no copy count, no availability marker —
   // those are facts about your copies of the card you OPENED, and the modal has two blocks
   // for them already.
