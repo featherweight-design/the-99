@@ -399,9 +399,13 @@ export async function loadCardComboPartners(args: {
     select p.variant_id, p.produces, p.popularity,
            other.oracle_id as partner_id,
            c.name as partner_name,
-           (select count(*) from collection_items ci
-            where ci.user_id = ${sql.param(args.userId)}
-              and ci.oracle_id = other.oracle_id)::int as owned_copies
+           -- EXISTS, not count(*). Only the boolean is read, and this scalar is evaluated
+           -- once per qualifying VARIANT — before the map below collapses the several
+           -- variants a pair can have — so a count scans every holding of that card again
+           -- for each one, where an existence test stops at the first row.
+           exists (select 1 from collection_items ci
+                   where ci.user_id = ${sql.param(args.userId)}
+                     and ci.oracle_id = other.oracle_id) as owned
     from pair p
     join ${spellbookVariantCards} self
       on self.variant_id = p.variant_id and self.oracle_id = ${sql.param(args.oracleId)}::uuid
@@ -410,7 +414,7 @@ export async function loadCardComboPartners(args: {
     join cards c on c.oracle_id = other.oracle_id
   `)).rows as {
     variant_id: string; produces: string[]; popularity: number | null;
-    partner_id: string; partner_name: string; owned_copies: number;
+    partner_id: string; partner_name: string; owned: boolean;
   }[];
 
   const inDeck = new Set(args.deckOracleIds ?? []);
@@ -422,7 +426,7 @@ export async function loadCardComboPartners(args: {
       name: r.partner_name,
       state: inDeck.has(r.partner_id)
         ? ("inDeck" as const)
-        : r.owned_copies > 0
+        : r.owned
           ? ("owned" as const)
           : ("notOwned" as const),
       popularity: r.popularity,
