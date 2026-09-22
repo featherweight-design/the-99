@@ -2,6 +2,7 @@
 // §Builder Spine, §Role Counter Strip, §Guided Banner, §Degraded Suggestions Banner.
 import { notFound } from "next/navigation";
 import { loadCandidateFacts } from "../../../lib/profile/candidate-facts";
+import { loadCompletionPartners } from "../../../lib/combos/near-miss";
 import { requireUserId } from "../../../lib/auth";
 import { getDeckDetail, listDecksWithStats } from "../../../lib/decks/read";
 import { cacheForUser } from "../../../lib/cache/user-lists";
@@ -237,7 +238,7 @@ export default async function DeckBuilderPage({
   // Swallowed like its neighbours. A failed facts read degrades to rows with no
   // note, which is the state the round draws for a card that has no facts
   // anyway — never the builder going down.
-  const [priced, availability, candidateFacts] = await Promise.all([
+  const [priced, availability, candidateFacts, completions] = await Promise.all([
     loadPrices([
       ...new Set([
         ...detail.cards.map((c) => c.oracleId),
@@ -261,6 +262,21 @@ export default async function DeckBuilderPage({
       candidateCards.map((c) => c.oracleId),
       detail.cards.map((c) => c.oracleId),
     ).catch(() => null),
+    // STATES 2 AND 3: which candidates complete a two-card combo already half-built in this
+    // deck. Swallowed like its neighbours — a failed read draws rows with no clause, which is
+    // what a card with no combo already looks like, and is never the builder going down.
+    //
+    // The COMMANDERS are passed separately from the deck's cards because §4.3b's rule 3 says
+    // so: a commander counts as held, and it is a column on `decks` rather than a `deck_cards`
+    // row, so a read taking only the list would miss every combo the commander is half of.
+    loadCompletionPartners({
+      deckOracleIds: detail.cards.map((c) => c.oracleId),
+      commanderOracleIds: [
+        detail.commander.oracleId,
+        ...(detail.partner ? [detail.partner.oracleId] : []),
+      ],
+      candidateOracleIds: candidateCards.map((c) => c.oracleId),
+    }).catch(() => null),
   ]);
 
   // Attached here, server-side, on lists that are being built anyway — so no
@@ -292,6 +308,12 @@ export default async function DeckBuilderPage({
     // figures above are attached here. `null` where the read failed or the card has no facts;
     // Round 4's note draws nothing for either, which is why one absence serves both.
     facts: candidateFacts?.get(c.oracleId) ?? null,
+    // The combo partner, attached for the same reason the three figures above are: the row
+    // reads a field rather than doing a map lookup per render.
+    comboPartner: (() => {
+      const hit = completions?.get(c.oracleId);
+      return hit ? { oracleId: hit.partnerOracleId, name: hit.partnerName } : null;
+    })(),
   }));
 
   // Read once per request rather than at each use, so the tab, the strip's home and the

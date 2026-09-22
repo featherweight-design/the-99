@@ -51,29 +51,37 @@ export function ComboClause({
       className={`inline-flex items-center gap-[4px] min-w-0 ${className ?? ""}`}
     >
       <ComboGlyph />
-      <span
-        // TRUNCATION, and an honest note about how far it meets the rule.
-        //
-        // The design says "the clause ellipses; the PARTNER NAME is the last thing to go".
-        // End-truncation delivers that for `with {partner} — you own both`, where the name
-        // sits mid-sentence and the tail `— you own both` is eaten first. It does NOT for
-        // `completes with {partner}`, where the name is last and goes first.
-        //
-        // Honouring it there means splitting one copy string into a shrinking prefix and a
-        // protected name, which puts sentence assembly in a component and is how quoted copy
-        // drifts from its module. Left as a known gap rather than papered over: the hosts
-        // give this clause a full secondary line, so the narrow case is reachable only at
-        // 390px behind a long partner name. Recorded for the host PR, where the widths are
-        // real and can be measured rather than guessed at.
-        // `min-w-0` ON THE FLEX ITEM ITSELF, not only on the row. A flex item's default
-        // `min-width: auto` is its min-content width, so `truncate` never engages and the
-        // clause pushes its row wide instead of ellipsing — the pairing this repo already
-        // relies on wherever a flex child truncates.
-        className="truncate min-w-0 font-mono text-[9.5px] md:text-[10.5px]"
-        style={{ color: "var(--fg-body)" }}
-      >
-        {text}
-      </span>
+      {state === "completes" ? (
+        /* THE PARTNER NAME IS THE LAST THING TO GO, and on THIS sentence it sits at the end
+           — so plain end-truncation eats precisely the word a reader cannot reconstruct.
+           The two halves shrink at different priorities instead: the app's words give up
+           ~999 units for every one the name does, so they are spent first and the name
+           truncates only after. Both still truncate, so neither can overflow its host.
+
+           `ownBoth` needs none of this: its name sits mid-sentence and the tail
+           `— you own both` is what end-truncation eats first, which is already the rule. */
+        <>
+          <span
+            className="truncate shrink-[999] min-w-0 font-mono text-[9.5px] md:text-[10.5px]"
+            style={{ color: "var(--fg-body)" }}
+          >
+            {comboAwarenessCopy.clause.completesLead}
+          </span>
+          <span
+            className="truncate min-w-0 font-mono text-[9.5px] md:text-[10.5px]"
+            style={{ color: "var(--fg-body)" }}
+          >
+            {partnerName}
+          </span>
+        </>
+      ) : (
+        <span
+          className="truncate min-w-0 font-mono text-[9.5px] md:text-[10.5px]"
+          style={{ color: "var(--fg-body)" }}
+        >
+          {text}
+        </span>
+      )}
     </span>
   );
 }

@@ -22,6 +22,21 @@ import { bulkConcession } from "../../lib/decks/bulk-concession";
 import { bulkFillOptions } from "../../app/decks/actions";
 import type { FillShortfall } from "../../lib/decks/fill";
 import { canSeed, type TopOffCandidate } from "../../lib/decks/last-slots";
+
+/**
+ * What this row draws: a candidate, plus the one deck-scoped field it may carry.
+ *
+ * OPTIONAL, and not because nobody populates it — `/decks/[id]` builds every candidate as a
+ * `TopOffCandidateWithFacts`, where it is required. It is optional HERE because the shared
+ * `SynergyCard` this narrows has no deck to complete anything in, and every fixture and
+ * every other consumer of that type is honestly without one. Widening this component to the
+ * full deck-scoped type instead would demand a `facts` field from fifty test fixtures that
+ * have no opinion about facts.
+ */
+type RowCandidate = TopOffCandidate & {
+  comboPartner?: { oracleId: string; name: string } | null;
+};
+import { ComboClause, comboClauseSpoken } from "../cards/combo-clause";
 import {
   formatCents,
   summarisePrices,
@@ -63,7 +78,7 @@ export interface TopOffListProps {
   /** The whole ranked pool, live. It is frozen inside for the life of one
       opening — see the comment at `frozen` — and the live value is read only to
       tell which of the frozen rows the route is still offering. */
-  candidates: TopOffCandidate[];
+  candidates: RowCandidate[];
   /** Oracle ids currently in the deck, used to name why a row went illegal. */
   deckOracleIds: Set<string>;
   ticked: Set<string>;
@@ -90,7 +105,7 @@ export interface TopOffListProps {
 }
 
 /** The three ownership clauses, matching the three occupancies of §8's slot. */
-function ownershipClause(c: TopOffCandidate, newestAsOf: Date | null): string {
+function ownershipClause(c: RowCandidate, newestAsOf: Date | null): string {
   if (!c.owned) {
     return topOffCopy.list.unownedClause(moneyOf(c.price, newestAsOf));
   }
@@ -119,8 +134,16 @@ function moneyOf(price: PriceFact | null, newestAsOf: Date | null): string | nul
  *  `list.rowAria` bakes in "plus", so it can only speak a non-negative figure.
  *  A null or negative synergy takes the shipped four-branch string instead,
  *  which exists for exactly that case. No new string either way. */
-function rowLabel(c: TopOffCandidate, newestAsOf: Date | null): string {
+function rowLabel(c: RowCandidate, newestAsOf: Date | null): string {
   const clause = ownershipClause(c, newestAsOf);
+  // THE COMBO IS SPOKEN HERE and nowhere else. Its glyph is aria-hidden and its sentence is
+  // drawn aria-hidden too, because on the phone it stands in for the PIP TRACK and on desktop
+  // it sits in the name cell's tail — neither of which a reader hears in a useful order. It
+  // is appended, after the figures, because it describes what adding the card would DO rather
+  // than what the card is or what this player's copies are.
+  const combo = c.comboPartner
+    ? ` ${comboClauseSpoken(c.comboPartner.name, "completes")}.`
+    : "";
   // The type is drawn `aria-hidden`, so without this it is the one column on the
   // row a screen reader never hears. Spoken at BOTH widths rather than only where
   // the column is drawn: a reader who is not looking at the columns is not
@@ -134,7 +157,7 @@ function rowLabel(c: TopOffCandidate, newestAsOf: Date | null): string {
       : synergyCopy.figure.inclusion(String(c.inclusionPct));
   const cost = spokenManaCost(c.manaCost);
   if (c.synergyPts !== null && c.synergyPts >= 0) {
-    return `${cost}. ${type}. ${topOffCopy.list.rowAria(c.name, clause, String(c.synergyPts), inclusion)}`;
+    return `${cost}. ${type}. ${topOffCopy.list.rowAria(c.name, clause, String(c.synergyPts), inclusion)}${combo}`;
   }
   const synergy =
     c.synergyPts === null
@@ -145,7 +168,7 @@ function rowLabel(c: TopOffCandidate, newestAsOf: Date | null): string {
     clause.replace(/\.$/, ""),
     synergy,
     inclusion,
-  )}`;
+  )}${combo}`;
 }
 
 /** Mounted twice, and only here. The phone track is uncapped and unshingled
@@ -171,6 +194,7 @@ function CostTrack({ cost }: { cost: string | null }) {
     return (
       <span
         aria-hidden
+        data-top-off-cost
         className="hidden md:block flex-none md:order-4"
         style={{ width: COST_TRACK }}
       />
@@ -181,7 +205,10 @@ function CostTrack({ cost }: { cost: string | null }) {
     // above lists the same eight slots in the same order, and the two have to be
     // read together — a change here with no change there puts every heading to
     // the right of the data it names.
-    <span className="flex-none md:order-4">
+    // Named for the same reason the type column is: a test looking for pips by their shape
+    // finds the row's own OWNERSHIP DOT, which is also a `rounded-full` span — so a check
+    // that the cost survived passes on a build that suppressed it.
+    <span data-top-off-cost className="flex-none md:order-4">
       <CostPips cost={cost} size={13} className="flex gap-[3px] md:hidden" />
       <CostPips
         cost={cost}
@@ -1196,7 +1223,7 @@ function CandidateRow({
   onToggle,
   onDecline,
 }: {
-  candidate: TopOffCandidate;
+  candidate: RowCandidate;
   ticked: boolean;
   inert: boolean;
   inflight: boolean;
@@ -1356,10 +1383,45 @@ function CandidateRow({
             name={c.name}
             siblings={siblings}
             title={c.name}
+            // THE CLAUSE ELLIPSES BEFORE THE NAME DOES, which is the design's rule, and the
+            // name stays SHRINKABLE, which is how that rule is delivered without breaking
+            // the row.
+            //
+            // `flex-none` is the literal reading and it does not work: it sets
+            // `flex-shrink: 0` with `flex-basis: auto`, so the `truncate` beside it can never
+            // engage and a long name renders at full max-content width. The clause shrinks to
+            // zero first and then nothing on the row can give — the eight fixed columns and
+            // their gaps come to 535px — so the row overflows a box that is
+            // `md:overflow-y-auto`, which computes overflow-x to `auto`, and the reader gets
+            // a horizontal scrollbar with the decline control outside it.
+            //
+            // Shrink PRIORITY does the same job safely: the clause carries a far larger
+            // `flex-shrink`, so it absorbs essentially all of the reduction and the name only
+            // begins to give once the clause is spent — at which point the name still
+            // truncates rather than overflowing.
             className="md:order-2 flex-auto min-w-0 text-left truncate text-[13.5px] [color:var(--fg)]"
           >
             {c.name}
           </CardDetailTrigger>
+        )}
+        {/* The clause, in the name cell's TAIL. Desktop only — the phone draws it leading
+            line 2, where there is room for a sentence. `flex-1 min-w-0` is what makes it the
+            item that shrinks; the four fixed columns after it do not move. */}
+        {isDesktop && c.comboPartner && (
+          <span
+            aria-hidden
+            // `flex-auto`, NOT `flex-1`, and that is the whole of it. `flex-1` sets the
+            // basis to `0%`, and flex distributes shrinkage in proportion to shrink factor
+            // TIMES BASIS — so a zero basis gives the clause no shrink budget at all, the
+            // `shrink-[999]` multiplies nothing, and a tight row takes the deficit out of the
+            // name's `auto` basis instead. Exactly backwards from the rule.
+            //
+            // With an auto basis the clause has its own content width to give up, and at 999
+            // against the name's 1 it is spent before the name moves.
+            className="md:order-2 flex-auto shrink-[999] min-w-0"
+          >
+            <ComboClause partnerName={c.comboPartner.name} state="completes" />
+          </span>
         )}
 
         {/* Type, desktop only. The phone row is two lines carrying the name, the
@@ -1386,7 +1448,20 @@ function CandidateRow({
             htmlFor={tickId}
             className="flex items-center gap-[8px] cursor-pointer md:contents"
           >
-            <CostTrack cost={c.manaCost} />
+            {/* THE PIP TRACK YIELDS ONLY ON A ROW THAT CARRIES A CLAUSE — about 4 of 38.
+                The other 34 keep their pips. Phone only: on desktop the clause sits in the
+                name cell's tail and the cost column is one of the four fixed slots, which do
+                not move for this. */}
+            {!isDesktop && c.comboPartner ? (
+              // The phone clause stands in for the pip track rather than sharing a line
+              // with a name, so it simply takes the room: nothing beside it on line 2 is
+              // competing for content width.
+              <span aria-hidden className="flex-auto min-w-0">
+                <ComboClause partnerName={c.comboPartner.name} state="completes" />
+              </span>
+            ) : (
+              <CostTrack cost={c.manaCost} />
+            )}
             <span
               aria-hidden
               className="flex-none md:order-6 md:w-[60px] md:text-right md:text-[12px]"

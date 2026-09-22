@@ -37,6 +37,19 @@ export type TopOffCandidate = SynergyCard;
  */
 export type TopOffCandidateWithFacts = TopOffCandidate & {
   facts: CandidateFacts | null;
+  /**
+   * Combo awareness states 2 and 3: adding this card completes a two-card combo whose other
+   * half is ALREADY IN THIS DECK, and `comboPartner` is that half.
+   *
+   * Deck-scoped, which is why it lives on this type and not on `SynergyCard` — the same
+   * reason `facts` does. `/commanders` draws the same card with no deck to complete anything
+   * in, and an optional field there would be present in the type, populated by nobody and
+   * drawn by nobody.
+   *
+   * The two states differ only by whether the reader OWNS this card, which every host already
+   * draws with the shipped `OwnershipDot` and `BuyTag`. Nothing here needs to know which it is.
+   */
+  comboPartner: { oracleId: string; name: string } | null;
 };
 
 /** Every card the list can offer, in rank order and uncapped.
