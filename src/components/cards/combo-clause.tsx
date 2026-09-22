@@ -20,25 +20,18 @@ import { ComboGlyph } from "./combo-glyph";
 export function ComboClause({
   partnerName,
   state,
-  /**
-   * `short` drops the app's words and keeps the card's name — `both yours` rather than
-   * `you own both`. Chosen by the HOST, because it is a question about that host's width: the
-   * collection row takes it at 390px and the tile takes it always.
-   */
-  short = false,
   className,
 }: {
   partnerName: string;
   state: "ownBoth" | "completes";
-  short?: boolean;
   className?: string;
 }) {
+  // NO SHORT FORM ANY MORE. It existed for `/collection`, which draws a 16px marker now
+  // rather than a sentence, and the decision hosts never used it.
   const text =
     state === "completes"
       ? comboAwarenessCopy.clause.completes(partnerName)
-      : short
-        ? comboAwarenessCopy.clause.ownBothShort(partnerName)
-        : comboAwarenessCopy.clause.ownBoth(partnerName);
+      : comboAwarenessCopy.clause.ownBoth(partnerName);
 
   return (
     <span

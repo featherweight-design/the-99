@@ -169,10 +169,8 @@ export function RowsView({
               )}
             </span>
             {/* Mobile type line — §Row: Type Line (mobile): 11.5px, --fg-faint, truncate.
-                STATE 1 REPLACES IT rather than adding a third line: the row's height is fixed
-                and the clause is the more useful of the two facts about a card you own two
-                halves of. The tail shortens at this width — the app's words give way, the
-                card's name does not. */}
+                UNTOUCHED by combo awareness: `/collection` draws a 16px marker in the cluster
+                rather than a sentence, so nothing yields and this line stays as it was. */}
             <span className="block md:hidden truncate text-[11.5px]" style={{ color: "var(--fg-faint)" }}>
               {c.typeLine}
             </span>

@@ -46,9 +46,6 @@ export const comboAwarenessCopy = {
   clause: {
     /** State 1 — both halves owned, neither assembled into a deck. `/collection` only. */
     ownBoth: (partner: string) => `with ${partner} — you own both`,
-    /** State 1 at 390px and on the collection tile: the app's words shorten, the card's name
-     *  does not. */
-    ownBothShort: (partner: string) => `with ${partner} — both yours`,
     /**
      * The words BEFORE the partner name in `completes`, exported so a host can shrink them
      * separately and leave the name standing.
