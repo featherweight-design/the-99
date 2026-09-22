@@ -9,6 +9,13 @@
 // work candidate by candidate is ~195ms each — 91 to 95 seconds for the pool. One statement
 // is 480 to 540 times cheaper, so this is a batched read or the push line is not shippable.
 //
+// THAT FIGURE PREDATES THE FOUR MODAL COLUMNS and is not re-measured here. It was taken when
+// this statement selected `bracket_tag` and `produces` alone; the columns added since are
+// joined on after the aggregate rather than carried through the materialised CTE, precisely so
+// the shape the figure describes is the shape that still runs. Re-measure before quoting it as
+// current — the 480-to-540x ratio is the load-bearing claim and a join per matched variant
+// does not threaten it, but the absolute number is a 2026-09-21 reading of a narrower select.
+//
 // THREE OF THE FOUR FACTS ARE CHEAP. Game changer is a column on `cards`; mass land denial and
 // extra turns are the flags table the profile already loads for the deck's own cards. Only the
 // fourth needs thought.
@@ -82,18 +89,28 @@ export async function loadCandidateFacts(
  * Template-gated variants are excluded here for the reason `assembledCombosQuery` excludes
  * them: a variant naming a CATEGORY of card is not one a decklist can be said to assemble.
  */
-async function completionsFor(
+/**
+ * The completions statement, extracted so its emitted SQL can be pinned the way
+ * `assembledCombosQuery` is.
+ *
+ * Both reads draw into the same modal, and the failure they share is silent: drop a column from
+ * a projection and the mapping's `?? null` reads it as null on every row, with no error. Only
+ * one of the two was guarded while it was inlined here.
+ *
+ * THE FOUR WIDE COLUMNS ARE JOINED BACK AFTER THE AGGREGATE, never carried through the CTE.
+ * `two_card` is referenced three times and is therefore materialised, and `steps` averages 395
+ * characters against a max of 754 — so carrying it there spooled it for every two-card
+ * membership row in the index and then used it as a GROUP BY key, when only the handful of
+ * matched completions need it at all. The narrow CTE and the two-column group key are the
+ * point; the join at the end costs one index lookup per matched variant.
+ */
+export function completionsQuery(
   candidateIds: readonly string[],
   deckOracleIds: readonly string[],
-): Promise<Map<string, ComboRef[]>> {
-  const out = new Map<string, ComboRef[]>();
-  if (deckOracleIds.length === 0) return out;
-
-  const result = await db.execute(sql`
+) {
+  return sql`
     with two_card as (
-      select v.variant_id, v.bracket_tag, v.produces,
-             v.mana_needed, v.mana_value_needed, v.steps, v.notable_prerequisites,
-             vc.oracle_id
+      select v.variant_id, vc.oracle_id
       from ${spellbookVariants} v
       join ${spellbookVariantCards} vc on vc.variant_id = v.variant_id
       where v.card_count = 2 and cardinality(v.requires_template_ids) = 0
@@ -103,21 +120,34 @@ async function completionsFor(
       from two_card
       where oracle_id = any(${sql.param([...deckOracleIds])}::uuid[])
       group by variant_id
+    ),
+    matched as (
+      select t.oracle_id as candidate,
+             t.variant_id,
+             array_agg(p.oracle_id order by p.oracle_id) as pieces
+      from two_card t
+      join held h on h.variant_id = t.variant_id and h.n = 1
+      join two_card p on p.variant_id = t.variant_id
+      where t.oracle_id = any(${sql.param([...candidateIds])}::uuid[])
+        and t.oracle_id <> all(${sql.param([...deckOracleIds])}::uuid[])
+      group by t.oracle_id, t.variant_id
     )
-    select t.oracle_id as candidate,
-           t.variant_id,
-           t.bracket_tag,
-           t.produces,
-           t.mana_needed, t.mana_value_needed, t.steps, t.notable_prerequisites,
-           array_agg(p.oracle_id order by p.oracle_id) as pieces
-    from two_card t
-    join held h on h.variant_id = t.variant_id and h.n = 1
-    join two_card p on p.variant_id = t.variant_id
-    where t.oracle_id = any(${sql.param([...candidateIds])}::uuid[])
-      and t.oracle_id <> all(${sql.param([...deckOracleIds])}::uuid[])
-    group by t.oracle_id, t.variant_id, t.bracket_tag, t.produces,
-             t.mana_needed, t.mana_value_needed, t.steps, t.notable_prerequisites
-  `);
+    select m.candidate, m.variant_id, m.pieces,
+           v.bracket_tag, v.produces,
+           v.mana_needed, v.mana_value_needed, v.steps, v.notable_prerequisites
+    from matched m
+    join ${spellbookVariants} v on v.variant_id = m.variant_id
+  `;
+}
+
+async function completionsFor(
+  candidateIds: readonly string[],
+  deckOracleIds: readonly string[],
+): Promise<Map<string, ComboRef[]>> {
+  const out = new Map<string, ComboRef[]>();
+  if (deckOracleIds.length === 0) return out;
+
+  const result = await db.execute(completionsQuery(candidateIds, deckOracleIds));
 
   for (const raw of result.rows as {
     candidate: string;

@@ -126,10 +126,17 @@ export function fieldPopulation(
 /**
  * The field floors, as a list of failures — empty when the population is healthy.
  *
- * AN EMPTY INGEST REPORTS NOTHING HERE, deliberately. With no rows both shares are 0 and every
- * floor is breached, which would report a field collapse over what is really a total one —
- * `variantsKept` is the floor that owns that case and its message is the one an operator needs.
- * Two refusals for one cause, naming the wrong cause, is worse than one.
+ * CHECKED AFTER `variantsKept`, and that ordering is the guard rather than the exemption below.
+ * A thin ingest breaches these shares for the same reason it breaches the variant floor, so
+ * whichever runs first owns the refusal — and the honest owner is the variant floor, whose
+ * message names the download. Running this one first reported "a field collapsed" over a
+ * 1,000-row download and told the operator every floor above had passed, which was not yet true
+ * because the variant floor had not been evaluated. Two refusals for one cause, naming the
+ * wrong cause, is worse than one.
+ *
+ * The `kept === 0` exemption stays as a second belt: it is the one case where every share is 0
+ * by construction rather than by collapse, and a caller reaching here with no rows at all has
+ * skipped the floor above.
  */
 export function fieldCollapse(fields: FieldPopulation, floors: IngestFloors): string[] {
   if (fields.kept === 0) return [];
@@ -314,18 +321,6 @@ export async function ingestCombos(opts: {
       `prerequisites ${fields.withPrerequisites}/${fields.kept}`,
   );
 
-  const fieldBelow = fieldCollapse(fields, floors);
-  if (fieldBelow.length > 0) {
-    throw new Error(
-      `spellbook ingest REFUSED — a field collapsed, nothing written:\n  ` +
-        `${fieldBelow.join("\n  ")}\n` +
-        `The records survived the transform, so every floor above passed. What this catches is ` +
-        `upstream still sending variants while no longer populating a field the reasoning modal ` +
-        `draws — which would otherwise publish and leave every modal empty behind a green job. ` +
-        `The previous variants stand.`,
-    );
-  }
-
   if (variantRows.length < floors.variantsKept) {
     throw new Error(
       `spellbook ingest REFUSED — ${variantRows.length} variants kept, below the floor of ` +
@@ -336,6 +331,20 @@ export async function ingestCombos(opts: {
         `truncation guard cannot see.`,
     );
   }
+
+  const fieldBelow = fieldCollapse(fields, floors);
+  if (fieldBelow.length > 0) {
+    throw new Error(
+      `spellbook ingest REFUSED — a field collapsed, nothing written:\n  ` +
+        `${fieldBelow.join("\n  ")}\n` +
+        `The records survived the transform AND cleared the variant floor above, so every other ` +
+        `check passed. What this catches is ` +
+        `upstream still sending variants while no longer populating a field the reasoning modal ` +
+        `draws — which would otherwise publish and leave every modal empty behind a green job. ` +
+        `The previous variants stand.`,
+    );
+  }
+
 
   // ---- 7 · publish the VARIANTS, second transaction -----------------------------------
   await db.transaction(async (tx) => {
