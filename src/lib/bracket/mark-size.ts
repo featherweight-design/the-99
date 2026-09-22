@@ -26,7 +26,7 @@ export function markForm(px: number): MarkForm {
  * spelled slug costs: a rename ships as a silent 404, because the markup is identical whether or
  * not the art resolved.
  */
-const SLUG: Record<Bracket, string> = {
+export const SLUG: Record<Bracket, string> = {
   1: "bracket-1-exhibition",
   2: "bracket-2-core",
   3: "bracket-3-upgraded",
