@@ -44,6 +44,7 @@ const result = (over: Partial<SearchResult> & { name: string }): SearchResult =>
   imageUri: null,
   manaCost: null,
   flavorName: null,
+  facts: null,
   ...over,
 });
 

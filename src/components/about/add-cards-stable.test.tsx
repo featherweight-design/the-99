@@ -1,3 +1,4 @@
+import { EMPTY_NOTE_COUNTS } from "../../lib/bracket/card-note";
 import { render } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
 import { QuickAddBar } from "../decks/quick-add-bar";
@@ -49,6 +50,8 @@ describe("the add-cards figure's search", () => {
         initialQuery="so"
         initialOwnedOnly={false}
         search={search}
+        declaredBracket={null}
+        noteCounts={EMPTY_NOTE_COUNTS}
       />,
     );
     await new Promise((resolve) => setTimeout(resolve, 900));

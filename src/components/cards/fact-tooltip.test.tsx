@@ -2,7 +2,7 @@ import { act, fireEvent, render, screen, waitFor } from "@testing-library/react"
 import { afterEach, describe, expect, it, vi } from "vitest";
 
 import { cardMarkCopy } from "../../lib/copy/card-mark";
-import { FactTooltip, OPEN_DELAY_MS } from "./fact-tooltip";
+import { FactTooltip, OPEN_DELAY_MS, ROOM_ABOVE_PX } from "./fact-tooltip";
 
 /** jsdom has no matchMedia, so each case states the pointer it is testing. */
 function pointer(fine: boolean) {
@@ -153,5 +153,40 @@ describe("FactTooltip", () => {
     await act(async () => { media.set(true); });
     await new Promise((r) => setTimeout(r, 50));
     expect(screen.queryByText(cardMarkCopy.tooltip.gameChanger)).toBeNull();
+  });
+});
+
+// The bubble is absolute inside its mark, so a scroller around the mark clips whatever leaves
+// its box. Two hosts draw marks in one — the quick-add results and the top-off list — and on
+// the first row there the bubble drawn ABOVE was cut off. jsdom lays nothing out, so the
+// geometry is stated: the scroller's top edge, and the mark's.
+describe("FactTooltip — the side it opens on", () => {
+  function mount(markTop: number) {
+    pointer(true);
+    render(
+      <div data-testid="scroller" style={{ overflowY: "auto" }}>
+        <FactTooltip fact="gameChanger"><i data-testid="mark" /></FactTooltip>
+      </div>,
+    );
+    const scroller = screen.getByTestId("scroller");
+    const anchor = screen.getByTestId("mark").parentElement as HTMLElement;
+    vi.spyOn(scroller, "getBoundingClientRect").mockReturnValue({ top: 100 } as DOMRect);
+    vi.spyOn(anchor, "getBoundingClientRect").mockReturnValue({ top: markTop } as DOMRect);
+    fireEvent.pointerEnter(screen.getByTestId("mark"));
+  }
+  const bubble = () => screen.getByText(cardMarkCopy.tooltip.gameChanger);
+
+  it("opens below a mark too near the top of the box that would clip it", async () => {
+    mount(100 + 23);
+    await waitFor(() => expect(bubble()).toHaveAttribute("data-side", "below"), {
+      timeout: OPEN_DELAY_MS + 500,
+    });
+  });
+
+  it("opens above when the room is there", async () => {
+    mount(100 + ROOM_ABOVE_PX + 1);
+    await waitFor(() => expect(bubble()).toHaveAttribute("data-side", "above"), {
+      timeout: OPEN_DELAY_MS + 500,
+    });
   });
 });

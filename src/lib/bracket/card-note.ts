@@ -11,9 +11,8 @@
 // note prints the card fact and the rules fact and stops. It never falls back to the last
 // determined verdict, which may be four edits old with nothing on the row to say so.
 //
-// NO COMPONENT MAY RE-DERIVE THIS. Two surfaces draw the note today — the Consider tile and
-// the top-off row — and the quick-add result row joins them in PR 8c. A second copy of the
-// order, the cap or the declared/undeclared branch in any of them is how `probe:build-from`
+// NO COMPONENT MAY RE-DERIVE THIS. Three surfaces draw the note — the Consider tile, the
+// top-off row and the quick-add result row. A second copy of the order, the cap or the declared/undeclared branch in any of them is how `probe:build-from`
 // spent three rounds drifting from `loadAvailability`.
 //
 // STATE COVERAGE. `STATES-card-note.md` §A names n1-n9; this covers n1-n7 and n9. n8 — the
@@ -88,9 +87,24 @@ function limitedBracket(declared: Bracket | null): 1 | 2 | 3 | null {
   return declared === 1 || declared === 2 || declared === 3 ? declared : null;
 }
 
+/**
+ * The four facts a note reads — narrower than `CandidateFacts` on purpose.
+ *
+ * `completesCombos` is not among them: n8 is not drawn (see the header), so the note never
+ * reads it, and requiring it would make every host carry a deck-shaped combo read to draw a
+ * sentence about the CARD. The quick-add row is the case that proves it: its facts come off
+ * the search's own row, per keystroke, and a completion is a question about the deck that
+ * `useDeckComboMap` answers once per panel instead. `CandidateFacts` satisfies this shape, so
+ * the two pool-fed hosts pass what they already hold.
+ */
+export type CardNoteFacts = Pick<
+  CandidateFacts,
+  "gameChanger" | "massLandDenial" | "extraTurn" | "tutor"
+>;
+
 export type CardNoteInput = {
   /** Null where the facts read failed or the card carries none. Draws nothing either way. */
-  facts: CandidateFacts | null;
+  facts: CardNoteFacts | null;
   /** `decks.declared_bracket`. Null is UNANSWERED and means nothing else. */
   declared: Bracket | null;
   counts: NoteCounts;

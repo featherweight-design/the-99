@@ -23,12 +23,13 @@
 
 import {
   cardNoteSentences,
+  type CardNoteFacts,
   type NoteCounts,
   type NoteDensity,
 } from "../../lib/bracket/card-note";
 import { cardNote } from "../../lib/copy/card-note";
 import type { Bracket } from "../../lib/bracket/types";
-import type { CandidateFacts } from "../../lib/bracket/delta";
+
 
 /** The body's type per density. The label is 9px mono at both. */
 const BODY: Record<NoteDensity, string> = {
@@ -37,7 +38,7 @@ const BODY: Record<NoteDensity, string> = {
 };
 
 export type CardNoteProps = {
-  facts: CandidateFacts | null;
+  facts: CardNoteFacts | null;
   /** The deck's LIVE declaration. Null is unanswered, and draws no deck clause. */
   declared: Bracket | null;
   /** What the deck's list already holds of each kind — the ordinals' denominator. */

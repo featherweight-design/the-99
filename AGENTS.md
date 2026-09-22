@@ -1211,8 +1211,9 @@ Package manager is **pnpm** (pinned via `packageManager` in package.json) — ne
   Two mutations fail it: the rows reporting no movement, and the edge flip removed. Makes no
   writes; point it at `local-dev`.
 
-- `pnpm probe:card-note` measures the card note on both of the deck page's add surfaces — the
-  Consider tile and the top-off row — at 1300x900 and 390x844. Thirty-eight checks.
+- `pnpm probe:card-note` measures the card note on all three of the deck page's add surfaces —
+  the Consider tile, the top-off row and the quick-add result row — at 1300x900 and 390x844.
+  Seventy-one checks.
 
   Four of its rulings are facts about laid-out geometry and jsdom produces none of them. **The
   note is INSIDE the row's box**: drawn after the box instead, the markup is identical element
@@ -1262,8 +1263,25 @@ Package manager is **pnpm** (pinned via `packageManager` in package.json) — ne
   sentences dropped from `rowLabel`, the empty-note guard removed (which draws a reserved box),
   the note moved outside the row's box, the row's marks mounted once outside the label (which
   reproduces the phone defect exactly), the key unmounted, and the tile's mark made `silent`.
-  `mt-auto` reverted on the tile's Add reads the 91px spread. It makes no writes; point it at
-  `local-dev`.
+  `mt-auto` reverted on the tile's Add reads the 91px spread.
+
+  **The quick-add row is searched into existence.** It types `tutor` with `Owned only` turned
+  OFF — through the hidden input with `force`, since the drawn switch intercepts a pointer —
+  because a search restricted to what the account owns can return nothing the note has anything
+  to say about. It is measured BEFORE the top-off list opens, because at 390 an open list takes
+  the dock's slot and hides the bar. Its note is FLUSH with the row's content edge — §C gives the
+  name-column indent to the top-off row alone — and the first build got that wrong by analogy
+  with the host beside it. Two more mutations fail it: that indent put back (label at 53px
+  against a row line at 11px), and `grow` put on the name inside its line, which puts the mark
+  121px past the end of `Mystical Tutor`. Its last check hovers the FIRST row's mark and reads the
+  tooltip against the results scroller, because the bubble is absolute inside the mark and the
+  results are their own `overflow-y-auto` box — `FactTooltip` now opens below when the room above
+  is short. The first row is reached by SEARCHING it there (`mystical tutor`), never by scrolling:
+  the `tutor` list is too short to scroll, and the first version read a bubble 117px clear of the
+  edge and passed a build that clips. With the flip removed it reads -2px. A first try at that second one measured nothing
+  and passed, because the mutation was written as a `style` prop on an element that already had
+  one — the later prop wins in JSX, so the build under test was the working one. It makes no
+  writes; point it at `local-dev`.
 
 - `pnpm probe:scroll-lock` presses every overlay the app draws over a scrim — the filter
   sheets on `/collection`, `/commanders`, `/discover`, `/decks` and a set page, the

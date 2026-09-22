@@ -1364,6 +1364,8 @@ export function BuilderShell({
                   deckOracleIds={deckOracleIds}
                   commanderShortName={commanderShortName}
                   commanderOracleId={deck.commander.oracleId}
+                  declaredBracket={declaration.declared}
+                  noteCounts={deck.noteCounts}
                 />
               </div>
             )}

@@ -3,6 +3,7 @@
 // file because the assertion is the same across surfaces; only the component
 // under it changes.
 
+import { EMPTY_NOTE_COUNTS } from "../../lib/bracket/card-note";
 import { act, fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
 import type { BrowseCard } from "../../lib/collection/browse";
@@ -149,6 +150,8 @@ describe("deck card-detail triggers", () => {
         deckOracleIds={[]}
         commanderShortName="Muldrotha"
         commanderOracleId="cmd-muldrotha"
+        declaredBracket={null}
+        noteCounts={EMPTY_NOTE_COUNTS}
       />,
     );
     fireEvent.change(screen.getByRole("combobox"), { target: { value: "sol" } });

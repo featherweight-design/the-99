@@ -1,5 +1,5 @@
-// The card note, measured in a real browser at 1300x900 and 390x844, on both of the deck
-// page's own add surfaces — the Consider tile and the top-off row.
+// The card note, measured in a real browser at 1300x900 and 390x844, on all three of the deck
+// page's add surfaces — the Consider tile, the top-off row and the quick-add result row.
 //
 // FOUR RULINGS HERE ARE FACTS ABOUT LAID-OUT GEOMETRY, and jsdom produces none of them.
 //
@@ -40,7 +40,7 @@
 import { clerkSetup, setupClerkTestingToken } from "@clerk/testing/playwright";
 import { chromium } from "playwright";
 import { requireEnv } from "./lib/env.mjs";
-import { onPage } from "./lib/surface.mjs";
+import { onPage, onPageRole } from "./lib/surface.mjs";
 
 const { E2E_AUDIT_USER_EMAIL: EMAIL } = requireEnv(["E2E_AUDIT_USER_EMAIL", "CLERK_SECRET_KEY"]);
 const BASE = process.env.PROBE_BASE ?? "http://localhost:3000";
@@ -486,6 +486,178 @@ async function run() {
               .every((w) => tileKey.includes(w)),
           tileKey === null ? "no key on the panel" : "all four words present",
         );
+      }
+
+      // ── The quick-add result row (PR 8c) ────────────────────────────────
+      //
+      // Measured BEFORE the top-off list opens, because at 390 an open list takes the dock's
+      // slot and the bar is hidden. Searched with `Owned only` off and for `tutor`, so the
+      // results are cards the note has something to say about whatever the account owns: a
+      // run whose results carry no fact reports that it measured nothing.
+      const deckTabForBar = onPage(page, "#tab-deck").first();
+      if ((await deckTabForBar.count()) > 0) {
+        await deckTabForBar.click();
+        await page.waitForTimeout(800);
+      }
+      const bar = onPage(page, 'input[role="combobox"]').first();
+      if ((await bar.count()) === 0) {
+        report(`${width}px · the quick-add field`, false, "not on the page — NOT a pass");
+      } else {
+        await bar.focus();
+        const owned = onPageRole(page, "checkbox", /only cards you own/i).first();
+        // `force`, because the input is the visually hidden peer of the drawn switch — the
+        // switch's own box is what intercepts a pointer.
+        if ((await owned.count()) > 0) await owned.setChecked(false, { force: true });
+        await bar.fill("tutor");
+        await page
+          .locator('main [role="option"]')
+          .first()
+          .waitFor({ state: "attached", timeout: 15_000 })
+          .catch(() => {});
+        await page.waitForTimeout(800);
+
+        const barNotes = await page.evaluate(READ_NOTES, '[role="option"]');
+        checkNotes(`${width}px · quick-add row`, barNotes, { bodyPx: 12.5, density: "row" });
+
+        // The row's own line is its first child — the same reading `READ_BOXES` makes for
+        // the top-off row, so the two hosts are held to one rule.
+        checkNoReservedHeight(
+          `${width}px · quick-add row`,
+          await page.evaluate(READ_BOXES, '[role="option"]'),
+        );
+
+        const barGeometry = await page.evaluate(() => {
+          const out = { indents: [], marks: [] };
+          for (const option of document.querySelectorAll('main [role="option"]')) {
+            const name = option.querySelector('[data-testid="search-row-name"]');
+            if (!name) continue;
+            const box = option.getBoundingClientRect();
+            // The note's LABEL against the row line's own left edge — both laid out, neither a
+            // constant. This host is NOT indented (§C gives the indent to the top-off row
+            // alone), so the label starts where the row's first line does.
+            const label = option.querySelector('[data-testid="card-note"] p');
+            if (label) {
+              out.indents.push({
+                label: Math.round(label.getBoundingClientRect().left - box.left),
+                edge: Math.round(option.firstElementChild.getBoundingClientRect().left - box.left),
+              });
+            }
+            const mark = option.querySelector("[data-testid^='card-fact-']");
+            if (mark) {
+              // The text's own end, via a Range — see the top-off row's reading below for why
+              // an element's rect is not the measure.
+              const range = document.createRange();
+              range.selectNodeContents(name);
+              const text = range.getBoundingClientRect();
+              const m = mark.getBoundingClientRect();
+              out.marks.push({
+                sameLine: Math.abs(m.top + m.height / 2 - (text.top + text.height / 2)) < 6,
+                px: Math.round(m.width),
+                gap: Math.round(m.left - text.right),
+                name: (name.textContent ?? "").trim(),
+              });
+            }
+          }
+          return out;
+        });
+
+        if (barGeometry.indents.length > 0) {
+          const off = barGeometry.indents.filter((i) => Math.abs(i.label - i.edge) > 1);
+          report(
+            `${width}px · quick-add row · the note is flush with the row's content edge`,
+            off.length === 0,
+            `label at ${[...new Set(barGeometry.indents.map((i) => i.label))].join(", ")}px · ` +
+              `row line at ${[...new Set(barGeometry.indents.map((i) => i.edge))].join(", ")}px`,
+          );
+        }
+
+        if (barGeometry.marks.length === 0) {
+          report(
+            `${width}px · quick-add row · a marked row`,
+            false,
+            "none among the results — NOT a pass, the check has no subject",
+          );
+        } else {
+          const bad = barGeometry.marks.filter(
+            (m) => !m.sameLine || m.px !== 16 || m.gap < 0 || m.gap > 24,
+          );
+          const first = barGeometry.marks[0];
+          report(
+            `${width}px · quick-add row · the mark is 16px, on the name's line and beside its text`,
+            bad.length === 0,
+            bad.length === 0
+              ? `${barGeometry.marks.length} marked · ${first.gap}px past "${first.name}"`
+              : `${bad[0].px}px · ${bad[0].gap}px past "${bad[0].name}" · same line: ${bad[0].sameLine}`,
+          );
+        }
+
+        // THE MARK'S TOOLTIP IS NOT CLIPPED BY THE RESULTS SCROLLER. The bubble is absolute
+        // inside its mark and the results are their own `overflow-y-auto` box, so a bubble
+        // drawn above a mark on the list's FIRST row is cut off by that box's top edge.
+        //
+        // The first row is reached by SEARCHING it there — `mystical tutor` returns one card,
+        // a game changer — never by scrolling: the `tutor` list is too short to scroll, so a
+        // scroll to the marked row moved nothing and the first version of this check read a
+        // bubble 117px clear of the edge and passed a build that clips. Desktop only: a coarse
+        // pointer draws no tooltip at all.
+        if (width === 1300) {
+          await bar.fill("mystical tutor");
+          await page.waitForTimeout(1_500);
+          const firstMark = onPage(page, '[role="option"]').first().locator("[data-testid^='card-fact-']").first();
+          if ((await firstMark.count()) === 0) {
+            report(`${width}px · quick-add row · a marked FIRST row`, false, "none — NOT a pass");
+          } else {
+            await firstMark.hover();
+            await page.waitForTimeout(700);
+            const tip = await page.evaluate(() => {
+              const option = document.querySelector('main [role="option"]');
+              const bubble = option?.querySelector("[data-side]");
+              if (!option || !bubble) return null;
+              let scroller = option.parentElement;
+              while (scroller && getComputedStyle(scroller).overflowY === "visible") {
+                scroller = scroller.parentElement;
+              }
+              const b = bubble.getBoundingClientRect();
+              const s = scroller.getBoundingClientRect();
+              return {
+                side: bubble.getAttribute("data-side"),
+                top: Math.round(b.top - s.top),
+                bottom: Math.round(s.bottom - b.bottom),
+              };
+            });
+            report(
+              `${width}px · quick-add row · the first row's mark tooltip is inside the scroller`,
+              tip !== null && tip.top >= 0 && tip.bottom >= 0,
+              tip === null
+                ? "no bubble opened — NOT a pass"
+                : `opened ${tip.side} · ${tip.top}px under the scroller's top · ${tip.bottom}px above its foot`,
+            );
+            await page.mouse.move(0, 0);
+          }
+        }
+
+        // Spoken in the OPTION's own name, which is where a listbox option is heard.
+        const barSpoken = await page.evaluate(() =>
+          [...document.querySelectorAll('main [role="option"]')]
+            .filter((o) => o.querySelector('[data-testid="card-note"]'))
+            .map((o) => {
+              const note = o.querySelector('[data-testid="card-note"]');
+              const body = note.querySelectorAll("p")[1];
+              return {
+                hidden: note.getAttribute("aria-hidden") === "true",
+                inName: (o.getAttribute("aria-label") ?? "").includes((body?.textContent ?? "").trim()),
+              };
+            }),
+        );
+        report(
+          `${width}px · quick-add row · the drawn note is hidden and spoken in the option's name`,
+          barSpoken.length > 0 && barSpoken.every((s) => s.hidden && s.inName),
+          `${barSpoken.filter((s) => s.hidden && s.inName).length} of ${barSpoken.length}`,
+        );
+
+        await bar.fill("");
+        await page.keyboard.press("Escape");
+        await page.waitForTimeout(400);
       }
 
       // ── The top-off row ──────────────────────────────────────────────────

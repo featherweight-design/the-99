@@ -6,7 +6,7 @@
 
 import type { CardFact } from "../copy/card-mark";
 import type { CardBracketFlags } from "./flags-read";
-import type { CandidateFacts } from "./delta";
+import type { CardNoteFacts } from "./card-note";
 
 /**
  * `undefined` when the card carries nothing, never `[]`.
@@ -43,7 +43,7 @@ export function factsFor(
  * glyph is that round's design, and `CARD_FACTS` is the shipped vocabulary. The note says the
  * word in prose until the glyph exists.
  */
-export function factsFromCandidate(facts: CandidateFacts | null): CardFact[] | undefined {
+export function factsFromCandidate(facts: CardNoteFacts | null): CardFact[] | undefined {
   if (!facts) return undefined;
   return factsFor(facts.gameChanger, {
     massLandDenial: facts.massLandDenial,

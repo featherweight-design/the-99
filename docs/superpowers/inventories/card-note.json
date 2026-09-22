@@ -1,10 +1,10 @@
 {
   "feature": "The card note and its marks — what a candidate card IS, on the deck's own add surfaces",
-  "note": "TWO SURFACES, TWO DENSITIES, and both are on `/decks/[id]`. The Consider tile draws the clause in its foot; the top-off row draws the sentence below its own line. Both render the same `CardNote`, which is the point of the `shares` block below: the rule that picks the sentences lives in `src/lib/bracket/card-note.ts` and no host may re-derive it.\n\nTHE THIRD HOST NAMED BY ROUND 4 — the quick-add result row — IS NOT HERE, and its absence is a scope decision rather than an omission. It is fed by a live per-keystroke search action that loads no facts at all, where the two rows below are fed by 8a's one batched pool read. That is PR 8c, named in the surface plan.\n\nPRECONDITION, and it decides whether this sheet proves anything: the deck's pool must hold a card that CARRIES a fact. Most cards carry none — that is the design, and the row draws nothing for them — so a sheet taken on an arbitrary deck photographs no note and reads as coverage while proving nothing. `CARD_NOTE_DECK` must be a deck with open slots whose top-off pool and Consider shelves both reach a marked or tutor card. Measured 2026-09-22 on `local-dev`: the probe read 3 notes on the Consider shelves and 17 on the top-off list at both widths, so such a deck is easy to find — but it is not every deck.\n\nThe Consider row reaches its surface by PRESSING the tab, not by a URL: the panel is component state, and a URL sweep cannot see a surface reached by a press.\n\nThe top-off row needs its door pressed too, and the door's spoken name carries the deck's own shortfall figure — so the click matches the stable head of that sentence rather than the whole of it.\n\nEVERY ROW SCROLLS A NOTE INTO VIEW as its last step, and that is the half that makes this sheet evidence rather than decoration. Most cards carry no fact, so the first screen of either surface is overwhelmingly rows and tiles with nothing in the slot: the first run of this inventory photographed four cells with not one note in them, on a build the probe had just measured 3 notes and 17 notes on. A `scrollTo` on the note's own handle also FAILS the cell when nothing draws one, so a build that lost the feature produces a hole in the sheet rather than a picture of the surface without it.\n\nTHE MARKS SHIP WITH THE NOTE, and the sheet photographs the NOTE rather than the mark. §C2 puts the three fact glyphs on both of these surfaces, and at the default shelf cap every tile on the fixture deck is a tutor — which carries no glyph by Round 2's design, so no shelf's first screen holds one. Reaching a marked tile takes expanding every shelf, and `click` here resolves with `.first()` (`contact-sheet.mjs`), so one step expands one shelf and a `scrollTo` on the glyph would fail the cell on a working build. `probe:card-note` presses every `Show all` and asserts the mark's size, its line and its spoken name at both widths instead — which is the stronger reading, and the sheet keeps its subject.\n\nTHE KEY HAS NO ROW OF ITS OWN, and that is the `shares` block's doing rather than an omission: `check:shared` asks every row's `view` for the named binding, and the key renders `MarkKey` rather than `CardNote`. A row for it would have to claim a component it does not use. It needs no row in any case — it sits above the shelves on the same route the Consider cell photographs, and `probe:card-note` asserts all four of its words at both widths, which is the stronger reading of a gloss than a picture of it.",
+  "note": "THREE HOSTS, TWO DENSITIES, and all three are on `/decks/[id]`. The Consider tile draws the clause in its foot; the top-off row and the quick-add result row draw the sentence below their own line. Both render the same `CardNote`, which is the point of the `shares` block below: the rule that picks the sentences lives in `src/lib/bracket/card-note.ts` and no host may re-derive it.\n\nTHE THIRD HOST — the quick-add result row — joined in PR 8c. Its facts come off the search's own row rather than 8a's pool read, so its cell has a precondition of its own: it types `tutor` with `Owned only` turned off, because a search restricted to the account's own cards may return nothing the note has anything to say about, and the cell's `scrollTo` would then fail on a working build.\n\nPRECONDITION, and it decides whether this sheet proves anything: the deck's pool must hold a card that CARRIES a fact. Most cards carry none — that is the design, and the row draws nothing for them — so a sheet taken on an arbitrary deck photographs no note and reads as coverage while proving nothing. `CARD_NOTE_DECK` must be a deck with open slots whose top-off pool and Consider shelves both reach a marked or tutor card. Measured 2026-09-22 on `local-dev`: the probe read 3 notes on the Consider shelves and 17 on the top-off list at both widths, so such a deck is easy to find — but it is not every deck.\n\nThe Consider row reaches its surface by PRESSING the tab, not by a URL: the panel is component state, and a URL sweep cannot see a surface reached by a press.\n\nThe top-off row needs its door pressed too, and the door's spoken name carries the deck's own shortfall figure — so the click matches the stable head of that sentence rather than the whole of it.\n\nEVERY ROW SCROLLS A NOTE INTO VIEW as its last step, and that is the half that makes this sheet evidence rather than decoration. Most cards carry no fact, so the first screen of either surface is overwhelmingly rows and tiles with nothing in the slot: the first run of this inventory photographed four cells with not one note in them, on a build the probe had just measured 3 notes and 17 notes on. A `scrollTo` on the note's own handle also FAILS the cell when nothing draws one, so a build that lost the feature produces a hole in the sheet rather than a picture of the surface without it.\n\nTHE MARKS SHIP WITH THE NOTE, and the sheet photographs the NOTE rather than the mark. §C2 puts the three fact glyphs on both of these surfaces, and at the default shelf cap every tile on the fixture deck is a tutor — which carries no glyph by Round 2's design, so no shelf's first screen holds one. Reaching a marked tile takes expanding every shelf, and `click` here resolves with `.first()` (`contact-sheet.mjs`), so one step expands one shelf and a `scrollTo` on the glyph would fail the cell on a working build. `probe:card-note` presses every `Show all` and asserts the mark's size, its line and its spoken name at both widths instead — which is the stronger reading, and the sheet keeps its subject.\n\nTHE KEY HAS NO ROW OF ITS OWN, and that is the `shares` block's doing rather than an omission: `check:shared` asks every row's `view` for the named binding, and the key renders `MarkKey` rather than `CardNote`. A row for it would have to claim a component it does not use. It needs no row in any case — it sits above the shelves on the same route the Consider cell photographs, and `probe:card-note` asserts all four of its words at both widths, which is the stronger reading of a gloss than a picture of it.",
   "shares": {
     "module": "src/components/decks/card-note.tsx",
     "binding": "CardNote",
-    "note": "Both hosts render it as-is, passing only their own density. A host drawing its own version of the slot is how a phone diverges from a desktop and how the cap drifts from the rule, so the check is asked of each host file directly."
+    "note": "Every host render it as-is, passing only their own density. A host drawing its own version of the slot is how a phone diverges from a desktop and how the cap drifts from the rule, so the check is asked of each host file directly."
   },
   "rows": [
     {
@@ -43,6 +43,31 @@
         },
         {
           "scrollTo": "[data-testid=\"card-note\"]",
+          "settle": 800
+        }
+      ]
+    },
+    {
+      "id": "quick-add-row",
+      "label": "/decks/[id] — the quick-add result row: the mark after the name, the sentence below the row's line",
+      "view": "src/components/decks/quick-add-bar.tsx",
+      "steps": [
+        {
+          "goto": "/decks/${CARD_NOTE_DECK}",
+          "wait": "main, [role=main], h1",
+          "settle": 3500
+        },
+        {
+          "click": "label:has(input[aria-label=\"Show only cards you own\"])",
+          "settle": 500
+        },
+        {
+          "fill": "input[role=\"combobox\"]",
+          "text": "tutor",
+          "settle": 2500
+        },
+        {
+          "scrollTo": "[role=\"option\"] [data-testid=\"card-note\"]",
           "settle": 800
         }
       ]
