@@ -1,13 +1,12 @@
 import type { ReactNode } from "react";
 
-import { CardFactMark } from "../cards/card-fact-mark";
-import { ComboGlyph } from "../cards/combo-glyph";
 import { climb } from "../../lib/bracket/climb";
 import type { Bracket, BracketLimitReport, BracketVerdict, RuleId } from "../../lib/bracket/types";
 import { upgradePath, type UpgradePath } from "../../lib/bracket/upgrade";
 import type { DeckProfile } from "../../lib/profile/types";
 import { BRACKET_NAMES, deckAnalysisCopy, nameList } from "../../lib/copy/deck-analysis";
 import { BracketMark, bracketInk } from "./bracket-mark";
+import { FindingMark } from "./finding-mark";
 
 /**
  * "Where you sit, and what moves you" — the bracket below, yours, and the one above.
@@ -281,7 +280,7 @@ function Allowances({ bracket, verdict }: { bracket: Bracket; verdict: BracketVe
             different mark depending on which list a player was looking at. The canvas draws 12
             here; that ruling supersedes it.
           */}
-          <RuleMark rule={row.rule} />
+          <FindingMark id={row.rule} />
           <span className="font-mono text-[10.5px]" style={{ color: ink }}>
             {copy.ruleNames[row.rule]}
           </span>
@@ -295,18 +294,6 @@ function Allowances({ bracket, verdict }: { bracket: Bracket; verdict: BracketVe
       ))}
     </span>
   );
-}
-
-/**
- * The fact mark for a bracket rule.
- *
- * `twoCardCombos` takes `ComboGlyph` rather than `CardFactMark`: the lemniscate is a fifth fact
- * with its own module, and `CardFact` does not name it. Both draw at `CARD_FACT_MARK_PX`.
- */
-function RuleMark({ rule }: { rule: RuleId }) {
-  if (rule === "twoCardCombos") return <ComboGlyph />;
-  const fact = rule === "gameChangers" ? "gameChanger" : rule === "massLandDenial" ? "massLandDenial" : "extraTurns";
-  return <CardFactMark fact={fact} silent />;
 }
 
 /**

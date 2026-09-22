@@ -392,6 +392,18 @@ function identityName(id: string[]): string {
   return id.join("/");
 }
 
+/**
+ * How far below the top a STACKED card sheet starts on the phone: 96px, drawn by this class.
+ *
+ * 96 is the canvas's figure (`The 99 - Verdict Addendum.dc.html` §5a): the receipt sits at 52
+ * and the card sheet 44 below it, which is the receipt's header row — its glyph, its title and
+ * its count, so the reader can read what they will land on. The addendum's prose says "12px
+ * lower", which leaves a hairline of chrome and no header; the drawing and the prose's own
+ * reason ("a visible strip of the receipt's own chrome") both say 44.
+ */
+const STACKED_SHEET =
+  "max-md:!h-[calc(100%-96px)] max-md:rounded-t-[14px] max-md:border-t max-md:border-[color:var(--border-strong)]";
+
 export function CardModal({
   card,
   position,
@@ -406,8 +418,21 @@ export function CardModal({
   deckHolds = false,
   onProxyWrite,
   onSelectCard,
+  stacked = false,
 }: {
   card: BrowseCard;
+  /**
+   * A sheet is open UNDER this one — the Analysis tab's receipt, whose addendum ruling is that
+   * a card opened from it stacks rather than replaces.
+   *
+   * Two changes, both so a reader can see what a dismissal lands on before making it. On the
+   * phone the sheet starts 96px from the top, leaving the receipt's own header visible
+   * above it — the canvas's 96px against the receipt's 52. And the backdrop is not drawn: the
+   * receipt has already dimmed the page, and a second wash over it would hide the one strip of
+   * chrome this offset exists to show. Pressing that strip still dismisses THIS sheet, because
+   * the backdrop element is still there and still takes the press.
+   */
+  stacked?: boolean;
   /** The deck this card was opened from, which scopes the proxy control. Null
    *  everywhere but the deck page — see `CardDetailProvider.deckId`. */
   deckId?: string | null;
@@ -1309,10 +1334,16 @@ export function CardModal({
     // Fixed backdrop wrapper — §Backdrop at 0.72, mixed against the canvas so the
     // dim tracks the theme; blurred collection behind is decorative and out-of-scope
     <div
-      className="fixed inset-0 z-50 flex items-center justify-center"
+      className={
+        "fixed inset-0 z-50 flex items-center justify-center"
+        + (stacked ? " max-md:items-end" : "")
+      }
       role="presentation"
       onClick={onClose}
-      style={{ background: "color-mix(in oklab, var(--bg) 72%, transparent)" }}
+      style={{
+        background: stacked ? "transparent" : "color-mix(in oklab, var(--bg) 72%, transparent)",
+      }}
+      data-stacked={stacked || undefined}
     >
       <div
         ref={dialogRef}
@@ -1331,7 +1362,7 @@ export function CardModal({
         // is the fixed backdrop, so the layer would cover the viewport — a second
         // full-screen thing over a dialog over a backdrop, and clicks outside the
         // dialog would dismiss the zoom instead of reaching the backdrop.
-        className="relative flex flex-col overflow-hidden w-full h-full md:h-[620px] md:max-h-[85vh] md:w-[820px] md:flex-row md:rounded-2xl bg-[color:var(--surface-sunken)] md:bg-[color:var(--surface-rail)] md:[border:1px_solid_var(--border-strong)]"
+        className={(stacked ? STACKED_SHEET + " " : "") + "relative flex flex-col overflow-hidden w-full h-full md:h-[620px] md:max-h-[85vh] md:w-[820px] md:flex-row md:rounded-2xl bg-[color:var(--surface-sunken)] md:bg-[color:var(--surface-rail)] md:[border:1px_solid_var(--border-strong)]"}
         style={{
           boxShadow: "var(--modal-shadow)",
         }}

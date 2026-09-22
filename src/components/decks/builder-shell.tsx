@@ -282,6 +282,16 @@ export function BuilderShell({
   // quantity-4 row is one printed card (ruling 5).
   // One derivation, shared with its test — see `proxiedCardCount`.
   const proxiedCount = proxiedCardCount(cards, deck.commander, deck.partner);
+  // What a receipt tile draws for each card the findings can name: its own printed name and the
+  // art of the copy this reader owns. Every one of them is a row here or a commander, so the map
+  // is complete by construction and the profile never has to carry a printing.
+  const findingArt = useMemo(() => {
+    const art = new Map<string, { name: string; imageUri: string | null }>();
+    for (const c of [...cards, deck.commander, ...(deck.partner ? [deck.partner] : [])]) {
+      art.set(c.oracleId, { name: printedNameOf({ name: c.name, printedName: c.printedName ?? null }), imageUri: c.imageUri ?? null });
+    }
+    return art;
+  }, [cards, deck.commander, deck.partner]);
   // What this deck HOLDS, which is what the sheet's proxy control is scoped to.
   // Both commanders count, as they do in the server's own membership test — and
   // the OPTIMISTIC list, so a card just added can be printed without a reload.
@@ -1047,6 +1057,7 @@ export function BuilderShell({
                   state={profile.state}
                   onRequest={profile.request}
                   synopsis={<SynopsisSlot />}
+                  art={findingArt}
                 >
                 {/* The strip in its new home. It is REAL analysis content rather than a
                     placeholder — Round 0 moves it here on purpose — which is why this panel

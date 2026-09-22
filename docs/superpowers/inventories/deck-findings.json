@@ -1,0 +1,184 @@
+{
+  "feature": "Deck analysis \u2014 the findings and their receipt (PR 4c)",
+  "note": "\"What is in this deck\": five findings, the receipt modal behind each one that has cards, the card modal stacked on it, and the provenance panel. Same preconditions as `deck-verdict.json`, and read that file's note first: the server needs ANALYSIS_TAB_ENABLED=true, every row reaches the tab by a PRESS, and every deck id must belong to the signed-in account.\n\nTWO DECKS. FINDINGS_DECK is `d0000000-0000-4000-8000-00000000cafe` on `local-dev`, which holds game changers and tutors and draws the card-list receipt. COMBO_DECK is `d0000000-0000-4000-8000-00000000c0b0`, built for this sheet on 2026-09-22 because no deck the e2e account owned assembled a combo, so the combo body had no cell: Kess, Dissident Mage leading Mirror of Fate and Thassa's Oracle, Spellbook variant `1164-1295`. It is trivial to rebuild: the deck needs its commander and those two `deck_cards` rows, nothing more.\n\nTHE STACKED ROW is the one that matters at 390. On the phone the card sheet starts at 96px and the receipt's header row must be whole above it; `probe:verdict-findings` asserts that by geometry, and this cell is the picture of the same thing.\n\nNO `shares` BLOCK: the findings and the receipt are mounted by `analysis-panel.tsx` alone.",
+  "rows": [
+    {
+      "id": "findings",
+      "label": "/decks/[id] Analysis \u2014 five findings: tiles at desktop, rows at 390",
+      "view": "src/components/decks/findings-block.tsx",
+      "steps": [
+        {
+          "goto": "/decks/${FINDINGS_DECK}",
+          "wait": "[role=tablist]",
+          "settle": 1500
+        },
+        {
+          "clickRole": "tab",
+          "name": "Analysis",
+          "settle": 600
+        },
+        {
+          "clickRole": "button",
+          "name": "Analyze this deck",
+          "settle": 400
+        },
+        {
+          "wait": "[data-testid='findings-block']",
+          "settle": 1200
+        },
+        {
+          "scrollTo": "[data-testid='findings-block']",
+          "settle": 350
+        }
+      ]
+    },
+    {
+      "id": "receipt-cards",
+      "label": "/decks/[id] Analysis \u2014 the receipt, card-list body",
+      "view": "src/components/decks/receipt-modal.tsx",
+      "steps": [
+        {
+          "goto": "/decks/${FINDINGS_DECK}",
+          "wait": "[role=tablist]",
+          "settle": 1500
+        },
+        {
+          "clickRole": "tab",
+          "name": "Analysis",
+          "settle": 600
+        },
+        {
+          "clickRole": "button",
+          "name": "Analyze this deck",
+          "settle": 400
+        },
+        {
+          "wait": "[data-testid='findings-block']",
+          "settle": 1200
+        },
+        {
+          "clickRole": "button",
+          "name": "Show the \\d+ game changers in this deck",
+          "settle": 400
+        },
+        {
+          "wait": "[data-testid='receipt-modal']",
+          "settle": 900
+        }
+      ]
+    },
+    {
+      "id": "receipt-stacked",
+      "label": "/decks/[id] Analysis \u2014 a card opened from the receipt, stacked on it",
+      "view": "src/components/decks/receipt-modal.tsx",
+      "steps": [
+        {
+          "goto": "/decks/${FINDINGS_DECK}",
+          "wait": "[role=tablist]",
+          "settle": 1500
+        },
+        {
+          "clickRole": "tab",
+          "name": "Analysis",
+          "settle": 600
+        },
+        {
+          "clickRole": "button",
+          "name": "Analyze this deck",
+          "settle": 400
+        },
+        {
+          "wait": "[data-testid='findings-block']",
+          "settle": 1200
+        },
+        {
+          "clickRole": "button",
+          "name": "Show the \\d+ game changers in this deck",
+          "settle": 400
+        },
+        {
+          "wait": "[data-testid='receipt-modal']",
+          "settle": 500
+        },
+        {
+          "click": "[data-testid='receipt-tile']",
+          "settle": 400
+        },
+        {
+          "wait": "[aria-labelledby='card-modal-title']",
+          "settle": 1200
+        }
+      ]
+    },
+    {
+      "id": "receipt-combo",
+      "label": "/decks/[id] Analysis \u2014 the receipt, combo body",
+      "view": "src/components/decks/receipt-modal.tsx",
+      "steps": [
+        {
+          "goto": "/decks/${COMBO_DECK}",
+          "wait": "[role=tablist]",
+          "settle": 1500
+        },
+        {
+          "clickRole": "tab",
+          "name": "Analysis",
+          "settle": 600
+        },
+        {
+          "clickRole": "button",
+          "name": "Analyze this deck",
+          "settle": 400
+        },
+        {
+          "wait": "[data-testid='findings-block']",
+          "settle": 1200
+        },
+        {
+          "clickRole": "button",
+          "name": "Show the 1 two-card infinites in this deck",
+          "settle": 400
+        },
+        {
+          "wait": "[data-testid='receipt-combo']",
+          "settle": 900
+        }
+      ]
+    },
+    {
+      "id": "provenance",
+      "label": "/decks/[id] Analysis \u2014 How we make these decisions, open",
+      "view": "src/components/decks/provenance-panel.tsx",
+      "steps": [
+        {
+          "goto": "/decks/${FINDINGS_DECK}",
+          "wait": "[role=tablist]",
+          "settle": 1500
+        },
+        {
+          "clickRole": "tab",
+          "name": "Analysis",
+          "settle": 600
+        },
+        {
+          "clickRole": "button",
+          "name": "Analyze this deck",
+          "settle": 400
+        },
+        {
+          "wait": "[data-testid='findings-block']",
+          "settle": 1200
+        },
+        {
+          "clickRole": "button",
+          "name": "How we make these decisions",
+          "settle": 400
+        },
+        {
+          "scrollTo": "[data-testid='provenance']",
+          "settle": 350
+        }
+      ]
+    }
+  ]
+}

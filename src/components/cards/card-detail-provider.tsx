@@ -80,6 +80,19 @@ type CardDetailContextValue = {
   evict: (oracleId: string) => void;
   /** Close the modal, and abandon any fetch still in flight for it. */
   close: () => void;
+  /**
+   * Declare a sheet that stays open UNDER the card modal, and get back the call that
+   * withdraws it.
+   *
+   * The Analysis tab's receipt is the one caller: the verdict addendum rules that a card opened
+   * from a receipt STACKS on it rather than replacing it, and that on a phone the card sheet
+   * sits lower so the receipt's header stays visible above it. The provider owns the modal and
+   * the receipt owns nothing of it, so the receipt says it is there and the modal reads that.
+   *
+   * Counted rather than a flag, for the reason the scroll lock is counted: a flag set by one
+   * mount and cleared by another's unmount is a race whenever two overlap.
+   */
+  registerSheet: () => () => void;
 };
 
 const CardDetailContext = createContext<CardDetailContextValue | null>(null);
@@ -245,6 +258,11 @@ export function CardDetailProvider({
     printing: (PreferredPrinting & { imageUri?: string | null; backImageUri?: string | null }) | null;
   } | null>(null);
   const [pendingOracleId, setPendingOracleId] = useState<string | null>(null);
+  const [sheetsBelow, setSheetsBelow] = useState(0);
+  const registerSheet = useCallback(() => {
+    setSheetsBelow((n) => n + 1);
+    return () => setSheetsBelow((n) => n - 1);
+  }, []);
   const [failed, setFailed] = useState(false);
   // Joined and re-split rather than held as an array, so the callback's dependency is a
   // STRING and cannot churn on identity alone. The deck page happens to memoise its list
@@ -500,8 +518,9 @@ export function CardDetailProvider({
       close,
       deckId,
       deckOracleIds: deckOracleIds ?? EMPTY_IDS,
+      registerSheet,
     }),
-    [open, pendingOracleId, card, evict, close, deckId, deckOracleIds],
+    [open, pendingOracleId, card, evict, close, deckId, deckOracleIds, registerSheet],
   );
 
   const index = card ? siblings.indexOf(card.oracleId) : -1;
@@ -538,6 +557,7 @@ export function CardDetailProvider({
           position={paging ? index + 1 : 1}
           total={paging ? siblings.length : 1}
           onClose={close}
+          stacked={sheetsBelow > 0}
           // The combo block's partner name, through the same `load` that pages Prev/Next —
           // so a partner replaces the open card exactly as a sibling does, and the back
           // gesture returns to the card the reader started from.
