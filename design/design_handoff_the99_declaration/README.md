@@ -20,6 +20,39 @@ interaction, and an interaction argued in static frames is an assertion.
 
 ---
 
+## Errata — ruled 2026-09-21, after R7
+
+Recorded here rather than redrawn. Two of the three items the R7 audit raised against §3a are
+settled and need no Design round; the third is a copy correction.
+
+**1 · The single-bracket specimen teaches `[3]`, not `[4]`.** Hugh ruled it. The card shows a
+deck HELD at Upgraded — *"This deck holds A + B, and nothing in it searches for either half —
+the pair is a draw away. That is what keeps this at Upgraded."* — which is `lean.drawOnly` in
+`declaration - copy strings.ts`, the variant that already names that verdict.
+
+The reasoning, so it is not re-litigated: the instructive case on a screen where a player is
+choosing what to DECLARE is the one that holds them down, because that is the boundary they
+might cross wrongly. **Round 4 owns promotion** — the push line and the upgrade path are its
+whole subject — so a Round 3 specimen teaching `[4]` would duplicate it and leave *being held*
+taught nowhere. And the epic's own ruling that a wrong verdict is worse than no verdict, because
+a bracket sets an expectation with three other people, makes over-declaring the dangerous
+direction.
+
+**2 · "It leans Optimized rather than cEDH" is withdrawn.** `leans` appears **zero times** in
+this handoff's own copy file, and neither lean variant mentions cEDH — the lean explains a
+RESOLVED verdict and never chooses between 4 and 5. The sentence predates that amendment and
+the product cannot say it. It goes whichever verdict the specimen carries.
+
+**3 · The control reads `see the reasoning`.** The copy file's `lean.open` gives it; the canvas
+says `why`. Three words, inside the control cap, and it matches the block label *How we
+determined this bracket*. `why` does not say what opens. Settled by a `/copy-review` pass, which
+also confirmed this copy has not shipped to `src/` at all — the drift is entirely between two
+files in this folder.
+
+Everything else in R7 stands.
+
+---
+
 ## R6 — what changed from R5
 
 **Two items, one of them a correction to R5's own mechanism sentence.**
