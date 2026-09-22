@@ -710,6 +710,61 @@ describe("filterCards", () => {
   it("substring search is case-insensitive on name", () => {
     expect(filterCards(list, { search: "cyclonic", colors: [], types: [], setCodes: [] }).map((c) => c.oracleId)).toEqual(["c"]);
   });
+
+  // A Secret Lair rename is the name ON the card and the name on screen, so a search
+  // reading the oracle name alone found nothing for what the reader was looking at.
+  // `sld/2214` draws `Mimir's Ancient Wisdom`; `Teferi's Ageless Insight` is printed
+  // nowhere on it.
+  const renamed = [
+    ...list,
+    listCard({
+      oracleId: "e",
+      name: "Teferi's Ageless Insight",
+      printedName: "Mimir's Ancient Wisdom",
+      colorIdentity: ["U"],
+      typeLine: "Legendary Enchantment",
+      setCodes: ["SLD"],
+      primarySetCode: "SLD",
+    }),
+  ];
+  const found = (search: string) =>
+    filterCards(renamed, { search, colors: [], types: [], setCodes: [] }).map((c) => c.oracleId);
+
+  it("finds a renamed card by the name printed on it", () => {
+    expect(found("mimir")).toEqual(["e"]);
+  });
+
+  it("still finds it by its oracle name, which every other printing carries", () => {
+    // Not a replacement: the oracle name is what the card is called everywhere else, what
+    // its rules text is filed under, and what a player who knows the card will type.
+    expect(found("teferi")).toEqual(["e"]);
+  });
+
+  it("sorts a renamed card by the name it DRAWS, not the one it is filed under", () => {
+    // Its oracle name starts with T and the row reads `Mimir's Ancient Wisdom`, so the
+    // oracle sort put it after Sol Ring and Shockingly Boring — past where a reader
+    // scanning for M would stop looking.
+    const order = sortCards(renamed, "name", "asc").map((c) => c.printedName ?? c.name);
+    expect(order.indexOf("Mimir's Ancient Wisdom")).toBeLessThan(order.indexOf("Shockingly Boring"));
+    expect(order.indexOf("Lightning Bolt")).toBeLessThan(order.indexOf("Mimir's Ancient Wisdom"));
+  });
+
+  it("survives a printed name that is ABSENT, not merely null", () => {
+    // `printedName` is typed `string | null` and omitted altogether by fixtures across
+    // nineteen files, so a `!== null` test admits `undefined` and the `.toLowerCase()`
+    // after it throws — taking out the whole browser rather than just its search, which
+    // is how `browser-clear.test.tsx` caught it. Both shapes are covered here.
+    const absent = { ...listCard({ oracleId: "f", name: "Birds of Paradise" }) };
+    delete (absent as { printedName?: string | null }).printedName;
+    const withAbsent = [...renamed, absent];
+    const ids = (search: string) =>
+      filterCards(withAbsent, { search, colors: [], types: [], setCodes: [] })
+        .map((c) => c.oracleId);
+
+    expect(ids("birds")).toEqual(["f"]);
+    expect(ids("sol")).toEqual(["a"]);
+    expect(ids("zzz")).toEqual([]);
+  });
   it("no filters returns everything (identity when empty search + no chips)", () => {
     expect(filterCards(list, { search: "", colors: [], types: [], setCodes: [] })).toHaveLength(4);
   });
