@@ -407,16 +407,20 @@ export function SuggestionTile({
           carrying the card's name — so hiding the note would delete the sentence rather than
           relocate it, and there is nowhere to relocate it to.
 
-          `applied`, NOT `inDeck`, exactly as every other atom on this tile is gated. `applied`
-          starts at `inDeck` and flips the moment Add is pressed; the prop stays at the last
-          server-rendered value until revalidation, so gating on it would leave the tile
-          counting the card as an add for the length of a round trip. */}
+          `inDeck`, NOT `applied`, and this is the one atom on the tile gated the other way.
+          The ordinal is `counts + (inDeck ? 0 : 1)`, and `noteCounts` is a SERVER prop: it
+          moves in the same render as `inDeck` and not at all when `applied` flips. Gating on
+          `applied` makes the number go BACKWARDS for the length of the round trip — a deck
+          holding three game changers reads `your 4th`, the press flips `applied` while the
+          count is still 3, and the tile says `your 3rd` until revalidation puts it back. A
+          figure that decrements when you add a card is worse than one that is briefly a beat
+          behind, which is all this is. */}
       <CardNote
         facts={suggestion.facts ?? null}
         declared={declaredBracket}
         counts={noteCounts}
         density="tile"
-        inDeck={applied}
+        inDeck={inDeck}
       />
 
       {/* THE ADD IS PINNED TO THE TILE'S FOOT, `mt-auto`, and that is this feature's own

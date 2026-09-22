@@ -1340,10 +1340,14 @@ function CandidateRow({
         ...(inert ? { opacity: 0.55 } : null),
       }}
     >
-      {/* THE ROW'S OWN LINE. Everything that was on the box is here unchanged; the box
-          above now owns only the padding, the fill and the border, so the note below is
-          inside all three. */}
-      <div className="flex w-full items-center gap-[9px] md:gap-[10px] min-h-[50px] md:min-h-[32px]">
+      {/* THE ROW'S OWN LINE. The box above now owns the padding, the fill and the border, so
+          the note below is inside all three — and the row's own height came with it.
+
+          THE HEIGHTS ADD BACK TO WHAT THE BOX HAD. The box was `min-h-[52px] md:min-h-[34px]`
+          with no vertical padding; it is now `py-[2px] md:py-[1px]` around a line of
+          `min-h-[48px] md:min-h-[32px]`, which is 52 and 34 exactly. Written as a sum rather
+          than left to look right: a 2px drift on a row drawn 38 times is 76px of list. */}
+      <div className="flex w-full items-center gap-[9px] md:gap-[10px] min-h-[48px] md:min-h-[32px]">
       <input
         type="checkbox"
         id={tickId}
@@ -1577,9 +1581,10 @@ function CandidateRow({
           from the shipped tick box rather than transcribed as the handoff's `27px`. That
           figure is drawn against a tick this row does not have: the shipped tick is `w-[26px]`
           with a `gap-[9px]` at 390 and `w-[18px]` with a `gap-[10px]` above `md`, so the name
-          column starts 49px in at 390 (tick 26 + gap 9 + ownership dot 7 + gap 7) and 46px in
-          above `md` (tick 18 + gap 10 + dot 7 + gap 10), both MEASURED in a browser rather
-          than added up here. 27px lands under the tick at 390.
+          column starts 49px in at 390 and 46px in above `md`, both MEASURED in a browser
+          rather than added up here — and the desktop figure is the reason to measure at all:
+          its parts (tick 18 + gap 10 + dot 7 + gap 10) sum to 45, and the laid-out name is at
+          46. 27px lands under the tick at 390.
 
           That is the `labelAtPx` lesson exactly: the constants live in the code and
           `probe:card-note` asserts the PROPERTY they were derived from — the note starts at

@@ -109,9 +109,10 @@ async function openList(page) {
 /**
  * The shared reading for one note: where it sits, what it is set in, and what its box does.
  *
- * `visible` filters the width this run is not at. Both host trees stay mounted at both widths
- * — the top-off row draws a phone tree and a desktop tree — so an unfiltered sweep measures a
- * box with no layout and reports a zero-width note about a build that is correct.
+ * `visible` is DEFENSIVE rather than load-bearing, and says so rather than inventing a reason:
+ * the top-off row picks its phone and desktop parts with `useIsDesktop`, so only one of them
+ * is mounted at a time and nothing here is currently filtered out. It stays because every
+ * reading below is a rect, and a box with no layout reports zeros that look like a defect.
  */
 const READ_NOTES = (boxSelector) => {
   const visible = (el) => {

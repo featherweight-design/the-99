@@ -1183,6 +1183,8 @@ Package manager is **pnpm** (pinned via `packageManager` in package.json) — ne
   row's own laid-out NAME**, never at a constant: the handoff's `27px` is derived from a tick this
   row does not have, so the shipped indents (49px at 390, 46px above `md`) live in the code and
   the probe asserts the property they came from — the `labelAtPx` rule from `probe:commander-row`.
+  The desktop figure is also why they are measured rather than derived: its parts sum to 45 and
+  the laid-out name is at 46.
 
   **Its Adds check caught this feature's own regression.** A tile is a grid item and stretches to
   its row, so before the note every tile's content ended level; the note is ~30px on one tile in

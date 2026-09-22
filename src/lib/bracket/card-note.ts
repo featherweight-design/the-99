@@ -11,7 +11,8 @@
 // note prints the card fact and the rules fact and stops. It never falls back to the last
 // determined verdict, which may be four edits old with nothing on the row to say so.
 //
-// NO COMPONENT MAY RE-DERIVE THIS. Three surfaces draw the note and a second copy of the
+// NO COMPONENT MAY RE-DERIVE THIS. Two surfaces draw the note today — the Consider tile and
+// the top-off row — and the quick-add result row joins them in PR 8c. A second copy of the
 // order, the cap or the declared/undeclared branch in any of them is how `probe:build-from`
 // spent three rounds drifting from `loadAvailability`.
 //

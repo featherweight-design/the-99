@@ -1,4 +1,4 @@
-import { render, screen } from "@testing-library/react";
+import { act, fireEvent, render, screen } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
 
 import { CardNote } from "./card-note";
@@ -9,6 +9,12 @@ import { cardNote } from "../../lib/copy/card-note";
 import type { CandidateFacts } from "../../lib/bracket/delta";
 import type { DeckSuggestion } from "../../lib/decks/suggest";
 import type { NoteCounts } from "../../lib/bracket/card-note";
+// The mocked module, typed as its mocks so a `mockImplementationOnce` typechecks.
+import * as realActions from "../../app/decks/actions";
+
+const actions = realActions as unknown as {
+  addCardToDeck: ReturnType<typeof vi.fn>;
+};
 
 // `bulkFillOptions` is asked on mount and its answer is `.then`-ed, so a bare `vi.fn()`
 // returning undefined throws inside an effect rather than resolving to no options.
@@ -169,6 +175,38 @@ describe("the note on the Consider tile", () => {
     expect(screen.queryByText(/No bracket limits how many you play/)).toBeNull();
   });
 
+  // THE ORDINAL MUST NOT MOVE BACKWARDS ON AN ADD. `inDeck` and `noteCounts` are both server
+  // props and move together; `applied` flips the moment Add is pressed and the counts do not
+  // follow until revalidation. Gating the note on `applied` therefore reads `your 4th`, then
+  // `your 3rd` for the length of the round trip, then `your 4th` again — a figure that
+  // decrements when you add a card.
+  it("keeps the ordinal where it was when Add is pressed", async () => {
+    mount({ facts: facts({ gameChanger: true }) }, { ...NONE, gameChanger: 3 });
+    expect(screen.getByText("A game changer, and your 4th.")).toBeInTheDocument();
+
+    // THE ACTION MUST NOT SETTLE, or this case measures nothing. `useDeckMutation` holds its
+    // optimistic override only while the transition is pending, so a mock that resolves
+    // immediately puts `applied` straight back to `committed` and the intermediate state —
+    // the one the ordinal was reading — never exists to be observed. Confirmed by mutation:
+    // with an instantly-resolving mock, gating the note on `applied` passes this test.
+    let settle = () => {};
+    actions.addCardToDeck.mockImplementationOnce(
+      () => new Promise((resolve) => { settle = () => resolve({ ok: true }); }),
+    );
+
+    await act(async () => {
+      fireEvent.click(screen.getByRole("button", { name: /^Add / }));
+    });
+
+    // The tile is mid-flight: its own Add has already flipped to the in-deck reading.
+    expect(screen.queryByRole("button", { name: /^Add / })).toBeNull();
+
+    expect(screen.getByText("A game changer, and your 4th.")).toBeInTheDocument();
+    expect(screen.queryByText("A game changer, and your 3rd.")).toBeNull();
+
+    await act(async () => { settle(); });
+  });
+
   // Sub-project 3's clause is the one that says a combo completes. Two sentences about one
   // combo on one row is the defect this omission exists to avoid.
   it("says nothing about a combo the candidate completes", () => {
@@ -241,8 +279,10 @@ describe("the note on the top-off row", () => {
 
   it("draws the sentence, and quotes the declared bracket's limit", () => {
     mount({ facts: facts({ gameChanger: true }) }, { ...NONE, gameChanger: 3 });
-    // The row mounts a phone tree and a desktop tree, so the sentence appears twice. Asserted
-    // by `getAllBy` rather than by a count, which would be a fact about the harness.
+    // `getAllBy` rather than `getBy`, and deliberately not asserting a count: how many nodes
+    // carry the sentence is a fact about the harness rather than about the note. (`isDesktop`
+    // SELECTS one name element inside a single row here — the list maps one `CandidateRow`
+    // per candidate — so today there is exactly one.)
     expect(
       screen.getAllByText("A game changer, and your 4th. Upgraded allows 3.").length,
     ).toBeGreaterThan(0);

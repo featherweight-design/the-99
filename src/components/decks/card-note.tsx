@@ -12,9 +12,11 @@
 // 480-candidate pool most rows carry nothing, so a reserved height would be the commonest
 // rendering there is.
 //
-// NEVER `--warning`, NEVER `--danger`, and no confidence figure. `--fact` ink and body text on
-// a claim that is *likely* by construction — the loudest signal on the least certain claim is
-// the treatment the handoff rejects by name.
+// NEVER `--warning`, NEVER `--danger`, and no confidence figure — the loudest signal on the
+// least certain claim is the treatment the handoff rejects by name, and this note is *likely*
+// by construction. What it draws instead is ordinary body text: the label at `--fg-muted` and
+// the sentences at `--fg-body`, both from §Geometry. (`--fact` is the FACT MARKS' ink, §C2's
+// five glyphs, and nothing in this component draws one.)
 //
 // The label is `--fg-muted` and not `--fg-disabled`: at 9px on `--surface` that measures
 // 1.71:1, which is under the text floor, and the handoff says so at the point it binds.
