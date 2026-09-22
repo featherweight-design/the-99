@@ -20,7 +20,7 @@
 
 import { CARD_FACTS, cardFactName, cardMarkCopy } from "../../lib/copy/card-mark";
 import { comboAwarenessCopy } from "../../lib/copy/combo-awareness";
-import { CARD_FACT_MARK_PX, CardFactMark } from "../cards/card-fact-mark";
+import { CardFactMark } from "../cards/card-fact-mark";
 import { ComboGlyph } from "../cards/combo-glyph";
 import { MarkKey } from "../decks/mark-key";
 
@@ -40,7 +40,12 @@ const ENTRIES = [
   // When Round 2 ships the lemniscate as a fact, this entry goes with it.
   {
     id: "combo",
-    sample: <ComboGlyph size={CARD_FACT_MARK_PX} />,
+    // AT THE SIZE THE READER SEES, which is 12px and not the 16 the three above draw at.
+    // A key decodes a glyph, so a sample that is not the glyph on the surface is decoding
+    // something else — and the two sizes are both the spec rather than drift from it:
+    // Round 1's facts sit on a NAME line at 16, and this clause leads a secondary line of
+    // 9.5-10.5px mono, where 16 is taller than the text it introduces.
+    sample: <ComboGlyph />,
     word: comboAwarenessCopy.keyWord,
   },
 ];

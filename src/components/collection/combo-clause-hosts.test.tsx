@@ -3,6 +3,7 @@ import { describe, expect, it } from "vitest";
 
 import type { BrowseListCard } from "../../lib/collection/browse";
 import { comboAwarenessCopy } from "../../lib/copy/combo-awareness";
+import { COMBO_GLYPH_PX } from "../cards/combo-glyph";
 import { CollectionMarkKey } from "./collection-mark-key";
 import { GridView } from "./grid-view";
 import { RowsView } from "./rows-view";
@@ -90,7 +91,13 @@ describe("combo awareness state 1 on /collection", () => {
   it("glosses the lemniscate in the key", () => {
     const { container } = render(<CollectionMarkKey />);
     expect(container.textContent).toContain(comboAwarenessCopy.keyWord);
-    expect(container.querySelector('[data-testid="combo-glyph"]')).not.toBeNull();
+    // AT THE SIZE THE SURFACE DRAWS IT. A key decodes a glyph; a sample at a size the
+    // reader never sees is decoding a different mark. The three fact marks above it draw at
+    // 16 because they sit on a name line, and this one at 12 because it leads a 9.5px
+    // secondary line — both are the spec.
+    const sample = container.querySelector('[data-testid="combo-glyph"]');
+    expect(sample).not.toBeNull();
+    expect(sample?.getAttribute("width")).toBe(String(COMBO_GLYPH_PX));
   });
 
   // THE TILE SPEAKS THE FULL SENTENCE, AFTER THE NAME. The drawn clause is aria-hidden like
