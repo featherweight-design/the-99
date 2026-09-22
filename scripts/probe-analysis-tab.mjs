@@ -312,7 +312,14 @@ async function run() {
         continue;
       }
       await invite.first().click();
-      await p.waitForTimeout(1200);
+      // WAITED FOR, not slept past. The slowest real deck builds a profile in 1.8-2.2s, so a
+      // fixed 1.2s sleep failed a correct build whose reply was merely slow. The timeout is
+      // well above the measured maximum, and the thing waited for is the state a reply
+      // produces rather than an elapsed time.
+      await onPageRole(p, "button", /Analyze again/)
+        .first()
+        .waitFor({ state: "visible", timeout: 15_000 })
+        .catch(() => {});
       const afterPress = posts();
       report(`${label}px · pressing it fetches the profile once`, afterPress === 1,
         `${afterPress} action call(s) after the press`);
