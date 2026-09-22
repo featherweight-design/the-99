@@ -1776,10 +1776,6 @@ export async function pullCardFromDeck(
   // owner never asked for — the exact case the pending-changes guard exists to
   // prevent. The write is in here for its own reason: a delete that lands
   // without its commit leaves the draft short of a card the version claims.
-  // The source deck auto-commits below, so it carries its declaration too. Built before the
-  // transaction for the reason the helper gives.
-  const pullSnapshot = await commitSnapshotFor(sourceDeckId, userId);
-
   const outcome = await db.transaction<DeckMutationResult>(async (tx) => {
     // EVERY party's deck row, locked in sorted id order, before anything is read.
     // The asking deck is locked because this transaction authorizes itself against
@@ -1953,7 +1949,24 @@ export async function pullCardFromDeck(
     // leaving Home to read this row as `committed` or `edited`. Both are true of
     // a pull, so neither is worth engineering for; see the note in `touched.ts`.
     await touchDeck(tx, sourceDeckId);
-    await commitVersion(sourceDeckId, "Pulled a card for another deck", tx, pullSnapshot);
+    // NO SNAPSHOT ON THIS PATH, and the reason is not cost.
+    //
+    // This transaction REMOVES a card and then commits, so any snapshot taken before it
+    // describes the deck as it was one card ago — and removing a card can change what the
+    // remaining cards permit ([4,5] to [1,2], say). `commitVersion` trusts `snapshot.permits`,
+    // so passing one here could persist a declaration the committed rows do not permit, which
+    // is precisely the gate that column exists to be.
+    //
+    // Recomputing after the removal means a 630ms-to-2.2s profile build inside a transaction
+    // holding the deck's row lock, which is not a price a pull should pay. So this version
+    // records no declaration, and nothing is lost: the declaration stays live on the deck and
+    // the next DELIBERATE commit carries it. A pull is the system auto-committing because a
+    // card left, not a player answering a question.
+    //
+    // This is different from `commitDeckVersion`, which mutates nothing between its snapshot
+    // and its commit — there, only a concurrent edit can diverge, and that race is benign in
+    // the direction it fails.
+    await commitVersion(sourceDeckId, "Pulled a card for another deck", tx);
     return { ok: true };
   });
   if (!outcome.ok) return outcome;
