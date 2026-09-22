@@ -90,4 +90,38 @@ describe("useDeclaration", () => {
     expect(result.current.declared).toBe(4);
     expect(result.current.refused).toBe(true);
   });
+
+  // A SUPERSEDED SUCCESS IS STILL A FACT ABOUT THE DATABASE. The first press lands after the
+  // second was made, then the second is refused: the screen goes back to the first answer, which
+  // the column holds, not to the value before either press.
+  it("restores a superseded success when the newer press is refused", async () => {
+    const replies = new Map<number, (r: unknown) => void>();
+    action.held = (value) => new Promise((resolve) => replies.set(value, resolve));
+    const { result } = renderHook(() => useDeclaration("deck-1", null));
+    act(() => result.current.declare(2));
+    act(() => result.current.declare(1));
+    await waitFor(() => expect(replies.size).toBe(2));
+    await act(async () => replies.get(2)!({ ok: true, declared: 2 }));
+    await act(async () => replies.get(1)!({ ok: false, reason: "not-permitted" }));
+    expect(result.current.declared).toBe(2);
+    expect(result.current.refused).toBe(true);
+  });
+
+  // KEYED ON THE DECK. Two decks can hold the same stored answer, so a value comparison alone
+  // would carry deck A's unconfirmed answer onto deck B — and a late reply for A must not land.
+  it("starts a new deck from its own stored answer and drops the old deck's replies", async () => {
+    const replies = new Map<number, (r: unknown) => void>();
+    action.held = (value) => new Promise((resolve) => replies.set(value, resolve));
+    const { result, rerender } = renderHook(({ id }) => useDeclaration(id, null), {
+      initialProps: { id: "deck-a" },
+    });
+    act(() => result.current.declare(2));
+    expect(result.current.declared).toBe(2);
+    rerender({ id: "deck-b" });
+    expect(result.current.declared).toBeNull();
+    await waitFor(() => expect(replies.size).toBe(1));
+    await act(async () => replies.get(2)!({ ok: false, reason: "not-permitted" }));
+    expect(result.current.declared).toBeNull();
+    expect(result.current.refused).toBe(false);
+  });
 });

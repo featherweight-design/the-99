@@ -222,6 +222,12 @@ export function BuilderShell({
   // The deck's declaration for the whole shell: the verdict draws and takes it, and the card
   // note on Consider and the top-off list reads it — one owner, so they cannot disagree.
   const declaration = useDeclaration(deck.id, deck.declaredBracket);
+  // The version this deck IS: committed, and the draft holding no change since. A draft with
+  // edits is not that version, and a brew has none.
+  const committedClean = draft?.version && !hasChanges(draft) ? draft.version : null;
+  const thisVersion = committedClean
+    ? versions.find((v) => v.number === committedClean.number) ?? null
+    : null;
   const [sort, setSort] = useState<SortKey>("gaps");
   const [exportOpen, setExportOpen] = useState(false);
   const [unresolvedExpanded, setUnresolvedExpanded] = useState(false);
@@ -1062,11 +1068,14 @@ export function BuilderShell({
                   onRequest={profile.request}
                   declaration={{
                     declared: declaration.declared,
-                    // `for version n` only when the deck IS version n: committed, and the draft
-                    // holding no change since. A draft with edits is not that version, and a brew
-                    // has none to name.
+                    // `for version n` only when the answer on screen IS what version n recorded.
+                    // A deck that is version n but was answered since carries that answer on its
+                    // draft until the next commit copies it — naming version n would claim a
+                    // record the version does not hold.
                     version:
-                      draft?.version && !hasChanges(draft) ? draft.version.number : null,
+                      thisVersion && (thisVersion.declaredBracket ?? null) === declaration.declared
+                        ? thisVersion.number
+                        : null,
                     onDeclare: declaration.declare,
                     refused: declaration.refused,
                   }}
