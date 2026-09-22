@@ -151,8 +151,18 @@ export function bestPartnerPerCard(rows: PairRow[]): Map<string, ComboPartner> {
   return best;
 }
 
-/** Most popular first; nulls last; `variantId` breaks the rest. Total, so the choice is stable. */
-function morePopular(a: ComboPartner, b: ComboPartner): boolean {
+/**
+ * Most popular first; nulls last; `variantId` breaks the rest. A TOTAL order, so the choice is
+ * stable across reloads — which is Design's only stated requirement of the tiebreak.
+ *
+ * Structurally typed on the two fields it reads rather than on `ComboPartner`, because the
+ * modal's own partner shape carries a `state` the clause readers have no use for and shares
+ * only the ordering question.
+ */
+function morePopular(
+  a: { popularity: number | null; variantId: string },
+  b: { popularity: number | null; variantId: string },
+): boolean {
   const ap = a.popularity ?? -1;
   const bp = b.popularity ?? -1;
   if (ap !== bp) return ap > bp;
@@ -338,4 +348,91 @@ export async function loadOwnBothPartners(args: {
   )).rows as PairRow[];
 
   return bestPartnerPerCard(rows);
+}
+
+/** One partner in the card modal's block, with the state the reader is shown. */
+export type ModalComboPartner = {
+  oracleId: string;
+  name: string;
+  state: "inDeck" | "owned" | "notOwned";
+  popularity: number | null;
+};
+
+/**
+ * EVERY two-card combo partner of ONE card, for the modal's block.
+ *
+ * The three clause readers above answer "is this card one away", which is a question about a
+ * LIST. This answers "what does this card pair with", which is a question about a CARD — so it
+ * keeps every partner rather than choosing the most popular one, and it is the only reader in
+ * this module that enumerates.
+ *
+ * RULE 2 IS NOT APPLIED. The block is a receipt about pairs that exist, not a claim that
+ * adding a card assembles one: a piece that works only from the command zone is still half of
+ * a real combo, and the reader may be looking at it precisely because they are choosing a
+ * commander. `completes` is the word that presupposes assembly, and the block never says it.
+ *
+ * `deckOracleIds` is OPTIONAL and is what makes `in this deck` sayable. Opened from
+ * `/collection` there is no deck in scope, that state has no referent, and the block says so
+ * by drawing the other two states only — which is why the scope line exists.
+ */
+export async function loadCardComboPartners(args: {
+  userId: string;
+  oracleId: string;
+  /** The deck the modal was opened from, if any. Its commanders count as held (§4.3b rule 3). */
+  deckOracleIds?: readonly string[];
+}): Promise<ModalComboPartner[]> {
+  const rows = (await db.execute(sql`
+    with pair as (
+      select v.variant_id, v.produces, v.popularity
+      from ${spellbookVariants} v
+      join ${spellbookVariantCards} vc on vc.variant_id = v.variant_id
+      where v.card_count = 2
+        and cardinality(v.requires_template_ids) = 0
+        -- Pruned before the group, as every read in this module is: a predicate on a
+        -- non-grouping column cannot reach through the aggregate.
+        and exists (select 1 from ${spellbookVariantCards} vc2
+                    where vc2.variant_id = v.variant_id
+                      and vc2.oracle_id = ${sql.param(args.oracleId)}::uuid)
+      group by v.variant_id
+      having count(*) = 2
+    )
+    select p.variant_id, p.produces, p.popularity,
+           other.oracle_id as partner_id,
+           c.name as partner_name,
+           (select count(*) from collection_items ci
+            where ci.user_id = ${sql.param(args.userId)}
+              and ci.oracle_id = other.oracle_id)::int as owned_copies
+    from pair p
+    join ${spellbookVariantCards} self
+      on self.variant_id = p.variant_id and self.oracle_id = ${sql.param(args.oracleId)}::uuid
+    join ${spellbookVariantCards} other
+      on other.variant_id = p.variant_id and other.oracle_id <> self.oracle_id
+    join cards c on c.oracle_id = other.oracle_id
+  `)).rows as {
+    variant_id: string; produces: string[]; popularity: number | null;
+    partner_id: string; partner_name: string; owned_copies: number;
+  }[];
+
+  const inDeck = new Set(args.deckOracleIds ?? []);
+  const best = new Map<string, ModalComboPartner & { variantId: string }>();
+  for (const r of rows) {
+    if (!isInfiniteOrGameEnding(r.produces)) continue;
+    const candidate = {
+      oracleId: r.partner_id,
+      name: r.partner_name,
+      state: inDeck.has(r.partner_id)
+        ? ("inDeck" as const)
+        : r.owned_copies > 0
+          ? ("owned" as const)
+          : ("notOwned" as const),
+      popularity: r.popularity,
+      variantId: r.variant_id,
+    };
+    // ONE LINE PER PARTNER, not per variant: two cards can pair in more than one recorded way,
+    // and the block names a CARD rather than a combo. The most popular variant decides the
+    // line's order, which is why the losing one is dropped rather than summed.
+    const held = best.get(r.partner_id);
+    if (!held || morePopular(candidate, held)) best.set(r.partner_id, candidate);
+  }
+  return [...best.values()].map(({ variantId: _v, ...p }) => p);
 }
