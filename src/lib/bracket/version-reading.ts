@@ -24,10 +24,29 @@ export type VersionReading = {
   split: boolean;
 };
 
+/**
+ * THREE STATES FOR THE PREVIOUS VERSION, not two.
+ *
+ * `deck_versions.permits` is NULLABLE and `commitVersion` writes both snapshot columns null when
+ * it has no snapshot — every version committed before those columns existed is in that state, and
+ * so is any pull-triggered auto-commit. Such a version REALLY EXISTS and really is the
+ * predecessor; it simply has no recorded reading.
+ *
+ * An earlier version of this type could only say "a reading" or "no previous version", so a
+ * caller holding one of those rows had to either fail type-checking or collapse a real version
+ * into `null` — which would have made the documented meaning of `null` a lie on every deck with
+ * history older than the columns.
+ */
+export type PreviousVersion =
+  /** No predecessor at all: a first commit, or a brew. */
+  | { kind: "none" }
+  /** A predecessor that exists but recorded no reading. The row says so rather than guessing. */
+  | { kind: "unrecorded" }
+  | { kind: "read"; reading: VersionReading };
+
 export type VersionComparison = {
   now: VersionReading;
-  /** Null when there is no previous version to compare against — a first commit, or a brew. */
-  was: VersionReading | null;
+  was: PreviousVersion;
   /**
    * Whether the ordinary declaration ask follows the comparison row.
    *
@@ -46,15 +65,23 @@ function reading(permits: readonly Bracket[], declared: Bracket | null): Version
 
 export function versionComparison(
   now: { permits: readonly Bracket[]; declared: Bracket | null },
-  was: { permits: readonly Bracket[]; declared: Bracket | null } | null,
+  /** `null` for no predecessor; a row whose `permits` is null for one that recorded nothing. */
+  was: { permits: readonly Bracket[] | null; declared: Bracket | null } | null,
 ): VersionComparison {
   const current = reading(now.permits, now.declared);
   return {
     now: current,
     // A PREVIOUS VERSION WITH NO DECLARATION STILL READS. The row compares READINGS, not
-    // answers, so a version that was never declared still says what it permitted — dropping it
+    // answers, so a version that was never declared still says what it PERMITTED — dropping it
     // would leave the comparison with one side and no reason for the row to exist.
-    was: was ? reading(was.permits, was.declared) : null,
+    //
+    // But a version with no recorded PERMITS has no reading to show, and saying so is not the
+    // same as saying there was no version. Three states, one of them explicit.
+    was: was === null
+      ? { kind: "none" }
+      : was.permits === null || was.permits.length === 0
+        ? { kind: "unrecorded" }
+        : { kind: "read", reading: reading(was.permits, was.declared) },
     stillAsking: current.split,
   };
 }

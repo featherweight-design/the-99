@@ -51,18 +51,41 @@ describe("versionComparison", () => {
   // so dropping it would leave the comparison with one side and no reason to exist.
   it("keeps a previous version that was never declared", () => {
     const c = versionComparison({ permits: [3], declared: null }, { permits: [1, 2], declared: null });
-    expect(c.was).toEqual({ verb: "permits", permits: [1, 2], declared: null, split: true });
+    expect(c.was).toEqual({
+      kind: "read",
+      reading: { verb: "permits", permits: [1, 2], declared: null, split: true },
+    });
+  });
+
+  // THREE STATES, NOT TWO. `deck_versions.permits` is nullable and `commitVersion` writes it
+  // null when it has no snapshot — every version committed before those columns existed is in
+  // that state, and so is any pull-triggered auto-commit. Such a version REALLY EXISTS and is
+  // really the predecessor; it simply recorded no reading, and collapsing it into "there was no
+  // previous version" would make that claim a lie on every deck with older history.
+  it("distinguishes a predecessor that recorded nothing from having none", () => {
+    const unrecorded = versionComparison({ permits: [3], declared: null }, { permits: null, declared: null });
+    expect(unrecorded.was).toEqual({ kind: "unrecorded" });
+    const none = versionComparison({ permits: [3], declared: null }, null);
+    expect(none.was).toEqual({ kind: "none" });
+    expect(unrecorded.was).not.toEqual(none.was);
+  });
+
+  // An empty array is the same fact as a null one — `permitsFor` never returns it, so a row
+  // holding it recorded nothing either.
+  it("treats an empty recorded range as unrecorded rather than as a reading", () => {
+    expect(versionComparison({ permits: [3], declared: null }, { permits: [], declared: null }).was)
+      .toEqual({ kind: "unrecorded" });
   });
 
   // No previous version at all — a first commit, or a brew. The row has nothing to compare and
   // says so with null rather than with an empty reading that would draw a blank side.
-  it("has no previous reading when there is no previous version", () => {
-    expect(versionComparison({ permits: [3], declared: 3 }, null).was).toBeNull();
+  it("says none when there is no previous version", () => {
+    expect(versionComparison({ permits: [3], declared: 3 }, null).was).toEqual({ kind: "none" });
   });
 
   it("carries both declarations through untouched", () => {
     const c = versionComparison({ permits: [4, 5], declared: 4 }, { permits: [1, 2], declared: 1 });
     expect(c.now.declared).toBe(4);
-    expect(c.was?.declared).toBe(1);
+    expect(c.was).toMatchObject({ kind: "read", reading: { declared: 1 } });
   });
 });
