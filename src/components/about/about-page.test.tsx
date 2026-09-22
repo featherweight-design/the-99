@@ -507,6 +507,38 @@ describe("the figures", () => {
     expect(over.length, "the over-committed edge drew nothing").toBe(1);
   });
 
+  // THE MEASURED SPECIMEN, and the two things about it that no other check here
+  // sees. The `roles` entry above draws `recommendedMix(null, false)` — an
+  // asserted starting point — so every assertion on it passes whatever the
+  // measured payload says. This one is about the payload itself.
+  it("draws the informed-build figure from a measured mix, wipes at zero", () => {
+    const { container } = render(<AboutPage seen={0} />);
+    const plate = figures(container)["informed-build"];
+
+    // PROVENANCE. The source line is the only place the strip says where its
+    // numbers came from, and the two strings are one word apart in the model
+    // and a whole claim apart on screen: this entry is about a mix measured
+    // from real decklists, so a specimen quoting `A common starting point`
+    // would illustrate the feature by showing its absence.
+    expect(plate.textContent).toContain(mixSourceLine({ measured: true } as never));
+    expect(plate.textContent).not.toContain(
+      mixSourceLine({ measured: false } as never),
+    );
+
+    // A MEASURED TARGET OF ZERO renders. `wipes: 0` against the fixture's one
+    // wipe is a real measured answer for a commander whose bucket wipes
+    // nothing, and the cell has to draw rather than divide its way out of
+    // existing. NOT a check on the zero-divide guard in `roleCellState`: this
+    // fixture is `1 / 0`, which is Infinity and clamps to 100 — the NaN case is
+    // `0 / 0` and no figure on this page holds one. Asserting it here would be
+    // a comment claiming coverage the fixture cannot give, and the mutation
+    // run said so.
+    const wipes = [...plate.querySelectorAll("p")].find((el) =>
+      el.parentElement?.textContent?.includes("Wipes"),
+    );
+    expect(wipes, "the figure drew no Wipes cell").toBeTruthy();
+  });
+
   it("draws the recommended mix as the deck page's own strip", () => {
     const { container } = render(<AboutPage seen={0} />);
     const plate = figures(container)["roles"];
