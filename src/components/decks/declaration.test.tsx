@@ -86,6 +86,13 @@ describe("the ask", () => {
     draw("1,2", null, { refused: true });
     expect(screen.getByRole("alert").textContent).toBe(declarationCopy.refused);
   });
+
+  // A refused CHANGE puts the previous answer back, so the notice has to draw beside the answer
+  // too, or the reader sees their old choice return with no word about why.
+  it("says so beside the answer when a change was refused", () => {
+    draw("1,2", 1, { refused: true });
+    expect(screen.getByRole("alert").textContent).toBe(declarationCopy.refused);
+  });
 });
 
 describe("the answer", () => {
@@ -126,6 +133,10 @@ describe("the answer", () => {
     fireEvent.click(screen.getByRole("button", { name: declarationCopy.declared.change }));
     expect(chips().getAllByRole("button").map((b) => b.textContent)).toEqual(["Optimized", "cEDH"]);
     expect(onDeclare).not.toHaveBeenCalled();
+    // THE WHOLE READING RETURNS TO THE ASK: the range's face and split pill, not the answer's.
+    expect(screen.getByText("Optimized or cEDH")).toBeTruthy();
+    expect(screen.getByText(deckAnalysisCopy.verdict.splitChip)).toBeTruthy();
+    expect(screen.queryByText(declarationCopy.declared.permitsBelow([4, 5]))).toBeNull();
   });
 });
 

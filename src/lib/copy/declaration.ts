@@ -70,6 +70,7 @@ export const declarationCopy = {
       `${BRACKET_NAMES[declared]} was declared, and this deck has since moved out of it.`,
   },
 
-  /** What the ask says when the write is refused. The answer is not drawn as given. */
-  refused: "That did not save. Nothing was declared.",
+  /** What the ask says when the write is refused. The house form: true whether the refused
+   *  write was a first answer or a change, where the previous answer is put back. */
+  refused: "That did not save. Try again.",
 } as const;

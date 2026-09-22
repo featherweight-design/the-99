@@ -1,4 +1,6 @@
-import type { ReactNode } from "react";
+"use client";
+
+import { useState, type ReactNode } from "react";
 
 import {
   populationLine,
@@ -52,7 +54,15 @@ export function VerdictBlock({
 }) {
   // THE DECLARATION'S READING, from its rule. It is handed the verdict's own range, never a
   // range this component works out, and everything below that turns on it reads `ask`.
-  const ask = declaration ? declarationAsk(verdict.permits, declaration.declared) : null;
+  //
+  // `change` RETURNS THE WHOLE READING TO THE ASK — the range's face, its split pill and its
+  // description — not only the section. So it is held here, where the face is drawn, and the
+  // section is handed the reading it should draw. Local and never persisted: pressing it and
+  // leaving changes nothing.
+  const [changing, setChanging] = useState(false);
+  const read = declaration ? declarationAsk(verdict.permits, declaration.declared) : null;
+  const ask =
+    read?.kind === "answered" && changing ? { kind: "ask" as const, permits: read.permits } : read;
   const answered = ask?.kind === "answered" ? ask.declared : null;
   const head = verdictHead(verdict.permits, answered);
   const subLine = verdictSubLine(verdict);
@@ -111,7 +121,19 @@ export function VerdictBlock({
           {declarationCopy.declared.permitsBelow(verdict.permits)}
         </p>
       )}
-      {ask && declaration ? <DeclarationSection ask={ask} control={declaration} /> : null}
+      {ask && declaration ? (
+        <DeclarationSection
+          ask={ask}
+          control={{
+            ...declaration,
+            onDeclare: (bracket) => {
+              setChanging(false);
+              declaration.onDeclare(bracket);
+            },
+          }}
+          onChange={() => setChanging(true)}
+        />
+      ) : null}
       <Population verdict={verdict} profile={profile} />
     </section>
   );

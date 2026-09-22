@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, type CSSProperties, type ReactNode } from "react";
+import type { CSSProperties, ReactNode } from "react";
 
 import type { DeclarationAsk } from "../../lib/bracket/declaration-ask";
 import type { Bracket } from "../../lib/bracket/types";
@@ -47,37 +47,35 @@ export type DeclarationControl = {
 export function DeclarationSection({
   ask,
   control,
+  onChange,
 }: {
   ask: DeclarationAsk;
   control: DeclarationControl;
+  /** `change`: re-open the ask. The verdict block holds it, because the face changes with it. */
+  onChange: () => void;
 }) {
-  // `change` re-opens the ask on an answered range. LOCAL and never persisted: it edits this
-  // state's answer by making a new one, and a player who opens it and leaves has changed nothing.
-  const [changing, setChanging] = useState(false);
-
   if (ask.kind === "none") return null;
 
-  if (ask.kind === "answered" && !changing) {
+  if (ask.kind === "answered") {
     return (
       <Box>
         <p className="text-[12.5px] leading-[1.6] text-[color:var(--fg-body)] md:text-[13px]">
           <DeclaredLine declared={ask.declared} version={control.version} />{" "}
           <button
             type="button"
-            onClick={() => setChanging(true)}
+            onClick={onChange}
             className="cursor-pointer border-b border-dotted border-[color:var(--accent)] font-mono text-[10.5px] text-[color:var(--accent)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[color:var(--accent)]"
           >
             {declarationCopy.declared.change}
           </button>
         </p>
+        {/* A refused CHANGE lands here: the previous answer is back, and says why. */}
+        {control.refused ? <Refused /> : null}
       </Box>
     );
   }
 
-  const choose = (bracket: Bracket) => {
-    setChanging(false);
-    control.onDeclare(bracket);
-  };
+  const choose = control.onDeclare;
 
   if (ask.kind === "drifted") {
     return (
@@ -100,7 +98,8 @@ export function DeclarationSection({
     );
   }
 
-  // `ask`, or an answered range whose `change` was pressed — which asks about the same range.
+  // `ask` — including an answered range whose `change` was pressed, which the block hands
+  // over as the same range asked again.
   return (
     <Box>
       <Ask
@@ -174,11 +173,15 @@ function Ask({
           </button>
         ))}
       </div>
-      {refused ? (
-        <p role="alert" className="text-[11.5px] leading-[1.5] text-[color:var(--fg-muted)]">
-          {declarationCopy.refused}
-        </p>
-      ) : null}
+      {refused ? <Refused /> : null}
     </div>
+  );
+}
+
+function Refused() {
+  return (
+    <p role="alert" className="text-[11.5px] leading-[1.5] text-[color:var(--fg-muted)]">
+      {declarationCopy.refused}
+    </p>
   );
 }
