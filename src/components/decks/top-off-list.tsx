@@ -1410,10 +1410,15 @@ function CandidateRow({
         {isDesktop && c.comboPartner && (
           <span
             aria-hidden
-            // `shrink-[999]` against the name's default 1: flex distributes shrinkage in
-            // proportion, so the clause gives up ~999 units for every one the name does and
-            // is effectively spent before the name moves at all.
-            className="md:order-2 flex-1 shrink-[999] min-w-0"
+            // `flex-auto`, NOT `flex-1`, and that is the whole of it. `flex-1` sets the
+            // basis to `0%`, and flex distributes shrinkage in proportion to shrink factor
+            // TIMES BASIS — so a zero basis gives the clause no shrink budget at all, the
+            // `shrink-[999]` multiplies nothing, and a tight row takes the deficit out of the
+            // name's `auto` basis instead. Exactly backwards from the rule.
+            //
+            // With an auto basis the clause has its own content width to give up, and at 999
+            // against the name's 1 it is spent before the name moves.
+            className="md:order-2 flex-auto shrink-[999] min-w-0"
           >
             <ComboClause partnerName={c.comboPartner.name} state="completes" />
           </span>
@@ -1448,7 +1453,10 @@ function CandidateRow({
                 name cell's tail and the cost column is one of the four fixed slots, which do
                 not move for this. */}
             {!isDesktop && c.comboPartner ? (
-              <span aria-hidden className="flex-1 min-w-0">
+              // The phone clause stands in for the pip track rather than sharing a line
+              // with a name, so it simply takes the room: nothing beside it on line 2 is
+              // competing for content width.
+              <span aria-hidden className="flex-auto min-w-0">
                 <ComboClause partnerName={c.comboPartner.name} state="completes" />
               </span>
             ) : (
