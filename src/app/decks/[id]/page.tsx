@@ -1,6 +1,7 @@
 // /decks/[id] — Builder page.
 // §Builder Spine, §Role Counter Strip, §Guided Banner, §Degraded Suggestions Banner.
 import { notFound } from "next/navigation";
+import { loadCandidateFacts } from "../../../lib/profile/candidate-facts";
 import { requireUserId } from "../../../lib/auth";
 import { getDeckDetail, listDecksWithStats } from "../../../lib/decks/read";
 import { cacheForUser } from "../../../lib/cache/user-lists";
@@ -17,7 +18,7 @@ import { readSynergyCards } from "../../commanders/[slug]/synergy-read";
 import {
   listLastSlotsCandidates,
   poolEmptiedByNegativeCut,
-  type TopOffCandidate,
+  type TopOffCandidateWithFacts,
 } from "../../../lib/decks/last-slots";
 import { loadPrices } from "../../../lib/decks/price-query";
 import { loadAvailability } from "../../../lib/decks/availability-query";
@@ -217,7 +218,26 @@ export default async function DeckBuilderPage({
       ...suggestions.filter((s) => s.owned).map((s) => s.oracleId),
     ]),
   ];
-  const [priced, availability] = await Promise.all([
+  // THE CARD-NOTE FACTS, for the whole pool in ONE statement.
+  //
+  // `loadCandidateFacts` has had no caller since it landed — the same shape as
+  // `cachedDeckProfile` before PR 1b and `commitVersion`'s snapshot before PR 3b:
+  // a payload built, tested and never reached. Round 4's card note draws these,
+  // and it cannot be built against a loader nothing calls.
+  //
+  // BATCHED, because the alternative does not ship. Measured on staging with
+  // `pnpm measure:facts-cost`: one statement for a 480-candidate pool is
+  // 177-192ms, where the same work candidate by candidate is ~195ms each — 91
+  // to 95 seconds for the pool, 480 to 540 times more.
+  //
+  // In the same `Promise.all` as the price and availability reads rather than
+  // after them: it needs only the candidate ids, which are already resolved, so
+  // sequencing it later would add its latency to theirs for nothing.
+  //
+  // Swallowed like its neighbours. A failed facts read degrades to rows with no
+  // note, which is the state the round draws for a card that has no facts
+  // anyway — never the builder going down.
+  const [priced, availability, candidateFacts] = await Promise.all([
     loadPrices([
       ...new Set([
         ...detail.cards.map((c) => c.oracleId),
@@ -228,6 +248,15 @@ export default async function DeckBuilderPage({
     ownedIds.length > 0
       ? loadAvailability(userId, { excludeDeckId: id, oracleIds: ownedIds }).catch(() => null)
       : null,
+    loadCandidateFacts(
+      [
+        ...new Set([
+          ...candidateCards.map((c) => c.oracleId),
+          ...suggestions.map((s) => s.oracleId),
+        ]),
+      ],
+      detail.cards.map((c) => c.oracleId),
+    ).catch(() => null),
   ]);
 
   // Attached here, server-side, on lists that are being built anyway — so no
@@ -243,6 +272,8 @@ export default async function DeckBuilderPage({
   const pricedSuggestions = suggestions.map((s) => ({
     ...withPrice(s),
     availability: s.owned ? (availability?.get(s.oracleId) ?? null) : null,
+    // The Add panel's suggestions draw the same note as the top-off rows, from the same read.
+    facts: candidateFacts?.get(s.oracleId) ?? null,
   }));
 
   // First-run: user's only deck and it has no cards yet.
@@ -251,10 +282,14 @@ export default async function DeckBuilderPage({
   // Attached here for the same reason `withPrice` above attaches its figure:
   // the row component then reads a field rather than doing two map lookups per
   // render, and BuilderShell takes one list rather than a list plus two maps.
-  const candidates: TopOffCandidate[] = candidateCards.map((c) => ({
+  const candidates: TopOffCandidateWithFacts[] = candidateCards.map((c) => ({
     ...c,
     price: c.owned ? null : (priced?.prices.get(c.oracleId) ?? null),
     availability: c.owned ? (availability?.get(c.oracleId) ?? null) : null,
+    // The card-note facts, on the row rather than in a map beside it — same reason the two
+    // figures above are attached here. `null` where the read failed or the card has no facts;
+    // Round 4's note draws nothing for either, which is why one absence serves both.
+    facts: candidateFacts?.get(c.oracleId) ?? null,
   }));
 
   // Read once per request rather than at each use, so the tab, the strip's home and the
