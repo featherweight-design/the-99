@@ -264,8 +264,58 @@ async function run() {
         before.sides.every((s) => !s.above),
         `${before.count} strip(s) above the tabs: ${before.sides.filter((s) => s.above).length}`);
 
+      // ── The profile payload, counted as REQUESTS ────────────────────────────────────────
+      //
+      // The whole reason the fetch is on demand is that a profile costs 630ms median and up to
+      // 2.2s on the slowest real deck. A check that only proves the tab works passes just as
+      // happily on the shape that pays that on every deck visit, so what is measured here is
+      // the COUNT of server-action posts — before the press, after it, and after pressing away
+      // and back.
+      //
+      // Server actions post to the route itself, so the filter is method rather than path: a
+      // GET is the document and its RSC payload, a POST is an action call. Nothing else on this
+      // page posts while the reader only presses tabs.
+      let posts = 0;
+      p.on("request", (r) => {
+        if (r.method() === "POST") posts += 1;
+      });
+      await p.waitForTimeout(400);
+      report(`${label}px · no profile fetched before the tab is pressed`, posts === 0,
+        `${posts} POST(s) before the press`);
+
       await onPage(p, '[role="tab"]').nth(analysisAt).click();
       await p.waitForTimeout(600);
+
+      const afterPress = posts;
+      report(`${label}px · pressing the tab fetches the profile once`, afterPress === 1,
+        `${afterPress} POST(s) after the press`);
+
+      // THE CACHE, and the reason the hook lives in the shell rather than the panel. One panel
+      // renders at a time, so the Analysis panel unmounts on a tab switch — a fetch owned by
+      // the panel would re-pay the whole build here, and every assertion about the rendered
+      // state would still pass.
+      const otherTab = analysisAt === 0 ? 1 : 0;
+      await onPage(p, '[role="tab"]').nth(otherTab).click();
+      await p.waitForTimeout(300);
+      await onPage(p, '[role="tab"]').nth(analysisAt).click();
+      await p.waitForTimeout(600);
+      report(`${label}px · leaving the tab and returning does not re-fetch`, posts === afterPress,
+        `${posts} POST(s) total, ${posts - afterPress} on the return`);
+
+      // The synopsis slot, in the one reading reachable until sub-project 6 — and NO control
+      // beside it, because nothing can write a summary yet.
+      const synopsis = await p.evaluate((scope) => {
+        const root = document.querySelector(scope);
+        const text = root?.textContent ?? "";
+        return {
+          absent: text.includes("No summary has been written for this deck yet."),
+          write: text.includes("Write one"),
+        };
+      }, PAGE);
+      report(`${label}px · the synopsis slot states that none is written`, synopsis.absent,
+        synopsis.absent ? "the absent line is drawn" : "no absent line");
+      report(`${label}px · and offers no control that cannot work`, !synopsis.write,
+        synopsis.write ? "a Write one control is drawn" : "no write control");
 
       const panel = await p.evaluate((scope) =>
         Boolean(document.querySelector(scope)?.querySelector("#panel-analysis")), PAGE);
