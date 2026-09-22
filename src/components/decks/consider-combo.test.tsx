@@ -1,12 +1,11 @@
-import { render } from "@testing-library/react";
+import { act, render, screen } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
 import type { DeckSuggestion } from "../../lib/decks/suggest";
 import { comboAwarenessCopy } from "../../lib/copy/combo-awareness";
 import { recommendedMix } from "../../lib/decks/mix";
 
-vi.mock("../../app/decks/actions", () => ({
-  addCardToDeck: vi.fn(async () => ({ ok: true as const })),
-}));
+const addCardToDeck = vi.fn(async () => ({ ok: true as const }));
+vi.mock("../../app/decks/actions", () => ({ addCardToDeck }));
 // The degraded banner's Try again re-fetches the page rather than owning a retry of its own,
 // so the panel needs a router even in the happy path.
 vi.mock("next/navigation", () => ({ useRouter: () => ({ refresh: vi.fn() }) }));
@@ -80,6 +79,37 @@ describe("combo awareness on the Consider tile", () => {
     const { container } = mount({ comboPartner: PARTNER, oracleId: "s-1" }, ["s-1"]);
     expect(container.querySelector('[data-testid="combo-clause"]')).toBeNull();
     expect(container.textContent).toContain("Instant");
+  });
+
+  // THE OPTIMISTIC PATH, which is the one a reader actually sees. `applied` flips on the
+  // press while `inDeck` stays at the last server-rendered value until revalidation, so a
+  // tile gated on the prop says `✓ In deck` and `completes with …` at once for the length of
+  // a round trip.
+  it("drops the clause the moment Add is pressed, not when the server answers", async () => {
+    // HELD OPEN. `applied` comes from `useOptimistic`, which holds its value only for the
+    // length of the transition — so an action that settles in the same turn reverts before
+    // any assertion can see it, and the case would pass on a tile gated the wrong way.
+    let release: (v: { ok: true }) => void = () => {};
+    addCardToDeck.mockReturnValue(
+      new Promise<{ ok: true }>((r) => {
+        release = r;
+      }),
+    );
+    const { container } = mount({ comboPartner: PARTNER });
+    expect(container.querySelector('[data-testid="combo-clause"]')).not.toBeNull();
+
+    const add = screen.getByRole("button", { name: /add/i });
+    await act(async () => {
+      add.click();
+    });
+
+    // Mid-flight: the tile already says it is in the deck, so it must not also say what
+    // adding it would complete.
+    expect(container.querySelector('[data-testid="combo-clause"]')).toBeNull();
+
+    await act(async () => {
+      release({ ok: true });
+    });
   });
 
   it("leaves a tile with no combo exactly as it was", () => {
