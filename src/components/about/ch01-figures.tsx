@@ -699,6 +699,41 @@ export function DecklistMarksFigureBody() {
 // imports `deck-size` and a type, and no database.
 const SPECIMEN_MIX: RecommendedMix = recommendedMix(null, false);
 
+/**
+ * A MEASURED mix, against the asserted one the roles figure draws.
+ *
+ * The specimen beside it is the same strip with `measured: false`, and the pair is the entry:
+ * before, every deck was told 10 ramp, 10 draw, 8 removal, 3 wipes and 37 lands whatever it was
+ * led by. These are real figures from the index — Kinnan wants twice the ramp and no wipes at
+ * all — and the source line says EDHREC rather than "a common starting point" because they came
+ * from somewhere.
+ *
+ * Hand-built rather than resolved: the About page has no commander and no deck, and a figure
+ * that fetched one would make a page of prose depend on a database read.
+ */
+const MEASURED_MIX: RecommendedMix = {
+  cells: {
+    ramp: { label: "Ramp", target: 20, advisory: false },
+    draw: { label: "Draw", target: 8, advisory: false },
+    removal: { label: "Removal", target: 10, advisory: false },
+    wipes: { label: "Wipes", target: 0, advisory: false },
+    land: { label: "Land", target: 28, advisory: true },
+  },
+  types: null,
+  measured: true,
+};
+
+export function InformedBuildFigureBody() {
+  return (
+    <RoleCounterStrip
+      mix={MEASURED_MIX}
+      cards={ROLE_MIX_CARDS}
+      onSeeShelf={() => {}}
+      rolesWithShelves={new Set(["draw", "removal"])}
+    />
+  );
+}
+
 export function RolesFigureBody() {
   return (
     <RoleCounterStrip

@@ -51,7 +51,7 @@ with `padding:30px 30px 34px`, so it sits 30px clear of the edge and never stick
 app has no top chrome at that width, so `top:0` puts the Contents label against the viewport edge
 the moment the page scrolls. The drawn clearance transfers; the property that produced it does not.
 
-**The code has 37 entries and the canvas drew 33.** The two extras are `decklist-order`, added
+**The code has 38 entries and the canvas drew 33.** The extras are `decklist-order`, added
 after #642 shipped the decklist's sort control, and `commander-availability`, added by #683 — both
 after the canvas was drawn. Earlier text here said "a handoff that drew thirty-four" — it drew
 thirty-three, and the code's own figure has moved twice while this PR was in review, which is why
