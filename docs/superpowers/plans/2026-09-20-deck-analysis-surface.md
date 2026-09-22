@@ -105,10 +105,10 @@ Tier A. The bracket marks reached `public/` in #837 and the `--bracket-1…5` pa
 **4a and 4b shipped on 2026-09-22** as #851 and #853, and the row count is now SIXTEEN: the
 findings were split out of 4b as 4c, and 8b was split into 8b and 8c, each for the reason its own
 row gives. **5, 7 and 9 shipped the same day** as #862, #866 and #867 — see *What 5, 7 and 9
-settled* below — beside 4c and 6, which shipped in parallel as #863 and #865. The rows above
-say what is still open. Each open row
-wants the design-review property-table pass, a probe and a contact sheet, so they are build work
-rather than the tail of a rules run.
+settled* below — beside 4c and 6, which shipped in parallel as #863 and #865. 8b and 8b-ii
+shipped too, as #854 and #859, though their rows above carry no mark. **8c is the one row still
+open**, and it wants the design-review property-table pass, a probe and a contact sheet like the
+rest.
 
 ---
 
