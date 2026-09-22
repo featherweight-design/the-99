@@ -323,6 +323,61 @@ describe("CardModal flip control", () => {
     expect(wash().style.backgroundImage).toContain(CELL_BACK);
   });
 
+  // BOTH doors again, for a card whose oracle layout says one side. This is the path a
+  // reversible printing actually arrives by: a set page cell, opened at that printing. The
+  // provenance flag has to travel with the caller's back art or the control is absent on
+  // exactly the surface the feature was built for.
+  it("turns over a reversible printing opened from a set page it does not own", () => {
+    const CELL_FRONT = "https://x/sld-front.jpg";
+    const CELL_BACK = "https://x/sld-back.jpg";
+    render(
+      <CardModal
+        card={{ ...delver, name: "Teferi's Ageless Insight", layout: "normal", backImageUri: null }}
+        position={1}
+        total={1}
+        onClose={() => {}}
+        onPrev={null}
+        onNext={null}
+        openAtPrinting={{
+          setCode: "SLD", collectorNumber: "2214",
+          imageUri: CELL_FRONT, backImageUri: CELL_BACK,
+        }}
+      />,
+    );
+    expect(wash().style.backgroundImage).toContain(CELL_FRONT);
+    fireEvent.click(screen.getAllByLabelText(twoFacedCopy.flipToSideAria("back"))[0]);
+    expect(wash().style.backgroundImage).toContain(CELL_BACK);
+  });
+
+  it("turns over a reversible printing opened at one the reader owns", () => {
+    // The repointing door rather than the injecting one. `hasOwnBack` has to travel with
+    // the override; taking the caller's back art and leaving the flag behind reads as "this
+    // printing has no second side" on a row that plainly does.
+    const OWNED_BACK = "https://x/owned-sld-back.jpg";
+    render(
+      <CardModal
+        card={{
+          ...delver,
+          name: "Teferi's Ageless Insight",
+          layout: "normal",
+          backImageUri: null,
+          printings: [{ ...delver.printings[0], backImageUri: null, hasOwnBack: false }],
+        }}
+        position={1}
+        total={1}
+        onClose={() => {}}
+        onPrev={null}
+        onNext={null}
+        openAtPrinting={{
+          setCode: "ISD", collectorNumber: "51",
+          imageUri: FRONT, backImageUri: OWNED_BACK,
+        }}
+      />,
+    );
+    fireEvent.click(screen.getAllByLabelText(twoFacedCopy.flipToSideAria("back"))[0]);
+    expect(wash().style.backgroundImage).toContain(OWNED_BACK);
+  });
+
   // Until the catalog is re-seeded against the new column every printing row carries a null
   // back, and the flip has to go on working exactly as it did before.
   it("keeps the oracle-level back when the printing carries none", () => {

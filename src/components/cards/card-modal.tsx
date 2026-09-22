@@ -651,7 +651,12 @@ export function CardModal({
             // own back has already fallen through the tiers to the oracle-level image —
             // so writing the null over it would take the second face off a card that has
             // one, on exactly the printings the column has not reached yet.
-            ...(at.backImageUri ? { backImageUri: at.backImageUri } : {}),
+            ...(at.backImageUri
+              // Provenance travels WITH the override, never on its own: the caller handed
+              // this row's own back art, so it is this printing's. Left alone where the
+              // override is absent, so the loader's answer stands.
+              ? { backImageUri: at.backImageUri, hasOwnBack: true }
+              : {}),
             flavorName: at.imageUri === p.imageUri ? p.flavorName : null,
           };
         }))
@@ -669,6 +674,12 @@ export function CardModal({
       // gradient, where the modal used to show the card's own image.
       imageUri: at.imageUri ?? card.imageUri,
       backImageUri: at.backImageUri ?? card.backImageUri ?? null,
+      // TRUE ONLY FOR THE CALLER'S OWN BACK, never for the card-level fallback beside it.
+      // A reversible printing opened from a set page reaches the modal through here, so
+      // without this the turn control is absent on exactly the path the feature was built
+      // for — and the fallback's image belongs to whatever printing seeded the oracle row,
+      // which is the conflation `hasOwnBack` exists to end. Raised by review.
+      hasOwnBack: at.backImageUri != null,
       // The card-level back is the same fallback `imageUri` takes above, and the same one a
       // printing ingested before the column existed falls to. What it must not do is stay
       // absent: an injected row with no back reads as "this printing has no second face",
