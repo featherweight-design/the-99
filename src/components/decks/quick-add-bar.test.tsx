@@ -8,7 +8,9 @@ import { act, fireEvent, render, screen, waitFor, within } from "@testing-librar
 import { beforeEach, describe, expect, it, onTestFinished, vi } from "vitest";
 import type { SearchResult } from "../../app/decks/[id]/search-action";
 
-const searchCards = vi.fn();
+// Typed, so a hand-built result that leaves out a required field fails typecheck rather than
+// reaching the row as `undefined` — which is how a stand-in with no `facts` draws no note.
+const searchCards = vi.fn<(...args: unknown[]) => Promise<SearchResult[]>>();
 const addCardToDeck = vi.fn(async () => ({ ok: true as const }));
 
 vi.mock("../../app/decks/[id]/search-action", () => ({ searchCards }));
@@ -414,7 +416,7 @@ describe("QuickAddBar — availability marker", () => {
     hard: hardDeckNames.length,
     soft: 0,
     free: 0,
-    claims: hardDeckNames.map((n, i) => ({ id: `d${i + 1}`, name: n, quantity: 1, mature: true, pending: false, commander: false })),
+    claims: hardDeckNames.map((n, i) => ({ id: `d${i + 1}`, name: n, quantity: 1, mature: true, pending: false, commander: false, senior: true })),
   });
 
   it("claims an off-list card another committed deck already holds", async () => {

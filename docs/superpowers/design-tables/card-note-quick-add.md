@@ -141,7 +141,7 @@ Cite: SCN §A; CS `cardNote`. All nine apply at row density. Per-density cap: **
 | n5b (not in SCN table) | Extra turns, declared bracket whose rule forbids them (bracket 1) | `cardNote.extraTurns.forbidden(declared, n)` — **FLAG C11**: key exists in CS, no SCN row | isExtraTurn; ordinal; declared bracket |
 | n6 | Extra turns, undeclared — **or declared 4 or 5** (SCN: "takes the n6 form") | `cardNote.extraTurns.plain(n)` | isExtraTurn; ordinal |
 | n7 | Tutor, declared or not | `cardNote.tutor(n)` | isTutor; ordinal |
-| n8 | Completes a two-card combo whose other half is already in the list, declared or not | `cardNote.completesCombo(a, b)` | combo pair names (A, B) |
+| n8 | Completes a two-card combo whose other half is already in the list, declared or not | **NOT DRAWN by the note.** `cardNote.completesCombo(a, b)` is transcribed and never called: combo awareness states the same fact on the same rows first (`ComboClause` / `ComboGlyph`, via `useDeckComboMap` on this host), and `CardNoteFacts` carries no `completesCombos`. See `src/lib/bracket/card-note.ts` | — |
 | n9 | No fact | **nothing renders** — no slot, no rule, no reserved height (`cardNote.none = null`) | — |
 | multi | Card carries ≥2 facts | one sentence per fact in table order, first two only on a row; marks show every fact | ordered fact list |
 | declared-never-analysed | Declared, no verdict ever determined | same as the declared forms; note never needs a verdict | declared bracket only |

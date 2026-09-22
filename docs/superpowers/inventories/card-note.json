@@ -4,7 +4,7 @@
   "shares": {
     "module": "src/components/decks/card-note.tsx",
     "binding": "CardNote",
-    "note": "Every host render it as-is, passing only their own density. A host drawing its own version of the slot is how a phone diverges from a desktop and how the cap drifts from the rule, so the check is asked of each host file directly."
+    "note": "Every host renders it as-is, passing only its own density. A host drawing its own version of the slot is how a phone diverges from a desktop and how the cap drifts from the rule, so the check is asked of each host file directly."
   },
   "rows": [
     {

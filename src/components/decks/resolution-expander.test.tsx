@@ -15,7 +15,9 @@ import { recommendedMix } from "../../lib/decks/mix";
  *  literal drifts from the type the moment a field is added, which is how 120 of these broke. */
 const TEST_MIX = recommendedMix(null, false);
 
-const searchCards = vi.fn();
+// Typed, so a hand-built result that leaves out a required field fails typecheck rather than
+// reaching the row as `undefined` — which is how a stand-in with no `facts` draws no note.
+const searchCards = vi.fn<(...args: unknown[]) => Promise<SearchResult[]>>();
 const resolveUnresolvedRow = vi.fn(async () => ({ ok: true as const }));
 const deleteUnresolvedRow = vi.fn(async () => ({ ok: true as const }));
 
