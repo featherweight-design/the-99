@@ -14,6 +14,8 @@ import { availabilityState, hardDecks } from "../../lib/decks/availability";
 import { isShoppingCard } from "../../lib/decks/shopping";
 import type { DeckSuggestion } from "../../lib/decks/suggest";
 import { BuilderSpine } from "./builder-spine";
+import { AnalysisPanel, SynopsisSlot } from "./analysis-panel";
+import { useDeckProfile } from "./use-deck-profile";
 import { RoleCounterStrip } from "./role-counter-strip";
 import { ArrivalStrip } from "./arrival-strip";
 import { UpdateStrip } from "./update-strip";
@@ -206,6 +208,12 @@ export function BuilderShell({
   const [view, setView] = useState<BuilderView>(
     initialBuilderView(initialView, versions.length, analysisEnabled),
   );
+
+  // IN THE SHELL, not the panel. One tab panel renders at a time, so the Analysis panel unmounts
+  // on every tab switch — a fetch there would re-pay a 630ms profile build each time the reader
+  // came back. The shell survives those switches, so this entry does too, and it dies with the
+  // visit when the route unmounts.
+  const profile = useDeckProfile(deck.id, view === "analysis");
   const [sort, setSort] = useState<SortKey>("gaps");
   const [exportOpen, setExportOpen] = useState(false);
   const [unresolvedExpanded, setUnresolvedExpanded] = useState(false);
@@ -1005,6 +1013,11 @@ export function BuilderShell({
 
             {view === "analysis" ? (
               <div id="panel-analysis" role="tabpanel" aria-labelledby="tab-analysis">
+                {/* The readings sit ABOVE the strip and the synopsis slot below it, so the
+                    verdict arrives on top of the mix rather than replacing it. The strip is
+                    counted from the list and is true in every profile state, which is what
+                    makes a failed read a delay rather than an outage. */}
+                <AnalysisPanel state={profile.state} onRetry={profile.retry}>
                 {/* The strip in its new home. It is REAL analysis content rather than a
                     placeholder — Round 0 moves it here on purpose — which is why this panel
                     draws something true on the day the tab lands, with the verdict arriving
@@ -1017,6 +1030,8 @@ export function BuilderShell({
                   justFilled={deck.filled && autoCount > 0}
                   wasCounts={wasCounts}
                 />
+                <SynopsisSlot />
+                </AnalysisPanel>
               </div>
             ) : view === "games" ? (
               <div id="panel-games" role="tabpanel" aria-labelledby="tab-games">

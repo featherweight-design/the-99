@@ -1,0 +1,95 @@
+// The Analysis tab's readings. Every state is a prop here, which is the point of the panel
+// being presentational: each reading is asserted without a request, and the two that draw
+// NOTHING are asserted to draw nothing rather than assumed to.
+
+import { render, screen } from "@testing-library/react";
+import { describe, expect, it, vi } from "vitest";
+
+import { AnalysisPanel, SynopsisSlot } from "./analysis-panel";
+import { deckAnalysisCopy } from "../../lib/copy/deck-analysis";
+import type { ProfileState } from "./use-deck-profile";
+
+const MIX = "the mix strip";
+const draw = (state: ProfileState) =>
+  render(
+    <AnalysisPanel state={state} onRetry={vi.fn()}>
+      <div>{MIX}</div>
+    </AnalysisPanel>,
+  );
+
+describe("AnalysisPanel", () => {
+  // THE MIX SURVIVES EVERY STATE. It is counted from the list rather than from a profile, so it
+  // is true whatever happened to the read — and that is the difference between a delay and an
+  // outage. Swept across all six states rather than asserted on one.
+  it.each<ProfileState>([
+    { kind: "idle" },
+    { kind: "loading" },
+    { kind: "ready", profile: {} as never },
+    { kind: "disabled" },
+    { kind: "missing" },
+    { kind: "failed" },
+  ])("keeps the tab's own content in the %s state", (state) => {
+    draw(state);
+    expect(screen.getByText(MIX)).toBeInTheDocument();
+  });
+
+  it("says it is reading while the request is in flight", () => {
+    draw({ kind: "loading" });
+    expect(screen.getByText(deckAnalysisCopy.panel.reading)).toBeInTheDocument();
+  });
+
+  // NEVER "something went wrong". The reader is owed what is and is not affected, and the
+  // counted figures are unaffected — the sentence says so.
+  it("states the failure and what it did not affect, with a retry", () => {
+    draw({ kind: "failed" });
+    expect(screen.getByText(deckAnalysisCopy.panel.failed)).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: deckAnalysisCopy.panel.retry })).toBeInTheDocument();
+  });
+
+  // A BUTTON, NEVER AUTOMATIC: a silent retry loop is how a wait becomes a bill.
+  it("offers the retry only on failure", () => {
+    for (const state of [{ kind: "loading" }, { kind: "ready", profile: {} as never }] as const) {
+      const { unmount } = draw(state);
+      expect(screen.queryByRole("button", { name: deckAnalysisCopy.panel.retry })).toBeNull();
+      unmount();
+    }
+  });
+
+  // THE FLAG BEING OFF DRAWS NOTHING, and a deck that cannot be read draws nothing either — the
+  // page around it has already answered that question. Asserted as an absence of the heading,
+  // because "renders null" is what a reserved-space regression would quietly break.
+  it.each<ProfileState>([{ kind: "disabled" }, { kind: "missing" }])(
+    "draws no reading at all in the %s state",
+    (state) => {
+      draw(state);
+      expect(screen.queryByText(deckAnalysisCopy.panel.heading)).toBeNull();
+      expect(screen.queryByText(deckAnalysisCopy.panel.reading)).toBeNull();
+      expect(screen.queryByText(deckAnalysisCopy.panel.failed)).toBeNull();
+    },
+  );
+
+  // NO SPACE IS RESERVED FOR PROSE THAT IS NOT THERE. `ready` has no verdict to draw until
+  // PR 4a, and a placeholder for it is the reserved space the states rule forbids.
+  it("draws no reading once the profile is ready, rather than a placeholder", () => {
+    draw({ kind: "ready", profile: {} as never });
+    expect(screen.queryByText(deckAnalysisCopy.panel.heading)).toBeNull();
+  });
+});
+
+describe("SynopsisSlot", () => {
+  it("states that no summary exists, and offers no control that cannot work", () => {
+    render(<SynopsisSlot />);
+    expect(screen.getByText(deckAnalysisCopy.synopsis.absent)).toBeInTheDocument();
+    // The strings exist in the copy module and must NOT be drawn: nothing can generate a
+    // summary until sub-project 6, and a button that cannot write is worse than the sentence.
+    expect(screen.queryByText(deckAnalysisCopy.synopsis.write)).toBeNull();
+    expect(screen.queryByText(deckAnalysisCopy.synopsis.writeCost)).toBeNull();
+  });
+
+  // SHIPS NO SENTENCE. Asserted as the absence of a paragraph beyond the one line, because the
+  // failure this guards is a placeholder arriving later and reading as content.
+  it("draws one line and no paragraph", () => {
+    const { container } = render(<SynopsisSlot />);
+    expect(container.querySelectorAll("p")).toHaveLength(1);
+  });
+});
