@@ -137,6 +137,22 @@ describe("the rung below", () => {
     expect(below.textContent).toContain("Cut one game changer, only three allowed at Upgraded.");
   });
 
+  // THE ALLOWANCE COMES FROM THE TARGET'S REPORT, not from the cuttable pool. `upgradePath`
+  // filters commanders out of `candidates` because a commander cannot be cut, so deriving the
+  // limit from that list under-reports it by the number of commanders holding the rule: this
+  // deck has four game changers, one of them its commander, and read "only two allowed".
+  it("names the bracket's own allowance when a commander holds the rule", () => {
+    const profile = deckProfile({
+      cards: [COMMANDER, ...["a", "b", "c"].map((id) => profileCard(id, `GC ${id}`))],
+      gameChangerIds: new Set([COMMANDER.oracleId, "a", "b", "c"]),
+    });
+    const verdict = slotDeck(profile);
+    expect(verdict.permits).toEqual([4, 5]);
+    render(<BracketClimb verdict={verdict} profile={profile} />);
+    const below = rungs().find((r) => r.dataset.role === "below")!;
+    expect(below.textContent).toContain("only three allowed at Upgraded");
+  });
+
   // `upgradePath.blocked` is a real state, not an error: a combo whose only pieces are the two
   // commanders cannot be broken by removing a card.
   it("says so when no removal can reach the bracket below", () => {

@@ -325,8 +325,15 @@ async function walk(page, label, markPx, viewportWidth) {
       sizes.every((s) => s.got === s.want),
       sizes.map((s) => `${s.role} ${s.got}/${s.want}`).join(", "));
 
-    // The rung that holds is the only one with figures beside it, and nothing in the climb is
-    // pressable: "the climb states, the findings open".
+    // THE FIGURES BELONG TO THE RUNG THAT HOLDS, and only it. The rung below carries a sentence
+    // about what to cut and the one above carries what it permits; allowances on either would be
+    // the figures of a bracket the deck is not on. An earlier version collected this and never
+    // read it, so a build drawing figures on all three passed every climb check here.
+    const misplaced = climb.filter((r) => r.role !== "yours" && r.figures > 0);
+    report(`${label}px · only the rung that holds carries figures`, misplaced.length === 0,
+      climb.map((r) => `${r.role}:${r.figures}`).join(" "));
+
+    // Nothing in the climb is pressable: "the climb states, the findings open".
     const pressable = await page.evaluate((scope) => {
       const root = document.querySelector(scope);
       const climbRoot = root?.querySelector('[data-testid="climb-rung"]')?.parentElement;

@@ -3,7 +3,7 @@ import type { ReactNode } from "react";
 import { CardFactMark } from "../cards/card-fact-mark";
 import { ComboGlyph } from "../cards/combo-glyph";
 import { climb } from "../../lib/bracket/climb";
-import type { Bracket, BracketVerdict, RuleId } from "../../lib/bracket/types";
+import type { Bracket, BracketLimitReport, BracketVerdict, RuleId } from "../../lib/bracket/types";
 import { upgradePath, type UpgradePath } from "../../lib/bracket/upgrade";
 import type { DeckProfile } from "../../lib/profile/types";
 import { BRACKET_NAMES, deckAnalysisCopy, nameList } from "../../lib/copy/deck-analysis";
@@ -180,7 +180,7 @@ function RungBody({
     // that bracket 1 is the only target counting extra turns.
     return (
       <span className="pl-[7px] text-[12px] leading-[1.55] text-[color:var(--fg-muted)] md:pl-0 md:text-[12.5px] md:leading-[1.6]">
-        {dropSentence(upgradePath(profile, bracket), bracket)}
+        {dropSentence(upgradePath(profile, bracket), bracket, verdict.limits[`bracket${bracket}`])}
       </span>
     );
   }
@@ -305,7 +305,12 @@ function RuleMark({ rule }: { rule: RuleId }) {
  * NAMES THE CARDS AT ONE OR TWO and counts above that. Nine card names in a row is not a
  * sentence a reader takes in, and the receipts live in the findings.
  */
-function dropSentence(path: UpgradePath, bracket: Bracket): ReactNode {
+function dropSentence(
+  path: UpgradePath,
+  bracket: Bracket,
+  /** The target bracket's own report — where the allowance comes from. See below. */
+  report: BracketLimitReport,
+): ReactNode {
   const copy = deckAnalysisCopy.climb;
   const name = BRACKET_NAMES[bracket];
   if (path.blocked) return copy.dropBlocked(name);
@@ -316,9 +321,16 @@ function dropSentence(path: UpgradePath, bracket: Bracket): ReactNode {
     }
     const noun = deckAnalysisCopy.verdict.ruleNouns[item.rule];
     const word = item.removeCount === 1 ? noun[0] : noun[1];
-    // The LIMIT, not the excess: `GAME_CHANGER_LIMIT[3]` is 3, so a deck cutting two to reach
-    // Upgraded is told what it may keep rather than only what has to go.
-    const limit = item.candidates.length - item.removeCount;
+    // THE LIMIT COMES FROM THE TARGET'S OWN REPORT, never from the candidate list. `candidates`
+    // is the CUTTABLE subset — `upgradePath` filters the commanders out of it, because a
+    // commander cannot be cut — so `candidates.length - removeCount` under-reports the allowance
+    // by the number of commanders holding that rule. A deck with four game changers one of which
+    // is its commander would have read "only two allowed at Upgraded" where Upgraded allows
+    // three. The report is where the figure actually lives.
+    //
+    // Game changers is the only rule with room at any of the three targets; mass land denial and
+    // extra turns cap at zero wherever they are counted at all, and a forbidden combo at zero.
+    const limit = item.rule === "gameChangers" ? report.gameChangers.limit : 0;
     if (item.candidates.length <= 2 && limit === 0) {
       return copy.dropParts.named(nameList(item.candidates.map((c) => c.name)), name);
     }
