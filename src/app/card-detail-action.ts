@@ -1,5 +1,6 @@
 "use server";
 
+import { sanitizeDeckScope } from "../lib/combos/deck-scope-param";
 import type { BrowseCard } from "../lib/collection/browse";
 import { loadCardDetail } from "../lib/collection/card-detail";
 import { requireUserId } from "../lib/auth";
@@ -33,6 +34,9 @@ export async function getCardDetail(
   // Server actions are reachable via crafted requests; a non-uuid would reach Postgres as a
   // cast error rather than a miss.
   if (!UUID.test(oracleId)) return null;
-  const scoped = deckOracleIds?.filter((id) => UUID.test(id));
+  // SHAPE-CHECKED AND CAPPED. This is a public endpoint and the argument is new; see
+  // `sanitizeDeckScope`, which is where the rule lives so a test can call it rather than
+  // restate it.
+  const scoped = sanitizeDeckScope(deckOracleIds);
   return loadCardDetail(userId, oracleId, scoped);
 }

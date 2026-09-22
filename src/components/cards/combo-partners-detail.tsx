@@ -179,13 +179,24 @@ export function ComboPartnersDetail({
                 {comboAwarenessCopy.modal.lineLead}
                 {/* THE ONLY TARGET IN THE BLOCK. A pair fact read from one end wants the
                     other end, and the name is the half a reader is looking for — it REPLACES
-                    this modal rather than stacking on it, which the addendum refuses by name,
-                    so the back gesture returns to the card you started from. */}
+                    this modal rather than stacking on it, which the addendum refuses by name.
+
+                    WHAT IT DOES NOT DO YET is return: `load` replaces the provider's card and
+                    keeps no history, so closing from a partner closes the modal rather than
+                    going back to the card you followed it from. The addendum asks for that
+                    return, and giving it one means deciding what CLOSE means on a partner —
+                    back, or shut — which is a design call rather than an omission. Flagged
+                    rather than invented. */}
                 {onSelectPartner ? (
                   <button
                     type="button"
                     onClick={() => onSelectPartner(p.oracleId)}
-                    className="inline p-0 bg-transparent border-none cursor-pointer font-semibold text-left underline decoration-[color:var(--accent-shadow)] underline-offset-[3px] text-[color:var(--fg)]"
+                    // A REAL 44px TARGET ON TOUCH, which the addendum asks for by name. An
+                    // `inline` button keeps only the text's intrinsic height — about 13px —
+                    // so the link was operable with a pointer and effectively not with a
+                    // thumb. `inline-block` with vertical padding and a negative margin buys
+                    // the height without moving the line it sits on.
+                    className="inline-block p-0 py-[15px] -my-[15px] sm:py-0 sm:my-0 bg-transparent border-none cursor-pointer font-semibold text-left underline decoration-[color:var(--accent-shadow)] underline-offset-[3px] text-[color:var(--fg)]"
                   >
                     {p.name}
                   </button>
