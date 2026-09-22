@@ -44,6 +44,7 @@ export function VerdictBlock({
   verdict,
   profile,
   declaration,
+  lean,
 }: {
   verdict: BracketVerdict;
   profile: Pick<DeckProfile, "cards" | "commanderOracleIds" | "brackets">;
@@ -52,6 +53,12 @@ export function VerdictBlock({
    * drew it — no ask, no answer — which is what a surface with no deck to write to gets.
    */
   declaration?: DeclarationControl;
+  /**
+   * The lean line, drawn between the sub-line and the population foot. A slot because it opens a
+   * modal and names cards, which needs the deck page's art and its card provider — neither of
+   * which this block has any other reason to know about.
+   */
+  lean?: ReactNode;
 }) {
   // THE DECLARATION'S READING, from its rule. It is handed the verdict's own range, never a
   // range this component works out, and everything below that turns on it reads `ask`.
@@ -122,6 +129,7 @@ export function VerdictBlock({
           {declarationCopy.declared.permitsBelow(verdict.permits)}
         </p>
       )}
+      {lean}
       {ask && declaration ? (
         <DeclarationSection
           ask={ask}

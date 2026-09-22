@@ -397,6 +397,85 @@ export const deckAnalysisCopy = {
   },
 
   /**
+   * The lean: why a resolved verdict landed where it did, when a combo decided it.
+   *
+   * Only on a single bracket — `leanFor` returns null on a range — so it never shares the block
+   * with the declaration ask. No count of tutors appears here: that clause was deleted in October
+   * 2025, and the threshold is the combo's own two halves.
+   */
+  lean: {
+    label: "How we determined this bracket",
+    reachable: (a: string, b: string) =>
+      `Your tutors can find both halves of ${a} + ${b}, so the pair is part of the plan rather `
+      + `than a draw away. That is what puts this past ${BRACKET_NAMES[3]}.`,
+    /** The same sentence in parts, so the two names can be pressed. Joined, it is `reachable`. */
+    reachableParts: (a: string, b: string) =>
+      ["Your tutors can find both halves of ", a, " + ", b,
+        `, so the pair is part of the plan rather than a draw away. That is what puts this past ${BRACKET_NAMES[3]}.`],
+    drawOnly: (a: string, b: string) =>
+      `This deck holds ${a} + ${b}, and nothing in it searches for either half. The pair is a `
+      + `draw away, and that is what keeps this at ${BRACKET_NAMES[3]}.`,
+    drawOnlyParts: (a: string, b: string) =>
+      ["This deck holds ", a, " + ", b,
+        `, and nothing in it searches for either half. The pair is a draw away, and that is what keeps this at ${BRACKET_NAMES[3]}.`],
+    /**
+     * Reachable with a commander half: the command zone covers it, so crediting "your tutors" with
+     * both halves would be false. Written here, like the next two; `/copy-review` owns them.
+     */
+    reachableCommander: (a: string, b: string) =>
+      `Your commander is one half of ${a} + ${b}, and your tutors can find the other, so the pair `
+      + `is part of the plan rather than a draw away. That is what puts this past ${BRACKET_NAMES[3]}.`,
+    reachableCommanderParts: (a: string, b: string) =>
+      ["Your commander is one half of ", a, " + ", b,
+        `, and your tutors can find the other, so the pair is part of the plan rather than a draw away. That is what puts this past ${BRACKET_NAMES[3]}.`],
+    /** Both halves are commanders — a partner pair — so no tutor is involved at all. */
+    reachableZone: (a: string, b: string) =>
+      `Both halves of ${a} + ${b} are in your command zone, so the pair is there every game. `
+      + `That is what puts this past ${BRACKET_NAMES[3]}.`,
+    reachableZoneParts: (a: string, b: string) =>
+      ["Both halves of ", a, " + ", b,
+        ` are in your command zone, so the pair is there every game. That is what puts this past ${BRACKET_NAMES[3]}.`],
+    /**
+     * A draw-only lean where ONE half is covered — by a tutor, or by the command zone. `leanFor`
+     * reads `drawOnly` whenever coverage is short of every piece, so the handoff's two sentences
+     * leave this case saying "nothing searches for either half" over a modal listing the tutor
+     * that finds one. Written here; `/copy-review` owns the wording.
+     */
+    oneHalf: (a: string, b: string) =>
+      `This deck can find one half of ${a} + ${b}, and the other is a draw away. That is what `
+      + `keeps this at ${BRACKET_NAMES[3]}.`,
+    oneHalfParts: (a: string, b: string) =>
+      ["This deck can find one half of ", a, " + ", b,
+        `, and the other is a draw away. That is what keeps this at ${BRACKET_NAMES[3]}.`],
+    open: "see the reasoning",
+  },
+
+  /** The receipt modal's third body: the reasoning behind a lean, grouped by the half found. */
+  reasoning: {
+    /** The number in the heading, because this is the one bracket reference with no mark. */
+    title: (n: Bracket) => `How we determined bracket ${n}`,
+    qualifierReachable: (n: Bracket) => `${BRACKET_NAMES[n]} · both halves findable`,
+    qualifierDrawOnly: (n: Bracket) => `${BRACKET_NAMES[n]} · neither half findable`,
+    qualifierOneHalf: (n: Bracket) => `${BRACKET_NAMES[n]} · one half findable`,
+    /** Not "2 of 2": a fraction invites a reader to lower a numerator that is not a limit. */
+    threshold: (n: Bracket) =>
+      `A deck reaches ${BRACKET_NAMES[n]} when its tutors can cover every piece of one combo: `
+      + "one card that finds both halves, or two that each find a different one.",
+    /** After the threshold, where a half is a commander: the zone covers it with no tutor. */
+    thresholdCommander: "A commander counts as covered, because it is in the zone every game.",
+    piece: (i: number) => `half ${i === 1 ? "one" : "two"} · in this list`,
+    /** A commander is in the zone every game, so it is covered with no tutor at all. */
+    pieceCommander: (i: number) => `half ${i === 1 ? "one" : "two"} · your commander`,
+    foundBy: "found by",
+    /** An empty slot reads as a clean deck; this sentence does not. */
+    foundByNone: "nothing in this deck searches for it",
+    foundByCommandZone: "the command zone, every game",
+    tutorsAreNotALimit:
+      "The threshold is this combo's own two halves. How many tutors a deck runs is a fact and "
+      + "never a limit. The count is in the findings, with the rest of what is in this deck.",
+  },
+
+  /**
    * "How we make these decisions" — collapsed by default, read once, mid-argument.
    *
    * The row sentences live in `detection` below; this is the panel's own frame around them.

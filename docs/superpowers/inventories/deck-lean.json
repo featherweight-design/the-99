@@ -1,0 +1,179 @@
+{
+  "feature": "Deck analysis \u2014 the lean and its reasoning (PR 6)",
+  "note": "The lean line in the verdict block \u2014 \"How we determined this bracket\", one sentence, and `see the reasoning` \u2014 and the reasoning modal it opens: Round 2's receipt chrome with a third body, the deciding combo at 100\u00d7140 per half and the tutors grouped by the half they find. Same preconditions as `deck-verdict.json`; read that file's note first.\n\nA lean exists only where a COMBO decided a single bracket, so both decks here are built for it on `local-dev` under the e2e account. REACHABLE_DECK is `d0000000-0000-4000-8000-00000000c0b1`: Kess, Dissident Mage leading Mirror of Fate and Thassa's Oracle (Spellbook `1164-1295`) with Fabricate, which finds the artifact half, and Imperial Recruiter, which finds the creature half \u2014 so the pair is assembled and the verdict reads `[4]`. DRAW_ONLY_DECK is `d0000000-0000-4000-8000-00000000c0b0`, the same pair with no tutor, which reads `[3]`; it is also `deck-findings.json`'s COMBO_DECK. Both are rebuilt from their commander and those `deck_cards` rows alone.\n\nThe stacked row is the reasoning modal's own case of addendum ruling 1: a tutor's name opens its card on top of the reasoning, which stays.",
+  "rows": [
+    {
+      "id": "lean-reachable",
+      "label": "/decks/[id] Analysis \u2014 the lean on a reachable deck, at 4",
+      "view": "src/components/decks/lean-line.tsx",
+      "steps": [
+        {
+          "goto": "/decks/${REACHABLE_DECK}",
+          "wait": "[role=tablist]",
+          "settle": 1500
+        },
+        {
+          "clickRole": "tab",
+          "name": "Analysis",
+          "settle": 600
+        },
+        {
+          "clickRole": "button",
+          "name": "Analyze this deck",
+          "settle": 400
+        },
+        {
+          "wait": "[data-testid='lean-line']",
+          "settle": 900
+        },
+        {
+          "scrollTo": "[data-testid='lean-line']",
+          "settle": 350
+        }
+      ]
+    },
+    {
+      "id": "lean-draw-only",
+      "label": "/decks/[id] Analysis \u2014 the lean on a draw-only deck, at 3",
+      "view": "src/components/decks/lean-line.tsx",
+      "steps": [
+        {
+          "goto": "/decks/${DRAW_ONLY_DECK}",
+          "wait": "[role=tablist]",
+          "settle": 1500
+        },
+        {
+          "clickRole": "tab",
+          "name": "Analysis",
+          "settle": 600
+        },
+        {
+          "clickRole": "button",
+          "name": "Analyze this deck",
+          "settle": 400
+        },
+        {
+          "wait": "[data-testid='lean-line']",
+          "settle": 900
+        },
+        {
+          "scrollTo": "[data-testid='lean-line']",
+          "settle": 350
+        }
+      ]
+    },
+    {
+      "id": "reasoning-reachable",
+      "label": "/decks/[id] Analysis \u2014 the reasoning, both halves findable",
+      "view": "src/components/decks/lean-line.tsx",
+      "steps": [
+        {
+          "goto": "/decks/${REACHABLE_DECK}",
+          "wait": "[role=tablist]",
+          "settle": 1500
+        },
+        {
+          "clickRole": "tab",
+          "name": "Analysis",
+          "settle": 600
+        },
+        {
+          "clickRole": "button",
+          "name": "Analyze this deck",
+          "settle": 400
+        },
+        {
+          "wait": "[data-testid='lean-line']",
+          "settle": 900
+        },
+        {
+          "clickRole": "button",
+          "name": "see the reasoning",
+          "settle": 400
+        },
+        {
+          "wait": "[data-testid='reasoning-pieces']",
+          "settle": 900
+        }
+      ]
+    },
+    {
+      "id": "reasoning-draw-only",
+      "label": "/decks/[id] Analysis \u2014 the reasoning, neither half findable",
+      "view": "src/components/decks/lean-line.tsx",
+      "steps": [
+        {
+          "goto": "/decks/${DRAW_ONLY_DECK}",
+          "wait": "[role=tablist]",
+          "settle": 1500
+        },
+        {
+          "clickRole": "tab",
+          "name": "Analysis",
+          "settle": 600
+        },
+        {
+          "clickRole": "button",
+          "name": "Analyze this deck",
+          "settle": 400
+        },
+        {
+          "wait": "[data-testid='lean-line']",
+          "settle": 900
+        },
+        {
+          "clickRole": "button",
+          "name": "see the reasoning",
+          "settle": 400
+        },
+        {
+          "wait": "[data-testid='reasoning-pieces']",
+          "settle": 900
+        }
+      ]
+    },
+    {
+      "id": "reasoning-stacked",
+      "label": "/decks/[id] Analysis \u2014 a tutor opened from the reasoning, stacked on it",
+      "view": "src/components/decks/lean-line.tsx",
+      "steps": [
+        {
+          "goto": "/decks/${REACHABLE_DECK}",
+          "wait": "[role=tablist]",
+          "settle": 1500
+        },
+        {
+          "clickRole": "tab",
+          "name": "Analysis",
+          "settle": 600
+        },
+        {
+          "clickRole": "button",
+          "name": "Analyze this deck",
+          "settle": 400
+        },
+        {
+          "wait": "[data-testid='lean-line']",
+          "settle": 900
+        },
+        {
+          "clickRole": "button",
+          "name": "see the reasoning",
+          "settle": 400
+        },
+        {
+          "wait": "[data-testid='reasoning-pieces']",
+          "settle": 500
+        },
+        {
+          "click": "[data-found='tutors'] button",
+          "settle": 400
+        },
+        {
+          "wait": "[aria-labelledby='card-modal-title']",
+          "settle": 1200
+        }
+      ]
+    }
+  ]
+}

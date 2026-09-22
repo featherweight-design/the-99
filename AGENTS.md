@@ -768,6 +768,27 @@ Package manager is **pnpm** (pinned via `packageManager` in package.json) — ne
   `user_prefs` About row `probe:verdict-block` writes. Point it at `local-dev`, **never
   production**.
 
+- `pnpm probe:verdict-lean` walks the lean and the reasoning modal at 1300x900 and 390x844,
+  against every deck the account owns that draws a lean — both readings where it has both. The
+  reasoning is the receipt's chrome with a third body, so what it proves is layout and stacking:
+  two 100×140 plates side by side at 700px and stacked at 390, the plates painted with the deck's
+  own art, the heading unclipped, and the qualifier drawn ONCE — in the header on desktop and
+  opening the body on the phone, because the phone's 43px header cannot hold both. The contact
+  sheet found that one before the probe existed, both halves truncated. A tutor opened from the
+  reasoning stacks on it with the reasoning's header whole above the card sheet, and Escape lands
+  back on the reasoning.
+
+  It reads the header through `innerText`, never `textContent` or rects: the aside's wrapper is
+  always mounted, and its first run read the phone's hidden qualifier as drawn and failed a build
+  the screenshot showed correct. Reverting the qualifier's move fails two checks per walked deck
+  at 390 — the heading clipped and the qualifier drawn twice — and the local-dev fixture walks
+  two decks, so the run reads four. Its 43px check reads whether the header's mark, heading and
+  qualifier END INSIDE it, not the header's height: a class pins the height, so a height check
+  passes on any build. The 44px close control is excluded, since it overhangs by a pixel by design. It FAILS when
+  no deck among the first twelve draws a lean; `deck-lean.json` names the two local-dev decks
+  built for it. Writes only the `user_prefs` About row. Point it at `local-dev`, **never
+  production**.
+
 - `pnpm probe:commander-availability` walks the two panels on `/commanders/[slug]` that
   draw a card's claim — Role Coverage and the synergy panel — at 1300x900 and 390x844,
   because their rulings are resolved styles rather than markup: the chip's 28px against a

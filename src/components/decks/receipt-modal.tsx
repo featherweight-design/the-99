@@ -56,17 +56,72 @@ export function ReceiptModal({
   art: FindingArt;
   onClose: () => void;
 }) {
+  const label = copy.findings.labels[finding.id];
+  const siblings = finding.cards.map((c) => c.oracleId);
+  return (
+    <ModalChrome
+      mark={<FindingMark id={finding.id} />}
+      title={label}
+      aside={finding.count}
+      closeLabel={copy.receipt.closeAria(label)}
+      onClose={onClose}
+    >
+      {finding.combos ? (
+        finding.combos.map((combo) => (
+          <ComboBody key={combo.variantId} combo={comboModal(combo)} art={art} />
+        ))
+      ) : (
+        <ul
+          className="m-0 list-none grid grid-cols-2 md:grid-cols-5 gap-[11px] md:gap-[9px] px-[16px] py-[14px] md:px-[18px] md:py-[16px]"
+          data-testid="receipt-grid"
+        >
+          {finding.cards.map((card) => (
+            <li key={card.oracleId} className="min-w-0">
+              <ReceiptTile card={card} art={art} siblings={siblings} />
+            </li>
+          ))}
+        </ul>
+      )}
+    </ModalChrome>
+  );
+}
+
+/**
+ * The modal's chrome, shared by every body the Analysis tab opens: the receipt's card list and
+ * combo, and the reasoning behind a lean. Glyph, title, an aside (a count, or a qualifier), close.
+ *
+ * `wide` is the reasoning modal's 700px, which its two 100×140 plates need side by side; the
+ * receipt is 560. `ground` is the reasoning's `--elevated` against the receipt's
+ * `--surface-raised`, as each is drawn.
+ */
+export function ModalChrome({
+  mark,
+  title,
+  aside,
+  closeLabel,
+  onClose,
+  wide = false,
+  ground = "var(--surface-raised)",
+  children,
+}: {
+  mark: React.ReactNode;
+  title: string;
+  aside: React.ReactNode;
+  closeLabel: string;
+  onClose: () => void;
+  wide?: boolean;
+  ground?: string;
+  children: React.ReactNode;
+}) {
   const ref = useRef<HTMLDivElement>(null);
   const titleId = useId();
   const { registerSheet, openOracleId } = useCardDetail();
   useDialogA11y(ref, onClose);
   useEffect(() => registerSheet(), [registerSheet]);
 
-  const label = copy.findings.labels[finding.id];
-  // The card in front of this one. The receipt steps down a ground behind it, which is the
-  // second half of what lets a reader see where a dismissal lands.
+  // The card in front of this one. The sheet steps down a ground behind it, which is the second
+  // half of what lets a reader see where a dismissal lands.
   const behind = openOracleId !== null;
-  const siblings = finding.cards.map((c) => c.oracleId);
 
   return (
     <div
@@ -85,14 +140,15 @@ export function ReceiptModal({
         onClick={(e) => e.stopPropagation()}
         className={
           // Phone: a sheet from 52px down — the canvas's figure, and the top of the strip the
-          // stacked card sheet leaves visible. Desktop: 560px, centered.
+          // stacked card sheet leaves visible. Desktop: centered.
           "flex flex-col w-full h-[calc(100%-52px)] rounded-t-[14px] border-t "
-          + "md:h-auto md:max-h-[85vh] md:w-[560px] md:rounded-[14px] md:border overflow-hidden "
+          + "md:h-auto md:max-h-[85vh] md:rounded-[14px] md:border overflow-hidden "
+          + (wide ? "md:w-[700px] " : "md:w-[560px] ")
           // Behind a card its edge steps down with its ground, as the addendum's §5a draws it.
           + (behind ? "border-[color:var(--border)]" : "border-[color:var(--border-strong)]")
         }
         style={{
-          background: behind ? "var(--surface-sunken)" : "var(--surface-raised)",
+          background: behind ? "var(--surface-sunken)" : ground,
           boxShadow: "var(--modal-shadow)",
         }}
       >
@@ -100,16 +156,16 @@ export function ReceiptModal({
           className="flex flex-none items-center gap-[9px] md:gap-[10px] h-[43px] px-[16px] md:h-auto md:px-[18px] md:py-[14px] border-b border-[color:var(--border)]"
           style={{ opacity: behind ? 0.55 : undefined }}
         >
-          <FindingMark id={finding.id} />
+          {mark}
           <h2
             id={titleId}
-            className="m-0 font-display font-bold text-[15px] md:text-[16px] leading-tight"
+            className="m-0 min-w-0 truncate font-display font-bold text-[15px] md:text-[16px] leading-tight"
             style={{ color: behind ? "var(--fg-muted)" : "var(--fg)" }}
           >
-            {label}
+            {title}
           </h2>
-          <span className="font-mono text-[11.5px] md:text-[12px]" style={{ color: "var(--fg-faint)" }}>
-            {finding.count}
+          <span className="min-w-0 truncate font-mono text-[11.5px] md:text-[12px]" style={{ color: "var(--fg-faint)" }}>
+            {aside}
           </span>
           {/* 44px to press. The header around it is pinned to 43px on the phone, because the
               stacked card sheet starts at 96 and this sheet at 52 behind a 1px border: a header
@@ -119,38 +175,20 @@ export function ReceiptModal({
           <button
             type="button"
             onClick={onClose}
-            aria-label={copy.receipt.closeAria(label)}
-            className="ml-auto -mr-[10px] md:-my-[14px] flex h-[44px] w-[44px] items-center justify-center bg-transparent border-0 font-mono text-[14px] cursor-pointer text-[color:var(--fg-faint)]"
+            aria-label={closeLabel}
+            className="ml-auto -mr-[10px] md:-my-[14px] flex flex-none h-[44px] w-[44px] items-center justify-center bg-transparent border-0 font-mono text-[14px] cursor-pointer text-[color:var(--fg-faint)]"
           >
             ×
           </button>
         </div>
-
-        <div className="flex-1 min-h-0 overflow-y-auto">
-          {finding.combos ? (
-            finding.combos.map((combo) => (
-              <ComboBody key={combo.variantId} combo={comboModal(combo)} art={art} />
-            ))
-          ) : (
-            <ul
-              className="m-0 list-none grid grid-cols-2 md:grid-cols-5 gap-[11px] md:gap-[9px] px-[16px] py-[14px] md:px-[18px] md:py-[16px]"
-              data-testid="receipt-grid"
-            >
-              {finding.cards.map((card) => (
-                <li key={card.oracleId} className="min-w-0">
-                  <ReceiptTile card={card} art={art} siblings={siblings} />
-                </li>
-              ))}
-            </ul>
-          )}
-        </div>
+        <div className="flex-1 min-h-0 overflow-y-auto">{children}</div>
       </div>
     </div>
   );
 }
 
 /** A card: its art, its name under it, and a press that opens the card modal on top. */
-function ReceiptTile({
+export function ReceiptTile({
   card,
   art,
   siblings,
