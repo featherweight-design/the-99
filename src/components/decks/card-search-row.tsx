@@ -161,27 +161,30 @@ export function CardSearchRowBody({
               resolves this item's automatic minimum size to zero via its
               overflow; spelling `min-w-0` out keeps the choice here rather than
               leaving it to which item the browser picks. */}
-          {/* `shrink-[999]` beside a partner: the type line and count are what the modal
-              restores, the partner's name is what nothing on this row can reconstruct, so the
-              meta yields first. The same priority `ComboClause` gives its own two halves. */}
-          <span className={`truncate min-w-0 ${comboPartner ? "shrink-[999]" : ""}`}>
+          {/* Beside a partner the type line takes only the room LEFT OVER — no base size,
+              growing up to its own full width — because the type and count are what the modal
+              restores and the partner's name is what nothing on this row can reconstruct. See
+              the partner below for why a shrink weight is not enough. */}
+          <span className={`truncate min-w-0 ${comboPartner ? "basis-0 grow max-w-max" : ""}`}>
             {flavor}
             {result.typeLine} · {comboPartner ? (ownershipShort ?? ownership) : ownership}
           </span>
           {marker && joiner}
           {marker}
-          {/* THE PARTNER DOES NOT SHRINK; IT IS CAPPED. A shrink WEIGHT (999 against 1) only
-              makes the type line give way first approximately: flex hands out the deficit in
+          {/* WHY THE TYPE LINE HAS NO BASE SIZE, rather than a shrink weight. A weight (999
+              against 1) only makes it give way first approximately: flex divides the deficit in
               proportion, so the partner still takes a fraction of a pixel, and a fraction is
-              enough for `text-overflow` to fire and delete two whole letters. Measured on the
-              real row at 390: the partner at 90 of 90px and drawn `Exquisite Blo…`. So the
-              group is `flex-none` and capped at the line's width — the type line is then the
-              ONLY thing that shrinks, and the name truncates only when it alone cannot fit.
-              The joiner travels inside the group so the cap accounts for it. */}
+              enough for `text-overflow` to fire and delete two whole letters — measured on the
+              real row at 390, the partner at 90 of 90px and drawn `Exquisite Blo…`. With the
+              type at basis 0 the partner and the marker get their full width FIRST and nothing
+              shrinks at all while they fit; only when they alone overflow does this group
+              shrink, with the type already at zero. A cap on the partner instead was tried and
+              is wrong: it cannot see the availability marker, which keeps a floor of its own,
+              so the two overflowed the cell together. The joiner travels inside the group. */}
           {comboPartner && (
             <span
               data-testid="combo-partner-inline"
-              className="flex-none max-w-full inline-flex items-center gap-[4px]"
+              className="inline-flex items-center gap-[4px] min-w-0"
             >
               {joiner}
               <ComboGlyph />

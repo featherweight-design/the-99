@@ -474,6 +474,11 @@ describe("QuickAddBar — availability marker", () => {
 // drawn at both widths, spoken in the row's name, and absent on a card the deck already holds.
 // Each component is tested on its own elsewhere; this is the case that fails when the prop is
 // dropped at the mount site, which is the one place neither of those can see.
+function phoneMetaType(row: HTMLElement): HTMLElement {
+  return row.querySelector('[data-testid="combo-partner-inline"]')!.parentElement!
+    .firstElementChild as HTMLElement;
+}
+
 describe("combo partner (quick-add, option E / G)", () => {
   const BOND = { rhystic: { oracleId: "sanguine-bond", name: "Sanguine Bond" } };
   // `row()` keys the oracle id off the lower-cased name.
@@ -503,15 +508,13 @@ describe("combo partner (quick-add, option E / G)", () => {
     expect(rhysticRow.querySelector('[data-testid="combo-clause"]')?.textContent).toBe(
       "completes with Sanguine Bond",
     );
-    // The partner is CAPPED rather than weighted on the phone line too — see card-search-row.
-    expect(rhysticRow.querySelector('[data-testid="combo-partner-inline"]')!.className).toMatch(
-      /flex-none.*max-w-full/,
-    );
+    // On the phone line the TYPE has no base size, so the partner is never handed a sub-pixel
+    // share while it fits — see card-search-row.
+    expect(phoneMetaType(rhysticRow).className).toMatch(/\bbasis-0\b/);
     // Phone (E): the count's short form beside the partner. Read EXACTLY, off the meta line's
     // own first span: `×1` is a prefix of `×1 owned`, so a containment check passes on a build
     // that ignored the short form — which is how the first version of this line read.
-    const phoneMeta = rhysticRow.querySelector('[data-testid="combo-partner-inline"]')!.parentElement!;
-    expect(phoneMeta.firstElementChild?.textContent).toBe("Enchantment · ×1");
+    expect(phoneMetaType(rhysticRow).textContent).toBe("Enchantment · ×1");
     // The words the phone draws as a glyph are in the row's spoken name.
     expect(rhysticRow.getAttribute("aria-label")).toMatch(/Sanguine Bond/);
 
