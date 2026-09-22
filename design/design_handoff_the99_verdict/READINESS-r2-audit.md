@@ -35,20 +35,31 @@ carried to Round 3 as an open call rather than left here. Nothing in this pass r
 
 ## The twelve errata, re-checked
 
-**Resolved since R1 — five.**
+**Resolved since R1 — five. THREE OF THEM ARE IN OPEN PRs, NOT ON `main`.**
 
-- **1 · the detection figure.** Fully resolved, and better than asked. `deckAnalysisCopy.detection`
+That distinction is the whole point of this document, so it is marked per item rather than left
+to a reader to discover. An audit that says "resolved" about a pushed branch is how PR 4a ends up
+built against fields that do not exist — review caught exactly that on the first issue of this
+file, reading `main` and finding none of the four combo columns.
+
+- **1 · the detection figure.** Fully resolved **on `main`**, and better than asked. `deckAnalysisCopy.detection`
   templates every sentence on `MLD_DETECTION` / `EXTRA_TURN_DETECTION` / `COMBO_DETECTION`, the
   miss slot takes the LIST (`knownMisses: ["Wave of Vitriol", "Cataclysm"]`), and the empty-list
   guard is on the assembled string with its reasoning recorded in place. A figure cannot desync
   from the constant again.
-- **8 · the rank-5 reissue.** Delivered.
-- **12 · the combo payload** — the mana and the steps half. `spellbook_variants` now carries
-  `mana_needed`, `mana_value_needed`, `steps` and `notable_prerequisites`, and `ComboRef` carries
-  all four on both reads. **The image-uri half is NOT met and deliberately so** — see below.
-- **13 · `counted: false` reaching the client.** Shipped, as a member of the `BracketLimit` union
-  in `src/lib/bracket/types.ts`.
-- **13 · the single-card-loop caveat.** Shipped, and placed better than the erratum asked. It is a
+- **8 · the rank-5 reissue.** Delivered — **in PR #817**, not yet on `main`. The consolidated
+  `assets/ASSETS.md` and the five chip files arrive with it; until it merges, `main` still has
+  the old rank-5 file and no manifest, so a builder reading `main` alone should treat this
+  erratum as open. The old file is SUPERSEDED rather than absent from every tree.
+- **12 · the combo payload** — the mana and the steps half, **in PR #820, not yet on `main`.**
+  That PR adds `mana_needed`, `mana_value_needed`, `steps` and `notable_prerequisites` to
+  `spellbook_variants` and carries all four on `ComboRef` through both reads. **On `main` today
+  none of it exists**, so PR 6 is blocked on #820 merging rather than on nothing.
+  **The image-uri half is NOT met and deliberately so** — see below.
+- **13 · `counted: false` reaching the client.** Shipped **on `main`**, as a member of the
+  `BracketLimit` union in `src/lib/bracket/types.ts`.
+- **13 · the single-card-loop caveat.** Shipped **on `main`**, and placed better than the
+  erratum asked. It is a
   SENTENCE in `deck-analysis.ts` rather than a field on `COMBO_DETECTION`, because a card looping
   on itself is a shape the classifier does not attempt rather than one it attempts and gets wrong —
   so it is not a coverage figure and does not belong beside the coverage figures. The code says so.
@@ -71,7 +82,9 @@ carried to Round 3 as an open call rather than left here. Nothing in this pass r
   (confirmed on `ComboReach`), and `--fact` is declared in all six themes (6 occurrences in
   `globals.css`).
 
-**Unchanged and still owed at build time — five.** None needs a decision from anyone.
+**Unchanged and still owed at build time — six** (2, 3, 4, 5, 6, 9). None needs a decision
+from anyone. *Said five in the first issue of this audit; the list has always had six, and this
+is the second miscount in this line of work after "eleven errata".*
 
 - **2 · hard-`99`** → the live count. One occurrence remains in the package's copy file.
 - **3 · em dashes** → `/copy-review` before any of it lands in `src/lib/copy/`.
@@ -106,7 +119,8 @@ the plan as PR 6's own line. **Nothing about the drawn modal changes.**
 
 **The modal gains a prerequisites line, under the steps.**
 
-`notablePrerequisites` is now stored and is set on **64%** of variants — *"You control at least
+`notablePrerequisites` is stored **by PR #820** — not on `main` yet — and is set on **64%** of
+variants — *"You control at least
 five creatures with different powers."* It is the line that answers whether a combo works in THIS
 deck, and Round 2 never asked for it because nobody knew it was in the feed.
 
@@ -123,8 +137,13 @@ zero. 59% of combos need no mana to execute, and that zero is the more alarming 
 
 **Held, unchanged.** No lean, no declaration interaction, no push line, no upgrade path.
 
-## Clear to build
+## Clear to build — with two PRs in front of it
 
-PR 4a may start. What it must carry from this pass: erratum 1's templating (already shipped — use
+PR 4a may start, and **nothing in it depends on #817 or #820**: the verdict head draws the range,
+the chips and the population line, none of which reads a combo column or a chip asset.
+
+**PR 6 does**, and is blocked on **#820** for the payload; the chip files it draws at 22px come
+from **#817**. Neither is on `main` at the time of writing, which is why every "resolved" above
+names where it actually lives. What it must carry from this pass: erratum 1's templating (already shipped — use
 it), erratum 6's precedence, the new `MarkKey` reading, `ASSETS.md`'s sub-20px rule, and the
 population line's null policy.
