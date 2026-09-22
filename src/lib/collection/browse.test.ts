@@ -771,6 +771,35 @@ describe("filterCards", () => {
     expect(order).toEqual(["e", "a"]);
   });
 
+  it("sorts a renamed TWO-FACED card by its front face, which is all the row draws", () => {
+    // A row draws `printedFaceName` — the front half where the layout has two faces — so
+    // keying the sort on the whole `A // B` string lets text on NEITHER ROW decide the
+    // order of both.
+    //
+    // The discriminating shape is two cards whose DRAWN LABELS ARE EQUAL: a reader sees
+    // `Bolt` twice and no reason for either to come first, so the input order must stand.
+    // Keyed on the joined string, the hidden back halves sort them. Measured before it was
+    // written: a prefix pair (`Battle` against `Battle of Olympus // Aftermath`) orders the
+    // same either way on this collation, so the obvious fixture passes both versions and a
+    // first attempt did.
+    const twoFaced = [
+      listCard({
+        oracleId: "zzz",
+        name: "Delver of Secrets // Insectile Aberration",
+        printedName: "Bolt // Zzz Aftermath",
+        layout: "transform",
+      }),
+      listCard({
+        oracleId: "aaa",
+        name: "Delver of Secrets // Insectile Aberration",
+        printedName: "Bolt // Aaa Aftermath",
+        layout: "transform",
+      }),
+    ];
+    expect(twoFaced.map((c) => printedFaceName(c))).toEqual(["Bolt", "Bolt"]);
+    expect(sortCards(twoFaced, "name", "asc").map((c) => c.oracleId)).toEqual(["zzz", "aaa"]);
+  });
+
   it("survives a printed name that is ABSENT, not merely null", () => {
     // `printedName` is typed `string | null` and omitted altogether by the card literals
     // ten test files build, so a `!== null` test admits `undefined` and the

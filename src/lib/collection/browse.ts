@@ -832,7 +832,12 @@ function colorSortKey(identity: string[]): number {
 
 /** Each key's primary comparator, always in ascending form. */
 const SORT_COMPARATORS: Record<SortKey, (a: BrowseListCard, b: BrowseListCard) => number> = {
-  // THE NAME ON SCREEN, which is the printed one where a printing renames the card.
+  // THE NAME ON SCREEN, which is `printedFaceName` — the printed name where a printing
+  // renames the card, and its FRONT HALF where the layout has two faces, because that is
+  // all a row or a tile draws (`rows-view:115`, `grid-view:157`). Keying on the whole
+  // `A // B` string let hidden back-face text order the visible labels: two rows drawing
+  // `Battle` and `Battle of Olympus` sort by what follows the separator, which is on
+  // neither of them. Raised by review.
   // Sorting on the oracle name filed `Mimir's Ancient Wisdom` under T, so a reader
   // scanning an A-Z list looked where the name they could see belonged and it was not
   // there — the same defect as the search reading that name alone, and found by sweeping
@@ -845,7 +850,7 @@ const SORT_COMPARATORS: Record<SortKey, (a: BrowseListCard, b: BrowseListCard) =
   // pass and again in the browser, and an unpinned collation can order the two differently
   // — a list that reshuffles on hydration. The strings it now keys on are Secret Lair
   // renames, which carry exactly the punctuation and diacritics collations disagree about.
-  name: (a, b) => printedNameOf(a).localeCompare(printedNameOf(b), "en"),
+  name: (a, b) => printedFaceName(a).localeCompare(printedFaceName(b), "en"),
   quantity: (a, b) => a.quantity - b.quantity,
   set: (a, b) => a.primarySetCode.localeCompare(b.primarySetCode),
   rarity: (a, b) => RARITY_ORDER[a.rarity] - RARITY_ORDER[b.rarity],
@@ -876,7 +881,7 @@ export function sortCards(
   // user asked to reverse, and flipping it would shuffle every equal-quantity
   // run on a direction change for no reason the user could name.
   return [...list].sort((a, b) => sign * primary(a, b)
-    || printedNameOf(a).localeCompare(printedNameOf(b), "en"));
+    || printedFaceName(a).localeCompare(printedFaceName(b), "en"));
 }
 
 /**
