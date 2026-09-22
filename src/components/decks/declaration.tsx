@@ -83,6 +83,10 @@ export function DeclarationSection({
         {/*
           STATED, NOT DELETED. The superseded answer keeps its mark, faint, at the chip size on
           both widths — it is a record, not a control, and scaling it up at 390 would promote it.
+
+          `dim`, NOT THE CANVAS'S 0.45. The verdict addendum's ruling 3 (#861) holds every bracket
+          mark at 3:1 as the graphic it is, and `DIM_OPACITY` is the one faint strength measured
+          to clear it; 0.45 is the figure that ruling retired.
         */}
         <div className="flex items-center gap-[9px]">
           <BracketMark bracket={ask.declared} px={22} dim />
