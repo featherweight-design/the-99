@@ -1,6 +1,9 @@
 "use server";
 
 import { and, desc, eq, gt, inArray, lt, lte, sql } from "drizzle-orm";
+import { bracketOf } from "../../lib/bracket/rules";
+import { slotDeck } from "../../lib/bracket/slot";
+import { cachedDeckProfile } from "../../lib/profile/load";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { db } from "../../db";
@@ -14,7 +17,7 @@ import { getEdhrecData } from "../../lib/edhrec/client";
 import { loadAvailability } from "../../lib/decks/availability-query";
 import { hardDecks, pullSources } from "../../lib/decks/availability";
 import {
-  commitVersion, loadVersionDiff, newestVersion, restoreDraftFromVersion, versionCards,
+  type CommitSnapshot, commitVersion, loadVersionDiff, newestVersion, restoreDraftFromVersion, versionCards,
   versionLiveAt, type VersionDiffCard,
 } from "../../lib/decks/versions";
 import {
@@ -1447,6 +1450,37 @@ export async function commitDeckVersion(
     return { ok: false, message: "We couldn't find that deck." };
   }
 
+  // THE COMMIT SNAPSHOT, and it is built here rather than inside the transaction.
+  //
+  // `deck_versions.declared_bracket` and `.permits` exist so a version can say "chose 4" about
+  // its own cards forever. Both were being written NULL on every real commit: `commitVersion`
+  // takes an optional snapshot and neither production caller passed one, so the column shipped
+  // dead and only an injected probe path ever exercised it.
+  //
+  // GATED ON THE DECK HAVING DECLARED ANYTHING. Deriving `permits` needs a whole profile —
+  // 630ms median, 2.2s on the slowest real deck — and a deck with no live declaration has
+  // nothing to carry, which is every deck until a player answers. So the cost is paid by the
+  // decks it is for, on the one action it is for.
+  //
+  // OUTSIDE THE TRANSACTION, deliberately: a 630ms build inside it would hold the deck's row
+  // lock for that long, and every concurrent edit and claim read would queue behind a
+  // measurement. The race that buys is benign in the right direction — if the cards move between
+  // this read and the lock below, `permitsDeclaration` fails and the version records NO
+  // declaration rather than one its own cards contradict, which is the rule the column already
+  // follows.
+  let snapshot: CommitSnapshot | undefined;
+  // The column under its own name rather than through a projection alias: the shape then does
+  // not depend on the alias surviving a driver or a test's select stub.
+  const [live] = await db
+    .select({ declaredBracket: decks.declaredBracket })
+    .from(decks)
+    .where(and(eq(decks.id, deckId), eq(decks.userId, userId)));
+  const declaredLive = bracketOf(live?.declaredBracket ?? null);
+  if (declaredLive !== null) {
+    const profile = await cachedDeckProfile(deckId, userId);
+    if (profile) snapshot = { declared: declaredLive, permits: slotDeck(profile).permits };
+  }
+
   const result = await db.transaction<CommitResult>(async (tx) => {
     const [deck] = await tx.select().from(decks).where(eq(decks.id, deckId)).for("update");
     // Deleted between the ownership check above and this lock. Left to fall
@@ -1572,7 +1606,7 @@ export async function commitDeckVersion(
     // than being counted here from `draft`: a path that inserts a card the deck
     // did not hold takes no row lock this transaction holds, so the two reads can
     // legitimately differ and only the snapshot's is the version's own figure.
-    const { version, cardCount } = await commitVersion(deckId, note?.trim() || null, tx);
+    const { version, cardCount } = await commitVersion(deckId, note?.trim() || null, tx, snapshot);
     return { ok: true, number: version.number, cardCount, buy, pull: removes };
   });
   if (!result.ok) return result;

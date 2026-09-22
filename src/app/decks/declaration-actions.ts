@@ -31,10 +31,24 @@ export type DeclareResult =
  * and `null` in that column means *unanswered* and nothing else.
  *
  * PERMITS COME FROM THE DECK'S OWN CARDS, never from the request. The control is drawn over a
- * verdict the reader is looking at, so the honest check is against what the cards permit at the
- * moment of the write — a page held open while the deck was edited elsewhere would otherwise
- * store an answer those cards never allowed. The profile read is `cachedDeckProfile`, so the
- * common case costs a cache hit rather than the 630ms a cold build takes.
+ * verdict the reader is looking at, so the check is against what the cards permit — a page held
+ * open while the deck was edited elsewhere would otherwise store an answer those cards never
+ * allowed. The profile read is `cachedDeckProfile`, so the common case costs a cache hit rather
+ * than the 630ms a cold build takes.
+ *
+ * THIS IS NOT ATOMIC WITH THE WRITE, and an earlier version of this comment claimed it was —
+ * "at the moment of the write", which it is not. The profile completes before the update, so a
+ * concurrent edit narrowing the range from [1,2] to [2] between the two can still store 1.
+ *
+ * Left that way on purpose. Closing it means deriving permits inside the transaction, which is
+ * a 630ms-to-2.2s profile build holding the deck's row lock while every concurrent edit and
+ * claim read queues behind a measurement. And the state the race produces is one the design
+ * already draws: a declaration the cards no longer permit is DRIFT, reported as its own
+ * reading, never corrected and never inferred. The race reaches a drawn state by an unusual
+ * road rather than reaching an undrawn one.
+ *
+ * What the check does buy is the case that matters — a request naming a bracket the cards have
+ * never permitted is refused outright.
  *
  * WHAT THIS DOES NOT DO: it never clears. There is no skip and no dismissal (Round 3, R5) — a
  * player changes a declaration by making a different one, and the only way back to `null` is a
