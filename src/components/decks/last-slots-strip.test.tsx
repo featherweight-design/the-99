@@ -236,6 +236,66 @@ describe("LastSlotsStrip", () => {
     expect(onAnnounce.mock.calls[0][0]).toContain(topOffCopy.announce.opened("3", "3", "0"));
   });
 
+  // THE OPEN IS ALWAYS ANNOUNCED, even when the answer is dropped. A seed that lands after the
+  // player has acted must not tick — those cards were chosen for a deck nobody is looking at
+  // any more — but the open still happened, and swallowing its message leaves a screen reader
+  // with no account of a list that is now on screen.
+  it("announces the open even when the seed is dropped as stale", async () => {
+    let release: (v: unknown) => void = () => {};
+    actions.chooseBulk.mockReturnValue(new Promise((r) => { release = r; }));
+    const onAnnounce = vi.fn();
+    render(<LastSlotsStrip {...base} onAnnounce={onAnnounce} />);
+
+    await click(screen.getByRole("button", { name: doorName("3") }));
+    // The player ticks by hand while the server thinks, which moves the draft.
+    await click(screen.getAllByRole("checkbox")[0]);
+    onAnnounce.mockClear();
+
+    await act(async () => {
+      release({ ok: true, oracleIds: ["owned-1", "owned-2"] });
+    });
+
+    expect(onAnnounce).toHaveBeenCalledTimes(1);
+    expect(onAnnounce.mock.calls[0][0]).toContain(topOffCopy.announce.opened("3", "3", "1"));
+  });
+
+  // ONE MESSAGE PER OPEN. Closing and reopening announces for itself on the reopen path; an
+  // answer from the first open arriving afterwards would put a second message in the live
+  // region for one open, and the first of the pair is the zero the deferral exists to avoid.
+  it("does not announce twice when the list is reopened before the seed lands", async () => {
+    let release: (v: unknown) => void = () => {};
+    actions.chooseBulk.mockReturnValue(new Promise((r) => { release = r; }));
+    const onAnnounce = vi.fn();
+    render(<LastSlotsStrip {...base} onAnnounce={onAnnounce} />);
+
+    await click(screen.getByRole("button", { name: doorName("3") }));
+    await click(screen.getAllByRole("button", { name: topOffCopy.strip.close })[0]);
+    await click(screen.getByRole("button", { name: doorName("3") }));
+    const afterReopen = onAnnounce.mock.calls.length;
+
+    await act(async () => {
+      release({ ok: true, oracleIds: ["owned-1", "owned-2"] });
+    });
+
+    expect(onAnnounce).toHaveBeenCalledTimes(afterReopen);
+  });
+
+  // A REFUSED SEED LEAVES IT OWED. Nothing happened, so a reopen may ask again — where a stale
+  // one does not, because the player has acted and re-seeding would write over them.
+  it("tries again on reopen after the seed is refused", async () => {
+    actions.chooseBulk.mockResolvedValue({ ok: false, message: "nope" });
+    render(<LastSlotsStrip {...base} />);
+
+    await click(screen.getByRole("button", { name: doorName("3") }));
+    expect(actions.chooseBulk).toHaveBeenCalledTimes(1);
+
+    await click(screen.getAllByRole("button", { name: topOffCopy.strip.close })[0]);
+    actions.chooseBulk.mockResolvedValue({ ok: true, oracleIds: ["owned-1"] });
+    await click(screen.getByRole("button", { name: doorName("3") }));
+
+    expect(actions.chooseBulk).toHaveBeenCalledTimes(2);
+  });
+
   it("leaves a claimed card unticked when the list opens", async () => {
     // The door-note checks above read `seedCount`, which is derived from the same
     // list the seed is — so a regression that seeded from `ownedIds` while the

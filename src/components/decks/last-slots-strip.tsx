@@ -171,6 +171,12 @@ function LastSlotsStripInner({
   // the same asynchronous act. The draft can move while the server thinks — a hand tick, a
   // decline, a quick-add closing a slot — and a seed that landed on top of it would overwrite
   // a choice the player had just made, which is the one thing a CONVENIENCE must never do.
+  // A TOKEN PER OPEN. The draft generation below says whether the DECK moved; this says
+  // whether the open that asked is still the open on screen. They are different questions and
+  // one ref cannot answer both: closing the list moves neither `ticked` nor `declined`, so a
+  // seed landing after a close would tick a shut list and announce into it.
+  const openToken = useRef(0);
+
   const draftGen = useRef(0);
   useEffect(() => {
     draftGen.current += 1;
@@ -184,15 +190,11 @@ function LastSlotsStripInner({
   // What the SEED may reach for, which is narrower than what the player may tick. The rule is
   // `canSeed`, shared with the list's bulk control.
   //
-  // THEY SHARE THE FILTER AND NO LONGER SHARE THE OBJECTIVE. The bulk control now asks
-  // `chooseBulkFill`, which runs the real fill and answers with what the deck NEEDS; the seed
-  // below still takes the top N of this list by synergy, which is what the control used to do
-  // and what Task 21 calls a category error — optimising "what can I sleeve" where the player
-  // asked "what does this deck need". Task 21 names only the control's slice, so the seed is
-  // left as it is rather than changed under a task that did not scope it.
-  //
-  // It is the more visible half: the seed runs on first open, so the selection a player is
-  // actually shown by default is still the synergy ranking. Owed as its own change.
+  // THEY SHARE BOTH NOW. `canSeed` decides what is ELIGIBLE, and `chooseBulkTicks` decides
+  // which of those to choose — the seed below and the list's own bulk control call the same
+  // function. Sharing only the first is how they drifted: #798 taught the control to ask the
+  // real fill and left the seed taking the top N of this list by synergy, on the half a player
+  // is actually shown.
   const seedableIds = candidates.filter(canSeed).map((c) => c.oracleId);
 
   const closeRef = useRef<HTMLButtonElement>(null);
@@ -208,6 +210,13 @@ function LastSlotsStripInner({
       .filter((id) => from.has(id) && !declined.has(id) && !deckOracleIds.has(id))
       .slice(0, Math.max(openSlots, 0)).length;
   }
+
+  // READ WHEN THE ANSWER LANDS, not when the request went out. The stale path announces the
+  // open with whatever is ticked NOW, and the closure's copy is from the render that opened.
+  const liveCount = useRef<() => number>(() => 0);
+  useEffect(() => {
+    liveCount.current = () => liveTickCount(ticked);
+  });
 
   function announceOpen(tickCount: number) {
     // One message per settle, and opening at phone settles two facts at once — so they are
@@ -228,6 +237,7 @@ function LastSlotsStripInner({
     const owed = !seeded.current && !restored;
     if (owed) seeded.current = true;
 
+    openToken.current += 1;
     moveFocus.current = true;
     setOpen(true);
     setVisitedThisMount(true);
@@ -250,25 +260,40 @@ function LastSlotsStripInner({
     // The alternative was computing the plan on the deck page for every deck with an open
     // slot, which is a fill per page load to prepare for a press that may never come.
     const askedAt = draftGen.current;
+    const openedAs = openToken.current;
     void chooseBulkTicks({
       deckId,
       slots: Math.max(openSlots, 0),
       allowed: new Set(seedableIds),
     }).then((result) => {
-      // Dropped rather than applied if the draft moved while the answer was coming.
-      if (draftGen.current !== askedAt) return;
+      // SUPERSEDED. The list was closed, or closed and opened again — and a reopen announces
+      // for itself on the `!owed` path above. Answering here as well would put two messages in
+      // the live region for one open, the first of them the zero this defers to avoid.
+      if (openToken.current !== openedAs) return;
+
+      // THE DRAFT MOVED while the answer was coming, so the ticks are not applied: they were
+      // chosen for a deck that is no longer in front of anyone, and overwriting a hand tick is
+      // the one thing a convenience must never do. The OPEN still happened, so it is still
+      // announced — with what is ticked now, read through a ref rather than the closure.
+      if (draftGen.current !== askedAt) {
+        announceOpen(liveCount.current());
+        return;
+      }
+
       const ticks = result.ok ? result.ticks : new Set<string>();
       if (result.ok) setTicked(ticks);
-      // ANNOUNCED HERE rather than at the open, and only on this first one: the figure is the
-      // point of the message, and announcing zero and then three is two messages where the
-      // first is never true. A refused seed announces the open with nothing ticked, which is
-      // what the player is looking at — and draws no refusal, because a convenience they did
-      // not ask for should not report its own failure at them.
+      // A REFUSED SEED opens with nothing ticked and says nothing about the refusal: the
+      // player did not ask for a pre-tick, so its failure is not theirs to read. It leaves the
+      // seed OWED, because nothing happened — a reopen may try again. A stale one does not,
+      // above, because the player has acted and re-seeding would write over them.
+      if (!result.ok) seeded.current = false;
       announceOpen(liveTickCount(ticks));
     });
   }
 
   function closeList() {
+    // Supersedes any seed still in flight: it was asked for an open that is over.
+    openToken.current += 1;
     moveFocus.current = true;
     setOpen(false);
     onOpenChange?.(false);

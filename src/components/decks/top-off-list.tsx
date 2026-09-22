@@ -277,12 +277,10 @@ export function TopOffList({
   // `tickable` — the fill leaves a slot open rather than spending it on a card no floor wants.
   // The figure on the face and in the accessible name is still the number of slots, because
   // that is what the button offers to fill; what changed is that offering is not promising.
-  // The bulk control reaches for what the SEED reaches for — `canSeed`, the one predicate —
-  // so the two cannot say different things about which cards are ELIGIBLE. They no longer
-  // agree on which of those to choose: the seed still takes the top N by synergy while this
-  // asks the real fill. See the note at `last-slots-strip.tsx`. A card owned with every copy
-  // sleeved elsewhere stays in the list and stays tickable by hand; what neither of these does
-  // is choose it for the player.
+  // The bulk control reaches for what the SEED reaches for, and they now agree on both halves:
+  // `canSeed` for what is ELIGIBLE, `chooseBulkTicks` for which of those to choose. A card
+  // owned with every copy sleeved elsewhere stays in the list and stays tickable by hand; what
+  // neither of these does is choose it for the player.
   //
   // It carries `ownedIds`' own exclusions as well, and they are not decoration:
   // a row the player has SET ASIDE, or one that went illegal while the list was
