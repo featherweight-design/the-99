@@ -267,30 +267,40 @@ describe("theme-independent tokens", () => {
     expect([...values]).toEqual([hex]);
   });
 
-  // RANK 1 DOES NOT CLEAR 4.5:1, AND THE HANDOFF SAYS IT DOES.
+  // RANK 1 DOES NOT CLEAR 4.5:1 ON THE GROUND THE VERDICT BLOCK DRAWS IT ON.
   //
   // `HANDOFF.md` states of palette 2e Ignition: "Every rung clears 4.5:1 on all twelve
-  // grounds" — and reasons it out in §2: "The numeral inside the mark is text, so every
+  // grounds" — TWELVE being `--surface-inset` and `--surface-sunken` across the six themes,
+  // which its README names, and on which the claim holds (4.6795 is the worst of them). The
+  // reasoning is §2's: "The numeral inside the mark is text, so every
   // rung owes 4.5:1. That puts a hard floor under rank 1: it cannot be made quiet by being
   // made darker." 4.5 rather than the 3:1 a graphic would owe, because of that numeral;
   // `--fact` above is held to 3 for exactly the opposite reason.
   //
-  // Measured here with this file's own `contrast()`: `--bracket-1` (#8A857C) does NOT clear
-  // it, on kaldheim `--surface` (4.4768) and kaldheim `--elevated-hover` (4.3204). Ranks 2
-  // through 5 clear on every ground in every theme.
+  // Measured here with this file's own `contrast()`: `--bracket-1` (#8A857C) reads 4.4768 on
+  // kaldheim `--surface`, which is the ground the verdict block draws it on and is not one of
+  // the twelve. Ranks 2 through 5 clear on every ground in every theme.
   //
-  // THE GROUNDS ARE NAMED, NOT SWEPT, and they are `--fact`'s — the same four, because that
-  // is the mark this app already draws and the precedent for what "the grounds a mark sits
-  // on" means. A first version of this swept eight surface tokens instead and reported 9
-  // failures of 48 with a minimum of 3.6857; those extra five grounds are real tokens but
-  // nothing establishes that a bracket mark is ever drawn on them, so asserting over them
-  // would be inventing a domain and then reporting its failures as the design's.
+  // THE GROUNDS ARE MEASURED NOW, NOT BORROWED. The list was `--fact`'s four while nothing
+  // drew a bracket mark; `BracketMark` ships in PR 4a and the verdict block is the only
+  // surface that mounts one, on its own box — `background: var(--surface)`, and nothing
+  // else. So the real domain is one token, and it is named here rather than swept: five
+  // more surface tokens would be a claim about mounts that do not exist. The list grows
+  // when a surface adds a ground, which is 4b's climb (`--surface-sunken` on the rung
+  // below, and a `color-mix` of the rank's own ink on the rung that holds).
   //
-  // **This list is provisional and must be revisited when `BracketMark` ships.** Nothing
-  // draws the mark yet, so the honest claim today is about the grounds a comparable mark
-  // uses. If the component lands on `--elevated` — where rank 1 reads 3.6857 on kaldheim,
-  // its worst anywhere — this gets worse, not better.
-  const GROUNDS = ["surface", "surface-rail", "elevated-hover", "bg"] as const;
+  // WHAT THE MEASUREMENT SETTLED, and it is not what the provisional list feared. It is
+  // better: kaldheim `--elevated-hover` (4.3204) is NOT a ground the mark sits on, and
+  // `--elevated` (3.6857, the worst anywhere) is not either. The real floor is kaldheim
+  // `--surface` at 4.4768.
+  //
+  // AND THE HANDOFF'S CLAIM IS TRUE AS WRITTEN. `design_handoff_the99_deck_analysis`'s
+  // README names the twelve grounds it measured — "`--surface-inset` and `--surface-sunken`
+  // × six themes" — and rank 1 clears 4.5:1 on all twelve (4.6795 is the worst of them).
+  // `--surface` is a THIRTEENTH ground, introduced by this component, and the palette was
+  // never cut for it. That is a question for Design rather than a defect in the drop, and
+  // it is recorded rather than quietly absorbed: the shortfall is 0.0232, on one theme.
+  const GROUNDS = ["surface"] as const;
 
   it("clears 4.5:1 for ranks 2-5 on every ground in every theme", () => {
     // Swept WIDER than GROUNDS deliberately: these clear everywhere, so the broader domain
@@ -316,13 +326,13 @@ describe("theme-independent tokens", () => {
     const ratios = entries.flatMap(([, tokens]) =>
       GROUNDS.map((ground) => contrast(tokens.get("bracket-1")!, tokens.get(ground)!)),
     );
-    // No worse than today, at FULL PRECISION rather than rounded. kaldheim on
-    // `--elevated-hover` is the weakest of the named grounds, and a floor written as 4.32
-    // would wave through a regression from 4.3204 to 4.321 — "no worse than today" has to
+    // No worse than today, at FULL PRECISION rather than rounded. kaldheim `--surface` is
+    // the weakest of the grounds the mark is actually drawn on, and a floor written as 4.47
+    // would wave through a regression from 4.4768 to 4.471 — "no worse than today" has to
     // mean today's number, or the gate permits exactly the drift it exists to catch.
     // `contrast()` is pure over two fixed hexes, so this is deterministic; the day it
     // legitimately moves, it fails loudly and is re-measured rather than absorbing a loss.
-    expect(Math.min(...ratios)).toBeGreaterThanOrEqual(4.320428393596114);
+    expect(Math.min(...ratios)).toBeGreaterThanOrEqual(4.47683985932081);
     // And still short of the claim, so this assertion is not quietly satisfied by a fix
     // nobody then notices — the day rank 1 clears, this line fails and comes out.
     expect(Math.min(...ratios)).toBeLessThan(4.5);

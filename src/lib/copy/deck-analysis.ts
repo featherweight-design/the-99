@@ -130,6 +130,119 @@ export const deckAnalysisCopy = {
   },
 
   /**
+   * The verdict block — the head Round 2 draws, and the chrome rounds 3 and 4 sit inside.
+   *
+   * NOTHING HERE GRADES. No "fails", no "too many", no "violation": the block prints a bracket
+   * and a reason, and a deck past all three limited brackets gets exactly the type, ink and mark
+   * a `1 or 2` deck gets. Round 0's reserved violation card is discarded, and this copy is the
+   * reason it can be — there is no sentence here that only a violating deck could take.
+   */
+  verdict: {
+    heading: "Your bracket",
+    /** On the chip beside the two marks. A range is two brackets the RULES hand the player. */
+    splitChip: "Split",
+    /** The ringed `?`. It asks the question a range poses, and carries no other meaning. */
+    declareGlyphAria: "Yours to declare",
+
+    /**
+     * The intent sub-lines, for the two ranges.
+     *
+     * `[1,2]` puts the intent at the BOTTOM of the range and `[4,5]` at the top, which is not a
+     * layout note: an exhibition deck is a promise about how it is played, where a cEDH deck is
+     * a claim about how hard it is trying. The two sentences say opposite things and neither
+     * generalises.
+     */
+    intentLow:
+      "Nothing in the 99 pushes past Core. Which of the two this is, is yours to say: an "
+      + "exhibition deck is a promise about how you play it, not a fact about the cards.",
+    intentHigh:
+      "Bracket 3 only permits up to three game changers. Four and five have no card limits "
+      + "between them, so which one this is, is how you play it.",
+    /** 390 only. The second clause survives; the middle one is what the narrow column drops. */
+    intentHighShort:
+      "Bracket 3 only permits up to three game changers. Which of the two this is, is how you "
+      + "play it.",
+
+    /**
+     * The single-bracket sub-line: what ruled the one below out, then the closing clause.
+     *
+     * DESIGN SUPPLIES THE FRAME AND ENGINEERING SUPPLIES THE CLAUSE. The package's
+     * `singleExact` takes `ruledOut` as a parameter for exactly this reason — the facts are a
+     * figure and a limit, both of which live in code.
+     */
+    ruledOutFact: (have: number, rule: string) => `${numberWord(have)} ${rule}`,
+    /**
+     * `and Exhibition allows none at all` / `and Upgraded allows only three`.
+     *
+     * TWO READINGS RATHER THAN ONE TEMPLATE WITH A ZERO IN IT. Every rule that can rule out
+     * brackets 1 and 2 caps at zero, so "allows only zero" would be the common case and it is
+     * not a sentence anyone says.
+     */
+    ruledOutAllowance: (bracket: string, limit: number) =>
+      limit === 0
+        ? `and ${bracket} allows none at all`
+        : `and ${bracket} allows only ${numberWord(limit)}`,
+    /**
+     * The `[4]` reading, which the canvas never drew: nothing at bracket 3 was violated, and
+     * what ruled it out is that the deck can ASSEMBLE its combo rather than draw into it.
+     */
+    ruledOutAssembled: (bracket: string) =>
+      `This deck can assemble a two-card infinite rather than draw into it, which is past `
+      + `${bracket}`,
+    /** The closing clause, on every single-bracket reading. */
+    nothingFurther: "Nothing else in the 99 reaches further.",
+
+    /**
+     * The nouns the sub-line counts. Singular and plural, because "One game changers" is the
+     * shape a naive template produces and it is the first thing a reader notices.
+     */
+    ruleNouns: {
+      gameChangers: ["game changer", "game changers"],
+      massLandDenial: ["mass land denial card", "mass land denial cards"],
+      extraTurns: ["extra-turn card", "extra-turn cards"],
+      twoCardCombos: ["two-card infinite", "two-card infinites"],
+    },
+  },
+
+  /**
+   * The population line, in the block's foot under a hairline.
+   *
+   * NEVER AN INPUT TO THE VERDICT, which the hairline says structurally and the placement says
+   * again: feeding what other players declared back into the reading makes it a popularity
+   * contest. And the DENOMINATOR IS INSIDE THE SENTENCE, so no layout change can drop it —
+   * only about 22.4% of decks declare a bracket at all, and a bare "3,884 decks" reads as a
+   * share of every deck rather than of the ones that answered.
+   */
+  population: {
+    label: "What other players say",
+    line: (declared: number, commander: string, said: number, name: string) =>
+      `Of the ${declared.toLocaleString()} ${commander} decks that declared a bracket, `
+      + `${said.toLocaleString()} said ${name}.`,
+    /**
+     * The same sentence, split so the two figures can carry the emphasis the canvas gives them.
+     *
+     * ONE SOURCE, CHECKED. `deck-analysis.test.ts` asserts these parts joined are byte-identical
+     * to `line` — two hand-kept copies of one sentence drift, and the copy guard reads `line`,
+     * so a drifted `lineParts` would be the half nothing looks at.
+     */
+    lineParts: (
+      declared: number,
+      commander: string,
+      said: number,
+      name: string,
+    ): { text: string; strong?: boolean }[] => [
+      { text: "Of the " },
+      { text: declared.toLocaleString(), strong: true },
+      { text: ` ${commander} decks that declared a bracket, ` },
+      { text: said.toLocaleString(), strong: true },
+      { text: ` said ${name}.` },
+    ],
+    /** The 27 commanders EDHREC has no declarations for. ABSENT, never zero: a zero reads as
+     *  "nobody plays this", which is a different and false claim. */
+    absent: (commander: string) => `EDHREC has no declared brackets for ${commander}.`,
+  },
+
+  /**
    * "How we make these decisions" — four rows, one per rule.
    *
    * Game changers carries NO misses line, deliberately: it is the contrast that makes the other

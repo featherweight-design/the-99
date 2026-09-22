@@ -1,5 +1,5 @@
-import { BRACKET_NAMES } from "../copy/deck-analysis";
-import type { Bracket } from "./types";
+import { BRACKET_NAMES, nameList } from "../copy/deck-analysis";
+import type { Bracket, RuleId } from "./types";
 
 /**
  * What the verdict block's head draws, from the permitted range alone.
@@ -90,4 +90,85 @@ export function populationLine(
     said: population.counts[String(bracket)] ?? 0,
     name: BRACKET_NAMES[bracket],
   };
+}
+
+/**
+ * The sub-line under the face — the one part of the block that differs between readings.
+ *
+ * FOUR READINGS, and the fourth is the one the canvas never drew. A range asks the player for
+ * their intent; a single bracket says what ruled the one below it out. That second half has two
+ * shapes, because `permitsFor` reaches a single bracket two different ways:
+ *
+ * - `[2]` and `[3]` arrive because a LIMIT was passed at the bracket below, so `violations`
+ *   holds the receipt and the sentence is built from it.
+ * - `[4]` arrives with `violatesB3` FALSE and `assemblesCombo` true. Nothing at bracket 3 was
+ *   violated, so `violations` holds nothing for it and a reading built from violations alone
+ *   would draw an empty sentence on a real deck. What ruled 3 out is that the deck can assemble
+ *   its combo rather than having to draw into it.
+ *
+ * The canvas draws `[1,2]`, `[2]`, `[3]` and `[4,5]` — three real decks — and never a `[4]`,
+ * so that fourth reading is engineering's clause in Design's own slot: `singleExact` takes
+ * `ruledOut` as a parameter precisely because the package expects it to be supplied from code.
+ */
+export type VerdictSubLine =
+  /** A range. The ink and the ringed `?` come from `VerdictHead`, not from here. */
+  | { kind: "intent"; low: Bracket }
+  /** A limit was passed at the bracket below, and these are the rules that passed it. */
+  | { kind: "ruledOut"; below: Bracket; reasons: RuledOutReason[] }
+  /** The bracket below is out because the deck assembles a combo rather than drawing into it. */
+  | { kind: "assembled"; below: Bracket }
+  /** No bracket below — unreachable from `permitsFor`, and drawn as nothing rather than thrown. */
+  | { kind: "none" };
+
+export type RuledOutReason = { rule: RuleId; have: number; limit: number };
+
+export function verdictSubLine(verdict: {
+  permits: readonly Bracket[];
+  violations: readonly { rule: RuleId; bracket: number; have: number; limit: number }[];
+}): VerdictSubLine {
+  const permits = verdict.permits;
+  // The same guard the head uses, for the same reason: a hand-built range renders a confident
+  // sentence about a reading nobody permitted.
+  const head = verdictHead(permits);
+  if (head.split) return { kind: "intent", low: permits[0] };
+  const yours = permits[0];
+  if (yours <= 1) return { kind: "none" };
+  const below = (yours - 1) as Bracket;
+  const reasons = verdict.violations
+    .filter((v) => v.bracket === below)
+    // DEDUPED BY RULE. `slotDeck` reports the loop clause at both 2 and 3, so a single bracket
+    // never sees the same rule twice — but the filter above takes one bracket, and a future
+    // rule reported twice at one bracket would otherwise say the same thing twice in one
+    // sentence.
+    .filter((v, i, all) => all.findIndex((o) => o.rule === v.rule) === i)
+    .map((v) => ({ rule: v.rule, have: v.have, limit: v.limit }));
+  // NOT A FALLBACK. `[4]` is the one single bracket that violates nothing below it, and this is
+  // that reading rather than an empty-list guard standing in for it.
+  return reasons.length > 0
+    ? { kind: "ruledOut", below, reasons }
+    : { kind: "assembled", below };
+}
+
+/**
+ * Who the population line is ABOUT — the commander, or the pair.
+ *
+ * `BracketPopulation.of` already records which row EDHREC's counts came from, and the two are
+ * different claims: a pair row counts decks led by BOTH, a commander row counts decks led by the
+ * PRIMARY one. Naming both commanders over a commander row would attribute a partner deck's
+ * counts to a pairing nobody counted.
+ *
+ * Returns null when the profile cannot name its own commander, and the line is then drawn as
+ * absent rather than as "Of the 9,730 undefined decks".
+ */
+export function populationSubject(
+  of: "commander" | "pair",
+  commanderOracleIds: readonly string[],
+  cards: readonly { oracleId: string; name: string }[],
+): string | null {
+  const byId = new Map(cards.map((c) => [c.oracleId, c.name]));
+  // The PRIMARY first: `commanderOracleIds` is built from the deck head's own two columns, in
+  // that order, and `populationFrom` reads the commander row for `head.commanderOracleId`.
+  const ids = of === "pair" ? commanderOracleIds : commanderOracleIds.slice(0, 1);
+  const names = ids.map((id) => byId.get(id)).filter((n): n is string => Boolean(n));
+  return names.length === ids.length && names.length > 0 ? nameList(names) : null;
 }

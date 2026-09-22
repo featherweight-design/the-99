@@ -525,6 +525,35 @@ html { --modal-shadow: 0 40px 100px rgba(0, 0, 0, 0.7); }
   }
 }
 
+/* The bracket mark's box, at one size below 768px and another above it.
+ * ------------------------------------------------------------------
+ * A MEDIA QUERY CANNOT BE WRITTEN INLINE, and the alternative is to mount the
+ * mark twice behind `hidden` / `md:hidden` — which is the responsive-split
+ * duplication this repo has been bitten by before. One element, two
+ * properties: `BracketMark` sets `--bracket-mark-px` always and
+ * `--bracket-mark-px-md` only when the two widths differ.
+ *
+ * The numeral inside is sized in `em`, so it follows the box without a second
+ * pair of declarations to keep in step.
+ *
+ * The component only passes an `mdPx` whose `markForm` matches `px`'s: the
+ * three forms resolve to different files (or to no file at all), so a
+ * breakpoint that crossed 20 or 26 would need a different mask on each side
+ * and this rule cannot supply one. `BracketMark` throws rather than drawing
+ * the wrong art at one of the two widths. */
+.bracket-mark {
+  width: var(--bracket-mark-px);
+  height: var(--bracket-mark-px);
+  font-size: var(--bracket-mark-px);
+}
+@media (min-width: 768px) {
+  .bracket-mark {
+    width: var(--bracket-mark-px-md, var(--bracket-mark-px));
+    height: var(--bracket-mark-px-md, var(--bracket-mark-px));
+    font-size: var(--bracket-mark-px-md, var(--bracket-mark-px));
+  }
+}
+
 /* Brand focus treatment — READINESS item 5.
  * Applies globally so every focusable control (rail item, tab, chip, button,
  * link, popover trigger, textarea) picks it up unless a component overrides.

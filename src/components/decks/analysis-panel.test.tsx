@@ -6,6 +6,7 @@ import { render, screen } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
 
 import { AnalysisPanel, SynopsisSlot } from "./analysis-panel";
+import { deckProfile } from "./__fixtures__/deck-profile";
 import { deckAnalysisCopy } from "../../lib/copy/deck-analysis";
 import type { ProfileState } from "./use-deck-profile";
 
@@ -25,7 +26,7 @@ describe("AnalysisPanel", () => {
   it.each<ProfileState>([
     { kind: "idle" },
     { kind: "loading" },
-    { kind: "ready", profile: {} as never },
+    { kind: "ready", profile: deckProfile() },
     { kind: "disabled" },
     { kind: "missing" },
     { kind: "failed" },
@@ -79,14 +80,14 @@ describe("AnalysisPanel", () => {
   // The hook's own second-press test could not catch it: its harness renders its own button.
   // A component whose control vanished would have passed there and failed a reader.
   it("keeps a way to ask again once the profile is ready", () => {
-    draw({ kind: "ready", profile: {} as never });
+    draw({ kind: "ready", profile: deckProfile() });
     expect(screen.getByRole("button", { name: deckAnalysisCopy.panel.again })).toBeInTheDocument();
     expect(screen.queryByText(deckAnalysisCopy.panel.reading)).toBeNull();
   });
 
   it("asks again when that control is pressed", () => {
     onRequest.mockClear();
-    draw({ kind: "ready", profile: {} as never });
+    draw({ kind: "ready", profile: deckProfile() });
     screen.getByRole("button", { name: deckAnalysisCopy.panel.again }).click();
     expect(onRequest).toHaveBeenCalledTimes(1);
   });

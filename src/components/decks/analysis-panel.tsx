@@ -2,8 +2,10 @@
 
 import type { ReactNode } from "react";
 
+import { slotDeck } from "../../lib/bracket/slot";
 import { deckAnalysisCopy } from "../../lib/copy/deck-analysis";
 import type { ProfileState } from "./use-deck-profile";
+import { VerdictBlock } from "./verdict-block";
 
 /**
  * The Analysis tab's own readings, above whatever the tab already draws.
@@ -24,15 +26,37 @@ import type { ProfileState } from "./use-deck-profile";
 export function AnalysisPanel({
   state,
   onRequest,
+  synopsis,
   children,
 }: {
   state: ProfileState;
   onRequest: () => void;
+  /**
+   * The synopsis slot, which sits ABOVE the verdict rather than among `children`.
+   *
+   * A NAMED SLOT because the order is the design's: Round 2 draws the overview first and the
+   * bracket under it, and `children` is the tab's existing content, which ends below both. A
+   * single opaque `children` cannot express "one of these goes above the verdict".
+   */
+  synopsis?: ReactNode;
   children: ReactNode;
 }) {
   return (
     <div className="flex flex-col gap-4">
       <Reading state={state} onRequest={onRequest} />
+      {synopsis}
+      {/*
+        THE VERDICT IS DRAWN FROM THE PROFILE THE READER ASKED FOR, and only then. Every other
+        reading above is about the ask itself; this is the answer.
+
+        `slotDeck` TAKES NO DECLARATION HERE, deliberately. Nothing 4a draws reads one — the
+        face, the chips and the population line are all functions of the permitted range — and
+        the declaration's own surface is PR 5's. Defaulting one would be the thing the round's
+        rulings forbid outright: never inferred, never defaulted.
+      */}
+      {state.kind === "ready" ? (
+        <VerdictBlock verdict={slotDeck(state.profile)} profile={state.profile} />
+      ) : null}
       {children}
     </div>
   );

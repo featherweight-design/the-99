@@ -117,3 +117,46 @@ describe("the shared helpers", () => {
     expect(ordinal(112)).toBe("112th");
   });
 });
+
+describe("the population line", () => {
+  // ONE SOURCE, CHECKED. `lineParts` exists only so the two figures can carry the canvas's
+  // emphasis; it is the same sentence, and two hand-kept copies of one sentence drift. The copy
+  // guard reads `line`, so a drifted `lineParts` would be the half nothing looks at.
+  it("splits into parts that rejoin as the sentence exactly", () => {
+    const args = [9730, "Yuriko, the Tiger's Shadow", 3884, "Optimized"] as const;
+    expect(deckAnalysisCopy.population.lineParts(...args).map((p) => p.text).join("")).toBe(
+      deckAnalysisCopy.population.line(...args),
+    );
+  });
+
+  it("emphasises the two figures and nothing else", () => {
+    const parts = deckAnalysisCopy.population.lineParts(9730, "Yuriko", 3884, "Optimized");
+    expect(parts.filter((p) => p.strong).map((p) => p.text)).toEqual(["9,730", "3,884"]);
+  });
+
+  // ABSENT NAMES THE COMMANDER. A zero reads as "nobody plays this" and is a different claim;
+  // 27 commanders have no counts at all.
+  it("names the commander in the absent reading", () => {
+    expect(deckAnalysisCopy.population.absent("Yuriko")).toBe(
+      "EDHREC has no declared brackets for Yuriko.",
+    );
+  });
+});
+
+describe("the verdict's ruled-out clause", () => {
+  // TWO READINGS RATHER THAN A TEMPLATE WITH A ZERO IN IT: every rule that can rule out brackets
+  // 1 and 2 caps at zero, so "allows only zero" would be the common case and nobody says it.
+  it("says none at all at a zero limit and names the figure otherwise", () => {
+    expect(deckAnalysisCopy.verdict.ruledOutAllowance("Exhibition", 0)).toBe(
+      "and Exhibition allows none at all",
+    );
+    expect(deckAnalysisCopy.verdict.ruledOutAllowance("Upgraded", 3)).toBe(
+      "and Upgraded allows only three",
+    );
+  });
+
+  it("counts the fact in words and takes the noun it is given", () => {
+    expect(deckAnalysisCopy.verdict.ruledOutFact(1, "extra-turn card")).toBe("one extra-turn card");
+    expect(deckAnalysisCopy.verdict.ruledOutFact(2, "game changers")).toBe("two game changers");
+  });
+});
