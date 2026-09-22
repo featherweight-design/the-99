@@ -73,25 +73,66 @@ added and the count went from nine to fourteen**, so the dependency history is a
 
 | PR | What | Blocked by |
 |---|---|---|
-| **0 — the combo payload** | `spellbook_variants` gains `mana_needed`, `mana_value_needed`, `steps` and `notable_prerequisites`; `db:seed:combos` ingests them, `check:spellbook` asserts them, `ComboRef` carries them. No UI. **The modal cannot be built before this.** | — |
+| **0 — the combo payload** ✅ | `spellbook_variants` gains `mana_needed`, `mana_value_needed`, `steps` and `notable_prerequisites`; `db:seed:combos` ingests them, `check:spellbook` asserts them, `ComboRef` carries them. No UI. **The modal cannot be built before this.** | — |
 | **1 — the tab** ✅ | The Analysis tab, its flag and the mix strip moved in. **Shipped reading no profile** — see PR 1b. | *shipped* |
-| **1b — the payload and the tab's states** | `cachedDeckProfile` reached from the surface (shape 3 below), the empty / loading / refused readings, and the synopsis slot with no sentence. | 1 |
+| **1b — the payload and the tab's states** ✅ | `cachedDeckProfile` reached from the surface (shape 3 below), the empty / loading / refused readings, and the synopsis slot with no sentence. | 1 |
 | **2 — receipts reshaped** ✅ | `lean.receipts[].tutors` keyed per piece; the deciding combo marked on `BracketLean`. | *shipped #792* |
 | **3 — the declaration's storage** ✅ | `decks.declared_bracket` and `deck_versions.declared_bracket`, both check-constrained; the copy at commit, gated on the version's own permits; `permits` stored sorted; `probe:declaration`. | *shipped #797 #801 #802 #803 #809* |
-| **3b — the declaration's write path** | The server action and its refusal rules — never defaulted, never inferred, no skip. **Never shipped**: `probe:declaration` says so in its own header ("nothing draws a declaration yet, so there is no server action to call"). | — |
-| **4a — the verdict head** | The permitted range, the bracket chips, and the population line. **This establishes Round 2's chrome** — rounds 3 and 4 sit inside it, so it is the one every later surface renders into. | 1b, **Round 2 re-audit** |
-| **4b — limits and violations** | The three limits tables and the violations list with their receipts. Renders inside 4a's chrome. | 4a |
-| **5 — the declaration ask and sub-line** | The readings that survive the 2026-09-21 ruling, plus `permits: [4]`, which draws no line. No skip, no "you said". | 3b, 4a |
-| **6 — the lean and the reasoning modal** | The lean line, the modal body, the command-zone `found by` reading, and image resolution **at the draw** rather than in the profile. Mana drawn **as a state** — pips above zero, "No mana needed" at zero — plus the notable-prerequisites line. | 0, 2, 4b |
-| **7 — the drift row** | What survives of drift once the "you said" framing is gone — the permitted side can be a single bracket, which needs a reading. | 4a |
-| **8a — the facts payload** | The profile threaded into the builder shell and the top-off list, and a BATCHED `CandidateFacts` read for the whole pool. Measured above; Round 4's own list does not contain it. | — |
+| **3b — the declaration's write path** ✅ | The server action and its refusal rules — never defaulted, never inferred, no skip. **Never shipped**: `probe:declaration` says so in its own header ("nothing draws a declaration yet, so there is no server action to call"). | — |
+| **4a — the verdict head** ◐ | The permitted range, the bracket chips, and the population line. **This establishes Round 2's chrome** — rounds 3 and 4 sit inside it, so it is the one every later surface renders into. | 1b, **Round 2 re-audit** |
+| **4b — limits and violations** ◐ | The three limits tables and the violations list with their receipts. Renders inside 4a's chrome. | 4a |
+| **5 — the declaration ask and sub-line** ◐ | The readings that survive the 2026-09-21 ruling, plus `permits: [4]`, which draws no line. No skip, no "you said". | 3b, 4a |
+| **6 — the lean and the reasoning modal** ◐ | The lean line, the modal body, the command-zone `found by` reading, and image resolution **at the draw** rather than in the profile. Mana drawn **as a state** — pips above zero, "No mana needed" at zero — plus the notable-prerequisites line. | 0, 2, 4b |
+| **7 — the drift row** ◐ | What survives of drift once the "you said" framing is gone — the permitted side can be a single bracket, which needs a reading. | 4a |
+| **8a — the facts payload** ✅ | The profile threaded into the builder shell and the top-off list, and a BATCHED `CandidateFacts` read for the whole pool. Measured above; Round 4's own list does not contain it. | — |
 | **8b — the push line** | The atom at two densities, on the quick-add row, the Consider tile and the top-off row. | 8a |
 | **9 — the upgrade path** | Candidate sets, never a pick; the `blocked` reading. | Round 4 design |
 
-**PRs 1, 2 and 3 have shipped** — 3 as storage only; see 3b. Four PRs are unblocked today and
-none of them waits on another: **PR 0** widens an ingest, **PR 1b** reaches a loader the app
-already has, **PR 3b** is the write path PR 3's storage was built for, and **PR 8a** is the
-batched facts read.
+## Where this stands — 2026-09-22
+
+**Tier B's rules are done.** ✅ marks a row that shipped whole; ◐ marks one whose RULE has
+shipped and whose RENDERING has not.
+
+Every rule in this table is written, swept across each shape it can be asked about, and
+mutation-proved: PR 0 (#820), 3b (#821), 1b (#825), 4a's `verdictHead` (#828), 8a (#830),
+5's `declarationAsk` (#831), 6's `comboModal` (#832), 4b's `climb`/`findingState` (#833),
+7's `versionComparison` (#834), and the mark's size rules (#835). `upgradePath` shipped in
+Tier A. The bracket marks reached `public/` in #837 and the `--bracket-1…5` palette in #838.
+
+**What remains is rendering** — the component halves of 4a, 4b, 5, 6, 7 and 9, plus PR 8b,
+which carries Round 4's three copy defects when it transcribes that module. Each wants the
+design-review property-table pass, a probe and a contact sheet, so they are build work rather
+than the tail of a rules run.
+
+**Two things the rendering inherits, both measured rather than assumed:**
+
+1. **The marks ink with `currentColor`.** An `<img src="/brackets/…svg">` renders every mark
+   black — an external SVG resolves `currentColor` against its own root, so the page's
+   `--bracket-N` never reaches it. The markup looks correct and nothing errors.
+2. **A CSS `mask-image` fixes the colour and breaks the numeral.** These files carry a
+   `<text>` numeral at `font-family="Cinzel,serif"`, and an external SVG cannot load the
+   page's webfont. Invisible at the 22px chip, which `ASSETS.md` calls decorative — but the
+   full mark ships at 26/36/44, where it reads. Inline the SVG, or mask the art and draw the
+   numeral as HTML text, which is what the handoff's "the numeral inside the mark is text"
+   appears to intend. Open, and it wants a probe reading the numeral's *resolved*
+   font-family: every wrong answer here renders a plausible-looking mark.
+
+**One open question for Design**, not blocking. `HANDOFF.md` states every rung clears 4.5:1,
+and §2 reasons it out — *"the numeral inside the mark is text, so every rung owes 4.5:1 … it
+cannot be made quiet by being made darker."* On the four grounds the card mark's own gate
+names, `--bracket-1` (#8A857C) fails two: kaldheim `--surface` at 4.4768 and kaldheim
+`--elevated-hover` at 4.3204. #838 ships the palette as drawn and gates it at the *measured*
+floor, so nothing silently claims 4.5 and any regression fails.
+
+**That ground list is provisional**, and this is the plan's business rather than a footnote:
+nothing draws the mark yet, so the honest claim today is about the grounds a comparable mark
+uses. Whichever of these PRs first renders a `BracketMark` decides the real list — and if it
+lands on `--elevated`, where rank 1 reads 3.6857 on kaldheim, the shortfall gets worse rather
+than better. Re-measure there; do not inherit this figure.
+
+---
+
+**PRs 1, 2 and 3 have shipped** — 3 as storage only; see 3b.
 
 **PR 4a is the critical path** — rounds 3 and 4 sit inside the chrome it establishes — and it now
 carries two gates rather than one. It needs PR 1b's tab to render into, and it needs **Round 2's
