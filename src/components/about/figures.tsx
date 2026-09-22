@@ -50,6 +50,7 @@ import {
   AutoFillFigureBody,
   DecklistMarksFigureBody,
   DecklistOrderFigureBody,
+  ComboAwarenessFigureBody,
   InformedBuildFigureBody,
   RolesFigureBody,
   DeckPageFigureBody,
@@ -699,6 +700,14 @@ function InformedBuildFigure({ width }: { width: AboutWidth }) {
   );
 }
 
+function ComboAwarenessFigure({ width }: { width: AboutWidth }) {
+  return (
+    <Specimen label="combo-awareness" width={width}>
+      <ComboAwarenessFigureBody />
+    </Specimen>
+  );
+}
+
 function RolesFigure({ width }: { width: AboutWidth }) {
   return (
     <Specimen label="roles" width={width}>
@@ -882,6 +891,7 @@ export const FIGURES: Partial<
   "deck-page": DeckPageFigure,
   "auto-fill": AutoFillFigure,
   roles: RolesFigure,
+  "combo-awareness": ComboAwarenessFigure,
   "informed-build": InformedBuildFigure,
   "decklist-order": DecklistOrderFigure,
   "add-cards": AddCardsFigure,

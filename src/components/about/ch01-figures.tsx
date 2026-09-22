@@ -56,6 +56,7 @@ import { printingPickerCopy } from "../../lib/copy/collection";
 import { COSTS } from "../../lib/about/fixtures";
 import { COST_PIP_SIZE, CostPips } from "../ui/cost-pips";
 import { TwoFacedMark } from "../cards/two-faced-mark";
+import { ComboPartnersDetail } from "../cards/combo-partners-detail";
 import { LastSlotsStrip } from "../decks/last-slots-strip";
 import { DecklistRow } from "../decks/decklist-row";
 import { useSyncExternalStore } from "react";
@@ -730,6 +731,43 @@ export function InformedBuildFigureBody() {
       cards={ROLE_MIX_CARDS}
       onSeeShelf={() => {}}
       rolesWithShelves={new Set(["draw", "removal"])}
+    />
+  );
+}
+
+/**
+ * The card modal's combo block, with one partner in each of its three states.
+ *
+ * The block is the one surface in this feature that ENUMERATES, so it is the specimen that
+ * shows what the feature is: a pair fact, three readings of where the other half is, and no
+ * count anywhere. The inline clause the lists draw is one line of the same idea.
+ *
+ * REAL PARTNERS OF A REAL CARD, read off the shipped index rather than invented: Basalt
+ * Monolith records twelve two-card partners producing something unbounded, and these are
+ * three of them. Only the STATES are chosen, so all three appear at once.
+ *
+ * The first version made the subject its own partner — `Isochron Scepter` listed among
+ * `Isochron Scepter`'s partners — which is a relationship the data can never return, since a
+ * card is the subject and cannot be its own other half. The block does not draw the subject's
+ * name, so nothing on screen contradicted itself and it would have taught the wrong shape
+ * quietly.
+ */
+const COMBO_SPECIMEN = [
+  { oracleId: "a", name: "Power Artifact", state: "inDeck" as const, popularity: 900 },
+  { oracleId: "b", name: "Rings of Brighthearth", state: "owned" as const, popularity: 800 },
+  { oracleId: "c", name: "Kinnan, Bonder Prodigy", state: "notOwned" as const, popularity: 700 },
+];
+
+export function ComboAwarenessFigureBody() {
+  return (
+    <ComboPartnersDetail
+      card={
+        {
+          oracleId: "about-combo",
+          name: "Basalt Monolith",
+          comboPartners: COMBO_SPECIMEN,
+        } as never
+      }
     />
   );
 }
