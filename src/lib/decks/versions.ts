@@ -5,6 +5,7 @@
 // cards". A VERSION is a snapshot; the DRAFT is `deck_cards`.
 
 import { and, count, desc, eq, inArray, lte, sql } from "drizzle-orm";
+import { permitsDeclaration } from "../bracket/declaration";
 import { db } from "../../db";
 import {
   cards, deckCards, deckGames, deckUnresolvedRows, deckVersionCards, deckVersions, decks,
@@ -170,8 +171,11 @@ async function commitVersionIn(
     // cards no longer reach it. Copying the answer anyway would have the version assert a
     // bracket it contradicts; the version records none instead, and the deck keeps its live
     // answer — stated, not deleted — so the surface can say the reading moved.
+    // Through `permitsDeclaration`, which the declaration action asks the same question of.
+    // This was the second copy of that membership test, and the action's own header argues
+    // against exactly that: a resolution written twice is free to drift once.
     declaredBracket:
-      snapshot && snapshot.declared !== null && snapshot.permits.includes(snapshot.declared)
+      snapshot && permitsDeclaration(snapshot.permits, snapshot.declared)
         ? snapshot.declared
         : null,
     // Sorted, so two versions' ranges compare as arrays without either reader sorting first.

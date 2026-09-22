@@ -58,10 +58,16 @@ describe("declarationRefusal", () => {
     }
   });
 
-  it("admits nothing outside 1-5 for any range", () => {
+  // OUT-OF-RANGE BY KIND, never merely "not null".
+  //
+  // The first version asserted `not.toBeNull()` across every range, which the `no-choice`
+  // branch satisfies for `[2]`, `[3]` and `[4]` — so 12 of its 20 iterations passed with the
+  // out-of-range check deleted outright, and only the two real ranges carried the case. Naming
+  // the kind is what makes every iteration load-bearing.
+  it("reports out-of-range by kind for every range, single or not", () => {
     for (const permits of RANGES) {
-      for (const value of [0, 6, 99, -3]) {
-        expect(declarationRefusal(permits, value)).not.toBeNull();
+      for (const value of [0, 6, 99, -3, 2.5]) {
+        expect(declarationRefusal(permits, value)).toEqual({ kind: "out-of-range" });
       }
     }
   });

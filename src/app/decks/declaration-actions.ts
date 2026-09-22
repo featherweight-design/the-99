@@ -4,6 +4,7 @@ import { eq, and } from "drizzle-orm";
 import { db } from "../../db";
 import { decks } from "../../db/schema";
 import { requireUserId } from "../../lib/auth";
+import { isUuid } from "../../lib/uuid";
 import { revalidatePath } from "next/cache";
 import { declarationRefusal, type DeclarationRefusal } from "../../lib/bracket/declaration";
 import type { Bracket } from "../../lib/bracket/types";
@@ -20,9 +21,9 @@ export type DeclareResult =
  *
  * THE REFUSAL RULES MATTER MORE THAN THE WRITE, and every one of them lives in
  * `declarationRefusal` rather than here. A server action needs a request and a signed-in reader,
- * so nothing in this repository can call one from a probe — so this function is deliberately too
- * thin to hold a rule: read the deck, derive its permits, ask, write or refuse. The decision is
- * unit-tested and mutation-proved; what is left here is wiring.
+ * so no probe in this repository can call one — so this function is deliberately too thin to
+ * hold a rule: guard the id, read the deck, derive its permits, ask, write or refuse. The
+ * decision is unit-tested and mutation-proved; what is left here is wiring.
  *
  * THE APP NEVER DEFAULTS AND NEVER INFERS ONE. There is no argument this function takes that
  * writes a bracket the caller did not name, no fallback when the answer is absent, and no path
@@ -41,6 +42,14 @@ export type DeclareResult =
  */
 export async function declareBracket(deckId: string, value: number): Promise<DeclareResult> {
   const userId = await requireUserId();
+
+  // BEFORE the id reaches a `uuid` column. The declared type is a compile-time claim and this
+  // is a Server Action argument, so a crafted request can post anything — and Postgres answers
+  // a malformed uuid with 22P02, which reaches the reader as a rejected action rather than as
+  // the refusal `DeclareResult` promises. Every other deck action in this directory guards it;
+  // `lib/uuid.ts` says why in its own header, including that a posted `["<a real uuid>"]`
+  // survives a bare `RegExp.test`.
+  if (!isUuid(deckId)) return { ok: false, reason: "not-found" };
 
   const profile = await cachedDeckProfile(deckId, userId);
   // A deck the reader does not own reads as absent rather than as forbidden: `loadProfileHead`
