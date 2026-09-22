@@ -31,7 +31,7 @@
 // changes. about.test.ts pins a content hash, so a change forces either a
 // deliberate bump or a deliberate re-pin.
 
-export const ABOUT_VERSION = 7;
+export const ABOUT_VERSION = 8;
 
 export type AboutChapter = '01' | '02' | '03' | '04';
 export type AboutWidth = 'inset' | 'plate';
@@ -404,6 +404,22 @@ export const aboutEntries: readonly AboutEntry[] = [
       'a short role is the one thing here that names what to do next, and `consider` goes straight to cards that would fill it.',
     ],
     since: 1,
+  },
+  {
+    id: 'informed-build',
+    chapter: '03',
+    title: 'Building toward decks like yours',
+    route: '/decks',
+    opens: 'opens a deck',
+    width: 'plate',
+    caption:
+      'Fill, the last 31 and the Add panel all build toward what other decks with your commander actually run, rather than one recipe for every deck. A Kinnan deck wants about twice the ramp of an Atraxa deck and no board wipes at all; both used to be told the same ten, ten, eight and three. Where there are not enough decks to measure, the old numbers still stand in, and the strip says which you are looking at.',
+    keys: [
+      'the land count moves too. Twenty-eight lands is a real answer for a deck that ramps, and thirty-seven was never right for all of them.',
+      '`fill` and the bulk tick both ask what the deck is short of, so a deck already deep in ramp is offered draw instead of more of what it has.',
+      'the Add panel orders each shelf by the gap a card would close, so of two cards filling the same role the one your deck is thinner on comes first.',
+    ],
+    since: 8,
   },
   {
     id: 'decklist-order',

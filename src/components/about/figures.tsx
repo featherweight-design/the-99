@@ -50,6 +50,7 @@ import {
   AutoFillFigureBody,
   DecklistMarksFigureBody,
   DecklistOrderFigureBody,
+  InformedBuildFigureBody,
   RolesFigureBody,
   DeckPageFigureBody,
   ImportIssuesFigureBody,
@@ -690,6 +691,14 @@ function AutoFillFigure({ width }: { width: AboutWidth }) {
   );
 }
 
+function InformedBuildFigure({ width }: { width: AboutWidth }) {
+  return (
+    <Specimen label="informed-build" width={width}>
+      <InformedBuildFigureBody />
+    </Specimen>
+  );
+}
+
 function RolesFigure({ width }: { width: AboutWidth }) {
   return (
     <Specimen label="roles" width={width}>
@@ -873,6 +882,7 @@ export const FIGURES: Partial<
   "deck-page": DeckPageFigure,
   "auto-fill": AutoFillFigure,
   roles: RolesFigure,
+  "informed-build": InformedBuildFigure,
   "decklist-order": DecklistOrderFigure,
   "add-cards": AddCardsFigure,
   "review-and-commit": ReviewAndCommitFigure,
