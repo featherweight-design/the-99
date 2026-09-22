@@ -15,6 +15,15 @@ import { recommendedMix } from "../../lib/decks/mix";
 const TEST_MIX = recommendedMix(null, false);
 
 vi.mock("../../app/decks/actions", () => ({
+  // The top-off list asks for both bulk plans when it opens, so every test that renders it
+  // reaches this. Answered with two EMPTY plans rather than a refusal: a refusal is drawn and
+  // SPOKEN, which would put a second message in the live region and break the announcement
+  // counts these files are actually about.
+  bulkFillOptions: vi.fn().mockResolvedValue({
+    ok: true,
+    collection: { oracleIds: [], shortfalls: [], measuredTypes: true },
+    best: { oracleIds: [], shortfalls: [], measuredTypes: true },
+  }),
   createDeck: vi.fn(),
   getDeckSuggestions: vi.fn(async () => ({ suggestions: [], degraded: false })),
   addCardToDeck: vi.fn(),

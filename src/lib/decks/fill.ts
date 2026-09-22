@@ -125,6 +125,19 @@ export type FillPlan = {
   /** Whether the floors above came from decklists or from the asserted baseline. The same
    *  per-plan honesty `RoleFit.measured` carries per row. */
   measured: boolean;
+  /**
+   * Whether there were TYPE targets to compare against at all.
+   *
+   * Parallel to `measured` and NOT the same question: the role chain ends at the asserted
+   * baseline, so there is always something to be short of, while the composition chain can
+   * end at nothing — a commander with no derivable composition has no type targets, and the
+   * ten type shortfalls are then empty for the opposite reason to a deck that met all ten.
+   *
+   * A reader cannot tell those apart from `shortfalls` alone, and the bulk controls' note has
+   * to: `matches every recommendation` over no composition would be the strongest possible
+   * claim made from no data.
+   */
+  measuredTypes: boolean;
 };
 
 const NON_LAND_ROLES = ["ramp", "draw", "removal", "wipes"] as const;
@@ -595,6 +608,7 @@ export function planFill(candidates: FillCandidate[], args: PlanFillArgs): FillP
     bought: rows.filter((r) => boughtIds.has(r.oracleId)).reduce((n, r) => n + r.quantity, 0),
     landCapable,
     measured,
+    measuredTypes: typeTargets !== null,
     shortfalls: [
       ...NON_LAND_ROLES.filter((r) => counts[r] < floors[r])
         .map((role) => ({ kind: "role" as const, role, short: floors[role] - counts[role] })),

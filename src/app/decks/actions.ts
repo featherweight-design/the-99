@@ -43,7 +43,8 @@ import type { ProfileSkeleton } from "../../lib/profile/types";
 import { readSynergyCards } from "../commanders/[slug]/synergy-read";
 import { loadSkeletonForCommanders } from "../../lib/profile/load";
 import {
-  dedupeSelectionFromPool, planFill, type FillPlan, type PlanFillArgs,
+  dedupeSelectionFromPool, planFill,
+  type FillPlan, type FillShortfall, type PlanFillArgs,
 } from "../../lib/decks/fill";
 import { sanitizeSelection } from "../../lib/decks/selection-param";
 import { recordFillPass, summariseFillPasses, type FillPassKind } from "../../lib/decks/fill-passes";
@@ -2032,28 +2033,22 @@ export async function pullCardFromDeck(
  *
  * `canSeed` is kept exactly as it is. It was the right filter and only ever the wrong objective.
  */
-export async function chooseBulkFill(
-  deckId: string,
-  openSlots: number,
-): Promise<{ ok: true; oracleIds: string[] } | { ok: false; message: string }> {
-  // A SERVER ACTION IS A PUBLIC ENDPOINT, and `openSlots` arrives from the caller. `<= 0` is
-  // not enough on its own: `NaN` passes it (every comparison with NaN is false), and reaches
-  // `planFill` as `slots: NaN`, where `filledSoFar() >= limit` is false forever — so the guard
-  // meant to cap the answer at a handful of slots instead lets it plan a whole 99. A
-  // fractional 1.5 has a smaller version of the same problem, admitting two rows before the
-  // check bites.
-  if (!Number.isInteger(openSlots) || openSlots <= 0) return { ok: true, oracleIds: [] };
-
-  // EVERY READ IS INSIDE THE `try`, including the two guards. `requireDeck` throws
-  // `deck not found` for a deck the reader does not own or one deleted while the list was
-  // open, and the caller is a click handler that reports a refusal — a rejection escaping
-  // here is an unhandled promise on a surface documented as never throwing.
-  try {
-    const userId = await requireUserId();
+/**
+ * THE GATHER, once, for both pools.
+ *
+ * `chooseBulkFill` and `bulkFillOptions` ask the same five questions of the database — the
+ * deck, its commanders, its `deck_cards` rows and what those cards ARE — and differ only in
+ * which pool they then plan from. Written twice they would drift, and the pair's whole promise
+ * is that the note beside a control describes the press that control makes.
+ *
+ * Returns `null` for a deck whose commander the catalog cannot resolve, which both callers
+ * report as the same refusal.
+ */
+async function gatherFillInputs(deckId: string, userId: string) {
     const deck = await requireDeck(deckId, userId);
     const [commander] = await db.select().from(cards)
       .where(eq(cards.oracleId, deck.commanderOracleId));
-    if (!commander) return { ok: false, message: synergyCopy.lastSlots.topUpFailed };
+    if (!commander) return null;
     // The partner legalises the pool alongside the primary, exactly as the create path reads it.
     const [partner] = deck.partnerOracleId
       ? await db.select().from(cards).where(eq(cards.oracleId, deck.partnerOracleId))
@@ -2091,15 +2086,33 @@ export async function chooseBulkFill(
       return card ? [{ ...card, quantity: r.quantity }] : [];
     });
 
-    const plan = await buildFillPlan(
+  return { deck, commander, partner, heldIds, heldCount, held };
+}
+
+type FillInputs = NonNullable<Awaited<ReturnType<typeof gatherFillInputs>>>;
+
+/**
+ * One plan, from one pool. `sleeveable` is what the collection control offers; `all` is what
+ * the deck needs whoever owns it.
+ */
+async function planFromPool(
+  userId: string,
+  deckId: string,
+  inputs: FillInputs,
+  openSlots: number,
+  pool: "all" | "sleeveable",
+) {
+  const { deck, commander, partner, heldIds, heldCount, held } = inputs;
+    return await buildFillPlan(
       userId,
       partner ? [commander, partner] : [commander],
       // The deck's own cards are not candidates for filling it.
       new Set(heldIds),
-      // SLEEVEABLE ONLY. The control's promise is about cards the player can put in the deck
-      // tonight; a plan that reached past the collection would tick a purchase.
+      // THE POOL IS THE CALLER'S. The collection control promises cards the player can put in
+      // the deck tonight; the other one asks what the deck needs and lets the note say what
+      // that costs.
       {
-        pool: "sleeveable",
+        pool,
         // So this deck's own claims are not counted as competition for itself when the pool
         // is narrowed to cards with a free copy.
         excludeDeckId: deckId,
@@ -2137,6 +2150,98 @@ export async function chooseBulkFill(
         })),
       },
     );
+}
+
+/** One tick is one card, so a stacked row cannot be expressed. See the note in
+ *  `chooseBulkFill` — this is that rule, shared by both callers. */
+function sleeveableIds(plan: { rows: readonly { oracleId: string; quantity: number; role: string }[] }) {
+  return plan.rows
+    .filter((r) => r.role !== "other" && r.quantity === 1)
+    .map((r) => r.oracleId);
+}
+
+/**
+ * BOTH FILLS, BEFORE EITHER PRESS.
+ *
+ * The bulk pair's locked requirement is that a player can compare what each control concedes
+ * WITHOUT pressing one to find out — so the notes beside them are figures from real plans
+ * against this player's collection, not estimates. That means both plans run when the list
+ * opens rather than when a button is pressed.
+ *
+ * It also means the press costs no round trip: the ids the note was computed from are the ids
+ * the press applies. A second call would re-plan against a deck that may have moved, and the
+ * note would then describe a selection the press did not make — which is the failure this
+ * whole pair exists to end, arriving from the other side.
+ *
+ * `shortfalls` and `measuredTypes` travel per pool because they differ per pool: the
+ * collection fill is the one that can leave a gap it had no card for.
+ */
+export async function bulkFillOptions(
+  deckId: string,
+  openSlots: number,
+): Promise<
+  | {
+      ok: true;
+      collection: { oracleIds: string[]; shortfalls: FillShortfall[]; measuredTypes: boolean };
+      best: { oracleIds: string[]; shortfalls: FillShortfall[]; measuredTypes: boolean };
+    }
+  | { ok: false; message: string }
+> {
+  // THE SAME GUARD `chooseBulkFill` TAKES, and for the same reason: a server action is a
+  // public endpoint, `<= 0` alone lets `NaN` through (every comparison with it is false), and
+  // `planFill` then plans a whole 99 for a control that asked for a handful of slots.
+  if (!Number.isInteger(openSlots) || openSlots <= 0) {
+    const empty = { oracleIds: [], shortfalls: [], measuredTypes: false };
+    return { ok: true, collection: empty, best: { ...empty } };
+  }
+
+  try {
+    const userId = await requireUserId();
+    const inputs = await gatherFillInputs(deckId, userId);
+    if (!inputs) return { ok: false, message: synergyCopy.lastSlots.topUpFailed };
+
+    // SEQUENTIAL, not `Promise.all`. Both plans read EDHREC through `getEdhrecData` for the
+    // same commander, and firing them together races two cold fetches for one answer where
+    // the second would have been served from the cache the first fills.
+    const collection = await planFromPool(userId, deckId, inputs, openSlots, "sleeveable");
+    const best = await planFromPool(userId, deckId, inputs, openSlots, "all");
+
+    return {
+      ok: true,
+      collection: {
+        oracleIds: sleeveableIds(collection),
+        shortfalls: collection.shortfalls,
+        measuredTypes: collection.measuredTypes,
+      },
+      best: {
+        oracleIds: sleeveableIds(best),
+        shortfalls: best.shortfalls,
+        measuredTypes: best.measuredTypes,
+      },
+    };
+  } catch (err) {
+    console.error("bulkFillOptions failed", err);
+    return { ok: false, message: synergyCopy.lastSlots.topUpFailed };
+  }
+}
+
+export async function chooseBulkFill(
+  deckId: string,
+  openSlots: number,
+): Promise<{ ok: true; oracleIds: string[] } | { ok: false; message: string }> {
+  // A SERVER ACTION IS A PUBLIC ENDPOINT, and `openSlots` arrives from the caller. `<= 0` is
+  // not enough on its own: `NaN` passes it (every comparison with NaN is false), and reaches
+  // `planFill` as `slots: NaN`, where `filledSoFar() >= limit` is false forever — so the guard
+  // meant to cap the answer at a handful of slots instead lets it plan a whole 99. A
+  // fractional 1.5 has a smaller version of the same problem, admitting two rows before the
+  // check bites.
+  if (!Number.isInteger(openSlots) || openSlots <= 0) return { ok: true, oracleIds: [] };
+
+  try {
+    const userId = await requireUserId();
+    const inputs = await gatherFillInputs(deckId, userId);
+    if (!inputs) return { ok: false, message: synergyCopy.lastSlots.topUpFailed };
+    const plan = await planFromPool(userId, deckId, inputs, openSlots, "sleeveable");
     // FEWER THAN THE SLOTS IS A VALID ANSWER, and the residual is what made that untrue.
     //
     // `planFill` always runs a residual pass after the role and land passes, filling whatever
@@ -2157,12 +2262,7 @@ export async function chooseBulkFill(
     //
     // Dropped rather than expanded into repeats: the list this feeds ticks each candidate at
     // most once, so three copies have nowhere to go on that surface either.
-    return {
-      ok: true,
-      oracleIds: plan.rows
-        .filter((r) => r.role !== "other" && r.quantity === 1)
-        .map((r) => r.oracleId),
-    };
+    return { ok: true, oracleIds: sleeveableIds(plan) };
   } catch (err) {
     console.error("chooseBulkFill failed", err);
     return { ok: false, message: synergyCopy.lastSlots.topUpFailed };
