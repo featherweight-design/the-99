@@ -133,11 +133,105 @@ describe("classifyPrinting", () => {
     }
   });
 
-  it("skips reversible_card, which has no top-level oracle_id", () => {
-    const result = classifyPrinting({
-      ...plains, layout: "reversible_card", oracle_id: undefined,
-    });
-    expect(result.kind).toBe("skipped-reversible");
+  // The shape of Scryfall's `sld/2214` — Hugh's foil, and the printing this layout used to
+  // deny the catalog. Its top level carries no oracle id, no art and no flavor name; all
+  // three sit on the faces, and the front face's name is the one printed on the card.
+  const reversible = {
+    id: "b83edc5c-ee6b-4c75-94b2-46d1f68f7304",
+    name: "Teferi's Ageless Insight // Teferi's Ageless Insight",
+    layout: "reversible_card",
+    set: "SLD",
+    collector_number: "2214",
+    finishes: ["foil"],
+    card_faces: [
+      {
+        name: "Teferi's Ageless Insight",
+        flavor_name: "Mimir's Ancient Wisdom",
+        oracle_id: "1c9e1f75-73f0-4846-b53f-458a0984b1bb",
+        image_uris: {
+          normal: "https://cards.scryfall.io/normal/front.jpg",
+          small: "https://cards.scryfall.io/small/front.jpg",
+          art_crop: "https://cards.scryfall.io/art_crop/front.jpg",
+        },
+      },
+      {
+        name: "Teferi's Ageless Insight",
+        oracle_id: "1c9e1f75-73f0-4846-b53f-458a0984b1bb",
+        image_uris: { normal: "https://cards.scryfall.io/normal/back.jpg" },
+      },
+    ],
+  };
+
+  it("ingests a reversible card from its faces, oracle id included", () => {
+    // The whole defect in one assertion: this printing used to be skipped, so a collection
+    // row naming `sld/2214` resolved to the set's representative printing instead and drew
+    // another card's art.
+    const row = asPrinting(reversible);
+    expect(row.oracleId).toBe("1c9e1f75-73f0-4846-b53f-458a0984b1bb");
+    expect(row.setCode).toBe("sld");
+    expect(row.collectorNumber).toBe("2214");
+  });
+
+  it("takes a reversible card's printed name off the FACE", () => {
+    // The top level carries no `flavor_name` on this layout, so a transform that read only
+    // there would ingest the printing and still draw `Teferi's Ageless Insight` on a card
+    // that says `Mimir's Ancient Wisdom`.
+    expect(asPrinting(reversible).flavorName).toBe("Mimir's Ancient Wisdom");
+  });
+
+  it("takes both of a reversible card's faces as front and back art", () => {
+    const row = asPrinting(reversible);
+    expect(row.imageUri).toBe("https://cards.scryfall.io/normal/front.jpg");
+    expect(row.backImageUri).toBe("https://cards.scryfall.io/normal/back.jpg");
+    expect(row.artCropUri).toBe("https://cards.scryfall.io/art_crop/front.jpg");
+  });
+
+  it("still skips a reversible card whose faces name different oracles", () => {
+    // Zero of the 82 that exist do this (measured 2026-09-21), and one that did would be two
+    // cards sharing stock rather than one card printed twice — a different thing, which this
+    // transform has no answer for. Skipping stays the answer for the case that would be a
+    // guess; it is not the answer for the case that is not.
+    const disagreeing = {
+      ...reversible,
+      card_faces: [
+        reversible.card_faces[0],
+        { ...reversible.card_faces[1], oracle_id: "cccccccc-0000-0000-0000-000000000009" },
+      ],
+    };
+    expect(classifyPrinting(disagreeing).kind).toBe("skipped-reversible");
+  });
+
+  it("skips a reversible card carrying no faces at all", () => {
+    const faceless = { ...reversible, card_faces: undefined };
+    expect(classifyPrinting(faceless).kind).toBe("skipped-reversible");
+  });
+
+  it("skips — rather than THROWING — when a face carries no oracle id at all", () => {
+    // The near-miss this guard is written against. Sizing a set of the ids that are PRESENT
+    // looks equivalent and is not: a first face with no id and a second with one gives a set
+    // of size 1, passes, and then throws on the row's own `requiredString`. That exception
+    // is raised inside the bulk stream, where nothing catches it — so the whole catalog
+    // refresh aborts, in place of the old code skipping one entry.
+    const headless = {
+      ...reversible,
+      card_faces: [
+        { name: "Teferi's Ageless Insight", image_uris: { normal: "https://x/front.jpg" } },
+        reversible.card_faces[1],
+      ],
+    };
+    expect(() => classifyPrinting(headless)).not.toThrow();
+    expect(classifyPrinting(headless).kind).toBe("skipped-reversible");
+  });
+
+  it("treats an EMPTY face oracle id as absent rather than as a value", () => {
+    // `oracle_id: ""` passes a `typeof` test, agrees with itself across both faces, and is
+    // stored as a printing with an empty oracle id — which the FK check counts as an orphan,
+    // and one orphan refuses the whole run's base-set sizing. Raised by review.
+    const blank = {
+      ...reversible,
+      card_faces: reversible.card_faces.map((f) => ({ ...f, oracle_id: "" })),
+    };
+    expect(classifyPrinting(blank).kind).toBe("skipped-reversible");
   });
 
   it("skips digital-only printings", () => {

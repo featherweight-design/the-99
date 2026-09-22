@@ -14,7 +14,9 @@ vi.mock("../../db", () => ({ db: {} }));
 const { unsizedRunFailure } = await import("./seed-printings");
 
 const run = (over: Partial<Parameters<typeof unsizedRunFailure>[0]> = {}) => ({
-  upserted: 102_769, skippedOrphan: 0, skippedLayout: 5_898, skippedReversible: 82,
+  // `skippedReversible: 0` is what a healthy run reports since reversible printings are
+  // ingested from their faces; it counted ~82 every run when the layout was dropped whole.
+  upserted: 102_769, skippedOrphan: 0, skippedLayout: 5_898, skippedReversible: 0,
   baseSetSizes: 740, ...over,
 });
 
