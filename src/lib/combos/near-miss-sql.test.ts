@@ -1,6 +1,6 @@
 import { PgDialect } from "drizzle-orm/pg-core";
 import { describe, it, expect } from "vitest";
-import { pairsWithOnePiece } from "./near-miss";
+import { ownBothQuery, pairsWithOnePiece } from "./near-miss";
 
 /**
  * THE EMITTED SQL, rendered rather than executed.
@@ -95,5 +95,55 @@ describe("pairsWithOnePiece — emitted SQL", () => {
     expect(render(base)).not.toMatch(/and want\.oracle_id = any\(/);
     const scoped = render({ ...base, missingIn: ["33333333-3333-3333-3333-333333333333"] });
     expect(scoped).toMatch(/and want\.oracle_id = any\(\$\d+::uuid\[\]\)/);
+  });
+});
+
+describe("ownBothQuery — emitted SQL", () => {
+  const show = (ids: string[] | null) =>
+    dialect.sqlToQuery(ownBothQuery("u-1", ids)).sql.replace(/\s+/g, " ");
+
+  // BOTH HALVES OWNED, which is the whole of state 1's ownership claim.
+  it("requires both pieces to be in the collection", () => {
+    const sql = show(null);
+    expect(sql).toContain("a.oracle_id in (select oracle_id from owned)");
+    expect(sql).toContain("b.oracle_id in (select oracle_id from owned)");
+  });
+
+  // THE PRUNE, against the collection rather than an id window — so it fires identically
+  // whether or not a window was given, and before the aggregate either way.
+  it("prunes against the collection before the group", () => {
+    const sql = show(null);
+    const prune = sql.indexOf("vc2.oracle_id in (select oracle_id from owned)");
+    const group = sql.indexOf("group by v.variant_id");
+    expect(prune, "no prune").toBeGreaterThan(-1);
+    expect(prune, "the prune landed after the group, where it does nothing").toBeLessThan(group);
+  });
+
+  // UNASSEMBLED means no SINGLE deck holds both — two tests ANDed inside one `decks` scope.
+  // Two separate `not exists` clauses would mean "no deck holds a and no deck holds b",
+  // which is a different and much stronger claim.
+  it("asks whether one deck holds both, not whether any deck holds either", () => {
+    const sql = show(null);
+    const scope = sql.slice(sql.indexOf("not exists"));
+    expect(scope).toContain("a.oracle_id");
+    expect(scope).toContain("b.oracle_id");
+    // The commanders count as held: a combo led by one of its own halves is assembled.
+    expect(scope).toContain("d.commander_oracle_id");
+    expect(scope).toContain("d.partner_oracle_id");
+    expect(sql.match(/not exists/g) ?? []).toHaveLength(1);
+  });
+
+  // THE WINDOW IS OPTIONAL, and `/collection` omits it — the faster of the two forms.
+  it("adds the id restriction only when a window is given", () => {
+    expect(show(null)).not.toContain("a.oracle_id = any(");
+    expect(show(["33333333-3333-3333-3333-333333333333"])).toMatch(
+      /and a\.oracle_id = any\(\$\d+::uuid\[\]\)/,
+    );
+  });
+
+  it("parameterises the user id rather than inlining it", () => {
+    const q = dialect.sqlToQuery(ownBothQuery("u-secret", null));
+    expect(q.params).toContain("u-secret");
+    expect(q.sql).not.toContain("u-secret");
   });
 });

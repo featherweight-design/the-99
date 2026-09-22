@@ -55,17 +55,12 @@ export default async function CollectionPage() {
     // draw no clause until the hour ceiling expired it, with the loader never running. The
     // key is the version.
     //
-    // ONE HALF OF THIS FIELD CAN GO STALE INSIDE THAT CEILING, and it is worth naming rather
-    // than discovering. `comboPartner` means "both halves owned AND no single deck holds
-    // both", and the second half depends on DECK contents — which this cache is not
-    // invalidated by. Build a deck holding both pieces and the clause survives until the
-    // entry expires.
-    //
-    // Left, deliberately. The sentence it draws — `with X — you own both` — stays TRUE
-    // throughout; what goes stale is only whether it is still worth saying. Invalidating the
-    // largest payload in the app on every deck write, to retire a clause that appears on 65
-    // of 2,805 cards and corrects itself within the hour, is the trade in the wrong
-    // direction.
+    // THE DECK-DEPENDENT HALF IS INVALIDATED, and an earlier revision of this comment said
+    // the opposite at length. `comboPartner` means "both halves owned AND no single deck
+    // holds both", so it depends on deck contents — and every deck write calls
+    // `revalidateClaims`, which calls `revalidateUserLists`, which drops exactly the tag
+    // `cacheForUser` put on this entry. Building a deck holding both pieces retires the
+    // clause on the spot rather than at the hour ceiling.
     cacheForUser(userId, ["browse-4"], () => loadBrowseCards(userId)),
     getCollectionLastUpdated(userId),
     // Set names + release dates for the Set ▾ panel (#86).

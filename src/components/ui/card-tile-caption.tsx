@@ -100,6 +100,7 @@ export function slotOutline(colour: string, dashed = false) {
 export function CardTileCaption({
   meta,
   metaTrail,
+  metaTrailShrinks = false,
   name,
   nameHidden = false,
   nameSpoken,
@@ -120,6 +121,16 @@ export function CardTileCaption({
   meta?: ReactNode;
   /** Right-aligned on the meta line. `SET · rarity` on `/collection`. */
   metaTrail?: ReactNode;
+  /**
+   * Let the trail SHRINK instead of holding its content width.
+   *
+   * `flex-none` is right for the trail's usual occupants — a 3-character set code and a
+   * rarity — which are short, fixed and worth protecting from a long name beside them. It is
+   * wrong for a sentence: combo awareness puts a clause here, and unshrinkable means its own
+   * `truncate` never engages and the tile hard-clips it at `overflow-hidden` with no
+   * ellipsis. Opt-in, so the two existing callers keep the behaviour that suits them.
+   */
+  metaTrailShrinks?: boolean;
   /** The printed front-face name. Truncation is this component's. */
   name: ReactNode;
   /**
@@ -157,7 +168,11 @@ export function CardTileCaption({
           className={`flex items-center gap-[6px] min-w-0 font-mono text-[9px] md:text-[9.5px] leading-none ${META_LINE}`}
         >
           {meta}
-          {metaTrail && <span className="ml-auto flex-none">{metaTrail}</span>}
+          {metaTrail && (
+            <span className={`ml-auto ${metaTrailShrinks ? "min-w-0" : "flex-none"}`}>
+              {metaTrail}
+            </span>
+          )}
         </div>
         {/* The name line carries a line-height, where the meta line above it
             takes `leading-none`. `truncate` means `overflow: hidden`, so at

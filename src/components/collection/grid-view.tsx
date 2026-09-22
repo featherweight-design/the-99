@@ -18,7 +18,7 @@ import { identityGradient } from "../../lib/collection/gradients";
 import { availabilityState } from "../../lib/decks/availability";
 import { AvailabilityMarker } from "../ui/availability-marker";
 import { CardFactMark } from "../cards/card-fact-mark";
-import { ComboClause } from "../cards/combo-clause";
+import { ComboClause, comboClauseSpoken } from "../cards/combo-clause";
 import { FactTooltip } from "../cards/fact-tooltip";
 import { CollectionMarkKey } from "./collection-mark-key";
 import { cardFactName, cardMarkCopy } from "../../lib/copy/card-mark";
@@ -138,6 +138,9 @@ export function GridView({
                 ))}
               </>
             }
+            // The clause is a sentence, not a set code: it has to be allowed to shrink or its
+            // own truncation never engages and the tile clips it with no ellipsis.
+            metaTrailShrinks={Boolean(c.comboPartner)}
             metaTrail={
               /* STATE 1 TAKES THIS SLOT AND `SET · rarity` YIELDS — the caption's height is
                  fixed (`CARD_TILE_CAPTION_H`), there is no third line, and of the two the
@@ -150,7 +153,13 @@ export function GridView({
                  not width-dependent the way the row's is — the app's words give way here on
                  every screen, and the card's name never does. */
               c.comboPartner ? (
-                <ComboClause partnerName={c.comboPartner.name} state="ownBoth" short />
+                // ARIA-HIDDEN, like the bracket marks on the same line and for the same
+                // reason: the tile speaks its name from `nameSpoken`, and left audible this
+                // sentence would be heard BEFORE the card it is about — and in its shortened
+                // visual form, which never contains the words "two-card combo".
+                <span aria-hidden>
+                  <ComboClause partnerName={c.comboPartner.name} state="ownBoth" short />
+                </span>
               ) : (
                 <span style={{ color: "var(--fg-faint)" }}>
                   <span className="md:hidden">{c.primarySetCode}</span>
@@ -195,6 +204,12 @@ export function GridView({
                     aria-hidden, which is what lets this sit in the reading order the
                     sentence wants instead of wherever the layout happens to put them. */}
                 {c.facts?.length ? `, ${cardMarkCopy.rowAria(c.facts.map(cardFactName))}` : ""}
+                {/* The combo clause rides here for the same reason the facts do — heard
+                    straight after the card it describes — and in its FULL spoken form, which
+                    names what the glyph means. The drawn clause above is aria-hidden. */}
+                {c.comboPartner
+                  ? `, ${comboClauseSpoken(c.comboPartner.name, "ownBoth")}`
+                  : ""}
               </span>
             }
           />

@@ -3,6 +3,7 @@ import { describe, expect, it } from "vitest";
 
 import type { BrowseListCard } from "../../lib/collection/browse";
 import { comboAwarenessCopy } from "../../lib/copy/combo-awareness";
+import { CollectionMarkKey } from "./collection-mark-key";
 import { GridView } from "./grid-view";
 import { RowsView } from "./rows-view";
 
@@ -80,6 +81,32 @@ describe("combo awareness state 1 on /collection", () => {
     const { container } = render(<GridView cards={[card()]} {...props} />);
     expect(container.textContent).toContain("THB");
     expect(container.querySelector('[data-testid="combo-clause"]')).toBeNull();
+  });
+
+  // THE GLYPH IS GLOSSED ON THE SURFACE IT DEBUTS ON. A glyph identifies and cannot teach,
+  // and neither clause sentence contains the word "combo" — so without a key entry a fourth
+  // mark arrives on /collection with nothing anywhere to say what it means. That is the
+  // failure the deck-status marks were retired in a day for.
+  it("glosses the lemniscate in the key", () => {
+    const { container } = render(<CollectionMarkKey />);
+    expect(container.textContent).toContain(comboAwarenessCopy.keyWord);
+    expect(container.querySelector('[data-testid="combo-glyph"]')).not.toBeNull();
+  });
+
+  // THE TILE SPEAKS THE FULL SENTENCE, AFTER THE NAME. The drawn clause is aria-hidden like
+  // the bracket marks beside it, because left audible it is heard BEFORE the card it is
+  // about — and in its shortened visual form, which never says "two-card combo".
+  it("speaks the tile's combo after the card's name, in full", () => {
+    const { container } = render(
+      <GridView cards={[card({ comboPartner: PARTNER })]} {...props} />,
+    );
+    const spoken = container.querySelector(".sr-only")?.textContent ?? "";
+    expect(spoken).toContain("Thassa's Oracle");
+    expect(spoken).toContain(comboAwarenessCopy.a11y.ownBoth("Demonic Consultation"));
+    expect(spoken.indexOf("Thassa's Oracle")).toBeLessThan(spoken.indexOf("two-card combo"));
+    // And the drawn one is silent, or the sentence is heard twice.
+    const drawn = container.querySelector('[data-testid="combo-clause"]')!;
+    expect(drawn.closest("[aria-hidden]")).not.toBeNull();
   });
 
   // NO COUNT, on either host. Detection excludes template-gated variants by design.

@@ -19,14 +19,31 @@
 "use client";
 
 import { CARD_FACTS, cardFactName, cardMarkCopy } from "../../lib/copy/card-mark";
-import { CardFactMark } from "../cards/card-fact-mark";
+import { comboAwarenessCopy } from "../../lib/copy/combo-awareness";
+import { CARD_FACT_MARK_PX, CardFactMark } from "../cards/card-fact-mark";
+import { ComboGlyph } from "../cards/combo-glyph";
 import { MarkKey } from "../decks/mark-key";
 
-const ENTRIES = CARD_FACTS.map((fact) => ({
-  id: fact,
-  sample: <CardFactMark fact={fact} silent />,
-  word: cardFactName(fact),
-}));
+const ENTRIES = [
+  ...CARD_FACTS.map((fact) => ({
+    id: fact,
+    sample: <CardFactMark fact={fact} silent />,
+    word: cardFactName(fact),
+  })),
+  // THE LEMNISCATE, glossed on the surface it debuts on. Neither clause sentence contains the
+  // word "combo" — they say `with {partner} — you own both` — so without this entry a fourth
+  // glyph arrives on /collection with nothing anywhere to say what it means, which is exactly
+  // what the header above records the deck-status marks being retired for.
+  //
+  // APPENDED rather than folded into `CARD_FACTS`: that list is the fact vocabulary and its
+  // fixed ORDER, both Round 2's, and this round needed the shape rather than a membership.
+  // When Round 2 ships the lemniscate as a fact, this entry goes with it.
+  {
+    id: "combo",
+    sample: <ComboGlyph size={CARD_FACT_MARK_PX} />,
+    word: comboAwarenessCopy.keyWord,
+  },
+];
 
 export function CollectionMarkKey({ className }: { className?: string }) {
   // The TILE grid needs `col-span-full` here, exactly as its `Show more` button does: a bare
