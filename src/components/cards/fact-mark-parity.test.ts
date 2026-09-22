@@ -22,6 +22,11 @@ const EXEMPT = new Map([
   ["src/components/decks/decklist.tsx", "the key's own sample — the word it defines is the next element"],
   ["src/components/collection/collection-mark-key.tsx", "the key's own sample, as above"],
   ["src/components/cards/card-modal.tsx", "the modal spells all three facts out in prose"],
+  [
+    "src/components/decks/bracket-climb.tsx",
+    "the climb's figure names the rule in the next element — and nothing in the climb is "
+    + "interactive, which a tooltip trigger would change",
+  ],
 ]);
 
 function tsxFiles(dir: string, out: string[] = []): string[] {
