@@ -18,7 +18,9 @@ import { topOffCopy } from "../../lib/copy/top-off";
 import { synergyCopy, synergySignedDisplay } from "../../lib/copy/synergy-discovery";
 import { spokenManaCost } from "../../lib/copy/card-surfaces";
 import { commitTopOff } from "../../app/decks/actions";
-import { chooseBulkTicks } from "../../lib/decks/bulk-choice";
+import { bulkConcession } from "../../lib/decks/bulk-concession";
+import { bulkFillOptions } from "../../app/decks/actions";
+import type { FillShortfall } from "../../lib/decks/fill";
 import { canSeed, type TopOffCandidate } from "../../lib/decks/last-slots";
 import {
   formatCents,
@@ -192,6 +194,72 @@ function CostTrack({ cost }: { cost: string | null }) {
   );
 }
 
+/** One pool's answer: what a press would select, and what that fill gave up. */
+type BulkPlan = {
+  oracleIds: string[];
+  shortfalls: FillShortfall[];
+  measuredTypes: boolean;
+};
+
+/**
+ * Whether two plans would select the SAME CARDS.
+ *
+ * As sets, never by length: two plans of twelve differing by one card are two different
+ * answers, and collapsing them would leave a player choosing between controls that are not
+ * the same while the surface tells them they are. Order is not a difference — both are
+ * applied as a `Set` — so the comparison must not be sensitive to it.
+ */
+function sameSelection(a: readonly string[], b: readonly string[]): boolean {
+  if (a.length !== b.length) return false;
+  const inA = new Set(a);
+  return b.every((id) => inA.has(id));
+}
+
+/**
+ * One control and its concession, as one row.
+ *
+ * The button is a fixed 232px column on desktop so the notes share a left edge and can be
+ * read against each other — 232px is the wider label at its largest reachable figure,
+ * `Select the 47 this deck needs`, so nothing in the pair wraps. At phone the button is full
+ * width at the 44px minimum and the note is indented to its edge, because side by side each
+ * label gets ~175px and the longer one wraps to three lines there.
+ *
+ * THE CONCESSION IS IN THE ACCESSIBLE NAME and the visible note is `aria-hidden`: a sibling
+ * note is read AFTER the choice on a linear pass, and the whole design is that both
+ * concessions are legible BEFORE either press. Hidden rather than duplicated, so the figure
+ * is not spoken twice.
+ */
+function BulkControl(props: {
+  pool: "collection" | "best";
+  label: string;
+  ariaLabel: string;
+  note: string;
+  disabled: boolean;
+  onPress: () => void;
+}) {
+  return (
+    <div className="flex flex-col gap-[5px] md:flex-row md:items-center md:gap-[14px]">
+      <GhostButton
+        data-bulk-fill={props.pool}
+        onClick={props.onPress}
+        disabled={props.disabled}
+        aria-label={props.ariaLabel}
+        className="flex w-full items-center justify-center min-h-[44px] font-mono text-[12px] md:w-[232px] md:min-h-0 md:h-[30px] md:text-[11px] rounded-[8px] text-[color:var(--fg-body)] disabled:opacity-50"
+      >
+        {props.label}
+      </GhostButton>
+      <p
+        data-bulk-concession={props.pool}
+        aria-hidden
+        className="font-mono text-[11px] pl-[2px] md:pl-0"
+        style={{ color: "var(--fg-body)" }}
+      >
+        {props.note}
+      </p>
+    </div>
+  );
+}
+
 export function TopOffList({
   deckId,
   listId,
@@ -212,6 +280,11 @@ export function TopOffList({
 }: TopOffListProps) {
   const [inflight, setInflight] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  // THE PAIR'S OWN REFUSAL, kept apart from `error`. That one belongs to the COMMIT, which
+  // speaks about an action the player just took; clearing it because a background refetch
+  // succeeded would take a message off the screen that nothing replaced. They render through
+  // the same plate, and the commit's wins when both are set for the same reason.
+  const [bulkError, setBulkError] = useState<string | null>(null);
 
   // The pool is frozen for the life of one opening. The optimistic deck set
   // freezes a quick-added row in the same frame as the click, but the server
@@ -277,8 +350,8 @@ export function TopOffList({
   // `tickable` — the fill leaves a slot open rather than spending it on a card no floor wants.
   // The figure on the face and in the accessible name is still the number of slots, because
   // that is what the button offers to fill; what changed is that offering is not promising.
-  // The bulk control reaches for what the SEED reaches for, and they now agree on both halves:
-  // `canSeed` for what is ELIGIBLE, `chooseBulkTicks` for which of those to choose. A card
+  // The COLLECTION control reaches for what the SEED reaches for: `canSeed` decides what is
+  // eligible, and the server's own fill decides which of those to choose. A card
   // owned with every copy sleeved elsewhere stays in the list and stays tickable by hand; what
   // neither of these does is choose it for the player.
   //
@@ -289,46 +362,98 @@ export function TopOffList({
     .filter((c) => canSeed(c) && !illegal.has(c.oracleId) && !declined.has(c.oracleId))
     .map((c) => c.oracleId);
   const tickable = Math.min(seedableIds.length, Math.max(openSlots, 0));
-  // A LIVE HANDLE ON THE ALLOW-LIST, read after the await rather than closed over before it.
-  // The draft can move while the server thinks — see the bulk control below. Written in an
-  // effect rather than during render, which React forbids: the value it carries is only ever
-  // read from an async continuation, which runs after the commit that this effect follows.
-  const seedableIdsRef = useRef(seedableIds);
-  useEffect(() => {
-    seedableIdsRef.current = seedableIds;
-  });
+  // THE ALLOW-LIST IS READ AT PRESS TIME, from render scope, and no ref is needed for it any
+  // more. A live handle and a draft generation used to live here because the press itself was
+  // asynchronous — it asked the server for a plan and the draft could move in the gap. The
+  // pair holds its ids and applies them synchronously, so the allow-list it intersects with is
+  // simply the current render's. Both refs and both effects were left write-only by that
+  // change and are gone rather than kept as furniture describing a guard that guards nothing.
 
-  // A GENERATION FOR THE DRAFT ITSELF, because intersecting against a live allow-list is not
-  // enough. `onTickedChange` REPLACES the selection, so an answer that arrives after the
-  // player has ticked a row by hand, cleared the lot, or pressed Cancel would write the old
-  // server answer over the newer state — reviving a selection they had just cancelled. Every
-  // one of those controls stays live while the request is out, by design: they consult
-  // `inflight`, which is the COMMIT's.
-  //
-  // Bumped on unmount too. Cancel unmounts this list, and a continuation that runs afterwards
-  // is setting state on a component nobody is looking at.
-  const draftGen = useRef(0);
-  useEffect(() => {
-    draftGen.current += 1;
-    // THE DECK IS IN HERE TOO, and both halves of it are needed.
-    //
-    // `openSlots` catches an add or a removal that changes how many slots are open. It is not
-    // enough on its own: a SWAP leaves the count where it was while the contents move, and
-    // `chooseBulkFill` seeds its role counts from those contents — so the plan would be stale
-    // in exactly the way this feature is about, with the count unchanged to hide it.
-    //
-    // `deckOracleIds` is the list's optimistic copy, memoised on the deck's cards, so it takes
-    // a new identity when and only when they move — a quick-add bumps it in the same frame as
-    // the click. A prop rebuilt every render would bump this constantly and drop every answer,
-    // which is why it is this one rather than a fresh set assembled here.
-  }, [ticked, declined, openSlots, deckOracleIds]);
-  useEffect(() => () => {
-    draftGen.current += 1;
-  }, []);
   const untouched = pool.length - tickedCount - declinedHere;
-  // The control's own in-flight state. Separate from `inflight`, which is the COMMIT's: a
-  // player pressing this twice while the server thinks would otherwise send two plans.
-  const [choosing, setChoosing] = useState(false);
+
+  // A STABLE KEY FOR THE DECK'S CARDS. `deckOracleIds` is a Set rebuilt by the parent on every
+  // render, so it cannot be a dependency; sorted and joined, it changes exactly when the deck's
+  // contents do.
+  const deckOracleKey = [...deckOracleIds].sort().join(",");
+
+  // ── The bulk pair's figures (§5.2, b1–b11) ─────────────────────────────
+  //
+  // BOTH PLANS RUN WHEN THE LIST OPENS, because the locked requirement is that a player can
+  // compare what each control concedes WITHOUT pressing one to find out. The ids the notes
+  // were computed from are the ids a press applies, so the note can never describe a
+  // selection the press did not make.
+  //
+  // Design draws no loading state and this is the one gap in the matrix: the pair MOUNTS when
+  // its figures land rather than appearing figureless and filling in. That is the same shape
+  // the strip's seed already has — it opens with nothing ticked and the ticks arrive — and it
+  // is preferred to the two alternatives the handoff rules out by name: an empty note slot
+  // ("a blank beside one control and a figure beside the other reads as a missing figure")
+  // and a disabled ghost, which §Component notes reserves for a commit in flight alone.
+  const [bulkOptions, setBulkOptions] = useState<
+    { collection: BulkPlan; best: BulkPlan } | null
+  >(null);
+  useEffect(() => {
+    let live = true;
+    // THE OLD ANSWER GOES BEFORE THE NEW ONE IS ASKED FOR. It was computed for a deck that has
+    // since moved, so leaving it on screen would draw two notes about a deck nobody is looking
+    // at and — worse — leave their ids PRESSABLE until the new answer lands. The pair is
+    // absent for that moment, which is the same state it is in before the first answer.
+    //
+    // The refusal goes too, or a read that failed once keeps its plate up over every later
+    // success. This is the pair's own, never the commit's.
+    // CLEARED IN THE CLEANUP, not synchronously here. The old answer has to go — it was
+    // computed for a deck that has since moved, and leaving it on screen draws two notes about
+    // a deck nobody is looking at while its ids stay PRESSABLE until the new answer lands —
+    // but a `setState` in an effect's body cascades a render, so the clear happens as this
+    // effect is torn down, which is the same instant from the reader's side. The refusal goes
+    // with it, or a read that failed once keeps its plate up over every later success. This is
+    // the pair's own refusal, never the commit's.
+    void bulkFillOptions(deckId, openSlots)
+      .then((r) => {
+        if (!live) return;
+        if (r.ok) {
+          setBulkOptions({ collection: r.collection, best: r.best });
+          return;
+        }
+        // A REFUSAL IS DRAWN AND SPOKEN, not swallowed into an empty slot. The pair is absent
+        // without its figures — there is nothing honest for the notes to say — and an absence
+        // with no reason beside it is the one thing the surface's own absence rule does not
+        // cover: b3 and b9 are absences the copy explains. This is the path the single
+        // control it replaces already took, through the same shipped plate.
+        setBulkError(r.message);
+        onAnnounce(r.message);
+      })
+      .catch(() => {
+        if (!live) return;
+        // A rejected call — a deck deleted while the list was open, or a transport failure —
+        // is a refusal the player can read rather than an unhandled rejection that leaves two
+        // controls missing and says nothing.
+        setBulkError(synergyCopy.lastSlots.topUpFailed);
+        onAnnounce(synergyCopy.lastSlots.topUpFailed);
+      });
+    return () => {
+      live = false;
+      setBulkOptions(null);
+      setBulkError(null);
+    };
+    // THE PLANS ARE FOR THIS DECK'S CARDS, not merely for its slot count.
+    //
+    // `openSlots` alone is not enough and the difference is reachable: a quick-add and a
+    // removal while the list is open leave the count unchanged while the deck underneath it
+    // moves, and both notes and both id sets would go on describing the deck as it was. The
+    // single control this pair replaces was asked on the press, so it could not be stale by
+    // more than a round trip; asking at the open means the answer is live for as long as the
+    // list is, and the dependency list is the only thing that retires it.
+    //
+    // Joined rather than passed as an array: `deckOracleIds` is rebuilt on every render of the
+    // parent, so depending on the array itself would re-run two server fills per render.
+    //
+    // `onAnnounce` is deliberately NOT a dependency. It is the parent's callback and is
+    // rebuilt on most of its renders, so listing it would re-run both server plans every time
+    // the page around this list re-rendered — two fills per render, for a figure that has not
+    // moved. It is only ever CALLED from the failure paths above, never read for its value.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [deckId, openSlots, deckOracleKey]);
 
   const buying = pool.filter((c) => live.has(c.oracleId) && !c.owned);
   const buyMoney = summarisePrices(
@@ -336,6 +461,120 @@ export function TopOffList({
     newestAsOf,
   );
   const buyCount = buying.length;
+
+  /**
+   * WHAT A PRESS WOULD ACTUALLY SELECT.
+   *
+   * ONE DEFINITION, because three things depend on it and they have to agree: the press, the
+   * buy figure beside the best control, and b3's judgement that the two pools chose the same
+   * cards. The first version computed each of those from the RAW plan ids, and both of the
+   * others were wrong in the same way — a declined or gone-illegal row that the plan named
+   * still counted, so the note quoted a card the press would not take and b3 asked its
+   * question about a difference that disappears on the press.
+   */
+  const wouldSelect = (ids: readonly string[], pool_: "collection" | "best") => {
+    // THE ALLOW-LIST IS THE CONTROL'S OWN POOL, and the two are genuinely different.
+    //
+    // The collection control promises cards the player can sleeve TONIGHT, which is `canSeed`
+    // — already computed as `seedableIds`, and already carrying the set-aside and gone-illegal
+    // exclusions. A card owned with every copy sleeved in another deck stays in the list and
+    // stays tickable BY HAND; what no control may do is choose it for the player.
+    //
+    // The best control's pool is every legal candidate, unfiltered by ownership: this list
+    // ticks unowned rows, draws their buy tags and buys them on commit, so narrowing it to
+    // `canSeed` would silently drop every purchase the control exists to offer.
+    const allowed = new Set(
+      pool_ === "collection"
+        ? seedableIds
+        : pool
+            .filter((c) => !illegal.has(c.oracleId) && !declined.has(c.oracleId))
+            .map((c) => c.oracleId),
+    );
+    return ids.filter((id) => allowed.has(id));
+  };
+
+  const applyBulk = (ids: readonly string[], pool_: "collection" | "best") =>
+    onTickedChange(new Set(wouldSelect(ids, pool_)));
+
+  // b9 · the collection control is absent at zero sleevable, and the remaining control keeps
+  // its own label: renaming it `Select 12` would hide that every one of them is a purchase.
+  const bulkShowsCollection = tickable > 0;
+  // b3 · the two pools produced the same rows, so the second control is absent. Compared as
+  // SETS rather than by length: two plans of twelve that differ by one card are two different
+  // answers, and the player would be choosing between controls that are not the same while
+  // being told they are.
+  // COMPARED AFTER EACH POOL'S OWN ALLOW-LIST, never on the raw plans. The two lists are
+  // intersected with different sets — the collection control may only choose a card with a
+  // free copy — so two plans that differ only by a row neither press can take are the same
+  // answer wearing two buttons, which is the #361 defect this rule exists to prevent.
+  const bulkShowsBest =
+    bulkOptions !== null &&
+    !sameSelection(
+      wouldSelect(bulkOptions.collection.oracleIds, "collection"),
+      wouldSelect(bulkOptions.best.oracleIds, "best"),
+    );
+
+  // b11 · at the cap with a hand-made selection in the way, replacing it is the WHOLE of what
+  // a press would do, and that outranks the figure. Both notes take it, and the figures return
+  // when the selection is cleared or reduced.
+  const bulkReplaces =
+    atCap && tickedCount > 0
+      ? tickedCount === 1
+        ? topOffCopy.bulk.replacesOne
+        : topOffCopy.bulk.replaces(String(tickedCount))
+      : null;
+
+  /**
+   * A press APPLIES the ids the note was computed from. No round trip: the plans ran when the
+   * list opened, and asking again would re-plan against a deck that may have moved since the
+   * figure beside the button was drawn.
+   *
+   * STILL INTERSECTED, and against the list as it stands rather than as it stood when the
+   * plans landed. A row set aside, or one that went illegal while the list was open, must not
+   * come back selected because the player pressed a bulk control — the same rule the seed and
+   * the old single control both take, and the reason the allow-list is read here rather than
+   * captured with the plan.
+   *
+   * The BEST pool's allow-list is wider than the collection's by design: this list ticks
+   * unowned rows, draws their buy tags and buys them on commit, so `canSeed` — which is about
+   * a copy free to sleeve tonight — would silently drop every purchase the control exists to
+   * offer.
+   */
+
+  /** The left-hand note: what filling from the collection gives up on shape. */
+  const bulkNote = (plan: BulkPlan, nothingToBuy: boolean) =>
+    bulkReplaces ??
+    bulkConcession({
+      shortfalls: plan.shortfalls,
+      measured: plan.measuredTypes,
+      nothingToBuy,
+    });
+
+  // The right-hand note: what the best fill costs. Computed from the rows the press will
+  // ACTUALLY select — the plan's ids intersected with this list — so the figure and the
+  // selection cannot disagree. Identical in shape to the shipped `commit.toBuy`, because the
+  // bar restates this pair of figures a moment later and two spellings of one fact read as two.
+  // FROM THE SELECTION, not from the plan. A declined unowned row still in the best plan would
+  // otherwise be counted and priced here and then dropped by the press, so the note would
+  // promise `5 to buy · $34.00` where the commit bar says `4 to buy · $14.00` a moment later.
+  const bestSelection = bulkOptions ? new Set(wouldSelect(bulkOptions.best.oracleIds, "best")) : null;
+  const bestBuying = bestSelection
+    ? pool.filter((c) => bestSelection.has(c.oracleId) && !c.owned)
+    : [];
+  const bestMoney = summarisePrices(
+    bestBuying.map((c) => ({ quantity: 1, price: c.price })),
+    newestAsOf,
+  );
+  const bulkBuyNote =
+    bulkReplaces ??
+    topOffCopy.bulk.buy(
+      String(bestBuying.length),
+      // A MISSING PRICE DROPS THE FIGURE AND KEEPS THE COUNT — `price.ts`'s shipped rule and
+      // the buy tag's own behaviour on the rows below. No dash, no `$0.00`, no
+      // "price unavailable". A figure stands as soon as one copy is priced.
+      bestMoney.pricedCopies > 0 ? formatCents(bestMoney.totalCents) : null,
+    );
+
   const total = bodySize - openSlots + tickedCount;
 
   const capLineId = `${listId}-cap`;
@@ -576,76 +815,76 @@ export function TopOffList({
           </p>
         )}
 
+        {/* ── The bulk pair (§5.1–§5.4, b1–b11) ──────────────────────────
+            TWO GHOSTS OF EQUAL WEIGHT, one fixed column, each with its
+            concession on its own line. The locked requirement is COMPARISON:
+            two labels of different length push their notes to different x
+            positions, and two figures that do not share a left edge are read
+            one after the other rather than against each other. So the buttons
+            take one fixed 232px column and the notes form a second.
+
+            Neither is primary. The pair exists precisely because the app cannot
+            know which concession a player minds, and weight would be an opinion
+            it does not have. The brass outline on this surface is spoken for by
+            `Add N cards`, the only control here that changes the deck.
+
+            NEITHER TAKES A PRESSED STATE. A player can deselect by hand a moment
+            later, and a lit button would claim a selection that no longer
+            matches it. Pressing the other swaps the selection wholesale. */}
+        <div className="flex flex-col gap-[10px] mt-[11px] md:gap-[7px]">
+          {bulkOptions && (bulkShowsCollection || bulkShowsBest) && (
+            <>
+              {/* b9 · nothing to sleeve. The collection control is ABSENT, not
+                  disabled — the surface's standing rule — and the strip's
+                  shipped door note already says which of the two zeroes it is. */}
+              {/* THE COLLECTION CONTROL NAMES `tickable`, NOT `openSlots`, and this is the one
+                  place the build departs from the handoff's copy note.
+
+                  That note says "both labels state the same count — the open slots — because
+                  both fills take every one of them". True in b1's own figures (23 sleevable
+                  for 12 open, so the two are the same number) and false exactly where they
+                  differ: a collection holding four candidates for twelve slots cannot take
+                  twelve, and `Select 12 from my collection` would promise eight cards that do
+                  not exist.
+
+                  The surface has already ruled on this shape once. The control this pair
+                  replaces named `tickable` for the same reason, recorded in its own case as
+                  "a button that says two and ticks one is wrong on its face and in its name".
+                  Recorded as errata on the handoff rather than settled quietly. */}
+              {bulkShowsCollection && (
+                <BulkControl
+                  pool="collection"
+                  label={topOffCopy.bulk.collection(String(tickable))}
+                  ariaLabel={topOffCopy.bulk.collectionAria(
+                    String(tickable),
+                    bulkNote(bulkOptions.collection, !bulkShowsBest),
+                  )}
+                  note={bulkNote(bulkOptions.collection, !bulkShowsBest)}
+                  disabled={inflight}
+                  onPress={() => applyBulk(bulkOptions.collection.oracleIds, "collection")}
+                />
+              )}
+              {/* b3 · the two fills are the same set, so the second control is
+                  ABSENT and the survivor's note says why. Two controls that do
+                  the same thing are the shipped #361 defect in a new costume. */}
+              {bulkShowsBest && (
+                <BulkControl
+                  pool="best"
+                  label={topOffCopy.bulk.best(String(openSlots))}
+                  ariaLabel={topOffCopy.bulk.bestAria(
+                    String(openSlots),
+                    bulkBuyNote,
+                  )}
+                  note={bulkBuyNote}
+                  disabled={inflight}
+                  onPress={() => applyBulk(bulkOptions.best.oracleIds, "best")}
+                />
+              )}
+            </>
+          )}
+        </div>
+
         <div className="flex flex-wrap gap-[8px] mt-[11px] md:contents">
-          <GhostButton
-            onClick={async () => {
-              // THE REAL FILL DECIDES, not the top of a synergy ranking. `seedableIds` is
-              // ordered by synergy, so slicing it optimised "what can I sleeve" where the
-              // player asked "what does this deck need" — short on creatures, it ticked
-              // non-creatures and left the deck worse with no slots left to fix it.
-              //
-              // The choice cannot be made here: the list's pool is `SynergyCard[]`, which
-              // carries no oracle text, and re-classifying without it under-counts every
-              // text-based role. So the action runs `planFill` on the server and returns ids.
-              setChoosing(true);
-              setError(null);
-              // The draft as it stands at the moment of the press. Anything that moves it —
-              // or takes the list away — makes this answer describe a deck that no longer
-              // exists, and the right thing to do with it is nothing.
-              const askedAt = draftGen.current;
-              const stale = () => draftGen.current !== askedAt;
-              try {
-                // THE SHARED PATH. The seed on `last-slots-strip.tsx` calls this same
-                // function, so the two cannot disagree about which cards a bulk selection
-                // ticks — which is exactly how they drifted before: they shared `canSeed`,
-                // which decides what is ELIGIBLE, and nothing about what to choose.
-                //
-                // The allow-list is read at APPLY time rather than captured before the await.
-                // The row toggles, the declines, the clear and Cancel all stay live while the
-                // server thinks — they consult `inflight`, which is the COMMIT's — so a
-                // player can set a row aside mid-request, and an allow-list from before it
-                // describes a draft that no longer exists.
-                const result = await chooseBulkTicks({
-                  deckId,
-                  slots: tickable,
-                  allowed: () => new Set(seedableIdsRef.current),
-                });
-                if (stale()) return;
-                if (!result.ok) {
-                  // THE REFUSAL CHANGES NOTHING, which is the rule the commit path beside
-                  // this one states in its own words. Replacing the selection with an empty
-                  // set would throw away every tick the player had made by hand — and the
-                  // empty set is a deliberate value here, drawn by the clear control, so it
-                  // must not double as a failure outcome.
-                  //
-                  // ANNOUNCED AS WELL AS DRAWN: `RefusalPlate` carries no live role, so a
-                  // message set into it reaches sighted readers and nobody else.
-                  setError(result.message);
-                  onAnnounce(result.message);
-                  return;
-                }
-                onTickedChange(result.ticks);
-              } catch {
-                if (stale()) return;
-                // A rejected call — a deck deleted while the list was open, or a transport
-                // failure — is a refusal the player can read, not an unhandled rejection that
-                // clears the spinner and says nothing. `commit()` above has the same catch.
-                setError(synergyCopy.lastSlots.topUpFailed);
-                onAnnounce(synergyCopy.lastSlots.topUpFailed);
-              } finally {
-                // Cleared even when the answer was dropped: the spinner belongs to the press,
-                // not to the answer, and a stale result still ends the press. Safe after an
-                // unmount — React no-ops a set on an unmounted component and warns about
-                // nothing since 18.
-                setChoosing(false);
-              }
-            }}
-            disabled={inflight || choosing || tickable === 0}
-            aria-label={topOffCopy.list.tickOwnedAria(String(tickable))}
-            className="flex flex-1 items-center justify-center min-h-[44px] md:inline-flex md:flex-none md:min-h-0 md:h-[30px] md:px-[11px] rounded-[8px] font-mono text-[11px] text-[color:var(--fg-body)] disabled:opacity-50"
-          >
-            {topOffCopy.list.tickOwned(String(tickable))}
-          </GhostButton>
           <GhostButton
             onClick={() => onTickedChange(new Set())}
             disabled={inflight || tickedCount === 0}
@@ -653,11 +892,6 @@ export function TopOffList({
           >
             {topOffCopy.list.clearTicks}
           </GhostButton>
-          {/* The way back out of every decline at once. It appears at one
-              decline rather than at all of them: gating it on the all-declined
-              case would hide the general control to serve the extreme one. At
-              phone it takes its own full-width row instead of squeezing the two
-              fixtures a player did not ask to have narrowed. */}
           {declinedHere > 0 && (
             <GhostButton
               onClick={restoreAll}
@@ -928,7 +1162,14 @@ export function TopOffList({
           </span>
         </div>
 
-        {error && <RefusalPlate className="order-4 md:order-5 md:w-full" message={error} />}
+        {(error ?? bulkError) && (
+          <RefusalPlate
+            className="order-4 md:order-5 md:w-full"
+            // The COMMIT's refusal wins when both are set: it is about something the player
+            // just pressed, while the pair's is about a background read.
+            message={(error ?? bulkError) as string}
+          />
+        )}
       </div>
     </div>
   );

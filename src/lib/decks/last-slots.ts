@@ -69,7 +69,7 @@ export function listLastSlotsCandidates(args: {
 /**
  * A card the list may tick BY DEFAULT — owned, with a copy free to sleeve.
  *
- * The seed and the bulk `Tick the N I can sleeve` control read this one
+ * The seed and the bulk `Select N from my collection` control read this one
  * predicate rather than each filtering on `owned` in their own file. They
  * already drifted once in the opposite direction: the seed was narrowed to free
  * copies while the bulk control kept ticking every owned card, which left a

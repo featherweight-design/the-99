@@ -7,6 +7,15 @@ import { topOffDraftKey } from "../../lib/decks/top-off-draft";
 
 const actions = vi.hoisted(() => ({ commit: vi.fn(), chooseBulk: vi.fn() }));
 vi.mock("../../app/decks/actions", () => ({
+  // The top-off list asks for both bulk plans when it opens, so every test that renders it
+  // reaches this. Answered with two EMPTY plans rather than a refusal: a refusal is drawn and
+  // SPOKEN, which would put a second message in the live region and break the announcement
+  // counts these files are actually about.
+  bulkFillOptions: vi.fn().mockResolvedValue({
+    ok: true,
+    collection: { oracleIds: [], shortfalls: [], measuredTypes: true },
+    best: { oracleIds: [], shortfalls: [], measuredTypes: true },
+  }),
   commitTopOff: actions.commit,
   // THE SEED ASKS THE REAL FILL NOW. It used to slice this list by synergy, which is the
   // "what can I sleeve" thinking the button stopped doing — so the strip calls the same

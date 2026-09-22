@@ -7,11 +7,28 @@ import { stubViewport } from "../../test-utils/stub-viewport";
 import type { TopOffCandidate } from "../../lib/decks/last-slots";
 import { CardDetailProvider, cardDetailCopy } from "../cards/card-detail-provider";
 
-const actions = vi.hoisted(() => ({ commit: vi.fn(), chooseBulk: vi.fn() }));
+const actions = vi.hoisted(() => ({
+  commit: vi.fn(),
+  chooseBulk: vi.fn(),
+  bulkOptions: vi.fn(),
+}));
 vi.mock("../../app/decks/actions", () => ({
   commitTopOff: actions.commit,
   chooseBulkFill: actions.chooseBulk,
+  // THE PAIR'S FIGURES, asked for when the list opens. Both plans run there so a player can
+  // compare what each control concedes before pressing either, so every case that renders the
+  // list reaches this — a default is set in `beforeEach` and cases that are ABOUT the pair
+  // override it.
+  bulkFillOptions: actions.bulkOptions,
 }));
+
+/** An answer from one pool. `measuredTypes: true` with no shortfalls is the b2 face —
+ *  the fill closed every gap — which is the sensible default for cases about other things. */
+const plan = (over: Partial<{ oracleIds: string[]; shortfalls: unknown[]; measuredTypes: boolean }> = {}) => ({
+  oracleIds: over.oracleIds ?? [],
+  shortfalls: over.shortfalls ?? [],
+  measuredTypes: over.measuredTypes ?? true,
+});
 
 import { TopOffList } from "./top-off-list";
 
@@ -119,6 +136,11 @@ beforeEach(() => {
   // presses the bulk control without stubbing it would inherit the previous case's ids rather
   // than `undefined`, and read as passing on an answer it never asked for.
   actions.chooseBulk.mockReset();
+  // The pair's default answer: both pools return nothing and concede nothing. Cases that are
+  // about the pair override it; every other case just needs the fetch not to reject.
+  actions.bulkOptions
+    .mockReset()
+    .mockResolvedValue({ ok: true, collection: plan(), best: plan({ oracleIds: ["x"] }) });
 });
 
 afterEach(() => {
@@ -430,13 +452,17 @@ describe("TopOffList", () => {
   it("names the tick-all by what it will tick, not by what is owned", async () => {
     // The action answers with the one slot's worth; the LABEL is computed from the list's own
     // `tickable` and is what this case is about.
-    actions.chooseBulk.mockResolvedValue({ ok: true, oracleIds: ["owned-1"] });
+    actions.bulkOptions.mockResolvedValue({
+      ok: true,
+      collection: plan({ oracleIds: ["owned-1"] }),
+      best: plan({ oracleIds: ["owned-2"] }),
+    });
     render(<Harness openSlots={1} />);
 
-    const button = screen.getByRole("button", {
-      name: topOffCopy.list.tickOwnedAria("1"),
+    const button = await screen.findByRole("button", {
+      name: topOffCopy.bulk.collectionAria("1", topOffCopy.bulk.gapNone),
     });
-    expect(button).toHaveTextContent(topOffCopy.list.tickOwned("1"));
+    expect(button).toHaveTextContent(topOffCopy.bulk.collection("1"));
 
     await click(button);
     expect(screen.getByText(topOffCopy.list.headMobile("1", "1"))).toBeInTheDocument();
@@ -606,25 +632,39 @@ describe("TopOffList — the bulk tick", () => {
     // stays green against it and the regression walks back in. The promise is held open and
     // released deliberately, which makes the unchecked assertion below real.
     let release: (v: unknown) => void = () => {};
-    actions.chooseBulk.mockReturnValue(new Promise((r) => { release = r; }));
+    actions.bulkOptions.mockReturnValue(new Promise((r) => { release = r; }));
     render(<Harness candidates={[claimed("held-1"), candidate("free-1", true)]} />);
 
-    const bulk = screen.getByRole("button", { name: topOffCopy.list.tickOwnedAria("1") });
-    expect(bulk).toHaveTextContent(topOffCopy.list.tickOwned("1"));
+    // THE PAIR IS ABSENT UNTIL ITS FIGURES LAND. The plans run when the list opens so both
+    // concessions are legible before either press, so the wait that matters moved from the
+    // press to the open — and it is held open here for the same reason as before: an answer
+    // that settles in the same turn cannot tell a real wait from a missing one.
+    expect(
+      screen.queryByRole("button", { name: /from your collection/ }),
+    ).not.toBeInTheDocument();
 
     const byName = (name: string) =>
       screen.getAllByRole("checkbox")
         .find((b) => (b.getAttribute("aria-label") ?? "").includes(name));
 
-    fireEvent.click(bulk);
-    // NOTHING IS TICKED YET, and this is the line the old wait cannot survive: it asserted
-    // the tick at this point, with the action still in flight.
     expect(byName("free-1")).not.toBeChecked();
 
     await act(async () => {
-      release({ ok: true, oracleIds: ["free-1", "held-1"] });
+      release({
+        ok: true,
+        collection: plan({ oracleIds: ["free-1", "held-1"] }),
+        best: plan({ oracleIds: ["free-1"] }),
+      });
     });
 
+    const bulk = screen.getByRole("button", { name: /from your collection/ });
+    expect(bulk).toHaveTextContent(topOffCopy.bulk.collection("1"));
+    await act(async () => {
+      fireEvent.click(bulk);
+    });
+
+    // The plan offered a HELD card and the list refuses it. Offering and choosing are
+    // different things, and only the second is this list's to decide.
     expect(byName("free-1")).toBeChecked();
     expect(byName("held-1")).not.toBeChecked();
   });
@@ -635,7 +675,7 @@ describe("TopOffList — the bulk tick", () => {
   // clear control, so it cannot double as a failure outcome. It dropped the message too.
   it("keeps the ticks and says why when the choice is refused", async () => {
     const onAnnounce = vi.fn();
-    actions.chooseBulk.mockResolvedValue({ ok: false, message: "Couldn’t work that out." });
+    actions.bulkOptions.mockResolvedValue({ ok: false, message: "Couldn’t work that out." });
     render(<Harness
       candidates={[candidate("free-1", true), candidate("free-2", true)]}
       onAnnounce={onAnnounce}
@@ -645,7 +685,8 @@ describe("TopOffList — the bulk tick", () => {
     fireEvent.click(box);
     expect(box).toBeChecked();
 
-    fireEvent.click(screen.getByRole("button", { name: /Tick all/ }));
+    // THE REFUSAL ARRIVES FROM THE OPEN, not from a press: the plans run when the list opens
+    // so both concessions are legible before either press, so that is where the failure is.
     await screen.findByTestId("top-off-refusal");
 
     expect(screen.getByTestId("top-off-refusal")).toHaveTextContent("Couldn’t work that out.");
@@ -656,112 +697,250 @@ describe("TopOffList — the bulk tick", () => {
   });
 
   it("draws a refusal rather than going silent when the call throws", async () => {
-    actions.chooseBulk.mockRejectedValue(new Error("network"));
+    actions.bulkOptions.mockRejectedValue(new Error("network"));
     render(<Harness candidates={[candidate("free-1", true)]} />);
 
-    fireEvent.click(screen.getByRole("button", { name: /Tick all/ }));
+    // THE REFUSAL ARRIVES FROM THE OPEN, not from a press: the plans run when the list opens
+    // so both concessions are legible before either press, so that is where the failure is.
     await screen.findByTestId("top-off-refusal");
 
     expect(screen.getByTestId("top-off-refusal"))
       .toHaveTextContent(synergyCopy.lastSlots.topUpFailed);
   });
 
-  // THE DRAFT MOVES WHILE THE SERVER THINKS. Row toggles, declines, clear and Cancel all stay
-  // live during the request — they consult `inflight`, which is the COMMIT's — so a player can
-  // set a row aside after pressing and before the answer lands. An allow-list captured before
-  // the await describes a draft that no longer exists, and reviving that row is exactly the
-  // undo-with-a-press this control is meant to avoid.
-  it("applies the answer against the draft as it stands when it arrives", async () => {
-    let release: (v: unknown) => void = () => {};
-    actions.chooseBulk.mockReturnValue(new Promise((r) => { release = r; }));
-    render(<Harness candidates={[candidate("free-1", true), candidate("free-2", true)]} />);
+  // FOUR STALENESS CASES WERE DELETED HERE, and the reason is that the race they pinned no
+  // longer exists rather than that it stopped mattering.
+  //
+  // The single control was asynchronous ON THE PRESS: it asked the server for a plan and the
+  // draft could move — a hand tick, a decline, a quick-add closing a slot — in the gap before
+  // the answer came back. Those four cases held the action open, moved the draft, and
+  // asserted the answer was dropped.
+  //
+  // The pair asks for both plans when the list OPENS, because both concessions have to be
+  // legible before either press. So the press applies ids it already holds, synchronously,
+  // against the list as it stands at that instant. There is no gap to go stale in, and a case
+  // pretending otherwise would have to fake an async press that does not exist to run at all.
+  //
+  // What survives, and is asserted above: a press intersects with the CURRENT list, so a row
+  // set aside or gone illegal since the plans landed is not selected. That is the same rule,
+  // moved to the only place it can still be broken.
 
-    fireEvent.click(screen.getByRole("button", { name: /Tick all/ }));
+  // ── The pair's own states (b1–b11) ───────────────────────────────────────
 
-    // Set one aside AFTER the request is out and BEFORE it answers.
-    fireEvent.click(screen.getByRole("button", {
-      name: topOffCopy.list.declineAria("free-1"),
-    }));
-
-    await act(async () => {
-      release({ ok: true, oracleIds: ["free-1", "free-2"] });
+  // b1 · THE ORDINARY PAIR — two controls, two different concessions.
+  //
+  // THE COUNTS ARE NOT ASSERTED TO MATCH, and that is deliberate. The handoff's copy comment
+  // says "both labels state the same count — the open slots — because both fills take every
+  // one of them", which is true in b1's own figures (23 sleevable for 12 open) and false
+  // wherever the collection holds fewer cards than there are slots. The collection control
+  // therefore names `tickable`, what it can actually select; see the note in the component.
+  // This case asserts the two notes, which is what it can see.
+  it("draws both controls with the same count and different concessions", async () => {
+    actions.bulkOptions.mockResolvedValue({
+      ok: true,
+      collection: plan({
+        oracleIds: ["free-1"],
+        shortfalls: [{ kind: "type", type: "creature", short: 2 }],
+      }),
+      best: plan({ oracleIds: ["free-2"] }),
     });
+    render(<Harness candidates={[candidate("free-1", true), candidate("free-2", false)]} />);
 
-    // RESTORED, because a declined row leaves the list either way and the question is what
-    // the late answer wrote into the selection behind it. A stale tick is invisible until the
-    // row comes back carrying it.
-    fireEvent.click(screen.getByRole("button", {
-      name: topOffCopy.list.restoreAria("free-1"),
-    }));
-    expect(rowBox("free-1")).not.toBeChecked();
+    await screen.findByRole("button", { name: /from your collection/ });
+    expect(screen.getByRole("button", { name: /this deck needs/ })).toBeInTheDocument();
+
+    const notes = screen.getAllByText(/short of recommendations|to buy/);
+    expect(notes[0]).toHaveTextContent("2 creatures short of recommendations");
+    // The buy figure is computed from the rows the press will ACTUALLY select, so the note and
+    // the selection cannot disagree: `free-2` is the one unowned row in the best plan.
+    expect(screen.getByText(topOffCopy.bulk.buy("1", null))).toBeInTheDocument();
   });
 
-  // A NEWER SELECTION WINS. `onTickedChange` REPLACES the selection wholesale, so an answer
-  // arriving after the player has ticked a row by hand would write the server's older view
-  // over their newer one. Every editing control stays live during the request by design —
-  // they consult `inflight`, which is the commit's — so this is reachable by pressing the
-  // bulk control and then ticking anything.
-  it("drops the answer when the player has edited the draft since asking", async () => {
-    let release: (v: unknown) => void = () => {};
-    actions.chooseBulk.mockReturnValue(new Promise((r) => { release = r; }));
-    render(<Harness candidates={[candidate("free-1", true), candidate("free-2", true)]} />);
-
-    fireEvent.click(screen.getByRole("button", { name: /Tick all/ }));
-    // A hand tick, after the request is out and before it answers.
-    fireEvent.click(rowBox("free-2"));
-    expect(rowBox("free-2")).toBeChecked();
-
-    await act(async () => {
-      release({ ok: true, oracleIds: ["free-1"] });
-    });
-
-    // The server's answer named free-1 only. Applying it would have replaced the hand tick.
-    expect(rowBox("free-2")).toBeChecked();
-    expect(rowBox("free-1")).not.toBeChecked();
-  });
-
-  // THE DECK MOVES TOO, not only the selection. A quick-add or a removal elsewhere changes how
-  // many slots are open without touching `ticked` or `declined` — so an answer planned for the
-  // old slot count would be applied to a deck that is no longer the one it was asked about.
-  it("drops the answer when the deck's open slots have changed since asking", async () => {
-    let release: (v: unknown) => void = () => {};
-    actions.chooseBulk.mockReturnValue(new Promise((r) => { release = r; }));
-    const cards = [candidate("free-1", true), candidate("free-2", true)];
-    const { rerender } = render(<Harness openSlots={3} candidates={cards} />);
-
-    fireEvent.click(screen.getByRole("button", { name: /Tick all/ }));
-    // Two slots now, because something was added to the deck while the server was thinking.
-    rerender(<Harness openSlots={2} candidates={cards} />);
+  // THE PLANS ARE ASKED FOR AGAIN WHEN THE DECK MOVES, and `openSlots` alone cannot see it.
+  //
+  // A quick-add and a removal while the list is open leave the slot count exactly where it was
+  // while the deck underneath changes, so both notes and both id sets would go on describing a
+  // deck that no longer exists. The single control this pair replaces asked on the PRESS and
+  // so could only be stale by one round trip; asking at the open makes the answer live for as
+  // long as the list is.
+  it("asks again when the deck's cards change under a steady slot count", async () => {
+    function Swapper() {
+      const [ids, setIds] = useState(new Set(["in-deck-a"]));
+      return (
+        <>
+          <button onClick={() => setIds(new Set(["in-deck-b"]))}>swap</button>
+          <Harness deckOracleIds={ids} openSlots={3} />
+        </>
+      );
+    }
+    render(<Swapper />);
+    await screen.findByRole("button", { name: /from your collection/ });
+    expect(actions.bulkOptions).toHaveBeenCalledTimes(1);
 
     await act(async () => {
-      release({ ok: true, oracleIds: ["free-1", "free-2"] });
+      screen.getByRole("button", { name: "swap" }).click();
     });
 
-    expect(rowBox("free-1")).not.toBeChecked();
-    expect(rowBox("free-2")).not.toBeChecked();
+    expect(actions.bulkOptions).toHaveBeenCalledTimes(2);
   });
 
-  // A SWAP MOVES THE CONTENTS AND NOT THE COUNT. `chooseBulkFill` seeds its role counts from
-  // the deck's cards, so a plan made before the swap is stale in precisely the way this
-  // feature is about — with `openSlots` unchanged to hide it.
-  it("drops the answer when the deck's cards have changed since asking", async () => {
-    let release: (v: unknown) => void = () => {};
-    actions.chooseBulk.mockReturnValue(new Promise((r) => { release = r; }));
-    const cards = [candidate("free-1", true), candidate("free-2", true)];
-    const { rerender } = render(
-      <Harness deckOracleIds={new Set(["in-deck-a"])} candidates={cards} />,
+  // THE BUY NOTE COUNTS WHAT THE PRESS TAKES, not what the plan named. A declined unowned row
+  // still in the best plan is dropped by the press, so counting it here promises a purchase
+  // the commit bar contradicts a moment later.
+  it("leaves a declined row out of the buy figure", async () => {
+    actions.bulkOptions.mockResolvedValue({
+      ok: true,
+      collection: plan(),
+      best: plan({ oracleIds: ["buy-1", "buy-2"] }),
+    });
+    render(
+      <Harness
+        candidates={[candidate("buy-1", false), candidate("buy-2", false)]}
+        initialDeclined={["buy-2"]}
+      />,
     );
 
-    fireEvent.click(screen.getByRole("button", { name: /Tick all/ }));
-    // One card out, one in: the same number of open slots, a different deck.
-    rerender(<Harness deckOracleIds={new Set(["in-deck-b"])} candidates={cards} />);
+    await screen.findByRole("button", { name: /this deck needs/ });
+    expect(screen.getByText(topOffCopy.bulk.buy("1", null))).toBeInTheDocument();
+    expect(screen.queryByText(topOffCopy.bulk.buy("2", null))).not.toBeInTheDocument();
+  });
+
+  // b3 IS ASKED AFTER EACH POOL'S OWN ALLOW-LIST. Two plans differing only by a row that
+  // NEITHER press can take are the same answer wearing two buttons — and the two allow-lists
+  // are genuinely different, so the raw lists are the wrong thing to compare.
+  it("still drops the second control when the only difference is a declined row", async () => {
+    actions.bulkOptions.mockResolvedValue({
+      ok: true,
+      collection: plan({ oracleIds: ["free-1"] }),
+      best: plan({ oracleIds: ["free-1", "free-2"] }),
+    });
+    render(
+      <Harness
+        candidates={[candidate("free-1", true), candidate("free-2", true)]}
+        initialDeclined={["free-2"]}
+      />,
+    );
+
+    await screen.findByRole("button", { name: /from your collection/ });
+    expect(screen.queryByRole("button", { name: /this deck needs/ })).not.toBeInTheDocument();
+  });
+
+  // b2 · THE COLLECTION CONCEDES NOTHING, and the nil is STATED. A blank beside one control
+  // and a figure beside the other reads as a missing figure, and the nil is the answer the
+  // player came for.
+  it("states the nil concession rather than leaving the slot blank", async () => {
+    actions.bulkOptions.mockResolvedValue({
+      ok: true,
+      collection: plan({ oracleIds: ["free-1"] }),
+      best: plan({ oracleIds: ["free-2"] }),
+    });
+    render(<Harness candidates={[candidate("free-1", true), candidate("free-2", false)]} />);
+
+    await screen.findByText(topOffCopy.bulk.gapNone);
+  });
+
+  // b3 · THE TWO FILLS ARE THE SAME SET, so the second control is ABSENT and the survivor's
+  // note says why. Two controls that do the same thing are the shipped #361 defect in a new
+  // costume, and an absence with no reason beside it reads as a bug.
+  it("drops the second control when both pools chose the same cards", async () => {
+    actions.bulkOptions.mockResolvedValue({
+      ok: true,
+      // The same ids in a DIFFERENT ORDER, because both are applied as a set: an
+      // order-sensitive comparison would draw two controls that do exactly the same thing.
+      collection: plan({ oracleIds: ["free-1", "free-2"] }),
+      best: plan({ oracleIds: ["free-2", "free-1"] }),
+    });
+    render(<Harness candidates={[candidate("free-1", true), candidate("free-2", true)]} />);
+
+    await screen.findByRole("button", { name: /from your collection/ });
+    expect(screen.queryByRole("button", { name: /this deck needs/ })).not.toBeInTheDocument();
+    expect(
+      screen.getByText(topOffCopy.bulk.andNothingToBuy(topOffCopy.bulk.gapNone)),
+    ).toBeInTheDocument();
+  });
+
+  // b6 · NO MIX TO MEASURE AGAINST. An empty shortfall list means "nothing was compared" here,
+  // not "nothing is missing" — `matches every recommendation` would be the strongest possible
+  // claim made from no data.
+  it("says there is no recommendation rather than claiming a match", async () => {
+    actions.bulkOptions.mockResolvedValue({
+      ok: true,
+      collection: plan({ oracleIds: ["free-1"], measuredTypes: false }),
+      best: plan({ oracleIds: ["free-2"] }),
+    });
+    render(<Harness candidates={[candidate("free-1", true), candidate("free-2", false)]} />);
+
+    await screen.findByText(topOffCopy.bulk.gapUnmeasured);
+    expect(screen.queryByText(topOffCopy.bulk.gapNone)).not.toBeInTheDocument();
+  });
+
+  // b9 · NOTHING TO SLEEVE. The collection control is ABSENT, not disabled, and the remaining
+  // control keeps its own label: renaming it `Select 1` would hide that every one of them is
+  // a purchase.
+  it("drops the collection control when there is nothing to sleeve", async () => {
+    actions.bulkOptions.mockResolvedValue({
+      ok: true,
+      collection: plan(),
+      best: plan({ oracleIds: ["buy-1"] }),
+    });
+    render(<Harness candidates={[candidate("buy-1", false)]} />);
+
+    await screen.findByRole("button", { name: /this deck needs/ });
+    expect(
+      screen.queryByRole("button", { name: /from your collection/ }),
+    ).not.toBeInTheDocument();
+  });
+
+  // b11 · AT THE CAP, MID-SELECTION. While a hand-made selection fills the slots, replacing it
+  // is the whole of what a press would do, and that outranks the figure. BOTH notes take it,
+  // and the figures return when the selection is reduced.
+  it("yields both notes to the replacement warning at the cap", async () => {
+    actions.bulkOptions.mockResolvedValue({
+      ok: true,
+      collection: plan({
+        oracleIds: ["free-1"],
+        shortfalls: [{ kind: "type", type: "creature", short: 2 }],
+      }),
+      best: plan({ oracleIds: ["free-2"] }),
+    });
+    render(
+      <Harness
+        openSlots={1}
+        candidates={[candidate("free-1", true), candidate("free-2", true)]}
+      />,
+    );
+    await screen.findByRole("button", { name: /from your collection/ });
 
     await act(async () => {
-      release({ ok: true, oracleIds: ["free-1", "free-2"] });
+      rowBox("free-1").click();
     });
 
-    expect(rowBox("free-1")).not.toBeChecked();
-    expect(rowBox("free-2")).not.toBeChecked();
+    expect(screen.getAllByText(topOffCopy.bulk.replacesOne)).toHaveLength(2);
+    expect(
+      screen.queryByText(/short of recommendations/),
+    ).not.toBeInTheDocument();
+  });
+
+  // THE CONCESSION IS SPOKEN BEFORE THE PRESS. A sibling note is read AFTER the choice on a
+  // linear pass, so the figure lives in each button's accessible name — and the visible note
+  // is `aria-hidden` so it is not spoken twice.
+  it("carries the concession in the accessible name, and hides the visible note", async () => {
+    actions.bulkOptions.mockResolvedValue({
+      ok: true,
+      collection: plan({
+        oracleIds: ["free-1"],
+        shortfalls: [{ kind: "type", type: "creature", short: 2 }],
+      }),
+      best: plan({ oracleIds: ["free-2"] }),
+    });
+    render(<Harness candidates={[candidate("free-1", true), candidate("free-2", false)]} />);
+
+    const button = await screen.findByRole("button", {
+      name: topOffCopy.bulk.collectionAria("1", "2 creatures short of recommendations"),
+    });
+    expect(button).toBeInTheDocument();
+    expect(screen.getByText("2 creatures short of recommendations"))
+      .toHaveAttribute("aria-hidden", "true");
   });
 
   it("does not bring back a row the player set aside", async () => {
@@ -769,8 +948,11 @@ describe("TopOffList — the bulk tick", () => {
     // meant to save presses. The action does not know about this list's declines — it reads
     // the deck — so the control intersects its answer with what this list can tick, and this
     // case is that intersection.
-    let release: (v: unknown) => void = () => {};
-    actions.chooseBulk.mockReturnValue(new Promise((r) => { release = r; }));
+    actions.bulkOptions.mockResolvedValue({
+      ok: true,
+      collection: plan({ oracleIds: ["free-1", "free-2"] }),
+      best: plan({ oracleIds: ["free-1"] }),
+    });
     render(
       <Harness
         candidates={[candidate("free-1", true), candidate("free-2", true)]}
@@ -781,15 +963,15 @@ describe("TopOffList — the bulk tick", () => {
     const checkedNow = () => screen.getAllByRole("checkbox")
       .filter((b) => (b as HTMLInputElement).checked);
 
-    fireEvent.click(screen.getByRole("button", { name: topOffCopy.list.tickOwnedAria("1") }));
-    // Held open for the same reason as the case above: an action that settles in the same
-    // turn cannot tell the right wait from the wrong one.
+    const bulk = await screen.findByRole("button", { name: /from your collection/ });
     expect(checkedNow()).toHaveLength(0);
 
     await act(async () => {
-      release({ ok: true, oracleIds: ["free-1", "free-2"] });
+      fireEvent.click(bulk);
     });
 
+    // The plan named both; the declined row is not selected. A bulk control that resurrected
+    // a decline would undo a choice with a press meant to save presses.
     expect(checkedNow()).toHaveLength(1);
   });
 });

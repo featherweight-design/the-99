@@ -223,11 +223,59 @@ describe("planFill", () => {
     // only "short on ramp" cannot see a deck eight creatures under the decks it is measured
     // against. With no composition there are no type targets to be short of.
     expect(plan.shortfalls).toEqual([
-      { kind: "role", role: "ramp" },
-      { kind: "role", role: "draw" },
-      { kind: "role", role: "removal" },
-      { kind: "role", role: "wipes" },
+      { kind: "role", role: "ramp", short: 9 },
+      { kind: "role", role: "draw", short: 10 },
+      { kind: "role", role: "removal", short: 8 },
+      { kind: "role", role: "wipes", short: 3 },
     ]);
+  });
+
+  // THE MAGNITUDE, on the TYPE arm, which is the one the bulk controls' concession note reads.
+  // A note saying `short on creatures` cannot tell a deck one card under the decklists it is
+  // measured against from one eight cards under, and those are different answers to the
+  // question the control is asked. Measured with `slots` set so the fill CANNOT close the gap
+  // — an unbounded fill would close it and report nothing, which proves nothing about the
+  // figure.
+  it("says how far short each type is, not only which", () => {
+    const plan = planFill(poolOf(40), {
+      hasPartner: false,
+      skeleton: skeletonWith({ creature: 26, instant: 8 }),
+      slots: 4,
+    });
+    const creature = plan.shortfalls.find(
+      (s) => s.kind === "type" && s.type === "creature",
+    );
+    expect(creature, "no creature shortfall to measure").toBeTruthy();
+    // Against the deck the plan actually built, never against the target alone: with two
+    // creatures placed the note owes `24 creatures short` and not `26`.
+    const placedCreatures = plan.rows.filter((r) => {
+      const n = Number(r.oracleId.replace("p", ""));
+      return Number.isInteger(n) && n % 3 === 0;
+    }).length;
+    expect(creature).toEqual({
+      kind: "type",
+      type: "creature",
+      short: 26 - placedCreatures,
+    });
+    expect(placedCreatures, "the fill placed nothing, so the figure is the target").toBeGreaterThan(0);
+  });
+
+  // `measured` AND `measuredTypes` ARE DIFFERENT QUESTIONS, and the concession note turns on
+  // the second one. The role chain ends at the asserted baseline, so there is always a floor
+  // to be short of; the composition chain can end at nothing, and then the ten type
+  // shortfalls are empty for the opposite reason to a deck that met all ten.
+  it("distinguishes no type targets from every type target met", () => {
+    const none = planFill(poolOf(40), { hasPartner: false, skeleton: null, slots: 4 });
+    expect(none.measuredTypes).toBe(false);
+    expect(none.shortfalls.some((s) => s.kind === "type")).toBe(false);
+
+    const withTargets = planFill(poolOf(40), {
+      hasPartner: false,
+      skeleton: skeletonWith({ creature: 26 }),
+      slots: 4,
+    });
+    expect(withTargets.measuredTypes).toBe(true);
+    expect(withTargets.shortfalls.some((s) => s.kind === "type")).toBe(true);
   });
 
   it("reports no shortfall and 68 cards on a complete fill", () => {

@@ -57,10 +57,18 @@ export type FillRow = { oracleId: string; quantity: number; role: FillRole };
  * What the fill could not reach. A ROLE floor or a TYPE target, because the two are different
  * axes and a reader told only "short on ramp" cannot see that the deck is also eight creatures
  * under the decks it is being compared to.
+ *
+ * `short` IS HOW FAR. Which axes were missed is enough to colour a cell and not enough to
+ * write a sentence: the bulk controls' concession note reads `2 creatures short of
+ * recommendations`, and a reader told only "short on creatures" cannot tell a deck one card
+ * under from one eight cards under. Always positive — an axis that is not short is not in the
+ * list at all — and measured against the same figure the filter beside it used, never
+ * recomputed from a second expression that could drift from it.
  */
 export type FillShortfall =
-  | { kind: "role"; role: FillRole }
-  | { kind: "type"; type: keyof CompositionTargets };
+  | { kind: "role"; role: FillRole; short: number }
+  | { kind: "type"; type: keyof CompositionTargets; short: number };
+
 
 export type PlanFillArgs = {
   hasPartner: boolean;
@@ -114,6 +122,19 @@ export type FillPlan = {
   /** Whether the floors above came from decklists or from the asserted baseline. The same
    *  per-plan honesty `RoleFit.measured` carries per row. */
   measured: boolean;
+  /**
+   * Whether there were TYPE targets to compare against at all.
+   *
+   * Parallel to `measured` and NOT the same question: the role chain ends at the asserted
+   * baseline, so there is always something to be short of, while the composition chain can
+   * end at nothing — a commander with no derivable composition has no type targets, and the
+   * ten type shortfalls are then empty for the opposite reason to a deck that met all ten.
+   *
+   * A reader cannot tell those apart from `shortfalls` alone, and the bulk controls' note has
+   * to: `matches every recommendation` over no composition would be the strongest possible
+   * claim made from no data.
+   */
+  measuredTypes: boolean;
 };
 
 const NON_LAND_ROLES = ["ramp", "draw", "removal", "wipes"] as const;
@@ -584,9 +605,10 @@ export function planFill(candidates: FillCandidate[], args: PlanFillArgs): FillP
     bought: rows.filter((r) => boughtIds.has(r.oracleId)).reduce((n, r) => n + r.quantity, 0),
     landCapable,
     measured,
+    measuredTypes: typeTargets !== null,
     shortfalls: [
       ...NON_LAND_ROLES.filter((r) => counts[r] < floors[r])
-        .map((role) => ({ kind: "role" as const, role })),
+        .map((role) => ({ kind: "role" as const, role, short: floors[role] - counts[role] })),
       // Against the ceiling the sweeps actually built to, which the modal drops already
       // reduced — otherwise a base that is complete in PLAY reports itself short by exactly
       // the cards that completed it.
@@ -594,7 +616,8 @@ export function planFill(candidates: FillCandidate[], args: PlanFillArgs): FillP
       // count is taken and can sleeve modal cards of its own, so a base the residual completed
       // still reported itself short by exactly the cards that completed it.
       ...(landCapable < landCeiling
-        ? [{ kind: "role" as const, role: "land" as const }] : []),
+        ? [{ kind: "role" as const, role: "land" as const, short: landCeiling - landCapable }]
+        : []),
       // TYPES TOO. A deck can meet every role floor and still sit eight creatures under the
       // decklists it is measured against, and a reader told only about roles cannot see it.
       // THE THREE LAND AXES ARE EXCLUDED, because `placed` only ever holds the non-land rows —
@@ -606,7 +629,11 @@ export function planFill(candidates: FillCandidate[], args: PlanFillArgs): FillP
         ? (Object.keys(typeTargets) as (keyof CompositionTargets)[])
             .filter((type) => type !== "land" && type !== "basic" && type !== "nonbasic")
             .filter((type) => haveTypes[type] < typeTargets[type])
-            .map((type) => ({ kind: "type" as const, type }))
+            .map((type) => ({
+              kind: "type" as const,
+              type,
+              short: typeTargets[type] - haveTypes[type],
+            }))
         : []),
     ],
   };
