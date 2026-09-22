@@ -8,6 +8,7 @@ import type { ProfileState } from "./use-deck-profile";
 import { BracketClimb } from "./bracket-climb";
 import type { DeclarationControl } from "./declaration";
 import { FindingsBlock } from "./findings-block";
+import { LeanLine } from "./lean-line";
 import { ProvenancePanel } from "./provenance-panel";
 import type { FindingArt } from "./receipt-modal";
 import { VerdictBlock } from "./verdict-block";
@@ -94,7 +95,23 @@ function Verdict({
   const verdict = slotDeck(profile);
   return (
     <>
-      <VerdictBlock verdict={verdict} profile={profile} declaration={declaration} />
+      <VerdictBlock
+        verdict={verdict}
+        profile={profile}
+        declaration={declaration}
+        lean={
+          // `leanFor` is non-null only on a single bracket, 3 or 4, so the narrowing below is
+          // the rule's own guarantee restated for the type system rather than a second rule.
+          verdict.lean && (verdict.permits[0] === 3 || verdict.permits[0] === 4) ? (
+            <LeanLine
+              lean={verdict.lean}
+              bracket={verdict.permits[0]}
+              art={art}
+              commanderOracleIds={profile.commanderOracleIds}
+            />
+          ) : null
+        }
+      />
       <BracketClimb verdict={verdict} profile={profile} />
       <FindingsBlock profile={profile} art={art} />
       <ProvenancePanel />
