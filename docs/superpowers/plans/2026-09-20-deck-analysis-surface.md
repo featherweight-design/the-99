@@ -82,14 +82,14 @@ added and the count went from nine to fourteen**, so the dependency history is a
 | **4a — the verdict head** ✅ | The permitted range, the bracket chips, the sub-line and the population line, plus `BracketMark`. **This establishes Round 2's chrome** — rounds 3 and 4 sit inside it. Shipped #851. | *shipped* |
 | **4b — the climb** ✅ | "Where you sit, and what moves you": the three rungs, their marks at 22/26/36, the drop sentence from `upgradePath`, and the declare rung. Renders inside 4a's chrome. Shipped #853. | *shipped* |
 | **4c — the findings and their receipt** ✅ | The five findings — tiles at desktop, rows at 390, three states — and the card-list body of the receipt modal. **Split out of 4b during the run**, because a present finding's control OPENS: "the climb states, the findings open" is the handoff's own rule, so findings without their modal are either a dead affordance or a state the design does not draw. PR 6's combo body then lands in this chrome rather than beside it. **Both bodies shipped here** — the card list and the combo, by the 2026-09-22 scope ruling — plus the provenance panel and the tutor glyph. PR 6 keeps the lean and the reasoning body. See `gap-report-deck-findings.md`. | 4b |
-| **5 — the declaration ask and sub-line** ◐ | The readings that survive the 2026-09-21 ruling, plus `permits: [4]`, which draws no line. No skip, no "you said". | 3b, 4a |
+| **5 — the declaration ask and sub-line** ✅ | The readings that survive the 2026-09-21 ruling, plus `permits: [4]`, which draws no line. No skip, no "you said". Shipped #862. | *shipped* |
 | **6 — the lean and the reasoning modal** ✅ | The lean line, the modal body, the command-zone `found by` reading, and image resolution **at the draw** rather than in the profile. Mana drawn **as a state** — pips above zero, "No mana needed" at zero — plus the notable-prerequisites line. **Its combo body lands inside 4c's modal chrome**, so it waits on 4c rather than on 4b. **Shipped with 4c's chrome shared**: the reasoning is `ModalChrome` with a third body, 700px on `--elevated`. The combo's mana state and prerequisites landed in 4c's combo body, so this row is the lean, the reasoning body and the command-zone reading. See `gap-report-deck-lean.md`. | 0, 2, **4c** |
-| **7 — the drift row** ◐ | What survives of drift once the "you said" framing is gone — the permitted side can be a single bracket, which needs a reading. | 4a |
+| **7 — the drift row** ✅ | What survives of drift once the "you said" framing is gone — the permitted side can be a single bracket, which needs a reading. Shipped #866 as §E's version comparison. | *shipped* |
 | **8a — the facts payload** ✅ | The profile threaded into the builder shell and the top-off list, and a BATCHED `CandidateFacts` read for the whole pool. Measured above; Round 4's own list does not contain it. | — |
 | **8b — the card note, on the deck's own add surfaces** | The note atom at two densities — the sentence on the top-off row, the clause on the Consider tile — its copy module, and the pure rule that picks which sentence a candidate draws. **The push line this row used to name is withdrawn**; see below. | 8a |
 | **8b-ii — the marks the note leans on** | §C2's three fact glyphs on the Consider tile and the top-off row, the key that glosses them and the lemniscate sub-project 3 left unglossed, and the mass-land-denial note restated as a CONSEQUENCE. Asked for by Hugh against the shipped tile; both questions were real omissions. | 8b |
 | **8c — the card note on the quick-add row** | The search action's own facts read, and the note on the search result row. A different payload question from 8b's: the two deck-page hosts are fed by 8a's batched pool read, and the quick-add row is fed by a live per-keystroke search that loads no facts at all. | 8b |
-| **9 — the upgrade path** ◐ | Candidate sets, never a pick; the `blocked` reading. | Round 4 design |
+| **9 — the upgrade path** ✅ | Candidate sets, never a pick; the `blocked` reading. Shipped #867, on the climb's lower rung. | *shipped* |
 
 ## Where this stands — 2026-09-22
 
@@ -104,7 +104,9 @@ Tier A. The bracket marks reached `public/` in #837 and the `--bracket-1…5` pa
 
 **4a and 4b shipped on 2026-09-22** as #851 and #853, and the row count is now SIXTEEN: the
 findings were split out of 4b as 4c, and 8b was split into 8b and 8c, each for the reason its own
-row gives. What remains is the component halves of 4c, 5, 6, 7 and 9, plus PRs 8b and 8c. Each
+row gives. **5, 7 and 9 shipped the same day** as #862, #866 and #867 — see *What 5, 7 and 9
+settled* below — beside 4c and 6, which shipped in parallel as #863 and #865. The rows above
+say what is still open. Each open row
 wants the design-review property-table pass, a probe and a contact sheet, so they are build work
 rather than the tail of a rules run.
 
@@ -575,3 +577,54 @@ allowance and so cannot state them both, and `dropCutNamed(card, why)`, whose se
 dash this repo's shipping strings do not carry. `check:copy-drift` is green because the table
 quotes a form the code NEVER emitted rather than one it stopped emitting, which is the case that
 check cannot see by construction.
+
+---
+
+## What 5, 7 and 9 settled — 2026-09-22
+
+**The declaration's answer has one owner, and it earned that in review.** `useDeclaration` holds
+it for the whole shell, because the card note on Consider and the top-off list read the same value
+the verdict block draws. Two review rounds went on it, and each finding was real. The state is
+keyed on the deck, because the shell survives a route change and two decks can hold the same
+stored answer. The writes are SERIALIZED: two presses sent at once could commit in either order
+and leave the column behind the screen. A superseded success still counts as confirmed, so a later
+refusal restores to what the column holds. And `for version n` is named only when that version
+RECORDED the answer on screen: a deck answered after its commit carries the answer on its draft.
+The action's revalidation moved into `after()`, because inline it shipped the deck page back in
+the action's reply: 112,778 bytes against 90.
+
+**One ask per surface.** The ringed `?` retired from both the verdict's sub-line and the climb's
+4–5 rung, and the rung now points at the block above. `verdictHead` resolves the face from an
+answer, and refuses an answer that is outside the range or given on a single bracket, so no
+component compares a declaration with `permits` itself.
+
+**§E wins over §A5 by running first.** A commit refuses to copy a declaration its cards do not
+permit, so after one both the version row and the drift line are true. The row's branch comes
+first and the line never draws beside it. `versionComparison` gained `changed`: a predecessor
+that recorded nothing is "unrecorded", which is not "different", so it draws no row.
+
+**The upgrade path is a disclosure, which the climb's "nothing opens" rule now names as its one
+exception.** Round 4's audits place it on the lower rung. It expands in place and opens no sheet.
+`CoverageDisclosure` was NOT moved out of `commanders/` for it, although two audits said to: its
+copy, its count and its cap all describe role coverage. Its targets are every bracket below the
+reading's FLOOR, so u6 ("nothing would have to go") is built and tested but cannot be reached
+from the rung.
+
+**The pre-open pass earned its keep on 9.** It found seven defects, all real. Among them: a
+commander offered as a combo half to cut, beside a sentence saying either half would do. A
+shortfall sentence that assumed one commander, when partner commanders can both be game changers.
+And a nearest-target count that counted a card in two items twice.
+
+**That count then went three review rounds and was removed, which is the useful lesson.** "The
+fewest cards that answer every line" is a set-cover problem. The sum over-counted, an exact solver
+with a size cap overstated past the cap, and an uncapped exact solver is exponential in the number
+of combos on a render path. Each finding was right. The nearest line now counts THINGS: the figure
+the heading prints once that target is pressed, exact by definition and free to compute. Round 1
+also found that at Upgraded two different rules put a combo on the list (a loop of extra turns,
+and an assembled combo), so `upgradePath` carries a per-combo `reason`.
+
+**Contrast outranked a drawing once.** The declaration canvas draws the superseded mark at 0.45.
+The verdict addendum's ruling 3 (#861) holds every bracket mark at 3:1 as a graphic, so it ships
+at `DIM_OPACITY` and the row's upper range member does too. Declined in review, and recorded in
+#862's `## Settled`.
+
