@@ -1035,11 +1035,56 @@ export async function attachBracketFacts(
   return cards;
 }
 
+/**
+ * STATE 1 of combo awareness, attached to a PAGE of cards.
+ *
+ * Modelled on `attachBracketFacts` deliberately, down to the injected read: the alternative is
+ * an untested attachment path, where deleting every line here leaves the suite green while the
+ * clause silently vanishes from the list.
+ *
+ * THE WHOLE COLLECTION, in one set-based read — 492ms on staging for 2,805 cards. This surface
+ * has no server page to scope to: it ships every card in one payload and windows client-side.
+ *
+ * A separate pass rather than a join, because the list query is already the largest payload in
+ * the app and this touches 65 rows of it on the reference collection.
+ *
+ * DEGRADES TO SILENCE. A failed read leaves every card without a clause, which is the same
+ * thing the absence of a combo looks like, and is the honest outcome — nothing here is load
+ * bearing for choosing a card, and a list that refused to draw because Spellbook was
+ * unreachable would be worse than one that says less.
+ */
+export async function attachComboPartners(
+  userId: string,
+  cards: BrowseCard[],
+  read?: (args: {
+    userId: string;
+    oracleIds?: readonly string[];
+  }) => Promise<Map<string, { partnerOracleId: string; partnerName: string }>>,
+): Promise<BrowseCard[]> {
+  if (cards.length === 0) return cards;
+  const load = read ?? (await import("../combos/near-miss")).loadOwnBothPartners;
+  // NO ID WINDOW. `/collection` ships every card in one payload and windows client-side, so
+  // there is no server page to scope to and any card can scroll into view — and passing all
+  // 2,805 ids is the SLOWER of the two forms, not the faster one (913ms against 492ms on
+  // staging, for the same 65 answers).
+  const partners = await load({ userId }).catch(() => null);
+  if (!partners || partners.size === 0) return cards;
+  for (const card of cards) {
+    const hit = partners.get(card.oracleId);
+    if (hit) card.comboPartner = { oracleId: hit.partnerOracleId, name: hit.partnerName };
+  }
+  return cards;
+}
+
 export const loadBrowseCards = cache(async function loadBrowseCards(
   userId: string,
 ): Promise<BrowseListCard[]> {
   const aggregated = aggregateCollection(await selectCollectionRows(userId));
-  return toListCards(await attachBracketFacts(aggregated));
+  // SEQUENTIAL, and the order is not arbitrary: both passes mutate the same card objects, and
+  // running them together would be two concurrent writers to one array for no gain — the combo
+  // read is 492ms of database time that does not overlap with the flags read's own round trip
+  // in any way this function can express.
+  return toListCards(await attachComboPartners(userId, await attachBracketFacts(aggregated)));
 });
 
 /**

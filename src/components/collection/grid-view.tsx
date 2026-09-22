@@ -18,6 +18,7 @@ import { identityGradient } from "../../lib/collection/gradients";
 import { availabilityState } from "../../lib/decks/availability";
 import { AvailabilityMarker } from "../ui/availability-marker";
 import { CardFactMark } from "../cards/card-fact-mark";
+import { ComboClause } from "../cards/combo-clause";
 import { FactTooltip } from "../cards/fact-tooltip";
 import { CollectionMarkKey } from "./collection-mark-key";
 import { cardFactName, cardMarkCopy } from "../../lib/copy/card-mark";
@@ -138,10 +139,24 @@ export function GridView({
               </>
             }
             metaTrail={
-              <span style={{ color: "var(--fg-faint)" }}>
-                <span className="md:hidden">{c.primarySetCode}</span>
-                <span className="hidden md:inline">{c.primarySetCode} · {c.rarity}</span>
-              </span>
+              /* STATE 1 TAKES THIS SLOT AND `SET · rarity` YIELDS — the caption's height is
+                 fixed (`CARD_TILE_CAPTION_H`), there is no third line, and of the two the
+                 combo is the one a reader cannot get from anywhere else on the tile.
+
+                 THE CHIP NEVER YIELDS, and does not have to: it is drawn above in `meta`,
+                 not here. It is about your copies, and so is the caption.
+
+                 Always the SHORT tail. The tile is 157px at its narrowest and the choice is
+                 not width-dependent the way the row's is — the app's words give way here on
+                 every screen, and the card's name never does. */
+              c.comboPartner ? (
+                <ComboClause partnerName={c.comboPartner.name} state="ownBoth" short />
+              ) : (
+                <span style={{ color: "var(--fg-faint)" }}>
+                  <span className="md:hidden">{c.primarySetCode}</span>
+                  <span className="hidden md:inline">{c.primarySetCode} · {c.rarity}</span>
+                </span>
+              )
             }
             /* The name printed on the copy the player owns, front face only,
                single line and never clamped. This surface carries no `//` mark

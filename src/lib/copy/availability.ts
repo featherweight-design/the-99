@@ -262,10 +262,21 @@ export const availabilityCopy = {
        * aria-hidden precisely so this clause can sit where the reading order wants it.
        */
       facts?: string | null,
+      /**
+       * Combo awareness state 1, and it lands LAST for the same reason the availability
+       * clause does: it is about this player's copies — two halves owned and unassembled —
+       * rather than about the card.
+       *
+       * It is also the only voicing. The drawn clause REPLACES the visible type line, and its
+       * glyph is aria-hidden, so a row without this would lose the sentence entirely while
+       * still reading the type line this clause is standing in for.
+       */
+      combo?: string | null,
     ) =>
       `${name}${facts ? `, ${facts}` : ""}, ${typeLine}, ` +
       `${qty === 1 ? "1 copy" : `${qty} copies`}, ${setAndRarity}` +
-      (availability ? `, ${availability}` : ""),
+      (availability ? `, ${availability}` : "") +
+      (combo ? `, ${combo}` : ""),
     // Heads the allocation receipt. Describes a list, never a location. Deck
     // names are NOT in this block's copy: the marker inside it is `nameless` and
     // the naming happens in the claim rows below, so there is no deck-name
