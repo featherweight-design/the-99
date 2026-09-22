@@ -62,6 +62,29 @@ better detection, not a stronger hedge.
 **Item 7 — nothing announces the card note.** Accepted, as at R2. A legend for a usually-absent
 slot is worse than the absence.
 
+## §C, §D and the thirteen rulings — read, and one finding
+
+The verdict states read consistently and the rulings hold against the shipped contract. Ruling 13
+carries `Marks 16px`, which is the shipped figure rather than the handoff's retired 12px floor, so
+Design has absorbed that ruling correctly.
+
+**`21 Sept` should be `21 Sep`.** v3's provenance line — *determined for v4 · all 99 · 21 Sept* —
+uses the abbreviation this codebase deliberately switched locales to avoid.
+`formatDeckDate` composes its own string and passes `en-US` **for exactly this reason**, and says
+so in its header: *"`en-US` rather than `en-GB`, for the reason the game log gives: en-GB
+abbreviates September as `Sept`."* The existing version stamp reads `v7 · 2 Aug`.
+
+**Two corrections I owe on that finding**, because my first reading of it was wrong twice.
+
+The day-month ORDER is not a British idiom creeping in — it is the app's own deliberate
+convention, and `21 Sept` matches the shipped `v7 · 2 Aug` stamp exactly. Only the month
+abbreviation is wrong, and it is one character.
+
+And `price.ts` formatting with `en-GB` is **not** the inconsistency it looks like. It asks for
+`month: "long"` and `weekday: "long"`, and those render identically in both locales — `September`,
+`Monday`. The locale only bites on the SHORT month, which is the one thing that file never asks
+for. No defect there; the two files disagree about a parameter neither of them uses.
+
 ## Two copy defects, and they must not ship
 
 **1 · THE COPY IS BRITISH, IN 28 PLACES.** `analyse`, `analysed`, `reanalyse` — including three
@@ -116,4 +139,11 @@ token, glyph or colour.
 ## Clear to build
 
 PRs 8b and 9 may start. What they carry from this pass: the US English fix, the corrected import,
-the confirmed snapshot, and `ordinal` as already shipped rather than as owed.
+`21 Sep` through `formatDeckDate` rather than a hand-written date, the confirmed snapshot, and
+`ordinal` as already shipped rather than as owed.
+
+**This audit was first issued Green on a partial read** — the readiness doc, the engineering list,
+the gaps and §A/§B — and §C, §D and the rulings were read afterwards, on Hugh asking for a
+re-assessment. The verdict does not change, and the one finding that pass produced is a
+one-character copy fix. Recording the order anyway: a Green issued over unread sections is a Green
+about the sections that were read.
