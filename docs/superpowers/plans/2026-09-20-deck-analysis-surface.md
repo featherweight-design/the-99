@@ -83,7 +83,7 @@ added and the count went from nine to fourteen**, so the dependency history is a
 | **4b — the climb** ✅ | "Where you sit, and what moves you": the three rungs, their marks at 22/26/36, the drop sentence from `upgradePath`, and the declare rung. Renders inside 4a's chrome. Shipped #853. | *shipped* |
 | **4c — the findings and their receipt** | The five findings — tiles at desktop, rows at 390, three states — and the card-list body of the receipt modal. **Split out of 4b during the run**, because a present finding's control OPENS: "the climb states, the findings open" is the handoff's own rule, so findings without their modal are either a dead affordance or a state the design does not draw. PR 6's combo body then lands in this chrome rather than beside it. | 4b |
 | **5 — the declaration ask and sub-line** ◐ | The readings that survive the 2026-09-21 ruling, plus `permits: [4]`, which draws no line. No skip, no "you said". | 3b, 4a |
-| **6 — the lean and the reasoning modal** ◐ | The lean line, the modal body, the command-zone `found by` reading, and image resolution **at the draw** rather than in the profile. Mana drawn **as a state** — pips above zero, "No mana needed" at zero — plus the notable-prerequisites line. | 0, 2, 4b |
+| **6 — the lean and the reasoning modal** ◐ | The lean line, the modal body, the command-zone `found by` reading, and image resolution **at the draw** rather than in the profile. Mana drawn **as a state** — pips above zero, "No mana needed" at zero — plus the notable-prerequisites line. **Its combo body lands inside 4c's modal chrome**, so it waits on 4c rather than on 4b. | 0, 2, **4c** |
 | **7 — the drift row** ◐ | What survives of drift once the "you said" framing is gone — the permitted side can be a single bracket, which needs a reading. | 4a |
 | **8a — the facts payload** ✅ | The profile threaded into the builder shell and the top-off list, and a BATCHED `CandidateFacts` read for the whole pool. Measured above; Round 4's own list does not contain it. | — |
 | **8b — the push line** | The atom at two densities, on the quick-add row, the Consider tile and the top-off row. | 8a |
@@ -156,8 +156,9 @@ the ruling, and its §2 covers it explicitly — concluding *"nothing in this pa
 redrawing"*. `permitsFor` shipping without `[3,4]` is the package's own expectation. The
 re-audit was still worth running; the reason given for it was not.
 
-PR 4b, 5 and 6's RENDERING waits on 4a's; PR 6's additionally waits on 4b's. PR 0 is no longer a
-gate on anything — it shipped in #820.
+PR 5, 6, 7 and 9's RENDERING waited on 4a's, which shipped in #851. **PR 6 now waits on 4c**
+rather than on 4b: 4b is the climb, which opens nothing, and the modal chrome PR 6's combo body
+renders into arrives with the findings. PR 0 is no longer a gate on anything — it shipped in #820.
 
 ---
 
