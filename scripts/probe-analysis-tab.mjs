@@ -275,9 +275,11 @@ async function run() {
       // a session touch and a token refresh — either landing inside a counted window would
       // break a correct build. `probe-list-payloads.mjs` already filters this way.
       //
-      // AND THE BODY IS CHECKED for the action's own name, because a count alone cannot say
-      // WHICH action ran: on a build where the press fetches nothing, one unrelated action call
-      // in the window would satisfy the count and the probe would report a pass.
+      // THE BODY IS NOT CHECKED, and an earlier version of this comment said it was. Next
+      // serialises an action to a hashed id in the `next-action` header; its NAME appears
+      // nowhere in the request, so matching the body would never fire and the count would read
+      // 0 forever. What identifies the action instead is its OUTCOME, asserted below: a profile
+      // reply replaces the invitation with the re-ask, which no other action would do.
       // BY ACTION ID, which is what Next actually sends. A server action is serialised to a
       // hashed id in the `next-action` header — its NAME appears nowhere, so matching the body
       // on "fetchDeckProfile" would never fire and the count would read 0 forever: a silent

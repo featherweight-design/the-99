@@ -63,6 +63,15 @@ export function useDeckProfile(deckId: string): {
    */
   const inFlightFor = useRef<string | null>(null);
   /**
+   * Which REQUEST, not merely which deck.
+   *
+   * `inFlightFor` holds a deck id, so it cannot tell two generations of the same deck apart: A
+   * loads, the reader moves to B and back to A, and the first A reply would be indistinguishable
+   * from the second's. The counter makes each request identifiable, and a reply that is not the
+   * newest is dropped.
+   */
+  const generation = useRef(0);
+  /**
    * The deck currently on screen, readable from an async continuation.
    *
    * Written in an EFFECT, which is where a ref may be written — a reply has to ask "is this
@@ -76,6 +85,7 @@ export function useDeckProfile(deckId: string): {
   const request = useCallback(() => {
     if (inFlightFor.current === deckId) return;
     inFlightFor.current = deckId;
+    const mine = ++generation.current;
     setShownFor(deckId);
     setState({ kind: "loading" });
     void (async () => {
@@ -90,14 +100,15 @@ export function useDeckProfile(deckId: string): {
         // THE IN-FLIGHT SLOT IS CLEARED ONLY BY ITS OWN DECK'S REPLY. An older reply clearing
         // it would unlock a second request for the deck now showing while that deck's first is
         // still in flight — the duplicate the slot exists to prevent, by a longer road.
-        if (inFlightFor.current === deckId) inFlightFor.current = null;
-        // And a reply for a deck we are no longer showing neither renders nor unlocks.
-        if (current.current !== deckId) return;
+        if (mine === generation.current) inFlightFor.current = null;
+        // And a reply that is not the newest, or is for a deck we are no longer showing,
+        // neither renders nor unlocks.
+        if (mine !== generation.current || current.current !== deckId) return;
         setState({ kind: "failed" });
         return;
       }
-      if (inFlightFor.current === deckId) inFlightFor.current = null;
-      if (current.current !== deckId) return;
+      if (mine === generation.current) inFlightFor.current = null;
+      if (mine !== generation.current || current.current !== deckId) return;
       if (result.ok) setState({ kind: "ready", profile: result.profile });
       else setState({ kind: result.reason === "disabled" ? "disabled" : "missing" });
     })();
