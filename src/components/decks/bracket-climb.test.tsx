@@ -1,0 +1,226 @@
+import { render, screen, within } from "@testing-library/react";
+import { describe, expect, it } from "vitest";
+
+import { slotDeck } from "../../lib/bracket/slot";
+import type { ComboRef, FlagSource } from "../../lib/profile/types";
+import { deckAnalysisCopy } from "../../lib/copy/deck-analysis";
+import { BracketClimb } from "./bracket-climb";
+import { COMMANDER, deckProfile, profileCard } from "./__fixtures__/deck-profile";
+
+/**
+ * Every case is a REAL profile through the REAL verdict. The climb's three rungs are a function
+ * of the permitted range, and a hand-written verdict can hold a range `permitsFor` never returns
+ * — the climb would then be tested against a deck that cannot exist.
+ */
+
+const PARTNER = profileCard("cmd2", "Tymna the Weaver");
+
+const combo = (pieces: string[]): ComboRef => ({
+  variantId: "v1",
+  cards: pieces.map((p) => ({ oracleId: p, name: p })),
+  produces: ["Infinite mana"],
+  bracketTag: "casual",
+  usesCommander: false,
+  manaValueNeeded: null,
+  manaNeeded: null,
+  steps: null,
+  notablePrerequisites: null,
+});
+
+const SHAPES = {
+  "1,2": () => deckProfile(),
+  "2": () =>
+    deckProfile({
+      cards: [COMMANDER, profileCard("time-warp", "Time Warp")],
+      extraTurnFlags: new Map([["time-warp", ["oracle_rule"] as FlagSource[]]]),
+    }),
+  "3": () =>
+    deckProfile({
+      cards: [COMMANDER, profileCard("rhystic", "Rhystic Study"), profileCard("cyc", "Cyclonic Rift")],
+      gameChangerIds: new Set(["rhystic", "cyc"]),
+    }),
+  "4,5": () =>
+    deckProfile({
+      cards: [COMMANDER, ...["a", "b", "c", "d"].map((id) => profileCard(id, `GC ${id}`))],
+      gameChangerIds: new Set(["a", "b", "c", "d"]),
+    }),
+  /** Both pieces in the command zone, so no removal can break the combo. */
+  blocked: () =>
+    deckProfile({
+      cards: [COMMANDER, PARTNER],
+      commanderOracleIds: [COMMANDER.oracleId, PARTNER.oracleId],
+      twoCardCombos: [combo([COMMANDER.oracleId, PARTNER.oracleId])],
+    }),
+};
+
+const draw = (key: keyof typeof SHAPES) => {
+  const profile = SHAPES[key]();
+  const verdict = slotDeck(profile);
+  render(<BracketClimb verdict={verdict} profile={profile} />);
+  return verdict;
+};
+
+const rungs = () => screen.getAllByTestId("climb-rung");
+const copy = deckAnalysisCopy.climb;
+
+describe("which rungs are drawn", () => {
+  // THREE, NOT FIVE. The brackets a deck is nowhere near are not drawn, which is what removed
+  // the repeated "ruled out" line by construction.
+  it("draws the bracket below, yours and the one above", () => {
+    draw("3");
+    expect(rungs().map((r) => `${r.dataset.bracket}:${r.dataset.role}`)).toEqual([
+      "2:below",
+      "3:yours",
+      "4:above",
+    ]);
+  });
+
+  // A range puts `yours` at its LOWER member: the deck is at the bottom of what it permits until
+  // the player says otherwise, so `[1,2]` is a rung at 1 with 2 above it and no rung below.
+  it("draws two rungs at the bottom of the ladder", () => {
+    draw("1,2");
+    expect(rungs().map((r) => `${r.dataset.bracket}:${r.dataset.role}`)).toEqual([
+      "1:yours",
+      "2:above",
+    ]);
+  });
+
+  // Three, not two: `climb` puts `yours` at the range's lower member, so `[4,5]` is a rung at 4
+  // with 3 below it and 5 above. Only a deck at 1 or at 5 loses a rung.
+  it("draws three rungs on the high range, with the claimable one above", () => {
+    draw("4,5");
+    expect(rungs().map((r) => `${r.dataset.bracket}:${r.dataset.role}`)).toEqual([
+      "3:below",
+      "4:yours",
+      "5:above",
+    ]);
+  });
+});
+
+describe("the rung that holds", () => {
+  it("names only the rules the deck actually holds, with what the bracket allows", () => {
+    draw("3");
+    const yours = rungs().find((r) => r.dataset.role === "yours")!;
+    const figures = within(yours).getAllByTestId("climb-figure").map((f) => f.textContent);
+    expect(figures).toEqual(["Game changers23 allowed"]);
+  });
+
+  // `counted: false` is why an extra-turn figure at 2 prints `no cap` rather than an allowance:
+  // that bracket REPORTS the count and attaches no verdict to it.
+  it("prints no cap where the bracket reports a figure without capping it", () => {
+    draw("2");
+    const yours = rungs().find((r) => r.dataset.role === "yours")!;
+    expect(within(yours).getByTestId("climb-figure").textContent).toBe("Extra turns1no cap");
+  });
+
+  // A rung listing four zeroes says nothing; the findings block below carries every count. And
+  // an empty one draws NO sentence: the only one available is the rung above's, which the
+  // contact sheet caught being drawn twice, one under the other, on a `[1,2]` deck.
+  it("draws nothing at all when the deck holds none of them", () => {
+    draw("1,2");
+    const yours = rungs().find((r) => r.dataset.role === "yours")!;
+    expect(within(yours).queryAllByTestId("climb-figure")).toHaveLength(0);
+    expect(within(yours).queryByText(copy.aboveAllowed)).toBeNull();
+    expect(screen.getAllByText(copy.aboveAllowed)).toHaveLength(1);
+  });
+});
+
+describe("the rung below", () => {
+  it("names the cards when there are one or two", () => {
+    draw("2");
+    const below = rungs().find((r) => r.dataset.role === "below")!;
+    expect(below.textContent).toContain("Cut Time Warp: Exhibition allows none.");
+  });
+
+  // The LIMIT, not the excess: a deck cutting to reach Upgraded is told what it may keep.
+  it("counts them and names the allowance above one or two", () => {
+    draw("4,5");
+    const below = rungs().find((r) => r.dataset.role === "below")!;
+    expect(below.textContent).toContain("Cut one game changer, only three allowed at Upgraded.");
+  });
+
+  // THE ALLOWANCE COMES FROM THE TARGET'S REPORT, not from the cuttable pool. `upgradePath`
+  // filters commanders out of `candidates` because a commander cannot be cut, so deriving the
+  // limit from that list under-reports it by the number of commanders holding the rule: this
+  // deck has four game changers, one of them its commander, and read "only two allowed".
+  it("names the bracket's own allowance when a commander holds the rule", () => {
+    const profile = deckProfile({
+      cards: [COMMANDER, ...["a", "b", "c"].map((id) => profileCard(id, `GC ${id}`))],
+      gameChangerIds: new Set([COMMANDER.oracleId, "a", "b", "c"]),
+    });
+    const verdict = slotDeck(profile);
+    expect(verdict.permits).toEqual([4, 5]);
+    render(<BracketClimb verdict={verdict} profile={profile} />);
+    const below = rungs().find((r) => r.dataset.role === "below")!;
+    expect(below.textContent).toContain("only three allowed at Upgraded");
+  });
+
+  // `upgradePath.blocked` is a real state, not an error: a combo whose only pieces are the two
+  // commanders cannot be broken by removing a card.
+  it("says so when no removal can reach the bracket below", () => {
+    draw("blocked");
+    const below = rungs().find((r) => r.dataset.role === "below")!;
+    expect(below.textContent).toContain("what puts this deck past it is in the command zone");
+  });
+});
+
+describe("the rung above", () => {
+  it("says nothing rules it out on a single reading", () => {
+    draw("3");
+    const above = rungs().find((r) => r.dataset.role === "above")!;
+    expect(within(above).getByText(copy.aboveAllowed)).toBeTruthy();
+    expect(within(above).queryByRole("img")).toBeNull();
+  });
+
+  // THE ONE RINGED `?` LEFT ON THE CLIMB, and it is the `above` rung of a range — the bracket
+  // the player may CLAIM, not one they are short of.
+  it("offers the declare line on a range, with the only glyph in the climb", () => {
+    draw("4,5");
+    const above = rungs().find((r) => r.dataset.role === "above")!;
+    expect(within(above).getByText(copy.declare)).toBeTruthy();
+    expect(
+      within(above).getByRole("img", { name: deckAnalysisCopy.verdict.declareGlyphAria }),
+    ).toBeTruthy();
+    expect(within(above).getByText(copy.roleDeclare)).toBeTruthy();
+  });
+
+  it("carries no declare line where the range does not reach it", () => {
+    draw("1,2");
+    const above = rungs().find((r) => r.dataset.role === "above")!;
+    expect(within(above).queryByText(copy.declare)).toBeNull();
+    expect(within(above).getByText(copy.roleAbove)).toBeTruthy();
+  });
+});
+
+describe("the marks", () => {
+  // The neighbour rungs mount the mark TWICE because 22 is the chip form and 26 the full one:
+  // different files, and a CSS rule cannot swap a mask across a breakpoint.
+  it("draws the chip form and the full form on a neighbour, and one full mark on yours", () => {
+    draw("3");
+    const below = rungs().find((r) => r.dataset.role === "below")!;
+    expect(
+      within(below).getAllByTestId("bracket-mark").map((m) => m.dataset.form),
+    ).toEqual(["chip", "full"]);
+    const yours = rungs().find((r) => r.dataset.role === "yours")!;
+    const mine = within(yours).getAllByTestId("bracket-mark");
+    expect(mine).toHaveLength(1);
+    expect(mine[0].dataset.form).toBe("full");
+  });
+
+  // "Do not drop the bracket mark at 390" is one of the three things the handoff lists as most
+  // likely to get broken in build.
+  it("gives every rung a mark", () => {
+    draw("4,5");
+    for (const rung of rungs()) {
+      expect(within(rung).getAllByTestId("bracket-mark").length).toBeGreaterThan(0);
+    }
+  });
+});
+
+// "The climb states, the findings open." Two things opening the same receipt is how the
+// duplication came back last time.
+it("has nothing to press", () => {
+  draw("3");
+  expect(screen.queryAllByRole("button")).toHaveLength(0);
+  expect(screen.queryAllByRole("link")).toHaveLength(0);
+});

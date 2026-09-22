@@ -216,6 +216,97 @@ export const deckAnalysisCopy = {
   },
 
   /**
+   * "Where you sit, and what moves you" — three rungs, and nothing in them opens.
+   *
+   * THREE, NOT FIVE, and that is a rule rather than a layout: the brackets a deck is nowhere
+   * near are not drawn, which removes the repeated "ruled out" line by construction rather than
+   * by editing. It also makes the block SHORTER on a high-bracket deck than a low one, which is
+   * the opposite of what the five-rung version did.
+   *
+   * ONE RULE GOVERNS THE WHOLE TAB: the climb states, the findings open. Every figure here is
+   * plain text, and the only thing that moves is `see all brackets`.
+   */
+  climb: {
+    heading: "Where you sit, and what moves you",
+
+    /** The rung labels, in 9px mono above each bracket's name. */
+    roleBelow: "to drop to here",
+    roleHere: "where your cards are",
+    /** 390 only. The rung already names the bracket, so the shorter form loses nothing. */
+    roleHereShort: "your cards",
+    roleAbove: "already allowed",
+    /** The 4-5 rung only, where the one ringed `?` left on the climb sits. */
+    roleDeclare: "to claim this",
+
+    /**
+     * What would take you down. NAMES THE CARDS at one or two and the count above that, because
+     * a list of nine card names is not a sentence a reader takes in — and it is phrased as a
+     * fact about the limit, never as advice. Nothing here tells a player what to play.
+     */
+    dropNamed: (cards: string, bracket: string) => `Cut ${cards}: ${bracket} allows none.`,
+    dropCount: (n: number, rule: string, bracket: string) =>
+      `Cut ${numberWord(n)} ${rule}: ${bracket} allows none.`,
+    dropCountAllowing: (n: number, rule: string, bracket: string, allowed: number) =>
+      `Cut ${numberWord(n)} ${rule}, only ${numberWord(allowed)} allowed at ${bracket}.`,
+    /**
+     * The same three sentences, split so the thing to CUT carries the emphasis the canvas gives
+     * it — the cards or the count in `--fg` at 600, the rest of the clause muted.
+     *
+     * ONE SOURCE, CHECKED. `deck-analysis.test.ts` asserts each parts list rejoins byte-identical
+     * to its flat sentence, for the reason `population.lineParts` is checked the same way: two
+     * hand-kept copies of one sentence drift, and the copy guard reads the flat one.
+     */
+    dropParts: {
+      named: (cards: string, bracket: string) => [
+        { text: "Cut " },
+        { text: cards, strong: true },
+        { text: `: ${bracket} allows none.` },
+      ] as { text: string; strong?: boolean }[],
+      count: (n: number, rule: string, bracket: string) => [
+        { text: "Cut " },
+        { text: `${numberWord(n)} ${rule}`, strong: true },
+        { text: `: ${bracket} allows none.` },
+      ] as { text: string; strong?: boolean }[],
+      countAllowing: (n: number, rule: string, bracket: string, allowed: number) => [
+        { text: "Cut " },
+        { text: `${numberWord(n)} ${rule}`, strong: true },
+        { text: `, only ${numberWord(allowed)} allowed at ${bracket}.` },
+      ] as { text: string; strong?: boolean }[],
+    },
+    /**
+     * A violation removals cannot clear. `upgradePath.blocked` is the flag, and it is a real
+     * state: a combo whose only pieces are the two commanders cannot be cut at all.
+     */
+    dropBlocked: (bracket: string) =>
+      `Nothing in the 99 can be cut to reach ${bracket}: what puts this deck past it is in the `
+      + `command zone.`,
+
+    aboveAllowed: "Nothing rules it out. It permits more than this deck uses.",
+    /**
+     * The 4-5 rung. The one ringed `?` left on the climb, and the only rung with a glyph.
+     *
+     * No em dash: this repo's shipping strings carry none, and the clause joins on a colon.
+     */
+    declare:
+      "Nothing to change. Four and five share their card limits: the difference is how you play "
+      + "it, and it is yours to declare.",
+
+    /** Beside the figure, in `--fg-faint`. Short on purpose - the rung already names the
+     *  bracket, so `3 allowed` cannot mean anything else. */
+    allowed: (n: number) => `${n} allowed`,
+    /** Where the rule reports a figure without capping it: extra turns at 2 and 3. */
+    noCap: "no cap",
+
+    /** The labels beside each figure on the rung that holds. */
+    ruleNames: {
+      gameChangers: "Game changers",
+      massLandDenial: "Mass land denial",
+      extraTurns: "Extra turns",
+      twoCardCombos: "Two-card infinites",
+    },
+  },
+
+  /**
    * The population line, in the block's foot under a hairline.
    *
    * NEVER AN INPUT TO THE VERDICT, which the hairline says structurally and the placement says
