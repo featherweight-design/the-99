@@ -3,6 +3,7 @@ import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { render, screen } from "@testing-library/react";
 import { describe, expect, it } from "vitest";
+import { CARD_FACT_MARK_PX } from "./card-fact-mark";
 import { ComboGlyph, COMBO_GLYPH_PX } from "./combo-glyph";
 
 /**
@@ -42,13 +43,23 @@ describe("ComboGlyph", () => {
     expect(path.getAttribute("fill")).toBe("none");
   });
 
-  // 12px on every host, 16 in the modal. Both figures are the spec by name.
-  it("defaults to the host size and takes the modal's", () => {
-    const { rerender } = render(<ComboGlyph />);
-    expect(screen.getByTestId("combo-glyph").getAttribute("width")).toBe(
-      String(COMBO_GLYPH_PX),
-    );
-    rerender(<ComboGlyph size={16} />);
-    expect(screen.getByTestId("combo-glyph").getAttribute("width")).toBe("16");
+  // ONE SIZE, EVERYWHERE, and not a prop. The fact marks shipped at 12, 13, 14 and 16 across
+  // six mounts, so the same fact read as a different mark depending on which list a player was
+  // looking at; Hugh ruled one size on 2026-09-21 and `card-fact-mark.tsx` records that it
+  // supersedes this handoff's own two figures. This component shipped obeying the handoff.
+  it("draws at the app's one mark size, and takes no size prop", () => {
+    render(<ComboGlyph />);
+    const svg = screen.getByTestId("combo-glyph");
+    expect(svg.getAttribute("width")).toBe(String(CARD_FACT_MARK_PX));
+    expect(svg.getAttribute("height")).toBe(String(CARD_FACT_MARK_PX));
+    expect(COMBO_GLYPH_PX).toBe(CARD_FACT_MARK_PX);
   });
+
+  it("carries the canvas's glow", () => {
+    const { container } = render(<ComboGlyph />);
+    const filter = (container.firstChild as SVGElement).style.filter;
+    expect(filter).toContain("0 0 3px");
+    expect(filter, "the interpolation is oklab, not srgb").toContain("in oklab");
+  });
+
 });

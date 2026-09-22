@@ -33,7 +33,20 @@ describe("the card modal's combo block", () => {
         ])}
       />,
     );
-    expect(screen.getByText(comboAwarenessCopy.modal.line("Isochron Scepter"))).toBeInTheDocument();
+    // MATCHED ACROSS ELEMENTS: the line is two spans now — the app's words at `--fg-body`
+    // and the partner's NAME at 600 in `--fg`, which is what the addendum sets.
+    const lineOf = (name: string) =>
+      screen.getAllByRole("listitem").find((li) =>
+        li.textContent?.includes(comboAwarenessCopy.modal.line(name)),
+      );
+    expect(lineOf("Isochron Scepter")).toBeTruthy();
+    // And the name is the half that is set apart.
+    expect(
+      [...lineOf("Isochron Scepter")!.querySelectorAll("span")].some(
+        (el) => el.textContent === "Isochron Scepter" && el.className.includes("font-semibold"),
+      ),
+      "the partner name is not set apart from the app's words",
+    ).toBe(true);
     expect(screen.getByText(comboAwarenessCopy.modal.state.owned)).toBeInTheDocument();
     expect(screen.getByText(comboAwarenessCopy.modal.state.notOwned)).toBeInTheDocument();
   });
@@ -96,7 +109,9 @@ describe("the card modal's combo block", () => {
     );
     render(<ComboPartnersDetail card={card(many)} />);
 
-    expect(screen.getAllByText(/^with Partner/)).toHaveLength(MODAL_COMBO_CAP_DESKTOP);
+    const lines = () =>
+      screen.getAllByRole("listitem").filter((li) => li.textContent?.includes("with Partner"));
+    expect(lines()).toHaveLength(MODAL_COMBO_CAP_DESKTOP);
     const more = screen.getByRole("button", {
       name: comboAwarenessCopy.modal.showAllAria(many.length),
     });
@@ -105,7 +120,7 @@ describe("the card modal's combo block", () => {
     await act(async () => {
       more.click();
     });
-    expect(screen.getAllByText(/^with Partner/)).toHaveLength(many.length);
+    expect(lines()).toHaveLength(many.length);
     // AND IT SAYS WHAT PRESSING IT NOW DOES. A control whose label still reads `Show all N`
     // while `aria-expanded` is true announces one state and offers the other.
     expect(more).toHaveTextContent(comboAwarenessCopy.modal.collapse);

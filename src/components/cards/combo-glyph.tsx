@@ -1,3 +1,5 @@
+import { CARD_FACT_MARK_PX } from "./card-fact-mark";
+
 /**
  * The lemniscate — a two-card combo, as a glyph.
  *
@@ -21,26 +23,31 @@
  * The glow sits OUTSIDE the box model, as Round 1's marks do: it costs no layout, so no row and
  * no caption grows for it.
  */
-// The canvas's own value, including its 3px radius and its `oklab` interpolation. The first
-// version of this file guessed 2px in srgb and was wrong about both.
+/** The glow sits OUTSIDE the box model: it costs no layout and grows no row. `oklab` is the
+ *  canvas's own interpolation for this glyph. */
 const GLOW = "drop-shadow(0 0 3px color-mix(in oklab, var(--fact) 45%, transparent))";
 
 /**
- * 12px on every host; the modal block draws it at 16.
+ * ONE SIZE, EVERYWHERE, and NOT A PROP — `CARD_FACT_MARK_PX`, the same 16 every other mark in
+ * the app draws at.
  *
- * DELIBERATELY NOT `CARD_FACT_MARK_PX` (16). Round 1's marks sit on a name line at 16 and
- * this clause leads a SECONDARY line of 9.5–10.5px mono, where a 16px glyph is taller than
- * the text it introduces. `STATES-combo-awareness.md` sets both figures by name — "glyph
- * size: 12px on every host. 16px in the modal block" — so the two sizes are the spec rather
- * than drift from it, and the modal's own 16 is why this is a parameter at all.
+ * The handoff sets two figures by name ("12px on every host. 16px in the modal block") and
+ * this component shipped obeying them. That was already superseded: the fact marks shipped at
+ * 12, 13, 14 and 16 across six mounts, so the same fact read as a different mark depending on
+ * which list a player was looking at, and Hugh ruled one size on 2026-09-21 —
+ * `card-fact-mark.tsx` records the ruling AND records that it supersedes this handoff's floor.
+ *
+ * A reviewer raised exactly this on #840. I declined it, citing the handoff, and recorded the
+ * decline in that PR's `## Settled` — which is how a ruling already in the tree was overridden
+ * by a document it had already superseded. Read the code's rulings before settling against one.
  */
-export const COMBO_GLYPH_PX = 12;
+export const COMBO_GLYPH_PX = CARD_FACT_MARK_PX;
 
-export function ComboGlyph({ size = COMBO_GLYPH_PX }: { size?: number }) {
+export function ComboGlyph() {
   return (
     <svg
-      width={size}
-      height={size}
+      width={COMBO_GLYPH_PX}
+      height={COMBO_GLYPH_PX}
       viewBox="0 0 16 16"
       // `block` so the glyph does not sit on the text baseline and lift the line box.
       className="block shrink-0"

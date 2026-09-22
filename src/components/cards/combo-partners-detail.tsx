@@ -56,9 +56,12 @@ export function ComboPartnersDetail({ card }: { card: BrowseCard }) {
         {/* ON THE HEADING, not on the wrapper. The bound describes the LIST, and a reader
             navigating by heading is the one who needs it — a relation hung on a generic
             container is not reliably announced with the `h3` inside it. */}
+        {/* `AvailabilityDetail`'s heading verbatim, which is what the addendum names — mono
+            10px at 0.1em. The first version copied `BracketFactsDetail`'s instead
+            (9.5/10px at 0.14em), which is the block above this one and a different spec. */}
         <h3
           aria-describedby={boundId}
-          className="font-mono text-[9.5px] md:text-[10px] uppercase tracking-[0.14em]"
+          className="font-mono text-[10px] uppercase tracking-[0.1em]"
           style={{ color: "var(--fg-faint)" }}
         >
           {comboAwarenessCopy.modal.heading}
@@ -93,18 +96,26 @@ export function ComboPartnersDetail({ card }: { card: BrowseCard }) {
       </p>
       <ul className="flex flex-col gap-[8px]">
         {shown.map((p) => (
-          <li key={p.oracleId} className="flex items-center gap-[10px]">
-            {/* 16px here — the modal register, per Round 1. The hosts draw 12 because their
-                clause leads a 9.5px mono line; this one sits on 13.5/15px body text. */}
-            <ComboGlyph size={16} />
+          /* AT 390px THE STATE WRAPS UNDER THE NAME rather than truncating it — the app's
+             words move before the card's name does, which is this feature's rule everywhere.
+             `flex-wrap` with a full-width state below `sm` is what delivers it. */
+          <li key={p.oracleId} className="flex flex-wrap sm:flex-nowrap items-center gap-[10px]">
+            <ComboGlyph />
+            {/* TWO WEIGHTS, one sentence. The addendum sets the app's words at `--fg-body`
+                and the partner's NAME at 600 in `--fg`: the name is the half a reader is
+                looking for, and it is also what will become pressable when ledger 14 lands.
+                13px, not the 13.5/15 the block above this one uses. */}
             <span
-              className="flex-auto min-w-0 truncate text-[13.5px] md:text-[15px]"
+              className="flex-auto min-w-0 truncate text-[13px]"
               style={{ color: "var(--fg-body)" }}
             >
-              {comboAwarenessCopy.modal.line(p.name)}
+              {comboAwarenessCopy.modal.lineLead}
+              <span className="font-semibold" style={{ color: "var(--fg)" }}>
+                {p.name}
+              </span>
             </span>
             <span
-              className="flex-none font-mono text-[10px] text-right"
+              className="w-full sm:w-auto flex-none font-mono text-[10px] sm:text-right"
               style={{ color: STATE_INK[p.state] }}
             >
               {comboAwarenessCopy.modal.state[p.state]}
