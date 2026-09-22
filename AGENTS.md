@@ -1203,13 +1203,18 @@ Package manager is **pnpm** (pinned via `packageManager` in package.json) — ne
   a run taking the first screen reports the mount missing on a build that draws it. It presses
   every `Show all` first, and `Mystical Tutor` is what it finds.
 
-  The row's mark is read as a RELATION to the laid-out name rather than against a constant, and
-  that is the check that caught the placement: mounted once outside the tick's label, the glyph
-  landed on the phone's SECOND line — 73px from the row's left against a name ending at 251px,
-  which is a different line and not a gap. It is mounted once per width now, guarded by
-  `isDesktop`, which is the pattern the name beside it already uses.
+  **The row's mark is measured against the name's TEXT, via a Range, and never its element.**
+  Two defects came out of that one reading. Mounted once outside the tick's label, the glyph
+  landed on the phone's SECOND line — 73px from the row's left against a name ending at 251px;
+  it is mounted once per width now, guarded by `isDesktop`, which is the pattern the name beside
+  it already uses. And the name GROWS to fill its cell, so a `flex-none` mark after it sat at
+  the far right of the column beside the buy tag: **535px past the end of `Mu Yanling` at 1300
+  and 87px at 390**, while the first version of this check read the element's rect and reported
+  a healthy 10px for every row. A gap measured against a grown box is satisfied by construction
+  for any mark placed after it. The name and its marks are one `flex-auto` group now, and the
+  grow lives on the group — left on the name inside it, the fix measured as no fix.
 
-  Ten mutations were run against it and all ten fail: the indent removed, the tile drawn at
+  Eleven mutations were run against it and all eleven fail: the indent removed, the tile drawn at
   row density, the rule above the note removed, the note left un-hidden on the row, the note's
   sentences dropped from `rowLabel`, the empty-note guard removed (which draws a reserved box),
   the note moved outside the row's box, the row's marks mounted once outside the label (which

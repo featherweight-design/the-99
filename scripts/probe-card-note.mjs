@@ -426,7 +426,6 @@ async function run() {
             `${footOrder.filter(Boolean).length} of ${footOrder.length}`,
           );
         }
-      }
 
         // THE FACT MARKS, §C2's other half. Expanded first: see the header — at the default
         // cap this deck's shelves are all tutors, which carry no glyph.
@@ -487,6 +486,7 @@ async function run() {
               .every((w) => tileKey.includes(w)),
           tileKey === null ? "no key on the panel" : "all four words present",
         );
+      }
 
       // ── The top-off row ──────────────────────────────────────────────────
       const deckTab = onPage(page, "#tab-deck").first();
@@ -518,13 +518,23 @@ async function run() {
         const row = [...document.querySelectorAll("main [data-top-off-row]")]
           .find((r) => r.querySelector("[data-testid^='card-fact-']"));
         if (!row) return null;
-        const m = row.querySelector("[data-testid^='card-fact-']").getBoundingClientRect();
-        const n = row.querySelector('[data-testid="top-off-name"]').getBoundingClientRect();
+        const mark = row.querySelector("[data-testid^='card-fact-']");
+        const nameEl = row.querySelector('[data-testid="top-off-name"]');
+        // THE TEXT'S OWN END, via a Range over the name's contents — never the element's
+        // rect. The name grows to fill its cell, so its BOX ends wherever the column does:
+        // the first version of this check read `m.left - n.right` and reported a healthy
+        // 10px for every row while the glyph sat 535px past the end of `Mu Yanling`. A gap
+        // measured against a grown box is satisfied by construction for any mark placed
+        // after it, and only `sameLine` was telling two builds apart.
+        const range = document.createRange();
+        range.selectNodeContents(nameEl);
+        const text = range.getBoundingClientRect();
+        const m = mark.getBoundingClientRect();
         return {
-          sameLine: Math.abs(m.top - n.top) < 12,
-          afterName: m.left >= n.right - 1,
+          sameLine: Math.abs(m.top - text.top) < 12,
           px: Math.round(m.width),
-          gap: Math.round(m.left - n.right),
+          gap: Math.round(m.left - text.right),
+          name: (nameEl.textContent ?? "").trim(),
         };
       });
       if (rowMark === null) {
@@ -534,10 +544,12 @@ async function run() {
           "none in the pool — NOT a pass, the check has no subject",
         );
       } else {
+        // 24px is generous against the 7px gap the group sets, and tight enough that the
+        // pre-wrapper placement — 87px at 390, 535px at 1300 — fails at either width.
         report(
-          `${width}px · top-off row · the mark is 16px, after the name and on its line`,
-          rowMark.sameLine && rowMark.afterName && rowMark.px === 16,
-          `${rowMark.px}px · ${rowMark.gap}px after the name · same line: ${rowMark.sameLine}`,
+          `${width}px · top-off row · the mark is 16px, on the name's line and beside its text`,
+          rowMark.sameLine && rowMark.px === 16 && rowMark.gap >= 0 && rowMark.gap <= 24,
+          `${rowMark.px}px · ${rowMark.gap}px past the end of "${rowMark.name}" · same line: ${rowMark.sameLine}`,
         );
       }
 

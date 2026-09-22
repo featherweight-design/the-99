@@ -152,7 +152,7 @@ describe("the Consider panel's key", () => {
   // `mix.cells[role].target`, so a plausible-looking shape throws on the first shelf.
   const TEST_MIX = recommendedMix(null, false);
 
-  it("mounts the gloss above the shelves, with no marked card in the list", () => {
+  it("mounts the gloss with no marked card in the list", () => {
     render(
       <CardDetailProvider fetchCard={async () => null}>
         <ConsiderPanel
@@ -289,7 +289,9 @@ describe("the fact marks on the top-off row", () => {
     );
   });
 
-  it("mounts the gloss above the rows", () => {
+  // WHERE it sits is `probe:card-note`'s, which reads it laid out. This asserts the gloss is
+  // mounted at all — the half that regresses when a panel is refactored.
+  it("mounts the gloss, with no marked row in the list", () => {
     mount({ facts: null });
     const key = screen.getByRole("group", { name: /mark/i });
     expect(within(key).getByText(cardFactName("extraTurns"))).toBeInTheDocument();

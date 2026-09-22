@@ -1448,18 +1448,25 @@ function CandidateRow({
               takes the trigger instead, below, where a pointer can tell the two
               apart and a hover says which is which. */}
           {!isDesktop && (
-            <span
-              // Named for the probe, for the reason `data-top-off-type` below is: the note
-              // indents to THIS column, and recognising it by its type size would pick up
-              // whatever else on the row happens to be set at 12.5px.
-              data-testid="top-off-name"
-              className="flex-auto min-w-0 text-[12.5px]"
-              style={{ color: "var(--fg)" }}
-            >
-              {c.name}
+            /* THE NAME AND ITS MARKS ARE ONE GROUP, and the wrapper carries the `flex-auto`
+               the name used to. "Inline after the name" is about the TEXT: with the name
+               growing to fill the cell, a `flex-none` mark after it lands at the far right of
+               the column beside the buy tag. Measured before this wrapper existed: the glyph
+               sat 87px past the end of `Mu Yanling` at 390 and 535px past it at 1300. */
+            <span className="flex-auto min-w-0 flex items-center gap-[7px]">
+              <span
+                // Named for the probe, for the reason `data-top-off-type` below is: the note
+                // indents to THIS column, and recognising it by its type size would pick up
+                // whatever else on the row happens to be set at 12.5px.
+                data-testid="top-off-name"
+                className="min-w-0 text-[12.5px]"
+                style={{ color: "var(--fg)" }}
+              >
+                {c.name}
+              </span>
+              {factMarks}
             </span>
           )}
-          {!isDesktop && factMarks}
           <span
             aria-hidden
             className="flex-none flex items-center justify-end whitespace-nowrap font-mono text-[10px] md:order-5 md:w-[84px]"
@@ -1493,7 +1500,12 @@ function CandidateRow({
             placed against, recorded in the addendum. `md:contents` on the parent
             makes this a direct child of the row's flex context, so `order` puts
             it back beside the dot however the DOM is arranged. */}
+        {/* THE NAME AND ITS MARKS ARE ONE GROUP, carrying the `md:order-2` and the `flex-auto`
+            the trigger used to own — so the shrink competition against the clause below is
+            unchanged, and the glyph follows the TEXT rather than the cell. Measured before
+            this wrapper existed: 535px past the end of `Mu Yanling` at 1300. */}
         {isDesktop && (
+          <span className="md:order-2 flex-auto min-w-0 flex items-center gap-[7px]">
           <CardDetailTrigger
             oracleId={c.oracleId}
             name={c.name}
@@ -1516,13 +1528,16 @@ function CandidateRow({
             // begins to give once the clause is spent — at which point the name still
             // truncates rather than overflowing.
             testId="top-off-name"
-            className="md:order-2 flex-auto min-w-0 text-left truncate text-[13.5px] [color:var(--fg)]"
+            // NOT `flex-auto` any more: the GROUP above owns the growing now. Left on the
+            // trigger it fills the group and the mark lands at the group's far edge again,
+            // which is the 535px this wrapper exists to close — the fix measured as no fix
+            // until the grow moved up one level.
+            className="min-w-0 text-left truncate text-[13.5px] [color:var(--fg)]"
           >
             {c.name}
           </CardDetailTrigger>
-        )}
-        {isDesktop && factMarks && (
-          <span className="md:order-2 flex-none flex">{factMarks}</span>
+          {factMarks}
+          </span>
         )}
         {/* The clause, in the name cell's TAIL. Desktop only — the phone draws it leading
             line 2, where there is room for a sentence. `flex-1 min-w-0` is what makes it the

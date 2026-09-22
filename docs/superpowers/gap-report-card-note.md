@@ -65,14 +65,13 @@ with the lemniscate beside it and a key entry glossing the glyph, and both hosts
 is a defect; the shipped one is shorter and glossed. The string is transcribed and says in its
 own comment what draws the fact instead. **Engineering's call, recorded in the surface plan.**
 
-**2 — CLOSED. The tile's "two short sentences" question is moot: it draws one.**
-Originally: README §3 says register 2 *"truncates to `we read this as mass land
-denial`"* on the tile. The production-final copy module carries no such string, and inventing one
-would be authoring copy rather than transcribing it. What ships instead uses only shipped
-strings: the tile draws ONE fact, and where that fact is mass land denial it draws
-`massLandDenial.plain` plus `massLandDenial.disclaimer` — two short sentences, inside
-`HANDOFF.md` §Geometry's *"two sentences max"* for the tile. **If Design wants the shortened
-form it is one new string, and nothing else changes.**
+**2 — CLOSED. The tile draws ONE sentence, so the question is moot.**
+It was: README §3 says register 2 *"truncates to `we read this as mass land denial`"* on the
+tile, and the production-final module carries no such string. What shipped first was the full
+sentence plus its disclaimer — two sentences, inside §Geometry's *"two sentences max"*, and at
+124px the only note on the surface drawing six lines. The follow-up moved the hedge to the row
+and restated the fact as a consequence, so the tile now draws one sentence at 74px and needs no
+shortened string at all.
 
 **3 — the row's indent is 49px at 390 and 46px above `md`, not the handoff's 27px.**
 `HANDOFF.md` §Geometry states `padding-left:27px` for the 390 note; §C's host matrix states the
