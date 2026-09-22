@@ -141,6 +141,28 @@ export function classifyPrinting(raw: Raw): PrintingClassification {
   let reversibleOracleId: string | null = null;
   if (reversible) {
     const revFaces = (raw.card_faces as Raw[] | undefined) ?? [];
+    // A TOKEN PRINTED AS A REVERSIBLE CARD IS STILL A TOKEN, and the layout gate above
+    // cannot see it: Scryfall files `sld/1969` Mechtitan as `reversible_card`, and only its
+    // faces' type lines say `Token Legendary Artifact Creature`. Its other printing is
+    // `tneo/14`, layout `token`, which `toCardRow` skips — so there is no `cards` row for it
+    // and there should not be. Ingesting the printing anyway made it an FK ORPHAN, and one
+    // orphan refuses the whole run's base-set sizing: the 2026-09-22 staging refresh seeded
+    // 103,306 printings and then sized 0 sets because of this single row.
+    //
+    // Routed to the skipped LEDGER rather than counted as reversible, because that is what
+    // it is — the ledger is what lets an upload say "token" instead of "unmatched". One of
+    // the 82 is in this position; the check is on the type line rather than on the name so
+    // it stays a rule about tokens rather than a list of them.
+    if (revFaces.some((f) => typeof f.type_line === "string" && f.type_line.startsWith("Token"))) {
+      return {
+        kind: "skipped-layout",
+        row: {
+          scryfallId: requiredString(raw, "id"),
+          layout,
+          name: typeof raw.name === "string" ? raw.name : "",
+        },
+      };
+    }
     // `firstString`, not a `typeof` test: an `oracle_id: ""` is as absent as a missing one,
     // and a type check calls it present. It would then agree with itself across both faces,
     // pass this guard, and be stored as a printing with an EMPTY oracle id — which the FK

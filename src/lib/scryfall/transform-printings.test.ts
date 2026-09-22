@@ -223,6 +223,48 @@ describe("classifyPrinting", () => {
     expect(classifyPrinting(headless).kind).toBe("skipped-reversible");
   });
 
+  it("routes a reversible TOKEN to the skipped ledger, not to the catalog", () => {
+    // `sld/1969` Mechtitan, the shape that took down the 2026-09-22 staging refresh. Its
+    // layout is `reversible_card` and only the faces' type lines say Token; its other
+    // printing is `tneo/14`, layout `token`, which the cards transform skips — so there is
+    // no `cards` row and there should not be. Ingested anyway, it is an FK orphan, and one
+    // orphan refuses the whole run's base-set sizing.
+    const token = {
+      ...reversible,
+      id: "5d02dee4-2071-448f-9fd3-58d63635d712",
+      name: "Mechtitan // Mechtitan",
+      collector_number: "1969",
+      card_faces: reversible.card_faces.map((f) => ({
+        ...f,
+        name: "Mechtitan",
+        type_line: "Token Legendary Artifact Creature — Construct",
+        oracle_id: "a4fecf0a-a7b3-49e4-bbb2-9690dff5a8f4",
+      })),
+    };
+    expect(classifyPrinting(token)).toEqual({
+      kind: "skipped-layout",
+      row: {
+        scryfallId: "5d02dee4-2071-448f-9fd3-58d63635d712",
+        layout: "reversible_card",
+        name: "Mechtitan // Mechtitan",
+      },
+    });
+  });
+
+  it("still ingests a reversible card whose type line merely MENTIONS a token", () => {
+    // The rule is about what this card IS, and `startsWith` is what keeps it there: a real
+    // card is never type-lined `Token …`, and one whose rules text makes tokens is a card.
+    const maker = {
+      ...reversible,
+      card_faces: reversible.card_faces.map((f) => ({
+        ...f,
+        type_line: "Legendary Enchantment",
+        oracle_text: "Create a 1/1 Token creature.",
+      })),
+    };
+    expect(classifyPrinting(maker).kind).toBe("printing");
+  });
+
   it("treats an EMPTY face oracle id as absent rather than as a value", () => {
     // `oracle_id: ""` passes a `typeof` test, agrees with itself across both faces, and is
     // stored as a printing with an empty oracle id — which the FK check counts as an orphan,
