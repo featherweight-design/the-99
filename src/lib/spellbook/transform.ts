@@ -24,6 +24,14 @@ export type VariantRow = {
   popularity: number | null;
   produces: string[];
   requiresTemplateIds: number[];
+  /** The cost to EXECUTE, not to cast. Null where upstream sends nothing. */
+  manaNeeded: string | null;
+  /** The same cost as a number. A 0 is a real answer — the combo is free to go off. */
+  manaValueNeeded: number | null;
+  /** Ordered execution steps, newline-separated. */
+  steps: string | null;
+  /** What must already be true for the combo to work. */
+  notablePrerequisites: string | null;
 };
 
 export type VariantCardRow = { oracleId: string; mustBeCommander: boolean };
@@ -43,6 +51,11 @@ export type TransformResult =
 type Uses = { card?: { oracleId?: unknown }; mustBeCommander?: unknown }[];
 type Requires = { template?: { id?: unknown } }[];
 type Produces = { feature?: { name?: unknown } }[];
+
+/** Upstream sends `""` rather than omitting these, so the two states are folded into one. */
+function nonEmpty(v: unknown): string | null {
+  return typeof v === "string" && v.trim().length > 0 ? v : null;
+}
 
 export function toVariantRows(raw: Record<string, unknown>, known: Set<string>): TransformResult {
   // Commander legality is upstream's own boolean, and it is how this ingest stays scoped to
@@ -114,6 +127,28 @@ export function toVariantRows(raw: Record<string, unknown>, known: Set<string>):
         .map((p) => p?.feature?.name)
         .filter((n): n is string => typeof n === "string" && n.length > 0),
       requiresTemplateIds,
+      // EMPTY STRING IS UPSTREAM'S "NOTHING", and it is what these fields carry far more often
+      // than a missing key — `notablePrerequisites` is `""` on a third of records. Folding it
+      // to null here means a reader tests one thing rather than two, and a `""` can never be
+      // drawn as a prerequisite nobody wrote.
+      manaNeeded: nonEmpty(raw.manaNeeded),
+      // NOT `nonEmpty`, and not `|| null`: 0 is the answer for 59% of variants — the combo
+      // needs no mana — and coercing it to null would turn the most informative reading on
+      // this record into "we do not know".
+      // INTEGER, not merely finite. The column is `integer`, so a 2.5 would either fail the
+      // insert or be coerced by the driver in a way nobody chose — and a refused batch takes
+      // the whole ingest down, which is a high price for one malformed record. A non-integer
+      // stores null instead: the modal then draws no mana figure for that combo rather than a
+      // wrong one, and the population floor sees it.
+      // A NON-NEGATIVE INTEGER. `Number.isInteger` alone admits -1, and a negative cost to
+      // execute a combo is not a small error — it is a figure the modal would draw. Zero stays,
+      // because zero is the answer for 59% of variants and the most informative one.
+      manaValueNeeded:
+        Number.isInteger(raw.manaValueNeeded) && (raw.manaValueNeeded as number) >= 0
+          ? (raw.manaValueNeeded as number)
+          : null,
+      steps: nonEmpty(raw.description),
+      notablePrerequisites: nonEmpty(raw.notablePrerequisites),
     },
     cards,
   };

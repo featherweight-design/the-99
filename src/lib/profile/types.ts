@@ -54,6 +54,25 @@ export type ComboRef = {
   bracketTag: string;
   /** At least one piece sits in the command zone. */
   usesCommander: boolean;
+  /**
+   * What it costs to EXECUTE the combo once both pieces are out — not to cast them.
+   *
+   * THREE STATES, and the surface must draw all three. A number above 0 is a cost; **0 means
+   * the combo is free**, which is the more dangerous reading and the one a blank slot would
+   * destroy; null means upstream told us nothing. Measured 2026-09-21: 41% of variants carry
+   * a cost, 59% are free, and the field is set on every record — so null here is rare and is
+   * genuinely "unknown", never "free".
+   */
+  manaValueNeeded: number | null;
+  /** The same cost in pips (`{2}`), where upstream sent them. Null wherever the cost is 0. */
+  manaNeeded: string | null;
+  /** The ordered execution steps, newline-separated. Set on every variant in the sample. */
+  steps: string | null;
+  /**
+   * What must already be true for the combo to work ("You control at least five creatures with
+   * different powers"). Set on 64%, and the line that answers "does this work in MY deck".
+   */
+  notablePrerequisites: string | null;
 };
 
 export type ProfileCounts = {

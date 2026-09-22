@@ -21,6 +21,12 @@ const combo = (variantId: string, produces: string[]): ComboRef => ({
   produces,
   bracketTag: "casual",
   usesCommander: false,
+  // Null on every fixture here: these suites assert bracket RULES, and no rule reads
+  // the modal's payload. `probe:bracket` covers the loader that populates them.
+  manaValueNeeded: null,
+  manaNeeded: null,
+  steps: null,
+  notablePrerequisites: null,
 });
 
 function profile(over: Partial<ProfileInput> = {}) {

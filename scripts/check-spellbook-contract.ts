@@ -36,6 +36,31 @@ const BRACKET_TAGS = ["R", "S", "P", "O", "C", "E", "B"];
 /** Every field `toVariantRows` projects. A missing one is a silently emptier ingest. */
 const REQUIRED_TOP_LEVEL = ["id", "bracketTag", "identity", "uses", "requires", "produces", "legalities"];
 
+/**
+ * The four the reasoning modal draws: the key must be PRESENT and of the right TYPE.
+ *
+ * Presence, because upstream removing or renaming a field would have the ingest store null on
+ * every row behind a green job and a healthy variant count. The key is present on every record
+ * measured — its VALUE is what varies: `manaNeeded` is `""` on most, because most combos need
+ * no mana, and `manaValueNeeded` is `0` there. Neither empty value is a finding.
+ *
+ * TYPE, because presence alone passes the canary this check exists to be. `manaValueNeeded`
+ * arrives as a JSON number; were it to become a string, `Number.isFinite` in the transform
+ * would null every row and the ingest would refuse naming a field collapse — the wrong cause.
+ * Worse for `manaNeeded`, which carries no population floor by design: a type change there
+ * stores null on 100% of rows silently and permanently, which is exactly the behind-a-green-job
+ * failure this block claims to catch and would not have.
+ *
+ * The POPULATION floors live in `seed.ts` (`fieldCollapse`) and run against the whole ingest.
+ * This is the cheaper daily half: one record, no database.
+ */
+const REQUIRED_MODAL_FIELDS = [
+  { key: "manaNeeded", type: "string" },
+  { key: "manaValueNeeded", type: "number" },
+  { key: "description", type: "string" },
+  { key: "notablePrerequisites", type: "string" },
+] as const;
+
 /** Asserted through a live sweep; never read as data. */
 const MLD_ANCHORS = ["Armageddon", "Ravages of War", "Jokulhaups"];
 const EXTRA_TURN_ANCHORS = ["Time Warp", "Temporal Manipulation"];
@@ -123,6 +148,22 @@ async function main(): Promise<void> {
     }
     if (typeof (first.legalities as Record<string, unknown>)?.commander !== "boolean") {
       fail("bulk entry: `legalities.commander` is not a boolean");
+    }
+    for (const { key, type } of REQUIRED_MODAL_FIELDS) {
+      if (!(key in first)) {
+        fail(`bulk entry: missing \`${key}\` — the reasoning modal reads it`);
+      } else if (typeof first[key] !== type) {
+        fail(
+          `bulk entry: \`${key}\` is ${typeof first[key]}, expected ${type} — the ingest ` +
+            `would store null on every row`,
+        );
+      }
+    }
+    // `description` is the one field here with no honest empty state: it is the combo's steps,
+    // set on 100% of a 347-variant sample, and a record without them is a record nobody can
+    // follow. Asserted as a non-empty string rather than merely present.
+    if (typeof first.description !== "string" || first.description.trim().length === 0) {
+      fail("bulk entry: `description` is empty — it is the combo's execution steps");
     }
     if (failures.length === 0) console.log(`bulk entry: ok (\`${String(first.id)}\`)`);
   }

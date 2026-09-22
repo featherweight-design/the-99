@@ -29,6 +29,12 @@ describe("toVariantRows", () => {
       popularity: expect.any(Number),
       produces: expect.arrayContaining([expect.any(String)]),
       requiresTemplateIds: [],
+      // The fixture is a trimmed head and carries none of these four; the cases below pin
+      // their behaviour against records that do.
+      manaNeeded: null,
+      manaValueNeeded: null,
+      steps: null,
+      notablePrerequisites: null,
     });
     expect(out.cards).toHaveLength(2);
     expect(JSON.stringify(out)).not.toMatch(/cards\.scryfall\.io|imageUri/);
@@ -129,5 +135,93 @@ describe("toVariantRows", () => {
     expect(new Set(out.cards.map((c) => c.oracleId)).size).toBe(out.cards.length);
     // …and cardCount still reports what upstream said the combo uses.
     expect(out.variant.cardCount).toBe(3);
+  });
+});
+
+// The four fields the reasoning modal draws. The trimmed fixture carries none of them, so these
+// build the records — which also lets each case state the exact upstream shape it is about.
+describe("toVariantRows — the reasoning modal's fields", () => {
+  const ORACLE = "66d41377-626d-4ae6-ba86-17bf0c8b3362";
+  const KNOWN = new Set([ORACLE, "b0a54050-3493-4ff6-8eca-e43b92c1f3d3"]);
+  const base = (extra: Record<string, unknown>): Record<string, unknown> => ({
+    id: "1-2",
+    bracketTag: "E",
+    identity: "R",
+    legalities: { commander: true },
+    uses: [{ card: { oracleId: ORACLE } }, { card: { oracleId: "b0a54050-3493-4ff6-8eca-e43b92c1f3d3" } }],
+    produces: [{ feature: { name: "Infinite mana" } }],
+    ...extra,
+  });
+  const row = (extra: Record<string, unknown>) => {
+    const out = toVariantRows(base(extra), KNOWN);
+    if (out.kind !== "row") throw new Error(`dropped: ${out.reason}`);
+    return out.variant;
+  };
+
+  it("carries the mana, the steps and the prerequisites when upstream sends them", () => {
+    const v = row({
+      manaNeeded: "{2}",
+      manaValueNeeded: 2,
+      description: "Sacrifice the creature.\nReturn it.\nRepeat.",
+      notablePrerequisites: "You control at least five creatures.",
+    });
+    expect(v.manaNeeded).toBe("{2}");
+    expect(v.manaValueNeeded).toBe(2);
+    expect(v.steps).toBe("Sacrifice the creature.\nReturn it.\nRepeat.");
+    expect(v.notablePrerequisites).toBe("You control at least five creatures.");
+  });
+
+  // 59% of variants need NO mana to execute, and that zero is the fact the modal draws as
+  // "No mana needed". Coercing it to null — which `|| null` or a truthiness test would do —
+  // turns the most informative reading on the record into "we do not know".
+  it("keeps a zero mana value, because zero means the combo is free rather than unknown", () => {
+    const v = row({ manaNeeded: "", manaValueNeeded: 0, description: "Go off." });
+    expect(v.manaValueNeeded).toBe(0);
+    expect(v.manaNeeded).toBeNull();
+  });
+
+  // Upstream sends "" far more often than it omits the key, and a "" reaching the database
+  // would be drawn as a prerequisite nobody wrote.
+  it("folds upstream's empty strings to null", () => {
+    const v = row({ manaNeeded: "   ", description: "", notablePrerequisites: "" });
+    expect(v.manaNeeded).toBeNull();
+    expect(v.steps).toBeNull();
+    expect(v.notablePrerequisites).toBeNull();
+  });
+
+  // A non-numeric mana value is not a zero. Treating it as one would claim the combo is free.
+  it("rejects a non-numeric mana value rather than reading it as free", () => {
+    expect(row({ manaValueNeeded: "2" }).manaValueNeeded).toBeNull();
+    expect(row({ manaValueNeeded: null }).manaValueNeeded).toBeNull();
+  });
+
+  // `Number.isInteger` admits -1, and a negative cost to execute a combo is not a small error:
+  // it is a figure the modal would draw. Zero is kept in the same case, because zero is the
+  // answer for most variants and the most informative one.
+  it("rejects a negative mana value and keeps zero", () => {
+    expect(row({ manaValueNeeded: -1 }).manaValueNeeded).toBeNull();
+    expect(row({ manaValueNeeded: -99 }).manaValueNeeded).toBeNull();
+    expect(row({ manaValueNeeded: 0 }).manaValueNeeded).toBe(0);
+  });
+});
+
+// The column is `integer`. A non-integer would either fail the insert — taking the whole batch,
+// and with it the ingest, down over one malformed record — or be coerced by the driver in a way
+// nobody chose. Null instead: the modal draws no mana figure for that combo rather than a wrong
+// one, and the population floor sees it.
+describe("toVariantRows — a non-integer mana value", () => {
+  it("stores null rather than risking the insert", () => {
+    const ORACLE = "66d41377-626d-4ae6-ba86-17bf0c8b3362";
+    const OTHER = "b0a54050-3493-4ff6-8eca-e43b92c1f3d3";
+    const out = toVariantRows({
+      id: "1-2", bracketTag: "E", identity: "R",
+      legalities: { commander: true },
+      uses: [{ card: { oracleId: ORACLE } }, { card: { oracleId: OTHER } }],
+      produces: [{ feature: { name: "Infinite mana" } }],
+      manaValueNeeded: 2.5,
+      description: "Go off.",
+    }, new Set([ORACLE, OTHER]));
+    if (out.kind !== "row") throw new Error(`dropped: ${out.reason}`);
+    expect(out.variant.manaValueNeeded).toBeNull();
   });
 });
