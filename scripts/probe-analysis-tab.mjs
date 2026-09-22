@@ -33,7 +33,7 @@
 import { clerkSetup, setupClerkTestingToken } from "@clerk/testing/playwright";
 import { chromium } from "playwright";
 import { requireEnv } from "./lib/env.mjs";
-import { onPage, PAGE } from "./lib/surface.mjs";
+import { onPage, onPageRole, PAGE } from "./lib/surface.mjs";
 
 const { E2E_AUDIT_USER_EMAIL: EMAIL } = requireEnv(["E2E_AUDIT_USER_EMAIL", "CLERK_SECRET_KEY"]);
 const BASE = process.env.PROBE_BASE ?? "http://localhost:3000";
@@ -264,8 +264,111 @@ async function run() {
         before.sides.every((s) => !s.above),
         `${before.count} strip(s) above the tabs: ${before.sides.filter((s) => s.above).length}`);
 
+      // ── The profile payload, counted as SERVER-ACTION POSTS ─────────────────────────────
+      //
+      // The whole reason the fetch is a press rather than automatic is that a profile costs
+      // 630ms median and up to 2.2s on the slowest real deck, and Round 4 forbids an auto-run
+      // on tab open. So what is measured is the count of action calls.
+      //
+      // FILTERED ON THE `next-action` HEADER, not on the method. `page.on("request")` sees
+      // cross-origin traffic, and Clerk's client posts to its own frontend API on this page for
+      // a session touch and a token refresh — either landing inside a counted window would
+      // break a correct build. `probe-list-payloads.mjs` already filters this way.
+      //
+      // THE BODY IS NOT CHECKED, and an earlier version of this comment said it was. Next
+      // serialises an action to a hashed id in the `next-action` header; its NAME appears
+      // nowhere in the request, so matching the body would never fire and the count would read
+      // 0 forever. What identifies the action instead is its OUTCOME, asserted below: a profile
+      // reply replaces the invitation with the re-ask, which no other action would do.
+      // BY ACTION ID, which is what Next actually sends. A server action is serialised to a
+      // hashed id in the `next-action` header — its NAME appears nowhere, so matching the body
+      // on "fetchDeckProfile" would never fire and the count would read 0 forever: a silent
+      // pass on "fetched nothing" and a failure on a working build.
+      //
+      // Collecting the distinct ids is what makes the count mean WHICH action rather than just
+      // how many. Only one action is reachable here while the reader presses tabs and the
+      // invitation, so exactly one distinct id is the assertion.
+      const actions = [];
+      p.on("request", (r) => {
+        if (r.method() !== "POST") return;
+        const id = r.headers()["next-action"];
+        if (id) actions.push(id);
+      });
+      const posts = () => actions.length;
+      await p.waitForTimeout(400);
+      report(`${label}px · no action called before anything is pressed`, posts() === 0,
+        `${posts()} action call(s) before the press`);
+
       await onPage(p, '[role="tab"]').nth(analysisAt).click();
       await p.waitForTimeout(600);
+
+      report(`${label}px · opening the tab still fetches nothing`, posts() === 0,
+        `${posts()} action call(s) after opening the tab`);
+
+      // ROUND 4 RULING 7: the verdict fires on analyse or commit and nowhere else. The tab draws
+      // the invitation instead, and pressing THAT is what costs 630ms.
+      const invite = onPageRole(p, "button", /Analyze this deck/);
+      if (!report(`${label}px · the tab invites the reader to analyze`,
+        (await invite.count()) > 0, "no invitation drawn")) {
+        await ctx.close();
+        continue;
+      }
+      await invite.first().click();
+      // WAITED FOR, not slept past. The slowest real deck builds a profile in 1.8-2.2s, so a
+      // fixed 1.2s sleep failed a correct build whose reply was merely slow. The timeout is
+      // well above the measured maximum, and the thing waited for is the state a reply
+      // produces rather than an elapsed time.
+      await onPageRole(p, "button", /Analyze again/)
+        .first()
+        .waitFor({ state: "visible", timeout: 15_000 })
+        .catch(() => {});
+      const afterPress = posts();
+      report(`${label}px · pressing it fetches the profile once`, afterPress === 1,
+        `${afterPress} action call(s) after the press`);
+      report(`${label}px · and it was ONE action, not two different ones`,
+        new Set(actions).size === 1,
+        `${new Set(actions).size} distinct action id(s): ${[...new Set(actions)].join(", ")}`);
+
+      // AND THE ACTION WAS THE PROFILE FETCH, proved by its OUTCOME rather than by its id.
+      //
+      // A count of one distinct opaque id says a single action ran; it cannot say WHICH, so a
+      // regression wiring this control to some other action would satisfy both checks above.
+      // Nothing observable carries the id, so the discriminator is the state only a profile
+      // reply can produce: the invitation is replaced by the re-ask. An action that fetched
+      // something else would leave the invitation where it was.
+      const stillInviting = await onPageRole(p, "button", /Analyze this deck/).count();
+      const reAsk = await onPageRole(p, "button", /Analyze again/).count();
+      report(`${label}px · and it was the PROFILE fetch, not merely an action`,
+        stillInviting === 0 && reAsk === 1,
+        `invitation ${stillInviting}, re-ask ${reAsk} — a profile reply replaces one with the other`);
+
+      // THE CACHE, and the reason the hook lives in the shell rather than the panel. One panel
+      // renders at a time, so the Analysis panel unmounts on a tab switch — a fetch owned by
+      // the panel would re-pay the whole build here, and every assertion about the rendered
+      // state would still pass.
+      const otherTab = analysisAt === 0 ? 1 : 0;
+      await onPage(p, '[role="tab"]').nth(otherTab).click();
+      await p.waitForTimeout(300);
+      await onPage(p, '[role="tab"]').nth(analysisAt).click();
+      await p.waitForTimeout(600);
+      report(`${label}px · leaving the tab and returning does not re-fetch`,
+        posts() === afterPress,
+        `${posts()} call(s) total, ${posts() - afterPress} on the return`);
+
+      // The synopsis slot, in the one reading reachable until sub-project 6 — and NO control
+      // beside it, because nothing can write a summary yet.
+      const synopsis = await p.evaluate((scope) => {
+        const root = document.querySelector(scope);
+        const text = root?.textContent ?? "";
+        return {
+          absent: text.includes("No summary has been written for this deck yet."),
+          write: text.includes("Write one"),
+        };
+      }, PAGE);
+      report(`${label}px · the synopsis slot states that none is written`, synopsis.absent,
+        synopsis.absent ? "the absent line is drawn" : "no absent line");
+      report(`${label}px · and offers no control that cannot work`, !synopsis.write,
+        synopsis.write ? "a Write one control is drawn" : "no write control");
 
       const panel = await p.evaluate((scope) =>
         Boolean(document.querySelector(scope)?.querySelector("#panel-analysis")), PAGE);

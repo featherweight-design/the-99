@@ -63,6 +63,73 @@ export const deckAnalysisCopy = {
   brackets: BRACKET_NAMES,
 
   /**
+   * The Analysis tab's own readings, before any verdict is drawn.
+   *
+   * Transcribed from `design_handoff_the99_deck_analysis/deck-analysis - copy strings.ts`.
+   * NO SENTENCE IS SHIPPED — what a summary may claim belongs to sub-project 6, and
+   * `commander_support.prose` is the precedent for the null state: a row that fails its accept
+   * contract stores nothing and the surface draws no paragraph.
+   *
+   * The `absent` reading carries NO control here. Design's state 2 pairs it with `Write one` and
+   * "about five seconds", and both are correct for the round that can generate one — offering a
+   * button that cannot write is worse than the plain sentence, so the strings are transcribed
+   * and left unused until something can honour them.
+   */
+  panel: {
+    /**
+     * Round 4's t1 — never determined. Its label and its cost, in the plain form: that round
+     * gives the control three weights, a fixed position and a tab dot, and refines this.
+     *
+     * "about two seconds" is the WORST case, not the median. Measured over all 20 real decks on
+     * staging: 630ms median, 559ms fastest, 1.8-2.2s slowest. A control promising one second and
+     * taking two has broken a promise; one promising two and taking half a second has not.
+     */
+    analyze: "Analyze this deck",
+    analyzeCost: "about two seconds",
+    /** Round 4's t2 — determined, nothing changed since. The re-ask, which has to stay reachable
+     *  or an edited deck can never be re-read. */
+    again: "Analyze again",
+    /**
+     * In flight. NO COUNT IN IT: `loadProfileHead` reads whatever `deck_cards` holds, so a brew
+     * with twelve cards would be told we were reading all 99. An earlier draft said exactly
+     * that.
+     */
+    reading: "Reading your deck\u2026",
+    /**
+     * The profile could not be built. NEVER "something went wrong": a reader who pressed a
+     * button is owed what is and is not affected, and the counted figures are unaffected.
+     */
+    failed:
+      "We could not finish reading this deck. The mix below is counted from your list and is "
+      + "true now.",
+    retry: "Try again",
+  },
+
+  synopsis: {
+    heading: "What this deck is",
+    /** 2 - never generated. The only reading reachable until sub-project 6 ships. */
+    absent: "No summary has been written for this deck yet.",
+    /** Transcribed and deliberately unused: see the note on `panel`. */
+    write: "Write one",
+    writeCost: "about five seconds",
+    /** 3 - stale. */
+    staleTag: "out of date",
+    staleCount: (changed: number, total: number) =>
+      `${changed} of ${total} cards have changed since it was written`,
+    staleProvenance: (was: number, total: number) => `written against ${was} of these ${total}`,
+    rewrite: "Write it again",
+    verdictCurrent: "recounted just now",
+    /** 4 - refused by the accept contract. Never "something went wrong". */
+    refusedTag: "not written",
+    refused:
+      "We wrote a summary and it did not check out against your list, so we are not showing "
+      + "it. Nothing about your deck changed.",
+    refusedCount: (failed: number, total: number) =>
+      `${failed} of ${total} claims failed checking`,
+    retry: "Try again",
+  },
+
+  /**
    * "How we make these decisions" — four rows, one per rule.
    *
    * Game changers carries NO misses line, deliberately: it is the contrast that makes the other
