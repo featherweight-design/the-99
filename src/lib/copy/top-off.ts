@@ -158,7 +158,7 @@ export const topOffCopy = {
       `${ticked} of ${plural(n, 'slot', 'slots')} ticked · ${plural(cand, 'candidate', 'candidates')}, ${untouched} untouched`,
     headMobile: (ticked: string, n: string) => `${ticked} of ${n} ticked`,
 
-        clearTicks: 'Clear all ticks',
+    clearTicks: 'Clear all ticks',
 
     /** Column headers. The two figures sit under them at both widths on
      *  desktop; at phone they are labelled by the aria name instead. */

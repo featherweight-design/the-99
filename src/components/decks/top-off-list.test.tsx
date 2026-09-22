@@ -639,7 +639,9 @@ describe("TopOffList — the bulk tick", () => {
     // concessions are legible before either press, so the wait that matters moved from the
     // press to the open — and it is held open here for the same reason as before: an answer
     // that settles in the same turn cannot tell a real wait from a missing one.
-    expect(screen.queryByTestId("bulk-collection")).not.toBeInTheDocument();
+    expect(
+      screen.queryByRole("button", { name: /from your collection/ }),
+    ).not.toBeInTheDocument();
 
     const byName = (name: string) =>
       screen.getAllByRole("checkbox")
@@ -746,6 +748,75 @@ describe("TopOffList — the bulk tick", () => {
     // The buy figure is computed from the rows the press will ACTUALLY select, so the note and
     // the selection cannot disagree: `free-2` is the one unowned row in the best plan.
     expect(screen.getByText(topOffCopy.bulk.buy("1", null))).toBeInTheDocument();
+  });
+
+  // THE PLANS ARE ASKED FOR AGAIN WHEN THE DECK MOVES, and `openSlots` alone cannot see it.
+  //
+  // A quick-add and a removal while the list is open leave the slot count exactly where it was
+  // while the deck underneath changes, so both notes and both id sets would go on describing a
+  // deck that no longer exists. The single control this pair replaces asked on the PRESS and
+  // so could only be stale by one round trip; asking at the open makes the answer live for as
+  // long as the list is.
+  it("asks again when the deck's cards change under a steady slot count", async () => {
+    function Swapper() {
+      const [ids, setIds] = useState(new Set(["in-deck-a"]));
+      return (
+        <>
+          <button onClick={() => setIds(new Set(["in-deck-b"]))}>swap</button>
+          <Harness deckOracleIds={ids} openSlots={3} />
+        </>
+      );
+    }
+    render(<Swapper />);
+    await screen.findByRole("button", { name: /from your collection/ });
+    expect(actions.bulkOptions).toHaveBeenCalledTimes(1);
+
+    await act(async () => {
+      screen.getByRole("button", { name: "swap" }).click();
+    });
+
+    expect(actions.bulkOptions).toHaveBeenCalledTimes(2);
+  });
+
+  // THE BUY NOTE COUNTS WHAT THE PRESS TAKES, not what the plan named. A declined unowned row
+  // still in the best plan is dropped by the press, so counting it here promises a purchase
+  // the commit bar contradicts a moment later.
+  it("leaves a declined row out of the buy figure", async () => {
+    actions.bulkOptions.mockResolvedValue({
+      ok: true,
+      collection: plan(),
+      best: plan({ oracleIds: ["buy-1", "buy-2"] }),
+    });
+    render(
+      <Harness
+        candidates={[candidate("buy-1", false), candidate("buy-2", false)]}
+        initialDeclined={["buy-2"]}
+      />,
+    );
+
+    await screen.findByRole("button", { name: /this deck needs/ });
+    expect(screen.getByText(topOffCopy.bulk.buy("1", null))).toBeInTheDocument();
+    expect(screen.queryByText(topOffCopy.bulk.buy("2", null))).not.toBeInTheDocument();
+  });
+
+  // b3 IS ASKED AFTER EACH POOL'S OWN ALLOW-LIST. Two plans differing only by a row that
+  // NEITHER press can take are the same answer wearing two buttons — and the two allow-lists
+  // are genuinely different, so the raw lists are the wrong thing to compare.
+  it("still drops the second control when the only difference is a declined row", async () => {
+    actions.bulkOptions.mockResolvedValue({
+      ok: true,
+      collection: plan({ oracleIds: ["free-1"] }),
+      best: plan({ oracleIds: ["free-1", "free-2"] }),
+    });
+    render(
+      <Harness
+        candidates={[candidate("free-1", true), candidate("free-2", true)]}
+        initialDeclined={["free-2"]}
+      />,
+    );
+
+    await screen.findByRole("button", { name: /from your collection/ });
+    expect(screen.queryByRole("button", { name: /this deck needs/ })).not.toBeInTheDocument();
   });
 
   // b2 · THE COLLECTION CONCEDES NOTHING, and the nil is STATED. A blank beside one control

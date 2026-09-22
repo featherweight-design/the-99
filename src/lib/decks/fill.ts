@@ -57,21 +57,18 @@ export type FillRow = { oracleId: string; quantity: number; role: FillRole };
  * What the fill could not reach. A ROLE floor or a TYPE target, because the two are different
  * axes and a reader told only "short on ramp" cannot see that the deck is also eight creatures
  * under the decks it is being compared to.
+ *
+ * `short` IS HOW FAR. Which axes were missed is enough to colour a cell and not enough to
+ * write a sentence: the bulk controls' concession note reads `2 creatures short of
+ * recommendations`, and a reader told only "short on creatures" cannot tell a deck one card
+ * under from one eight cards under. Always positive — an axis that is not short is not in the
+ * list at all — and measured against the same figure the filter beside it used, never
+ * recomputed from a second expression that could drift from it.
  */
 export type FillShortfall =
   | { kind: "role"; role: FillRole; short: number }
   | { kind: "type"; type: keyof CompositionTargets; short: number };
 
-/**
- * HOW FAR SHORT, on every arm. The list used to say only WHICH axes were missed, which is
- * enough to colour a cell and not enough to write a sentence: the bulk controls' concession
- * note reads `2 creatures short of recommendations`, and a reader told only "short on
- * creatures" cannot tell a deck one card under from one eight cards under.
- *
- * Always positive — an axis that is not short is not in the list at all — and measured
- * against the same figure the filter beside it used, never recomputed from a second
- * expression that could drift from it.
- */
 
 export type PlanFillArgs = {
   hasPartner: boolean;

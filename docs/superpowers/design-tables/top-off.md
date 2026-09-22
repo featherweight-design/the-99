@@ -190,7 +190,7 @@ Unchanged from shipped. Same position under the provenance ledger, above the dec
 | font-size | `11px` | `11px` |
 | layout | **side by side on one row**, `display:flex; gap:8px; margin-top:11px` | in the head's flex row |
 | Touch target | **44px** | — |
-| aria-label (tick-all) | `list.tickOwnedAria(owned)` | same |
+| aria-label (collection control) | `bulk.collectionAria(tickable, concession)` | same |
 
 ## 2c · Ordering note
 
@@ -1057,8 +1057,23 @@ chose from · `{placed}` the pass's original row count · `{kept}` rows graduate
 | `list.groupAria(cand, n)` | `{cand} candidates for the last {n} slots` |
 | `list.head(ticked, n, cand, untouched)` | `{ticked} of {n} slots ticked · {cand} candidates, {untouched} untouched` |
 | `list.headMobile(ticked, n)` | `{ticked} of {n} ticked` |
-| `list.tickOwned(owned)` | `Tick the {owned} I own` |
-| `list.tickOwnedAria(owned)` | `Tick all {owned} candidates you already own` |
+| `bulk.collection(n)` | `Select {n} from my collection` |
+| `bulk.best(n)` | `Select the {n} this deck needs` |
+| `bulk.collectionAria(n, concession)` | `Select {n} cards from your collection — {concession}` |
+| `bulk.bestAria(n, concession)` | `Select the {n} cards this deck needs — {concession}` |
+| `bulk.gapNone` | `matches every recommendation` |
+| `bulk.gapOne(n, type)` | `{n} {type} short of recommendations` |
+| `bulk.gapTwo(n, type, m, other)` | `{n} {type} and {m} {other} short of recommendations` |
+| `bulk.gapMany(types, worst, worstType)` | `short on {types} types · {worstType} worst at {worst}` |
+| `bulk.gapUnmeasured` | `no recommendation for this commander` |
+| `bulk.andNothingToBuy(gap)` | `{gap} · nothing to buy` |
+| `bulk.buy(n, money)` | `{n} to buy` / `{n} to buy · {money}` |
+| `bulk.replaces(selected)` | `replaces your {selected} selections` |
+| `bulk.replacesOne` | `replaces your 1 selection` |
+
+The single `list.tickOwned` / `list.tickOwnedAria` control these replaced was retired with the
+pair (PR 9b). Its wording was correct about its pool and silent about its concession, which is
+the reported failure in one string.
 | `list.clearTicks` | `Clear all ticks` |
 | `list.colCard` | `Card` |
 | `list.colSynergy` | `Synergy` |

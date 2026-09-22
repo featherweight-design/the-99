@@ -345,8 +345,8 @@ export function TopOffList({
   // `tickable` — the fill leaves a slot open rather than spending it on a card no floor wants.
   // The figure on the face and in the accessible name is still the number of slots, because
   // that is what the button offers to fill; what changed is that offering is not promising.
-  // The bulk control reaches for what the SEED reaches for, and they now agree on both halves:
-  // `canSeed` for what is ELIGIBLE, `chooseBulkTicks` for which of those to choose. A card
+  // The COLLECTION control reaches for what the SEED reaches for: `canSeed` decides what is
+  // eligible, and the server's own fill decides which of those to choose. A card
   // owned with every copy sleeved elsewhere stays in the list and stays tickable by hand; what
   // neither of these does is choose it for the player.
   //
@@ -357,43 +357,19 @@ export function TopOffList({
     .filter((c) => canSeed(c) && !illegal.has(c.oracleId) && !declined.has(c.oracleId))
     .map((c) => c.oracleId);
   const tickable = Math.min(seedableIds.length, Math.max(openSlots, 0));
-  // A LIVE HANDLE ON THE ALLOW-LIST, read after the await rather than closed over before it.
-  // The draft can move while the server thinks — see the bulk control below. Written in an
-  // effect rather than during render, which React forbids: the value it carries is only ever
-  // read from an async continuation, which runs after the commit that this effect follows.
-  const seedableIdsRef = useRef(seedableIds);
-  useEffect(() => {
-    seedableIdsRef.current = seedableIds;
-  });
+  // THE ALLOW-LIST IS READ AT PRESS TIME, from render scope, and no ref is needed for it any
+  // more. A live handle and a draft generation used to live here because the press itself was
+  // asynchronous — it asked the server for a plan and the draft could move in the gap. The
+  // pair holds its ids and applies them synchronously, so the allow-list it intersects with is
+  // simply the current render's. Both refs and both effects were left write-only by that
+  // change and are gone rather than kept as furniture describing a guard that guards nothing.
 
-  // A GENERATION FOR THE DRAFT ITSELF, because intersecting against a live allow-list is not
-  // enough. `onTickedChange` REPLACES the selection, so an answer that arrives after the
-  // player has ticked a row by hand, cleared the lot, or pressed Cancel would write the old
-  // server answer over the newer state — reviving a selection they had just cancelled. Every
-  // one of those controls stays live while the request is out, by design: they consult
-  // `inflight`, which is the COMMIT's.
-  //
-  // Bumped on unmount too. Cancel unmounts this list, and a continuation that runs afterwards
-  // is setting state on a component nobody is looking at.
-  const draftGen = useRef(0);
-  useEffect(() => {
-    draftGen.current += 1;
-    // THE DECK IS IN HERE TOO, and both halves of it are needed.
-    //
-    // `openSlots` catches an add or a removal that changes how many slots are open. It is not
-    // enough on its own: a SWAP leaves the count where it was while the contents move, and
-    // `chooseBulkFill` seeds its role counts from those contents — so the plan would be stale
-    // in exactly the way this feature is about, with the count unchanged to hide it.
-    //
-    // `deckOracleIds` is the list's optimistic copy, memoised on the deck's cards, so it takes
-    // a new identity when and only when they move — a quick-add bumps it in the same frame as
-    // the click. A prop rebuilt every render would bump this constantly and drop every answer,
-    // which is why it is this one rather than a fresh set assembled here.
-  }, [ticked, declined, openSlots, deckOracleIds]);
-  useEffect(() => () => {
-    draftGen.current += 1;
-  }, []);
   const untouched = pool.length - tickedCount - declinedHere;
+
+  // A STABLE KEY FOR THE DECK'S CARDS. `deckOracleIds` is a Set rebuilt by the parent on every
+  // render, so it cannot be a dependency; sorted and joined, it changes exactly when the deck's
+  // contents do.
+  const deckOracleKey = [...deckOracleIds].sort().join(",");
 
   // ── The bulk pair's figures (§5.2, b1–b11) ─────────────────────────────
   //
@@ -439,16 +415,24 @@ export function TopOffList({
     return () => {
       live = false;
     };
-    // The plans are for THIS deck at THIS slot count. A slot closing under the list — a
-    // quick-add from the dock — makes both answers describe a deck that is no longer in front
-    // of anyone, so they are asked again rather than left to go quietly stale.
+    // THE PLANS ARE FOR THIS DECK'S CARDS, not merely for its slot count.
+    //
+    // `openSlots` alone is not enough and the difference is reachable: a quick-add and a
+    // removal while the list is open leave the count unchanged while the deck underneath it
+    // moves, and both notes and both id sets would go on describing the deck as it was. The
+    // single control this pair replaces was asked on the press, so it could not be stale by
+    // more than a round trip; asking at the open means the answer is live for as long as the
+    // list is, and the dependency list is the only thing that retires it.
+    //
+    // Joined rather than passed as an array: `deckOracleIds` is rebuilt on every render of the
+    // parent, so depending on the array itself would re-run two server fills per render.
     //
     // `onAnnounce` is deliberately NOT a dependency. It is the parent's callback and is
     // rebuilt on most of its renders, so listing it would re-run both server plans every time
     // the page around this list re-rendered — two fills per render, for a figure that has not
     // moved. It is only ever CALLED from the failure paths above, never read for its value.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [deckId, openSlots]);
+  }, [deckId, openSlots, deckOracleKey]);
 
   const buying = pool.filter((c) => live.has(c.oracleId) && !c.owned);
   const buyMoney = summarisePrices(
@@ -457,6 +441,40 @@ export function TopOffList({
   );
   const buyCount = buying.length;
 
+  /**
+   * WHAT A PRESS WOULD ACTUALLY SELECT.
+   *
+   * ONE DEFINITION, because three things depend on it and they have to agree: the press, the
+   * buy figure beside the best control, and b3's judgement that the two pools chose the same
+   * cards. The first version computed each of those from the RAW plan ids, and both of the
+   * others were wrong in the same way — a declined or gone-illegal row that the plan named
+   * still counted, so the note quoted a card the press would not take and b3 asked its
+   * question about a difference that disappears on the press.
+   */
+  const wouldSelect = (ids: readonly string[], pool_: "collection" | "best") => {
+    // THE ALLOW-LIST IS THE CONTROL'S OWN POOL, and the two are genuinely different.
+    //
+    // The collection control promises cards the player can sleeve TONIGHT, which is `canSeed`
+    // — already computed as `seedableIds`, and already carrying the set-aside and gone-illegal
+    // exclusions. A card owned with every copy sleeved in another deck stays in the list and
+    // stays tickable BY HAND; what no control may do is choose it for the player.
+    //
+    // The best control's pool is every legal candidate, unfiltered by ownership: this list
+    // ticks unowned rows, draws their buy tags and buys them on commit, so narrowing it to
+    // `canSeed` would silently drop every purchase the control exists to offer.
+    const allowed = new Set(
+      pool_ === "collection"
+        ? seedableIds
+        : pool
+            .filter((c) => !illegal.has(c.oracleId) && !declined.has(c.oracleId))
+            .map((c) => c.oracleId),
+    );
+    return ids.filter((id) => allowed.has(id));
+  };
+
+  const applyBulk = (ids: readonly string[], pool_: "collection" | "best") =>
+    onTickedChange(new Set(wouldSelect(ids, pool_)));
+
   // b9 · the collection control is absent at zero sleevable, and the remaining control keeps
   // its own label: renaming it `Select 12` would hide that every one of them is a purchase.
   const bulkShowsCollection = tickable > 0;
@@ -464,8 +482,16 @@ export function TopOffList({
   // SETS rather than by length: two plans of twelve that differ by one card are two different
   // answers, and the player would be choosing between controls that are not the same while
   // being told they are.
+  // COMPARED AFTER EACH POOL'S OWN ALLOW-LIST, never on the raw plans. The two lists are
+  // intersected with different sets — the collection control may only choose a card with a
+  // free copy — so two plans that differ only by a row neither press can take are the same
+  // answer wearing two buttons, which is the #361 defect this rule exists to prevent.
   const bulkShowsBest =
-    bulkOptions !== null && !sameSelection(bulkOptions.collection.oracleIds, bulkOptions.best.oracleIds);
+    bulkOptions !== null &&
+    !sameSelection(
+      wouldSelect(bulkOptions.collection.oracleIds, "collection"),
+      wouldSelect(bulkOptions.best.oracleIds, "best"),
+    );
 
   // b11 · at the cap with a hand-made selection in the way, replacing it is the WHOLE of what
   // a press would do, and that outranks the figure. Both notes take it, and the figures return
@@ -493,26 +519,6 @@ export function TopOffList({
    * a copy free to sleeve tonight — would silently drop every purchase the control exists to
    * offer.
    */
-  const applyBulk = (ids: readonly string[], pool_: "collection" | "best") => {
-    // THE ALLOW-LIST IS THE CONTROL'S OWN POOL, and the two are genuinely different.
-    //
-    // The collection control promises cards the player can sleeve TONIGHT, which is `canSeed`
-    // — already computed as `seedableIds`, and already carrying the set-aside and gone-illegal
-    // exclusions. A card owned with every copy sleeved in another deck stays in the list and
-    // stays tickable BY HAND; what no control may do is choose it for the player.
-    //
-    // The best control's pool is every legal candidate, unfiltered by ownership: this list
-    // ticks unowned rows, draws their buy tags and buys them on commit, so narrowing it to
-    // `canSeed` would silently drop every purchase the control exists to offer.
-    const allowed = new Set(
-      pool_ === "collection"
-        ? seedableIds
-        : pool
-            .filter((c) => !illegal.has(c.oracleId) && !declined.has(c.oracleId))
-            .map((c) => c.oracleId),
-    );
-    onTickedChange(new Set(ids.filter((id) => allowed.has(id))));
-  };
 
   /** The left-hand note: what filling from the collection gives up on shape. */
   const bulkNote = (plan: BulkPlan, nothingToBuy: boolean) =>
@@ -527,8 +533,12 @@ export function TopOffList({
   // ACTUALLY select — the plan's ids intersected with this list — so the figure and the
   // selection cannot disagree. Identical in shape to the shipped `commit.toBuy`, because the
   // bar restates this pair of figures a moment later and two spellings of one fact read as two.
-  const bestBuying = bulkOptions
-    ? pool.filter((c) => bulkOptions.best.oracleIds.includes(c.oracleId) && !c.owned)
+  // FROM THE SELECTION, not from the plan. A declined unowned row still in the best plan would
+  // otherwise be counted and priced here and then dropped by the press, so the note would
+  // promise `5 to buy · $34.00` where the commit bar says `4 to buy · $14.00` a moment later.
+  const bestSelection = bulkOptions ? new Set(wouldSelect(bulkOptions.best.oracleIds, "best")) : null;
+  const bestBuying = bestSelection
+    ? pool.filter((c) => bestSelection.has(c.oracleId) && !c.owned)
     : [];
   const bestMoney = summarisePrices(
     bestBuying.map((c) => ({ quantity: 1, price: c.price })),
