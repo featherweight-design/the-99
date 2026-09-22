@@ -19,14 +19,36 @@
 "use client";
 
 import { CARD_FACTS, cardFactName, cardMarkCopy } from "../../lib/copy/card-mark";
+import { comboAwarenessCopy } from "../../lib/copy/combo-awareness";
 import { CardFactMark } from "../cards/card-fact-mark";
+import { ComboGlyph } from "../cards/combo-glyph";
 import { MarkKey } from "../decks/mark-key";
 
-const ENTRIES = CARD_FACTS.map((fact) => ({
-  id: fact,
-  sample: <CardFactMark fact={fact} silent />,
-  word: cardFactName(fact),
-}));
+const ENTRIES = [
+  ...CARD_FACTS.map((fact) => ({
+    id: fact,
+    sample: <CardFactMark fact={fact} silent />,
+    word: cardFactName(fact),
+  })),
+  // THE LEMNISCATE, glossed on the surface it debuts on. Neither clause sentence contains the
+  // word "combo" — they say `with {partner} — you own both` — so without this entry a fourth
+  // glyph arrives on /collection with nothing anywhere to say what it means, which is exactly
+  // what the header above records the deck-status marks being retired for.
+  //
+  // APPENDED rather than folded into `CARD_FACTS`: that list is the fact vocabulary and its
+  // fixed ORDER, both Round 2's, and this round needed the shape rather than a membership.
+  // When Round 2 ships the lemniscate as a fact, this entry goes with it.
+  {
+    id: "combo",
+    // AT THE SIZE THE READER SEES, which is 12px and not the 16 the three above draw at.
+    // A key decodes a glyph, so a sample that is not the glyph on the surface is decoding
+    // something else — and the two sizes are both the spec rather than drift from it:
+    // Round 1's facts sit on a NAME line at 16, and this clause leads a secondary line of
+    // 9.5-10.5px mono, where 16 is taller than the text it introduces.
+    sample: <ComboGlyph />,
+    word: comboAwarenessCopy.keyWord,
+  },
+];
 
 export function CollectionMarkKey({ className }: { className?: string }) {
   // The TILE grid needs `col-span-full` here, exactly as its `Show more` button does: a bare

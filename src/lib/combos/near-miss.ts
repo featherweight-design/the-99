@@ -249,16 +249,20 @@ async function nameMap(oracleIds: readonly string[]): Promise<Map<string, string
  * the command zone is still a card the reader owns, and the pair is still real for the deck
  * they would build around it.
  */
-export async function loadOwnBothPartners(args: {
-  userId: string;
-  /** The cards on screen. The collection is paged, so this is a window, never the whole list. */
-  oracleIds: readonly string[];
-}): Promise<Map<string, ComboPartner>> {
-  if (args.oracleIds.length === 0) return new Map();
-
-  const ids = sql.param([...args.oracleIds]);
-  const userId = sql.param(args.userId);
-  const rows = (await db.execute(sql`
+/**
+ * STATE 1's query, extracted so its emitted SQL can be rendered without a database.
+ *
+ * Its sibling `pairsWithOnePiece` is pinned that way already, and the invariants here fail
+ * the same silent way: a dropped `::uuid[]` is a runtime type error on one deployment, and a
+ * prune that stops pruning still returns exactly the right rows, slowly.
+ *
+ * `oracleIds` null means the whole collection, which is what `/collection` asks for.
+ */
+export function ownBothQuery(userIdValue: string, oracleIds: readonly string[] | null) {
+  const scoped = oracleIds != null;
+  const ids = sql.param([...(oracleIds ?? [])]);
+  const userId = sql.param(userIdValue);
+  return sql`
     with owned as (
       select distinct oracle_id from collection_items where user_id = ${userId}
     ),
@@ -268,11 +272,12 @@ export async function loadOwnBothPartners(args: {
       join ${spellbookVariantCards} vc on vc.variant_id = v.variant_id
       where v.card_count = 2 and cardinality(v.requires_template_ids) = 0
         -- Pruned before the group for the same reason as the deck read: a predicate on a
-        -- non-grouping column cannot reach through the aggregate, and this one runs per page
-        -- of a collection that may hold thousands of cards.
+        -- non-grouping column cannot reach through the aggregate. Against the COLLECTION
+        -- rather than the id window, so the prune is the same set-based test whether or not
+        -- a window was given.
         and exists (select 1 from ${spellbookVariantCards} vc2
                     where vc2.variant_id = v.variant_id
-                      and vc2.oracle_id = any(${ids}::uuid[]))
+                      and vc2.oracle_id in (select oracle_id from owned))
       group by v.variant_id
       having count(*) = 2
     )
@@ -286,8 +291,8 @@ export async function loadOwnBothPartners(args: {
     join ${spellbookVariantCards} b
       on b.variant_id = p.variant_id and b.oracle_id <> a.oracle_id
     join cards c on c.oracle_id = b.oracle_id
-    where a.oracle_id = any(${ids}::uuid[])
-      and a.oracle_id in (select oracle_id from owned)
+    where a.oracle_id in (select oracle_id from owned)
+      ${scoped ? sql`and a.oracle_id = any(${ids}::uuid[])` : sql``}
       and b.oracle_id in (select oracle_id from owned)
       -- UNASSEMBLED — no SINGLE deck of this player's holds both pieces.
       --
@@ -308,7 +313,29 @@ export async function loadOwnBothPartners(args: {
                or d.commander_oracle_id = b.oracle_id
                or d.partner_oracle_id = b.oracle_id)
       )
-  `)).rows as PairRow[];
+  `;
+}
+
+export async function loadOwnBothPartners(args: {
+  userId: string;
+  /**
+   * The cards to answer about. OMIT IT for the whole collection, which is what `/collection`
+   * does: that surface ships every card in one payload and windows client-side, so there is no
+   * server page to scope to and any card can scroll into view.
+   *
+   * Omitting is also FASTER than passing every id, which is the opposite of what it looks
+   * like: the ids then arrive as a 2,805-element array parameter that every row is matched
+   * against, where the unscoped form joins `owned` to itself as a set. Measured on staging
+   * over a 2,805-card collection, same 65 answers both ways: **492ms unscoped, 913ms** with
+   * every id passed.
+   */
+  oracleIds?: readonly string[];
+}): Promise<Map<string, ComboPartner>> {
+  if (args.oracleIds?.length === 0) return new Map();
+
+  const rows = (await db.execute(
+    ownBothQuery(args.userId, args.oracleIds ?? null),
+  )).rows as PairRow[];
 
   return bestPartnerPerCard(rows);
 }

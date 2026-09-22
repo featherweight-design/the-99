@@ -14,6 +14,7 @@ import { availabilityState } from "../../lib/decks/availability";
 import { availabilityCopy } from "../../lib/copy/availability";
 import { AvailabilityMarker, markerAria } from "../ui/availability-marker";
 import { CardFactMark } from "../cards/card-fact-mark";
+import { ComboClause, comboClauseSpoken } from "../cards/combo-clause";
 import { FactTooltip } from "../cards/fact-tooltip";
 import { CollectionMarkKey } from "./collection-mark-key";
 import { cardFactName, cardMarkCopy } from "../../lib/copy/card-mark";
@@ -84,6 +85,11 @@ export function RowsView({
             // The facts, spoken once, in the place the reading order wants them. The
             // glyphs beside the name are aria-hidden so this is the only voicing.
             c.facts?.length ? cardMarkCopy.rowAria(c.facts.map(cardFactName)) : null,
+            // THE COMBO CLAUSE IS SPOKEN HERE and nowhere else: the glyph is aria-hidden and
+            // the visible sentence replaces the type line, which a screen reader would
+            // otherwise simply lose. Spoken in FULL — `you own both` rather than the phone's
+            // `both yours` — because the shortening is about pixels and nothing here has any.
+            c.comboPartner ? comboClauseSpoken(c.comboPartner.name, "ownBoth") : null,
           )}
           // §Row Container: grid template columns, gap 10/16px, padding 10px 12px / 12px 18px, radius 7px, bg --surface, border 1px --border
           // Background and border are utilities, not inline style: inline values
@@ -152,9 +158,17 @@ export function RowsView({
                 />
               )}
             </span>
-            {/* Mobile type line — §Row: Type Line (mobile): 11.5px, --fg-faint, truncate */}
+            {/* Mobile type line — §Row: Type Line (mobile): 11.5px, --fg-faint, truncate.
+                STATE 1 REPLACES IT rather than adding a third line: the row's height is fixed
+                and the clause is the more useful of the two facts about a card you own two
+                halves of. The tail shortens at this width — the app's words give way, the
+                card's name does not. */}
             <span className="block md:hidden truncate text-[11.5px]" style={{ color: "var(--fg-faint)" }}>
-              {c.typeLine}
+              {c.comboPartner ? (
+                <ComboClause partnerName={c.comboPartner.name} state="ownBoth" short />
+              ) : (
+                c.typeLine
+              )}
             </span>
           </span>
 
@@ -208,11 +222,18 @@ function SetRarityColumn({ card }: { card: BrowseListCard }) {
       </span>
 
       {/* Desktop-only trailing spans — displayed only ≥md */}
+      {/* STATE 1 REPLACES THE TYPE LINE at this width too, with the full tail: the column is
+          wide enough for `— you own both`, and shortening it here would be shortening for a
+          constraint that is not present. */}
       <span
         className="hidden md:block truncate font-sans text-[12.5px]"
         style={{ color: "var(--fg-muted)" }}
       >
-        {card.typeLine}
+        {card.comboPartner ? (
+          <ComboClause partnerName={card.comboPartner.name} state="ownBoth" />
+        ) : (
+          card.typeLine
+        )}
       </span>
       <span className="hidden md:flex items-center gap-[8px]">
         <span

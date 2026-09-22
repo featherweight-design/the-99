@@ -16,6 +16,21 @@
  */
 
 export const comboAwarenessCopy = {
+  /**
+   * THE WORD THE GLYPH CANNOT SAY.
+   *
+   * A glyph identifies and cannot teach, so something on the surface has to say the word —
+   * the rule `collection-mark-key.tsx` states, and the one the deck-status marks were
+   * retired in a day for breaking. Neither clause sentence contains "combo", so without this
+   * the lemniscate debuts on `/collection` unglossed.
+   *
+   * `Two-card combo` is Design's own noun for this, taken from the modal block's heading
+   * (`Two-card combos`) in this round's copy file rather than coined here. ROUND 2 OWNS THE
+   * LEMNISCATE'S FACT NAME and may land a different one; when it does, this follows it and
+   * the key entry moves to `CARD_FACTS` with the rest.
+   */
+  keyWord: 'Two-card combo',
+
   /** The inline clause. `partner` is the card's printed name, never truncated in the string. */
   clause: {
     /** State 1 — both halves owned, neither assembled into a deck. `/collection` only. */

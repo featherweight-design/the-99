@@ -49,11 +49,19 @@ export default async function CollectionPage() {
     getCollectionStats(userId),
     // The heaviest read on this page by an order of magnitude, which is why it
     // is the one cached across visits.
-    // "browse-3" because the payload gained `facts` for the card mark. Same reason as
-    // "browse-2" before it, which this replaces: an entry written by the previous
-    // deploy carries no such field, so every card would draw no mark until the hour
-    // ceiling expired it, with the loader never running. The key is the version.
-    cacheForUser(userId, ["browse-3"], () => loadBrowseCards(userId)),
+    // "browse-4" because the payload gained `comboPartner` for combo awareness state 1.
+    // Same reason as "browse-3" before it, which added `facts`, and "browse-2" before that:
+    // an entry written by the previous deploy carries no such field, so every card would
+    // draw no clause until the hour ceiling expired it, with the loader never running. The
+    // key is the version.
+    //
+    // THE DECK-DEPENDENT HALF IS INVALIDATED, and an earlier revision of this comment said
+    // the opposite at length. `comboPartner` means "both halves owned AND no single deck
+    // holds both", so it depends on deck contents — and every deck write calls
+    // `revalidateClaims`, which calls `revalidateUserLists`, which drops exactly the tag
+    // `cacheForUser` put on this entry. Building a deck holding both pieces retires the
+    // clause on the spot rather than at the hour ceiling.
+    cacheForUser(userId, ["browse-4"], () => loadBrowseCards(userId)),
     getCollectionLastUpdated(userId),
     // Set names + release dates for the Set ▾ panel (#86).
     loadOwnedSetMeta(userId),
