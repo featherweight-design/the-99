@@ -248,13 +248,17 @@ export default async function DeckBuilderPage({
     ownedIds.length > 0
       ? loadAvailability(userId, { excludeDeckId: id, oracleIds: ownedIds }).catch(() => null)
       : null,
+    // THE CANDIDATES ONLY, for now. The Add panel's suggestions draw the same note from the
+    // same read, but `DeckSuggestion` does not declare a `facts` field and `BuilderShell` types
+    // the list as `DeckSuggestion[]` — so attaching one here would ride UNTYPED through a spread
+    // and no consumer would ever be forced to read it. That is precisely the dead-payload shape
+    // this PR exists to end, and shipping it on the suggestions while fixing it on the
+    // candidates would be the same defect surviving its own fix.
+    //
+    // 8b threads a facts-bearing suggestion type through the client components when it draws the
+    // note, and widens this read with it.
     loadCandidateFacts(
-      [
-        ...new Set([
-          ...candidateCards.map((c) => c.oracleId),
-          ...suggestions.map((s) => s.oracleId),
-        ]),
-      ],
+      candidateCards.map((c) => c.oracleId),
       detail.cards.map((c) => c.oracleId),
     ).catch(() => null),
   ]);
@@ -272,8 +276,6 @@ export default async function DeckBuilderPage({
   const pricedSuggestions = suggestions.map((s) => ({
     ...withPrice(s),
     availability: s.owned ? (availability?.get(s.oracleId) ?? null) : null,
-    // The Add panel's suggestions draw the same note as the top-off rows, from the same read.
-    facts: candidateFacts?.get(s.oracleId) ?? null,
   }));
 
   // First-run: user's only deck and it has no cards yet.
