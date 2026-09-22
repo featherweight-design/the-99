@@ -31,7 +31,7 @@
 // changes. about.test.ts pins a content hash, so a change forces either a
 // deliberate bump or a deliberate re-pin.
 
-export const ABOUT_VERSION = 8;
+export const ABOUT_VERSION = 9;
 
 export type AboutChapter = '01' | '02' | '03' | '04';
 export type AboutWidth = 'inset' | 'plate';
@@ -420,6 +420,23 @@ export const aboutEntries: readonly AboutEntry[] = [
       'the Add panel orders each shelf by the gap a card would close, so of two cards filling the same role the one your deck is thinner on comes first.',
     ],
     since: 8,
+  },
+  {
+    id: 'combo-awareness',
+    chapter: '03',
+    title: 'The other half of a combo',
+    route: '/collection',
+    opens: 'opens your collection',
+    width: 'plate',
+    caption:
+      'Some cards only do something remarkable next to one other card, and the app now says which — on a collection row when you own both halves and no deck has put them together, and on a card the deck you are building is one away from. The card’s own page lists every partner it has, with whether that partner is in the deck, in your collection, or neither.',
+    keys: [
+      'no counts, anywhere. Detection leaves out combos that need a third piece, so a number beside the sentence would be the first thing on the surface that is not true.',
+      'one partner is named on a row and all of them on the card’s page. Naming one is true whether or not there are others; the list is where the enumerating belongs.',
+      'a combo you have already built says nothing. `you own both` is about two cards sitting apart, and a deck holding both has answered the question.',
+      'it comes from Commander Spellbook, and the card’s page says so behind the heading’s marker rather than under every block.',
+    ],
+    since: 9,
   },
   {
     id: 'decklist-order',

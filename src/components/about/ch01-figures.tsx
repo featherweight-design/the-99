@@ -56,6 +56,7 @@ import { printingPickerCopy } from "../../lib/copy/collection";
 import { COSTS } from "../../lib/about/fixtures";
 import { COST_PIP_SIZE, CostPips } from "../ui/cost-pips";
 import { TwoFacedMark } from "../cards/two-faced-mark";
+import { ComboPartnersDetail } from "../cards/combo-partners-detail";
 import { LastSlotsStrip } from "../decks/last-slots-strip";
 import { DecklistRow } from "../decks/decklist-row";
 import { useSyncExternalStore } from "react";
@@ -730,6 +731,36 @@ export function InformedBuildFigureBody() {
       cards={ROLE_MIX_CARDS}
       onSeeShelf={() => {}}
       rolesWithShelves={new Set(["draw", "removal"])}
+    />
+  );
+}
+
+/**
+ * The card modal's combo block, with one partner in each of its three states.
+ *
+ * The block is the one surface in this feature that ENUMERATES, so it is the specimen that
+ * shows what the feature is: a pair fact, three readings of where the other half is, and no
+ * count anywhere. The inline clause the lists draw is one line of the same idea.
+ *
+ * A FIXTURE, and named as one — these are real cards and a real pairing, but the states are
+ * chosen to show all three at once rather than read off anyone's collection.
+ */
+const COMBO_SPECIMEN = [
+  { oracleId: "a", name: "Isochron Scepter", state: "inDeck" as const, popularity: 900 },
+  { oracleId: "b", name: "Dramatic Reversal", state: "owned" as const, popularity: 800 },
+  { oracleId: "c", name: "Basalt Monolith", state: "notOwned" as const, popularity: 700 },
+];
+
+export function ComboAwarenessFigureBody() {
+  return (
+    <ComboPartnersDetail
+      card={
+        {
+          oracleId: "about-combo",
+          name: "Isochron Scepter",
+          comboPartners: COMBO_SPECIMEN,
+        } as never
+      }
     />
   );
 }
