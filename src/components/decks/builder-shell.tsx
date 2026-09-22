@@ -67,7 +67,7 @@ import { cardCopies, deckCounts, unresolvedCardCount, type DeckDetailCard } from
 import { computeRoleCounts, type MixRole, type RecommendedMix } from "../../lib/decks/mix";
 import { useIsDesktop } from "../ui/use-is-desktop";
 import type { ProvenanceForm } from "../../lib/decks/price";
-import type { TopOffCandidate } from "../../lib/decks/last-slots";
+import type { TopOffCandidateWithFacts } from "../../lib/decks/last-slots";
 import { proxiedCardCount } from "../../lib/decks/proxy-count";
 
 // Shared by both shelf paths — the one that is already on Consider and the one
@@ -129,7 +129,7 @@ interface BuilderShellProps {
       availability-marked by the page route. An empty array is a state the strip
       renders rather than a reason to unmount it: the door stays while slots are
       open, and says the pool ran out. */
-  candidates?: TopOffCandidate[];
+  candidates?: TopOffCandidateWithFacts[];
   /** The pool is empty because every ranked card argues against itself, which is
    *  a different fact from the collection running out and takes a different
    *  sentence. Defaults false: an absent flag is not a claim. */

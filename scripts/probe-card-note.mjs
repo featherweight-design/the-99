@@ -227,6 +227,48 @@ function checkNotes(where, notes, { bodyPx, density }) {
   );
 }
 
+/**
+ * The row's own MINIMUM, unchanged by the feature.
+ *
+ * The note made the box a column, so its `min-h` had to move to the line inside it — and a
+ * border-box minimum carries the box's own 1px border, which the first split dropped. Two
+ * pixels on a row drawn 38 times is 76px of list, and nothing in the markup says it moved.
+ *
+ * Read as the MINIMUM rather than as a painted height, because only the desktop row sits at
+ * its own floor: the phone row is two lines by design and measures 73 to 92px, so a height
+ * assertion there would be a fact about the longest card name in the pool. The sum the check
+ * makes — the line's `min-height` plus the box's padding and border — is exactly the
+ * arithmetic the finding named, and it is read RESOLVED from both elements rather than added
+ * up from the class strings that produced it.
+ */
+const READ_ROW_MINIMUM = () => {
+  const box = document.querySelector("main [data-top-off-row]");
+  if (!box) return null;
+  const line = box.firstElementChild;
+  if (!line) return null;
+  const b = getComputedStyle(box);
+  const l = getComputedStyle(line);
+  const px = (v) => Number.parseFloat(v) || 0;
+  return {
+    line: px(l.minHeight),
+    padding: px(b.paddingTop) + px(b.paddingBottom),
+    border: px(b.borderTopWidth) + px(b.borderBottomWidth),
+  };
+};
+
+function checkRowMinimum(where, parts, expected) {
+  if (parts === null) {
+    report(`${where} · a row to measure`, false, "none — NOT a pass");
+    return;
+  }
+  const total = parts.line + parts.padding + parts.border;
+  report(
+    `${where} · the row's minimum is still ${expected}px`,
+    Math.abs(total - expected) <= 0.5,
+    `${parts.line} line + ${parts.padding} padding + ${parts.border} border = ${total}px`,
+  );
+}
+
 function checkNoReservedHeight(where, boxes) {
   const plain = boxes.filter((b) => !b.noted);
   const noted = boxes.filter((b) => b.noted);
@@ -378,9 +420,12 @@ async function run() {
 
       const rowNotes = await page.evaluate(READ_NOTES, "[data-top-off-row]");
       checkNotes(`${width}px · top-off row`, rowNotes, { bodyPx: 12.5, density: "row" });
-      checkNoReservedHeight(
+      const rowBoxes = await page.evaluate(READ_BOXES, "[data-top-off-row]");
+      checkNoReservedHeight(`${width}px · top-off row`, rowBoxes);
+      checkRowMinimum(
         `${width}px · top-off row`,
-        await page.evaluate(READ_BOXES, "[data-top-off-row]"),
+        await page.evaluate(READ_ROW_MINIMUM),
+        width === 390 ? 52 : 34,
       );
 
       if (rowNotes.length > 0) {

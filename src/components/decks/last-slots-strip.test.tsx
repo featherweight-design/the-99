@@ -2,7 +2,7 @@ import { act, render, screen } from "@testing-library/react";
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { synergyCopy } from "../../lib/copy/synergy-discovery";
 import { topOffCopy } from "../../lib/copy/top-off";
-import type { TopOffCandidate } from "../../lib/decks/last-slots";
+import type { TopOffCandidateWithFacts } from "../../lib/decks/last-slots";
 import { topOffDraftKey } from "../../lib/decks/top-off-draft";
 
 const actions = vi.hoisted(() => ({ commit: vi.fn(), chooseBulk: vi.fn() }));
@@ -25,7 +25,7 @@ vi.mock("../../app/decks/actions", () => ({
 
 import { LastSlotsStrip } from "./last-slots-strip";
 
-function candidate(id: string, owned: boolean): TopOffCandidate {
+function candidate(id: string, owned: boolean): TopOffCandidateWithFacts {
   return {
     oracleId: id,
     name: id,
@@ -39,6 +39,11 @@ function candidate(id: string, owned: boolean): TopOffCandidate {
     manaCost: null,
     price: null,
     availability: null,
+    // A fixture row with no facts and no combo partner. STATED rather than omitted: both
+    // fields are required on the deck-scoped row type, because a type that lets them be
+    // omitted is a type that lets the page's attachment be deleted without a compile error.
+    facts: null,
+    comboPartner: null,
   };
 }
 
@@ -172,11 +177,11 @@ describe("LastSlotsStrip", () => {
   // where it is indistinguishable from a card they can sleeve tonight and
   // committing it costs either a purchase or a card out of another deck. That is
   // the act the list draws a buy tag for, made silently on their behalf.
-  const claimed = (id: string): TopOffCandidate => ({
+  const claimed = (id: string): TopOffCandidateWithFacts => ({
     ...candidate(id, true),
     availability: { owned: 1, hard: 1, soft: 0, free: 0, claims: [] },
   });
-  const spare = (id: string): TopOffCandidate => ({
+  const spare = (id: string): TopOffCandidateWithFacts => ({
     ...candidate(id, true),
     availability: { owned: 2, hard: 1, soft: 0, free: 1, claims: [] },
   });

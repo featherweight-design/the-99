@@ -9,6 +9,7 @@ import {
   primaryRole,
   colorIdentityMask,
   poolCountFromMaskTally,
+  countNoteKinds,
 } from "./read";
 import { deckCounts, groupByCardType, groupByRole, unresolvedCardCount } from "./grouping";
 import type { DeckDetailCard, DeckUnresolvedRow } from "./grouping";
@@ -324,5 +325,92 @@ describe("deckIsFlippable reads coverage", () => {
     expect(deckIsFlippable({
       built: 99, partnerName: null, ownedCount: 99, unresolvedCount: 0,
     })).toBe(true);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// countNoteKinds — the card note's ordinal DENOMINATOR
+//
+// The one piece of this round's read that nothing else asserts. Every renderer test injects
+// `NoteCounts`, and `probe:card-note` reads the note's geometry rather than its figures — so a
+// regression here returns a perfectly plausible `your 1st` and passes all of it. What it has
+// to get right: copies rather than rows, the commanders folded in, the flags map consulted,
+// and the tutor read through the SHIPPED classifier rather than a second rule.
+// ---------------------------------------------------------------------------
+describe("countNoteKinds", () => {
+  const NONE = { gameChanger: 0, massLandDenial: 0, extraTurns: 0, tutor: 0 };
+  const row = (over: Partial<Parameters<typeof countNoteKinds>[0][number]> = {}) => ({
+    oracleId: "o-plain",
+    gameChanger: false,
+    oracleText: "Draw a card.",
+    quantity: 1,
+    ...over,
+  });
+  // Demonic Tutor's own text, taken from `tutor-targets.test.ts` rather than invented: this
+  // case is about whether the count runs the classifier at all, and a made-up sentence that
+  // the classifier happens to reject would pass on a build that never calls it.
+  const TUTOR_TEXT = "Search your library for a card, put that card into your hand, then shuffle.";
+
+  it("counts nothing for a deck of plain cards", () => {
+    expect(countNoteKinds([row(), row()], [], new Map())).toEqual(NONE);
+  });
+
+  it("counts COPIES, not rows", () => {
+    // No note-bearing kind is a basic today, so rows and copies agree on every real deck —
+    // which is exactly why a rule that counts rows would never be caught by looking.
+    expect(
+      countNoteKinds([row({ gameChanger: true, quantity: 3 })], [], new Map()).gameChanger,
+    ).toBe(3);
+  });
+
+  it("folds the commanders in, at one copy each", () => {
+    // COMMANDERS ARE CARDS: the bracket rules count a Game Changer in the command zone
+    // against every limit, and it is the one card on this page that is a column on `decks`
+    // rather than a `deck_cards` row.
+    const counts = countNoteKinds(
+      [row()],
+      [
+        { oracleId: "c-1", gameChanger: true, oracleText: null },
+        { oracleId: "c-2", gameChanger: true, oracleText: null },
+      ],
+      new Map(),
+    );
+    expect(counts.gameChanger).toBe(2);
+  });
+
+  it("reads mass land denial and extra turns off the flags map", () => {
+    const flags = new Map([
+      ["o-mld", { massLandDenial: true, extraTurn: false }],
+      ["o-turn", { massLandDenial: false, extraTurn: true }],
+    ]);
+    const counts = countNoteKinds(
+      [row({ oracleId: "o-mld" }), row({ oracleId: "o-turn", quantity: 2 })],
+      [],
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      flags as any,
+    );
+    expect(counts.massLandDenial).toBe(1);
+    expect(counts.extraTurns).toBe(2);
+  });
+
+  it("classifies tutors through the shipped classifier, on the list and in the zone", () => {
+    const counts = countNoteKinds(
+      [row({ oracleText: TUTOR_TEXT }), row()],
+      [{ oracleId: "c-1", gameChanger: false, oracleText: TUTOR_TEXT }],
+      new Map(),
+    );
+    expect(counts.tutor).toBe(2);
+  });
+
+  it("counts one card under every kind it satisfies", () => {
+    // A card wears every fact true of it — the note's order then picks which sentences to
+    // draw, and the count behind each of them is its own.
+    const counts = countNoteKinds(
+      [row({ oracleId: "o-all", gameChanger: true, oracleText: TUTOR_TEXT, quantity: 2 })],
+      [],
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      new Map([["o-all", { massLandDenial: true, extraTurn: true }]]) as any,
+    );
+    expect(counts).toEqual({ gameChanger: 2, massLandDenial: 2, extraTurns: 2, tutor: 2 });
   });
 });

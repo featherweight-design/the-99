@@ -428,6 +428,11 @@ export async function getDeckDetail(deckId: string, userId: string): Promise<Dec
  * The card note's four counts over the deck as it stands — the DRAFT, since that is what the
  * analysis reads and what a player is looking at while they add.
  *
+ * EXPORTED for its own test. Every renderer test injects `NoteCounts`, so the denominator
+ * behind every ordinal on the surface was asserted by nobody: a regression returning zeros,
+ * dropping the commanders, or counting rows instead of copies renders a perfectly plausible
+ * `your 1st` and passes every check this round shipped. `read.test.ts` covers it directly.
+ *
  * BY COPIES, not by rows. A deck can hold five Swamps and the note's ordinal is a count of
  * cards, not of distinct names. No kind here is a basic today, so the two agree on every real
  * deck; counting rows would be a rule that happens to be right rather than the right rule.
@@ -436,7 +441,7 @@ export async function getDeckDetail(deckId: string, userId: string): Promise<Dec
  * end: a Game Changer in the command zone counts against every limit, and it is the one card
  * on this page that is a column rather than a row.
  */
-function countNoteKinds(
+export function countNoteKinds(
   cardRows: readonly { oracleId: string; gameChanger: boolean; oracleText: string | null; quantity: number }[],
   commanderRows: readonly { oracleId: string; gameChanger: boolean; oracleText: string | null }[],
   flags: Map<string, CardBracketFlags>,

@@ -16,21 +16,18 @@ import { type Ref, useEffect, useId, useRef, useState } from "react";
 import { synergyCopy } from "../../lib/copy/synergy-discovery";
 import { chooseBulkTicks } from "../../lib/decks/bulk-choice";
 import { topOffCopy } from "../../lib/copy/top-off";
-import { canSeed, type TopOffCandidate } from "../../lib/decks/last-slots";
+import { canSeed, type TopOffCandidateWithFacts } from "../../lib/decks/last-slots";
 
 /**
- * What this row draws: a candidate, plus the one deck-scoped field it may carry.
+ * What this strip hands down: the DECK-SCOPED candidate, both of its deck-scoped fields
+ * REQUIRED.
  *
- * OPTIONAL, and not because nobody populates it — `/decks/[id]` builds every candidate as a
- * `TopOffCandidateWithFacts`, where it is required. It is optional HERE because the shared
- * `SynergyCard` this narrows has no deck to complete anything in, and every fixture and
- * every other consumer of that type is honestly without one. Widening this component to the
- * full deck-scoped type instead would demand a `facts` field from fifty test fixtures that
- * have no opinion about facts.
+ * This is the middle link of the chain the card-note round had to repair. With `facts`
+ * optional anywhere along it, the page's attachment is erased on the way down and removing
+ * that attachment compiles — which is exactly how a payload ships, tested, and is drawn by
+ * nobody. Fixtures say `facts: null` rather than saying nothing.
  */
-type RowCandidate = TopOffCandidate & {
-  comboPartner?: { oracleId: string; name: string } | null;
-};
+type RowCandidate = TopOffCandidateWithFacts;
 import { useIsDesktop } from "../ui/use-is-desktop";
 import { TopOffList } from "./top-off-list";
 import type { NoteCounts } from "../../lib/bracket/card-note";
@@ -45,7 +42,8 @@ export interface LastSlotsStripProps {
   /** The ceiling the counts on this strip are measured against. Passed rather
       than reconstructed: `openSlots` alone cannot tell 3 of 99 from 3 of 98. */
   bodySize: number;
-  /** The whole ranked pool, uncapped, already excluding what the deck holds. */
+  /** The whole ranked pool, uncapped, already excluding what the deck holds.
+   *  The deck-scoped row type, with `facts` REQUIRED — see `RowCandidate`. */
   candidates: RowCandidate[];
   /** The pool is empty because every ranked card argues against itself rather
    *  than because the collection ran out. Two different facts, two different

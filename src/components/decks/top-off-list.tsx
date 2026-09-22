@@ -21,26 +21,25 @@ import { commitTopOff } from "../../app/decks/actions";
 import { bulkConcession } from "../../lib/decks/bulk-concession";
 import { bulkFillOptions } from "../../app/decks/actions";
 import type { FillShortfall } from "../../lib/decks/fill";
-import { canSeed, type TopOffCandidate } from "../../lib/decks/last-slots";
+import { canSeed, type TopOffCandidateWithFacts } from "../../lib/decks/last-slots";
 
 /**
- * What this row draws: a candidate, plus the one deck-scoped field it may carry.
+ * What this row draws: the DECK-SCOPED candidate, with both of its deck-scoped fields
+ * REQUIRED.
  *
- * OPTIONAL, and not because nobody populates it — `/decks/[id]` builds every candidate as a
- * `TopOffCandidateWithFacts`, where it is required. It is optional HERE because the shared
- * `SynergyCard` this narrows has no deck to complete anything in, and every fixture and
- * every other consumer of that type is honestly without one. Widening this component to the
- * full deck-scoped type instead would demand a `facts` field from fifty test fixtures that
- * have no opinion about facts.
+ * This type used to widen `TopOffCandidate` and make both fields optional, on the grounds
+ * that fixtures have no opinion about facts. That is the dead-payload shape this feature's
+ * own payload PR refused to ship: with `facts` optional here, `BuilderShellProps.candidates`
+ * and `LastSlotsStripProps.candidates` erased it back to `TopOffCandidate`, so DELETING the
+ * page's attachment compiled cleanly and silently drew no note on any top-off row.
+ *
+ * Fixtures state `facts: null` and `comboPartner: null` instead, which costs a line each and
+ * is the honest thing for them to say: they are rows with no facts, not rows that decline to
+ * answer.
  */
-type RowCandidate = TopOffCandidate & {
-  comboPartner?: { oracleId: string; name: string } | null;
-  /** The card-note facts, optional here for the same reason `comboPartner` is. */
-  facts?: CandidateFacts | null;
-};
+type RowCandidate = TopOffCandidateWithFacts;
 import { ComboClause, comboClauseSpoken } from "../cards/combo-clause";
 import { CardNote, cardNoteSpoken } from "./card-note";
-import type { CandidateFacts } from "../../lib/bracket/delta";
 import type { NoteCounts } from "../../lib/bracket/card-note";
 import type { Bracket } from "../../lib/bracket/types";
 import {
@@ -167,7 +166,7 @@ function rowLabel(
   // note says what kind of card it is, which is context for all of them rather than another
   // column.
   const note = cardNoteSpoken({
-    facts: c.facts ?? null,
+    facts: c.facts,
     declared: declaredBracket,
     counts: noteCounts,
     density: "row",
@@ -713,7 +712,7 @@ export function TopOffList({
     onTickedChange(next);
   }
 
-  function decline(c: TopOffCandidate) {
+  function decline(c: RowCandidate) {
     if (inflight) return;
     const nextDeclined = new Set(declined);
     nextDeclined.add(c.oracleId);
@@ -1343,11 +1342,14 @@ function CandidateRow({
       {/* THE ROW'S OWN LINE. The box above now owns the padding, the fill and the border, so
           the note below is inside all three — and the row's own height came with it.
 
-          THE HEIGHTS ADD BACK TO WHAT THE BOX HAD. The box was `min-h-[52px] md:min-h-[34px]`
-          with no vertical padding; it is now `py-[2px] md:py-[1px]` around a line of
-          `min-h-[48px] md:min-h-[32px]`, which is 52 and 34 exactly. Written as a sum rather
-          than left to look right: a 2px drift on a row drawn 38 times is 76px of list. */}
-      <div className="flex w-full items-center gap-[9px] md:gap-[10px] min-h-[48px] md:min-h-[32px]">
+          THE HEIGHTS ADD BACK TO WHAT THE BOX HAD, AND THE BORDER IS PART OF THE SUM. The box
+          was `min-h-[52px] md:min-h-[34px]` — a BORDER-BOX minimum, so its own 1px border was
+          inside it. It is now that 1px border, plus `py-[2px] md:py-[1px]`, around a line of
+          `min-h-[46px] md:min-h-[30px]`: 2 + 4 + 46 = 52, and 2 + 2 + 30 = 34, exactly what
+          the box had. Written as a sum rather than left to look right, and the border counted
+          rather than assumed — the first version of this split omitted it and left every
+          phone row 2px taller, which is 76px of list across 38 rows. */}
+      <div className="flex w-full items-center gap-[9px] md:gap-[10px] min-h-[46px] md:min-h-[30px]">
       <input
         type="checkbox"
         id={tickId}
@@ -1591,7 +1593,7 @@ function CandidateRow({
           the row's own laid-out name — so a later change to the tick or the dot fails the
           probe rather than drifting silently. */}
       <CardNote
-        facts={c.facts ?? null}
+        facts={c.facts}
         declared={declaredBracket}
         counts={noteCounts}
         density="row"

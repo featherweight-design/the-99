@@ -600,7 +600,12 @@ export function AutoFillFigureBody() {
       deckId="about-figure"
       openSlots={5}
       bodySize={99}
-      candidates={SYNERGY_ROWS}
+      // The shared About fixture is a `SynergyCard[]` — the shape with no deck to be a
+      // candidate FOR — so the two deck-scoped fields are supplied here rather than added
+      // to a fixture every other figure on this page also draws. Both null: the figure's
+      // rows carry no facts, so the note renders nothing, which is what a card with no
+      // facts looks like anywhere.
+      candidates={SYNERGY_ROWS.map((c) => ({ ...c, facts: null, comboPartner: null }))}
       deckOracleIds={new Set()}
       declaredBracket={null}
       noteCounts={{ gameChanger: 0, massLandDenial: 0, extraTurns: 0, tutor: 0 }}

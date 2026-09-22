@@ -10,7 +10,7 @@ import { topOffCopy } from "../../lib/copy/top-off";
 import type { DeckDetail } from "../../lib/decks/read";
 import { unresolvedCardCount } from "../../lib/decks/grouping";
 import type { DeckUnresolvedRow } from "../../lib/decks/grouping";
-import type { TopOffCandidate } from "../../lib/decks/last-slots";
+import type { TopOffCandidateWithFacts } from "../../lib/decks/last-slots";
 import { recommendedMix } from "../../lib/decks/mix";
 
 /** The asserted baseline, through the real function rather than restated — a hand-built
@@ -84,7 +84,7 @@ function makeDeck(matched: number, unresolvedRows: DeckUnresolvedRow[]): DeckDet
 
 // A pool with something left in it, so the strip draws its door rather than the
 // exhausted plate that stands in for one.
-const candidates: TopOffCandidate[] = Array.from({ length: 12 }, (_, i) => ({
+const candidates: TopOffCandidateWithFacts[] = Array.from({ length: 12 }, (_, i) => ({
   oracleId: `cand-${i}`,
   name: `Candidate ${i}`,
   typeLine: "Instant",
@@ -97,6 +97,10 @@ const candidates: TopOffCandidate[] = Array.from({ length: 12 }, (_, i) => ({
   manaCost: null,
   price: null,
   availability: null,
+  // Stated, not omitted: both deck-scoped fields are required on the row type so the page's
+  // attachment cannot be deleted without a compile error.
+  facts: null,
+  comboPartner: null,
 }));
 
 async function shell(matched: number, unresolvedRows: DeckUnresolvedRow[]) {
