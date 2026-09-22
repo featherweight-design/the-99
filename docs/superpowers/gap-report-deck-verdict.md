@@ -56,3 +56,21 @@ serves a 404 behind identical markup. `pnpm probe:verdict-block` reads the resol
 the painted ink and the served bytes; five mutations were run against it and all five fail.
 
 The contact sheet is `docs/superpowers/inventories/deck-verdict.json`, six cells at both widths.
+
+## What the pre-open pass added, after the three design passes
+
+Four findings, all four acted on, and two of them were tests of this feature's own rules that
+measured nothing:
+
+- the two-rule case was **two game changers** — one rule with a count of two — so
+  `ruledOutClause`'s `nameList` join passed with `facts[0]` in its place. A game changer beside
+  an unreachable combo is the only shape where two rules can co-occur at the bracket below
+  (mass land denial violates bracket 3 as well, and at bracket 1 only extra turns can fire
+  alone), and that fixture now fails the mutation.
+- the allowance case drew a range and exercised nothing of the branch it named. The branch is
+  **unreachable**: `below` is 1, 2 or 3; every rule caps at zero at 1 and 2; and `below === 3`
+  needs `permits` to be `[4]`, which arrives with `violatesB3` false and no bracket-3 violation
+  to report. The test pins that invariant instead.
+
+The other two are claim corrections — the comment describing bracket-3 reasons that cannot
+occur, and the contrast gate's own scope, which now records what it does not cover.
