@@ -12,7 +12,7 @@ import type { DeckDetail } from "../../lib/decks/read";
 import { countStatus, statusPill } from "../../lib/decks/status";
 import { availabilityState, hardDecks } from "../../lib/decks/availability";
 import { isShoppingCard } from "../../lib/decks/shopping";
-import type { DeckSuggestion } from "../../lib/decks/suggest";
+import type { DeckSuggestionWithFacts } from "../../lib/decks/suggest";
 import { BuilderSpine } from "./builder-spine";
 import { AnalysisPanel, SynopsisSlot } from "./analysis-panel";
 import { useDeckProfile } from "./use-deck-profile";
@@ -96,7 +96,7 @@ interface BuilderShellProps {
    *  constant would draw one deck's recommendation on every deck. */
   mix: RecommendedMix;
   deck: DeckDetail;
-  suggestions: DeckSuggestion[];
+  suggestions: DeckSuggestionWithFacts[];
   degraded: boolean;
   firstRun: boolean;
   commanderIdentity: string[];

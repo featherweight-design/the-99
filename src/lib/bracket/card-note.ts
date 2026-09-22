@@ -39,8 +39,18 @@ import type { CandidateFacts } from "./delta";
  */
 export type NoteCounts = {
   gameChanger: number;
-  massLandDenial: number;
-  extraTurns: number;
+  /**
+   * `null` where the DECK's flags read failed — unknown, and not the same claim as zero.
+   *
+   * These two kinds are the only ones that come off `card_bracket_flags`; a game changer is a
+   * column on `cards` and a tutor is read off oracle text, so both survive that failure. The
+   * candidate's own facts come from a SEPARATE flags read, which can succeed while this one
+   * fails — and then a card correctly detected as mass land denial would be introduced as
+   * `your 1st` to a deck already holding three. An ordinal is a count, and a count nobody has
+   * is not zero.
+   */
+  massLandDenial: number | null;
+  extraTurns: number | null;
   tutor: number;
 };
 
@@ -103,6 +113,9 @@ export function cardNoteSentences({
   if (!facts) return [];
 
   const cap = FACT_CAP[density];
+  // A kind whose count is UNKNOWN draws no sentence at all — see `NoteCounts`. The card fact
+  // is still true and the rules clause is still quotable, but every one of these sentences
+  // carries an ordinal, and there is no shipped form of them without it.
   // The ordinal counts the card itself. Adding it makes it the next of its kind; a card
   // already sleeved is counted where it already sits, because the note is then a statement
   // about the copy in the list rather than about an add.
@@ -129,7 +142,7 @@ export function cardNoteSentences({
     );
   }
 
-  if (facts.massLandDenial) {
+  if (facts.massLandDenial && counts.massLandDenial !== null) {
     // The disclaimer rides with the sentence rather than being a fact of its own: it is the
     // second half of one attributed claim, and `STATES-card-note.md` caps facts rather than
     // sentences for this reason. It is also what makes the tile's "two short sentences" reach
@@ -145,7 +158,7 @@ export function cardNoteSentences({
     );
   }
 
-  if (facts.extraTurn) {
+  if (facts.extraTurn && counts.extraTurns !== null) {
     const n = nth(counts.extraTurns);
     take(
       declared === null || declared >= 4

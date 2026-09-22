@@ -296,10 +296,15 @@ export default async function DeckBuilderPage({
     // The card note's facts, on the tile rather than in a map beside it — same reason the
     // price and the availability figures are attached here, and same `null` for a failed
     // read as for a card that carries nothing. Both render as no note at all.
+    //
+    // REQUIRED on `DeckSuggestionWithFacts`, which is what `BuilderShell` takes: deleting
+    // this line fails typecheck rather than silently drawing no note on any Consider tile.
+    // An optional field closed that hole only for as long as somebody remembered.
     facts: candidateFacts?.get(s.oracleId) ?? null,
-    // Declared on `DeckSuggestion`, so a consumer is forced to read it rather than inheriting
-    // it untyped through this spread — which is the dead-payload shape the candidate-facts
-    // note above refuses.
+    // Declared on the suggestion type, so a consumer is forced to read it rather than
+    // inheriting it untyped through this spread — the dead-payload shape the note above
+    // refuses. (`comboPartner` is still optional on `DeckSuggestion` itself; that is sub-
+    // project 3's field and its own chain, not this round's to change.)
     comboPartner: comboFor(s.oracleId, completions),
   }));
 

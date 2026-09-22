@@ -36,19 +36,6 @@ export type DeckSuggestion = {
    * an absent combo is what most cards have.
    */
   comboPartner?: { oracleId: string; name: string } | null;
-  /**
-   * The card-note facts — game changer, mass land denial, extra turns, tutor — for the note
-   * the Consider tile draws in its foot.
-   *
-   * DECLARED HERE for the reason `comboPartner` is, and for the reason PR 8a refused to spread
-   * it: a field that rides in untyped is a field no consumer is forced to read, which is how
-   * three payloads in this run were built, tested and reached by nobody.
-   *
-   * Optional because every producer other than the deck page's own read leaves it out, and
-   * `null` is what a failed read and a card with no facts both look like — the same rendering
-   * either way, which is nothing at all.
-   */
-  facts?: CandidateFacts | null;
   cardTypeGroup: DeckDetailCard["cardTypeGroup"];
   role: DeckDetailCard["role"];
   imageUri: string | null;
@@ -76,6 +63,23 @@ export type DeckSuggestion = {
   availability?: Availability | null;
   /** Absent or null renders the bare `buy` tag — see DeckDetailCard.price. */
   price?: PriceFact | null;
+};
+
+/**
+ * A suggestion the DECK PAGE has enriched — the shape the Consider tile draws.
+ *
+ * REQUIRED `facts`, and a separate type rather than an optional field on `DeckSuggestion`,
+ * for the reason `TopOffCandidateWithFacts` exists on the other add surface: with the field
+ * optional, deleting the page's attachment compiles cleanly and every tile silently renders
+ * without a note. That is the dead-payload shape this round exists to close, and an optional
+ * field closes it only for as long as somebody remembers.
+ *
+ * `null` is what a failed facts read and a card with no facts both look like, and both render
+ * as nothing at all — which is why the field is required and its VALUE is nullable, rather
+ * than the other way round.
+ */
+export type DeckSuggestionWithFacts = DeckSuggestion & {
+  facts: CandidateFacts | null;
 };
 
 export type Suggestion = { oracleId: string; reason: "edhrec" | "ramp" | "draw" | "removal" | "wipes" | "land" };

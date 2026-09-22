@@ -6,7 +6,7 @@
 // so a tile in the Ramp shelf does not say "ramp" a second time.
 
 import { hasFrontFaceCost } from "../../lib/cards/faces";
-import type { DeckSuggestion } from "../../lib/decks/suggest";
+import type { DeckSuggestion, DeckSuggestionWithFacts } from "../../lib/decks/suggest";
 import { addCardToDeck } from "../../app/decks/actions";
 import { availabilityCopy } from "../../lib/copy/availability";
 import { addPanelCopy } from "../../lib/copy/decks-builder";
@@ -118,7 +118,9 @@ function Evidence({
 }
 
 interface SuggestionTileProps {
-  suggestion: DeckSuggestion;
+  /** The ENRICHED suggestion: `facts` required, so the page's attachment cannot be deleted
+   *  without a compile error. See `DeckSuggestionWithFacts`. */
+  suggestion: DeckSuggestionWithFacts;
   deckId: string;
   /**
    * The deck's live declaration, and what its list already holds of each note-bearing kind.
@@ -416,7 +418,7 @@ export function SuggestionTile({
           figure that decrements when you add a card is worse than one that is briefly a beat
           behind, which is all this is. */}
       <CardNote
-        facts={suggestion.facts ?? null}
+        facts={suggestion.facts}
         declared={declaredBracket}
         counts={noteCounts}
         density="tile"

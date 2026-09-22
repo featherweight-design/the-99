@@ -7,7 +7,7 @@
 import { act, fireEvent, render, screen } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import type { DeckDetail } from "../../lib/decks/read";
-import type { DeckSuggestion } from "../../lib/decks/suggest";
+import type { DeckSuggestionWithFacts } from "../../lib/decks/suggest";
 import type { DeckMutationResult } from "../../lib/decks/mutation-result";
 import { recommendedMix } from "../../lib/decks/mix";
 
@@ -40,7 +40,9 @@ function deferred<T>() {
   return { promise, resolve };
 }
 
-const suggestion: DeckSuggestion = {
+const suggestion: DeckSuggestionWithFacts = {
+  // `null` — a card with no facts, which draws no note. Required on the enriched type.
+  facts: null,
   oracleId: "sol-ring",
   name: "Sol Ring",
   reason: "edhrec",

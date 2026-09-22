@@ -7,7 +7,7 @@ import { TopOffList } from "./top-off-list";
 import { CardDetailProvider } from "../cards/card-detail-provider";
 import { cardNote } from "../../lib/copy/card-note";
 import type { CandidateFacts } from "../../lib/bracket/delta";
-import type { DeckSuggestion } from "../../lib/decks/suggest";
+import type { DeckSuggestionWithFacts } from "../../lib/decks/suggest";
 import type { NoteCounts } from "../../lib/bracket/card-note";
 // The mocked module, typed as its mocks so a `mockImplementationOnce` typechecks.
 import * as realActions from "../../app/decks/actions";
@@ -106,7 +106,7 @@ describe("CardNote — the atom", () => {
 });
 
 describe("the note on the Consider tile", () => {
-  const suggestion = (over: Partial<DeckSuggestion>): DeckSuggestion =>
+  const suggestion = (over: Partial<DeckSuggestionWithFacts>): DeckSuggestionWithFacts =>
     ({
       oracleId: "o-test",
       name: "Test Card",
@@ -125,10 +125,10 @@ describe("the note on the Consider tile", () => {
       lift: null,
       synergyFigure: null,
       ...over,
-    }) as DeckSuggestion;
+    }) as DeckSuggestionWithFacts;
 
   const mount = (
-    over: Partial<DeckSuggestion>,
+    over: Partial<DeckSuggestionWithFacts>,
     counts: NoteCounts = NONE,
     declaredBracket: 1 | 2 | 3 | 4 | 5 | null = null,
     inDeck = false,

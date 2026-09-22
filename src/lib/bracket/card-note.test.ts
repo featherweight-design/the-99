@@ -209,6 +209,48 @@ describe("cardNoteSentences", () => {
     });
   });
 
+  // A failed flags read is UNKNOWN, not zero — `NoteCounts` says why. These two kinds are the
+  // only ones that come off `card_bracket_flags`, and the CANDIDATE's own facts come from a
+  // separate read that can succeed while the deck's fails. Without this, a correctly detected
+  // mass land denial is introduced as `your 1st` to a deck already holding three.
+  describe("a count nobody has", () => {
+    const unknown = { ...EMPTY_NOTE_COUNTS, massLandDenial: null, extraTurns: null };
+
+    it("draws no mass-land-denial sentence when the deck's count is unknown", () => {
+      expect(draw({ facts: facts({ massLandDenial: true }), counts: unknown })).toEqual([]);
+    });
+
+    it("draws no extra-turn sentence either", () => {
+      expect(draw({ facts: facts({ extraTurn: true }), counts: unknown })).toEqual([]);
+    });
+
+    // The other two kinds survive that failure: a game changer is a column on `cards` and a
+    // tutor is read off oracle text, so neither count was ever in the flags map.
+    it("still draws the two kinds the flags read was never the source of", () => {
+      expect(
+        draw({ facts: facts({ gameChanger: true, tutor: true }), counts: unknown }),
+      ).toEqual([
+        "A game changer, and your 1st.",
+        "A tutor, and your 1st. No bracket limits how many you play.",
+      ]);
+    });
+
+    // And an unknown kind does not spend a slot on the way past: a row whose first two facts
+    // are unknown still draws the two it can count.
+    it("does not spend the cap on a kind it cannot draw", () => {
+      expect(
+        draw({
+          facts: facts({ gameChanger: true, massLandDenial: true, extraTurn: true, tutor: true }),
+          counts: unknown,
+          density: "row",
+        }),
+      ).toEqual([
+        "A game changer, and your 1st.",
+        "A tutor, and your 1st. No bracket limits how many you play.",
+      ]);
+    });
+  });
+
   describe("the rule it enforces", () => {
     // Every sentence this function can emit, swept for the vocabulary the 2026-09-21 ruling
     // removed. A note is a claim about a CARD; nothing here may state, imply or predict what

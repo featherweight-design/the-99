@@ -2,6 +2,8 @@ import { describe, expect, it, vi } from "vitest";
 
 // Mock db before importing read to avoid DATABASE_URL at module init.
 vi.mock("../../db", () => ({ db: {} }));
+// The flags read, so `readNoteFlags`'s failure branch is reachable without a database.
+vi.mock("../bracket/flags-read", () => ({ loadBracketFlags: vi.fn() }));
 
 import {
   cardTypeGroup,
@@ -10,7 +12,11 @@ import {
   colorIdentityMask,
   poolCountFromMaskTally,
   countNoteKinds,
+  readNoteFlags,
 } from "./read";
+import * as realFlagsRead from "../bracket/flags-read";
+
+const flagsRead = realFlagsRead as unknown as { loadBracketFlags: ReturnType<typeof vi.fn> };
 import { deckCounts, groupByCardType, groupByRole, unresolvedCardCount } from "./grouping";
 import type { DeckDetailCard, DeckUnresolvedRow } from "./grouping";
 
@@ -337,20 +343,20 @@ describe("deckIsFlippable reads coverage", () => {
 // to get right: copies rather than rows, the commanders folded in, the flags map consulted,
 // and the tutor read through the SHIPPED classifier rather than a second rule.
 // ---------------------------------------------------------------------------
-describe("countNoteKinds", () => {
-  const NONE = { gameChanger: 0, massLandDenial: 0, extraTurns: 0, tutor: 0 };
-  const row = (over: Partial<Parameters<typeof countNoteKinds>[0][number]> = {}) => ({
-    oracleId: "o-plain",
-    gameChanger: false,
-    oracleText: "Draw a card.",
-    quantity: 1,
-    ...over,
-  });
-  // Demonic Tutor's own text, taken from `tutor-targets.test.ts` rather than invented: this
-  // case is about whether the count runs the classifier at all, and a made-up sentence that
-  // the classifier happens to reject would pass on a build that never calls it.
-  const TUTOR_TEXT = "Search your library for a card, put that card into your hand, then shuffle.";
+const NONE = { gameChanger: 0, massLandDenial: 0, extraTurns: 0, tutor: 0 };
+const row = (over: Partial<Parameters<typeof countNoteKinds>[0][number]> = {}) => ({
+  oracleId: "o-plain",
+  gameChanger: false,
+  oracleText: "Draw a card.",
+  quantity: 1,
+  ...over,
+});
+// Demonic Tutor's own text, taken from `tutor-targets.test.ts` rather than invented: this
+// case is about whether the count runs the classifier at all, and a made-up sentence that
+// the classifier happens to reject would pass on a build that never calls it.
+const TUTOR_TEXT = "Search your library for a card, put that card into your hand, then shuffle.";
 
+describe("countNoteKinds", () => {
   it("counts nothing for a deck of plain cards", () => {
     expect(countNoteKinds([row(), row()], [], new Map())).toEqual(NONE);
   });
@@ -412,5 +418,49 @@ describe("countNoteKinds", () => {
       new Map([["o-all", { massLandDenial: true, extraTurn: true }]]) as any,
     );
     expect(counts).toEqual({ gameChanger: 2, massLandDenial: 2, extraTurns: 2, tutor: 2 });
+  });
+});
+
+// A FAILED flags read is not an empty one. `getDeckDetail` degrades that read to `null`
+// rather than to an empty map, because the marks can afford absence and an ordinal cannot:
+// the candidate's own facts come from a separate read that can succeed while this one
+// fails, and a flattened failure introduces a real mass land denial as `your 1st`.
+describe("countNoteKinds — a failed flags read", () => {
+  it("reports the two flag-derived counts as unknown, not as zero", () => {
+    const counts = countNoteKinds([row({ gameChanger: true })], [], null);
+    expect(counts.massLandDenial).toBeNull();
+    expect(counts.extraTurns).toBeNull();
+  });
+
+  it("still counts the two kinds that were never in the flags map", () => {
+    const counts = countNoteKinds(
+      [row({ gameChanger: true, quantity: 2 }), row({ oracleText: TUTOR_TEXT })],
+      [],
+      null,
+    );
+    expect(counts.gameChanger).toBe(2);
+    expect(counts.tutor).toBe(1);
+  });
+
+  // An EMPTY map is a successful read that found nothing, which is a real zero. The two
+  // must not be the same value or the distinction the null exists for is unreachable.
+  it("an empty map is a real zero, not unknown", () => {
+    expect(countNoteKinds([row()], [], new Map()).massLandDenial).toBe(0);
+  });
+});
+
+// The degradation itself, which is the half the counter's own tests cannot see: they are
+// handed `null` and assert what it means. This asserts that a failed read produces one.
+describe("readNoteFlags", () => {
+  it("resolves null when the flags read rejects", async () => {
+    flagsRead.loadBracketFlags.mockRejectedValueOnce(new Error("neon down"));
+    await expect(readNoteFlags(["o-1"])).resolves.toBeNull();
+  });
+
+  // An empty map is a SUCCESSFUL read that found nothing, and it must come back as itself —
+  // `null` there would report every deck's counts as unknown.
+  it("passes an empty map through as an empty map", async () => {
+    flagsRead.loadBracketFlags.mockResolvedValueOnce(new Map());
+    await expect(readNoteFlags(["o-1"])).resolves.toEqual(new Map());
   });
 });

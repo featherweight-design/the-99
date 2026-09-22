@@ -10,7 +10,7 @@ import { useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { GhostButton } from "../ui/button";
 import type { DeckDetailCard } from "../../lib/decks/grouping";
-import { shelfRoleOf, type DeckSuggestion } from "../../lib/decks/suggest";
+import { shelfRoleOf, type DeckSuggestion, type DeckSuggestionWithFacts } from "../../lib/decks/suggest";
 import { addPanelCopy } from "../../lib/copy/decks-builder";
 import { synergyCopy } from "../../lib/copy/synergy-discovery";
 import { computeRoleCounts, type MixRole, type RecommendedMix } from "../../lib/decks/mix";
@@ -45,12 +45,12 @@ type ShelfKey = ShelfRole | "synergy" | "unowned";
 
 type Shelf = {
   key: ShelfKey;
-  suggestions: DeckSuggestion[];
+  suggestions: DeckSuggestionWithFacts[];
   /** Null on the "Threats & synergy" shelf, which has no target to be short of. */
   coverage: { have: number; target: number } | null;
 };
 
-function buildShelves(suggestions: DeckSuggestion[], deckCards: DeckDetailCard[], mix: RecommendedMix): Shelf[] {
+function buildShelves(suggestions: DeckSuggestionWithFacts[], deckCards: DeckDetailCard[], mix: RecommendedMix): Shelf[] {
   const counts = computeRoleCounts(deckCards);
   // A coverage shelf says "you have 2 of 10", which is a claim about cards you
   // can play tonight — so the unowned staples never mix into one.
@@ -136,13 +136,13 @@ export function rolesWithShelves(suggestions: DeckSuggestion[]): ReadonlySet<Mix
  * they touched the control. Before this change `gaps` was a pass-through and both were safe
  * by accident; now they are safe on purpose.
  */
-function sortWithin(
-  suggestions: DeckSuggestion[],
+function sortWithin<T extends DeckSuggestion>(
+  suggestions: T[],
   sort: SortKey,
   mix: RecommendedMix,
   deckCards: DeckDetailCard[],
   shelfKey: ShelfKey,
-): DeckSuggestion[] {
+): T[] {
   if (sort === "gaps") {
     if (shelfKey === "synergy" || shelfKey === "unowned") return suggestions;
     // `preferByTypeGap` from `fill-shape.ts`, never a second copy — one definition of "which
@@ -333,7 +333,7 @@ interface ConsiderPanelProps {
    */
   declaredBracket: Bracket | null;
   noteCounts: NoteCounts;
-  suggestions: DeckSuggestion[];
+  suggestions: DeckSuggestionWithFacts[];
   /**
    * The optimistic decklist, so the coverage figures move the moment a card is
    * added. Membership is not read from here: `deckOracleIds` is the committed

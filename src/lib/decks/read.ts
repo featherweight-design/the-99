@@ -360,10 +360,17 @@ export async function getDeckDetail(deckId: string, userId: string): Promise<Dec
   //
   // The COMMANDERS' ids ride along: they draw no mark on this page, but the card note counts
   // a kind across the whole deck and a commander is part of the deck. One read either way.
-  const bracketFlags = await loadBracketFlags([
+  //
+  // FAIL-SOFT, and the FAILURE IS CARRIED rather than flattened to an empty map. The marks
+  // degrade to absence either way, which is right for them — but the card note's ordinals are
+  // counts, and a count nobody has is not zero. The candidate's own facts come from a separate
+  // flags read that can succeed while this one fails, so a flattened failure introduces a
+  // correctly-detected mass land denial as `your 1st` to a deck already holding three.
+  const bracketFlags = await readNoteFlags([
     ...cardRows.map((r) => r.oracleId),
     ...commanderIds,
-  ]).catch(() => new Map<string, CardBracketFlags>());
+  ]);
+  const flags = bracketFlags ?? new Map<string, CardBracketFlags>();
 
   const commander = asCommander(commanderRow);
   const partner = partnerRow ? asCommander(partnerRow) : null;
@@ -376,7 +383,7 @@ export async function getDeckDetail(deckId: string, userId: string): Promise<Dec
     role: primaryRole({ typeLine: row.typeLine, oracleText: row.oracleText, keywords: row.keywords }),
     cmc: row.cmc,
     owned: row.owned,
-    facts: factsFor(row.gameChanger, bracketFlags.get(row.oracleId)),
+    facts: factsFor(row.gameChanger, flags.get(row.oracleId)),
     proxied: proxiedIds.has(row.oracleId),
     quantity: row.quantity,
     auto: row.auto,
@@ -425,6 +432,20 @@ export async function getDeckDetail(deckId: string, userId: string): Promise<Dec
 }
 
 /**
+ * The deck's bracket flags, or `null` where the read FAILED.
+ *
+ * Three lines with a name on them, because the difference between `null` and an empty map is
+ * the whole of the degradation and a `.catch` inline is a branch no test can reach: a unit
+ * test would have to drive `getDeckDetail`'s entire query chain to see it, and the mutation
+ * that flattens it to an empty map passes every test of the pure counter beneath.
+ */
+export async function readNoteFlags(
+  oracleIds: string[],
+): Promise<Map<string, CardBracketFlags> | null> {
+  return loadBracketFlags(oracleIds).catch(() => null);
+}
+
+/**
  * The card note's four counts over the deck as it stands — the DRAFT, since that is what the
  * analysis reads and what a player is looking at while they add.
  *
@@ -444,17 +465,24 @@ export async function getDeckDetail(deckId: string, userId: string): Promise<Dec
 export function countNoteKinds(
   cardRows: readonly { oracleId: string; gameChanger: boolean; oracleText: string | null; quantity: number }[],
   commanderRows: readonly { oracleId: string; gameChanger: boolean; oracleText: string | null }[],
-  flags: Map<string, CardBracketFlags>,
+  /** `null` when the flags read FAILED — see `NoteCounts`. An empty map is a successful read
+   *  that found nothing, which is a different claim and counts as zero. */
+  flags: Map<string, CardBracketFlags> | null,
 ): NoteCounts {
-  const counts: NoteCounts = { gameChanger: 0, massLandDenial: 0, extraTurns: 0, tutor: 0 };
+  const counts = {
+    gameChanger: 0,
+    massLandDenial: flags === null ? null : 0,
+    extraTurns: flags === null ? null : 0,
+    tutor: 0,
+  } as NoteCounts;
   const add = (
     copies: number,
     row: { oracleId: string; gameChanger: boolean; oracleText: string | null },
   ) => {
-    const flag = flags.get(row.oracleId);
+    const flag = flags?.get(row.oracleId);
     if (row.gameChanger) counts.gameChanger += copies;
-    if (flag?.massLandDenial) counts.massLandDenial += copies;
-    if (flag?.extraTurn) counts.extraTurns += copies;
+    if (flag?.massLandDenial && counts.massLandDenial !== null) counts.massLandDenial += copies;
+    if (flag?.extraTurn && counts.extraTurns !== null) counts.extraTurns += copies;
     // The SHIPPED classifier over the same text `loadCandidateFacts` reads, so a card's
     // reading cannot differ depending on which side of the add it is on.
     if (classifyTutor(row.oracleText) !== null) counts.tutor += copies;
