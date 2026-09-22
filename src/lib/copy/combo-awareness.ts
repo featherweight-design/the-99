@@ -38,8 +38,20 @@ export const comboAwarenessCopy = {
     /** State 1 at 390px and on the collection tile: the app's words shorten, the card's name
      *  does not. */
     ownBothShort: (partner: string) => `with ${partner} — both yours`,
+    /**
+     * The words BEFORE the partner name in `completes`, exported so a host can shrink them
+     * separately and leave the name standing.
+     *
+     * The design's rule is that the clause ellipses and the partner name is the LAST thing to
+     * go — and on this sentence the name is at the END, so plain end-truncation eats exactly
+     * the word a reader cannot reconstruct. Splitting the sentence in the COMPONENT would put
+     * sentence assembly outside this module, which is how quoted copy drifts from it; keeping
+     * the lead here and composing `completes` FROM it means there is still one source and the
+     * two cannot disagree.
+     */
+    completesLead: 'completes with ',
     /** States 2 and 3, identically. `completes` presupposes the partner is in the deck. */
-    completes: (partner: string) => `completes with ${partner}`,
+    completes: (partner: string) => `${comboAwarenessCopy.clause.completesLead}${partner}`,
   },
 
   /**
