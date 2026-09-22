@@ -236,9 +236,11 @@ export function CardDetailProvider({
   } | null>(null);
   const [pendingOracleId, setPendingOracleId] = useState<string | null>(null);
   const [failed, setFailed] = useState(false);
-  // Joined and re-split rather than held as an array: the deck page rebuilds this list on
-  // every render, and an array identity in the callback's dependencies would rebuild the
-  // fetch — and evict the open card — on renders that changed nothing.
+  // Joined and re-split rather than held as an array, so the callback's dependency is a
+  // STRING and cannot churn on identity alone. The deck page happens to memoise its list
+  // today, so this buys nothing from that caller — it is a guard on every future one, and
+  // on a caller passing a literal, which would otherwise rebuild the fetch and evict the
+  // open card on renders that changed nothing.
   const comboScopeKey = (comboDeckOracleIds ?? []).join(",");
   const comboScope = useMemo(
     () => (comboScopeKey ? comboScopeKey.split(",") : undefined),

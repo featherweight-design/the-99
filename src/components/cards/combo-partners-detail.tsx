@@ -28,12 +28,10 @@ const STATE_INK: Record<string, string> = {
  * are facts about YOUR COPIES OF THE CARD YOU OPENED, and the modal already has two blocks
  * for them. A second money figure about a card you are not looking at reads as a basket.
  *
- * NOT YET DRAWN, and both are the handoff's own dependencies rather than omissions:
- *   · the SCOPE LINE and the `in this deck` state, which need the deck the modal was opened
- *     from — `fetchCard` takes an oracle id alone (dependency 5);
- *   · the PRESSABLE PARTNER NAME, which replaces the modal with the partner's (ledger 14).
- * Unscoped, the block draws the two states that have a referent, which is the `/collection`
- * face the design already specifies.
+ * THE SCOPE LINE AND `in this deck` need the deck the modal was opened from, which the
+ * card-detail fetch now carries (dependency 5); without one the block draws the two states
+ * that have a referent and omits the scope line, which is the `/collection` face the design
+ * specifies. The partner's name opens that partner in place (ledger 14).
  */
 export function ComboPartnersDetail({
   card,
@@ -171,7 +169,7 @@ export function ComboPartnersDetail({
             <ComboGlyph />
             {/* TWO WEIGHTS, one sentence. The addendum sets the app's words at `--fg-body`
                 and the partner's NAME at 600 in `--fg`: the name is the half a reader is
-                looking for, and it is also what will become pressable when ledger 14 lands.
+                looking for, and it is also the half that is pressable.
                 13px, not the 13.5/15 the block above this one uses. */}
             <span className="flex flex-auto min-w-0 flex-col sm:flex-row sm:items-center sm:gap-[10px]">
               <span

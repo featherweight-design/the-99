@@ -57,6 +57,27 @@ const openBlock = async () => {
 };
 
 describe("CardModal — the combo block's wiring", () => {
+  // THE COMMANDERS COUNT AS HELD (§4.3b rule 3), and the scope the deck page sends has to
+  // include them. Without it a partner that IS the commander reads `you own it` — with the
+  // scope line naming that very commander directly above it — and a brew holding only its
+  // commander misclassifies every partner it has.
+  //
+  // Asserted at the BLOCK, because the classification happens server-side from that list:
+  // what this pins is that a partner the deck holds is labelled as held rather than owned.
+  it("labels a partner the deck holds as in this deck", async () => {
+    mount({
+      card: {
+        ...card(),
+        comboPartners: [
+          { oracleId: "p-1", name: "Power Artifact", state: "inDeck", popularity: 900 },
+        ],
+      } as never,
+    });
+    await openBlock();
+    expect(screen.getByText(comboAwarenessCopy.modal.state.inDeck)).toBeInTheDocument();
+    expect(screen.queryByText(comboAwarenessCopy.modal.state.owned)).toBeNull();
+  });
+
   it("hands the block the deck it was opened from", async () => {
     mount({ deckName: "Kykar, Wind's Fury" });
     await openBlock();
