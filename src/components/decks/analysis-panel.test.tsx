@@ -10,9 +10,10 @@ import { deckAnalysisCopy } from "../../lib/copy/deck-analysis";
 import type { ProfileState } from "./use-deck-profile";
 
 const MIX = "the mix strip";
+const onRequest = vi.fn();
 const draw = (state: ProfileState) =>
   render(
-    <AnalysisPanel state={state} onRetry={vi.fn()}>
+    <AnalysisPanel state={state} onRequest={onRequest}>
       <div>{MIX}</div>
     </AnalysisPanel>,
   );
@@ -62,9 +63,10 @@ describe("AnalysisPanel", () => {
     "draws no reading at all in the %s state",
     (state) => {
       draw(state);
-      expect(screen.queryByText(deckAnalysisCopy.panel.heading)).toBeNull();
       expect(screen.queryByText(deckAnalysisCopy.panel.reading)).toBeNull();
       expect(screen.queryByText(deckAnalysisCopy.panel.failed)).toBeNull();
+      expect(screen.queryByText(deckAnalysisCopy.panel.analyze)).toBeNull();
+      expect(screen.queryByRole("button")).toBeNull();
     },
   );
 
@@ -72,7 +74,32 @@ describe("AnalysisPanel", () => {
   // PR 4a, and a placeholder for it is the reserved space the states rule forbids.
   it("draws no reading once the profile is ready, rather than a placeholder", () => {
     draw({ kind: "ready", profile: {} as never });
-    expect(screen.queryByText(deckAnalysisCopy.panel.heading)).toBeNull();
+    expect(screen.queryByRole("button")).toBeNull();
+    expect(screen.queryByText(deckAnalysisCopy.panel.reading)).toBeNull();
+  });
+
+  // ROUND 4 RULING 7: no auto-run on tab open. The reader has to be able to ask, so the idle
+  // state is an invitation rather than a blank — and its cost line is the WORST case, not the
+  // median, because a control promising less than it takes has broken a promise.
+  it("invites the reader to ask, with its cost, when nothing has been asked", () => {
+    draw({ kind: "idle" });
+    expect(screen.getByRole("button", { name: deckAnalysisCopy.panel.analyze })).toBeInTheDocument();
+    expect(screen.getByText(deckAnalysisCopy.panel.analyzeCost)).toBeInTheDocument();
+  });
+
+  it("asks when the invitation is pressed", () => {
+    onRequest.mockClear();
+    draw({ kind: "idle" });
+    screen.getByRole("button", { name: deckAnalysisCopy.panel.analyze }).click();
+    expect(onRequest).toHaveBeenCalledTimes(1);
+  });
+
+  // NO COUNT IN THE IN-FLIGHT LINE. `loadProfileHead` reads whatever `deck_cards` holds, so a
+  // brew with twelve cards would be told we were reading all 99. An earlier draft said that.
+  it("does not claim a card count while reading", () => {
+    draw({ kind: "loading" });
+    expect(screen.getByText(deckAnalysisCopy.panel.reading)).toBeInTheDocument();
+    expect(deckAnalysisCopy.panel.reading).not.toMatch(/99|\d/);
   });
 });
 

@@ -27,10 +27,15 @@ export type ProfileFetch =
  * cache exists to prevent. The head read alone is ~120ms of it, and it is the only part that has
  * to run before the cache can be consulted.
  *
- * SO: on demand, once per visit, cached in the component that asked. `cachedDeckProfile` keys on
- * `profileFingerprint`, so an edit retires the entry by changing the key rather than by being
- * hunted down — and the caller holds the result for the rest of the visit, the pattern
- * `useDiscoveryCache` establishes for a list a reader flips between.
+ * SO: ON A PRESS. Round 4's ruling 7 settles which press — *"the verdict fires on analyse or
+ * commit, and nowhere else. No per-add, no per-edit, no auto-run on tab open."*
+ *
+ * `cachedDeckProfile` keys its SERVER-side entry on `profileFingerprint`, so a second press
+ * after an edit builds afresh while a second press after no edit is nearly free. **That keying
+ * does not reach the client**, and this is the sentence an earlier draft got wrong: the caller
+ * holds one answer for the visit, so an edit made without leaving the route does not retire it.
+ * Nothing needs it to — the reader presses again, which is exactly the model Round 4 draws,
+ * where a determined verdict goes stale and the control invites another pass.
  *
  * THE FLAG GATES THE LOADER AS WELL AS THE TAB. A hidden tab whose payload still loads is the
  * worst of both, so `disabled` is answered before any read — and it is a distinct reason from

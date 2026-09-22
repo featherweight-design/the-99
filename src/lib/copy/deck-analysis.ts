@@ -76,22 +76,30 @@ export const deckAnalysisCopy = {
    * and left unused until something can honour them.
    */
   panel: {
-    heading: "What this deck is",
-    /** In flight. The mix below is already true, so this never replaces the panel. */
-    reading: "Reading all 99\u2026",
     /**
-     * The profile could not be built. NEVER "something went wrong": a reader who pressed
-     * nothing is owed what is and is not affected, and the counted figures are unaffected.
+     * Round 4's t1 — never determined. Its label and its cost, in the plain form: that round
+     * gives the control three weights, a fixed position and a tab dot, and refines this.
+     *
+     * "about two seconds" is the WORST case, not the median. Measured over all 20 real decks on
+     * staging: 630ms median, 559ms fastest, 1.8-2.2s slowest. A control promising one second and
+     * taking two has broken a promise; one promising two and taking half a second has not.
+     */
+    analyze: "Analyze this deck",
+    analyzeCost: "about two seconds",
+    /**
+     * In flight. NO COUNT IN IT: `loadProfileHead` reads whatever `deck_cards` holds, so a brew
+     * with twelve cards would be told we were reading all 99. An earlier draft said exactly
+     * that.
+     */
+    reading: "Reading your deck\u2026",
+    /**
+     * The profile could not be built. NEVER "something went wrong": a reader who pressed a
+     * button is owed what is and is not affected, and the counted figures are unaffected.
      */
     failed:
       "We could not finish reading this deck. The mix below is counted from your list and is "
       + "true now.",
     retry: "Try again",
-    /** State 5. The em dash is the NUMERATOR and the denominator is still drawn, so the slot
-     *  reads as not-yet rather than as nought. */
-    unread:
-      "We have not finished reading this deck. The mix below is counted from your list and is "
-      + "true now; the bracket needs one pass over all 99.",
   },
 
   synopsis: {

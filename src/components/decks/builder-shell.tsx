@@ -210,10 +210,13 @@ export function BuilderShell({
   );
 
   // IN THE SHELL, not the panel. One tab panel renders at a time, so the Analysis panel unmounts
-  // on every tab switch — a fetch there would re-pay a 630ms profile build each time the reader
-  // came back. The shell survives those switches, so this entry does too, and it dies with the
-  // visit when the route unmounts.
-  const profile = useDeckProfile(deck.id, view === "analysis");
+  // on every tab switch — a hook owned by the panel would lose its answer each time, and a
+  // 630ms build is not something to pay twice for the same question. The shell survives those
+  // switches, so this entry does too, and it dies with the visit when the route unmounts.
+  //
+  // It fetches on a PRESS, never on tab activation: Round 4's ruling 7 forbids an auto-run on
+  // tab open, and it is newer and more specific than the plan's shape-3 choice.
+  const profile = useDeckProfile(deck.id);
   const [sort, setSort] = useState<SortKey>("gaps");
   const [exportOpen, setExportOpen] = useState(false);
   const [unresolvedExpanded, setUnresolvedExpanded] = useState(false);
@@ -1017,7 +1020,7 @@ export function BuilderShell({
                     verdict arrives on top of the mix rather than replacing it. The strip is
                     counted from the list and is true in every profile state, which is what
                     makes a failed read a delay rather than an outage. */}
-                <AnalysisPanel state={profile.state} onRetry={profile.retry}>
+                <AnalysisPanel state={profile.state} onRequest={profile.request}>
                 {/* The strip in its new home. It is REAL analysis content rather than a
                     placeholder — Round 0 moves it here on purpose — which is why this panel
                     draws something true on the day the tab lands, with the verdict arriving

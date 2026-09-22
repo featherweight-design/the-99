@@ -1,12 +1,12 @@
 "use client";
 
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useRef, useState } from "react";
 
 import { fetchDeckProfile, type ProfileFetch } from "../../app/decks/profile-actions";
 import type { DeckProfile } from "../../lib/profile/types";
 
 export type ProfileState =
-  /** The tab has never been opened. No request has been made and none should be. */
+  /** Never asked for. No request has been made and none should be until the reader asks. */
   | { kind: "idle" }
   | { kind: "loading" }
   | { kind: "ready"; profile: DeckProfile }
@@ -18,63 +18,73 @@ export type ProfileState =
   | { kind: "failed" };
 
 /**
- * The deck profile, fetched the FIRST time the Analysis tab is opened and held for the visit.
+ * The deck profile, fetched when the reader ASKS for it and held for the visit.
  *
- * THIS HOOK LIVES IN THE SHELL, not in the panel, and that is the whole design. `BuilderTabs`
- * renders one panel at a time — switching away unmounts the Analysis panel — so a fetch-on-mount
- * inside the panel would re-request a 630ms build every time the reader came back to the tab.
- * The shell stays mounted across tab switches, so the cache placed there survives them.
+ * ON A PRESS, NEVER ON TAB OPEN. Round 4's ruling 7 is explicit — *"The verdict fires on analyse
+ * or commit, and nowhere else. No per-add, no per-edit, no auto-run on tab open."* An earlier
+ * draft of this hook fetched when the Analysis tab became active, which is the shape the Tier B
+ * plan chose before that amendment landed; the amendment is newer, more specific and about the
+ * same act, so it wins.
  *
- * A CACHE LIVES FOR ONE VISIT, per the convention this codebase already holds. Leaving
- * `/decks/<id>` unmounts the shell and the entry with it, so a change made elsewhere needs no
- * invalidation — there is nothing left to invalidate by the time the reader returns.
+ * That also settles STALENESS, which an automatic fetch could not. The shell holds the card list
+ * across edits without leaving the route, so a once-per-visit automatic fetch would keep showing
+ * a pre-edit profile for the rest of the visit while the server's fingerprint keying sat unused.
+ * With the reader asking, an edited deck is re-asked about deliberately — which is Round 4's
+ * model, where a determined verdict goes stale and the control invites another pass.
  *
- * `active` rather than an imperative call, because the reader's press is what should cause the
- * request and the shell already knows which tab is showing. The request fires once: `asked`
- * guards the effect rather than the state, since `failed` must not re-fire on every render
- * while still being retryable on purpose.
+ * THE CACHE LIVES IN THE SHELL, not the panel. One tab panel renders at a time, so the Analysis
+ * panel unmounts on every tab switch — a hook owned by the panel would lose its answer each
+ * time, and a 630ms build is not something to pay twice for the same question. Leaving the route
+ * unmounts the shell and the entry with it, so a change made elsewhere needs no invalidation.
+ *
+ * KEYED ON THE DECK ID. `asked` alone would leave deck B rendering deck A's profile with no
+ * request made, in a shell that outlives a route change between decks.
  */
-export function useDeckProfile(deckId: string, active: boolean): {
+export function useDeckProfile(deckId: string): {
   state: ProfileState;
-  retry: () => void;
+  /** Ask, or ask again. Safe to call repeatedly — a request in flight is not duplicated. */
+  request: () => void;
 } {
   const [state, setState] = useState<ProfileState>({ kind: "idle" });
-  const asked = useRef(false);
-  // The deck id a request was made for, so a commander swap or a route change to another deck
-  // within the same mounted shell cannot leave one deck's profile showing under another's name.
-  const askedFor = useRef<string | null>(null);
+  /** The deck a request is in flight or settled for. Null means nothing has been asked. */
+  const asked = useRef<string | null>(null);
+  const inFlight = useRef(false);
 
-  const run = useCallback(async () => {
-    asked.current = true;
-    askedFor.current = deckId;
+  const request = useCallback(() => {
+    if (inFlight.current) return;
+    inFlight.current = true;
+    asked.current = deckId;
     setState({ kind: "loading" });
-    let result: ProfileFetch;
-    try {
-      result = await fetchDeckProfile(deckId);
-    } catch {
-      // A THROW IS `failed`, NEVER `missing`. The action answers a missing deck in its return
-      // value, so an exception here is the request itself — a network drop, a serialisation
-      // error — and telling the reader their deck is gone would be a lie with a retry hidden
-      // behind it.
-      setState({ kind: "failed" });
-      return;
-    }
-    // Late reply for a deck we are no longer showing: dropped rather than rendered.
-    if (askedFor.current !== deckId) return;
-    if (result.ok) setState({ kind: "ready", profile: result.profile });
-    else setState({ kind: result.reason === "disabled" ? "disabled" : "missing" });
+    void (async () => {
+      let result: ProfileFetch;
+      try {
+        result = await fetchDeckProfile(deckId);
+      } catch {
+        // A THROW IS `failed`, NEVER `missing`. The action answers a missing deck in its return
+        // value, so an exception here is the request itself — a network drop, a serialisation
+        // error — and telling the reader their deck is gone would be a lie with a retry hidden
+        // behind it.
+        inFlight.current = false;
+        if (asked.current === deckId) setState({ kind: "failed" });
+        return;
+      }
+      inFlight.current = false;
+      // A reply for a deck we are no longer showing is dropped rather than rendered. Reachable
+      // because the shell outlives a route change between two decks.
+      if (asked.current !== deckId) return;
+      if (result.ok) setState({ kind: "ready", profile: result.profile });
+      else setState({ kind: result.reason === "disabled" ? "disabled" : "missing" });
+    })();
   }, [deckId]);
 
-  useEffect(() => {
-    if (!active || asked.current) return;
-    void run();
-  }, [active, run]);
+  // The deck changed under a mounted shell: the answer we hold is about another deck, so it is
+  // dropped rather than shown under this one's name. Adjusted during render rather than in an
+  // effect, so the previous deck's profile never paints once before being corrected.
+  if (asked.current !== null && asked.current !== deckId && state.kind !== "idle") {
+    asked.current = null;
+    inFlight.current = false;
+    setState({ kind: "idle" });
+  }
 
-  // A DELIBERATE RE-ASK, which is why it does not consult `asked`. The failed reading offers a
-  // retry and this is it; nothing else calls this.
-  const retry = useCallback(() => {
-    void run();
-  }, [run]);
-
-  return { state, retry };
+  return { state, request };
 }

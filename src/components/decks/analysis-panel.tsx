@@ -23,22 +23,22 @@ import type { ProfileState } from "./use-deck-profile";
  */
 export function AnalysisPanel({
   state,
-  onRetry,
+  onRequest,
   children,
 }: {
   state: ProfileState;
-  onRetry: () => void;
+  onRequest: () => void;
   children: ReactNode;
 }) {
   return (
     <div className="flex flex-col gap-4">
-      <Reading state={state} onRetry={onRetry} />
+      <Reading state={state} onRequest={onRequest} />
       {children}
     </div>
   );
 }
 
-function Reading({ state, onRetry }: { state: ProfileState; onRetry: () => void }) {
+function Reading({ state, onRequest }: { state: ProfileState; onRequest: () => void }) {
   // THE FLAG BEING OFF DRAWS NOTHING. Not a reading, not an explanation: this deployment has no
   // analysis, and a sentence about a feature the reader cannot use is noise. The tab itself is
   // hidden by the same flag, so this branch is only reachable in a deployment that flipped it
@@ -56,24 +56,40 @@ function Reading({ state, onRetry }: { state: ProfileState; onRetry: () => void 
     return null;
   }
 
+  // ONE HEADING IN THE TABPANEL. `synopsis.heading` is the same sentence — "What this deck is" —
+  // and the slot below draws it, so a heading here put two identical `h3`s in one panel.
   return (
     <section aria-live="polite" className="flex flex-col gap-1.5">
-      <h3 className="font-mono text-[11px] uppercase tracking-[0.08em] text-[var(--fg-faint)]">
-        {deckAnalysisCopy.panel.heading}
-      </h3>
-      {state.kind === "loading" || state.kind === "idle" ? (
-        <p className="text-[13px] text-[var(--fg-faint)]">{deckAnalysisCopy.panel.reading}</p>
+      {state.kind === "idle" ? (
+        <>
+          {/* Round 4's t1: never determined. The invitation, in its plain form — that round
+              gives the control three weights, a fixed position and a tab dot, and refines
+              this. It has to exist for the tab to be usable at all, which is why it is here
+              rather than waiting. */}
+          <button
+            type="button"
+            onClick={onRequest}
+            className="w-fit rounded-[3px] bg-[color:var(--accent)] px-2.5 py-1 font-mono text-[11px] text-[color:var(--bg)]"
+          >
+            {deckAnalysisCopy.panel.analyze}
+          </button>
+          <p className="font-mono text-[11px] text-[color:var(--fg-faint)]">
+            {deckAnalysisCopy.panel.analyzeCost}
+          </p>
+        </>
+      ) : state.kind === "loading" ? (
+        <p className="text-[13px] text-[color:var(--fg-faint)]">{deckAnalysisCopy.panel.reading}</p>
       ) : (
         <>
-          <p className="max-w-[62ch] text-[13px] text-[var(--fg-muted)]">
+          <p className="max-w-[62ch] text-[13px] text-[color:var(--fg-muted)]">
             {deckAnalysisCopy.panel.failed}
           </p>
           {/* A BUTTON, NEVER AUTOMATIC. A silent retry loop is how a wait becomes a bill —
               `STATES-synopsis.md` says so about the refused state and it is the same rule. */}
           <button
             type="button"
-            onClick={onRetry}
-            className="w-fit rounded-[3px] border border-[var(--border)] px-2 py-1 font-mono text-[11px] text-[var(--fg-body)] hover:bg-[var(--surface-raised)]"
+            onClick={onRequest}
+            className="w-fit rounded-[3px] border border-[color:var(--border)] px-2 py-1 font-mono text-[11px] text-[color:var(--fg-body)] hover:bg-[color:var(--surface-raised)]"
           >
             {deckAnalysisCopy.panel.retry}
           </button>
@@ -98,10 +114,10 @@ function Reading({ state, onRetry }: { state: ProfileState; onRetry: () => void 
 export function SynopsisSlot() {
   return (
     <section className="flex flex-col gap-1.5">
-      <h3 className="font-mono text-[11px] uppercase tracking-[0.08em] text-[var(--fg-faint)]">
+      <h3 className="font-mono text-[11px] uppercase tracking-[0.08em] text-[color:var(--fg-faint)]">
         {deckAnalysisCopy.synopsis.heading}
       </h3>
-      <p className="text-[13px] text-[var(--fg-faint)]">{deckAnalysisCopy.synopsis.absent}</p>
+      <p className="text-[13px] text-[color:var(--fg-faint)]">{deckAnalysisCopy.synopsis.absent}</p>
     </section>
   );
 }
