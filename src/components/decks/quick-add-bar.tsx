@@ -18,10 +18,12 @@ import { colorLabel } from "../../lib/decks/format";
 import { isBasicLand } from "../../lib/decks/grouping";
 import { SearchField } from "../ui/text-field";
 import { markerAria } from "../ui/availability-marker";
+import { comboClauseSpoken } from "../cards/combo-clause";
 import { CardSearchRowBody } from "./card-search-row";
 import { MutationError } from "./mutation-error";
 import { useAddOptimisticCard } from "./optimistic-deck";
 import { type CardSearchInput, useCardSearch } from "./use-card-search";
+import { type DeckComboMap, useDeckComboMap } from "./use-deck-combo-map";
 import { useDeckMutation } from "./use-deck-mutation";
 
 interface QuickAddBarProps {
@@ -59,6 +61,8 @@ interface QuickAddBarProps {
    */
   initialOwnedOnly?: boolean;
   search?: CardSearchInput["search"];
+  /** The combo map's read. Defaults to the server action; see `useDeckComboMap`. */
+  loadComboMap?: (deckId: string) => Promise<DeckComboMap>;
 }
 
 export function QuickAddBar({
@@ -70,6 +74,7 @@ export function QuickAddBar({
   initialQuery = "",
   initialOwnedOnly = true,
   search,
+  loadComboMap,
 }: QuickAddBarProps) {
   const [query, setQuery] = useState(initialQuery);
   const [ownedOnly, setOwnedOnly] = useState(initialOwnedOnly);
@@ -80,6 +85,14 @@ export function QuickAddBar({
 
   const { trimmed, results, stale, open, noResults, searching, activeIndex, setActiveIndex, move } =
     useCardSearch({ query, colorIdentity: commanderIdentity, ownedOnly, dismissed, deckId, search });
+
+  // Keyed on the COMMITTED list, which is what this prop is (see its doc): the re-read after an
+  // add must see the deck the add produced, and the optimistic list moves before that exists.
+  const { map: comboMap, start: startComboMap } = useDeckComboMap(
+    deckId,
+    deckOracleIds.join(","),
+    loadComboMap,
+  );
 
   // The commander counts, though it is no `deck_cards` row: `addCardToDeck`
   // refuses it (`validateCardForDeck` returns `is-commander`), so a row left
@@ -170,7 +183,11 @@ export function QuickAddBar({
           autoComplete="off"
           spellCheck={false}
           value={query}
+          // Focus is the earliest honest signal that a search is coming; the change handler
+          // starts it too, for a value that arrives without a focus event.
+          onFocus={startComboMap}
           onChange={(e) => {
+            startComboMap();
             setQuery(e.target.value);
             setDismissed(false);
           }}
@@ -292,6 +309,7 @@ export function QuickAddBar({
                 key={r.oracleId}
                 id={optionId(i)}
                 result={r}
+                comboPartner={comboMap?.[r.oracleId] ?? null}
                 query={trimmed}
                 deckId={deckId}
                 inDeck={inDeck(r)}
@@ -347,6 +365,8 @@ export function QuickAddBar({
 interface QuickAddRowProps {
   id: string;
   result: SearchResult;
+  /** Null for a card with no combo, and for a map that has not landed. */
+  comboPartner: { oracleId: string; name: string } | null;
   query: string;
   deckId: string;
   inDeck: boolean;
@@ -360,6 +380,7 @@ interface QuickAddRowProps {
 function QuickAddRow({
   id,
   result,
+  comboPartner: comboHit,
   query,
   deckId,
   inDeck,
@@ -373,6 +394,11 @@ function QuickAddRow({
   const ownership = result.owned
     ? addPanelCopy.quickAdd.rowOwned(result.ownedQty)
     : addPanelCopy.quickAdd.rowNotOwned;
+  // Matrix 4, "the partner itself": a card in the deck carries no mark. `applied` covers both
+  // a card that was in the deck already and one added from this row a moment ago — which is
+  // the one clause an add can falsify, so this line is also the instant half of the refresh.
+  const comboPartner = applied ? null : comboHit;
+  const ownershipShort = result.owned ? addPanelCopy.quickAdd.rowOwnedShort(result.ownedQty) : undefined;
 
   // The guard lives here rather than on the click handler alone: Enter reaches
   // the row through registerAdd, which would otherwise re-fire the mutation
@@ -441,6 +467,8 @@ function QuickAddRow({
           ? `${addPanelCopy.quickAdd.rowFlavorNamePrefix}${result.flavorName}`
           : null,
         result.owned ? addPanelCopy.quickAdd.rowOwned(result.ownedQty) : null,
+        // The words the phone row replaces with a glyph, so the ear gets the whole sentence.
+        comboPartner ? comboClauseSpoken(comboPartner.name, "completes") : null,
         applied ? addPanelCopy.quickAdd.rowInDeck : null,
       ]
         .filter(Boolean)
@@ -461,6 +489,8 @@ function QuickAddRow({
         dim={applied}
         selfExcluded={selfClaimed}
         seam="var(--surface)"
+        comboPartner={comboPartner}
+        ownershipShort={ownershipShort}
         nameClassName="flex-1 min-w-0 md:flex-none md:w-[210px] flex flex-col"
         trailing={
           applied ? (

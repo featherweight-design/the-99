@@ -64,6 +64,10 @@ describe("ComboClause", () => {
     expect(lead!.className).toContain("shrink-[999]");
     expect(name!.className).not.toContain("shrink-[999]");
     expect(name!.className).toContain("truncate");
+    // And the name does not shrink AT ALL until it alone cannot fit: capped, not weighted. A
+    // weight leaves it a sub-pixel share, which is enough for the ellipsis to eat two letters.
+    expect(name!.className).toContain("flex-none");
+    expect(name!.className).toContain("max-w-full");
     // And the sentence still reads as one.
     expect(clause).toHaveTextContent(comboAwarenessCopy.clause.completes("Isochron Scepter"));
   });

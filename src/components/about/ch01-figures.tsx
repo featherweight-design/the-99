@@ -874,6 +874,8 @@ const ADD_SEARCH = async (
   ownedOnly: boolean,
 ) => (ownedOnly ? ADD_RESULTS.filter((r) => r.owned) : ADD_RESULTS);
 
+const NO_COMBOS = async () => ({});
+
 export function AddCardsFigureBody() {
   return (
     <QuickAddBar
@@ -895,6 +897,9 @@ export function AddCardsFigureBody() {
       // business reaching a server action, and these three rows are chosen to
       // say what the caption says.
       search={ADD_SEARCH}
+      // Same rule for the combo map: an empty one, so the figure draws no partner — this
+      // entry is about searching, and the combo entry says what a partner means.
+      loadComboMap={NO_COMBOS}
     />
   );
 }

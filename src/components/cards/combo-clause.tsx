@@ -53,7 +53,16 @@ export function ComboClause({
 
            `ownBoth` needs none of this: its name sits mid-sentence and the tail
            `— you own both` is what end-truncation eats first, which is already the rule. */
-        <>
+        /* AND THE NAME IS CAPPED, NOT WEIGHTED. A shrink weight alone (999 against 1) is only
+           approximately "the app's words first": flex divides the deficit in proportion, the
+           name still takes a fraction of a pixel, and a fraction is enough for
+           `text-overflow` to fire and delete two whole letters while the lead still had room
+           to give. Measured on the quick-add row on 2026-09-22 — the name at 90 of 90px, drawn
+           `Exquisite Blo…`. So the two halves share a group of their own, the name is
+           `flex-none` and capped at that group's width, and the lead is the ONLY thing that
+           shrinks; the name truncates only when it alone cannot fit. The 4px between them is
+           the name's own padding rather than a gap, so it is inside the cap too. */
+        <span className="inline-flex min-w-0">
           <span
             className="truncate shrink-[999] min-w-0 font-mono text-[9.5px] md:text-[10.5px]"
             style={{ color: "var(--fg-body)" }}
@@ -61,12 +70,12 @@ export function ComboClause({
             {comboAwarenessCopy.clause.completesLead}
           </span>
           <span
-            className="truncate min-w-0 font-mono text-[9.5px] md:text-[10.5px]"
+            className="flex-none max-w-full pl-[4px] truncate font-mono text-[9.5px] md:text-[10.5px]"
             style={{ color: "var(--fg-body)" }}
           >
             {partnerName}
           </span>
-        </>
+        </span>
       ) : (
         <span
           className="truncate min-w-0 font-mono text-[9.5px] md:text-[10.5px]"

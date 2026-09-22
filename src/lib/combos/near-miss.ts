@@ -212,20 +212,37 @@ export function castableCandidates(rows: readonly PairRow[]): PairRow[] {
  * Keyed by the CANDIDATE's oracle id, which is the row the clause is drawn on. The two states
  * differ only by whether the reader owns that candidate, which every host already draws with
  * the shipped `OwnershipDot` and `BuyTag`; nothing here needs to know.
+ *
+ * `candidateOracleIds: null` asks for EVERY card that would complete something for this deck,
+ * rather than the few on screen. The expensive half of the query is driven by `present` alone
+ * — the `exists` prune and the `group by` walk the index from the deck's side — and the
+ * candidate list is a post-filter on rows that have already been produced. So a caller that
+ * cannot name its candidates up front, because they arrive a keystroke at a time, pays the
+ * same read ONCE and answers each keystroke from the map instead of asking again.
+ *
+ * Measured on staging, the whole-deck map is 4 to 114 entries across 20 decks, median 26 —
+ * counted before `isInfiniteOrGameEnding` and rule 2 cut it further, so that is an upper
+ * bound. It is a map to hold in memory, not a list to page.
  */
 export async function loadCompletionPartners(args: {
   deckOracleIds: readonly string[];
   commanderOracleIds: readonly string[];
-  candidateOracleIds: readonly string[];
+  /** The candidates on screen, or `null` for every completion this deck has. */
+  candidateOracleIds: readonly string[] | null;
 }): Promise<Map<string, ComboPartner>> {
   const present = [...new Set([...args.deckOracleIds, ...args.commanderOracleIds])];
-  if (present.length === 0 || args.candidateOracleIds.length === 0) return new Map();
+  // A null candidate list is "every card", which is the opposite of an empty one. Spelled out
+  // rather than folded into a truthiness check, because `[]` must still return nothing: a
+  // caller that asked about no cards is owed no answers, and reading `[]` as "all" would have
+  // the page-level path quietly widen to the whole deck the first time a list came back empty.
+  if (present.length === 0) return new Map();
+  if (args.candidateOracleIds !== null && args.candidateOracleIds.length === 0) return new Map();
 
   const rows = (await db.execute(
     pairsWithOnePiece({
       present,
       commanders: args.commanderOracleIds,
-      missingIn: args.candidateOracleIds,
+      missingIn: args.candidateOracleIds,  // null widens to every completion — see above.
     }),
   )).rows as PairRow[];
 

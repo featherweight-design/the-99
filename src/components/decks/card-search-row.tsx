@@ -10,6 +10,8 @@ import { addPanelCopy } from "../../lib/copy/decks-builder";
 import type { SearchResult } from "../../app/decks/[id]/search-action";
 import { AvailabilityMarker } from "../ui/availability-marker";
 import { availabilityState } from "../../lib/decks/availability";
+import { ComboClause } from "../cards/combo-clause";
+import { ComboGlyph } from "../cards/combo-glyph";
 
 // The matched run in accent, so a list of eight near-identical names says which
 // part of each one the query actually caught. Case-insensitive and literal:
@@ -56,6 +58,23 @@ interface CardSearchRowBodyProps {
   selfExcluded?: boolean;
   /** The colour behind the marker, for the over glyph's seam. */
   seam?: string;
+  /**
+   * The card already in the deck that this result would complete a two-card combo with, or
+   * null. Only the quick-add bar passes it; the resolution search answers "what was this
+   * line?", where a combo is not the question.
+   *
+   * THE PLACEMENT IS HUGH'S RULING OF 2026-09-22, NOT MATRIX 4's. Matrix 4 has the clause
+   * REPLACE the meta line, which on a phone is the only place the type line and the owned
+   * count are drawn — and dropping the type line at phone width is the shortcut this row was
+   * fixed for once already (see the comment above the name cell). So:
+   *   - phone (option E): the partner JOINS the meta line as glyph + name, no verb. The glyph
+   *     is the verb; the spoken name carries the words.
+   *   - desktop (option G): the full clause goes on a second line in the name cell, which the
+   *     52px row already has room for, and the type column is left alone.
+   */
+  comboPartner?: { name: string } | null;
+  /** The ownership phrase's short form, drawn on the phone meta line only beside a partner. */
+  ownershipShort?: string;
 }
 
 export function CardSearchRowBody({
@@ -67,6 +86,8 @@ export function CardSearchRowBody({
   trailing,
   selfExcluded = false,
   seam,
+  comboPartner = null,
+  ownershipShort,
 }: CardSearchRowBodyProps) {
   // The state, not the element: the rollup returns figures for every owned card,
   // free ones included, and the marker declines to draw those. Gating the joiner
@@ -140,13 +161,42 @@ export function CardSearchRowBody({
               resolves this item's automatic minimum size to zero via its
               overflow; spelling `min-w-0` out keeps the choice here rather than
               leaving it to which item the browser picks. */}
-          <span className="truncate min-w-0">
+          {/* `shrink-[999]` beside a partner: the type line and count are what the modal
+              restores, the partner's name is what nothing on this row can reconstruct, so the
+              meta yields first. The same priority `ComboClause` gives its own two halves. */}
+          <span className={`truncate min-w-0 ${comboPartner ? "shrink-[999]" : ""}`}>
             {flavor}
-            {result.typeLine} · {ownership}
+            {result.typeLine} · {comboPartner ? (ownershipShort ?? ownership) : ownership}
           </span>
           {marker && joiner}
           {marker}
+          {/* THE PARTNER DOES NOT SHRINK; IT IS CAPPED. A shrink WEIGHT (999 against 1) only
+              makes the type line give way first approximately: flex hands out the deficit in
+              proportion, so the partner still takes a fraction of a pixel, and a fraction is
+              enough for `text-overflow` to fire and delete two whole letters. Measured on the
+              real row at 390: the partner at 90 of 90px and drawn `Exquisite Blo…`. So the
+              group is `flex-none` and capped at the line's width — the type line is then the
+              ONLY thing that shrinks, and the name truncates only when it alone cannot fit.
+              The joiner travels inside the group so the cap accounts for it. */}
+          {comboPartner && (
+            <span
+              data-testid="combo-partner-inline"
+              className="flex-none max-w-full inline-flex items-center gap-[4px]"
+            >
+              {joiner}
+              <ComboGlyph />
+              <span className="truncate min-w-0" style={{ color: "var(--fg-body)" }}>
+                {comboPartner.name}
+              </span>
+            </span>
+          )}
         </span>
+        {/* Desktop only: its own line under the name, so the type column keeps the type. */}
+        {comboPartner && (
+          <span className="hidden md:flex min-w-0">
+            <ComboClause partnerName={comboPartner.name} state="completes" />
+          </span>
+        )}
       </span>
 
       <span

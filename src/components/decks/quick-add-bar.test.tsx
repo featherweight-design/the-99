@@ -469,3 +469,83 @@ describe("QuickAddBar — availability marker", () => {
     expect(screen.getByRole("option")).not.toHaveTextContent("none free");
   });
 });
+
+// THE BOUNDARY, end to end: a map arriving through `loadComboMap` must reach the row it names,
+// drawn at both widths, spoken in the row's name, and absent on a card the deck already holds.
+// Each component is tested on its own elsewhere; this is the case that fails when the prop is
+// dropped at the mount site, which is the one place neither of those can see.
+describe("combo partner (quick-add, option E / G)", () => {
+  const BOND = { rhystic: { oracleId: "sanguine-bond", name: "Sanguine Bond" } };
+  // `row()` keys the oracle id off the lower-cased name.
+  const RHYSTIC = "rhystic study";
+
+  it("does not read the map until the field is used", async () => {
+    const loadComboMap = vi.fn(async () => ({ [RHYSTIC]: BOND.rhystic }));
+    mount({ loadComboMap });
+    await new Promise((r) => setTimeout(r, 20));
+    expect(loadComboMap).not.toHaveBeenCalled();
+    fireEvent.focus(field());
+    await waitFor(() => expect(loadComboMap).toHaveBeenCalledWith("deck-1"));
+  });
+
+  it("draws the partner on the row it names, and on no other", async () => {
+    const loadComboMap = vi.fn(async () => ({ [RHYSTIC]: BOND.rhystic }));
+    mount({ loadComboMap });
+    fireEvent.focus(field());
+    await search();
+    const rhysticRow = await screen.findByRole("option", { name: /Rhystic Study/ });
+    await waitFor(() =>
+      expect(
+        rhysticRow.querySelector('[data-testid="combo-partner-inline"] span.truncate')?.textContent,
+      ).toBe("Sanguine Bond"),
+    );
+    // Desktop (G): the full clause on its own line in the name cell.
+    expect(rhysticRow.querySelector('[data-testid="combo-clause"]')?.textContent).toBe(
+      "completes with Sanguine Bond",
+    );
+    // The partner is CAPPED rather than weighted on the phone line too — see card-search-row.
+    expect(rhysticRow.querySelector('[data-testid="combo-partner-inline"]')!.className).toMatch(
+      /flex-none.*max-w-full/,
+    );
+    // Phone (E): the count's short form beside the partner. Read EXACTLY, off the meta line's
+    // own first span: `×1` is a prefix of `×1 owned`, so a containment check passes on a build
+    // that ignored the short form — which is how the first version of this line read.
+    const phoneMeta = rhysticRow.querySelector('[data-testid="combo-partner-inline"]')!.parentElement!;
+    expect(phoneMeta.firstElementChild?.textContent).toBe("Enchantment · ×1");
+    // The words the phone draws as a glyph are in the row's spoken name.
+    expect(rhysticRow.getAttribute("aria-label")).toMatch(/Sanguine Bond/);
+
+    const sramRow = screen.getByRole("option", { name: /Sram's Study/ });
+    expect(sramRow.querySelector('[data-testid="combo-glyph"]')).toBeNull();
+    expect(sramRow.textContent).toContain("×1 owned");
+  });
+
+  it("a card already in the deck carries no mark", async () => {
+    const loadComboMap = vi.fn(async () => ({ [RHYSTIC]: BOND.rhystic }));
+    mount({ loadComboMap, deckOracleIds: [RHYSTIC] });
+    fireEvent.focus(field());
+    await search();
+    await waitFor(() => expect(loadComboMap).toHaveBeenCalled());
+    await new Promise((r) => setTimeout(r, 20));
+    const rhysticRow = screen.getByRole("option", { name: /Rhystic Study/ });
+    expect(rhysticRow.querySelector('[data-testid="combo-glyph"]')).toBeNull();
+  });
+
+  it("re-reads when the committed deck changes", async () => {
+    const loadComboMap = vi.fn(async () => ({}));
+    const { rerender } = mount({ loadComboMap });
+    fireEvent.focus(field());
+    await waitFor(() => expect(loadComboMap).toHaveBeenCalledTimes(1));
+    rerender(
+      <QuickAddBar
+        deckId="deck-1"
+        commanderIdentity={["U"]}
+        deckOracleIds={[RHYSTIC]}
+        commanderShortName="Korvold"
+        commanderOracleId="cmd-korvold"
+        loadComboMap={loadComboMap}
+      />,
+    );
+    await waitFor(() => expect(loadComboMap).toHaveBeenCalledTimes(2));
+  });
+});
