@@ -20,6 +20,10 @@
 // that is the drift state and no control can produce it on purpose. All four are deleted in a
 // `finally`; their cards cascade.
 //
+// TWO MUTATIONS WERE RUN AGAINST IT AND BOTH FAIL: the desktop chip at 40px rather than 38 (one
+// check), and the revalidation moved back inside the action, whose reply then measured 112,778
+// bytes against 90 (two checks, one per width).
+//
 // It also seeds `user_prefs.about_version_seen` forward with `greatest(...)`, as
 // `probe:verdict-block` does and for its reason: the About gate would otherwise redirect every
 // route to `/about`. Needs a server with ANALYSIS_TAB_ENABLED=true. Point it at `local-dev`,
