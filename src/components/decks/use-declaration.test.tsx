@@ -69,9 +69,13 @@ describe("useDeclaration", () => {
     const { result } = renderHook(() => useDeclaration("deck-1", null));
     act(() => result.current.declare(2));
     act(() => result.current.declare(1));
-    await waitFor(() => expect(replies.size).toBe(2));
-    await act(async () => replies.get(1)!({ ok: true, declared: 1 }));
+    await waitFor(() => expect(replies.has(2)).toBe(true));
+    // The first press is refused after the second was made: the screen stays on the second.
     await act(async () => replies.get(2)!({ ok: false, reason: "not-permitted" }));
+    expect(result.current.declared).toBe(1);
+    expect(result.current.refused).toBe(false);
+    await waitFor(() => expect(replies.has(1)).toBe(true));
+    await act(async () => replies.get(1)!({ ok: true, declared: 1 }));
     expect(result.current.declared).toBe(1);
     expect(result.current.refused).toBe(false);
   });
@@ -83,10 +87,12 @@ describe("useDeclaration", () => {
     action.held = (value) => new Promise((resolve) => replies.set(value, resolve));
     const { result } = renderHook(() => useDeclaration("deck-1", 4));
     act(() => result.current.declare(5));
-    await waitFor(() => expect(replies.size).toBe(1));
     act(() => result.current.declare(4));
-    await waitFor(() => expect(replies.size).toBe(2));
+    await waitFor(() => expect(replies.has(5)).toBe(true));
+    await act(async () => replies.get(5)!({ ok: false, reason: "not-permitted" }));
+    await waitFor(() => expect(replies.has(4)).toBe(true));
     await act(async () => replies.get(4)!({ ok: false, reason: "not-permitted" }));
+    // Never the unconfirmed 5 that was on screen when the refused press was made.
     expect(result.current.declared).toBe(4);
     expect(result.current.refused).toBe(true);
   });
@@ -100,8 +106,9 @@ describe("useDeclaration", () => {
     const { result } = renderHook(() => useDeclaration("deck-1", null));
     act(() => result.current.declare(2));
     act(() => result.current.declare(1));
-    await waitFor(() => expect(replies.size).toBe(2));
+    await waitFor(() => expect(replies.has(2)).toBe(true));
     await act(async () => replies.get(2)!({ ok: true, declared: 2 }));
+    await waitFor(() => expect(replies.has(1)).toBe(true));
     await act(async () => replies.get(1)!({ ok: false, reason: "not-permitted" }));
     expect(result.current.declared).toBe(2);
     expect(result.current.refused).toBe(true);
@@ -123,5 +130,31 @@ describe("useDeclaration", () => {
     await act(async () => replies.get(2)!({ ok: false, reason: "not-permitted" }));
     expect(result.current.declared).toBeNull();
     expect(result.current.refused).toBe(false);
+  });
+
+  // SERIALIZED: the second write is not sent until the first has answered, so the server commits
+  // them in the order they were pressed.
+  it("sends the next write only after the previous one answers", async () => {
+    const replies = new Map<number, (r: unknown) => void>();
+    action.held = (value) => new Promise((resolve) => replies.set(value, resolve));
+    const { result } = renderHook(() => useDeclaration("deck-1", null));
+    act(() => result.current.declare(2));
+    act(() => result.current.declare(1));
+    await waitFor(() => expect(action.calls).toEqual([["deck-1", 2]]));
+    await act(async () => replies.get(2)!({ ok: true, declared: 2 }));
+    await waitFor(() => expect(action.calls).toEqual([["deck-1", 2], ["deck-1", 1]]));
+  });
+
+  // A fresh stored value is the answer: a notice about an earlier refusal no longer applies.
+  it("clears the refusal notice when the server sends a new value", async () => {
+    action.result = { ok: false, reason: "not-permitted" };
+    const { result, rerender } = renderHook(({ stored }) => useDeclaration("deck-1", stored), {
+      initialProps: { stored: null as 1 | 2 | null },
+    });
+    act(() => result.current.declare(2));
+    await waitFor(() => expect(result.current.refused).toBe(true));
+    rerender({ stored: 1 });
+    expect(result.current.refused).toBe(false);
+    expect(result.current.declared).toBe(1);
   });
 });

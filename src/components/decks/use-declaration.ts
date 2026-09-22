@@ -19,11 +19,16 @@ import type { Bracket } from "../../lib/bracket/types";
  * deck was edited elsewhere and no longer permits the choice, or the request failed — the LAST
  * ANSWER THE SERVER CONFIRMED returns and `refused` says so.
  *
- * ONLY THE NEWEST PRESS SPEAKS. Two presses can be in flight at once (answer, `change`, answer
- * again), and replies arrive in any order. A reply to a superseded press never touches the
- * screen — a slow refusal of the first must not put it back over a second that succeeded — but
- * a superseded SUCCESS is still recorded as confirmed, because the database holds it, and a
- * later refusal restores to it rather than to something older.
+ * THE WRITES ARE SERIALIZED, so the database commits them in the order they were pressed. Two
+ * presses can happen before the first reply (answer, `change`, answer again), and two requests
+ * sent at once can reach the server in either order — the older could land second and leave the
+ * column holding an answer the screen has moved past. Each write waits for the one before it,
+ * so the last press is the last write.
+ *
+ * ONLY THE NEWEST PRESS SPEAKS. A reply to a superseded press never touches the screen — a
+ * refusal of the first must not put it back over a second that succeeded — but a superseded
+ * SUCCESS is still recorded as confirmed, because the database holds it, and a later refusal
+ * restores to it rather than to something older.
  *
  * KEYED ON THE DECK. The shell survives a route change between two decks, so the held answer
  * and every reply are tagged with the deck they are about; a new deck starts from its own stored
@@ -54,15 +59,19 @@ export function useDeclaration(
    * would be stale by then.
    */
   const confirmed = useRef({ press: 0, value: stored });
+  /** The write in flight, which the next one waits behind. */
+  const queue = useRef<Promise<unknown>>(Promise.resolve());
   useEffect(() => {
     current.current = deckId;
     confirmed.current = { press: newest.current, value: stored };
   }, [deckId, stored]);
 
   if (deckId !== seen.deckId || stored !== seen.stored) {
+    // A FRESH SERVER VALUE IS THE ANSWER, so a notice about an earlier refused write no longer
+    // describes what is on screen.
     setSeen({ deckId, stored });
     setDeclared(stored);
-    if (deckId !== seen.deckId) setRefused(false);
+    setRefused(false);
   }
 
   const declare = (bracket: Bracket) => {
@@ -70,8 +79,10 @@ export function useDeclaration(
     const forDeck = deckId;
     setDeclared(bracket);
     setRefused(false);
+    const write = queue.current.then(() => declareBracket(forDeck, bracket).catch(() => null));
+    queue.current = write;
     startTransition(async () => {
-      const result = await declareBracket(forDeck, bracket).catch(() => null);
+      const result = await write;
       if (forDeck !== current.current) return;
       if (result?.ok && press > confirmed.current.press) {
         confirmed.current = { press, value: result.declared };
