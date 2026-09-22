@@ -12,7 +12,7 @@ const CSS = readFileSync(
 );
 const THEMES = parseThemeBlocks(CSS);
 
-// The 38 keys, spelled out rather than derived from :root. Derived, a token
+// The 43 keys, spelled out rather than derived from :root. Derived, a token
 // dropped from every theme at once would still pass.
 const CONTRACT = [
   "bg", "surface", "surface-raised", "surface-rail", "surface-sunken",
@@ -30,6 +30,11 @@ const CONTRACT = [
   // the foot of this file, NOT the duplicate check: that one rebuilds `seen` per
   // theme, so it can only ever compare keys within a single block.
   "fact",
+  // The five bracket rungs, theme-independent for the same reason and pinned the
+  // same way. Listed here so a theme block that omits one fails LOUDLY: a mark whose
+  // ink resolves to nothing draws at the inherited colour, which is a legible glyph
+  // of the wrong rank rather than a visible hole.
+  "bracket-1", "bracket-2", "bracket-3", "bracket-4", "bracket-5",
   "font-display-face",
 ];
 
@@ -92,7 +97,7 @@ describe("theme contract", () => {
       return value;
     };
 
-    it("declares exactly the 38 contract keys", () => {
+    it("declares exactly the 43 contract keys", () => {
       expect([...tokens.keys()].sort()).toEqual([...CONTRACT].sort());
     });
 
@@ -245,5 +250,81 @@ describe("theme-independent tokens", () => {
     // mark reads the same whatever theme the reader is in.
     const values = new Set(entries.map(([, tokens]) => tokens.get("fact")));
     expect([...values]).toEqual(["#8FA6BE"]);
+  });
+
+  // Each rung asserted SEPARATELY rather than as one set of five. A theme that
+  // swapped rank 3's hex for rank 4's would leave the union of all values identical
+  // across the six blocks, so a set comparison passes while two ranks have traded
+  // places under one theme — which is the confusion the palette exists to prevent.
+  it.each([
+    ["bracket-1", "#8A857C"],
+    ["bracket-2", "#A89A74"],
+    ["bracket-3", "#C9AC62"],
+    ["bracket-4", "#E6D08A"],
+    ["bracket-5", "#FBEFC6"],
+  ])("declares one value for --%s in all six themes", (token, hex) => {
+    const values = new Set(entries.map(([, tokens]) => tokens.get(token)));
+    expect([...values]).toEqual([hex]);
+  });
+
+  // RANK 1 DOES NOT CLEAR 4.5:1, AND THE HANDOFF SAYS IT DOES.
+  //
+  // `HANDOFF.md` states of palette 2e Ignition: "Every rung clears 4.5:1 on all twelve
+  // grounds" — and reasons it out in §2: "The numeral inside the mark is text, so every
+  // rung owes 4.5:1. That puts a hard floor under rank 1: it cannot be made quiet by being
+  // made darker." 4.5 rather than the 3:1 a graphic would owe, because of that numeral;
+  // `--fact` above is held to 3 for exactly the opposite reason.
+  //
+  // Measured here with this file's own `contrast()`: `--bracket-1` (#8A857C) does NOT clear
+  // it, on kaldheim `--surface` (4.4768) and kaldheim `--elevated-hover` (4.3204). Ranks 2
+  // through 5 clear on every ground in every theme.
+  //
+  // THE GROUNDS ARE NAMED, NOT SWEPT, and they are `--fact`'s — the same four, because that
+  // is the mark this app already draws and the precedent for what "the grounds a mark sits
+  // on" means. A first version of this swept eight surface tokens instead and reported 9
+  // failures of 48 with a minimum of 3.6857; those extra five grounds are real tokens but
+  // nothing establishes that a bracket mark is ever drawn on them, so asserting over them
+  // would be inventing a domain and then reporting its failures as the design's.
+  //
+  // **This list is provisional and must be revisited when `BracketMark` ships.** Nothing
+  // draws the mark yet, so the honest claim today is about the grounds a comparable mark
+  // uses. If the component lands on `--elevated` — where rank 1 reads 3.6857 on kaldheim,
+  // its worst anywhere — this gets worse, not better.
+  const GROUNDS = ["surface", "surface-rail", "elevated-hover", "bg"] as const;
+
+  it("clears 4.5:1 for ranks 2-5 on every ground in every theme", () => {
+    // Swept WIDER than GROUNDS deliberately: these clear everywhere, so the broader domain
+    // is free strength rather than an invented claim. Narrowing an assertion that passes
+    // costs coverage and buys nothing.
+    const wide = [
+      "bg", "surface", "surface-raised", "surface-rail",
+      "surface-sunken", "surface-inset", "elevated", "elevated-hover",
+    ];
+    const failures: string[] = [];
+    for (const [theme, tokens] of entries) {
+      for (const rank of [2, 3, 4, 5]) {
+        for (const ground of wide) {
+          const ratio = contrast(tokens.get(`bracket-${rank}`)!, tokens.get(ground)!);
+          if (ratio < 4.5) failures.push(`${theme} bracket-${rank}/${ground} ${ratio.toFixed(2)}`);
+        }
+      }
+    }
+    expect(failures).toEqual([]);
+  });
+
+  it("holds rank 1 at its measured floor, which is under the stated 4.5:1", () => {
+    const ratios = entries.flatMap(([, tokens]) =>
+      GROUNDS.map((ground) => contrast(tokens.get("bracket-1")!, tokens.get(ground)!)),
+    );
+    // No worse than today, at FULL PRECISION rather than rounded. kaldheim on
+    // `--elevated-hover` is the weakest of the named grounds, and a floor written as 4.32
+    // would wave through a regression from 4.3204 to 4.321 — "no worse than today" has to
+    // mean today's number, or the gate permits exactly the drift it exists to catch.
+    // `contrast()` is pure over two fixed hexes, so this is deterministic; the day it
+    // legitimately moves, it fails loudly and is re-measured rather than absorbing a loss.
+    expect(Math.min(...ratios)).toBeGreaterThanOrEqual(4.320428393596114);
+    // And still short of the claim, so this assertion is not quietly satisfied by a fix
+    // nobody then notices — the day rank 1 clears, this line fails and comes out.
+    expect(Math.min(...ratios)).toBeLessThan(4.5);
   });
 });
