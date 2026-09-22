@@ -5,6 +5,7 @@ import type { ReactNode } from "react";
 import { slotDeck } from "../../lib/bracket/slot";
 import { deckAnalysisCopy } from "../../lib/copy/deck-analysis";
 import type { ProfileState } from "./use-deck-profile";
+import { BracketClimb } from "./bracket-climb";
 import { VerdictBlock } from "./verdict-block";
 
 /**
@@ -54,11 +55,26 @@ export function AnalysisPanel({
         the declaration's own surface is PR 5's. Defaulting one would be the thing the round's
         rulings forbid outright: never inferred, never defaulted.
       */}
-      {state.kind === "ready" ? (
-        <VerdictBlock verdict={slotDeck(state.profile)} profile={state.profile} />
-      ) : null}
+      {state.kind === "ready" ? <Verdict profile={state.profile} /> : null}
       {children}
     </div>
+  );
+}
+
+/**
+ * The verdict and the climb, from one reading of the rules.
+ *
+ * `slotDeck` IS CALLED ONCE and its answer handed to both. It is pure and cheap, but two calls
+ * are two chances for the two blocks to disagree about the same deck the day it stops being
+ * either — and the climb's rungs are derived from the verdict's own `permits`.
+ */
+function Verdict({ profile }: { profile: import("../../lib/profile/types").DeckProfile }) {
+  const verdict = slotDeck(profile);
+  return (
+    <>
+      <VerdictBlock verdict={verdict} profile={profile} />
+      <BracketClimb verdict={verdict} profile={profile} />
+    </>
   );
 }
 

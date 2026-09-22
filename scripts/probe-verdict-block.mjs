@@ -148,7 +148,7 @@ function contrast(a, b) {
 
 const rgb = (css) => (css.match(/\d+(\.\d+)?/g) ?? []).slice(0, 3).map(Number);
 
-async function walk(page, label, markPx) {
+async function walk(page, label, markPx, viewportWidth) {
   const block = onPage(page, 'section[aria-label="Your bracket"]').first();
   const blocks = await block.count();
   if (!(await report(`${label}px · the verdict block is drawn`, blocks > 0,
@@ -277,6 +277,70 @@ async function walk(page, label, markPx) {
   report(`${label}px · and draws one of its two readings whole`, present || absent,
     present ? "present, denominator inside the sentence" : absent ? "absent, never a zero" : "neither");
 
+  // ── The climb ───────────────────────────────────────────────────────────────────────────
+  //
+  // THE MARK AT 390 IS THE WHOLE POINT. `HANDOFF.md` lists "do not drop the bracket mark at 390"
+  // among the three things most likely to get broken in build, and the rungs carry it at 22 /
+  // 26 — which straddles the chip/full boundary, so a neighbour mounts two and a CSS breakpoint
+  // cannot serve both. What proves the right one drew is its RESOLVED width, not its class list.
+  const climb = await page.evaluate((scope) => {
+    const root = document.querySelector(scope);
+    const rungs = [...(root?.querySelectorAll('[data-testid="climb-rung"]') ?? [])];
+    return rungs.map((rung) => {
+      const marks = [...rung.querySelectorAll('[data-testid="bracket-mark"]')]
+        .map((m) => ({ form: m.dataset.form, w: Math.round(m.getBoundingClientRect().width) }))
+        // A mark whose box is 0 wide is the width this run is NOT at, hidden by `display:none`.
+        .filter((m) => m.w > 0);
+      const box = rung.getBoundingClientRect();
+      return {
+        role: rung.dataset.role,
+        bracket: Number(rung.dataset.bracket),
+        marks,
+        width: Math.round(box.width),
+        right: Math.round(box.right),
+        figures: [...rung.querySelectorAll('[data-testid="climb-figure"]')].length,
+        text: (rung.textContent ?? "").replace(/\s+/g, " ").trim(),
+      };
+    });
+  }, PAGE);
+
+  report(`${label}px · the climb draws its rungs`, climb.length >= 2,
+    climb.length ? climb.map((r) => `${r.bracket}:${r.role}`).join(" ") : "no rungs");
+
+  if (climb.length >= 2) {
+    // EXACTLY ONE VISIBLE MARK PER RUNG. The neighbour rungs mount two and hide one; a build
+    // that hid neither would draw the chip and the full mark side by side, which every DOM
+    // assertion passes over because both are in the document either way.
+    const visible = climb.map((r) => r.marks.length);
+    report(`${label}px · every rung draws exactly one mark`,
+      visible.every((n) => n === 1), `marks per rung: ${visible.join(", ")}`);
+
+    const expected = label === 390 ? { yours: 26, other: 22 } : { yours: 36, other: 26 };
+    const sizes = climb.map((r) => ({
+      role: r.role,
+      want: r.role === "yours" ? expected.yours : expected.other,
+      got: r.marks[0]?.w ?? 0,
+    }));
+    report(`${label}px · at the ship size for its role`,
+      sizes.every((s) => s.got === s.want),
+      sizes.map((s) => `${s.role} ${s.got}/${s.want}`).join(", "));
+
+    // The rung that holds is the only one with figures beside it, and nothing in the climb is
+    // pressable: "the climb states, the findings open".
+    const pressable = await page.evaluate((scope) => {
+      const root = document.querySelector(scope);
+      const climbRoot = root?.querySelector('[data-testid="climb-rung"]')?.parentElement;
+      return [...(climbRoot?.querySelectorAll("button, a, [role=button]") ?? [])].length;
+    }, PAGE);
+    report(`${label}px · nothing in the climb opens`, pressable === 0,
+      `${pressable} pressable element(s)`);
+
+    // A rung that overflows its own box is the failure a phone finds and a desktop hides.
+    const overflow = climb.filter((r) => r.right > viewportWidth);
+    report(`${label}px · no rung runs past the viewport`, overflow.length === 0,
+      overflow.length ? `${overflow.length} rung(s) past ${viewportWidth}` : `widest ${Math.max(...climb.map((r) => r.width))}px`);
+  }
+
   // ── The sub-line ────────────────────────────────────────────────────────────────────────
   const subLine =
     /which of the two this is, is yours to say/i.test(foot)
@@ -350,7 +414,7 @@ async function run() {
           .catch(() => {});
       }
 
-      await walk(p, label, markPx);
+      await walk(p, label, markPx, viewport.width);
       await ctx.close();
     }
   } finally {
