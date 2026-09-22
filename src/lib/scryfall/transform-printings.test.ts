@@ -223,6 +223,62 @@ describe("classifyPrinting", () => {
     expect(classifyPrinting(headless).kind).toBe("skipped-reversible");
   });
 
+  it("routes a reversible TOKEN to the skipped ledger, not to the catalog", () => {
+    // `sld/1969` Mechtitan, the shape that took down the 2026-09-22 staging refresh. Its
+    // layout is `reversible_card` and only the faces' type lines say Token; its other
+    // printing is `tneo/14`, layout `token`, which the cards transform skips — so there is
+    // no `cards` row and there should not be. Ingested anyway, it is an FK orphan, and one
+    // orphan refuses the whole run's base-set sizing.
+    const token = {
+      ...reversible,
+      id: "5d02dee4-2071-448f-9fd3-58d63635d712",
+      name: "Mechtitan // Mechtitan",
+      collector_number: "1969",
+      card_faces: reversible.card_faces.map((f) => ({
+        ...f,
+        name: "Mechtitan",
+        type_line: "Token Legendary Artifact Creature — Construct",
+        oracle_id: "a4fecf0a-a7b3-49e4-bbb2-9690dff5a8f4",
+      })),
+    };
+    expect(classifyPrinting(token)).toEqual({
+      kind: "skipped-layout",
+      row: {
+        scryfallId: "5d02dee4-2071-448f-9fd3-58d63635d712",
+        layout: "reversible_card",
+        name: "Mechtitan // Mechtitan",
+      },
+    });
+  });
+
+  it("reads the TYPE LINE's opening word, not the rules text and not a mention", () => {
+    // Two fixtures, because one of them measures nothing on its own. A card whose ORACLE
+    // TEXT says "token" passes with the gate deleted — the gate never reads that field — so
+    // it pins nothing by itself and is here only to say the rules text is out of scope.
+    const maker = {
+      ...reversible,
+      card_faces: reversible.card_faces.map((f) => ({
+        ...f,
+        type_line: "Legendary Enchantment",
+        oracle_text: "Create a 1/1 colorless Thopter artifact creature token.",
+      })),
+    };
+    expect(classifyPrinting(maker).kind).toBe("printing");
+
+    // THIS is the one that distinguishes `startsWith` from `includes`: a type line that
+    // CONTAINS the word downstream of its opening. Synthetic — Scryfall types every token it
+    // prints as `Token …` at the head — and here precisely because the rule is about the
+    // opening word, so widening it to a substring match would start dropping real cards.
+    const mentions = {
+      ...reversible,
+      card_faces: reversible.card_faces.map((f) => ({
+        ...f,
+        type_line: "Enchantment — Token Role",
+      })),
+    };
+    expect(classifyPrinting(mentions).kind).toBe("printing");
+  });
+
   it("treats an EMPTY face oracle id as absent rather than as a value", () => {
     // `oracle_id: ""` passes a `typeof` test, agrees with itself across both faces, and is
     // stored as a printing with an empty oracle id — which the FK check counts as an orphan,
