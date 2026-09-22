@@ -85,7 +85,9 @@ describe("which rungs are drawn", () => {
     ]);
   });
 
-  it("draws two rungs at the top", () => {
+  // Three, not two: `climb` puts `yours` at the range's lower member, so `[4,5]` is a rung at 4
+  // with 3 below it and 5 above. Only a deck at 1 or at 5 loses a rung.
+  it("draws three rungs on the high range, with the claimable one above", () => {
     draw("4,5");
     expect(rungs().map((r) => `${r.dataset.bracket}:${r.dataset.role}`)).toEqual([
       "3:below",
