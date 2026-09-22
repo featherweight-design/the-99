@@ -5,6 +5,7 @@ import { classifyRoles } from "../recs/roles";
 import type { MixRole, RecommendedMix } from "./mix";
 import { deckBodySize } from "./deck-size";
 import type { PoolCard } from "../recs/score";
+import type { CandidateFacts } from "../bracket/delta";
 
 export type ReasonType = "edhrec" | "role";
 
@@ -35,6 +36,19 @@ export type DeckSuggestion = {
    * an absent combo is what most cards have.
    */
   comboPartner?: { oracleId: string; name: string } | null;
+  /**
+   * The card-note facts — game changer, mass land denial, extra turns, tutor — for the note
+   * the Consider tile draws in its foot.
+   *
+   * DECLARED HERE for the reason `comboPartner` is, and for the reason PR 8a refused to spread
+   * it: a field that rides in untyped is a field no consumer is forced to read, which is how
+   * three payloads in this run were built, tested and reached by nobody.
+   *
+   * Optional because every producer other than the deck page's own read leaves it out, and
+   * `null` is what a failed read and a card with no facts both look like — the same rendering
+   * either way, which is nothing at all.
+   */
+  facts?: CandidateFacts | null;
   cardTypeGroup: DeckDetailCard["cardTypeGroup"];
   role: DeckDetailCard["role"];
   imageUri: string | null;

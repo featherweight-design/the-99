@@ -112,6 +112,8 @@ describe("deck card-detail triggers", () => {
       <SuggestionTile
         suggestion={suggestion}
         deckId="d1"
+        declaredBracket={null}
+        noteCounts={{ gameChanger: 0, massLandDenial: 0, extraTurns: 0, tutor: 0 }}
         inDeck={false}
         siblings={["o-sol"]}
         commanderShortName="Muldrotha"

@@ -98,6 +98,8 @@ function Harness({
       declined={declined}
       onDeclinedChange={setDeclined}
       newestAsOf={props.newestAsOf ?? null}
+      declaredBracket={null}
+      noteCounts={{ gameChanger: 0, massLandDenial: 0, extraTurns: 0, tutor: 0 }}
       onAnnounce={props.onAnnounce ?? (() => {})}
       onInflight={props.onInflight ?? (() => {})}
       // Both halves, as in production, where this is wired to the draft's
@@ -987,7 +989,7 @@ describe("TopOffList — the desktop row", () => {
   }
 
   /** The row's own element, from the checkbox that names it. */
-  const rowOf = (name: string) => rowBox(name).closest("li") ?? rowBox(name).parentElement;
+  const rowOf = (name: string) => rowBox(name).closest("[data-top-off-row]");
 
   it("draws no underline under the card name", () => {
     // Nothing else in this app underlines a `CardDetailTrigger`, and on this
@@ -1072,7 +1074,7 @@ describe("TopOffList — a cost that belongs to the back face", () => {
   ];
 
   /** The row's own element, from the checkbox that names it. */
-  const rowOf = (name: string) => rowBox(name).closest("li") ?? rowBox(name).parentElement;
+  const rowOf = (name: string) => rowBox(name).closest("[data-top-off-row]");
 
   it("mounts no cost track for it, and still mounts one for a costed row", () => {
     render(<Harness candidates={backOnly} />);

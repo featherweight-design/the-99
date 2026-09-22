@@ -33,6 +33,8 @@ type RowCandidate = TopOffCandidate & {
 };
 import { useIsDesktop } from "../ui/use-is-desktop";
 import { TopOffList } from "./top-off-list";
+import type { NoteCounts } from "../../lib/bracket/card-note";
+import type { Bracket } from "../../lib/bracket/types";
 import { useTopOffDraft } from "./use-top-off-draft";
 
 export interface LastSlotsStripProps {
@@ -55,6 +57,18 @@ export interface LastSlotsStripProps {
   deckOracleIds: Set<string>;
   /** Newest price as-of, for the buy tags and the money figure. */
   newestAsOf: Date | null;
+  /**
+   * The card note's two deck-level inputs — the deck's live declaration and what its list
+   * already holds of each note-bearing kind.
+   *
+   * REQUIRED, and threaded rather than defaulted, for the reason `newestAsOf` beside it is:
+   * a row that receives no counts draws every ordinal from zero and says `your 1st game
+   * changer` about a deck holding four. A wrong figure rather than a missing prop, and
+   * silent — the failure that comment records having shipped once already.
+   */
+  declaredBracket: Bracket | null;
+  noteCounts: NoteCounts;
+
   /** Writes one message per settle to the live region in builder-shell.tsx. */
   onAnnounce: (message: string) => void;
   /** True while the commit is running. The shell uses it to disable quick-add. */
@@ -143,6 +157,8 @@ function LastSlotsStripInner({
   allNegative = false,
   deckOracleIds,
   newestAsOf,
+  declaredBracket,
+  noteCounts,
   onAnnounce,
   onInflight,
   onOpenChange,
@@ -512,6 +528,8 @@ function LastSlotsStripInner({
           declined={declined}
           onDeclinedChange={setDeclined}
           newestAsOf={newestAsOf}
+          declaredBracket={declaredBracket}
+          noteCounts={noteCounts}
           onAnnounce={onAnnounce}
           onCommitted={discard}
           onInflight={(v) => onInflight?.(v)}

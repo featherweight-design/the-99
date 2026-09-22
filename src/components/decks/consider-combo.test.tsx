@@ -44,6 +44,8 @@ function mount(over: Partial<DeckSuggestion> = {}, deckOracleIds: string[] = [])
     <CardDetailProvider fetchCard={async () => null}>
       <ConsiderPanel
         deckId="deck-1"
+        declaredBracket={null}
+        noteCounts={{ gameChanger: 0, massLandDenial: 0, extraTurns: 0, tutor: 0 }}
         suggestions={[suggestion(over)]}
         deckCards={[]}
         deckOracleIds={deckOracleIds}

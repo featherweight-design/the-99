@@ -51,6 +51,8 @@ function list(over: Partial<RowCandidate> = {}) {
         onClose={() => {}}
         onBarHeight={() => {}}
         newestAsOf={null}
+        declaredBracket={null}
+        noteCounts={{ gameChanger: 0, massLandDenial: 0, extraTurns: 0, tutor: 0 }}
       />
     </CardDetailProvider>,
   );

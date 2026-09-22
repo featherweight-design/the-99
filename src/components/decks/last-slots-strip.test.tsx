@@ -57,6 +57,8 @@ const base = {
   candidates,
   deckOracleIds: new Set<string>(),
   newestAsOf: null,
+  declaredBracket: null,
+  noteCounts: { gameChanger: 0, massLandDenial: 0, extraTurns: 0, tutor: 0 },
   onAnnounce: () => {},
 };
 

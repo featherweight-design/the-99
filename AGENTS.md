@@ -1168,6 +1168,37 @@ Package manager is **pnpm** (pinned via `packageManager` in package.json) — ne
   Two mutations fail it: the rows reporting no movement, and the edge flip removed. Makes no
   writes; point it at `local-dev`.
 
+- `pnpm probe:card-note` measures the card note on both of the deck page's add surfaces — the
+  Consider tile and the top-off row — at 1300x900 and 390x844. Thirty-eight checks.
+
+  Four of its rulings are facts about laid-out geometry and jsdom produces none of them. **The
+  note is INSIDE the row's box**: drawn after the box instead, the markup is identical element
+  for element while the reader sees a sentence hanging under a bordered row, and what tells them
+  apart is whether the note's rect lies inside the box's. **The row reserves no height for a note
+  it is not drawing** — measured as a difference between a noted host and an un-noted one, since
+  most of a 480-candidate pool carries no fact and a reserved slot would be the commonest
+  rendering on the surface. **The type is read RESOLVED** (12.5px on a row, 11.5px on a tile, a
+  9px mono uppercase label), because a Tailwind arbitrary value that does not compile leaves the
+  class string reading correctly and the text at its inherited size. And **the note starts at the
+  row's own laid-out NAME**, never at a constant: the handoff's `27px` is derived from a tick this
+  row does not have, so the shipped indents (49px at 390, 46px above `md`) live in the code and
+  the probe asserts the property they came from — the `labelAtPx` rule from `probe:commander-row`.
+
+  **Its Adds check caught this feature's own regression.** A tile is a grid item and stretches to
+  its row, so before the note every tile's content ended level; the note is ~30px on one tile in
+  six, and the six Add buttons in a row went **90 to 91px** out of line while the tiles around
+  them still ended level. Rows are grouped by MEASURED top edge rather than by index — the column
+  count is a function of the viewport — and a run where no row mixes a noted tile with an
+  un-noted one FAILS rather than passing, because every tile carrying a note, or none, lines up
+  on any build. Same rule everywhere here: a run that finds no note at all is reported as having
+  measured nothing.
+
+  Seven mutations were run against it and all seven fail: the indent removed, the tile drawn at
+  row density, the rule above the note removed, the note left un-hidden on the row, the note's
+  sentences dropped from `rowLabel`, the empty-note guard removed (which draws a reserved box),
+  and the note moved outside the row's box. `mt-auto` reverted on the tile's Add reads the 91px
+  spread exactly. It makes no writes; point it at `local-dev`.
+
 - `pnpm probe:scroll-lock` presses every overlay the app draws over a scrim — the filter
   sheets on `/collection`, `/commanders`, `/discover`, `/decks` and a set page, the
   `FilterPanel` sort sheet, and the card modal — and proves the page behind each one does

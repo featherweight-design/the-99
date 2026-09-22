@@ -98,6 +98,8 @@ function makeDeck(): DeckDetail {
     toBuyCount: 0,
     total: 1,
     unresolvedRows: [],
+    declaredBracket: null,
+    noteCounts: { gameChanger: 0, massLandDenial: 0, extraTurns: 0, tutor: 0 },
   } as DeckDetail;
 }
 

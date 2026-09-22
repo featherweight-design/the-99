@@ -35,8 +35,14 @@ import { canSeed, type TopOffCandidate } from "../../lib/decks/last-slots";
  */
 type RowCandidate = TopOffCandidate & {
   comboPartner?: { oracleId: string; name: string } | null;
+  /** The card-note facts, optional here for the same reason `comboPartner` is. */
+  facts?: CandidateFacts | null;
 };
 import { ComboClause, comboClauseSpoken } from "../cards/combo-clause";
+import { CardNote, cardNoteSpoken } from "./card-note";
+import type { CandidateFacts } from "../../lib/bracket/delta";
+import type { NoteCounts } from "../../lib/bracket/card-note";
+import type { Bracket } from "../../lib/bracket/types";
 import {
   formatCents,
   summarisePrices,
@@ -86,6 +92,17 @@ export interface TopOffListProps {
   declined: Set<string>;
   onDeclinedChange: (next: Set<string>) => void;
   newestAsOf: Date | null;
+  /**
+   * The card note's two deck-level inputs — the deck's live declaration and what its list
+   * already holds of each note-bearing kind.
+   *
+   * REQUIRED, and threaded rather than defaulted, for the reason `newestAsOf` beside it is:
+   * a row that receives no counts draws every ordinal from zero and says `your 1st game
+   * changer` about a deck holding four. A wrong figure rather than a missing prop, and
+   * silent — the failure that comment records having shipped once already.
+   */
+  declaredBracket: Bracket | null;
+  noteCounts: NoteCounts;
   onAnnounce: (message: string) => void;
   onInflight: (inflight: boolean) => void;
   /** A pass has landed. The selection survives a cancel, and every refusal, but
@@ -134,8 +151,28 @@ function moneyOf(price: PriceFact | null, newestAsOf: Date | null): string | nul
  *  `list.rowAria` bakes in "plus", so it can only speak a non-negative figure.
  *  A null or negative synergy takes the shipped four-branch string instead,
  *  which exists for exactly that case. No new string either way. */
-function rowLabel(c: RowCandidate, newestAsOf: Date | null): string {
+function rowLabel(
+  c: RowCandidate,
+  newestAsOf: Date | null,
+  declaredBracket: Bracket | null,
+  noteCounts: NoteCounts,
+): string {
   const clause = ownershipClause(c, newestAsOf);
+  // THE CARD NOTE IS SPOKEN HERE and nowhere else, for the reason the combo clause below is:
+  // every visual atom on this row is aria-hidden, so the row's one accessible name is the
+  // only place any of it is heard. Composed by `cardNoteSpoken` rather than re-joined here, so
+  // what is drawn and what is spoken cannot disagree.
+  //
+  // It comes LAST, after the combo. The figures say what this copy is worth to this deck; the
+  // note says what kind of card it is, which is context for all of them rather than another
+  // column.
+  const note = cardNoteSpoken({
+    facts: c.facts ?? null,
+    declared: declaredBracket,
+    counts: noteCounts,
+    density: "row",
+  });
+  const noteClause = note ? ` ${note}` : "";
   // THE COMBO IS SPOKEN HERE and nowhere else. Its glyph is aria-hidden and its sentence is
   // drawn aria-hidden too, because on the phone it stands in for the PIP TRACK and on desktop
   // it sits in the name cell's tail — neither of which a reader hears in a useful order. It
@@ -157,7 +194,7 @@ function rowLabel(c: RowCandidate, newestAsOf: Date | null): string {
       : synergyCopy.figure.inclusion(String(c.inclusionPct));
   const cost = spokenManaCost(c.manaCost);
   if (c.synergyPts !== null && c.synergyPts >= 0) {
-    return `${cost}. ${type}. ${topOffCopy.list.rowAria(c.name, clause, String(c.synergyPts), inclusion)}${combo}`;
+    return `${cost}. ${type}. ${topOffCopy.list.rowAria(c.name, clause, String(c.synergyPts), inclusion)}${combo}${noteClause}`;
   }
   const synergy =
     c.synergyPts === null
@@ -168,7 +205,7 @@ function rowLabel(c: RowCandidate, newestAsOf: Date | null): string {
     clause.replace(/\.$/, ""),
     synergy,
     inclusion,
-  )}${combo}`;
+  )}${combo}${noteClause}`;
 }
 
 /** Mounted twice, and only here. The phone track is uncapped and unshingled
@@ -299,6 +336,8 @@ export function TopOffList({
   declined,
   onDeclinedChange,
   newestAsOf,
+  declaredBracket,
+  noteCounts,
   onAnnounce,
   onInflight,
   onCommitted,
@@ -1072,6 +1111,8 @@ export function TopOffList({
               inflight={inflight}
               capLineId={capLineId}
               newestAsOf={newestAsOf}
+              declaredBracket={declaredBracket}
+              noteCounts={noteCounts}
               isDesktop={isDesktop}
               siblings={siblingIds}
               onToggle={() => toggle(c.oracleId)}
@@ -1218,6 +1259,8 @@ function CandidateRow({
   inflight,
   capLineId,
   newestAsOf,
+  declaredBracket,
+  noteCounts,
   isDesktop,
   siblings,
   onToggle,
@@ -1229,6 +1272,9 @@ function CandidateRow({
   inflight: boolean;
   capLineId: string;
   newestAsOf: Date | null;
+  /** The card note's two deck-level inputs. See `LastSlotsStripProps`. */
+  declaredBracket: Bracket | null;
+  noteCounts: NoteCounts;
   /** Desktop alone opens the card. The phone row is one tap target on purpose —
       the addendum's own rule, and what makes 38 of them tickable one-handed — so
       a button inside it would put "read this card" and "tick this card" on the
@@ -1264,9 +1310,19 @@ function CandidateRow({
       // `md:` only. A touch device has no hover, and the sticky :hover a phone
       // browser leaves behind after a tap would mark the last row pressed as
       // though it were still under a pointer.
+      // A COLUMN, so the card note can sit BELOW the row's line and inside its box —
+      // `HANDOFF.md` §Geometry. The row itself is the first child and keeps every class it
+      // had; the box's padding, fill, border and hover stay out here so the note is inside
+      // all four of them rather than hanging off the bottom edge.
+      // NAMED, because the row is no longer the card name's parent element: the note made it
+      // a column whose first child is the row's own line, so `parentElement` now lands on that
+      // line rather than on the box carrying the fill. A handle says which box is the row
+      // instead of leaving every reader to count levels — the reason `data-top-off-type`
+      // below carries one.
+      data-top-off-row
       className={[
-        "flex items-center gap-[9px] md:gap-[10px] rounded-[7px]",
-        "min-h-[52px] md:min-h-[34px] pl-[8px] pr-[10px] md:px-[9px]",
+        "flex flex-col rounded-[7px]",
+        "pl-[8px] pr-[10px] md:px-[9px] py-[2px] md:py-[1px]",
         ticked
           ? "bg-[color:var(--elevated-hover)] [--row-bg:var(--elevated-hover)]"
           : "bg-[color:var(--surface)] [--row-bg:var(--surface)]"
@@ -1284,12 +1340,16 @@ function CandidateRow({
         ...(inert ? { opacity: 0.55 } : null),
       }}
     >
+      {/* THE ROW'S OWN LINE. Everything that was on the box is here unchanged; the box
+          above now owns only the padding, the fill and the border, so the note below is
+          inside all three. */}
+      <div className="flex w-full items-center gap-[9px] md:gap-[10px] min-h-[50px] md:min-h-[32px]">
       <input
         type="checkbox"
         id={tickId}
         className="peer sr-only"
         checked={ticked}
-        aria-label={rowLabel(c, newestAsOf)}
+        aria-label={rowLabel(c, newestAsOf, declaredBracket, noteCounts)}
         aria-disabled={inert || inflight ? true : undefined}
         aria-describedby={inert ? capLineId : undefined}
         onChange={onToggle}
@@ -1338,6 +1398,10 @@ function CandidateRow({
               apart and a hover says which is which. */}
           {!isDesktop && (
             <span
+              // Named for the probe, for the reason `data-top-off-type` below is: the note
+              // indents to THIS column, and recognising it by its type size would pick up
+              // whatever else on the row happens to be set at 12.5px.
+              data-testid="top-off-name"
               className="flex-auto min-w-0 text-[12.5px]"
               style={{ color: "var(--fg)" }}
             >
@@ -1399,6 +1463,7 @@ function CandidateRow({
             // `flex-shrink`, so it absorbs essentially all of the reduction and the name only
             // begins to give once the clause is spent — at which point the name still
             // truncates rather than overflowing.
+            testId="top-off-name"
             className="md:order-2 flex-auto min-w-0 text-left truncate text-[13.5px] [color:var(--fg)]"
           >
             {c.name}
@@ -1501,6 +1566,33 @@ function CandidateRow({
           </button>
         </span>
       </span>
+      </div>
+
+      {/* THE CARD NOTE, below the row's line and indented to the name column — `HANDOFF.md`
+          §Geometry, §C's host matrix. `aria-hidden`, because `rowLabel` above already speaks
+          it: every visual atom on this row is hidden and the tick's one accessible name is
+          where all of it is heard, in an order a reader can follow.
+
+          INDENTED TO THE NAME COLUMN, which is where §C's host matrix puts it — and computed
+          from the shipped tick box rather than transcribed as the handoff's `27px`. That
+          figure is drawn against a tick this row does not have: the shipped tick is `w-[26px]`
+          with a `gap-[9px]` at 390 and `w-[18px]` with a `gap-[10px]` above `md`, so the name
+          column starts 49px in at 390 (tick 26 + gap 9 + ownership dot 7 + gap 7) and 46px in
+          above `md` (tick 18 + gap 10 + dot 7 + gap 10), both MEASURED in a browser rather
+          than added up here. 27px lands under the tick at 390.
+
+          That is the `labelAtPx` lesson exactly: the constants live in the code and
+          `probe:card-note` asserts the PROPERTY they were derived from — the note starts at
+          the row's own laid-out name — so a later change to the tick or the dot fails the
+          probe rather than drifting silently. */}
+      <CardNote
+        facts={c.facts ?? null}
+        declared={declaredBracket}
+        counts={noteCounts}
+        density="row"
+        spokenElsewhere
+        className="pl-[49px] md:pl-[46px] pb-[7px]"
+      />
     </div>
   );
 }

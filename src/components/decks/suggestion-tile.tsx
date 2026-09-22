@@ -18,7 +18,10 @@ import { shelfRoleOf } from "../../lib/decks/suggest";
 import { AvailabilityMarker } from "../ui/availability-marker";
 import { GhostButton } from "../ui/button";
 import { BuyTag } from "./buy-tag";
+import { CardNote } from "./card-note";
 import type { ProvenanceForm } from "../../lib/decks/price";
+import type { Bracket } from "../../lib/bracket/types";
+import type { NoteCounts } from "../../lib/bracket/card-note";
 import { CardDetailTrigger } from "../cards/card-detail-provider";
 import { ComboClause } from "../cards/combo-clause";
 import { MutationError } from "./mutation-error";
@@ -117,6 +120,15 @@ function Evidence({
 interface SuggestionTileProps {
   suggestion: DeckSuggestion;
   deckId: string;
+  /**
+   * The deck's live declaration, and what its list already holds of each note-bearing kind.
+   *
+   * Both come off `DeckDetail` and are threaded rather than imported: the counts are a fact
+   * about THIS deck, and a component reaching for anything module-level would draw one deck's
+   * ordinals on every deck — the rule `mix` above states for the same reason.
+   */
+  declaredBracket: Bracket | null;
+  noteCounts: NoteCounts;
   /** The server's decklist, never the optimistic one — see builder-shell.tsx:67. */
   inDeck: boolean;
   /**
@@ -149,8 +161,8 @@ interface SuggestionTileProps {
 }
 
 export function SuggestionTile({
-  suggestion, deckId, inDeck, selfClaimed, siblings, commanderShortName, showNoSynergy,
-  newestAsOf, provenance = null,
+  suggestion, deckId, declaredBracket, noteCounts, inDeck, selfClaimed, siblings,
+  commanderShortName, showNoSynergy, newestAsOf, provenance = null,
 }: SuggestionTileProps) {
   const { applied, isPending, error, run } = useDeckMutation(inDeck, DECK_ADD_FALLBACK_MESSAGE);
   const addOptimisticCard = useAddOptimisticCard();
@@ -386,11 +398,43 @@ export function SuggestionTile({
         showNoSynergy={showNoSynergy}
       />
 
+      {/* THE CARD NOTE, in the tile foot above the Add — `HANDOFF.md` §Geometry.
+          One fact's sentences at this density, which is the rule's cap and not this
+          component's: the tile states the density and `cardNoteSentences` decides what fits.
+
+          READ AS TEXT, not aria-hidden, for the same reason the combo clause above is: this
+          tile composes no accessible name of its own — its name is a `CardDetailTrigger`
+          carrying the card's name — so hiding the note would delete the sentence rather than
+          relocate it, and there is nowhere to relocate it to.
+
+          `applied`, NOT `inDeck`, exactly as every other atom on this tile is gated. `applied`
+          starts at `inDeck` and flips the moment Add is pressed; the prop stays at the last
+          server-rendered value until revalidation, so gating on it would leave the tile
+          counting the card as an add for the length of a round trip. */}
+      <CardNote
+        facts={suggestion.facts ?? null}
+        declared={declaredBracket}
+        counts={noteCounts}
+        density="tile"
+        inDeck={applied}
+      />
+
+      {/* THE ADD IS PINNED TO THE TILE'S FOOT, `mt-auto`, and that is this feature's own
+          regression being fixed rather than a change of design. A tile is a grid item and
+          stretches to its row, so before the note every tile's content ended at the same
+          height and the Adds lined up at spread 0. A note is 30-odd pixels of extra content
+          on one tile in six, and measured on the shipped Consider grid it put the Adds in a
+          row **90 to 91px apart** — while the row itself still ends level, which is the
+          shipped ruling and is what makes the misalignment inside it read as a mistake.
+
+          `mt-auto` absorbs the free space instead, so every Add sits on the tile's floor
+          whether or not the tile above it carries a note. The alternative — reserving the
+          note's height on every tile — is the one thing the handoff forbids outright. */}
       {applied ? (
         <span
           aria-disabled="true"
           aria-label={addPanelCopy.tile.inDeckAria(suggestion.name)}
-          className="block text-center text-[12px] font-semibold rounded-[7px] py-[7px]"
+          className="mt-auto block text-center text-[12px] font-semibold rounded-[7px] py-[7px]"
           style={{ color: "var(--success)", border: "1px solid var(--border)" }}
         >
           {addPanelCopy.tile.inDeck}
@@ -414,7 +458,7 @@ export function SuggestionTile({
               ? addPanelCopy.tile.addAria(suggestion.name)
               : addPanelCopy.tile.addUnownedAria(suggestion.name)
           }
-          className="w-full text-center rounded-[10px] md:rounded-[8px] h-[44px] md:h-[32px] px-[16px] md:px-[14px] text-[14px] md:text-[12.5px] font-medium disabled:opacity-50"
+          className="mt-auto w-full text-center rounded-[10px] md:rounded-[8px] h-[44px] md:h-[32px] px-[16px] md:px-[14px] text-[14px] md:text-[12.5px] font-medium disabled:opacity-50"
         >
           {suggestion.owned
             ? addPanelCopy.tile.add

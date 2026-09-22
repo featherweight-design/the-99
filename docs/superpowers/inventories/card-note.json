@@ -1,0 +1,51 @@
+{
+  "feature": "The card note — what a candidate card IS, on the deck's own add surfaces",
+  "note": "TWO SURFACES, TWO DENSITIES, and both are on `/decks/[id]`. The Consider tile draws the clause in its foot; the top-off row draws the sentence below its own line. Both render the same `CardNote`, which is the point of the `shares` block below: the rule that picks the sentences lives in `src/lib/bracket/card-note.ts` and no host may re-derive it.\n\nTHE THIRD HOST NAMED BY ROUND 4 — the quick-add result row — IS NOT HERE, and its absence is a scope decision rather than an omission. It is fed by a live per-keystroke search action that loads no facts at all, where the two rows below are fed by 8a's one batched pool read. That is PR 8c, named in the surface plan.\n\nPRECONDITION, and it decides whether this sheet proves anything: the deck's pool must hold a card that CARRIES a fact. Most cards carry none — that is the design, and the row draws nothing for them — so a sheet taken on an arbitrary deck photographs no note and reads as coverage while proving nothing. `CARD_NOTE_DECK` must be a deck with open slots whose top-off pool and Consider shelves both reach a marked or tutor card. Measured 2026-09-22 on `local-dev`: the probe read 3 notes on the Consider shelves and 17 on the top-off list at both widths, so such a deck is easy to find — but it is not every deck.\n\nThe Consider row reaches its surface by PRESSING the tab, not by a URL: the panel is component state, and a URL sweep cannot see a surface reached by a press.\n\nThe top-off row needs its door pressed too, and the door's spoken name carries the deck's own shortfall figure — so the click matches the stable head of that sentence rather than the whole of it.\n\nEVERY ROW SCROLLS A NOTE INTO VIEW as its last step, and that is the half that makes this sheet evidence rather than decoration. Most cards carry no fact, so the first screen of either surface is overwhelmingly rows and tiles with nothing in the slot: the first run of this inventory photographed four cells with not one note in them, on a build the probe had just measured 3 notes and 17 notes on. A `scrollTo` on the note's own handle also FAILS the cell when nothing draws one, so a build that lost the feature produces a hole in the sheet rather than a picture of the surface without it.",
+  "shares": {
+    "module": "src/components/decks/card-note.tsx",
+    "binding": "CardNote",
+    "note": "Both hosts render it as-is, passing only their own density. A host drawing its own version of the slot is how a phone diverges from a desktop and how the cap drifts from the rule, so the check is asked of each host file directly."
+  },
+  "rows": [
+    {
+      "id": "consider-tile",
+      "label": "/decks/[id] — the clause in the Consider tile's foot, above the Add",
+      "view": "src/components/decks/suggestion-tile.tsx",
+      "steps": [
+        {
+          "goto": "/decks/${CARD_NOTE_DECK}",
+          "wait": "main, [role=main], h1",
+          "settle": 3500
+        },
+        {
+          "click": "#tab-consider",
+          "settle": 2000
+        },
+        {
+          "scrollTo": "[data-testid=\"card-note\"]",
+          "settle": 800
+        }
+      ]
+    },
+    {
+      "id": "top-off-row",
+      "label": "/decks/[id] — the sentence below a top-off row's line, indented to the name",
+      "view": "src/components/decks/top-off-list.tsx",
+      "steps": [
+        {
+          "goto": "/decks/${CARD_NOTE_DECK}",
+          "wait": "main, [role=main], h1",
+          "settle": 3500
+        },
+        {
+          "click": "button[aria-label^=\"Choose the cards for the last\"]",
+          "settle": 2000
+        },
+        {
+          "scrollTo": "[data-testid=\"card-note\"]",
+          "settle": 800
+        }
+      ]
+    }
+  ]
+}

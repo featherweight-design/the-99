@@ -338,6 +338,8 @@ function makeDeck(cards: DeckDetailCard[] = [solRing, arcaneSignet]): DeckDetail
     toBuyCount: 0,
     total: built,
     unresolvedRows: [],
+    declaredBracket: null,
+    noteCounts: { gameChanger: 0, massLandDenial: 0, extraTurns: 0, tutor: 0 },
   } as DeckDetail;
 }
 

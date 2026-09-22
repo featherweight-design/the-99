@@ -894,6 +894,8 @@ export function BuilderShell({
               allNegative={candidatesAllNegative}
               deckOracleIds={topOffDeckOracleIds}
               newestAsOf={newestAsOf}
+              declaredBracket={deck.declaredBracket}
+              noteCounts={deck.noteCounts}
               onAnnounce={setAnnouncement}
               onInflight={setFillInflight}
               onOpenChange={setTopOffOpen}
@@ -1051,6 +1053,8 @@ export function BuilderShell({
               <ConsiderPanel
               mix={mix}
                 deckId={deck.id}
+                declaredBracket={deck.declaredBracket}
+                noteCounts={deck.noteCounts}
                 suggestions={suggestions}
                 deckCards={cards}
                 deckOracleIds={deckOracleIds}
