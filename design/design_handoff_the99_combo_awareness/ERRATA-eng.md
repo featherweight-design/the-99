@@ -19,12 +19,26 @@ set"*. Both are superseded.
 > six mounts, so the same fact read as a different mark depending on which list a player was
 > looking at. Ruled by Hugh, 2026-09-21. This supersedes the handoff's 12px floor."*
 
-Four files carry the old figure: `READINESS.md`, `README.md`, `STATES-combo-awareness.md` and
-`ADDENDUM-modal-block.md`.
+**Three files carry the old figure, not four**, and the distinction matters because one of them
+is already right:
+
+| file | the glyph figure it states |
+|---|---|
+| `READINESS.md` | 12px, twice — the `ComboClause` line and a "12px glyph floor" attributed to Round 1 |
+| `README.md` | 12px, in the glyph spec table and the engineering list |
+| `STATES-combo-awareness.md` | *"12px on every host. 16px in the modal block."* — the host figure is stale, the modal one is right |
+| `ADDENDUM-modal-block.md` | **16px, correct.** Its other `12px` hits are a font size and a border radius, not the glyph |
+
+An earlier version of this errata listed all four. Corrected after review — an errata that is
+itself inaccurate is worse than none, because it is what a reader checks the package against.
 
 **What it changes is not obvious and should not be assumed.** The package sets a 9.5px mono clause
 against a 12px glyph and argues the ratio; at 16px that argument needs re-making rather than
 re-scaling, and the row heights it implies may move. That is a Design call, not an eng one.
+
+**`READINESS.md` has no cross-reference to this file**, so a reader skimming readiness meets the
+stale figure with nothing beside it. Design's files are not edited here, so the note lives on this
+side; anyone touching that package should add the pointer.
 
 **The Round 2 dependency itself is sound.** The lemniscate ships with Round 2's verdict block and
 this round draws with it rather than defining it, which is the right seam — only the figure is
