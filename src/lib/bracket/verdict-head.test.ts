@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { populationLine, verdictHead } from "./verdict-head";
+import { populationLine, populationSubject, verdictHead, verdictSubLine } from "./verdict-head";
 import type { Bracket } from "./types";
 
 /** Every shape `permitsFor` can return, so no case here is hypothetical. */
@@ -83,5 +83,93 @@ describe("populationLine", () => {
     expect(populationLine({ counts: { "1": 40 }, declaredTotal: 40 }, 5)).toEqual({
       kind: "present", declaredTotal: 40, said: 0, name: "cEDH",
     });
+  });
+});
+
+describe("the sub-line", () => {
+  const sub = (permits: Bracket[], violations: Parameters<typeof verdictSubLine>[0]["violations"] = []) =>
+    verdictSubLine({ permits, violations });
+
+  it("asks for intent on a range, at the range's lower member", () => {
+    expect(sub([1, 2])).toEqual({ kind: "intent", low: 1 });
+    expect(sub([4, 5])).toEqual({ kind: "intent", low: 4 });
+  });
+
+  it("names the rules that ruled the bracket below out", () => {
+    expect(
+      sub([3], [
+        { rule: "gameChangers", bracket: 2, have: 2, limit: 0 },
+        { rule: "gameChangers", bracket: 1, have: 2, limit: 0 },
+      ]),
+    ).toEqual({
+      kind: "ruledOut",
+      below: 2,
+      reasons: [{ rule: "gameChangers", have: 2, limit: 0 }],
+    });
+  });
+
+  // EVERY rule at that bracket, not the first. A deck can pass two limits at once, and naming
+  // one would let a reader cut those cards and find the answer unmoved.
+  it("keeps every rule that ruled it out", () => {
+    const reading = sub([2], [
+      { rule: "extraTurns", bracket: 1, have: 1, limit: 0 },
+      { rule: "gameChangers", bracket: 1, have: 1, limit: 0 },
+    ]);
+    expect(reading).toEqual({
+      kind: "ruledOut",
+      below: 1,
+      reasons: [
+        { rule: "extraTurns", have: 1, limit: 0 },
+        { rule: "gameChangers", have: 1, limit: 0 },
+      ],
+    });
+  });
+
+  // `slotDeck` reports the loop clause at 2 AND 3, so a rule can appear twice under one bracket
+  // the day another clause does the same. A sentence must not say the same thing twice.
+  it("says each rule once", () => {
+    const reading = sub([3], [
+      { rule: "extraTurns", bracket: 2, have: 1, limit: 0 },
+      { rule: "extraTurns", bracket: 2, have: 1, limit: 0 },
+    ]);
+    expect(reading).toEqual({
+      kind: "ruledOut",
+      below: 2,
+      reasons: [{ rule: "extraTurns", have: 1, limit: 0 }],
+    });
+  });
+
+  // THE READING THE CANVAS NEVER DREW. `[4]` arrives with `violatesB3` false, so there is no
+  // violation at bracket 3 at all and a violations-only reading would draw an empty sentence on
+  // a real deck.
+  it("reads [4] as assembled rather than as an empty list of rules", () => {
+    expect(sub([4])).toEqual({ kind: "assembled", below: 3 });
+  });
+
+  it("refuses a range permitsFor cannot return", () => {
+    expect(() => sub([1, 3] as Bracket[])).toThrow(/no reading/);
+  });
+});
+
+describe("who the population line is about", () => {
+  const cards = [
+    { oracleId: "a", name: "Kraum, Ludevic's Opus" },
+    { oracleId: "b", name: "Tymna the Weaver" },
+    { oracleId: "c", name: "Sol Ring" },
+  ];
+
+  it("names both commanders over a pair row", () => {
+    expect(populationSubject("pair", ["a", "b"], cards)).toBe("Kraum, Ludevic's Opus and Tymna the Weaver");
+  });
+
+  // A COMMANDER ROW IS THE PRIMARY'S. Naming both would attribute a partner deck's counts to a
+  // pairing EDHREC never counted.
+  it("names only the primary over a commander row", () => {
+    expect(populationSubject("commander", ["a", "b"], cards)).toBe("Kraum, Ludevic's Opus");
+  });
+
+  it("returns null when a commander is not among the cards", () => {
+    expect(populationSubject("pair", ["a", "z"], cards)).toBeNull();
+    expect(populationSubject("commander", [], cards)).toBeNull();
   });
 });

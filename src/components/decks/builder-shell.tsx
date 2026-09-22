@@ -1020,7 +1020,11 @@ export function BuilderShell({
                     verdict arrives on top of the mix rather than replacing it. The strip is
                     counted from the list and is true in every profile state, which is what
                     makes a failed read a delay rather than an outage. */}
-                <AnalysisPanel state={profile.state} onRequest={profile.request}>
+                <AnalysisPanel
+                  state={profile.state}
+                  onRequest={profile.request}
+                  synopsis={<SynopsisSlot />}
+                >
                 {/* The strip in its new home. It is REAL analysis content rather than a
                     placeholder — Round 0 moves it here on purpose — which is why this panel
                     draws something true on the day the tab lands, with the verdict arriving
@@ -1033,7 +1037,6 @@ export function BuilderShell({
                   justFilled={deck.filled && autoCount > 0}
                   wasCounts={wasCounts}
                 />
-                <SynopsisSlot />
                 </AnalysisPanel>
               </div>
             ) : view === "games" ? (

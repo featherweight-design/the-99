@@ -710,6 +710,42 @@ Package manager is **pnpm** (pinned via `packageManager` in package.json) — ne
 
   It writes three decks under the account it signs in as and deletes them in a `finally`;
   point it at `local-dev` or a scratch Neon branch, **never production**.
+- `pnpm probe:verdict-block` walks the Analysis tab's verdict at 1300x900 and 390x844 and
+  proves how the bracket mark is DRAWN, which is the one thing every unit test here is blind to:
+  each wrong way to draw it renders plausible markup and errors nowhere.
+
+  `<img src="/brackets/…svg">` renders every mark **black** — the ten files ink every path with
+  `currentColor`, and an external SVG resolves that against its OWN root, so the page's
+  `--bracket-N` never reaches it. A CSS mask fixes the ink and leaves the numeral wrong: the
+  files carry it as `<text font-family="Cinzel,serif">`, and an external SVG cannot load the
+  page's webfont, so inside a mask it is the platform serif. Invisible at the 22px chip, which
+  `ASSETS.md` calls decorative there, and plainly wrong at 26 / 36 / 44 where it is the thing
+  being read. So the component masks the art, subtracts the file's own numeral with a second
+  mask layer, and draws the numeral as real HTML text — and this probe reads the **resolved**
+  font-family, the **painted** ink, and the bytes the mask URL actually serves.
+
+  It also re-measures the contrast GROUND rather than inheriting one. `contract.test.ts` held a
+  provisional list while nothing drew a mark; this block is the first mount and it draws on its
+  own `--surface`, so the domain is one token. That retires the deferred rank-1 question: the
+  handoff's claim is true as written — its twelve grounds are `--surface-inset` and
+  `--surface-sunken` across six themes, and rank 1 clears 4.5:1 on all twelve — while `--surface`
+  is a THIRTEENTH ground this component introduces, where rank 1 reads **4.4768**. The probe
+  asserts 4.4 rather than 4.5, because asserting the stated bar would fail a build that is
+  exactly as drawn; what it catches is a mark landing on a darker ground, where kaldheim
+  `--elevated` reads 3.6857.
+
+  **It clears the About gate before asking for any route**, by seeding `user_prefs`. Since #658
+  `proxy.ts` redirects a reader below `ABOUT_VERSION` to `/about?next=…`, and the About page's
+  own specimen deck links then read as the account's decks — the first run of this file reported
+  "no Analysis tab" about `/decks/about-resume-edited`, a routing problem wearing a flag
+  problem's clothes. **And it reaches the surface by a PRESS**: `BuilderTabs` is client state and
+  produces no address, which is how the card mark shipped broken into a view a URL sweep
+  photographed.
+
+  Needs a server with `ANALYSIS_TAB_ENABLED=true`. Five mutations were run against it and all
+  five fail; the counts are in its header. It writes only that one `user_prefs` row — point it
+  at `local-dev`, **never production**.
+
 - `pnpm probe:commander-availability` walks the two panels on `/commanders/[slug]` that
   draw a card's claim — Role Coverage and the synergy panel — at 1300x900 and 390x844,
   because their rulings are resolved styles rather than markup: the chip's 28px against a
