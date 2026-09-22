@@ -1,0 +1,151 @@
+{
+  "feature": "Deck analysis \u2014 the upgrade path (PR 9)",
+  "note": "Round 4's \u00a7B on the climb's lower rung. Every row reaches the surface by a PRESS: the Analysis tab, Analyze, and then the disclosure \u2014 the tab has no address and the disclosure is local state.\n\nPRECONDITION: a server running with ANALYSIS_TAB_ENABLED=true.\n\nFIXTURES are two brews on local-dev owned by the e2e account: PATH_DECK (d0000000-0000-4000-8000-00000000d5c1: five game changers beside Sanguine Bond and Exquisite Blood, so it reads Optimized or cEDH and every target below it has something to name) and PATH_BLOCKED_DECK (d0000000-0000-4000-8000-00000000d5c2: four game changers under Braids, Cabal Minion, itself a game changer, so Core and Exhibition are out of reach of removals and Upgraded is not). Pressing a target chip writes nothing, so every state here is re-photographable.\n\nNOT PHOTOGRAPHED: u6, the satisfied path, which the lower rung cannot reach \u2014 its targets are every bracket below the reading's floor, where something always has to go. And u8, both halves of a combo in the command zone, which is in the unit tests: it wants a commander pair that Spellbook records as a two-card combo, and this sheet carries no such fixture.\n\nNO `shares` BLOCK: one mount.",
+  "rows": [
+    {
+      "id": "closed",
+      "label": "/decks/[id] Analysis \u2014 the lower rung, To downgrade your deck, with its closed disclosure",
+      "view": "src/components/decks/bracket-climb.tsx",
+      "steps": [
+        {
+          "goto": "/decks/${PATH_DECK}",
+          "wait": "[role=tablist]",
+          "settle": 1500
+        },
+        {
+          "clickRole": "tab",
+          "name": "Analysis",
+          "settle": 600
+        },
+        {
+          "clickRole": "button",
+          "name": "Analyze this deck",
+          "settle": 400
+        },
+        {
+          "wait": "[data-testid='climb-rung']",
+          "settle": 1200
+        },
+        {
+          "scrollTo": "[data-testid='climb-rung'][data-role='below']",
+          "settle": 300
+        }
+      ]
+    },
+    {
+      "id": "open",
+      "label": "/decks/[id] Analysis \u2014 the path open at Upgraded: target chips, any two of these five",
+      "view": "src/components/decks/bracket-climb.tsx",
+      "steps": [
+        {
+          "goto": "/decks/${PATH_DECK}",
+          "wait": "[role=tablist]",
+          "settle": 1500
+        },
+        {
+          "clickRole": "tab",
+          "name": "Analysis",
+          "settle": 600
+        },
+        {
+          "clickRole": "button",
+          "name": "Analyze this deck",
+          "settle": 400
+        },
+        {
+          "wait": "[data-testid='climb-rung']",
+          "settle": 1200
+        },
+        {
+          "clickRole": "button",
+          "name": "what would have to go",
+          "settle": 400
+        },
+        {
+          "scrollTo": "[data-testid='upgrade-path']",
+          "settle": 300
+        }
+      ]
+    },
+    {
+      "id": "core",
+      "label": "/decks/[id] Analysis \u2014 the path at Core: every game changer named, the combo broken by either half",
+      "view": "src/components/decks/bracket-climb.tsx",
+      "steps": [
+        {
+          "goto": "/decks/${PATH_DECK}",
+          "wait": "[role=tablist]",
+          "settle": 1500
+        },
+        {
+          "clickRole": "tab",
+          "name": "Analysis",
+          "settle": 600
+        },
+        {
+          "clickRole": "button",
+          "name": "Analyze this deck",
+          "settle": 400
+        },
+        {
+          "wait": "[data-testid='climb-rung']",
+          "settle": 1200
+        },
+        {
+          "clickRole": "button",
+          "name": "what would have to go",
+          "settle": 400
+        },
+        {
+          "clickRole": "button",
+          "name": "Core",
+          "settle": 400
+        },
+        {
+          "scrollTo": "[data-testid='upgrade-path']",
+          "settle": 300
+        }
+      ]
+    },
+    {
+      "id": "blocked",
+      "label": "/decks/[id] Analysis \u2014 blocked at Core: the commander on a dashed edge, and the nearest target that removals reach",
+      "view": "src/components/decks/bracket-climb.tsx",
+      "steps": [
+        {
+          "goto": "/decks/${PATH_BLOCKED_DECK}",
+          "wait": "[role=tablist]",
+          "settle": 1500
+        },
+        {
+          "clickRole": "tab",
+          "name": "Analysis",
+          "settle": 600
+        },
+        {
+          "clickRole": "button",
+          "name": "Analyze this deck",
+          "settle": 400
+        },
+        {
+          "wait": "[data-testid='climb-rung']",
+          "settle": 1200
+        },
+        {
+          "clickRole": "button",
+          "name": "what would have to go",
+          "settle": 400
+        },
+        {
+          "clickRole": "button",
+          "name": "Core",
+          "settle": 400
+        },
+        {
+          "scrollTo": "[data-testid='upgrade-path']",
+          "settle": 300
+        }
+      ]
+    }
+  ]
+}

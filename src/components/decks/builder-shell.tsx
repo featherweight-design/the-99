@@ -1069,6 +1069,7 @@ export function BuilderShell({
                 <AnalysisPanel
                   state={profile.state}
                   onRequest={profile.request}
+                  onOpenDecklist={() => setView("deck")}
                   declaration={{
                     declared: declaration.declared,
                     // `for version n` only when the answer on screen IS what version n recorded.
