@@ -91,7 +91,7 @@ Listed so the sub-line's spacing can be checked against it. This PR does not re-
 | color | `var(--fg-muted)` | `var(--fg-muted)` |
 | line-height | 1.6 | 1.55 |
 | margin-top | 11px (1a live card: 12px) | 10px |
-| Copy, declared inside permits | `declarationCopy.declared.permitsBelow(permitsPhrase, isTopRange)`. `permitsPhrase` = "*lo* or *hi*" by name, `isTopRange` = permits is `[4,5]` | same |
+| Copy, declared inside permits | `declarationCopy.declared.permitsBelow(permits)`, which names the pair and picks the top-range sentence (`[4,5]`) or the low one (`[1,2]`) itself | same |
 | Copy, every other reading | the existing verdict description (not this PR's copy) | same |
 
 ---

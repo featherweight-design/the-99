@@ -4,11 +4,14 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 const action = vi.hoisted(() => ({
   result: { ok: true, declared: 2 } as unknown,
   calls: [] as [string, number][],
+  /** When set, each call waits on its own promise, resolved by the test in any order. */
+  held: null as null | ((value: number) => Promise<unknown>),
 }));
 
 vi.mock("../../app/decks/declaration-actions", () => ({
   declareBracket: async (deckId: string, value: number) => {
     action.calls.push([deckId, value]);
+    if (action.held) return action.held(value);
     if (action.result instanceof Error) throw action.result;
     return action.result;
   },
@@ -19,6 +22,7 @@ const { useDeclaration } = await import("./use-declaration");
 beforeEach(() => {
   action.calls = [];
   action.result = { ok: true, declared: 2 };
+  action.held = null;
 });
 
 describe("useDeclaration", () => {
@@ -55,5 +59,35 @@ describe("useDeclaration", () => {
     });
     rerender({ stored: 2 });
     expect(result.current.declared).toBe(2);
+  });
+
+  // ONLY THE NEWEST PRESS SPEAKS. A slow refusal of an earlier press must not put the screen back
+  // over a later one that succeeded — the database holds the later answer.
+  it("ignores a late reply to a superseded press", async () => {
+    const replies = new Map<number, (r: unknown) => void>();
+    action.held = (value) => new Promise((resolve) => replies.set(value, resolve));
+    const { result } = renderHook(() => useDeclaration("deck-1", null));
+    act(() => result.current.declare(2));
+    act(() => result.current.declare(1));
+    await waitFor(() => expect(replies.size).toBe(2));
+    await act(async () => replies.get(1)!({ ok: true, declared: 1 }));
+    await act(async () => replies.get(2)!({ ok: false, reason: "not-permitted" }));
+    expect(result.current.declared).toBe(1);
+    expect(result.current.refused).toBe(false);
+  });
+
+  // A refusal restores what the SERVER last confirmed, not the unconfirmed answer that happened
+  // to be on screen when the refused press was made.
+  it("restores the last confirmed answer, not an unconfirmed one", async () => {
+    const replies = new Map<number, (r: unknown) => void>();
+    action.held = (value) => new Promise((resolve) => replies.set(value, resolve));
+    const { result } = renderHook(() => useDeclaration("deck-1", 4));
+    act(() => result.current.declare(5));
+    await waitFor(() => expect(replies.size).toBe(1));
+    act(() => result.current.declare(4));
+    await waitFor(() => expect(replies.size).toBe(2));
+    await act(async () => replies.get(4)!({ ok: false, reason: "not-permitted" }));
+    expect(result.current.declared).toBe(4);
+    expect(result.current.refused).toBe(true);
   });
 });

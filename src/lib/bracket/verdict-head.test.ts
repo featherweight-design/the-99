@@ -22,9 +22,9 @@ describe("verdictHead", () => {
     expect(verdictHead([2])).toEqual({ face: "Core", split: false, chip: 2 });
   });
 
-  // ROUND 3: ANSWERING RESOLVES THE FACE. Every member of both ranges, because the upper one
-  // (`[5]`, `[2]` as an answer to `[1,2]`) is not itself a reachable `permits` shape and a face
-  // built by re-reading the answer as a range would throw on exactly those.
+  // ROUND 3: ANSWERING RESOLVES THE FACE. Every member of both ranges, because `[1]` and `[5]`
+  // are not reachable `permits` shapes, so a face built by re-reading the answer as a
+  // single-bracket range would throw on exactly those two.
   it("resolves a range to the answer's own face and chip", () => {
     for (const permits of [[1, 2], [4, 5]] as Bracket[][]) {
       for (const answered of permits) {
