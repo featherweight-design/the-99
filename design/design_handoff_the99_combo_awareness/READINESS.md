@@ -117,7 +117,7 @@ The copy file's string is `and ${others} others` unconditionally, so a card with
 partners read ungrammatically — and two is the MEDIAN shape on the reference collection, not
 an edge. Corrected in code to a singular at one. No other string moved.
 
-## 4 · The partner link does not return to the card it was followed from
+## 4 · The partner link does not return to the card it was followed from — RESOLVED
 
 The addendum says the name opens the partner **replacing** the current modal, and that the
 back gesture returns to the card you started from. The first half ships; the second does not.
@@ -125,9 +125,13 @@ back gesture returns to the card you started from. The first half ships; the sec
 the modal.
 
 Giving it a return means deciding what CLOSE means while a partner is open — back, or shut —
-which is a design call rather than an omission, so it is flagged here rather than invented.
+which is a design call rather than an omission, so it was flagged here rather than invented.
+**That call has since been made, and the two paragraphs above are the state before it. The
+shipped behaviour is correct; nothing below is an open deviation.**
 
-**RESOLVED 2026-09-22, by a later Design package rather than by this one.**
+**RESOLVED 2026-09-22, by a later Design package rather than by this one, which
+SUPERSEDES the addendum's expectation that the back gesture returns to the originating
+card.**
 `design_handoff_the99_verdict_addendum`, drawn for the verdict receipt, rules on modal depth
 from the other side: *"Depth stops at two, and this is a hard rule. Nothing inside the card
 modal opens a third sheet — no related-card link, no jump to another combo,"* and
