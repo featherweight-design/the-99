@@ -51,8 +51,10 @@ describe("the card modal's combo block", () => {
   // rendered whether or not it is open, or `aria-describedby` would dangle.
   it("describes the block with the bound, open or closed", () => {
     const { container } = render(<ComboPartnersDetail card={card([partner()])} />);
-    const block = container.querySelector("[data-testid='combo-partners-block']")!;
-    const described = block.getAttribute("aria-describedby");
+    // ON THE HEADING: a reader navigating by heading is the one who needs the bound, and a
+    // relation on the wrapping container is not reliably announced with the h3 inside it.
+    const heading = screen.getByText(comboAwarenessCopy.modal.heading);
+    const described = heading.getAttribute("aria-describedby");
     expect(described).toBeTruthy();
     expect(document.getElementById(described!)?.textContent).toBe(
       comboAwarenessCopy.modal.qualifier,
@@ -67,10 +69,9 @@ describe("the card modal's combo block", () => {
       name: comboAwarenessCopy.modal.boundMarkerAria,
     });
     expect(marker.getAttribute("aria-expanded")).toBe("false");
-    const bound = container.querySelector(`#${CSS.escape(
-      container.querySelector("[data-testid='combo-partners-block']")!
-        .getAttribute("aria-describedby")!,
-    )}`)!;
+    const bound = document.getElementById(
+      screen.getByText(comboAwarenessCopy.modal.heading).getAttribute("aria-describedby")!,
+    )!;
     expect(bound.className).toContain("sr-only");
 
     await act(async () => {

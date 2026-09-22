@@ -358,12 +358,19 @@ export const loadCardDetail = cache(async function loadCardDetail(
   // The unowned branch synthesises its card from the catalog, so `gameChanger` comes off
   // the `cards` row rather than from an aggregation — and without this the block never drew
   // for an unowned Game Changer at all.
-  return withBracketFacts({
-    ...catalogCard(card, printingRows),
-    facts: card.gameChanger ? ["gameChanger"] : undefined,
-    prices: await prices,
-    proxiedBy: await proxiedBy,
-  });
+  // BOTH BRANCHES, and the unowned one is the branch that matters most here. This block's
+  // `you don't own it` state is by definition about cards the reader does not have — and a
+  // reader following a partner into its own modal lands on exactly such a card. Enriching
+  // only the owned branch left the block silently absent on the commonest open it has.
+  return withComboPartners(
+    await withBracketFacts({
+      ...catalogCard(card, printingRows),
+      facts: card.gameChanger ? ["gameChanger"] : undefined,
+      prices: await prices,
+      proxiedBy: await proxiedBy,
+    }),
+    userId,
+  );
 });
 
 /**

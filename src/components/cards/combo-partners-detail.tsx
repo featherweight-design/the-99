@@ -51,10 +51,13 @@ export function ComboPartnersDetail({ card }: { card: BrowseCard }) {
       data-testid="combo-partners-block"
       className="rounded-[10px] mt-[16px] md:mt-[22px] p-[14px_16px] md:p-[18px_20px]"
       style={{ background: "var(--bg)", border: "1px solid var(--border)" }}
-      aria-describedby={boundId}
     >
       <div className="flex items-center gap-[6px] mb-[10px]">
+        {/* ON THE HEADING, not on the wrapper. The bound describes the LIST, and a reader
+            navigating by heading is the one who needs it — a relation hung on a generic
+            container is not reliably announced with the `h3` inside it. */}
         <h3
+          aria-describedby={boundId}
           className="font-mono text-[9.5px] md:text-[10px] uppercase tracking-[0.14em]"
           style={{ color: "var(--fg-faint)" }}
         >
