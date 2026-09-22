@@ -20,6 +20,7 @@ import { GhostButton } from "../ui/button";
 import { BuyTag } from "./buy-tag";
 import type { ProvenanceForm } from "../../lib/decks/price";
 import { CardDetailTrigger } from "../cards/card-detail-provider";
+import { ComboClause } from "../cards/combo-clause";
 import { MutationError } from "./mutation-error";
 import { useAddOptimisticCard } from "./optimistic-deck";
 import { useDeckMutation } from "./use-deck-mutation";
@@ -325,12 +326,40 @@ export function SuggestionTile({
         >
           {suggestion.name}
         </CardDetailTrigger>
-        <p
-          className="truncate font-mono text-[10px] md:text-[9.5px]"
-          style={{ color: applied ? "var(--fg-locked)" : "var(--fg-faint)" }}
-        >
-          {suggestion.typeLine}
-        </p>
+        {/* STATE 2 / 3 REPLACE THE TYPE LINE. The tile has one line here and the combo is
+            the fact a reader cannot get from the art, the name or the evidence row below.
+
+            ABSENT WHEN THE CARD IS IN THE DECK: `completes` presupposes adding it, and a
+            card that is in already completes nothing by being added again. The tile says
+            `✓ In deck` there and the type line comes back.
+
+            GATED ON `applied`, NOT ON `inDeck`. `applied` starts AT `inDeck` and flips the
+            moment Add is pressed, while `inDeck` stays at the last server-rendered value
+            until revalidation — so gating on the prop leaves the tile saying `✓ In deck` and
+            `completes with …` at the same time for the length of a round trip. Every other
+            atom on this tile is gated the same way.
+
+            READ AS TEXT, not aria-hidden. Unlike the collection row and the Last 31, this
+            tile composes no accessible name of its own — its name is a `CardDetailTrigger`
+            whose label is the card's name, and the type line this replaces was simply read
+            in place as content. Hiding the clause here would delete the sentence rather
+            than relocate it, and there is nowhere to relocate it to. The glyph inside is
+            hidden either way. */}
+        {suggestion.comboPartner && !applied ? (
+          <p className="min-w-0">
+            <ComboClause
+              partnerName={suggestion.comboPartner.name}
+              state="completes"
+            />
+          </p>
+        ) : (
+          <p
+            className="truncate font-mono text-[10px] md:text-[9.5px]"
+            style={{ color: applied ? "var(--fg-locked)" : "var(--fg-faint)" }}
+          >
+            {suggestion.typeLine}
+          </p>
+        )}
         {/* The chip is count-only (density="chip" forces nameless), so the
             caption is where the deck gets named. Design 6.3 / 6.4. */}
         {tileCaption && (

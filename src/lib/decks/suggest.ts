@@ -21,6 +21,20 @@ export type DeckSuggestion = {
   // name for, and guessing puts the optimistic row in a group it then jumps out
   // of — which is more jarring than the latency it was meant to hide.
   typeLine: string;
+  /**
+   * Combo awareness states 2 and 3: adding this card completes a two-card combo whose other
+   * half is ALREADY IN THIS DECK.
+   *
+   * On `DeckSuggestion` rather than spread onto it untyped, which is the dead-payload shape
+   * the candidate-facts note on `/decks/[id]` records and refuses. A suggestion is
+   * deck-scoped by construction — there is no surface that lists one without a deck — so
+   * this is not the "optional field on a shared type, populated by nobody" trap that keeps
+   * `facts` off `SynergyCard`.
+   *
+   * Optional because every producer other than the deck page's own read leaves it out, and
+   * an absent combo is what most cards have.
+   */
+  comboPartner?: { oracleId: string; name: string } | null;
   cardTypeGroup: DeckDetailCard["cardTypeGroup"];
   role: DeckDetailCard["role"];
   imageUri: string | null;

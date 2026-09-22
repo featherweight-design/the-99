@@ -3,6 +3,7 @@
 import { notFound } from "next/navigation";
 import { loadCandidateFacts } from "../../../lib/profile/candidate-facts";
 import { loadCompletionPartners } from "../../../lib/combos/near-miss";
+import { comboFor, comboLookupIds } from "../../../lib/combos/attach";
 import { requireUserId } from "../../../lib/auth";
 import { getDeckDetail, listDecksWithStats } from "../../../lib/decks/read";
 import { cacheForUser } from "../../../lib/cache/user-lists";
@@ -275,7 +276,10 @@ export default async function DeckBuilderPage({
         detail.commander.oracleId,
         ...(detail.partner ? [detail.partner.oracleId] : []),
       ],
-      candidateOracleIds: candidateCards.map((c) => c.oracleId),
+      // BOTH LISTS IN ONE READ. The Add panel's suggestions and the Last 31's candidates are
+      // two different rankings over the same question, and asking twice would pay the join
+      // twice for an overlapping set of ids.
+      candidateOracleIds: comboLookupIds(candidateCards, suggestions),
     }).catch(() => null),
   ]);
 
@@ -292,6 +296,10 @@ export default async function DeckBuilderPage({
   const pricedSuggestions = suggestions.map((s) => ({
     ...withPrice(s),
     availability: s.owned ? (availability?.get(s.oracleId) ?? null) : null,
+    // Declared on `DeckSuggestion`, so a consumer is forced to read it rather than inheriting
+    // it untyped through this spread — which is the dead-payload shape the candidate-facts
+    // note above refuses.
+    comboPartner: comboFor(s.oracleId, completions),
   }));
 
   // First-run: user's only deck and it has no cards yet.
@@ -310,10 +318,7 @@ export default async function DeckBuilderPage({
     facts: candidateFacts?.get(c.oracleId) ?? null,
     // The combo partner, attached for the same reason the three figures above are: the row
     // reads a field rather than doing a map lookup per render.
-    comboPartner: (() => {
-      const hit = completions?.get(c.oracleId);
-      return hit ? { oracleId: hit.partnerOracleId, name: hit.partnerName } : null;
-    })(),
+    comboPartner: comboFor(c.oracleId, completions),
   }));
 
   // Read once per request rather than at each use, so the tab, the strip's home and the
