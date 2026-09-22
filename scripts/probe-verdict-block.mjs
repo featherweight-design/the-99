@@ -20,7 +20,13 @@
 // nothing drew a mark; this block is the first mount, so the ground is read off the painted page
 // rather than inherited — the block's own `--surface`, not `--elevated-hover`.
 //
-// Makes no writes. Signs in through Clerk's dev instance — see the local-auth note in memory.
+// FIVE MUTATIONS WERE RUN AGAINST IT AND ALL FIVE FAIL: the art drawn as an `<img>` (4 checks),
+// the numeral's face dropped to `serif` (2), a typo in the slug — which passes every DOM
+// assertion while serving a 404, and is the whole reason the file is fetched (2) — the mask's
+// second layer removed so the file's own numeral survives under the HTML one (2), and the
+// denominator taken out of the population sentence (2).
+//
+// Makes no writes to any deck. Signs in through Clerk's dev instance — see the local-auth note in memory.
 // Needs a server with ANALYSIS_TAB_ENABLED=true. Point it at `local-dev`, never production.
 //
 //   PROBE_BASE=http://localhost:3010 node scripts/probe-verdict-block.mjs
