@@ -56,6 +56,15 @@ export type VersionComparison = {
    * here is: the component would otherwise hold a second copy of the rule.
    */
   stillAsking: boolean;
+  /**
+   * Whether the row is drawn at all: this version READS differently from the last one.
+   *
+   * A comparison of two identical readings says nothing, and a predecessor with no recorded
+   * reading cannot be compared — "unrecorded" is not "different". Only the ranges are compared,
+   * never the declarations: the row is about what the CARDS permit, and a version that reads the
+   * same as the last one but was answered differently has nothing to reconcile.
+   */
+  changed: boolean;
 };
 
 function reading(permits: readonly Bracket[], declared: Bracket | null): VersionReading {
@@ -69,6 +78,7 @@ export function versionComparison(
   was: { permits: readonly Bracket[] | null; declared: Bracket | null } | null,
 ): VersionComparison {
   const current = reading(now.permits, now.declared);
+  const previous = was !== null && was.permits !== null && was.permits.length > 0 ? was.permits : null;
   return {
     now: current,
     // A PREVIOUS VERSION WITH NO DECLARATION STILL READS. The row compares READINGS, not
@@ -83,5 +93,6 @@ export function versionComparison(
         ? { kind: "unrecorded" }
         : { kind: "read", reading: reading(was.permits, was.declared) },
     stillAsking: current.split,
+    changed: previous !== null && previous.join(",") !== [...now.permits].join(","),
   };
 }
