@@ -50,12 +50,18 @@ export type PairRow = {
 };
 
 /**
- * The two-piece core, shared by both readers.
+ * The two-piece core of the DECK read. `loadCompletionPartners` is its only caller.
  *
- * `present` is what the reader is known to have — a deck's cards plus its commanders, or a
- * collection. `missing` is the other piece, whatever it turns out to be. Written once because
- * the three §4.3b rules are subtle enough that a second copy would drift from `load.ts`'s
- * within a round, which is the failure `probe:build-from` took three rounds to stop repeating.
+ * `present` is the deck's cards plus its commanders; `missing` is the other piece, whatever it
+ * turns out to be. `loadOwnBothPartners` deliberately does NOT go through here, and passing it
+ * an empty `commanders` list would not produce the collection read: rule 2's `CASE` would then
+ * reject every `must_be_commander` piece outright, where the collection read has to keep them.
+ * The claim there is about owning two cards, not about assembling them, so a piece that works
+ * only from the command zone is still a card the reader owns.
+ *
+ * The two queries therefore share their RULES and not their text. That is a real duplication
+ * and it is the lesser one: the alternative is a parameter that silently changes which §4.3b
+ * rules apply, which is how a reader ends up asserting a combo it never tested for.
  */
 export function pairsWithOnePiece(args: {
   present: readonly string[];
