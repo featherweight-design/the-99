@@ -19,6 +19,9 @@ import { AvailabilityMarker } from "../ui/availability-marker";
 import { GhostButton } from "../ui/button";
 import { BuyTag } from "./buy-tag";
 import { CardNote } from "./card-note";
+import { CardFactMark } from "../cards/card-fact-mark";
+import { FactTooltip } from "../cards/fact-tooltip";
+import { factsFromCandidate } from "../../lib/bracket/facts";
 import type { ProvenanceForm } from "../../lib/decks/price";
 import type { Bracket } from "../../lib/bracket/types";
 import type { NoteCounts } from "../../lib/bracket/card-note";
@@ -167,6 +170,9 @@ export function SuggestionTile({
   commanderShortName, showNoSynergy, newestAsOf, provenance = null,
 }: SuggestionTileProps) {
   const { applied, isPending, error, run } = useDeckMutation(inDeck, DECK_ADD_FALLBACK_MESSAGE);
+  // The three standing facts, adapted from the candidate's own read. `undefined` for a card
+  // with none and for a failed read alike — both draw nothing, which is the same rendering.
+  const marks = factsFromCandidate(suggestion.facts) ?? [];
   const addOptimisticCard = useAddOptimisticCard();
   const noArt = suggestion.imageUri === null;
 
@@ -319,6 +325,28 @@ export function SuggestionTile({
       </div>
 
       <div className="flex flex-col gap-[2px] min-w-0">
+        {/* THE FACT MARKS, on their own line above the name — `STATES-push-line.md` §C2.
+            This is the surface the glyph was designed to lead on: a reader scanning a shelf
+            of six tiles meets the silhouette before any sentence, and the note below then
+            says the count and the rule, which a glyph cannot.
+
+            DRAWN ONLY WHERE THERE ARE MARKS. No tile reserves the line: most candidates carry
+            no fact at all, so a reserved row would be the commonest rendering on the shelf —
+            the same rule the note itself obeys.
+
+            `FactTooltip` wraps each one, as on every other mount. The hover is a SURFACE
+            concern that needs a positioned element and an open delay, which is why it wraps
+            the glyph rather than being a prop on it; a mark drawn bare is the defect reported
+            on /collection on 2026-09-19. */}
+        {marks.length > 0 && (
+          <div className="flex items-center gap-[5px] min-w-0">
+            {marks.map((fact) => (
+              <FactTooltip key={fact} fact={fact}>
+                <CardFactMark fact={fact} />
+              </FactTooltip>
+            ))}
+          </div>
+        )}
         <CardDetailTrigger
           oracleId={suggestion.oracleId}
           name={suggestion.name}

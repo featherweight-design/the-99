@@ -40,6 +40,11 @@ import { canSeed, type TopOffCandidateWithFacts } from "../../lib/decks/last-slo
 type RowCandidate = TopOffCandidateWithFacts;
 import { ComboClause, comboClauseSpoken } from "../cards/combo-clause";
 import { CardNote, cardNoteSpoken } from "./card-note";
+import { AddSurfaceMarkKey } from "./add-surface-mark-key";
+import { CardFactMark } from "../cards/card-fact-mark";
+import { FactTooltip } from "../cards/fact-tooltip";
+import { factsFromCandidate } from "../../lib/bracket/facts";
+import { cardFactName } from "../../lib/copy/card-mark";
 import type { NoteCounts } from "../../lib/bracket/card-note";
 import type { Bracket } from "../../lib/bracket/types";
 import {
@@ -172,6 +177,13 @@ function rowLabel(
     density: "row",
   });
   const noteClause = note ? ` ${note}` : "";
+  // THE MARKS ARE SPOKEN HERE and nowhere else, for the reason every other atom on this row
+  // is: the row's one accessible name is where all of it is heard. They come BEFORE the note,
+  // because the mark says WHICH kind and the note says how many and what the rules make of
+  // it — which is the order a reader can follow, and the order they are drawn in.
+  const markWords = factsFromCandidate(c.facts) ?? [];
+  const marksClause =
+    markWords.length > 0 ? ` ${markWords.map(cardFactName).join(", ")}.` : "";
   // THE COMBO IS SPOKEN HERE and nowhere else. Its glyph is aria-hidden and its sentence is
   // drawn aria-hidden too, because on the phone it stands in for the PIP TRACK and on desktop
   // it sits in the name cell's tail — neither of which a reader hears in a useful order. It
@@ -193,7 +205,7 @@ function rowLabel(
       : synergyCopy.figure.inclusion(String(c.inclusionPct));
   const cost = spokenManaCost(c.manaCost);
   if (c.synergyPts !== null && c.synergyPts >= 0) {
-    return `${cost}. ${type}. ${topOffCopy.list.rowAria(c.name, clause, String(c.synergyPts), inclusion)}${combo}${noteClause}`;
+    return `${cost}. ${type}. ${topOffCopy.list.rowAria(c.name, clause, String(c.synergyPts), inclusion)}${combo}${marksClause}${noteClause}`;
   }
   const synergy =
     c.synergyPts === null
@@ -204,7 +216,7 @@ function rowLabel(
     clause.replace(/\.$/, ""),
     synergy,
     inclusion,
-  )}${combo}${noteClause}`;
+  )}${combo}${marksClause}${noteClause}`;
 }
 
 /** Mounted twice, and only here. The phone track is uncapped and unshingled
@@ -977,6 +989,12 @@ export function TopOffList({
         </p>
       </div>
 
+      {/* THE KEY, above the rows, so the vocabulary is met before the first glyph. See
+          `AddSurfaceMarkKey` for why it is unconditional here and conditional on the
+          decklist: this list ranks a pool of 262 candidates for the average commander and
+          shows a window on it. */}
+      <AddSurfaceMarkKey className="px-[8px] md:px-[9px] pb-[10px]" />
+
       {/* ── The rows (§4) ──────────────────────────────────────────────── */}
       {/* One preview for the whole list, as the decklist mounts one for its
           ninety-nine: 262 rows each carrying a positioned 252x352 box and a
@@ -1284,6 +1302,33 @@ function CandidateRow({
   onToggle: () => void;
   onDecline: () => void;
 }) {
+  // The three standing facts, adapted from the candidate's own read. `undefined` for a card
+  // with none and for a failed read alike — both draw nothing, the same rendering.
+  const marks = factsFromCandidate(c.facts) ?? [];
+  /**
+   * THE FACT MARKS, inline after the name — `STATES-push-line.md` §C2, and Round 1's rule for
+   * a card row. `silent`, and spoken once in `rowLabel` like every other atom here.
+   *
+   * MOUNTED ONCE PER WIDTH, guarded by `isDesktop`, which is the pattern the NAME beside them
+   * already uses rather than a second one. The two widths put the name in different places —
+   * the phone's is a text span inside the tick's label, the desktop's a `CardDetailTrigger`
+   * outside it — so "after the name" is two different positions in the tree. Rendered once
+   * outside the label, the marks landed on the phone's SECOND line: measured at 73px from the
+   * row's left against a name ending at 251px, which is a different line rather than a gap.
+   *
+   * Not a CSS `hidden`/`md:hidden` pair: `isDesktop` mounts one of the two, so there is no
+   * duplicated subtree to keep in step.
+   */
+  const factMarks =
+    marks.length > 0 ? (
+      <span aria-hidden className="flex-none flex items-center gap-[4px]">
+        {marks.map((fact) => (
+          <FactTooltip key={fact} fact={fact}>
+            <CardFactMark fact={fact} silent />
+          </FactTooltip>
+        ))}
+      </span>
+    ) : null;
   // The decklist's own preview, borrowed rather than redrawn: one instance for
   // the whole list owns the image, the geometry and the two delays, and the row
   // only reports that a pointer arrived. A null `imageUri` is a no-op inside it,
@@ -1414,6 +1459,7 @@ function CandidateRow({
               {c.name}
             </span>
           )}
+          {!isDesktop && factMarks}
           <span
             aria-hidden
             className="flex-none flex items-center justify-end whitespace-nowrap font-mono text-[10px] md:order-5 md:w-[84px]"
@@ -1474,6 +1520,9 @@ function CandidateRow({
           >
             {c.name}
           </CardDetailTrigger>
+        )}
+        {isDesktop && factMarks && (
+          <span className="md:order-2 flex-none flex">{factMarks}</span>
         )}
         {/* The clause, in the name cell's TAIL. Desktop only — the phone draws it leading
             line 2, where there is room for a sentence. `flex-1 min-w-0` is what makes it the

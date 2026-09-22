@@ -145,16 +145,19 @@ export function cardNoteSentences({
   if (facts.massLandDenial && counts.massLandDenial !== null) {
     // The disclaimer rides with the sentence rather than being a fact of its own: it is the
     // second half of one attributed claim, and `STATES-card-note.md` caps facts rather than
-    // sentences for this reason. It is also what makes the tile's "two short sentences" reach
-    // the tile without anyone inventing a shortened string.
+    // sentences for this reason.
     const limited = limitedBracket(declared);
     take(
-      // "including the Optimized you declared" is FALSE at 4 and 5, which have no limits at
-      // all. The flat clause stays true at every bracket, so that is what those take.
+      // At 4 and 5 the deck's own bracket DOES allow it, so naming it would read as a refusal
+      // that is not happening. The flat clause states where the card sits and stays true at
+      // every bracket, so that is what those take.
       limited !== null
         ? cardNote.massLandDenial.declared(limited)
         : cardNote.massLandDenial.plain,
-      cardNote.massLandDenial.disclaimer,
+      // THE HEDGE IS THE ROW'S, not the tile's. See `massLandDenial.disclaimer` for why: it is
+      // a fixed two-line cost, and on a 173px tile it made this the only note drawing six
+      // lines where every other draws three.
+      ...(density === "row" ? [cardNote.massLandDenial.disclaimer] : []),
     );
   }
 

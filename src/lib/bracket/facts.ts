@@ -6,6 +6,7 @@
 
 import type { CardFact } from "../copy/card-mark";
 import type { CardBracketFlags } from "./flags-read";
+import type { CandidateFacts } from "./delta";
 
 /**
  * `undefined` when the card carries nothing, never `[]`.
@@ -28,4 +29,26 @@ export function factsFor(
   if (flags?.massLandDenial) facts.push("massLandDenial");
   if (flags?.extraTurn) facts.push("extraTurns");
   return facts.length > 0 ? facts : undefined;
+}
+
+/**
+ * The same three marks, for a CANDIDATE the player is deciding whether to add.
+ *
+ * `CandidateFacts` carries the two flag-derived facts as plain booleans — it comes off a
+ * different read from the deck's own cards, one scoped to a pool rather than to a list — so
+ * this is the adapter, and it is an adapter rather than a second assembly on purpose. The
+ * fixed order and the `undefined`-not-`[]` rule are `factsFor`'s, stated once.
+ *
+ * Tutors are NOT here, and their absence is Round 2's rather than an omission: the drawn-up
+ * glyph is that round's design, and `CARD_FACTS` is the shipped vocabulary. The note says the
+ * word in prose until the glyph exists.
+ */
+export function factsFromCandidate(facts: CandidateFacts | null): CardFact[] | undefined {
+  if (!facts) return undefined;
+  return factsFor(facts.gameChanger, {
+    massLandDenial: facts.massLandDenial,
+    massLandDenialSources: [],
+    extraTurn: facts.extraTurn,
+    extraTurnSources: [],
+  });
 }

@@ -21,6 +21,7 @@ import { describe, expect, it } from "vitest";
 const EXEMPT = new Map([
   ["src/components/decks/decklist.tsx", "the key's own sample — the word it defines is the next element"],
   ["src/components/collection/collection-mark-key.tsx", "the key's own sample, as above"],
+  ["src/components/decks/add-surface-mark-key.tsx", "the add surfaces' key, same sample"],
   ["src/components/cards/card-modal.tsx", "the modal spells all three facts out in prose"],
   [
     "src/components/decks/bracket-climb.tsx",

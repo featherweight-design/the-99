@@ -22,6 +22,13 @@
 // constant — 27px is what the handoff states for the 390 row, and what makes it right is that
 // it clears the tick box, which is a laid-out width.
 //
+// THE FACT MARKS ARE MEASURED HERE TOO, because they are the same slot's other half: §C2 puts
+// the three glyphs on both of these surfaces, the note says the count and the rule, and a
+// reader meets the silhouette first. A MARKED TILE IS ONLY REACHABLE WITH THE SHELVES
+// EXPANDED — at the default cap every tile on the fixture deck is a tutor, which has no glyph
+// by Round 2's design, so a run taking the first screen reports the mount missing on a build
+// that draws it. The probe presses every `Show all` before it looks.
+//
 // A RUN THAT FINDS NO NOTE FAILS. The fixture is whatever the account's pool happens to hold,
 // and a check that counted zero and passed would be a probe measuring nothing — the failure
 // `probe:commander-availability` carried for its whole life before it was found.
@@ -421,6 +428,66 @@ async function run() {
         }
       }
 
+        // THE FACT MARKS, §C2's other half. Expanded first: see the header — at the default
+        // cap this deck's shelves are all tutors, which carry no glyph.
+        for (const btn of await onPage(page, 'button[aria-label^="Show all"]').all()) {
+          await btn.click({ timeout: 4000 }).catch(() => {});
+        }
+        await page.waitForTimeout(1200);
+        const tileMark = await page.evaluate(() => {
+          const tile = [...document.querySelectorAll('main [data-testid="suggestion-tile"]')]
+            .find((t) => t.querySelector("[data-testid^='card-fact-']"));
+          if (!tile) return null;
+          const mark = tile.querySelector("[data-testid^='card-fact-']");
+          const name = [...tile.querySelectorAll("button")].find((b) =>
+            b.className.includes("font-semibold"));
+          if (!name) return null;
+          const m = mark.getBoundingClientRect();
+          const n = name.getBoundingClientRect();
+          return {
+            // §C2: "own line above the name". Its own LINE, so the mark's foot clears the
+            // name's top rather than merely sitting left of it.
+            aboveName: m.bottom <= n.top + 1,
+            px: Math.round(m.width),
+            // The glyph carries its own name here: the tile composes no accessible name of
+            // its own, so hiding it would delete the fact rather than relocate it.
+            spoken: mark.getAttribute("aria-hidden") !== "true",
+          };
+        });
+        if (tileMark === null) {
+          report(
+            `${width}px · Consider tile · a marked tile`,
+            false,
+            "none across every expanded shelf — NOT a pass, the check has no subject",
+          );
+        } else {
+          report(
+            `${width}px · Consider tile · the mark is 16px on its own line above the name`,
+            tileMark.aboveName && tileMark.px === 16,
+            `${tileMark.px}px, above the name: ${tileMark.aboveName}`,
+          );
+          report(
+            `${width}px · Consider tile · the mark speaks its own name`,
+            tileMark.spoken,
+            tileMark.spoken ? "role=img with a label" : "aria-hidden, and nothing else says it",
+          );
+        }
+
+        // THE KEY. A wordless mark is legal only where something glosses it — the rule the
+        // deck-status marks were retired in a day for breaking. Unconditional on this surface,
+        // so it is asserted with no marked card required.
+        const tileKey = await page.evaluate(() => {
+          const key = document.querySelector('main [role="group"][aria-label*="ark"]');
+          return key ? (key.textContent ?? "") : null;
+        });
+        report(
+          `${width}px · Consider tile · the key glosses every glyph drawn here`,
+          tileKey !== null
+            && ["game changer", "mass land denial", "extra turns", "Two-card combo"]
+              .every((w) => tileKey.includes(w)),
+          tileKey === null ? "no key on the panel" : "all four words present",
+        );
+
       // ── The top-off row ──────────────────────────────────────────────────
       const deckTab = onPage(page, "#tab-deck").first();
       if ((await deckTab.count()) > 0) {
@@ -442,6 +509,37 @@ async function run() {
         await page.evaluate(READ_ROW_MINIMUM),
         width === 390 ? 52 : 34,
       );
+
+      // THE ROW'S MARKS, inline AFTER the name and on its line — the placement that was wrong
+      // at 390 before it was measured: mounted once outside the tick's label, the glyph landed
+      // on the phone's second line, 73px from the row's left against a name ending at 251px.
+      // Read as a relation to the laid-out name at each width, never as a constant.
+      const rowMark = await page.evaluate(() => {
+        const row = [...document.querySelectorAll("main [data-top-off-row]")]
+          .find((r) => r.querySelector("[data-testid^='card-fact-']"));
+        if (!row) return null;
+        const m = row.querySelector("[data-testid^='card-fact-']").getBoundingClientRect();
+        const n = row.querySelector('[data-testid="top-off-name"]').getBoundingClientRect();
+        return {
+          sameLine: Math.abs(m.top - n.top) < 12,
+          afterName: m.left >= n.right - 1,
+          px: Math.round(m.width),
+          gap: Math.round(m.left - n.right),
+        };
+      });
+      if (rowMark === null) {
+        report(
+          `${width}px · top-off row · a marked row`,
+          false,
+          "none in the pool — NOT a pass, the check has no subject",
+        );
+      } else {
+        report(
+          `${width}px · top-off row · the mark is 16px, after the name and on its line`,
+          rowMark.sameLine && rowMark.afterName && rowMark.px === 16,
+          `${rowMark.px}px · ${rowMark.gap}px after the name · same line: ${rowMark.sameLine}`,
+        );
+      }
 
       if (rowNotes.length > 0) {
         // INDENTED TO THE NAME COLUMN. The handoff states 27px for the 390 row; what makes

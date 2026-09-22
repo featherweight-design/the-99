@@ -1195,11 +1195,27 @@ Package manager is **pnpm** (pinned via `packageManager` in package.json) — ne
   on any build. Same rule everywhere here: a run that finds no note at all is reported as having
   measured nothing.
 
-  Seven mutations were run against it and all seven fail: the indent removed, the tile drawn at
+  **It measures §C2's MARKS too**, the slot's other half: the three glyphs at 16px, on their own
+  line above the tile's name and inline after the row's, plus the key that glosses all four —
+  including the lemniscate `ComboClause` had been drawing unglossed on both surfaces since
+  sub-project 3. **A marked tile is only reachable with the shelves EXPANDED**: at the default
+  cap every tile on the fixture deck is a tutor, which carries no glyph by Round 2's design, so
+  a run taking the first screen reports the mount missing on a build that draws it. It presses
+  every `Show all` first, and `Mystical Tutor` is what it finds.
+
+  The row's mark is read as a RELATION to the laid-out name rather than against a constant, and
+  that is the check that caught the placement: mounted once outside the tick's label, the glyph
+  landed on the phone's SECOND line — 73px from the row's left against a name ending at 251px,
+  which is a different line and not a gap. It is mounted once per width now, guarded by
+  `isDesktop`, which is the pattern the name beside it already uses.
+
+  Ten mutations were run against it and all ten fail: the indent removed, the tile drawn at
   row density, the rule above the note removed, the note left un-hidden on the row, the note's
   sentences dropped from `rowLabel`, the empty-note guard removed (which draws a reserved box),
-  and the note moved outside the row's box. `mt-auto` reverted on the tile's Add reads the 91px
-  spread exactly. It makes no writes; point it at `local-dev`.
+  the note moved outside the row's box, the row's marks mounted once outside the label (which
+  reproduces the phone defect exactly), the key unmounted, and the tile's mark made `silent`.
+  `mt-auto` reverted on the tile's Add reads the 91px spread. It makes no writes; point it at
+  `local-dev`.
 
 - `pnpm probe:scroll-lock` presses every overlay the app draws over a scrim — the filter
   sheets on `/collection`, `/commanders`, `/discover`, `/decks` and a set page, the

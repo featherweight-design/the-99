@@ -87,6 +87,7 @@ added and the count went from nine to fourteen**, so the dependency history is a
 | **7 — the drift row** ◐ | What survives of drift once the "you said" framing is gone — the permitted side can be a single bracket, which needs a reading. | 4a |
 | **8a — the facts payload** ✅ | The profile threaded into the builder shell and the top-off list, and a BATCHED `CandidateFacts` read for the whole pool. Measured above; Round 4's own list does not contain it. | — |
 | **8b — the card note, on the deck's own add surfaces** | The note atom at two densities — the sentence on the top-off row, the clause on the Consider tile — its copy module, and the pure rule that picks which sentence a candidate draws. **The push line this row used to name is withdrawn**; see below. | 8a |
+| **8b-ii — the marks the note leans on** | §C2's three fact glyphs on the Consider tile and the top-off row, the key that glosses them and the lemniscate sub-project 3 left unglossed, and the mass-land-denial note restated as a CONSEQUENCE. Asked for by Hugh against the shipped tile; both questions were real omissions. | 8b |
 | **8c — the card note on the quick-add row** | The search action's own facts read, and the note on the search result row. A different payload question from 8b's: the two deck-page hosts are fed by 8a's batched pool read, and the quick-add row is fed by a live per-keystroke search that loads no facts at all. | 8b |
 | **9 — the upgrade path** ◐ | Candidate sets, never a pick; the `blocked` reading. | Round 4 design |
 
@@ -149,6 +150,19 @@ spelling is the trigger's and the `21 Sept` stamp is the committed verdict's pro
 travel to whichever PR draws the verdict block. Defect 1's three production-final strings are in
 any case **already correct on `main`**: `deck-analysis.ts` shipped `Analyze this deck` and
 `Analyze again` in #828.
+
+**What 8b-ii corrected, 2026-09-22.** 8b built §C's note matrix and not §C2's MARK matrix. The
+three glyphs are specified on both add surfaces and drew on neither — `CardFactMark` rendered on
+every surface showing a card you already have and none showing a card you are deciding to add —
+so the words carried the whole load where the glyph was meant to lead. Neither surface had a KEY
+either, which made the lemniscate `ComboClause` has drawn since sub-project 3 a wordless mark
+with nothing glossing it: the exact failure the deck-status marks were retired in a day for.
+
+And the note's mass-land-denial sentence now states the CONSEQUENCE — *"Nothing below Optimized
+allows it"*. That is not the withdrawn push line: MLD is forbidden outright at 1, 2 and 3, so
+where the card puts you needs no verdict and no count. It does not generalise, and is not
+applied to the other two — extra turns are counted at bracket 1 alone, and a game changer's
+consequence depends on the count, which IS the verdict the ruling removed.
 
 **One ruling 8b makes, and it belongs here rather than in a component:** state n8, *"This completes
 A + B, a two-card infinite"*, is **not drawn**. Sub-project 3 shipped the same statement on the
