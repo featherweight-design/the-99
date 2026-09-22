@@ -57,7 +57,7 @@ export type PairRow = {
  * the three §4.3b rules are subtle enough that a second copy would drift from `load.ts`'s
  * within a round, which is the failure `probe:build-from` took three rounds to stop repeating.
  */
-function pairsWithOnePiece(args: {
+export function pairsWithOnePiece(args: {
   present: readonly string[];
   /** Cards that count as being in the COMMAND ZONE, for rule 2. Empty for a collection read. */
   commanders: readonly string[];
