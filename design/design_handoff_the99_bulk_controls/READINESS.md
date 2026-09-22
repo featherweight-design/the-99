@@ -118,3 +118,26 @@ requirement. The pair never builds one plan to describe and another to apply.
 - `data-bulk-fill` and `data-bulk-concession` on both controls, and a `probe:last-slots` case
   asserting the concession is readable BEFORE the press. A check that only reads post-press state
   would pass a build that reveals the cost too late, which is the one thing §3 locks.
+
+## Errata — raised in review of this handoff's own PR, 2026-09-22
+
+Three internal contradictions in the package, recorded rather than edited: the drawings are
+Design's and this section is eng's. **None of them changes the verdict**, and the build (PR 9b)
+resolved each one the way named below.
+
+1. **The desktop button width is stated three ways.** README §1 and `STATES` both specify
+   **232px**, four times between them, with the derivation beside it; the canvas renders 244px
+   and its logic helper 196px. **Built to 232px** — the prose is explicit, repeated, and carries
+   its own arithmetic, while the canvas figure appears only as a drawn value. If 244 was the
+   intended figure, it is a one-line change and the notes still share a left edge either way,
+   which is what the column is for.
+
+2. **The package is labelled R1 in its filenames and READINESS title and R2 on the canvas
+   badge.** The contents match the R2 description. Read as R2 throughout; no verdict depends on
+   which label is on the cover.
+
+3. **The canvas still draws the two additions this audit dropped** — the *tick → select* verb
+   rename and the candidate-row marks. That is chronology rather than contradiction: the canvas
+   predates the audit below, which is the later document and the one the build followed. Both
+   remain Design-proposed scope and neither touches the pair. The rename is a follow-up with the
+   About batch; the marks need a payload change for an ornament outside the pair.
