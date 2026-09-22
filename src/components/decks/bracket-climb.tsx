@@ -1,3 +1,7 @@
+import type { ReactNode } from "react";
+
+import { CardFactMark } from "../cards/card-fact-mark";
+import { ComboGlyph } from "../cards/combo-glyph";
 import { climb } from "../../lib/bracket/climb";
 import type { Bracket, BracketVerdict, RuleId } from "../../lib/bracket/types";
 import { upgradePath, type UpgradePath } from "../../lib/bracket/upgrade";
@@ -72,8 +76,10 @@ function Rung({
       data-role={role}
       data-bracket={bracket}
       className={
-        "grid items-center gap-[10px] rounded-lg px-3 py-[10px] md:grid-cols-[186px_1fr] md:gap-[14px] md:px-3 "
-        + (role === "yours" ? "md:py-[11px] " : "md:py-[10px] ")
+        "grid rounded-lg px-[11px] md:grid-cols-[186px_1fr] md:items-center md:gap-[14px] md:px-3 "
+        + (role === "yours"
+          ? "gap-[9px] py-[11px] md:py-[11px] "
+          : "gap-[7px] py-[10px] md:py-[10px] ")
         + (role === "below" ? "border border-[color:var(--border)] bg-[color:var(--surface-sunken)] " : "")
         + (role === "yours" ? "border " : "")
         + (role === "above" && !declares ? "border border-[color:var(--border)] " : "")
@@ -87,7 +93,7 @@ function Rung({
             : undefined
       }
     >
-      <span className="flex items-center gap-[9px]">
+      <span className="flex items-center gap-2 md:gap-[9px]">
         {role === "yours" ? (
           <BracketMark bracket={bracket} px={26} mdPx={36} />
         ) : (
@@ -107,15 +113,25 @@ function Rung({
             </span>
           </>
         )}
-        <span className="flex flex-col gap-0.5">
+        {/*
+          AT 390 THE LABEL IS ONE LINE, with the role pushed to the far end — the rung is a
+          single column there, so stacking the two would spend a second line on nine characters
+          and push the body further from the mark it belongs to. Above 768px the rung's first
+          column is a fixed 186px and the two stack inside it.
+        */}
+        <span className="flex flex-1 items-baseline gap-2 md:flex-none md:flex-col md:items-start md:gap-0.5">
           <span
-            className={role === "yours" ? "text-[13.5px] font-semibold" : "text-[12.5px] font-semibold text-[color:var(--fg-body)]"}
+            className={
+              role === "yours"
+                ? "text-[13px] font-semibold md:text-[13.5px]"
+                : "text-[12.5px] font-semibold text-[color:var(--fg-body)]"
+            }
             style={role === "yours" ? { color: ink } : undefined}
           >
             {BRACKET_NAMES[bracket]}
           </span>
           <span
-            className="font-mono text-[9px] uppercase tracking-[0.1em]"
+            className="ml-auto font-mono text-[8.5px] uppercase tracking-[0.1em] md:ml-0 md:text-[9px]"
             style={{ color: role === "yours" ? ink : "var(--fg-faint)" }}
           >
             {role === "below" ? (
@@ -163,7 +179,7 @@ function RungBody({
     // which combos a target forbids, which cards sit in the command zone and cannot be cut, and
     // that bracket 1 is the only target counting extra turns.
     return (
-      <span className="text-[12.5px] leading-[1.6] text-[color:var(--fg-muted)]">
+      <span className="pl-[7px] text-[12px] leading-[1.55] text-[color:var(--fg-muted)] md:pl-0 md:text-[12.5px] md:leading-[1.6]">
         {dropSentence(upgradePath(profile, bracket), bracket)}
       </span>
     );
@@ -171,23 +187,23 @@ function RungBody({
   if (role === "above") {
     if (!declares) {
       return (
-        <span className="text-[12.5px] leading-[1.6] text-[color:var(--fg-muted)]">
+        <span className="pl-[7px] text-[12px] leading-[1.55] text-[color:var(--fg-muted)] md:pl-0 md:text-[12.5px] md:leading-[1.6]">
           {copy.aboveAllowed}
         </span>
       );
     }
     return (
-      <span className="flex items-start gap-2">
+      <span className="flex items-start gap-[7px] pl-[5px] md:gap-2 md:pl-0">
         {/* The one ringed `?` left on the climb, and the only glyph in it. */}
         <span
           role="img"
           aria-label={deckAnalysisCopy.verdict.declareGlyphAria}
-          className="mt-px flex h-[14px] w-[14px] flex-none items-center justify-center rounded-full border font-mono text-[9px] font-semibold leading-none"
+          className="mt-px flex h-[13px] w-[13px] flex-none items-center justify-center rounded-full border font-mono text-[8.5px] font-semibold leading-none md:h-[14px] md:w-[14px] md:text-[9px]"
           style={{ borderColor: bracketInk(bracket), color: bracketInk(bracket) }}
         >
           ?
         </span>
-        <span className="text-[12.5px] leading-[1.6] text-[color:var(--fg-muted)]">
+        <span className="text-[12px] leading-[1.55] text-[color:var(--fg-muted)] md:text-[12.5px] md:leading-[1.6]">
           {copy.declare}
         </span>
       </span>
@@ -245,20 +261,42 @@ function Allowances({ bracket, verdict }: { bracket: Bracket; verdict: BracketVe
   // block above has already said what this deck is; an empty cell is quiet and true.
   if (rows.length === 0) return null;
   return (
-    <span className="flex flex-wrap items-center gap-x-[18px] gap-y-2">
+    <span className="flex flex-col gap-[6px] pl-[7px] md:flex-row md:flex-wrap md:items-center md:gap-x-[18px] md:gap-y-2 md:pl-0">
       {rows.map((row) => (
         <span key={row.rule} data-testid="climb-figure" className="inline-flex items-center gap-[7px]">
+          {/*
+            THE SAME MARK THE FINDINGS AND THE CARD SURFACES DRAW, at the one size it has:
+            `CARD_FACT_MARK_PX` is 16 everywhere and is not a prop, ruled 2026-09-21 after the
+            set shipped at 12, 13, 14 and 16 across six mounts and the same fact read as a
+            different mark depending on which list a player was looking at. The canvas draws 12
+            here; that ruling supersedes it.
+          */}
+          <RuleMark rule={row.rule} />
           <span className="font-mono text-[10.5px]" style={{ color: ink }}>
             {copy.ruleNames[row.rule]}
           </span>
           <span className="font-mono text-[13px] font-semibold" style={{ color: ink }}>
             {row.have}
           </span>
-          <span className="font-mono text-[10px] text-[color:var(--fg-faint)]">{row.allowance}</span>
+          <span className="font-mono text-[9.5px] text-[color:var(--fg-faint)] md:text-[10px]">
+            {row.allowance}
+          </span>
         </span>
       ))}
     </span>
   );
+}
+
+/**
+ * The fact mark for a bracket rule.
+ *
+ * `twoCardCombos` takes `ComboGlyph` rather than `CardFactMark`: the lemniscate is a fifth fact
+ * with its own module, and `CardFact` does not name it. Both draw at `CARD_FACT_MARK_PX`.
+ */
+function RuleMark({ rule }: { rule: RuleId }) {
+  if (rule === "twoCardCombos") return <ComboGlyph />;
+  const fact = rule === "gameChangers" ? "gameChanger" : rule === "massLandDenial" ? "massLandDenial" : "extraTurns";
+  return <CardFactMark fact={fact} silent />;
 }
 
 /**
@@ -267,14 +305,14 @@ function Allowances({ bracket, verdict }: { bracket: Bracket; verdict: BracketVe
  * NAMES THE CARDS AT ONE OR TWO and counts above that. Nine card names in a row is not a
  * sentence a reader takes in, and the receipts live in the findings.
  */
-function dropSentence(path: UpgradePath, bracket: Bracket): string {
+function dropSentence(path: UpgradePath, bracket: Bracket): ReactNode {
   const copy = deckAnalysisCopy.climb;
   const name = BRACKET_NAMES[bracket];
   if (path.blocked) return copy.dropBlocked(name);
   const clauses = path.items.map((item) => {
     if (item.rule === "twoCardCombos") {
       const n = item.combos.length;
-      return copy.dropCount(n, n === 1 ? "two-card infinite" : "two-card infinites", name);
+      return copy.dropParts.count(n, n === 1 ? "two-card infinite" : "two-card infinites", name);
     }
     const noun = deckAnalysisCopy.verdict.ruleNouns[item.rule];
     const word = item.removeCount === 1 ? noun[0] : noun[1];
@@ -282,13 +320,24 @@ function dropSentence(path: UpgradePath, bracket: Bracket): string {
     // Upgraded is told what it may keep rather than only what has to go.
     const limit = item.candidates.length - item.removeCount;
     if (item.candidates.length <= 2 && limit === 0) {
-      return copy.dropNamed(nameList(item.candidates.map((c) => c.name)), name);
+      return copy.dropParts.named(nameList(item.candidates.map((c) => c.name)), name);
     }
     return limit > 0
-      ? copy.dropCountAllowing(item.removeCount, word, name, limit)
-      : copy.dropCount(item.removeCount, word, name);
+      ? copy.dropParts.countAllowing(item.removeCount, word, name, limit)
+      : copy.dropParts.count(item.removeCount, word, name);
   });
   // ONE SENTENCE PER RULE, joined by a space rather than by `nameList`: these are whole
-  // sentences with their own full stops, and a comma-joined list of them is unreadable.
-  return clauses.join(" ");
+  // sentences with their own full stops, and a comma-joined list of them is unreadable. The
+  // THING TO CUT carries the emphasis the canvas gives it; the rest of the clause stays muted.
+  return clauses.flatMap((parts, clause) =>
+    parts.map((part, i) =>
+      part.strong ? (
+        <b key={`${clause}-${i}`} className="font-semibold text-[color:var(--fg)]">
+          {part.text}
+        </b>
+      ) : (
+        <span key={`${clause}-${i}`}>{i === 0 && clause > 0 ? ` ${part.text}` : part.text}</span>
+      ),
+    ),
+  );
 }

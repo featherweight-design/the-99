@@ -160,3 +160,28 @@ describe("the verdict's ruled-out clause", () => {
     expect(deckAnalysisCopy.verdict.ruledOutFact(2, "game changers")).toBe("two game changers");
   });
 });
+
+describe("the climb's drop sentence", () => {
+  // ONE SOURCE, CHECKED, exactly as the population line is. The parts exist only so the thing to
+  // CUT can carry the canvas's emphasis; the copy guard reads the flat sentences, so a drifted
+  // parts list would be the half nothing looks at.
+  const c = deckAnalysisCopy.climb;
+  it("splits into parts that rejoin as each sentence exactly", () => {
+    expect(c.dropParts.named("Time Warp", "Exhibition").map((p) => p.text).join("")).toBe(
+      c.dropNamed("Time Warp", "Exhibition"),
+    );
+    expect(c.dropParts.count(2, "game changers", "Core").map((p) => p.text).join("")).toBe(
+      c.dropCount(2, "game changers", "Core"),
+    );
+    expect(
+      c.dropParts.countAllowing(1, "game changer", "Upgraded", 3).map((p) => p.text).join(""),
+    ).toBe(c.dropCountAllowing(1, "game changer", "Upgraded", 3));
+  });
+
+  it("emphasises the cards or the count and nothing else", () => {
+    expect(c.dropParts.named("Time Warp", "Exhibition").filter((p) => p.strong).map((p) => p.text))
+      .toEqual(["Time Warp"]);
+    expect(c.dropParts.count(2, "game changers", "Core").filter((p) => p.strong).map((p) => p.text))
+      .toEqual(["two game changers"]);
+  });
+});

@@ -249,6 +249,31 @@ export const deckAnalysisCopy = {
     dropCountAllowing: (n: number, rule: string, bracket: string, allowed: number) =>
       `Cut ${numberWord(n)} ${rule}, only ${numberWord(allowed)} allowed at ${bracket}.`,
     /**
+     * The same three sentences, split so the thing to CUT carries the emphasis the canvas gives
+     * it — the cards or the count in `--fg` at 600, the rest of the clause muted.
+     *
+     * ONE SOURCE, CHECKED. `deck-analysis.test.ts` asserts each parts list rejoins byte-identical
+     * to its flat sentence, for the reason `population.lineParts` is checked the same way: two
+     * hand-kept copies of one sentence drift, and the copy guard reads the flat one.
+     */
+    dropParts: {
+      named: (cards: string, bracket: string) => [
+        { text: "Cut " },
+        { text: cards, strong: true },
+        { text: `: ${bracket} allows none.` },
+      ] as { text: string; strong?: boolean }[],
+      count: (n: number, rule: string, bracket: string) => [
+        { text: "Cut " },
+        { text: `${numberWord(n)} ${rule}`, strong: true },
+        { text: `: ${bracket} allows none.` },
+      ] as { text: string; strong?: boolean }[],
+      countAllowing: (n: number, rule: string, bracket: string, allowed: number) => [
+        { text: "Cut " },
+        { text: `${numberWord(n)} ${rule}`, strong: true },
+        { text: `, only ${numberWord(allowed)} allowed at ${bracket}.` },
+      ] as { text: string; strong?: boolean }[],
+    },
+    /**
      * A violation removals cannot clear. `upgradePath.blocked` is the flag, and it is a real
      * state: a combo whose only pieces are the two commanders cannot be cut at all.
      */
