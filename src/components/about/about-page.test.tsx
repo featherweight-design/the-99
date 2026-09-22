@@ -525,6 +525,25 @@ describe("the figures", () => {
       mixSourceLine({ measured: false } as never),
     );
 
+    // THE TARGETS THEMSELVES, read off the denominator each cell draws. The
+    // provenance check above passes whatever the numbers are, so without this
+    // the figure could quote 37 lands at nobody and still say `EDHREC
+    // averages` over the top — which is the exact overclaim the entry exists
+    // to rule out. Read from the cell's own `/ N` span rather than from a
+    // `textContent` match on the plate, because the numerator sits beside it
+    // and `20` appears in both `20 / 20` and `4 / 20`.
+    const denominators = [...plate.querySelectorAll("p > span")]
+      .map((el) => el.textContent?.trim() ?? "")
+      .filter((t) => t.startsWith("/"))
+      .map((t) => t.slice(1).trim());
+    expect(denominators, "the figure's measured targets moved").toEqual([
+      "20",
+      "8",
+      "10",
+      "0",
+      "28",
+    ]);
+
     // A MEASURED TARGET OF ZERO renders. `wipes: 0` against the fixture's one
     // wipe is a real measured answer for a commander whose bucket wipes
     // nothing, and the cell has to draw rather than divide its way out of
