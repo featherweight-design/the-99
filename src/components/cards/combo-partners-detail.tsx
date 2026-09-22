@@ -96,29 +96,32 @@ export function ComboPartnersDetail({ card }: { card: BrowseCard }) {
       </p>
       <ul className="flex flex-col gap-[8px]">
         {shown.map((p) => (
-          /* AT 390px THE STATE WRAPS UNDER THE NAME rather than truncating it — the app's
-             words move before the card's name does, which is this feature's rule everywhere.
-             `flex-wrap` with a full-width state below `sm` is what delivers it. */
-          <li key={p.oracleId} className="flex flex-wrap sm:flex-nowrap items-center gap-[10px]">
+          /* AT 390px THE STATE STACKS UNDER THE NAME, not under the glyph. `flex-wrap` with a
+             full-width state put it at the `<li>`'s left edge, beneath the lemniscate, where
+             it read as a second line of the row rather than as this partner's state — so the
+             name and the state share a nested column and the glyph stays beside it. */
+          <li key={p.oracleId} className="flex items-center gap-[10px]">
             <ComboGlyph />
             {/* TWO WEIGHTS, one sentence. The addendum sets the app's words at `--fg-body`
                 and the partner's NAME at 600 in `--fg`: the name is the half a reader is
                 looking for, and it is also what will become pressable when ledger 14 lands.
                 13px, not the 13.5/15 the block above this one uses. */}
-            <span
-              className="flex-auto min-w-0 truncate text-[13px]"
-              style={{ color: "var(--fg-body)" }}
-            >
-              {comboAwarenessCopy.modal.lineLead}
-              <span className="font-semibold" style={{ color: "var(--fg)" }}>
-                {p.name}
+            <span className="flex flex-auto min-w-0 flex-col sm:flex-row sm:items-center sm:gap-[10px]">
+              <span
+                className="min-w-0 truncate text-[13px] sm:flex-auto"
+                style={{ color: "var(--fg-body)" }}
+              >
+                {comboAwarenessCopy.modal.lineLead}
+                <span className="font-semibold" style={{ color: "var(--fg)" }}>
+                  {p.name}
+                </span>
               </span>
-            </span>
-            <span
-              className="w-full sm:w-auto flex-none font-mono text-[10px] sm:text-right"
-              style={{ color: STATE_INK[p.state] }}
-            >
-              {comboAwarenessCopy.modal.state[p.state]}
+              <span
+                className="flex-none font-mono text-[10px] sm:text-right"
+                style={{ color: STATE_INK[p.state] }}
+              >
+                {comboAwarenessCopy.modal.state[p.state]}
+              </span>
             </span>
           </li>
         ))}

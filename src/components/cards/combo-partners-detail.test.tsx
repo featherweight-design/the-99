@@ -134,15 +134,21 @@ describe("the card modal's combo block", () => {
   // so removing `flex-wrap` changes no measurement here and only the class list can be read.
   // A class assertion agrees with itself. The real proof is a browser probe, and this feature
   // has none yet — recorded as a follow-up rather than implied by a green test.
-  it("gives the state its own full-width row below sm", () => {
+  it("stacks the state under the NAME below sm, not under the glyph", () => {
     const { container } = render(<ComboPartnersDetail card={card([partner()])} />);
     const li = container.querySelector("li")!;
-    expect(li.className, "the line cannot wrap").toContain("flex-wrap");
-    const state = li.lastElementChild!;
-    expect(state.className, "the state does not take its own row on the phone").toContain(
-      "w-full",
+    // The glyph stays beside a column that holds the name and the state, so the state lands
+    // under the name rather than at the row's left edge beneath the lemniscate.
+    const column = li.lastElementChild!;
+    expect(column.className, "the name and state do not share a column").toContain(
+      "flex-col",
     );
-    expect(state.className, "the state stays full width on desktop").toContain("sm:w-auto");
+    expect(column.className, "the column never returns to a row").toContain("sm:flex-row");
+    expect(
+      column.querySelector('[data-testid="combo-glyph"]'),
+      "the glyph was pulled into the text column",
+    ).toBeNull();
+    expect(column.textContent).toContain("Isochron Scepter");
   });
 
   // THE THREE STATES AND NOTHING ELSE. No price, no copy count, no availability marker —
