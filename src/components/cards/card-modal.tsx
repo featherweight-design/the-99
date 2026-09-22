@@ -405,6 +405,7 @@ export function CardModal({
   deckName = null,
   deckHolds = false,
   onProxyWrite,
+  onSelectCard,
 }: {
   card: BrowseCard;
   /** The deck this card was opened from, which scopes the proxy control. Null
@@ -418,6 +419,16 @@ export function CardModal({
   /** Invalidates this card in the provider's cache after a proxy write, so the
    *  receipt beside the control stops describing the state before the tap. */
   onProxyWrite?: () => void;
+  /**
+   * Opens another card IN PLACE of this one — the combo block's partner name is its only
+   * caller, and it REPLACES rather than stacks, which the addendum refuses by name.
+   *
+   * A prop rather than reaching for the provider's context: this component is rendered BY
+   * that provider and does not consume it, and the first version of this wiring wrote
+   * `open(id)`, which resolved to `window.open` — it typechecked, every test passed, and it
+   * would have navigated the browser instead of changing the card.
+   */
+  onSelectCard?: (oracleId: string) => void;
   position: number;
   total: number;
   onClose: () => void;
@@ -1626,7 +1637,11 @@ export function CardModal({
             {/* SECOND IN THE STACK: card fact, then PAIR fact, then copy facts. This block is
                 the hinge where the reader crosses from what the card IS to what they HAVE,
                 which is exactly what a pair fact is. */}
-            <ComboPartnersDetail card={card} />
+            <ComboPartnersDetail
+              card={card}
+              deckName={deckName}
+              onSelectPartner={onSelectCard}
+            />
             <AvailabilityDetail card={card} />
             <ProxyDetail card={card} />
 

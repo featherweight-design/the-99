@@ -35,7 +35,17 @@ const STATE_INK: Record<string, string> = {
  * Unscoped, the block draws the two states that have a referent, which is the `/collection`
  * face the design already specifies.
  */
-export function ComboPartnersDetail({ card }: { card: BrowseCard }) {
+export function ComboPartnersDetail({
+  card,
+  /** The deck the modal was opened from, if any — what makes the scope line sayable. */
+  deckName = null,
+  /** Opens a partner's own modal, replacing this one. */
+  onSelectPartner,
+}: {
+  card: BrowseCard;
+  deckName?: string | null;
+  onSelectPartner?: (oracleId: string) => void;
+}) {
   const [expanded, setExpanded] = useState(false);
   const [boundOpen, setBoundOpen] = useState(false);
   const partners = card.comboPartners ?? [];
@@ -83,8 +93,18 @@ export function ComboPartnersDetail({ card }: { card: BrowseCard }) {
               >
                 {comboAwarenessCopy.modal.heading}
               </span>
-              {/* THE COUNTS, and `in this deck` leads and is the only part in colour: it is
-                  the only part that is ever urgent, so it is what decides whether to open. */}
+              {/* THE SCOPE LINE TAKES OVER FROM THE COUNTS when the block opens, on the
+                  header itself — so the block gains no chrome by opening, and the one thing
+                  that varies by route is visible instead of looking like an inconsistency.
+                  Absent without a deck, which is the `/collection` face. */}
+              {expanded && deckName ? (
+                <span
+                  className="font-mono text-[10px] sm:text-[10.5px] truncate"
+                  style={{ color: "var(--fg-locked)" }}
+                >
+                  {comboAwarenessCopy.modal.scope(deckName)}
+                </span>
+              ) : expanded ? null : (
               <span
                 className="font-mono text-[10px] sm:text-[10.5px] truncate"
                 style={{ color: "var(--fg-muted)" }}
@@ -99,6 +119,7 @@ export function ComboPartnersDetail({ card }: { card: BrowseCard }) {
                   </span>
                 ))}
               </span>
+              )}
             </span>
             <span
               aria-hidden
@@ -158,9 +179,23 @@ export function ComboPartnersDetail({ card }: { card: BrowseCard }) {
                 style={{ color: "var(--fg-body)" }}
               >
                 {comboAwarenessCopy.modal.lineLead}
-                <span className="font-semibold" style={{ color: "var(--fg)" }}>
-                  {p.name}
-                </span>
+                {/* THE ONLY TARGET IN THE BLOCK. A pair fact read from one end wants the
+                    other end, and the name is the half a reader is looking for — it REPLACES
+                    this modal rather than stacking on it, which the addendum refuses by name,
+                    so the back gesture returns to the card you started from. */}
+                {onSelectPartner ? (
+                  <button
+                    type="button"
+                    onClick={() => onSelectPartner(p.oracleId)}
+                    className="inline p-0 bg-transparent border-none cursor-pointer font-semibold text-left underline decoration-[color:var(--accent-shadow)] underline-offset-[3px] text-[color:var(--fg)]"
+                  >
+                    {p.name}
+                  </button>
+                ) : (
+                  <span className="font-semibold" style={{ color: "var(--fg)" }}>
+                    {p.name}
+                  </span>
+                )}
               </span>
               <span
                 className="flex-none font-mono text-[10px] sm:text-right"

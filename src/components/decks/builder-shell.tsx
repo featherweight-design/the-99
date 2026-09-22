@@ -750,6 +750,11 @@ export function BuilderShell({
       deckId={deck.id}
       deckName={deck.name}
       deckOracleIds={proxyEligibleIds}
+      // THE DECK'S OWN CARDS, which is a different set from the proxy-eligible one above:
+      // this is what lets the combo block say `in this deck` and name the deck in its scope
+      // line, and passing the proxy set would have it calling a card in-deck because it
+      // happens to be proxyable.
+      comboDeckOracleIds={deckOracleIds}
     >
       <AddOptimisticCardProvider value={deckEdits}>
         <PassMarkProvider value={passMark}>

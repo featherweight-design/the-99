@@ -223,7 +223,7 @@ describe("CoverageChip", () => {
       </CardDetailProvider>,
     );
     fireEvent.click(screen.getByRole("button", { name: /Sol Ring/i }));
-    expect(fetchCard).toHaveBeenCalledWith("oracle-sol");
+    expect(fetchCard).toHaveBeenCalledWith("oracle-sol", undefined);
   });
 });
 

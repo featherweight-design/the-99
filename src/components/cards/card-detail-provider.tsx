@@ -165,9 +165,13 @@ export function CardDetailProvider({
   deckId = null,
   deckName = null,
   deckOracleIds,
+  comboDeckOracleIds,
 }: {
   children: ReactNode;
-  fetchCard?: (oracleId: string) => Promise<BrowseCard | null>;
+  fetchCard?: (
+    oracleId: string,
+    deckOracleIds?: readonly string[],
+  ) => Promise<BrowseCard | null>;
   /** See `CardDetailContextValue.deckId`. Set by the deck page alone. */
   deckId?: string | null;
   /** That deck's name, which the control's label and its marked sentence both
@@ -175,6 +179,14 @@ export function CardDetailProvider({
   deckName?: string | null;
   /** See `CardDetailContextValue.deckOracleIds`. */
   deckOracleIds?: ReadonlySet<string>;
+  /**
+   * The deck's OWN cards, for the combo block's `in this deck` state.
+   *
+   * Separate from `deckOracleIds` above, which is the PROXY-ELIGIBLE set — a different
+   * question with a different answer, and passing one where the other belongs would have the
+   * block calling a card in-deck because it happens to be proxyable.
+   */
+  comboDeckOracleIds?: readonly string[];
   /**
    * Fired when a printing pick is ATTEMPTED, and again when it settles — including when
    * the write was refused and the modal has rolled its own state back. It is a nudge that
@@ -224,6 +236,14 @@ export function CardDetailProvider({
   } | null>(null);
   const [pendingOracleId, setPendingOracleId] = useState<string | null>(null);
   const [failed, setFailed] = useState(false);
+  // Joined and re-split rather than held as an array: the deck page rebuilds this list on
+  // every render, and an array identity in the callback's dependencies would rebuild the
+  // fetch — and evict the open card — on renders that changed nothing.
+  const comboScopeKey = (comboDeckOracleIds ?? []).join(",");
+  const comboScope = useMemo(
+    () => (comboScopeKey ? comboScopeKey.split(",") : undefined),
+    [comboScopeKey],
+  );
   // Clicks can overlap — a slow first fetch must not land on top of the card the user
   // actually asked for second.
   const latest = useRef(0);
@@ -350,7 +370,11 @@ export function CardDetailProvider({
         let raced = true;
         for (let attempt = 0; attempt < READ_ATTEMPTS && raced; attempt++) {
           const evictedAtStart = evictions.current.get(oracleId) ?? 0;
-          next = await fetchCard(oracleId);
+          // THE DECK'S CARDS TRAVEL WITH THE READ, so the combo block can say `in this deck`
+          // and render its scope line. `deckOracleIds` is set by the deck page alone; every
+          // other route sends nothing and the block draws the two states that have a referent,
+          // which is the `/collection` face the design specifies.
+          next = await fetchCard(oracleId, comboScope);
           if (latest.current !== request) return;
           raced = (evictions.current.get(oracleId) ?? 0) !== evictedAtStart;
         }
@@ -393,7 +417,7 @@ export function CardDetailProvider({
         }
       }
     },
-    [fetchCard, show],
+    [fetchCard, show, comboScope],
   );
   useEffect(() => { loadRef.current = load; }, [load]);
 
@@ -502,6 +526,10 @@ export function CardDetailProvider({
           position={paging ? index + 1 : 1}
           total={paging ? siblings.length : 1}
           onClose={close}
+          // The combo block's partner name, through the same `load` that pages Prev/Next —
+          // so a partner replaces the open card exactly as a sibling does, and the back
+          // gesture returns to the card the reader started from.
+          onSelectCard={(id) => void load(id)}
           onPrev={paging && index > 0
             ? () => void load(siblings[index - 1])
             : null}

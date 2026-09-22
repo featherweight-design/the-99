@@ -273,6 +273,8 @@ export async function withBracketFacts(
 export const loadCardDetail = cache(async function loadCardDetail(
   userId: string,
   oracleId: string,
+  /** The deck the modal was opened from, if any. See `withComboPartners`. */
+  deckOracleIds?: readonly string[],
 ): Promise<BrowseCard | null> {
   const owned = aggregateCollection(await selectCollectionRows(userId, oracleId));
   // Only for a card the user owns: the availability query is driven by the collection, so
@@ -294,15 +296,10 @@ export const loadCardDetail = cache(async function loadCardDetail(
       pricesFor(oracleId),
       proxyingDecks(userId, oracleId),
     ]);
-    // NO DECK SCOPE YET, deliberately — handoff dependency 5. `in this deck` needs the deck
-    // the modal was opened from, and `fetchCard` takes an oracle id alone: routes that open
-    // this modal do not all carry a deck id. Unscoped, the block draws the two states that
-    // have a referent and omits its scope line, which is exactly the `/collection` face the
-    // design already specifies. The parameter is here so the follow-up threads a value rather
-    // than a new argument.
     return withComboPartners(
       await withBracketFacts({ ...owned[0], availability, prices, proxiedBy }),
       userId,
+      deckOracleIds,
     );
   }
 
@@ -370,6 +367,7 @@ export const loadCardDetail = cache(async function loadCardDetail(
       proxiedBy: await proxiedBy,
     }),
     userId,
+    deckOracleIds,
   );
 });
 

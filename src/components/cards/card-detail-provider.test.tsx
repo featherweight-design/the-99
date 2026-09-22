@@ -85,7 +85,10 @@ describe("CardDetailProvider", () => {
     renderTriggers(fetchCard);
     await click(screen.getByRole("button", { name: cardDetailCopy.triggerAria("Arcane Signet") }));
 
-    expect(fetchCard).toHaveBeenCalledWith("o-signet");
+    // The second argument is the COMBO SCOPE — the deck's own cards — and is `undefined` on
+    // every route but the deck page. Asserted rather than loosened to `expect.anything()`, so
+    // a scope leaking onto a route that has no deck would fail here.
+    expect(fetchCard).toHaveBeenCalledWith("o-signet", undefined);
     const dialog = await screen.findByRole("dialog");
     expect(dialog).toHaveAccessibleName("Arcane Signet");
   });
@@ -586,7 +589,7 @@ describe("CardDetailProvider card cache", () => {
 
     // The art pick the reader makes in that still-open modal.
     await click(screen.getByRole("button", { name: "evict" }));
-    await waitFor(() => expect(fetchCard).toHaveBeenCalledWith("o-signet"));
+    await waitFor(() => expect(fetchCard).toHaveBeenCalledWith("o-signet", undefined));
     expect(fetchCard.mock.calls.filter(([id]) => id === "o-signet")).toHaveLength(2);
   });
 
@@ -845,7 +848,7 @@ describe("CardDetailProvider open-at-printing scope", () => {
     expect(art().some((b) => b.includes("rvr-24"))).toBe(true);
 
     await click(screen.getAllByRole("button", { name: "Next card" })[0]);
-    await waitFor(() => expect(fetchCard).toHaveBeenCalledWith("o-sol"));
+    await waitFor(() => expect(fetchCard).toHaveBeenCalledWith("o-sol", undefined));
     // Arcane Signet is still the card on screen, and still wearing the printing that was
     // clicked. The page did not happen.
     expect(art().some((b) => b.includes("rvr-24"))).toBe(true);
@@ -938,7 +941,7 @@ describe("CardDetailProvider open-at-printing scope", () => {
 
     // The open fails, so nothing is painted and its printing is owed to a read that is over.
     await click(screen.getByRole("button", { name: "open sol at M21" }));
-    await waitFor(() => expect(fetchCard).toHaveBeenCalledWith("o-sol"));
+    await waitFor(() => expect(fetchCard).toHaveBeenCalledWith("o-sol", undefined));
 
     // The same card, opened again with NO printing. It must arrive wearing none.
     failNext = false;
