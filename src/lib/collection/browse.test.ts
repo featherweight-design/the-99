@@ -710,6 +710,118 @@ describe("filterCards", () => {
   it("substring search is case-insensitive on name", () => {
     expect(filterCards(list, { search: "cyclonic", colors: [], types: [], setCodes: [] }).map((c) => c.oracleId)).toEqual(["c"]);
   });
+
+  // A Secret Lair rename is the name ON the card and the name on screen, so a search
+  // reading the oracle name alone found nothing for what the reader was looking at.
+  // `sld/2214` draws `Mimir's Ancient Wisdom`; `Teferi's Ageless Insight` is printed
+  // nowhere on it.
+  const renamed = [
+    ...list,
+    listCard({
+      oracleId: "e",
+      name: "Teferi's Ageless Insight",
+      printedName: "Mimir's Ancient Wisdom",
+      colorIdentity: ["U"],
+      typeLine: "Legendary Enchantment",
+      setCodes: ["SLD"],
+      primarySetCode: "SLD",
+    }),
+  ];
+  const found = (search: string) =>
+    filterCards(renamed, { search, colors: [], types: [], setCodes: [] }).map((c) => c.oracleId);
+
+  it("finds a renamed card by the name printed on it", () => {
+    expect(found("mimir")).toEqual(["e"]);
+  });
+
+  it("still finds it by its oracle name, which every other printing carries", () => {
+    // Not a replacement: the oracle name is what the card is called everywhere else, what
+    // its rules text is filed under, and what a player who knows the card will type.
+    expect(found("teferi")).toEqual(["e"]);
+  });
+
+  it("sorts a renamed card by the name it DRAWS, not the one it is filed under", () => {
+    // Its oracle name starts with T and the row reads `Mimir's Ancient Wisdom`, so the
+    // oracle sort put it after Sol Ring and Shockingly Boring — past where a reader
+    // scanning for M would stop looking.
+    const order = sortCards(renamed, "name", "asc").map((c) => c.printedName ?? c.name);
+    expect(order.indexOf("Mimir's Ancient Wisdom")).toBeLessThan(order.indexOf("Shockingly Boring"));
+    expect(order.indexOf("Lightning Bolt")).toBeLessThan(order.indexOf("Mimir's Ancient Wisdom"));
+  });
+
+  it("breaks a tie on the drawn name too, where the primary key is equal", () => {
+    // The tiebreak is a SECOND call site and was asserted by nothing: every other case
+    // sorts on `name`, where the primary comparator already resolves the printed name, so
+    // the tiebreak is never reached with unequal names. Sorting on quantity with the
+    // quantities equal is what reaches it.
+    // The two names have to order DIFFERENTLY or the case cannot tell the versions apart:
+    // `Mimir's` < `Sol Ring` < `Teferi's`, so the drawn name puts the rename first and the
+    // oracle name puts it last. A first version paired it with `Zzz Placeholder`, where
+    // both orders agree, and passed with the tiebreak reverted.
+    const tied = [
+      listCard({ oracleId: "a", name: "Sol Ring", quantity: 4 }),
+      listCard({
+        oracleId: "e",
+        name: "Teferi's Ageless Insight",
+        printedName: "Mimir's Ancient Wisdom",
+        quantity: 4,
+      }),
+    ];
+    const order = sortCards(tied, "quantity", "desc").map((c) => c.oracleId);
+    expect(order).toEqual(["e", "a"]);
+  });
+
+  it("sorts a renamed TWO-FACED card by its front face, which is all the row draws", () => {
+    // A row draws `printedFaceName` — the front half where the layout has two faces — so
+    // keying the sort on the whole `A // B` string lets text on NEITHER ROW decide the
+    // order of both.
+    //
+    // The discriminating shape is two cards whose DRAWN LABELS ARE EQUAL: a reader sees
+    // `Bolt` twice and no reason for either to come first, so the input order must stand.
+    // Keyed on the joined string, the hidden back halves sort them. Measured before it was
+    // written: a prefix pair (`Battle` against `Battle of Olympus // Aftermath`) orders the
+    // same either way on this collation, so the obvious fixture passes both versions and a
+    // first attempt did.
+    const twoFaced = [
+      listCard({
+        oracleId: "zzz",
+        name: "Delver of Secrets // Insectile Aberration",
+        printedName: "Bolt // Zzz Aftermath",
+        layout: "transform",
+      }),
+      listCard({
+        oracleId: "aaa",
+        name: "Delver of Secrets // Insectile Aberration",
+        printedName: "Bolt // Aaa Aftermath",
+        layout: "transform",
+      }),
+    ];
+    expect(twoFaced.map((c) => printedFaceName(c))).toEqual(["Bolt", "Bolt"]);
+    expect(sortCards(twoFaced, "name", "asc").map((c) => c.oracleId)).toEqual(["zzz", "aaa"]);
+  });
+
+  it("survives a printed name that is ABSENT, not merely null", () => {
+    // `printedName` is typed `string | null` and omitted altogether by the card literals
+    // ten test files build, so a `!== null` test admits `undefined` and the
+    // `.toLowerCase()` after it throws — taking out the whole browser rather than just its
+    // search, which is how `browser-clear.test.tsx` caught it. Both shapes are covered
+    // here. (The nineteen-file figure next door counts `BrowsePrinting` literals, which is
+    // a different set.)
+    const absent = { ...listCard({ oracleId: "f", name: "Birds of Paradise" }) };
+    delete (absent as { printedName?: string | null }).printedName;
+    const withAbsent = [...renamed, absent];
+    const ids = (search: string) =>
+      filterCards(withAbsent, { search, colors: [], types: [], setCodes: [] })
+        .map((c) => c.oracleId);
+
+    // The RENAMED card is searched in the same pass, so this case also fails when the
+    // printed name is not consulted at all — without that clause it passes with the whole
+    // change reverted, pinning an intermediate implementation nobody shipped.
+    expect(ids("mimir")).toEqual(["e"]);
+    expect(ids("birds")).toEqual(["f"]);
+    expect(ids("sol")).toEqual(["a"]);
+    expect(ids("zzz")).toEqual([]);
+  });
   it("no filters returns everything (identity when empty search + no chips)", () => {
     expect(filterCards(list, { search: "", colors: [], types: [], setCodes: [] })).toHaveLength(4);
   });

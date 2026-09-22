@@ -768,13 +768,40 @@ export function printingCaption(
   return others > 0 ? `${base} +${others} more` : base;
 }
 
+/**
+ * Does this card answer to `search` under either of its names?
+ *
+ * `search` arrives already trimmed and lowercased — the caller does it once per filter
+ * pass rather than once per card.
+ */
+function matchesName(card: Pick<BrowseCard, "name" | "printedName">, search: string): boolean {
+  // THROUGH `printedNameOf`, not a null test of its own. `printedName` is typed
+  // `string | null` and is ABSENT — not null — on the card literals ten test files build,
+  // so `!== null` admits `undefined` and the `.toLowerCase()` after it throws, which took
+  // out the whole collection browser rather than just its search. `printedNameOf` has
+  // answered that with `??` since it was written, and a card with no printed name simply
+  // tests its own name twice.
+  return printedNameOf(card).toLowerCase().includes(search)
+    || card.name.toLowerCase().includes(search);
+}
+
 export function filterCards(list: BrowseListCard[], f: BrowseFilters): BrowseListCard[] {
   const search = f.search.trim().toLowerCase();
   // Types and sets each OR internally and AND with every other filter.
   const types = f.types.map((t) => t.toLowerCase());
   const setCodes = new Set(f.setCodes.map((s) => s.toLowerCase()));
   return list.filter((c) => {
-    if (search && !c.name.toLowerCase().includes(search)) return false;
+    // BOTH NAMES, because the row draws the printed one. A Secret Lair rename is the
+    // name on the card in the box and the name on screen — `Mimir's Ancient Wisdom` over
+    // `Teferi's Ageless Insight` — so a search that read the oracle name alone found
+    // nothing for what the reader was looking at, and found a row under a name that is
+    // not printed anywhere on it. Reported by Hugh on 2026-09-21.
+    //
+    // The oracle name keeps matching: it is what every other printing of the card is
+    // called, what the rules text is filed under, and what a player who knows the card
+    // by its real name will type. Neither name is the truer one, so the filter takes
+    // either.
+    if (search && !matchesName(c, search)) return false;
     if (f.colors.length > 0) {
       const id = new Set(c.colorIdentity);
       for (const col of f.colors) if (!id.has(col)) return false;
@@ -805,7 +832,25 @@ function colorSortKey(identity: string[]): number {
 
 /** Each key's primary comparator, always in ascending form. */
 const SORT_COMPARATORS: Record<SortKey, (a: BrowseListCard, b: BrowseListCard) => number> = {
-  name: (a, b) => a.name.localeCompare(b.name),
+  // THE NAME ON SCREEN, which is `printedFaceName` — the printed name where a printing
+  // renames the card, and its FRONT HALF where the layout has two faces, because that is
+  // all a row or a tile draws (`rows-view:115`, `grid-view:157`). Keying on the whole
+  // `A // B` string let hidden back-face text order the visible labels: two rows drawing
+  // `Battle` and `Battle of Olympus` sort by what follows the separator, which is on
+  // neither of them. Raised by review.
+  // Sorting on the oracle name filed `Mimir's Ancient Wisdom` under T, so a reader
+  // scanning an A-Z list looked where the name they could see belonged and it was not
+  // there — the same defect as the search reading that name alone, and found by sweeping
+  // for it. Measured on STAGING, which is where this repo counts a frequency: 9 of 3,235
+  // collection rows resolve a printing that renames the card (0.28%), out of 634 renamed
+  // printings in 103,309 (0.61%). Small, and every one of them is a row whose drawn name
+  // disagreed with its own position in the list.
+  // `"en"` PINNED, as `sort-cards.ts`, `sort.ts` and `touched.ts` each pin it and for
+  // their reason: this component is statically imported, so this runs in Node for the SSR
+  // pass and again in the browser, and an unpinned collation can order the two differently
+  // — a list that reshuffles on hydration. The strings it now keys on are Secret Lair
+  // renames, which carry exactly the punctuation and diacritics collations disagree about.
+  name: (a, b) => printedFaceName(a).localeCompare(printedFaceName(b), "en"),
   quantity: (a, b) => a.quantity - b.quantity,
   set: (a, b) => a.primarySetCode.localeCompare(b.primarySetCode),
   rarity: (a, b) => RARITY_ORDER[a.rarity] - RARITY_ORDER[b.rarity],
@@ -835,7 +880,8 @@ export function sortCards(
   // The name tiebreak stays A→Z in both directions. It is not part of what the
   // user asked to reverse, and flipping it would shuffle every equal-quantity
   // run on a direction change for no reason the user could name.
-  return [...list].sort((a, b) => sign * primary(a, b) || a.name.localeCompare(b.name));
+  return [...list].sort((a, b) => sign * primary(a, b)
+    || printedFaceName(a).localeCompare(printedFaceName(b), "en"));
 }
 
 /**
