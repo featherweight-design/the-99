@@ -50,26 +50,39 @@ adds the tab without moving the strip spends that budget twice.
 
 ## PR boundaries
 
-Named before implementation starts, per the repo's split rule. Nine PRs; none over ~20 files.
+Named before implementation starts, per the repo's split rule. Eleven PRs; none over ~20 files.
+
+**Revised 2026-09-21** after two plan reviews and five rulings. Two PRs were added — a combo
+ingest widening and a **PR 1b** — because PR 1 shipped deliberately narrower than this table
+described, and because the reasoning modal specifies two columns the database does not have.
 
 | PR | What | Blocked by |
 |---|---|---|
-| **1 — the tab and the payload** | The Analysis tab, **its address** (see below), `cachedDeckProfile` behind it, the mix strip moved in, and the empty / loading / refused readings. No verdict content. | — |
-| **2 — receipts reshaped** | `lean.receipts[].tutors` keyed per piece; the deciding combo marked on `BracketLean`. Pure, unit-testable, no UI. | — |
-| **3 — the declaration's write path** | The server action, its refusal rules (never defaulted, never inferred), **`deck_versions.declared_bracket` captured at commit**, and `probe:declaration`. No skip, in any form. | — |
-| **4 — the verdict block** | Permitted range, the three limits tables, violations with receipts, the population line. **This IS Round 2's build** — the chrome rounds 3 and 4 sit inside. | 1 |
+| **0 — the combo payload** | `spellbook_variants` gains `mana_needed`, `mana_value_needed`, `steps` and `notable_prerequisites`; `db:seed:combos` ingests them, `check:spellbook` asserts them, `ComboRef` carries them. No UI. **The modal cannot be built before this.** | — |
+| **1 — the tab** ✅ | The Analysis tab, its flag and the mix strip moved in. **Shipped reading no profile** — see PR 1b. | *shipped* |
+| **1b — the payload and the tab's states** | `cachedDeckProfile` reached from the surface (shape 3 below), the empty / loading / refused readings, and the synopsis slot with no sentence. | 1 |
+| **2 — receipts reshaped** ✅ | `lean.receipts[].tutors` keyed per piece; the deciding combo marked on `BracketLean`. | *shipped #792* |
+| **3 — the declaration's write path** ✅ | The server action, its refusal rules, `deck_versions.declared_bracket` at commit, `probe:declaration`. | *shipped #797 #801 #802 #803 #809* |
+| **4 — the verdict block** | Permitted range, the three limits tables, violations with receipts, the population line. **This IS Round 2's build** — the chrome rounds 3 and 4 sit inside. | 1b, **Round 2 re-audit** |
 | **5 — the declaration ask and sub-line** | The readings that survive the 2026-09-21 ruling, plus `permits: [4]`, which draws no line. No skip, no "you said". | 3, 4 |
-| **6 — the lean and the reasoning modal** | The lean line, the modal body, the command-zone `found by` reading, and image resolution **at the draw** rather than in the profile. | 2, 4 |
+| **6 — the lean and the reasoning modal** | The lean line, the modal body, the command-zone `found by` reading, and image resolution **at the draw** rather than in the profile. Mana drawn **as a state** — pips above zero, "No mana needed" at zero — plus the notable-prerequisites line. | 0, 2, 4 |
 | **7 — the drift row** | **HELD on Design** — see risks. | Design answer |
 | **8a — the facts payload** | The profile threaded into the builder shell and the top-off list, and a BATCHED `CandidateFacts` read for the whole pool. Measured above; Round 4's own list does not contain it. | — |
 | **8b — the push line** | The atom at two densities, on the quick-add row, the Consider tile and the top-off row. | 8a |
 | **9 — the upgrade path** | Candidate sets, never a pick; the `blocked` reading. | Round 4 design |
 
-PRs 1, 2 and 3 are **unblocked today** and in that order they are the whole spine: a tab that
-loads a profile, a verdict shaped the way the modal needs it, and the one write. **PR 4 IS Round
-2's build** — it needs only PR 1's tab to render into, and it is the critical path for everything
-drawn after it, because rounds 3 and 4 sit inside the chrome it establishes. PRs 5 and 6 wait on
-PR 4.
+**PRs 1, 2 and 3 have shipped.** What is unblocked today is **PR 0** and **PR 1b**, and they are
+independent of each other: one widens an ingest, the other reaches a loader the app already has.
+
+**PR 4 is the critical path** — rounds 3 and 4 sit inside the chrome it establishes — and it now
+carries two gates rather than one. It needs PR 1b's tab to render into, and it needs **Round 2's
+readiness audit re-run** (ruled 2026-09-21). That audit is the only one never revisited: it
+predates the 3-vs-4 boundary resolving, marks being fixed at 16px, all five marks staying, and
+the declaration coming off the cached profile — four rulings that change things underneath it —
+and it carries eleven errata engineering was told to fold in, none of which has been checked
+against the rulings since.
+
+PRs 5 and 6 wait on PR 4; PR 6 additionally waits on PR 0.
 
 ---
 
@@ -103,7 +116,19 @@ has the caching convention for it.
 
 ## What each PR must prove
 
-**PR 1.** A probe that presses the tab rather than visiting a URL — the reason the card mark
+**PR 0.** `check:spellbook` asserts the four new fields against the LIVE feed, and the ingest
+refuses on a per-field collapse floor the way it already does for the others — a widening that
+silently stores nulls is indistinguishable from an upstream that stopped sending them.
+
+**Sample the feed from more than its head.** Measured 2026-09-21 across 347 variants drawn from
+the head plus two mid-file slices: `description` is set on 100% (avg 395 chars, max 754),
+`manaNeeded` on 41%, `notablePrerequisites` on 64%. The first 52 records report `manaNeeded` at
+**3%**, which reads as broken upstream data and nearly cost the modal its mana line. It is not
+missing: `manaValueNeeded > 0` agrees with `manaNeeded` on exactly the same 41%, so the other
+59% genuinely need **no mana to execute**, and that zero is a fact worth drawing rather than a
+gap to hide.
+
+**PR 1b.** The probe presses the tab rather than visiting a URL — the reason the card mark
 shipped broken into Card view is that the probe swept by URL and the surface was reached by a
 press. It must read the mix strip in its NEW home and assert it is gone from the header, or the
 move is invisible to every check.
@@ -113,6 +138,11 @@ And it must retire the cache with an input the FINGERPRINT ACTUALLY READS.
 is not a proof — a rename or a fill can leave the fingerprint byte-identical while the cache is
 working perfectly, and the check would pass either way. Change a card's quantity, a commander, or
 the declaration, and assert the second read differs from the first.
+
+**PR 1b, continued.** It must retire the cache with an input the FINGERPRINT ACTUALLY READS
+(the paragraph above), and assert the profile is **not** fetched for a reader who never presses
+the tab — that is the whole reason shape 3 was chosen, and a check that only proves the tab
+works passes on the shape that costs every deck visit a profile build.
 
 **PR 2.** Pure unit tests, mutation-proved. The deciding-combo rule reuses `comboLandsEarly`'s
 per-combo predicate rather than a second copy of it.
@@ -145,7 +175,7 @@ reproduce frames 1e/1f as drawn** — they are states the code cannot produce.
 
 **R3 — the synopsis slot has no content design.** Round 0 drew the slot and its absent, stale and
 refused readings; what the sentences may claim, their length and their accept contract belong to
-sub-project 6. PR 1 builds the slot and its three empty readings and **ships no sentence**.
+sub-project 6. **PR 1b** builds the slot and its three empty readings and **ships no sentence**.
 `commander_support.prose` is the precedent for the null state.
 
 **R4 — `permits: [4]` is young.** The 3-vs-4 boundary was ruled to resolve on 2026-09-20 and
@@ -156,9 +186,20 @@ either side, and any copy or table still carrying `[3,4]` is stale.
 written once at launch (PR #770). A plan task at close-out carries the entry and the
 `ABOUT_VERSION` bump; `feature-acceptance` does not pass without them.
 
+**R6 — the modal draws a field Round 2 never asked for.** `notablePrerequisites` is set on 64%
+of variants and is the line that tells a player whether a combo works in *their* deck ("You
+control at least five creatures with different powers"). Ruled 2026-09-21 to be drawn. It needs
+a slot, and that slot is settled in **Round 2's re-audit** rather than a Design round — same
+modal, one more line, which is the threshold for an engineering call.
+
+**R7 — the mana line is a state, not a figure.** 59% of variants need no mana at all. Drawn as
+a cost the slot is empty on most combos; drawn as a state the zero becomes the most informative
+thing in the modal, because a free combo is the scarier one. No surface here may render a blank
+where the answer is "none".
+
 ---
 
-## Measured, 2026-09-21 — and it decides PR 1's shape
+## Measured, 2026-09-21 — and it decides PR 1b's shape
 
 `pnpm measure:profile-cost` against **staging**, on the real decks:
 
@@ -175,6 +216,8 @@ list length, so a sample ordered by size is the one sample guaranteed not to con
 slowest deck.
 
 **So the profile is fetched ON DEMAND, when the tab is pressed** — option 3 above, not option 1.
+PR 1 shipped the tab without it, so this is now **PR 1b's** decision to implement rather than
+PR 1's to make: `cachedDeckProfile` exists and today has no caller in the app.
 Adding half a second to three seconds to every `/decks/<id>` load, for a tab most visits never
 open, is precisely the regression the decklist's own cache exists to prevent. The figure also
 retires the idea that the head read is the expensive half: it is a fifth of the cost, and it is
@@ -213,7 +256,7 @@ heading claiming it priced the real one.
 
 ---
 
-## The 2026-09-21 rulings
+## The 2026-09-21 rulings, first batch
 
 Three, all from Hugh, and they simplify this surface rather than growing it.
 
@@ -223,6 +266,8 @@ it. **Defaults off when unset**, so production is unaffected until the variable 
 deliberately. It gates the LOADER as well as the tab: a hidden tab whose payload still loads is
 the worst of both. Set on the staging Vercel project first; until then the tab is dark
 everywhere, which is a thing to say out loud when PR 1 lands rather than discover.
+(PR 1 has landed; `docs/superpowers/runbooks/informed-building-production.md` is the operator's
+copy of this step.)
 
 The strip's move is gated by the SAME flag, because Round 0 pays for the tab with the ~150px the
 `RoleCounterStrip` vacates — and an unconditional move would take that strip off the deck page in
@@ -256,3 +301,38 @@ drawn largely goes with it** — a version holds the answer that was true for it
 shows the current analysis. What survives is smaller and still owed: the permitted side can be a
 single bracket, which needs a reading. `docs/superpowers/design-briefs/2026-09-21-declaration-drift-addendum.md`
 carries the correction.
+
+---
+
+## The 2026-09-21 rulings, second batch
+
+Five, settled after two plan reviews — one read by the author, one cold. They move PR boundaries
+rather than surfaces, which is why they are here and not in a design round.
+
+**4. The combo payload is widened before the verdict block.** Round 2's reasoning modal specifies
+a combo's mana and Spellbook's execution steps; `spellbook_variants` stores neither. The round's
+own audit called this "the one erratum that can move the PR boundaries" and asked for it to be
+sized before the surface was planned — and it was planned anyway. **PR 0** is that widening, and
+PR 6 is blocked on it. See R7 for what the mana field turned out to be, and the sampling trap
+that nearly hid it.
+
+**5. Round 2's readiness audit is re-run before PR 4 starts.** It is the only round's audit never
+revisited. Four rulings have landed underneath it and eleven errata sit unchecked against them.
+PR 4 is the biggest build in the epic; starting it from a reading four rulings out of date is the
+expensive version of saving a cycle.
+
+**6. PR 1's unowned work becomes PR 1b, ahead of the verdict block.** PR 1 shipped the tab, the
+flag and the mix strip's move, and deliberately read no profile — so the on-demand fetch, the
+tab's empty/loading/failed readings and the synopsis slot had no owner. They land together,
+before PR 4, so the verdict block renders into a tab that already loads and PR 4 stays about the
+verdict. PR 4 busts the ~20-file split rule on its own; it does not also absorb this.
+
+**7. The modal draws mana as a state and adds the prerequisites.** R7 and R6 carry the reasoning
+and the figures.
+
+**8. Informed building is verified on staging in parallel, not as a gate.** Sub-project 2 shipped
+while staging's index was unbuilt, so it had only ever run against the flat fallback. Staging
+rebuilt 2026-09-21: every one of 20 real decks now resolves to measured role targets (19 at the
+commander rung, 1 at the pair), and 18 of 20 moved off the flat 37/36 land count. Wipes fall to
+**zero** on 7 of the 20 — the most visible behaviour change, and the one to look at first. The
+measurement is recorded; the walk-through happens alongside Tier B rather than blocking it.
