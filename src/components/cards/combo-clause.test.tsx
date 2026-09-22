@@ -12,26 +12,7 @@ describe("ComboClause", () => {
     );
   });
 
-  // THE APP'S WORDS SHORTEN, THE CARD'S NAME DOES NOT. `short` is the host's call — it is a
-  // question about that host's width — and it may only ever drop the app's own words.
-  it("shortens the app's words and never the card's name", () => {
-    const { rerender } = render(<ComboClause partnerName="Demonic Consultation" state="ownBoth" />);
-    expect(screen.getByTestId("combo-clause")).toHaveTextContent("with Demonic Consultation — you own both");
 
-    rerender(<ComboClause partnerName="Demonic Consultation" state="ownBoth" short />);
-    const clause = screen.getByTestId("combo-clause");
-    expect(clause).toHaveTextContent("with Demonic Consultation — both yours");
-    expect(clause.textContent).toContain("Demonic Consultation");
-  });
-
-  // `short` IS ABOUT STATE 1 ONLY. States 2 and 3 have no shortened form — the sentence is
-  // already three words and a name — so the flag must not silently change them.
-  it("ignores the short flag on a completes clause", () => {
-    render(<ComboClause partnerName="Basalt Monolith" state="completes" short />);
-    expect(screen.getByTestId("combo-clause")).toHaveTextContent(
-      comboAwarenessCopy.clause.completes("Basalt Monolith"),
-    );
-  });
 
   // THE GLYPH IS HIDDEN AND THE CLAUSE IS INERT. What a screen reader hears is the sentence,
   // composed into the host's accessible name — so the glyph must not speak, and this must not

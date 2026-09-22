@@ -46,9 +46,6 @@ export const comboAwarenessCopy = {
   clause: {
     /** State 1 — both halves owned, neither assembled into a deck. `/collection` only. */
     ownBoth: (partner: string) => `with ${partner} — you own both`,
-    /** State 1 at 390px and on the collection tile: the app's words shorten, the card's name
-     *  does not. */
-    ownBothShort: (partner: string) => `with ${partner} — both yours`,
     /**
      * The words BEFORE the partner name in `completes`, exported so a host can shrink them
      * separately and leave the name standing.
@@ -63,6 +60,28 @@ export const comboAwarenessCopy = {
     completesLead: COMPLETES_LEAD,
     /** States 2 and 3, identically. `completes` presupposes the partner is in the deck. */
     completes: (partner: string) => `${COMPLETES_LEAD}${partner}`,
+  },
+
+  /**
+   * `/collection` — the marker's hover tooltip, in the Game Changer register: "This card is on
+   * the Game Changer list." Sentence case, full stop, not mono.
+   *
+   * Pointer-fine only. On touch there is no tooltip and the row's own tap opens the modal,
+   * which is the behaviour the bolt already has.
+   */
+  markerTooltip: {
+    /** State 1, one partner. */
+    ownBoth: (partner: string) => `Two-card combo with ${partner}. You own both.`,
+    /**
+     * Several partners — a count of what the tooltip is NOT naming, never of what exists.
+     *
+     * SINGULAR AT ONE. The handoff's string is `and ${others} others` unconditionally, which
+     * emits `and 1 others` for a card with exactly two partners — and two partners is the
+     * common shape, not an edge: the median piece has two. Corrected here and flagged to
+     * Design rather than left to ship.
+     */
+    ownBothMore: (partner: string, others: number) =>
+      `Two-card combo with ${partner}, and ${others} ${others === 1 ? "other" : "others"}.`,
   },
 
   /** The card modal's block — the ONE surface in this feature that enumerates. */

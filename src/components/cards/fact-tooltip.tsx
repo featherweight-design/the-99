@@ -25,7 +25,23 @@ import { type CardFact, cardMarkCopy } from "../../lib/copy/card-mark";
 /** The handoff's figure: long enough not to fire on a pointer crossing the row. */
 export const OPEN_DELAY_MS = 400;
 
-export function FactTooltip({ fact, children }: { fact: CardFact; children: React.ReactNode }) {
+/**
+ * `fact` names one of the bracket facts and looks its sentence up; `sentence` supplies one
+ * directly, for a mark whose words depend on the CARD rather than on the fact.
+ *
+ * The combo mark is the second kind: its tooltip names a partner. Passing the sentence keeps
+ * the chrome, the delays and the pointer-fine rule in ONE place — a second tooltip component
+ * for one sentence is exactly the drift this file's own header refuses.
+ */
+export function FactTooltip({
+  fact,
+  sentence,
+  children,
+}: {
+  fact?: CardFact;
+  sentence?: string;
+  children: React.ReactNode;
+}) {
   // THE REPO'S ONE MEDIA-QUERY SUBSCRIBER, not a second copy. This was a state-plus-effect
   // whose mount effect called `setFine` synchronously, which React 19's
   // `react-hooks/set-state-in-effect` rejects — and the first fix for that wrote a private
@@ -52,11 +68,15 @@ export function FactTooltip({ fact, children }: { fact: CardFact; children: Reac
   //
   // Unmounting is the fix rather than a reset effect, because React discarding the child's
   // state cannot be forgotten the way a dependency list can.
+  // NO TOOLTIP ON TOUCH, which is the shipped rule and the one the combo mark inherits: the
+  // row's own tap opens the modal, where every partner and state is listed.
   if (!fine) return <>{children}</>;
-  return <FinePointerTooltip fact={fact}>{children}</FinePointerTooltip>;
+  const text = sentence ?? (fact ? cardMarkCopy.tooltip[fact] : "");
+  if (!text) return <>{children}</>;
+  return <FinePointerTooltip text={text}>{children}</FinePointerTooltip>;
 }
 
-function FinePointerTooltip({ fact, children }: { fact: CardFact; children: React.ReactNode }) {
+function FinePointerTooltip({ text, children }: { text: string; children: React.ReactNode }) {
   const [open, setOpen] = useState(false);
   const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
@@ -88,7 +108,7 @@ function FinePointerTooltip({ fact, children }: { fact: CardFact; children: Reac
             boxShadow: "0 4px 14px color-mix(in srgb, var(--bg) 70%, transparent)",
           }}
         >
-          {cardMarkCopy.tooltip[fact]}
+          {text}
         </span>
       )}
     </span>
