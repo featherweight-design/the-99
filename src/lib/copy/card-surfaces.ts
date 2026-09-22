@@ -97,6 +97,17 @@ export const twoFacedCopy = {
   flipToAria: (otherFaceName: string) => `Turn over to ${otherFaceName}`,
   /** Announced on the swap, since the image change is silent by design. */
   flippedAria: (faceName: string) => `Showing ${faceName}`,
+  /**
+   * The same pair, for a printing whose two faces carry ONE name: Secret Lair's
+   * reversible cards, where the sides differ in art and in nothing else.
+   *
+   * `Turn over to Mimir's Ancient Wisdom` names the card already on screen, which
+   * tells a reader who cannot see the art nothing at all. The side is what the
+   * label has left to say, and `front` / `back` is the vocabulary the rest of this
+   * feature already uses for the two images.
+   */
+  flipToSideAria: (side: "front" | "back") => `Turn over to the ${side} art`,
+  flippedSideAria: (side: "front" | "back") => `Showing the ${side} art`,
 } as const;
 
 /**

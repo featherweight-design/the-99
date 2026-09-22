@@ -953,11 +953,35 @@ export function CardModal({
   // existed carries the layout and no art, and a control that turns to a
   // colour-identity gradient is the lie the layout gate exists to prevent.
   const backImage = resolved?.backImageUri ?? card.backImageUri ?? null;
-  const twoFaced = isTwoFaced(card.layout) && Boolean(backImage);
+  // TWO SIDES BY LAYOUT, OR BY THIS PRINTING'S OWN BACK ART.
+  //
+  // `card.layout` is ORACLE-level, and that is the wrong scope for a reversible
+  // printing: `sld/2214` prints Teferi's Ageless Insight on both sides, while the
+  // oracle row's layout comes from its M21 printing and says `normal`. So the art
+  // was ingested (#811), stored, and unreachable — 81 printings carry their own
+  // back image under a one-sided oracle layout, all of them reversibles.
+  //
+  // A printing's own back image is POSITIVE EVIDENCE of two-sided stock, and
+  // stronger than the layout word, which describes the card in general. The layout
+  // gate stays for the oracle-level column beside it: `faces.ts` refuses to infer
+  // two-sidedness from a `//` in a name, and a split or adventure printing answers
+  // null here because its faces share one image.
+  const twoFaced = Boolean(backImage)
+    && (isTwoFaced(card.layout) || Boolean(resolved?.backImageUri));
   // The faces of the name on screen, which is the printed one when the copy in
   // hand carries a printed name. The title above and this announcement must
   // name the same card.
   const faces = faceNames(printedNameOf(preview));
+  // A reversible card's two sides carry ONE name, so `faceNames` hands back the same
+  // string twice and every label built from it would name the card already on screen.
+  // The side is what is left to say. See `twoFacedCopy.flipToSideAria`.
+  const oneName = faces.front === faces.back;
+  const flipLabel = (toBack: boolean) => (oneName
+    ? twoFacedCopy.flipToSideAria(toBack ? "back" : "front")
+    : twoFacedCopy.flipToAria(toBack ? faces.back : faces.front));
+  const shownLabel = (onBack: boolean) => (oneName
+    ? twoFacedCopy.flippedSideAria(onBack ? "back" : "front")
+    : twoFacedCopy.flippedAria(onBack ? faces.back : faces.front));
 
   function onZoomFlip() {
     const next = !zoomFlipped;
@@ -969,13 +993,13 @@ export function CardModal({
     // landing.
     const reduced = typeof window !== "undefined"
       && window.matchMedia?.("(prefers-reduced-motion: reduce)").matches;
-    if (reduced) setAnnouncement(twoFacedCopy.flippedAria(next ? faces.back : faces.front));
+    if (reduced) setAnnouncement(shownLabel(next));
   }
 
   function onTurnSettled(e: React.TransitionEvent<HTMLDivElement>) {
     // Only the box's own turn, not a transition bubbling from something inside it.
     if (e.target !== e.currentTarget || e.propertyName !== "transform") return;
-    setAnnouncement(twoFacedCopy.flippedAria(zoomFlipped ? faces.back : faces.front));
+    setAnnouncement(shownLabel(zoomFlipped));
   }
 
   function onFlip() {
@@ -987,12 +1011,12 @@ export function CardModal({
     // landing there.
     const reduced = typeof window !== "undefined"
       && window.matchMedia?.("(prefers-reduced-motion: reduce)").matches;
-    if (reduced) setAnnouncement(twoFacedCopy.flippedAria(next ? faces.back : faces.front));
+    if (reduced) setAnnouncement(shownLabel(next));
   }
 
   function onArtTurnSettled(e: React.TransitionEvent<HTMLDivElement>) {
     if (e.target !== e.currentTarget || e.propertyName !== "transform") return;
-    const face = twoFacedCopy.flippedAria(flipped ? faces.back : faces.front);
+    const face = shownLabel(flipped);
     // NOT while the zoom is up. A reader who turns the art and opens the zoom
     // inside the 320ms turn leaves this transition still running underneath a
     // layer that deliberately opens on the FRONT — and `openZoom` clears the
@@ -1192,7 +1216,7 @@ export function CardModal({
       </p>
       {twoFaced && (
         <FlipControl
-          otherFaceName={flipped ? faces.front : faces.back}
+          flipAria={flipLabel(!flipped)}
           onFlip={onFlip}
           // A real 44px target on the phone. 32 on the desktop, where the column
           // below the art is 97px tall at the drawn dialog height and this stack
@@ -1796,7 +1820,7 @@ export function CardModal({
               >
                 <FlipControl
                   controlRef={zoomFlipRef}
-                  otherFaceName={zoomFlipped ? faces.front : faces.back}
+                  flipAria={flipLabel(!zoomFlipped)}
                   onFlip={onZoomFlip}
                   size={44}
                 />
@@ -1915,9 +1939,14 @@ function CardFaces({
  * going round.
  */
 function FlipControl({
-  otherFaceName, onFlip, size, controlRef,
+  flipAria, onFlip, size, controlRef,
 }: {
-  otherFaceName: string;
+  /**
+   * Built by the caller, because what the label can say depends on the printing:
+   * the other face's NAME where the two differ, and the side where one name is
+   * printed on both (`twoFacedCopy.flipToSideAria`).
+   */
+  flipAria: string;
   onFlip: () => void;
   /** 44 on the phone's art header and inside the zoom, 32 in the desktop art column. */
   size: number;
@@ -1929,7 +1958,7 @@ function FlipControl({
       ref={controlRef}
       type="button"
       onClick={onFlip}
-      aria-label={twoFacedCopy.flipToAria(otherFaceName)}
+      aria-label={flipAria}
       // The ground is a scrim rather than a solid: the control has to stay
       // legible over whatever art is under it without hiding a square of the card.
       // In normal flow now that it is under the card; the stack around it centres

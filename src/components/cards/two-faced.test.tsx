@@ -114,8 +114,55 @@ describe("CardModal flip control", () => {
   });
 
   it("offers no control for a split card", () => {
-    mount({ ...delver, name: "Fire // Ice", layout: "split", backImageUri: null });
+    // The printing carries no back art either, which is what a split printing looks
+    // like: Scryfall gives `split`, `adventure` and `prepare` one image between both
+    // halves, so `card_faces[1]` has no `image_uris` and the transform stores null.
+    // Checked against the catalog on 2026-09-22 — every printing holding its own back
+    // art is a two-sided layout or a reversible printing, and none is a split.
+    mount({
+      ...delver,
+      name: "Fire // Ice",
+      layout: "split",
+      backImageUri: null,
+      printings: [{ ...delver.printings[0], backImageUri: null }],
+    });
     expect(flipTo("Ice")).toHaveLength(0);
+  });
+
+  it("turns over a REVERSIBLE printing, whose oracle layout says one side", () => {
+    // `sld/2214`: Secret Lair prints one card on both sides with different art. The
+    // oracle row's layout comes from an ordinary printing and says `normal`, so the
+    // layout gate alone left 81 printings' back art ingested and unreachable.
+    mount({
+      ...delver,
+      name: "Teferi's Ageless Insight",
+      printedName: "Mimir's Ancient Wisdom",
+      layout: "normal",
+      backImageUri: null,
+      printings: [{ ...delver.printings[0], backImageUri: BACK, flavorName: "Mimir's Ancient Wisdom" }],
+    });
+    // Labelled by SIDE, not by name: both faces print `Mimir's Ancient Wisdom`, so
+    // `Turn over to Mimir's Ancient Wisdom` would name the card already on screen.
+    const control = screen.getAllByLabelText(twoFacedCopy.flipToSideAria("back"));
+    expect(control.length).toBeGreaterThan(0);
+    fireEvent.click(control[0]);
+    settle();
+    expect(screen.getByText(twoFacedCopy.flippedSideAria("back"))).toBeTruthy();
+    expect(screen.getAllByLabelText(twoFacedCopy.flipToSideAria("front")).length).toBeGreaterThan(0);
+  });
+
+  it("still names the FACES of a reversible printing whose sides differ", () => {
+    // `tdm/381` Bloomvine Regent // Claim Territory: an adventure card printed with
+    // its two halves on two sides. Same layout mismatch, two different names — so the
+    // side wording would be the wrong choice here and the names are what to say.
+    mount({
+      ...delver,
+      name: "Bloomvine Regent // Claim Territory",
+      layout: "adventure",
+      backImageUri: null,
+      printings: [{ ...delver.printings[0], backImageUri: BACK }],
+    });
+    expect(flipTo("Claim Territory").length).toBeGreaterThan(0);
   });
 
   it("offers no control when the layout says two faces but no back art was stored", () => {
