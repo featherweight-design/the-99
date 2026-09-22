@@ -272,7 +272,7 @@ describe("theme-independent tokens", () => {
   // `HANDOFF.md` states of palette 2e Ignition: "Every rung clears 4.5:1 on all twelve
   // grounds". Measured here with this file's own `contrast()`, ranks 2 through 5 do, on
   // every ground in every theme. `--bracket-1` (#8A857C) does not, on 9 of the 48
-  // theme×ground pairs — worst kaldheim `--elevated` at 3.686:1, then ixalan `--elevated`
+  // theme×ground pairs — worst kaldheim `--elevated` at 3.6857:1, then ixalan `--elevated`
   // 4.03, amonkhet 4.19, eldraine 4.21, kaldheim `--surface-raised` 4.26, kamigawa 4.33,
   // kaldheim `--elevated-hover` 4.32, ixalan `--surface-raised` 4.44, kaldheim
   // `--surface` 4.48.
@@ -309,8 +309,13 @@ describe("theme-independent tokens", () => {
     const ratios = entries.flatMap(([, tokens]) =>
       GROUNDS.map((ground) => contrast(tokens.get("bracket-1")!, tokens.get(ground)!)),
     );
-    // No worse than today. 3.686 is kaldheim on `--elevated`, the weakest pair there is.
-    expect(Math.min(...ratios)).toBeGreaterThanOrEqual(3.68);
+    // No worse than today, at FULL PRECISION rather than rounded. kaldheim on `--elevated`
+    // is the weakest pair there is, and a floor written as 3.68 would wave through a
+    // regression from 3.6856 to 3.681 — "no worse than today" has to mean today's number,
+    // or the gate permits exactly the drift it exists to catch. `contrast()` is pure over
+    // two fixed hexes, so this is deterministic; the day it legitimately moves, it fails
+    // loudly and is re-measured rather than quietly absorbing a loss.
+    expect(Math.min(...ratios)).toBeGreaterThanOrEqual(3.6856560710173714);
     // And still short of the claim, so this assertion is not quietly satisfied by a fix
     // that nobody then notices — the day rank 1 clears, this line fails and comes out.
     expect(Math.min(...ratios)).toBeLessThan(4.5);
