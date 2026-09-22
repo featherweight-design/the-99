@@ -222,6 +222,33 @@ describe("LastSlotsStrip", () => {
     expect(byName("owned-1")).not.toBeChecked();
   });
 
+  // UNMOUNT IS NOT A CLOSE, and the strip unmounts on its own — the deck page drops it the
+  // moment `openSlots` reaches 0, which a quick-add can do while a seed is still out. The live
+  // region belongs to the PARENT and outlives this component, so a continuation that announces
+  // here describes a list that is no longer on screen to a screen reader that has no way to
+  // know that. Bumping only the draft generation is not enough: it stops the ticks and routes
+  // the continuation into the draft-moved branch, which announces.
+  it("says nothing when the seed lands after the strip unmounted", async () => {
+    let release: (v: unknown) => void = () => {};
+    actions.chooseBulk.mockReturnValue(
+      new Promise((r) => {
+        release = r;
+      }),
+    );
+    const onAnnounce = vi.fn();
+    const { unmount } = render(<LastSlotsStrip {...base} onAnnounce={onAnnounce} />);
+
+    await click(screen.getByRole("button", { name: doorName("3") }));
+    onAnnounce.mockClear();
+
+    unmount();
+    await act(async () => {
+      release({ ok: true, oracleIds: ["a"] });
+    });
+
+    expect(onAnnounce).not.toHaveBeenCalled();
+  });
+
   // A refused seed leaves the list open with nothing ticked, and says nothing about it. The
   // player did not ask for the pre-tick, so a failure of it is not theirs to read.
   it("opens with nothing ticked when the fill refuses", async () => {

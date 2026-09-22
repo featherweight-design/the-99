@@ -181,8 +181,17 @@ function LastSlotsStripInner({
   useEffect(() => {
     draftGen.current += 1;
   }, [ticked, declined, openSlots, deckOracleIds]);
+  // UNMOUNT SUPERSEDES AN IN-FLIGHT SEED, both ways, and the second bump is the
+  // one that matters. The strip unmounts on its own when `openSlots` reaches 0,
+  // so a seed asked moments earlier lands with nothing on screen — and bumping
+  // only `draftGen` stops the TICKS while routing the continuation into the
+  // draft-moved branch, which still announces. `onAnnounce` is the parent's,
+  // and the live region it writes to outlives this component: the message
+  // reaches a screen reader describing a list that is gone. Bumping the open
+  // token returns before either.
   useEffect(() => () => {
     draftGen.current += 1;
+    openToken.current += 1;
   }, []);
 
   const ownedIds = candidates.filter((c) => c.owned).map((c) => c.oracleId);
