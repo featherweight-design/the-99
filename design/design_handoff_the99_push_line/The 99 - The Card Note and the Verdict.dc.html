@@ -1,0 +1,484 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<meta name="design_doc_mode" content="canvas">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@600;700;800&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root, [data-theme="amonkhet"] {
+    --bg:#14110E; --surface:#1E1A15; --surface-rail:#1A1611; --surface-sunken:#18140F;
+    --surface-raised:#211D18; --surface-inset:#1B1712; --elevated:#29241F; --elevated-hover:#201C17;
+    --border:#2B241B; --border-strong:#3A3229; --border-dashed:#494037;
+    --fg:#EDE6D8; --fg-body:#C0B8A6; --fg-muted:#A59C89; --fg-faint:#8B8270; --fg-locked:#6E6654; --fg-disabled:#4A4033;
+    --accent:#CF8745; --accent-hover:#DE9757; --accent-mid:#AB6E37; --accent-shadow:#6B482A;
+    --success:#6FA368; --warning:#DEAA29; --danger:#C6533F;
+    --w:#F4E9C4; --u:#3A6AA5; --b:#98748F; --r:#C05A3E; --g:#4B7A46;
+    --display:'Cinzel';
+    --bracket-1:#8A857C; --bracket-2:#A89A74; --bracket-3:#C9AC62; --bracket-4:#E6D08A; --bracket-5:#FBEFC6;
+    --fact:#8FA6BE;
+  }
+  [data-theme="kamigawa"] {
+    --bg:#0E0F14; --surface:#16181F; --surface-raised:#191B22; --surface-rail:#12141B; --surface-sunken:#101219; --surface-inset:#13151C;
+    --elevated:#20222A; --elevated-hover:#181A21; --border:#181C26; --border-strong:#262A35; --border-dashed:#343843;
+    --fg:#E6E8F0; --fg-body:#B1B6C7; --fg-muted:#959AAD; --fg-faint:#6F7486; --fg-locked:#606476; --fg-disabled:#3D404E;
+    --accent:#FF4D9A; --accent-hover:#FF62A9; --accent-mid:#D33E7E; --accent-shadow:#843052;
+    --success:#6FA368; --warning:#E0913C; --danger:#C6533F;
+    --w:#F4E9C4; --u:#3A6AA5; --b:#98748F; --r:#C05A3E; --g:#4B7A46;
+    --display:'Cinzel';
+    --bracket-1:#8A857C; --bracket-2:#A89A74; --bracket-3:#C9AC62; --bracket-4:#E6D08A; --bracket-5:#FBEFC6;
+    --fact:#8FA6BE;
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; }
+  a { color: var(--accent); text-decoration: none; }
+  a:hover { color: var(--accent-hover); }
+</style>
+</helmet>
+
+<div data-theme="{{ theme }}" style="font-family:'IBM Plex Sans',sans-serif;background:var(--bg);color:var(--fg);padding:44px 40px 90px;display:flex;flex-direction:column;gap:56px;">
+
+  <div style="max-width:1180px;display:flex;flex-direction:column;gap:14px;">
+    <div style="display:flex;align-items:center;gap:13px;flex-wrap:wrap;">
+      <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;font-weight:600;color:var(--bg);background:var(--accent);border-radius:6px;padding:4px 10px;letter-spacing:0.08em;">R1</span>
+      <h1 style="font-family:var(--display),serif;font-weight:800;font-size:34px;margin:0;line-height:1.1;color:var(--fg);">The card note and the verdict</h1>
+      <span style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--fg-faint);">Round 4 of 5 &middot; &sect;4.1 premise withdrawn 2026-09-21</span>
+    </div>
+    <p style="font-size:15px;line-height:1.7;color:var(--fg-body);margin:0;max-width:920px;text-wrap:pretty;">Hugh&rsquo;s ruling splits one object into two. <b style="color:var(--fg);font-weight:600;">The card note is a claim about a card</b> &mdash; cheap, immediate, and true whether or not the deck has been analysed. <b style="color:var(--fg);font-weight:600;">The verdict is a claim about a deck at a moment</b>, and it now exists only because someone asked for it or committed a version. The two were one sentence when a verdict was free. <b style="color:var(--fg);font-weight:600;">It is not free any more, and the round is two features.</b></p>
+    <p style="font-size:14px;line-height:1.7;color:var(--fg-faint);margin:4px 0 0;max-width:920px;"><a href="#1a">1a</a> what the split costs and buys &middot; <b style="color:var(--accent);font-weight:600;"><a href="#1b">1b</a> the note&rsquo;s register &mdash; likely, never determined</b> &middot; <a href="#1c">1c</a> both surfaces, both widths &middot; <b style="color:var(--accent);font-weight:600;"><a href="#1d">1d</a> the analyze trigger</b> &middot; <a href="#1e">1e</a> asked vs committed &middot; <b style="color:var(--accent);font-weight:600;"><a href="#1f">1f</a> the stale verdict &mdash; Round 0&rsquo;s rule, inverted</b> &middot; <a href="#1g">1g</a> &sect;4.5, re-read</p>
+
+    <div style="border:1px solid var(--accent);border-radius:11px;background:color-mix(in oklab,var(--accent) 7%,var(--surface));padding:15px 17px;display:flex;flex-direction:column;gap:9px;margin-top:6px;">
+      <span style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.14em;text-transform:uppercase;color:var(--accent);">the five calls</span>
+      <div style="display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:9px 26px;">
+        <span style="font-size:12.5px;color:var(--fg-body);line-height:1.6;"><b style="color:var(--fg);font-weight:600;">1 &middot; The note&rsquo;s bracket clause reads against the <i>declared</i> bracket, not a computed one.</b> A declaration is the player&rsquo;s own statement of what they are building; it does not go stale when they add a card, and it is what <i>your bracket</i> most naturally means. <b style="color:var(--fg);font-weight:600;">With no declaration the note makes no deck claim at all</b> and prints the card fact alone. <a href="#1b">1b</a></span>
+        <span style="font-size:12.5px;color:var(--fg-body);line-height:1.6;"><b style="color:var(--fg);font-weight:600;">2 &middot; Two registers, because the detections differ.</b> Game Changer is a list membership and is stated flatly. Mass land denial and extra turns are read off oracle text, so they are <b style="color:var(--fg);font-weight:600;">attributed to us</b> &mdash; <i>we read this as</i> &mdash; and the bracket clause becomes conditional on that reading. <b style="color:var(--fg);font-weight:600;">Neither register ever names the deck&rsquo;s standing.</b> <a href="#1b">1b</a></span>
+        <span style="font-size:12.5px;color:var(--fg-body);line-height:1.6;"><b style="color:var(--fg);font-weight:600;">3 &middot; The analyze trigger is the verdict block&rsquo;s own control, and the tab carries the only signal.</b> A dot on the Analysis tab label when undetermined edits exist &mdash; no banner, no toast, no button on the decklist. <b style="color:var(--fg);font-weight:600;">The app may say the answer is old; it may not nag for permission to refresh it.</b> <a href="#1d">1d</a></span>
+        <span style="font-size:12.5px;color:var(--fg-body);line-height:1.6;"><b style="color:var(--fg);font-weight:600;">4 &middot; Asked and committed read identically, and behave differently.</b> Same sentence, same marks &mdash; the verdict is not two verdicts. <b style="color:var(--fg);font-weight:600;">The provenance line differs, and only the committed one is immune to staleness</b>, because it describes a snapshot that cannot change. <a href="#1e">1e</a></span>
+        <span style="font-size:12.5px;color:var(--fg-body);line-height:1.6;"><b style="color:var(--fg);font-weight:600;">5 &middot; The stale verdict follows Round 0&rsquo;s form and loses its counterweight.</b> Demoted, tagged, dated with its own denominator &mdash; but Round 0 could write <i>recounted just now</i> beside a stale sentence, and nothing recounts any more. <b style="color:var(--fg);font-weight:600;">The control that ends the staleness takes that slot</b>, and the card notes are what stay true in the meantime. <a href="#1f">1f</a></span>
+        <span style="font-size:12.5px;color:var(--fg-body);line-height:1.6;"><b style="color:var(--fg);font-weight:600;">6 &middot; &sect;4.5, re-read: the note does not persist, and does not need to.</b> The card is in the deck now and Round 1&rsquo;s marks carry its facts on the decklist row. <b style="color:var(--fg);font-weight:600;">Nothing about the add is lost, because nothing about the add was ever a verdict.</b> <a href="#1g">1g</a></span>
+      </div>
+    </div>
+  </div>
+
+  <!-- ========== 1a · THE SPLIT ========== -->
+  <div id="1a" style="display:flex;flex-direction:column;gap:14px;">
+    <div style="display:flex;align-items:center;gap:11px;flex-wrap:wrap;border-top:2px solid var(--accent);padding-top:18px;">
+      <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;font-weight:600;color:var(--bg);background:var(--accent);border-radius:5px;padding:3px 8px;">1a</span>
+      <span style="font-family:var(--display),serif;font-weight:700;font-size:19px;color:var(--fg);">One sentence, split in two &mdash; and what each half can still say</span>
+      <span style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.12em;text-transform:uppercase;color:var(--accent);border:1px solid var(--accent);border-radius:999px;padding:2px 9px;">&sect;4.1 withdrawn</span>
+    </div>
+
+    <p style="margin:0;font-size:14.5px;line-height:1.7;color:var(--fg-body);max-width:920px;text-wrap:pretty;">The push line worked because a verdict was a free by-product of every keystroke. <b style="color:var(--fg);font-weight:600;">Once standing is determined only on request, a per-add sentence about the deck is a sentence the app is not entitled to write</b> &mdash; it would either recompute the thing Hugh ruled we do not recompute, or quote a reading from four edits ago as though it were now. What survives the ruling is everything that was true of the <i>card</i>, and that turns out to be most of what the sentence was carrying.</p>
+
+    <div style="display:flex;gap:18px;flex-wrap:wrap;align-items:flex-start;">
+      <div style="width:560px;display:flex;flex-direction:column;gap:9px;">
+        <span style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.14em;text-transform:uppercase;color:var(--fg-locked);">the R2 push line, and the clause that dies</span>
+        <div style="background:var(--surface-sunken);border:1px solid var(--border);border-radius:9px;padding:12px 13px;display:flex;flex-direction:column;gap:7px;">
+          <span style="font-family:'IBM Plex Mono',monospace;font-size:9px;letter-spacing:0.14em;text-transform:uppercase;color:var(--fg-muted);">If you add this</span>
+          <span style="font-size:13px;color:var(--fg-body);line-height:1.6;">That would be your <b style="color:var(--fg);font-weight:600;">4th</b> game changer, and <b style="color:var(--fg);font-weight:600;">Upgraded allows 3</b>. <span style="color:var(--fg-locked);text-decoration:line-through;text-decoration-color:var(--danger);">It moves what your cards permit from Upgraded to Optimized or cEDH.</span></span>
+        </div>
+        <div style="font-size:12px;color:var(--fg-muted);line-height:1.6;"><b style="color:var(--fg-body);font-weight:600;">The first clause is a card fact and a rules fact.</b> <i>This card is a Game Changer</i> and <i>Upgraded allows three of them</i> are both true without analysing anything; only the ordinal needs the deck, and a count of Game Changers in a list is not a verdict. <b style="color:var(--fg);font-weight:600;">The struck clause is the whole of what the ruling removes</b> &mdash; a range-to-range statement about the deck&rsquo;s standing, which now requires an act.</div>
+      </div>
+
+      <div style="width:560px;display:flex;flex-direction:column;gap:9px;">
+        <span style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.14em;text-transform:uppercase;color:var(--accent);">what each object keeps</span>
+        <div style="border:1px solid var(--border);border-radius:11px;background:var(--surface);padding:14px 16px;display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px 20px;">
+          <span style="display:flex;flex-direction:column;gap:6px;">
+            <span style="font-family:'IBM Plex Mono',monospace;font-size:9.5px;letter-spacing:0.12em;text-transform:uppercase;color:var(--fact);">the card note</span>
+            <span style="font-size:12.5px;color:var(--fg-muted);line-height:1.6;">What the card is. What the rules say about that kind of card. Whether the <b style="color:var(--fg-body);font-weight:600;">declared</b> bracket permits it. The count of its kind already in the list. <b style="color:var(--fg);font-weight:600;">On both add surfaces, always, with no analysis run.</b></span>
+          </span>
+          <span style="display:flex;flex-direction:column;gap:6px;">
+            <span style="font-family:'IBM Plex Mono',monospace;font-size:9.5px;letter-spacing:0.12em;text-transform:uppercase;color:var(--bracket-3);">the verdict</span>
+            <span style="font-size:12.5px;color:var(--fg-muted);line-height:1.6;">What the deck&rsquo;s cards permit, the receipts behind it, and the upgrade path out. <b style="color:var(--fg);font-weight:600;">On the Analysis tab, on ask or on commit, and nowhere else.</b></span>
+          </span>
+          <span style="grid-column:1 / -1;font-size:12.5px;color:var(--fg-muted);line-height:1.6;border-top:1px solid var(--border);padding-top:11px;"><b style="color:var(--fg);font-weight:600;">The split is a gain, not a consolation.</b> The old sentence could only speak when <span style="font-family:'IBM Plex Mono',monospace;">bracketDelta</span> found a transition, which is rare; <b style="color:var(--fg-body);font-weight:600;">the note speaks whenever the card carries a fact</b>, which is far more often and is the part a player adding cards can actually act on. And it survives the one thing that killed the push line: <b style="color:var(--fg);font-weight:600;">it is still true four edits later.</b></span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ========== 1b · REGISTER ========== -->
+  <div id="1b" style="display:flex;flex-direction:column;gap:14px;">
+    <div style="display:flex;align-items:center;gap:11px;flex-wrap:wrap;border-top:2px solid var(--accent);padding-top:18px;">
+      <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;font-weight:600;color:var(--bg);background:var(--accent);border-radius:5px;padding:3px 8px;">1b</span>
+      <span style="font-family:var(--display),serif;font-weight:700;font-size:19px;color:var(--fg);">Likely, never determined &mdash; and the two registers that makes</span>
+      <span style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.12em;text-transform:uppercase;color:var(--accent);border:1px solid var(--accent);border-radius:999px;padding:2px 9px;">constraint</span>
+    </div>
+
+    <p style="margin:0;font-size:14.5px;line-height:1.7;color:var(--fg-body);max-width:920px;text-wrap:pretty;"><b style="color:var(--fg);font-weight:600;">Hedging everything equally is the failure mode here.</b> Of the three detections, one is a list lookup and two are readings of oracle text &mdash; and a note that says <i>we think this might be a Game Changer</i> about a card on WotC&rsquo;s published list teaches the player that our hedges are decoration, at which point the hedge on the two that need it stops working. <b style="color:var(--fg);font-weight:600;">So the uncertainty is spent where it is real, and stated as authorship rather than as doubt:</b> <i>we read this as</i>, which is checkable, rather than <i>possibly</i>, which is not.</p>
+
+    <div style="display:flex;gap:18px;flex-wrap:wrap;align-items:flex-start;">
+      <div style="width:400px;display:flex;flex-direction:column;gap:9px;">
+        <span style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.14em;text-transform:uppercase;color:var(--fg-faint);">register 1 &mdash; a list fact, stated flatly</span>
+        <div style="background:var(--surface);border:1px solid var(--border);border-radius:9px;padding:11px 12px;display:flex;flex-direction:column;gap:7px;">
+          <span style="font-family:'IBM Plex Mono',monospace;font-size:9px;letter-spacing:0.14em;text-transform:uppercase;color:var(--fg-muted);">About this card</span>
+          <div style="display:flex;align-items:flex-start;gap:9px;">
+            <svg width="16" height="16" viewBox="0 0 16 16" style="display:block;flex:none;margin-top:2px;color:var(--fact);filter:drop-shadow(0 0 4px color-mix(in oklab,var(--fact) 45%,transparent));"><path d="M9.4 1.5 L4.1 8.8 H7.3 L6.6 14.5 L11.9 7.0 H8.7 Z" fill="currentColor"></path></svg>
+            <span style="font-size:12.5px;color:var(--fg-body);line-height:1.6;"><b style="color:var(--fg);font-weight:600;">A game changer</b>, and your 4th. <b style="color:var(--fg);font-weight:600;">Upgraded allows 3.</b></span>
+          </div>
+        </div>
+        <div style="font-size:12px;color:var(--fg-muted);line-height:1.6;"><b style="color:var(--fg-body);font-weight:600;">No hedge, because there is nothing to hedge.</b> Membership of WotC&rsquo;s list is a lookup, the count is arithmetic over the list the player is looking at, and the allowance is quoted rules text. <b style="color:var(--fg);font-weight:600;">Three determinate facts and no claim about the deck&rsquo;s standing</b> &mdash; note that it says <i>Upgraded allows 3</i>, never <i>you are at Upgraded</i>.</div>
+      </div>
+
+      <div style="width:400px;display:flex;flex-direction:column;gap:9px;">
+        <span style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.14em;text-transform:uppercase;color:var(--accent);">register 2 &mdash; a reading, attributed</span>
+        <div style="background:var(--surface);border:1px solid var(--accent-shadow);border-radius:9px;padding:11px 12px;display:flex;flex-direction:column;gap:7px;">
+          <span style="font-family:'IBM Plex Mono',monospace;font-size:9px;letter-spacing:0.14em;text-transform:uppercase;color:var(--fg-muted);">About this card</span>
+          <div style="display:flex;align-items:flex-start;gap:9px;">
+            <svg width="16" height="16" viewBox="0 0 16 16" style="display:block;flex:none;margin-top:2px;color:var(--fact);filter:drop-shadow(0 0 4px color-mix(in oklab,var(--fact) 45%,transparent));"><path d="M1.4 13.4 L6.2 5.2 L9.4 10.6 L11.2 7.8 L14.6 13.4 Z" fill="currentColor"></path><path d="M4.4 2.6 L5.6 2.6 M8.0 1.6 L8.0 3.0 M11.0 2.8 L12.2 2.2" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" opacity="0.6"></path></svg>
+            <span style="font-size:12.5px;color:var(--fg-body);line-height:1.6;"><b style="color:var(--fg);font-weight:600;">We read this as mass land denial</b>, which <b style="color:var(--fg);font-weight:600;">no bracket with limits allows</b>. If that&rsquo;s wrong for how you play it, the reading is ours, not the rules&rsquo;.</span>
+          </div>
+        </div>
+        <div style="font-size:12px;color:var(--fg-muted);line-height:1.6;"><b style="color:var(--fg-body);font-weight:600;">The hedge is on the detection and nowhere else.</b> <i>No bracket with limits allows it</i> stays flat, because that clause is rules text and is not in doubt &mdash; the uncertainty is entirely about whether this card is that kind of card. <b style="color:var(--fg);font-weight:600;">The last clause is the honest part</b>: it tells the player which half to argue with, and it is the only place the app admits a reading can be wrong without pretending the rules might be.</div>
+      </div>
+
+      <div style="width:340px;display:flex;flex-direction:column;gap:9px;">
+        <span style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.14em;text-transform:uppercase;color:var(--fg-locked);">rejected registers</span>
+        <div style="border:1px solid var(--border);border-radius:11px;background:var(--surface-sunken);padding:14px 16px;display:flex;flex-direction:column;gap:9px;">
+          <span style="font-size:12.5px;color:var(--fg-muted);line-height:1.6;"><b style="color:var(--fg-body);font-weight:600;">&ldquo;This may push your bracket.&rdquo;</b> The exact claim the ruling removed, in softer clothes. <i>May</i> does not make a deck statement into a card statement.</span>
+          <span style="font-size:12.5px;color:var(--fg-muted);line-height:1.6;"><b style="color:var(--fg-body);font-weight:600;">A confidence percentage.</b> The detections are boolean and their error rate is unmeasured; a figure would be invented precision on top of a partial reading.</span>
+          <span style="font-size:12.5px;color:var(--fg-muted);line-height:1.6;"><b style="color:var(--fg-body);font-weight:600;">&ldquo;Possibly mass land denial.&rdquo;</b> Doubt with no author and no remedy. <i>We read this as</i> costs the same and tells the player whose claim it is.</span>
+          <span style="font-size:12.5px;color:var(--fg-muted);line-height:1.6;"><b style="color:var(--fg-body);font-weight:600;">A warning colour.</b> <span style="font-family:'IBM Plex Mono',monospace;">--warning</span> or <span style="font-family:'IBM Plex Mono',monospace;">--danger</span> on a note that is <i>likely</i> by construction would be the surface&rsquo;s loudest signal attached to its least certain claim. <b style="color:var(--fg);font-weight:600;">The note is <span style="font-family:'IBM Plex Mono',monospace;">--fact</span> ink and body text, always.</b></span>
+        </div>
+      </div>
+    </div>
+
+    <div style="border:1px solid var(--accent);border-radius:11px;background:color-mix(in oklab,var(--accent) 7%,var(--surface));padding:15px 17px;display:flex;flex-direction:column;gap:10px;max-width:1180px;">
+      <span style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.14em;text-transform:uppercase;color:var(--accent);">the bracket clause &mdash; which bracket, when the deck&rsquo;s standing is unknown</span>
+      <div style="display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px 22px;">
+        <span style="font-size:12.5px;color:var(--fg-muted);line-height:1.65;"><b style="color:var(--fg);font-weight:600;">Declared, where there is a declaration.</b> Round 3 already has the player stating what they are building. <b style="color:var(--fg-body);font-weight:600;">A declaration cannot go stale from an edit</b> &mdash; it is an intention, not a measurement &mdash; so the note can cite it on every add without recomputing anything, and <i>your bracket</i> means the bracket the player said they were playing. <b style="color:var(--fg);font-weight:600;">It is also the only reading under which the note is advice rather than trivia.</b></span>
+        <span style="font-size:12.5px;color:var(--fg-muted);line-height:1.65;"><b style="color:var(--fg);font-weight:600;">Undeclared: no deck clause at all.</b> The note prints the card fact and the rules fact and stops. <b style="color:var(--fg-body);font-weight:600;">It does not fall back to the last determined verdict</b>, which is the trap: that reading may be four edits old, and a note that silently quotes a stale verdict is worse than the per-add verdict the ruling just removed, because nothing on the row says how old it is.</span>
+        <span style="font-size:12.5px;color:var(--fg-muted);line-height:1.65;"><b style="color:var(--fg);font-weight:600;">Declared but not yet determined is fine.</b> The note is about a rule and a declaration, and neither needs an analysis to have run. <b style="color:var(--fg-body);font-weight:600;">This is the case that makes the split worth having</b>: a player who has declared Upgraded and never once opened the Analysis tab still gets told, on the row, that the card they are about to add is their fourth Game Changer.</span>
+      </div>
+      <span style="font-size:12.5px;color:var(--fg-muted);line-height:1.65;border-top:1px solid var(--accent-shadow);padding-top:10px;"><b style="color:var(--fg);font-weight:600;">One consequence worth stating for eng:</b> the note needs the declaration and the card facts, and <b style="color:var(--fg-body);font-weight:600;">it does not need <span style="font-family:'IBM Plex Mono',monospace;">buildDeckProfile</span> or <span style="font-family:'IBM Plex Mono',monospace;">bracketDelta</span> at all</b>. Its only deck-derived figure is a count of a kind in the current list, which the add panel can compute from data it already holds. <b style="color:var(--fg);font-weight:600;">That is what makes it cheap enough to draw on every row of a 480-card pool.</b></span>
+    </div>
+  </div>
+
+  <!-- ========== 1c · BOTH SURFACES ========== -->
+  <div id="1c" style="display:flex;flex-direction:column;gap:14px;">
+    <div style="display:flex;align-items:center;gap:11px;flex-wrap:wrap;border-top:2px solid var(--accent);padding-top:18px;">
+      <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;font-weight:600;color:var(--bg);background:var(--accent);border-radius:5px;padding:3px 8px;">1c</span>
+      <span style="font-family:var(--display),serif;font-weight:700;font-size:19px;color:var(--fg);">Both add surfaces, both widths</span>
+      <span style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.12em;text-transform:uppercase;color:var(--accent);border:1px solid var(--accent);border-radius:999px;padding:2px 9px;">deliverable 1</span>
+    </div>
+
+    <div style="display:flex;gap:20px;flex-wrap:wrap;align-items:flex-start;">
+      <div style="width:540px;display:flex;flex-direction:column;gap:10px;">
+        <span style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.14em;text-transform:uppercase;color:var(--accent);">quick add, HD &middot; three rows, two of them silent</span>
+        <div style="background:var(--surface-rail);border:1px solid var(--border-strong);border-radius:10px;padding:12px 13px;display:flex;flex-direction:column;gap:7px;">
+          <div style="background:var(--surface);border:1px solid var(--border);border-radius:7px;padding:9px 10px;display:flex;align-items:center;gap:10px;min-height:34px;">
+            <span style="width:7px;height:7px;border-radius:999px;background:var(--success);flex:none;"></span>
+            <span style="font-size:13.5px;color:var(--fg);flex:auto;">Swords to Plowshares</span>
+            <span style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--fg-faint);width:64px;text-align:right;flex:none;">86%</span>
+            <span style="display:inline-flex;align-items:center;justify-content:center;height:30px;padding:0 13px;border:1px solid var(--accent);border-radius:8px;font-size:13px;font-weight:600;color:var(--accent);flex:none;">Add &#8629;</span>
+          </div>
+          <div style="background:var(--surface);border:1px solid var(--border);border-radius:7px;padding:9px 10px;display:flex;flex-direction:column;gap:0;">
+            <div style="display:flex;align-items:center;gap:10px;min-height:34px;">
+              <span style="width:7px;height:7px;border-radius:999px;background:var(--success);flex:none;"></span>
+              <span style="display:flex;align-items:center;gap:7px;flex:auto;min-width:0;">
+                <span style="font-size:13.5px;font-weight:500;color:var(--fg);">Armageddon</span>
+                <svg width="16" height="16" viewBox="0 0 16 16" style="display:block;flex:none;color:var(--fact);filter:drop-shadow(0 0 4px color-mix(in oklab,var(--fact) 45%,transparent));"><path d="M1.4 13.4 L6.2 5.2 L9.4 10.6 L11.2 7.8 L14.6 13.4 Z" fill="currentColor"></path><path d="M4.4 2.6 L5.6 2.6 M8.0 1.6 L8.0 3.0 M11.0 2.8 L12.2 2.2" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" opacity="0.6"></path></svg>
+              </span>
+              <span style="display:flex;align-items:center;gap:3px;flex:none;">
+                <span style="width:12px;height:12px;border-radius:999px;background:var(--w);display:block;"></span>
+                <span style="width:12px;height:12px;border-radius:999px;background:var(--w);display:block;"></span>
+                <span style="width:12px;height:12px;border-radius:999px;background:var(--w);display:block;"></span>
+                <span style="width:12px;height:12px;border-radius:999px;background:var(--w);display:block;"></span>
+              </span>
+              <span style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--fg-faint);width:64px;text-align:right;flex:none;">4%</span>
+              <span style="display:inline-flex;align-items:center;justify-content:center;height:30px;padding:0 13px;border:1px solid var(--accent);border-radius:8px;font-size:13px;font-weight:600;color:var(--accent);flex:none;">Add &#8629;</span>
+            </div>
+            <div style="border-top:1px solid var(--border);margin-top:9px;padding-top:9px;display:flex;flex-direction:column;gap:6px;">
+              <span style="font-family:'IBM Plex Mono',monospace;font-size:9px;letter-spacing:0.14em;text-transform:uppercase;color:var(--fg-muted);">About this card</span>
+              <span style="font-size:12.5px;color:var(--fg-body);line-height:1.6;">We read this as <b style="color:var(--fg);font-weight:600;">mass land denial</b>, which <b style="color:var(--fg);font-weight:600;">no bracket with limits allows</b> &mdash; including the <b style="color:var(--fg);font-weight:600;">Upgraded</b> you declared.</span>
+            </div>
+          </div>
+          <div style="background:var(--surface);border:1px solid var(--border);border-radius:7px;padding:9px 10px;display:flex;align-items:center;gap:10px;min-height:34px;">
+            <span style="width:7px;height:7px;border:1px dashed var(--fg-locked);border-radius:999px;flex:none;"></span>
+            <span style="font-size:13.5px;color:var(--fg);flex:auto;">Smothering Tithe</span>
+            <span style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--fg-faint);width:64px;text-align:right;flex:none;">71%</span>
+            <span style="display:inline-flex;align-items:center;justify-content:center;height:30px;padding:0 13px;border:1px solid var(--accent);border-radius:8px;font-size:13px;font-weight:600;color:var(--accent);flex:none;">Add &#8629;</span>
+          </div>
+        </div>
+        <div style="font-size:12px;color:var(--fg-muted);line-height:1.6;"><b style="color:var(--fg-body);font-weight:600;">Same slot the push line had, and a lower bar to fill it.</b> Below the row&rsquo;s own line, inside its box, above a <span style="font-family:'IBM Plex Mono',monospace;">1px --border</span> rule; label mono 9px <span style="font-family:'IBM Plex Mono',monospace;">--fg-muted</span>. <b style="color:var(--fg);font-weight:600;">The row never reserves the height</b> &mdash; a card with no fact draws no note and keeps the shipped 34px line.</div>
+      </div>
+
+      <div style="width:250px;display:flex;flex-direction:column;gap:10px;">
+        <span style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.14em;text-transform:uppercase;color:var(--accent);">Consider tile &mdash; the clause density</span>
+        <div style="background:var(--surface-rail);border:1px solid var(--border-strong);border-radius:10px;padding:12px;display:flex;gap:12px;">
+          <div style="width:168px;background:var(--surface);border:1px solid var(--border);border-radius:9px;padding:9px;display:flex;flex-direction:column;gap:8px;">
+            <div style="height:88px;border-radius:6px;background:repeating-linear-gradient(135deg,var(--surface-raised) 0 6px,var(--surface-sunken) 6px 12px);"></div>
+            <span style="display:flex;align-items:center;gap:7px;min-height:16px;">
+              <span style="width:7px;height:7px;border-radius:999px;background:var(--success);flex:none;"></span>
+              <svg width="16" height="16" viewBox="0 0 16 16" style="display:block;flex:none;color:var(--fact);filter:drop-shadow(0 0 4px color-mix(in oklab,var(--fact) 45%,transparent));"><path d="M9.4 1.5 L4.1 8.8 H7.3 L6.6 14.5 L11.9 7.0 H8.7 Z" fill="currentColor"></path></svg>
+              <svg width="16" height="16" viewBox="0 0 16 16" style="display:block;flex:none;color:var(--fact);filter:drop-shadow(0 0 4px color-mix(in oklab,var(--fact) 45%,transparent));"><path d="M5.2 4.9 A 3.1 3.1 0 1 0 5.2 11.1 C 8.3 11.1 7.7 4.9 10.8 4.9 A 3.1 3.1 0 1 1 10.8 11.1 C 7.7 11.1 8.3 4.9 5.2 4.9 Z" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"></path></svg>
+            </span>
+            <span style="font-size:12.5px;font-weight:600;color:var(--fg);line-height:1.35;">Underworld Breach</span>
+            <span style="font-family:'IBM Plex Mono',monospace;font-size:9.5px;color:var(--fg-faint);">enchantment</span>
+            <span style="display:flex;align-items:center;gap:7px;">
+              <span style="height:4px;flex:1;background:var(--border-strong);border-radius:999px;position:relative;overflow:hidden;"><span style="position:absolute;inset:0 38% 0 0;background:var(--accent);display:block;"></span></span>
+              <span style="font-family:'IBM Plex Mono',monospace;font-size:9.5px;color:var(--fg-faint);">62%</span>
+            </span>
+            <span style="display:flex;flex-direction:column;gap:3px;border-top:1px solid var(--border);padding-top:8px;">
+              <span style="font-family:'IBM Plex Mono',monospace;font-size:9px;letter-spacing:0.12em;text-transform:uppercase;color:var(--fg-muted);">About this card</span>
+              <span style="font-size:11.5px;color:var(--fg-body);line-height:1.45;">Your <b style="color:var(--fg);font-weight:600;">4th</b> game changer. <b style="color:var(--fg);font-weight:600;">Upgraded allows 3.</b></span>
+            </span>
+            <span style="display:inline-flex;align-items:center;justify-content:center;height:30px;border:1px solid var(--accent);border-radius:7px;font-size:12.5px;font-weight:600;color:var(--accent);">Add</span>
+          </div>
+        </div>
+        <div style="font-size:12px;color:var(--fg-muted);line-height:1.6;"><b style="color:var(--fg-body);font-weight:600;">Two short sentences fit where one long one didn&rsquo;t.</b> That is a direct dividend of the split: with the range clause gone, the note&rsquo;s longest form on a tile is <b style="color:var(--fg);font-weight:600;">the count and the allowance</b>, which sit in two lines at 168px. <b style="color:var(--fg);font-weight:600;">Register 2 truncates to <i>we read this as mass land denial</i></b> and the rest opens with the card.</div>
+      </div>
+
+      <div style="width:330px;display:flex;flex-direction:column;gap:10px;">
+        <span style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.14em;text-transform:uppercase;color:var(--accent);">390 &mdash; top-off candidate row</span>
+        <div style="background:var(--surface-rail);border:1px solid var(--border-strong);border-radius:10px;padding:11px;display:flex;flex-direction:column;gap:6px;">
+          <div style="background:var(--surface);border:1px solid var(--border);border-radius:7px;padding:9px;display:flex;align-items:center;gap:9px;min-height:52px;">
+            <span style="width:18px;height:18px;border-radius:5px;border:1px solid var(--border-strong);display:inline-flex;align-items:center;justify-content:center;font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--fg-faint);flex:none;">+</span>
+            <span style="width:7px;height:7px;border-radius:999px;background:var(--success);flex:none;"></span>
+            <span style="display:flex;flex-direction:column;gap:2px;flex:auto;min-width:0;">
+              <span style="font-size:13px;color:var(--fg);">Cyclonic Rift</span>
+              <span style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--fg-faint);">+41 &middot; 68%</span>
+            </span>
+          </div>
+          <div style="background:var(--elevated-hover);border:1px solid var(--accent-shadow);border-radius:7px;padding:9px;display:flex;flex-direction:column;gap:0;">
+            <div style="display:flex;align-items:center;gap:9px;min-height:52px;">
+              <span style="width:18px;height:18px;border-radius:5px;border:1px solid var(--accent);background:color-mix(in oklab,var(--accent) 12%,transparent);display:inline-flex;align-items:center;justify-content:center;font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--accent);flex:none;">&#10003;</span>
+              <span style="width:7px;height:7px;border-radius:999px;background:var(--success);flex:none;"></span>
+              <span style="display:flex;flex-direction:column;gap:2px;flex:auto;min-width:0;">
+                <span style="display:flex;align-items:center;gap:6px;">
+                  <span style="font-size:13px;color:var(--fg);">Time Warp</span>
+                  <svg width="16" height="16" viewBox="0 0 16 16" style="display:block;flex:none;color:var(--fact);filter:drop-shadow(0 0 4px color-mix(in oklab,var(--fact) 45%,transparent));"><path d="M10.98 3.74 A 5.2 5.2 0 1 1 6.65 2.98" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"></path><path d="M9.0 2.4 L7.1 4.6 L6.2 1.3 Z" fill="currentColor"></path></svg>
+                </span>
+                <span style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--fg-faint);">+33 &middot; 22%</span>
+              </span>
+            </div>
+            <div style="border-top:1px solid var(--border);margin-top:8px;padding-top:9px;padding-left:27px;display:flex;flex-direction:column;gap:5px;">
+              <span style="font-family:'IBM Plex Mono',monospace;font-size:9px;letter-spacing:0.14em;text-transform:uppercase;color:var(--fg-muted);">About this card</span>
+              <span style="font-size:12.5px;color:var(--fg-body);line-height:1.55;">We read this as an <b style="color:var(--fg);font-weight:600;">extra-turn card</b>, your <b style="color:var(--fg);font-weight:600;">3rd</b>. <b style="color:var(--fg);font-weight:600;">Upgraded&rsquo;s rule is about chaining them</b>, which a list can&rsquo;t show, so we count them and stop there.</span>
+            </div>
+          </div>
+        </div>
+        <div style="font-size:12px;color:var(--fg-muted);line-height:1.6;"><b style="color:var(--fg-body);font-weight:600;">The note does not change at 390</b>; the row becomes the shipped 52px meta variant and the note indents to the name column. <b style="color:var(--fg);font-weight:600;">Marks stay 16px inline after the name</b> at both widths.</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ========== 1d · THE TRIGGER ========== -->
+  <div id="1d" style="display:flex;flex-direction:column;gap:14px;">
+    <div style="display:flex;align-items:center;gap:11px;flex-wrap:wrap;border-top:2px solid var(--accent);padding-top:18px;">
+      <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;font-weight:600;color:var(--bg);background:var(--accent);border-radius:5px;padding:3px 8px;">1d</span>
+      <span style="font-family:var(--display),serif;font-weight:700;font-size:19px;color:var(--fg);">The analyze trigger &mdash; and the one signal that leaves the tab</span>
+      <span style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.12em;text-transform:uppercase;color:var(--accent);border:1px solid var(--accent);border-radius:999px;padding:2px 9px;">deliverable 2</span>
+    </div>
+
+    <p style="margin:0;font-size:14.5px;line-height:1.7;color:var(--fg-body);max-width:920px;text-wrap:pretty;">Nothing today says <i>what&rsquo;s the state of my changes?</i>, and the temptation is to answer it everywhere &mdash; a button on the decklist, a banner after an edit, a prompt on commit. <b style="color:var(--fg);font-weight:600;">Every one of those re-imports the thing the ruling removed:</b> a per-edit reminder that the deck has an unexamined standing is a per-edit verdict with the number left out. <b style="color:var(--fg);font-weight:600;">So the control lives where the answer lives, and exactly one mark travels.</b></p>
+
+    <div style="display:flex;gap:20px;flex-wrap:wrap;align-items:flex-start;">
+      <div style="width:620px;display:flex;flex-direction:column;gap:10px;">
+        <span style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.14em;text-transform:uppercase;color:var(--accent);">the tab row, and the block that owns the control &mdash; three states</span>
+        <div style="display:flex;flex-direction:column;gap:12px;">
+          <div style="background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:0;overflow:hidden;">
+            <div style="display:flex;gap:2px;padding:0 14px;border-bottom:1px solid var(--border);background:var(--surface-sunken);">
+              <span style="font-size:12.5px;color:var(--fg-muted);padding:11px 13px;">Your deck</span>
+              <span style="display:inline-flex;align-items:center;gap:7px;font-size:12.5px;font-weight:600;color:var(--fg);padding:11px 13px;border-bottom:2px solid var(--accent);">Analysis</span>
+              <span style="font-size:12.5px;color:var(--fg-muted);padding:11px 13px;">Consider</span>
+              <span style="font-size:12.5px;color:var(--fg-muted);padding:11px 13px;">Games</span>
+            </div>
+            <div style="padding:15px 17px;display:flex;align-items:center;gap:14px;flex-wrap:wrap;">
+              <span style="display:flex;flex-direction:column;gap:4px;flex:auto;min-width:260px;">
+                <span style="font-family:'IBM Plex Mono',monospace;font-size:9px;letter-spacing:0.14em;text-transform:uppercase;color:var(--fg-muted);">This deck has not been analysed</span>
+                <span style="font-size:13px;color:var(--fg-body);line-height:1.6;">Your cards decide which brackets this deck can sit in. <b style="color:var(--fg);font-weight:600;">One pass over all 99 and we&rsquo;ll tell you which.</b></span>
+              </span>
+              <span style="display:flex;align-items:center;gap:11px;flex:none;">
+                <span style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--fg-faint);">about two seconds</span>
+                <span style="display:inline-flex;align-items:center;justify-content:center;height:36px;padding:0 17px;border-radius:9px;background:var(--accent);font-size:13px;font-weight:600;color:var(--bg);">Analyse this deck</span>
+              </span>
+            </div>
+          </div>
+
+          <div style="background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:0;overflow:hidden;">
+            <div style="display:flex;gap:2px;padding:0 14px;border-bottom:1px solid var(--border);background:var(--surface-sunken);">
+              <span style="font-size:12.5px;color:var(--fg-muted);padding:11px 13px;">Your deck</span>
+              <span style="display:inline-flex;align-items:center;gap:7px;font-size:12.5px;color:var(--fg-muted);padding:11px 13px;">Analysis<span style="width:6px;height:6px;border-radius:999px;background:var(--accent);display:block;"></span></span>
+              <span style="font-size:12.5px;color:var(--fg-muted);padding:11px 13px;">Consider</span>
+              <span style="font-size:12.5px;color:var(--fg-muted);padding:11px 13px;">Games</span>
+            </div>
+            <div style="padding:15px 17px;display:flex;align-items:center;gap:13px;">
+              <span style="font-size:12.5px;color:var(--fg-faint);line-height:1.6;">The player is on <b style="color:var(--fg-muted);font-weight:600;">Your deck</b>, four cards in. <b style="color:var(--fg-body);font-weight:600;">The dot on the tab label is the entire cross-page signal</b> &mdash; no banner above the list, no count, no toast after an add, nothing that moves or appears while they are typing.</span>
+            </div>
+          </div>
+
+          <div style="background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:15px 17px;display:flex;align-items:center;gap:14px;flex-wrap:wrap;">
+            <svg width="26" height="26" viewBox="0 0 40 40" style="display:block;flex:none;"><path d="M20 8.5 L31.5 20 L20 31.5 L8.5 20 Z" fill="none" stroke="currentColor" stroke-width="1.5"></path><path d="M20 5.9 L34.1 20 L20 34.1 L5.9 20 Z" fill="none" stroke="currentColor" stroke-width="0.9" opacity="0.55"></path><path d="M20 4.7 L20 4.1" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"></path><path d="M35.3 20 L35.9 20" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"></path><path d="M20 35.3 L20 35.9" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"></path><path d="M4.7 20 L4.1 20" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"></path><text x="20" y="20" text-anchor="middle" dominant-baseline="central" font-family="Cinzel,serif" font-weight="700" font-size="16" fill="currentColor" dy="0.5">3</text></svg>
+            <span style="display:flex;flex-direction:column;gap:3px;flex:auto;min-width:240px;">
+              <span style="font-size:14px;font-weight:600;color:var(--fg);">Your cards permit Upgraded</span>
+              <span style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--fg-faint);">determined against all 99 &middot; 2 minutes ago</span>
+            </span>
+            <span style="display:inline-flex;align-items:center;justify-content:center;height:32px;padding:0 14px;border:1px solid var(--border-strong);border-radius:8px;font-size:12.5px;font-weight:600;color:var(--fg-body);flex:none;">Analyse again</span>
+          </div>
+        </div>
+        <div style="font-size:12px;color:var(--fg-muted);line-height:1.6;"><b style="color:var(--fg-body);font-weight:600;">One control, three weights, one place.</b> Filled accent when there is no answer yet, because that is the only state where pressing it is the whole point of the tab; <b style="color:var(--fg);font-weight:600;">outlined and secondary once an answer exists</b>, because the answer is now the subject and the button is maintenance. <b style="color:var(--fg);font-weight:600;">It never moves position between states</b> &mdash; a player who has pressed it once knows where it is.</div>
+      </div>
+
+      <div style="width:400px;display:flex;flex-direction:column;gap:14px;">
+        <div style="border:1px solid var(--accent);border-radius:11px;background:color-mix(in oklab,var(--accent) 7%,var(--surface));padding:14px 16px;display:flex;flex-direction:column;gap:10px;">
+          <span style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.14em;text-transform:uppercase;color:var(--accent);">the dot, and what it is allowed to mean</span>
+          <span style="font-size:12.5px;color:var(--fg-muted);line-height:1.65;"><b style="color:var(--fg);font-weight:600;">It means: there is something here you have not seen.</b> Present when edits exist since the last determination, and when no determination exists at all. <b style="color:var(--fg-body);font-weight:600;">It carries no number</b> &mdash; a count of unexamined edits invites the reader to decide whether four is enough to bother with, which is a judgement the app cannot help them make.</span>
+          <span style="font-size:12.5px;color:var(--fg-muted);line-height:1.65;"><b style="color:var(--fg);font-weight:600;">It is not a warning.</b> <span style="font-family:'IBM Plex Mono',monospace;">--accent</span>, 6px, the same dot the app already uses for unseen content. Unexamined is not the same as wrong, and most edits move nothing.</span>
+          <span style="font-size:12.5px;color:var(--fg-muted);line-height:1.65;"><b style="color:var(--fg);font-weight:600;">It clears on determination, not on visit.</b> Opening the tab and reading a stale verdict does not make it current, so the dot stays until the answer does.</span>
+        </div>
+        <div style="border:1px solid var(--border);border-radius:11px;background:var(--surface-sunken);padding:14px 16px;display:flex;flex-direction:column;gap:9px;">
+          <span style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.14em;text-transform:uppercase;color:var(--fg-locked);">rejected triggers</span>
+          <span style="font-size:12.5px;color:var(--fg-muted);line-height:1.6;"><b style="color:var(--fg-body);font-weight:600;">A button on the decklist.</b> Puts the deck&rsquo;s standing back in front of a player who is editing &mdash; the ruling with an extra click in it.</span>
+          <span style="font-size:12.5px;color:var(--fg-muted);line-height:1.6;"><b style="color:var(--fg-body);font-weight:600;">A prompt after N edits.</b> The app picking the moment the player is supposed to care. Hugh&rsquo;s ruling is precisely that the player picks it.</span>
+          <span style="font-size:12.5px;color:var(--fg-muted);line-height:1.6;"><b style="color:var(--fg-body);font-weight:600;">Auto-analyse on opening the tab.</b> Defensible, and it makes the tab a page that computes when looked at; the stale state then never exists, and neither does the player&rsquo;s ability to compare a verdict to the edits made since. <b style="color:var(--fg);font-weight:600;">Worth revisiting if the run is genuinely free</b> &mdash; recorded in READINESS, not assumed here.</span>
+          <span style="font-size:12.5px;color:var(--fg-muted);line-height:1.6;"><b style="color:var(--fg-body);font-weight:600;">A toast on commit.</b> Commit already determines (<a href="#1e">1e</a>); announcing it twice makes a checkpoint feel like an alarm.</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ========== 1e · ASKED VS COMMITTED ========== -->
+  <div id="1e" style="display:flex;flex-direction:column;gap:14px;">
+    <div style="display:flex;align-items:center;gap:11px;flex-wrap:wrap;border-top:2px solid var(--accent);padding-top:18px;">
+      <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;font-weight:600;color:var(--bg);background:var(--accent);border-radius:5px;padding:3px 8px;">1e</span>
+      <span style="font-family:var(--display),serif;font-weight:700;font-size:19px;color:var(--fg);">Asked and committed &mdash; one verdict, two provenances</span>
+      <span style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.12em;text-transform:uppercase;color:var(--accent);border:1px solid var(--accent);border-radius:999px;padding:2px 9px;">deliverable 3</span>
+    </div>
+
+    <p style="margin:0;font-size:14.5px;line-height:1.7;color:var(--fg-body);max-width:920px;text-wrap:pretty;"><b style="color:var(--fg);font-weight:600;">The verdict reads the same, and it has to.</b> Two phrasings for one computation would tell the player the app knows something different about a committed deck than about the same 99 cards a second earlier, which is false &mdash; the function is the same function. <b style="color:var(--fg);font-weight:600;">What legitimately differs is what the answer is <i>about</i>:</b> an asked verdict describes a live list that the next keystroke changes; a committed one describes a version, and a version cannot change. That difference belongs in the provenance line and in the staleness behaviour, and nowhere else.</p>
+
+    <div style="display:flex;gap:20px;flex-wrap:wrap;align-items:flex-start;">
+      <div style="width:440px;display:flex;flex-direction:column;gap:9px;">
+        <span style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.14em;text-transform:uppercase;color:var(--fg-faint);">asked &mdash; about the list as it stands</span>
+        <div style="background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:15px 17px;display:flex;align-items:center;gap:14px;">
+          <svg width="26" height="26" viewBox="0 0 40 40" style="display:block;flex:none;"><path d="M20 8.5 L31.5 20 L20 31.5 L8.5 20 Z" fill="none" stroke="currentColor" stroke-width="1.5"></path><path d="M20 5.9 L34.1 20 L20 34.1 L5.9 20 Z" fill="none" stroke="currentColor" stroke-width="0.9" opacity="0.55"></path><path d="M20 4.7 L20 4.1" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"></path><path d="M35.3 20 L35.9 20" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"></path><path d="M20 35.3 L20 35.9" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"></path><path d="M4.7 20 L4.1 20" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"></path><text x="20" y="20" text-anchor="middle" dominant-baseline="central" font-family="Cinzel,serif" font-weight="700" font-size="16" fill="currentColor" dy="0.5">3</text></svg>
+          <span style="display:flex;flex-direction:column;gap:3px;">
+            <span style="font-size:14px;font-weight:600;color:var(--fg);">Your cards permit Upgraded</span>
+            <span style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--fg-faint);">determined against all 99 &middot; 2 minutes ago</span>
+          </span>
+        </div>
+        <div style="font-size:12px;color:var(--fg-muted);line-height:1.6;"><b style="color:var(--fg-body);font-weight:600;">Dated, and counted.</b> The denominator is Round 0&rsquo;s and does the same work here: it tells the reader what the answer was computed over, which is the only way a later staleness tag can mean anything. <b style="color:var(--fg);font-weight:600;">This one can go stale</b>, and will, on the next edit.</div>
+      </div>
+
+      <div style="width:440px;display:flex;flex-direction:column;gap:9px;">
+        <span style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.14em;text-transform:uppercase;color:var(--accent);">committed &mdash; about a version, permanently</span>
+        <div style="background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:15px 17px;display:flex;align-items:center;gap:14px;">
+          <svg width="26" height="26" viewBox="0 0 40 40" style="display:block;flex:none;"><path d="M20 8.5 L31.5 20 L20 31.5 L8.5 20 Z" fill="none" stroke="currentColor" stroke-width="1.5"></path><path d="M20 5.9 L34.1 20 L20 34.1 L5.9 20 Z" fill="none" stroke="currentColor" stroke-width="0.9" opacity="0.55"></path><path d="M20 4.7 L20 4.1" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"></path><path d="M35.3 20 L35.9 20" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"></path><path d="M20 35.3 L20 35.9" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"></path><path d="M4.7 20 L4.1 20" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"></path><text x="20" y="20" text-anchor="middle" dominant-baseline="central" font-family="Cinzel,serif" font-weight="700" font-size="16" fill="currentColor" dy="0.5">3</text></svg>
+          <span style="display:flex;flex-direction:column;gap:3px;">
+            <span style="font-size:14px;font-weight:600;color:var(--fg);">Your cards permit Upgraded</span>
+            <span style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--fg-faint);">determined for <span style="color:var(--fg-body);">v4</span> &middot; all 99 &middot; 21 Sept</span>
+          </span>
+        </div>
+        <div style="font-size:12px;color:var(--fg-muted);line-height:1.6;"><b style="color:var(--fg-body);font-weight:600;">Named, not dated-relative.</b> <i>2 minutes ago</i> is right for something about to be superseded; a version&rsquo;s verdict is a record, so it takes the version&rsquo;s own name and an absolute date. <b style="color:var(--fg);font-weight:600;">It never goes stale</b> &mdash; edits after a commit belong to the draft, and the draft&rsquo;s verdict is a separate, askable thing. That is also why commit is a natural determination point: <b style="color:var(--fg-body);font-weight:600;">the app is already snapshotting the list, and a verdict is the cheapest thing it can attach.</b></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ========== 1f · STALE ========== -->
+  <div id="1f" style="display:flex;flex-direction:column;gap:14px;">
+    <div style="display:flex;align-items:center;gap:11px;flex-wrap:wrap;border-top:2px solid var(--accent);padding-top:18px;">
+      <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;font-weight:600;color:var(--bg);background:var(--accent);border-radius:5px;padding:3px 8px;">1f</span>
+      <span style="font-family:var(--display),serif;font-weight:700;font-size:19px;color:var(--fg);">The stale verdict &mdash; Round 0&rsquo;s rule holds, and its counterweight is gone</span>
+      <span style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.12em;text-transform:uppercase;color:var(--accent);border:1px solid var(--accent);border-radius:999px;padding:2px 9px;">deliverable 4</span>
+    </div>
+
+    <p style="margin:0;font-size:14.5px;line-height:1.7;color:var(--fg-body);max-width:920px;text-wrap:pretty;"><b style="color:var(--fg);font-weight:600;">Yes, the verdict follows &mdash; the form transfers exactly, and the reasoning does not.</b> Round 0 kept a stale sentence because hiding it cost the player a true description of 92 of their 99 cards to avoid being wrong about seven, and it could afford to because <i>the verdict beside it was explicitly marked current</i>. <b style="color:var(--fg);font-weight:600;">Under this ruling nothing recounts, so that sentence cannot be written any more</b> &mdash; the block that was the anchor is now the thing adrift. The same argument still lands, because a bracket reading computed over 95 of 99 cards is overwhelmingly likely to be the right one; but it has to be carried by the tag and the denominator alone.</p>
+
+    <div style="display:flex;gap:20px;flex-wrap:wrap;align-items:flex-start;">
+      <div style="width:620px;display:flex;flex-direction:column;gap:10px;">
+        <span style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.14em;text-transform:uppercase;color:var(--accent);">analysed, then four more edits, then back to the tab</span>
+        <div style="background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:16px 18px;display:flex;flex-direction:column;gap:13px;">
+          <div style="display:flex;align-items:center;gap:14px;flex-wrap:wrap;">
+            <svg width="26" height="26" viewBox="0 0 40 40" style="display:block;flex:none;opacity:0.55;"><path d="M20 8.5 L31.5 20 L20 31.5 L8.5 20 Z" fill="none" stroke="currentColor" stroke-width="1.5"></path><path d="M20 5.9 L34.1 20 L20 34.1 L5.9 20 Z" fill="none" stroke="currentColor" stroke-width="0.9" opacity="0.55"></path><path d="M20 4.7 L20 4.1" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"></path><path d="M35.3 20 L35.9 20" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"></path><path d="M20 35.3 L20 35.9" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"></path><path d="M4.7 20 L4.1 20" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"></path><text x="20" y="20" text-anchor="middle" dominant-baseline="central" font-family="Cinzel,serif" font-weight="700" font-size="16" fill="currentColor" dy="0.5">3</text></svg>
+            <span style="display:flex;flex-direction:column;gap:5px;flex:auto;min-width:260px;">
+              <span style="display:flex;align-items:center;gap:9px;flex-wrap:wrap;">
+                <span style="font-size:14px;font-weight:600;color:var(--fg-faint);">Your cards permitted Upgraded</span>
+                <span style="font-family:'IBM Plex Mono',monospace;font-size:9.5px;letter-spacing:0.1em;text-transform:uppercase;color:var(--warning);border:1px solid var(--warning);border-radius:999px;padding:2px 8px;">out of date</span>
+              </span>
+              <span style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--fg-faint);">determined against 95 of these 99 &middot; 4 cards have changed since</span>
+            </span>
+            <span style="display:inline-flex;align-items:center;justify-content:center;height:36px;padding:0 17px;border-radius:9px;background:var(--accent);font-size:13px;font-weight:600;color:var(--bg);flex:none;">Analyse again</span>
+          </div>
+          <div style="border-top:1px solid var(--border);padding-top:12px;display:flex;flex-direction:column;gap:9px;">
+            <span style="font-size:12.5px;color:var(--fg-body);line-height:1.65;"><b style="color:var(--fg);font-weight:600;">The four that changed</b> &mdash; so the reader can judge the old answer themselves rather than trust a tag.</span>
+            <span style="display:flex;flex-wrap:wrap;gap:7px 14px;">
+              <span style="display:inline-flex;align-items:center;gap:6px;"><span style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--success);">+</span><span style="font-size:12.5px;color:var(--fg-body);border-bottom:1px dotted var(--accent);">Rhystic Study</span><svg width="16" height="16" viewBox="0 0 16 16" style="display:block;flex:none;color:var(--fact);filter:drop-shadow(0 0 4px color-mix(in oklab,var(--fact) 45%,transparent));"><path d="M9.4 1.5 L4.1 8.8 H7.3 L6.6 14.5 L11.9 7.0 H8.7 Z" fill="currentColor"></path></svg></span>
+              <span style="display:inline-flex;align-items:center;gap:6px;"><span style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--success);">+</span><span style="font-size:12.5px;color:var(--fg-body);border-bottom:1px dotted var(--accent);">Mystic Remora</span><svg width="16" height="16" viewBox="0 0 16 16" style="display:block;flex:none;color:var(--fact);filter:drop-shadow(0 0 4px color-mix(in oklab,var(--fact) 45%,transparent));"><path d="M9.4 1.5 L4.1 8.8 H7.3 L6.6 14.5 L11.9 7.0 H8.7 Z" fill="currentColor"></path></svg></span>
+              <span style="display:inline-flex;align-items:center;gap:6px;"><span style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--danger);">&minus;</span><span style="font-size:12.5px;color:var(--fg-faint);">Wayfarer&rsquo;s Bauble</span></span>
+              <span style="display:inline-flex;align-items:center;gap:6px;"><span style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--success);">+</span><span style="font-size:12.5px;color:var(--fg-body);">Wooded Foothills</span></span>
+            </span>
+            <span style="font-size:12px;color:var(--fg-faint);line-height:1.6;"><b style="color:var(--fg-muted);font-weight:600;">Two of the four carry facts the brackets count.</b> That sentence is a card claim, not a deck claim, so it is allowed here and is the most useful thing on the block.</span>
+          </div>
+        </div>
+        <div style="font-size:12px;color:var(--fg-muted);line-height:1.6;max-width:620px;"><b style="color:var(--fg-body);font-weight:600;">Three changes from Round 0&rsquo;s stale synopsis, all forced by the ruling.</b> The verb goes past tense &mdash; <i>permitted</i>, not <i>permits</i> &mdash; which is the cheapest honest signal available and works before the tag is read. The mark dims to <span style="font-family:'IBM Plex Mono',monospace;">0.55</span> with the sentence, because here the figure <i>is</i> the stale thing; Round 0 could keep its verdict bright and demote only the prose. <b style="color:var(--fg);font-weight:600;">And the control takes the slot where <i>recounted just now</i> used to sit</b> &mdash; it goes back to filled accent, because in this state pressing it is again the point of the tab.</div>
+      </div>
+
+      <div style="width:400px;display:flex;flex-direction:column;gap:14px;">
+        <div style="border:1px solid var(--accent);border-radius:11px;background:color-mix(in oklab,var(--accent) 7%,var(--surface));padding:14px 16px;display:flex;flex-direction:column;gap:10px;">
+          <span style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.14em;text-transform:uppercase;color:var(--accent);">what stays true while the verdict is stale</span>
+          <span style="font-size:12.5px;color:var(--fg-muted);line-height:1.65;"><b style="color:var(--fg);font-weight:600;">The card notes, all of them.</b> They were never derived from the verdict, so a stale verdict does not make a single note wrong &mdash; the player adding cards on the other tab is still being told what each card is and what the rules say about it. <b style="color:var(--fg-body);font-weight:600;">That is the split paying for itself:</b> under the old design, a deck between analyses had no true statements on any surface.</span>
+          <span style="font-size:12.5px;color:var(--fg-muted);line-height:1.65;"><b style="color:var(--fg);font-weight:600;">The mix strip and the counts.</b> Counted from the list, unaffected, and explicitly not tagged &mdash; Round 0&rsquo;s rule that a stale sentence never takes the figures down with it survives for everything that is still counted rather than determined.</span>
+        </div>
+        <div style="border:1px solid var(--border);border-radius:11px;background:var(--surface-sunken);padding:14px 16px;display:flex;flex-direction:column;gap:9px;">
+          <span style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.14em;text-transform:uppercase;color:var(--fg-locked);">rejected</span>
+          <span style="font-size:12.5px;color:var(--fg-muted);line-height:1.6;"><b style="color:var(--fg-body);font-weight:600;">Hiding the stale verdict.</b> Round 0&rsquo;s argument, unchanged: it costs the player a reading computed over 95 of 99 cards to avoid being wrong about four, and they can see the four.</span>
+          <span style="font-size:12.5px;color:var(--fg-muted);line-height:1.6;"><b style="color:var(--fg-body);font-weight:600;">A guess at whether the four mattered.</b> Tempting &mdash; two of them are Game Changers &mdash; and it is a verdict computed on the sly to decide whether to admit the verdict is old.</span>
+          <span style="font-size:12.5px;color:var(--fg-muted);line-height:1.6;"><b style="color:var(--fg-body);font-weight:600;">Greying the whole block.</b> The upgrade path and receipts below are as old as the verdict and are demoted with it, but the block keeps its border and its contrast floor. <b style="color:var(--fg);font-weight:600;">Stale is not disabled.</b></span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ========== 1g · §4.5 ========== -->
+  <div id="1g" style="display:flex;flex-direction:column;gap:14px;">
+    <div style="display:flex;align-items:center;gap:11px;flex-wrap:wrap;border-top:2px solid var(--accent);padding-top:18px;">
+      <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;font-weight:600;color:var(--bg);background:var(--accent);border-radius:5px;padding:3px 8px;">1g</span>
+      <span style="font-family:var(--display),serif;font-weight:700;font-size:19px;color:var(--fg);">&sect;4.5 re-read &mdash; does the card note persist after the add?</span>
+    </div>
+
+    <div style="display:flex;gap:20px;flex-wrap:wrap;align-items:flex-start;">
+      <div style="width:560px;display:flex;flex-direction:column;gap:10px;">
+        <span style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.14em;text-transform:uppercase;color:var(--accent);">no &mdash; and the shipped decklist row is why</span>
+        <div style="background:var(--surface-rail);border:1px solid var(--border-strong);border-radius:10px;padding:12px;display:flex;flex-direction:column;gap:7px;">
+          <span style="font-family:'IBM Plex Mono',monospace;font-size:9px;letter-spacing:0.14em;text-transform:uppercase;color:var(--fg-muted);">Your deck &middot; after the add</span>
+          <div style="background:var(--surface);border:1px solid var(--border);border-radius:7px;padding:9px 10px;display:flex;align-items:center;gap:10px;min-height:34px;">
+            <span style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--fg-faint);flex:none;">1</span>
+            <span style="display:flex;align-items:center;gap:7px;flex:auto;min-width:0;">
+              <span style="font-size:13.5px;color:var(--fg);">Armageddon</span>
+              <svg width="16" height="16" viewBox="0 0 16 16" style="display:block;flex:none;color:var(--fact);filter:drop-shadow(0 0 4px color-mix(in oklab,var(--fact) 45%,transparent));"><path d="M1.4 13.4 L6.2 5.2 L9.4 10.6 L11.2 7.8 L14.6 13.4 Z" fill="currentColor"></path><path d="M4.4 2.6 L5.6 2.6 M8.0 1.6 L8.0 3.0 M11.0 2.8 L12.2 2.2" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" opacity="0.6"></path></svg>
+            </span>
+            <span style="display:flex;align-items:center;gap:3px;flex:none;">
+              <span style="width:12px;height:12px;border-radius:999px;background:var(--w);display:block;"></span>
+              <span style="width:12px;height:12px;border-radius:999px;background:var(--w);display:block;"></span>
+              <span style="width:12px;height:12px;border-radius:999px;background:var(--w);display:block;"></span>
+              <span style="width:12px;height:12px;border-radius:999px;background:var(--w);display:block;"></span>
+            </span>
+            <span style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--fg-faint);flex:none;">$8.40</span>
+          </div>
+        </div>
+        <div style="font-size:12px;color:var(--fg-muted);line-height:1.6;"><b style="color:var(--fg-body);font-weight:600;">The note was about a candidate, and there is no candidate any more.</b> What it was carrying does not disappear with it: <b style="color:var(--fg);font-weight:600;">Round 1&rsquo;s mark is on the decklist row</b>, the card is counted in the mix, and the consequence for the deck is the verdict&rsquo;s job &mdash; which the player now reaches by asking. <b style="color:var(--fg);font-weight:600;">Nothing is lost, because nothing about an add was ever a verdict.</b></div>
+      </div>
+
+      <div style="width:400px;display:flex;flex-direction:column;gap:12px;">
+        <div style="border:1px solid var(--border);border-radius:11px;background:var(--surface);padding:14px 16px;display:flex;flex-direction:column;gap:10px;">
+          <span style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.14em;text-transform:uppercase;color:var(--accent);">the rest of &sect;4.2&ndash;&sect;4.5, as they now read</span>
+          <span style="font-size:12.5px;color:var(--fg-muted);line-height:1.65;"><b style="color:var(--fg);font-weight:600;">&sect;4.2&ndash;&sect;4.4 are unaffected</b> and their R2 answers stand: the upgrade path reads rather than acts, <span style="font-family:'IBM Plex Mono',monospace;">blocked</span> is stated plainly with the nearest reachable target named, and the two-clause count sentence leads with the count. <b style="color:var(--fg-body);font-weight:600;">All three live on the Analysis tab, which is where a determined verdict lives</b> &mdash; the ruling moved nothing underneath them.</span>
+          <span style="font-size:12.5px;color:var(--fg-muted);line-height:1.65;"><b style="color:var(--fg);font-weight:600;">One thing does transfer from the withdrawn work:</b> <span style="font-family:'IBM Plex Mono',monospace;">bracketDelta</span>&rsquo;s five sentences are now the <i>verdict&rsquo;s</i> vocabulary, not the row&rsquo;s. The corrected shapes in the superseded canvas &mdash; the binding bracket, the two fact forms, the three <span style="font-family:'IBM Plex Mono',monospace;">inert</span> clauses &mdash; remain the right copy wherever a determined verdict explains itself. <b style="color:var(--fg-body);font-weight:600;">They are kept beside this file rather than deleted.</b></span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;theme&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;amonkhet&quot;,&quot;kamigawa&quot;],&quot;default&quot;:&quot;amonkhet&quot;,&quot;tsType&quot;:&quot;\&quot;amonkhet\&quot; | \&quot;kamigawa\&quot;&quot;}}"></script>
+</body>
+</html>
