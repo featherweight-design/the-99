@@ -69,13 +69,22 @@ export const topOffCopy = {
      *  `doorNoteNoneFree` exists beside it: a seed of 0 used to mean the player
      *  owned none of the candidates, and now it also happens when they own every
      *  one and every copy is sleeved in another deck. Those are opposite facts,
-     *  and the caller picks between them on the owned count, never on the seed. */
+     *  and the caller picks between them on the owned count, never on the seed.
+     *
+     *  IT NAMES THE POOL, NEVER THE TICKS. It used to promise `3 candidates arrive
+     *  ticked`, which was true while the seed WAS the first N of this list. The seed
+     *  asks the real fill now, and a fill spends slots on cards the player does not
+     *  own, so the door promised three and the list opened with two. What is still
+     *  true when the door is drawn is how many of these they can sleeve; the
+     *  pre-tick is something the list does rather than something the door promises.
+     *  `top-off-list.tsx` made the same concession for the button: offering is not
+     *  promising. */
     doorNote: (seeded: string) =>
       seeded === '0'
         ? 'You own none of these, so the list arrives untouched. Nothing is added until you say so.'
         : seeded === '1'
-        ? '1 candidate arrives ticked, from your collection. Nothing is added until you say so.'
-        : `${seeded} candidates arrive ticked, all from your collection. Nothing is added until you say so.`,
+        ? '1 you can sleeve. Nothing is added until you say so.'
+        : `${seeded} you can sleeve. Nothing is added until you say so.`,
     /** Reopening after a partial accept. Says what is left and that the
      *  selection survived, so closing the list is never a loss. */
     doorNoteAgain: (cand: string) =>
@@ -95,9 +104,11 @@ export const topOffCopy = {
     doorNoteMobile: (seeded: string) =>
       seeded === '0'
         ? 'You own none of these. Nothing is added until you say so.'
-        : seeded === '1'
-        ? '1 arrives ticked. Nothing is added until you say so.'
-        : `${seeded} arrive ticked. Nothing is added until you say so.`,
+        // ONE SENTENCE AT BOTH WIDTHS for the seeded case. The desktop form existed
+        // because it ran three mono lines at 390px; it named the tick count and the
+        // provenance, and naming neither leaves a sentence short enough for the phone.
+        // The zero branch keeps its own form, which still differs.
+        : topOffCopy.strip.doorNote(seeded),
     /** The pool is empty because every ranked card ARGUES AGAINST itself.
      *
      *  `synergyCopy.lastSlots.short` says the collection ran out and that there

@@ -121,7 +121,7 @@ describe("LastSlotsStrip", () => {
 
   it("names the owned candidates in the door note before any pass", () => {
     render(<LastSlotsStrip {...base} />);
-    expect(screen.getByText(topOffCopy.strip.doorNote("2"))).toBeInTheDocument();
+    expect(screen.getAllByText(topOffCopy.strip.doorNote("2"))).toHaveLength(2);
   });
 
   // The note promises what will arrive ticked, and the seed clamps to the open
@@ -129,8 +129,8 @@ describe("LastSlotsStrip", () => {
   // two is a promise the open cannot keep.
   it("clamps the door note's promise to the slots the seed can fill", () => {
     render(<LastSlotsStrip {...base} openSlots={1} />);
-    expect(screen.getByText(topOffCopy.strip.doorNote("1"))).toBeInTheDocument();
-    expect(screen.queryByText(topOffCopy.strip.doorNote("2"))).toBeNull();
+    expect(screen.getAllByText(topOffCopy.strip.doorNote("1"))).toHaveLength(2);
+    expect(screen.queryAllByText(topOffCopy.strip.doorNote("2"))).toHaveLength(0);
   });
 
   // A player who owns none of the candidates seeds no ticks, and the note has
@@ -178,7 +178,7 @@ describe("LastSlotsStrip", () => {
     // One, not three: the note states what will arrive ticked, so it reads the
     // same list the seed does or it overstates by exactly the cards whose every
     // copy is sleeved elsewhere.
-    expect(screen.getByText(topOffCopy.strip.doorNote("1"))).toBeInTheDocument();
+    expect(screen.getAllByText(topOffCopy.strip.doorNote("1"))).toHaveLength(2);
     expect(screen.queryByText(topOffCopy.strip.doorNote("3"))).toBeNull();
   });
 
@@ -263,7 +263,7 @@ describe("LastSlotsStrip", () => {
     // let one failed read silently empty the promise the strip makes.
     render(<LastSlotsStrip {...base} candidates={[candidate("unread", true)]} />);
 
-    expect(screen.getByText(topOffCopy.strip.doorNote("1"))).toBeInTheDocument();
+    expect(screen.getAllByText(topOffCopy.strip.doorNote("1"))).toHaveLength(2);
   });
 
   it("does not claim nothing was ranked when the tail was simply cut", () => {
@@ -428,7 +428,7 @@ describe("LastSlotsStrip", () => {
     await click(screen.getByRole("button", { name: topOffCopy.commit.addAria("2", "98", 99) }));
 
     expect(await screen.findByText(topOffCopy.strip.doorNoteAgainOwned("2", "3"))).toBeInTheDocument();
-    expect(screen.queryByText(topOffCopy.strip.doorNote("2"))).toBeNull();
+    expect(screen.queryAllByText(topOffCopy.strip.doorNote("2"))).toHaveLength(0);
   });
 
   // Cancelling adds nothing, but it does not discard the selection either: the
@@ -441,7 +441,7 @@ describe("LastSlotsStrip", () => {
     await click(screen.getByRole("button", { name: topOffCopy.strip.close }));
 
     expect(screen.getByText(topOffCopy.strip.doorNoteAgainOwned("2", "3"))).toBeInTheDocument();
-    expect(screen.queryByText(topOffCopy.strip.doorNote("2"))).toBeNull();
+    expect(screen.queryAllByText(topOffCopy.strip.doorNote("2"))).toHaveLength(0);
   });
 
   // The strip is the last thing on the builder page, so at 390px the list opens
@@ -512,14 +512,14 @@ describe("LastSlotsStrip", () => {
     // survives the reload, that promise is about a seed that already happened.
     it("greets a returning player with the reopen note, not the first-open one", async () => {
       const first = render(<LastSlotsStrip {...base} />);
-      expect(screen.getByText(topOffCopy.strip.doorNote("2"))).toBeInTheDocument();
+      expect(screen.getAllByText(topOffCopy.strip.doorNote("2"))).toHaveLength(2);
       await click(screen.getByRole("button", { name: doorName("3") }));
       await click(screen.getByRole("button", { name: topOffCopy.strip.close }));
       first.unmount();
 
       render(<LastSlotsStrip {...base} />);
       expect(screen.getByText(topOffCopy.strip.doorNoteAgainOwned("2", "3"))).toBeInTheDocument();
-      expect(screen.queryByText(topOffCopy.strip.doorNote("2"))).toBeNull();
+      expect(screen.queryAllByText(topOffCopy.strip.doorNote("2"))).toHaveLength(0);
     });
 
     it("does not restore another deck's selection", async () => {
@@ -528,7 +528,7 @@ describe("LastSlotsStrip", () => {
       first.unmount();
 
       render(<LastSlotsStrip {...base} deckId="deck-2" />);
-      expect(screen.getByText(topOffCopy.strip.doorNote("2"))).toBeInTheDocument();
+      expect(screen.getAllByText(topOffCopy.strip.doorNote("2"))).toHaveLength(2);
     });
 
     // What survives a reload is an *uncommitted* selection. A landed pass has
@@ -543,7 +543,7 @@ describe("LastSlotsStrip", () => {
       first.unmount();
 
       render(<LastSlotsStrip {...base} />);
-      expect(screen.getByText(topOffCopy.strip.doorNote("2"))).toBeInTheDocument();
+      expect(screen.getAllByText(topOffCopy.strip.doorNote("2"))).toHaveLength(2);
       await click(screen.getByRole("button", { name: doorName("3") }));
       expect(screen.getAllByRole("checkbox", { checked: true })).toHaveLength(2);
     });
