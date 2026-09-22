@@ -651,7 +651,12 @@ export function CardModal({
             // own back has already fallen through the tiers to the oracle-level image —
             // so writing the null over it would take the second face off a card that has
             // one, on exactly the printings the column has not reached yet.
-            ...(at.backImageUri ? { backImageUri: at.backImageUri } : {}),
+            ...(at.backImageUri
+              // Provenance travels WITH the override, never on its own: the caller handed
+              // this row's own back art, so it is this printing's. Left alone where the
+              // override is absent, so the loader's answer stands.
+              ? { backImageUri: at.backImageUri, hasOwnBack: true }
+              : {}),
             flavorName: at.imageUri === p.imageUri ? p.flavorName : null,
           };
         }))
@@ -669,6 +674,12 @@ export function CardModal({
       // gradient, where the modal used to show the card's own image.
       imageUri: at.imageUri ?? card.imageUri,
       backImageUri: at.backImageUri ?? card.backImageUri ?? null,
+      // TRUE ONLY FOR THE CALLER'S OWN BACK, never for the card-level fallback beside it.
+      // A reversible printing opened from a set page reaches the modal through here, so
+      // without this the turn control is absent on exactly the path the feature was built
+      // for — and the fallback's image belongs to whatever printing seeded the oracle row,
+      // which is the conflation `hasOwnBack` exists to end. Raised by review.
+      hasOwnBack: at.backImageUri != null,
       // The card-level back is the same fallback `imageUri` takes above, and the same one a
       // printing ingested before the column existed falls to. What it must not do is stay
       // absent: an injected row with no back reads as "this printing has no second face",
@@ -953,11 +964,59 @@ export function CardModal({
   // existed carries the layout and no art, and a control that turns to a
   // colour-identity gradient is the lie the layout gate exists to prevent.
   const backImage = resolved?.backImageUri ?? card.backImageUri ?? null;
-  const twoFaced = isTwoFaced(card.layout) && Boolean(backImage);
+  // TWO SIDES BY LAYOUT, OR BY THIS PRINTING'S OWN BACK ART.
+  //
+  // `card.layout` is ORACLE-level, and that is the wrong scope for a reversible
+  // printing: `sld/2214` prints Teferi's Ageless Insight on both sides, while the
+  // oracle row's layout comes from its M21 printing and says `normal`. So the art
+  // was ingested (#811), stored, and unreachable — 81 printings carry their own
+  // back image under a one-sided oracle layout, all of them reversibles.
+  //
+  // A printing's own back image is POSITIVE EVIDENCE of two-sided stock, and stronger
+  // than the layout word, which describes the card in general.
+  //
+  // `hasOwnBack` RATHER THAN `backImageUri`, and the difference is the whole guard:
+  // `resolveBackImageUri` hands a printing with no back of its own the ORACLE's image,
+  // so the resolved string cannot say whose back it is. Reading it here put a turn on a
+  // one-sided printing whose back belongs to another printing entirely — and the first
+  // version of this gate did exactly that while passing its own test, because the
+  // fixture built props by hand rather than through the loader. Raised by review.
+  //
+  // What excludes an ordinary split or adventure printing is its own null back art,
+  // NOT the layout word: Scryfall gives those layouts one image between both halves,
+  // so `card_faces[1]` carries no `image_uris` and the transform stores null. A
+  // reversible printing OF an adventure card is a different thing and turns over
+  // correctly — `tdm/381` prints Bloomvine Regent and Claim Territory on two sides,
+  // and each side has its own art.
+  const twoFaced = Boolean(backImage)
+    && (isTwoFaced(card.layout) || Boolean(resolved?.hasOwnBack));
+  // CLAMPED TO WHAT EXISTS, not to what the reader last asked for.
+  //
+  // `flipped` survives a printing pick by design — only a card change remounts this —
+  // and since the turn began taking a PRINTING's own back art as its signal, a pick
+  // can take that art away underneath a turned card. Turn `sld/2214` over, pick the
+  // M21 printing, and `backImage` goes null: the art fell back to the colour-identity
+  // gradient and `turningArt` returned nothing, so there was no control left to turn
+  // back with. Exactly the lie the gate's own comment above says it prevents, reached
+  // from a direction that did not exist before — a `transform` oracle always carries
+  // `cards.back_image_uri` as a fallback, so `backImage` could not go null under a pick.
+  //
+  // The reader's intent stays in `flipped`; every drawn decision reads this instead.
+  const showingBack = twoFaced && flipped;
   // The faces of the name on screen, which is the printed one when the copy in
   // hand carries a printed name. The title above and this announcement must
   // name the same card.
   const faces = faceNames(printedNameOf(preview));
+  // A reversible card's two sides carry ONE name, so `faceNames` hands back the same
+  // string twice and every label built from it would name the card already on screen.
+  // The side is what is left to say. See `twoFacedCopy.flipToSideAria`.
+  const oneName = faces.front === faces.back;
+  const flipLabel = (toBack: boolean) => (oneName
+    ? twoFacedCopy.flipToSideAria(toBack ? "back" : "front")
+    : twoFacedCopy.flipToAria(toBack ? faces.back : faces.front));
+  const shownLabel = (onBack: boolean) => (oneName
+    ? twoFacedCopy.flippedSideAria(onBack ? "back" : "front")
+    : twoFacedCopy.flippedAria(onBack ? faces.back : faces.front));
 
   function onZoomFlip() {
     const next = !zoomFlipped;
@@ -969,13 +1028,13 @@ export function CardModal({
     // landing.
     const reduced = typeof window !== "undefined"
       && window.matchMedia?.("(prefers-reduced-motion: reduce)").matches;
-    if (reduced) setAnnouncement(twoFacedCopy.flippedAria(next ? faces.back : faces.front));
+    if (reduced) setAnnouncement(shownLabel(next));
   }
 
   function onTurnSettled(e: React.TransitionEvent<HTMLDivElement>) {
     // Only the box's own turn, not a transition bubbling from something inside it.
     if (e.target !== e.currentTarget || e.propertyName !== "transform") return;
-    setAnnouncement(twoFacedCopy.flippedAria(zoomFlipped ? faces.back : faces.front));
+    setAnnouncement(shownLabel(zoomFlipped));
   }
 
   function onFlip() {
@@ -987,12 +1046,12 @@ export function CardModal({
     // landing there.
     const reduced = typeof window !== "undefined"
       && window.matchMedia?.("(prefers-reduced-motion: reduce)").matches;
-    if (reduced) setAnnouncement(twoFacedCopy.flippedAria(next ? faces.back : faces.front));
+    if (reduced) setAnnouncement(shownLabel(next));
   }
 
   function onArtTurnSettled(e: React.TransitionEvent<HTMLDivElement>) {
     if (e.target !== e.currentTarget || e.propertyName !== "transform") return;
-    const face = twoFacedCopy.flippedAria(flipped ? faces.back : faces.front);
+    const face = shownLabel(showingBack);
     // NOT while the zoom is up. A reader who turns the art and opens the zoom
     // inside the 320ms turn leaves this transition still running underneath a
     // layer that deliberately opens on the FRONT — and `openZoom` clears the
@@ -1038,7 +1097,7 @@ export function CardModal({
     // The zoom draws the card and no line rather than a line with nothing in it.
     : null;
 
-  const faceImage = flipped ? backImage : resolved?.imageUri;
+  const faceImage = showingBack ? backImage : resolved?.imageUri;
   const artStyle: React.CSSProperties = faceImage
     ? { backgroundImage: cssUrl(faceImage), backgroundSize: "cover", backgroundPosition: "center" }
     : { background: identityGradient(card.colorIdentity) };
@@ -1126,12 +1185,12 @@ export function CardModal({
       <div
         aria-hidden
         data-testid="modal-art-turn"
-        data-face={flipped ? "back" : "front"}
+        data-face={showingBack ? "back" : "front"}
         className={`absolute inset-0 ${radius} anim-card-turn`}
         onTransitionEnd={onArtTurnSettled}
         style={{
           transformStyle: "preserve-3d",
-          transform: flipped ? "rotateY(180deg)" : undefined,
+          transform: showingBack ? "rotateY(180deg)" : undefined,
         }}
       >
         <CardFaces
@@ -1192,7 +1251,7 @@ export function CardModal({
       </p>
       {twoFaced && (
         <FlipControl
-          otherFaceName={flipped ? faces.front : faces.back}
+          flipAria={flipLabel(!showingBack)}
           onFlip={onFlip}
           // A real 44px target on the phone. 32 on the desktop, where the column
           // below the art is 97px tall at the drawn dialog height and this stack
@@ -1796,7 +1855,7 @@ export function CardModal({
               >
                 <FlipControl
                   controlRef={zoomFlipRef}
-                  otherFaceName={zoomFlipped ? faces.front : faces.back}
+                  flipAria={flipLabel(!zoomFlipped)}
                   onFlip={onZoomFlip}
                   size={44}
                 />
@@ -1915,9 +1974,14 @@ function CardFaces({
  * going round.
  */
 function FlipControl({
-  otherFaceName, onFlip, size, controlRef,
+  flipAria, onFlip, size, controlRef,
 }: {
-  otherFaceName: string;
+  /**
+   * Built by the caller, because what the label can say depends on the printing:
+   * the other face's NAME where the two differ, and the side where one name is
+   * printed on both (`twoFacedCopy.flipToSideAria`).
+   */
+  flipAria: string;
   onFlip: () => void;
   /** 44 on the phone's art header and inside the zoom, 32 in the desktop art column. */
   size: number;
@@ -1929,7 +1993,7 @@ function FlipControl({
       ref={controlRef}
       type="button"
       onClick={onFlip}
-      aria-label={twoFacedCopy.flipToAria(otherFaceName)}
+      aria-label={flipAria}
       // The ground is a scrim rather than a solid: the control has to stay
       // legible over whatever art is under it without hiding a square of the card.
       // In normal flow now that it is under the card; the stack around it centres

@@ -18,6 +18,7 @@ const { CardModal } = await import("./card-modal");
 
 const FRONT = "https://x/front.jpg";
 const BACK = "https://x/back.jpg";
+const OTHER = "https://x/other-printing.jpg";
 
 const delver: BrowseCard = {
   oracleId: "o1",
@@ -114,8 +115,130 @@ describe("CardModal flip control", () => {
   });
 
   it("offers no control for a split card", () => {
-    mount({ ...delver, name: "Fire // Ice", layout: "split", backImageUri: null });
+    // The printing carries no back art either, and THAT is what excludes it rather
+    // than the layout word: Scryfall gives `split`, `adventure` and `prepare` one image
+    // between both halves, so `card_faces[1]` has no `image_uris` and the transform
+    // stores null. A reversible printing of one of those layouts does carry two images
+    // and does turn over — the `tdm/381` case below. Checked against the catalog on
+    // 2026-09-22: every printing holding its own back art is a two-sided layout or a
+    // reversible printing, and none is an ordinary split.
+    mount({
+      ...delver,
+      name: "Fire // Ice",
+      layout: "split",
+      backImageUri: null,
+      printings: [{ ...delver.printings[0], backImageUri: null }],
+    });
     expect(flipTo("Ice")).toHaveLength(0);
+  });
+
+  it("turns over a REVERSIBLE printing, whose oracle layout says one side", () => {
+    // `sld/2214`: Secret Lair prints one card on both sides with different art. The
+    // oracle row's layout comes from an ordinary printing and says `normal`, so the
+    // layout gate alone left 81 printings' back art ingested and unreachable.
+    mount({
+      ...delver,
+      name: "Teferi's Ageless Insight",
+      printedName: "Mimir's Ancient Wisdom",
+      layout: "normal",
+      backImageUri: null,
+      printings: [{
+        ...delver.printings[0], backImageUri: BACK, hasOwnBack: true,
+        flavorName: "Mimir's Ancient Wisdom",
+      }],
+    });
+    // Labelled by SIDE, not by name: both faces print `Mimir's Ancient Wisdom`, so
+    // `Turn over to Mimir's Ancient Wisdom` would name the card already on screen.
+    const control = screen.getAllByLabelText(twoFacedCopy.flipToSideAria("back"));
+    expect(control.length).toBeGreaterThan(0);
+    fireEvent.click(control[0]);
+    settle();
+    expect(screen.getByText(twoFacedCopy.flippedSideAria("back"))).toBeTruthy();
+    expect(screen.getAllByLabelText(twoFacedCopy.flipToSideAria("front")).length).toBeGreaterThan(0);
+  });
+
+  it("does not strand a turned card when the pick has no back art", () => {
+    // Reachable only since a PRINTING's own back art became a turn signal. `flipped`
+    // survives a printing pick by design, so turning `sld/2214` over and then picking
+    // the M21 printing took the back image away underneath a turned card: the art fell
+    // back to the colour-identity gradient and the control disappeared with it, leaving
+    // no way back. The drawn state is clamped to what exists now.
+    mount({
+      ...delver,
+      name: "Teferi's Ageless Insight",
+      layout: "normal",
+      backImageUri: null,
+      quantity: 2,
+      printings: [
+        { setCode: "SLD", setName: "Secret Lair", collectorNumber: "2214",
+          releasedAt: "2025-10-27", quantity: 1, finishes: { foil: 1 }, imageUri: FRONT,
+          backImageUri: BACK, hasOwnBack: true, flavorName: "Mimir's Ancient Wisdom" },
+        { setCode: "M21", setName: "Core Set 2021", collectorNumber: "76",
+          releasedAt: "2020-07-03", quantity: 1, finishes: { nonfoil: 1 }, imageUri: OTHER,
+          backImageUri: null, flavorName: null },
+      ],
+      setCodes: ["SLD", "M21"],
+      primarySetCode: "SLD",
+    });
+
+    fireEvent.click(screen.getAllByLabelText(twoFacedCopy.flipToSideAria("back"))[0]);
+    expect(wash().style.backgroundImage).toContain(BACK);
+
+    // Through the real picker rather than by prop, because the bug lives in the state
+    // that SURVIVES the pick.
+    fireEvent.click(screen.getAllByLabelText(/printings owned/i)[0]);
+    const m21 = screen.getAllByLabelText(/Core Set 2021/i)[0];
+    fireEvent.click(m21);
+
+    // The M21 art, never the gradient — and nothing claims a back to turn to.
+    expect(wash().style.backgroundImage).toContain(OTHER);
+    expect(wash().style.background ?? "").not.toContain("linear-gradient");
+    expect(screen.queryAllByLabelText(/Turn over/)).toHaveLength(0);
+  });
+
+  it("does not turn on an ORACLE-LEVEL back that the loader copied onto the printing", () => {
+    // `resolveBackImageUri` hands a printing with no back of its own the oracle's image, so
+    // `backImageUri` on a printing row is not evidence the printing has two sides. Reading
+    // it as such put a turn control on a one-sided printing whose back belongs to another
+    // printing entirely — and the case passed its first test, because that fixture built
+    // props by hand rather than through the loader. `hasOwnBack` carries the provenance.
+    mount({
+      ...delver,
+      name: "Teferi's Ageless Insight",
+      layout: "normal",
+      backImageUri: BACK,
+      printings: [{ ...delver.printings[0], backImageUri: BACK, hasOwnBack: false }],
+    });
+    expect(screen.queryAllByLabelText(/Turn over/)).toHaveLength(0);
+  });
+
+  it("keeps the LAYOUT half of the gate, for an oracle-level back with no printing art", () => {
+    // Distinguishes the two-signal gate from `Boolean(backImage)` alone: an oracle-level
+    // back image on a one-sided layout is not evidence that the copy in hand has two
+    // sides, and inferring a turn from it is the same guess `faces.ts` refuses to make
+    // from a `//` in a name.
+    mount({
+      ...delver,
+      name: "Fire // Ice",
+      layout: "split",
+      backImageUri: BACK,
+      printings: [{ ...delver.printings[0], backImageUri: null }],
+    });
+    expect(screen.queryAllByLabelText(/Turn over/)).toHaveLength(0);
+  });
+
+  it("still names the FACES of a reversible printing whose sides differ", () => {
+    // `tdm/381` Bloomvine Regent // Claim Territory: an adventure card printed with
+    // its two halves on two sides. Same layout mismatch, two different names — so the
+    // side wording would be the wrong choice here and the names are what to say.
+    mount({
+      ...delver,
+      name: "Bloomvine Regent // Claim Territory",
+      layout: "adventure",
+      backImageUri: null,
+      printings: [{ ...delver.printings[0], backImageUri: BACK, hasOwnBack: true }],
+    });
+    expect(flipTo("Claim Territory").length).toBeGreaterThan(0);
   });
 
   it("offers no control when the layout says two faces but no back art was stored", () => {
@@ -198,6 +321,61 @@ describe("CardModal flip control", () => {
     expect(wash().style.backgroundImage).toContain(CELL_FRONT);
     fireEvent.click(flipTo("Insectile Aberration")[0]);
     expect(wash().style.backgroundImage).toContain(CELL_BACK);
+  });
+
+  // BOTH doors again, for a card whose oracle layout says one side. This is the path a
+  // reversible printing actually arrives by: a set page cell, opened at that printing. The
+  // provenance flag has to travel with the caller's back art or the control is absent on
+  // exactly the surface the feature was built for.
+  it("turns over a reversible printing opened from a set page it does not own", () => {
+    const CELL_FRONT = "https://x/sld-front.jpg";
+    const CELL_BACK = "https://x/sld-back.jpg";
+    render(
+      <CardModal
+        card={{ ...delver, name: "Teferi's Ageless Insight", layout: "normal", backImageUri: null }}
+        position={1}
+        total={1}
+        onClose={() => {}}
+        onPrev={null}
+        onNext={null}
+        openAtPrinting={{
+          setCode: "SLD", collectorNumber: "2214",
+          imageUri: CELL_FRONT, backImageUri: CELL_BACK,
+        }}
+      />,
+    );
+    expect(wash().style.backgroundImage).toContain(CELL_FRONT);
+    fireEvent.click(screen.getAllByLabelText(twoFacedCopy.flipToSideAria("back"))[0]);
+    expect(wash().style.backgroundImage).toContain(CELL_BACK);
+  });
+
+  it("turns over a reversible printing opened at one the reader owns", () => {
+    // The repointing door rather than the injecting one. `hasOwnBack` has to travel with
+    // the override; taking the caller's back art and leaving the flag behind reads as "this
+    // printing has no second side" on a row that plainly does.
+    const OWNED_BACK = "https://x/owned-sld-back.jpg";
+    render(
+      <CardModal
+        card={{
+          ...delver,
+          name: "Teferi's Ageless Insight",
+          layout: "normal",
+          backImageUri: null,
+          printings: [{ ...delver.printings[0], backImageUri: null, hasOwnBack: false }],
+        }}
+        position={1}
+        total={1}
+        onClose={() => {}}
+        onPrev={null}
+        onNext={null}
+        openAtPrinting={{
+          setCode: "ISD", collectorNumber: "51",
+          imageUri: FRONT, backImageUri: OWNED_BACK,
+        }}
+      />,
+    );
+    fireEvent.click(screen.getAllByLabelText(twoFacedCopy.flipToSideAria("back"))[0]);
+    expect(wash().style.backgroundImage).toContain(OWNED_BACK);
   });
 
   // Until the catalog is re-seeded against the new column every printing row carries a null

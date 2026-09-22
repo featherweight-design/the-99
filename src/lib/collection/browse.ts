@@ -65,6 +65,22 @@ export type BrowsePrinting = {
    */
   backImageUri?: string | null;
   /**
+   * Whether `backImageUri` above is THIS PRINTING's own, rather than the oracle-level
+   * fallback `resolveBackImageUri` hands a printing that has none.
+   *
+   * The two are the same value to anything DRAWING the back, and a different fact to
+   * anything deciding whether the copy in hand has two sides. The card modal's turn
+   * control needs the second: a reversible printing carries its own back art under a
+   * one-sided oracle layout, and reading the resolved value there would also open on an
+   * oracle-level back belonging to some other printing entirely. Raised by review on
+   * #818, where the gate conflated them and only passed its test because the fixture
+   * built props by hand rather than through this loader.
+   *
+   * Optional for the same reason `backImageUri` is: fixtures build these literals, and
+   * absent means "not this printing's own", which is the safe reading.
+   */
+  hasOwnBack?: boolean;
+  /**
    * THIS printing's frame-free crop — what a wash draws behind a commander sleeved from it.
    *
    * Printing-level for the same reason `backImageUri` is: `cards.art_crop_uri` is one
@@ -417,6 +433,26 @@ export function resolveBackImageUri(r: {
 }
 
 /**
+ * Whether `resolveBackImageUri` just returned THIS printing's own back art rather than the
+ * oracle-level fallback.
+ *
+ * Deliberately mirrors the tiering above line for line rather than re-deriving it: the two
+ * answer about the same pixels, and a second copy of the rule that drifted would put a turn
+ * control on a card whose back belongs to another printing. Same shape as
+ * `compareForRepresentative`, which exists to keep one ordering in two places honest.
+ */
+export function backImageIsOwn(r: {
+  exactImageUri: string | null;
+  representativeImageUri: string | null;
+  exactBackImageUri: string | null;
+  representativeBackImageUri: string | null;
+}): boolean {
+  if (r.exactImageUri !== null) return r.exactBackImageUri !== null;
+  if (r.representativeImageUri !== null) return r.representativeBackImageUri !== null;
+  return false;
+}
+
+/**
  * The frame-free crop of whichever printing `resolveImageUri` just took the front art from.
  *
  * Same rule as `resolveBackImageUri`, for the same reason: the crop and the front art come
@@ -495,6 +531,7 @@ export function aggregateCollection(rows: RawCollectionRow[]): BrowseCard[] {
       imageUri: resolveImageUri(r),
       artCropUri: resolveArtCropUri(r),
       backImageUri: resolveBackImageUri(r),
+      hasOwnBack: backImageIsOwn(r),
       flavorName: resolveFlavorName(r),
     };
     const existing = byOracle.get(r.oracleId);
@@ -545,6 +582,13 @@ export function aggregateCollection(rows: RawCollectionRow[]): BrowseCard[] {
       // the image line above.
       seen.flavorName ??= printing.flavorName;
       seen.backImageUri ??= printing.backImageUri;
+      // `||=`, beside the line above rather than instead of it: coalescing the back art
+      // and leaving the provenance behind is the one way these two can end up disagreeing,
+      // and a filled back with a false flag reads as "this printing has no second side" on
+      // a row that has one. Both finishes of one printing resolve through the same tiers,
+      // so this can only ever set true onto true — belt and braces, in the same spirit,
+      // and it means no future caller has to remember the pair travels together.
+      seen.hasOwnBack ||= printing.hasOwnBack;
       seen.artCropUri ??= printing.artCropUri;
       // NOT `??=`, unlike the two lines above. Two finishes of one printing normally
       // share a catalog id, but the import path already records that they can

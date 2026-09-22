@@ -14,6 +14,14 @@
  * assembled rather than turned over. Nor is `reversible_card`, which is
  * genuinely two-sided but carries no top-level `oracle_id` and so never
  * reaches the `cards` table at all — `toCardRow` drops it before this is asked.
+ *
+ * THAT LAST CASE IS NOT THE END OF THE STORY, and this set is no longer the only
+ * gate. A reversible PRINTING is ingested from its faces (#811) and carries its
+ * own `back_image_uri`, while the oracle row it links to comes from an ordinary
+ * printing and says `normal` here. The card modal therefore turns over on either
+ * signal: this layout word, or the resolved printing's own back art. What has not
+ * changed is what this function refuses to do — infer two-sidedness from a `//` in
+ * a name, which is the lie it exists to prevent.
  */
 const TWO_FACED = new Set(["transform", "modal_dfc"]);
 

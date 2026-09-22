@@ -137,11 +137,18 @@ export function classifyPrinting(raw: Raw): PrintingClassification {
   //     narrower one: no reversible printing of a REAL card is missing its oracle, and a
   //     future one would fail the run loudly with a named count rather than silently.
   //
-  //   · `back_image_uri` is stored for these printings and NOT drawn. The flip control is
-  //     gated on `isTwoFaced(card.layout)`, which is oracle-level and reads `normal` here,
-  //     and `faces.ts` deliberately excludes this layout. Storing it costs nothing, keeps
-  //     this transform's face handling uniform, and leaves the data ready if that ruling
-  //     ever moves.
+  //   · `back_image_uri` is stored for these printings and IS drawn, since the modal's
+  //     turn control began taking a printing's own back art as evidence of two-sided
+  //     stock. It was unreachable when this comment was first written — the gate asked
+  //     `isTwoFaced(card.layout)` alone, which is oracle-level and reads `normal` here.
+  //
+  //     What is still deliberately absent is the `//` MARK on rows and tiles, which
+  //     stays keyed to the layout word. That mark says the CARD turns over in play,
+  //     and a Secret Lair printing does not change what a card does: `sld/2214` is a
+  //     one-faced enchantment printed twice, and `tdm/381` is an adventure card whose
+  //     two halves are one object at the table however the drop arranged them on the
+  //     stock. Neither turns over in a game. The modal's control is about seeing the
+  //     OTHER ART, which is why its label says art rather than naming a face.
   const reversible = layout === "reversible_card";
   let reversibleOracleId: string | null = null;
   if (reversible) {
