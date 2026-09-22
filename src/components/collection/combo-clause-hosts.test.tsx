@@ -1,9 +1,8 @@
-import { render, screen, within } from "@testing-library/react";
+import { render, screen } from "@testing-library/react";
 import { describe, expect, it } from "vitest";
 
 import type { BrowseListCard } from "../../lib/collection/browse";
 import { comboAwarenessCopy } from "../../lib/copy/combo-awareness";
-import { COMBO_GLYPH_PX } from "../cards/combo-glyph";
 import { CollectionMarkKey } from "./collection-mark-key";
 import { GridView } from "./grid-view";
 import { RowsView } from "./rows-view";
