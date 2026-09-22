@@ -181,7 +181,12 @@ async function walk(page, label, width) {
   // A card opened from the reasoning stacks on it, as from a receipt.
   const opener = modal.locator('[data-found="tutors"] button').first();
   if ((await opener.count()) === 0) {
-    report(`${label}px · a tutor opens stacked`, reason !== "reachable", "no tutor on this reading — nothing to open");
+    // No tutor is a correct state on two readings: draw-only with neither half found, and a
+    // partner pair whose halves are BOTH in the command zone (`reachableZone`). Any other
+    // reachable reading names at least one tutor, so an empty list there is a regression.
+    const reading = await lean.getAttribute("data-reading");
+    report(`${label}px · a tutor opens stacked`, reason !== "reachable" || reading === "reachableZone",
+      `no tutor on this reading (${reading}) — nothing to open`);
   } else {
     await opener.click();
     const card = page.locator('[role="dialog"][aria-labelledby="card-modal-title"]');
