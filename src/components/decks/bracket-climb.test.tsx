@@ -4,7 +4,7 @@ import { describe, expect, it } from "vitest";
 import { slotDeck } from "../../lib/bracket/slot";
 import type { ComboRef, FlagSource } from "../../lib/profile/types";
 import { deckAnalysisCopy } from "../../lib/copy/deck-analysis";
-import { BracketClimb } from "./bracket-climb";
+import { BracketClimb, NEIGHBOUR_OPACITY, YOURS_TINT } from "./bracket-climb";
 import { COMMANDER, deckProfile, profileCard } from "./__fixtures__/deck-profile";
 
 /**
@@ -223,4 +223,27 @@ it("has nothing to press", () => {
   draw("3");
   expect(screen.queryAllByRole("button")).toHaveLength(0);
   expect(screen.queryAllByRole("link")).toHaveLength(0);
+});
+
+// THE TWO FIGURES THE THEME CONTRACT COMPOSITES AGAINST, read back off the rendered rung. The
+// contract imports the same constants, so without these a rung drawn at any other opacity or tint
+// would pass it: the contract would be measuring a number the component had stopped using.
+describe("what the theme contract measures is what the rung draws", () => {
+  it("tints the rung that holds with YOURS_TINT of its own ink", () => {
+    draw("3");
+    const yours = rungs().find((r) => r.dataset.role === "yours")!;
+    expect(yours.getAttribute("style")).toContain(
+      `color-mix(in oklab, var(--bracket-3) ${YOURS_TINT * 100}%, var(--surface))`,
+    );
+  });
+
+  it("draws a neighbour's mark at NEIGHBOUR_OPACITY, at both widths", () => {
+    draw("3");
+    const below = rungs().find((r) => r.dataset.role === "below")!;
+    const marks = within(below).getAllByTestId("bracket-mark");
+    expect(marks).toHaveLength(2);
+    for (const mark of marks) {
+      expect((mark.parentElement as HTMLElement).style.opacity).toBe(String(NEIGHBOUR_OPACITY));
+    }
+  });
 });
