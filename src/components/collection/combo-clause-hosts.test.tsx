@@ -20,34 +20,50 @@ const card = (over: Partial<BrowseListCard> = {}): BrowseListCard =>
 const props = { totalCards: 1, onShowMore: () => {}, onOpen: () => {}, pendingOracleId: null };
 const PARTNER = { oracleId: "o-2", name: "Demonic Consultation" };
 
+/**
+ * Marks drawn on CARDS, excluding the key's own sample.
+ *
+ * The key glosses the lemniscate unconditionally, so a document-wide query always finds one
+ * and would pass with every card marker deleted — the same trap `collection-marks.test.tsx`
+ * records for the three fact marks.
+ */
+const cardGlyphs = (container: HTMLElement) =>
+  [...container.querySelectorAll('[data-testid="combo-glyph"]')].filter(
+    (el) => !el.closest('[role="group"]'),
+  );
+
 describe("combo awareness state 1 on /collection", () => {
-  // THE CLAUSE REPLACES THE TYPE LINE rather than adding a third line. The row's height is
-  // fixed, and of the two facts the combo is the one a reader cannot get from anywhere else.
-  it("puts the clause where the type line was, at both widths", () => {
+  // A MARKER, NOT A SENTENCE. The revised handoff splits the feature by what a host is FOR:
+  // a browse host gets the marker, a decision host gets the clause. `/collection` is where you
+  // look at what you own, so the mark joins the cluster that already carries the Game Changer
+  // bolt — and the partner's name moves to the tooltip and the modal.
+  it("draws the marker on a row and no clause at all", () => {
     const { container } = render(
       <RowsView cards={[card({ comboPartner: PARTNER })]} {...props} />,
     );
-    expect(container.textContent).toContain("Demonic Consultation");
-    expect(container.textContent).not.toContain("Creature — Merfolk Wizard");
+    expect(cardGlyphs(container)).toHaveLength(1);
+    expect(container.querySelector('[data-testid="combo-clause"]')).toBeNull();
+    expect(container.textContent).not.toContain("Demonic Consultation");
   });
 
-  // Both widths are in the document at once — one is `md:hidden`, the other `hidden md:block`
-  // — so the two sentences have to be checked together, and the phone's is the SHORT tail.
-  it("shortens the app's words on the phone line and not on the desktop one", () => {
-    const { container } = render(
+  // NOTHING YIELDS. The `SET · rarity` yield was invented to make room for a ~100px partner
+  // name; a 16px glyph needs no room, so Round 1's rule is restored whole — and the row's type
+  // line comes back with it.
+  it("leaves the type line and the set line exactly where they were", () => {
+    const { container: row } = render(
       <RowsView cards={[card({ comboPartner: PARTNER })]} {...props} />,
     );
-    expect(container.textContent).toContain(
-      comboAwarenessCopy.clause.ownBothShort("Demonic Consultation"),
+    expect(row.textContent).toContain("Creature — Merfolk Wizard");
+
+    const { container: tile } = render(
+      <GridView cards={[card({ comboPartner: PARTNER })]} {...props} />,
     );
-    expect(container.textContent).toContain(
-      comboAwarenessCopy.clause.ownBoth("Demonic Consultation"),
-    );
+    expect(tile.textContent).toContain("THB");
+    expect(cardGlyphs(tile)).toHaveLength(1);
   });
 
-  // THE ROW SPEAKS IT, and this is the only voicing: the glyph is aria-hidden and the visible
-  // sentence has taken the type line's place, so a row without this clause in its accessible
-  // name loses the fact entirely while still reading a type line that is no longer drawn.
+  // THE STATE IS IN THE ROW'S ACCESSIBLE NAME. The glyph is aria-hidden and there is no
+  // tooltip on touch, so without this the fact reaches a screen reader nowhere at all.
   it("names the combo in the row's accessible name", () => {
     render(<RowsView cards={[card({ comboPartner: PARTNER })]} {...props} />);
     const row = screen.getAllByRole("button")[0];
@@ -58,73 +74,18 @@ describe("combo awareness state 1 on /collection", () => {
 
   it("leaves a card with no combo exactly as it was", () => {
     const { container } = render(<RowsView cards={[card()]} {...props} />);
+    expect(cardGlyphs(container)).toHaveLength(0);
     expect(container.textContent).toContain("Creature — Merfolk Wizard");
-    expect(container.querySelector('[data-testid="combo-clause"]')).toBeNull();
     const row = screen.getAllByRole("button")[0];
     expect(row.getAttribute("aria-label") ?? "").not.toContain("two-card combo");
   });
 
-  // THE TILE: `SET · rarity` YIELDS. The caption's height is fixed and there is no third line,
-  // so one of the two goes — and the set code is the one recoverable elsewhere.
-  it("gives the tile's set line to the clause", () => {
-    const { container } = render(
-      <GridView cards={[card({ comboPartner: PARTNER })]} {...props} />,
-    );
-    expect(container.querySelector('[data-testid="combo-clause"]')).not.toBeNull();
-    expect(container.textContent).toContain(
-      comboAwarenessCopy.clause.ownBothShort("Demonic Consultation"),
-    );
-    // The set code is gone from the caption, which is the yield the design asks for.
-    expect(container.textContent).not.toContain("THB");
-  });
-
-  it("keeps the tile's set line when there is no combo", () => {
-    const { container } = render(<GridView cards={[card()]} {...props} />);
-    expect(container.textContent).toContain("THB");
-    expect(container.querySelector('[data-testid="combo-clause"]')).toBeNull();
-  });
-
-  // THE GLYPH IS GLOSSED ON THE SURFACE IT DEBUTS ON. A glyph identifies and cannot teach,
-  // and neither clause sentence contains the word "combo" — so without a key entry a fourth
-  // mark arrives on /collection with nothing anywhere to say what it means. That is the
-  // failure the deck-status marks were retired in a day for.
+  // THE GLYPH IS GLOSSED ON THE SURFACE IT DEBUTS ON. The handoff says the key needs no
+  // change because it already reads `∞ Two-card combo` — this is the case that keeps that
+  // true.
   it("glosses the lemniscate in the key", () => {
     const { container } = render(<CollectionMarkKey />);
     expect(container.textContent).toContain(comboAwarenessCopy.keyWord);
-    // AT THE SIZE THE SURFACE DRAWS IT. A key decodes a glyph; a sample at a size the
-    // reader never sees is decoding a different mark. The three fact marks above it draw at
-    // 16 because they sit on a name line, and this one at 12 because it leads a 9.5px
-    // secondary line — both are the spec.
-    const sample = container.querySelector('[data-testid="combo-glyph"]');
-    expect(sample).not.toBeNull();
-    expect(sample?.getAttribute("width")).toBe(String(COMBO_GLYPH_PX));
-  });
-
-  // THE TILE SPEAKS THE FULL SENTENCE, AFTER THE NAME. The drawn clause is aria-hidden like
-  // the bracket marks beside it, because left audible it is heard BEFORE the card it is
-  // about — and in its shortened visual form, which never says "two-card combo".
-  it("speaks the tile's combo after the card's name, in full", () => {
-    const { container } = render(
-      <GridView cards={[card({ comboPartner: PARTNER })]} {...props} />,
-    );
-    const spoken = container.querySelector(".sr-only")?.textContent ?? "";
-    expect(spoken).toContain("Thassa's Oracle");
-    expect(spoken).toContain(comboAwarenessCopy.a11y.ownBoth("Demonic Consultation"));
-    expect(spoken.indexOf("Thassa's Oracle")).toBeLessThan(spoken.indexOf("two-card combo"));
-    // And the drawn one is silent, or the sentence is heard twice.
-    const drawn = container.querySelector('[data-testid="combo-clause"]')!;
-    expect(drawn.closest("[aria-hidden]")).not.toBeNull();
-  });
-
-  // NO COUNT, on either host. Detection excludes template-gated variants by design.
-  it("prints no figure beside the sentence on either host", () => {
-    for (const View of [RowsView, GridView]) {
-      const { container, unmount } = render(
-        <View cards={[card({ comboPartner: PARTNER })]} {...props} />,
-      );
-      const clause = container.querySelector('[data-testid="combo-clause"]')!;
-      expect(within(clause as HTMLElement).queryByText(/\+\d|· \d/)).toBeNull();
-      unmount();
-    }
+    expect(container.querySelector('[data-testid="combo-glyph"]')).not.toBeNull();
   });
 });

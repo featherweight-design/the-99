@@ -183,6 +183,14 @@ export type BrowseCard = {
    */
   comboPartner?: { oracleId: string; name: string };
   /**
+   * How many OTHER partners the marker's tooltip is not naming.
+   *
+   * A count of what the SENTENCE omits, never a claim about what exists — which is the one
+   * licence a number has in this feature, and the same one `+N more` had. Absent or 0 means
+   * the tooltip names the only partner there is.
+   */
+  comboOtherPartners?: number;
+  /**
    * EVERY two-card combo partner of this card, for the modal's `Two-card combos` block.
    *
    * Distinct from `comboPartner` above, which is ONE partner for the inline clause on a list
@@ -1071,7 +1079,9 @@ export async function attachComboPartners(
   read?: (args: {
     userId: string;
     oracleIds?: readonly string[];
-  }) => Promise<Map<string, { partnerOracleId: string; partnerName: string }>>,
+  }) => Promise<
+    Map<string, { partnerOracleId: string; partnerName: string; otherPartners?: number }>
+  >,
 ): Promise<BrowseCard[]> {
   if (cards.length === 0) return cards;
   const load = read ?? (await import("../combos/near-miss")).loadOwnBothPartners;
@@ -1083,7 +1093,10 @@ export async function attachComboPartners(
   if (!partners || partners.size === 0) return cards;
   for (const card of cards) {
     const hit = partners.get(card.oracleId);
-    if (hit) card.comboPartner = { oracleId: hit.partnerOracleId, name: hit.partnerName };
+    if (hit) {
+      card.comboPartner = { oracleId: hit.partnerOracleId, name: hit.partnerName };
+      if (hit.otherPartners) card.comboOtherPartners = hit.otherPartners;
+    }
   }
   return cards;
 }

@@ -33,10 +33,10 @@ wins** and these tables are what to correct.
 | # | Question | Called |
 |---|---|---|
 | **A** | One mark with three readings, or distinct marks | **One mark.** Round 2's lemniscate, `--fact`, unchanged. The states differ by ownership, which every host already draws twice. |
-| **B** | How the partner is named | **Inline, always, at every width.** One mono clause on the host's secondary line, led by the mark. No hover-only route, no modal-only route. |
-| **C** | Where the mark sits | **It moves.** A mark with a sentence leaves the name line and leads that sentence. A mark without one stays exactly where Round 1 put it. |
+| **B** | How the partner is named | **Inline on the decision hosts, in the tooltip on `/collection`.** One mono clause on the Add panel and Last-31 rows; on the shipped one-line collection row and tile, the marker's hover tooltip and the modal. |
+| **C** | Where the mark sits | **Browse hosts get the marker, decision hosts get the sentence.** On `/collection` the marker joins the shipped Game Changer cluster with a hover tooltip. On the candidate surfaces a mark with a sentence leaves the name line to lead it. |
 | **D** | State 3 beside the shipped `BuyTag` | **Untouched, and they cannot be confused.** Boxed/`--warning`/right slot versus bare/`--fg-body`/left secondary line. No combined atom, no brighter tag. |
-| **E** | *(addendum)* The card modal | **A pair fact between the card facts and the copy facts** — second in the stack, naming its own scope, capped at 6/4 with the shipped disclosure, the partner name pressable. See `ADDENDUM-modal-block.md`. |
+| **E** | *(addendum)* The card modal | **A pair fact between the card facts and the copy facts** — second in the stack, naming its own scope, the partner name pressable. **Closed by default as a 52px row with counts by state**; open means all lines. See `ADDENDUM-modal-block.md`. |
 
 ---
 
@@ -79,6 +79,13 @@ That is the rule that makes the round coherent, and it is what `1a` and `1c` fai
   refused as the only one.
 - **`1b` — the mark moves down and leads a sentence.** Adopted.
 
+### B · addendum — where the clause is not drawn
+
+> **`1b` governs the decision hosts. On `/collection` the clause is withdrawn entirely** (canvas
+> `4a`): the shipped row is one line with a marker cluster, so the marker carries the fact and the
+> tooltip carries the name. `1a`'s objection — *a marker alone says nothing new* — is answered
+> there by the tooltip, which `1a` had no equivalent of on a two-line row.
+
 ### The clause
 
 | | Value |
@@ -115,28 +122,66 @@ all three are refused below.
 `from Commander Spellbook. combos needing a third piece are not listed.`
 A caveat repeated on 38 rows is noise; a caveat beside the full list is a footnote.
 
-## C · The mark moves, and that is the new rule
+## C · Browse hosts get the marker; decision hosts get the sentence
 
-Round 1 put every fact mark on the **name line** in a fixed order. This round adds one clause to
-that rule and changes nothing else:
+*(Revised — canvas `4a`, corrected against the shipped `/collection` row.)*
+
+The shipped collection row is **one line**: `×N` · name · **marker cluster** · availability · pips ·
+type · set · `›`. It already renders a fact marker with a hover tooltip — the Game Changer bolt —
+so the combo mark **joins that family** rather than inventing a second pattern beside it.
+
+> **On `/collection` (row and tile): the marker only, rendered exactly as Game Changer is, with
+> the partner name in the tooltip. On the Add panel and the Last-31 list: the clause, leading the
+> host's secondary line.**
+
+The division is not arbitrary. On a browse surface the state is a gloss on a row you are scanning;
+on a candidate surface it is **the reason to pick this card out of 38 near-identical ones, at the
+moment of picking** — and a candidate row has no marker family to join.
+
+### On `/collection`, the marker is Game Changer's marker
+
+| | Value |
+|---|---|
+| size | **16×16**, `--fact`, 3px glow — identical to the bolt |
+| position | the marker cluster after the name (row) or the caption's marker row (tile), Round 1's fixed order |
+| target | **none.** `aria-hidden` glyph; the state is in the accessible name |
+| tooltip | on hover, pointer-fine only — the bolt's chrome and register verbatim |
+| touch | **no tooltip.** The row's own tap opens the modal — same as Game Changer today |
+| yields | **nothing.** Round 1's rule restored whole. |
+
+**Tooltip copy:** *"Two-card combo with Demonic Consultation. You own both."* Several partners:
+*"Two-card combo with Demonic Consultation, and 3 others."* Sentence case, full stop, not mono —
+matching *"This card is on the Game Changer list."* **The key needs no change**: the shipped legend
+already reads `⚡ game changer` … `∞ Two-card combo`.
+
+**Withdrawn with the clause:** the collection row's type-line yield, the collection tile's
+`SET · rarity` yield, and `ownBothShort`. **Net effect on the shipped row: one 16px glyph, and
+nothing else moves.**
+
+**The honest cost:** at 390 the partner name is two taps away rather than on screen. That is the
+price of the marker family being *the* family — the bolt has always worked this way, and a combo
+mark that behaved differently would teach the reader that some markers talk and some do not.
+
+### On the decision hosts, the mark moves down
+
+Round 1 put every fact mark on the **name line** in a fixed order. On the Add panel and the
+Last-31 list this round adds one clause to that rule and changes nothing else:
 
 > **A mark with a sentence leaves the name line and leads that sentence on the secondary line. A
 > mark without one stays where it is. One glyph is never drawn twice on one row.**
 
-So a card carrying a Round 1 fact **and** a combo state reads *facts above, relations below* — the
-bolt on the name line in its fixed slot, the lemniscate downstairs with its sentence. The two lines
-never trade places.
+So a card carrying a Round 1 fact **and** a combo state reads *facts above, relations below*.
 
 **Rejected: repeating the mark on both lines.** Two lemniscates on one row reads as two combos.
 **Rejected: leaving the mark upstairs and starting the clause with a dash.** The sentence then has
-nothing tying it to the glyph, and on a tile the two are 20px and a name apart.
+nothing tying it to the glyph.
 
 ### Host by host
 
-| Host | Where the clause goes | What yields |
+| Host | Where the state goes | What yields |
 |---|---|---|
-| **Collection row**, both widths | the **type line** | the type line, on marked rows only |
-| **Collection tile**, both widths | the meta line | **`SET · rarity`** — a named amendment to Round 1, see below |
+| **Collection row**, both widths | **the marker cluster** — marker + tooltip, no clause | **nothing** |
+| **Collection tile**, both widths | **the caption's marker row** — marker only | **nothing** |
 | **Consider tile** (Add panel) | the **type line** | the ellipsed type line |
 | **Quick-add result row** | the meta line | the meta line |
 | **Last-31 row, desktop 34px** | the **tail of the name cell** (no secondary line exists) | nothing — name `flex:none`, clause `flex:1;min-width:0` |
@@ -148,17 +193,17 @@ the 34px and 52px candidate rows keep their heights, and the Last-31 row's four 
 cost 40, availability 84, synergy 88, inclusion 52 — do not move, so they still land on one
 vertical line down 38 rows.
 
-### The two yields, both named
+### The two yields — both withdrawn on `/collection`
 
-1. **The collection tile's `SET · rarity`.** Round 1 ruled *nothing yields*, and that held because a
-   12px glyph costs 12px. A partner name costs ~100px. The printing is one tap away in the modal;
-   *you own two cards that go infinite together* is not anywhere. **Only the state yields it — the
-   bare Round 2 fact still sits beside the set code exactly as Round 1 drew it.** The availability
-   chip never yields: it is about your copies and so is the caption.
-2. **The Last-31 phone row's pip track.** Line 2 holds pips, synergy and inclusion; a clause does
-   not fit beside all three. On the ~4 rows that complete something the mana cost steps aside — a
-   player choosing between 38 near-identical candidates does not break the tie on cost when one of
-   them closes a loop. The other 34 rows are untouched, pips and all.
+1. ~~**The collection tile's `SET · rarity`.**~~ **Withdrawn** (canvas `4a`). It was invented to
+   make room for a ~100px partner name; a 16px glyph needs no room. The caption's marker row
+   already holds a chip, a bolt and a printing today. **Round 1's rule is restored whole: nothing
+   yields.**
+2. **The Last-31 phone row's pip track.** Stands — that host keeps its clause. Line 2 holds pips,
+   synergy and inclusion; a clause does not fit beside all three. On the ~4 rows that complete
+   something the mana cost steps aside — a player choosing between 38 near-identical candidates
+   does not break the tie on cost when one of them closes a loop. The other 34 rows are untouched,
+   pips and all.
 
 ## D · State 3 beside the shipped BuyTag
 
@@ -200,13 +245,13 @@ away. **Named as severable, not refused.**
 | # | Change | Kind |
 |---|---|---|
 | 1 | **New `ComboClause`** — lemniscate at 12px + one mono string, two densities, inert, `aria-hidden` glyph | new |
-| 2 | **`CardFactMark` gains a `suppress` prop** (or the caller omits the lemniscate) so the mark is not drawn twice when a clause is present | additive |
-| 3 | `collection/rows-view.tsx` — clause replaces the type line when a state is live; one clause added to the row's `aria-label` | additive |
-| 4 | `collection/grid-view.tsx` — clause replaces the `SET · rarity` group in the meta line; caption height unchanged | additive |
+| 2 | **`CardFactMark` gains the lemniscate as a member of the marker family** — 16×16, `--fact`, its own tooltip, in Round 1's fixed order. On the decision hosts it also gains a `suppress` prop (or the caller omits it) so the mark is not drawn twice when a clause is present | additive |
+| 3 | `collection/rows-view.tsx` — **marker in the shipped cluster + hover tooltip. No clause, no yield, no layout change**; one clause added to the row's `aria-label` | additive |
+| 4 | `collection/grid-view.tsx` — **marker in the caption's marker row. `SET · rarity` unchanged**; caption height unchanged | additive |
 | 5 | `suggestion-tile.tsx` — clause replaces the type line | additive |
 | 6 | `quick-add-bar.tsx` result row — clause on the meta line | additive |
 | 7 | Last-31 candidate row — desktop: name `flex:none`, clause `flex:1;min-width:0`; phone: clause leads line 2, pip track suppressed on clause rows only | additive |
-| 8 | `card-modal.tsx` — `Two-card combos` block, **second in the stack**, after `In the bracket rules`, `null` when empty — see `ADDENDUM-modal-block.md` for scope, cap, disclosure and the pressable partner name | additive |
+| 8 | `card-modal.tsx` — `Two-card combos` block, **second in the stack**, after `In the bracket rules`, `null` when empty, **closed by default** — see `ADDENDUM-modal-block.md` for the closed row, scope, ordering, the tooltip bound and the pressable partner name | additive |
 | 9 | **Payload:** the browse list and both candidate payloads need, per card, `{state, partnerName, partnerOracleId}` from the §4.3 join — **and the join must apply all three of §4.3b's rules** | data, Tier B |
 | 10 | No new token, no new hex, no new motion class, no new empty state | — |
 
@@ -218,7 +263,9 @@ same afternoon, and nothing caches the difference.
 
 - **A list.** Hugh's ruling, and the volume is the reason: 962 raw near-misses across 20 decks.
 - **A second ink, a second glyph, a filled/stroked split by ownership.**
-- **Any count, badge or deck-level total** — `4 combos`, `+1`, a number on a deck tile.
+- **Any count, badge or deck-level total** — `4 combos`, `+1`, a number on a deck tile. The modal's
+  **closed row** is the one exception: its counts describe the list the reader has not opened yet,
+  not what exists.
 - **Sorting, filtering or promoting combo rows.** A mark states a fact; moving a row makes a
   recommendation, and nobody has asked for that.
 - **A mark on the partner.** The half already in the deck is the sentence's object, not its subject.
@@ -227,13 +274,12 @@ same afternoon, and nothing caches the difference.
 
 ## Gap report
 
-1. **The mark's column position is no longer stable.** A reader scanning a column sees the
-   lemniscate on the name line for a bare fact and on the secondary line for a state. Deliberate —
-   the sentence is worth more than the alignment — but it is the call most likely to be challenged,
-   and it reverses for the cost of repeating the glyph.
-2. **The tile ellipses the partner name** (`with Demonic Consul…`). The full name is in the row
-   view, the modal and the accessible name, but the tile is the surface where a player browses
-   their collection, and a truncated name is a name you have to go and get.
+1. **The mark's column position is no longer stable** *on the decision hosts* — name line for a
+   bare fact, secondary line for a state. Deliberate, and it no longer affects `/collection`, where
+   the marker sits in the shipped cluster like every other fact marker.
+2. **On `/collection` at 390 the partner name is two taps away** — no hover, so the tooltip is
+   unreachable and the modal is the route. Correct for consistency with Game Changer, and still the
+   single biggest thing this round gives up.
 3. **"Most popular partner" is a ranking Design did not derive.** `spellbook_variants.popularity`
    is nullable (§4.2 verified it null on a real record). Eng needs a deterministic tiebreak; Design
    has no opinion beyond *stable across reloads*.

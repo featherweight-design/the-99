@@ -23,6 +23,12 @@ import { isInfiniteOrGameEnding } from "../spellbook/combo-features";
 
 /** One partner, for one card. */
 export type ComboPartner = {
+  /**
+   * How many OTHER partners this card has, for the marker's tooltip. Carried beside the chosen
+   * one because the readers already have every row in hand — counting again downstream would
+   * be a second traversal of the same join for a figure this one can hand over.
+   */
+  otherPartners?: number;
   /** The card the row is about — the one the reader is looking at. */
   oracleId: string;
   partnerOracleId: string;
@@ -136,6 +142,7 @@ export function pairsWithOnePiece(args: {
  */
 export function bestPartnerPerCard(rows: PairRow[]): Map<string, ComboPartner> {
   const best = new Map<string, ComboPartner>();
+  const partnersSeen = new Map<string, Set<string>>();
   for (const r of rows) {
     if (!isInfiniteOrGameEnding(r.produces)) continue;
     const candidate: ComboPartner = {
@@ -147,6 +154,15 @@ export function bestPartnerPerCard(rows: PairRow[]): Map<string, ComboPartner> {
     };
     const held = best.get(r.present_id);
     if (!held || morePopular(candidate, held)) best.set(r.present_id, candidate);
+    // Every DISTINCT partner seen for this card, so the marker can say how many the tooltip is
+    // not naming. Counted on partner id rather than on rows: a pair recorded in two variants is
+    // one partner, and counting rows would inflate it.
+    const seen = partnersSeen.get(r.present_id) ?? new Set<string>();
+    seen.add(r.missing_id);
+    partnersSeen.set(r.present_id, seen);
+  }
+  for (const [id, chosen] of best) {
+    chosen.otherPartners = Math.max(0, (partnersSeen.get(id)?.size ?? 1) - 1);
   }
   return best;
 }

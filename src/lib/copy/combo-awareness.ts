@@ -65,6 +65,21 @@ export const comboAwarenessCopy = {
     completes: (partner: string) => `${COMPLETES_LEAD}${partner}`,
   },
 
+  /**
+   * `/collection` — the marker's hover tooltip, in the Game Changer register: "This card is on
+   * the Game Changer list." Sentence case, full stop, not mono.
+   *
+   * Pointer-fine only. On touch there is no tooltip and the row's own tap opens the modal,
+   * which is the behaviour the bolt already has.
+   */
+  markerTooltip: {
+    /** State 1, one partner. */
+    ownBoth: (partner: string) => `Two-card combo with ${partner}. You own both.`,
+    /** Several partners — a count of what the tooltip is NOT naming, never of what exists. */
+    ownBothMore: (partner: string, others: number) =>
+      `Two-card combo with ${partner}, and ${others} others.`,
+  },
+
   /** The card modal's block — the ONE surface in this feature that enumerates. */
   modal: {
     heading: 'Two-card combos',

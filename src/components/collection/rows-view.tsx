@@ -14,7 +14,8 @@ import { availabilityState } from "../../lib/decks/availability";
 import { availabilityCopy } from "../../lib/copy/availability";
 import { AvailabilityMarker, markerAria } from "../ui/availability-marker";
 import { CardFactMark } from "../cards/card-fact-mark";
-import { ComboClause, comboClauseSpoken } from "../cards/combo-clause";
+import { comboClauseSpoken } from "../cards/combo-clause";
+import { ComboMark } from "../cards/combo-mark";
 import { FactTooltip } from "../cards/fact-tooltip";
 import { CollectionMarkKey } from "./collection-mark-key";
 import { cardFactName, cardMarkCopy } from "../../lib/copy/card-mark";
@@ -135,6 +136,15 @@ export function RowsView({
                   <CardFactMark fact={fact} silent />
                 </FactTooltip>
               ))}
+              {/* THE COMBO MARK JOINS THE CLUSTER, last, after Round 1's fixed order. One more
+                  16px glyph in a row built for them — the row's height, grid and every column
+                  are unchanged, and nothing yields for it. */}
+              {c.comboPartner && (
+                <ComboMark
+                  partnerName={c.comboPartner.name}
+                  otherPartners={c.comboOtherPartners ?? 0}
+                />
+              )}
               {c.availability && (
                 // `nameless` — /collection is the count-only vantage. No
                 // `selfExcluded`: there is no deck to stand in here.
@@ -164,11 +174,7 @@ export function RowsView({
                 halves of. The tail shortens at this width — the app's words give way, the
                 card's name does not. */}
             <span className="block md:hidden truncate text-[11.5px]" style={{ color: "var(--fg-faint)" }}>
-              {c.comboPartner ? (
-                <ComboClause partnerName={c.comboPartner.name} state="ownBoth" short />
-              ) : (
-                c.typeLine
-              )}
+              {c.typeLine}
             </span>
           </span>
 
@@ -222,18 +228,11 @@ function SetRarityColumn({ card }: { card: BrowseListCard }) {
       </span>
 
       {/* Desktop-only trailing spans — displayed only ≥md */}
-      {/* STATE 1 REPLACES THE TYPE LINE at this width too, with the full tail: the column is
-          wide enough for `— you own both`, and shortening it here would be shortening for a
-          constraint that is not present. */}
       <span
         className="hidden md:block truncate font-sans text-[12.5px]"
         style={{ color: "var(--fg-muted)" }}
       >
-        {card.comboPartner ? (
-          <ComboClause partnerName={card.comboPartner.name} state="ownBoth" />
-        ) : (
-          card.typeLine
-        )}
+        {card.typeLine}
       </span>
       <span className="hidden md:flex items-center gap-[8px]">
         <span

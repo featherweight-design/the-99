@@ -27,38 +27,67 @@ ownership dot and its shipped `BuyTag`.
 | truncation | the clause ellipses; the **partner name is the last thing to go** |
 | target | never. Inert, glyph `aria-hidden`, state in the row's accessible name |
 
-**The placement rule:** a mark **with** a sentence leaves the name line and leads that sentence on
-the host's secondary line. A mark **without** one stays where Round 1 put it. One glyph is never
-drawn twice on one row.
+**The placement rule:** *on the decision hosts* — the Add panel and the Last-31 list — a mark with
+a sentence leaves the name line and leads that sentence on the host's secondary line. **On the
+browse hosts (`/collection` row and tile) there is no sentence:** the marker joins the shipped
+marker cluster and the tooltip carries the name. One glyph is never drawn twice on one row.
 
-## Matrix 1 — the collection row, `/collection` (rows view)
+> **Browse hosts get the marker; decision hosts get the sentence.**
+
+## Matrix 1 — the collection row, `/collection` (rows view) *(revised — canvas `4a`)*
+
+**The shipped row is one line:** `×N` · name · **marker cluster** · availability · pips · type · set ·
+`›`. The combo mark joins the cluster that already carries the Game Changer bolt. **No clause on
+this host** — the partner name is in the tooltip and the modal.
 
 | State | 390px | desktop |
 |---|---|---|
 | **unmarked** | — | — |
-| **Round 2 fact only** | lemniscate on the **name line**, Round 1 order, type line intact | same |
-| **state 1** | clause **replaces the type line**, tail shortened to `both yours` | clause replaces the type line, full tail `— you own both` |
-| **state 1 + a Round 1 fact** | bolt stays on the name line; lemniscate downstairs with its sentence | same |
-| **state 1 + over-committed** | clause on the type line; `◆◆ short 1` unchanged in its own slot | same |
+| **Game Changer only** | bolt in the cluster, tooltip on hover | same |
+| **state 1** | **lemniscate in the cluster**, 16×16, `--fact` | same, + tooltip on hover |
+| **state 1 + Game Changer** | both markers, Round 1's fixed order, one cluster, **a tooltip each** | same |
+| **state 1 + over-committed** | markers in the cluster; `◆ none free` unchanged in its own slot | same |
 | **state 2 / 3** | **—** no deck in scope on this host | — |
 
-Row height, grid (`52px 1fr 90px 150px 92px 18px` desktop, `38px 1fr 76px auto` phone) and every
-right-hand column are unchanged.
+**Row height, grid and every column unchanged — the row gains one 16px glyph and nothing else
+moves.** The "mark moves down to lead a sentence" rule does not apply here: there is no second
+line, and with no clause there is nothing to lead.
 
-## Matrix 2 — the collection tile, `/collection` (card view)
+### The marker, to Game Changer's spec exactly
 
-| State | meta line | name line |
+| | Value |
+|---|---|
+| size | **16×16**, `--fact`, 3px glow — identical to the bolt |
+| position | the marker cluster after the name, Round 1's fixed order |
+| target | **none.** `aria-hidden` glyph; the state is in the row's accessible name |
+| tooltip | on hover, pointer-fine only — the bolt's chrome and register verbatim |
+| touch | **no tooltip.** The row's own tap opens the modal, where every partner and state is listed — same as Game Changer today |
+
+**Tooltip copy:** *"Two-card combo with Demonic Consultation. You own both."* — sentence case, full
+stop, not mono, matching *"This card is on the Game Changer list."* Several partners:
+*"Two-card combo with Demonic Consultation, and 3 others."* — a count of what the tooltip is not
+naming, never a claim about what exists.
+
+**The key needs no change.** The shipped legend already reads `⚡ game changer` … `∞ Two-card
+combo`.
+
+## Matrix 2 — the collection tile, `/collection` (card view) *(revised — canvas `4a`)*
+
+The caption's **marker row** already holds an availability chip, fact markers and `SET · rarity`.
+The lemniscate is one more 16px glyph in a row built for them.
+
+| State | marker row | name line |
 |---|---|---|
-| **unmarked** | `SET · rarity` (or chip · `SET · rarity`) | name |
-| **Round 2 fact only** | **∞** · `SET · rarity` — Round 1 unchanged | name |
-| **state 1** | **∞** `with Demonic Consul…` — **`SET · rarity` yields** | name |
-| **state 1 + chip** | `short 1` · **∞** `Demonic…` — chip keeps its slot, set yields | name · `×2` |
-| **state 1, no art** | as above; art draws the identity gradient | name |
+| **unmarked** | (chip) · `SET · rarity` | name |
+| **Game Changer only** | (chip) · **⚡** · `SET · rarity` | name |
+| **state 1** | **∞** · `SET · rarity` — **nothing yields** | name |
+| **state 1 + Game Changer** | **⚡ ∞** · `SET · rarity` | name |
+| **state 1 + chip** | `short 1` · **⚡ ∞** — `SET · rarity` drops **as it does today** | name · `×2` |
 | **state 2 / 3** | **—** no deck in scope | — |
 
-`CARD_TILE_CAPTION_H` (56/50px) unchanged, no third line, no data-dependent height. **The chip
-never yields** — it is about your copies and so is the caption. **The bare fact never yields
-anything**; the amendment is scoped to the state.
+**The `SET · rarity` yield is withdrawn.** It was invented to make room for a ~100px partner name;
+a 16px glyph needs no room. **Round 1's rule is restored whole: nothing yields.** Caption height
+untouched.
 
 ## Matrix 3 — the Consider tile, the deck Add panel
 
@@ -104,20 +133,37 @@ their pips.
 ## Matrix 6 — the card modal *(revised by `ADDENDUM-modal-block.md`)*
 
 Placement: **second in the oracle column's stack** — after `In the bracket rules`, before
-`In your collection`. Card fact → pair fact → copy facts. Chrome is `AvailabilityDetail`'s
-verbatim. Absent entirely when nothing is detected.
+`In your collection`, closed or open. Card fact → pair fact → copy facts. Chrome is
+`AvailabilityDetail`'s verbatim. Absent entirely when nothing is detected.
 
-### 6a — scope
+### 6a — closed, the default
+
+| | Desktop | 390px |
+|---|---|---|
+| height | **52px**, one row | **52px**, label and counts stacked |
+| target | **the whole row**, one `<button>` | same |
+| glyph | lemniscate 16px `--fact` | same |
+| label | mono 10px `0.1em` uppercase `--fg-faint` | mono 9.5px |
+| counts | mono 10.5px `--fg-muted`, **`N in this deck` in `--success`, always first** | mono 10px |
+| chevron | `▾` mono 12px `--fg-faint`, right | same |
+| `*` | **not drawn while closed** | same |
+| zero count | **not drawn** — never `0 you own` | same |
+
+**Closed at every count, including one.** The open state is **remembered per reader, not per
+card**; closing it once turns it back off.
+
+### 6b — scope
 
 | Opened from | Heading | Scope line | Sayable states |
 |---|---|---|---|
-| a deck (decklist, Add panel, top-off list) | `Two-card combos` | `against Kykar, Wind's Fury` — mono 10px `--fg-locked` | `in this deck` · `you own it` · `you don't own it` |
+| a deck (decklist, Add panel, top-off list) | `Two-card combos` | `against Kykar, Wind's Fury` — **on the header row when open**, mono 10px `--fg-locked` | `in this deck` · `you own it` · `you don't own it` |
 | `/collection`, or anywhere with no deck | `Two-card combos` | **—** | `you own it` · `you don't own it` |
 
 **This is the only block in the modal that varies by route**, which is why it names its scope and
-the others do not.
+the others do not. **Closed, the counts occupy that slot; open, the scope line takes it over** —
+so the block gains no chrome by opening.
 
-### 6b — the line
+### 6c — the line, open
 
 | Part | Desktop | 390px |
 |---|---|---|
@@ -126,36 +172,34 @@ the others do not.
 | state | mono 10px, right-aligned | **wraps under the name** |
 | state ink | `in this deck` `--success` · `you own it` `--fg-muted` · `you don't own it` `--fg-locked` | same |
 
-### 6c — density
+### 6d — density
 
-| Partners | Desktop | 390px |
+**All lines, no cap, no inner disclosure.** The 6/4 cap and the `+N more` / `Show all N` atoms are
+withdrawn from this block — the closed row does the job they were invented for, and a reader who
+asked for the list is not served by a second disclosure inside it.
+
+| Partners | Closed | Open |
 |---|---|---|
 | 0 | block absent | block absent |
-| 1 | one line, no disclosure — **49% of pieces** | same |
-| 2–4 | all, no disclosure — **median is 2** | all, no disclosure |
-| 5–6 | all, no disclosure | 4 + `Show all N` |
-| 7+ | 6 + `+N more` | 4 + `Show all N` |
+| 1 — **49% of pieces** | 52px row, `1 you own` | one line |
+| 2 — **the median** | 52px row | two lines |
+| 14 — **21 of 249 owned pieces exceed ten** | 52px row | fourteen lines |
 
-Disclosure is the shipped atom: desktop dashed `--border-strong` chip, `+N more` mono 11px
-`--accent`; phone full-width 44px dashed row, `Show all N` mono 12px `--accent`. **Expanded, the
-block grows in place** — no inner scroller, no second surface. **21 of 249 owned pieces exceed
-ten**, so this is the 8% case.
+**Ordering: `in this deck`, then owned, then unowned; popularity inside each band.**
 
-**Ordering: `in this deck`, then owned, then unowned; popularity inside each band.** The cap never
-hides a partner already on the table in favour of one you would have to buy.
-
-### 6d — targets
+### 6e — targets
 
 | Element | Behaviour |
 |---|---|
+| the closed row | **one `<button>`, the whole row.** `aria-expanded`, `aria-controls`; accessible name is the label plus the counts as words. Focus stays on it. **No motion** on open. |
 | partner name | **the only target on a line.** Opens the partner's modal, **replacing** the current one. Brass underline `1px --accent-shadow`, 44px hit area on phone. Never stacks. |
-| the heading `*` | the bound. Tooltip at 400ms on pointer-fine, **dismissible / hover-into because it holds a link**; **44px tap-to-disclose in place** on touch. `aria-describedby` on the block. |
+| the heading `*` | the bound, **open only**. Tooltip at 400ms on pointer-fine, **dismissible / hover-into because it holds a link**; **44px tap-to-disclose in place** on touch. A separate target inside the header button, not part of its name. |
 | `Commander Spellbook ↗` | **inside the tooltip** — this card on Commander Spellbook, new tab, `rel="noopener"`. Plain text when no URL resolves. |
 | the glyph | inert, `aria-hidden`, as everywhere else |
 | the state words | inert. Not filters. |
 | anything else | there is nothing else — no `add to deck`, no price, no copy count |
 
-### 6e — the bound
+### 6f — the bound
 
 `From Commander Spellbook ↗. Combos needing a third piece are not listed.` — **behind the heading's
 brass `*`**, never printed under every block, with the source's own name as the link out. Round
@@ -163,8 +207,9 @@ brass `*`**, never printed under every block, with the source's own name as the 
 count.
 
 **Open with engineering (Hugh's question, see `ADDENDUM-modal-block.md`):** whether
-`you don't own it` lines belong in this block at all. If they are cut, 6c and 6d are unchanged and
-only the tail of the ordering disappears.
+`you don't own it` lines belong in this block at all. The closed row answers the height objection,
+so the cut is now cheaper later than now — one filter on the ordering's tail, and the closed row's
+counts change by themselves.
 
 ## Matrix 7 — the key (`MarkKey`)
 
