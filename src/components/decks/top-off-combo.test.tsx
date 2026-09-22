@@ -3,12 +3,10 @@ import { describe, expect, it, vi } from "vitest";
 import { comboAwarenessCopy } from "../../lib/copy/combo-awareness";
 import { stubViewport } from "../../test-utils/stub-viewport";
 import { CardDetailProvider } from "../cards/card-detail-provider";
-import type { TopOffCandidate } from "../../lib/decks/last-slots";
+import type { TopOffCandidateWithFacts } from "../../lib/decks/last-slots";
 
-/** What the row accepts: a candidate plus the one deck-scoped field it may carry. */
-type RowCandidate = TopOffCandidate & {
-  comboPartner?: { oracleId: string; name: string } | null;
-};
+/** What the row accepts: the deck-scoped candidate, both deck-scoped fields required. */
+type RowCandidate = TopOffCandidateWithFacts;
 import { TopOffList } from "./top-off-list";
 
 vi.mock("../../app/decks/actions", () => ({
@@ -28,6 +26,9 @@ const candidate = (over: Partial<RowCandidate> = {}) =>
     oracleId: "c-1", name: "Dramatic Reversal", typeLine: "Instant", facet: "spell",
     inclusionPct: 40, synergyPts: 20, imageUri: null, owned: true, committedTo: null,
     manaCost: "{1}{U}", price: null, availability: null,
+    // Both deck-scoped fields, stated. This file is about `comboPartner`, and `facts` is
+    // null so the note draws nothing beside the clause it is measuring.
+    facts: null, comboPartner: null,
     ...over,
   }) as RowCandidate;
 
@@ -51,6 +52,8 @@ function list(over: Partial<RowCandidate> = {}) {
         onClose={() => {}}
         onBarHeight={() => {}}
         newestAsOf={null}
+        declaredBracket={null}
+        noteCounts={{ gameChanger: 0, massLandDenial: 0, extraTurns: 0, tutor: 0 }}
       />
     </CardDetailProvider>,
   );

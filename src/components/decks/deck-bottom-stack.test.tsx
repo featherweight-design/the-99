@@ -6,7 +6,7 @@
 import { act, render, screen } from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { topOffCopy } from "../../lib/copy/top-off";
-import type { TopOffCandidate } from "../../lib/decks/last-slots";
+import type { TopOffCandidateWithFacts } from "../../lib/decks/last-slots";
 import type { DeckDetail } from "../../lib/decks/read";
 import { recommendedMix } from "../../lib/decks/mix";
 
@@ -79,10 +79,12 @@ function makeDeck(): DeckDetail {
     total: 99,
     filled: false,
     unresolvedRows: [],
+    declaredBracket: null,
+    noteCounts: { gameChanger: 0, massLandDenial: 0, extraTurns: 0, tutor: 0 },
   } as DeckDetail;
 }
 
-async function shell(candidates: TopOffCandidate[] = []) {
+async function shell(candidates: TopOffCandidateWithFacts[] = []) {
   await act(async () => {
     render(
       <BuilderShell mix={TEST_MIX}
@@ -132,7 +134,7 @@ describe("Quick-add bar — phone bottom stack", () => {
 // of dead space mid-list and reserved nothing at the end. The rule is the
 // spacer's PLACEMENT, which typecheck cannot see.
 describe("Top-off commit bar — page-foot reservation", () => {
-  function candidate(id: string): TopOffCandidate {
+  function candidate(id: string): TopOffCandidateWithFacts {
     return {
       oracleId: id,
       name: id,
@@ -146,6 +148,8 @@ describe("Top-off commit bar — page-foot reservation", () => {
       manaCost: null,
       price: null,
       availability: null,
+      facts: null,
+      comboPartner: null,
     };
   }
 

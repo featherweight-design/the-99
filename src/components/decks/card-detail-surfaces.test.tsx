@@ -8,7 +8,7 @@ import { describe, expect, it, vi } from "vitest";
 import type { BrowseCard } from "../../lib/collection/browse";
 import type { DeckDetailCard } from "../../lib/decks/grouping";
 import type { DeckDetail } from "../../lib/decks/read";
-import type { DeckSuggestion } from "../../lib/decks/suggest";
+import type { DeckSuggestionWithFacts } from "../../lib/decks/suggest";
 import { CardDetailProvider, cardDetailCopy } from "../cards/card-detail-provider";
 import { BuilderSpine } from "./builder-spine";
 import { Decklist } from "./decklist";
@@ -101,7 +101,8 @@ describe("deck card-detail triggers", () => {
   });
 
   it("opens details from a suggestion tile", async () => {
-    const suggestion: DeckSuggestion = {
+    const suggestion: DeckSuggestionWithFacts = {
+      facts: null,
       oracleId: "o-sol", name: "Sol Ring", reason: "edhrec", reasonType: "edhrec",
       reasonLabel: "98% of decks", owned: false, inDeck: false,
       typeLine: "Artifact", cardTypeGroup: "Artifacts", role: "ramp",
@@ -112,6 +113,8 @@ describe("deck card-detail triggers", () => {
       <SuggestionTile
         suggestion={suggestion}
         deckId="d1"
+        declaredBracket={null}
+        noteCounts={{ gameChanger: 0, massLandDenial: 0, extraTurns: 0, tutor: 0 }}
         inDeck={false}
         siblings={["o-sol"]}
         commanderShortName="Muldrotha"

@@ -2,6 +2,9 @@ import { and, asc, desc, eq, inArray, sql } from "drizzle-orm";
 import { alias } from "drizzle-orm/pg-core";
 import { db } from "../../db";
 import { factsFor } from "../bracket/facts";
+import { classifyTutor } from "../bracket/tutor-targets";
+import type { NoteCounts } from "../bracket/card-note";
+import type { Bracket } from "../bracket/types";
 import { loadBracketFlags, type CardBracketFlags } from "../bracket/flags-read";
 import {
   cards,
@@ -181,6 +184,22 @@ export type DeckDetail = {
   toBuyCount: number;
   /** built plus the cards on unresolved lines — the size of the deck the player asked for. */
   total: number;
+  /**
+   * `decks.declared_bracket`. The bracket the player SAID they were building, live on the
+   * deck while drafting and copied onto a version at commit.
+   *
+   * A declaration is an intention rather than a measurement, so it cannot go stale from an
+   * edit — which is what lets the card note cite it on every add with nothing recomputed.
+   */
+  declaredBracket: Bracket | null;
+  /**
+   * How many of each note-bearing kind this deck's list already holds, counted by COPIES.
+   *
+   * Derived here rather than on the client because one of the four is not on the card: the
+   * three marks come off `facts`, and the tutor reading is `classifyTutor` over oracle text,
+   * which this query already has and a `DeckDetailCard` does not carry.
+   */
+  noteCounts: NoteCounts;
 };
 
 /** The deck row, or a throw. Used by every deck mutation and by the reads that
@@ -204,6 +223,11 @@ export async function getDeckDetail(deckId: string, userId: string): Promise<Dec
       filled: decks.filled,
       commanderOracleId: decks.commanderOracleId,
       partnerOracleId: decks.partnerOracleId,
+      // The LIVE declaration, which the card note cites and nothing else on this page reads.
+      // Null is UNANSWERED and means nothing else: there is no skip, and the note prints no
+      // deck clause rather than falling back to a determined verdict that may be four edits
+      // old with nothing on the row to say so.
+      declaredBracket: decks.declaredBracket,
     })
     .from(decks)
     .where(and(eq(decks.id, deckId), eq(decks.userId, userId)));
@@ -227,6 +251,10 @@ export async function getDeckDetail(deckId: string, userId: string): Promise<Dec
       oracleText: cards.oracleText,
       imageUri: cards.imageUri,
       artCropUri: cards.artCropUri,
+      // COMMANDERS ARE CARDS. The bracket rules count a Game Changer in the command zone
+      // against every limit, so the card note's ordinal has to count it too — and this is
+      // the one card on the page that is a column on `decks` rather than a `deck_cards` row.
+      gameChanger: cards.gameChanger,
     })
     .from(cards)
     .where(inArray(cards.oracleId, commanderIds));
@@ -329,9 +357,20 @@ export async function getDeckDetail(deckId: string, userId: string): Promise<Dec
   // the proxy read above is: a mark is decoration on a page that must render without it, and
   // a transient failure here would otherwise 500 a readable deck over three glyphs. An empty
   // map costs the marks and nothing else.
-  const bracketFlags = await loadBracketFlags(cardRows.map((r) => r.oracleId)).catch(
-    () => new Map<string, CardBracketFlags>(),
-  );
+  //
+  // The COMMANDERS' ids ride along: they draw no mark on this page, but the card note counts
+  // a kind across the whole deck and a commander is part of the deck. One read either way.
+  //
+  // FAIL-SOFT, and the FAILURE IS CARRIED rather than flattened to an empty map. The marks
+  // degrade to absence either way, which is right for them — but the card note's ordinals are
+  // counts, and a count nobody has is not zero. The candidate's own facts come from a separate
+  // flags read that can succeed while this one fails, so a flattened failure introduces a
+  // correctly-detected mass land denial as `your 1st` to a deck already holding three.
+  const bracketFlags = await readNoteFlags([
+    ...cardRows.map((r) => r.oracleId),
+    ...commanderIds,
+  ]);
+  const flags = bracketFlags ?? new Map<string, CardBracketFlags>();
 
   const commander = asCommander(commanderRow);
   const partner = partnerRow ? asCommander(partnerRow) : null;
@@ -344,7 +383,7 @@ export async function getDeckDetail(deckId: string, userId: string): Promise<Dec
     role: primaryRole({ typeLine: row.typeLine, oracleText: row.oracleText, keywords: row.keywords }),
     cmc: row.cmc,
     owned: row.owned,
-    facts: factsFor(row.gameChanger, bracketFlags.get(row.oracleId)),
+    facts: factsFor(row.gameChanger, flags.get(row.oracleId)),
     proxied: proxiedIds.has(row.oracleId),
     quantity: row.quantity,
     auto: row.auto,
@@ -386,8 +425,71 @@ export async function getDeckDetail(deckId: string, userId: string): Promise<Dec
     partner,
     cards: detailCards,
     unresolvedRows,
+    declaredBracket: (deck.declaredBracket as Bracket | null) ?? null,
+    noteCounts: countNoteKinds(cardRows, commanderRows, bracketFlags),
     ...deckCounts(detailCards, unresolvedCardCount(unresolvedRows)),
   };
+}
+
+/**
+ * The deck's bracket flags, or `null` where the read FAILED.
+ *
+ * Three lines with a name on them, because the difference between `null` and an empty map is
+ * the whole of the degradation and a `.catch` inline is a branch no test can reach: a unit
+ * test would have to drive `getDeckDetail`'s entire query chain to see it, and the mutation
+ * that flattens it to an empty map passes every test of the pure counter beneath.
+ */
+export async function readNoteFlags(
+  oracleIds: string[],
+): Promise<Map<string, CardBracketFlags> | null> {
+  return loadBracketFlags(oracleIds).catch(() => null);
+}
+
+/**
+ * The card note's four counts over the deck as it stands — the DRAFT, since that is what the
+ * analysis reads and what a player is looking at while they add.
+ *
+ * EXPORTED for its own test. Every renderer test injects `NoteCounts`, so the denominator
+ * behind every ordinal on the surface was asserted by nobody: a regression returning zeros,
+ * dropping the commanders, or counting rows instead of copies renders a perfectly plausible
+ * `your 1st` and passes every check this round shipped. `read.test.ts` covers it directly.
+ *
+ * BY COPIES, not by rows. A deck can hold five Swamps and the note's ordinal is a count of
+ * cards, not of distinct names. No kind here is a basic today, so the two agree on every real
+ * deck; counting rows would be a rule that happens to be right rather than the right rule.
+ *
+ * The commanders are folded in at one copy each for the reason `probe:bracket` pins end to
+ * end: a Game Changer in the command zone counts against every limit, and it is the one card
+ * on this page that is a column rather than a row.
+ */
+export function countNoteKinds(
+  cardRows: readonly { oracleId: string; gameChanger: boolean; oracleText: string | null; quantity: number }[],
+  commanderRows: readonly { oracleId: string; gameChanger: boolean; oracleText: string | null }[],
+  /** `null` when the flags read FAILED — see `NoteCounts`. An empty map is a successful read
+   *  that found nothing, which is a different claim and counts as zero. */
+  flags: Map<string, CardBracketFlags> | null,
+): NoteCounts {
+  const counts = {
+    gameChanger: 0,
+    massLandDenial: flags === null ? null : 0,
+    extraTurns: flags === null ? null : 0,
+    tutor: 0,
+  } as NoteCounts;
+  const add = (
+    copies: number,
+    row: { oracleId: string; gameChanger: boolean; oracleText: string | null },
+  ) => {
+    const flag = flags?.get(row.oracleId);
+    if (row.gameChanger) counts.gameChanger += copies;
+    if (flag?.massLandDenial && counts.massLandDenial !== null) counts.massLandDenial += copies;
+    if (flag?.extraTurn && counts.extraTurns !== null) counts.extraTurns += copies;
+    // The SHIPPED classifier over the same text `loadCandidateFacts` reads, so a card's
+    // reading cannot differ depending on which side of the add it is on.
+    if (classifyTutor(row.oracleText) !== null) counts.tutor += copies;
+  };
+  for (const row of cardRows) add(row.quantity, row);
+  for (const row of commanderRows) add(1, row);
+  return counts;
 }
 
 /** What the review page needs of the deck itself — and nothing else. */

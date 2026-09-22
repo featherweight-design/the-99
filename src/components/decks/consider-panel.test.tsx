@@ -8,7 +8,7 @@ import { useState } from "react";
 import { fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import type { SortKey } from "./consider-toolbar";
-import type { DeckSuggestion } from "../../lib/decks/suggest";
+import type { DeckSuggestionWithFacts } from "../../lib/decks/suggest";
 import type { DeckDetailCard } from "../../lib/decks/grouping";
 import { synergyCopy } from "../../lib/copy/synergy-discovery";
 import { addPanelCopy } from "../../lib/copy/decks-builder";
@@ -29,7 +29,8 @@ vi.mock("next/navigation", () => ({ useRouter: () => ({ refresh }) }));
 const { ConsiderPanel, SHELF_CAP, rolesWithShelves } = await import("./consider-panel");
 const { CardDetailProvider } = await import("../cards/card-detail-provider");
 
-const suggestion = (over: Partial<DeckSuggestion> & { name: string }): DeckSuggestion => ({
+const suggestion = (over: Partial<DeckSuggestionWithFacts> & { name: string }): DeckSuggestionWithFacts => ({
+  facts: null,
   oracleId: over.name.toLowerCase().replace(/\W+/g, "-"),
   reason: "edhrec",
   reasonType: "edhrec",
@@ -58,6 +59,8 @@ function Harness(props: Partial<React.ComponentProps<typeof ConsiderPanel>>) {
   return (
     <ConsiderPanel mix={TEST_MIX}
       deckId="deck-1"
+      declaredBracket={null}
+      noteCounts={{ gameChanger: 0, massLandDenial: 0, extraTurns: 0, tutor: 0 }}
       suggestions={[suggestion({ name: "Sol Ring" })]}
       deckCards={[]}
       deckOracleIds={[]}

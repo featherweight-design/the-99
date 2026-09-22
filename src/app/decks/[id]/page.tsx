@@ -250,17 +250,14 @@ export default async function DeckBuilderPage({
     ownedIds.length > 0
       ? loadAvailability(userId, { excludeDeckId: id, oracleIds: ownedIds }).catch(() => null)
       : null,
-    // THE CANDIDATES ONLY, for now. The Add panel's suggestions draw the same note from the
-    // same read, but `DeckSuggestion` does not declare a `facts` field and `BuilderShell` types
-    // the list as `DeckSuggestion[]` — so attaching one here would ride UNTYPED through a spread
-    // and no consumer would ever be forced to read it. That is precisely the dead-payload shape
-    // this PR exists to end, and shipping it on the suggestions while fixing it on the
-    // candidates would be the same defect surviving its own fix.
+    // BOTH POOLS IN ONE READ, which is 8b widening the read 8a scoped to the candidates.
     //
-    // 8b threads a facts-bearing suggestion type through the client components when it draws the
-    // note, and widens this read with it.
+    // `DeckSuggestion` now DECLARES `facts`, so the Add panel's tiles are forced to read it
+    // rather than inheriting it untyped through a spread — the dead-payload shape 8a refused
+    // to ship halfway. The two pools overlap heavily and `loadCandidateFacts` dedupes its ids,
+    // so asking once costs less than asking twice for a set that is mostly the same.
     loadCandidateFacts(
-      candidateCards.map((c) => c.oracleId),
+      [...candidateCards.map((c) => c.oracleId), ...suggestions.map((s) => s.oracleId)],
       detail.cards.map((c) => c.oracleId),
     ).catch(() => null),
     // STATES 2 AND 3: which candidates complete a two-card combo already half-built in this
@@ -296,9 +293,18 @@ export default async function DeckBuilderPage({
   const pricedSuggestions = suggestions.map((s) => ({
     ...withPrice(s),
     availability: s.owned ? (availability?.get(s.oracleId) ?? null) : null,
-    // Declared on `DeckSuggestion`, so a consumer is forced to read it rather than inheriting
-    // it untyped through this spread — which is the dead-payload shape the candidate-facts
-    // note above refuses.
+    // The card note's facts, on the tile rather than in a map beside it — same reason the
+    // price and the availability figures are attached here, and same `null` for a failed
+    // read as for a card that carries nothing. Both render as no note at all.
+    //
+    // REQUIRED on `DeckSuggestionWithFacts`, which is what `BuilderShell` takes: deleting
+    // this line fails typecheck rather than silently drawing no note on any Consider tile.
+    // An optional field closed that hole only for as long as somebody remembered.
+    facts: candidateFacts?.get(s.oracleId) ?? null,
+    // Declared on the suggestion type, so a consumer is forced to read it rather than
+    // inheriting it untyped through this spread — the dead-payload shape the note above
+    // refuses. (`comboPartner` is still optional on `DeckSuggestion` itself; that is sub-
+    // project 3's field and its own chain, not this round's to change.)
     comboPartner: comboFor(s.oracleId, completions),
   }));
 

@@ -10,13 +10,15 @@ import { useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { GhostButton } from "../ui/button";
 import type { DeckDetailCard } from "../../lib/decks/grouping";
-import { shelfRoleOf, type DeckSuggestion } from "../../lib/decks/suggest";
+import { shelfRoleOf, type DeckSuggestion, type DeckSuggestionWithFacts } from "../../lib/decks/suggest";
 import { addPanelCopy } from "../../lib/copy/decks-builder";
 import { synergyCopy } from "../../lib/copy/synergy-discovery";
 import { computeRoleCounts, type MixRole, type RecommendedMix } from "../../lib/decks/mix";
 import { preferByTypeGap, tallyTypes, typeDeficits } from "../../lib/decks/fill-shape";
 import type { ProvenanceForm } from "../../lib/decks/price";
 import { SuggestionTile } from "./suggestion-tile";
+import type { Bracket } from "../../lib/bracket/types";
+import type { NoteCounts } from "../../lib/bracket/card-note";
 import { ConsiderToolbar, type SortKey } from "./consider-toolbar";
 
 // One desktop row, three phone rows. Named once so the cap, the `Show all N`
@@ -43,12 +45,12 @@ type ShelfKey = ShelfRole | "synergy" | "unowned";
 
 type Shelf = {
   key: ShelfKey;
-  suggestions: DeckSuggestion[];
+  suggestions: DeckSuggestionWithFacts[];
   /** Null on the "Threats & synergy" shelf, which has no target to be short of. */
   coverage: { have: number; target: number } | null;
 };
 
-function buildShelves(suggestions: DeckSuggestion[], deckCards: DeckDetailCard[], mix: RecommendedMix): Shelf[] {
+function buildShelves(suggestions: DeckSuggestionWithFacts[], deckCards: DeckDetailCard[], mix: RecommendedMix): Shelf[] {
   const counts = computeRoleCounts(deckCards);
   // A coverage shelf says "you have 2 of 10", which is a claim about cards you
   // can play tonight — so the unowned staples never mix into one.
@@ -134,13 +136,13 @@ export function rolesWithShelves(suggestions: DeckSuggestion[]): ReadonlySet<Mix
  * they touched the control. Before this change `gaps` was a pass-through and both were safe
  * by accident; now they are safe on purpose.
  */
-function sortWithin(
-  suggestions: DeckSuggestion[],
+function sortWithin<T extends DeckSuggestion>(
+  suggestions: T[],
   sort: SortKey,
   mix: RecommendedMix,
   deckCards: DeckDetailCard[],
   shelfKey: ShelfKey,
-): DeckSuggestion[] {
+): T[] {
   if (sort === "gaps") {
     if (shelfKey === "synergy" || shelfKey === "unowned") return suggestions;
     // `preferByTypeGap` from `fill-shape.ts`, never a second copy — one definition of "which
@@ -202,11 +204,14 @@ function CardFan() {
 }
 
 function ShelfSection({
-  shelf, deckId, inDeckIds, selfClaimedIds, commanderShortName, first,
-  newestAsOf, provenance,
+  shelf, deckId, declaredBracket, noteCounts, inDeckIds, selfClaimedIds, commanderShortName,
+  first, newestAsOf, provenance,
 }: {
   shelf: Shelf;
   deckId: string;
+  /** Straight through to each tile's card note. See `ConsiderPanelProps`. */
+  declaredBracket: Bracket | null;
+  noteCounts: NoteCounts;
   /** A set rather than the array: every tile asks, and a deck runs to 99. */
   inDeckIds: Set<string>;
   /** `inDeckIds` plus the commander. See ConsiderPanel. */
@@ -295,6 +300,8 @@ function ShelfSection({
             key={s.oracleId}
             suggestion={s}
             deckId={deckId}
+            declaredBracket={declaredBracket}
+            noteCounts={noteCounts}
             inDeck={inDeckIds.has(s.oracleId)}
             selfClaimed={selfClaimedIds.has(s.oracleId)}
             siblings={siblings}
@@ -315,7 +322,18 @@ interface ConsiderPanelProps {
    *  constant would draw one deck's recommendation on every deck. */
   mix: RecommendedMix;
   deckId: string;
-  suggestions: DeckSuggestion[];
+  /**
+   * The deck's live declaration and what its list already holds of each note-bearing kind —
+   * the card note's two deck-level inputs, threaded to every tile.
+   *
+   * REQUIRED here for the reason `newestAsOf` below is required here: the tile requires them,
+   * so leaving the boundary optional at the panel would put the hole one level up, where a
+   * caller compiles and every tile draws its ordinals from zero. A wrong figure rather than a
+   * missing prop, and silent.
+   */
+  declaredBracket: Bracket | null;
+  noteCounts: NoteCounts;
+  suggestions: DeckSuggestionWithFacts[];
   /**
    * The optimistic decklist, so the coverage figures move the moment a card is
    * added. Membership is not read from here: `deckOracleIds` is the committed
@@ -351,7 +369,8 @@ interface ConsiderPanelProps {
 
 export function ConsiderPanel({
   mix,
-  deckId, suggestions, deckCards, deckOracleIds, commanderOracleId, commanderShortName, degraded,
+  deckId, declaredBracket, noteCounts, suggestions, deckCards, deckOracleIds,
+  commanderOracleId, commanderShortName, degraded,
   sort, onSortChange, newestAsOf, provenance = null,
 }: ConsiderPanelProps) {
   const router = useRouter();
@@ -461,6 +480,8 @@ export function ConsiderPanel({
               first={i === 0}
               shelf={shelf}
               deckId={deckId}
+              declaredBracket={declaredBracket}
+              noteCounts={noteCounts}
               inDeckIds={inDeckIds}
               selfClaimedIds={selfClaimedIds}
               commanderShortName={commanderShortName}

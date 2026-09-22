@@ -4,7 +4,7 @@ import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import { topOffCopy } from "../../lib/copy/top-off";
 import { synergyCopy } from "../../lib/copy/synergy-discovery";
 import { stubViewport } from "../../test-utils/stub-viewport";
-import type { TopOffCandidate } from "../../lib/decks/last-slots";
+import type { TopOffCandidateWithFacts } from "../../lib/decks/last-slots";
 import { CardDetailProvider, cardDetailCopy } from "../cards/card-detail-provider";
 
 const actions = vi.hoisted(() => ({
@@ -32,7 +32,7 @@ const plan = (over: Partial<{ oracleIds: string[]; shortfalls: unknown[]; measur
 
 import { TopOffList } from "./top-off-list";
 
-function candidate(id: string, owned: boolean): TopOffCandidate {
+function candidate(id: string, owned: boolean): TopOffCandidateWithFacts {
   return {
     oracleId: id,
     name: id,
@@ -46,6 +46,11 @@ function candidate(id: string, owned: boolean): TopOffCandidate {
     manaCost: null,
     price: null,
     availability: null,
+    // No facts and no combo partner, STATED rather than omitted: both are required on the
+    // deck-scoped row type, so the page's attachment cannot be deleted without a compile
+    // error. See `RowCandidate` in top-off-list.tsx.
+    facts: null,
+    comboPartner: null,
   };
 }
 
@@ -67,7 +72,7 @@ function Harness({
   initialTicked?: string[];
   initialDeclined?: string[];
   openSlots?: number;
-  candidates?: TopOffCandidate[];
+  candidates?: TopOffCandidateWithFacts[];
   deckOracleIds?: Set<string>;
   newestAsOf?: Date | null;
   onAnnounce?: (m: string) => void;
@@ -98,6 +103,8 @@ function Harness({
       declined={declined}
       onDeclinedChange={setDeclined}
       newestAsOf={props.newestAsOf ?? null}
+      declaredBracket={null}
+      noteCounts={{ gameChanger: 0, massLandDenial: 0, extraTurns: 0, tutor: 0 }}
       onAnnounce={props.onAnnounce ?? (() => {})}
       onInflight={props.onInflight ?? (() => {})}
       // Both halves, as in production, where this is wired to the draft's
@@ -610,7 +617,7 @@ describe("TopOffList", () => {
 });
 
 describe("TopOffList — the bulk tick", () => {
-  const claimed = (id: string): TopOffCandidate => ({
+  const claimed = (id: string): TopOffCandidateWithFacts => ({
     ...candidate(id, true),
     availability: { owned: 1, hard: 1, soft: 0, free: 0, claims: [] },
   });
@@ -987,7 +994,7 @@ describe("TopOffList — the desktop row", () => {
   }
 
   /** The row's own element, from the checkbox that names it. */
-  const rowOf = (name: string) => rowBox(name).closest("li") ?? rowBox(name).parentElement;
+  const rowOf = (name: string) => rowBox(name).closest("[data-top-off-row]");
 
   it("draws no underline under the card name", () => {
     // Nothing else in this app underlines a `CardDetailTrigger`, and on this
@@ -1072,7 +1079,7 @@ describe("TopOffList — a cost that belongs to the back face", () => {
   ];
 
   /** The row's own element, from the checkbox that names it. */
-  const rowOf = (name: string) => rowBox(name).closest("li") ?? rowBox(name).parentElement;
+  const rowOf = (name: string) => rowBox(name).closest("[data-top-off-row]");
 
   it("mounts no cost track for it, and still mounts one for a costed row", () => {
     render(<Harness candidates={backOnly} />);

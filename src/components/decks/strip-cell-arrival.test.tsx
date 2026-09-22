@@ -9,7 +9,7 @@
 import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
 import type { DeckDetail } from "../../lib/decks/read";
-import type { DeckSuggestion } from "../../lib/decks/suggest";
+import type { DeckSuggestionWithFacts } from "../../lib/decks/suggest";
 import { addPanelCopy } from "../../lib/copy/decks-builder";
 import { recommendedMix } from "../../lib/decks/mix";
 
@@ -61,7 +61,7 @@ const deck = {
   unresolvedRows: [],
 } as unknown as DeckDetail;
 
-const suggestions: DeckSuggestion[] = [
+const suggestions: DeckSuggestionWithFacts[] = [
   {
     oracleId: "sol-ring",
     name: "Sol Ring",
@@ -78,7 +78,7 @@ const suggestions: DeckSuggestion[] = [
     manaValue: 1,
     inclusionPct: 80,
     lift: null,
-  } as unknown as DeckSuggestion,
+  } as unknown as DeckSuggestionWithFacts,
 ];
 
 describe("coverage cell arrival", () => {

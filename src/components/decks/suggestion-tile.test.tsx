@@ -11,7 +11,7 @@ import { availabilityCopy } from "../../lib/copy/availability";
 import { addPanelCopy } from "../../lib/copy/decks-builder";
 import { synergyCopy } from "../../lib/copy/synergy-discovery";
 import type { Availability } from "../../lib/decks/availability";
-import type { DeckSuggestion } from "../../lib/decks/suggest";
+import type { DeckSuggestionWithFacts } from "../../lib/decks/suggest";
 import { CardDetailProvider } from "../cards/card-detail-provider";
 import { SuggestionTile } from "./suggestion-tile";
 
@@ -20,7 +20,7 @@ vi.mock("../../app/decks/actions", () => ({
   removeCardFromDeck: vi.fn(),
 }));
 
-const suggestion = (availability: Availability | null): DeckSuggestion =>
+const suggestion = (availability: Availability | null): DeckSuggestionWithFacts =>
   ({
     oracleId: "o-sol", name: "Sol Ring", reason: "edhrec", reasonType: "edhrec",
     reasonLabel: "98% of decks", owned: true, inDeck: false,
@@ -28,7 +28,7 @@ const suggestion = (availability: Availability | null): DeckSuggestion =>
     manaCost: "{1}", manaValue: 1,
     imageUri: null, inclusionPct: null, lift: null,
     availability,
-  }) as DeckSuggestion;
+  }) as DeckSuggestionWithFacts;
 
 function mount(availability: Availability | null, selfClaimed = false) {
   render(
@@ -36,6 +36,8 @@ function mount(availability: Availability | null, selfClaimed = false) {
       <SuggestionTile
         suggestion={suggestion(availability)}
         deckId="d1"
+        declaredBracket={null}
+        noteCounts={{ gameChanger: 0, massLandDenial: 0, extraTurns: 0, tutor: 0 }}
         inDeck={false}
         newestAsOf={null}
         siblings={["o-sol"]}
@@ -48,8 +50,9 @@ function mount(availability: Availability | null, selfClaimed = false) {
 
 // Factory for lift-line and noSynergy tests. Separate from the availability
 // factory above — takes partials rather than an Availability object.
-function makeSuggestion(over: Partial<DeckSuggestion> = {}): DeckSuggestion {
+function makeSuggestion(over: Partial<DeckSuggestionWithFacts> = {}): DeckSuggestionWithFacts {
   return {
+    facts: null,
     oracleId: "o-test",
     name: "Test Card",
     reason: "edhrec",
@@ -71,7 +74,7 @@ function makeSuggestion(over: Partial<DeckSuggestion> = {}): DeckSuggestion {
 }
 
 function mountTile(
-  over: Partial<DeckSuggestion>,
+  over: Partial<DeckSuggestionWithFacts>,
   tileProps: Partial<React.ComponentProps<typeof SuggestionTile>> = {},
 ) {
   render(
@@ -79,6 +82,8 @@ function mountTile(
       <SuggestionTile
         suggestion={makeSuggestion(over)}
         deckId="d1"
+        declaredBracket={null}
+        noteCounts={{ gameChanger: 0, massLandDenial: 0, extraTurns: 0, tutor: 0 }}
         inDeck={false}
         siblings={["o-test"]}
         commanderShortName="Muldrotha"

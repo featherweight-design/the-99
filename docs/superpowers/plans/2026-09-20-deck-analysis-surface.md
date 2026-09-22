@@ -86,7 +86,8 @@ added and the count went from nine to fourteen**, so the dependency history is a
 | **6 — the lean and the reasoning modal** ◐ | The lean line, the modal body, the command-zone `found by` reading, and image resolution **at the draw** rather than in the profile. Mana drawn **as a state** — pips above zero, "No mana needed" at zero — plus the notable-prerequisites line. **Its combo body lands inside 4c's modal chrome**, so it waits on 4c rather than on 4b. | 0, 2, **4c** |
 | **7 — the drift row** ◐ | What survives of drift once the "you said" framing is gone — the permitted side can be a single bracket, which needs a reading. | 4a |
 | **8a — the facts payload** ✅ | The profile threaded into the builder shell and the top-off list, and a BATCHED `CandidateFacts` read for the whole pool. Measured above; Round 4's own list does not contain it. | — |
-| **8b — the push line** | The atom at two densities, on the quick-add row, the Consider tile and the top-off row. | 8a |
+| **8b — the card note, on the deck's own add surfaces** | The note atom at two densities — the sentence on the top-off row, the clause on the Consider tile — its copy module, and the pure rule that picks which sentence a candidate draws. **The push line this row used to name is withdrawn**; see below. | 8a |
+| **8c — the card note on the quick-add row** | The search action's own facts read, and the note on the search result row. A different payload question from 8b's: the two deck-page hosts are fed by 8a's batched pool read, and the quick-add row is fed by a live per-keystroke search that loads no facts at all. | 8b |
 | **9 — the upgrade path** ◐ | Candidate sets, never a pick; the `blocked` reading. | Round 4 design |
 
 ## Where this stands — 2026-09-22
@@ -100,12 +101,61 @@ mutation-proved: PR 0 (#820), 3b (#821), 1b (#825), 4a's `verdictHead` (#828), 8
 7's `versionComparison` (#834), and the mark's size rules (#835). `upgradePath` shipped in
 Tier A. The bracket marks reached `public/` in #837 and the `--bracket-1…5` palette in #838.
 
-**4a and 4b shipped on 2026-09-22** as #851 and #853, and the row count is now FIFTEEN: the
-findings were split out of 4b as 4c, for the reason that row gives. What remains is the component
-halves of 4c, 5, 6, 7 and 9, plus PR 8b,
-which carries Round 4's three copy defects when it transcribes that module. Each wants the
-design-review property-table pass, a probe and a contact sheet, so they are build work rather
-than the tail of a rules run.
+**4a and 4b shipped on 2026-09-22** as #851 and #853, and the row count is now SIXTEEN: the
+findings were split out of 4b as 4c, and 8b was split into 8b and 8c, each for the reason its own
+row gives. What remains is the component halves of 4c, 5, 6, 7 and 9, plus PRs 8b and 8c. Each
+wants the design-review property-table pass, a probe and a contact sheet, so they are build work
+rather than the tail of a rules run.
+
+---
+
+## Row 8b is the CARD NOTE, not the push line — 2026-09-22
+
+**This row was written on 2026-09-20 and the premise under it was withdrawn on 2026-09-21.** The
+2026-09-21 revision moved four boundaries and recorded that `8a`/`8b` were "unchanged by this
+revision", which was true of their *boundary* and not of what 8b draws. Correcting it here rather
+than building the withdrawn surface.
+
+**What was withdrawn.** §4.1 of Round 4's brief said the push line fires at the moment of an add.
+Hugh ruled that a deck's standing is determined **only on ask or on commit**, so a per-add sentence
+about the deck can only recompute what the ruling says is not recomputed, or quote a reading from
+four edits ago as current. `design_handoff_the99_push_line/READINESS.md` puts it in the engineering
+list as an exclusion: **"Not in the list: `bracketDelta` on any add surface."**
+`READINESS-r3-audit.md` is Green on the withdrawal.
+
+**What replaces it, in the same slot, on the same hosts, at the same two densities: the card
+note.** It states what the CARD is and what the RULES say about that kind, never the deck's
+standing. It needs the declaration, the candidate's facts and a count of a kind in the current
+list — no `buildDeckProfile`, no `bracketDelta`. It is strictly more often useful than what it
+replaces: the push line spoke only on a transition, and the note speaks whenever the card carries
+a fact.
+
+**8a is the proof this is the right reading of the row.** Its payload is `loadCandidateFacts`,
+whose five facts are exactly the note's five, and its own PR body says so: *"Round 4's card note
+draws these, and it cannot be built against a loader nothing calls."* The comment it left in
+`src/app/decks/[id]/page.tsx` names 8b's job as threading a facts-bearing suggestion type through
+the client components **when it draws the note**.
+
+**`push-line - copy strings.ts` is therefore NOT transcribed by 8b.** Its destinations
+(`src/lib/copy/bracket-delta.ts`, `upgrade-path.ts`) are the *verdict's* vocabulary now — Design
+kept the file for that reason — so those strings land with the surfaces that explain a determined
+verdict: 4b and PR 9. Transcribing them here would ship a fourth copy module nothing calls, which
+is the dead-payload shape this run has closed three times.
+
+**Round 4's copy defects split with the modules.** `ERRATA-eng.md` assigns them per module, not per
+round. Defect 2 (the `@/lib/copy/shared` import, in both modules) is applied to the card-note module
+by 8b. Defects 1 and 3 live **entirely** in that module's `verdictBlock` export — the `analyse`
+spelling is the trigger's and the `21 Sept` stamp is the committed verdict's provenance — so they
+travel to whichever PR draws the verdict block. Defect 1's three production-final strings are in
+any case **already correct on `main`**: `deck-analysis.ts` shipped `Analyze this deck` and
+`Analyze again` in #828.
+
+**One ruling 8b makes, and it belongs here rather than in a component:** state n8, *"This completes
+A + B, a two-card infinite"*, is **not drawn**. Sub-project 3 shipped the same statement on the
+same two rows first, as `comboAwarenessCopy.clause.completes` with a glyph and a key entry, and
+both hosts already render it (`consider-combo.test.tsx`, `top-off-combo.test.tsx`). Two sentences
+about one combo on one row is a defect, and the shipped one is the shorter of the two and is
+glossed. The string is still transcribed, and says in its own comment what draws the fact instead.
 
 **Two things the rendering inherits, both measured rather than assumed:**
 

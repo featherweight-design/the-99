@@ -1,6 +1,6 @@
 import { act, render, screen } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
-import type { DeckSuggestion } from "../../lib/decks/suggest";
+import type { DeckSuggestionWithFacts } from "../../lib/decks/suggest";
 import { comboAwarenessCopy } from "../../lib/copy/combo-awareness";
 import { recommendedMix } from "../../lib/decks/mix";
 
@@ -18,7 +18,7 @@ const PARTNER = { oracleId: "p-1", name: "Isochron Scepter" };
 /** The real panel's own fixture shape, copied rather than invented: a suggestion missing a
  *  field the shelving reads is dropped, and the panel then draws its empty state — which is
  *  what every case here saw on the first run. */
-const suggestion = (over: Partial<DeckSuggestion> = {}): DeckSuggestion =>
+const suggestion = (over: Partial<DeckSuggestionWithFacts> = {}): DeckSuggestionWithFacts =>
   ({
     oracleId: "s-1",
     name: "Dramatic Reversal",
@@ -37,13 +37,15 @@ const suggestion = (over: Partial<DeckSuggestion> = {}): DeckSuggestion =>
     lift: null,
     synergyFigure: null,
     ...over,
-  }) as unknown as DeckSuggestion;
+  }) as unknown as DeckSuggestionWithFacts;
 
-function mount(over: Partial<DeckSuggestion> = {}, deckOracleIds: string[] = []) {
+function mount(over: Partial<DeckSuggestionWithFacts> = {}, deckOracleIds: string[] = []) {
   return render(
     <CardDetailProvider fetchCard={async () => null}>
       <ConsiderPanel
         deckId="deck-1"
+        declaredBracket={null}
+        noteCounts={{ gameChanger: 0, massLandDenial: 0, extraTurns: 0, tutor: 0 }}
         suggestions={[suggestion(over)]}
         deckCards={[]}
         deckOracleIds={deckOracleIds}

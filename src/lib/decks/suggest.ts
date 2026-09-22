@@ -5,6 +5,7 @@ import { classifyRoles } from "../recs/roles";
 import type { MixRole, RecommendedMix } from "./mix";
 import { deckBodySize } from "./deck-size";
 import type { PoolCard } from "../recs/score";
+import type { CandidateFacts } from "../bracket/delta";
 
 export type ReasonType = "edhrec" | "role";
 
@@ -62,6 +63,23 @@ export type DeckSuggestion = {
   availability?: Availability | null;
   /** Absent or null renders the bare `buy` tag — see DeckDetailCard.price. */
   price?: PriceFact | null;
+};
+
+/**
+ * A suggestion the DECK PAGE has enriched — the shape the Consider tile draws.
+ *
+ * REQUIRED `facts`, and a separate type rather than an optional field on `DeckSuggestion`,
+ * for the reason `TopOffCandidateWithFacts` exists on the other add surface: with the field
+ * optional, deleting the page's attachment compiles cleanly and every tile silently renders
+ * without a note. That is the dead-payload shape this round exists to close, and an optional
+ * field closes it only for as long as somebody remembers.
+ *
+ * `null` is what a failed facts read and a card with no facts both look like, and both render
+ * as nothing at all — which is why the field is required and its VALUE is nullable, rather
+ * than the other way round.
+ */
+export type DeckSuggestionWithFacts = DeckSuggestion & {
+  facts: CandidateFacts | null;
 };
 
 export type Suggestion = { oracleId: string; reason: "edhrec" | "ramp" | "draw" | "removal" | "wipes" | "land" };

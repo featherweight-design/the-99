@@ -103,7 +103,7 @@ export function useCardDetail(): CardDetailContextValue {
  * focus-return would then have nothing to hand focus back to on close.
  */
 export function CardDetailTrigger({
-  oracleId, name, siblings, className, style, title, ariaLabel, describedBy, children,
+  oracleId, name, siblings, className, style, title, ariaLabel, describedBy, testId, children,
 }: {
   oracleId: string;
   name: string;
@@ -122,6 +122,15 @@ export function CardDetailTrigger({
    *  tabbing through the decklist hears which pass placed the card. Sibling
    *  visually-hidden text alone is reachable only in browse mode. */
   describedBy?: string;
+  /**
+   * A `data-testid` on the rendered button.
+   *
+   * This trigger is how several surfaces draw a card's NAME, so on those surfaces it is the
+   * name column — and a probe measuring against that column would otherwise have to recognise
+   * it by its type size, which on a row full of 12.5px text picks whichever comes first. The
+   * same reason `top-off-list.tsx` names its type column.
+   */
+  testId?: string;
   children: ReactNode;
 }) {
   const { open, pendingOracleId } = useCardDetail();
@@ -129,6 +138,7 @@ export function CardDetailTrigger({
   return (
     <button
       type="button"
+      data-testid={testId}
       onClick={() => open(oracleId, siblings)}
       aria-label={ariaLabel ?? cardDetailCopy.triggerAria(name)}
       aria-describedby={describedBy}
