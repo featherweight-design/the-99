@@ -205,6 +205,29 @@ describe("the card modal's combo block", () => {
     expect(screen.getAllByRole("button")).toHaveLength(3);
   });
 
+  // THE TOUCH TARGET IS NOT CLIPPED BY AN ANCESTOR. `truncate` sets `overflow: hidden`, so a
+  // wrapper carrying it clips whatever buys the button its 44px — the height was there and
+  // unreachable. Each half truncates itself instead.
+  it("keeps the partner button out of a truncating ancestor", async () => {
+    render(
+      <ComboPartnersDetail
+        card={card([partner({ name: "Power Artifact" })])}
+        onSelectPartner={() => {}}
+      />,
+    );
+    await open();
+    const button = screen.getByRole("button", { name: "Power Artifact" });
+    expect(button.className, "the button has no touch height of its own").toContain(
+      "min-h-[44px]",
+    );
+    // No ancestor between the button and the row clips it.
+    let el: HTMLElement | null = button.parentElement;
+    while (el && el.tagName !== "LI") {
+      expect(el.className, `a clipping ancestor: ${el.className}`).not.toContain("truncate");
+      el = el.parentElement;
+    }
+  });
+
   // WITHOUT A HANDLER IT IS NOT A TARGET, rather than a dead button: `/collection` opens this
   // modal too, and a control that does nothing is worse than emphasis.
   it("leaves the name as emphasis when nothing can open a partner", async () => {

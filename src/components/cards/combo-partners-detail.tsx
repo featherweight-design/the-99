@@ -172,11 +172,17 @@ export function ComboPartnersDetail({
                 looking for, and it is also the half that is pressable.
                 13px, not the 13.5/15 the block above this one uses. */}
             <span className="flex flex-auto min-w-0 flex-col sm:flex-row sm:items-center sm:gap-[10px]">
+              {/* THE TRUNCATION IS ON EACH HALF, not on this wrapper. `truncate` sets
+                  `overflow: hidden`, so a wrapper carrying it CLIPS the partner button's
+                  44px touch area — the padding that buys the height sits outside the line
+                  box. Each half clips itself instead, and the row can hold a taller child. */}
               <span
-                className="min-w-0 truncate text-[13px] sm:flex-auto"
+                className="flex min-w-0 items-center text-[13px] sm:flex-auto"
                 style={{ color: "var(--fg-body)" }}
               >
+                <span className="flex-none">
                 {comboAwarenessCopy.modal.lineLead}
+                </span>
                 {/* THE ONLY TARGET IN THE BLOCK. A pair fact read from one end wants the
                     other end, and the name is the half a reader is looking for — it REPLACES
                     this modal rather than stacking on it, which the addendum refuses by name.
@@ -196,12 +202,12 @@ export function ComboPartnersDetail({
                     // so the link was operable with a pointer and effectively not with a
                     // thumb. `inline-block` with vertical padding and a negative margin buys
                     // the height without moving the line it sits on.
-                    className="inline-block p-0 py-[15px] -my-[15px] sm:py-0 sm:my-0 bg-transparent border-none cursor-pointer font-semibold text-left underline decoration-[color:var(--accent-shadow)] underline-offset-[3px] text-[color:var(--fg)]"
+                    className="flex min-w-0 min-h-[44px] sm:min-h-0 items-center truncate p-0 bg-transparent border-none cursor-pointer font-semibold text-left underline decoration-[color:var(--accent-shadow)] underline-offset-[3px] text-[color:var(--fg)]"
                   >
                     {p.name}
                   </button>
                 ) : (
-                  <span className="font-semibold" style={{ color: "var(--fg)" }}>
+                  <span className="min-w-0 truncate font-semibold" style={{ color: "var(--fg)" }}>
                     {p.name}
                   </span>
                 )}

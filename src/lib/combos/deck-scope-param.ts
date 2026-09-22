@@ -16,7 +16,13 @@ const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
  */
 export function sanitizeDeckScope(value: unknown): string[] | undefined {
   if (!Array.isArray(value)) return undefined;
+  // SLICED BEFORE FILTERED, which is the whole point of a cap on a public endpoint: applied
+  // after, an arbitrarily large array is still traversed and regex-tested in full before the
+  // limit takes effect, so the caller still chooses the work.
+  //
+  // A prefix of junk therefore yields fewer than the cap. That is the correct trade — the cap
+  // bounds the WORK, not the yield, and nothing legitimate sends junk at all.
   return value
-    .filter((id): id is string => typeof id === "string" && UUID.test(id))
-    .slice(0, MAX_DECK_SCOPE);
+    .slice(0, MAX_DECK_SCOPE)
+    .filter((id): id is string => typeof id === "string" && UUID.test(id));
 }

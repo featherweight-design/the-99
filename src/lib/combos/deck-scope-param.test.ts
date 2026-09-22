@@ -27,4 +27,13 @@ describe("sanitizeDeckScope", () => {
       MAX_DECK_SCOPE,
     );
   });
+
+  // THE CAP BOUNDS THE WORK, not the yield. Applied after the filter, a huge array of junk is
+  // still traversed and regex-tested in full before the limit bites — so the caller still
+  // chooses the work, which is what the cap exists to stop. A prefix of junk therefore yields
+  // fewer than the cap, and that is the right way round.
+  it("bounds the work rather than the answer", () => {
+    const junkThenReal = [...Array.from({ length: MAX_DECK_SCOPE }, () => "x"), ID];
+    expect(sanitizeDeckScope(junkThenReal)).toEqual([]);
+  });
 });
