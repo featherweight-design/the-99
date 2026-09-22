@@ -29,6 +29,18 @@ export type VerdictHead = {
  * and the 3-vs-4 boundary resolves rather than splitting — ruled 2026-09-20, which is why
  * `[3,4]` is unreachable and the package's row for it is marked "not drawn".
  */
+/**
+ * THE EXACT FIVE, not a length test.
+ *
+ * A length check accepts `[1, 3]`, `[2, 5]` and `[5, 4]` — none of which `permitsFor` can
+ * return, and each of which renders a confident face for a range nobody permitted: "Exhibition
+ * or Upgraded", and for the reversed pair a face whose two names are the wrong way round with
+ * the glyph inked from the HIGHER bracket. A fabricated answer is worse than an empty one
+ * because it looks like an answer, and this function is the runtime boundary for hand-built
+ * data.
+ */
+const REACHABLE = new Set(["1,2", "2", "3", "4", "4,5"]);
+
 export function verdictHead(permits: readonly Bracket[]): VerdictHead {
   const [low, high] = [permits[0], permits[permits.length - 1]];
   // ONE OR TWO, AND NOTHING ELSE. `permitsFor` returns only those shapes, so anything else was
@@ -36,10 +48,10 @@ export function verdictHead(permits: readonly Bracket[]): VerdictHead {
   // off `[1, 2, 3]` silently discards the interior and renders "Exhibition or Upgraded", a face
   // that names a range nobody permitted. An empty one renders the empty string beside a mark
   // drawing nothing. Both fail closed.
-  if (permits.length < 1 || permits.length > 2) {
+  if (!REACHABLE.has(permits.join(","))) {
     throw new Error(
-      `verdictHead: a permitted range of ${permits.length} has no reading — permitsFor returns `
-      + `one or two`,
+      `verdictHead: [${permits.join(", ")}] is not a range permitsFor can return — it has no `
+      + `reading`,
     );
   }
   if (permits.length === 1) {

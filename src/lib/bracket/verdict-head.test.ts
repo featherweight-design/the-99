@@ -51,8 +51,12 @@ describe("verdictHead", () => {
   // string beside a mark drawing nothing; a three-member one silently discards its interior and
   // renders "Exhibition or Upgraded" — a face naming a range nobody permitted, which is worse
   // because it looks like an answer.
-  it.each([[[]], [[1, 2, 3]], [[1, 2, 4, 5]]])(
-    "refuses %j rather than drawing a misleading face",
+  // EVERY SHAPE `permitsFor` CANNOT RETURN, not merely the wrong lengths. A length test accepts
+  // `[1,3]`, `[2,5]` and `[5,4]`: two of them render a confident face for a range nobody
+  // permitted, and the reversed pair renders its names backwards with the glyph inked from the
+  // higher bracket. A fabricated answer is worse than an empty one because it looks like one.
+  it.each([[[]], [[1, 2, 3]], [[1, 2, 4, 5]], [[1, 3]], [[2, 5]], [[5, 4]], [[3, 4]], [[5]]])(
+    "refuses %j rather than drawing a fabricated face",
     (permits) => {
       expect(() => verdictHead(permits as Bracket[])).toThrow(/has no reading/);
     },
