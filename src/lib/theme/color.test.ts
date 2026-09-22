@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { chroma, contrast, deltaEOk, hueGap, hueOk, parseHex, relativeLuminance } from "./color";
+import { chroma, contrast, deltaEOk, hueGap, hueOk, mixOklab, parseHex, relativeLuminance } from "./color";
 
 describe("parseHex", () => {
   it("reads a six-digit hex, case-insensitively", () => {
@@ -101,5 +101,22 @@ describe("hueOk / hueGap", () => {
 
   it("is symmetric", () => {
     expect(hueGap("#4B7A46", "#5EA990")).toBeCloseTo(hueGap("#5EA990", "#4B7A46"), 9);
+  });
+});
+
+describe("mixOklab", () => {
+  it("returns each end at its full weight", () => {
+    expect(mixOklab("#C0392B", "#1E1A15", 1)).toBe("#c0392b");
+    expect(mixOklab("#C0392B", "#1E1A15", 0)).toBe("#1e1a15");
+  });
+
+  // An independent figure: OKLab L = 0.5 is linear 0.125, which sRGB-encodes to 99. It is also
+  // what a browser paints for `color-mix(in oklab, black 50%, white)`.
+  it("puts the midpoint of black and white at #636363", () => {
+    expect(mixOklab("#000000", "#FFFFFF", 0.5)).toBe("#636363");
+  });
+
+  it("mixes a colour with itself to itself", () => {
+    expect(mixOklab("#3A7BD5", "#3A7BD5", 0.12)).toBe("#3a7bd5");
   });
 });

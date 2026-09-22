@@ -60,7 +60,7 @@ export function VerdictBlock({
       <div className="mt-[9px] md:mt-[10px] md:flex md:items-center md:gap-[10px]">
         {/*
           ONE PILL, INKED BY THE LOWER MEMBER. A range draws both marks inside it — the one that
-          holds at full strength, the one above it at 0.45 — with the border and the label in the
+          holds at full strength, the one above it at 0.65 — with the border and the label in the
           lower bracket's ink, which is the same derivation `verdictHead.glyphBracket` makes for
           the ringed `?`. Listing the two ranges instead would leave a third inkless.
         */}

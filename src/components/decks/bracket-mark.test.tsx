@@ -2,7 +2,7 @@ import { render, screen } from "@testing-library/react";
 import { describe, expect, it } from "vitest";
 
 import { markAsset } from "../../lib/bracket/mark-size";
-import { BracketMark, bracketInk } from "./bracket-mark";
+import { BracketMark, DIM_OPACITY, bracketInk } from "./bracket-mark";
 
 /**
  * WHAT THESE CAN AND CANNOT SAY. jsdom computes no styles and loads no font, so nothing here
@@ -74,5 +74,17 @@ describe("BracketMark", () => {
       "var(--bracket-4)",
       "var(--bracket-5)",
     ]);
+  });
+});
+
+// The contract composites the dimmed range member at DIM_OPACITY. It imports the constant, so it
+// cannot tell whether the mark still draws at it; this can.
+describe("the dimmed member of a range", () => {
+  it("draws at DIM_OPACITY, and a lit mark carries no opacity", () => {
+    const { unmount } = render(<BracketMark bracket={2} px={36} dim />);
+    expect(screen.getByTestId("bracket-mark").style.opacity).toBe(String(DIM_OPACITY));
+    unmount();
+    render(<BracketMark bracket={2} px={36} />);
+    expect(screen.getByTestId("bracket-mark").style.opacity).toBe("");
   });
 });

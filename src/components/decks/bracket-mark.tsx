@@ -41,6 +41,15 @@ import type { Bracket } from "../../lib/bracket/types";
  * any of the ten files draws crosses it. A hard stop rather than a ramp, or the subtraction
  * leaves a halo of half-painted ink where the numeral was.
  */
+/**
+ * How far the unlit half of a range is dimmed.
+ *
+ * EXPORTED so the contrast gate measures the figure the component draws rather than a copy of
+ * it: the bar this has to clear is 3:1 on a COMPOSITE, and a gate holding its own 0.65 would go
+ * on passing the day the component moved to 0.5.
+ */
+export const DIM_OPACITY = 0.65;
+
 const DISC = "radial-gradient(circle closest-side at 50% 50%, transparent 0 35%, #000 35%)";
 
 const INK: Record<Bracket, string> = {
@@ -80,7 +89,17 @@ export function BracketMark({
    * the chip file on one side and the full file on the other, and must mount both.
    */
   mdPx?: number;
-  /** The upper member of a range, which the canvas draws at 0.45 behind the one that holds. */
+  /**
+   * The upper member of a range, drawn behind the one that holds.
+   *
+   * 0.65, RAISED FROM THE CANVAS'S 0.45 BY THE ADDENDUM'S RULING 3. The mark is a graphical
+   * object held to 3:1, and at 0.45 rank 2 composited over `--surface` reads 2.2533 on kaldheim
+   * — 6 of its 12 theme×rank pairs under the bar. At 0.65 the floor is **3.2963**, still
+   * kaldheim rank 2, and nothing is under. 0.6 was measured too: 3.0128, which is not a margin
+   * to spend across six themes.
+   *
+   * The meaning survives the smaller step — this is still the unlit half of the range.
+   */
   dim?: boolean;
   className?: string;
 }) {
@@ -110,7 +129,7 @@ export function BracketMark({
         {
           "--bracket-mark-px": `${px}px`,
           ...(mdPx === undefined ? {} : { "--bracket-mark-px-md": `${mdPx}px` }),
-          opacity: dim ? 0.45 : undefined,
+          opacity: dim ? DIM_OPACITY : undefined,
         } as CSSProperties
       }
     >

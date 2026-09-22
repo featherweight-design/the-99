@@ -80,3 +80,36 @@ export function deltaEOk(a: string, b: string): number {
   const y = oklab(b);
   return Math.hypot(x.L - y.L, x.a - y.a, x.b - y.b);
 }
+
+function fromLinear(c: number): number {
+  const v = c <= 0.0031308 ? 12.92 * c : 1.055 * c ** (1 / 2.4) - 0.055;
+  return Math.round(Math.min(1, Math.max(0, v)) * 255);
+}
+
+/**
+ * `color-mix(in oklab, a p%, b)` as a hex, for a ground that is not a token.
+ *
+ * The climb's own rung is drawn on `color-mix(in oklab, <rank ink> 12%, var(--surface))`, and
+ * the mark sits on that rather than on `--surface`. A contrast assertion against the token
+ * would be measuring a ground nothing is drawn on. Ottosson's inverse matrix; the result is
+ * quantised to 8-bit hex, as the browser paints it.
+ */
+export function mixOklab(a: string, b: string, weightOfA: number): string {
+  const x = oklab(a);
+  const y = oklab(b);
+  const L = x.L * weightOfA + y.L * (1 - weightOfA);
+  const A = x.a * weightOfA + y.a * (1 - weightOfA);
+  const B = x.b * weightOfA + y.b * (1 - weightOfA);
+
+  const l_ = L + 0.3963377774 * A + 0.2158037573 * B;
+  const m_ = L - 0.1055613458 * A - 0.0638541728 * B;
+  const s_ = L - 0.0894841775 * A - 1.291485548 * B;
+  const [l, m, s] = [l_ ** 3, m_ ** 3, s_ ** 3];
+
+  const rgb = [
+    4.0767416621 * l - 3.3077115913 * m + 0.2309699292 * s,
+    -1.2684380046 * l + 2.6097574011 * m - 0.3413193965 * s,
+    -0.0041960863 * l - 0.7034186147 * m + 1.707614701 * s,
+  ];
+  return "#" + rgb.map((c) => fromLinear(c).toString(16).padStart(2, "0")).join("");
+}
