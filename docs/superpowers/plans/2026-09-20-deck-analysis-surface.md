@@ -97,7 +97,7 @@ Every rule in this table is written, swept across each shape it can be asked abo
 mutation-proved: PR 0 (#820), 3b (#821), 1b (#825), 4a's `verdictHead` (#828), 8a (#830),
 5's `declarationAsk` (#831), 6's `comboModal` (#832), 4b's `climb`/`findingState` (#833),
 7's `versionComparison` (#834), and the mark's size rules (#835). `upgradePath` shipped in
-Tier A. The bracket marks reached `public/` in #837; the `--bracket-1…5` palette is #838, **open at the time of writing**.
+Tier A. The bracket marks reached `public/` in #837 and the `--bracket-1…5` palette in #838.
 
 **What remains is rendering** — the component halves of 4a, 4b, 5, 6, 7 and 9, plus PR 8b,
 which carries Round 4's three copy defects when it transcribes that module. Each wants the
