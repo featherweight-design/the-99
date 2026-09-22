@@ -13,12 +13,15 @@ const stub = vi.hoisted(() => ({
   throws: false,
   /** Held open when set, so an in-flight request is observable. */
   gate: null as null | (() => void),
+  /** One resolver per call when set, so two requests can be released independently. */
+  gates: null as null | (() => void)[],
 }));
 
 vi.mock("../../app/decks/profile-actions", () => ({
   fetchDeckProfile: async (deckId: string) => {
     stub.calls.push(deckId);
-    if (stub.gate) await new Promise<void>((r) => (stub.gate = r));
+    if (stub.gates) await new Promise<void>((r) => stub.gates!.push(r));
+    else if (stub.gate) await new Promise<void>((r) => (stub.gate = r));
     if (stub.throws) throw new Error("network");
     return stub.reply;
   },
@@ -51,6 +54,7 @@ beforeEach(() => {
   stub.reply = { ok: true, profile: { brackets: {} } };
   stub.throws = false;
   stub.gate = null;
+  stub.gates = null;
 });
 
 describe("useDeckProfile", () => {
@@ -144,6 +148,36 @@ describe("useDeckProfile", () => {
     // Still idle: deck A's profile was answered and thrown away rather than shown under B.
     expect(kind(c)).toBe("idle");
     expect(stub.calls).toEqual([A]);
+  });
+
+  // THE IN-FLIGHT FLAG IS NOT CLEARED BY AN OLDER DECK'S REPLY.
+  //
+  // A starts; the shell moves to B; B is requested; then A finally resolves. If A's reply clears
+  // the flag, a further press starts a DUPLICATE B while B's first request is still in flight —
+  // the very thing the flag exists to prevent, arriving by a longer road. Three presses, and the
+  // assertion is that only two requests were ever made.
+  it("does not let an older deck's reply unlock a duplicate for the current one", async () => {
+    stub.gates = [];
+    const c = render(<Harness deckId={A} />);
+    await ask(c);                       // A in flight
+    c.rerender(<Harness deckId={B} />); // the shell moves on
+    await act(async () => {});
+    await ask(c);                       // B in flight
+    expect(stub.calls).toEqual([A, B]);
+
+    const releaseA = stub.gates[0];
+    await act(async () => {
+      releaseA?.();
+    });
+
+    await ask(c);                       // must NOT start a second B
+    expect(stub.calls).toEqual([A, B]);
+
+    const releaseB = stub.gates[1];
+    stub.gates = null;
+    await act(async () => {
+      releaseB?.();
+    });
   });
 
   it("reports disabled without treating it as a failure", async () => {

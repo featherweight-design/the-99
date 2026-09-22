@@ -14,12 +14,13 @@ export type ProfileFetch =
   | { ok: false; reason: "disabled" };
 
 /**
- * The deck profile, fetched when the reader opens the Analysis tab and not before.
+ * The deck profile, fetched when the reader presses Analyze and not before.
  *
- * WHY AN ACTION RATHER THAN THE PAGE'S OWN LOADER. `BuilderTabs` is client state — pressing a
- * tab is not a navigation, and `builder-view.ts` says why in its own header — so a route loader
- * that fetched the profile when the tab was active could never re-run: no navigation happens.
- * Adding it to the deck page's `Promise.all` instead would make every visit pay for it.
+ * WHY AN ACTION RATHER THAN THE PAGE'S OWN LOADER. Round 4's ruling 7 puts this behind a press,
+ * and a page loader cannot answer a press at all. Even gated on the tab it could not: `BuilderTabs`
+ * is client state — pressing a tab is not a navigation, and `builder-view.ts` says why in its own
+ * header — so a loader keyed on the active tab would never re-run. Adding it to the deck page's
+ * `Promise.all` instead would make every visit pay for it.
  *
  * AND THE PROFILE IS NOT CHEAP. `pnpm measure:profile-cost` against staging, over all 20 real
  * decks: 630ms median cold, 1.8-2.2s on the slowest, 559ms on the fastest. Paying that on every

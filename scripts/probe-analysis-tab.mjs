@@ -320,6 +320,19 @@ async function run() {
         new Set(actions).size === 1,
         `${new Set(actions).size} distinct action id(s): ${[...new Set(actions)].join(", ")}`);
 
+      // AND THE ACTION WAS THE PROFILE FETCH, proved by its OUTCOME rather than by its id.
+      //
+      // A count of one distinct opaque id says a single action ran; it cannot say WHICH, so a
+      // regression wiring this control to some other action would satisfy both checks above.
+      // Nothing observable carries the id, so the discriminator is the state only a profile
+      // reply can produce: the invitation is replaced by the re-ask. An action that fetched
+      // something else would leave the invitation where it was.
+      const stillInviting = await onPageRole(p, "button", /Analyze this deck/).count();
+      const reAsk = await onPageRole(p, "button", /Analyze again/).count();
+      report(`${label}px · and it was the PROFILE fetch, not merely an action`,
+        stillInviting === 0 && reAsk === 1,
+        `invitation ${stillInviting}, re-ask ${reAsk} — a profile reply replaces one with the other`);
+
       // THE CACHE, and the reason the hook lives in the shell rather than the panel. One panel
       // renders at a time, so the Analysis panel unmounts on a tab switch — a fetch owned by
       // the panel would re-pay the whole build here, and every assertion about the rendered

@@ -49,7 +49,7 @@ describe("AnalysisPanel", () => {
 
   // A BUTTON, NEVER AUTOMATIC: a silent retry loop is how a wait becomes a bill.
   it("offers the retry only on failure", () => {
-    for (const state of [{ kind: "loading" }, { kind: "ready", profile: {} as never }] as const) {
+    for (const state of [{ kind: "loading" }, { kind: "idle" }] as const) {
       const { unmount } = draw(state);
       expect(screen.queryByRole("button", { name: deckAnalysisCopy.panel.retry })).toBeNull();
       unmount();
@@ -72,10 +72,23 @@ describe("AnalysisPanel", () => {
 
   // NO SPACE IS RESERVED FOR PROSE THAT IS NOT THERE. `ready` has no verdict to draw until
   // PR 4a, and a placeholder for it is the reserved space the states rule forbids.
-  it("draws no reading once the profile is ready, rather than a placeholder", () => {
+  // THE RE-ASK SURVIVES A SUCCESSFUL READ. An earlier version drew nothing in `ready`, which
+  // removed the only control on the surface the moment a read succeeded — so the re-ask path
+  // this component documents was unreachable and an edited deck could never be re-read.
+  //
+  // The hook's own second-press test could not catch it: its harness renders its own button.
+  // A component whose control vanished would have passed there and failed a reader.
+  it("keeps a way to ask again once the profile is ready", () => {
     draw({ kind: "ready", profile: {} as never });
-    expect(screen.queryByRole("button")).toBeNull();
+    expect(screen.getByRole("button", { name: deckAnalysisCopy.panel.again })).toBeInTheDocument();
     expect(screen.queryByText(deckAnalysisCopy.panel.reading)).toBeNull();
+  });
+
+  it("asks again when that control is pressed", () => {
+    onRequest.mockClear();
+    draw({ kind: "ready", profile: {} as never });
+    screen.getByRole("button", { name: deckAnalysisCopy.panel.again }).click();
+    expect(onRequest).toHaveBeenCalledTimes(1);
   });
 
   // ROUND 4 RULING 7: no auto-run on tab open. The reader has to be able to ask, so the idle

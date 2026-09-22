@@ -64,14 +64,19 @@ export function useDeckProfile(deckId: string): {
         // value, so an exception here is the request itself — a network drop, a serialisation
         // error — and telling the reader their deck is gone would be a lie with a retry hidden
         // behind it.
+        //
+        // THE FLAG IS CLEARED ONLY BY THE CURRENT DECK'S REPLY. An older reply clearing it would
+        // unlock a second request for the deck now showing while that deck's first is still in
+        // flight — which is the duplicate the flag exists to prevent, arriving by a longer road.
+        if (asked.current !== deckId) return;
         inFlight.current = false;
-        if (asked.current === deckId) setState({ kind: "failed" });
+        setState({ kind: "failed" });
         return;
       }
-      inFlight.current = false;
-      // A reply for a deck we are no longer showing is dropped rather than rendered. Reachable
-      // because the shell outlives a route change between two decks.
+      // Same rule as the catch above: a reply for a deck we are no longer showing neither
+      // renders nor unlocks.
       if (asked.current !== deckId) return;
+      inFlight.current = false;
       if (result.ok) setState({ kind: "ready", profile: result.profile });
       else setState({ kind: result.reason === "disabled" ? "disabled" : "missing" });
     })();

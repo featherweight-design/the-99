@@ -50,17 +50,26 @@ function Reading({ state, onRequest }: { state: ProfileState; onRequest: () => v
   // sentence here would be arguing with the page.
   if (state.kind === "missing") return null;
 
-  if (state.kind === "ready") {
-    // The verdict lands here (PR 4a). Until then the profile is fetched, cached and unused, and
-    // drawing a placeholder for it would be the reserved space the states rule forbids.
-    return null;
-  }
 
   // ONE HEADING IN THE TABPANEL. `synopsis.heading` is the same sentence — "What this deck is" —
   // and the slot below draws it, so a heading here put two identical `h3`s in one panel.
   return (
     <section aria-live="polite" className="flex flex-col gap-1.5">
-      {state.kind === "idle" ? (
+      {state.kind === "ready" ? (
+        // ROUND 4's t2 — determined, no edits since: outlined secondary, "Analyze again".
+        //
+        // The re-ask has to stay reachable. An earlier version drew nothing here, which removed
+        // the only control on the surface the moment a read succeeded — so the re-ask path this
+        // component documents was unreachable and an edited deck could never be re-read. The
+        // verdict lands beside this in PR 4a; it does not replace the control.
+        <button
+          type="button"
+          onClick={onRequest}
+          className="w-fit rounded-[3px] border border-[color:var(--border-strong)] px-2 py-1 font-mono text-[11px] text-[color:var(--fg-body)] hover:bg-[color:var(--surface-raised)]"
+        >
+          {deckAnalysisCopy.panel.again}
+        </button>
+      ) : state.kind === "idle" ? (
         <>
           {/* Round 4's t1: never determined. The invitation, in its plain form — that round
               gives the control three weights, a fixed position and a tab dot, and refines

@@ -86,6 +86,9 @@ export const deckAnalysisCopy = {
      */
     analyze: "Analyze this deck",
     analyzeCost: "about two seconds",
+    /** Round 4's t2 — determined, nothing changed since. The re-ask, which has to stay reachable
+     *  or an edited deck can never be re-read. */
+    again: "Analyze again",
     /**
      * In flight. NO COUNT IN IT: `loadProfileHead` reads whatever `deck_cards` holds, so a brew
      * with twelve cards would be told we were reading all 99. An earlier draft said exactly
