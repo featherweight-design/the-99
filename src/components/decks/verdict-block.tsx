@@ -13,6 +13,7 @@ import type { Bracket, BracketVerdict } from "../../lib/bracket/types";
 import type { DeckProfile } from "../../lib/profile/types";
 import { deckAnalysisCopy, BRACKET_NAMES, nameList } from "../../lib/copy/deck-analysis";
 import { declarationAsk } from "../../lib/bracket/declaration-ask";
+import { versionComparison } from "../../lib/bracket/version-reading";
 import { declarationCopy } from "../../lib/copy/declaration";
 import { BracketMark, bracketInk } from "./bracket-mark";
 import { DeclarationSection, type DeclarationControl } from "./declaration";
@@ -132,6 +133,17 @@ export function VerdictBlock({
             },
           }}
           onChange={() => setChanging(true)}
+          comparison={
+            declaration.previous
+              ? {
+                  reading: versionComparison(
+                    { permits: verdict.permits, declared: declaration.declared },
+                    declaration.previous,
+                  ),
+                  previousNumber: declaration.previous.number,
+                }
+              : null
+          }
         />
       ) : null}
       <Population verdict={verdict} profile={profile} />

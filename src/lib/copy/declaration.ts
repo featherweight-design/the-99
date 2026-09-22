@@ -70,6 +70,33 @@ export const declarationCopy = {
       `${BRACKET_NAMES[declared]} was declared, and this deck has since moved out of it.`,
   },
 
+  /**
+   * A COMMITTED version that reads differently from the last one (§E). It replaces the whole
+   * earlier drift block, whose "you said", "moved past" and "change what you said" existed to
+   * soften a claim the app should never have made — that a statement had gone out of date.
+   *
+   * What is left is a diff: one sentence, no direction, no control, no second person. Cardinality
+   * picks the verb — a range PERMITS, a single bracket READS AS.
+   */
+  versionChange: {
+    markLabelPrevious: (version: number) => `version ${version}`,
+    markLabelCurrent: "this version",
+    line: (
+      current: { phrase: string; isRange: boolean },
+      previous: { version: number; phrase: string; declared: Bracket | null },
+    ) => {
+      const now = current.isRange
+        ? `This version permits ${current.phrase}.`
+        : `This version reads as ${current.phrase}.`;
+      const then =
+        previous.declared === null
+          ? `Version ${previous.version} read as ${previous.phrase}.`
+          : `Version ${previous.version} read as ${previous.phrase} and was declared `
+            + `${BRACKET_NAMES[previous.declared]}.`;
+      return `${now} ${then}`;
+    },
+  },
+
   /** What the ask says when the write is refused. The house form: true whether the refused
    *  write was a first answer or a change, where the previous answer is put back. */
   refused: "That did not save. Try again.",

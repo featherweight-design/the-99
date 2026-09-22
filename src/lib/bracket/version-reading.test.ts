@@ -88,4 +88,16 @@ describe("versionComparison", () => {
     expect(c.now.declared).toBe(4);
     expect(c.was).toMatchObject({ kind: "read", reading: { declared: 1 } });
   });
+
+  // THE ROW IS DRAWN ONLY FOR A DIFFERENT READING. A predecessor that recorded nothing cannot be
+  // compared, and one that read the same leaves nothing to say — whatever either side declared.
+  it("is changed only when both readings exist and differ", () => {
+    expect(versionComparison({ permits: [3], declared: null }, { permits: [4, 5], declared: 5 }).changed).toBe(true);
+    expect(versionComparison({ permits: [4, 5], declared: null }, { permits: [4, 5], declared: 5 }).changed).toBe(false);
+    expect(versionComparison({ permits: [4, 5], declared: 4 }, { permits: [4, 5], declared: null }).changed).toBe(false);
+    expect(versionComparison({ permits: [3], declared: null }, { permits: null, declared: null }).changed).toBe(false);
+    expect(versionComparison({ permits: [3], declared: null }, null).changed).toBe(false);
+    // Same members, same reading: a range is compared as a set of brackets, in order.
+    expect(versionComparison({ permits: [1, 2], declared: null }, { permits: [2], declared: null }).changed).toBe(true);
+  });
 });

@@ -1,6 +1,6 @@
 {
-  "feature": "Deck analysis \u2014 the declaration ask, its answer, and the drift line (PR 5)",
-  "note": "Round 3's \u00a7A and \u00a7B inside the verdict block from #851. Every row reaches the surface by a PRESS \u2014 the Analysis tab is client state and has no address \u2014 and then presses Analyze, which is what the settles are sized for.\n\nPRECONDITION: a server running with ANALYSIS_TAB_ENABLED=true, or every cell photographs a deck page with no Analysis tab.\n\nFIXTURES are five brews on local-dev owned by the e2e account, each reaching its reading through game changers alone, because a deck in each STATE is what the sheet photographs and one deck can only be in one: DECL_ASK_LOW (d...d5a1, [1,2], unanswered), DECL_ASK_HIGH (d...d5a2, four game changers, [4,5], unanswered), DECL_ANSWERED (d...d5a3, [1,2], declared Core), DECL_DRIFT_RANGE (d...d5a4, [1,2], declared Optimized \u2014 outside its range, written to the column directly because no control produces drift on purpose) and DECL_DRIFT_SINGLE (d...d5a5, one game changer, [3], declared Exhibition). The full ids are d0000000-0000-4000-8000-00000000d5a1 through ...d5a5.\n\nNO ROW PRESSES A CHIP. A press WRITES the declaration, so a sheet that answered the ask would photograph the answer on its next run and the ask never again. The write and its round trip are `probe:declaration-ask`'s, which builds its own fixtures and deletes them. The `change` row presses `change`, which is local state and writes nothing.\n\nNO `shares` BLOCK: one mount. `analysis-panel.tsx` renders the verdict block and nothing else does.",
+  "feature": "Deck analysis \u2014 the declaration: the ask, the answer, the drift line, and a later version (PRs 5 and 7)",
+  "note": "Round 3's \u00a7A and \u00a7B inside the verdict block from #851. Every row reaches the surface by a PRESS \u2014 the Analysis tab is client state and has no address \u2014 and then presses Analyze, which is what the settles are sized for.\n\nPRECONDITION: a server running with ANALYSIS_TAB_ENABLED=true, or every cell photographs a deck page with no Analysis tab.\n\nFIXTURES are five brews on local-dev owned by the e2e account, each reaching its reading through game changers alone, because a deck in each STATE is what the sheet photographs and one deck can only be in one: DECL_ASK_LOW (d...d5a1, [1,2], unanswered), DECL_ASK_HIGH (d...d5a2, four game changers, [4,5], unanswered), DECL_ANSWERED (d...d5a3, [1,2], declared Core), DECL_DRIFT_RANGE (d...d5a4, [1,2], declared Optimized \u2014 outside its range, written to the column directly because no control produces drift on purpose) and DECL_DRIFT_SINGLE (d...d5a5, one game changer, [3], declared Exhibition). The full ids are d0000000-0000-4000-8000-00000000d5a1 through ...d5a5.\n\nNO ROW PRESSES A CHIP. A press WRITES the declaration, so a sheet that answered the ask would photograph the answer on its next run and the ask never again. The write and its round trip are `probe:declaration-ask`'s, which builds its own fixtures and deletes them. The `change` row presses `change`, which is local state and writes nothing.\n\nNO `shares` BLOCK: one mount. `analysis-panel.tsx` renders the verdict block and nothing else does.\n\nPR 7 adds two committed fixtures, each at version 2 with its draft unchanged since, so each IS a version: DECL_VERSION_SINGLE (d...d5b1: version 1 permitted Optimized or cEDH and was declared cEDH; version 2 holds one game changer and reads Upgraded; the deck still carries cEDH, which the commit refused to copy, so both the version row and the drift line are true and the row must be the one drawn) and DECL_VERSION_RANGE (d...d5b2: version 1 read Upgraded; version 2 is empty and permits Exhibition or Core, so the ask follows the row). The edited-draft case, where no row is drawn, is `probe:version-comparison`'s, because it needs a draft that differs from its version and a sheet fixture edited once is edited for good.",
   "rows": [
     {
       "id": "ask-low",
@@ -164,6 +164,66 @@
       "steps": [
         {
           "goto": "/decks/${DECL_DRIFT_SINGLE}",
+          "wait": "[role=tablist]",
+          "settle": 1500
+        },
+        {
+          "clickRole": "tab",
+          "name": "Analysis",
+          "settle": 600
+        },
+        {
+          "clickRole": "button",
+          "name": "Analyze this deck",
+          "settle": 400
+        },
+        {
+          "wait": "section[aria-label='Your bracket']",
+          "settle": 1200
+        },
+        {
+          "scrollTo": "section[aria-label='Your bracket']",
+          "settle": 300
+        }
+      ]
+    },
+    {
+      "id": "version-single",
+      "label": "/decks/[id] Analysis \u2014 a later version reads differently, single bracket: the row, one sentence, no control, no drift line",
+      "view": "src/components/decks/analysis-panel.tsx",
+      "steps": [
+        {
+          "goto": "/decks/${DECL_VERSION_SINGLE}",
+          "wait": "[role=tablist]",
+          "settle": 1500
+        },
+        {
+          "clickRole": "tab",
+          "name": "Analysis",
+          "settle": 600
+        },
+        {
+          "clickRole": "button",
+          "name": "Analyze this deck",
+          "settle": 400
+        },
+        {
+          "wait": "section[aria-label='Your bracket']",
+          "settle": 1200
+        },
+        {
+          "scrollTo": "section[aria-label='Your bracket']",
+          "settle": 300
+        }
+      ]
+    },
+    {
+      "id": "version-range",
+      "label": "/decks/[id] Analysis \u2014 a later version reads differently, range: the row, then the ask",
+      "view": "src/components/decks/analysis-panel.tsx",
+      "steps": [
+        {
+          "goto": "/decks/${DECL_VERSION_RANGE}",
           "wait": "[role=tablist]",
           "settle": 1500
         },

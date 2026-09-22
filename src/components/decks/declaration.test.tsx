@@ -1,4 +1,4 @@
-import { fireEvent, render, screen, within } from "@testing-library/react";
+import { cleanup, fireEvent, render, screen, within } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
 
 import { slotDeck } from "../../lib/bracket/slot";
@@ -26,7 +26,11 @@ const SHAPES = { "1,2": () => deckProfile(), "3": () => gc(1), "4,5": () => gc(4
 function draw(
   key: keyof typeof SHAPES,
   declared: Bracket | null,
-  extra: { version?: number | null; refused?: boolean } = {},
+  extra: {
+    version?: number | null;
+    refused?: boolean;
+    previous?: { number: number; permits: Bracket[] | null; declared: Bracket | null } | null;
+  } = {},
 ) {
   const profile = SHAPES[key]();
   const verdict = slotDeck(profile);
@@ -39,6 +43,7 @@ function draw(
       declaration={{
         declared,
         version: extra.version ?? null,
+        previous: extra.previous ?? null,
         onDeclare,
         refused: extra.refused ?? false,
       }}
@@ -163,5 +168,70 @@ describe("the draft moved out", () => {
   it("never says you", () => {
     draw("1,2", 4);
     expect(document.body.textContent).not.toMatch(/\byou said\b|\byour changes\b/i);
+  });
+});
+
+describe("a later version reads differently", () => {
+  const sentence = () =>
+    screen.getByText((_, el) => el?.tagName === "P" && /^This version /.test(el.textContent ?? ""))
+      .textContent;
+
+  // ONE SENTENCE, NO CONTROL: a single bracket READS AS, and the last version's answer is named.
+  it("states both readings on a single bracket, and asks nothing", () => {
+    draw("3", null, { version: 2, previous: { number: 1, permits: [4, 5], declared: 5 } });
+    expect(sentence()).toBe(
+      "This version reads as Upgraded. Version 1 read as Optimized or cEDH and was declared cEDH.",
+    );
+    expect(screen.queryByRole("group")).toBeNull();
+    expect(screen.queryByRole("button", { name: /change/ })).toBeNull();
+  });
+
+  // A range PERMITS, and it is asked: this version has never answered its own question.
+  it("says permits on a range, and the ask follows", () => {
+    draw("4,5", null, { version: 2, previous: { number: 1, permits: [3], declared: null } });
+    expect(sentence()).toBe("This version permits Optimized or cEDH. Version 1 read as Upgraded.");
+    expect(chips().getAllByRole("button")).toHaveLength(2);
+  });
+
+  // PRECEDENCE: the row names the old answer and the new reading, so the draft's drift line
+  // would say the same thing a second time. It is suppressed; the ask still follows.
+  it("suppresses the drift line when the row is drawn", () => {
+    draw("1,2", 4, { version: 2, previous: { number: 1, permits: [4, 5], declared: 4 } });
+    expect(sentence()).toBe(
+      "This version permits Exhibition or Core. Version 1 read as Optimized or cEDH and was declared Optimized.",
+    );
+    expect(screen.queryByText(declarationCopy.draftMovedOut.line(4))).toBeNull();
+    expect(chips().getAllByRole("button")).toHaveLength(2);
+  });
+
+  // A range this version has ALREADY answered keeps its answer and `change` under the row.
+  it("keeps this version's own answer under the row", () => {
+    draw("4,5", 4, { version: 2, previous: { number: 1, permits: [3], declared: null } });
+    expect(sentence()).toMatch(/^This version permits Optimized or cEDH\./);
+    expect(screen.getByRole("button", { name: declarationCopy.declared.change })).toBeTruthy();
+  });
+
+  // THE SAME READING SAYS NOTHING, and a predecessor that recorded nothing cannot be compared.
+  it("draws no row when the readings match or the last one is unrecorded", () => {
+    draw("3", null, { version: 2, previous: { number: 1, permits: [3], declared: null } });
+    expect(screen.queryByText(/^This version /)).toBeNull();
+    cleanup();
+    draw("3", null, { version: 2, previous: { number: 1, permits: null, declared: null } });
+    expect(screen.queryByText(/^This version /)).toBeNull();
+  });
+
+  // The marks are decoration for the sentence: hidden from assistive technology, labelled for
+  // the eye, with the arrow as time.
+  it("draws version n, an arrow, and this version", () => {
+    draw("3", null, { version: 2, previous: { number: 1, permits: [4, 5], declared: 5 } });
+    const row = screen.getByText("version 1").closest("[aria-hidden='true']");
+    expect(row).toBeTruthy();
+    expect(row!.textContent).toContain("→");
+    expect(row!.textContent).toContain("this version");
+  });
+
+  it("never quotes the player", () => {
+    draw("1,2", 4, { version: 2, previous: { number: 1, permits: [4, 5], declared: 4 } });
+    expect(document.body.textContent).not.toMatch(/\byou said\b|\byour (last )?changes\b|moved (this deck )?past/i);
   });
 });

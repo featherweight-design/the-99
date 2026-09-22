@@ -3,8 +3,9 @@
 import type { CSSProperties, ReactNode } from "react";
 
 import type { DeclarationAsk } from "../../lib/bracket/declaration-ask";
+import type { VersionComparison } from "../../lib/bracket/version-reading";
 import type { Bracket } from "../../lib/bracket/types";
-import { BRACKET_NAMES } from "../../lib/copy/deck-analysis";
+import { BRACKET_NAMES, bracketPhrase } from "../../lib/copy/deck-analysis";
 import { declarationCopy } from "../../lib/copy/declaration";
 import { BracketMark, bracketInk } from "./bracket-mark";
 
@@ -26,6 +27,11 @@ export type DeclarationControl = {
    * so is the error Round 3's R5 made in prose.
    */
   version: number | null;
+  /**
+   * The version before the one this deck IS, with what it recorded — or null on a draft, a
+   * brew, or a first version. Only a committed, unedited deck has a reading to set beside it.
+   */
+  previous: { number: number; permits: readonly Bracket[] | null; declared: Bracket | null } | null;
   onDeclare: (bracket: Bracket) => void;
   /** The last write was refused, and the answer on screen was put back. */
   refused: boolean;
@@ -48,34 +54,66 @@ export function DeclarationSection({
   ask,
   control,
   onChange,
+  comparison,
 }: {
   ask: DeclarationAsk;
   control: DeclarationControl;
   /** `change`: re-open the ask. The verdict block holds it, because the face changes with it. */
   onChange: () => void;
+  /**
+   * How this version reads beside the last one, when the deck IS a committed version with a
+   * predecessor. Absent on a draft: a draft is one moving reading, and there is no second one to
+   * compare it with.
+   */
+  comparison?: { reading: VersionComparison; previousNumber: number } | null;
 }) {
-  if (ask.kind === "none") return null;
+  const answer = ask.kind === "answered" ? (
+    <p className="text-[12.5px] leading-[1.6] text-[color:var(--fg-body)] md:text-[13px]">
+      <DeclaredLine declared={ask.declared} version={control.version} />{" "}
+      <button
+        type="button"
+        onClick={onChange}
+        className="cursor-pointer border-b border-dotted border-[color:var(--accent)] font-mono text-[10.5px] text-[color:var(--accent)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[color:var(--accent)]"
+      >
+        {declarationCopy.declared.change}
+      </button>
+    </p>
+  ) : null;
+  const asking =
+    ask.kind === "ask" || (ask.kind === "drifted" && ask.stillAsking) ? (
+      <Ask permits={ask.permits} onChoose={control.onDeclare} refused={control.refused} />
+    ) : null;
 
-  if (ask.kind === "answered") {
+  // §E WINS. A commit refuses to copy a declaration its cards do not permit, so the version row
+  // and the draft's drift line are both true after one — and say the same thing in two voices.
+  // The row is the stronger statement (the old answer, the new reading), so the drift line is
+  // suppressed and whatever the reading still owes follows inside the row's box.
+  if (comparison?.reading.changed) {
+    const owed = answer ?? asking;
     return (
       <Box>
-        <p className="text-[12.5px] leading-[1.6] text-[color:var(--fg-body)] md:text-[13px]">
-          <DeclaredLine declared={ask.declared} version={control.version} />{" "}
-          <button
-            type="button"
-            onClick={onChange}
-            className="cursor-pointer border-b border-dotted border-[color:var(--accent)] font-mono text-[10.5px] text-[color:var(--accent)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[color:var(--accent)]"
-          >
-            {declarationCopy.declared.change}
-          </button>
-        </p>
+        <VersionRow reading={comparison.reading} previousNumber={comparison.previousNumber} />
+        {owed ? (
+          <div className="mt-0.5 flex flex-col gap-[9px] border-t border-[color:var(--border)] pt-[11px]">
+            {owed}
+            {answer && control.refused ? <Refused /> : null}
+          </div>
+        ) : null}
+      </Box>
+    );
+  }
+
+  if (ask.kind === "none") return null;
+
+  if (answer) {
+    return (
+      <Box>
+        {answer}
         {/* A refused CHANGE lands here: the previous answer is back, and says why. */}
         {control.refused ? <Refused /> : null}
       </Box>
     );
   }
-
-  const choose = control.onDeclare;
 
   if (ask.kind === "drifted") {
     return (
@@ -95,23 +133,82 @@ export function DeclarationSection({
           </p>
         </div>
         {/* The question changed, so it is asked. On a single bracket there is nothing to ask. */}
-        {ask.stillAsking ? (
-          <Ask permits={ask.permits} onChoose={choose} refused={control.refused} />
-        ) : null}
+        {asking}
       </Box>
     );
   }
 
   // `ask` — including an answered range whose `change` was pressed, which the block hands
   // over as the same range asked again.
+  return <Box>{asking}</Box>;
+}
+
+/**
+ * `version 1 → this version`, and one sentence. NO CONTROL, NO DIRECTION, NO ALARM.
+ *
+ * The arrow is TIME and nothing else: never flipped, rotated or recoloured for a deck tuned
+ * down, because a comparison of two readings has no direction to be wrong about.
+ *
+ * The marks are decoration for the sentence beside them, which says everything they say, so the
+ * row is hidden from assistive technology and the sentence carries it.
+ */
+function VersionRow({
+  reading,
+  previousNumber,
+}: {
+  reading: VersionComparison;
+  previousNumber: number;
+}) {
+  const copy = declarationCopy.versionChange;
+  if (reading.was.kind !== "read") return null;
+  const was = reading.was.reading;
+  const now = reading.now;
+  const phrase = bracketPhrase(now.permits);
+  const flat = copy.line(
+    { phrase, isRange: now.split },
+    { version: previousNumber, phrase: bracketPhrase(was.permits), declared: was.declared },
+  );
+  // The CURRENT reading carries the weight; the now-sentence comes first, so its phrase is the
+  // first occurrence.
+  const at = flat.indexOf(phrase);
   return (
-    <Box>
-      <Ask
-        permits={ask.permits}
-        onChoose={choose}
-        refused={control.refused}
-      />
-    </Box>
+    <>
+      <div aria-hidden="true" className="flex items-end gap-[10px]">
+        <MarkColumn
+          // The previous side draws what was DECLARED for it when anything was — that is the
+          // record a later version reads against — and its reading otherwise.
+          brackets={was.declared !== null ? [was.declared] : was.permits}
+          label={copy.markLabelPrevious(previousNumber)}
+        />
+        <span className="pb-[13px] font-mono text-[13px] text-[color:var(--fg-faint)]">→</span>
+        <MarkColumn brackets={now.permits} label={copy.markLabelCurrent} />
+      </div>
+      <p className="text-[12.5px] leading-[1.55] text-[color:var(--fg-body)]">
+        {flat.slice(0, at)}
+        <b className="font-semibold text-[color:var(--fg)]">{phrase}</b>
+        {flat.slice(at + phrase.length)}
+      </p>
+    </>
+  );
+}
+
+function MarkColumn({ brackets, label }: { brackets: readonly Bracket[]; label: string }) {
+  return (
+    <span className="inline-flex flex-col items-center gap-[3px]">
+      <span className="flex items-center gap-0.5">
+        {brackets.map((b, i) => (
+          // A range's upper member DIMMED, through the mark's own `dim` so it takes the one
+          // opacity the theme contract holds at 3:1. The handoff drew 0.5 here, before the
+          // verdict addendum's ruling 3 set the dimmed member's floor.
+          <span key={b} className="flex">
+            <BracketMark bracket={b} px={24} dim={i > 0} />
+          </span>
+        ))}
+      </span>
+      <span className="font-mono text-[8px] leading-none uppercase tracking-[0.1em] text-[color:var(--fg-faint)]">
+        {label}
+      </span>
+    </span>
   );
 }
 

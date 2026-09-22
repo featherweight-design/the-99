@@ -222,11 +222,14 @@ export function BuilderShell({
   // The deck's declaration for the whole shell: the verdict draws and takes it, and the card
   // note on Consider and the top-off list reads it — one owner, so they cannot disagree.
   const declaration = useDeclaration(deck.id, deck.declaredBracket);
-  // The version this deck IS: committed, and the draft holding no change since. A draft with
-  // edits is not that version, and a brew has none.
+  // The version this deck IS — committed, and the draft holding no change since — and the one
+  // committed before it. A draft with edits is neither, and a brew has neither.
   const committedClean = draft?.version && !hasChanges(draft) ? draft.version : null;
   const thisVersion = committedClean
     ? versions.find((v) => v.number === committedClean.number) ?? null
+    : null;
+  const previousVersion = committedClean
+    ? versions.find((v) => v.number === committedClean.number - 1) ?? null
     : null;
   const [sort, setSort] = useState<SortKey>("gaps");
   const [exportOpen, setExportOpen] = useState(false);
@@ -1076,6 +1079,17 @@ export function BuilderShell({
                       thisVersion && (thisVersion.declaredBracket ?? null) === declaration.declared
                         ? thisVersion.number
                         : null,
+                    // §E reads THIS version against the one before it, and only a committed deck
+                    // with nothing changed since IS a version. `permits` is null on a version
+                    // committed before the snapshot columns existed, which the rule reads as
+                    // "recorded nothing" rather than as a reading.
+                    previous: previousVersion
+                      ? {
+                          number: previousVersion.number,
+                          permits: previousVersion.permits ?? null,
+                          declared: previousVersion.declaredBracket ?? null,
+                        }
+                      : null,
                     onDeclare: declaration.declare,
                     refused: declaration.refused,
                   }}
