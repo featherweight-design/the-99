@@ -84,6 +84,36 @@ function Evicter({ oracleId }: { oracleId: string }) {
 }
 
 describe("CardDetailProvider", () => {
+  // THE PARTNER LINK REACHES `load`, which is the last link in this chain and the fourth
+  // place it has been possible to lose a value between two tested ends.
+  //
+  // `card-modal-combo.test.tsx` mounts `CardModal` directly with a spy, so it proves the
+  // modal calls what it is given and nothing about what the PROVIDER gives it: removing
+  // `onSelectCard` at this mount site left that file green while pressing a partner did
+  // nothing at all.
+  it("opens a partner through the provider's own load", async () => {
+    const withPartner = {
+      ...SIGNET,
+      comboPartners: [
+        { oracleId: "o-sol", name: "Sol Ring", state: "owned" as const, popularity: 9 },
+      ],
+    };
+    const fetchCard = vi.fn(async (id: string) => (id === "o-sol" ? SOL : withPartner));
+    renderTriggers(fetchCard);
+    await click(screen.getByText("Arcane Signet"));
+
+    await act(async () => {
+      screen.getByRole("button", { name: /Two-card combos/ }).click();
+    });
+    await act(async () => {
+      screen.getByRole("button", { name: "Sol Ring" }).click();
+    });
+
+    // The provider fetched the PARTNER, which is what `load` does and a spy on the modal
+    // cannot see.
+    expect(fetchCard).toHaveBeenCalledWith("o-sol", undefined);
+  });
+
   // THE COMBO SCOPE REACHES THE READ. It is what makes `in this deck` sayable and the scope
   // line renderable, and it is the deck page's alone — every other route sends nothing.
   //
