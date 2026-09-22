@@ -141,3 +141,15 @@ resolved each one the way named below.
    predates the audit below, which is the later document and the one the build followed. Both
    remain Design-proposed scope and neither touches the pair. The rename is a follow-up with the
    About batch; the marks need a payload change for an ornament outside the pair.
+
+4. **The two labels cannot always state the same count.** The copy file's comment says *"both
+   labels state the same count — the open slots — because both fills take every one of them"*.
+   That holds in b1's own figures — 23 sleevable for 12 open, so `tickable` and `openSlots` are
+   the same number — and fails wherever the collection holds fewer candidates than there are
+   slots: `Select 12 from my collection` against four sleevable candidates promises eight cards
+   that do not exist. **Built with the collection control naming `tickable`** and the best
+   control naming `openSlots`. The surface has ruled on this shape once already — the single
+   control this pair replaces named `tickable`, recorded in its own case as *"a button that
+   says two and ticks one is wrong on its face and in its name"* — and b9 already accepts that
+   the two controls can carry different labels. If Design would rather both read `openSlots`,
+   it is one argument and no relayout.
