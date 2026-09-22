@@ -300,6 +300,18 @@ describe("theme-independent tokens", () => {
   // `--surface` is a THIRTEENTH ground, introduced by this component, and the palette was
   // never cut for it. That is a question for Design rather than a defect in the drop, and
   // it is recorded rather than quietly absorbed: the shortfall is 0.0232, on one theme.
+  //
+  // WHAT THIS DOES NOT COVER, and it is a drawing decision rather than a hole here: a RANGE
+  // draws its upper member at `opacity: 0.45`, which the canvas specifies. Composited over
+  // `--surface` that numeral reads 2.2533-2.3116 for rank 2 on `[1,2]` and 3.9807-4.0928 for
+  // rank 5 on `[4,5]`. No rung clears 4.5 in that state and none can, so asserting it here
+  // would fail a build that is exactly as drawn.
+  //
+  // It is not a contrast failure in the WCAG sense either: the upper bracket's NAME is in the
+  // face line directly above, at `--fg` and 600, so the dimmed numeral repeats information that
+  // is already available as full-contrast text. Recorded rather than asserted, and named to
+  // Design beside the rank-1 question, because "what strength may a mark's numeral draw at" is
+  // the same conversation as "which grounds may it sit on".
   const GROUNDS = ["surface"] as const;
 
   it("clears 4.5:1 for ranks 2-5 on every ground in every theme", () => {

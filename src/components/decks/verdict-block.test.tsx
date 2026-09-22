@@ -41,6 +41,26 @@ const SHAPES = {
       cards: [COMMANDER, profileCard("rhystic", "Rhystic Study"), profileCard("cyc", "Cyclonic Rift")],
       gameChangerIds: new Set(["rhystic", "cyc"]),
     }),
+  /**
+   * `[3]` reached by TWO rules at the bracket below, which is the only way two can co-occur.
+   *
+   * At bracket 1 the only rule that can fire alone is extra turns — anything else violates
+   * bracket 2 as well and the deck is no longer `[2]`. At bracket 2 mass land denial violates
+   * bracket 3 too, so what is left is game changers beside a combo: both are capped at zero
+   * there, neither moves bracket 3, and the combo's pieces are unreachable so the deck does not
+   * climb to `[4]`.
+   */
+  "3-two-rules": () =>
+    deckProfile({
+      cards: [
+        COMMANDER,
+        profileCard("rhystic", "Rhystic Study"),
+        profileCard("p1", "Thassa's Oracle"),
+        profileCard("p2", "Demonic Consultation"),
+      ],
+      gameChangerIds: new Set(["rhystic"]),
+      twoCardCombos: [combo(["p1", "p2"])],
+    }),
   // `violatesB3` FALSE and the combo assembles: both pieces sit in the command zone, so nothing
   // at bracket 3 was violated and what ruled it out is the assembly.
   "4": () =>
@@ -56,10 +76,15 @@ const SHAPES = {
     }),
 };
 
-const draw = (key: keyof typeof SHAPES) => {
+const drawn = (key: keyof typeof SHAPES) => {
+  const profile = SHAPES[key]();
+  return { verdict: slotDeck(profile), profile };
+};
+
+const draw = (key: keyof typeof SHAPES, permits = key as string) => {
   const profile = SHAPES[key]();
   const verdict = slotDeck(profile);
-  expect(verdict.permits.join(",")).toBe(key);
+  expect(verdict.permits.join(",")).toBe(permits);
   render(<VerdictBlock verdict={verdict} profile={profile} />);
   return verdict;
 };
@@ -114,17 +139,38 @@ describe("the sub-line", () => {
     ).toBeTruthy();
   });
 
-  it("names the allowance when the bracket below has room", () => {
-    draw("4,5");
-    // `[4,5]` is a range, so the ruled-out sentence is not drawn at all — the intent line is.
-    expect(screen.queryByText(/allows only/)).toBeNull();
+  // THE INVARIANT, not a figure nothing can produce. `ruledOutAllowance`'s `allows only N`
+  // reading is unreachable from this component: `below` is 1, 2 or 3; every rule caps at zero at
+  // 1 and 2, and `below === 3` needs `[4]`, which arrives with `violatesB3` false and therefore
+  // no bracket-3 violation to report. The copy function's other reading is covered directly in
+  // `deck-analysis.test.ts`.
+  it("says `none at all` on every ruled-out reading a deck can reach", () => {
+    for (const key of ["2", "3", "3-two-rules"] as const) {
+      const { unmount } = render(<VerdictBlock {...drawn(key)} />);
+      expect(screen.getByText(/allows none at all\./)).toBeTruthy();
+      expect(screen.queryByText(/allows only/)).toBeNull();
+      unmount();
+    }
   });
 
-  it("reads a two-rule deck as both rules", () => {
+  it("reads a one-rule deck as its count in words", () => {
     draw("3");
     expect(
       screen.getByText(
         "Two game changers, and Core allows none at all. Nothing else in the 99 reaches further.",
+      ),
+    ).toBeTruthy();
+  });
+
+  // BOTH RULES, joined. Naming one would let a reader cut those cards and find the answer
+  // unmoved — and a single-rule fixture passes with `nameList(facts)` replaced by `facts[0]`,
+  // which is what this shape exists to stop.
+  it("reads a two-rule deck as both rules, joined", () => {
+    draw("3-two-rules", "3");
+    expect(
+      screen.getByText(
+        "One game changer and one two-card infinite, and Core allows none at all. Nothing else "
+        + "in the 99 reaches further.",
       ),
     ).toBeTruthy();
   });

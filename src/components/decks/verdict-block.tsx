@@ -154,10 +154,21 @@ function SubLine({
  * `Two game changers, and Core allows none at all.`
  *
  * EVERY RULE THAT RULED IT OUT, not the first one. A deck can pass two limits at the bracket
- * below, and naming one would let a reader cut those cards and find the answer unmoved. The
- * allowance clause is the bracket's own, and it takes the LOWEST limit among the reasons: they
- * are all zero at brackets 1 and 2, and at bracket 3 only game changers has room, so the lowest
- * is the one a reader has to satisfy.
+ * below — `[3]` is reached with game changers AND a combo both violating at bracket 2 — and
+ * naming one would let a reader cut those cards and find the answer unmoved.
+ *
+ * THE ALLOWANCE IS ALWAYS `none at all` TODAY, and the `only N` reading is unreachable from this
+ * component rather than merely rare. `verdictSubLine` only ever reports the bracket BELOW the
+ * deck's own, so `below` is 1, 2 or 3; every rule caps at zero at 1 and 2, and `below === 3`
+ * needs `permits` to be `[4]`, which `permitsFor` returns only when `violatesB3` is FALSE — so
+ * `slotDeck` recorded no bracket-3 violation at all and the reading is `assembled` rather than
+ * `ruledOut`. The branch stays because `limit` is a real field on `Violation` and the day
+ * `GAME_CHANGER_LIMIT` changes it becomes reachable; `deck-analysis.test.ts` covers both
+ * readings of the copy directly, and the test below pins the invariant rather than a figure
+ * nothing can produce.
+ *
+ * The LOWEST limit among the reasons is what a reader has to satisfy, which is why it is a
+ * `Math.min` rather than the first reason's.
  */
 function ruledOutClause(below: Bracket, reasons: RuledOutReason[]): string {
   const copy = deckAnalysisCopy.verdict;
