@@ -1,4 +1,5 @@
 import type { SynergyCard } from "../commanders/synergy-cards";
+import type { CandidateFacts } from "../bracket/delta";
 
 /** A candidate row as the top-off list draws it.
  *
@@ -22,6 +23,21 @@ import type { SynergyCard } from "../commanders/synergy-cards";
  * call site here reads better for it.
  */
 export type TopOffCandidate = SynergyCard;
+
+/**
+ * A candidate with its card-note facts attached, as the deck page hands them down.
+ *
+ * A SEPARATE TYPE rather than a field on `SynergyCard`, because `SynergyCard` is drawn on
+ * surfaces that have no deck to be a candidate FOR — `/commanders` lists it with no facts to
+ * carry — and an optional field there would be the same trap this payload was already in:
+ * present in the type, populated by nobody, drawn by nobody.
+ *
+ * `facts` is null where the read failed or the card carries none. Round 4's note draws nothing
+ * for either, which is why one absence serves both.
+ */
+export type TopOffCandidateWithFacts = TopOffCandidate & {
+  facts: CandidateFacts | null;
+};
 
 /** Every card the list can offer, in rank order and uncapped.
  *
