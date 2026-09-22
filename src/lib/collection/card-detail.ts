@@ -1,4 +1,5 @@
 import type { CardBracketFlags } from "../bracket/flags-read";
+import type { ModalComboPartner } from "../combos/near-miss";
 // One card's full detail, for surfaces that hold nothing but an oracle id — the decklist,
 // the Add panel and the builder spine (#127, #91). loadBrowseCards cannot serve them: it is
 // rooted in collection_items, and a deck routinely lists cards the user does not own.
@@ -195,6 +196,40 @@ async function proxyingDecks(userId: string, oracleId: string): Promise<Proxying
  * losing the card. An absent flag row means neither fact applies and nothing more — it is
  * never a claim that the card is clear.
  */
+/**
+ * The card's two-card combo partners, for the modal's block.
+ *
+ * FAIL-SOFT and injected, exactly like `withBracketFacts` beside it and for the same reason:
+ * without the seam, deleting this function leaves the whole suite green while the modal
+ * silently loses its block. A failure omits the block rather than losing the card — the block
+ * is a receipt, and nothing on this path depends on it to draw the rest.
+ *
+ * `deckOracleIds` is what makes `in this deck` sayable. Opened from `/collection` there is no
+ * deck in scope and that state has no referent, which is what the block's scope line exists
+ * to make visible rather than leaving it looking like an inconsistency.
+ */
+export async function withComboPartners(
+  card: BrowseCard,
+  userId: string,
+  deckOracleIds?: readonly string[],
+  read?: (args: {
+    userId: string;
+    oracleId: string;
+    deckOracleIds?: readonly string[];
+  }) => Promise<ModalComboPartner[]>,
+): Promise<BrowseCard> {
+  try {
+    const load = read ?? (await import("../combos/near-miss")).loadCardComboPartners;
+    const partners = await load({ userId, oracleId: card.oracleId, deckOracleIds });
+    // OMITTED WHEN EMPTY rather than sent as `[]`: the block is absent entirely when nothing
+    // is detected — no heading, no empty state, no reserved height — and an empty array would
+    // spend payload to say what an absent field already says.
+    return partners.length > 0 ? { ...card, comboPartners: partners } : card;
+  } catch {
+    return card;
+  }
+}
+
 export async function withBracketFacts(
   card: BrowseCard,
   /**
@@ -259,7 +294,16 @@ export const loadCardDetail = cache(async function loadCardDetail(
       pricesFor(oracleId),
       proxyingDecks(userId, oracleId),
     ]);
-    return withBracketFacts({ ...owned[0], availability, prices, proxiedBy });
+    // NO DECK SCOPE YET, deliberately — handoff dependency 5. `in this deck` needs the deck
+    // the modal was opened from, and `fetchCard` takes an oracle id alone: routes that open
+    // this modal do not all carry a deck id. Unscoped, the block draws the two states that
+    // have a referent and omits its scope line, which is exactly the `/collection` face the
+    // design already specifies. The parameter is here so the follow-up threads a value rather
+    // than a new argument.
+    return withComboPartners(
+      await withBracketFacts({ ...owned[0], availability, prices, proxiedBy }),
+      userId,
+    );
   }
 
   const { db } = await import("../../db");
@@ -314,12 +358,19 @@ export const loadCardDetail = cache(async function loadCardDetail(
   // The unowned branch synthesises its card from the catalog, so `gameChanger` comes off
   // the `cards` row rather than from an aggregation — and without this the block never drew
   // for an unowned Game Changer at all.
-  return withBracketFacts({
-    ...catalogCard(card, printingRows),
-    facts: card.gameChanger ? ["gameChanger"] : undefined,
-    prices: await prices,
-    proxiedBy: await proxiedBy,
-  });
+  // BOTH BRANCHES, and the unowned one is the branch that matters most here. This block's
+  // `you don't own it` state is by definition about cards the reader does not have — and a
+  // reader following a partner into its own modal lands on exactly such a card. Enriching
+  // only the owned branch left the block silently absent on the commonest open it has.
+  return withComboPartners(
+    await withBracketFacts({
+      ...catalogCard(card, printingRows),
+      facts: card.gameChanger ? ["gameChanger"] : undefined,
+      prices: await prices,
+      proxiedBy: await proxiedBy,
+    }),
+    userId,
+  );
 });
 
 /**

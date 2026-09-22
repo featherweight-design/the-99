@@ -63,6 +63,37 @@ export const comboAwarenessCopy = {
     completes: (partner: string) => `${COMPLETES_LEAD}${partner}`,
   },
 
+  /** The card modal's block — the ONE surface in this feature that enumerates. */
+  modal: {
+    heading: 'Two-card combos',
+    /** One line per detected partner. Ordered: inDeck, then owned, then unowned. */
+    line: (partner: string) => `with ${partner}`,
+    state: {
+      inDeck: 'in this deck',
+      owned: 'you own it',
+      notOwned: "you don't own it",
+    },
+    /** The shipped disclosure atoms. Cap is 6 desktop / 4 phone. */
+    more: (n: number) => `+${n} more`,
+    showAll: (n: number) => `Show all ${n}`,
+    showAllAria: (n: number) => `Show all ${n} combo partners`,
+    /** The shipped disclosure's own collapse word, so a toggle never announces one state
+     *  while offering the other. */
+    collapse: 'Show fewer',
+    /**
+     * THE DETECTION BOUND, said once, behind the heading's marker rather than printed under
+     * every block — a caveat that repeats that often stops being read, which is the opposite
+     * of what a caveat is for.
+     *
+     * It is also why the heading carries no count: `+8 more` is a fact about what is HIDDEN,
+     * where `Two-card combos · 14` would be a claim about what exists, and detection excludes
+     * template-gated variants by design.
+     */
+    boundMarkerAria: 'About this list',
+    qualifier:
+      'From Commander Spellbook. Combos needing a third piece are not listed.',
+  },
+
   /**
    * Screen-reader clauses. The glyph is `aria-hidden` and the visible text is composed into
    * the host's own accessible name, so these are what is actually spoken — once, in the place

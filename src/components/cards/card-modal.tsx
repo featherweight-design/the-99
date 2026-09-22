@@ -27,6 +27,7 @@ import { AvailabilityMarker } from "../ui/availability-marker";
 import { clearCardArtPreference, setCardArtPreference } from "../../app/collection/actions";
 import { ManaCost } from "./mana-pips";
 import { CardFactMark } from "./card-fact-mark";
+import { ComboPartnersDetail } from "./combo-partners-detail";
 import { cardFactName, cardMarkCopy } from "../../lib/copy/card-mark";
 import { PrintingRegion, OVERFLOW_THRESHOLD, printingEntryCount, printingKey } from "./printing-region";
 import { PriceTag } from "./price-tag";
@@ -1622,6 +1623,10 @@ export function CardModal({
             )}
 
             <BracketFactsDetail card={card} />
+            {/* SECOND IN THE STACK: card fact, then PAIR fact, then copy facts. This block is
+                the hinge where the reader crosses from what the card IS to what they HAVE,
+                which is exactly what a pair fact is. */}
+            <ComboPartnersDetail card={card} />
             <AvailabilityDetail card={card} />
             <ProxyDetail card={card} />
 
