@@ -137,8 +137,8 @@ than better. Re-measure there; do not inherit this figure.
 **PR 4a is the critical path** — rounds 3 and 4 sit inside the chrome it establishes — and it
 carried two gates. **Both are discharged**: PR 1b's tab shipped in #825, and Round 2's readiness
 audit was re-run 2026-09-21 and came back Green (#816). What remains of 4a is its rendering; the
-`verdictHead` rule shipped in #828. That audit is the only one never revisited: it
-carries twelve errata engineering was told to fold in — twelve, not eleven: R1's list numbers
+`verdictHead` rule shipped in #828. That audit had been the only one never revisited until
+2026-09-21, and it carries twelve errata engineering was told to fold in — twelve, not eleven: R1's list numbers
 1–10, then 12 and 13, and every summary of it since has repeated the wrong count.
 
 **RE-AUDITED 2026-09-21, and the result is 🟢 Green.** The audit is
@@ -319,8 +319,14 @@ slowest deck.
 PR 1 shipped the tab without it, so this became **PR 1b's** decision to implement rather than
 PR 1's to make. **Implemented in #825**: `src/app/decks/profile-actions.ts` calls
 `cachedDeckProfile` from a press, deck-keyed and behind a generation token, and the panel draws
-its own idle, loading, failed and ready readings. The loader had been written and left with no
-caller in the app — one of three dead payloads this round found and closed.
+its own idle, loading, failed and ready readings.
+
+**#825 is the first SURFACE consumer, not the first caller** — a distinction worth keeping,
+because two server-side callers arrived alongside it and a flat "first caller" claim is already
+wrong: `declaration-actions.ts:68` reads the profile for `slotDeck(profile).permits` before it
+will accept a declaration, and `actions.ts` reads it to snapshot the permits onto a committed
+version. Before all three the loader had been written and left with nothing calling it at all —
+one of three dead payloads this round found and closed.
 Adding half a second to three seconds to every `/decks/<id>` load, for a tab most visits never
 open, is precisely the regression the decklist's own cache exists to prevent. The figure also
 retires the idea that the head read is the expensive half: it is a fifth of the cost, and it is
