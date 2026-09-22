@@ -206,6 +206,23 @@ describe("classifyPrinting", () => {
     expect(classifyPrinting(faceless).kind).toBe("skipped-reversible");
   });
 
+  it("skips — rather than THROWING — when a face carries no oracle id at all", () => {
+    // The near-miss this guard is written against. Sizing a set of the ids that are PRESENT
+    // looks equivalent and is not: a first face with no id and a second with one gives a set
+    // of size 1, passes, and then throws on the row's own `requiredString`. That exception
+    // is raised inside the bulk stream, where nothing catches it — so the whole catalog
+    // refresh aborts, in place of the old code skipping one entry.
+    const headless = {
+      ...reversible,
+      card_faces: [
+        { name: "Teferi's Ageless Insight", image_uris: { normal: "https://x/front.jpg" } },
+        reversible.card_faces[1],
+      ],
+    };
+    expect(() => classifyPrinting(headless)).not.toThrow();
+    expect(classifyPrinting(headless).kind).toBe("skipped-reversible");
+  });
+
   it("skips digital-only printings", () => {
     expect(classifyPrinting({ ...plains, digital: true }).kind).toBe("skipped-digital");
   });

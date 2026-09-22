@@ -118,11 +118,40 @@ export function classifyPrinting(raw: Raw): PrintingClassification {
   // layout is one card printed on both sides, not two cards sharing stock. The skip is kept
   // for the case that would be a guess — faces naming different oracles — which exists
   // nowhere today and would be a different thing entirely if it ever shipped.
+  //
+  // TWO THINGS THIS DOES NOT DO, both deliberate:
+  //
+  //   · `toCardRow` still drops the layout, so `cards` gains no row from a reversible entry
+  //     and the oracle it links to comes from an ordinary printing of the same card. Reading
+  //     the face there instead would UPSERT over that row with this layout's doubled name
+  //     (`Teferi's Ageless Insight // Teferi's Ageless Insight`), which is a worse defect
+  //     than the one being fixed. The consequence is a real risk and is named rather than
+  //     papered over: a reversible printing whose oracle has NO other printing now reaches
+  //     the FK-orphan check instead of being turned away here, and one orphan refuses the
+  //     whole refresh's base-set sizing. Zero of the 82 are in that position — all 71 of
+  //     their oracles are in `cards`, checked including the 17 newest non-Secret-Lair ones —
+  //     and if one ever is, the run fails loudly with a named count rather than silently.
+  //
+  //   · `back_image_uri` is stored for these printings and NOT drawn. The flip control is
+  //     gated on `isTwoFaced(card.layout)`, which is oracle-level and reads `normal` here,
+  //     and `faces.ts` deliberately excludes this layout. Storing it costs nothing, keeps
+  //     this transform's face handling uniform, and leaves the data ready if that ruling
+  //     ever moves.
   const reversible = layout === "reversible_card";
+  let reversibleOracleId: string | null = null;
   if (reversible) {
     const revFaces = (raw.card_faces as Raw[] | undefined) ?? [];
-    const oracleIds = new Set(revFaces.map((f) => f.oracle_id).filter(Boolean));
-    if (oracleIds.size !== 1) return { kind: "skipped-reversible" };
+    const faceIds = revFaces.map((f) => (typeof f.oracle_id === "string" ? f.oracle_id : null));
+    // EVERY face must name one, and they must agree. Sizing a set of the ids that are
+    // PRESENT is the version that looks right and is not: a first face carrying no id and a
+    // second carrying one gives a set of size 1, passes, and then throws on the row's own
+    // `requiredString` — which is an exception inside the bulk stream, and that aborts the
+    // whole refresh where the old code skipped a single entry.
+    const distinct = new Set(faceIds);
+    if (faceIds.length === 0 || faceIds.some((id) => id === null) || distinct.size !== 1) {
+      return { kind: "skipped-reversible" };
+    }
+    reversibleOracleId = faceIds[0];
   }
   // MTGO/Arena-only printings would pollute the representative pick.
   if (raw.digital === true) return { kind: "skipped-digital" };
@@ -145,11 +174,10 @@ export function classifyPrinting(raw: Raw): PrintingClassification {
     kind: "printing",
     row: {
       scryfallId: requiredString(raw, "id"),
-      // The face's id for a reversible card, whose top level has none. Checked above to be
-      // the one id both faces agree on.
-      oracleId: reversible
-        ? requiredString(faces?.[0] ?? {}, "oracle_id")
-        : requiredString(raw, "oracle_id"),
+      // The id every face agreed on, for a reversible card whose top level has none. Taken
+      // from the guard above rather than re-read from face 0, so the value asserted and the
+      // value stored cannot drift apart.
+      oracleId: reversibleOracleId ?? requiredString(raw, "oracle_id"),
       setCode: requiredString(raw, "set").toLowerCase(),
       collectorNumber: requiredString(raw, "collector_number"),
       imageUri,
