@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 
 import { fetchDeckProfile, type ProfileFetch } from "../../app/decks/profile-actions";
 import type { DeckProfile } from "../../lib/profile/types";
@@ -46,14 +46,37 @@ export function useDeckProfile(deckId: string): {
   request: () => void;
 } {
   const [state, setState] = useState<ProfileState>({ kind: "idle" });
-  /** The deck a request is in flight or settled for. Null means nothing has been asked. */
-  const asked = useRef<string | null>(null);
-  const inFlight = useRef(false);
+  /**
+   * The deck the state currently describes. STATE rather than a ref, because it is compared
+   * during render and reading a ref there is forbidden — `react-hooks` catches it, and the rule
+   * exists because a ref read during render is not tracked and can tear under concurrent
+   * rendering.
+   */
+  const [shownFor, setShownFor] = useState<string | null>(null);
+  /**
+   * The deck a request is in flight FOR, rather than a boolean.
+   *
+   * A boolean had to be cleared when the deck changed, and the only place to notice that was
+   * during render — which is the ref read above, forbidden. Holding the deck instead makes the
+   * question local to the handler: a second press for the SAME deck is a duplicate, a press
+   * for a different one is not, and nothing has to be reset from anywhere.
+   */
+  const inFlightFor = useRef<string | null>(null);
+  /**
+   * The deck currently on screen, readable from an async continuation.
+   *
+   * Written in an EFFECT, which is where a ref may be written — a reply has to ask "is this
+   * still the deck being shown", and the closure only knows the deck it was made for.
+   */
+  const current = useRef(deckId);
+  useEffect(() => {
+    current.current = deckId;
+  }, [deckId]);
 
   const request = useCallback(() => {
-    if (inFlight.current) return;
-    inFlight.current = true;
-    asked.current = deckId;
+    if (inFlightFor.current === deckId) return;
+    inFlightFor.current = deckId;
+    setShownFor(deckId);
     setState({ kind: "loading" });
     void (async () => {
       let result: ProfileFetch;
@@ -64,30 +87,28 @@ export function useDeckProfile(deckId: string): {
         // value, so an exception here is the request itself — a network drop, a serialisation
         // error — and telling the reader their deck is gone would be a lie with a retry hidden
         // behind it.
-        //
-        // THE FLAG IS CLEARED ONLY BY THE CURRENT DECK'S REPLY. An older reply clearing it would
-        // unlock a second request for the deck now showing while that deck's first is still in
-        // flight — which is the duplicate the flag exists to prevent, arriving by a longer road.
-        if (asked.current !== deckId) return;
-        inFlight.current = false;
+        // THE IN-FLIGHT SLOT IS CLEARED ONLY BY ITS OWN DECK'S REPLY. An older reply clearing
+        // it would unlock a second request for the deck now showing while that deck's first is
+        // still in flight — the duplicate the slot exists to prevent, by a longer road.
+        if (inFlightFor.current === deckId) inFlightFor.current = null;
+        // And a reply for a deck we are no longer showing neither renders nor unlocks.
+        if (current.current !== deckId) return;
         setState({ kind: "failed" });
         return;
       }
-      // Same rule as the catch above: a reply for a deck we are no longer showing neither
-      // renders nor unlocks.
-      if (asked.current !== deckId) return;
-      inFlight.current = false;
+      if (inFlightFor.current === deckId) inFlightFor.current = null;
+      if (current.current !== deckId) return;
       if (result.ok) setState({ kind: "ready", profile: result.profile });
       else setState({ kind: result.reason === "disabled" ? "disabled" : "missing" });
     })();
   }, [deckId]);
 
-  // The deck changed under a mounted shell: the answer we hold is about another deck, so it is
-  // dropped rather than shown under this one's name. Adjusted during render rather than in an
-  // effect, so the previous deck's profile never paints once before being corrected.
-  if (asked.current !== null && asked.current !== deckId && state.kind !== "idle") {
-    asked.current = null;
-    inFlight.current = false;
+  // THE DECK CHANGED UNDER A MOUNTED SHELL. The answer we hold is about another deck, so it is
+  // dropped rather than shown under this one's name. Adjusted during render — React's own
+  // pattern for deriving state from a changed prop — so the previous deck's profile never paints
+  // once before being corrected.
+  if (shownFor !== null && shownFor !== deckId && state.kind !== "idle") {
+    setShownFor(null);
     setState({ kind: "idle" });
   }
 
