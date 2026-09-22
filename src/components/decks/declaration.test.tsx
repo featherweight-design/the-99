@@ -232,6 +232,8 @@ describe("a later version reads differently", () => {
 
   it("never quotes the player", () => {
     draw("1,2", 4, { version: 2, previous: { number: 1, permits: [4, 5], declared: 4 } });
+    // THE ROW IS ON SCREEN FIRST, or the assertion below reads the drift line instead of it.
+    expect(sentence()).toMatch(/^This version permits /);
     expect(document.body.textContent).not.toMatch(/\byou said\b|\byour (last )?changes\b|moved (this deck )?past/i);
   });
 });

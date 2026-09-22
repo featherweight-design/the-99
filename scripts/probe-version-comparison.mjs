@@ -205,8 +205,10 @@ async function walk(p, { label }, decks) {
       r.labels.map((l) => l.text).join("|") === "version 1|this version"
         && r.labels.every((l) => l.size === 8 && l.transform === "uppercase"),
       r.labels.map((l) => `${l.text}@${l.size}/${l.transform}`).join(" "));
-    // THE ARROW SITS LEVEL WITH THE MARKS, above the labels: `pb-[13px]` lifts it off the row's
-    // foot by the label's height and the gap. Measured centre to centre.
+    // THE ARROW SITS LEVEL WITH THE MARKS, above the labels. The figures do not add up by
+    // themselves: the label and its gap are 11px, and it is the glyph's own inherited line box
+    // (about 19.5px) that brings `pb-[13px]` to the marks' centre, 8 + 3 + 12 = 23px up. So it is
+    // measured centre to centre, and a change to the label, the gap or the line height fails here.
     report(`${label}px · the arrow is seated with the marks, not the labels`,
       r.arrowGap !== null && Math.abs(r.arrowGap) <= 2, `arrow centre ${r.arrowGap}px from the marks' centre`);
     report(`${label}px · the row suppresses the drift line`, !r.drift, r.drift ? "drift line drawn too" : "one statement");
