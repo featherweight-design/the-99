@@ -144,11 +144,16 @@ describe("blocked", () => {
   // u8: both halves in the command zone — no removal breaks it.
   it("says so when both halves of a combo are the commanders", () => {
     const PARTNER = profileCard("cmd2", "Tymna the Weaver");
-    draw(deckProfile({
-      cards: [COMMANDER, PARTNER],
-      commanderOracleIds: [COMMANDER.oracleId, PARTNER.oracleId],
-      twoCardCombos: [combo(COMMANDER.oracleId, PARTNER.oracleId)],
-    }));
+    const profileOf = () =>
+      deckProfile({
+        cards: [COMMANDER, PARTNER],
+        commanderOracleIds: [COMMANDER.oracleId, PARTNER.oracleId],
+        twoCardCombos: [combo(COMMANDER.oracleId, PARTNER.oracleId)],
+      });
+    draw(profileOf());
+    // The pair in the command zone ASSEMBLES — no tutor needed — so the deck reads [4] and the
+    // default target is Upgraded, the nearest bracket below.
+    expect(slotDeck(profileOf()).permits).toEqual([4]);
     fireEvent.click(trigger());
     expect(panel().textContent).toContain(upgradePathCopy.blocked.comboShortfall(3));
   });
@@ -201,6 +206,33 @@ describe("the satisfied path", () => {
     expect(screen.getByTestId("upgrade-path").textContent).toContain(
       upgradePathCopy.satisfied(2, "Exhibition or Core"),
     );
+  });
+});
+
+describe("more of the rules", () => {
+  // A LOOP OF EXTRA TURNS is on Upgraded's list whether or not the tutors can find it, and it is
+  // explained as a loop, never as an assembled combo.
+  it("explains a loop of extra turns as a loop", () => {
+    const loop = { ...combo("x", "y"), produces: ["Infinite turns"] };
+    draw(deckProfile({
+      cards: [COMMANDER, profileCard("x", "x"), profileCard("y", "y"), ...gcs(["A", "B", "C", "D"])],
+      gameChangerIds: new Set(["A", "B", "C", "D"]),
+      twoCardCombos: [loop],
+    }));
+    fireEvent.click(trigger());
+    expect(panel().textContent).toContain(upgradePathCopy.comboRule.loop(3));
+    expect(panel().textContent).not.toContain(upgradePathCopy.comboRule.assembled(3));
+  });
+
+  // ONE TARGET STILL DRAWS ITS CHIP: a [2] deck can only go to Exhibition.
+  it("draws the chip when there is one target", () => {
+    draw(deckProfile({
+      cards: [COMMANDER, profileCard("time-warp", "Time Warp")],
+      extraTurnFlags: new Map([["time-warp", ["oracle_rule"] as never]]),
+    }));
+    fireEvent.click(trigger());
+    const chips = within(screen.getByRole("group", { name: upgradePathCopy.targetsAria })).getAllByRole("button");
+    expect(chips.map((c) => c.textContent)).toEqual(["Exhibition"]);
   });
 });
 

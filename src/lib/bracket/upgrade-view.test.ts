@@ -3,7 +3,6 @@ import { describe, expect, it } from "vitest";
 import { COMMANDER, deckProfile, profileCard } from "../../components/decks/__fixtures__/deck-profile";
 import { upgradePath } from "./upgrade";
 import {
-  comboReason,
   downgradeTargets,
   heldCount,
   minimumCuts,
@@ -89,7 +88,7 @@ describe("nearestReachable", () => {
   });
 });
 
-describe("heldCount and comboReason", () => {
+describe("heldCount", () => {
   // The count a limit sentence reports includes the commander: it is a card the deck holds.
   it("counts every holder of a rule, commanders included", () => {
     const profile = deckProfile({
@@ -97,12 +96,6 @@ describe("heldCount and comboReason", () => {
       gameChangerIds: new Set([COMMANDER.oracleId, "a"]),
     });
     expect(heldCount(profile, "gameChangers")).toBe(2);
-  });
-
-  it("forbids combos outright at 1 and 2, and asks only about assembled ones at 3", () => {
-    expect(comboReason(1)).toBe("forbidden");
-    expect(comboReason(2)).toBe("forbidden");
-    expect(comboReason(3)).toBe("assembled");
   });
 });
 
@@ -136,6 +129,20 @@ describe("minimumCuts", () => {
   it("charges a combo with no shared card one more cut", () => {
     const profile = gcDeck(["a"], { twoCardCombos: [combo("x", "y")] });
     expect(minimumCuts(upgradePath(profile, 2))).toBe(2);
+  });
+});
+
+describe("minimumCuts across count rules", () => {
+  // A game changer that is ALSO mass land denial answers both count rules with one cut.
+  it("counts a card in two count rules once", () => {
+    const profile = deckProfile({
+      cards: [COMMANDER, profileCard("a", "a")],
+      gameChangerIds: new Set(["a"]),
+      mldFlags: new Map([["a", ["oracle_rule"] as FlagSource[]]]),
+    });
+    const path = upgradePath(profile, 2);
+    expect(path.items).toHaveLength(2);
+    expect(minimumCuts(path)).toBe(1);
   });
 });
 

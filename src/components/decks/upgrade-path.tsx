@@ -4,7 +4,6 @@ import { useState, type ReactNode } from "react";
 
 import { upgradePath, type UpgradeItem, type UpgradePath } from "../../lib/bracket/upgrade";
 import {
-  comboReason,
   heldCount,
   leftInCommandZone,
   minimumCuts,
@@ -142,7 +141,9 @@ function Targets({
   selected: Target;
   onSelect: (target: Target) => void;
 }) {
-  if (targets.length < 2) return null;
+  // ONE TARGET STILL DRAWS ITS CHIP: it names the bracket the panel is reading, and a group that
+  // vanished at one member would leave the head saying which bracket without the mark for it.
+  if (targets.length === 0) return null;
   return (
     <div className="flex items-center gap-[7px] md:flex-none">
       <span className="hidden font-mono text-[9.5px] uppercase tracking-[0.12em] text-[color:var(--fg-muted)] md:inline">
@@ -210,9 +211,11 @@ function Item({
     return (
       <ItemCard label={label}>
         <p className={sentence}>
-          {comboReason(target) === "assembled"
-            ? upgradePathCopy.comboRule.assembled(target)
-            : upgradePathCopy.comboRule.forbidden(target)}{" "}
+          {/* EACH REASON ON THE LIST, ONCE. At Upgraded a loop of extra turns and an assembled
+              combo are different rules, and one sentence for both would misdescribe one. */}
+          {[...new Set(item.combos.map((c) => c.reason))]
+            .map((reason) => upgradePathCopy.comboRule[reason](target))
+            .join(" ")}{" "}
           <b className="font-semibold text-[color:var(--fg)]">
             {item.combos.every((c) => c.candidates.length > 1)
               ? upgradePathCopy.comboRule.either

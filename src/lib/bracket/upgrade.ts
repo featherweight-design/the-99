@@ -32,8 +32,14 @@ export type UpgradeItem =
     }
   | {
       rule: "twoCardCombos";
-      /** One entry per combo; at least one piece of each has to go. */
-      combos: { combo: ComboRef; candidates: CardRef[] }[];
+      /**
+       * One entry per combo; at least one piece of each has to go.
+       *
+       * `reason` is WHY this combo is on the list, because at Upgraded two different rules put
+       * one there — a loop of extra turns, or a combo the deck's tutors can assemble — and a
+       * surface explaining one with the other's sentence would be wrong about the deck.
+       */
+      combos: { combo: ComboRef; candidates: CardRef[]; reason: "forbidden" | "loop" | "assembled" }[];
     };
 
 export type UpgradePath = {
@@ -94,7 +100,13 @@ export function upgradePath(profile: DeckProfile, target: 1 | 2 | 3): UpgradePat
       const candidates = cuttable(combo.cards);
       // Every piece in the command zone: the combo cannot be broken by removing a card.
       if (candidates.length === 0) blocked = true;
-      return { combo, candidates };
+      const reason: "forbidden" | "loop" | "assembled" =
+        COMBO_POLICY[target] === "forbidden"
+          ? "forbidden"
+          : producesInfiniteTurns(combo.produces)
+            ? "loop"
+            : "assembled";
+      return { combo, candidates, reason };
     });
     items.push({ rule: "twoCardCombos", combos });
   }

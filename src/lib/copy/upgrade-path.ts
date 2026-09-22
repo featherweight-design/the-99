@@ -60,6 +60,8 @@ export const upgradePathCopy = {
     assembled: (bracket: Bracket) =>
       `Your tutors can assemble this one, which is what puts the deck past ${name(bracket)}.`,
     forbidden: (bracket: Bracket) => `${name(bracket)} doesn't allow two-card combos at all.`,
+    /** At Upgraded, a combo producing infinite turns — whether or not the tutors can find it. */
+    loop: (bracket: Bracket) => `${name(bracket)} doesn't allow a loop of extra turns.`,
     either: "Either half breaks it.",
   },
 

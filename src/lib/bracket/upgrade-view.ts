@@ -1,5 +1,5 @@
 import type { DeckProfile } from "../profile/types";
-import { COMBO_POLICY, GAME_CHANGER_LIMIT } from "./rules";
+import { GAME_CHANGER_LIMIT } from "./rules";
 import type { Bracket } from "./types";
 import { upgradePath, type UpgradeItem, type UpgradePath } from "./upgrade";
 
@@ -95,14 +95,6 @@ export function heldCount(
   return profile.brackets[rule].length;
 }
 
-/**
- * Which combo sentence an item reads. At 1 and 2 two-card combos are forbidden outright; at 3
- * only the ones the deck's tutors can ASSEMBLE (or a loop of extra turns) put it past, which is
- * why `upgradePath` listed them at all.
- */
-export function comboReason(target: Target): "forbidden" | "assembled" {
-  return COMBO_POLICY[target] === "forbidden" ? "forbidden" : "assembled";
-}
 
 /**
  * What a target allows of a count rule. Game changers are the only rule with room at any of the
@@ -120,25 +112,40 @@ export function targetLimit(
 /**
  * The fewest cards that answer every item at once — what "n cards would have to go" counts.
  *
- * NOT `thingsToGo`. A game changer that is also half a combo answers both lines with one cut, so
- * a combo whose cuttable half sits among a count rule's candidates costs nothing extra: the count
- * rule's removals can be chosen to include it. Every other combo costs one card.
+ * NOT `thingsToGo`. One card can answer two lines: a game changer that is also mass land denial,
+ * or also half a combo. So this is a small covering problem — each count rule needs `removeCount`
+ * of its candidates, each combo one of its halves — solved exactly over every subset of the cards
+ * named, which is never more than a couple of dozen. Past the cap it falls back to the sum,
+ * which is an upper bound and never an understatement.
  */
+const EXACT_CAP = 20;
+
 export function minimumCuts(path: UpgradePath): number {
-  const counted = new Set<string>();
-  let n = 0;
+  const needs: { ids: string[]; count: number }[] = [];
   for (const item of path.items) {
-    if (item.rule === "twoCardCombos") continue;
-    n += item.removeCount;
-    for (const card of item.candidates) counted.add(card.oracleId);
-  }
-  for (const item of path.items) {
-    if (item.rule !== "twoCardCombos") continue;
-    for (const { candidates } of item.combos) {
-      if (!candidates.some((c) => counted.has(c.oracleId))) n += 1;
+    if (item.rule === "twoCardCombos") {
+      for (const c of item.combos) needs.push({ ids: c.candidates.map((x) => x.oracleId), count: 1 });
+    } else {
+      needs.push({ ids: item.candidates.map((x) => x.oracleId), count: item.removeCount });
     }
   }
-  return n;
+  const upper = needs.reduce((n, need) => n + need.count, 0);
+  const pool = [...new Set(needs.flatMap((n) => n.ids))];
+  if (pool.length > EXACT_CAP) return upper;
+  const bit = new Map(pool.map((id, i) => [id, 1 << i]));
+  const masks = needs.map((n) => ({ mask: n.ids.reduce((m, id) => m | bit.get(id)!, 0), count: n.count }));
+  const popcount = (x: number) => {
+    let c = 0;
+    for (; x; x &= x - 1) c++;
+    return c;
+  };
+  let best = upper;
+  for (let set = 0; set < 1 << pool.length; set++) {
+    const size = popcount(set);
+    if (size >= best) continue;
+    if (masks.every((m) => popcount(set & m.mask) >= Math.min(m.count, popcount(m.mask)))) best = size;
+  }
+  return best;
 }
 
 /**
