@@ -79,10 +79,11 @@ added and the count went from nine to fourteen**, so the dependency history is a
 | **2 — receipts reshaped** ✅ | `lean.receipts[].tutors` keyed per piece; the deciding combo marked on `BracketLean`. | *shipped #792* |
 | **3 — the declaration's storage** ✅ | `decks.declared_bracket` and `deck_versions.declared_bracket`, both check-constrained; the copy at commit, gated on the version's own permits; `permits` stored sorted; `probe:declaration`. | *shipped #797 #801 #802 #803 #809* |
 | **3b — the declaration's write path** ✅ | The server action and its refusal rules — never defaulted, never inferred, no skip. Shipped #821 as `declarationRefusal` plus `declareBracket`; `probe:declaration` still cannot call it, and now says *that* rather than that the action is absent. | — |
-| **4a — the verdict head** ◐ | The permitted range, the bracket chips, and the population line. **This establishes Round 2's chrome** — rounds 3 and 4 sit inside it, so it is the one every later surface renders into. | 1b, **Round 2 re-audit** |
-| **4b — limits and violations** ◐ | The three limits tables and the violations list with their receipts. Renders inside 4a's chrome. | 4a |
+| **4a — the verdict head** ✅ | The permitted range, the bracket chips, the sub-line and the population line, plus `BracketMark`. **This establishes Round 2's chrome** — rounds 3 and 4 sit inside it. Shipped #851. | *shipped* |
+| **4b — the climb** ✅ | "Where you sit, and what moves you": the three rungs, their marks at 22/26/36, the drop sentence from `upgradePath`, and the declare rung. Renders inside 4a's chrome. Shipped #853. | *shipped* |
+| **4c — the findings and their receipt** | The five findings — tiles at desktop, rows at 390, three states — and the card-list body of the receipt modal. **Split out of 4b during the run**, because a present finding's control OPENS: "the climb states, the findings open" is the handoff's own rule, so findings without their modal are either a dead affordance or a state the design does not draw. PR 6's combo body then lands in this chrome rather than beside it. | 4b |
 | **5 — the declaration ask and sub-line** ◐ | The readings that survive the 2026-09-21 ruling, plus `permits: [4]`, which draws no line. No skip, no "you said". | 3b, 4a |
-| **6 — the lean and the reasoning modal** ◐ | The lean line, the modal body, the command-zone `found by` reading, and image resolution **at the draw** rather than in the profile. Mana drawn **as a state** — pips above zero, "No mana needed" at zero — plus the notable-prerequisites line. | 0, 2, 4b |
+| **6 — the lean and the reasoning modal** ◐ | The lean line, the modal body, the command-zone `found by` reading, and image resolution **at the draw** rather than in the profile. Mana drawn **as a state** — pips above zero, "No mana needed" at zero — plus the notable-prerequisites line. **Its combo body lands inside 4c's modal chrome**, so it waits on 4c rather than on 4b. | 0, 2, **4c** |
 | **7 — the drift row** ◐ | What survives of drift once the "you said" framing is gone — the permitted side can be a single bracket, which needs a reading. | 4a |
 | **8a — the facts payload** ✅ | The profile threaded into the builder shell and the top-off list, and a BATCHED `CandidateFacts` read for the whole pool. Measured above; Round 4's own list does not contain it. | — |
 | **8b — the push line** | The atom at two densities, on the quick-add row, the Consider tile and the top-off row. | 8a |
@@ -99,7 +100,9 @@ mutation-proved: PR 0 (#820), 3b (#821), 1b (#825), 4a's `verdictHead` (#828), 8
 7's `versionComparison` (#834), and the mark's size rules (#835). `upgradePath` shipped in
 Tier A. The bracket marks reached `public/` in #837 and the `--bracket-1…5` palette in #838.
 
-**What remains is rendering** — the component halves of 4a, 4b, 5, 6, 7 and 9, plus PR 8b,
+**4a and 4b shipped on 2026-09-22** as #851 and #853, and the row count is now FIFTEEN: the
+findings were split out of 4b as 4c, for the reason that row gives. What remains is the component
+halves of 4c, 5, 6, 7 and 9, plus PR 8b,
 which carries Round 4's three copy defects when it transcribes that module. Each wants the
 design-review property-table pass, a probe and a contact sheet, so they are build work rather
 than the tail of a rules run.
@@ -153,8 +156,9 @@ the ruling, and its §2 covers it explicitly — concluding *"nothing in this pa
 redrawing"*. `permitsFor` shipping without `[3,4]` is the package's own expectation. The
 re-audit was still worth running; the reason given for it was not.
 
-PR 4b, 5 and 6's RENDERING waits on 4a's; PR 6's additionally waits on 4b's. PR 0 is no longer a
-gate on anything — it shipped in #820.
+PR 5, 6, 7 and 9's RENDERING waited on 4a's, which shipped in #851. **PR 6 now waits on 4c**
+rather than on 4b: 4b is the climb, which opens nothing, and the modal chrome PR 6's combo body
+renders into arrives with the findings. PR 0 is no longer a gate on anything — it shipped in #820.
 
 ---
 
@@ -452,3 +456,58 @@ rebuilt 2026-09-21: every one of 20 real decks now resolves to measured role tar
 commander rung, 1 at the pair), and 18 of 20 moved off the flat 37/36 land count. Wipes fall to
 **zero** on 7 of the 20 — the most visible behaviour change, and the one to look at first. The
 measurement is recorded; the walk-through happens alongside Tier B rather than blocking it.
+
+---
+
+## What 4a and 4b settled — 2026-09-22
+
+**The mark's drawing, and it needed a third mechanic nobody had named.** The ruling was "mask the
+art, draw the numeral as HTML text", which fixes the `<img>`-renders-black problem and the
+webfont-in-an-external-SVG problem. It leaves a third: a CSS mask uses the file's ALPHA, and the
+files carry their numeral as opaque `<text>` — so the masked serif numeral survives underneath the
+Cinzel one, in the same ink, as a doubled digit. `BracketMark` subtracts it with a second mask
+layer: a hard-edged disc at 35% of `closest-side`, which is 7 of the 40 viewBox units. The numeral
+is drawn at `font-size` 16 and fits inside it; the nearest ornament to the centre is an inner
+diamond whose EDGE passes at 11.5/√2 ≈ 8.13 units, so nothing any of the ten files draws crosses
+it.
+
+**The contrast ground, measured rather than inherited — and the handoff was right.** Its twelve
+grounds are `--surface-inset` and `--surface-sunken` across six themes, and rank 1 clears 4.5:1 on
+all twelve. `--surface` is a THIRTEENTH ground the verdict block introduces, where rank 1 reads
+**4.4768** on kaldheim: short by 0.0232, on one theme. Design's to settle, and it is a palette
+question rather than a hex typo — a one-step lightening clears `--surface` and still fails
+`--surface-raised`, so the real question is which grounds a bracket mark may sit on. A second item
+joins it: a range's upper mark draws at `opacity: 0.45`, where rank 2 reads 2.2533–2.3116 and rank
+5 reads 3.9807–4.0928. Not a WCAG failure — the bracket's name is full-contrast text directly
+above — but recorded rather than left implied.
+
+**Two readings the canvas never drew.** `[4]` arrives with `violatesB3` FALSE, so nothing at
+bracket 3 was violated and a "what ruled the one below out" sentence built from violations would
+be empty on a real deck; `verdictSubLine` gives it an `assembled` reading in Design's own
+`singleExact` slot. And the absent population line is specified in `STATES-verdict.md` §E and the
+copy file and drawn nowhere.
+
+**What each gate actually caught, which is worth keeping for the rounds still to come:**
+
+- **The design-review verify pass** — 13 gaps across the two PRs, all mechanical, mostly one root
+  cause: the phone column was never split out of the desktop values.
+- **The contact sheet** — two defects no property table could see, because the property was right
+  and the CONDITION was wrong. The declare rung fired on the upper rung of ANY range, so a `[1,2]`
+  deck read "Four and five share their card limits" at bracket 2; and a rung holding nothing fell
+  back to the rung ABOVE's sentence, so a clean deck drew it twice, one under the other.
+- **The pre-open pass** — six, including two tests of this feature's own rules that measured
+  nothing, and one arithmetic bug that every other gate passed over: the climb derived its
+  allowance from the CUTTABLE pool, which `upgradePath` filters commanders out of, so a deck with
+  four game changers one of them its commander read "only two allowed at Upgraded" where Upgraded
+  allows three.
+- **The full test suite** — one regression the targeted runs missed: the climb's fact mark trips
+  `fact-mark-parity`, which requires every `CardFactMark` mount to carry its hover. The climb's
+  figure meets that guard's own exemption criterion — the rule's name is the next element — and a
+  tooltip trigger would make the climb interactive, which its first build guardrail forbids.
+
+**One design-table drift is carried rather than fixed.** The package ships `dropCut(n, rule)` —
+*"Cut {n} {rule}, only {n} fewer allowed"* — which uses one parameter for both the cut and the
+allowance and so cannot state them both, and `dropCutNamed(card, why)`, whose separator is an em
+dash this repo's shipping strings do not carry. `check:copy-drift` is green because the table
+quotes a form the code NEVER emitted rather than one it stopped emitting, which is the case that
+check cannot see by construction.
