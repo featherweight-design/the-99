@@ -1428,11 +1428,16 @@ export type CommitResult =
  * median, 2.2s on the slowest real deck — and a deck with no live declaration has nothing to
  * carry, which is every deck until a player answers.
  *
- * BUILT OUTSIDE THE CALLER'S TRANSACTION, deliberately: a 630ms build inside one holds the
- * deck's row lock for that long while every concurrent edit and claim read queues behind a
- * measurement. The race that buys is benign in the right direction — if the cards move between
- * this read and the lock, `permitsDeclaration` fails and the version records NO declaration
- * rather than one its own cards contradict.
+ * CALL IT UNDER THE CALLER'S LOCK. An earlier version built it before the transaction and
+ * called the resulting race benign, on the reasoning that `permitsDeclaration` would reject a
+ * declaration the cards no longer permit. That was wrong: `commitVersion` takes
+ * `snapshot.permits` ON TRUST and never compares them to the rows it is writing, so a stale
+ * permit list is simply believed — and the version records a declaration its own cards may not
+ * permit, which is the gate the column exists to be.
+ *
+ * It costs a 630ms-to-2.2s profile build inside a transaction, which is real. It is paid only by
+ * a deck that has DECLARED something — none of them until a player answers — and only on a
+ * deliberate commit.
  */
 async function commitSnapshotFor(
   deckId: string,
@@ -1484,8 +1489,6 @@ export async function commitDeckVersion(
     return { ok: false, message: "We couldn't find that deck." };
   }
 
-
-  const snapshot = await commitSnapshotFor(deckId, userId);
 
   const result = await db.transaction<CommitResult>(async (tx) => {
     const [deck] = await tx.select().from(decks).where(eq(decks.id, deckId)).for("update");
@@ -1612,6 +1615,19 @@ export async function commitDeckVersion(
     // than being counted here from `draft`: a path that inserts a card the deck
     // did not hold takes no row lock this transaction holds, so the two reads can
     // legitimately differ and only the snapshot's is the version's own figure.
+    // THE SNAPSHOT IS BUILT UNDER THE LOCK, and the cost is deliberate.
+    //
+    // Built before the transaction, it described the deck as it was BEFORE the row and draft
+    // locks — and `commitVersion` trusts `snapshot.permits` without comparing them to the rows
+    // it is writing. So an edit landing in that window could persist a declaration the committed
+    // cards do not permit, which is the gate this column exists to be. Calling that race
+    // "benign" was wrong: the permits are taken on trust, so nothing downstream catches it.
+    //
+    // It costs a 630ms-to-2.2s profile build inside the transaction — but ONLY for a deck that
+    // has declared something, which is none of them until a player answers, and only on a
+    // deliberate commit. Correctness of the one column the version exists to freeze is worth
+    // that on the rare path that reaches it.
+    const snapshot = await commitSnapshotFor(deckId, userId);
     const { version, cardCount } = await commitVersion(deckId, note?.trim() || null, tx, snapshot);
     return { ok: true, number: version.number, cardCount, buy, pull: removes };
   });
