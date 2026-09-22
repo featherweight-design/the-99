@@ -597,17 +597,34 @@ describe("TopOffList — the bulk tick", () => {
     // so the case stubs its answer and asserts the control honours the list's own exclusions
     // on top of it. Offering a held card and choosing one are different things, and only the
     // second changed.
-    actions.chooseBulk.mockResolvedValue({ ok: true, oracleIds: ["free-1", "held-1"] });
+    // HELD OPEN, not resolved. This control became ASYNC in #798 — it awaits a server action
+    // before it ticks anything — and the wait that used to sit below named the button that was
+    // already in the document, so it resolved without waiting for the action and the
+    // assertions raced the state update: green locally, red at random on a loaded runner.
+    //
+    // A `mockResolvedValue` settles in the same turn, so it cannot PIN that: the broken wait
+    // stays green against it and the regression walks back in. The promise is held open and
+    // released deliberately, which makes the unchecked assertion below real.
+    let release: (v: unknown) => void = () => {};
+    actions.chooseBulk.mockReturnValue(new Promise((r) => { release = r; }));
     render(<Harness candidates={[claimed("held-1"), candidate("free-1", true)]} />);
 
     const bulk = screen.getByRole("button", { name: topOffCopy.list.tickOwnedAria("1") });
     expect(bulk).toHaveTextContent(topOffCopy.list.tickOwned("1"));
 
-    fireEvent.click(bulk);
-    await screen.findByRole("button", { name: topOffCopy.list.tickOwnedAria("1") });
-    const boxes = screen.getAllByRole("checkbox");
     const byName = (name: string) =>
-      boxes.find((b) => (b.getAttribute("aria-label") ?? "").includes(name));
+      screen.getAllByRole("checkbox")
+        .find((b) => (b.getAttribute("aria-label") ?? "").includes(name));
+
+    fireEvent.click(bulk);
+    // NOTHING IS TICKED YET, and this is the line the old wait cannot survive: it asserted
+    // the tick at this point, with the action still in flight.
+    expect(byName("free-1")).not.toBeChecked();
+
+    await act(async () => {
+      release({ ok: true, oracleIds: ["free-1", "held-1"] });
+    });
+
     expect(byName("free-1")).toBeChecked();
     expect(byName("held-1")).not.toBeChecked();
   });
@@ -752,7 +769,8 @@ describe("TopOffList — the bulk tick", () => {
     // meant to save presses. The action does not know about this list's declines — it reads
     // the deck — so the control intersects its answer with what this list can tick, and this
     // case is that intersection.
-    actions.chooseBulk.mockResolvedValue({ ok: true, oracleIds: ["free-1", "free-2"] });
+    let release: (v: unknown) => void = () => {};
+    actions.chooseBulk.mockReturnValue(new Promise((r) => { release = r; }));
     render(
       <Harness
         candidates={[candidate("free-1", true), candidate("free-2", true)]}
@@ -760,10 +778,19 @@ describe("TopOffList — the bulk tick", () => {
       />,
     );
 
+    const checkedNow = () => screen.getAllByRole("checkbox")
+      .filter((b) => (b as HTMLInputElement).checked);
+
     fireEvent.click(screen.getByRole("button", { name: topOffCopy.list.tickOwnedAria("1") }));
-    await screen.findByRole("button", { name: topOffCopy.list.tickOwnedAria("1") });
-    const boxes = screen.getAllByRole("checkbox");
-    expect(boxes.filter((b) => (b as HTMLInputElement).checked)).toHaveLength(1);
+    // Held open for the same reason as the case above: an action that settles in the same
+    // turn cannot tell the right wait from the wrong one.
+    expect(checkedNow()).toHaveLength(0);
+
+    await act(async () => {
+      release({ ok: true, oracleIds: ["free-1", "free-2"] });
+    });
+
+    expect(checkedNow()).toHaveLength(1);
   });
 });
 
