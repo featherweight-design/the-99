@@ -234,5 +234,19 @@ describe("more of the rules", () => {
     const chips = within(screen.getByRole("group", { name: upgradePathCopy.targetsAria })).getAllByRole("button");
     expect(chips.map((c) => c.textContent)).toEqual(["Exhibition"]);
   });
+
+  // SEVERAL COMBOS, DIFFERENT CUTS: one breaks on either half, the other only on the half outside
+  // the command zone. Each row says its own.
+  it("says what breaks each combo on its own row", () => {
+    draw(deckProfile({
+      cards: [COMMANDER, profileCard("x", "x"), profileCard("y", "y"), profileCard("z", "z"), ...gcs(["A"])],
+      gameChangerIds: new Set(["A"]),
+      twoCardCombos: [combo("x", "y"), combo(COMMANDER.oracleId, "z")],
+    }));
+    fireEvent.click(trigger());
+    const text = panel().textContent ?? "";
+    expect(text).toContain(upgradePathCopy.comboRule.either);
+    expect(text).toContain(upgradePathCopy.countRule.forced(["z"]));
+  });
 });
 

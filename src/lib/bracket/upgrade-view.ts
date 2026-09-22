@@ -114,12 +114,13 @@ export function targetLimit(
  *
  * NOT `thingsToGo`. One card can answer two lines: a game changer that is also mass land denial,
  * or also half a combo. So this is a small covering problem — each count rule needs `removeCount`
- * of its candidates, each combo one of its halves — solved exactly over every subset of the cards
- * named, which is never more than a couple of dozen. Past the cap it falls back to the sum,
- * which is an upper bound and never an understatement.
+ * of its candidates, each combo one of its halves.
+ *
+ * EXACT AT ANY SIZE, because cards that belong to exactly the same lines are interchangeable. They
+ * are grouped by that membership, so the search is over how many to take from each GROUP rather
+ * than over subsets of cards — and a deck has only a handful of lines, so only a handful of
+ * groups, however many cards it holds.
  */
-const EXACT_CAP = 20;
-
 export function minimumCuts(path: UpgradePath): number {
   const needs: { ids: string[]; count: number }[] = [];
   for (const item of path.items) {
@@ -129,22 +130,39 @@ export function minimumCuts(path: UpgradePath): number {
       needs.push({ ids: item.candidates.map((x) => x.oracleId), count: item.removeCount });
     }
   }
-  const upper = needs.reduce((n, need) => n + need.count, 0);
-  const pool = [...new Set(needs.flatMap((n) => n.ids))];
-  if (pool.length > EXACT_CAP) return upper;
-  const bit = new Map(pool.map((id, i) => [id, 1 << i]));
-  const masks = needs.map((n) => ({ mask: n.ids.reduce((m, id) => m | bit.get(id)!, 0), count: n.count }));
-  const popcount = (x: number) => {
-    let c = 0;
-    for (; x; x &= x - 1) c++;
-    return c;
-  };
-  let best = upper;
-  for (let set = 0; set < 1 << pool.length; set++) {
-    const size = popcount(set);
-    if (size >= best) continue;
-    if (masks.every((m) => popcount(set & m.mask) >= Math.min(m.count, popcount(m.mask)))) best = size;
+  // A need cannot ask for more than its candidates hold: the rest is in the command zone, and no
+  // cut reaches it.
+  const req = needs.map((n) => Math.min(n.count, n.ids.length));
+  const membership = new Map<string, number[]>();
+  needs.forEach((n, i) => {
+    for (const id of n.ids) membership.set(id, [...(membership.get(id) ?? []), i]);
+  });
+  const groups = new Map<string, { needs: number[]; size: number }>();
+  for (const list of membership.values()) {
+    const key = list.join(",");
+    const g = groups.get(key);
+    if (g) g.size += 1;
+    else groups.set(key, { needs: list, size: 1 });
   }
+  const gs = [...groups.values()];
+  let best = req.reduce((a, b) => a + b, 0);
+  const left = [...req];
+  const search = (g: number, taken: number) => {
+    if (taken >= best) return;
+    if (left.every((r) => r <= 0)) {
+      best = taken;
+      return;
+    }
+    if (g === gs.length) return;
+    const { needs: ns, size } = gs[g];
+    const useful = Math.min(size, Math.max(0, ...ns.map((i) => left[i])));
+    for (let k = useful; k >= 0; k--) {
+      for (const i of ns) left[i] -= k;
+      search(g + 1, taken + k);
+      for (const i of ns) left[i] += k;
+    }
+  };
+  search(0, 0);
   return best;
 }
 

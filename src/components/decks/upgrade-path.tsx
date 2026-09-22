@@ -216,20 +216,12 @@ function Item({
           {[...new Set(item.combos.map((c) => c.reason))]
             .map((reason) => upgradePathCopy.comboRule[reason](target))
             .join(" ")}{" "}
-          <b className="font-semibold text-[color:var(--fg)]">
-            {item.combos.every((c) => c.candidates.length > 1)
-              ? upgradePathCopy.comboRule.either
-              // One half is in the command zone, so only the other can break it: the rules
-              // choose, and the card is named rather than offered as a choice.
-              : upgradePathCopy.countRule.forced(
-                  item.combos.flatMap((c) => (c.candidates.length === 1 ? [c.candidates[0].name] : [])),
-                )}
-          </b>
+          {item.combos.length === 1 ? <b className="font-semibold text-[color:var(--fg)]">{comboClause(item.combos[0])}</b> : null}
         </p>
         {/* THE SPACER holds the label column's second row so the pairs line up with the sentence. */}
         <span className="hidden md:block" />
         <div className="flex flex-col gap-[7px] md:mt-[5px] md:gap-[5px]">
-          {item.combos.map(({ combo, candidates }) => (
+          {item.combos.map(({ combo, candidates, reason }) => (
             <div key={combo.variantId} className="flex flex-wrap items-center gap-x-[14px] gap-y-1.5">
               {combo.cards.map((card, i) => (
                 <span key={card.oracleId} className="inline-flex items-center gap-[14px]">
@@ -243,6 +235,13 @@ function Item({
                   )}
                 </span>
               ))}
+              {/* SEVERAL COMBOS: each row says what breaks IT, because one may lose either half
+                  and another only the half outside the command zone. */}
+              {item.combos.length > 1 ? (
+                <b className="text-[12.5px] font-semibold text-[color:var(--fg)]">
+                  {comboClause({ candidates, reason })}
+                </b>
+              ) : null}
               {combo.produces[0] ? (
                 <span className="font-mono text-[9.5px] uppercase tracking-[0.1em] text-[color:var(--fg-locked)]">
                   {combo.produces[0]}
@@ -280,6 +279,16 @@ function Item({
       )}
     </ItemCard>
   );
+}
+
+/**
+ * What breaks ONE combo: either half, or — when the other is in the command zone — the one half
+ * that can go, named, because the rules chose it.
+ */
+function comboClause({ candidates }: { candidates: readonly CardRef[]; reason?: string }): string {
+  return candidates.length > 1
+    ? upgradePathCopy.comboRule.either
+    : upgradePathCopy.countRule.forced(candidates.map((c) => c.name));
 }
 
 /**

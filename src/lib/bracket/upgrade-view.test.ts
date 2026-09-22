@@ -146,3 +146,17 @@ describe("minimumCuts across count rules", () => {
   });
 });
 
+
+describe("minimumCuts at any size", () => {
+  // TWENTY-FIVE game changers, one of them also mass land denial: at Core every one must go, and
+  // the land-denial line is answered by a card already cut. No size cap overstates it.
+  it("stays exact past twenty cards", () => {
+    const ids = Array.from({ length: 25 }, (_, i) => `g${i}`);
+    const profile = deckProfile({
+      cards: [COMMANDER, ...ids.map((id) => profileCard(id, id))],
+      gameChangerIds: new Set(ids),
+      mldFlags: new Map([["g0", ["oracle_rule"] as FlagSource[]]]),
+    });
+    expect(minimumCuts(upgradePath(profile, 2))).toBe(25);
+  });
+});
