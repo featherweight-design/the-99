@@ -69,6 +69,12 @@ function makeDeck(): DeckDetail {
     toBuyCount: 0,
     total: 1,
     unresolvedRows: [],
+    // Added when `DeckDetail` gained them (#854), which merged after the PR that last touched
+    // this fixture (#852). Neither branch could see the other, so both were green alone and
+    // `main` was not. Stated rather than spread from a default: a fixture that inherits fields
+    // it does not name stops saying what the case is about.
+    declaredBracket: null,
+    noteCounts: { gameChanger: 0, massLandDenial: 0, extraTurns: 0, tutor: 0 },
   } as DeckDetail;
 }
 
