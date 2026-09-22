@@ -19,8 +19,8 @@ Drizzle on Neon, Vitest, Playwright probes.
 | Round 0 — the frame | merged (#753) |
 | Round 1 — the card mark | **shipped** |
 | Round 2 — the verdict | design complete, **unbuilt** |
-| Round 3 — the declaration | audited 🟠 Orange, PR #773; one Design question open |
-| Round 4 — the push line and the upgrade path | brief written (#774); **not yet drawn** |
+| Round 3 — the declaration | audited 🟡 Yellow at R7, 2026-09-21; no Design question open |
+| Round 4 — the push line and the upgrade path | audited 🟡 Yellow at R2, 2026-09-21; Design self-assesses Green |
 
 ---
 
@@ -76,7 +76,7 @@ described, and because the reasoning modal specifies two columns the database do
 | **4b — limits and violations** | The three limits tables and the violations list with their receipts. Renders inside 4a's chrome. | 4a |
 | **5 — the declaration ask and sub-line** | The readings that survive the 2026-09-21 ruling, plus `permits: [4]`, which draws no line. No skip, no "you said". | 3b, 4a |
 | **6 — the lean and the reasoning modal** | The lean line, the modal body, the command-zone `found by` reading, and image resolution **at the draw** rather than in the profile. Mana drawn **as a state** — pips above zero, "No mana needed" at zero — plus the notable-prerequisites line. | 0, 2, 4b |
-| **7 — the drift row** | **HELD on Design** — see risks. | Design answer |
+| **7 — the drift row** | What survives of drift once the "you said" framing is gone — the permitted side can be a single bracket, which needs a reading. | 4a |
 | **8a — the facts payload** | The profile threaded into the builder shell and the top-off list, and a BATCHED `CandidateFacts` read for the whole pool. Measured above; Round 4's own list does not contain it. | — |
 | **8b — the push line** | The atom at two densities, on the quick-add row, the Consider tile and the top-off row. | 8a |
 | **9 — the upgrade path** | Candidate sets, never a pick; the `blocked` reading. | Round 4 design |
@@ -89,10 +89,19 @@ batched facts read.
 **PR 4a is the critical path** — rounds 3 and 4 sit inside the chrome it establishes — and it now
 carries two gates rather than one. It needs PR 1b's tab to render into, and it needs **Round 2's
 readiness audit re-run** (ruled 2026-09-21). That audit is the only one never revisited: it
-predates the 3-vs-4 boundary resolving, marks being fixed at 16px, all five marks staying, and
-the declaration coming off the cached profile — four rulings that change things underneath it —
-and it carries eleven errata engineering was told to fold in, none of which has been checked
-against the rulings since.
+carries twelve errata engineering was told to fold in — twelve, not eleven: R1's list numbers
+1–10, then 12 and 13, and every summary of it since has repeated the wrong count.
+
+**RE-AUDITED 2026-09-21, and the result is 🟢 Green** (`READINESS-r2-audit.md`). Five errata
+are resolved, one is retired by the 16px mark ruling, one is stale as written (the `MarkKey`
+prop claim — the key split in two in #776), and the five that remain are engineering's to carry
+at build time. Nothing needs Design.
+
+**One claim this plan made about that audit was false and is corrected here.** It said R1
+predates the 3-vs-4 boundary resolving. It does not: R1 is dated 2026-09-20, the same day as
+the ruling, and its §2 covers it explicitly — concluding *"nothing in this package needs
+redrawing"*. `permitsFor` shipping without `[3,4]` is the package's own expectation. The
+re-audit was still worth running; the reason given for it was not.
 
 PR 4b, 5 and 6 wait on 4a; PR 6 additionally waits on PR 0 and on 4b.
 
@@ -339,10 +348,15 @@ sized before the surface was planned — and it was planned anyway. **PR 0** is 
 PR 6 is blocked on it. See R7 for what the mana field turned out to be, and the sampling trap
 that nearly hid it.
 
-**5. Round 2's readiness audit is re-run before PR 4a starts.** It is the only round's audit never
-revisited. Four rulings have landed underneath it and eleven errata sit unchecked against them.
-PR 4 is the biggest build in the epic; starting it from a reading four rulings out of date is the
-expensive version of saving a cycle.
+**5. Round 2's readiness audit is re-run before PR 4a starts.** DONE, 2026-09-21, verdict
+🟢 Green — `READINESS-r2-audit.md`. It was the only round's audit never revisited, and PR 4a
+is the biggest build in the epic, so starting it from an unchecked reading was the expensive
+version of saving a cycle.
+
+**The reason this plan gave for ordering it was wrong**, and the re-audit says so in its own
+first section: R1 does not predate the 3-vs-4 ruling. What the pass actually found was worth the
+cycle anyway — a stale `MarkKey` claim that would have cost a build round, twelve errata rather
+than eleven, and five items already resolved that nobody had struck off.
 
 **6. PR 1's unowned work becomes PR 1b, ahead of the verdict block.** PR 1 shipped the tab, the
 flag and the mix strip's move, and deliberately read no profile — so the on-demand fetch, the
