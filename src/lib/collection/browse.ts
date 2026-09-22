@@ -171,6 +171,16 @@ export type BrowseCard = {
    * nothing drawn from it may say otherwise.
    */
   facts?: CardFact[];
+  /**
+   * STATE 1 of combo awareness: this card and `comboPartner` are two halves of a two-card
+   * combo, both owned, and no single deck holds both.
+   *
+   * Absent for every other card, and absent is the common case — 65 of 2,805 on the reference
+   * collection. A name rather than a flag, because the clause NAMES the partner and never
+   * counts: detection excludes template-gated variants by design, so a number beside it would
+   * be the first thing on the surface that is not true.
+   */
+  comboPartner?: { oracleId: string; name: string };
   availability?: Availability | null;
   /**
    * The decks printing this card, which is NOT part of `availability.claims` and
