@@ -158,14 +158,28 @@ const READ_NOTES = (boxSelector) => {
   return out;
 };
 
-/** Every host box of a kind, and whether it holds a note — so "no note, no height" is
- *  measurable as a DIFFERENCE between two real rows rather than as an absolute. */
+/**
+ * Every host box of a kind, measured against ITS OWN row line.
+ *
+ * The figure is the box's height MINUS the height of the line inside it — the room the box
+ * gives to anything below that line, which on this surface is the note and nothing else.
+ * Normalising that way is the whole of the reading: a phone row's own height ranges 73 to
+ * 92px purely on how a card's name wraps, so comparing a tall un-noted row against a short
+ * noted one can fail a build that is correct, which is a probe manufacturing a defect.
+ */
 const READ_BOXES = (boxSelector) => {
   const out = [];
   for (const box of document.querySelectorAll(`main ${boxSelector}`)) {
     const r = box.getBoundingClientRect();
     if (r.width === 0 || r.height === 0) continue;
-    out.push({ height: Math.round(r.height), noted: box.querySelector('[data-testid="card-note"]') !== null });
+    const line = box.firstElementChild;
+    if (!line) continue;
+    out.push({
+      // Rounded to whole pixels: sub-pixel layout differences between two rows are not the
+      // subject, and a 0.5px drift would otherwise read as reserved space.
+      below: Math.round(r.height - line.getBoundingClientRect().height),
+      noted: box.querySelector('[data-testid="card-note"]') !== null,
+    });
   }
   return out;
 };
@@ -280,15 +294,16 @@ function checkNoReservedHeight(where, boxes) {
     );
     return;
   }
-  // The un-noted hosts must all be the SAME height as each other and SHORTER than a noted one.
-  // Equality alone would pass on a build that reserved the slot on every row; shorter alone
-  // would pass on one where the slot varied for unrelated reasons.
-  const tallestPlain = Math.max(...plain.map((b) => b.height));
-  const shortestNoted = Math.min(...noted.map((b) => b.height));
+  // Every un-noted host gives the SAME room below its line as every other, and a noted one
+  // gives more. Equality alone would pass on a build that reserved the slot on every row;
+  // "more" alone would pass on one where the room varied for unrelated reasons.
+  const plainRoom = [...new Set(plain.map((b) => b.below))];
+  const tallestPlain = Math.max(...plainRoom);
+  const shortestNoted = Math.min(...noted.map((b) => b.below));
   report(
     `${where} · a host with no fact reserves no height for a note`,
-    tallestPlain < shortestNoted,
-    `un-noted up to ${tallestPlain}px, noted from ${shortestNoted}px`,
+    plainRoom.length === 1 && tallestPlain < shortestNoted,
+    `un-noted ${plainRoom.join(", ")}px below the line, noted from ${shortestNoted}px`,
   );
 }
 
