@@ -81,11 +81,23 @@ from commander_support cs join cards c on c.oracle_id = cs.commander_oracle_id
 where c.name = 'Kinnan, Bonder Prodigy';
 ```
 
-**What a reader sees change:** the Recommended mix strip's gloss goes from
-`A common starting point` to `EDHREC averages`, and the four role cells stop reading
-10 / 10 / 8 / 3 on every deck — each deck now draws whichever rung of the chain served it. No redeploy is needed — the figures are read per request, and
-the cached payloads carry the index generation in their key, so they retire themselves within
-the hour ceiling at worst.
+**What a reader sees change, and on which decks.** A deck whose basis chain resolves to
+measured targets draws them: its four role cells stop reading 10 / 10 / 8 / 3 and show
+whichever rung served it. A deck whose commander the index left **absent or degraded**, and
+whose identity and count buckets carry nothing either, keeps the asserted cells — the chain
+ends at the flat baseline by design, and no index run makes that deck measured.
+
+The strip's gloss is stricter still: `mixSourceLine` reads `A common starting point` unless
+**both** the role and the land halves are measured, so a deck with measured roles and no
+composition keeps the old gloss while its cells move.
+
+Measured on staging after its 2026-09-21 index run, for calibration rather than as a promise
+about production: 20 of 20 real decks resolved to measured role targets — 19 at the commander
+rung, 1 at the pair rung — and 18 of 20 moved off the flat 37/36 land count.
+
+**No redeploy is needed for this switch.** The figures are read per request, and the cached
+payloads carry the index generation in their key, so they retire themselves within the hour
+ceiling at worst. (Step 2's flag is the opposite case, and says so.)
 
 ---
 
@@ -103,13 +115,24 @@ reloading shows no tab — with the code, the read and its own comment all appar
 To deploy the current `main` rather than rebuilding the old commit (the dashboard "Redeploy"
 button rebuilds the *same* commit):
 
-```
-POST https://api.vercel.com/v13/deployments?teamId=team_tBEQct4aCLPw5a8jbqRJbuPZ
-{"name":"the-99","project":"the-99","target":"production",
- "gitSource":{"type":"github","repoId":1305223398,"ref":"main","sha":"<sha>"}}
+```sh
+# A Vercel token with access to the team, from
+# https://vercel.com/account/settings/tokens
+export VERCEL_TOKEN=...
+
+# The SHA to deploy, read from the remote rather than typed — a stale local main
+# silently deploys the wrong commit, which is the failure this whole step avoids.
+SHA=$(git ls-remote https://github.com/HartiganHM/the-99 refs/heads/main | cut -f1)
+
+curl -sS -X POST \
+  "https://api.vercel.com/v13/deployments?teamId=team_tBEQct4aCLPw5a8jbqRJbuPZ" \
+  -H "Authorization: Bearer $VERCEL_TOKEN" \
+  -H "Content-Type: application/json" \
+  -d "{\"name\":\"the-99\",\"project\":\"the-99\",\"target\":\"production\",
+       \"gitSource\":{\"type\":\"github\",\"repoId\":1305223398,\"ref\":\"main\",\"sha\":\"$SHA\"}}"
 ```
 
-Verify with `meta.githubCommitSha` on the returned deployment.
+Verify `meta.githubCommitSha` on the returned deployment matches `$SHA`.
 
 ### What this switch moves
 
