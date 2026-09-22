@@ -251,18 +251,32 @@ describe("classifyPrinting", () => {
     });
   });
 
-  it("still ingests a reversible card whose type line merely MENTIONS a token", () => {
-    // The rule is about what this card IS, and `startsWith` is what keeps it there: a real
-    // card is never type-lined `Token …`, and one whose rules text makes tokens is a card.
+  it("reads the TYPE LINE's opening word, not the rules text and not a mention", () => {
+    // Two fixtures, because one of them measures nothing on its own. A card whose ORACLE
+    // TEXT says "token" passes with the gate deleted — the gate never reads that field — so
+    // it pins nothing by itself and is here only to say the rules text is out of scope.
     const maker = {
       ...reversible,
       card_faces: reversible.card_faces.map((f) => ({
         ...f,
         type_line: "Legendary Enchantment",
-        oracle_text: "Create a 1/1 Token creature.",
+        oracle_text: "Create a 1/1 colorless Thopter artifact creature token.",
       })),
     };
     expect(classifyPrinting(maker).kind).toBe("printing");
+
+    // THIS is the one that distinguishes `startsWith` from `includes`: a type line that
+    // CONTAINS the word downstream of its opening. Synthetic — Scryfall types every token it
+    // prints as `Token …` at the head — and here precisely because the rule is about the
+    // opening word, so widening it to a substring match would start dropping real cards.
+    const mentions = {
+      ...reversible,
+      card_faces: reversible.card_faces.map((f) => ({
+        ...f,
+        type_line: "Enchantment — Token Role",
+      })),
+    };
+    expect(classifyPrinting(mentions).kind).toBe("printing");
   });
 
   it("treats an EMPTY face oracle id as absent rather than as a value", () => {

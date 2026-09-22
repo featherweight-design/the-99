@@ -126,11 +126,16 @@ export function classifyPrinting(raw: Raw): PrintingClassification {
   //     the face there instead would UPSERT over that row with this layout's doubled name
   //     (`Teferi's Ageless Insight // Teferi's Ageless Insight`), which is a worse defect
   //     than the one being fixed. The consequence is a real risk and is named rather than
-  //     papered over: a reversible printing whose oracle has NO other printing now reaches
-  //     the FK-orphan check instead of being turned away here, and one orphan refuses the
-  //     whole refresh's base-set sizing. Zero of the 82 are in that position — all 71 of
-  //     their oracles are in `cards`, checked including the 17 newest non-Secret-Lair ones —
-  //     and if one ever is, the run fails loudly with a named count rather than silently.
+  //     papered over: a reversible printing whose oracle has NO other printing reaches the
+  //     FK-orphan check instead of being turned away here, and one orphan refuses the whole
+  //     refresh's base-set sizing.
+  //
+  //     THAT HAPPENED ON THE FIRST RUN, and the sampling said it would not: 1 of the 71
+  //     oracles is missing from `cards`, not 0. It is `sld/1969` Mechtitan, a TOKEN, whose
+  //     only other printing is `tneo/14` with layout `token` — so `cards` has no row and
+  //     should not. The token gate below turns it away now. The claim that survives is the
+  //     narrower one: no reversible printing of a REAL card is missing its oracle, and a
+  //     future one would fail the run loudly with a named count rather than silently.
   //
   //   · `back_image_uri` is stored for these printings and NOT drawn. The flip control is
   //     gated on `isTwoFaced(card.layout)`, which is oracle-level and reads `normal` here,
@@ -151,8 +156,16 @@ export function classifyPrinting(raw: Raw): PrintingClassification {
     //
     // Routed to the skipped LEDGER rather than counted as reversible, because that is what
     // it is — the ledger is what lets an upload say "token" instead of "unmatched". One of
-    // the 82 is in this position; the check is on the type line rather than on the name so
-    // it stays a rule about tokens rather than a list of them.
+    // the 82 is in this position; the check is on the type line rather than on the id, so it
+    // stays a rule about tokens rather than a list of one that rots.
+    //
+    // SCOPED TO THIS LAYOUT, and the wider gap is real and NOT fixed here. Six printings of
+    // five Wilds of Eldraine ROLE tokens are typed `Token Enchantment — Aura Role` under
+    // layout `flip`, which neither transform skips, so they sit in `cards` and `printings`
+    // as ordinary cards today — searchable and deck-addable. That predates this change and
+    // removing them deletes catalog rows, which is a different blast radius from turning one
+    // row away at ingest. Nothing references them (0 collection rows, 0 deck rows, checked
+    // on staging 2026-09-22), so it is a safe follow-up rather than an urgent one.
     if (revFaces.some((f) => typeof f.type_line === "string" && f.type_line.startsWith("Token"))) {
       return {
         kind: "skipped-layout",
