@@ -24,9 +24,10 @@ const EXEMPT = new Map([
   ["src/components/decks/add-surface-mark-key.tsx", "the add surfaces' key, same sample"],
   ["src/components/cards/card-modal.tsx", "the modal spells all three facts out in prose"],
   [
-    "src/components/decks/bracket-climb.tsx",
-    "the climb's figure names the rule in the next element — and nothing in the climb is "
-    + "interactive, which a tooltip trigger would change",
+    "src/components/decks/finding-mark.tsx",
+    "every mount names the fact in the next element — a climb figure, a finding, a receipt "
+    + "header — which is the verdict addendum's condition for a mark with no key; and the climb "
+    + "is not interactive, which a tooltip trigger would change",
   ],
 ]);
 

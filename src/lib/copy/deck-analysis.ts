@@ -345,6 +345,81 @@ export const deckAnalysisCopy = {
   },
 
   /**
+   * "What is in this deck" — five findings, each with its count and its cards.
+   *
+   * THE FINDINGS OPEN AND THE CLIMB STATES. Every count here that has cards behind it opens the
+   * receipt; a zero opens nothing and draws no control, because an affordance onto nothing is
+   * worse than none.
+   */
+  findings: {
+    heading: "What is in this deck",
+    labels: {
+      gameChangers: "Game changers",
+      massLandDenial: "Mass land denial",
+      extraTurns: "Extra turns",
+      twoCardCombos: "Two-card infinites",
+      tutors: "Tutors",
+    },
+    empty: "nothing in the list",
+    /** Tutors only. No bracket limits them, and the chip says so where the figure is. */
+    noLimit: "no limit",
+    /** Never a bare `+3`: the names come first, and the tail says how many are not shown. */
+    names: (shown: string[], rest: number) =>
+      rest > 0 ? `${shown.join(" · ")} · +${rest}` : shown.join(" · "),
+    comboPair: (a: string, b: string) => `${a} + ${b}`,
+    /** An arrow, not a caret: it opens a modal, and a caret promises an expand in place. */
+    open: (n: number) => (n === 1 ? "see the card" : "see the cards"),
+    openCombo: (n: number) => (n === 1 ? "see the combo" : "see the combos"),
+    openAria: (n: number, label: string) => `Show the ${n} ${label.toLowerCase()} in this deck`,
+  },
+
+  /**
+   * The receipt: one modal, two bodies. The header is glyph, name, count and close in both.
+   *
+   * THE COMBO BODY QUOTES SPELLBOOK and says nothing of its own about whether a line is good.
+   * "Assembled in this list" is the whole claim the foot makes: intent is not inferable from a
+   * decklist, and the foot must not appear to have answered it.
+   */
+  receipt: {
+    manaNeeded: "Mana needed",
+    /** The zero is an ANSWER. 59% of combos need nothing to execute, and a free combo is the
+     *  alarming reading — a blank slot would throw it away. */
+    manaFree: "No mana needed",
+    /** Null upstream, which is rare and is genuinely unknown rather than free. */
+    manaUnknown: "Commander Spellbook does not say",
+    steps: "Steps",
+    /** Spellbook's `notablePrerequisites`, drawn under the steps. Absent on 36% of combos. */
+    prerequisites: "Needs",
+    assembled: "assembled in this list",
+    spellbook: "Commander Spellbook",
+    /** Two distinct names, because on a phone both sheets are on screen at once. */
+    closeAria: (label: string) => `Close ${label.toLowerCase()}`,
+    opened: (n: number, label: string) => `${n} ${label.toLowerCase()} shown.`,
+  },
+
+  /**
+   * "How we make these decisions" — collapsed by default, read once, mid-argument.
+   *
+   * The row sentences live in `detection` below; this is the panel's own frame around them.
+   */
+  provenance: {
+    toggle: "How we make these decisions",
+    /**
+     * "Work out from your cards", not "by reading your cards": the three rows below it combine
+     * Commander Spellbook's index and estimate with our own reading of the rules text, and a lead
+     * claiming the reading alone would be contradicted by the rows it introduces.
+     */
+    lead:
+      "Four things decide a bracket. One of them is a published list, so we can be exact. The "
+      + "other three we work out from your cards, with Commander Spellbook's index and our own "
+      + "reading of the rules text. Here is where each answer comes from, and what it might miss.",
+    /** The source a row links to, where one exists to link. */
+    source: (name: string) => `${name} ↗`,
+    /** The published rules, dated, because the rules are a blog post and can move. */
+    rulesChecked: (date: string) => `Rules as published, checked ${date}.`,
+  },
+
+  /**
    * "How we make these decisions" — four rows, one per rule.
    *
    * Game changers carries NO misses line, deliberately: it is the contrast that makes the other

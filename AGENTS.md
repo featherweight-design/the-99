@@ -746,6 +746,28 @@ Package manager is **pnpm** (pinned via `packageManager` in package.json) — ne
   five fail; the counts are in its header. It writes only that one `user_prefs` row — point it
   at `local-dev`, **never production**.
 
+- `pnpm probe:verdict-findings` walks the Analysis tab's findings and their receipt at
+  1300x900 and 390x844 — thirty-four checks, and every one is a fact about layout or about two
+  dialogs at once, which jsdom has neither of.
+
+  **The five findings are one list restyled at `md:`**, tiles in a row on desktop and rows in a
+  column on the phone, so a class that did not compile leaves identical markup and the wrong
+  layout; the probe groups them by MEASURED top and left edge. **A card opened from a receipt
+  STACKS** (verdict addendum, ruling 1): the receipt stays, steps down to `--surface-sunken`,
+  and on the phone the card sheet starts at 96px so the receipt's header row is whole above it.
+  That last clause is asserted as the header's rect against the sheet's top, and it is the one
+  that found a defect: the header measured 46px against a 43px strip and was cut along its
+  bottom edge by the sheet that exists to show it. **Two Escapes land in the order the sheets
+  opened** — `useDialogA11y` ignores a key pressed inside another dialog, and only a real focus
+  model says it did.
+
+  It finds its own fixture by pressing the account's decks until one draws a finding with cards
+  behind it, and FAILS when none of the first twelve does, because a run over a deck with nothing
+  in it reports every receipt check as passing about nothing. Two mutations fail it: the stacked
+  offset removed (`top 0`) and the desktop grid removed (`5 distinct tops`). It writes only the
+  `user_prefs` About row `probe:verdict-block` writes. Point it at `local-dev`, **never
+  production**.
+
 - `pnpm probe:commander-availability` walks the two panels on `/commanders/[slug]` that
   draw a card's claim — Role Coverage and the synergy panel — at 1300x900 and 390x844,
   because their rulings are resolved styles rather than markup: the chip's 28px against a

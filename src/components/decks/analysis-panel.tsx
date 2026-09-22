@@ -6,6 +6,9 @@ import { slotDeck } from "../../lib/bracket/slot";
 import { deckAnalysisCopy } from "../../lib/copy/deck-analysis";
 import type { ProfileState } from "./use-deck-profile";
 import { BracketClimb } from "./bracket-climb";
+import { FindingsBlock } from "./findings-block";
+import { ProvenancePanel } from "./provenance-panel";
+import type { FindingArt } from "./receipt-modal";
 import { VerdictBlock } from "./verdict-block";
 
 /**
@@ -28,10 +31,16 @@ export function AnalysisPanel({
   state,
   onRequest,
   synopsis,
+  art = EMPTY_ART,
   children,
 }: {
   state: ProfileState;
   onRequest: () => void;
+  /**
+   * The art and printed name for every card the findings can name, from the deck page's own
+   * rows. See `FindingArt` for why it is resolved here rather than carried on the profile.
+   */
+  art?: FindingArt;
   /**
    * The synopsis slot, which sits ABOVE the verdict rather than among `children`.
    *
@@ -55,7 +64,7 @@ export function AnalysisPanel({
         the declaration's own surface is PR 5's. Defaulting one would be the thing the round's
         rulings forbid outright: never inferred, never defaulted.
       */}
-      {state.kind === "ready" ? <Verdict profile={state.profile} /> : null}
+      {state.kind === "ready" ? <Verdict profile={state.profile} art={art} /> : null}
       {children}
     </div>
   );
@@ -68,15 +77,25 @@ export function AnalysisPanel({
  * are two chances for the two blocks to disagree about the same deck the day it stops being
  * either — and the climb's rungs are derived from the verdict's own `permits`.
  */
-function Verdict({ profile }: { profile: import("../../lib/profile/types").DeckProfile }) {
+function Verdict({
+  profile,
+  art,
+}: {
+  profile: import("../../lib/profile/types").DeckProfile;
+  art: FindingArt;
+}) {
   const verdict = slotDeck(profile);
   return (
     <>
       <VerdictBlock verdict={verdict} profile={profile} />
       <BracketClimb verdict={verdict} profile={profile} />
+      <FindingsBlock profile={profile} art={art} />
+      <ProvenancePanel />
     </>
   );
 }
+
+const EMPTY_ART: FindingArt = new Map();
 
 function Reading({ state, onRequest }: { state: ProfileState; onRequest: () => void }) {
   // THE FLAG BEING OFF DRAWS NOTHING. Not a reading, not an explanation: this deployment has no

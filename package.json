@@ -87,6 +87,7 @@
     "measure:tutors": "tsx scripts/measure-tutor-targets.mts",
     "probe:bracket": "tsx scripts/probe-bracket.ts",
     "probe:verdict-block": "node scripts/probe-verdict-block.mjs",
+    "probe:verdict-findings": "node scripts/probe-verdict-findings.mjs",
     "measure:roles": "tsx scripts/measure-role-targets.mts",
     "probe:card-mark": "node scripts/probe-card-mark.mjs",
     "probe:role-targets": "tsx scripts/probe-role-targets.ts",
