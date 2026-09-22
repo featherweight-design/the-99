@@ -60,9 +60,16 @@ comfortably past the rule, and the rule says a PR that size is split *with its b
 here, before implementation*, rather than noted as an exception. The seam is the chrome: **4a**
 establishes the head that rounds 3 and 4 sit inside, **4b** fills it.
 
-**Revised 2026-09-21** after two plan reviews and five rulings. Two PRs were added — a combo
-ingest widening and a **PR 1b** — because PR 1 shipped deliberately narrower than this table
-described, and because the reasoning modal specifies two columns the database does not have.
+**Revised 2026-09-21** after two plan reviews, five rulings, and a pre-open pass. **Four rows were
+added and the count went from nine to fourteen**, so the dependency history is auditable:
+
+- **PR 0**, because the reasoning modal specifies two columns the database does not have.
+- **PR 1b**, because PR 1 shipped deliberately narrower than this table described.
+- **PR 3b**, because PR 3 shipped its storage and not its write path — found by the pre-open pass,
+  the same orphaning as PR 1 in the same table.
+- **PR 4b**, because PR 4 exceeded the split rule and the rule says split rather than annotate.
+
+`8a`/`8b` were already two rows and are unchanged by this revision.
 
 | PR | What | Blocked by |
 |---|---|---|
@@ -92,7 +99,9 @@ readiness audit re-run** (ruled 2026-09-21). That audit is the only one never re
 carries twelve errata engineering was told to fold in — twelve, not eleven: R1's list numbers
 1–10, then 12 and 13, and every summary of it since has repeated the wrong count.
 
-**RE-AUDITED 2026-09-21, and the result is 🟢 Green** (`READINESS-r2-audit.md`). Five errata
+**RE-AUDITED 2026-09-21, and the result is 🟢 Green.** The audit is
+`design/design_handoff_the99_verdict/READINESS-r2-audit.md`, **which lands in PR #816 and is not
+in this checkout** — so a reader inspecting `main` before that merges will not find it. Five errata
 are resolved, one is retired by the 16px mark ruling, one is stale as written (the `MarkKey`
 prop claim — the key split in two in #776), and the five that remain are engineering's to carry
 at build time. Nothing needs Design.
@@ -164,8 +173,14 @@ What PR 1b owes is two assertions the existing probe cannot make, because PR 1 l
 **It retires the cache with an input the FINGERPRINT ACTUALLY READS.** `profileFingerprint`
 deliberately excludes `auto` and takes no deck name, so "edit the deck" is not a proof — a
 rename or a fill can leave the fingerprint byte-identical while the cache is working perfectly,
-and the check would pass either way. Change a card's quantity, a commander, or the declaration,
-and assert the second read differs from the first.
+and the check would pass either way. Change a card's quantity or a commander, and assert the
+second read differs from the first.
+
+**NOT the declaration.** It was removed from the fingerprint deliberately (#797) because the
+profile does not read it — `fingerprint.ts` lists it under "What is OUT" — so changing only
+`declared_bracket` cannot move the key. Requiring it to would make this proof impossible, and
+"fixing" that by putting the declaration back in the fingerprint would couple a one-column
+write to a full profile rebuild, which is the 630ms the whole on-demand shape exists to avoid.
 
 **And the profile is NOT fetched for a reader who never presses the tab.** That is the whole
 reason shape 3 was chosen, and a check proving only that the tab works passes just as happily on
@@ -174,13 +189,24 @@ the shape that costs every deck visit a profile build.
 **PR 2.** Pure unit tests, mutation-proved. The deciding-combo rule reuses `comboLandsEarly`'s
 per-combo predicate rather than a second copy of it.
 
-**PR 3.** `probe:declaration` against a real Postgres, with this repo's fixture discipline — a
-per-run `user_id` deleted in a `finally`, pointed at `local-dev` or a scratch branch, never
-production. Three facts no unit test can reach: a declaration survives a re-import and a
-re-analysis; **it is captured into the version at commit and the version's copy never moves
-afterwards**; and the column's check constraint refuses anything but 1–5 or null. **No skip
-case** — there is no skip. **The refusal rules matter more than the write**: the app must never default or
-infer a declaration, and a probe is what proves an action did not quietly write one.
+**PR 3 — storage. SHIPPED.** `probe:declaration` against a real Postgres, with this repo's
+fixture discipline — a per-run `user_id` deleted in a `finally`, pointed at `local-dev` or a
+scratch branch, never production. The facts no unit test can reach, all of them about what the
+transaction WROTE: a declaration inside the committed version's permits is carried into it; one
+the version's own cards do not permit is not; **the version's copy never moves afterwards**; a
+commit with no snapshot records neither column; and the check constraint refuses anything but
+1–5 or null on both tables.
+
+**PR 3b — the write path. NOT SHIPPED, and this is the half that matters.** The refusal rules
+outrank the write: the app must never default a declaration and never infer one, and **a probe is
+what proves an action did not quietly write one**. `probe:declaration` cannot reach any of that
+today and says so in its own header — *"nothing draws a declaration yet, so there is no server
+action to call"*. **No skip case, because there is no skip.**
+
+PR 3b is not complete on a passing storage probe. It owes action-level refusal checks: an action
+handed no answer writes nothing, an action handed a bracket outside the deck's permits refuses
+rather than storing it, and no code path reaches `declared_bracket` except the one a player's
+choice goes through.
 
 **PRs 4a–6.** Both widths in the same PR, per the standing rule. A contact-sheet inventory, and
 `check:shared` where two routes are meant to carry the same control.
