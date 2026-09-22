@@ -60,6 +60,18 @@
   --success: #6FA368;
   --warning: #DEAA29;
   --fact: #8FA6BE;
+
+  /* Bracket ink — palette 2e Ignition, IDENTICAL IN EVERY THEME, for the reason
+     `--fact` above is: a bracket is the FORMAT's vocabulary rather than this app's
+     mood, so rank 3 may not change colour when the theme does. Declared per theme
+     rather than once on `:root` because an unset custom property fails silently —
+     the hazard `check:tokens` exists for — and the contract test counts keys per
+     block. Cross-theme equality is pinned at the foot of `contract.test.ts`. */
+  --bracket-1: #8A857C;
+  --bracket-2: #A89A74;
+  --bracket-3: #C9AC62;
+  --bracket-4: #E6D08A;
+  --bracket-5: #FBEFC6;
   --danger: #C6533F;
 
   /* Card availability (5). The first two are aliases and must stay aliases —
@@ -109,6 +121,18 @@
   --success: #6FA368;
   --warning: #E0913C;
   --fact: #8FA6BE;
+
+  /* Bracket ink — palette 2e Ignition, IDENTICAL IN EVERY THEME, for the reason
+     `--fact` above is: a bracket is the FORMAT's vocabulary rather than this app's
+     mood, so rank 3 may not change colour when the theme does. Declared per theme
+     rather than once on `:root` because an unset custom property fails silently —
+     the hazard `check:tokens` exists for — and the contract test counts keys per
+     block. Cross-theme equality is pinned at the foot of `contract.test.ts`. */
+  --bracket-1: #8A857C;
+  --bracket-2: #A89A74;
+  --bracket-3: #C9AC62;
+  --bracket-4: #E6D08A;
+  --bracket-5: #FBEFC6;
   --danger: #C6533F;
   --avail-soft: var(--fg-muted);
   --avail-hard: var(--accent);
@@ -190,6 +214,18 @@
   --success: #5EA990;
   --warning: #E0913C;
   --fact: #8FA6BE;
+
+  /* Bracket ink — palette 2e Ignition, IDENTICAL IN EVERY THEME, for the reason
+     `--fact` above is: a bracket is the FORMAT's vocabulary rather than this app's
+     mood, so rank 3 may not change colour when the theme does. Declared per theme
+     rather than once on `:root` because an unset custom property fails silently —
+     the hazard `check:tokens` exists for — and the contract test counts keys per
+     block. Cross-theme equality is pinned at the foot of `contract.test.ts`. */
+  --bracket-1: #8A857C;
+  --bracket-2: #A89A74;
+  --bracket-3: #C9AC62;
+  --bracket-4: #E6D08A;
+  --bracket-5: #FBEFC6;
   --danger: #C6533F;
   --avail-soft: var(--fg-muted);
   --avail-hard: var(--accent);
@@ -235,6 +271,18 @@
   --success: #6FA368;
   --warning: #E0913C;
   --fact: #8FA6BE;
+
+  /* Bracket ink — palette 2e Ignition, IDENTICAL IN EVERY THEME, for the reason
+     `--fact` above is: a bracket is the FORMAT's vocabulary rather than this app's
+     mood, so rank 3 may not change colour when the theme does. Declared per theme
+     rather than once on `:root` because an unset custom property fails silently —
+     the hazard `check:tokens` exists for — and the contract test counts keys per
+     block. Cross-theme equality is pinned at the foot of `contract.test.ts`. */
+  --bracket-1: #8A857C;
+  --bracket-2: #A89A74;
+  --bracket-3: #C9AC62;
+  --bracket-4: #E6D08A;
+  --bracket-5: #FBEFC6;
   --danger: #C6533F;
   --avail-soft: var(--fg-muted);
   --avail-hard: var(--accent);
@@ -282,6 +330,18 @@
   --success: #6FA368;
   --warning: #E0913C;
   --fact: #8FA6BE;
+
+  /* Bracket ink — palette 2e Ignition, IDENTICAL IN EVERY THEME, for the reason
+     `--fact` above is: a bracket is the FORMAT's vocabulary rather than this app's
+     mood, so rank 3 may not change colour when the theme does. Declared per theme
+     rather than once on `:root` because an unset custom property fails silently —
+     the hazard `check:tokens` exists for — and the contract test counts keys per
+     block. Cross-theme equality is pinned at the foot of `contract.test.ts`. */
+  --bracket-1: #8A857C;
+  --bracket-2: #A89A74;
+  --bracket-3: #C9AC62;
+  --bracket-4: #E6D08A;
+  --bracket-5: #FBEFC6;
   --danger: #C6533F;
   --avail-soft: var(--fg-muted);
   --avail-hard: var(--accent);
@@ -327,6 +387,18 @@
   --success: #6FA368;
   --warning: #E0913C;
   --fact: #8FA6BE;
+
+  /* Bracket ink — palette 2e Ignition, IDENTICAL IN EVERY THEME, for the reason
+     `--fact` above is: a bracket is the FORMAT's vocabulary rather than this app's
+     mood, so rank 3 may not change colour when the theme does. Declared per theme
+     rather than once on `:root` because an unset custom property fails silently —
+     the hazard `check:tokens` exists for — and the contract test counts keys per
+     block. Cross-theme equality is pinned at the foot of `contract.test.ts`. */
+  --bracket-1: #8A857C;
+  --bracket-2: #A89A74;
+  --bracket-3: #C9AC62;
+  --bracket-4: #E6D08A;
+  --bracket-5: #FBEFC6;
   --danger: #C6533F;
   --avail-soft: var(--fg-muted);
   --avail-hard: var(--accent);
