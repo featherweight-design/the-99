@@ -103,6 +103,7 @@ export async function loadProfileHead(
 export function assembledCombosQuery(ids: readonly string[], commanders: readonly string[]) {
   return sql`
       select v.variant_id, v.bracket_tag, v.produces,
+             v.mana_needed, v.mana_value_needed, v.steps, v.notable_prerequisites,
              array_agg(vc.oracle_id order by vc.oracle_id) as pieces,
              bool_or(vc.oracle_id = any(${sql.param([...commanders])}::uuid[])) as uses_commander
       from ${spellbookVariants} v
@@ -116,7 +117,8 @@ export function assembledCombosQuery(ids: readonly string[], commanders: readonl
         and exists (select 1 from ${spellbookVariantCards} vc2
                     where vc2.variant_id = v.variant_id
                       and vc2.oracle_id = any(${sql.param([...ids])}::uuid[]))
-      group by v.variant_id, v.bracket_tag, v.produces
+      group by v.variant_id, v.bracket_tag, v.produces,
+               v.mana_needed, v.mana_value_needed, v.steps, v.notable_prerequisites
       -- TWO ROWS, not merely a card_count of 2. That column keeps UPSTREAM's own uses
       -- length while spellbook_variant_cards is deduped by oracle id, so a variant naming
       -- one card twice passes the column test, aggregates to a single piece, and a deck
@@ -143,6 +145,8 @@ export async function loadAssembledCombos(
   const rows = (await db.execute(assembledCombosQuery(ids, commanders))).rows as {
     variant_id: string; bracket_tag: string | null; produces: string[];
     pieces: string[]; uses_commander: boolean;
+    mana_needed: string | null; mana_value_needed: number | null;
+    steps: string | null; notable_prerequisites: string | null;
   }[];
 
 
@@ -158,6 +162,13 @@ export async function loadAssembledCombos(
     produces: r.produces,
     bracketTag: r.bracket_tag ?? "",
     usesCommander: r.uses_commander,
+    // `?? null` on each, never `|| null`: a mana value of 0 is the answer for most combos and
+    // coercing it would claim the cost is unknown on the very rows where it is known to be
+    // nothing.
+    manaValueNeeded: r.mana_value_needed ?? null,
+    manaNeeded: r.mana_needed ?? null,
+    steps: r.steps ?? null,
+    notablePrerequisites: r.notable_prerequisites ?? null,
   }));
 }
 

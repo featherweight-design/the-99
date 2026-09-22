@@ -23,6 +23,21 @@ const rendered = () =>
     .sql.replace(/\s+/g, " ");
 
 describe("the assembled-combo query", () => {
+  // THE MODAL'S FOUR FIELDS, in the select AND in the group by. The group-by half is
+  // self-catching — Postgres refuses an ungrouped column — but the SELECT half is not: drop a
+  // column there and the loader's `?? null` maps it to null on every row, so every combo in
+  // the app reads "no mana needed, no steps, no prerequisites" behind a passing suite. That is
+  // the same silent-null shape the ingest's `fieldCollapse` floors guard from the other end.
+  it.each(["mana_needed", "mana_value_needed", "steps", "notable_prerequisites"])(
+    "selects and groups %s, which the reasoning modal draws",
+    (column) => {
+      const sql = rendered();
+      expect(sql).toContain(`v.${column}`);
+      // Twice: once in the projection, once in the group by.
+      expect(sql.split(`v.${column}`).length - 1).toBeGreaterThanOrEqual(2);
+    },
+  );
+
   // RULE 1. A template-gated variant names a CATEGORY of card — "a creature with flying" —
   // not a card, so a decklist cannot be said to assemble it. Dropping this admits thousands
   // of variants no deck holds.

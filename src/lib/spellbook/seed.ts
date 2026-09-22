@@ -60,9 +60,88 @@ export const FLOORS = {
    * Half the measured 106,903.
    */
   variantsKept: 53000,
+  /**
+   * Share of KEPT variants carrying execution steps, and the share carrying a mana value.
+   *
+   * These guard the same class of failure `variantsKept` does, one door further in. A feed
+   * that still sends well-formed records but stops populating `description` passes every floor
+   * above — the transform keeps the variant, the publish succeeds, the job is green — and
+   * every combo modal in the app is then empty. Nothing else here looks at a field's
+   * POPULATION, only at whether records survived.
+   *
+   * Both measured at 1.00 across 347 variants sampled from the head plus two mid-file slices,
+   * 2026-09-21. The floor is 0.5 for the reason `sweepResolutionShare`'s is: this detects a
+   * collapse, not the ordinary drift of upstream leaving one record blank.
+   *
+   * There is deliberately NO floor on `manaNeeded`, whose population is 41% and is a fact
+   * about combos rather than about the feed — most need no mana, so a floor there would be
+   * asserting a ratio nobody controls. `manaValueNeeded` is the one to guard, because it is
+   * set on every record and a 0 in it is load-bearing: see the reader note on the column.
+   */
+  stepsShare: 0.5,
+  manaValueShare: 0.5,
 } as const;
 
 export type IngestFloors = typeof FLOORS;
+
+/** What share of the rows about to be published carry each field the modal draws. */
+export type FieldPopulation = {
+  kept: number;
+  withSteps: number;
+  withManaValue: number;
+  withManaPips: number;
+  withPrerequisites: number;
+  stepsShare: number;
+  manaValueShare: number;
+};
+
+/**
+ * Counted over the KEPT rows, so the denominator is the set about to be published rather than
+ * everything upstream sent — a feed that drops half its records and populates the rest
+ * perfectly is `variantsKept`'s problem, not this one.
+ */
+export function fieldPopulation(
+  // `undefined` as well as `null`, because these arrive as Drizzle's `$inferInsert`, which
+  // makes a nullable column optional. `!= null` covers both, and narrowing the parameter to
+  // `| null` alone would force a cast at the one call site that matters.
+  rows: readonly {
+    steps?: string | null; manaValueNeeded?: number | null;
+    manaNeeded?: string | null; notablePrerequisites?: string | null;
+  }[],
+): FieldPopulation {
+  const kept = rows.length;
+  const withSteps = rows.filter((v) => v.steps != null).length;
+  const withManaValue = rows.filter((v) => v.manaValueNeeded != null).length;
+  return {
+    kept,
+    withSteps,
+    withManaValue,
+    withManaPips: rows.filter((v) => v.manaNeeded != null).length,
+    withPrerequisites: rows.filter((v) => v.notablePrerequisites != null).length,
+    stepsShare: kept === 0 ? 0 : withSteps / kept,
+    manaValueShare: kept === 0 ? 0 : withManaValue / kept,
+  };
+}
+
+/**
+ * The field floors, as a list of failures — empty when the population is healthy.
+ *
+ * AN EMPTY INGEST REPORTS NOTHING HERE, deliberately. With no rows both shares are 0 and every
+ * floor is breached, which would report a field collapse over what is really a total one —
+ * `variantsKept` is the floor that owns that case and its message is the one an operator needs.
+ * Two refusals for one cause, naming the wrong cause, is worse than one.
+ */
+export function fieldCollapse(fields: FieldPopulation, floors: IngestFloors): string[] {
+  if (fields.kept === 0) return [];
+  const below: string[] = [];
+  if (fields.stepsShare < floors.stepsShare) {
+    below.push(`steps ${fields.stepsShare.toFixed(3)} < ${floors.stepsShare}`);
+  }
+  if (fields.manaValueShare < floors.manaValueShare) {
+    below.push(`mana value ${fields.manaValueShare.toFixed(3)} < ${floors.manaValueShare}`);
+  }
+  return below;
+}
 
 export type IngestReport = {
   sweep: { batches: number; resolved: number; unresolved: number; notIndexed: number };
@@ -226,6 +305,27 @@ export async function ingestCombos(opts: {
   // Nothing is hidden: `computed_at` on each table records its own generation, so a reader
   // comparing them can see exactly which is which, and the refusal message below says plainly
   // that the flags above are current while the previous variants stand.
+  const fields = fieldPopulation(variantRows);
+  log(
+    `bulk fields: steps ${fields.withSteps}/${fields.kept} (${fields.stepsShare.toFixed(3)}), ` +
+      `mana value ${fields.withManaValue}/${fields.kept} ` +
+      `(${fields.manaValueShare.toFixed(3)}), ` +
+      `mana pips ${fields.withManaPips}/${fields.kept}, ` +
+      `prerequisites ${fields.withPrerequisites}/${fields.kept}`,
+  );
+
+  const fieldBelow = fieldCollapse(fields, floors);
+  if (fieldBelow.length > 0) {
+    throw new Error(
+      `spellbook ingest REFUSED — a field collapsed, nothing written:\n  ` +
+        `${fieldBelow.join("\n  ")}\n` +
+        `The records survived the transform, so every floor above passed. What this catches is ` +
+        `upstream still sending variants while no longer populating a field the reasoning modal ` +
+        `draws — which would otherwise publish and leave every modal empty behind a green job. ` +
+        `The previous variants stand.`,
+    );
+  }
+
   if (variantRows.length < floors.variantsKept) {
     throw new Error(
       `spellbook ingest REFUSED — ${variantRows.length} variants kept, below the floor of ` +

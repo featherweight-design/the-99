@@ -30,6 +30,12 @@ const combo = (variantId: string, produces: string[], pieces = ["p1", "p2"]): Co
   produces,
   bracketTag: "casual",
   usesCommander: false,
+  // Null on every fixture here: these suites assert bracket RULES, and no rule reads
+  // the modal's payload. `probe:bracket` covers the loader that populates them.
+  manaValueNeeded: null,
+  manaNeeded: null,
+  steps: null,
+  notablePrerequisites: null,
 });
 
 // The verdict is a pure function over a profile, so every case is built as a real profile

@@ -1335,6 +1335,37 @@ export const spellbookVariants = pgTable("spellbook_variants", {
   produces: text("produces").array().notNull(),
   /** Template prerequisites, stored so sub-project 3 can surface a near-miss. */
   requiresTemplateIds: integer("requires_template_ids").array().notNull(),
+  /**
+   * Upstream's `manaNeeded` — the cost to EXECUTE the combo once both pieces are on the
+   * battlefield, not the cost to cast them. A pip string like `{2}`.
+   *
+   * NULLABLE, AND NULL IS NOT MISSING DATA. Measured across 347 variants on 2026-09-21, this
+   * is set on 41% — and `manaValueNeeded > 0` agrees on exactly the same 41%, so the other
+   * 59% genuinely need NO mana to go off. A reader must draw that as "no mana needed" rather
+   * than as a blank, because a free combo is the more dangerous one and an empty slot loses
+   * the very fact worth knowing.
+   *
+   * Sample the feed from more than its head when re-measuring this: the first 52 records
+   * report 3%, which reads as broken upstream data and is an artefact of the file's order.
+   */
+  manaNeeded: text("mana_needed"),
+  /** The same cost as a number. Upstream sets it on every record; 0 means the combo is free. */
+  manaValueNeeded: integer("mana_value_needed"),
+  /**
+   * Upstream's `description` — the ordered steps for executing the combo, newline-separated.
+   * Set on 100% of the sample (avg 395 chars, max 754), which is why the modal can rely on it.
+   */
+  steps: text("steps"),
+  /**
+   * Upstream's `notablePrerequisites` — what must already be true for the combo to work
+   * ("You control at least five creatures with different powers"). Set on 64%.
+   *
+   * This is the field that answers "does this work in MY deck", and Round 2 never asked for
+   * it. `easyPrerequisites` is deliberately NOT stored: upstream's own judgement is that those
+   * are usually already true, and a line that is nearly always noise costs the modal more than
+   * it returns.
+   */
+  notablePrerequisites: text("notable_prerequisites"),
   computedAt: timestamp("computed_at").notNull().defaultNow(),
 }, (t) => [
   // The enum narrows TypeScript only; without this the database takes any text. Same

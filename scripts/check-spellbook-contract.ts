@@ -36,6 +36,20 @@ const BRACKET_TAGS = ["R", "S", "P", "O", "C", "E", "B"];
 /** Every field `toVariantRows` projects. A missing one is a silently emptier ingest. */
 const REQUIRED_TOP_LEVEL = ["id", "bracketTag", "identity", "uses", "requires", "produces", "legalities"];
 
+/**
+ * The four the reasoning modal draws. PRESENCE of the key, never a populated value: upstream
+ * sends `""` and `0` as real answers on three of them, and `manaNeeded` is legitimately absent
+ * on most records because most combos need no mana. What this catches is upstream REMOVING or
+ * RENAMING a field — which the ingest would then store as null on every row, behind a green job
+ * and a healthy variant count, leaving every modal in the app empty.
+ *
+ * The POPULATION floors live in `seed.ts` (`fieldCollapse`) and run against the whole ingest.
+ * This is the cheaper daily half: one record, no database.
+ */
+const REQUIRED_MODAL_FIELDS = [
+  "manaNeeded", "manaValueNeeded", "description", "notablePrerequisites",
+];
+
 /** Asserted through a live sweep; never read as data. */
 const MLD_ANCHORS = ["Armageddon", "Ravages of War", "Jokulhaups"];
 const EXTRA_TURN_ANCHORS = ["Time Warp", "Temporal Manipulation"];
@@ -123,6 +137,15 @@ async function main(): Promise<void> {
     }
     if (typeof (first.legalities as Record<string, unknown>)?.commander !== "boolean") {
       fail("bulk entry: `legalities.commander` is not a boolean");
+    }
+    for (const f of REQUIRED_MODAL_FIELDS) {
+      if (!(f in first)) fail(`bulk entry: missing \`${f}\` — the reasoning modal reads it`);
+    }
+    // `description` is the one field here with no honest empty state: it is the combo's steps,
+    // set on 100% of a 347-variant sample, and a record without them is a record nobody can
+    // follow. Asserted as a non-empty string rather than merely present.
+    if (typeof first.description !== "string" || first.description.trim().length === 0) {
+      fail("bulk entry: `description` is empty — it is the combo's execution steps");
     }
     if (failures.length === 0) console.log(`bulk entry: ok (\`${String(first.id)}\`)`);
   }

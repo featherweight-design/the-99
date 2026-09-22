@@ -91,7 +91,9 @@ async function completionsFor(
 
   const result = await db.execute(sql`
     with two_card as (
-      select v.variant_id, v.bracket_tag, v.produces, vc.oracle_id
+      select v.variant_id, v.bracket_tag, v.produces,
+             v.mana_needed, v.mana_value_needed, v.steps, v.notable_prerequisites,
+             vc.oracle_id
       from ${spellbookVariants} v
       join ${spellbookVariantCards} vc on vc.variant_id = v.variant_id
       where v.card_count = 2 and cardinality(v.requires_template_ids) = 0
@@ -106,13 +108,15 @@ async function completionsFor(
            t.variant_id,
            t.bracket_tag,
            t.produces,
+           t.mana_needed, t.mana_value_needed, t.steps, t.notable_prerequisites,
            array_agg(p.oracle_id order by p.oracle_id) as pieces
     from two_card t
     join held h on h.variant_id = t.variant_id and h.n = 1
     join two_card p on p.variant_id = t.variant_id
     where t.oracle_id = any(${sql.param([...candidateIds])}::uuid[])
       and t.oracle_id <> all(${sql.param([...deckOracleIds])}::uuid[])
-    group by t.oracle_id, t.variant_id, t.bracket_tag, t.produces
+    group by t.oracle_id, t.variant_id, t.bracket_tag, t.produces,
+             t.mana_needed, t.mana_value_needed, t.steps, t.notable_prerequisites
   `);
 
   for (const raw of result.rows as {
@@ -121,6 +125,10 @@ async function completionsFor(
     bracket_tag: string | null;
     produces: string[] | null;
     pieces: string[];
+    mana_needed: string | null;
+    mana_value_needed: number | null;
+    steps: string | null;
+    notable_prerequisites: string | null;
   }[]) {
     const combo: ComboRef = {
       variantId: raw.variant_id,
@@ -133,6 +141,13 @@ async function completionsFor(
       // A completion is a card the player is ADDING, so no piece of it is in the command
       // zone by virtue of this add.
       usesCommander: false,
+      // Carried here as well as on the assembled read: a near-miss is drawn in the same modal
+      // as an assembled combo, and a row that reached the surface without them would have the
+      // mana line silently absent on exactly the combos a player is deciding whether to add.
+      manaValueNeeded: raw.mana_value_needed ?? null,
+      manaNeeded: raw.mana_needed ?? null,
+      steps: raw.steps ?? null,
+      notablePrerequisites: raw.notable_prerequisites ?? null,
     };
     out.set(raw.candidate, [...(out.get(raw.candidate) ?? []), combo]);
   }

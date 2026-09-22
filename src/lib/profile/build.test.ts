@@ -379,6 +379,12 @@ describe("combo reach", () => {
     produces: ["Infinite mana"],
     bracketTag: "casual",
     usesCommander: false,
+    // Null on every fixture here: these suites assert bracket RULES, and no rule reads
+    // the modal's payload. `probe:bracket` covers the loader that populates them.
+    manaValueNeeded: null,
+    manaNeeded: null,
+    steps: null,
+    notablePrerequisites: null,
   };
 
   it("pairs each tutor with each combo piece the deck holds", () => {
@@ -500,6 +506,12 @@ describe("what a tutor cannot reach", () => {
       produces: ["Infinite mana"],
       bracketTag: "casual",
       usesCommander: true,
+      // Null on every fixture here: these suites assert bracket RULES, and no rule reads
+      // the modal's payload. `probe:bracket` covers the loader that populates them.
+      manaValueNeeded: null,
+      manaNeeded: null,
+      steps: null,
+      notablePrerequisites: null,
     };
     const p = buildDeckProfile(
       input({
@@ -558,6 +570,12 @@ describe("a tutor reaches only what it can find", () => {
     produces: ["Infinite mana"],
     bracketTag: "casual",
     usesCommander: false,
+    // Null on every fixture here: these suites assert bracket RULES, and no rule reads
+    // the modal's payload. `probe:bracket` covers the loader that populates them.
+    manaValueNeeded: null,
+    manaNeeded: null,
+    steps: null,
+    notablePrerequisites: null,
   };
 
   const cards = [
