@@ -280,6 +280,11 @@ export function TopOffList({
 }: TopOffListProps) {
   const [inflight, setInflight] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  // THE PAIR'S OWN REFUSAL, kept apart from `error`. That one belongs to the COMMIT, which
+  // speaks about an action the player just took; clearing it because a background refetch
+  // succeeded would take a message off the screen that nothing replaced. They render through
+  // the same plate, and the commit's wins when both are set for the same reason.
+  const [bulkError, setBulkError] = useState<string | null>(null);
 
   // The pool is frozen for the life of one opening. The optimistic deck set
   // freezes a quick-added row in the same frame as the click, but the server
@@ -389,6 +394,20 @@ export function TopOffList({
   >(null);
   useEffect(() => {
     let live = true;
+    // THE OLD ANSWER GOES BEFORE THE NEW ONE IS ASKED FOR. It was computed for a deck that has
+    // since moved, so leaving it on screen would draw two notes about a deck nobody is looking
+    // at and — worse — leave their ids PRESSABLE until the new answer lands. The pair is
+    // absent for that moment, which is the same state it is in before the first answer.
+    //
+    // The refusal goes too, or a read that failed once keeps its plate up over every later
+    // success. This is the pair's own, never the commit's.
+    // CLEARED IN THE CLEANUP, not synchronously here. The old answer has to go — it was
+    // computed for a deck that has since moved, and leaving it on screen draws two notes about
+    // a deck nobody is looking at while its ids stay PRESSABLE until the new answer lands —
+    // but a `setState` in an effect's body cascades a render, so the clear happens as this
+    // effect is torn down, which is the same instant from the reader's side. The refusal goes
+    // with it, or a read that failed once keeps its plate up over every later success. This is
+    // the pair's own refusal, never the commit's.
     void bulkFillOptions(deckId, openSlots)
       .then((r) => {
         if (!live) return;
@@ -401,7 +420,7 @@ export function TopOffList({
         // with no reason beside it is the one thing the surface's own absence rule does not
         // cover: b3 and b9 are absences the copy explains. This is the path the single
         // control it replaces already took, through the same shipped plate.
-        setError(r.message);
+        setBulkError(r.message);
         onAnnounce(r.message);
       })
       .catch(() => {
@@ -409,11 +428,13 @@ export function TopOffList({
         // A rejected call — a deck deleted while the list was open, or a transport failure —
         // is a refusal the player can read rather than an unhandled rejection that leaves two
         // controls missing and says nothing.
-        setError(synergyCopy.lastSlots.topUpFailed);
+        setBulkError(synergyCopy.lastSlots.topUpFailed);
         onAnnounce(synergyCopy.lastSlots.topUpFailed);
       });
     return () => {
       live = false;
+      setBulkOptions(null);
+      setBulkError(null);
     };
     // THE PLANS ARE FOR THIS DECK'S CARDS, not merely for its slot count.
     //
@@ -1141,7 +1162,14 @@ export function TopOffList({
           </span>
         </div>
 
-        {error && <RefusalPlate className="order-4 md:order-5 md:w-full" message={error} />}
+        {(error ?? bulkError) && (
+          <RefusalPlate
+            className="order-4 md:order-5 md:w-full"
+            // The COMMIT's refusal wins when both are set: it is about something the player
+            // just pressed, while the pair's is about a background read.
+            message={(error ?? bulkError) as string}
+          />
+        )}
       </div>
     </div>
   );
