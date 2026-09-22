@@ -77,6 +77,9 @@ export const comboAwarenessCopy = {
     more: (n: number) => `+${n} more`,
     showAll: (n: number) => `Show all ${n}`,
     showAllAria: (n: number) => `Show all ${n} combo partners`,
+    /** The shipped disclosure's own collapse word, so a toggle never announces one state
+     *  while offering the other. */
+    collapse: 'Show fewer',
     /**
      * THE DETECTION BOUND, said once, behind the heading's marker rather than printed under
      * every block — a caveat that repeats that often stops being read, which is the opposite

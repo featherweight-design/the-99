@@ -125,8 +125,12 @@ export function ComboPartnersDetail({ card }: { card: BrowseCard }) {
           }
           className="mt-[10px] p-0 font-mono text-[11px] cursor-pointer border-none bg-transparent text-accent hover:text-accent-hover"
         >
+          {/* EXPANDED, IT SAYS WHAT PRESSING IT DOES. The first version kept `Show all N` on
+              an already-expanded control, so its label and its `aria-expanded` state
+              contradicted each other. `Show fewer` is the shipped disclosure's own collapse
+              word, which is the atom this reuses. */}
           {expanded
-            ? comboAwarenessCopy.modal.showAll(partners.length)
+            ? comboAwarenessCopy.modal.collapse
             : desktop
               ? comboAwarenessCopy.modal.more(hidden)
               : comboAwarenessCopy.modal.showAll(partners.length)}

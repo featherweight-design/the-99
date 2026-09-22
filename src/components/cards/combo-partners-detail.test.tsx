@@ -106,6 +106,10 @@ describe("the card modal's combo block", () => {
       more.click();
     });
     expect(screen.getAllByText(/^with Partner/)).toHaveLength(many.length);
+    // AND IT SAYS WHAT PRESSING IT NOW DOES. A control whose label still reads `Show all N`
+    // while `aria-expanded` is true announces one state and offers the other.
+    expect(more).toHaveTextContent(comboAwarenessCopy.modal.collapse);
+    expect(more.getAttribute("aria-expanded")).toBe("true");
   });
 
   // THE THREE STATES AND NOTHING ELSE. No price, no copy count, no availability marker —
