@@ -22,6 +22,21 @@ import { bulkConcession } from "../../lib/decks/bulk-concession";
 import { bulkFillOptions } from "../../app/decks/actions";
 import type { FillShortfall } from "../../lib/decks/fill";
 import { canSeed, type TopOffCandidate } from "../../lib/decks/last-slots";
+
+/**
+ * What this row draws: a candidate, plus the one deck-scoped field it may carry.
+ *
+ * OPTIONAL, and not because nobody populates it — `/decks/[id]` builds every candidate as a
+ * `TopOffCandidateWithFacts`, where it is required. It is optional HERE because the shared
+ * `SynergyCard` this narrows has no deck to complete anything in, and every fixture and
+ * every other consumer of that type is honestly without one. Widening this component to the
+ * full deck-scoped type instead would demand a `facts` field from fifty test fixtures that
+ * have no opinion about facts.
+ */
+type RowCandidate = TopOffCandidate & {
+  comboPartner?: { oracleId: string; name: string } | null;
+};
+import { ComboClause, comboClauseSpoken } from "../cards/combo-clause";
 import {
   formatCents,
   summarisePrices,
@@ -63,7 +78,7 @@ export interface TopOffListProps {
   /** The whole ranked pool, live. It is frozen inside for the life of one
       opening — see the comment at `frozen` — and the live value is read only to
       tell which of the frozen rows the route is still offering. */
-  candidates: TopOffCandidate[];
+  candidates: RowCandidate[];
   /** Oracle ids currently in the deck, used to name why a row went illegal. */
   deckOracleIds: Set<string>;
   ticked: Set<string>;
@@ -90,7 +105,7 @@ export interface TopOffListProps {
 }
 
 /** The three ownership clauses, matching the three occupancies of §8's slot. */
-function ownershipClause(c: TopOffCandidate, newestAsOf: Date | null): string {
+function ownershipClause(c: RowCandidate, newestAsOf: Date | null): string {
   if (!c.owned) {
     return topOffCopy.list.unownedClause(moneyOf(c.price, newestAsOf));
   }
@@ -119,8 +134,16 @@ function moneyOf(price: PriceFact | null, newestAsOf: Date | null): string | nul
  *  `list.rowAria` bakes in "plus", so it can only speak a non-negative figure.
  *  A null or negative synergy takes the shipped four-branch string instead,
  *  which exists for exactly that case. No new string either way. */
-function rowLabel(c: TopOffCandidate, newestAsOf: Date | null): string {
+function rowLabel(c: RowCandidate, newestAsOf: Date | null): string {
   const clause = ownershipClause(c, newestAsOf);
+  // THE COMBO IS SPOKEN HERE and nowhere else. Its glyph is aria-hidden and its sentence is
+  // drawn aria-hidden too, because on the phone it stands in for the PIP TRACK and on desktop
+  // it sits in the name cell's tail — neither of which a reader hears in a useful order. It
+  // is appended, after the figures, because it describes what adding the card would DO rather
+  // than what the card is or what this player's copies are.
+  const combo = c.comboPartner
+    ? ` ${comboClauseSpoken(c.comboPartner.name, "completes")}.`
+    : "";
   // The type is drawn `aria-hidden`, so without this it is the one column on the
   // row a screen reader never hears. Spoken at BOTH widths rather than only where
   // the column is drawn: a reader who is not looking at the columns is not
@@ -134,7 +157,7 @@ function rowLabel(c: TopOffCandidate, newestAsOf: Date | null): string {
       : synergyCopy.figure.inclusion(String(c.inclusionPct));
   const cost = spokenManaCost(c.manaCost);
   if (c.synergyPts !== null && c.synergyPts >= 0) {
-    return `${cost}. ${type}. ${topOffCopy.list.rowAria(c.name, clause, String(c.synergyPts), inclusion)}`;
+    return `${cost}. ${type}. ${topOffCopy.list.rowAria(c.name, clause, String(c.synergyPts), inclusion)}${combo}`;
   }
   const synergy =
     c.synergyPts === null
@@ -145,7 +168,7 @@ function rowLabel(c: TopOffCandidate, newestAsOf: Date | null): string {
     clause.replace(/\.$/, ""),
     synergy,
     inclusion,
-  )}`;
+  )}${combo}`;
 }
 
 /** Mounted twice, and only here. The phone track is uncapped and unshingled
@@ -1196,7 +1219,7 @@ function CandidateRow({
   onToggle,
   onDecline,
 }: {
-  candidate: TopOffCandidate;
+  candidate: RowCandidate;
   ticked: boolean;
   inert: boolean;
   inflight: boolean;
@@ -1356,10 +1379,25 @@ function CandidateRow({
             name={c.name}
             siblings={siblings}
             title={c.name}
-            className="md:order-2 flex-auto min-w-0 text-left truncate text-[13.5px] [color:var(--fg)]"
+            // WITH A CLAUSE BESIDE IT THE NAME GOES `flex-none`, so the CLAUSE is what
+            // ellipses. That is the design's rule and it is the right way round: the card's
+            // name is the one thing in this row a reader cannot reconstruct from anywhere
+            // else, and the app's words can give way. Without a clause the name keeps the
+            // whole cell, exactly as before.
+            className={`md:order-2 min-w-0 text-left truncate text-[13.5px] [color:var(--fg)] ${
+              c.comboPartner ? "flex-none" : "flex-auto"
+            }`}
           >
             {c.name}
           </CardDetailTrigger>
+        )}
+        {/* The clause, in the name cell's TAIL. Desktop only — the phone draws it leading
+            line 2, where there is room for a sentence. `flex-1 min-w-0` is what makes it the
+            item that shrinks; the four fixed columns after it do not move. */}
+        {isDesktop && c.comboPartner && (
+          <span aria-hidden className="md:order-2 flex-1 min-w-0">
+            <ComboClause partnerName={c.comboPartner.name} state="completes" />
+          </span>
         )}
 
         {/* Type, desktop only. The phone row is two lines carrying the name, the
@@ -1386,7 +1424,17 @@ function CandidateRow({
             htmlFor={tickId}
             className="flex items-center gap-[8px] cursor-pointer md:contents"
           >
-            <CostTrack cost={c.manaCost} />
+            {/* THE PIP TRACK YIELDS ONLY ON A ROW THAT CARRIES A CLAUSE — about 4 of 38.
+                The other 34 keep their pips. Phone only: on desktop the clause sits in the
+                name cell's tail and the cost column is one of the four fixed slots, which do
+                not move for this. */}
+            {!isDesktop && c.comboPartner ? (
+              <span aria-hidden className="flex-1 min-w-0">
+                <ComboClause partnerName={c.comboPartner.name} state="completes" />
+              </span>
+            ) : (
+              <CostTrack cost={c.manaCost} />
+            )}
             <span
               aria-hidden
               className="flex-none md:order-6 md:w-[60px] md:text-right md:text-[12px]"
