@@ -816,6 +816,20 @@ export function TopOffList({
               {/* b9 · nothing to sleeve. The collection control is ABSENT, not
                   disabled — the surface's standing rule — and the strip's
                   shipped door note already says which of the two zeroes it is. */}
+              {/* THE COLLECTION CONTROL NAMES `tickable`, NOT `openSlots`, and this is the one
+                  place the build departs from the handoff's copy note.
+
+                  That note says "both labels state the same count — the open slots — because
+                  both fills take every one of them". True in b1's own figures (23 sleevable
+                  for 12 open, so the two are the same number) and false exactly where they
+                  differ: a collection holding four candidates for twelve slots cannot take
+                  twelve, and `Select 12 from my collection` would promise eight cards that do
+                  not exist.
+
+                  The surface has already ruled on this shape once. The control this pair
+                  replaces named `tickable` for the same reason, recorded in its own case as
+                  "a button that says two and ticks one is wrong on its face and in its name".
+                  Recorded as errata on the handoff rather than settled quietly. */}
               {bulkShowsCollection && (
                 <BulkControl
                   pool="collection"

@@ -727,8 +727,14 @@ describe("TopOffList — the bulk tick", () => {
 
   // ── The pair's own states (b1–b11) ───────────────────────────────────────
 
-  // b1 · THE ORDINARY PAIR. Both faces carry the same count, because both fills take every
-  // open slot; the notes are the only difference, which is the whole of the design.
+  // b1 · THE ORDINARY PAIR — two controls, two different concessions.
+  //
+  // THE COUNTS ARE NOT ASSERTED TO MATCH, and that is deliberate. The handoff's copy comment
+  // says "both labels state the same count — the open slots — because both fills take every
+  // one of them", which is true in b1's own figures (23 sleevable for 12 open) and false
+  // wherever the collection holds fewer cards than there are slots. The collection control
+  // therefore names `tickable`, what it can actually select; see the note in the component.
+  // This case asserts the two notes, which is what it can see.
   it("draws both controls with the same count and different concessions", async () => {
     actions.bulkOptions.mockResolvedValue({
       ok: true,
