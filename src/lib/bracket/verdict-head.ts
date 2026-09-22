@@ -31,10 +31,16 @@ export type VerdictHead = {
  */
 export function verdictHead(permits: readonly Bracket[]): VerdictHead {
   const [low, high] = [permits[0], permits[permits.length - 1]];
-  if (low === undefined) {
-    // `permitsFor` cannot return this. A caller that hand-built the input can, and a face built
-    // from an empty range would read as the empty string beside a mark drawing nothing.
-    throw new Error("verdictHead: an empty permitted range has no reading");
+  // ONE OR TWO, AND NOTHING ELSE. `permitsFor` returns only those shapes, so anything else was
+  // hand-built by a caller — and the failure is not loud on its own: reading `[0]` and `[-1]`
+  // off `[1, 2, 3]` silently discards the interior and renders "Exhibition or Upgraded", a face
+  // that names a range nobody permitted. An empty one renders the empty string beside a mark
+  // drawing nothing. Both fail closed.
+  if (permits.length < 1 || permits.length > 2) {
+    throw new Error(
+      `verdictHead: a permitted range of ${permits.length} has no reading — permitsFor returns `
+      + `one or two`,
+    );
   }
   if (permits.length === 1) {
     return { face: BRACKET_NAMES[low], split: false, glyphBracket: null };

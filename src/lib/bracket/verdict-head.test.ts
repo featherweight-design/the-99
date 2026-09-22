@@ -47,9 +47,16 @@ describe("verdictHead", () => {
 
   // `permitsFor` cannot return an empty range, so a caller that produces one built it by hand —
   // and a face built from it would be the empty string beside a mark drawing nothing.
-  it("refuses an empty range rather than drawing an empty face", () => {
-    expect(() => verdictHead([])).toThrow(/empty permitted range/);
-  });
+  // FAILS CLOSED ON ANY SHAPE `permitsFor` CANNOT RETURN. An empty range renders the empty
+  // string beside a mark drawing nothing; a three-member one silently discards its interior and
+  // renders "Exhibition or Upgraded" — a face naming a range nobody permitted, which is worse
+  // because it looks like an answer.
+  it.each([[[]], [[1, 2, 3]], [[1, 2, 4, 5]]])(
+    "refuses %j rather than drawing a misleading face",
+    (permits) => {
+      expect(() => verdictHead(permits as Bracket[])).toThrow(/has no reading/);
+    },
+  );
 });
 
 describe("populationLine", () => {
