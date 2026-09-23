@@ -1,5 +1,98 @@
 # The 99 — Deck tuning suggestions, five surfaces (design handoff, R2)
 
+## Addendum, 2026-09-23: where the panel lives now that the deck has an Analysis tab
+
+Canvas: `The 99 - Deck Tuning · Placement Addendum.dc.html` (A at 1300 / 390, B the allowance,
+C the Games line). Read against `design_handoff_the99_analysis_tab/HANDOFF.md` (PR #882). Only
+placement moved. The panel, its states and its copy stand as approved, except where noted below.
+
+**Decision: the Analysis tab.** One panel, full width at the foot of the tab, under the
+recommended mix and its own rule, mounted with the grid once the deck has a reading. The Games tab
+keeps one line pointing there. This supersedes the Games-tab placement in §2 below
+("below the aggregate, above the history").
+
+**Why.**
+1. **Games no longer gate it, and the Games tab gates by construction.** With no games, Games
+   draws its empty state *instead of* the panel body (`games-panel.tsx`, the §8.4 branch), so
+   tuning would be unreachable exactly where it now runs. Games still enrich the evidence; the
+   manifest shows the games row only when there are games, as it already does for intent.
+2. **Three of its four reads are the list.** The list, the note's deck, the collection: the
+   Analysis tab is where the list is read.
+3. **One allowance, one tab.** The synopsis and tuning spend the same daily allowance; on one tab
+   a player sees both its spenders and the one sentence that says it is used.
+4. **Split rejected.** A panel in two tabs breaks the panel's own rule ("one box in one place and
+   it never leaves") and leaves two copies of held suggestions to keep in step. The Games line is
+   a pointer, not a second panel.
+
+**How it relates to the verdict and findings.**
+- **Order:** banner · Overview · bracket box · climb · findings · mix · **Suggested changes**. The
+  reading is computed; the panel is a proposal, so it comes last and never sits in the grid.
+- **It never cites the bracket.** No suggestion, chip or rationale names a bracket, a finding or a
+  rung. Coming down a bracket is the climb's sheet (3b). The consequence line stays the deck's
+  status (`99 / 99 · complete`), never a bracket.
+- **Suggestions are deterministic filters, never promises.** The validator's rules stand and now
+  also drop any rationale that claims a bracket or result. Flagged for `/copy-review`, not changed
+  here: *propose three swaps* (Ready) and *Three swaps, all aimed…* (Results) state a count the
+  validator can undercut (gap 3); *up to three* is the honest form.
+- **An applied swap is an edit.** It sets the deck's changes flag (ruling 5, `READINESS-r1-audit`)
+  and the tab's one banner offers Re-analyze. The panel never re-analyzes; Re-analyze never re-runs
+  the panel.
+- **Staleness stays in the banner.** A stale reading does not dim, tag or hide the panel.
+- **Before a first reading** (2a–2c) the tab is one empty state and the panel is absent. Analyze
+  is free, so asking for it first costs nothing.
+
+**State 1 retires as a gate.** *Below threshold* no longer disables the primary. With fewer than
+`PATTERN_MIN` games the panel opens at Ready and reads the list, the collection and any intent;
+the Fix line and the games row are absent. The Ready pitch for that case is owed copy (no new
+string written here).
+
+**The allowance, used up (B).** One string, `allowanceCopy.exhausted(time)`, imported by both the
+panel and the Overview:
+
+> You have used today’s allowance for synopses and suggestions. It resets at {time}.
+
+In the panel: the primary disables in its corner (as state 1 did), the mono note carries the line,
+and the body keeps whatever it held. No tag, no `--danger`, no *Try again*. In the Overview: under
+*View full synopsis →*, with the synopsis in its stale state. Never in the banner, and Analyze /
+Re-analyze never disable for it: the bracket, findings, climb and lean are never limited. `{time}`
+is set by sub-project 6.
+
+**The Games line (C).** After `GameFindings`, before History, 44px:
+*Suggested changes reads these games.* **It is on the Analysis tab →**, calling
+`setView('analysis')` as the header chip does. Shown only with a reading and at least one game.
+The note's held `readBack` clause can ship as *and read by Suggested changes*.
+
+**Phone (390).** Same order, one column, the panel last; its approved phone frame unchanged.
+
+**New copy, for `/copy-review`:** the allowance line, the Games line, the `readBack` clause. No em
+dash in any of them.
+
+### Addendum r2, after Hugh's feedback (2026-09-23)
+
+Canvas: `The 99 - Deck Tuning · Placement Addendum v2.dc.html` (r1's file is kept as history).
+Placement is unchanged. **These override the approved panel wherever they differ.**
+
+| Area | Now |
+|---|---|
+| **Count** | A run asks for **five**. The validator can drop some, so fewer is valid and the lead says so (*Three swaps this time. Two more did not hold up to checking.*). Never padded. Copy says *up to five*, never a promised number. |
+| **No games** | Runs on the list, the recommended mix, the collection and intent. Said in the lead, in a dashed *Your games · none logged* manifest row with *Log a game →* (the one row shown unread, and labelled so), and at the end of the results' read line. No `games` / `note` chips; a new `mix` chip cites the strip. |
+| **Seeing the cards** | Both names and both thumbnails are card-open triggers (dotted `--accent` underline). Desktop hover: the shipped `HoverPreview` (the tab mounts a provider; finding 9 already owes one). Click / tap: shipped `CardModal` with the pair as its list, cut first, so Prev / Next steps out ↔ in; stacked with `backLabel` *Suggested changes*. Nothing else added to the modal. |
+| **Availability on the add** | The app's own vocabulary: green dot owned; hollow diamond *1 in a draft*; solid *none free*; dashed dot + the shipped `buy` chip (warning-tinted plate, `buy` · dotted leader · price, as on the decklist) when unowned; on the phone the marks take their own row under the pair. Owned and unclaimed is the green dot **alone**: the free state is never named (`availability.test.ts`). The cut carries no mark. Replaces `×1 owned` / `not owned` and the price-only atom. |
+| **Removed** | The consequence line (*stays 99 / 99 · …*), the applied stamp's verdict and shopping clause. The marks carry it. |
+| **Reject** | Replaces *Not this one*; the collapsed row reads `rejected` + *Show it again*. |
+| **Credits** | Beside *Suggest again*: *Replaces these suggestions and uses a credit. You have {n} of {total} left today.* Beside a first *Suggest changes*: *Uses a credit. You have {n} of {total} left today.* Used up: *You have used all {total} of today’s credits. Synopses and suggestions share them; more at {time}.* (replaces r1's allowance line, same two surfaces). Total 5 is a fixture until sub-project 6 sets it. |
+| **Every one answered** | The cards collapse to applied / rejected rows in their slots; lead *All five answered: 3 applied, 2 rejected. Suggest again for a new set, read from the deck as it is now.* Part-answered keeps open cards in place, footer counts them. |
+| **Tie** | **To the version, not to Analyze.** Analyze is free; a run costs a credit, so it stays its own press. A commit retires the set: the panel returns to never-run with *Your last suggestions were for version 3. Committing version 4 cleared them…*. In a draft, a swap an edit broke (cut gone, or add already in) becomes a `no longer applies` row, checked deterministically; the rest stand. |
+| **Loading** | The manifest ticks as before, and the body gains the brand's card-fan mark (`CardFanMark`), shuffling: each card steps left → centre → right, the front one lifts and slips to the back (2.4s loop, ⅓ offset per card; `aria-hidden`; reduced motion shows the static fan). Heading *Shuffling through your deck…* is the live region. It is not a progress figure; `2 of 4 read` still is. Drawn at 1300 (C2) and 390 (C2b). |
+| **Notes** | **Game notes only** (`deck_games.note`, typed when logging a game). Version notes are not read. Manifest row *Notes on your games · on 2 of 9 games*; read line *2 game notes*. Intent, when set, is its own row. |
+| **Phone** | Card padding 13 / 12, 11px between a card's rows, 12px between cards, 16px above the action row; marks on their own line under the add. |
+
+**Open for Hugh:** whether a stopped or failed run is charged a credit (proposed: no, only a run
+that returns suggestions), and whether Re-analyze's banner should state its credit cost when it
+will rewrite the synopsis.
+
+---
+
 **R2 — density pass on the suggestion card, plus the phone frames it was missing.** Feedback: this
 app's boxes run roomy and that costs the most on mobile. The suggestion card is now four rows at
 9px padding instead of six at 14px (about 45px shorter each, so three cards plus the footer fit one
@@ -356,7 +449,10 @@ state, no modal, no toast, no tray.**
    constraint, and it is the most likely thing to be asked to relax.
 
 ## Files
-- `The 99 - Deck Tuning.dc.html` — the canvas (this handoff's deliverable).
+- `The 99 - Deck Tuning · Placement Addendum v2.dc.html` — **canonical for placement and the
+  panel**: results at 1300 / 390, both cards up close, the lifecycle, no games logged.
+- `The 99 - Deck Tuning · Placement Addendum.dc.html` — r1 of the addendum, history only.
+- `The 99 - Deck Tuning.dc.html` — the R2 canvas: note field, history row, intent, failure classes.
 - `README.md` — this file.
 - `STATES-tuning-panel.md` — the six-state matrix, plus the note field's states.
 - `INTENT-where-it-lives.md` — the deck-intent call in full, and what was rejected.

@@ -1,5 +1,43 @@
 # READINESS — Deck tuning suggestions, five surfaces (R2)
 
+## Addendum r2, 2026-09-23: placement + panel revision (Hugh: LGTM)
+
+**Self-assessed: 🟢 Green for build planning; 🟡 on three open items below.** Canonical canvas:
+`The 99 - Deck Tuning · Placement Addendum v2.dc.html`. Decision and full change table: `README.md`
+§Addendum and §Addendum r2. **Where r2 and anything below this section disagree, r2 wins.**
+
+**What r2 supersedes below:** locked ruling 1's pre-tap consequence line and post-apply verdict /
+shopping clause (the availability marks carry it); ruling 3's `×1 owned` / `not owned` atom (now the
+app's dot, diamonds and `buy` chip); called item 2 (games no longer gate; state 1 retires); called
+item 12 (five, not three); `Not this one` → `Reject`; the Games-tab placement.
+
+**Engineering list, in dependency order**
+1. **Shared credit allowance** (sub-project 6): per player per day, spent by a tuning run and by a
+   synopsis rewrite; exposes `left / total / resetsAt`. The number is a fixture (5) until measured.
+2. **Suggestion set keyed to a version**: a commit retires the set; in a draft, a deterministic
+   check marks a swap `no longer applies` when its cut has left the list or its add is already in it.
+3. **Run request**: asks for five; the validator drops failures; zero games is valid (list, mix,
+   collection, intent). New `mix` citation source.
+4. **Panel on the Analysis tab**, full width after the mix, mounted with the grid. Games tab gets one
+   pointer line (`setView('analysis')`).
+5. **Card-open on both names and thumbnails**: `HoverPreviewProvider` on the tab (shared with finding
+   9); `CardModal` with `[cut, add]` as its list and `backLabel` *Suggested changes*.
+6. **Add-side marks** from the shipped availability + buy-chip components; own row on phone.
+7. **Loading mark**: `CardFanMark` gains an animated variant (`fan-shuffle`, 2.4s, reduced-motion
+   static).
+8. **Copy** (all new lines, for `/copy-review`, no em dash): credit notes ×3, results / fewer / all
+   answered / retired / no-games leads, `Shuffling through your deck…`, `no longer applies` line,
+   manifest labels (*Notes on your games*, *Your games · none logged*), Games pointer, `readBack`.
+
+**Open**
+- Is a stopped or failed run charged a credit? Proposed: no; only a run that returns suggestions.
+- Does Re-analyze's banner state its credit cost when it will rewrite the synopsis?
+- C (lifecycle) is approved pending engineering feedback on the version tie and the draft check.
+
+---
+
+## R2 (original)
+
 **Self-assessed: 🟡 Green with one open item.** Both open calls are called, nothing is blocked on a
 dependency and no redraw is pending — but **§6's four failure-class labels are Design's inference**,
 because the spec is not in this design project. That is the one thing the audit must confirm or
