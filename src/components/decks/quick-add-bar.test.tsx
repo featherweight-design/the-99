@@ -510,10 +510,13 @@ describe("combo partner (quick-add, option E / G)", () => {
         rhysticRow.querySelector('[data-testid="combo-partner-inline"] span.truncate')?.textContent,
       ).toBe("Sanguine Bond"),
     );
-    // Desktop (G): the full clause on its own line in the name cell.
-    expect(rhysticRow.querySelector('[data-testid="combo-clause"]')?.textContent).toBe(
-      "completes with Sanguine Bond",
-    );
+    // Desktop (G): its own line in the name cell, drawn as the glyph and the name alone.
+    const desktopClause = rhysticRow.querySelector('[data-testid="combo-clause"]')!;
+    expect(
+      [...desktopClause.querySelectorAll("span")]
+        .filter((el) => !el.classList.contains("sr-only"))
+        .map((el) => el.textContent),
+    ).toEqual(["Sanguine Bond"]);
     // On the phone line the TYPE has no base size, so the partner is never handed a sub-pixel
     // share while it fits — see card-search-row.
     expect(phoneMetaType(rhysticRow).className).toMatch(/\bbasis-0\b/);

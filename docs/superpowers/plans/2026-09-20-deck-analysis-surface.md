@@ -167,7 +167,8 @@ consequence depends on the count, which IS the verdict the ruling removed.
 
 **One ruling 8b makes, and it belongs here rather than in a component:** state n8, *"This completes
 A + B, a two-card infinite"*, is **not drawn**. Sub-project 3 shipped the same statement on the
-same two rows first, as `comboAwarenessCopy.clause.completes` with a glyph and a key entry, and
+same two rows first, as the combo clause (drawn since 2026-09-22 as the lemniscate and the
+partner's name, the sentence spoken — combo-awareness errata §6) with a key entry, and
 both hosts already render it (`consider-combo.test.tsx`, `top-off-combo.test.tsx`). Two sentences
 about one combo on one row is a defect, and the shipped one is the shorter of the two and is
 glossed. The string is still transcribed, and says in its own comment what draws the fact instead.

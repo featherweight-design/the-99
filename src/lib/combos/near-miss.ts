@@ -17,7 +17,7 @@ import { isInfiniteOrGameEnding } from "../spellbook/combo-features";
  *
  * ALL THREE §4.3b RULES APPLY UNCHANGED, and rule 2 is the one that matters most here. A piece
  * flagged `must_be_commander` only works from the command zone, so a card that would complete a
- * combo ONLY as a commander is not completed by adding it to the 99 — and a `completes with X`
+ * combo ONLY as a commander is not completed by adding it to the 99 — and a combo clause naming X
  * on that row would be a false positive on the one claim this design cannot survive.
  */
 
@@ -135,8 +135,8 @@ export function pairsWithOnePiece(args: {
  * squirrels" is a two-card variant; `isInfiniteOrGameEnding` is what says whether this system
  * counts it, and 703 of 3,842 sampled two-card variants produce something it does not.
  *
- * ONE PARTNER PER CARD. The surfaces this feeds draw a single inline clause — `completes with
- * {partner}` — and naming one partner is true whether or not there are others, which is why no
+ * ONE PARTNER PER CARD. The surfaces this feeds draw a single inline clause — the glyph and
+ * one partner's name — and naming one partner is true whether or not there are others, which is why no
  * count may ever appear beside it. The one chosen is the most popular, with `variantId` as the
  * tail so the choice cannot move between two reads of an unchanged collection.
  */
@@ -190,7 +190,7 @@ function morePopular(
  *
  * In the query the reader HAS `present` and LACKS `want`, so `want.must_be_commander` says
  * whether the candidate completes this combo only from the command zone — in which case adding
- * it to the 99 completes nothing, and `completes with X` on that row is the false positive this
+ * it to the 99 completes nothing, and a clause naming X on that row is the false positive this
  * design cannot survive.
  *
  * `loadCompletionPartners` then FLIPS which piece is called "missing", because the row on

@@ -378,7 +378,7 @@ export function SuggestionTile({
             GATED ON `applied`, NOT ON `inDeck`. `applied` starts AT `inDeck` and flips the
             moment Add is pressed, while `inDeck` stays at the last server-rendered value
             until revalidation — so gating on the prop leaves the tile saying `✓ In deck` and
-            `completes with …` at the same time for the length of a round trip. Every other
+            naming a combo partner at the same time for the length of a round trip. Every other
             atom on this tile is gated the same way.
 
             READ AS TEXT, not aria-hidden. Unlike the collection row and the Last 31, this

@@ -47,7 +47,8 @@ describe("AddSurfaceMarkKey", () => {
   });
 
   // The lemniscate arrived on both add surfaces with sub-project 3 and nothing glossed it:
-  // neither clause sentence contains the word "combo" — they read `completes with {partner}`.
+  // the clause never contained the word "combo", and since 2026-09-22 it holds no words at
+  // all — the lemniscate and the partner's name — so this key is the glyph's only gloss.
   it("glosses the combo glyph these surfaces were already drawing", () => {
     render(<AddSurfaceMarkKey />);
     expect(screen.getByText(comboAwarenessCopy.keyWord)).toBeInTheDocument();

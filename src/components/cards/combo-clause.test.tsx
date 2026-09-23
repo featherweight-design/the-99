@@ -4,12 +4,27 @@ import { ComboClause, comboClauseSpoken } from "./combo-clause";
 import { comboAwarenessCopy } from "../../lib/copy/combo-awareness";
 
 describe("ComboClause", () => {
-  it("draws the glyph and the sentence, and names the partner", () => {
+  // `completes` DRAWS THE GLYPH AND THE NAME, AND NO WORDS (Hugh, 2026-09-22). The drawn
+  // text is exactly the name — `completes with` truncated ahead of it on every host.
+  it("draws the glyph and the partner's name, with no words before it", () => {
     render(<ComboClause partnerName="Isochron Scepter" state="completes" />);
     expect(screen.getByTestId("combo-glyph")).toBeInTheDocument();
-    expect(screen.getByTestId("combo-clause")).toHaveTextContent(
-      comboAwarenessCopy.clause.completes("Isochron Scepter"),
+    const drawn = [...screen.getByTestId("combo-clause").querySelectorAll("span")].filter(
+      (el) => !el.classList.contains("sr-only"),
     );
+    expect(drawn.map((el) => el.textContent)).toEqual(["Isochron Scepter"]);
+  });
+
+  // AND THE EAR STILL HEARS THE SENTENCE. A bare name says nothing about a combo, and the
+  // Consider tile reads the clause as content rather than composing it into a label — so the
+  // drawn name is hidden and the spoken sentence stands in for it.
+  it("speaks the whole sentence in place of the bare name", () => {
+    render(<ComboClause partnerName="Isochron Scepter" state="completes" />);
+    const clause = screen.getByTestId("combo-clause");
+    const sr = clause.querySelector(".sr-only");
+    expect(sr?.textContent).toBe(comboClauseSpoken("Isochron Scepter", "completes"));
+    const drawn = [...clause.querySelectorAll("span")].find((el) => el.textContent === "Isochron Scepter");
+    expect(drawn).toHaveAttribute("aria-hidden", "true");
   });
 
 
@@ -30,11 +45,12 @@ describe("ComboClause", () => {
   // Asserted as "nothing but the sentence" rather than "no digits": a card name may contain
   // one — `1996 World Champion` is a real card — so a digit sweep would fail on a legitimate
   // partner while still passing a `· 4` appended to a name that happens to have none.
-  it("prints the sentence and nothing appended to it", () => {
+  it("prints the name and nothing appended to it", () => {
     render(<ComboClause partnerName="Grim Monolith" state="completes" />);
-    expect(screen.getByTestId("combo-clause").textContent).toBe(
-      comboAwarenessCopy.clause.completes("Grim Monolith"),
+    const drawn = [...screen.getByTestId("combo-clause").querySelectorAll("span")].filter(
+      (el) => !el.classList.contains("sr-only"),
     );
+    expect(drawn.map((el) => el.textContent).join("")).toBe("Grim Monolith");
   });
 
   it("appends nothing to a partner whose name carries a digit", () => {
@@ -44,39 +60,22 @@ describe("ComboClause", () => {
     );
   });
 
-  // THE NAME AND THE APP'S WORDS SHRINK AT DIFFERENT PRIORITIES on `completes`, because the
-  // name is at the END of that sentence and plain end-truncation would eat exactly the word a
-  // reader cannot reconstruct. Asserted structurally — jsdom lays nothing out, so the shrink
-  // itself is a browser fact — but the SPLIT is real markup and a build that stopped splitting
-  // would silently go back to truncating the name first.
-  it("splits the completes sentence so the app's words give way first", () => {
+  // THE NAME TRUNCATES, and only when it alone cannot fit — there is nothing else left on the
+  // line to give way first.
+  it("lets the name truncate in its cell", () => {
     render(<ComboClause partnerName="Isochron Scepter" state="completes" />);
-    const clause = screen.getByTestId("combo-clause");
-    const lead = [...clause.querySelectorAll("span")].find(
-      (el) => el.textContent === comboAwarenessCopy.clause.completesLead,
-    );
-    const name = [...clause.querySelectorAll("span")].find(
+    const name = [...screen.getByTestId("combo-clause").querySelectorAll("span")].find(
       (el) => el.textContent === "Isochron Scepter",
     );
-    expect(lead, "the app's words are not their own element").toBeTruthy();
-    expect(name, "the partner name is not its own element").toBeTruthy();
-    // The lead gives way first; both truncate, so neither can overflow its host.
-    // The lead has NO BASE SIZE: it fills only what the name leaves, so nothing shrinks while
-    // the name fits. A shrink weight leaves the name a sub-pixel share, which is enough for the
-    // ellipsis to eat two letters — measured, not assumed.
-    expect(lead!.className).toMatch(/\bbasis-0\b/);
-    expect(lead!.className).toMatch(/\bmax-w-max\b/);
-    expect(name!.className).not.toMatch(/\bbasis-0\b/);
-    expect(name!.className).toContain("truncate");
-    // And the sentence still reads as one.
-    expect(clause).toHaveTextContent(comboAwarenessCopy.clause.completes("Isochron Scepter"));
+    expect(name!.className).toMatch(/\btruncate\b/);
+    expect(name!.className).toMatch(/\bmin-w-0\b/);
   });
 
   // THE CLAUSE IS CAPPED AT ITS PARENT, or none of the above ever runs. Two of its three hosts
   // put it in a BLOCK parent, where an inline-level box sizes to at least its min-content —
   // and for text that cannot wrap that is the whole sentence, so nothing shrank and the clause
   // ran into its neighbours (24px into the top-off row's figures at 390, measured). jsdom lays
-  // nothing out, so this pins the cap and the browser numbers in #864's follow-up prove it.
+  // nothing out, so this pins the cap and the browser numbers in #870 prove it.
   it("caps itself at its parent's width, whatever the host's display", () => {
     render(<ComboClause partnerName="Thassa's Oracle" state="completes" />);
     expect(screen.getByTestId("combo-clause").className).toMatch(/\bmax-w-full\b/);
