@@ -354,10 +354,6 @@ export async function createDeck(
       const [deck] = await tx.insert(decks)
         .values({
           userId, name: deckName, commanderOracleId, partnerOracleId, filled: true,
-          // The brief the fill built to, marked as the app's words. Seeded in the creating
-          // insert so no deck is ever born filled and unseeded.
-          intent: seededIntent(partner ? [commander.name, partner.name] : [commander.name]),
-          intentSeeded: true,
         })
         .returning({ id: decks.id });
       // The selection first, then as much of the fill as fits under the body
@@ -382,6 +378,16 @@ export async function createDeck(
       }
       if (capped.length > 0) {
         await tx.insert(deckCards).values(capped).onConflictDoNothing();
+
+        // The brief the fill built to, marked as the app's words — and only when the FILL
+        // placed something. The selection comes first in `capped`, so anything past it is the
+        // app's; a deck of the player's own picks alone has no brief to disclose. In the
+        // creating transaction, so no deck the app filled is ever read unseeded.
+        if (capped.length > selected.length) {
+          await tx.update(decks)
+            .set({ intent: seededIntent(partner ? [commander.name, partner.name] : [commander.name]), intentSeeded: true })
+            .where(eq(decks.id, deck.id));
+        }
 
         // TWO PASSES, NOT ONE, now that the fill reaches the whole body.
         //

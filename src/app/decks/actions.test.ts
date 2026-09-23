@@ -673,19 +673,30 @@ describe("createDeck — filled baseline", () => {
   // Gate 6, "fires once": the fill-failed banner's retry is the one path that
   // can run a seed fill against a deck that already exists, so it is the one
   // path that could write a second seed pass.
-  // The brief a fill builds to is the app's own words, so the deck is born SEEDED: the intent
-  // and the flag the chip reads land in the creating insert, never in a second write.
-  it("is born with a seeded intent naming the commander", async () => {
+  // The brief a fill builds to is the app's own words, so a deck the fill placed cards in is
+  // born SEEDED, in its creating transaction.
+  it("is born with a seeded intent naming the commander when the fill lands rows", async () => {
     stub.state.cards.push(commanderCard());
     stub.state.collectionItems.push(...Array.from({ length: 10 }, (_, i) => rampCard(i)));
 
     await runCreate();
 
-    const decksInsert = stub.state.insertCalls.find((c) => c.table === "decks");
-    expect(decksInsert!.values).toMatchObject({
-      intent: "Built around Atraxa, Praetors' Voice, from the cards you own.",
-      intentSeeded: true,
+    expect(stub.state.updateCalls).toContainEqual({
+      table: "decks",
+      values: { intent: "Built around Atraxa, Praetors' Voice, from the cards you own.", intentSeeded: true },
     });
+  });
+
+  // A fill that placed nothing built nothing, so there is no brief to disclose — the rule the
+  // retry path keeps too.
+  it("seeds nothing when the fill lands no rows", async () => {
+    stub.state.cards.push(commanderCard());
+
+    await runCreate();
+
+    const seeds = (values: unknown) => (values as { intentSeeded?: boolean }).intentSeeded === true;
+    expect(stub.state.insertCalls.some((c) => c.table === "decks" && seeds(c.values))).toBe(false);
+    expect(stub.state.updateCalls.some((c) => seeds(c.values))).toBe(false);
   });
 
   it("seeds the intent when the failed fill is retried and lands rows", async () => {

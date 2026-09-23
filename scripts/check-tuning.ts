@@ -11,11 +11,13 @@
  *   1. the reply parses against `tuningResponseSchema`
  *   2. at least one suggestion survives `validateSuggestions`
  *   3. a survivor cites the axis the fixture marks as hurting most
- *   4. every survivor's add is inside the commander's colour identity
- *   5. every survivor's cut is a card the fixture's decklist holds
+ *   4. every add the model PROPOSED is inside the commander's colour identity
+ *   5. every cut the model PROPOSED is a card the fixture's decklist holds
  *
  * A model returning fluent, well-formed, ungrounded answers is exactly the drift a shape-only
- * check would miss; 3 to 5 are what catch it.
+ * check would miss; 3 to 5 are what catch it. 4 and 5 read the model's own proposals, before the
+ * validator: after it they cannot fail, because the validator drops exactly those suggestions,
+ * and a model drifting off the decklist would pass so long as one proposal survived.
  *
  * Card names resolve through Scryfall's `/cards/named`, the database-free equivalent of the
  * catalog read `runTuning` makes. It prints the call's token usage, which is the figure
@@ -102,21 +104,20 @@ async function main() {
     if (kept.length > 0 && !cites) failures.push(`3 · no survivor cites the axis marked hurting most (${axisLabel(worst.key)})`);
   }
 
-  // 4 · Every add is inside the colour identity.
+  // 4 · Every PROPOSED add is a real card inside the colour identity.
   const identity = new Set(pack.colorIdentity);
-  const byOracle = new Map([...resolved.values()].map((r) => [r.oracleId, r]));
-  for (const s of kept) {
-    const add = byOracle.get(s.addOracleId);
+  outcome.value.suggestions.forEach((s, i) => {
+    const add = resolved.get(s.add);
     if (!add || !add.colorIdentity.every((c) => identity.has(c))) {
-      failures.push(`4 · suggestion ${s.position}'s add is outside ${pack.colorIdentity.join("")}`);
+      failures.push(`4 · proposal ${i} adds ${s.add}, which is not a card inside ${pack.colorIdentity.join("")}`);
     }
-  }
+  });
 
-  // 5 · Every cut is a card the decklist holds.
-  const inDeck = new Set(pack.cards.map((c) => c.oracleId));
-  for (const s of kept) {
-    if (!inDeck.has(s.cutOracleId)) failures.push(`5 · suggestion ${s.position}'s cut is not in the decklist`);
-  }
+  // 5 · Every PROPOSED cut is a card the decklist holds.
+  const inDeck = new Set(pack.cards.map((c) => c.name));
+  outcome.value.suggestions.forEach((s, i) => {
+    if (!inDeck.has(s.cut)) failures.push(`5 · proposal ${i} cuts ${s.cut}, which the decklist does not hold`);
+  });
 
   if (failures.length > 0) {
     for (const f of failures) console.error(`FAIL  ${f}`);
