@@ -14,8 +14,9 @@
 > 3. **`seededIntent` moves to C** beside `createDeck` and `fillDeck`, its callers. The handoff
 >    draws the seeded state but writes no seeded sentence, so that sentence is authorship and goes
 >    through `/copy-review` with a picture.
-> 4. **`EvidencePack.targets` carries the five mix cells, land included**, plus `measured`, rather
->    than a separate `lands` field: `recommendedMix` already puts land in the same shape.
+> 4. **`EvidencePack.targets` carries the five mix cells, land included, each with its own
+>    `measured` flag**, rather than a separate `lands` field and one flag: `recommendedMix` already
+>    puts land in the same shape, and resolves the roles and the land count independently.
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
