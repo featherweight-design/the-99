@@ -54,7 +54,18 @@ export type ProfileState =
  * KEYED ON THE DECK ID. `asked` alone would leave deck B rendering deck A's profile with no
  * request made, in a shell that outlives a route change between decks.
  */
-export function useDeckProfile(deckId: string): {
+export function useDeckProfile(
+  deckId: string,
+  /**
+   * The list the shell is drawing, as a stable string of its cards. A reading held for the visit
+   * describes the list it was made from, so when this moves the reading is dropped back to `idle`
+   * and the tab offers Analyze again — the same thing a reload shows, because the stored row is
+   * refused for a list it was not made from. The consolidated tab has no re-analyze control on a
+   * reading (the banner that offers one is the lifecycle round's), so without this an edit made
+   * in the same visit would leave the pre-edit bracket on screen with no way to ask again.
+   */
+  listKey?: string,
+): {
   state: ProfileState;
   /** Ask, or ask again. Safe to call repeatedly — a request in flight is not duplicated. */
   request: () => void;
@@ -167,6 +178,19 @@ export function useDeckProfile(deckId: string): {
   if (shownFor !== null && shownFor !== deckId && state.kind !== "idle") {
     setShownFor(null);
     setState({ kind: "idle" });
+  }
+
+  // THE LIST CHANGED UNDER A READING. The key a reading was first drawn against is held, and a
+  // different key drops it. Adjusted during render for the same reason as the deck change above.
+  const [readKey, setReadKey] = useState<string | null>(null);
+  if (state.kind === "ready" && listKey !== undefined) {
+    if (readKey === null) setReadKey(listKey);
+    else if (readKey !== listKey) {
+      setReadKey(null);
+      setState({ kind: "idle" });
+    }
+  } else if (state.kind !== "ready" && readKey !== null) {
+    setReadKey(null);
   }
 
   return { state, request, peek };

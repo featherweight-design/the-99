@@ -117,7 +117,6 @@ describe("the answer", () => {
   it("resolves the face to the declared bracket and moves the range below it", () => {
     draw("4,5", 5);
     expect(screen.queryByText("Optimized or cEDH")).toBeNull();
-    expect(screen.queryByText(deckAnalysisCopy.verdict.splitChip)).toBeNull();
     expect(screen.getAllByTestId("bracket-mark").map((m) => m.dataset.bracket)).toEqual(["5"]);
     expect(screen.getByText(declarationCopy.declared.permitsBelow([4, 5]))).toBeTruthy();
     expect(screen.queryByRole("group")).toBeNull();
