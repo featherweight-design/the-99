@@ -30,6 +30,7 @@ import { buildPrompt } from "../../lib/tuning/prompt";
 import { tuningResponseSchema } from "../../lib/tuning/response-schema";
 import { cancelRun, finishRun, persistRun, saveIntent, startRun } from "../../lib/tuning/run-store";
 import type { TuningState } from "../../lib/tuning/state";
+import { nameResolver } from "../../lib/tuning/resolve-names";
 import { validateSuggestions } from "../../lib/tuning/validate";
 import { applyItem, setDismissed, undoItem } from "../../lib/tuning/verdicts";
 
@@ -113,11 +114,9 @@ export async function runTuning(deckId: string, opts: { anyway?: boolean } = {})
       .select({ oracleId: cards.oracleId, name: cards.name, colorIdentity: cards.colorIdentity, commanderLegal: cards.commanderLegal })
       .from(cards)
       .where(inArray(cards.name, names));
-    const byName = new Map(rows.map((r) => [r.name, r]));
+    const resolveName = nameResolver(rows, new Set(pack.cards.map((c) => c.oracleId)));
 
-    const { kept, droppedCount } = validateSuggestions({
-      response: outcome.value, pack, resolveName: (name) => byName.get(name) ?? null,
-    });
+    const { kept, droppedCount } = validateSuggestions({ response: outcome.value, pack, resolveName });
     if (kept.length === 0) return await fail("ungrounded", droppedCount);
 
     // The bracket flag: shown, never dropped (Hugh, 2026-09-23).
