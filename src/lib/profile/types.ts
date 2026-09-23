@@ -241,7 +241,12 @@ export type DetectionCoverage = {
 export type ComboReach = {
   /** Every tutor the deck holds. Drawn as a fact; NO bracket rule counts them. */
   tutors: CardRef[];
-  /** Tutors that can search out a piece of a combo this deck assembles. */
+  /**
+   * Every SEARCH that can find a piece of a combo this deck assembles, keyed `tutor` for
+   * history. Since 2026-09-22 that includes a land-only search, which is NOT a tutor and is not
+   * in `tutors` above: Crop Rotation finds Dark Depths. So a reader wording a reach must not
+   * call its finder a tutor. The lean and the upgrade path say "this deck can find".
+   */
   reaches: { tutor: CardRef; combo: ComboRef; piece: CardRef }[];
 };
 

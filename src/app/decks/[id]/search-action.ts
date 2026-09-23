@@ -5,7 +5,7 @@ import { db } from "../../../db";
 import { cardBracketFlags, cards, collectionItems, printings } from "../../../db/schema";
 import { requireUserId } from "../../../lib/auth";
 import type { CardNoteFacts } from "../../../lib/bracket/card-note";
-import { classifyTutor } from "../../../lib/bracket/tutor-targets";
+import { isTutor } from "../../../lib/bracket/tutor-targets";
 import { withinColorIdentity } from "../../../lib/cards/identity-where";
 import type { Availability } from "../../../lib/decks/availability";
 import { loadAvailability } from "../../../lib/decks/availability-query";
@@ -52,7 +52,7 @@ export type SearchResult = {
    *
    * Read ON THE SEARCH'S OWN ROW rather than through `loadCandidateFacts`, and that is the
    * whole of 8c's payload answer. Every one of the four is a property of the CARD: the game
-   * changer is a column already on this row, the tutor reading is `classifyTutor` over the
+   * changer is a column already on this row, the tutor reading is `isTutor` over the
    * oracle text this query already selects, and the two flags come off a table of 163 rows by
    * primary key. Measured on staging: 0.04ms for twenty ids, joined into the statement that
    * already runs, so no keystroke pays a round trip for it. What `loadCandidateFacts` adds is
@@ -169,7 +169,7 @@ export async function searchCards(
       gameChanger: gameChanger ?? false,
       massLandDenial: massLandDenial ?? false,
       extraTurn: extraTurn ?? false,
-      tutor: classifyTutor(oracleText) !== null,
+      tutor: isTutor(oracleText),
     }),
     // Dropped when the title itself matched: the flavor name is there to explain a row
     // whose name does not contain what the player typed, and nothing else.

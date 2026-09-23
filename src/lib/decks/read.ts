@@ -2,7 +2,7 @@ import { and, asc, desc, eq, inArray, sql } from "drizzle-orm";
 import { alias } from "drizzle-orm/pg-core";
 import { db } from "../../db";
 import { factsFor } from "../bracket/facts";
-import { classifyTutor } from "../bracket/tutor-targets";
+import { isTutor } from "../bracket/tutor-targets";
 import type { NoteCounts } from "../bracket/card-note";
 import type { Bracket } from "../bracket/types";
 import { loadBracketFlags, type CardBracketFlags } from "../bracket/flags-read";
@@ -196,7 +196,7 @@ export type DeckDetail = {
    * How many of each note-bearing kind this deck's list already holds, counted by COPIES.
    *
    * Derived here rather than on the client because one of the four is not on the card: the
-   * three marks come off `facts`, and the tutor reading is `classifyTutor` over oracle text,
+   * three marks come off `facts`, and the tutor reading is `isTutor` over oracle text,
    * which this query already has and a `DeckDetailCard` does not carry.
    */
   noteCounts: NoteCounts;
@@ -484,9 +484,10 @@ export function countNoteKinds(
     if (row.gameChanger) counts.gameChanger += copies;
     // Mass land denial is NOT counted: its sentence takes no ordinal. See `NoteCounts`.
     if (flag?.extraTurn && counts.extraTurns !== null) counts.extraTurns += copies;
-    // The SHIPPED classifier over the same text `loadCandidateFacts` reads, so a card's
-    // reading cannot differ depending on which side of the add it is on.
-    if (classifyTutor(row.oracleText) !== null) counts.tutor += copies;
+    // `isTutor`, the same predicate `loadCandidateFacts` and the search read, so a card's
+    // reading cannot differ depending on which side of the add it is on. NOT `classifyTutor`,
+    // which counts every land search (ruled 2026-09-22) and put Evolving Wilds in this count.
+    if (isTutor(row.oracleText)) counts.tutor += copies;
   };
   for (const row of cardRows) add(row.quantity, row);
   for (const row of commanderRows) add(1, row);

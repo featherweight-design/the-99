@@ -14,7 +14,7 @@ import {
 } from "../../db/schema";
 import { loadBracketFlags } from "../bracket/flags-read";
 import { EXTRA_TURN_DETECTION, MLD_DETECTION } from "../bracket/oracle-rules";
-import { classifyTutor, tutorReaches } from "../bracket/tutor-targets";
+import { classifySearches, tutorReaches } from "../bracket/tutor-targets";
 import { cacheForUser } from "../cache/user-lists";
 import { canonicalPair } from "../edhrec/pair";
 import { COMBO_DETECTION, isInfiniteOrGameEnding } from "../spellbook/combo-features";
@@ -346,18 +346,15 @@ export async function loadDeckProfileFromHead(head: ProfileHead): Promise<DeckPr
     if (f.extraTurn) extraTurnFlags.set(oracleId, f.extraTurnSources as FlagSource[]);
   }
 
-  // THE TUTORS, classified here rather than in the builder, so the builder stays pure. Only
-  // a tutor that can actually FIND a piece of a combo this deck assembles is recorded: the
-  // profile reports the reach as a fact, and a tutor that reaches nothing is still a tutor —
-  // which is why `comboReach.tutors` takes the whole set and the pairing is the builder's.
-  const tutorIds = new Set<string>();
-  const tutorTargets = new Map<string, ReturnType<typeof classifyTutor>>();
-  for (const row of rows) {
-    const target = classifyTutor(row.oracleText);
-    if (!target) continue;
-    tutorIds.add(row.oracleId);
-    tutorTargets.set(row.oracleId, target);
-  }
+  // THE SEARCHES, classified here rather than in the builder, so the builder stays pure, and
+  // split in two. A TUTOR (`isTutorTarget`) can find something other than a land; it is what
+  // `comboReach.tutors` lists and what the tutors finding counts. A LAND SEARCH can find only
+  // a land (Evolving Wilds, Crop Rotation): Hugh ruled on 2026-09-22 that it is ramp, not a
+  // tutor, so it is never counted. It still REACHES, though, because a land can be a combo
+  // piece (`Crop Rotation` finds `Dark Depths`), and reach is a question about what a search
+  // can find, not about what the card is called. So both sets feed the pairing, and only the
+  // first is named. The split is `classifySearches`, where it has a unit test.
+  const { tutorIds, landSearchIds, targets: tutorTargets } = classifySearches(rows);
 
   const input: ProfileInput = {
     deckId: head.deckId,
@@ -378,6 +375,7 @@ export async function loadDeckProfileFromHead(head: ProfileHead): Promise<DeckPr
     gameChangerIds: new Set(cardRows.filter((r) => r.gameChanger).map((r) => r.oracleId)),
     twoCardCombos: combos,
     tutorIds,
+    landSearchIds,
     // The reach predicate travels with the ids, so the builder pairs a tutor with a piece
     // only where the tutor can actually find it. Without this every tutor "reaches" every
     // piece, which is a receipt nobody can check and an overstatement on every deck.

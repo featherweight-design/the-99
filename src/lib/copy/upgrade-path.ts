@@ -58,7 +58,10 @@ export const upgradePathCopy = {
   /** The combo item states the requirement at the COMBO's cardinality, and never says "remove". */
   comboRule: {
     assembled: (bracket: Bracket) =>
-      `Your tutors can assemble this one, which is what puts the deck past ${name(bracket)}.`,
+      // Not "your tutors": a land-only search is not a tutor (2026-09-22) and still finds a
+      // land half. And not "can find both halves" either: `comboLandsEarly` counts a commander
+      // half as covered with no search at all, so "assemble" is the verb true of both.
+      `This deck can assemble this one, which is what puts it past ${name(bracket)}.`,
     forbidden: (bracket: Bracket) => `${name(bracket)} doesn't allow two-card combos at all.`,
     /** At Upgraded, a combo producing infinite turns — whether or not the tutors can find it. */
     loop: (bracket: Bracket) => `${name(bracket)} doesn't allow a loop of extra turns.`,

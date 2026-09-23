@@ -220,6 +220,86 @@ export function classifyTutor(oracleText: string | null): TutorTarget | null {
 }
 
 /**
+ * The words a target phrase can use that only a LAND carries: the card type itself, and every
+ * land subtype that no other card type shares.
+ *
+ * Derived from the catalog rather than recalled, on staging on 2026-09-22: every subtype word
+ * to the right of the dash on a land face, less every word that also appears on a non-land face.
+ * The subtypes both sides share (`lair`, `locus`, `planet`, `saga` and so on) are left out on
+ * purpose: a search naming one of those can find a non-land, so it is not land-only. A land
+ * subtype printed after this list was taken falls through as not-land-only, which OVER-counts
+ * tutors: the direction the reader can see and check.
+ */
+export const LAND_ONLY_WORDS: ReadonlySet<string> = new Set([
+  "land",
+  "plains", "island", "swamp", "mountain", "forest",
+  "barnyard", "cave", "cloud", "desert", "gate", "mine", "omenpath", "power-plant", "sphere",
+  "tower", "town", "ulamog's", "urza's",
+]);
+
+/**
+ * Whether a search can find ONLY lands. Ruled by Hugh on 2026-09-22: a library search that
+ * can find nothing but a land is ramp, not a tutor. That covers Evolving Wilds, Cultivate,
+ * Farseek, Three Visits and Crop Rotation.
+ *
+ * An alternative is land-only when ONE of its constraints is, because every constraint must
+ * hold for the piece: `a Forest creature card`'s `forest` constraint forces a land. A
+ * constraint is land-only when every word it expands to is a land word. `permanent` expands to
+ * six types, land among them, so it is not.
+ */
+function landOnly(target: TutorTarget): boolean {
+  if (target.kinds === "any") return false;
+  return target.kinds.every((alternative) =>
+    alternative.some((constraint) => constraint.every((word) => LAND_ONLY_WORDS.has(word))),
+  );
+}
+
+/**
+ * Whether a classified search is a TUTOR in the sense a player means and every surface that
+ * says the word or counts it: it can find something other than a land.
+ *
+ * DELIBERATELY NARROWER THAN `classifyTutor`, which answers a different question: can this
+ * card find a combo piece? A land search can (`Crop Rotation` finds `Dark Depths`), so reach
+ * keeps every search. What changes is only what gets CALLED a tutor. Before this, 510 of the
+ * 929 commander-legal searches were land-only, so `Evolving Wilds` read "A tutor, and your
+ * Nth" and a deck holding one real tutor reported ten.
+ */
+export function isTutorTarget(target: TutorTarget | null): boolean {
+  return target !== null && !landOnly(target);
+}
+
+/**
+ * A deck's searches, split the way the profile needs them: the TUTORS (listed and counted),
+ * the LAND SEARCHES (paired for reach, never called tutors), and every target by id so the
+ * reach predicate can test either kind.
+ *
+ * One function rather than the split written inline at the call site, so the rule has a unit
+ * test. Inline, a regression putting every search back in the tutor set was reachable only by
+ * `probe:bracket` against a real database.
+ */
+export function classifySearches(rows: readonly { oracleId: string; oracleText: string | null }[]): {
+  tutorIds: Set<string>;
+  landSearchIds: Set<string>;
+  targets: Map<string, TutorTarget>;
+} {
+  const tutorIds = new Set<string>();
+  const landSearchIds = new Set<string>();
+  const targets = new Map<string, TutorTarget>();
+  for (const row of rows) {
+    const target = classifyTutor(row.oracleText);
+    if (!target) continue;
+    (isTutorTarget(target) ? tutorIds : landSearchIds).add(row.oracleId);
+    targets.set(row.oracleId, target);
+  }
+  return { tutorIds, landSearchIds, targets };
+}
+
+/** `isTutorTarget` over oracle text, for a reader holding the text rather than a target. */
+export function isTutor(oracleText: string | null): boolean {
+  return isTutorTarget(classifyTutor(oracleText));
+}
+
+/**
  * Whether a tutor can find a given card.
  *
  * A basic-land tutor reaches nothing: no basic land is a two-card combo piece, and a

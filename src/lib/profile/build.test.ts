@@ -610,6 +610,23 @@ describe("a tutor reaches only what it can find", () => {
     expect(p.brackets.comboReach.tutors).toHaveLength(1);
     expect(p.brackets.comboReach.reaches).toEqual([]);
   });
+  // A land-only search (ruled 2026-09-22) is NOT a tutor, so it is not listed or counted.
+  // But it still REACHES, because a land can be a combo piece: Crop Rotation finds Dark Depths.
+  // Both halves are asserted, because dropping it from the input entirely passes the first
+  // and silently loses the reach.
+  it("pairs a land search for reach without listing it as a tutor", () => {
+    const p = buildDeckProfile(
+      input({
+        cards,
+        tutorIds: new Set(),
+        landSearchIds: new Set(["tutor"]),
+        twoCardCombos: [combo],
+        tutorReaches: (_id, piece) => piece.typeLine.toLowerCase().includes("land"),
+      }),
+    );
+    expect(p.brackets.comboReach.tutors).toEqual([]);
+    expect(p.brackets.comboReach.reaches.map((r) => r.piece.oracleId)).toEqual(["land-piece"]);
+  });
 });
 
 // THE ROLE CHAIN. Read down the same order as the composition and resolved SEPARATELY — the

@@ -404,12 +404,16 @@ export const deckAnalysisCopy = {
    */
   lean: {
     label: "How we determined this bracket",
+    // "This deck can find", not "your tutors": since 2026-09-22 a land-only search is not a
+    // tutor, and it still covers a land half (Crop Rotation finds Dark Depths). The finder is
+    // named in the reasoning; this sentence says what is found, which is true of either kind.
+    // `oneHalf` below already said it this way.
     reachable: (a: string, b: string) =>
-      `Your tutors can find both halves of ${a} + ${b}, so the pair is part of the plan rather `
+      `This deck can find both halves of ${a} + ${b}, so the pair is part of the plan rather `
       + `than a draw away. That is what puts this past ${BRACKET_NAMES[3]}.`,
     /** The same sentence in parts, so the two names can be pressed. Joined, it is `reachable`. */
     reachableParts: (a: string, b: string) =>
-      ["Your tutors can find both halves of ", a, " + ", b,
+      ["This deck can find both halves of ", a, " + ", b,
         `, so the pair is part of the plan rather than a draw away. That is what puts this past ${BRACKET_NAMES[3]}.`],
     drawOnly: (a: string, b: string) =>
       `This deck holds ${a} + ${b}, and nothing in it searches for either half. The pair is a `
@@ -422,11 +426,11 @@ export const deckAnalysisCopy = {
      * both halves would be false. Written here, like the next two; `/copy-review` owns them.
      */
     reachableCommander: (a: string, b: string) =>
-      `Your commander is one half of ${a} + ${b}, and your tutors can find the other, so the pair `
+      `Your commander is one half of ${a} + ${b}, and this deck can find the other, so the pair `
       + `is part of the plan rather than a draw away. That is what puts this past ${BRACKET_NAMES[3]}.`,
     reachableCommanderParts: (a: string, b: string) =>
       ["Your commander is one half of ", a, " + ", b,
-        `, and your tutors can find the other, so the pair is part of the plan rather than a draw away. That is what puts this past ${BRACKET_NAMES[3]}.`],
+        `, and this deck can find the other, so the pair is part of the plan rather than a draw away. That is what puts this past ${BRACKET_NAMES[3]}.`],
     /** Both halves are commanders — a partner pair — so no tutor is involved at all. */
     reachableZone: (a: string, b: string) =>
       `Both halves of ${a} + ${b} are in your command zone, so the pair is there every game. `
@@ -458,7 +462,7 @@ export const deckAnalysisCopy = {
     qualifierOneHalf: (n: Bracket) => `${BRACKET_NAMES[n]} · one half findable`,
     /** Not "2 of 2": a fraction invites a reader to lower a numerator that is not a limit. */
     threshold: (n: Bracket) =>
-      `A deck reaches ${BRACKET_NAMES[n]} when its tutors can cover every piece of one combo: `
+      `A deck reaches ${BRACKET_NAMES[n]} when it can find every piece of one combo: `
       + "one card that finds both halves, or two that each find a different one.",
     /** After the threshold, where a half is a commander: the zone covers it with no tutor. */
     thresholdCommander: "A commander counts as covered, because it is in the zone every game.",
