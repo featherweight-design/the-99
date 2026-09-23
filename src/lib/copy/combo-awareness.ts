@@ -1,12 +1,15 @@
 /**
  * src/lib/copy/combo-awareness.ts — combo awareness (sub-project 3), the three states.
  *
- * Transcribed verbatim from `design/design_handoff_the99_combo_awareness/
- * combo-awareness · copy strings.ts`. Round 1 (the card mark) owns `cardMarkCopy` and Round 2
+ * Transcribed from `design/design_handoff_the99_combo_awareness/combo-awareness · copy
+ * strings.ts`, with ONE DEPARTURE: the handoff's `completes with ${partner}` is gone. Hugh ruled
+ * on 2026-09-22 that states 2 and 3 draw the lemniscate and the partner's name with no words
+ * (errata §6), so `clause` carries `ownBoth` alone and the sentence survives only as what a
+ * screen reader hears, `a11y.completes`. Round 1 (the card mark) owns `cardMarkCopy` and Round 2
  * owns the lemniscate's key entry and its fact name; this block owns only the sentences.
  *
- * Two clause strings, and the reason there are only two: states 2 and 3 differ by ownership of
- * the row's card, which every host already draws with the shipped `OwnershipDot` and `BuyTag`.
+ * States 2 and 3 share one rendering: they differ by ownership of the row's card, which every
+ * host already draws with the shipped `OwnershipDot` and `BuyTag`.
  *
  * BOUNDED BY CONSTRUCTION. Detection excludes template-gated variants by design, so nothing
  * here may carry a count, a definite article, or a deck-level total. Naming one partner is

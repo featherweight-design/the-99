@@ -59,8 +59,9 @@ Routed through `/copy-review` rather than Design — the box is the same box.
 
 **1 — n8, the combo completion, is not drawn.** `STATES-card-note.md` n8 says a candidate that
 completes a two-card combo prints *This completes A + B, a two-card infinite.* Sub-project 3
-shipped the same statement on the same two rows first, as `comboAwarenessCopy.clause.completes`
-with the lemniscate beside it and a key entry glossing the glyph, and both hosts render it today
+shipped the same statement on the same two rows first — the combo clause, drawn since 2026-09-22
+as the lemniscate and the partner's name with the sentence spoken, and a key entry glossing the
+glyph — and both hosts render it today
 (`consider-combo.test.tsx`, `top-off-combo.test.tsx`). Two sentences about one combo on one row
 is a defect; the shipped one is shorter and glossed. The string is transcribed and says in its
 own comment what draws the fact instead. **Engineering's call, recorded in the surface plan.**

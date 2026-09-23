@@ -60,11 +60,6 @@ describe("ComboClause", () => {
     );
   });
 
-  // THE NAME AND THE APP'S WORDS SHRINK AT DIFFERENT PRIORITIES on `completes`, because the
-  // name is at the END of that sentence and plain end-truncation would eat exactly the word a
-  // reader cannot reconstruct. Asserted structurally — jsdom lays nothing out, so the shrink
-  // itself is a browser fact — but the SPLIT is real markup and a build that stopped splitting
-  // would silently go back to truncating the name first.
   // THE NAME TRUNCATES, and only when it alone cannot fit — there is nothing else left on the
   // line to give way first.
   it("lets the name truncate in its cell", () => {

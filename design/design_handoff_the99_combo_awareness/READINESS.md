@@ -179,9 +179,12 @@ the name it exists to introduce: `completes wi… Lithoform Engine` on the quick
 The clause is now the lemniscate and the partner's name, which is what §5 had already made the
 phone quick-add row.
 
-Nothing a reader needs goes with it. The glyph is glossed `Two-card combo` by the key both add
-surfaces mount, and it is now the ONLY gloss there, which is worth knowing before anyone removes
-that key. The sentence is still heard: the top-off row and the quick-add option speak it through
+On the Consider tile and the top-off list the glyph is glossed `Two-card combo` by the key those
+surfaces mount, and that key is now the ONLY gloss there — worth knowing before anyone removes it.
+**The quick-add row has no key.** It never mounted one, and on desktop `completes with` was the
+only hint it carried, so there the lemniscate is now unglossed for a sighted reader; the phone
+quick-add row has been in that state since §5. Raised with Hugh rather than solved here, because
+where a key would live on that dock is a placement call. The sentence is still heard: the top-off row and the quick-add option speak it through
 their own labels, and the clause carries it sr-only for the Consider tile, which reads it as
 content. `ownBoth` (`with {partner} — you own both`) is unchanged; no host draws it today.
 
