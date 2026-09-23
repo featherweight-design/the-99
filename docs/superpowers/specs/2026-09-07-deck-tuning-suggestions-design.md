@@ -113,6 +113,15 @@ that assumed the field was append-only would have to be unpicked.
 
 ## 4. Data model
 
+> **Amended 2026-09-23.** A third table joins these: **`model_calls`**, the per-player allowance ledger
+> shared with the deck synopsis — one row per model run (`user_id`, `feature` in `tuning | synopsis`,
+> `status` in `reserved | spent | refunded`, `created_at`), counted over a rolling 24 hours. Only a
+> `spent` or in-flight `reserved` row counts; a failed or stopped run is `refunded` (Hugh, 2026-09-23).
+> Rows are kept, like runs. `deck_suggestion_runs` gains `model_call_id` and `profile_version`, and
+> `deck_suggestion_items` gains `bracket_after` and `undo_snapshot`. The implementation plan
+> (`docs/superpowers/plans/2026-09-07-deck-tuning-suggestions.md` and its per-PR files) is
+> authoritative for exact columns.
+
 Two columns and two tables. Column and table names are indicative; the implementation plan settles exact
 naming against Drizzle conventions already in `src/db/schema.ts`.
 
@@ -328,11 +337,14 @@ Mobile and desktop parity throughout, per the repo's standing rule.
 
 - Pure unit tests for the evidence pack, the fingerprint, all five validation rules, and the interrupted-run
   reaper's cutoff.
-- Action tests for the durability contract specifically: a pending row exists before the call, a second
-  concurrent generation is refused, a failed run leaves the gate open, a successful one closes it, and a
-  stale pending row is written to `interrupted` on read rather than merely displayed that way.
-- A test for both halves of the reaper race: a reaped run's late success is discarded rather than written,
-  and a run that finishes first is not overwritten by a reaper firing behind it.
+- The durability contract is proved against a real Postgres by `pnpm probe:tuning-run` (amended
+  2026-09-23; a stubbed action test proves only the SQL text, not what a transaction wrote): a pending row
+  exists before the call, a second concurrent generation is refused, a failed run leaves the gate open, a
+  successful one closes it, and a stale pending row is written to `interrupted` on read rather than merely
+  displayed that way. The same probe covers the allowance race for a player's last unit and the refund on
+  every failure path.
+- Both halves of the reaper race, in that probe: a reaped run's late success is discarded rather than
+  written, and a run that finishes first is not overwritten by a reaper firing behind it.
 - Component tests for every state in §10, including each failure class.
 - `pnpm check:tuning` for advice quality, run deliberately rather than on every commit.
 
