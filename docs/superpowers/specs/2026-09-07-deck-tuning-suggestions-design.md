@@ -166,13 +166,18 @@ Three consequences worth stating outright:
 - **Including `prompt_version` in the hash is deliberate.** Improving the prompt is a material change, so it
   legitimately unlocks a regeneration on every deck. Leaving it out would freeze every deck on advice from
   the worst prompt the feature ever shipped.
-- **Generation requires `PATTERN_MIN` games.** #9 already holds that below three games the panel describes
-  rather than finds; a suggestion is a finding. Same threshold, same argument, and the constant is already
-  exported once from `src/lib/copy/game-log.ts`.
+- ~~**Generation requires `PATTERN_MIN` games.**~~ **Removed (2026-09-20 foundation ruling).** The Deck
+  Profile is sufficient input on its own, so a deck built tonight gets an answer tonight. Games enrich the
+  evidence when they exist and the panel says which it had; they never gate it.
 
-A per-user ceiling of a small number of generations per hour, counted from the runs table, sits behind all
-of this as insurance against a loop nobody intended. It is not a business rule and should never be visible
-in normal use.
+~~A per-user ceiling of a small number of generations per hour, counted from the runs table.~~ **Replaced
+2026-09-23 (Hugh):** one per-player DAILY allowance, shared with the deck synopsis through one model client,
+so there is one counter and one number. Spending it is a stated state that says when it reopens, not a
+silent refusal. The number is set once a call's cost is measured. See the plan's *Cost* section.
+
+> **Amended 2026-09-23.** The fingerprint's decklist half is now the Deck Profile's own fingerprint
+> (`src/lib/profile/fingerprint.ts`), so "the deck changed" has one definition; the tuning fingerprint
+> adds the games, notes, intent and `prompt_version`.
 
 ---
 
@@ -230,8 +235,9 @@ trusting a feature.
 ## 7. The pipeline
 
 1. **Authorise** — the established pattern: `requireUserId()`, then ownership of the deck.
-2. **Build the evidence pack** — a *pure* function over the deck, its games, its notes, its intent, and the
-   role gaps the existing engine already computes. It touches no network and no database, so the hardest
+2. **Build the evidence pack** — a *pure* function over the Deck Profile (amended 2026-09-23: the profile
+   holds the counts, roles, targets and staples this step used to gather for itself), the play-data group
+   built from its games and notes, and its intent. It touches no network and no database, so the hardest
    part of the feature is unit-testable without an API key.
 3. **Check the fingerprint** — §5. Refuse without spending.
 4. **Write the pending run** — §6.
@@ -244,7 +250,8 @@ per-game notes, the deck intent, the role gaps, and the commander's EDHREC stapl
 the deck. That last item is context, not a menu: the model may suggest anything legal, and the staples are
 there so it knows what the deck has already declined.
 
-**Model:** default to Sonnet 4.6, recorded per run. The evaluation harness in §9 is what should decide
+**Model:** the current Sonnet (`claude-sonnet-5` at the 2026-09-23 revision), recorded per run, called through
+the shared model client the synopsis also uses. The evaluation harness in §9 is what should decide
 whether a larger model earns its cost, rather than an assumption in either direction.
 
 ---
@@ -307,7 +314,7 @@ Five, of which one is a change to something already shipped.
 2. **The game history row** (changed, from #9) — shows a note when one exists.
 3. **Deck intent** — needs a home, an empty state that asks for it, an editable state, and a distinct
    seeded state for when the app wrote the first draft because the app built the deck.
-4. **The tuning panel** — states for: below the threshold, ready to generate, generating, results,
+4. **The tuning panel** — states for: ~~below the threshold~~ (retired with the game gate, 2026-09-20), ready to generate (including with no games logged), the shared allowance spent, generating, results,
    nothing-has-changed (button disabled, with the reason), and each failure class from §6.
 5. **The suggestion card** — the cut and add pair, an ownership label, a price when the card is not owned
    (the ManaPool data already ships), the rationale, the evidence it cites, and the accepted and dismissed

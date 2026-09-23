@@ -1,25 +1,44 @@
 # Deck Tuning Suggestions Implementation Plan
 
-> **Amended 2026-09-20 by the deck-analysis foundation (spec §10, PR 6 of that plan):**
-> (1) Task 7's evidence pack is assembled FROM the Deck Profile (`src/lib/profile`) rather
-> than built privately — two deck-characterisation objects is a reconciliation we can see
-> coming, and the profile already holds the counts, roles, curve, colours, skeleton fit and
-> bracket facts this plan's pack was going to gather for itself.
-> (2) The `PATTERN_MIN` game gate on suggestions is REMOVED. The profile alone is sufficient
-> input, so a deck built tonight gets an answer tonight; games enter the evidence pack when
-> they exist, and the panel states which it had. No other #10 ruling is re-opened.
+> **Revised 2026-09-23 (sub-project 5 of the Deck Analysis Epic).** This plan was written on
+> 2026-09-07, paused, and is now rebuilt on what the epic has shipped since. The revision is
+> in place rather than a successor file, so there is one plan to read. What moved:
+>
+> 1. **The evidence pack is assembled FROM the Deck Profile** (`src/lib/profile/**`), not from
+>    `DeckDetail`, `computeRoleCounts`, the retired `RECOMMENDED_MIX` or `readSynergyCards`.
+>    Play data arrives as a new profile fact group, the one `src/lib/profile/types.ts:12-14`
+>    anticipates, attached OUTSIDE the cached document (Task 7). The tuning fingerprint is
+>    built on `profileFingerprint` rather than hashing the decklist a second time (Task 6).
+>    This was amendment (1) of the 2026-09-20 foundation ruling; it is now carried into the
+>    tasks rather than sitting above them.
+> 2. **No game gate.** `PATTERN_MIN` gates nothing in this feature: it is gone from the
+>    constraints, the copy re-exports, `gateReason`, `GateReason.kind` and every test. A deck
+>    built tonight gets an answer tonight; games enrich the evidence when they exist and the
+>    panel states which it had. This was amendment (2) of the same ruling.
+> 3. **One shared model client, in `src/lib/model/`.** The synopsis (sub-project 6) is the
+>    epic's other model feature, so the client, its retries and its deadline carry no tuning
+>    assumptions (Task 10). The model is `claude-sonnet-5`, recorded per run.
+> 4. **The hourly ceiling is replaced by a shared DAILY allowance** (Hugh, 2026-09-23). The
+>    synopsis and tuning spend one per-player allowance through the shared client: one counter,
+>    one number. It lives in the client's layer, its size is a named constant set once a call's
+>    cost is measured, and an exhausted allowance is a stated state (Task 10, Task 12).
+> 5. **Split into four PRs** (see *PR boundaries*). PRs A–C are the whole backend and need no
+>    design input. **PR D is BLOCKED ON DESIGN — placement addendum**: the handoff mounts the
+>    panel on the Games tab and predates the Analysis tab (#753), so no tab is chosen here.
+> 6. **Stale references fixed** against `origin/main` at `67f29274`: line numbers, the
+>    workflow file, test files that do not exist, and the migration head (0052).
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
-**Goal:** Turn a deck's logged games, per-game notes, and a stated deck intent into a small set of grounded cut/add suggestions the player can apply in one tap, produced by a single schema-constrained model call whose every claim is verified against the player's own data before it is shown.
+**Goal:** Turn a deck, its logged games and notes when there are any, and a stated deck intent into a small set of grounded cut/add suggestions the player can apply in one tap, produced by a single schema-constrained model call whose every claim is verified against the player's own data before it is shown.
 
-**Architecture:** A pure core and a thin shell. Everything that decides — the fingerprint, the evidence pack, the prompt, the response schema, the six validation rules, the presentation checks, the reaper's arithmetic — lives in `src/lib/tuning/*` as pure functions with no database and no network, so the whole decision surface is unit-testable without either. One server action module (`src/app/decks/tuning-actions.ts`) owns the durability contract: a `pending` run row committed in its own transaction before the model call, a partial unique index that makes a second concurrent run impossible, a read-time reaper that fails abandoned rows, and conditional writes on both the success and failure paths so an interrupted run can never overwrite a reaped one. The UI is a panel on the existing builder page that reads its state from the newest run row.
+**Architecture:** A pure core and a thin shell. Everything that decides — the fingerprint, the evidence pack, the prompt, the response schema, the six validation rules, the presentation checks, the reaper's arithmetic — lives in `src/lib/tuning/*` as pure functions with no database and no network, so the whole decision surface is unit-testable without either. The deck half of the evidence is the Deck Profile the Analysis tab already computes; the play half is a new profile fact group. The model call goes through `src/lib/model/`, a feature-neutral client that owns the HTTP contract, the deadline, the two bounded retries and the per-player daily allowance. One server action module (`src/app/decks/tuning-actions.ts`) owns the durability contract: a `pending` run row committed in its own transaction before the model call, a partial unique index that makes a second concurrent run impossible, a read-time reaper that fails abandoned rows, and conditional writes on both the success and failure paths so an interrupted run can never overwrite a reaped one. The UI is a panel on the builder page whose placement is Design's to draw.
 
-**Tech Stack:** Next.js 16 (App Router, server actions), React 19, Tailwind 4, Drizzle ORM 0.45.2 on Neon Postgres, zod 4.4.3, Clerk auth, Vitest 4 + jsdom + Testing Library, pnpm. The model call is a raw `fetch` to `https://api.anthropic.com/v1/messages` — there is no `@anthropic-ai/sdk` in this repo and this plan does not add one, matching the existing integration in `scripts/generate-commander-prose.ts`.
+**Tech Stack:** Next.js 16 (App Router, server actions), React 19, Tailwind 4, Drizzle ORM on Neon Postgres, zod 4, Clerk auth, Vitest 4 + jsdom + Testing Library, pnpm. The model call is a raw `fetch` to `https://api.anthropic.com/v1/messages` — there is no `@anthropic-ai/sdk` in this repo and this plan does not add one, matching the existing integration in `scripts/generate-commander-prose.ts`.
 
-**Spec:** `docs/superpowers/specs/2026-09-07-deck-tuning-suggestions-design.md`
+**Spec:** `docs/superpowers/specs/2026-09-07-deck-tuning-suggestions-design.md` (§5 amended 2026-09-23 to match this revision)
 
-**Design property table:** `docs/superpowers/design-tables/deck-tuning.md` — every component task must satisfy the rows for its component. The table is the deterministic checklist; the design-review skill verifies against it before the PR opens.
+**Design property table:** `docs/superpowers/design-tables/deck-tuning.md` — every component task must satisfy the rows for its component. The table is the deterministic checklist; the design-review skill verifies against it before the PR opens. Its S4 state 1 (*Below threshold*) is retired by the removed gate; see Task 14.
 
 **Gap report (eng resolutions):** `docs/superpowers/gap-report-deck-tuning.md`
 
@@ -33,10 +52,11 @@ Every task's requirements implicitly include this section.
 
 Read every rule below as governing **what reaches the player** — shipped copy, the prompt, the evidence pack, and the model's own output. They do not govern the plan's own prose or its test fixtures: several tests below deliberately feed a `%` to a validator to prove it rejects one, and a rule that forbade writing the character at all would forbid testing the rule.
 
-- **No percentage anywhere.** Not in a suggestion, not in a rationale, not in a citation.
+- **No percentage anywhere.** Not in a suggestion, not in a rationale, not in a citation — and not in the evidence pack, which is why the pack forwards a staple's `commanders of commanderTotal` and drops `StapleRef.avgInclusion` (a proportion the model would happily render as one).
 - **No net figure anywhere.** `AxisTally.net` orders and buckets axes; it is never rendered and never enters the evidence pack as a rendered value.
 - **Every count carries its denominator.** `2 of 5 games`, never `2 games`.
-- **`PATTERN_MIN = 3`** and **`axisCopy`** are imported from `src/lib/copy/game-log.ts` and redefined nowhere. `src/lib/copy/deck-tuning.ts` re-exports them.
+- **No game gate.** Generation is open at zero games. `PATTERN_MIN` stays where #9 uses it (the Games panel's own headline) and is neither imported nor re-exported by anything in this plan. A pack with no games says so, and the prompt tells the model that play evidence is absent rather than letting it infer patterns from nothing.
+- **`axisCopy`** is imported from `src/lib/copy/game-log.ts` and redefined nowhere. `src/lib/copy/deck-tuning.ts` re-exports it.
 - **#9's shipped denominator strings must not be changed.** `1 up`, `3 up · 1 down`, `Mana — 2 up, 2 down.`, `2 marked` stay exactly as they ship today. New copy is additive.
 - **Fix above Keep** in any axis ordering the evidence pack or the UI produces.
 - **A loss is never `--danger`.**
@@ -46,75 +66,93 @@ Read every rule below as governing **what reaches the player** — shipped copy,
 
 **Data and schema.**
 
-- **The whole game-note path shipped 2026-09-13**, ahead of the rest of this plan: the column and its check (migration `0029_slow_whiplash`), the read, the History row line, and the form's field and counter. Task 4 is done; Task 1 keeps everything but the column, and Task 3 keeps only its step 6, which is intent work rather than note work. What remains of the note is the note reaching the model (Task 7's evidence pack). Do not add the column, the field or the line again. **A game already logged still has no edit path** — #9 ships none by design — so a note on an old game is written by hand against the database.
-- The new game column is **`note`, singular** — `deck_games.note`. `decks.notes` (plural) already exists at `src/db/schema.ts:170` and is a different thing.
+- **The whole game-note path shipped 2026-09-13**, ahead of the rest of this plan: the column and its check (`deck_games.note`, `src/db/schema.ts:578`, migration `0029_slow_whiplash`), `DeckGame.note` read by `listDeckGames`, `LogGameInput.note` accepted by `logGame`, the History row line, and the form's field and counter. Task 4 is done; Task 3 keeps only its step 6. Do not add the column, the field or the line again. **A game already logged still has no edit path** — #9 ships none by design.
+- The game column is **`note`, singular** — `deck_games.note`. `decks.notes` (plural, `src/db/schema.ts:281`) is a different thing.
 - **Note ≤ 140 characters. Intent ≤ 120 characters.** The app-seeded intent string must itself fit inside 120.
 - **Five failure classes, not four:** `upstream_busy`, `timeout`, `malformed`, `ungrounded`, `interrupted`. `interrupted` is written by the reaper, never by the run itself.
 - **`cancelled` is a fourth `status` value**, alongside `pending`, `ok`, `failed`. A player pressing Stop is not a failure.
 - **Runs are kept, never replaced.** The history of runs on a deck is the record.
 - **Two constraints do real work:** the partial unique index on `deck_id where status = 'pending'`, and `add_oracle_id` as a foreign key into the card catalog.
 - **Both outcome writes are guarded by `where status = 'pending'`.** Zero rows affected means "I was reaped or cancelled" — discard the result silently.
+- **The Deck Profile is read, not extended in place.** `src/lib/profile/types.ts` is a shared surface with one owner (playbook, *Shared surfaces*). Task 7's one addition to it — the `play` key — goes through the orchestrator for ownership of that PR, and no other file under `src/lib/profile/` changes.
 
-**Model and validation.**
+**Model, allowance and validation.**
 
-- **Model: `claude-sonnet-4-6`**, recorded per run in `deck_suggestion_runs.model`.
-- **One model call per run.** The two in-run bounded retries (`upstream_busy`, `malformed`) happen inside that single run row and do not create a second run.
+- **Model: `claude-sonnet-5`** — the current Sonnet, chosen for a structured-output task that must follow nine presentation rules. It is `TUNING_MODEL` in `src/lib/tuning/limits.ts`, passed to the shared client per call, and recorded per run in `deck_suggestion_runs.model`. Nothing in `src/lib/model/` names a model.
+- **One model run per press.** The two in-run bounded retries (`upstream_busy`, `malformed`) happen inside that single run row and do not create a second run.
+- **One per-player DAILY allowance, shared with the synopsis.** `MODEL_DAILY_ALLOWANCE` in `src/lib/model/allowance.ts` is the only number; a run consumes one unit whether it succeeds or fails, because the call was paid for either way, and a refusal before the call consumes none. Its value is a named placeholder until a call's cost is measured (see *Cost*). An exhausted allowance is a stated state with its own copy and the time it reopens — never a silent failure and never a disabled button without a reason.
 - **Three suggestions maximum. Fewer is legitimate** — one well-grounded suggestion beats three padded ones, and zero surviving suggestions is the `ungrounded` outcome, not an error.
 - **Six validation rules**, all pure: schema, the card exists, the cut is real, the add is legal (colour identity), the evidence exists, and the nine presentation checks. Every drop increments `dropped_count`.
-- **`prompt_version`** is a single integer exported from one module. Bumping it invalidates every fingerprint.
+- **`PROMPT_VERSION`** is a single integer exported from one module. Bumping it invalidates every tuning fingerprint.
+- **No bracket claim.** The pack carries no bracket figure and the prompt asks for none. `bracketDelta` has no reachable `[3] → [4]` transition, and a suggestion reasoning about one would cite evidence the app cannot produce.
 
 **Money and formatting.**
 
-- **`formatCents` at `src/lib/decks/price.ts:109-114` is the only price formatter.** `deckTuningCopy.card.price(amount)` is a pass-through that takes an already-formatted string.
+- **`formatCents` at `src/lib/decks/price.ts:111-116` is the only price formatter.** `deckTuningCopy.card.price(amount)` is a pass-through that takes an already-formatted string.
 
 **Client-safety.**
 
-- **A module a `"use client"` component value-imports must never touch the database.** `src/lib/decks/read.ts` imports the Drizzle client, which throws at module init without `DATABASE_URL`. `src/lib/decks/status.ts` exists as a separate module for exactly this reason. Two of the `src/lib/tuning/*` modules are server-only and are never imported by a client component: `client.ts`, which holds the Anthropic call, and `fingerprint.ts`, which hashes through `node:crypto`. The rest are pure and client-safe. The File Structure table below marks both.
+- **A module a `"use client"` component value-imports must never touch the database.** `src/lib/decks/read.ts` imports the Drizzle client, which throws at module init without `DATABASE_URL`; `src/lib/decks/status.ts` exists as a separate module for exactly this reason. Server-only here: everything in `src/lib/model/` (the Anthropic call and the allowance store), and `src/lib/tuning/fingerprint.ts` (hashes through `node:crypto`, like `src/lib/profile/fingerprint.ts`). The rest of `src/lib/tuning/` is pure and client-safe. The File Structure table marks each.
 
 **Workflow.**
 
 - Pre-push gate, every push: `pnpm typecheck && pnpm lint && pnpm test`, plus the stub-DB build (`DATABASE_URL="postgres://stub:stub@localhost/stub" pnpm build`), then `git fetch origin && git rebase origin/main`.
 - Stage files by name — never `git add -A`.
-- Migrations are generated with `pnpm db:generate`, never handwritten. The highest existing migration is `drizzle/0018_spotty_colleen_wing.sql`.
+- Migrations are generated with `pnpm db:generate`, never handwritten. The head on `main` at revision time is `drizzle/0052_tan_elektra.sql`, and the `analysis-tab` lane generates one too — **`git fetch` and generate against the newest `main` immediately before PR A**, and if a rebase collides, regenerate and re-stamp the ledger rather than renumbering by hand.
+- Race and durability behaviour is proved by a probe against a real Postgres (`pnpm probe:tuning-run`, Task 11), never by a jsdom test that stubs the database — the repo's convention for every rule a transaction enforces.
 
 ---
 
 ## File Structure
+
+**Shared model layer — `src/lib/model/` (all server-only; feature-neutral):**
+
+| File | Responsibility |
+|---|---|
+| `client.ts` | `callModel({ model, system, user, maxTokens, schema, deadlineMs }, deps?)` — the raw `fetch`, one deadline across both attempts, one retry on `429`/`529`/`5xx`, one retry on a reply that fails the caller's zod schema. Returns `{ ok: true, value } \| { ok: false, errorClass: "upstream_busy" \| "timeout" \| "malformed" }`. Knows no feature. |
+| `allowance.ts` | `MODEL_DAILY_ALLOWANCE`, `ALLOWANCE_WINDOW_MS`, `reserveModelCall(tx, userId, feature)` and `readAllowance(userId, now)`. The only counter. |
 
 **Pure core — `src/lib/tuning/` (no database, no network, client-safe unless noted):**
 
 | File | Responsibility |
 |---|---|
 | `prompt-version.ts` | The single `PROMPT_VERSION` integer. Nothing else. |
-| `fingerprint.ts` | **Server-only.** `tuningFingerprint(input)` — a stable hash over decklist, games, notes, intent, and `PROMPT_VERSION`. Pure, but it hashes through `node:crypto`, so only the page and the action call it. |
-| `evidence.ts` | `buildEvidencePack(input)` — assembles the pack from already-loaded rows. Pure. |
+| `fingerprint.ts` | **Server-only.** `tuningFingerprint(input)` — a hash over the profile fingerprint, the play group's inputs, the intent and `PROMPT_VERSION`. |
+| `evidence.ts` | `buildEvidencePack({ profile, play, intent, owned })` — assembles the pack from a `DeckProfile`. Pure. |
 | `prompt.ts` | Renders the evidence pack into the system + user messages. Pure string work. |
 | `response-schema.ts` | The zod schema for the model's reply, and the `TuningResponse` type. |
 | `validate.ts` | The six validation rules, as pure predicates over a candidate plus the pack. |
 | `presentation.ts` | The nine `suggestionRules` checks — the sixth validation rule. |
-| `gate.ts` | `gateReason(state, gameCount)` and the `GateReason` type — the one answer to "why is the button disabled", shared by the panel and by `runTuning`. |
+| `gate.ts` | `gateReason(state)` and the `GateReason` type — the one answer to "why is the button disabled", shared by the panel and by `runTuning`. No game count. |
 | `reaper.ts` | `reapCutoff(now)` and the pure arithmetic behind the read-time reap. |
-| `limits.ts` | `TUNING_RUNS_PER_HOUR`, `REAPER_CUTOFF_MS`, `MODEL_TIMEOUT_MS`, `MAX_SUGGESTIONS`, plus `intentRefusal(intent)` and `seededIntent(commanderName)`. |
-| `client.ts` | **Server-only.** The raw `fetch` to Anthropic, with the hard timeout and the two bounded in-run retries. |
+| `limits.ts` | `TUNING_MODEL`, `REAPER_CUTOFF_MS`, `MODEL_TIMEOUT_MS`, `MAX_SUGGESTIONS`, plus `intentRefusal(intent)` and `seededIntent(commanderName)`. |
+
+**Profile fact group:**
+
+| File | Responsibility |
+|---|---|
+| `src/lib/profile/play.ts` | `ProfilePlay` and `buildPlayGroup(games)` — pure. The play-data group `types.ts:12-14` names, built from `DeckGame[]`. |
+| `src/lib/profile/types.ts` | **Shared surface.** Gains `play?: ProfilePlay \| null` on `DeckProfile`, documented as never present in the cached document. |
 
 **Server shell:**
 
 | File | Responsibility |
 |---|---|
-| `src/app/decks/tuning-actions.ts` | Every server action: `runTuning`, `cancelTuningRun`, `applySuggestion`, `undoSuggestion`, `dismissSuggestion`, `restoreSuggestion`, `saveDeckIntent`, `readTuningEvidence`. |
-| `src/lib/decks/tuning-read.ts` | `readTuningState(deckId, userId, fingerprint)` — the newest run plus its items, reaping on the way past. |
+| `src/app/decks/tuning-actions.ts` | Every server action: `runTuning`, `cancelTuningRun`, `applySuggestion`, `undoSuggestion`, `dismissSuggestion`, `restoreSuggestion`, `saveDeckIntent`, `readTuningEvidence`, `readTuningPanel`. |
+| `src/lib/decks/tuning-read.ts` | `readTuningState(deckId, userId, fingerprint)` — the newest run plus its items, reaping on the way past, plus the reader's allowance. |
+| `scripts/probe-tuning-run.mts` | `pnpm probe:tuning-run` — the durability contract against a real Postgres. |
 
 **Copy:**
 
 | File | Responsibility |
 |---|---|
-| `src/lib/copy/deck-tuning.ts` | `deckTuningCopy` and `manifestCopy`; re-exports `PATTERN_MIN` and `axisCopy` from `game-log.ts`. |
+| `src/lib/copy/deck-tuning.ts` | Exists (the `note` section shipped). Gains `panel`, `failure`, `card`, `intent`, `suggestionRules`, `announce`, `allowance`, and `manifestCopy`; re-exports `axisCopy` from `game-log.ts`. |
 
-**Components — `src/components/decks/`:**
+**Components — `src/components/decks/` (PR D, BLOCKED ON DESIGN):**
 
 | File | Responsibility |
 |---|---|
-| `tuning-panel.tsx` | The six panel states plus the Stop transition. Owns the run lifecycle. |
+| `tuning-panel.tsx` | The panel states plus the Stop transition. Owns the run lifecycle. |
 | `manifest-rows.tsx` | The generating manifest, ticking on real read completions. |
 | `suggestion-card.tsx` | One cut/add pair, its citations, and apply/dismiss/undo/restore. |
 | `deck-intent.tsx` | The intent ask, chip, edit, and seeded state. |
@@ -123,61 +161,75 @@ Read every rule below as governing **what reaches the player** — shipped copy,
 
 | File | Change |
 |---|---|
-| `src/db/schema.ts` | ~~`deck_games.note`~~ (shipped 2026-09-13); `decks.intent` + `decks.intent_seeded`; `deck_suggestion_runs`; `deck_suggestion_items`. Adds the `uniqueIndex` import. |
-| `src/lib/decks/games.ts` | ~~`DeckGame.note`, read by `listDeckGames`~~ — shipped 2026-09-13. |
-| `src/lib/decks/read.ts` | `DeckDetail.intent` and `.intentSeeded`, projected by `getDeckDetail`. |
-| `src/app/decks/actions.ts` | `logGame` accepts and stores the note. |
-| `src/app/decks/[id]/page.tsx` | Reads tuning state; exports `maxDuration`. |
-| `src/components/decks/game-log-form.tsx` | The note field. |
-| `src/components/decks/game-history-row.tsx` | The note, when present. |
-| `src/components/decks/builder-shell.tsx` | Mounts the tuning panel and the intent control. |
-| `.env.example`, `docs/deployment.md` | `ANTHROPIC_API_KEY`. |
+| `src/db/schema.ts` | `decks.intent` + `decks.intent_seeded`; `deck_suggestion_runs`; `deck_suggestion_items`; `model_calls`. Adds `uniqueIndex` to the pg-core import. (`deck_games.note` shipped.) |
+| `src/lib/decks/read.ts` | `DeckDetail.intent` and `.intentSeeded` (`DeckDetail` is at `:168`, `getDeckDetail` at `:219`). |
+| `src/app/decks/actions.ts` | `fillDeck` (`:660`) seeds the intent. |
+| `src/app/decks/[id]/page.tsx` | Exports `maxDuration` (PR D). |
+| the placement Design names | Mounts the tuning panel and the intent control (PR D). |
+| `.env.example`, `docs/deployment.md` | `ANTHROPIC_API_KEY` — absent from both today; only the prose workflow reads it. |
+| `package.json` | `check:tuning`, `probe:tuning-run`. |
 
 **Scripts and CI:**
 
 | File | Responsibility |
 |---|---|
 | `scripts/check-tuning.ts` | `pnpm check:tuning` — one live API call against a fixture pack, asserting the response validates. |
-| `.github/workflows/upstream-contracts.yml` | Adds the tuning check, gated on a repository variable. |
+| `scripts/fixtures/tuning-pack.json` | The committed fixture pack. |
+| `.github/workflows/scryfall-contract.yml` | The "Upstream contract checks" workflow. Gains the tuning step. |
+
+---
+
+## PR boundaries
+
+Four PRs, merged in order, none stacked: each branches from `main` after the previous one merges. Each stays under ~20 files / ~800 lines. A through C are the whole backend and need no design input; D waits for the placement addendum.
+
+| PR | Tasks | Contents | Files (approx.) |
+|---|---|---|---|
+| **A — schema and the shared client** | 1, 10 | Schema + generated migration (4 new objects), `src/lib/model/client.ts` + `allowance.ts` and tests, schema shape test, `ANTHROPIC_API_KEY` docs. | ~12 |
+| **B — the pure core** | 2 (the keys pure code and server refusals read), 5 step 3 (`limits.ts`), 6, 7, 8, 9, 11 steps 1–2 (`reaper.ts`), 12 steps 1–2 (`gate.ts`) | `src/lib/tuning/*` and tests, the copy keys they read, `src/lib/profile/play.ts` + the `play` key on `types.ts` (ownership of that one file sequenced by the orchestrator). No database, no route. | ~20 |
+| **C — the server shell** | 3 step 6, 5 (action + seeding), 11 (actions + probe), 12 (read + `readTuningPanel`), 13 (action), 15 (actions), 17 | `tuning-actions.ts`, `tuning-read.ts`, `DeckDetail.intent`, `fillDeck` seeding, the copy keys a server refusal returns, `probe:tuning-run`, `check:tuning` + workflow step. Callable end to end from a probe; nothing mounted. | ~16 |
+| **D — the surfaces** | 2 (the keys only a component draws), 5 (component), 13 (component), 14, 15 (component), 16, 18 | **BLOCKED ON DESIGN — placement addendum.** Four components and tests, the mount, `maxDuration`. | ~14 |
+
+The About entry is not in D: this is a multi-round line, and its entries batch at the end of the launch (`AGENTS.md`, *Design pipeline*). The line's plan names that task; D's close-out confirms it is still named.
+
+---
+
+## Cost
+
+**Calls per run.** One model run per press. That run makes **one HTTP request normally, two at most** — the second only after a `429`/`529`/`5xx` or a reply that fails the schema. A timeout is not retried. A refusal at the gate (unchanged inputs, run in flight, allowance spent) makes **zero**.
+
+**Worst case per player per day.** `MODEL_DAILY_ALLOWANCE` runs, across tuning and the synopsis together, so at most `2 × MODEL_DAILY_ALLOWANCE` HTTP requests. The allowance is the only thing bounding spend: the fingerprint gate stops a repeat on unchanged inputs, but a player editing one card between presses changes the fingerprint each time, and without the allowance nothing else stops them.
+
+**Per-call size, to measure rather than assert.** The pack carries ~100 card rows (name, type line, roles), up to the skeleton's staples, the role and land targets, the games with their notes, and the intent. The first `check:tuning` run in PR C records the request's `usage.input_tokens` / `usage.output_tokens` from the response, and **that figure sets `MODEL_DAILY_ALLOWANCE`**: the constant ships in PR A as a named placeholder (`5`) with a comment pointing here, and PR C's description states the measured tokens and the value chosen. The run count is what a player sees; the token figure is what makes it a budget.
 
 ---
 
 ### Task 1: Schema and migration
 
+**PR A.**
+
 > **Partly shipped 2026-09-13.** `deckGames.note` and its length check are in
-> `src/db/schema.ts` already, applied by `drizzle/0029_slow_whiplash.sql`. Skip
-> that column here; everything else in this task stands. The migration this task
-> generates will be numbered after 0029, not 0019.
+> `src/db/schema.ts` already (`:578`), applied by `drizzle/0029_slow_whiplash.sql`. Skip
+> that column here. The migration this task generates takes the next free number on
+> `main` when PR A is cut — 0053 at revision time, unless the `analysis-tab` lane has
+> merged one first.
 
 **Files:**
 - Modify: `src/db/schema.ts`
 - Create: the next generated `drizzle/00NN_*.sql` (generated — do not handwrite)
-- Test: `src/db/schema.test.ts`
+- Create: `src/db/schema.test.ts` (new — no schema shape test exists today)
 
 **Interfaces:**
 - Consumes: nothing.
-- Produces: ~~`deckGames.note`~~ (shipped), `decks.intent`, `decks.intentSeeded`, and the tables `deckSuggestionRuns` / `deckSuggestionItems` with the column names every later task imports.
+- Produces: ~~`deckGames.note`~~ (shipped), `decks.intent`, `decks.intentSeeded`, the tables `deckSuggestionRuns` / `deckSuggestionItems` with the column names every later task imports, and `modelCalls`, the shared allowance's ledger (Task 10).
 
 - [ ] **Step 1: Add `uniqueIndex` to the pg-core import**
 
-`src/db/schema.ts` lines 2-4 currently import `pgTable, text, integer, real, timestamp, jsonb, boolean, primaryKey, uuid, index, check, date`. Add `uniqueIndex` to that list. `jsonb` is already imported and already used with `.$type<>()` at line 351 — follow that form.
+The pg-core import at `src/db/schema.ts:2-5` carries `unique` and `foreignKey` among others, and no `uniqueIndex`. Add it. `jsonb` is already imported and used with `.$type<>()` — `deckProfiles.profile` is the nearest form to follow.
 
-- [ ] **Step 2: Add the three columns to existing tables**
+- [ ] **Step 2: Add the two columns to `decks`**
 
-In `deckGames` (currently `src/db/schema.ts:201-213`), add after `createdAt`:
-
-```typescript
-  // Singular. decks.notes (plural) already exists and is a different thing.
-  note: text("note"),
-```
-
-and add a length check to the config array, alongside the existing checks:
-
-```typescript
-    check("deck_games_note_length_check", sql`${t.note} is null or char_length(${t.note}) <= 140`),
-```
-
-In `decks` (currently `src/db/schema.ts:165-177`), add after `notes`:
+`deck_games.note` shipped; do not add it. In `decks` (`src/db/schema.ts:272`), add after `notes` (`:281`):
 
 ```typescript
   intent: text("intent"),
@@ -186,12 +238,10 @@ In `decks` (currently `src/db/schema.ts:165-177`), add after `notes`:
   intentSeeded: boolean("intent_seeded").notNull().default(false),
 ```
 
-`decks` currently has no config array. Add one:
+`decks` already has a config array (it carries the `declaredBracket` check). Add to it:
 
 ```typescript
-}, (t) => [
   check("decks_intent_length_check", sql`${t.intent} is null or char_length(${t.intent}) <= 120`),
-]);
 ```
 
 - [ ] **Step 3: Add the runs table**
@@ -265,6 +315,25 @@ export const deckSuggestionItems = pgTable("deck_suggestion_items", {
 
 `addOracleId` referencing `cards.oracleId` is the second load-bearing constraint: a suggestion for a card that is not in the catalog cannot be stored at all.
 
+- [ ] **Step 4b: Add the allowance ledger**
+
+Feature-neutral, because the synopsis spends the same allowance (Task 10). One row per model run, never per HTTP attempt.
+
+```typescript
+export const modelCalls = pgTable("model_calls", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  userId: text("user_id").notNull(),
+  feature: text("feature").notNull(),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+}, (t) => [
+  check("model_calls_feature_check", sql`${t.feature} in ('tuning', 'synopsis')`),
+  // The allowance's only query: this player's calls inside the window.
+  index("model_calls_user_created_idx").on(t.userId, t.createdAt),
+]);
+```
+
+No foreign key to a run: a synopsis has no run table in this plan, and the ledger must not need one to count.
+
 - [ ] **Step 5: Write the schema shape test**
 
 ```typescript
@@ -272,7 +341,7 @@ export const deckSuggestionItems = pgTable("deck_suggestion_items", {
 import { describe, expect, it } from "vitest";
 import { getTableName } from "drizzle-orm";
 import { getTableConfig } from "drizzle-orm/pg-core";
-import { deckSuggestionRuns, deckSuggestionItems, deckGames, decks } from "./schema";
+import { deckSuggestionRuns, deckSuggestionItems, deckGames, decks, modelCalls } from "./schema";
 
 describe("tuning schema", () => {
   it("keeps the game note singular and separate from decks.notes", () => {
@@ -306,6 +375,11 @@ describe("tuning schema", () => {
     expect(pairs).toContain("cut_oracle_id->cards.oracle_id");
     expect(pairs).toContain("run_id->deck_suggestion_runs.id");
   });
+
+  it("indexes the allowance ledger on the one query it answers", () => {
+    const idx = getTableConfig(modelCalls).indexes.map((i) => i.config.name);
+    expect(idx).toContain("model_calls_user_created_idx");
+  });
 });
 ```
 
@@ -316,13 +390,13 @@ pnpm test src/db/schema.test.ts
 pnpm db:generate
 ```
 
-Expected: three passing tests, and one new generated `drizzle/00NN_*.sql` (numbered after `0029_slow_whiplash`, not `0019` — the plan was written when 0018 was the head). Open it and confirm the partial index line carries `where "status" = 'pending'`. If Drizzle emitted an unconditional unique index, the `.where()` in Step 3 is wrong — fix it and regenerate rather than editing the SQL by hand.
+Expected: four passing tests, and one new generated `drizzle/00NN_*.sql` at the next free number on `main` (`git fetch` first; 0053 at revision time). Commit the journal and snapshot Drizzle writes beside it. Open it and confirm the partial index line carries `where "status" = 'pending'`. If Drizzle emitted an unconditional unique index, the `.where()` in Step 3 is wrong — fix it and regenerate rather than editing the SQL by hand.
 
 - [ ] **Step 7: Commit**
 
 ```bash
 git add src/db/schema.ts src/db/schema.test.ts drizzle/
-git commit -m "feat(tuning): schema for game notes, deck intent, and suggestion runs"
+git commit -m "feat(tuning): schema for deck intent, suggestion runs, and the model allowance ledger"
 ```
 
 ---
@@ -333,13 +407,17 @@ git commit -m "feat(tuning): schema for game notes, deck intent, and suggestion 
 > the `note` section only — the rest of the sections below arrive with the
 > surfaces that draw them, so a copy pass never reads a string nothing renders.
 
+**Split across PRs by that same rule.** PR B adds the keys pure code or a server refusal
+returns — `panel.generating`, `panel.unchanged`, `panel.refused`, `allowance`, `failure`,
+`suggestionRules`. PR D adds the keys only a component draws. Each batch goes through
+`/copy-review` in its own PR.
+
 **Files:**
-- Modify: `src/lib/copy/deck-tuning.ts`
-- Test: `src/lib/copy/deck-tuning.test.ts`
+- Modify: `src/lib/copy/deck-tuning.ts`, `src/lib/copy/deck-tuning.test.ts` (both exist)
 
 **Interfaces:**
-- Consumes: `PATTERN_MIN` and `axisCopy` from `src/lib/copy/game-log.ts`.
-- Produces: `deckTuningCopy`, `manifestCopy`, and the re-exported `PATTERN_MIN` / `axisCopy`. Every component and action imports its strings from here and defines none of its own.
+- Consumes: `axisCopy` from `src/lib/copy/game-log.ts`. Not `PATTERN_MIN`: nothing in this feature gates on a game count.
+- Produces: `deckTuningCopy`, `manifestCopy`, and the re-exported `axisCopy`. Every component and action imports its strings from here and defines none of its own.
 
 - [ ] **Step 1: Write the guard test first**
 
@@ -348,7 +426,7 @@ The value of this test is not that the strings exist — it is that the presenta
 ```typescript
 // src/lib/copy/deck-tuning.test.ts
 import { describe, expect, it } from "vitest";
-import { deckTuningCopy, manifestCopy, PATTERN_MIN, axisCopy } from "./deck-tuning";
+import { deckTuningCopy, manifestCopy, axisCopy } from "./deck-tuning";
 import { gameLogCopy } from "./game-log";
 
 // Functions are included by their source, not skipped. Most of this file's
@@ -364,8 +442,11 @@ function allStrings(value: unknown): string[] {
 
 describe("deck tuning copy", () => {
   it("re-exports the game log's vocabulary rather than redefining it", () => {
-    expect(PATTERN_MIN).toBe(3);
     expect(axisCopy.mana).toBeDefined();
+  });
+
+  it("carries no below-threshold copy, because nothing gates on a game count", () => {
+    expect(Object.keys(deckTuningCopy.panel).filter((k) => k.startsWith("belowThreshold"))).toEqual([]);
   });
 
   it("never writes a percentage", () => {
@@ -407,7 +488,7 @@ describe("deck tuning copy", () => {
 pnpm test src/lib/copy/deck-tuning.test.ts
 ```
 
-Expected: FAIL — cannot resolve `./deck-tuning`.
+Expected: FAIL — the module exports only `countCharacters` and the `note` section today.
 
 - [ ] **Step 3: Write the copy module**
 
@@ -417,7 +498,7 @@ Transcribe every key from the **Copy keys** section of `docs/superpowers/design-
 // src/lib/copy/deck-tuning.ts
 // Every string the tuning surfaces render. Transcribed from the design table's
 // copy-keys section; the wording there wins over anything drawn on a canvas.
-export { PATTERN_MIN, axisCopy } from "./game-log";
+export { axisCopy } from "./game-log";
 
 export const manifestCopy = {
   games: { what: "games logged", count: (n: number) => `${n} games`, countOne: "1 game" },
@@ -425,10 +506,15 @@ export const manifestCopy = {
 } as const;
 
 export const deckTuningCopy = {
-  // `ceiling` is the one key here Design did not draw: §5 calls the hourly cap
-  // insurance that "should never be visible in normal use", but a disabled
-  // button still owes the player a sentence. Write it in the panel's register.
-  panel: { /* heading, belowThreshold*, ready*, generating*, stop, results*, again*, tally*, unchanged*, ceiling */ },
+  // No belowThreshold* keys: the game gate is gone (2026-09-20 ruling). `ready*` must
+  // read truthfully at zero games — the addendum redraws it (Task 14).
+  // `refused` is the one refusal no gate names: a deck the reader cannot open.
+  panel: { /* heading, ready*, generating*, stop, results*, again*, tally*, unchanged*, refused */ },
+  // The shared allowance's exhausted state. Not drawn by the tuning handoff, and
+  // visible in normal use, unlike the hourly ceiling it replaces — so eng writes a
+  // placeholder in the panel's register for PR B and the placement addendum returns
+  // the drawn wording, with the synopsis's surface in view, since both show it.
+  allowance: { /* spent(reopensAt: Date), remaining(n, of) */ },
   failure: {
     retry: "Try again",
     unavailable: { /* tag, body, kept, note */ },
@@ -449,7 +535,7 @@ export const deckTuningCopy = {
 } as const;
 ```
 
-`card.price` is a pass-through taking an already-formatted string: `price: (amount: string) => amount`. It must never format cents itself — `formatCents` at `src/lib/decks/price.ts:109-114` is the only formatter in this codebase.
+`card.price` is a pass-through taking an already-formatted string: `price: (amount: string) => amount`. It must never format cents itself — `formatCents` at `src/lib/decks/price.ts:111-116` is the only formatter in this codebase.
 
 - [ ] **Step 4: Run the test to verify it passes**
 
@@ -457,7 +543,7 @@ export const deckTuningCopy = {
 pnpm test src/lib/copy/deck-tuning.test.ts
 ```
 
-Expected: PASS, six tests.
+Expected: PASS, the shipped `note` tests plus these.
 
 - [ ] **Step 5: Commit**
 
@@ -536,7 +622,7 @@ Expected: PASS.
 
 - [x] ~~**Step 5: Accept the note in `logGame`**~~ — shipped
 
-`logGame` is **not** a form action. Its signature is `logGame(deckId: string, input: LogGameInput)` (`src/app/decks/actions.ts:849-851`), `LogGameInput` is declared at `:822`, and `game-log-form.tsx:199` calls it directly with an object. Do not reach for `FormData` here.
+`logGame` is **not** a form action. Its signature is `logGame(deckId: string, input: LogGameInput)` (`src/app/decks/actions.ts:1264`), `LogGameInput` is declared at `:822`, and `game-log-form.tsx:199` calls it directly with an object. Do not reach for `FormData` here.
 
 Add to `LogGameInput`:
 
@@ -560,7 +646,7 @@ and validate it in the same inline style the action already uses (lines 861-889 
 
 - [ ] **Step 6: Project the intent onto `DeckDetail`**
 
-Tasks 5, 7, 11, and 16 all read `detail.intent`, and `getDeckDetail` does not select it today. Add both columns to the `decks` select in `src/lib/decks/read.ts` and to the `DeckDetail` type at `:74-100`:
+**PR C.** The intent control (Task 5, PR D) reads `detail.intent`, and `getDeckDetail` (`src/lib/decks/read.ts:219`) does not select it today. `runTuning` does not go through `DeckDetail` — it reads the one column itself (Task 11) — so this step exists for the surface. Add both columns to the `decks` select and to the `DeckDetail` type at `:168`:
 
 ```typescript
   intent: string | null;
@@ -673,14 +759,16 @@ git commit -m "feat(tuning): note field on the game log form and on the history 
 
 ### Task 5: Deck intent
 
+**Split.** Step 3's `limits.ts` ships in **PR B** (the pure core reads it). Steps 1–3's action and step 6's seeding ship in **PR C**. Steps 4–5, the component, ship in **PR D** and are **BLOCKED ON DESIGN** only as far as where the chip sits; its four states are drawn.
+
 **Files:**
-- Create: `src/components/decks/deck-intent.tsx`
+- Create: `src/components/decks/deck-intent.tsx` (PR D)
 - Modify: `src/app/decks/tuning-actions.ts` (create the file here, with `saveDeckIntent` as its first action)
-- Test: `src/components/decks/deck-intent.test.tsx`
+- Test: `src/components/decks/deck-intent.test.tsx` (PR D)
 
 **Interfaces:**
 - Consumes: `decks.intent` / `decks.intentSeeded` from Task 1; `deckTuningCopy.intent` from Task 2.
-- Produces: `saveDeckIntent(deckId: string, formData: FormData): Promise<DeckMutationResult>`, and the `DeckIntent` component. The evidence pack (Task 6) reads `intent` off `DeckDetail`.
+- Produces: `saveDeckIntent(deckId: string, formData: FormData): Promise<DeckMutationResult>`, and the `DeckIntent` component. The evidence pack (Task 7) takes the intent `runTuning` reads.
 
 **Design table rows to satisfy:** S3 states 1–4 plus the chip-removed transition.
 
@@ -720,7 +808,11 @@ import { gameLogCopy } from "../copy/game-log";
 export const MAX_SUGGESTIONS = 3;
 export const REAPER_CUTOFF_MS = 5 * 60 * 1000;
 export const MODEL_TIMEOUT_MS = 90_000;
-export const TUNING_RUNS_PER_HOUR = 5;
+// The current Sonnet. Recorded per run in deck_suggestion_runs.model; the shared
+// client names no model of its own. No hourly ceiling here — the per-player daily
+// allowance lives in src/lib/model/allowance.ts and is shared with the synopsis.
+export const TUNING_MODEL = "claude-sonnet-5";
+export const TUNING_MAX_TOKENS = 2_000;
 
 export function intentRefusal(intent: string): string | null {
   // The shipped form refusal, not a tuning-specific string — this is a form
@@ -786,7 +878,7 @@ Four states: no intent (the ask), an intent as a chip, the chip in edit, and a s
 
 - [ ] **Step 6: Seed the intent where the app builds a deck**
 
-Without a writer of `intentSeeded: true`, state 4 is dead code — nothing else in the plan ever sets it. `fillDeck` (`src/app/decks/actions.ts:511`) is the app building a deck on the player's behalf, so it is the seeder. Inside its existing transaction, when `decks.intent` is null, write a one-line intent drawn from the commander and the mix the fill chose, with `intentSeeded: true`.
+Without a writer of `intentSeeded: true`, state 4 is dead code — nothing else in the plan ever sets it. `fillDeck` (`src/app/decks/actions.ts:660`) is the app building a deck on the player's behalf, so it is the seeder. Inside its existing transaction, when `decks.intent` is null, write a one-line intent drawn from the commander and the mix the fill chose, with `intentSeeded: true`.
 
 ```typescript
 if (deck.intent === null) {
@@ -812,22 +904,29 @@ git commit -m "feat(tuning): deck intent — ask, chip, edit, and seeded provena
 
 ### Task 6: Fingerprint
 
+**PR B.**
+
 **Files:**
 - Create: `src/lib/tuning/prompt-version.ts`, `src/lib/tuning/fingerprint.ts`
 - Test: `src/lib/tuning/fingerprint.test.ts`
 
 **Interfaces:**
-- Consumes: `DeckGame` from Task 3.
+- Consumes: `profileFingerprint` (`src/lib/profile/fingerprint.ts:32`) — the deck half is ITS hash, not a second one; `ProfilePlay` (Task 7).
 - Produces:
   ```typescript
   export const PROMPT_VERSION = 1;
   export type FingerprintInput = {
-    cards: { oracleId: string; quantity: number }[];
+    /** `profileFingerprint(head)` — the deck's cards and both commanders, under PROFILE_VERSION. */
+    profile: string;
     games: { id: string; result: string; podSize: number; worked: string[]; hurt: string[]; note: string | null }[];
     intent: string | null;
   };
   export function tuningFingerprint(input: FingerprintInput): string;
   ```
+
+**Why it layers rather than duplicates.** The profile fingerprint already answers "have the deck's cards or commanders moved", and it already carries `PROFILE_VERSION`, so a change to how the profile characterizes a deck unlocks a regeneration too. Hashing the decklist a second time here would be a second definition of "the deck changed" that could disagree with the first — `profileFingerprint` deliberately leaves out `auto`, `deck_proxies` and `declared_bracket`, and a private copy that included any of them would unlock a run the profile says is unchanged. The tuning fingerprint adds exactly what the profile excludes by design and the model reads: the games, their notes, the intent, and `PROMPT_VERSION`.
+
+The catalog generation is out, as it is from the profile's: a weekly refresh that moves the staples list does not unlock a regeneration on its own. That is a deliberate trade — the gate exists so a press with nothing new to say is not paid for — and the next deck edit or game picks the new staples up.
 
 - [ ] **Step 1: Write the failing test**
 
@@ -837,20 +936,20 @@ import { describe, expect, it } from "vitest";
 import { tuningFingerprint, type FingerprintInput } from "./fingerprint";
 
 const base: FingerprintInput = {
-  cards: [{ oracleId: "a", quantity: 1 }, { oracleId: "b", quantity: 2 }],
+  profile: "p1",
   games: [{ id: "g1", result: "loss", podSize: 4, worked: [], hurt: ["mana"], note: null }],
   intent: null,
 };
 
 describe("tuningFingerprint", () => {
-  it("ignores the order the inputs arrive in", () => {
-    const shuffled = { ...base, cards: [...base.cards].reverse() };
-    expect(tuningFingerprint(shuffled)).toBe(tuningFingerprint(base));
+  it("ignores the order games arrive in, and the order of their marks", () => {
+    const two = { ...base, games: [...base.games, { ...base.games[0], id: "g2", hurt: ["tempo", "mana"] }] };
+    const shuffled = { ...two, games: [...two.games].reverse().map((g) => ({ ...g, hurt: [...g.hurt].reverse() })) };
+    expect(tuningFingerprint(shuffled)).toBe(tuningFingerprint(two));
   });
 
-  it("changes when a quantity changes", () => {
-    const more = { ...base, cards: [{ oracleId: "a", quantity: 2 }, { oracleId: "b", quantity: 2 }] };
-    expect(tuningFingerprint(more)).not.toBe(tuningFingerprint(base));
+  it("changes when the deck's profile fingerprint changes", () => {
+    expect(tuningFingerprint({ ...base, profile: "p2" })).not.toBe(tuningFingerprint(base));
   });
 
   it("changes when a game is added, when a note is written, and when the intent changes", () => {
@@ -861,8 +960,11 @@ describe("tuningFingerprint", () => {
     expect(tuningFingerprint({ ...base, intent: "go wide" })).not.toBe(tuningFingerprint(base));
   });
 
-  it("is stable across calls", () => {
-    expect(tuningFingerprint(base)).toBe(tuningFingerprint(base));
+  it("fingerprints a deck with no games", () => {
+    // No gate: a deck built tonight is a legitimate input, and its hash must be stable.
+    const none = { ...base, games: [] };
+    expect(tuningFingerprint(none)).toBe(tuningFingerprint(none));
+    expect(tuningFingerprint(none)).not.toBe(tuningFingerprint(base));
   });
 });
 ```
@@ -879,22 +981,21 @@ Expected: FAIL — cannot resolve `./fingerprint`.
 
 ```typescript
 // src/lib/tuning/prompt-version.ts
-// Bumping this invalidates every stored fingerprint, so every deck becomes
+// Bumping this invalidates every stored tuning fingerprint, so every deck becomes
 // eligible for a fresh run. That is the intended way to ship a prompt change.
+// (PROFILE_VERSION in src/lib/profile/version.ts cites this file as its precedent.)
 export const PROMPT_VERSION = 1;
 ```
 
 ```typescript
 // src/lib/tuning/fingerprint.ts
+// SERVER-ONLY: node:crypto, as src/lib/profile/fingerprint.ts.
 import { createHash } from "node:crypto";
 import { PROMPT_VERSION } from "./prompt-version";
 
 export function tuningFingerprint(input: FingerprintInput): string {
-  const cards = [...input.cards]
-    .sort((a, b) => a.oracleId.localeCompare(b.oracleId))
-    .map((c) => `${c.oracleId}:${c.quantity}`);
   const games = [...input.games]
-    .sort((a, b) => a.id.localeCompare(b.id))
+    .sort((a, b) => (a.id < b.id ? -1 : a.id > b.id ? 1 : 0))
     .map((g) => [
       g.id, g.result, g.podSize,
       [...g.worked].sort().join(","), [...g.hurt].sort().join(","),
@@ -902,111 +1003,182 @@ export function tuningFingerprint(input: FingerprintInput): string {
     ].join("|"));
 
   return createHash("sha256")
-    .update(JSON.stringify([PROMPT_VERSION, cards, games, input.intent ?? ""]))
+    .update(JSON.stringify({ v: PROMPT_VERSION, profile: input.profile, games, intent: input.intent ?? "" }))
     .digest("hex");
 }
 ```
 
-`node:crypto` keeps this module off the client. That is acceptable here and only here: the fingerprint is computed server-side and never by a component. Every other `src/lib/tuning/*` module except `client.ts` stays client-safe.
+The comparator is the byte order `profileFingerprint` uses rather than `localeCompare`, so the two hashes sort the same way on every runtime.
 
 - [ ] **Step 4: Run the test to verify it passes, then commit**
 
 ```bash
 pnpm test src/lib/tuning/fingerprint.test.ts
 git add src/lib/tuning/prompt-version.ts src/lib/tuning/fingerprint.ts src/lib/tuning/fingerprint.test.ts
-git commit -m "feat(tuning): stable fingerprint over decklist, games, notes, and intent"
+git commit -m "feat(tuning): fingerprint layered on the profile's, plus games, notes and intent"
 ```
 
 ---
 
-### Task 7: Evidence pack
+### Task 7: The play group and the evidence pack
+
+**PR B.**
 
 **Files:**
-- Create: `src/lib/tuning/evidence.ts`
-- Test: `src/lib/tuning/evidence.test.ts`
+- Create: `src/lib/profile/play.ts`, `src/lib/tuning/evidence.ts`
+- Modify: `src/lib/profile/types.ts` (**shared surface** — one key, ownership sequenced by the orchestrator)
+- Test: `src/lib/profile/play.test.ts`, `src/lib/tuning/evidence.test.ts`
 
 **Interfaces:**
-- Consumes: `DeckDetail` (`src/lib/decks/read.ts:74-100`), `DeckGame` and `GameSummary` (`src/lib/decks/games.ts`), `computeRoleCounts` / `RECOMMENDED_MIX` (`src/lib/decks/mix.ts`), and the staples rows returned by `readSynergyCards`.
+- Consumes: `DeckProfile` (`src/lib/profile/types.ts:292`) — `cards`, `commanderOracleIds`, `colours.identity`, `counts`, `roles`, `skeleton` (its `roleTargets`, `composition`, `staples`, `thinCondition`); `recommendedMix(skeleton, hasPartner)` (`src/lib/decks/mix.ts:107`) for the per-role targets and their `advisory` flag; `DeckGame` and `summarizeGames` (`src/lib/decks/games.ts:7`, `:138`).
 - Produces:
   ```typescript
-  export type EvidencePack = {
-    commander: { name: string; colorIdentity: string[] };
-    cards: { oracleId: string; name: string; typeLine: string; role: string; quantity: number; owned: boolean }[];
-    games: { result: string; podSize: number; playedAt: string; worked: string[]; hurt: string[]; note: string | null }[];
-    summary: { count: number; marked: number; record: { wins: number; losses: number; draws: number }; axes: { key: string; worked: number; hurt: number }[] };
-    roleGaps: { role: string; have: number; target: number; advisory: boolean }[];
-    intent: string | null;
-    staples: { oracleId: string; name: string; typeLine: string; owned: boolean }[];
+  // src/lib/profile/play.ts — pure, client-safe
+  export type ProfilePlay = {
+    games: { id: string; result: "win" | "loss" | "draw"; podSize: number; playedAt: string; worked: string[]; hurt: string[]; note: string | null }[];
+    summary: {
+      count: number;
+      marked: number;
+      record: { wins: number; losses: number; draws: number };
+      /** Fix-first. No `net`: it orders, it never travels. */
+      axes: { key: string; worked: number; hurt: number }[];
+    };
   };
-  export function buildEvidencePack(input: EvidencePackInput): EvidencePack;
+  export function buildPlayGroup(games: DeckGame[]): ProfilePlay;
+
+  // src/lib/tuning/evidence.ts — pure, client-safe
+  export type EvidencePack = {
+    commanders: { oracleId: string; name: string }[];
+    colorIdentity: string[];
+    cards: { oracleId: string; name: string; typeLine: string; roles: string[]; quantity: number; owned: boolean; commander: boolean }[];
+    targets: {
+      roles: { role: string; have: number; target: number; advisory: boolean }[];
+      lands: { have: number; target: number } | null;
+      /** The skeleton's own honesty flag: targets taken over too few decks. */
+      thin: boolean;
+    };
+    staples: { oracleId: string; name: string; commanders: number; commanderTotal: number; owned: boolean }[];
+    play: ProfilePlay;
+    intent: string | null;
+  };
+  export function buildEvidencePack(input: {
+    profile: DeckProfile;
+    play: ProfilePlay;
+    intent: string | null;
+    owned: ReadonlySet<string>;
+  }): EvidencePack;
   ```
 
-- [ ] **Step 1: Write the failing test**
+**Why the play group is attached, not cached.** `types.ts:12-14` promises that a later fact group arrives "as sibling keys … and nothing about the loader, the fingerprint or the cache key changes when they do". The profile's fingerprint is over the deck's cards alone, so a play group computed INSIDE `cachedDeckProfile` would be filed under a key a logged game does not move — the cached document would carry last week's games — and moving the key instead would retire the stored analysis (`deck_profiles`) every time a game is logged, for figures no game can change. So `DeckProfile` gains `play?: ProfilePlay | null`, the cached and stored documents never carry it, and a consumer that wants it composes `{ ...profile, play: buildPlayGroup(games) }` at the read. The doc comment on the key says exactly that.
+
+**Ownership is an input, not a group.** The profile has no ownership group yet (`types.ts:12` lists it as a later one). The pack takes the reader's owned oracle ids as a plain set, read once by `runTuning` over the pack's card and staple ids (`collection_items`, scoped by `user_id`). If an ownership group ships first, this input is where it plugs in.
+
+- [ ] **Step 1: Write the failing play-group test**
 
 ```typescript
-// src/lib/tuning/evidence.test.ts
-import { describe, expect, it } from "vitest";
-import { buildEvidencePack } from "./evidence";
+// src/lib/profile/play.test.ts
+it("strips net from every axis it carries", () => {
+  for (const axis of buildPlayGroup(games).summary.axes) expect(axis).not.toHaveProperty("net");
+});
 
-describe("buildEvidencePack", () => {
-  it("strips net from the axes it forwards", () => {
-    const pack = buildEvidencePack(input);
-    for (const axis of pack.summary.axes) expect(axis).not.toHaveProperty("net");
-  });
+it("orders axes fix-first", () => {
+  const { axes } = buildPlayGroup(games);
+  const firstHurt = axes.findIndex((a) => a.hurt > a.worked);
+  const firstWorked = axes.findIndex((a) => a.worked > a.hurt);
+  expect(firstHurt).toBeLessThan(firstWorked);
+});
 
-  it("keeps the denominator by carrying the game count alongside the tallies", () => {
-    const pack = buildEvidencePack(input);
-    expect(pack.summary.count).toBe(5);
-    expect(pack.summary.marked).toBeLessThanOrEqual(pack.summary.count);
+it("is an empty group, not an absent one, at zero games", () => {
+  expect(buildPlayGroup([])).toEqual({
+    games: [],
+    summary: { count: 0, marked: 0, record: { wins: 0, losses: 0, draws: 0 }, axes: [] },
   });
+});
 
-  it("orders axes fix-first", () => {
-    const pack = buildEvidencePack(input);
-    const firstHurt = pack.summary.axes.findIndex((a) => a.hurt > a.worked);
-    const firstWorked = pack.summary.axes.findIndex((a) => a.worked > a.hurt);
-    expect(firstHurt).toBeLessThan(firstWorked);
-  });
-
-  it("excludes staples already in the deck", () => {
-    const pack = buildEvidencePack(input);
-    const inDeck = new Set(pack.cards.map((c) => c.oracleId));
-    for (const s of pack.staples) expect(inDeck.has(s.oracleId)).toBe(false);
-  });
-
-  it("does no network and no database work", () => {
-    // The whole test file imports no db module. If buildEvidencePack ever
-    // reaches for one, this suite fails at import time without DATABASE_URL.
-    expect(typeof buildEvidencePack).toBe("function");
-  });
+it("serializes playedAt as a string, because the profile is JSON-only", () => {
+  expect(typeof buildPlayGroup(games).games[0].playedAt).toBe("string");
 });
 ```
 
-Build `input` in the test from plain literals — the function takes already-loaded rows, which is exactly what makes it testable without a database.
+- [ ] **Step 2: Write the failing evidence test**
 
-- [ ] **Step 2: Run it to verify it fails**
+```typescript
+// src/lib/tuning/evidence.test.ts
+it("excludes staples already in the deck", () => {
+  const pack = buildEvidencePack(input);
+  const inDeck = new Set(pack.cards.map((c) => c.oracleId));
+  for (const s of pack.staples) expect(inDeck.has(s.oracleId)).toBe(false);
+});
 
-```bash
-pnpm test src/lib/tuning/evidence.test.ts
+it("forwards a staple's breadth as a count with its denominator, and no proportion", () => {
+  const [staple] = buildEvidencePack(input).staples;
+  expect(staple).toHaveProperty("commanders");
+  expect(staple).toHaveProperty("commanderTotal");
+  expect(staple).not.toHaveProperty("avgInclusion");
+  expect(staple).not.toHaveProperty("weightedRank");
+});
+
+it("marks the commanders so a cut can never name one", () => {
+  const pack = buildEvidencePack(input);
+  const commanders = pack.cards.filter((c) => c.commander).map((c) => c.oracleId);
+  expect(commanders).toEqual(input.profile.commanderOracleIds);
+});
+
+it("takes role targets from recommendedMix, advisory flag included", () => {
+  const lands = buildEvidencePack(input).targets.roles.find((r) => r.role === "land");
+  expect(lands?.advisory).toBe(true);
+});
+
+it("builds a pack with no games", () => {
+  const pack = buildEvidencePack({ ...input, play: buildPlayGroup([]) });
+  expect(pack.play.summary.count).toBe(0);
+});
+
+it("never carries a figure a percentage could be written from", () => {
+  expect(JSON.stringify(buildEvidencePack(input))).not.toMatch(/\b0\.\d+\b/);
+});
 ```
 
-Expected: FAIL — cannot resolve `./evidence`.
+Build `input` in the test from plain literals — a hand-written `DeckProfile` fixture. The function takes an already-loaded profile, which is exactly what makes it testable without a database.
 
-- [ ] **Step 3: Implement**
-
-Assemble the seven fields above. Three rules do real work in this function:
-
-- **`net` never leaves.** Map `AxisTally` down to `{ key, worked, hurt }`. The model cannot render a figure it was never given.
-- **Fix before Keep.** Order the axes hurt-dominant first, matching what the panel shows, so the model's reading of the evidence and the player's reading of the same screen agree.
-- **Staples exclude the deck.** Call the staples reader with the deck's oracle ids as covered ids, or filter here; either way a card already in the 99 is never offered as an add.
-
-Group `cards` by role using `computeRoleCounts`, and derive `roleGaps` from `RECOMMENDED_MIX` — `advisory` is carried through so the prompt can say a gap is a guide and not a gate.
-
-- [ ] **Step 4: Run the test to verify it passes, then commit**
+- [ ] **Step 3: Run both to verify they fail**
 
 ```bash
-pnpm test src/lib/tuning/evidence.test.ts
-git add src/lib/tuning/evidence.ts src/lib/tuning/evidence.test.ts
-git commit -m "feat(tuning): pure evidence pack from decklist, games, notes, gaps, and staples"
+pnpm test src/lib/profile/play.test.ts src/lib/tuning/evidence.test.ts
+```
+
+- [ ] **Step 4: Implement**
+
+`buildPlayGroup` wraps `summarizeGames` and maps `AxisTally` down to `{ key, worked, hurt }` in fix-first order — the model cannot render a figure it was never given. `playedAt` goes out as an ISO date string.
+
+`buildEvidencePack` reads, and never recomputes, what the profile holds:
+
+- **`cards`** is `profile.cards`, each tagged with every role `profile.roles.cards` files it under (a card can hold several) and `commander: true` for `commanderOracleIds`.
+- **`targets.roles`** pairs `profile.roles.counts` with `recommendedMix(profile.skeleton, commanderOracleIds.length > 1).cells`, carrying `advisory` through so the prompt can say a gap is a guide and not a gate. `targets.lands` is `counts.land` against `skeleton.composition?.targets.land`, null when the skeleton has no composition. `thin` is `skeleton.thinCondition`.
+- **`staples`** is `skeleton.staples` minus every deck card, in the skeleton's own rank order, with `commanders` / `commanderTotal` forwarded and the ranking figures dropped.
+- **`play`** and **`intent`** pass through.
+
+Nothing in the pack is a bracket figure (see *Global Constraints*).
+
+- [ ] **Step 5: Add the key to `DeckProfile`**
+
+```typescript
+  /**
+   * The play-data group. NEVER present in the cached or stored document: the fingerprint is
+   * over the deck's cards, so a group filed under it would go stale on the next logged game.
+   * A consumer composes it at the read — `{ ...profile, play: buildPlayGroup(games) }`.
+   */
+  play?: ProfilePlay | null;
+```
+
+Optional, so `buildDeckProfile`, the stored rows and every existing consumer compile unchanged. Ask the orchestrator for this file before the PR opens.
+
+- [ ] **Step 6: Run the tests and commit**
+
+```bash
+pnpm test src/lib/profile/play.test.ts src/lib/tuning/evidence.test.ts
+git add src/lib/profile/play.ts src/lib/profile/play.test.ts src/lib/profile/types.ts src/lib/tuning/evidence.ts src/lib/tuning/evidence.test.ts
+git commit -m "feat(tuning): the play-data profile group and an evidence pack read from the profile"
 ```
 
 ---
@@ -1018,7 +1190,9 @@ git commit -m "feat(tuning): pure evidence pack from decklist, games, notes, gap
 - Test: `src/lib/tuning/prompt.test.ts`, `src/lib/tuning/response-schema.test.ts`
 
 **Interfaces:**
-- Consumes: `EvidencePack` from Task 7; `MAX_SUGGESTIONS` from Task 5's `limits.ts`.
+- Consumes: `EvidencePack` from Task 7; `MAX_SUGGESTIONS` from `limits.ts` (Task 5 step 3, shipped in PR B).
+
+**PR B.**
 - Produces:
   ```typescript
   export function buildPrompt(pack: EvidencePack): { system: string; user: string };
@@ -1130,11 +1304,17 @@ it("names the deck intent when there is one and says so when there is not", () =
   expect(buildPrompt({ ...pack, intent: "go wide" }).user).toContain("go wide");
   expect(buildPrompt({ ...pack, intent: null }).user).toContain("no stated intent");
 });
+
+it("says there is no play evidence when there are no games, rather than rendering an empty summary", () => {
+  const { user } = buildPrompt({ ...pack, play: buildPlayGroup([]) });
+  expect(user).toContain("no games logged");
+  expect(user).not.toMatch(/0 of 0/);
+});
 ```
 
 - [ ] **Step 5: Write the prompt**
 
-The system message carries the nine `suggestionRules` verbatim from the copy module — they are the model's instructions and the validator's checklist, and they must be one text so the two cannot drift. The user message renders the pack: commander and colour identity, decklist grouped by role, the game summary with denominators intact, each game's note quoted, the role gaps marked advisory where they are, the intent, and the staples not in the deck. Ask for at most `MAX_SUGGESTIONS`, and say plainly that fewer is better than padding.
+The system message carries the nine `suggestionRules` verbatim from the copy module — they are the model's instructions and the validator's checklist, and they must be one text so the two cannot drift. The user message renders the pack: the commanders and colour identity, the decklist grouped by role with the commanders marked as uncuttable, the role and land targets with their advisory flags (and the skeleton's thin-sample caveat when `targets.thin`), the game summary with denominators intact and each game's note quoted — or, at zero games, one sentence saying none are logged and that suggestions must rest on the list alone — the intent, and the staples not in the deck with their `commanders of commanderTotal` breadth. Ask for at most `MAX_SUGGESTIONS`, and say plainly that fewer is better than padding.
 
 - [ ] **Step 6: Run both tests and commit**
 
@@ -1147,6 +1327,8 @@ git commit -m "feat(tuning): schema-constrained prompt and response contract"
 ---
 
 ### Task 9: The six validation rules
+
+**PR B.**
 
 **Files:**
 - Create: `src/lib/tuning/presentation.ts`, `src/lib/tuning/validate.ts`
@@ -1231,9 +1413,23 @@ it("drops a cut that is not in the deck", () => {
   expect(out.droppedCount).toBe(1);
 });
 
+it("drops a cut that names a commander", () => {
+  // The profile's commanders-are-cards converse: they are in the list and can never leave it.
+  const out = validateSuggestions({ response: withCut(commanderName), pack, resolveName: resolve });
+  expect(out.kept).toHaveLength(0);
+  expect(out.droppedCount).toBe(1);
+});
+
+it("drops a citation of games when the pack has none", () => {
+  const out = validateSuggestions({
+    response: withCitation("Mana — 2 of 3 games"), pack: { ...pack, play: buildPlayGroup([]) }, resolveName: resolve,
+  });
+  expect(out.kept).toHaveLength(0);
+});
+
 it("drops an add outside the commander's colour identity", () => {
   const out = validateSuggestions({
-    response: withAdd("Lightning Bolt"), pack: { ...pack, commander: { name: "X", colorIdentity: ["G"] } },
+    response: withAdd("Lightning Bolt"), pack: { ...pack, colorIdentity: ["G"] },
     resolveName: () => ({ oracleId: "bolt", colorIdentity: ["R"] }),
   });
   expect(out.kept).toHaveLength(0);
@@ -1262,7 +1458,7 @@ it("renumbers position over the survivors so the card list has no holes", () => 
 
 Run each suggestion through the six rules in order and keep only those that survive all of them. `droppedCount` is the number that did not. Renumber `position` across the survivors — a hole in the sequence would be a rendering bug waiting to happen.
 
-Colour identity uses the same rule the add path already enforces (`validateCardForDeck` at `src/lib/decks/add-validation.ts:42-55`); do not write a second, subtly different subset test — extract or reuse.
+Colour identity uses the same rule the add path already enforces (`validateCardForDeck` at `src/lib/decks/add-validation.ts:46`); do not write a second, subtly different subset test — extract or reuse.
 
 - [ ] **Step 6: Run both suites and commit**
 
@@ -1274,118 +1470,170 @@ git commit -m "feat(tuning): six validation rules, every drop counted"
 
 ---
 
-### Task 10: The model client
+### Task 10: The shared model client and the daily allowance
+
+**PR A.** Nothing here names tuning. The synopsis (sub-project 6) calls the same two functions with its own model, prompt, schema and feature name.
 
 **Files:**
-- Create: `src/lib/tuning/client.ts`
-- Test: `src/lib/tuning/client.test.ts`
+- Create: `src/lib/model/client.ts`, `src/lib/model/allowance.ts`
+- Test: `src/lib/model/client.test.ts`, `src/lib/model/allowance.test.ts`
 - Modify: `.env.example`, `docs/deployment.md`
 
 **Interfaces:**
-- Consumes: `buildPrompt` (Task 8), `tuningResponseSchema` (Task 8), `MODEL_TIMEOUT_MS` (Task 5).
+- Consumes: `modelCalls` (Task 1).
 - Produces:
   ```typescript
-  export const TUNING_MODEL = "claude-sonnet-4-6";
-  export type ModelOutcome =
-    | { ok: true; response: TuningResponse }
-    | { ok: false; errorClass: "upstream_busy" | "timeout" | "malformed" };
-  export function callTuningModel(pack: EvidencePack, deps?: { fetch?: typeof fetch; now?: () => number }): Promise<ModelOutcome>;
+  // src/lib/model/client.ts — server-only
+  export type ModelErrorClass = "upstream_busy" | "timeout" | "malformed";
+  export type ModelOutcome<T> =
+    | { ok: true; value: T; usage: { inputTokens: number; outputTokens: number } }
+    | { ok: false; errorClass: ModelErrorClass };
+  export function callModel<T>(
+    request: {
+      model: string;           // the caller's; this module names none
+      system: string;
+      user: string;
+      maxTokens: number;
+      schema: z.ZodType<T>;    // the reply is JSON text parsed against this
+      deadlineMs: number;      // one deadline across both attempts
+    },
+    deps?: { fetch?: typeof fetch; now?: () => number },
+  ): Promise<ModelOutcome<T>>;
+
+  // src/lib/model/allowance.ts — server-only
+  export const MODEL_DAILY_ALLOWANCE = 5; // placeholder until measured; see the plan's Cost section
+  export const ALLOWANCE_WINDOW_MS = 24 * 60 * 60 * 1000;
+  export type ModelFeature = "tuning" | "synopsis";
+  export type Allowance = { used: number; limit: number; reopensAt: Date | null };
+  /** Inside the caller's transaction: lock, count, insert. Null when spent. */
+  export function reserveModelCall(tx: Tx, userId: string, feature: ModelFeature, now: Date): Promise<{ id: string } | null>;
+  export function readAllowance(userId: string, now: Date): Promise<Allowance>;
+  export function allowanceFrom(callTimes: Date[], now: Date): Allowance; // pure; both of the above use it
   ```
 
-**Server-only.** No client component imports this module.
+**Why the counter is rows, not a number.** A per-player counter column needs a reset job and loses the history; a ledger row per run is counted over a rolling window by one indexed query, reopens on its own, and says what spent it. `feature` is carried so the cost section's figures can be split later, and for nothing else — the allowance counts both features against one number, which is the ruling.
 
-- [ ] **Step 1: Write the failing test**
+**Rolling 24 hours, not a calendar day.** A calendar reset has to pick a time zone, and midnight UTC is mid-evening for the players this is built for — the hour a deck is most likely being tuned. A rolling window needs no zone, and `reopensAt` (the oldest counted call plus the window) gives the exhausted state an honest time to name.
 
-`fetch` is injected so the whole retry contract is testable with no network.
+**Concurrency.** Two presses on two decks at once must not both take the last unit. `reserveModelCall` takes `pg_advisory_xact_lock(hashtext('model-allowance:' || user_id))` first — the same per-user advisory-lock pattern `replaceCollection` uses — then counts inside the window, then inserts. The caller runs it in the same transaction as its own pending-row insert (Task 11), so a run either holds a unit and a pending row or neither.
+
+- [ ] **Step 1: Write the failing client tests**
+
+`fetch` and `now` are injected, so the whole retry contract is testable with no network.
 
 ```typescript
-// src/lib/tuning/client.test.ts
+// src/lib/model/client.test.ts
+const schema = z.object({ answer: z.string() });
+const req = { model: "m", system: "s", user: "u", maxTokens: 100, schema, deadlineMs: 90_000 };
+
 it("retries once on a 529 and succeeds", async () => {
   const calls: number[] = [];
-  const fake = async () => { calls.push(1); return calls.length === 1 ? busy() : good(); };
-  const out = await callTuningModel(pack, { fetch: fake as unknown as typeof fetch });
+  const fake = async () => { calls.push(1); return calls.length === 1 ? busy() : reply({ answer: "x" }); };
+  const out = await callModel(req, { fetch: fake as unknown as typeof fetch });
   expect(out.ok).toBe(true);
   expect(calls).toHaveLength(2);
 });
 
 it("gives up as upstream_busy after the one retry", async () => {
-  const fake = async () => busy();
-  const out = await callTuningModel(pack, { fetch: fake as unknown as typeof fetch });
+  const out = await callModel(req, { fetch: (async () => busy()) as unknown as typeof fetch });
   expect(out).toEqual({ ok: false, errorClass: "upstream_busy" });
 });
 
-it("retries once on unparseable output and then reports malformed", async () => {
+it("retries once on a reply that fails the caller's schema, then reports malformed", async () => {
   const calls: number[] = [];
-  const fake = async () => { calls.push(1); return garbage(); };
-  const out = await callTuningModel(pack, { fetch: fake as unknown as typeof fetch });
+  const fake = async () => { calls.push(1); return reply({ wrong: 1 }); };
+  const out = await callModel(req, { fetch: fake as unknown as typeof fetch });
   expect(out).toEqual({ ok: false, errorClass: "malformed" });
   expect(calls).toHaveLength(2);
 });
 
-it("reports timeout when the call outruns its budget", async () => {
-  const fake = (_u: string, init?: RequestInit) => new Promise((_r, reject) => {
-    init?.signal?.addEventListener("abort", () => reject(new DOMException("aborted", "AbortError")));
-  });
-  const out = await callTuningModel(pack, { fetch: fake as unknown as typeof fetch });
-  expect(out).toEqual({ ok: false, errorClass: "timeout" });
+it("reports timeout and does not retry it", async () => {
+  // fake timers advanced past deadlineMs
 });
-```
 
-```typescript
 it("spends one deadline across both attempts, not one each", async () => {
-  // First attempt returns 529 after MODEL_TIMEOUT_MS - 1000ms. The retry must
-  // be armed at ~1000ms, not at a fresh MODEL_TIMEOUT_MS.
   const arms: number[] = [];
   const fake = (_u: string, init?: RequestInit) => { arms.push(remainingOn(init!.signal!)); return busy(); };
-  await callTuningModel(pack, { fetch: fake as unknown as typeof fetch });
+  await callModel(req, { fetch: fake as unknown as typeof fetch });
   expect(arms[1]).toBeLessThan(arms[0]);
+});
+
+it("sends the caller's model and names none of its own", async () => {
+  let body: { model?: string } = {};
+  const fake = async (_u: string, init?: RequestInit) => { body = JSON.parse(String(init!.body)); return reply({ answer: "x" }); };
+  await callModel({ ...req, model: "caller-model" }, { fetch: fake as unknown as typeof fetch });
+  expect(body.model).toBe("caller-model");
+});
+
+it("returns the usage the response reported", async () => {
+  // Cost section: the measured tokens are read off this.
 });
 ```
 
-The timeout test needs fake timers advanced past `MODEL_TIMEOUT_MS`.
+- [ ] **Step 2: Write the failing allowance tests — the pure half**
 
-- [ ] **Step 2: Run it to verify it fails**
+```typescript
+// src/lib/model/allowance.test.ts
+const now = new Date("2026-09-23T12:00:00Z");
+const hoursAgo = (h: number) => new Date(now.getTime() - h * 3_600_000);
 
-```bash
-pnpm test src/lib/tuning/client.test.ts
+it("counts only calls inside the rolling window", () => {
+  expect(allowanceFrom([hoursAgo(1), hoursAgo(25)], now).used).toBe(1);
+});
+
+it("reopens when the oldest counted call leaves the window", () => {
+  const times = Array.from({ length: MODEL_DAILY_ALLOWANCE }, (_, i) => hoursAgo(20 - i));
+  const a = allowanceFrom(times, now);
+  expect(a.used).toBe(MODEL_DAILY_ALLOWANCE);
+  expect(a.reopensAt).toEqual(new Date(hoursAgo(20).getTime() + ALLOWANCE_WINDOW_MS));
+});
+
+it("names no reopening time while units remain", () => {
+  expect(allowanceFrom([hoursAgo(1)], now).reopensAt).toBeNull();
+});
 ```
 
-Expected: FAIL — cannot resolve `./client`.
+The lock, the count and the insert are a transaction's behaviour and are proved in `probe:tuning-run` (Task 11), which races two reservations for one player's last unit and asserts exactly one wins.
 
-- [ ] **Step 3: Implement**
-
-Raw `fetch` to `https://api.anthropic.com/v1/messages`, mirroring `scripts/generate-commander-prose.ts`: `"anthropic-version": "2023-06-01"`, `x-api-key` from `process.env.ANTHROPIC_API_KEY`, model `TUNING_MODEL`.
-
-**`MODEL_TIMEOUT_MS` is one deadline across both attempts, not a budget each.** Compute `deadline = now() + MODEL_TIMEOUT_MS` once, before the first attempt, and arm each attempt's `AbortController` at `deadline - now()`. A per-attempt budget plus one retry would allow ~180s against the route's `maxDuration = 120`, and the run would be killed mid-flight leaving an orphaned pending row — the one case §6 admits it cannot cover. If the deadline has already passed when a retry would start, return `timeout` without attempting it.
-
-At most **two** HTTP attempts total, and only for the two retryable conditions:
-
-- an overloaded/rate-limited upstream (`429`, `529`, `5xx`) → retry once, then `upstream_busy`
-- output that does not parse against `tuningResponseSchema` → retry once, then `malformed`
-
-A timeout is **not** retried — the budget is the budget, and a second attempt would blow the route's `maxDuration` and leave no room to write the failure row.
-
-Both attempts happen inside one run row. The spec's "no automatic retry" rule is about not starting a second run behind the player's back; a bounded retry inside the run the player asked for is the same run.
-
-- [ ] **Step 4: Document the key**
-
-Add `ANTHROPIC_API_KEY=` to `.env.example` with a one-line comment, and a row to `docs/deployment.md` noting it is required in every Vercel project that serves the builder, sensitive, all scopes. Without it, `runTuning` fails as `upstream_busy` rather than throwing — a missing key must not take the builder page down.
-
-- [ ] **Step 5: Run the test and commit**
+- [ ] **Step 3: Run them to verify they fail**
 
 ```bash
-pnpm test src/lib/tuning/client.test.ts
-git add src/lib/tuning/client.ts src/lib/tuning/client.test.ts .env.example docs/deployment.md
-git commit -m "feat(tuning): bounded model call with one retry per retryable class"
+pnpm test src/lib/model
+```
+
+- [ ] **Step 4: Implement the client**
+
+Raw `fetch` to `https://api.anthropic.com/v1/messages`, the headers `scripts/generate-commander-prose.ts` sends (`content-type`, `x-api-key` from `process.env.ANTHROPIC_API_KEY`, `"anthropic-version": "2023-06-01"`), the caller's `model` and `max_tokens`, and the caller's `system` and `user`. The reply's text block is `JSON.parse`d and checked with `schema.safeParse`; a parse or schema failure is the `malformed` class.
+
+**The deadline is one deadline across both attempts, not a budget each.** Compute `deadline = now() + deadlineMs` once, before the first attempt, and arm each attempt's `AbortController` at `deadline - now()`; skip the retry when nothing is left. At most two HTTP attempts, and only for `429`/`529`/`5xx` (→ `upstream_busy`) and an unparseable reply (→ `malformed`). A timeout is not retried — the budget is the budget, and a second attempt would outrun the route's `maxDuration` and leave no room to write the failure row. A missing key throws: that is a deployment defect, not a failure class a player should see as "try again".
+
+`scripts/generate-commander-prose.ts` keeps its own fetch in this PR. Moving it onto the shared client is a separate change with its own proof (the prose workflow), logged on the board rather than folded in here.
+
+- [ ] **Step 5: Implement the allowance**
+
+`allowanceFrom` is the pure arithmetic. `readAllowance` selects the `created_at` of the reader's `model_calls` rows inside the window (`model_calls_user_created_idx`) and hands them to it. `reserveModelCall` locks, counts through the same arithmetic, and returns null when `used >= MODEL_DAILY_ALLOWANCE`, otherwise inserts `{ userId, feature }` and returns the id.
+
+- [ ] **Step 6: Document the key**
+
+Add `ANTHROPIC_API_KEY=` to `.env.example` with a one-line comment, and a row to `docs/deployment.md`: required in every Vercel project that serves the builder, Sensitive, Production and Preview. Without it, `runTuning` throws at the call rather than recording a failure class. The prose workflow's own repository secret is unaffected.
+
+- [ ] **Step 7: Run the tests and commit**
+
+```bash
+pnpm test src/lib/model
+git add src/lib/model/client.ts src/lib/model/client.test.ts src/lib/model/allowance.ts src/lib/model/allowance.test.ts .env.example docs/deployment.md
+git commit -m "feat(model): one shared model client and a per-player daily allowance"
 ```
 
 ---
 
 ### Task 11: The durability contract
 
+**Split.** Steps 1–2 (`reaper.ts`, pure) ship in **PR B**. Steps 3–6 ship in **PR C**.
+
 **Files:**
 - Modify: `src/app/decks/tuning-actions.ts` (adds `runTuning` and `cancelTuningRun`)
-- Create: `src/lib/tuning/reaper.ts`
+- Create: `src/lib/tuning/reaper.ts`, `scripts/probe-tuning-run.mts` (+ `probe:tuning-run` in `package.json`)
 - Test: `src/lib/tuning/reaper.test.ts`, `src/app/decks/tuning-actions.test.ts`
 
 **Interfaces:**
@@ -1432,7 +1680,7 @@ export function reapCutoff(now: Date): Date {
 
 - [ ] **Step 3: Write `runTuning`**
 
-The order matters and is the whole point. Nothing here trusts the client: **a server action is a public endpoint**, as `logGame`'s own comment at `src/app/decks/actions.ts:858` says, so every gate the panel applies is re-applied here. A stale tab or a replayed call must not spend money on unchanged inputs.
+The order matters and is the whole point. Nothing here trusts the client: **a server action is a public endpoint**, as `logGame`'s own comment says (`src/app/decks/actions.ts`, inside `logGame` at `:1264`), so every gate the panel applies is re-applied here. A stale tab or a replayed request hits the same rule the button does.
 
 ```typescript
 // 23505 is Postgres's unique_violation. Narrowed by hand rather than by
@@ -1445,51 +1693,69 @@ function isUniqueViolation(err: unknown): boolean {
 
 export async function runTuning(deckId: string): Promise<DeckMutationResult> {
   const userId = await requireUserId();
-  const detail = await getDeckDetail(deckId, userId);
-  if (!detail) return { ok: false, message: gameLogCopy.form.refused };
 
-  const games = await listDeckGames(deckId, userId);
-  const fingerprint = tuningFingerprint({ cards: detail.cards, games, intent: detail.intent });
+  // 0. The inputs. The profile is the deck half of the evidence; the play group
+  //    is composed onto it here and never cached with it (Task 7).
+  const [profile, games, intent] = await Promise.all([
+    cachedDeckProfile(deckId, userId),
+    listDeckGames(deckId, userId),
+    readDeckIntent(deckId, userId),
+  ]);
+  if (!profile) return { ok: false, message: deckTuningCopy.panel.refused };
+  const play = buildPlayGroup(games);
+  const fingerprint = tuningFingerprint({ profile: profile.fingerprint, games, intent });
 
   // 1. The same gate the panel shows, enforced server-side. gateReason is the
-  //    single source of that answer (Task 12) so the disabled button and the
-  //    refusal can never disagree — and so a caller bypassing the button hits
-  //    the identical rule.
+  //    single source of that answer (Task 12), so the disabled button and the
+  //    refusal can never disagree. No game count enters it.
   const state = await readTuningState(deckId, userId, fingerprint);
-  const gate = gateReason(state, games.length);
+  const gate = gateReason(state);
   if (gate) return { ok: false, message: gate.message };
 
-  // 2. The pending row, in its own transaction, committed before any network
-  //    call. The partial unique index makes a second concurrent run impossible:
-  //    the loser gets a unique violation, not a second run.
+  // 2. One transaction: reserve a unit of the shared allowance, then the pending
+  //    row. Committed before any network call. The allowance lock makes the last
+  //    unit single-winner across decks; the partial unique index makes a second
+  //    concurrent run on this deck impossible. A run holds both or neither.
   let runId: string;
   try {
-    const [row] = await db.insert(deckSuggestionRuns).values({
-      deckId, userId, inputFingerprint: fingerprint,
-      model: TUNING_MODEL, promptVersion: PROMPT_VERSION, status: "pending",
-    }).returning({ id: deckSuggestionRuns.id });
-    runId = row.id;
+    runId = await db.transaction(async (tx) => {
+      const unit = await reserveModelCall(tx, userId, "tuning", new Date());
+      if (!unit) throw new AllowanceSpentError();
+      const [row] = await tx.insert(deckSuggestionRuns).values({
+        deckId, userId, inputFingerprint: fingerprint,
+        model: TUNING_MODEL, promptVersion: PROMPT_VERSION, status: "pending",
+      }).returning({ id: deckSuggestionRuns.id });
+      return row.id;
+    });
   } catch (err) {
+    if (err instanceof AllowanceSpentError) {
+      const allowance = await readAllowance(userId, new Date());
+      return { ok: false, message: deckTuningCopy.allowance.spent(allowance.reopensAt!) };
+    }
     // Only a unique violation on the partial index means "another run for this
-    // deck is already in flight". A bare `catch` here would report that same
-    // reassuring message for a dropped connection or a missing column, and the
-    // player would retry forever against a database that is not answering.
+    // deck is already in flight". A bare `catch` would report that same message
+    // for a dropped connection or a missing column.
     if (!isUniqueViolation(err)) throw err;
     return { ok: false, message: deckTuningCopy.panel.generating };
   }
 
   // 3. The call. Everything after this point writes conditionally.
-  const staples = await readSynergyCards(
-    userId, detail.commander.oracleId, detail.cards.map((c) => c.oracleId),
-  );
-  const pack = buildEvidencePack({ detail, games, summary: summarizeGames(games), staples });
-  const outcome = await callTuningModel(pack);
+  const owned = await readOwnedOracleIds(userId, [
+    ...profile.cards.map((c) => c.oracleId),
+    ...profile.skeleton.staples.map((s) => s.oracleId),
+  ]);
+  const pack = buildEvidencePack({ profile, play, intent, owned });
+  const { system, user } = buildPrompt(pack);
+  const outcome = await callModel({
+    model: TUNING_MODEL, system, user, maxTokens: TUNING_MAX_TOKENS,
+    schema: tuningResponseSchema, deadlineMs: MODEL_TIMEOUT_MS,
+  });
 
   if (!outcome.ok) return finishRun(runId, deckId, { status: "failed", errorClass: outcome.errorClass });
 
   // resolveName closes over one catalog read of every name the model returned.
   // Injecting it is what keeps validate.ts pure and client-safe (Task 9).
-  const names = outcome.response.suggestions.flatMap((s) => [s.add, ...(s.cut ? [s.cut] : [])]);
+  const names = outcome.value.suggestions.flatMap((s) => [s.add, ...(s.cut ? [s.cut] : [])]);
   const rows = names.length === 0 ? [] : await db
     .select({ oracleId: cards.oracleId, name: cards.name, colorIdentity: cards.colorIdentity })
     .from(cards)
@@ -1497,7 +1763,7 @@ export async function runTuning(deckId: string): Promise<DeckMutationResult> {
   const byName = new Map(rows.map((r) => [r.name, r]));
   const resolveName = (name: string) => byName.get(name) ?? null;
 
-  const { kept, droppedCount } = validateSuggestions({ response: outcome.response, pack, resolveName });
+  const { kept, droppedCount } = validateSuggestions({ response: outcome.value, pack, resolveName });
   if (kept.length === 0) {
     return finishRun(runId, deckId, { status: "failed", errorClass: "ungrounded", droppedCount });
   }
@@ -1506,6 +1772,8 @@ export async function runTuning(deckId: string): Promise<DeckMutationResult> {
   return persistRun(runId, deckId, kept, droppedCount);
 }
 ```
+
+`readDeckIntent` is a one-column read of `decks.intent`, scoped by `user_id`; `readOwnedOracleIds` is one `collection_items` read over the given ids. Both live in `tuning-read.ts`. `cachedDeckProfile` is the loader the Analysis tab's press already warms (`src/lib/profile/load.ts:577`), so a player who analysed the deck first pays nothing for the deck half here. Its key is the profile fingerprint, so a card edited since the analysis reads a fresh profile rather than a stale one.
 
 Both writers share one shape. `finishRun` writes an outcome and no items; `persistRun` writes the items and the outcome together:
 
@@ -1575,55 +1843,50 @@ It takes the `runId` the panel was watching, not just the deck. Scoped to the de
 
 Stop needs no new concurrency primitive — it is the reaper's mechanism fired by hand. A cancelled run is not a failure, so `failed` keeps meaning failure; and because the fingerprint gate only matches **successful** runs, a cancel does not consume the gate.
 
-- [ ] **Step 5: Write the race tests — both halves**
+- [ ] **Step 5: Prove the durability contract against a real Postgres — `pnpm probe:tuning-run`**
 
-```typescript
-// src/app/decks/tuning-actions.test.ts
-it("discards its result when the reaper got there first", async () => {
-  // Arrange a run row already flipped to 'failed'/'interrupted', then let the
-  // generation path try to write 'ok'. Assert the row still reads
-  // failed/interrupted and that no items were inserted.
-});
+Every rule in this task is a fact about what a transaction wrote, which no jsdom test here can reach; a stub that records statements proves the text was issued and nothing about the lock or the guard. So the race cases are a probe, in the repo's convention (`probe:claims`, `probe:score-lock`): `scripts/probe-tuning-run.mts`, a per-run `user_id`, every fixture deleted in a `finally`, each cleanup step on its own. It calls the real `finishRun` / `persistRun` / `reserveModelCall` and stubs only the model (through `callModel`'s injected `fetch`).
 
-it("discards its result when the player pressed Stop", async () => {
-  // Same shape, with the row flipped to 'cancelled'. Assert cancelled survives.
-});
+Four cases, each written so a mutation fails it:
 
-it("refuses a second concurrent run on the same deck", async () => {
-  // Two inserts of a pending row for one deck; the second must reject.
-});
-```
+1. **The reaper got there first.** A run row flipped to `failed`/`interrupted`, then the success path writes `ok`. The row still reads `failed`/`interrupted` and no items exist. Mutation: drop the `status = 'pending'` guard from `persistRun`.
+2. **The player pressed Stop.** Same shape with the row `cancelled`. `cancelled` survives. Mutation: the same guard, on `finishRun`.
+3. **A second concurrent run on one deck** is refused by the partial index (23505), and the loser holds no allowance unit — the unit and the row share the transaction. Mutation: move the reservation out of the pending-row transaction, and the loser keeps a unit it never spent.
+4. **Two presses on two decks race for one player's last allowance unit**, started together on two connections; exactly one reserves. Mutation: remove the advisory lock (it fails on every run, as `probe:arrivals`'s lock case does).
 
-Both halves are required by the spec's §11. Testing only the reaper half would leave the Stop half — the one a player actually triggers — unproven.
+Point it at `local-dev` or a scratch Neon branch, **never production**. The script's `report()` counts its own failures and `process.exit` runs after the `finally`, not inside it — the trap three earlier probes fell into.
 
 - [ ] **Step 6: Run the suite and commit**
 
 ```bash
-pnpm test src/app/decks/tuning-actions.test.ts src/lib/tuning/reaper.test.ts
-git add src/lib/tuning/reaper.ts src/lib/tuning/reaper.test.ts src/app/decks/tuning-actions.ts src/app/decks/tuning-actions.test.ts
+pnpm test src/lib/tuning/reaper.test.ts
+PROBE against local-dev: pnpm probe:tuning-run
+git add src/app/decks/tuning-actions.ts scripts/probe-tuning-run.mts package.json
 git commit -m "feat(tuning): durable run lifecycle with a reaper, a cancel, and guarded writes"
 ```
 
 ---
 
-### Task 12: The read, the gate, and the ceiling
+### Task 12: The read, the gate, and the allowance
+
+**Split.** Steps 1–2 (`gate.ts`, pure) ship in **PR B**; steps 3–5 (`tuning-read.ts`, `readTuningPanel`) in **PR C**. The page wiring is PR D's.
 
 **Files:**
-- Create: `src/lib/decks/tuning-read.ts`
-- Modify: `src/app/decks/[id]/page.tsx`
+- Create: `src/lib/tuning/gate.ts`, `src/lib/decks/tuning-read.ts`
+- Modify: `src/app/decks/tuning-actions.ts` (adds `readTuningPanel`)
 - Test: `src/lib/tuning/gate.test.ts`
 
 **Interfaces:**
-- Consumes: Tasks 1, 6, 11.
+- Consumes: Tasks 1, 6, 7, 10, 11.
 - Produces:
   ```typescript
   // src/lib/tuning/gate.ts — pure, client-safe
   export type GateReason = {
-    kind: "too_few_games" | "unchanged" | "ceiling" | "in_flight";
+    kind: "in_flight" | "allowance" | "unchanged";
     /** Rendered beside the disabled button, and returned by runTuning's refusal. */
     message: string;
   };
-  export function gateReason(state: TuningState, gameCount: number): GateReason | null;
+  export function gateReason(state: TuningState): GateReason | null;
 
   // src/lib/decks/tuning-read.ts — server-only
   export type TuningItem = {
@@ -1648,16 +1911,22 @@ git commit -m "feat(tuning): durable run lifecycle with a reaper, a cancel, and 
     lastOkAt: Date | null;
     /** lastOkFingerprint !== the fingerprint passed in. */
     stale: boolean;
-    runsThisHour: number;
+    /** The reader's shared model allowance — tuning and the synopsis together. */
+    allowance: Allowance;
+    /** What the evidence will hold, so the panel can say "no games yet" without a gate. */
+    gameCount: number;
   };
   export function readTuningState(deckId: string, userId: string, fingerprint: string): Promise<TuningState>;
+
+  // src/app/decks/tuning-actions.ts
+  export function readTuningPanel(deckId: string): Promise<TuningState | null>;
   ```
 
-`readTuningState` takes three arguments everywhere, including in the File Structure table. `TuningItem` is the only shape the card renders — the card does no lookups of its own, which is why the name, type line, ownership, and price are joined here rather than passed around the component tree.
+`gameCount` rides on the state for the panel's copy — a deck with no games is told its suggestions come from the list alone — and gates nothing. `TuningItem` is the only shape the card renders; the card does no lookups of its own, which is why the name, type line, ownership, and price are joined here.
 
 - [ ] **Step 1: Write the failing gate test**
 
-`gateReason` is pure, lives in `src/lib/tuning/gate.ts`, and is the single answer to "why is the button disabled" — so the disabled button and the reason shown beside it can never disagree.
+`gateReason` is pure and is the single answer to "why is the button disabled", so the disabled button and the reason shown beside it can never disagree.
 
 ```typescript
 // src/lib/tuning/gate.test.ts
@@ -1665,49 +1934,71 @@ const at = new Date("2026-09-07T10:00:00Z");
 const run = (status: string, errorClass: string | null = null) => ({
   id: "run_1", status, errorClass, createdAt: at, droppedCount: 0,
 });
-const okRun = run("ok");
-const failedRun = run("failed", "upstream_busy");
-const cancelledRun = run("cancelled");
-// `fresh` is a deck that has never generated: no run, no ok fingerprint, so
-// every gate below is switched on by the one field the test names.
+const open: Allowance = { used: 0, limit: MODEL_DAILY_ALLOWANCE, reopensAt: null };
+// `fresh` is a deck that has never generated — and has no games, which is not a gate.
 const fresh: TuningState = {
   run: null, items: [], lastOkFingerprint: null, lastOkAt: null,
-  stale: true, runsThisHour: 0,
+  stale: true, allowance: open, gameCount: 0,
 };
-// The unchanged gate needs both halves of the ok pair, which always travel
-// together — gateReason dereferences lastOkAt on exactly that branch.
 const settled: TuningState = {
-  ...fresh, run: okRun, lastOkFingerprint: "fp", lastOkAt: at, stale: false,
+  ...fresh, run: run("ok"), lastOkFingerprint: "fp", lastOkAt: at, stale: false,
 };
 
-it("gates below the pattern minimum", () => {
-  expect(gateReason(fresh, PATTERN_MIN - 1)?.kind).toBe("too_few_games");
+it("opens a deck with no games and no runs", () => {
+  expect(gateReason(fresh)).toBeNull();
+});
+
+it("gates while a run is in flight", () => {
+  expect(gateReason({ ...fresh, run: run("pending") })?.kind).toBe("in_flight");
 });
 
 it("gates when nothing has changed since the last successful run", () => {
-  expect(gateReason(settled, 5)?.kind).toBe("unchanged");
+  expect(gateReason(settled)?.kind).toBe("unchanged");
 });
 
-it("does not gate when the last run failed", () => {
-  expect(gateReason({ ...fresh, run: failedRun }, 5)).toBeNull();
+it("does not gate when the last run failed or was cancelled", () => {
+  expect(gateReason({ ...fresh, run: run("failed", "upstream_busy") })).toBeNull();
+  expect(gateReason({ ...fresh, run: run("cancelled") })).toBeNull();
 });
 
-it("does not gate when the last run was cancelled", () => {
-  expect(gateReason({ ...fresh, run: cancelledRun }, 5)).toBeNull();
+it("gates when the shared allowance is spent, and names when it reopens", () => {
+  const reopensAt = new Date("2026-09-08T09:00:00Z");
+  const g = gateReason({ ...fresh, allowance: { used: MODEL_DAILY_ALLOWANCE, limit: MODEL_DAILY_ALLOWANCE, reopensAt } });
+  expect(g?.kind).toBe("allowance");
+  expect(g?.message).toBe(deckTuningCopy.allowance.spent(reopensAt));
 });
 
-it("gates at the hourly ceiling", () => {
-  expect(gateReason({ ...fresh, runsThisHour: TUNING_RUNS_PER_HOUR }, 5)?.kind).toBe("ceiling");
+it("reports unchanged before allowance, so a spent allowance never hides that a press would be wasted anyway", () => {
+  expect(gateReason({ ...settled, allowance: { used: 5, limit: 5, reopensAt: at } })?.kind).toBe("unchanged");
 });
 ```
 
-A failed or cancelled run not consuming the gate is the spec's rule and the reason these two cases are tested separately.
+A failed or cancelled run not consuming the gate is the spec's rule and the reason those cases are tested separately.
 
 - [ ] **Step 2: Run it to verify it fails, then implement `gateReason`**
 
-```bash
-pnpm test src/lib/tuning/gate.test.ts
+Three kinds, in this order — the first that applies wins:
+
+```typescript
+export function gateReason(state: TuningState): GateReason | null {
+  if (state.run?.status === "pending") {
+    return { kind: "in_flight", message: deckTuningCopy.panel.generating };
+  }
+  if (!state.stale && state.lastOkFingerprint !== null) {
+    return { kind: "unchanged", message: deckTuningCopy.panel.unchanged(state.lastOkAt!) };
+  }
+  if (state.allowance.used >= state.allowance.limit) {
+    return { kind: "allowance", message: deckTuningCopy.allowance.spent(state.allowance.reopensAt!) };
+  }
+  return null;
+}
 ```
+
+`unchanged` precedes `allowance` because it is the more useful truth: a player told their allowance is spent will wait for it to reopen and then be told nothing changed. `panel.unchangedCta` is the **button label** on the unchanged state and must not be reused as a message. `allowance.spent(at)` is the stated exhausted state; its wording is not drawn yet and is listed in Task 2 as a key the placement addendum returns, with the synopsis's surface in mind, because both features show it.
+
+`panel.unchanged(...)` takes the time the standing suggestions were generated, which is the newest **ok** run's timestamp — not `state.run.createdAt`, which may belong to a failure that happened afterwards.
+
+An `ungrounded` failure leaves the gate open on unchanged inputs, so `Try again` can re-spend on a call that will very likely fail the same way. That is the spec's rule, and the allowance is now what bounds it.
 
 - [ ] **Step 3: Write `readTuningState`**
 
@@ -1718,74 +2009,29 @@ update deck_suggestion_runs set status = 'failed', error_class = 'interrupted'
 where deck_id = :deckId and status = 'pending' and created_at < :cutoff
 ```
 
-The spec's §6 writes this unscoped. Scoping it to the deck being read is a strict improvement and changes nothing about the contract: every deck's page read reaps its own, so no pending row outlives the cutoff, and one player opening a deck no longer writes across every other player's rows on every page load.
+The spec's §6 writes this unscoped. Scoping it to the deck being read changes nothing about the contract — every deck's read reaps its own — and one player opening a deck no longer writes across other players' rows.
 
-Then it reads three things: the newest run for the deck with its items ordered by `position`, joined to `cards` for the add and cut names and type lines and to the collection and price tables for `owned` / `ownedQuantity` / `priceCents`; the newest run with `status = 'ok'` for `lastOkFingerprint` and `lastOkAt`, both off that one row; and the user's run count in the last hour for the ceiling. `stale` is `lastOkFingerprint !== fingerprint` — deliberately not a comparison against the newest run of *any* status, because a failed or cancelled run must not consume the gate.
+Then it reads: the newest run for the deck with its items ordered by `position`, joined to `cards` for the add and cut names and type lines and to the collection and price tables for `owned` / `ownedQuantity` / `priceCents`; the newest run with `status = 'ok'` for `lastOkFingerprint` / `lastOkAt`; the game count; and `readAllowance(userId, now)`.
 
-- [ ] **Step 3b: Write `gateReason`**
+- [ ] **Step 4: Write `readTuningPanel`**
 
-Four kinds, in this order — the first that applies wins:
+The one server action a surface calls to draw the panel. It exists because **the Analysis tab has no address** — `BuilderTabs` is client state, so no route loader can be conditional on the panel being visible, and loading the tuning state on every deck-page render would pay for a read most visits never draw. The action computes the fingerprint (`loadProfileHead` → `profileFingerprint`, `listDeckGames`, the deck's intent), then returns `readTuningState`. `requireUserId` first; a deck the reader does not own reads as null.
 
-```typescript
-export function gateReason(state: TuningState, gameCount: number): GateReason | null {
-  if (state.run?.status === "pending") {
-    return { kind: "in_flight", message: deckTuningCopy.panel.generating };
-  }
-  if (gameCount < PATTERN_MIN) {
-    return { kind: "too_few_games", message: deckTuningCopy.panel.belowThresholdNote(gameCount) };
-  }
-  if (state.runsThisHour >= TUNING_RUNS_PER_HOUR) {
-    return { kind: "ceiling", message: deckTuningCopy.panel.ceiling };
-  }
-  if (!state.stale && state.lastOkFingerprint !== null) {
-    return { kind: "unchanged", message: deckTuningCopy.panel.unchanged(state.lastOkAt!) };
-  }
-  return null;
-}
-```
+Whether PR D calls this on tab open (as `peekProfile` does for the stored analysis) or the route loads it unconditionally is D's decision, made once the addendum says where the panel lives.
 
-Each kind carries its own message, so a refusal always says which of the four happened. Returning one generic string for all of them would defeat §6's rule that the panel names the cause.
-
-Two of those four messages need care. `panel.unchangedCta` is the **button label** on the unchanged state — it is not a message and must not be reused as one. The ceiling gets its own key, `panel.ceiling`, added to Task 2's `panel` group: the spec (§5) says the ceiling "should never be visible in normal use", so Design drew no state for it, but a disabled button still owes the player a sentence. Write it in the panel's existing register and route the wording through `/copy-review` rather than back to Design.
-
-`panel.unchanged(...)` takes the time the standing suggestions were generated, which is the newest **ok** run's timestamp — not `state.run.createdAt`, which is the newest run of any status and may belong to a failure that happened afterwards. `TuningState` therefore carries `lastOkAt: Date | null`, read from the same row `lastOkFingerprint` comes from, and the two are always both null or both set. The non-null assertion above is sound for that reason: the branch has already established `lastOkFingerprint !== null`.
-
-An `ungrounded` failure leaves the gate open on unchanged inputs, which lets `Try again` re-spend on a call that will very likely fail the same way. That is the spec's rule — a failed run does not consume the gate — and it stands, because the alternative traps a deck whose inputs cannot change until it plays another game. The hourly ceiling is what bounds the cost.
-
-- [ ] **Step 4: Wire the page**
-
-In `src/app/decks/[id]/page.tsx`, the tuning read **cannot** join the existing `Promise.all` at line 36: it needs a fingerprint, and the fingerprint needs `games`, which that same `Promise.all` produces. Compute the fingerprint after it resolves, then read the tuning state in the sequential section alongside the existing `loadPrices` call:
-
-```typescript
-const fingerprint = tuningFingerprint({ cards: detail.cards, games, intent: detail.intent });
-const [priced, tuning] = await Promise.all([
-  loadPrices([...]).catch(() => null),
-  readTuningState(id, userId, fingerprint),
-]);
-```
-
-Pass `tuning` into `BuilderShell`.
-
-Add at the top of the file:
-
-```typescript
-// Server actions inherit the invoking route's limit, and runTuning's budget is
-// the model call (90s) plus room to write the outcome row. Precedent:
-// src/app/collection/replace/page.tsx:12.
-export const maxDuration = 120;
-```
-
-- [ ] **Step 5: Run the full suite and the stub build, then commit**
+- [ ] **Step 5: Run the suite and commit**
 
 ```bash
-pnpm test && pnpm typecheck && DATABASE_URL="postgres://stub:stub@localhost/stub" pnpm build
-git add src/lib/tuning/gate.ts src/lib/tuning/gate.test.ts src/lib/decks/tuning-read.ts "src/app/decks/[id]/page.tsx"
-git commit -m "feat(tuning): read-time reaper, the fingerprint gate, and the hourly ceiling"
+pnpm test src/lib/tuning && pnpm typecheck
+git add src/lib/tuning/gate.ts src/lib/tuning/gate.test.ts src/lib/decks/tuning-read.ts src/app/decks/tuning-actions.ts
+git commit -m "feat(tuning): read-time reaper, the fingerprint gate, and the shared allowance"
 ```
 
 ---
 
 ### Task 13: The manifest
+
+**Split.** `readTuningEvidence` ships in **PR C**; `ManifestRows` in **PR D**. The `games` and `notes` steps report 0 truthfully on a deck with no games — the manifest discloses what the model was handed, and nothing is what it was handed.
 
 **Files:**
 - Create: `src/components/decks/manifest-rows.tsx`
@@ -1850,6 +2096,8 @@ git commit -m "feat(tuning): evidence manifest that ticks on real reads"
 
 ### Task 14: The tuning panel
 
+**PR D — BLOCKED ON DESIGN — placement addendum.** Two things the addendum returns before this task starts: where the panel lives (Task 16), and the panel with **no game gate**. S4 state 1 (*Below threshold*) is retired, and S4 state 2 (*Ready*) was drawn assuming at least `PATTERN_MIN` games — its briefing names "the strongest Fix". A deck with no games, or games with no marks, has no Fix to name, so *Ready* needs a drawing for that case, and the allowance's exhausted state needs one too. Eng does not improvise either.
+
 **Files:**
 - Create: `src/components/decks/tuning-panel.tsx`
 - Test: `src/components/decks/tuning-panel.test.tsx`
@@ -1858,7 +2106,7 @@ git commit -m "feat(tuning): evidence manifest that ticks on real reads"
 - Consumes: `deckTuningCopy.panel` and `.failure` and `.announce` (Task 2); `TuningState` and `gateReason` (Task 12); `runTuning` / `cancelTuningRun` (Task 11); `ManifestRows` (Task 13).
 - Produces: the `TuningPanel` component. `builder-shell.tsx` mounts it.
 
-**Design table rows to satisfy:** S4 states 1, 2, 3, 4, 5, 6a–6d, **6e (interrupted, undrawn)**, and the `Stop` transition. The action row is a **fixed band across all six states** — 56px desktop, primaries 44px on mobile. Getting that band right is what stops the panel jumping as it changes state.
+**Design table rows to satisfy:** S4 states 2 (and the addendum's zero-evidence *Ready*), 3, 4, 5, 6a–6d, the allowance state, **6e (interrupted, undrawn)**, and the `Stop` transition. The action row is a **fixed band across all six states** — 56px desktop, primaries 44px on mobile. Getting that band right is what stops the panel jumping as it changes state.
 
 State 6e has no drawing. Build it from the four drawn failure states' shared structure — tag, body, kept line, note — with `deckTuningCopy.failure.interrupted`'s strings. That is the audit's finding A resolution, and it is eng's to build, not a Design round-trip.
 
@@ -1867,34 +2115,36 @@ State 6e has no drawing. Build it from the four drawn failure states' shared str
 ```typescript
 // src/components/decks/tuning-panel.test.tsx
 it("shows the reason beside a disabled button rather than only disabling it", () => {
-  render(<TuningPanel state={unchangedState} gameCount={5} />);
+  render(<TuningPanel state={unchangedState} />);
   expect(screen.getByRole("button", { name: deckTuningCopy.panel.unchangedCta })).toBeDisabled();
   expect(screen.getByText(/nothing has changed/i)).toBeInTheDocument();
 });
 
 it("offers Stop only while a run is pending", () => {
-  const { rerender } = render(<TuningPanel state={pendingState} gameCount={5} />);
+  const { rerender } = render(<TuningPanel state={pendingState} />);
   expect(screen.getByRole("button", { name: deckTuningCopy.panel.stop })).toBeInTheDocument();
-  rerender(<TuningPanel state={okState} gameCount={5} />);
+  rerender(<TuningPanel state={okState} />);
   expect(screen.queryByRole("button", { name: deckTuningCopy.panel.stop })).not.toBeInTheDocument();
 });
 
 it("renders the interrupted failure with its own copy", () => {
-  render(<TuningPanel state={interruptedState} gameCount={5} />);
+  render(<TuningPanel state={interruptedState} />);
   expect(screen.getByText(deckTuningCopy.failure.interrupted.tag)).toBeInTheDocument();
 });
 
 it("announces once per settle, not once per intermediate state", async () => {
-  render(<TuningPanel state={pendingState} gameCount={5} />);
+  render(<TuningPanel state={pendingState} />);
   const live = screen.getByRole("status");
   expect(live).toHaveTextContent(deckTuningCopy.announce.started);
   // advance the manifest through all four steps
   expect(live.textContent?.match(/read/g) ?? []).toHaveLength(0);
 });
 
-it("keeps a below-threshold deck honest about how many games it has", () => {
-  render(<TuningPanel state={fresh} gameCount={1} />);
-  expect(screen.getByText(deckTuningCopy.panel.belowThresholdNote(1))).toBeInTheDocument();
+it("opens at zero games rather than gating", () => {
+  // No gate at zero games: the primary is enabled, and the panel says the
+  // suggestions will come from the list alone. Copy per the addendum.
+  render(<TuningPanel state={{ ...fresh, gameCount: 0 }} />);
+  expect(screen.getByRole("button", { name: deckTuningCopy.panel.readyCta })).toBeEnabled();
 });
 ```
 
@@ -1920,7 +2170,7 @@ git commit -m "feat(tuning): the tuning panel across all six states"
 - Test: `src/components/decks/suggestion-card.test.tsx`, additions to `src/app/decks/tuning-actions.test.ts`
 
 **Interfaces:**
-- Consumes: `deckTuningCopy.card` (Task 2); `formatCents` (`src/lib/decks/price.ts:109-114`); `statusPill` (`src/lib/decks/status.ts`); the item rows from Task 12.
+- Consumes: `deckTuningCopy.card` (Task 2); `formatCents` (`src/lib/decks/price.ts:111-116`); `statusPill` (`src/lib/decks/status.ts`); the item rows from Task 12.
 - Produces:
   ```typescript
   export function applySuggestion(itemId: string): Promise<DeckMutationResult>;
@@ -1951,7 +2201,9 @@ it("keeps a dismissed suggestion restorable", async () => {
 });
 ```
 
-The apply path must reuse the existing row-locking pattern in `addCardToDeck` (`src/app/decks/actions.ts:424`, `select 1 from decks ... for update`) rather than inventing a second concurrency approach, and must call `claimSurfaces(deckId)` the way that action does.
+The apply path must reuse the existing row-locking pattern in `addCardToDeck` (`src/app/decks/actions.ts:467`, `select 1 from decks ... for update` at `:495`) rather than inventing a second concurrency approach, and must revalidate through `revalidateClaims(deckId, userId)` (`src/lib/decks/revalidate-claims.ts:18`) the way that action does, not `claimSurfaces` directly.
+
+**Split.** The four actions ship in **PR C**, and their tests are cases in `probe:tuning-run` rather than jsdom tests: "both `deck_cards` changes land or none do" and "undo returns exactly the prior deck" are facts about a transaction. Add them as cases 5–8, with the mutation for each (drop the transaction; skip restoring the cut's prior quantity). The card and its tests ship in **PR D**.
 
 - [ ] **Step 2: Run them to verify they fail, then implement the four actions**
 
@@ -2006,40 +2258,30 @@ git commit -m "feat(tuning): suggestion card with apply, undo, dismiss, and rest
 
 ---
 
-### Task 16: Mount it on the builder
+### Task 16: Mount it — BLOCKED ON DESIGN, placement addendum
 
-**Files:**
-- Modify: `src/components/decks/builder-shell.tsx`
-- Test: `src/components/decks/builder-shell.test.tsx`
+**PR D.** Not started until the placement addendum returns and its readiness audit is approved.
 
-**Interfaces:**
-- Consumes: `TuningPanel` (Task 14), `DeckIntent` (Task 5), `TuningState` (Task 12).
-- Produces: no new exports. `BuilderShell` gains a `tuning: TuningState` prop.
+The tuning handoff mounts the panel and the intent control on the **Games** tab. It was drawn before the **Analysis** tab existed (#753), which now reads the same Deck Profile the evidence is built from and already hosts the synopsis slot (`SynopsisSlot`, `src/components/decks/analysis-panel.tsx:211`). Where the panel belongs — Games, Analysis, or split between them — is a design decision, and this plan does not make it.
 
-- [ ] **Step 1: Write the failing test**
+What the addendum must return, as named asks:
 
-```typescript
-it("shows the tuning panel on the Games tab", async () => {
-  render(<BuilderShell {...props} tuning={fresh} />);
-  await userEvent.click(screen.getByRole("tab", { name: /games/i }));
-  expect(screen.getByText(deckTuningCopy.panel.heading)).toBeInTheDocument();
-});
+1. **The tab** the panel and the intent control live on, at both widths.
+2. **The zero-evidence *Ready* state** and the retirement of S4 state 1 (Task 14).
+3. **The allowance's exhausted state**, drawn once for both model features.
 
-it("offers the intent ask beside the panel", async () => {
-  render(<BuilderShell {...props} tuning={fresh} deck={{ ...props.deck, intent: null }} />);
-  await userEvent.click(screen.getByRole("tab", { name: /games/i }));
-  expect(screen.getByText(deckTuningCopy.intent.askLabel)).toBeInTheDocument();
-});
-```
+What eng already knows about any answer, so the addendum need not solve it:
 
-- [ ] **Step 2: Run it, wire the panel and the intent control into the Games tab, run it again**
+- **Neither tab has an address.** `BuilderTabs` (`src/components/decks/builder-tabs.tsx:89`) is client state, so the mount cannot be a route loader conditional on the tab. The panel reads through `readTuningPanel` (Task 12) on first open, as the Analysis tab's `peekProfile` does, or the page loads it unconditionally; Task 12 step 4 leaves that choice here.
+- **`BuilderShell` is not mounted in jsdom** — `src/lib/decks/builder-tab-specs.ts` says it is too heavy, and no `builder-shell.test.tsx` exists. The mount's test is a `builderTabSpecs` case plus a browser probe that presses the tab (a URL sweep cannot reach a surface a press opens), not a render of the shell.
+- **`maxDuration`.** Server actions inherit the invoking route's limit, and `runTuning`'s budget is `MODEL_TIMEOUT_MS` (90s) plus the outcome write. Add `export const maxDuration = 120;` to `src/app/decks/[id]/page.tsx`; precedent `src/app/collection/replace/page.tsx:12`.
+- **The shell's owner.** `BuilderTabs` and the Analysis tab's frame are a shared surface (playbook); if the answer is the Analysis tab, the orchestrator sequences the edit.
 
-- [ ] **Step 3: Run the whole gate and commit**
+- [ ] **Step 1: Wire the panel where the addendum says, with the test named above**
+- [ ] **Step 2: Run the whole gate and commit**
 
 ```bash
 pnpm typecheck && pnpm lint && pnpm test && DATABASE_URL="postgres://stub:stub@localhost/stub" pnpm build
-git add src/components/decks/builder-shell.tsx src/components/decks/builder-shell.test.tsx
-git commit -m "feat(tuning): mount the tuning panel and intent on the builder"
 ```
 
 ---
@@ -2048,10 +2290,12 @@ git commit -m "feat(tuning): mount the tuning panel and intent on the builder"
 
 **Files:**
 - Create: `scripts/check-tuning.ts`, `scripts/fixtures/tuning-pack.json`
-- Modify: `package.json`, `.github/workflows/upstream-contracts.yml`
+- Modify: `package.json`, `.github/workflows/scryfall-contract.yml` (the "Upstream contract checks" workflow — there is no `upstream-contracts.yml`)
 
 **Interfaces:**
-- Consumes: `buildPrompt`, `tuningResponseSchema`, `callTuningModel`, `validateSuggestions`.
+- Consumes: `buildPrompt`, `tuningResponseSchema`, `callModel` with `TUNING_MODEL`, `validateSuggestions`.
+
+**PR C.** Its first run is also the cost measurement: print the response's `usage` and put the figure, and the `MODEL_DAILY_ALLOWANCE` it sets, in PR C's description (see *Cost*).
 - Produces: `pnpm check:tuning`.
 
 This is the only place a live API call happens outside a real run. It exists because the model is upstream in exactly the way Scryfall and ManaPool are, and a silent contract change would otherwise sit unnoticed.
@@ -2070,13 +2314,13 @@ Follow the shape of `scripts/check-scryfall-contract.ts`: read the key through `
 "check:tuning": "tsx scripts/check-tuning.ts"
 ```
 
-Add a step to `.github/workflows/upstream-contracts.yml` with `if: always()` so it runs even when an earlier check fails, gated on a repository variable — `TUNING_CHECK_ENABLED == 'true'` — matching how the price refresh and commander index workflows are gated. Unlike the Scryfall and ManaPool checks, this one costs money per run, so the gate is not optional.
+Add a step to `.github/workflows/scryfall-contract.yml`, after `check:spellbook`, with `if: always()` so it runs even when an earlier check fails, gated on a repository variable — `TUNING_CHECK_ENABLED == 'true'` — matching how the price refresh and commander index workflows are gated. Unlike the Scryfall and ManaPool checks, this one costs money per run, so the gate is not optional.
 
 - [ ] **Step 4: Run it locally once and commit**
 
 ```bash
 pnpm check:tuning
-git add scripts/check-tuning.ts scripts/fixtures/tuning-pack.json package.json .github/workflows/upstream-contracts.yml
+git add scripts/check-tuning.ts scripts/fixtures/tuning-pack.json package.json .github/workflows/scryfall-contract.yml
 git commit -m "feat(tuning): daily contract check against the live model"
 ```
 
@@ -2084,7 +2328,7 @@ git commit -m "feat(tuning): daily contract check against the live model"
 
 ### Task 18: Design review and PR
 
-**Files:** none created. This task is the gate.
+**Files:** none created. This task is the gate. Steps 1–3 are PR D's; steps 4–5 run for **each** of the four PRs, and every PR also runs the `pr-review` §10b pre-open pass before `gh pr create`.
 
 - [ ] **Step 1: Run the design-review skill's verify pass**
 
@@ -2103,32 +2347,34 @@ Only previously-flagged items. Zero gaps before the PR opens.
 ```bash
 pnpm typecheck && pnpm lint && pnpm test && DATABASE_URL="postgres://stub:stub@localhost/stub" pnpm build
 git fetch origin && git rebase origin/main
-git push -u origin feat/deck-tuning
+git push -u origin <branch>
 ```
 
-The PR body names the durability contract, the five failure classes, the `cancelled` status, and the fact that `ANTHROPIC_API_KEY` must be set in every Vercel project serving the builder before this merges.
+PR A's body names the new tables and that `ANTHROPIC_API_KEY` must be set in every Vercel project serving the builder before PR C merges. PR C's body names the durability contract, the five failure classes, the `cancelled` status, and the fact that `ANTHROPIC_API_KEY` must be set in every Vercel project serving the builder before this merges.
 
 - [ ] **Step 5: Copilot review rounds**
 
-Per the policy in `~/.claude/CLAUDE.md`. This PR touches a destructive path (apply and undo mutate the deck) and an integration that spends money — no round cap, and a clean round on the apply/undo path is not on its own a stop signal.
+Per the `pr-review` skill, including its round and time limits. PR C touches a destructive path (apply and undo mutate the deck), so its merge bar is clean-after-clean on that path.
 
 - [ ] **Step 6: Close out**
 
-Delete `design/design_handoff_the99_deck_tuning/` in the same PR — a consumed handoff becomes a second source of truth. The property table and the gap reports stay. Update `docs/superpowers/design-pipeline-status.md`.
+Keep `design/design_handoff_the99_deck_tuning/` and the placement addendum — handoffs are kept after a build. The property table and the gap reports stay. Update `docs/superpowers/design-pipeline-status.md` through whoever owns it at the time (the orchestrator sequences that file). Run `feature-acceptance` on PR D and again at the line's close.
 
 ---
 
 ## Self-Review
 
-**Spec coverage.** §4 data model → Task 1. §5 fingerprint, gate, ceiling → Tasks 6, 12. §6 reaper, error classes, guarded writes → Tasks 10, 11, 12. §7 pipeline and evidence pack → Tasks 7, 10, 11. §8 validation → Task 9. §9 testing strategy and `check:tuning` → Tasks 9, 17. §11 testing, including both halves of the reaper race → Task 11 Step 5. The note, intent, panel, card, and manifest surfaces → Tasks 3, 4, 5, 13, 14, 15, 16.
+**Revision 2026-09-23.** The six changes in the header note are carried into every task, not stated above them: no task imports `PATTERN_MIN`, gates on a game count, reads `DeckDetail` for the evidence, hashes the decklist privately, names a model inside `src/lib/model/`, or counts runs per hour. Paths were checked with `git ls-files` against `origin/main` at `67f29274`. Two questions this revision surfaced and did not answer, because they are Design's: where the panel lives, and what *Ready* says with no games (Tasks 14 and 16).
+
+**Spec coverage.** §4 data model → Task 1. §5 fingerprint, gate, allowance → Tasks 6, 10, 12. §6 reaper, error classes, guarded writes → Tasks 10, 11, 12. §7 pipeline and evidence pack → Tasks 7, 10, 11. §8 validation → Task 9. §9 testing strategy and `check:tuning` → Tasks 9, 17. §11 testing, including both halves of the reaper race → Task 11 Step 5. The note, intent, panel, card, and manifest surfaces → Tasks 3, 4, 5, 13, 14, 15, 16.
 
 **Gaps found and closed during review.** The spec never says where `Stop` writes; Task 11 resolves it with a fourth `status` value rather than overloading `failed`. The spec's error-class table has five entries but reads as four in one place; Global Constraints and Task 2's test both pin it at five. The seeded-intent provenance needed a column the spec does not name; Task 1 adds `intent_seeded`, Task 5 explains why one column covers both states, and Task 5 Step 6 gives it its only writer — without which state 4 would be unreachable.
 
 A pre-implementation code review of this plan found and closed eight further defects, each of which would have cost a task or worse:
 
 - `deck_suggestion_items` declared its card foreign keys as `text`, but `cards.oracleId` is `uuid` — the migration would not have applied. Both columns are now `uuid`.
-- `runTuning` enforced neither the fingerprint gate nor the hourly ceiling. A server action is a public endpoint, so both are now re-checked server-side through the same `gateReason` the panel uses.
-- `DeckDetail` does not carry `intent`, and four tasks read it. Task 3 Step 6 now extends `getDeckDetail`.
+- `runTuning` enforced neither the fingerprint gate nor the hourly ceiling (now the shared allowance). A server action is a public endpoint, so both are now re-checked server-side through the same `gateReason` the panel uses.
+- `DeckDetail` does not carry `intent`. Task 3 Step 6 extends `getDeckDetail` for the intent control; `runTuning` reads the column itself.
 - `logGame` takes `LogGameInput`, not `FormData`. Task 3 Step 5 was rewritten against the real signature.
 - `TuningItem` was used by Task 15 and defined nowhere, and nothing joined the name, ownership, or price the card renders. Task 12 now defines it and joins them.
 - `MODEL_TIMEOUT_MS` armed per attempt plus one retry could reach ~180s against a 120s route limit, orphaning the pending row. It is now one deadline across both attempts.
@@ -2139,4 +2385,4 @@ Also corrected: the reaper is scoped to the deck being read rather than sweeping
 
 **Type consistency.** `ValidatedSuggestion.addOracleId` (Task 9) matches `deckSuggestionItems.addOracleId` (Task 1). `TuningCitation` is declared once, in `schema.ts`, and imported by `validate.ts` and the card. `ManifestStep`'s four values match `manifestCopy`'s four groups and `readTuningEvidence`'s parameter. `gateReason` returns the same `GateReason` the panel switches on.
 
-**Open decisions carried into implementation.** None. Every question the audit left to eng is answered above: the fifth failure class, `Stop`'s status, the manifest's honesty, the timeout budget, and the intent provenance column.
+**Open decisions carried into implementation.** Two, both Design's and both gating PR D only: the placement addendum's tab, and its zero-evidence *Ready* and allowance states. One number is set by measurement in PR C: `MODEL_DAILY_ALLOWANCE`. Every question the original audit left to eng is answered above: the fifth failure class, `Stop`'s status, the manifest's honesty, the timeout budget, and the intent provenance column.
