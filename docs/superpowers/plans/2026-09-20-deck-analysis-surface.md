@@ -102,11 +102,11 @@ mutation-proved: PR 0 (#820), 3b (#821), 1b (#825), 4a's `verdictHead` (#828), 8
 7's `versionComparison` (#834), and the mark's size rules (#835). `upgradePath` shipped in
 Tier A. The bracket marks reached `public/` in #837 and the `--bracket-1…5` palette in #838.
 
-**4a and 4b shipped on 2026-09-22** as #851 and #853, and the row count is now SIXTEEN: the
-findings were split out of 4b as 4c, and 8b was split into 8b and 8c, each for the reason its own
-row gives. **5, 7 and 9 shipped the same day** as #862, #866 and #867 — see *What 5, 7 and 9
+**4a and 4b shipped on 2026-09-22** as #851 and #853, and the row count is now SEVENTEEN: the
+findings were split out of 4b as 4c, 8b was split into 8b and 8c, and 8b-ii was added at Hugh's
+request, each for the reason its own row gives. **5, 7 and 9 shipped the same day** as #862, #866 and #867 — see *What 5, 7 and 9
 settled* below — beside 4c and 6, which shipped in parallel as #863 and #865. 8b and 8b-ii
-shipped as #854 and #859, and 8c as #864. **All sixteen rows have shipped.** An earlier revision
+shipped as #854 and #859, and 8c as #864. **All seventeen rows have shipped.** An earlier revision
 of this paragraph called 8c open; #864 had already merged when it was written.
 
 ---
