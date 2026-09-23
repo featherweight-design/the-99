@@ -1575,7 +1575,7 @@ export type ApplySnapshot = {
 };
 
 export type TuningCitation = {
-  kind: "games" | "note" | "decklist" | "intent";
+  kind: "games" | "note" | "decklist" | "intent" | "mix";
   /** Rendered by the card. Never a percentage, never a net figure. */
   value: string;
 };

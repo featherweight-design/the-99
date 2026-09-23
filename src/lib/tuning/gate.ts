@@ -8,8 +8,8 @@ import type { TuningState } from "./state";
  *
  * Three reasons, the first that applies wins. NO GAME COUNT: a deck with no games runs.
  *  - in_flight — a run is pending on this deck.
- *  - unchanged — nothing the player did has moved since the last successful run, and no version
- *    has either. NOT a dead end: the panel draws `Suggest again anyway` enabled (design table S4
+ *  - unchanged — nothing the player did has moved since the last successful run, no model
+ *    version has either, and no deck version has been committed since. NOT a dead end: the panel draws `Suggest again anyway` enabled (design table S4
  *    state 5), and `runTuning(deckId, { anyway: true })` passes this reason and no other.
  *  - allowance — the shared per-player allowance is spent. After `unchanged`, because that is the
  *    more useful truth: a player told to wait for the allowance would come back to be told nothing
@@ -26,7 +26,7 @@ export function gateReason(state: TuningState): GateReason | null {
   if (state.run?.status === "pending") {
     return { kind: "in_flight", message: deckTuningCopy.announce.started };
   }
-  if (!state.stale && !state.versionMoved && state.lastOkFingerprint !== null) {
+  if (!state.stale && !state.modelVersionMoved && !state.retired && state.lastOkFingerprint !== null) {
     return { kind: "unchanged", message: deckTuningCopy.announce.unchanged };
   }
   if (state.allowance.used >= state.allowance.limit) {

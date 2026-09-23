@@ -10,6 +10,7 @@ import {
   deckSuggestionItems,
   deckSuggestionRuns,
   decks,
+  deckVersions,
 } from "../../db/schema";
 import { readAllowance, settleModelCall } from "../model/allowance";
 import { cacheForUser } from "../cache/user-lists";
@@ -153,6 +154,7 @@ export async function readTuningState(
     }).from(deckSuggestionRuns).where(and(runOf, mine))
       .orderBy(desc(deckSuggestionRuns.createdAt)).limit(1),
     db.select({
+      id: deckSuggestionRuns.id,
       fingerprint: deckSuggestionRuns.inputFingerprint,
       createdAt: deckSuggestionRuns.createdAt,
       promptVersion: deckSuggestionRuns.promptVersion,
@@ -174,7 +176,8 @@ export async function readTuningState(
     lastOkFingerprint: lastOk?.fingerprint ?? null,
     lastOkAt: lastOk?.createdAt ?? null,
     stale: lastOk ? lastOk.fingerprint !== fingerprint : false,
-    versionMoved: lastOk
+    retired: lastOk ? await readRetired(deckId, lastOk.id) : null,
+    modelVersionMoved: lastOk
       ? lastOk.promptVersion !== PROMPT_VERSION || lastOk.profileVersion !== PROFILE_VERSION
       : false,
     allowance,
@@ -182,12 +185,33 @@ export async function readTuningState(
   };
 }
 
+/**
+ * A version committed after the run means the set was read against an older deck. The run's own
+ * version is the newest committed at or before it; the deck's is the newest of all. Derived from
+ * `deck_versions.committed_at` against the run's `created_at`, both stamped by the database's
+ * clock and compared INSIDE the query, so no column on the run is needed and no timestamp makes
+ * a round trip through JavaScript's milliseconds.
+ */
+async function readRetired(deckId: string, runId: string): Promise<TuningState["retired"]> {
+  const rows = await db.execute<{ newest: number | null; at_run: number | null; retired: boolean }>(sql`
+    select
+      (select max(v.number) from ${deckVersions} v where v.deck_id = ${deckId}) as newest,
+      (select max(v.number) from ${deckVersions} v
+        where v.deck_id = ${deckId} and v.committed_at <= r.created_at) as at_run,
+      exists (select 1 from ${deckVersions} v
+        where v.deck_id = ${deckId} and v.committed_at > r.created_at) as retired
+    from ${deckSuggestionRuns} r where r.id = ${runId}`);
+  const [r] = rows.rows;
+  if (!r || !r.retired || r.newest === null) return null;
+  return { from: r.at_run, to: r.newest };
+}
+
 async function readItems(runId: string, deckId: string, userId: string): Promise<TuningItem[]> {
   const rows = await db.execute<{
     id: string; add_oracle_id: string; add_name: string; add_type_line: string;
     cut_oracle_id: string; cut_name: string; rationale: string; rationale_short: string;
     evidence: TuningItem["evidence"]; position: number; verdict: TuningItem["verdict"];
-    bracket_after: number[] | null; owned_quantity: number;
+    bracket_after: number[] | null; owned_quantity: number; applies: boolean;
   }>(sql`
     select i.id, i.add_oracle_id, a.name as add_name, a.type_line as add_type_line,
            i.cut_oracle_id, c.name as cut_name, i.rationale, i.rationale_short, i.evidence,
@@ -195,7 +219,13 @@ async function readItems(runId: string, deckId: string, userId: string): Promise
            coalesce((
              select sum(ci.quantity) from ${collectionItems} ci
              where ci.user_id = ${userId} and ci.oracle_id = i.add_oracle_id
-           ), 0)::int as owned_quantity
+           ), 0)::int as owned_quantity,
+           -- The swap can still be made: the cut is in the deck, and the add is not (a basic
+           -- may be held already; the apply adds a copy). The apply checks the same rule.
+           (exists (select 1 from ${deckCards} dc where dc.deck_id = ${deckId} and dc.oracle_id = i.cut_oracle_id)
+             and (a.type_line like '%Basic%' or not exists (
+               select 1 from ${deckCards} dc where dc.deck_id = ${deckId} and dc.oracle_id = i.add_oracle_id)))
+             as applies
     from ${deckSuggestionItems} i
     join ${cards} a on a.oracle_id = i.add_oracle_id
     join ${cards} c on c.oracle_id = i.cut_oracle_id
@@ -222,6 +252,7 @@ async function readItems(runId: string, deckId: string, userId: string): Promise
       ownedQuantity: r.owned_quantity,
       priceCents: fact ? priceOf(fact, priceState(fact, newestAsOf)) : null,
       bracketAfter: r.bracket_after,
+      applies: r.applies,
     };
   });
 }

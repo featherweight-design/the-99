@@ -81,4 +81,31 @@ describe("presentationFailures", () => {
     expect(presentationFailures("On 2026-09-01 you wrote “flooded out on turn six”.", notes)).toEqual([]);
     expect(presentationFailures('You wrote "flooded on turn six".', notes)).toContain("quotedNote");
   });
+
+  // ── The addendum's forms and rules (C-fix, audit findings 6 and 7) ─────────────────────
+  it("accepts a possessed denominator and a word numerator, as Design's samples write them", () => {
+    expect(presentationFailures("4 of your 99 cards draw anything.", [])).toEqual([]);
+    expect(presentationFailures("It paid off in none of the 9 games.", [])).toEqual([]);
+    expect(presentationFailures("It is one of 11 cards at four or more.", [])).toEqual([]);
+    expect(presentationFailures("It is in 11 cards.", [])).toContain("denominator");
+  });
+
+  it("drops a rationale that names a bracket", () => {
+    expect(presentationFailures("This keeps the deck in its bracket.", [])).toContain("noBracketClaim");
+    expect(presentationFailures("A fine card for Optimized tables.", [])).toContain("noBracketClaim");
+    expect(presentationFailures("The core of the deck stays.", [])).toEqual([]);
+  });
+
+  it("drops a rationale that promises a result, and keeps a record already logged", () => {
+    for (const claim of ["This swap will win you games.", "You would lose less.", "It makes the deck stronger.", "Win more with it."]) {
+      expect(presentationFailures(claim, [])).toContain("noResultClaim");
+    }
+    expect(presentationFailures("You won 1 of 5 games.", [])).toEqual([]);
+  });
+
+  it("reads the player's own quoted words as theirs, not the model's claim", () => {
+    const intent = [{ text: "I want to win late", date: null }];
+    expect(presentationFailures("You said \u201cI want to win late\u201d.", intent)).toEqual([]);
+  });
 });
+

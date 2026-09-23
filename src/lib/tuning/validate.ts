@@ -1,7 +1,8 @@
 import { validateCardForDeck } from "../decks/add-validation";
 import type { TuningCitation } from "../../db/schema";
 import type { EvidencePack } from "./evidence";
-import { presentationFailures, type Quotable, type RuleKey } from "./presentation";
+import { noteDate, packYear } from "./note-date";
+import { NUMBER_WORDS, presentationFailures, type Quotable, type RuleKey } from "./presentation";
 import { axisLabel, oneLine } from "./prompt";
 import type { TuningResponse, TuningSuggestion } from "./response-schema";
 
@@ -47,8 +48,9 @@ export function validateSuggestions(args: {
   const inDeck = new Map(pack.cards.map((c) => [c.oracleId, c]));
   // Everything the player wrote that a suggestion may quote: each note with its game's date, as
   // the prompt renders it, and the intent, which has none. In the one-line form the prompt showed.
+  const year = packYear(pack.play.games);
   const quotable: Quotable[] = [
-    ...pack.play.games.flatMap((g) => (g.note === null ? [] : [{ text: oneLine(g.note), date: g.playedAt.slice(0, 10) }])),
+    ...pack.play.games.flatMap((g) => (g.note === null ? [] : [{ text: oneLine(g.note), date: noteDate(g.playedAt, year) }])),
     ...(pack.intent === null ? [] : [{ text: oneLine(pack.intent), date: null }]),
   ];
   const [primary, partner] = pack.commanders;
@@ -104,7 +106,7 @@ export function validateSuggestions(args: {
     if (usedAdds.has(add.oracleId) || usedCuts.has(cut.oracleId)) return "duplicate";
 
     for (const c of s.evidence) {
-      if (!citationHolds(c)) return "citation";
+      if (!citationHolds(c, s)) return "citation";
     }
 
     for (const text of [s.rationale, s.rationaleShort, ...s.evidence.map((c) => c.value)]) {
@@ -125,48 +127,77 @@ export function validateSuggestions(args: {
       ...axes.flatMap((a) => {
         const label = new RegExp(escapeRegExp(axisLabel(a.key).toLowerCase()));
         return [
-          { words: [label, /\bhurt/], n: a.hurt },
-          { words: [label, /\bwork/], n: a.worked },
+          { words: [label, HURT], n: a.hurt },
+          { words: [label, WORKED], n: a.worked },
         ];
       }),
     ];
   }
 
-  function citationHolds(c: TuningCitation): boolean {
+  /** The one `N of M` figure in a citation — a word numerator read as its number — or null
+   *  when there is none or more than one: two figures cannot be tied to the claims they label
+   *  without parsing the sentence, and a suggestion has four citations for its facts. */
+  function oneFigure(text: string, nouns: string): { n: number; m: number } | null {
+    const figures = [...text.matchAll(new RegExp(`\\b(\\d+|${NUMBER_WORDS})\\s+of\\s+(?:the\\s+|your\\s+)?(\\d+)(?:\\s+${nouns})?\\b`, "g"))];
+    if (figures.length !== 1) return null;
+    const [, n, m] = figures[0];
+    return { n: /^\d+$/.test(n) ? Number(n) : NUMBER_WORDS.split("|").indexOf(n), m: Number(m) };
+  }
+
+  function citationHolds(c: TuningCitation, s: TuningSuggestion): boolean {
     const count = pack.play.summary.count;
+    const text = c.value.toLowerCase();
     switch (c.kind) {
       case "games": {
         if (count === 0) return false;
-        // Every `N of M games` in it must be about the games actually read — M the count — and N
-        // must be what the prompt stated for a claim the citation NAMES: `Mana hurt in 5 of 5`
-        // is refused when mana hurt in 3, though 5 is the count. A figure no named claim carries
-        // is a count the model made up, however plausible.
-        const text = c.value.toLowerCase();
-        // ONE figure per citation. With two, the figures cannot be tied to the claims they label
-        // without parsing the sentence, and swapped numerators pass; a suggestion with two facts
-        // to cite has up to four citations to cite them in.
-        const figures = [...text.matchAll(/(\d+)\s+of\s+(\d+)\s+games?\b/g)];
-        if (figures.length !== 1) return false;
-        const [, n, m] = figures[0];
-        return Number(m) === count
-          && gameClaims().some((claim) => claim.n === Number(n) && claim.words.every((w) => w.test(text)));
+        // The figure must be about the games actually read — M the count — and N must be what
+        // the prompt stated for a claim the citation NAMES: `Mana hurt in 5 of 5` is refused
+        // when mana hurt in 3, though 5 is the count. "games" may be left implied, as Design's
+        // `cards in hand · 7 of 9` leaves it. An axis named with no direction may carry either
+        // of its figures, since both were stated; a direction, when given, must be the right one.
+        const figure = oneFigure(text, "games?");
+        if (!figure || figure.m !== count) return false;
+        const directed = HURT.test(text) || WORKED.test(text);
+        return gameClaims().some((claim) => claim.n === figure.n
+          && claim.words.every((w) => w.test(text) || (!directed && (w === HURT || w === WORKED))));
       }
-      case "note":
-        // `suggestionRules.quotedNote`: the note byte-identical, IN QUOTATION MARKS, WITH ITS DATE,
-        // the date of the game it was written about, as the prompt renders it.
-        // In the one-line form the prompt showed, which is the only form the model could quote.
-        return pack.play.games.some((g) => g.note !== null
-          && (c.value.includes(`"${oneLine(g.note)}"`) || c.value.includes(`\u201c${oneLine(g.note)}\u201d`))
-          && c.value.includes(g.playedAt.slice(0, 10)));
-      case "intent":
-        // The player's own words, cited verbatim: a citation that names some other purpose is
+      case "note": {
+        // Design's form: the citation names the note's date as the notes list writes it
+        // (`26 Aug`), and the suggestion quotes that note — `suggestionRules.quotedNote` then
+        // holds the quotation to the byte and to its date wherever it appears.
+        const year = packYear(pack.play.games);
+        const own = [s.rationale, s.rationaleShort, ...s.evidence.map((e) => e.value)];
+        return pack.play.games.some((g) => {
+          if (g.note === null || !c.value.includes(noteDate(g.playedAt, year))) return false;
+          const note = oneLine(g.note);
+          return own.some((t) => t.includes(`"${note}"`) || t.includes(`\u201c${note}\u201d`));
+        });
+      }
+      case "intent": {
+        // The player's own words, whole or a part of them (Design cites `win late` out of a
+        // longer line). A part must be at least a word; a citation naming some other purpose is
         // not evidence of this one.
-        return pack.intent !== null && c.value.includes(oneLine(pack.intent));
+        if (pack.intent === null) return false;
+        const intent = oneLine(pack.intent);
+        const words = c.value.trim().replace(/^["\u201c]|["\u201d]$/g, "").trim();
+        return c.value.includes(intent) || (words.length >= 3 && intent.includes(words));
+      }
+      case "mix": {
+        // A target and its figure, as the targets list writes it: `draw 4 of 10`. The cell the
+        // citation names must carry exactly that have and target.
+        const figure = oneFigure(text, "cards?");
+        return figure !== null && pack.targets.roles.some((cell) =>
+          cell.have === figure.n && cell.target === figure.m && text.includes(cell.role.replace(/s$/, "")));
+      }
       case "decklist":
         return true;
     }
   }
 }
+
+/** A citation's direction: the axis worked against the player, or for them. */
+const HURT = /\bhurt|\bagainst\b/;
+const WORKED = /\bwork|\bfor you\b/;
 
 function escapeRegExp(text: string): string {
   return text.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");

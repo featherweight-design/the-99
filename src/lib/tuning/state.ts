@@ -26,6 +26,10 @@ export type TuningItem = {
   priceCents: number | null;
   /** The bracket flag: the deck's permits with this swap, or null when it moves nothing. */
   bracketAfter: number[] | null;
+  /** Whether the swap can still be made: the deck still holds the cut, and does not already
+   *  hold the add (a basic excepted). Design's `no longer applies` row; apply refuses one that
+   *  does not, whatever the panel drew. */
+  applies: boolean;
 };
 
 export type TuningRun = {
@@ -46,9 +50,15 @@ export type TuningState = {
   lastOkAt: Date | null;
   /** lastOkFingerprint !== the fingerprint passed in — the PLAYER changed something. */
   stale: boolean;
-  /** The newest ok run's prompt or profile version differs from the current one. Reopens the
-   *  gate as its own reason; never folded into `stale`. */
-  versionMoved: boolean;
+  /** The newest ok run's prompt or profile version differs from the current one — the MODEL's
+   *  inputs moved, not the deck's. Reopens the gate as its own reason; never folded into `stale`.
+   *  Named for what moved, because a deck has versions too and `retired` is about those. */
+  modelVersionMoved: boolean;
+  /** A deck version committed since the newest ok run: the set was read against the deck as it
+   *  stood then (`from`, null for a deck that had no version yet) and the deck is now at `to`.
+   *  Design's "retired by a commit" state. It reopens the gate: a commit is a new baseline even
+   *  when the list did not move, so `Suggest changes` is not refused as "nothing changed". */
+  retired: { from: number | null; to: number } | null;
   /** The reader's shared model allowance — tuning and the synopsis together. */
   allowance: Allowance;
   /** What the evidence will hold, for the panel's copy. Gates nothing. */

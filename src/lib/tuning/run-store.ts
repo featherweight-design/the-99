@@ -51,7 +51,10 @@ export async function startRun(
       const [row] = await tx.insert(deckSuggestionRuns).values({
         deckId, userId, inputFingerprint: fingerprint, modelCallId: unit.id,
         model: TUNING_MODEL, promptVersion: PROMPT_VERSION, profileVersion: PROFILE_VERSION,
-        status: "pending", createdAt: now,
+        // No `createdAt`: the database stamps it, as it stamps `deck_versions.committed_at`,
+        // which is what a run is compared with to know whether a commit retired its set. A JS
+        // clock here put a version committed before the run after it, on any skew at all.
+        status: "pending",
       }).returning({ id: deckSuggestionRuns.id });
       return row.id;
     });

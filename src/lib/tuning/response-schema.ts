@@ -12,7 +12,7 @@ import { MAX_SUGGESTIONS } from "./limits";
  * answer that becomes the `ungrounded` outcome, not a schema failure.
  */
 export const citationSchema = z.object({
-  kind: z.enum(["games", "note", "decklist", "intent"]),
+  kind: z.enum(["games", "note", "decklist", "intent", "mix"]),
   value: z.string().min(1).max(160),
 });
 

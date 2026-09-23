@@ -7,8 +7,9 @@ import { countCharacters, deckTuningCopy } from "../copy/deck-tuning";
  * in `src/lib/model/allowance-rule.ts`.
  */
 
-/** At most three swaps. Fewer is legitimate; zero that survive checking is `ungrounded`. */
-export const MAX_SUGGESTIONS = 3;
+/** At most five swaps (Hugh, 2026-09-23, as Design drew). Fewer is legitimate; zero that survive
+ *  checking is `ungrounded`. */
+export const MAX_SUGGESTIONS = 5;
 
 /** A pending run older than this was abandoned, and the read-time reaper fails it. */
 export const REAPER_CUTOFF_MS = 5 * 60 * 1000;
@@ -40,8 +41,13 @@ export function seededIntent(commanderNames: readonly string[]): string {
   return seededBriefShort(`${[...names].slice(0, room).join("")}\u2026`);
 }
 
-/** Three short suggestions with their evidence fit well inside this. */
-export const TUNING_MAX_TOKENS = 2_000;
+/**
+ * Sized from the response schema's own caps rather than guessed. One suggestion at its longest is
+ * 200 + 200 + 400 + 80 characters of text plus four 160-character citations: 1,520 characters,
+ * about 400 tokens, and about 460 with its JSON keys. Five of those is about 2,300. The ceiling
+ * leaves room over that worst case without inviting the model to pad.
+ */
+export const TUNING_MAX_TOKENS = 3_000;
 
 /**
  * Whether a deck intent is over the cap, counted in code points as the column's

@@ -46,10 +46,10 @@ describe("buildPrompt", () => {
     expect(user).toContain("in 200 of 336 commanders");
   });
 
-  it("renders a note verbatim with its date, unwrapped so a quote inside it cannot collide", () => {
-    expect(buildPrompt(pack).user).toContain("- 2026-09-01: flooded out on turn six\n");
+  it("renders a note verbatim with its date as the game log draws it, unwrapped so a quote inside it cannot collide", () => {
+    expect(buildPrompt(pack).user).toContain("- 1 Sep: flooded out on turn six\n");
     const quoted = { ...pack, play: buildPlayGroup([game("g1", { note: 'I said "keep lands"' })]) };
-    expect(buildPrompt(quoted).user).toContain('- 2026-09-01: I said "keep lands"');
+    expect(buildPrompt(quoted).user).toContain('- 1 Sep: I said "keep lands"');
   });
 
   it("carries the record with its denominator", () => {
