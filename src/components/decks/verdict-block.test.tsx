@@ -1,11 +1,12 @@
-import { render, screen } from "@testing-library/react";
+import { render, screen, within } from "@testing-library/react";
 import { describe, expect, it } from "vitest";
 
 import { slotDeck } from "../../lib/bracket/slot";
 import type { ComboRef, FlagSource } from "../../lib/profile/types";
 import { deckAnalysisCopy } from "../../lib/copy/deck-analysis";
 import { COMMANDER, deckProfile, population, profileCard } from "./__fixtures__/deck-profile";
-import { VerdictBlock } from "./verdict-block";
+import { VerdictBlock, analyzedWhen } from "./verdict-block";
+import { DIM_OPACITY } from "./bracket-mark";
 
 /**
  * Every case here is built from a REAL profile through the REAL verdict, because the readings
@@ -85,33 +86,50 @@ const draw = (key: keyof typeof SHAPES, permits = key as string) => {
   const profile = SHAPES[key]();
   const verdict = slotDeck(profile);
   expect(verdict.permits.join(",")).toBe(permits);
-  render(<VerdictBlock verdict={verdict} profile={profile} />);
+  render(<VerdictBlock analyzedAt={new Date().toISOString()} verdict={verdict} profile={profile} />);
   return verdict;
 };
 
-describe("the face and the chip", () => {
-  it("names both brackets and says Split on a range", () => {
+describe("the head (Analysis tab handoff §2, row 2)", () => {
+  // A RANGE draws both marks, the upper at 0.65 with a `/` between them, and names both brackets.
+  // No label, no pill, and no `Split`: the redrawn box retires all three.
+  it("names both brackets beside both marks on a range", () => {
     draw("4,5");
-    expect(screen.getByText("Optimized or cEDH")).toBeTruthy();
-    expect(screen.getByText(deckAnalysisCopy.verdict.splitChip)).toBeTruthy();
-    const marks = screen.getAllByTestId("bracket-mark");
+    expect(screen.getByTestId("verdict-name").textContent).toBe("Optimized or cEDH");
+    const marks = within(screen.getByTestId("verdict-marks")).getAllByTestId("bracket-mark");
     expect(marks.map((m) => m.dataset.bracket)).toEqual(["4", "5"]);
+    expect((marks[1].parentElement as HTMLElement).style.opacity).toBe(String(DIM_OPACITY));
+    expect(screen.getByTestId("verdict-marks").textContent).toContain("/");
+    expect(screen.queryByText("Split")).toBeNull();
+    expect(screen.queryByRole("heading", { name: deckAnalysisCopy.verdict.heading })).toBeNull();
   });
 
-  it("names one bracket and draws one mark on an exact reading", () => {
+  it("names one bracket once, beside one mark, on an exact reading", () => {
     draw("3");
-    // TWICE, and that is the drawing: the face names the bracket and the chip beside the mark
-    // names it again, exactly as the canvas draws `Core` over `2 Core`.
-    expect(screen.getAllByText("Upgraded")).toHaveLength(2);
-    expect(screen.queryByText(deckAnalysisCopy.verdict.splitChip)).toBeNull();
+    expect(screen.getAllByText("Upgraded")).toHaveLength(1);
     expect(screen.getAllByTestId("bracket-mark")).toHaveLength(1);
   });
 
-  // THE LOWER MEMBER INKS THE PILL, derived rather than listed — `[1,2]` takes `--bracket-1` and
-  // `[4,5]` takes `--bracket-4`, and a third range could not arrive inkless.
-  it("inks the chip from the range's lower member", () => {
+  // THE LOWER MEMBER INKS THE NAME, derived rather than listed: `[1,2]` takes `--bracket-1`.
+  it("inks the name from the range's lower member", () => {
     draw("1,2");
-    expect(screen.getByText("Split").getAttribute("style")).toContain("var(--bracket-1)");
+    expect(screen.getByTestId("verdict-name").getAttribute("style")).toContain("var(--bracket-1)");
+  });
+
+  it("dates the reading under the name", () => {
+    draw("3");
+    expect(screen.getByTestId("verdict-analyzed").textContent).toBe("analyzed a moment ago");
+  });
+});
+
+describe("analyzedWhen", () => {
+  const at = new Date("2026-09-18T12:00:00Z");
+  const after = (ms: number) => new Date(at.getTime() + ms);
+  it("is a moment, then minutes, then the short date at the hour", () => {
+    expect(analyzedWhen(at, after(30_000))).toBe("a moment ago");
+    expect(analyzedWhen(at, after(60_000))).toBe("1 minute ago");
+    expect(analyzedWhen(at, after(59 * 60_000))).toBe("59 minutes ago");
+    expect(analyzedWhen(at, after(60 * 60_000))).toBe("18 Sep");
   });
 });
 
@@ -147,7 +165,7 @@ describe("the sub-line", () => {
   // `deck-analysis.test.ts`.
   it("says `none at all` on every ruled-out reading a deck can reach", () => {
     for (const key of ["2", "3", "3-two-rules"] as const) {
-      const { unmount } = render(<VerdictBlock {...drawn(key)} />);
+      const { unmount } = render(<VerdictBlock analyzedAt={new Date().toISOString()} {...drawn(key)} />);
       expect(screen.getByText(/allows none at all\./)).toBeTruthy();
       expect(screen.queryByText(/allows only/)).toBeNull();
       unmount();
@@ -196,7 +214,7 @@ describe("the sub-line", () => {
 describe("the population line", () => {
   const withPopulation = (counts: Parameters<typeof population>[0], of: "commander" | "pair" = "commander") => {
     const profile = deckProfile({ population: population(counts, of) });
-    render(<VerdictBlock verdict={slotDeck(profile)} profile={profile} />);
+    render(<VerdictBlock analyzedAt={new Date().toISOString()} verdict={slotDeck(profile)} profile={profile} />);
   };
 
   it("carries the denominator inside the sentence", () => {
@@ -215,7 +233,7 @@ describe("the population line", () => {
   // claim — and 27 commanders are in the first case.
   it("reports absent rather than zero where EDHREC has no declarations", () => {
     const profile = deckProfile();
-    render(<VerdictBlock verdict={slotDeck(profile)} profile={profile} />);
+    render(<VerdictBlock analyzedAt={new Date().toISOString()} verdict={slotDeck(profile)} profile={profile} />);
     expect(
       screen.getByText("EDHREC has no declared brackets for Myrel, Shield of Argive."),
     ).toBeTruthy();
@@ -240,7 +258,7 @@ describe("the population line", () => {
       commanderOracleIds: [COMMANDER.oracleId, PARTNER.oracleId],
       population: population({ "1": 5 }, "pair"),
     });
-    render(<VerdictBlock verdict={slotDeck(profile)} profile={profile} />);
+    render(<VerdictBlock analyzedAt={new Date().toISOString()} verdict={slotDeck(profile)} profile={profile} />);
     expect(screen.getByText(/Myrel, Shield of Argive and Tymna the Weaver decks/)).toBeTruthy();
   });
 });

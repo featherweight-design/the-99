@@ -64,7 +64,7 @@ export function LeanLine({
       >
         {copy.lean.label}
       </span>
-      <p className="m-0 text-[12.5px] leading-[1.6]" style={{ color: "var(--fg-muted)" }}>
+      <p className="m-0 text-[12.5px] leading-[1.6] [text-wrap:pretty]" style={{ color: "var(--fg-muted)" }}>
         {parts.map((part, i) =>
           i === 1 || i === 3 ? (
             <CardDetailTrigger
@@ -85,9 +85,11 @@ export function LeanLine({
         type="button"
         onClick={() => setOpen(true)}
         aria-haspopup="dialog"
-        className="self-start mt-[2px] inline-flex min-h-[44px] md:min-h-0 items-center bg-transparent border-0 p-0 font-mono text-[10px] cursor-pointer text-[color:var(--accent)]"
+        className="self-start mt-[2px] inline-flex min-h-[44px] md:min-h-0 items-center gap-[6px] bg-transparent border-0 p-0 font-mono text-[10px] cursor-pointer text-[color:var(--accent)]"
       >
+        {/* The arrow because it opens a sheet: every opener on the tab carries one (§2). */}
         <span className="border-b border-dotted border-[color:var(--accent)]">{copy.lean.open}</span>
+        <span aria-hidden>→</span>
       </button>
       {open ? (
         <ReasoningModal

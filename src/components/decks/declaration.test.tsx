@@ -3,10 +3,19 @@ import { describe, expect, it, vi } from "vitest";
 
 import { slotDeck } from "../../lib/bracket/slot";
 import type { Bracket } from "../../lib/bracket/types";
-import { deckAnalysisCopy } from "../../lib/copy/deck-analysis";
 import { declarationCopy } from "../../lib/copy/declaration";
 import { COMMANDER, deckProfile, profileCard } from "./__fixtures__/deck-profile";
 import { VerdictBlock } from "./verdict-block";
+
+/** What a button says aloud: its text outside `aria-hidden` subtrees, where the mark's numeral is. */
+const spoken = (el: HTMLElement): string => {
+  const walker = document.createTreeWalker(el, NodeFilter.SHOW_TEXT);
+  let out = "";
+  for (let n = walker.nextNode(); n; n = walker.nextNode()) {
+    if (!n.parentElement?.closest("[aria-hidden='true']")) out += n.textContent ?? "";
+  }
+  return out;
+};
 
 /**
  * The declaration inside the verdict block, drawn from REAL profiles through the REAL verdict.
@@ -37,7 +46,7 @@ function draw(
   expect(verdict.permits.join(",")).toBe(key);
   const onDeclare = vi.fn();
   render(
-    <VerdictBlock
+    <VerdictBlock analyzedAt={new Date().toISOString()}
       verdict={verdict}
       profile={profile}
       declaration={{
@@ -60,17 +69,18 @@ describe("the ask", () => {
     const { onDeclare } = draw("4,5", null);
     expect(screen.getByText(declarationCopy.ask.lead)).toBeTruthy();
     const buttons = chips().getAllByRole("button");
-    expect(buttons.map((b) => b.textContent)).toEqual(["Optimized", "cEDH"]);
+    expect(buttons.map(spoken)).toEqual(["Optimized", "cEDH"]);
     fireEvent.click(buttons[1]);
     expect(onDeclare).toHaveBeenCalledWith(5);
     // The face still asks: the range, and the split pill.
     expect(screen.getByText("Optimized or cEDH")).toBeTruthy();
-    expect(screen.getByText(deckAnalysisCopy.verdict.splitChip)).toBeTruthy();
+    // The range draws both of its marks, and no pill (the Analysis tab handoff retires it).
+    expect(screen.getAllByTestId("bracket-mark").map((m) => m.dataset.bracket).slice(0, 2)).toEqual(["4", "5"]);
   });
 
   it("asks on the low range too", () => {
     draw("1,2", null);
-    expect(chips().getAllByRole("button").map((b) => b.textContent)).toEqual(["Exhibition", "Core"]);
+    expect(chips().getAllByRole("button").map(spoken)).toEqual(["Exhibition", "Core"]);
   });
 
   // THERE IS NO SKIP. No control on the surface may dismiss the question.
@@ -106,7 +116,6 @@ describe("the answer", () => {
   it("resolves the face to the declared bracket and moves the range below it", () => {
     draw("4,5", 5);
     expect(screen.queryByText("Optimized or cEDH")).toBeNull();
-    expect(screen.queryByText(deckAnalysisCopy.verdict.splitChip)).toBeNull();
     expect(screen.getAllByTestId("bracket-mark").map((m) => m.dataset.bracket)).toEqual(["5"]);
     expect(screen.getByText(declarationCopy.declared.permitsBelow([4, 5]))).toBeTruthy();
     expect(screen.queryByRole("group")).toBeNull();
@@ -136,11 +145,12 @@ describe("the answer", () => {
   it("re-asks the same range when change is pressed", () => {
     const { onDeclare } = draw("4,5", 4);
     fireEvent.click(screen.getByRole("button", { name: declarationCopy.declared.change }));
-    expect(chips().getAllByRole("button").map((b) => b.textContent)).toEqual(["Optimized", "cEDH"]);
+    expect(chips().getAllByRole("button").map(spoken)).toEqual(["Optimized", "cEDH"]);
     expect(onDeclare).not.toHaveBeenCalled();
     // THE WHOLE READING RETURNS TO THE ASK: the range's face and split pill, not the answer's.
     expect(screen.getByText("Optimized or cEDH")).toBeTruthy();
-    expect(screen.getByText(deckAnalysisCopy.verdict.splitChip)).toBeTruthy();
+    // The range draws both of its marks, and no pill (the Analysis tab handoff retires it).
+    expect(screen.getAllByTestId("bracket-mark").map((m) => m.dataset.bracket).slice(0, 2)).toEqual(["4", "5"]);
     expect(screen.queryByText(declarationCopy.declared.permitsBelow([4, 5]))).toBeNull();
   });
 });

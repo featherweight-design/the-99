@@ -1,0 +1,131 @@
+{
+  "feature": "Analysis tab, consolidated \u2014 PR B, the tab with a current reading",
+  "note": "The tab body before and with a reading (Analysis tab handoff \u00a72). Needs a server with ANALYSIS_TAB_ENABLED=true and four decks the signed-in account owns: ANALYSIS_EMPTY_DECK with NO stored reading (the empty state; on local-dev d0000000-0000-4000-8000-00000000d5b1), and three WITH one, because a stored reading draws on open with no press: ANALYSIS_DECK (d\u2026cafe), ANALYSIS_SPLIT_DECK, a range left unanswered (d\u2026d5a2), and ANALYSIS_LEAN_DECK, a single bracket with a lean (d\u2026c0b1). Every row reaches the tab by a PRESS, because BuilderTabs is client state and has no address. Each row scrolls to its surface, because on a phone the deck's own head fills the first screen and a cell would photograph that instead.",
+  "rows": [
+    {
+      "id": "empty-idle",
+      "label": "/decks/[id] Analysis \u2014 2a, before a reading: the ring, Analyze and the opener; no grid",
+      "view": "src/components/decks/analysis-empty.tsx",
+      "steps": [
+        {
+          "goto": "/decks/${ANALYSIS_EMPTY_DECK}",
+          "wait": "[role=tablist]",
+          "settle": 1500
+        },
+        {
+          "clickRole": "tab",
+          "name": "Analysis",
+          "settle": 700
+        },
+        {
+          "wait": "[data-testid='analysis-empty']",
+          "settle": 900
+        },
+        {
+          "scrollTo": "[data-testid='analysis-empty']",
+          "settle": 400
+        }
+      ]
+    },
+    {
+      "id": "reading-exact",
+      "label": "/decks/[id] Analysis \u2014 a single bracket: the box beside the climb at 1300, box first at 390",
+      "view": "src/components/decks/analysis-panel.tsx",
+      "steps": [
+        {
+          "goto": "/decks/${ANALYSIS_DECK}",
+          "wait": "[role=tablist]",
+          "settle": 1500
+        },
+        {
+          "clickRole": "tab",
+          "name": "Analysis",
+          "settle": 700
+        },
+        {
+          "wait": "section[aria-label='Your bracket']",
+          "settle": 900
+        },
+        {
+          "scrollTo": "section[aria-label='Your bracket']",
+          "settle": 400
+        }
+      ]
+    },
+    {
+      "id": "reading-range-asked",
+      "label": "/decks/[id] Analysis \u2014 2e, a range asked: two marks, Optimized or cEDH, the ask chips",
+      "view": "src/components/decks/verdict-block.tsx",
+      "steps": [
+        {
+          "goto": "/decks/${ANALYSIS_SPLIT_DECK}",
+          "wait": "[role=tablist]",
+          "settle": 1500
+        },
+        {
+          "clickRole": "tab",
+          "name": "Analysis",
+          "settle": 700
+        },
+        {
+          "wait": "section[aria-label='Your bracket']",
+          "settle": 900
+        },
+        {
+          "scrollTo": "section[aria-label='Your bracket']",
+          "settle": 400
+        }
+      ]
+    },
+    {
+      "id": "reading-lean",
+      "label": "/decks/[id] Analysis \u2014 2h, a single with a lean",
+      "view": "src/components/decks/verdict-block.tsx",
+      "steps": [
+        {
+          "goto": "/decks/${ANALYSIS_LEAN_DECK}",
+          "wait": "[role=tablist]",
+          "settle": 1500
+        },
+        {
+          "clickRole": "tab",
+          "name": "Analysis",
+          "settle": 700
+        },
+        {
+          "wait": "section[aria-label='Your bracket']",
+          "settle": 900
+        },
+        {
+          "scrollTo": "section[aria-label='Your bracket']",
+          "settle": 400
+        }
+      ]
+    },
+    {
+      "id": "reading-mix",
+      "label": "/decks/[id] Analysis \u2014 the findings and the mix, inset under a rule",
+      "view": "src/components/decks/role-counter-strip.tsx",
+      "steps": [
+        {
+          "goto": "/decks/${ANALYSIS_DECK}",
+          "wait": "[role=tablist]",
+          "settle": 1500
+        },
+        {
+          "clickRole": "tab",
+          "name": "Analysis",
+          "settle": 700
+        },
+        {
+          "wait": "section[aria-label='Recommended mix']",
+          "settle": 900
+        },
+        {
+          "scrollTo": "section[aria-label='Recommended mix']",
+          "settle": 400
+        }
+      ]
+    }
+  ]
+}

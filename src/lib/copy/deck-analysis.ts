@@ -74,70 +74,52 @@ export const deckAnalysisCopy = {
   brackets: BRACKET_NAMES,
 
   /**
-   * The Analysis tab's own readings, before any verdict is drawn.
+   * The Analysis tab's own frame: the one empty state before a first reading, the date line under
+   * the bracket's name, and the announcement when a reading lands (Analysis tab handoff §2, §E).
    *
-   * Transcribed from `design_handoff_the99_deck_analysis/deck-analysis - copy strings.ts`.
-   * NO SENTENCE IS SHIPPED — what a summary may claim belongs to sub-project 6, and
-   * `commander_support.prose` is the precedent for the null state: a row that fails its accept
-   * contract stores nothing and the surface draws no paragraph.
+   * THERE IS NO SYNOPSIS HERE. What a summary may claim belongs to sub-project 6, and until it
+   * exists the tab draws no Overview section at all (readiness finding 6): no placeholder
+   * sentence, and no control that cannot write.
    *
-   * The `absent` reading carries NO control here. Design's state 2 pairs it with `Write one` and
-   * "about five seconds", and both are correct for the round that can generate one — offering a
-   * button that cannot write is worse than the plain sentence, so the strings are transcribed
-   * and left unused until something can honour them.
+   * NO RE-ANALYZE ON A CURRENT READING. The handoff offers re-analysis only from the banner a
+   * changed deck draws, so a reading on screen carries no control of its own.
    */
   panel: {
+    /** The empty state's label, over the ring. */
+    overview: "Overview",
+    idle: {
+      heading: "Five brackets. Your cards pick which.",
+      body:
+        "One pass over your list against the Commander Format Panel's rules, and we'll tell you "
+        + "which brackets your cards permit, and which cards put it there.",
+      bodyPersist: "The reading is kept with the deck. Edit the list and it waits for you to ask again.",
+      /** No cost line: the handoff cut "about two seconds" with the rest of Round 4's t1. */
+      cta: "Analyze",
+    },
     /**
-     * Round 4's t1 — never determined. Its label and its cost, in the plain form: that round
-     * gives the control three weights, a fixed position and a tab dot, and refines this.
-     *
-     * "about two seconds" is the WORST case, not the median. Measured over all 20 real decks on
-     * staging: 630ms median, 559ms fastest, 1.8-2.2s slowest. A control promising one second and
-     * taking two has broken a promise; one promising two and taking half a second has not.
+     * In flight, and the heading is the live region. NO COUNT IN IT: `loadProfileHead` reads
+     * whatever `deck_cards` holds, so a brew with twelve cards would be told we were reading all
+     * 99. An earlier draft said exactly that.
      */
-    analyze: "Analyze this deck",
-    analyzeCost: "about two seconds",
-    /** Round 4's t2 — determined, nothing changed since. The re-ask, which has to stay reachable
-     *  or an edited deck can never be re-read. */
-    again: "Analyze again",
-    /**
-     * In flight. NO COUNT IN IT: `loadProfileHead` reads whatever `deck_cards` holds, so a brew
-     * with twelve cards would be told we were reading all 99. An earlier draft said exactly
-     * that.
-     */
-    reading: "Reading your deck\u2026",
+    loading: {
+      heading: "Reading your deck\u2026",
+      body: "Checking your list against each bracket's rules.",
+    },
     /**
      * The profile could not be built. NEVER "something went wrong": a reader who pressed a
      * button is owed what is and is not affected, and the counted figures are unaffected.
      */
-    failed:
-      "We could not finish reading this deck. The mix below is counted from your list and is "
-      + "true now.",
-    retry: "Try again",
-  },
-
-  synopsis: {
-    heading: "What this deck is",
-    /** 2 - never generated. The only reading reachable until sub-project 6 ships. */
-    absent: "No summary has been written for this deck yet.",
-    /** Transcribed and deliberately unused: see the note on `panel`. */
-    write: "Write one",
-    writeCost: "about five seconds",
-    /** 3 - stale. */
-    staleTag: "out of date",
-    staleCount: (changed: number, total: number) =>
-      `${changed} of ${total} cards have changed since it was written`,
-    staleProvenance: (was: number, total: number) => `written against ${was} of these ${total}`,
-    rewrite: "Write it again",
-    verdictCurrent: "recounted just now",
-    /** 4 - refused by the accept contract. Never "something went wrong". */
-    refusedTag: "not written",
-    refused:
-      "We wrote a summary and it did not check out against your list, so we are not showing "
-      + "it. Nothing about your deck changed.",
-    refusedCount: (failed: number, total: number) =>
-      `${failed} of ${total} claims failed checking`,
-    retry: "Try again",
+    failed: {
+      heading: "We could not finish reading this deck.",
+      body: "The mix below is counted from your list and is true now. Nothing about your deck changed.",
+      cta: "Try again",
+    },
+    /** `analyzed {when}`: relative under an hour, then the deck page's short date (`18 Sep`). */
+    analyzed: (when: string) => `analyzed ${when}`,
+    justNow: "a moment ago",
+    minutesAgo: (n: number) => `${n} ${n === 1 ? "minute" : "minutes"} ago`,
+    /** Spoken once, when a reading settles (§E). */
+    settled: (range: string) => `Analysis ready. Your cards permit ${range}.`,
   },
 
   /** The bracket chip in the deck header, which opens the Analysis tab. Spoken only. */

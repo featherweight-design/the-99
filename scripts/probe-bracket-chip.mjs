@@ -19,6 +19,7 @@ import { neon } from "@neondatabase/serverless";
 import { clerkSetup, setupClerkTestingToken } from "@clerk/testing/playwright";
 import { chromium } from "playwright";
 import { requireEnv } from "./lib/env.mjs";
+import { holdProfile } from "./lib/profile-hold.mjs";
 import { onPageRole, PAGE } from "./lib/surface.mjs";
 
 const { E2E_AUDIT_USER_EMAIL: EMAIL, DATABASE_URL } = requireEnv([
@@ -133,7 +134,7 @@ async function run() {
   await clerkSetup();
   const browser = await chromium.launch();
   let deckId = null;
-  let priorRow = null;
+  let restoreProfile = null;
   try {
     for (const { label, viewport } of WIDTHS) {
       const ctx = await browser.newContext({ viewport });
@@ -151,7 +152,8 @@ async function run() {
         deckId = href.split("/")[2];
         // The whole row, not only whether one exists: pressing Analyze UPSERTS it, so a deck that was
         // already analyzed has its own analysis put back in the `finally` rather than left replaced.
-        priorRow = (await sqlc`select * from deck_profiles where deck_id = ${deckId}::uuid`)[0] ?? null;
+        // Held on DISK, so a dead run or a failed restore cannot lose it (`lib/profile-hold.mjs`).
+        restoreProfile = await holdProfile(sqlc, deckId);
       }
       const href = `/decks/${deckId}`;
 
@@ -233,17 +235,7 @@ async function run() {
       }
     };
     await step("put back the prior analysis", async () => {
-      if (!deckId) return;
-      if (!priorRow) {
-        await sqlc`delete from deck_profiles where deck_id = ${deckId}::uuid`;
-        return;
-      }
-      const cols = Object.keys(priorRow);
-      await sqlc.query(
-        `insert into deck_profiles (${cols.map((c) => `"${c}"`).join(",")}) values (${cols.map((_, n) => `$${n + 1}`).join(",")})
-         on conflict (deck_id) do update set ${cols.filter((c) => c !== "deck_id").map((c) => `"${c}" = excluded."${c}"`).join(", ")}`,
-        cols.map((c) => (c === "profile" ? JSON.stringify(priorRow[c]) : priorRow[c])),
-      );
+      if (restoreProfile) await restoreProfile();
     });
     await step("close the browser", () => browser.close());
     for (const f of failed) report("cleanup", false, f);

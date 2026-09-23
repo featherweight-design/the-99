@@ -797,9 +797,29 @@ Package manager is **pnpm** (pinned via `packageManager` in package.json) — ne
   produces no address, which is how the card mark shipped broken into a view a URL sweep
   photographed.
 
+  **It also walks the tab around the box** (Analysis tab handoff §2). Before a reading the tab
+  is one empty state: a 150px ring of five 44px marks, 1 at twelve o'clock and running
+  clockwise on a 50px radius, then the heading in the display face, then Analyze with the
+  provenance opener beside it at 1300 and under it at 390. With a reading, the climb and the box
+  share a row at 1300, 2fr to 1fr, and stack box-first at 390. The gutters are 16px and 30px,
+  and the mix sits inside them under a rule. To reach the empty state it DELETES the walked
+  deck's `deck_profiles` row before each width, and puts the row back as captured in a
+  `finally`. With the gutters and the grid reverted it reads `0px` and `ratio 1.00`.
+
+  **The captured row is held ON DISK**, by `scripts/lib/profile-hold.mjs`, which
+  `probe:analysis-tab` and `probe:bracket-chip` share. A restore held in memory is lost when the
+  run dies or its one statement fails, and the reader's saved analysis goes with it. So the row is
+  written to a file before the first delete, the restore is retried, and a restore that still
+  fails keeps the file. The next run of any of the three puts the ORIGINAL back before it
+  captures anything.
+
+  **The box's mark is found INSIDE the box.** It used to be the first mark on the page, which
+  since #877 is the deck header's chip on the hidden desktop copy. That read `chip at 0x0` and
+  failed a correct build.
+
   Needs a server with `ANALYSIS_TAB_ENABLED=true`. Five mutations were run against it and all
-  five fail; the counts are in its header. It writes only that one `user_prefs` row — point it
-  at `local-dev`, **never production**.
+  five fail; the counts are in its header. Besides the `deck_profiles` row above, it writes only
+  that one `user_prefs` row. Point it at `local-dev`, **never production**.
 
 - `pnpm probe:verdict-findings` walks the Analysis tab's findings and their receipt at
   1300x900 and 390x844 — thirty-four checks, and every one is a fact about layout or about two

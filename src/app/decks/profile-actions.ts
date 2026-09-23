@@ -6,11 +6,12 @@ import { after } from "next/server";
 import { requireUserId } from "../../lib/auth";
 import { isUuid } from "../../lib/uuid";
 import { analysisTabEnabled } from "../../lib/decks/analysis-flag";
-import { computeAndStoreProfile, readStoredProfile } from "../../lib/profile/stored";
+import { computeAndStoreProfile, readStoredReading } from "../../lib/profile/stored";
 import type { DeckProfile } from "../../lib/profile/types";
 
 export type ProfileFetch =
-  | { ok: true; profile: DeckProfile }
+  /** `analyzedAt` is an ISO instant: when the press ran, or when the stored reading was written. */
+  | { ok: true; profile: DeckProfile; analyzedAt: string }
   /** The deck is absent, not this reader's, or the id was malformed. */
   | { ok: false; reason: "not-found" }
   /** The flag is off for this deployment. Distinct from a failure: nothing is wrong. */
@@ -66,7 +67,7 @@ export async function fetchDeckProfile(deckId: string): Promise<ProfileFetch> {
   // whole deck (the 1.6MB lesson recorded in `probe:printing-pick`).
   after(() => revalidatePath("/decks"));
 
-  return { ok: true, profile };
+  return { ok: true, profile, analyzedAt: new Date().toISOString() };
 }
 
 export type StoredProfileFetch =
@@ -87,6 +88,8 @@ export async function fetchStoredDeckProfile(deckId: string): Promise<StoredProf
   if (!analysisTabEnabled()) return { ok: false, reason: "disabled" };
   if (!isUuid(deckId)) return { ok: false, reason: "not-found" };
   const userId = await requireUserId();
-  const profile = await readStoredProfile(deckId, userId);
-  return profile ? { ok: true, profile } : { ok: false, reason: "none" };
+  const stored = await readStoredReading(deckId, userId);
+  return stored
+    ? { ok: true, profile: stored.profile, analyzedAt: stored.analyzedAt.toISOString() }
+    : { ok: false, reason: "none" };
 }

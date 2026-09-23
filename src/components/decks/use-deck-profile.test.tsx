@@ -46,8 +46,8 @@ const B = "22222222-2222-4222-8222-222222222222";
 /** Every (deck, state) pair that reached the screen, so a single wrong render is visible. */
 const painted: string[] = [];
 
-function Harness({ deckId = A }: { deckId?: string }) {
-  const { state, request, peek } = useDeckProfile(deckId);
+function Harness({ deckId = A, listKey }: { deckId?: string; listKey?: string }) {
+  const { state, request, peek } = useDeckProfile(deckId, listKey);
   painted.push(`${deckId}:${state.kind}`);
   return (
     <div>
@@ -101,6 +101,41 @@ describe("useDeckProfile", () => {
     await ask(c);
     expect(stub.calls).toEqual([A]);
     expect(kind(c)).toBe("ready");
+  });
+
+  // AN EDIT IN THE VISIT RETIRES THE READING. The tab has no re-analyze control on a reading, so a
+  // held reading of a list that has since changed would sit on screen with no way to ask again.
+  it("drops a held reading when the list changes, and keeps it while it does not", async () => {
+    const c = render(<Harness listKey="a:1" />);
+    await ask(c);
+    expect(kind(c)).toBe("ready");
+    c.rerender(<Harness listKey="a:1" />);
+    await act(async () => {});
+    expect(kind(c)).toBe("ready");
+    c.rerender(<Harness listKey="a:1,b:1" />);
+    await act(async () => {});
+    expect(kind(c)).toBe("idle");
+    // And asks again, against the new list.
+    await ask(c);
+    expect(kind(c)).toBe("ready");
+    expect(stub.calls).toEqual([A, A]);
+  });
+
+  // AN EDIT WHILE THE REQUEST IS IN FLIGHT. The reply describes the list as it stood when the
+  // press was made, so it must not land as a reading of the list the reader has since edited.
+  it("drops a reply for a list edited while the request was in flight", async () => {
+    stub.gate = () => {};
+    const c = render(<Harness listKey="a:1" />);
+    await ask(c);
+    expect(kind(c)).toBe("loading");
+    c.rerender(<Harness listKey="a:1,b:1" />);
+    await act(async () => {});
+    const release = stub.gate;
+    stub.gate = null;
+    await act(async () => {
+      release?.();
+    });
+    expect(kind(c)).toBe("idle");
   });
 
   // THE CACHE, stated as a request count. Re-rendering — which happens on every keystroke

@@ -708,6 +708,16 @@ html { --modal-shadow: 0 40px 100px rgba(0, 0, 0, 0.7); }
    schedule. */
 .anim-card-turn { transition: transform 0.32s cubic-bezier(0.2, 0.7, 0.2, 1); }
 
+/* THE RING READING (Analysis tab handoff §2, 2b). Each of the five marks lights in turn,
+   1 to 5 clockwise: the stagger is the component's `animation-delay`, 0.16s per mark.
+   It rests at 0.22, below DIM_OPACITY, which is fine because the ring is decorative
+   (aria-hidden) and the heading carries the state (readiness finding 17). */
+@keyframes at-wave {
+  0%, 100% { opacity: 0.22; }
+  35%, 60% { opacity: 1; }
+}
+.anim-at-wave { animation: at-wave 1.6s ease-in-out infinite; }
+
 /* There is no exit animation. The layer unmounts on close — see the note at
    `closeZoom` in `cards/card-modal.tsx` for why the 160ms fade was dropped. */
 
@@ -736,6 +746,9 @@ html { --modal-shadow: 0 40px 100px rgba(0, 0, 0, 0.7); }
      here, it is the swap the un-zoomed control has always done. So the animated path
      is this feature's amendment and the still one is the status quo. */
   .anim-card-turn { transition: none; }
+
+  /* Reading, still: the ring holds at full ink, and only the heading says it is reading. */
+  .anim-at-wave { animation: none; opacity: 1; }
 }
 
 /* The wash trades legibility against drama. A reader who has asked for less

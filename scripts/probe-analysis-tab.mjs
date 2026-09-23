@@ -26,16 +26,26 @@
 //   ANALYSIS_TAB_ENABLED=true  pnpm dev          → PROBE_ANALYSIS_EXPECT=on   (the drawn layout)
 //   pnpm dev                                      → PROBE_ANALYSIS_EXPECT=off  (today's layout)
 //
-// Makes no writes. Signs in through Clerk's dev instance — see the local-auth note in memory.
+// IT CLEARS THE WALKED DECK'S STORED READING before each width, and puts the row back as captured
+// in a `finally`. Since #874 a deck with a stored reading draws it on open, with no invitation,
+// and opening the tab calls one action — the stored peek — which answers `none` here. So the
+// counts below allow exactly that peek before the press. It writes nothing else. Signs in through Clerk's dev instance — see the local-auth note in memory.
 // Point it at `local-dev`, never production.
 //
 //   PROBE_BASE=http://localhost:3010 node scripts/probe-analysis-tab.mjs
 import { clerkSetup, setupClerkTestingToken } from "@clerk/testing/playwright";
+import { neon } from "@neondatabase/serverless";
 import { chromium } from "playwright";
 import { requireEnv } from "./lib/env.mjs";
+import { holdProfile } from "./lib/profile-hold.mjs";
 import { onPage, onPageRole, PAGE } from "./lib/surface.mjs";
 
-const { E2E_AUDIT_USER_EMAIL: EMAIL } = requireEnv(["E2E_AUDIT_USER_EMAIL", "CLERK_SECRET_KEY"]);
+const { E2E_AUDIT_USER_EMAIL: EMAIL, DATABASE_URL } = requireEnv([
+  "E2E_AUDIT_USER_EMAIL",
+  "CLERK_SECRET_KEY",
+  // To clear the walked deck's stored reading, so the tab draws its invitation; see `run()`.
+  "DATABASE_URL",
+]);
 const BASE = process.env.PROBE_BASE ?? "http://localhost:3000";
 const PASSWORD = process.env.E2E_AUDIT_USER_PASSWORD;
 if (!EMAIL.includes("+clerk_test") && !PASSWORD) throw new Error("Set E2E_AUDIT_USER_PASSWORD.");
@@ -198,8 +208,13 @@ async function run() {
         : `       (NOTE: no deck of ${hrefs.length} draws a Versions cell — the FIVE-cell row is not measured)`,
     );
     await context.close();
-
+    const deckId = href.split("/")[2];
+    const sql = neon(DATABASE_URL);
+    // On disk before the first delete, so a dead run or a failed restore cannot lose it.
+    const restore = await holdProfile(sql, deckId);
+    try {
     for (const { label, viewport } of WIDTHS) {
+      await sql`delete from deck_profiles where deck_id = ${deckId}`;
       const ctx = await browser.newContext({ viewport });
       const p = await ctx.newPage();
       await signIn(p);
@@ -302,12 +317,14 @@ async function run() {
       await onPage(p, '[role="tab"]').nth(analysisAt).click();
       await p.waitForTimeout(600);
 
-      report(`${label}px · opening the tab still fetches nothing`, posts() === 0,
-        `${posts()} action call(s) after opening the tab`);
+      // The one call opening the tab may make is the stored peek, which computes nothing.
+      const peeked = posts();
+      report(`${label}px · opening the tab only asks for a stored reading`, peeked <= 1,
+        `${peeked} action call(s) after opening the tab`);
 
       // ROUND 4 RULING 7: the verdict fires on analyse or commit and nowhere else. The tab draws
       // the invitation instead, and pressing THAT is what costs 630ms.
-      const invite = onPageRole(p, "button", /Analyze this deck/);
+      const invite = onPageRole(p, "button", /^Analyze$/);
       if (!report(`${label}px · the tab invites the reader to analyze`,
         (await invite.count()) > 0, "no invitation drawn")) {
         await ctx.close();
@@ -318,29 +335,30 @@ async function run() {
       // fixed 1.2s sleep failed a correct build whose reply was merely slow. The timeout is
       // well above the measured maximum, and the thing waited for is the state a reply
       // produces rather than an elapsed time.
-      await onPageRole(p, "button", /Analyze again/)
+      await onPage(p, 'section[aria-label="Your bracket"]')
         .first()
         .waitFor({ state: "visible", timeout: 15_000 })
         .catch(() => {});
       const afterPress = posts();
-      report(`${label}px · pressing it fetches the profile once`, afterPress === 1,
-        `${afterPress} action call(s) after the press`);
+      report(`${label}px · pressing it fetches the profile once`, afterPress - peeked === 1,
+        `${afterPress - peeked} action call(s) after the press`);
       report(`${label}px · and it was ONE action, not two different ones`,
-        new Set(actions).size === 1,
-        `${new Set(actions).size} distinct action id(s): ${[...new Set(actions)].join(", ")}`);
+        new Set(actions.slice(peeked)).size === 1,
+        `${new Set(actions.slice(peeked)).size} distinct action id(s) after the press`);
 
       // AND THE ACTION WAS THE PROFILE FETCH, proved by its OUTCOME rather than by its id.
       //
       // A count of one distinct opaque id says a single action ran; it cannot say WHICH, so a
       // regression wiring this control to some other action would satisfy both checks above.
       // Nothing observable carries the id, so the discriminator is the state only a profile
-      // reply can produce: the invitation is replaced by the re-ask. An action that fetched
-      // something else would leave the invitation where it was.
-      const stillInviting = await onPageRole(p, "button", /Analyze this deck/).count();
-      const reAsk = await onPageRole(p, "button", /Analyze again/).count();
+      // reply can produce: the empty state is replaced by the bracket box (the consolidated tab
+      // draws no re-ask on a reading). An action that fetched something else would leave the
+      // empty state where it was.
+      const stillInviting = await onPage(p, '[data-testid="analysis-empty"]').count();
+      const box = await onPage(p, 'section[aria-label="Your bracket"]').count();
       report(`${label}px · and it was the PROFILE fetch, not merely an action`,
-        stillInviting === 0 && reAsk === 1,
-        `invitation ${stillInviting}, re-ask ${reAsk} — a profile reply replaces one with the other`);
+        stillInviting === 0 && box === 1,
+        `empty state ${stillInviting}, bracket box ${box} — a profile reply replaces one with the other`);
 
       // THE CACHE, and the reason the hook lives in the shell rather than the panel. One panel
       // renders at a time, so the Analysis panel unmounts on a tab switch — a fetch owned by
@@ -355,19 +373,19 @@ async function run() {
         posts() === afterPress,
         `${posts()} call(s) total, ${posts() - afterPress} on the return`);
 
-      // The synopsis slot, in the one reading reachable until sub-project 6 — and NO control
-      // beside it, because nothing can write a summary yet.
+      // NO SYNOPSIS SLOT at all until sub-project 6 (readiness finding 6): no placeholder line and
+      // no control that cannot write.
       const synopsis = await p.evaluate((scope) => {
-        const root = document.querySelector(scope);
-        const text = root?.textContent ?? "";
+        const panel = document.querySelector(scope)?.querySelector("#panel-analysis");
+        const text = panel?.textContent ?? "";
         return {
-          absent: text.includes("No summary has been written for this deck yet."),
+          placeholder: /No summary has been written|Overview/.test(text),
           write: text.includes("Write one"),
         };
       }, PAGE);
-      report(`${label}px · the synopsis slot states that none is written`, synopsis.absent,
-        synopsis.absent ? "the absent line is drawn" : "no absent line");
-      report(`${label}px · and offers no control that cannot work`, !synopsis.write,
+      report(`${label}px · no synopsis slot and no placeholder for one`, !synopsis.placeholder,
+        synopsis.placeholder ? "a placeholder is drawn" : "none drawn");
+      report(`${label}px · and no control that cannot work`, !synopsis.write,
         synopsis.write ? "a Write one control is drawn" : "no write control");
 
       const panel = await p.evaluate((scope) =>
@@ -387,6 +405,9 @@ async function run() {
         console.log(`       (the strip is ${after.sides[0].height}px — the vertical it vacated)`);
       }
       await ctx.close();
+    }
+    } finally {
+      await restore();
     }
   } finally {
     await browser.close();

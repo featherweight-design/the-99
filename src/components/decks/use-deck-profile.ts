@@ -14,7 +14,8 @@ export type ProfileState =
   /** Never asked for. No request has been made and none should be until the reader asks. */
   | { kind: "idle" }
   | { kind: "loading" }
-  | { kind: "ready"; profile: DeckProfile }
+  /** `analyzedAt` is an ISO instant, drawn as the bracket box's `analyzed {when}`. */
+  | { kind: "ready"; profile: DeckProfile; analyzedAt: string }
   /** The flag is off. Nothing is wrong, and no surface may say otherwise. */
   | { kind: "disabled" }
   /** The deck is absent or not this reader's. */
@@ -34,8 +35,8 @@ export type ProfileState =
  * That also settles STALENESS, which an automatic fetch could not. The shell holds the card list
  * across edits without leaving the route, so a once-per-visit automatic fetch would keep showing
  * a pre-edit profile for the rest of the visit while the server's fingerprint keying sat unused.
- * With the reader asking, an edited deck is re-asked about deliberately — which is Round 4's
- * model, where a determined verdict goes stale and the control invites another pass.
+ * With the reader asking, an edited deck is re-asked about deliberately: an edit in the visit
+ * drops the held reading back to `idle` (see `listKey`), and the tab offers Analyze again.
  *
  * WHAT TAB OPEN MAY DO is `peek`: ask whether an analysis the reader ALREADY pressed for is
  * stored, and show it if so. That computes nothing — a head read and a keyed lookup, and a miss
@@ -53,7 +54,18 @@ export type ProfileState =
  * KEYED ON THE DECK ID. `asked` alone would leave deck B rendering deck A's profile with no
  * request made, in a shell that outlives a route change between decks.
  */
-export function useDeckProfile(deckId: string): {
+export function useDeckProfile(
+  deckId: string,
+  /**
+   * The list the shell is drawing, as a stable string of its cards. A reading held for the visit
+   * describes the list it was made from, so when this moves the reading is dropped back to `idle`
+   * and the tab offers Analyze again — the same thing a reload shows, because the stored row is
+   * refused for a list it was not made from. The consolidated tab has no re-analyze control on a
+   * reading (the banner that offers one is the lifecycle round's), so without this an edit made
+   * in the same visit would leave the pre-edit bracket on screen with no way to ask again.
+   */
+  listKey?: string,
+): {
   state: ProfileState;
   /** Ask, or ask again. Safe to call repeatedly — a request in flight is not duplicated. */
   request: () => void;
@@ -101,11 +113,19 @@ export function useDeckProfile(deckId: string): {
   useEffect(() => {
     current.current = deckId;
   }, [deckId]);
+  // The list as of the latest render, read when a request starts; and the list the reading on
+  // screen was asked about. See `listKey`.
+  const latestKey = useRef(listKey);
+  useEffect(() => {
+    latestKey.current = listKey;
+  }, [listKey]);
+  const [readyKey, setReadyKey] = useState<string | undefined>(undefined);
 
   const request = useCallback(() => {
     if (inFlightFor.current === deckId) return;
     inFlightFor.current = deckId;
     const mine = ++generation.current;
+    const askedAbout = latestKey.current;
     setShownFor(deckId);
     setState({ kind: "loading" });
     void (async () => {
@@ -129,7 +149,10 @@ export function useDeckProfile(deckId: string): {
       }
       if (mine === generation.current) inFlightFor.current = null;
       if (mine !== generation.current || current.current !== deckId) return;
-      if (result.ok) setState({ kind: "ready", profile: result.profile });
+      if (result.ok) {
+        setReadyKey(askedAbout);
+        setState({ kind: "ready", profile: result.profile, analyzedAt: result.analyzedAt });
+      }
       else setState({ kind: result.reason === "disabled" ? "disabled" : "missing" });
     })();
   }, [deckId]);
@@ -140,6 +163,7 @@ export function useDeckProfile(deckId: string): {
     if (peeked.current.has(deckId) || state.kind !== "idle" || inFlightFor.current === deckId) return;
     peeked.current.add(deckId);
     const mine = generation.current;
+    const askedAbout = latestKey.current;
     void (async () => {
       let result: StoredProfileFetch;
       try {
@@ -154,7 +178,10 @@ export function useDeckProfile(deckId: string): {
       // flag switched off mid-visit, or the deck is gone — and the press would lie about both.
       if (!result.ok && result.reason === "none") return;
       setShownFor(deckId);
-      if (result.ok) setState({ kind: "ready", profile: result.profile });
+      if (result.ok) {
+        setReadyKey(askedAbout);
+        setState({ kind: "ready", profile: result.profile, analyzedAt: result.analyzedAt });
+      }
       else setState({ kind: result.reason === "disabled" ? "disabled" : "missing" });
     })();
   }, [deckId, state.kind]);
@@ -165,6 +192,14 @@ export function useDeckProfile(deckId: string): {
   // once before being corrected.
   if (shownFor !== null && shownFor !== deckId && state.kind !== "idle") {
     setShownFor(null);
+    setState({ kind: "idle" });
+  }
+
+  // THE LIST CHANGED UNDER A READING. A reading carries the key captured when its request STARTED,
+  // so a reply for a list edited while it was in flight is dropped as surely as a reading edited
+  // after it landed. Adjusted during render for the same reason as the deck change above.
+  if (state.kind === "ready" && listKey !== undefined && readyKey !== listKey) {
+    setReadyKey(listKey);
     setState({ kind: "idle" });
   }
 
