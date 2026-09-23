@@ -43,6 +43,14 @@ describe("presentationFailures", () => {
     expect(presentationFailures('On 2026-09-02: \u201cI said "keep lands"\u201d', withQuote)).toEqual([]);
   });
 
+  it("accepts a quotation any one of its sources satisfies", () => {
+    const twice = [{ text: "flooded", date: "2026-09-01" }, { text: "flooded", date: "2026-09-08" }];
+    expect(presentationFailures('On 2026-09-08: "flooded"', twice)).toEqual([]);
+    const alsoIntent = [{ text: "flooded", date: "2026-09-01" }, { text: "flooded", date: null }];
+    expect(presentationFailures('You said the deck is "flooded"', alsoIntent)).toEqual([]);
+    expect(presentationFailures('On 2026-09-15: "flooded"', twice)).toEqual(["quotedNote"]);
+  });
+
   it("still catches a misquote beside a correct quotation", () => {
     expect(presentationFailures('On 2026-09-01 "flooded out on turn six", and "never drew".', notes)).toContain("quotedNote");
   });

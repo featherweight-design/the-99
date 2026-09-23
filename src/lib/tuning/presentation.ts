@@ -54,11 +54,15 @@ export function presentationFailures(text: string, quotable: readonly Quotable[]
   // rather than split at its inner quote — and a quoted note must have its date in the same text.
   // Whatever is still in quotation marks once they are taken out is a misquote. Straight or
   // curly outer quotes, since the model may use either.
+  // One text can have several sources — two notes alike, or a note that says what the intent
+  // says — and the quotation stands when ANY of them is satisfied: the intent needs no date, a
+  // note needs its own.
   let rest = text;
   for (const q of quotable) {
     for (const quoted of [`"${q.text}"`, `\u201c${q.text}\u201d`]) {
       if (!rest.includes(quoted)) continue;
-      if (q.date !== null && !text.includes(q.date)) {
+      const sourced = quotable.some((s) => s.text === q.text && (s.date === null || text.includes(s.date)));
+      if (!sourced) {
         broken.push("quotedNote");
         return broken;
       }
