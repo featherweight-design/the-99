@@ -29,7 +29,7 @@ import { inArray, sql } from "drizzle-orm";
 import { db } from "../../db";
 import { cards, spellbookVariantCards, spellbookVariants } from "../../db/schema";
 import { loadBracketFlags } from "../bracket/flags-read";
-import { classifyTutor } from "../bracket/tutor-targets";
+import { isTutor } from "../bracket/tutor-targets";
 import type { CandidateFacts } from "../bracket/delta";
 import type { ComboRef } from "./types";
 
@@ -70,9 +70,9 @@ export async function loadCandidateFacts(
       gameChanger: row.gameChanger ?? false,
       massLandDenial: flag?.massLandDenial ?? false,
       extraTurn: flag?.extraTurn ?? false,
-      // The SHIPPED classifier over the same text the profile reads, so a candidate's
-      // reading and the deck's are one rule rather than two that agree today.
-      tutor: classifyTutor(row.oracleText) !== null,
+      // `isTutor`, the predicate the profile's tutor count reads too, so a candidate's reading
+      // and the deck's are one rule rather than two that agree today.
+      tutor: isTutor(row.oracleText),
       completesCombos: completions.get(row.oracleId) ?? [],
     });
   }

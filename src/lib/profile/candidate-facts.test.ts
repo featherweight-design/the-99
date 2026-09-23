@@ -16,9 +16,11 @@ const dialect = new PgDialect();
  * The returned FIGURES need a real Postgres and belong to a probe.
  */
 const executed: string[] = [];
+/** The `cards` rows the select returns — empty unless a case states them. */
+let cardRows: { oracleId: string; name: string; gameChanger: boolean; oracleText: string | null }[] = [];
 vi.mock("../../db", () => ({
   db: {
-    select: () => ({ from: () => ({ where: async () => [] }) }),
+    select: () => ({ from: () => ({ where: async () => cardRows }) }),
     execute: async (q: Parameters<PgDialect["sqlToQuery"]>[0]) => {
       executed.push(dialect.sqlToQuery(q).sql);
       return { rows: [] };
@@ -126,3 +128,34 @@ describe("the completions statement", () => {
     expect(rendered()).toContain("cardinality(v.requires_template_ids) = 0");
   });
 });
+
+// Ruled 2026-09-22: a search that can find only a land is ramp. This read feeds the note on
+// the two pool-fed add surfaces, so a land search here would draw "A tutor, and your Nth" on
+// Evolving Wilds in the Consider shelf and the top-off list. Texts read off staging's catalog.
+describe("the candidate's tutor reading", () => {
+  it("is true for a search that can find a non-land and false for a land-only one", async () => {
+    cardRows = [
+      {
+        oracleId: "demonic",
+        name: "Demonic Tutor",
+        gameChanger: true,
+        oracleText: "Search your library for a card, put that card into your hand, then shuffle.",
+      },
+      {
+        oracleId: "wilds",
+        name: "Evolving Wilds",
+        gameChanger: false,
+        oracleText:
+          "{T}, Sacrifice this land: Search your library for a basic land card, put it onto the battlefield tapped, then shuffle.",
+      },
+    ];
+    try {
+      const facts = await loadCandidateFacts(["demonic", "wilds"], []);
+      expect(facts.get("demonic")?.tutor).toBe(true);
+      expect(facts.get("wilds")?.tutor).toBe(false);
+    } finally {
+      cardRows = [];
+    }
+  });
+});
+

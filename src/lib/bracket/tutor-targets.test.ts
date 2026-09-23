@@ -1,6 +1,13 @@
 import { describe, expect, it } from "vitest";
 
-import { classifyTutor, tutorReaches, type TutorTarget } from "./tutor-targets";
+import {
+  classifySearches,
+  classifyTutor,
+  isTutor,
+  isTutorTarget,
+  tutorReaches,
+  type TutorTarget,
+} from "./tutor-targets";
 
 // Oracle text as the catalog stores it. Every string here was read off the live catalog by
 // `measure-tutor-targets.mts` rather than written from memory — a fixture the author made up
@@ -306,3 +313,81 @@ describe("colour alternatives", () => {
     expect(tutorReaches(sunforger, piece("Instant", 2, ["U"]))).toBe(false);
   });
 });
+
+// Ruled by Hugh on 2026-09-22: a search that can find nothing but a land is ramp, not a tutor.
+// Every text below was read off staging's catalog, not written from memory.
+const LAND_SEARCH = {
+  cultivate:
+    "Search your library for up to two basic land cards, reveal those cards, put one onto the battlefield tapped and the other into your hand, then shuffle.",
+  farseek:
+    "Search your library for a Plains, Island, Swamp, or Mountain card, put it onto the battlefield tapped, then shuffle.",
+  threeVisits: "Search your library for a Forest card, put it onto the battlefield, then shuffle.",
+  sylvanScrying: "Search your library for a land card, reveal it, put it into your hand, then shuffle.",
+};
+const NONLAND_SEARCH = {
+  stoneforge:
+    "When this creature enters, you may search your library for an Equipment card, reveal it, put it into your hand, then shuffle.\n{1}{W}, {T}: You may put an Equipment card from your hand onto the battlefield.",
+  planarBridge:
+    "{8}, {T}: Search your library for a permanent card, put it onto the battlefield, then shuffle.",
+};
+
+describe("isTutor — a search that can find something other than a land", () => {
+  it("is not a tutor when every alternative can only find a land", () => {
+    for (const [name, text] of Object.entries({ ...LAND_SEARCH, wilds: TEXT.wilds, cropRotation: TEXT.cropRotation })) {
+      // Each is still a SEARCH, which is what reach reads — only the label changes.
+      expect(classifyTutor(text), name).not.toBeNull();
+      expect(isTutor(text), name).toBe(false);
+    }
+  });
+
+  it("is a tutor when the search can find a non-land", () => {
+    for (const [name, text] of Object.entries({
+      ...NONLAND_SEARCH,
+      demonic: TEXT.demonic,
+      vampiric: TEXT.vampiric,
+      worldly: TEXT.worldly,
+    })) {
+      expect(isTutor(text), name).toBe(true);
+    }
+  });
+
+  // `permanent` expands to six types, land among them — so it can find a creature, and a
+  // rule testing "mentions land" rather than "every word is a land word" would drop it.
+  it("keeps a permanent search, whose expansion includes land among other types", () => {
+    expect(isTutor(NONLAND_SEARCH.planarBridge)).toBe(true);
+  });
+
+  // One land alternative among several does not make the search land-only; one land
+  // CONSTRAINT within an alternative does, because every constraint in it must hold.
+  it("reads alternatives with some, and constraints within one with every", () => {
+    const either: TutorTarget = {
+      kinds: [[["creature"]], [["land"]]], colors: null, maxManaValue: null, basicOnly: false,
+    };
+    const forestCreature: TutorTarget = {
+      kinds: [[["forest"], ["creature"]]], colors: null, maxManaValue: null, basicOnly: false,
+    };
+    expect(isTutorTarget(either)).toBe(true);
+    expect(isTutorTarget(forestCreature)).toBe(false);
+  });
+
+  it("is not a tutor when there is no search at all", () => {
+    expect(isTutor(null)).toBe(false);
+    expect(isTutor("Draw a card.")).toBe(false);
+  });
+});
+
+describe("classifySearches — the profile's split", () => {
+  it("files a tutor and a land search apart, and keeps a target for both", () => {
+    const { tutorIds, landSearchIds, targets } = classifySearches([
+      { oracleId: "demonic", oracleText: TEXT.demonic },
+      { oracleId: "crop", oracleText: TEXT.cropRotation },
+      { oracleId: "plain", oracleText: "Draw a card." },
+      { oracleId: "none", oracleText: null },
+    ]);
+    expect([...tutorIds]).toEqual(["demonic"]);
+    expect([...landSearchIds]).toEqual(["crop"]);
+    // Both kinds keep their target, because reach tests either: Crop Rotation finds Dark Depths.
+    expect([...targets.keys()].sort()).toEqual(["crop", "demonic"]);
+  });
+});
+

@@ -407,6 +407,21 @@ describe("countNoteKinds", () => {
     expect(counts.tutor).toBe(2);
   });
 
+  // Ruled 2026-09-22: a search that can find only a land is ramp. Evolving Wilds' own text,
+  // read off staging's catalog. A land search in a deck holding one real tutor used to make
+  // the note say "your 2nd"; `classifyTutor` returns a target for it, so a count built on
+  // that would pass the case above and fail this one.
+  it("does not count a land-only search as a tutor", () => {
+    const WILDS =
+      "{T}, Sacrifice this land: Search your library for a basic land card, put it onto the battlefield tapped, then shuffle.";
+    const counts = countNoteKinds(
+      [row({ oracleText: TUTOR_TEXT }), row({ oracleId: "o-wilds", oracleText: WILDS, quantity: 3 })],
+      [],
+      new Map(),
+    );
+    expect(counts.tutor).toBe(1);
+  });
+
   it("counts one card under every kind it satisfies", () => {
     // A card wears every fact true of it — the note's order then picks which sentences to
     // draw, and the count behind each of them is its own.

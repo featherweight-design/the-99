@@ -82,8 +82,17 @@ export type ProfileInput = {
   extraTurnFlags: Map<string, FlagSource[]>;
   gameChangerIds: Set<string>;
   twoCardCombos: ComboRef[];
-  /** Pre-classified by the loader (`classifyTutor`), so this stays pure. */
+  /** Cards the loader classified as TUTORS (`isTutorTarget`): they can find a non-land. These
+   *  are what `comboReach.tutors` lists and the tutors finding counts. */
   tutorIds: Set<string>;
+  /**
+   * Cards whose library search can find ONLY a land. Not tutors (ruled 2026-09-22), so never
+   * listed or counted, but still paired for REACH, because a land can be a combo piece.
+   *
+   * Optional, and an absence means the deck holds none, which is exact for every hand-built
+   * fixture that never states one. The loader always supplies it.
+   */
+  landSearchIds?: Set<string>;
   /**
    * Whether a tutor can actually FIND a piece. Supplied by the loader because the predicate
    * reads the tutor's oracle text, which this function does not parse.
@@ -321,9 +330,15 @@ export function buildDeckProfile(input: ProfileInput): DeckProfile {
     }));
 
   const tutors = uniqueRefs(cards.filter((c) => input.tutorIds.has(c.oracleId)));
+  // Every SEARCH pairs for reach — the tutors and the land searches alike — because reach asks
+  // what a card can find, and a land search can find a land combo piece. Only `tutors` is
+  // listed and counted. See `landSearchIds`.
+  const searchers = uniqueRefs(
+    cards.filter((c) => input.tutorIds.has(c.oracleId) || input.landSearchIds?.has(c.oracleId)),
+  );
   const byId = new Map(cards.map((c) => [c.oracleId, c]));
   const reaches: { tutor: CardRef; combo: ComboRef; piece: CardRef }[] = [];
-  for (const tutor of tutors) {
+  for (const tutor of searchers) {
     for (const combo of input.twoCardCombos) {
       for (const piece of combo.cards) {
         // A tutor that finds a piece the deck already holds still shortens the path: the

@@ -129,7 +129,7 @@ export function leanReading(
     const receipt =
       lean.receipts.find((r) => r.combo.variantId === lean.decidedBy?.variantId) ?? lean.receipts[0];
     if (!receipt) return null;
-    // "Your tutors can find both halves" is false of a commander half, which the command zone
+    // "This deck can find both halves" is false of a commander half, which the command zone
     // covers with no tutor — so the reachable sentence counts them, as coverage does.
     const inZone = receipt.pieces.filter((p) => commanderOracleIds.includes(p.piece.oracleId)).length;
     return {
