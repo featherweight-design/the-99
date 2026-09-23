@@ -13,14 +13,14 @@ Drizzle on Neon, Vitest, Playwright probes.
 | Input | State |
 |---|---|
 | Spellbook combo ingest, `spellbook_variants`, `db:seed:combos`, `check:spellbook` | **built** |
-| `buildDeckProfile`, `loadDeckProfile`, `cachedDeckProfile` | **built**; `cachedDeckProfile`'s first consumer is PR 1b (#825) |
-| `slotDeck` / `bracketDelta` / `upgradePath` / `fitSkeleton` | **built, unit-tested**, and each has a shipped consumer: the verdict, the card note, the upgrade path, the mix strip |
+| `buildDeckProfile`, `loadDeckProfile`, `cachedDeckProfile` | **built**; `cachedDeckProfile`'s first consumers are 3b (#821) and 1b (#825) |
+| `slotDeck` / `bracketDelta` / `upgradePath` / `fitSkeleton` | **built, unit-tested**; `slotDeck` is consumed by the verdict and the declaration, `upgradePath` by the climb and the upgrade path; `bracketDelta` and `fitSkeleton` still have no caller outside tests |
 | `decks.declared_bracket` column + check constraint | **built**; write path shipped in 3b (#821) |
 | Round 0 — the frame | handoff merged (#753); **shipped**: the Analysis tab (#788) |
 | Round 1 — the card mark | **shipped** |
 | Round 2 — the verdict | **shipped**: head #851, climb #853, findings #863, lean #865 |
 | Round 3 — the declaration | audited 🟡 Yellow at R7, 2026-09-21 (#800), drift resolved; **shipped**: the ask #862, version comparison #866 |
-| Round 4 — the push line and the upgrade path | audited 🟢 Green at R3, 2026-09-21 (#815); the push line withdrawn for the card note; **shipped**: card note #854, #859, #869, upgrade path #867 |
+| Round 4 — the push line and the upgrade path | audited 🟢 Green at R3, 2026-09-21 (#815); the push line withdrawn for the card note; **shipped**: card note #854, #859, #864, #869, upgrade path #867 |
 
 ---
 
