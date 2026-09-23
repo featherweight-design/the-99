@@ -1289,6 +1289,7 @@ export const RESUME_DECKS: DeckListItem[] = [
     inUseElsewhere: 0,
     proxiedCount: 0,
     statusPill: "Complete",
+    bracket: null,
   },
   {
     id: "about-resume-committed",
@@ -1319,6 +1320,7 @@ export const RESUME_DECKS: DeckListItem[] = [
     inUseElsewhere: 4,
     proxiedCount: 0,
     statusPill: "To buy",
+    bracket: null,
   },
   {
     // A FOURTH, so the block draws its real 2x2 grid rather than a row of two
@@ -1347,6 +1349,7 @@ export const RESUME_DECKS: DeckListItem[] = [
     inUseElsewhere: 2,
     proxiedCount: 0,
     statusPill: "Building",
+    bracket: null,
   },
   {
     id: "about-resume-played",
@@ -1373,6 +1376,7 @@ export const RESUME_DECKS: DeckListItem[] = [
     inUseElsewhere: 0,
     proxiedCount: 0,
     statusPill: "Complete",
+    bracket: null,
   },
 ];
 

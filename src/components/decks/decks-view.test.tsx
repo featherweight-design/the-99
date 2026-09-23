@@ -50,6 +50,7 @@ function deckOf(over: Partial<DeckListItem> = {}): DeckListItem {
     folderId: null,
     folderName: null,
     statusPill: "Complete",
+    bracket: null,
     built: 99,
     ownedCount: 99,
     toBuyCount: 0,

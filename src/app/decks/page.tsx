@@ -2,6 +2,8 @@
 // filters, the order and the URL that carries both.
 import { redirect } from "next/navigation";
 import { requireUserId } from "../../lib/auth";
+import { catalogGeneration } from "../../lib/cache/catalog-generation";
+import { analysisTabEnabled } from "../../lib/decks/analysis-flag";
 import { listDecksWithStats } from "../../lib/decks/read";
 import { listFolders } from "../../lib/decks/folders";
 import { loadShoppingRollup } from "../../lib/decks/shopping-rollup";
@@ -31,6 +33,10 @@ export default async function DecksPage({
   }
 
   const userId = await requireUserId();
+  // The tile's bracket chip reads each deck's stored analysis against the current catalog. Off
+  // with the Analysis tab's flag, because a chip that lands on a tab nobody can open is a promise
+  // the page cannot keep.
+  const bracketCatalog = analysisTabEnabled() ? await catalogGeneration() : undefined;
   const [decks, shopping, folders] = await Promise.all([
     // The sort has no default in the reader, so no caller's order can move
     // under it. The server hands back this order and the client re-sorts from
@@ -48,6 +54,7 @@ export default async function DecksPage({
       // The tile's wash IS the commander's art, so this surface pays for the
       // copy the player owns rather than drawing another printing's.
       includeCommanderArt: true,
+      bracketCatalog,
     }),
     // The tile's To buy figure reads its copies and its cost from the same
     // roll-up, so the count and the price always cover the same cards.

@@ -56,6 +56,7 @@ const deck = (o: Partial<DeckListItem> = {}): DeckListItem => ({
   pendingChanges: 0,
   versionNumber: null,
   statusPill: "To buy",
+  bracket: null,
   lastPlayedAt: null,
   lastEditedAt: new Date("2026-09-01T00:00:00Z"),
   lastCommittedAt: null,

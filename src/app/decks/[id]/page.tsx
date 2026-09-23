@@ -10,6 +10,7 @@ import { cacheForUser } from "../../../lib/cache/user-lists";
 import { indexGeneration } from "../../../lib/cache/index-generation";
 import { loadDeckSuggestions } from "../../../lib/decks/suggestions-read";
 import { BuilderShell } from "../../../components/decks/builder-shell";
+import { readStoredPermits } from "../../../lib/profile/stored";
 import {
   arrivedFromImport,
   IMPORTED_PARAM,
@@ -102,6 +103,13 @@ export default async function DeckBuilderPage({
   // Resolved before the wave rather than inside it: it is a 60-second cached read shared by
   // both cached payloads below, and awaiting it per-entry would serialise them.
   const indexGen = await indexGeneration();
+
+  // The header's bracket chip, from the analysis already stored for this deck, started beside the
+  // wave rather than inside it. It computes nothing (see `readStoredPermits`), and a failed read
+  // draws no chip, which is what an unread deck draws anyway.
+  const storedPermits = analysisTabEnabled()
+    ? readStoredPermits(id, userId).catch(() => null)
+    : Promise.resolve(null);
 
   const [
     { suggestions, degraded, shoppingFigures, mix },
@@ -330,6 +338,7 @@ export default async function DeckBuilderPage({
   // Read once per request rather than at each use, so the tab, the strip's home and the
   // arrival view cannot disagree about which layout this deployment is drawing.
   const analysisEnabled = analysisTabEnabled();
+  const storedBracket = await storedPermits;
   // WHAT THIS DECK IS COMPARED TO, taken off the suggestions payload rather than resolved
   // again here. `loadDeckSuggestions` already ran in the first wave above and already built
   // this exact mix for its own shelf headers, so reading it back costs nothing and makes the
@@ -378,6 +387,7 @@ export default async function DeckBuilderPage({
       // Nothing in the app produces such a URL now that `/decks/[id]/versions`
       // is retired; see the note in `lib/decks/builder-view.ts`.
       analysisEnabled={analysisEnabled}
+      storedPermits={storedBracket}
       // Resolved on the SERVER, where the flag is read. A URL naming `analysis` against a
       // deployment that does not draw it lands on the decklist rather than on an unselected
       // row above an empty panel — the same rule `versions` already has for a brew.
