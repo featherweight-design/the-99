@@ -21,6 +21,36 @@ conflict among them is #877, and it is finding 3. #874 is the premise of finding
 "Bracket facts" heading is inside `CardModal` (`card-mark.ts:61`), which the handoff stacks
 unchanged, so there is no conflict there. #875, #878 and #881 touch nothing drawn here.
 
+## Hugh's rulings, 2026-09-23 (they settle findings 1, 2 and 5, and reshape PR C)
+
+**A deck carries one standing analysis: the last one the player ran. It describes the deck in
+its current state until the player runs another.**
+
+1. **v0 (no version yet).** Analysis needs a legal deck, never under or over. It belongs to the
+   deck, not to a version.
+2. **Commit.** Analysis runs alongside the commit. If the list is unchanged since the last
+   analysis, nothing is recomputed: the existing analysis is pinned to the new version. This
+   gives finding 7's "analyzed with version n" its data.
+3. **Edit, then re-analyze.** The new result and the player's declaration become the deck's
+   bracket everywhere: the tab, the header and the tile.
+4. **Edit without re-analyzing.** The deck KEEPS its last bracket everywhere, header chip
+   included, and the Re-analyze prompt shows. **Finding 2 is settled for the handoff:** the chip
+   holds, which reverses #877's hide-on-edit rule (`use-header-bracket.ts:13-15`).
+5. **Drift is an isDirty flag, not a diff.** Any edit sets it; any analysis clears it. After a
+   revert to the analyzed list the prompt still shows, and the press finds the same fingerprint,
+   answers almost instantly from the stored analysis, and clears the flag.
+6. **Only the player's edits cause drift.** A catalog refresh, a new set or a price update never
+   does. **Finding 1 is settled:** the stored analysis stops lapsing on the catalog generation and
+   the 7-day cap, and the banner's "your deck has changes" is then always true. Telling a player
+   that bracket-relevant DATA moved under their deck (a new Game Changer, a new flag, a new combo
+   touching their cards, a rules change) is a separate feature, scoped on its own and never an
+   automatic re-analysis.
+7. **The synopsis (finding 5).** Re-analyze rewrites it when the list has changed, charged
+   against a daily per-player allowance shared with #10 deck tuning. The bracket, findings, climb
+   and lean cost nothing and are never limited. An unchanged list returns the stored synopsis. An
+   exhausted allowance leaves the synopsis in its stale state with a reset line. The number is set
+   in sub-project 6 once a call is measured. A commit does not write a synopsis.
+
 ## Findings
 
 | # | Sev | What | Handoff | `main` | Resolves |
@@ -262,7 +292,7 @@ No stacking. Each PR merges before the next opens. Sizes are estimates.
 |---|---|---|---|
 | **A: sheets** | `ModalChrome` optional `mark` and 760; receipt at 760 / 4 across / 12px names; 3b sheet (lower rung only, no targets, no decklist link); 3c sheet; `CardModal` `backLabel` (finding 10); retired strings and the two design tables; probes `verdict-findings` and `verdict-lean` re-run, plus a `backLabel` check | `receipt-modal.tsx`, `card-modal.tsx`, `upgrade-path.tsx`, `bracket-climb.tsx`, `provenance-panel.tsx`, `findings-block.tsx`, `upgrade-path.ts`, `deck-analysis.ts`, `builder-shell.tsx` (drops `onOpenDecklist`). About 16 files. | nothing |
 | **B: the tab, fresh** | The empty state (ring, `at-wave`), the 2fr / 1fr grid, the bracket box redrawn (no label, no pill, display-face name, `analyzed {when}`), the strip's inset mode, the Overview omitted (finding 6), the settle announcement, `SynopsisSlot` deleted; `probe:verdict-block` updated | `analysis-panel.tsx`, `verdict-block.tsx`, `role-counter-strip.tsx`, `deck-analysis.ts`, `globals.css`, `builder-shell.tsx`. About 14 files. | A merged |
-| **C: held and stale** | `readStoredProfile` returns stale with its reason; the hook's held, re-read and failed-over-held states; the banner; 2d; the chips withheld on a stale range; `probe:profile-store` | `stored.ts`, `stored-sql.ts`, `profile-actions.ts`, `use-deck-profile.ts`, `analysis-panel.tsx`, `declaration.tsx`, `use-header-bracket.ts` (if finding 2 says hold). About 14 files. | **Hugh on 1 and 2** |
+| **C: the analysis lifecycle** | Per Hugh's rulings above: the stored analysis stops lapsing on catalog or age; an isDirty flag set by every edit and cleared by every analysis; the same-fingerprint re-analyze answers from the store; the hook's held, re-read and failed-over-held states; the banner; 2d; the chips withheld on a dirty range; the header and tile chip HOLD the last bracket (reverses #877); analysis on a legal deck only; analysis run and pinned at commit; `probe:profile-store` extended | `stored.ts`, `stored-sql.ts`, `profile-actions.ts`, `use-deck-profile.ts`, `analysis-panel.tsx`, `declaration.tsx`, `use-header-bracket.ts`, the commit action, `db/schema.ts` + one migration. Likely over 20 files: split data (schema, flag, store, commit pin) from surface (hook, banner, chips). | ruled 2026-09-23 |
 | **D: header** | The chips row at both widths, `BracketChip` restyled for both mounts (finding 3), `probe:bracket-chip` at 390 / 700 / 1300, `probe:commit-offer` re-run | `spine-desktop.tsx`, `spine-mobile.tsx`, `bracket-chip.tsx`, `deck-card.tsx`, `deck-analysis.ts`. About 10 files. | can run in parallel with B and C |
 | **E: synopsis** | The Overview paragraph, the entry point, the fourth body, the Versions link, the hover provider on names (finding 9) | `analysis-panel.tsx`, `receipt-modal.tsx`, `version-history.tsx`, a synopsis copy module | **sub-project 6's backend, plus Hugh on 5.** Likely more than one PR |
 | **F: About** | The launch batch: the entry, the `deck-page` edit, `ABOUT_VERSION` 10, fixtures, re-pinned hash | `about.ts`, `about/fixtures.ts` | the last PR of the line; Hugh on 18 |
