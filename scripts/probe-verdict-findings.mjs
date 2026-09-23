@@ -388,7 +388,14 @@ async function walkUpgradePath(page, label, width) {
     `${head.chips} chips, decklist ${head.decklist}`);
 
   // A CANDIDATE STACKS, and the way back is the target's name, the opening words of the header.
+  // A path blocked by the command zone lists no candidate by design (the commander is a span),
+  // so no candidate is a failure only on a path that is not blocked.
   const candidate = sheet.locator('[data-testid="upgrade-path"] button').first();
+  if ((await candidate.count()) === 0 && /not reachable/.test(head.title)) {
+    console.log(`       (${label}px · the path is blocked with nothing cuttable: no candidate to stack)`);
+    await page.keyboard.press("Escape");
+    return;
+  }
   if (!report(`${label}px · the path lists a candidate to open`, (await candidate.count()) === 1, `${await candidate.count()} found`)) {
     await page.keyboard.press("Escape");
     return;
@@ -420,10 +427,16 @@ async function run() {
     await signIn(scout);
     let href = null;
     for (const candidate of (await deckHrefs(scout)).slice(0, 12)) {
-      if ((await openAnalysis(scout, candidate)) && (await listFinding(scout))) { href = candidate; break; }
+      // 3b needs a rung below the reading, which a deck at the bottom of the ladder has none of,
+      // so the fixture must draw both a finding with cards AND the lower rung's opener.
+      if ((await openAnalysis(scout, candidate)) && (await listFinding(scout))
+        && (await onPageRole(scout, "button", /what would have to go/).count()) === 1) {
+        href = candidate;
+        break;
+      }
     }
     await first.close();
-    if (!report("a deck with a finding to open", href !== null, href ?? "none of the first 12 decks has one")) return;
+    if (!report("a deck with a finding to open", href !== null, href ?? "none of the first 12 decks has both a finding with cards and a rung below")) return;
     console.log(`       (walking ${href})`);
 
     for (const { label, viewport } of WIDTHS) {

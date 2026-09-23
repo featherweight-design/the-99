@@ -11,9 +11,8 @@ const copy = deckAnalysisCopy;
 
 /**
  * "How we make these decisions →", and the sheet it opens (the Analysis tab handoff's 3c): 560px,
- * no mark, no aside, and the shipped body unchanged. Opened from the findings' head row, and from
- * the empty state before a first reading. Outside links leave the app, and nothing else in the
- * sheet opens anything.
+ * no mark, no aside, and the shipped body unchanged. Opened from the findings' head row. Outside
+ * links leave the app, and nothing else in the sheet opens anything.
  *
  * FOUR ROWS: where each figure comes from, then what it might miss. Game changers carries no
  * misses line, and that contrast is the point: a reader who sees three caveats beside one flat

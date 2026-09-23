@@ -23,7 +23,7 @@ const name = (bracket: Bracket) => BRACKET_NAMES[bracket];
 const capitalize = (text: string) => text.charAt(0).toUpperCase() + text.slice(1);
 
 export const upgradePathCopy = {
-  /** The climb's lower rung, and the disclosure that opens from it. Replaces `to drop to here`. */
+  /** The climb's lower rung, and the sheet that opens from it (3b). Replaces `to drop to here`. */
   rungLabel: "To downgrade your deck",
   open: "what would have to go",
   /** `n` counts what must go: the copies a count rule asks for, plus one per combo to break. */

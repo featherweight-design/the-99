@@ -19,8 +19,9 @@ const NAMES_PHONE = 3;
  * "What is in this deck" — five findings, each with its count and its cards, and the receipt
  * behind every one that has cards.
  *
- * ONE RULE GOVERNS THE TAB: the climb states, the findings open. A present finding's control is
- * the only thing here that opens anything, and a zero draws no control at all.
+ * ONE RULE GOVERNS THE TAB: the climb states, the findings open. A present finding's control
+ * opens its receipt and a zero draws no control at all; the section's only other control is the
+ * head row's `How we make these decisions →`, which is about all five rather than any one.
  *
  * ONE LIST AT BOTH WIDTHS, restyled rather than drawn twice. Desktop lays the five out as tiles
  * in a row; the phone stacks them as rows in one box. Two subtrees would mount every control

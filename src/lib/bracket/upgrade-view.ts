@@ -8,16 +8,16 @@ import { upgradePath, type UpgradeItem, type UpgradePath } from "./upgrade";
  * component holds a second copy of a rule.
  *
  * `upgradePath` is Tier A's and states what a target asks for. What the surface adds is only
- * arithmetic over that answer — which targets to offer, how many things a heading counts, which
- * cards sit in two items, and the nearest target removals CAN reach when this one cannot.
+ * arithmetic over that answer — which target to read, how many things a heading counts, and which
+ * cards sit in two items.
  */
 
 /** The three brackets a deck can be taken down to. Never 4 or 5: those have no card limits. */
 export type Target = 1 | 2 | 3;
 
 /**
- * The targets offered as chips, nearest first: every bracket BELOW the bottom of the deck's
- * reading, up to Upgraded.
+ * The brackets below the deck's reading, nearest first: every bracket BELOW the bottom of the
+ * reading, up to Upgraded. The sheet reads the first, the bracket directly below (3b).
  *
  * Below the BOTTOM, not the top. A `[1,2]` deck already sits inside Core, and the path it would
  * draw there is "nothing would have to go" — which is the declaration's question, asked by the
