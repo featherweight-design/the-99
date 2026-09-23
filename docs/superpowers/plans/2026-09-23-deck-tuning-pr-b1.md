@@ -2,6 +2,21 @@
 
 > Part of the deck tuning plan. **Read the index first:** [`2026-09-07-deck-tuning-suggestions.md`](2026-09-07-deck-tuning-suggestions.md) — the Global Constraints, File Structure, PR boundaries and Cost there apply to every task below. Task numbers are shared across all six files.
 
+> **Amended 2026-09-23, during the build.** Four changes, each to keep a string or a function from
+> shipping ahead of the thing that uses it, or to keep the plan honest about the code:
+> 1. **Copy keys arrive with their first caller**, which is what `deck-tuning.ts`'s own header
+>    already requires. B1 adds `intent` alone (`limits.ts` reads `maxLength`). `panel.generating`,
+>    `panel.unchanged`, `allowance` and `suggestionRules` go to B2 with the gate and the prompt;
+>    `panel.refused` and the intent refusal go to C with the actions.
+> 2. **`intentRefusal` is `intentTooLong`, a boolean.** The plan had it return
+>    `gameLogCopy.form.refused`, which reads "We couldn't save that game" — wrong for an intent.
+>    The refusal sentence is new copy and ships in C through `/copy-review`.
+> 3. **`seededIntent` moves to C** beside `createDeck` and `fillDeck`, its callers. The handoff
+>    draws the seeded state but writes no seeded sentence, so that sentence is authorship and goes
+>    through `/copy-review` with a picture.
+> 4. **`EvidencePack.targets` carries the five mix cells, land included**, plus `measured`, rather
+>    than a separate `lands` field: `recommendedMix` already puts land in the same shape.
+
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
 ---
