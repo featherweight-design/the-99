@@ -59,13 +59,13 @@
 | **7** | 16–19 | `recommendedMix` per deck, the route read, copy, About | no |
 | **8** | 20 | Add panel orders within a shelf by type gap | no |
 | **9a** | 21 | The existing bulk control runs the real fill | no |
-| **9b** | 22 | A second bulk control, and the concession labels | **yes** |
+| **9b** | 22 | A second bulk control, and the concession labels | **yes** · shipped #836 |
 
 **[R2] `landTarget` and `planFill` are now ONE PR.** R1 changed `landTarget`'s signature in PR 5 and left `fill.ts`'s two call sites to PR 6, so PR 5 did not compile.
 
 **[R3] PR 10 is GONE, and its absence is the point.** It proposed a layered clear; the app already separates the fill by PASS and already draws a per-pass undo (`provenance-line.tsx`, `pass-mark.tsx`, `Undo these {n}`). Filling to 99 in one pass would have collapsed that, so the fix is Task 14 recording the residual as its own pass — no control, no migration, no backfill, no Design round. See spec §2.2.
 
-Only 9b is blocked on Design now. Emit the brief when PR 6 merges.
+9b was the only PR blocked on Design. Its handoff (`design/design_handoff_the99_bulk_controls/`) was audited 🟢 Green in #823, and 9b shipped as #836.
 
 ---
 
@@ -1041,9 +1041,9 @@ fails. Record it.
 
 ---
 
-### Task 22: The second bulk control — PR 9b · BLOCKED ON DESIGN
+### Task 22: The second bulk control — PR 9b · SHIPPED #836
 
-Do not start until a handoff with a READINESS verdict exists. Adds a second control whose pool is
+Built against `design/design_handoff_the99_bulk_controls/`, audited 🟢 Green in #823. Adds a second control whose pool is
 the whole candidate list, labelled with its cost, beside the first labelled with what it
 compromised. 
 Already built and not to be rebuilt: the list has no facet filter; it draws `BuyTag` and prices

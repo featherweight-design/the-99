@@ -316,7 +316,7 @@ sharpens the reasoning.
   surfaces and needs a design cycle, and separating the two means the floor can be measured,
   argued with and corrected before anything is built on it. `ROLE_TARGETS` keeps its current
   callers untouched in this sub-project; §4A.6 covers what becomes of it.
-- **Any language-model call.** Sub-project 5, and it reads this object.
+- **Any language-model call.** Sub-projects 5 (#10) and 6 (the synopsis), which share one model client; the synopsis reads this object.
 - **Combo surfacing and near-miss recommendations.** The ingest lands here because the slot
   needs two-card-combo detection; *surfacing* combos and `almostIncluded` is sub-project 3
   (§14).
@@ -2268,7 +2268,7 @@ Named so the profile's shape accounts for them. None is specced.
 | 3 | Combos and near-misses (`almostIncluded`) | — reads §4.3 |
 | 4 | Small swap tools: cheaper-than-$X, from-my-collection, #218, #217 | ownership, price groups |
 | 5 | #10 resumed, games as enrichment | play-data group |
-| 6 | Deck synopsis (the one model feature) | — reads the whole object |
+| 6 | Deck synopsis (one of two model features, with #10 in row 5; the two share one model client) | — reads the whole object |
 | 7 | #215 alternate commander | — |
 | 8 | Intake questions → deck | — |
 
