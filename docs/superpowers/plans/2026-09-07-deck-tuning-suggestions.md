@@ -79,7 +79,7 @@ Read every rule below as governing **what reaches the player** — shipped copy,
 **Model, allowance and validation.**
 
 - **Model: `claude-sonnet-5`** — the current Sonnet, chosen for a structured-output task that must follow nine presentation rules. It is `TUNING_MODEL` in `src/lib/tuning/limits.ts`, passed to the shared client per call, and recorded per run in `deck_suggestion_runs.model`. Nothing in `src/lib/model/` names a model.
-- **One model run per press.** The two in-run bounded retries (`upstream_busy`, `malformed`) happen inside that single run row and do not create a second run.
+- **One model run per press.** At most one bounded in-run retry — after an `upstream_busy` or a `malformed` reply, whichever comes first — so at most two HTTP attempts, inside that single run row. A retry never creates a second run.
 - **One per-player DAILY allowance, shared with the synopsis.** `MODEL_DAILY_ALLOWANCE` in `src/lib/model/allowance.ts` is the only number; a run consumes one unit whether it succeeds or fails, because the call was paid for either way, and a refusal before the call consumes none. Its value is a named placeholder until a call's cost is measured (see *Cost*). An exhausted allowance is a stated state with its own copy and the time it reopens — never a silent failure and never a disabled button without a reason.
 - **Three suggestions maximum. Fewer is legitimate** — one well-grounded suggestion beats three padded ones, and zero surviving suggestions is the `ungrounded` outcome, not an error.
 - **Six validation rules**, all pure: schema, the card exists, the cut is real, the add is legal (colour identity), the evidence exists, and the nine presentation checks. Every drop increments `dropped_count`.
@@ -109,8 +109,8 @@ Read every rule below as governing **what reaches the player** — shipped copy,
 
 | File | Responsibility |
 |---|---|
-| `client.ts` | `callModel({ model, system, user, maxTokens, schema, deadlineMs }, deps?)` — the raw `fetch`, one deadline across both attempts, one retry on `429`/`529`/`5xx`, one retry on a reply that fails the caller's zod schema. Returns `{ ok: true, value } \| { ok: false, errorClass: "upstream_busy" \| "timeout" \| "malformed" }`. Knows no feature. |
-| `allowance.ts` | `MODEL_DAILY_ALLOWANCE`, `ALLOWANCE_WINDOW_MS`, `reserveModelCall(tx, userId, feature)` and `readAllowance(userId, now)`. The only counter. |
+| `client.ts` | `callModel({ model, system, user, maxTokens, schema, deadlineMs }, deps?)` — the raw `fetch`, one deadline across both attempts, at most two attempts: one retry after a `429`/`529`/`5xx` or a reply failing the caller's zod schema, not one of each. Returns `{ ok: true, value, usage } \| { ok: false, errorClass: "upstream_busy" \| "timeout" \| "malformed" }`. Knows no feature. |
+| `allowance.ts` | `MODEL_DAILY_ALLOWANCE`, `ALLOWANCE_WINDOW_MS`, `AllowanceSpentError`, `reserveModelCall(tx, userId, feature, now)`, `readAllowance(userId, now)` and the pure `allowanceFrom`. The only counter. |
 
 **Pure core — `src/lib/tuning/` (no database, no network, client-safe unless noted):**
 
@@ -123,6 +123,8 @@ Read every rule below as governing **what reaches the player** — shipped copy,
 | `response-schema.ts` | The zod schema for the model's reply, and the `TuningResponse` type. |
 | `validate.ts` | The six validation rules, as pure predicates over a candidate plus the pack. |
 | `presentation.ts` | The nine `suggestionRules` checks — the sixth validation rule. |
+| `state.ts` | `TuningState` and `TuningItem` — types only, so `gate.ts` and the panel compile without the server read. |
+| `run-store.ts` | **Server-only.** `finishRun`, `persistRun`, `ErrorClass` — the guarded outcome writes, importable by the probe. |
 | `gate.ts` | `gateReason(state)` and the `GateReason` type — the one answer to "why is the button disabled", shared by the panel and by `runTuning`. No game count. |
 | `reaper.ts` | `reapCutoff(now)` and the pure arithmetic behind the read-time reap. |
 | `limits.ts` | `TUNING_MODEL`, `REAPER_CUTOFF_MS`, `MODEL_TIMEOUT_MS`, `MAX_SUGGESTIONS`, plus `intentRefusal(intent)` and `seededIntent(commanderName)`. |
@@ -175,7 +177,7 @@ Read every rule below as governing **what reaches the player** — shipped copy,
 |---|---|
 | `scripts/check-tuning.ts` | `pnpm check:tuning` — one live API call against a fixture pack, asserting the response validates. |
 | `scripts/fixtures/tuning-pack.json` | The committed fixture pack. |
-| `.github/workflows/scryfall-contract.yml` | The "Upstream contract checks" workflow. Gains the tuning step. |
+| `.github/workflows/tuning-contract.yml` | New, daily, gated on `TUNING_CHECK_ENABLED`, with `ANTHROPIC_API_KEY` as a secret. Not a step in `scryfall-contract.yml`, whose header promises "no database, no secrets". |
 
 ---
 
@@ -269,18 +271,18 @@ export const deckSuggestionRuns = pgTable("deck_suggestion_runs", {
   ),
   // The constraint that makes a second concurrent run impossible. Partial, on
   // 'pending' only — a deck may accumulate any number of finished runs.
-  // The predicate is written as raw SQL, not as `${t.status}`. Drizzle renders a
-  // column reference table-qualified, and Postgres rejects a qualified name in
-  // an index predicate.
+  // Same form as printings_flavor_name_idx (src/db/schema.ts:142-144): Drizzle
+  // qualifies the column and Postgres accepts a qualified name in a predicate —
+  // drizzle/0023_chubby_lady_vermin.sql applied exactly that.
   uniqueIndex("deck_suggestion_runs_one_pending_idx")
     .on(t.deckId)
-    .where(sql`status = 'pending'`),
+    .where(sql`${t.status} = 'pending'`),
   index("deck_suggestion_runs_deck_created_idx").on(t.deckId, t.createdAt),
   index("deck_suggestion_runs_user_created_idx").on(t.userId, t.createdAt),
 ]);
 ```
 
-The `.where()` clause on a unique index is new to this file — no partial index exists in it today. The generated SQL must read `create unique index ... on "deck_suggestion_runs" ("deck_id") where "status" = 'pending';`. Verify that in Step 6.
+The file's one partial index today is `printings_flavor_name_idx`; this is its first partial UNIQUE index. The generated SQL must read `CREATE UNIQUE INDEX "deck_suggestion_runs_one_pending_idx" ON "deck_suggestion_runs" USING btree ("deck_id") WHERE "deck_suggestion_runs"."status" = 'pending';`. Verify that in Step 6.
 
 - [ ] **Step 4: Add the items table**
 
@@ -294,7 +296,7 @@ export type TuningCitation = {
 export const deckSuggestionItems = pgTable("deck_suggestion_items", {
   id: uuid("id").primaryKey().defaultRandom(),
   runId: uuid("run_id").notNull().references(() => deckSuggestionRuns.id, { onDelete: "cascade" }),
-  // uuid, not text — cards.oracleId is uuid("oracle_id") at src/db/schema.ts:25
+  // uuid, not text — cards.oracleId is uuid("oracle_id") at src/db/schema.ts:33
   // and Postgres rejects a text→uuid foreign key. Matches deckCards.oracleId.
   addOracleId: uuid("add_oracle_id").notNull().references(() => cards.oracleId),
   cutOracleId: uuid("cut_oracle_id").references(() => cards.oracleId),
@@ -390,7 +392,7 @@ pnpm test src/db/schema.test.ts
 pnpm db:generate
 ```
 
-Expected: four passing tests, and one new generated `drizzle/00NN_*.sql` at the next free number on `main` (`git fetch` first; 0053 at revision time). Commit the journal and snapshot Drizzle writes beside it. Open it and confirm the partial index line carries `where "status" = 'pending'`. If Drizzle emitted an unconditional unique index, the `.where()` in Step 3 is wrong — fix it and regenerate rather than editing the SQL by hand.
+Expected: four passing tests, and one new generated `drizzle/00NN_*.sql` at the next free number on `main` (`git fetch` first; 0053 at revision time). Commit the journal and snapshot Drizzle writes beside it. Open it and confirm the partial index line carries `WHERE "deck_suggestion_runs"."status" = 'pending'`. If Drizzle emitted an unconditional unique index, the `.where()` in Step 3 is wrong — fix it and regenerate rather than editing the SQL by hand.
 
 - [ ] **Step 7: Commit**
 
@@ -457,11 +459,12 @@ describe("deck tuning copy", () => {
 
   it("amends the game log's optional-note line rather than replacing it", () => {
     expect(gameLogCopy.form.optionalNote).toBe(
-      "marks are optional — a result on its own is a game",
+      "marks are optional: a result on its own is a game",
     );
     expect(deckTuningCopy.note.optionalNote).not.toBe(gameLogCopy.form.optionalNote);
   });
 
+  // PR D: `intent.seeded` arrives with the intent control.
   it("caps a note at 140 and an intent at 120, and seeds inside the cap", () => {
     expect(deckTuningCopy.note.maxLength).toBe(140);
     expect(deckTuningCopy.note.warnAt).toBe(130);
@@ -469,12 +472,14 @@ describe("deck tuning copy", () => {
     expect(deckTuningCopy.intent.seeded.length).toBeLessThanOrEqual(120);
   });
 
+  // PR B from here to the next marker.
   it("has a failure object for all five classes", () => {
     for (const k of ["unavailable", "timedOut", "unusable", "nothingHeldUp", "interrupted"]) {
       expect(deckTuningCopy.failure[k as keyof typeof deckTuningCopy.failure]).toBeDefined();
     }
   });
 
+  // PR D: `panel.results` and `card.*` are keys only a component draws.
   it("carries a denominator on every counted line", () => {
     expect(deckTuningCopy.panel.results(2, 3)).toContain("of 3");
     expect(deckTuningCopy.card.consequenceOwned(99, "Complete")).toContain("of 99");
@@ -530,7 +535,7 @@ export const deckTuningCopy = {
   // Shipped. Also carries `hintShort` (the phone's gloss) and the `readBack`
   // pair (the desktop line under the field), neither of which this sketch had.
   note: { /* label, hint, hintShort, counter, maxLength: 140, warnAt: 130, optionalNote, ariaDescription, readBack, readBackEmphasis */ },
-  suggestionRules: { /* the nine static rules — see Task 7 */ },
+  suggestionRules: { /* the nine static rules — see Task 9 */ },
   announce: { /* started, ready, readyOne, unchanged, stopped, failed, applied, undone, dismissed, intentSaved */ },
 } as const;
 ```
@@ -622,7 +627,7 @@ Expected: PASS.
 
 - [x] ~~**Step 5: Accept the note in `logGame`**~~ — shipped
 
-`logGame` is **not** a form action. Its signature is `logGame(deckId: string, input: LogGameInput)` (`src/app/decks/actions.ts:1264`), `LogGameInput` is declared at `:822`, and `game-log-form.tsx:199` calls it directly with an object. Do not reach for `FormData` here.
+`logGame` is **not** a form action. Its signature is `logGame(deckId: string, input: LogGameInput)` (`src/app/decks/actions.ts:1264`), `LogGameInput` is declared at `:1232`, and `game-log-form.tsx:235` calls it directly with an object. Do not reach for `FormData` here.
 
 Add to `LogGameInput`:
 
@@ -630,7 +635,7 @@ Add to `LogGameInput`:
   note?: string;
 ```
 
-and validate it in the same inline style the action already uses (lines 861-889 — no zod), remembering the action's own comment that "a server action is a public endpoint, so the input's declared type is a claim and not a guarantee":
+and validate it in the same inline style the action already uses (inside `logGame` — no zod), remembering the action's own comment that "a server action is a public endpoint, so the input's declared type is a claim and not a guarantee":
 
 ```typescript
   // As shipped. A non-string is REFUSED rather than read as an empty note: the
@@ -642,7 +647,7 @@ and validate it in the same inline style the action already uses (lines 861-889 
   if (countCharacters(note) > deckTuningCopy.note.maxLength) return refuse;
 ```
 
-`refuse` is the existing local at line 855. Pass `note: note.length > 0 ? note : null` in the `deckGames` insert. A blank note stores null, not an empty string — so "has a note" is one predicate everywhere.
+`refuse` is the existing local at `:1271`. Pass `note: note.length > 0 ? note : null` in the `deckGames` insert. A blank note stores null, not an empty string — so "has a note" is one predicate everywhere.
 
 - [ ] **Step 6: Project the intent onto `DeckDetail`**
 
@@ -802,7 +807,7 @@ Expected: FAIL — `intentRefusal` is not exported.
 
 ```typescript
 // src/lib/tuning/limits.ts
-import { deckTuningCopy } from "../copy/deck-tuning";
+import { countCharacters, deckTuningCopy } from "../copy/deck-tuning";
 import { gameLogCopy } from "../copy/game-log";
 
 export const MAX_SUGGESTIONS = 3;
@@ -817,7 +822,9 @@ export const TUNING_MAX_TOKENS = 2_000;
 export function intentRefusal(intent: string): string | null {
   // The shipped form refusal, not a tuning-specific string — this is a form
   // rejecting what was typed, which is the case gameLogCopy.form.refused names.
-  return intent.length > deckTuningCopy.intent.maxLength ? gameLogCopy.form.refused : null;
+  // Code points, as the note's check does: the column counts with char_length,
+  // and `.length` would refuse 61 emoji as 122 characters.
+  return countCharacters(intent) > deckTuningCopy.intent.maxLength ? gameLogCopy.form.refused : null;
 }
 ```
 
@@ -992,6 +999,12 @@ export const PROMPT_VERSION = 1;
 // SERVER-ONLY: node:crypto, as src/lib/profile/fingerprint.ts.
 import { createHash } from "node:crypto";
 import { PROMPT_VERSION } from "./prompt-version";
+
+export type FingerprintInput = {
+  profile: string;
+  games: { id: string; result: string; podSize: number; worked: string[]; hurt: string[]; note: string | null }[];
+  intent: string | null;
+};
 
 export function tuningFingerprint(input: FingerprintInput): string {
   const games = [...input.games]
@@ -1338,7 +1351,8 @@ git commit -m "feat(tuning): schema-constrained prompt and response contract"
 - Consumes: `EvidencePack` (Task 7), `TuningResponse` (Task 8).
 - Produces:
   ```typescript
-  export function presentationFailures(text: string): string[];
+  /** `notes` are the pack's game notes: the verbatim-quote check needs something to compare against. */
+  export function presentationFailures(text: string, notes: readonly string[]): string[];
   export type ValidatedSuggestion = {
     addOracleId: string; cutOracleId: string | null;
     rationale: string; rationaleShort: string;
@@ -1347,7 +1361,9 @@ git commit -m "feat(tuning): schema-constrained prompt and response contract"
   export function validateSuggestions(args: {
     response: TuningResponse;
     pack: EvidencePack;
-    resolveName: (name: string) => { oracleId: string; colorIdentity: string[] } | null;
+    // The shape validateCardForDeck takes (CardForValidation, add-validation.ts), so
+    // "the add is legal" is that one rule: commander-legal first, then identity.
+    resolveName: (name: string) => { oracleId: string; colorIdentity: string[]; commanderLegal: boolean } | null;
   }): { kept: ValidatedSuggestion[]; droppedCount: number };
   ```
 
@@ -1393,7 +1409,7 @@ Expected: FAIL — cannot resolve `./presentation`.
 
 - [ ] **Step 3: Implement the nine checks**
 
-One function returning the names of the rules a string breaks. The nine, matching `deckTuningCopy.suggestionRules` one-to-one: no percentage; no net figure; every count carries a denominator; every claim cites; a quoted note is quoted verbatim; the add is inside the colour identity; the cut is in the deck; one cut per add; ownership is a fact about the collection and never a ranking. The first five are text checks and live here; the last four are structural and live in `validate.ts`, but all nine are named by the same copy keys so the model's instructions and the validator agree.
+One function returning the names of the rules a string breaks. The nine, matching `deckTuningCopy.suggestionRules` one-to-one: no percentage; no net figure; every count carries a denominator; every claim cites; a quoted note is quoted verbatim; the add is inside the colour identity; the cut is in the deck; one cut per add; ownership is a fact about the collection and never a ranking. The first five are text checks and live here — the verbatim one against the `notes` passed in, so a quotation matching no logged note is a failure; the last four are structural and live in `validate.ts`, but all nine are named by the same copy keys so the model's instructions and the validator agree.
 
 The denominator check is the subtle one: a numeral followed by a countable noun (`games`, `cards`) with no ` of ` between it and a second numeral is a failure. `3 of 5 games` passes; `3 games` does not; `4 lands` in a decklist claim does not need a denominator and is exempted by requiring the noun to be one of the counted nouns.
 
@@ -1430,7 +1446,7 @@ it("drops a citation of games when the pack has none", () => {
 it("drops an add outside the commander's colour identity", () => {
   const out = validateSuggestions({
     response: withAdd("Lightning Bolt"), pack: { ...pack, colorIdentity: ["G"] },
-    resolveName: () => ({ oracleId: "bolt", colorIdentity: ["R"] }),
+    resolveName: () => ({ oracleId: "bolt", colorIdentity: ["R"], commanderLegal: true }),
   });
   expect(out.kept).toHaveLength(0);
   expect(out.droppedCount).toBe(1);
@@ -1505,6 +1521,8 @@ git commit -m "feat(tuning): six validation rules, every drop counted"
   export const ALLOWANCE_WINDOW_MS = 24 * 60 * 60 * 1000;
   export type ModelFeature = "tuning" | "synopsis";
   export type Allowance = { used: number; limit: number; reopensAt: Date | null };
+  /** Thrown inside the caller's transaction to roll back a run that found the allowance spent. */
+  export class AllowanceSpentError extends Error {}
   /** Inside the caller's transaction: lock, count, insert. Null when spent. */
   export function reserveModelCall(tx: Tx, userId: string, feature: ModelFeature, now: Date): Promise<{ id: string } | null>;
   export function readAllowance(userId: string, now: Date): Promise<Allowance>;
@@ -1548,7 +1566,25 @@ it("retries once on a reply that fails the caller's schema, then reports malform
 });
 
 it("reports timeout and does not retry it", async () => {
-  // fake timers advanced past deadlineMs
+  vi.useFakeTimers();
+  const calls: number[] = [];
+  const fake = (_u: string, init?: RequestInit) => new Promise<Response>((_r, reject) => {
+    calls.push(1);
+    init?.signal?.addEventListener("abort", () => reject(new DOMException("aborted", "AbortError")));
+  });
+  const pending = callModel(req, { fetch: fake as unknown as typeof fetch });
+  await vi.advanceTimersByTimeAsync(req.deadlineMs + 1);
+  expect(await pending).toEqual({ ok: false, errorClass: "timeout" });
+  expect(calls).toHaveLength(1);
+  vi.useRealTimers();
+});
+
+it("spends its one retry once, even when the two failures differ", async () => {
+  const calls: number[] = [];
+  const fake = async () => { calls.push(1); return calls.length === 1 ? busy() : reply({ wrong: 1 }); };
+  const out = await callModel(req, { fetch: fake as unknown as typeof fetch });
+  expect(out).toEqual({ ok: false, errorClass: "malformed" });
+  expect(calls).toHaveLength(2);
 });
 
 it("spends one deadline across both attempts, not one each", async () => {
@@ -1567,6 +1603,8 @@ it("sends the caller's model and names none of its own", async () => {
 
 it("returns the usage the response reported", async () => {
   // Cost section: the measured tokens are read off this.
+  const out = await callModel(req, { fetch: (async () => reply({ answer: "x" }, { input_tokens: 812, output_tokens: 90 })) as unknown as typeof fetch });
+  expect(out.ok && out.usage).toEqual({ inputTokens: 812, outputTokens: 90 });
 });
 ```
 
@@ -1605,7 +1643,7 @@ pnpm test src/lib/model
 
 Raw `fetch` to `https://api.anthropic.com/v1/messages`, the headers `scripts/generate-commander-prose.ts` sends (`content-type`, `x-api-key` from `process.env.ANTHROPIC_API_KEY`, `"anthropic-version": "2023-06-01"`), the caller's `model` and `max_tokens`, and the caller's `system` and `user`. The reply's text block is `JSON.parse`d and checked with `schema.safeParse`; a parse or schema failure is the `malformed` class.
 
-**The deadline is one deadline across both attempts, not a budget each.** Compute `deadline = now() + deadlineMs` once, before the first attempt, and arm each attempt's `AbortController` at `deadline - now()`; skip the retry when nothing is left. At most two HTTP attempts, and only for `429`/`529`/`5xx` (→ `upstream_busy`) and an unparseable reply (→ `malformed`). A timeout is not retried — the budget is the budget, and a second attempt would outrun the route's `maxDuration` and leave no room to write the failure row. A missing key throws: that is a deployment defect, not a failure class a player should see as "try again".
+**The deadline is one deadline across both attempts, not a budget each.** Compute `deadline = now() + deadlineMs` once, before the first attempt, and arm each attempt's `AbortController` at `deadline - now()`; skip the retry when nothing is left. At most two HTTP attempts in total — one retry, spent on whichever retryable condition comes first: `429`/`529`/`5xx` (→ `upstream_busy`) or an unparseable reply (→ `malformed`). A second retryable failure reports its own class. A timeout is not retried — the budget is the budget, and a second attempt would outrun the route's `maxDuration` and leave no room to write the failure row. A missing key throws: that is a deployment defect, not a failure class a player should see as "try again".
 
 `scripts/generate-commander-prose.ts` keeps its own fetch in this PR. Moving it onto the shared client is a separate change with its own proof (the prose workflow), logged on the board rather than folded in here.
 
@@ -1633,7 +1671,7 @@ git commit -m "feat(model): one shared model client and a per-player daily allow
 
 **Files:**
 - Modify: `src/app/decks/tuning-actions.ts` (adds `runTuning` and `cancelTuningRun`)
-- Create: `src/lib/tuning/reaper.ts`, `scripts/probe-tuning-run.mts` (+ `probe:tuning-run` in `package.json`)
+- Create: `src/lib/tuning/reaper.ts`, `src/lib/tuning/run-store.ts`, `scripts/probe-tuning-run.mts` (+ `probe:tuning-run` in `package.json`)
 - Test: `src/lib/tuning/reaper.test.ts`, `src/app/decks/tuning-actions.test.ts`
 
 **Interfaces:**
@@ -1757,7 +1795,7 @@ export async function runTuning(deckId: string): Promise<DeckMutationResult> {
   // Injecting it is what keeps validate.ts pure and client-safe (Task 9).
   const names = outcome.value.suggestions.flatMap((s) => [s.add, ...(s.cut ? [s.cut] : [])]);
   const rows = names.length === 0 ? [] : await db
-    .select({ oracleId: cards.oracleId, name: cards.name, colorIdentity: cards.colorIdentity })
+    .select({ oracleId: cards.oracleId, name: cards.name, colorIdentity: cards.colorIdentity, commanderLegal: cards.commanderLegal })
     .from(cards)
     .where(inArray(cards.name, names));
   const byName = new Map(rows.map((r) => [r.name, r]));
@@ -1775,12 +1813,14 @@ export async function runTuning(deckId: string): Promise<DeckMutationResult> {
 
 `readDeckIntent` is a one-column read of `decks.intent`, scoped by `user_id`; `readOwnedOracleIds` is one `collection_items` read over the given ids. Both live in `tuning-read.ts`. `cachedDeckProfile` is the loader the Analysis tab's press already warms (`src/lib/profile/load.ts:577`), so a player who analysed the deck first pays nothing for the deck half here. Its key is the profile fingerprint, so a card edited since the analysis reads a fresh profile rather than a stale one.
 
-Both writers share one shape. `finishRun` writes an outcome and no items; `persistRun` writes the items and the outcome together:
+Both writers share one shape. `finishRun` writes an outcome and no items; `persistRun` writes the items and the outcome together. They live in **`src/lib/tuning/run-store.ts`** (server-only, not a `"use server"` module), exported, so the probe can call the real functions: exported from `tuning-actions.ts` they would become public server actions taking an arbitrary `runId`. `ErrorClass` is declared there beside them — `ModelErrorClass | "ungrounded" | "interrupted"`, the five values the column's check allows:
 
 ```typescript
+export type ErrorClass = ModelErrorClass | "ungrounded" | "interrupted";
+
 class RunSupersededError extends Error {}
 
-async function finishRun(
+export async function finishRun(
   runId: string,
   deckId: string,
   set: { status: "failed"; errorClass: ErrorClass; droppedCount?: number },
@@ -1796,7 +1836,7 @@ async function finishRun(
   return { ok: true };
 }
 
-async function persistRun(
+export async function persistRun(
   runId: string, deckId: string, kept: ValidatedSuggestion[], droppedCount: number,
 ): Promise<DeckMutationResult> {
   try {
@@ -1845,7 +1885,7 @@ Stop needs no new concurrency primitive — it is the reaper's mechanism fired b
 
 - [ ] **Step 5: Prove the durability contract against a real Postgres — `pnpm probe:tuning-run`**
 
-Every rule in this task is a fact about what a transaction wrote, which no jsdom test here can reach; a stub that records statements proves the text was issued and nothing about the lock or the guard. So the race cases are a probe, in the repo's convention (`probe:claims`, `probe:score-lock`): `scripts/probe-tuning-run.mts`, a per-run `user_id`, every fixture deleted in a `finally`, each cleanup step on its own. It calls the real `finishRun` / `persistRun` / `reserveModelCall` and stubs only the model (through `callModel`'s injected `fetch`).
+Every rule in this task is a fact about what a transaction wrote, which no jsdom test here can reach; a stub that records statements proves the text was issued and nothing about the lock or the guard. So the race cases are a probe, in the repo's convention (`probe:claims`, `probe:score-lock`): `scripts/probe-tuning-run.mts`, a per-run `user_id`, every fixture deleted in a `finally`, each cleanup step on its own. It calls the real `finishRun` / `persistRun` (from `run-store.ts`) and `reserveModelCall`, and stubs only the model (through `callModel`'s injected `fetch`).
 
 Four cases, each written so a mutation fails it:
 
@@ -1861,7 +1901,7 @@ Point it at `local-dev` or a scratch Neon branch, **never production**. The scri
 ```bash
 pnpm test src/lib/tuning/reaper.test.ts
 PROBE against local-dev: pnpm probe:tuning-run
-git add src/app/decks/tuning-actions.ts scripts/probe-tuning-run.mts package.json
+git add src/app/decks/tuning-actions.ts src/lib/tuning/run-store.ts scripts/probe-tuning-run.mts package.json
 git commit -m "feat(tuning): durable run lifecycle with a reaper, a cancel, and guarded writes"
 ```
 
@@ -1869,10 +1909,10 @@ git commit -m "feat(tuning): durable run lifecycle with a reaper, a cancel, and 
 
 ### Task 12: The read, the gate, and the allowance
 
-**Split.** Steps 1–2 (`gate.ts`, pure) ship in **PR B**; steps 3–5 (`tuning-read.ts`, `readTuningPanel`) in **PR C**. The page wiring is PR D's.
+**Split.** Steps 1–2 (`state.ts` and `gate.ts`, pure) ship in **PR B**; steps 3–5 (`tuning-read.ts`, `readTuningPanel`) in **PR C**. The page wiring is PR D's.
 
 **Files:**
-- Create: `src/lib/tuning/gate.ts`, `src/lib/decks/tuning-read.ts`
+- Create: `src/lib/tuning/state.ts`, `src/lib/tuning/gate.ts`, `src/lib/decks/tuning-read.ts`
 - Modify: `src/app/decks/tuning-actions.ts` (adds `readTuningPanel`)
 - Test: `src/lib/tuning/gate.test.ts`
 
@@ -1888,7 +1928,8 @@ git commit -m "feat(tuning): durable run lifecycle with a reaper, a cancel, and 
   };
   export function gateReason(state: TuningState): GateReason | null;
 
-  // src/lib/decks/tuning-read.ts — server-only
+  // src/lib/tuning/state.ts — pure types, PR B, so gate.ts compiles without PR C.
+  // tuning-read.ts (PR C) imports them and fills them.
   export type TuningItem = {
     id: string;
     addOracleId: string; addName: string; addTypeLine: string;
@@ -1916,6 +1957,8 @@ git commit -m "feat(tuning): durable run lifecycle with a reaper, a cancel, and 
     /** What the evidence will hold, so the panel can say "no games yet" without a gate. */
     gameCount: number;
   };
+
+  // src/lib/decks/tuning-read.ts — server-only, PR C
   export function readTuningState(deckId: string, userId: string, fingerprint: string): Promise<TuningState>;
 
   // src/app/decks/tuning-actions.ts
@@ -2181,33 +2224,20 @@ git commit -m "feat(tuning): the tuning panel across all six states"
 
 **Design table rows to satisfy:** S5 states 1–6, the persistence row, and the candidate-not-shown row. Apply/dismiss tap floor **44px mobile, 32px desktop**, and **apply is never adjacent to a destructive control** — the dismiss control must not sit beside it in the tap order.
 
-- [ ] **Step 1: Write the failing action tests**
+- [ ] **Step 1: Write the failing probe cases** (in `scripts/probe-tuning-run.mts`, PR C)
 
-```typescript
-it("applies a pair as one transaction — the cut leaves and the add arrives together", async () => {
-  // Assert both deck_cards changes and the item verdict land, or none do.
-});
-
-it("refuses to apply twice", async () => {
-  // Second call on an already-accepted item returns ok:false with applyRefused.
-});
-
-it("undoes a pair back to exactly the prior deck", async () => {
-  // The cut returns at its prior quantity and the add is gone.
-});
-
-it("keeps a dismissed suggestion restorable", async () => {
-  // dismiss then restore returns the item to 'pending'.
-});
-```
+5. **Apply is one transaction** — the cut leaves, the add arrives and the verdict lands, or none do. Mutation: split the writes across two transactions and fail the second.
+6. **Apply refuses twice** — a second call on an accepted item returns `ok: false` and changes no `deck_cards` row. Mutation: drop the `verdict = 'pending'` guard.
+7. **Undo returns exactly the prior deck** — the cut back at its prior quantity, the add gone. Mutation: restore the cut at quantity 1.
+8. **Dismiss then restore** returns the item to `pending` with the deck untouched.
 
 The apply path must reuse the existing row-locking pattern in `addCardToDeck` (`src/app/decks/actions.ts:467`, `select 1 from decks ... for update` at `:495`) rather than inventing a second concurrency approach, and must revalidate through `revalidateClaims(deckId, userId)` (`src/lib/decks/revalidate-claims.ts:18`) the way that action does, not `claimSurfaces` directly.
 
-**Split.** The four actions ship in **PR C**, and their tests are cases in `probe:tuning-run` rather than jsdom tests: "both `deck_cards` changes land or none do" and "undo returns exactly the prior deck" are facts about a transaction. Add them as cases 5–8, with the mutation for each (drop the transaction; skip restoring the cut's prior quantity). The card and its tests ship in **PR D**.
+**Split.** The four actions ship in **PR C**, and their tests are cases in `probe:tuning-run` rather than jsdom tests: "both `deck_cards` changes land or none do" and "undo returns exactly the prior deck" are facts about a transaction. Those are cases 5–8 above. The card and its tests ship in **PR D**.
 
-- [ ] **Step 2: Run them to verify they fail, then implement the four actions**
+- [ ] **Step 2: Run the probe to verify the new cases fail, then implement the four actions**
 
-Each writes the item's `verdict` and `verdictAt` and mutates the deck in the same transaction, then revalidates `deckSurfaces(deckId)`.
+Each writes the item's `verdict` and `verdictAt` and mutates the deck in the same transaction, then revalidates through `revalidateClaims(deckId, userId)`, which covers `deckSurfaces` and the claim surfaces a deck mutation moves.
 
 - [ ] **Step 3: Write the failing card tests**
 
@@ -2290,7 +2320,8 @@ pnpm typecheck && pnpm lint && pnpm test && DATABASE_URL="postgres://stub:stub@l
 
 **Files:**
 - Create: `scripts/check-tuning.ts`, `scripts/fixtures/tuning-pack.json`
-- Modify: `package.json`, `.github/workflows/scryfall-contract.yml` (the "Upstream contract checks" workflow — there is no `upstream-contracts.yml`)
+- Modify: `package.json`
+- Create: `.github/workflows/tuning-contract.yml`
 
 **Interfaces:**
 - Consumes: `buildPrompt`, `tuningResponseSchema`, `callModel` with `TUNING_MODEL`, `validateSuggestions`.
@@ -2314,13 +2345,13 @@ Follow the shape of `scripts/check-scryfall-contract.ts`: read the key through `
 "check:tuning": "tsx scripts/check-tuning.ts"
 ```
 
-Add a step to `.github/workflows/scryfall-contract.yml`, after `check:spellbook`, with `if: always()` so it runs even when an earlier check fails, gated on a repository variable — `TUNING_CHECK_ENABLED == 'true'` — matching how the price refresh and commander index workflows are gated. Unlike the Scryfall and ManaPool checks, this one costs money per run, so the gate is not optional.
+Add `.github/workflows/tuning-contract.yml`: a daily schedule plus `workflow_dispatch`, one job gated on a repository variable — `TUNING_CHECK_ENABLED == 'true'`, matching how the price refresh and commander index workflows are gated — with `ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}` in its env, the secret the `Commander prose` workflow already reads. It is its own workflow rather than a step in `scryfall-contract.yml` (the "Upstream contract checks" workflow; there is no `upstream-contracts.yml`) because that file's header promises "No database, no secrets", and a step there would fail at `requireEnv` on every run. Unlike the Scryfall and ManaPool checks, this one costs money per run, so the gate is not optional.
 
 - [ ] **Step 4: Run it locally once and commit**
 
 ```bash
 pnpm check:tuning
-git add scripts/check-tuning.ts scripts/fixtures/tuning-pack.json package.json .github/workflows/scryfall-contract.yml
+git add scripts/check-tuning.ts scripts/fixtures/tuning-pack.json package.json .github/workflows/tuning-contract.yml
 git commit -m "feat(tuning): daily contract check against the live model"
 ```
 
@@ -2378,7 +2409,7 @@ A pre-implementation code review of this plan found and closed eight further def
 - `logGame` takes `LogGameInput`, not `FormData`. Task 3 Step 5 was rewritten against the real signature.
 - `TuningItem` was used by Task 15 and defined nowhere, and nothing joined the name, ownership, or price the card renders. Task 12 now defines it and joins them.
 - `MODEL_TIMEOUT_MS` armed per attempt plus one retry could reach ~180s against a 120s route limit, orphaning the pending row. It is now one deadline across both attempts.
-- The partial index predicate used `${t.status}`, which Drizzle renders table-qualified and Postgres rejects in an index predicate. It is now raw `status = 'pending'`.
+- ~~The partial index predicate used `${t.status}`, which Drizzle renders table-qualified and Postgres rejects.~~ Withdrawn at the 2026-09-23 revision: a qualified predicate is accepted, and `drizzle/0023` applied one. The predicate uses `${t.status}`, following `printings_flavor_name_idx`.
 - `cancelTuningRun` was scoped to the deck, so a late Stop could cancel a run the player never watched. It now takes the `runId`.
 
 Also corrected: the reaper is scoped to the deck being read rather than sweeping every user's rows on every page load; `gateReason` returns a distinct message per kind rather than one generic refusal; the tuning read cannot join the page's first `Promise.all` because it depends on that call's output; and `check:tuning` asserts §9's five conditions rather than shape alone.
