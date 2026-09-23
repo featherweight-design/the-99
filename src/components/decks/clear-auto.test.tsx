@@ -518,6 +518,8 @@ function makeDeck(cards: DeckDetailCard[]): DeckDetail {
     total: built,
     unresolvedRows: [],
     declaredBracket: null,
+    intent: null,
+    intentSeeded: false,
     noteCounts: { gameChanger: 0, extraTurns: 0, tutor: 0 },
   } as DeckDetail;
 }

@@ -1,0 +1,36 @@
+name: Tuning contract check
+
+# The deck-tuning model is upstream the way Scryfall and ManaPool are: a silent change in how it
+# answers would otherwise surface as players' runs failing. `pnpm check:tuning` sends the
+# committed evidence pack through the real prompt, schema, client and validator, and asserts the
+# answer is grounded, not just well-formed.
+#
+# Its own workflow rather than a step in `scryfall-contract.yml`, whose header promises "no
+# database, no secrets": this one needs ANTHROPIC_API_KEY, and every run costs money. So it is
+# gated on the TUNING_CHECK_ENABLED repository variable, the way the price refresh and the
+# commander index are gated, and the gate is not optional.
+on:
+  schedule:
+    # 07:30 UTC daily, beside the other upstream checks.
+    - cron: '30 7 * * *'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  check:
+    if: vars.TUNING_CHECK_ENABLED == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm check:tuning
+        env:
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}

@@ -25,6 +25,22 @@ export const MODEL_TIMEOUT_MS = 90_000;
  */
 export const TUNING_MODEL = "claude-sonnet-5";
 
+/**
+ * The intent the app writes when it fills a deck, marked `intent_seeded` so the chip can say
+ * who wrote it. Always within the intent's cap, counted in code points as the column counts:
+ * the full sentence, then the short one, then the short one with the names cut and closed with
+ * an ellipsis. A pair is named as a pair.
+ */
+export function seededIntent(commanderNames: readonly string[]): string {
+  const names = commanderNames.join(" and ");
+  const { seededBrief, seededBriefShort, maxLength } = deckTuningCopy.intent;
+  for (const sentence of [seededBrief(names), seededBriefShort(names)]) {
+    if (countCharacters(sentence) <= maxLength) return sentence;
+  }
+  const room = maxLength - countCharacters(seededBriefShort("\u2026"));
+  return seededBriefShort(`${[...names].slice(0, room).join("")}\u2026`);
+}
+
 /** Three short suggestions with their evidence fit well inside this. */
 export const TUNING_MAX_TOKENS = 2_000;
 

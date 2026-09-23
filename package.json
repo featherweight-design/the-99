@@ -98,7 +98,9 @@
     "probe:card-mark": "node scripts/probe-card-mark.mjs",
     "probe:role-targets": "tsx scripts/probe-role-targets.ts",
     "probe:fill": "tsx scripts/probe-fill.ts",
-    "assets:brackets": "tsx scripts/copy-bracket-marks.mts"
+    "assets:brackets": "tsx scripts/copy-bracket-marks.mts",
+    "probe:tuning-run": "tsx scripts/probe-tuning-run.ts",
+    "check:tuning": "tsx scripts/check-tuning.ts"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "0.128.0",

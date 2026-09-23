@@ -195,6 +195,10 @@ export type DeckDetail = {
    * edit — which is what lets the card note cite it on every add with nothing recomputed.
    */
   declaredBracket: Bracket | null;
+  /** What the deck is for, in one line: the player's, or the app's when it filled the deck. */
+  intent: string | null;
+  /** True while the intent is the app's own words; the player's first edit clears it for good. */
+  intentSeeded: boolean;
   /**
    * How many of each note-bearing kind this deck's list already holds, counted by COPIES.
    *
@@ -231,6 +235,8 @@ export async function getDeckDetail(deckId: string, userId: string): Promise<Dec
       // deck clause rather than falling back to a determined verdict that may be four edits
       // old with nothing on the row to say so.
       declaredBracket: decks.declaredBracket,
+      intent: decks.intent,
+      intentSeeded: decks.intentSeeded,
     })
     .from(decks)
     .where(and(eq(decks.id, deckId), eq(decks.userId, userId)));
@@ -429,6 +435,8 @@ export async function getDeckDetail(deckId: string, userId: string): Promise<Dec
     cards: detailCards,
     unresolvedRows,
     declaredBracket: (deck.declaredBracket as Bracket | null) ?? null,
+    intent: deck.intent,
+    intentSeeded: deck.intentSeeded,
     noteCounts: countNoteKinds(cardRows, commanderRows, bracketFlags),
     ...deckCounts(detailCards, unresolvedCardCount(unresolvedRows)),
   };

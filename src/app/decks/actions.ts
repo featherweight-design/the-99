@@ -1,6 +1,6 @@
 "use server";
 
-import { and, desc, eq, gt, inArray, lt, lte, sql } from "drizzle-orm";
+import { and, desc, eq, gt, inArray, isNull, lt, lte, sql } from "drizzle-orm";
 import { bracketOf } from "../../lib/bracket/rules";
 import { slotDeck } from "../../lib/bracket/slot";
 import { cachedDeckProfile } from "../../lib/profile/load";
@@ -54,6 +54,7 @@ import { recordFillPass, summariseFillPasses, type FillPassKind } from "../../li
 import { synergyCopy } from "../../lib/copy/synergy-discovery";
 import { GAME_AXIS_KEYS, isGameAxisKey, type GameAxisKey } from "../../lib/decks/game-axes";
 import { gameLogCopy } from "../../lib/copy/game-log";
+import { seededIntent } from "../../lib/tuning/limits";
 import { countCharacters, deckTuningCopy } from "../../lib/copy/deck-tuning";
 import { pruneOrphanProxies } from "../../lib/decks/prune-proxies";
 import { pruneOrphanAssignments } from "../../lib/decks/prune-assignments";
@@ -351,7 +352,13 @@ export async function createDeck(
     );
     deckId = await db.transaction(async (tx) => {
       const [deck] = await tx.insert(decks)
-        .values({ userId, name: deckName, commanderOracleId, partnerOracleId, filled: true })
+        .values({
+          userId, name: deckName, commanderOracleId, partnerOracleId, filled: true,
+          // The brief the fill built to, marked as the app's words. Seeded in the creating
+          // insert so no deck is ever born filled and unseeded.
+          intent: seededIntent(partner ? [commander.name, partner.name] : [commander.name]),
+          intentSeeded: true,
+        })
         .returning({ id: decks.id });
       // The selection first, then as much of the fill as fits under the body
       // size — 99, or 98 for a pair. The cap sums quantity rather than counting
@@ -718,6 +725,11 @@ export async function fillDeck(deckId: string): Promise<void> {
       // sets `filled` below — that column answers "was this ever filled" — but
       // it left the list exactly as it was, and the stamp describes the list.
       await touchDeck(tx, deckId);
+      // The app built this list, so it knows the brief — and says so with the seeded flag. Only
+      // over no intent at all: a line the player already wrote is theirs, and never replaced.
+      await tx.update(decks)
+        .set({ intent: seededIntent(partner ? [commander.name, partner.name] : [commander.name]), intentSeeded: true })
+        .where(and(eq(decks.id, deckId), isNull(decks.intent)));
     }
     await tx.update(decks).set({ filled: true }).where(eq(decks.id, deckId));
   });

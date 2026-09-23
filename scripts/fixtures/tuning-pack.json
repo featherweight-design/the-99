@@ -1,0 +1,1126 @@
+{
+  "commanders": [
+    {
+      "oracleId": "fcb0c7db-bd07-4c25-b7f8-b6c207e4f6be",
+      "name": "Brago, King Eternal"
+    }
+  ],
+  "colorIdentity": [
+    "W",
+    "U"
+  ],
+  "cards": [
+    {
+      "oracleId": "cab092f9-b7ff-43b9-935f-310869a4daf8",
+      "name": "Abdel Adrian, Gorion's Ward",
+      "typeLine": "Legendary Creature — Human Warrior",
+      "roles": [],
+      "quantity": 1,
+      "owned": true,
+      "commander": false
+    },
+    {
+      "oracleId": "a3da7d5b-2c2b-45fe-b9c5-413b8c8fc0a2",
+      "name": "Academy Ruins",
+      "typeLine": "Legendary Land",
+      "roles": [
+        "land"
+      ],
+      "quantity": 1,
+      "owned": true,
+      "commander": false
+    },
+    {
+      "oracleId": "d5ad26cc-2bdb-46b7-b8bf-dd099d5fa09b",
+      "name": "Adarkar Wastes",
+      "typeLine": "Land",
+      "roles": [
+        "land"
+      ],
+      "quantity": 1,
+      "owned": true,
+      "commander": false
+    },
+    {
+      "oracleId": "fb220f46-f8b8-4804-baa4-e7d50b4871f7",
+      "name": "Aether Channeler",
+      "typeLine": "Creature — Human Wizard",
+      "roles": [
+        "draw"
+      ],
+      "quantity": 1,
+      "owned": true,
+      "commander": false
+    },
+    {
+      "oracleId": "4cd82c7a-86df-4d29-b578-c009208c0d4b",
+      "name": "Agent of Treachery",
+      "typeLine": "Creature — Human Rogue",
+      "roles": [
+        "draw"
+      ],
+      "quantity": 1,
+      "owned": true,
+      "commander": false
+    },
+    {
+      "oracleId": "e4125377-34c0-4b54-bdf8-4e88f5d24565",
+      "name": "Approach of the Second Sun",
+      "typeLine": "Sorcery",
+      "roles": [],
+      "quantity": 1,
+      "owned": true,
+      "commander": false
+    },
+    {
+      "oracleId": "0bc7f093-bef0-4f1a-852c-4b75ebf54838",
+      "name": "Arcane Signet",
+      "typeLine": "Artifact",
+      "roles": [
+        "ramp"
+      ],
+      "quantity": 1,
+      "owned": true,
+      "commander": false
+    },
+    {
+      "oracleId": "a91a3266-cadd-47a0-9b20-160307f14c07",
+      "name": "Archaeomancer",
+      "typeLine": "Creature — Human Wizard",
+      "roles": [],
+      "quantity": 1,
+      "owned": true,
+      "commander": false
+    },
+    {
+      "oracleId": "189fc8f4-17ac-4f1d-82c8-8401445bdaf4",
+      "name": "Azorius Chancery",
+      "typeLine": "Land",
+      "roles": [
+        "land"
+      ],
+      "quantity": 1,
+      "owned": true,
+      "commander": false
+    },
+    {
+      "oracleId": "e018773f-95b3-49a3-9674-6f04ddef2092",
+      "name": "Azorius Signet",
+      "typeLine": "Artifact",
+      "roles": [
+        "ramp"
+      ],
+      "quantity": 1,
+      "owned": true,
+      "commander": false
+    },
+    {
+      "oracleId": "c48d844c-3976-4fa5-8e0d-3f0e535e7619",
+      "name": "Charming Prince",
+      "typeLine": "Creature — Human Noble",
+      "roles": [],
+      "quantity": 1,
+      "owned": true,
+      "commander": false
+    },
+    {
+      "oracleId": "1665ca9f-176d-40f1-a4e9-42da4f1236e9",
+      "name": "Circuit Mender",
+      "typeLine": "Artifact Creature — Insect",
+      "roles": [
+        "draw"
+      ],
+      "quantity": 1,
+      "owned": true,
+      "commander": false
+    },
+    {
+      "oracleId": "aff34f28-f707-4458-8af3-1bd5b13a6b10",
+      "name": "Cleansing Nova",
+      "typeLine": "Sorcery",
+      "roles": [
+        "wipes"
+      ],
+      "quantity": 1,
+      "owned": true,
+      "commander": false
+    },
+    {
+      "oracleId": "d4ec0df9-a4a3-48cf-a0aa-b1aea5c49142",
+      "name": "Clever Impersonator",
+      "typeLine": "Creature — Shapeshifter",
+      "roles": [],
+      "quantity": 1,
+      "owned": true,
+      "commander": false
+    },
+    {
+      "oracleId": "f84d1291-1f82-4b67-a26e-b79624b4ce1d",
+      "name": "Cloudblazer",
+      "typeLine": "Creature — Human Scout",
+      "roles": [
+        "draw"
+      ],
+      "quantity": 1,
+      "owned": true,
+      "commander": false
+    },
+    {
+      "oracleId": "6879f5ce-7a1b-4606-bad1-885779b0d456",
+      "name": "Cloudshift",
+      "typeLine": "Instant",
+      "roles": [],
+      "quantity": 1,
+      "owned": true,
+      "commander": false
+    },
+    {
+      "oracleId": "0895c9b7-ae7d-4bb3-af17-3b75deb50a25",
+      "name": "Command Tower",
+      "typeLine": "Land",
+      "roles": [
+        "land"
+      ],
+      "quantity": 1,
+      "owned": true,
+      "commander": false
+    },
+    {
+      "oracleId": "cd1eda60-53e4-44d0-9b2c-7a57395e291f",
+      "name": "Conjurer's Closet",
+      "typeLine": "Artifact",
+      "roles": [],
+      "quantity": 1,
+      "owned": true,
+      "commander": false
+    },
+    {
+      "oracleId": "cddccc2a-a76e-48b3-b4dd-dfeab89e1619",
+      "name": "Cosmic Intervention",
+      "typeLine": "Instant",
+      "roles": [],
+      "quantity": 1,
+      "owned": true,
+      "commander": false
+    },
+    {
+      "oracleId": "ebef6d84-b724-4a84-bcde-8eb6dc06717d",
+      "name": "Deadeye Navigator",
+      "typeLine": "Creature — Spirit",
+      "roles": [],
+      "quantity": 1,
+      "owned": true,
+      "commander": false
+    },
+    {
+      "oracleId": "f0ec8681-da50-466b-8cdd-1dc710deccd9",
+      "name": "Deserted Beach",
+      "typeLine": "Land",
+      "roles": [
+        "land"
+      ],
+      "quantity": 1,
+      "owned": true,
+      "commander": false
+    },
+    {
+      "oracleId": "0634091a-a74c-4cea-b6d1-7324a725554a",
+      "name": "Eerie Interlude",
+      "typeLine": "Instant",
+      "roles": [],
+      "quantity": 1,
+      "owned": true,
+      "commander": false
+    },
+    {
+      "oracleId": "5ade11c0-41dd-4b6a-9f5b-c5903a3a0d7f",
+      "name": "Elesh Norn, Mother of Machines",
+      "typeLine": "Legendary Creature — Phyrexian Praetor",
+      "roles": [],
+      "quantity": 1,
+      "owned": true,
+      "commander": false
+    },
+    {
+      "oracleId": "40c88392-2aa7-4e12-86a4-8d680219e670",
+      "name": "Elspeth Conquers Death",
+      "typeLine": "Enchantment — Saga",
+      "roles": [
+        "removal"
+      ],
+      "quantity": 1,
+      "owned": true,
+      "commander": false
+    },
+    {
+      "oracleId": "0fd57894-b917-41c8-a394-360d1d31b236",
+      "name": "Ephemerate",
+      "typeLine": "Instant",
+      "roles": [],
+      "quantity": 1,
+      "owned": true,
+      "commander": false
+    },
+    {
+      "oracleId": "fdd94383-b573-439a-8e1c-925af887c5a6",
+      "name": "Evacuation",
+      "typeLine": "Instant",
+      "roles": [],
+      "quantity": 1,
+      "owned": true,
+      "commander": false
+    },
+    {
+      "oracleId": "4eb813fd-2d5a-4b02-8193-662681ef4e7d",
+      "name": "Farewell",
+      "typeLine": "Sorcery",
+      "roles": [
+        "wipes"
+      ],
+      "quantity": 1,
+      "owned": true,
+      "commander": false
+    },
+    {
+      "oracleId": "95560508-7ac9-4be9-8a3f-3c7d5b52807b",
+      "name": "Fellwar Stone",
+      "typeLine": "Artifact",
+      "roles": [
+        "ramp"
+      ],
+      "quantity": 1,
+      "owned": true,
+      "commander": false
+    },
+    {
+      "oracleId": "b23a3d30-6b8e-4aad-890f-db0c3af43ace",
+      "name": "Flickerwisp",
+      "typeLine": "Creature — Elemental",
+      "roles": [],
+      "quantity": 1,
+      "owned": true,
+      "commander": false
+    },
+    {
+      "oracleId": "ad0070db-6454-41cb-861f-8f5b8fc2a3b8",
+      "name": "Ghostly Flicker",
+      "typeLine": "Instant",
+      "roles": [],
+      "quantity": 1,
+      "owned": true,
+      "commander": false
+    },
+    {
+      "oracleId": "027dd013-baa7-4111-b3c9-f4d1414e9c45",
+      "name": "Glacial Fortress",
+      "typeLine": "Land",
+      "roles": [
+        "land"
+      ],
+      "quantity": 1,
+      "owned": true,
+      "commander": false
+    },
+    {
+      "oracleId": "f1750962-a87c-49f6-b731-02ae971ac6ea",
+      "name": "Hallowed Fountain",
+      "typeLine": "Land — Plains Island",
+      "roles": [
+        "land"
+      ],
+      "quantity": 1,
+      "owned": true,
+      "commander": false
+    },
+    {
+      "oracleId": "461b3f2f-fcee-4160-abfa-061f8b6a784f",
+      "name": "Hengegate Pathway // Mistgate Pathway",
+      "typeLine": "Land // Land",
+      "roles": [
+        "land"
+      ],
+      "quantity": 1,
+      "owned": true,
+      "commander": false
+    },
+    {
+      "oracleId": "d646e42b-5635-4798-b633-29c093b66a55",
+      "name": "Inspiring Overseer",
+      "typeLine": "Creature — Angel Cleric",
+      "roles": [
+        "draw"
+      ],
+      "quantity": 1,
+      "owned": true,
+      "commander": false
+    },
+    {
+      "oracleId": "406eabe2-df62-49e2-bb39-c0227509d875",
+      "name": "Irrigated Farmland",
+      "typeLine": "Land — Plains Island",
+      "roles": [
+        "draw",
+        "land"
+      ],
+      "quantity": 1,
+      "owned": true,
+      "commander": false
+    },
+    {
+      "oracleId": "b2c6aa39-2d2a-459c-a555-fb48ba993373",
+      "name": "Island",
+      "typeLine": "Basic Land — Island",
+      "roles": [
+        "land"
+      ],
+      "quantity": 10,
+      "owned": true,
+      "commander": false
+    },
+    {
+      "oracleId": "8c31fec9-e4b3-4761-990e-7be38eb05604",
+      "name": "Karmic Guide",
+      "typeLine": "Creature — Angel Spirit",
+      "roles": [],
+      "quantity": 1,
+      "owned": true,
+      "commander": false
+    },
+    {
+      "oracleId": "3efe6ac8-f92e-4108-913b-077e41c0a841",
+      "name": "Lae'zel's Acrobatics",
+      "typeLine": "Instant",
+      "roles": [
+        "wipes"
+      ],
+      "quantity": 1,
+      "owned": true,
+      "commander": false
+    },
+    {
+      "oracleId": "55df6fa3-3d24-46d5-b325-099336c3f0fd",
+      "name": "Lavinia of the Tenth",
+      "typeLine": "Legendary Creature — Human Soldier",
+      "roles": [],
+      "quantity": 1,
+      "owned": true,
+      "commander": false
+    },
+    {
+      "oracleId": "0bf299da-1854-4153-baea-3cee2eb01ee8",
+      "name": "Lithoform Engine",
+      "typeLine": "Legendary Artifact",
+      "roles": [],
+      "quantity": 1,
+      "owned": true,
+      "commander": false
+    },
+    {
+      "oracleId": "b3d81980-76f2-44e2-b1c9-01e30c726312",
+      "name": "Loran of the Third Path",
+      "typeLine": "Legendary Creature — Human Artificer",
+      "roles": [
+        "draw"
+      ],
+      "quantity": 1,
+      "owned": true,
+      "commander": false
+    },
+    {
+      "oracleId": "ccfb8b4d-651c-418a-aa19-cb23105b3f2f",
+      "name": "Meticulous Archive",
+      "typeLine": "Land — Plains Island",
+      "roles": [
+        "land"
+      ],
+      "quantity": 1,
+      "owned": true,
+      "commander": false
+    },
+    {
+      "oracleId": "c97361b5-af16-4a7b-af85-a429dbaf4ad2",
+      "name": "Mind Stone",
+      "typeLine": "Artifact",
+      "roles": [
+        "ramp",
+        "draw"
+      ],
+      "quantity": 1,
+      "owned": true,
+      "commander": false
+    },
+    {
+      "oracleId": "a3ec6b5d-08ec-4ae0-b1db-c4b87a1849c7",
+      "name": "Momentary Blink",
+      "typeLine": "Instant",
+      "roles": [],
+      "quantity": 1,
+      "owned": true,
+      "commander": false
+    },
+    {
+      "oracleId": "24d0f5e7-0d9e-4b76-900e-a7274e80312d",
+      "name": "Mulldrifter",
+      "typeLine": "Creature — Elemental",
+      "roles": [
+        "draw"
+      ],
+      "quantity": 1,
+      "owned": true,
+      "commander": false
+    },
+    {
+      "oracleId": "e9f5feb2-2c1a-46ce-885a-4f378d7d10af",
+      "name": "Mystic Gate",
+      "typeLine": "Land",
+      "roles": [
+        "land"
+      ],
+      "quantity": 1,
+      "owned": true,
+      "commander": false
+    },
+    {
+      "oracleId": "8a52f3c0-2552-4425-b2e3-5496eb2232a7",
+      "name": "Mystic Remora",
+      "typeLine": "Enchantment",
+      "roles": [
+        "draw"
+      ],
+      "quantity": 1,
+      "owned": true,
+      "commander": false
+    },
+    {
+      "oracleId": "d7e1d4eb-1d4e-460e-9304-7db9ab50ccb5",
+      "name": "Nimbus Maze",
+      "typeLine": "Land",
+      "roles": [
+        "land"
+      ],
+      "quantity": 1,
+      "owned": true,
+      "commander": false
+    },
+    {
+      "oracleId": "76678885-3674-443d-b9a2-2a460cf6aac0",
+      "name": "Panharmonicon",
+      "typeLine": "Artifact",
+      "roles": [],
+      "quantity": 1,
+      "owned": true,
+      "commander": false
+    },
+    {
+      "oracleId": "0bd67481-6bd9-48d6-92bd-8933b5ea1eae",
+      "name": "Peregrine Drake",
+      "typeLine": "Creature — Drake",
+      "roles": [],
+      "quantity": 1,
+      "owned": true,
+      "commander": false
+    },
+    {
+      "oracleId": "bc71ebf6-2056-41f7-be35-b2e5c34afa99",
+      "name": "Plains",
+      "typeLine": "Basic Land — Plains",
+      "roles": [
+        "land"
+      ],
+      "quantity": 10,
+      "owned": true,
+      "commander": false
+    },
+    {
+      "oracleId": "5330e24a-8568-446e-840a-594cd08bd1bc",
+      "name": "Prairie Stream",
+      "typeLine": "Land — Plains Island",
+      "roles": [
+        "land"
+      ],
+      "quantity": 1,
+      "owned": true,
+      "commander": false
+    },
+    {
+      "oracleId": "232c297d-71b6-429f-99df-39a11dbcea40",
+      "name": "Reality Acid",
+      "typeLine": "Enchantment — Aura",
+      "roles": [],
+      "quantity": 1,
+      "owned": true,
+      "commander": false
+    },
+    {
+      "oracleId": "d521a329-a53a-4962-810a-2abed80df260",
+      "name": "Recruiter of the Guard",
+      "typeLine": "Creature — Human Soldier",
+      "roles": [],
+      "quantity": 1,
+      "owned": true,
+      "commander": false
+    },
+    {
+      "oracleId": "5398362d-c45e-4d56-a622-8be1124730b9",
+      "name": "Reflector Mage",
+      "typeLine": "Creature — Human Wizard",
+      "roles": [],
+      "quantity": 1,
+      "owned": true,
+      "commander": false
+    },
+    {
+      "oracleId": "c23e5b80-08d2-4e24-9908-fe2aa4f30f6f",
+      "name": "Reliquary Tower",
+      "typeLine": "Land",
+      "roles": [
+        "land"
+      ],
+      "quantity": 1,
+      "owned": true,
+      "commander": false
+    },
+    {
+      "oracleId": "f29dc596-2121-4421-8463-15f6c2e8b9b3",
+      "name": "Rogue's Passage",
+      "typeLine": "Land",
+      "roles": [
+        "land"
+      ],
+      "quantity": 1,
+      "owned": true,
+      "commander": false
+    },
+    {
+      "oracleId": "8aed54cb-d1bb-45ad-adbe-38e55d84ff31",
+      "name": "Silence",
+      "typeLine": "Instant",
+      "roles": [],
+      "quantity": 1,
+      "owned": true,
+      "commander": false
+    },
+    {
+      "oracleId": "d90af00a-d322-4265-9954-7b1e80702e18",
+      "name": "Skyclave Apparition",
+      "typeLine": "Creature — Kor Spirit",
+      "roles": [],
+      "quantity": 1,
+      "owned": true,
+      "commander": false
+    },
+    {
+      "oracleId": "6ad8011d-3471-4369-9d68-b264cc027487",
+      "name": "Sol Ring",
+      "typeLine": "Artifact",
+      "roles": [
+        "ramp"
+      ],
+      "quantity": 1,
+      "owned": true,
+      "commander": false
+    },
+    {
+      "oracleId": "00c0543c-2a1f-4425-8283-4062d74a1637",
+      "name": "Solemn Simulacrum",
+      "typeLine": "Artifact Creature — Golem",
+      "roles": [
+        "ramp",
+        "draw"
+      ],
+      "quantity": 1,
+      "owned": true,
+      "commander": false
+    },
+    {
+      "oracleId": "92019547-f6db-4ea6-8356-d0a90ace5662",
+      "name": "Soulherder",
+      "typeLine": "Creature — Spirit",
+      "roles": [],
+      "quantity": 1,
+      "owned": true,
+      "commander": false
+    },
+    {
+      "oracleId": "47a785ed-8095-4685-8daa-02c4e2b0ffcd",
+      "name": "Spellseeker",
+      "typeLine": "Creature — Human Wizard",
+      "roles": [],
+      "quantity": 1,
+      "owned": true,
+      "commander": false
+    },
+    {
+      "oracleId": "02f062f5-8012-4440-ac12-49fc49822106",
+      "name": "Spine of Ish Sah",
+      "typeLine": "Artifact",
+      "roles": [
+        "removal"
+      ],
+      "quantity": 1,
+      "owned": true,
+      "commander": false
+    },
+    {
+      "oracleId": "9c5f0d91-9d86-4e66-94fd-4af93ad01838",
+      "name": "Spirited Companion",
+      "typeLine": "Enchantment Creature — Dog",
+      "roles": [
+        "draw"
+      ],
+      "quantity": 1,
+      "owned": true,
+      "commander": false
+    },
+    {
+      "oracleId": "65368569-68bf-4498-9979-d2935942ca49",
+      "name": "Stonehorn Dignitary",
+      "typeLine": "Creature — Rhino Soldier",
+      "roles": [],
+      "quantity": 1,
+      "owned": true,
+      "commander": false
+    },
+    {
+      "oracleId": "cf751552-156f-4f81-ac94-9814dce099f9",
+      "name": "Strionic Resonator",
+      "typeLine": "Artifact",
+      "roles": [],
+      "quantity": 1,
+      "owned": true,
+      "commander": false
+    },
+    {
+      "oracleId": "0230de18-8d15-4cfa-9d42-7ccddd9f9570",
+      "name": "Supreme Verdict",
+      "typeLine": "Sorcery",
+      "roles": [
+        "wipes"
+      ],
+      "quantity": 1,
+      "owned": true,
+      "commander": false
+    },
+    {
+      "oracleId": "8ddfc283-c9b4-41a5-af88-cf0068e986cc",
+      "name": "Swan Song",
+      "typeLine": "Instant",
+      "roles": [
+        "removal"
+      ],
+      "quantity": 1,
+      "owned": true,
+      "commander": false
+    },
+    {
+      "oracleId": "b1544f21-7e98-461b-aed5-e748b0168c52",
+      "name": "Swords to Plowshares",
+      "typeLine": "Instant",
+      "roles": [
+        "removal"
+      ],
+      "quantity": 1,
+      "owned": true,
+      "commander": false
+    },
+    {
+      "oracleId": "00e35322-1a9a-41e3-9ce1-359c8eaa3bc7",
+      "name": "Talisman of Progress",
+      "typeLine": "Artifact",
+      "roles": [
+        "ramp"
+      ],
+      "quantity": 1,
+      "owned": true,
+      "commander": false
+    },
+    {
+      "oracleId": "c786a0aa-d86f-42c3-a7ea-5cb6ab72b5ec",
+      "name": "Teleportation Circle",
+      "typeLine": "Enchantment",
+      "roles": [],
+      "quantity": 1,
+      "owned": true,
+      "commander": false
+    },
+    {
+      "oracleId": "20a1671d-e8a4-4cf1-87a7-f2f6319f4b9e",
+      "name": "The Eternal Wanderer",
+      "typeLine": "Legendary Planeswalker",
+      "roles": [],
+      "quantity": 1,
+      "owned": true,
+      "commander": false
+    },
+    {
+      "oracleId": "a332e80a-dc51-4dc6-bc85-e114a1c6fdb8",
+      "name": "Vanquish the Horde",
+      "typeLine": "Sorcery",
+      "roles": [
+        "wipes"
+      ],
+      "quantity": 1,
+      "owned": true,
+      "commander": false
+    },
+    {
+      "oracleId": "0f41cefc-d6ff-4db7-ba35-502b7e081de1",
+      "name": "Venser, Shaper Savant",
+      "typeLine": "Legendary Creature — Human Wizard",
+      "roles": [],
+      "quantity": 1,
+      "owned": true,
+      "commander": false
+    },
+    {
+      "oracleId": "a8bf8ff8-d924-4fd2-b5ed-05b38f55325a",
+      "name": "Venser, the Sojourner",
+      "typeLine": "Legendary Planeswalker — Venser",
+      "roles": [
+        "removal"
+      ],
+      "quantity": 1,
+      "owned": true,
+      "commander": false
+    },
+    {
+      "oracleId": "5f601f48-d24b-4883-9fde-b3f620e7c9ea",
+      "name": "Wall of Omens",
+      "typeLine": "Creature — Wall",
+      "roles": [
+        "draw"
+      ],
+      "quantity": 1,
+      "owned": true,
+      "commander": false
+    },
+    {
+      "oracleId": "277aafa6-4270-4d24-a888-cf9e8e635d4b",
+      "name": "Watcher for Tomorrow",
+      "typeLine": "Creature — Human Wizard",
+      "roles": [],
+      "quantity": 1,
+      "owned": true,
+      "commander": false
+    },
+    {
+      "oracleId": "7060f2c8-fca0-4b7a-bddf-37682f434596",
+      "name": "Whirler Rogue",
+      "typeLine": "Creature — Human Rogue Artificer",
+      "roles": [],
+      "quantity": 1,
+      "owned": true,
+      "commander": false
+    },
+    {
+      "oracleId": "9ad4f730-a18e-4a7c-a468-a926c718c741",
+      "name": "Whispersilk Cloak",
+      "typeLine": "Artifact — Equipment",
+      "roles": [],
+      "quantity": 1,
+      "owned": true,
+      "commander": false
+    },
+    {
+      "oracleId": "e15504a7-2b67-4185-b916-172145f10b19",
+      "name": "Yorion, Sky Nomad",
+      "typeLine": "Legendary Creature — Bird Serpent",
+      "roles": [],
+      "quantity": 1,
+      "owned": true,
+      "commander": false
+    },
+    {
+      "oracleId": "fcb0c7db-bd07-4c25-b7f8-b6c207e4f6be",
+      "name": "Brago, King Eternal",
+      "typeLine": "Legendary Creature — Spirit Noble",
+      "roles": [],
+      "quantity": 1,
+      "owned": true,
+      "commander": true
+    }
+  ],
+  "targets": {
+    "roles": [
+      {
+        "role": "ramp",
+        "have": 7,
+        "target": 7,
+        "advisory": false,
+        "measured": true
+      },
+      {
+        "role": "draw",
+        "have": 13,
+        "target": 10,
+        "advisory": false,
+        "measured": true
+      },
+      {
+        "role": "removal",
+        "have": 5,
+        "target": 6,
+        "advisory": false,
+        "measured": true
+      },
+      {
+        "role": "wipes",
+        "have": 5,
+        "target": 1,
+        "advisory": false,
+        "measured": true
+      },
+      {
+        "role": "land",
+        "have": 35,
+        "target": 34,
+        "advisory": true,
+        "measured": true
+      }
+    ],
+    "thin": false
+  },
+  "staples": [
+    {
+      "oracleId": "d683d985-9888-4d21-8b5f-69e69ce4a03b",
+      "name": "Path to Exile",
+      "commanders": 134,
+      "commanderTotal": 134,
+      "owned": false
+    },
+    {
+      "oracleId": "3407fe41-fdd3-4119-8f70-4bc4590a379f",
+      "name": "Negate",
+      "commanders": 134,
+      "commanderTotal": 134,
+      "owned": false
+    },
+    {
+      "oracleId": "9965d9c5-2ebf-4a6c-930e-55c5890979be",
+      "name": "Thought Vessel",
+      "commanders": 134,
+      "commanderTotal": 134,
+      "owned": false
+    },
+    {
+      "oracleId": "458d2b12-f578-4392-98d3-c3bc83f316c4",
+      "name": "Port Town",
+      "commanders": 134,
+      "commanderTotal": 134,
+      "owned": false
+    },
+    {
+      "oracleId": "1b388371-f9ef-45b4-82a3-ca20a8cd7807",
+      "name": "Dovin's Veto",
+      "commanders": 134,
+      "commanderTotal": 134,
+      "owned": false
+    },
+    {
+      "oracleId": "cc187110-1148-4090-bbb8-e205694a39f5",
+      "name": "Counterspell",
+      "commanders": 134,
+      "commanderTotal": 134,
+      "owned": false
+    },
+    {
+      "oracleId": "672e190d-8ea0-4a2e-b74f-5d35304631e4",
+      "name": "Sea of Clouds",
+      "commanders": 133,
+      "commanderTotal": 134,
+      "owned": false
+    },
+    {
+      "oracleId": "76f335d0-7f71-4b1a-b60d-73de954cbe2c",
+      "name": "Skycloud Expanse",
+      "commanders": 133,
+      "commanderTotal": 134,
+      "owned": false
+    },
+    {
+      "oracleId": "f3c7af78-a77d-4134-82a2-a5ce84285a84",
+      "name": "Flooded Strand",
+      "commanders": 133,
+      "commanderTotal": 134,
+      "owned": false
+    },
+    {
+      "oracleId": "89f43e27-790b-4ca1-8ba7-0882b31e0783",
+      "name": "Temple of Enlightenment",
+      "commanders": 132,
+      "commanderTotal": 134,
+      "owned": false
+    },
+    {
+      "oracleId": "fae37e28-e137-4177-b973-fa8b4dd8f409",
+      "name": "Generous Gift",
+      "commanders": 132,
+      "commanderTotal": 134,
+      "owned": false
+    },
+    {
+      "oracleId": "ab1cc360-b9de-48d9-9983-4dfe4a7d2a37",
+      "name": "Arcane Denial",
+      "commanders": 132,
+      "commanderTotal": 134,
+      "owned": false
+    },
+    {
+      "oracleId": "27b047e3-0d41-45e2-98e9-9391d7923a1e",
+      "name": "Exotic Orchard",
+      "commanders": 131,
+      "commanderTotal": 134,
+      "owned": false
+    },
+    {
+      "oracleId": "f1e9abfb-c3c8-483e-b446-5c2afc9f6394",
+      "name": "Floodfarm Verge",
+      "commanders": 132,
+      "commanderTotal": 134,
+      "owned": false
+    },
+    {
+      "oracleId": "234a734b-ba28-4f1b-9d01-3c3e7d516590",
+      "name": "An Offer You Can't Refuse",
+      "commanders": 133,
+      "commanderTotal": 134,
+      "owned": false
+    },
+    {
+      "oracleId": "ea9709b6-4c37-4d5a-b04d-cd4c42e4f9dd",
+      "name": "Propaganda",
+      "commanders": 130,
+      "commanderTotal": 134,
+      "owned": false
+    },
+    {
+      "oracleId": "e828b189-0e8f-43b8-b909-4c23e742e028",
+      "name": "Ghostly Prison",
+      "commanders": 127,
+      "commanderTotal": 134,
+      "owned": false
+    },
+    {
+      "oracleId": "c8b143ad-43ec-4e0d-a440-e348daa31391",
+      "name": "Swiftfoot Boots",
+      "commanders": 127,
+      "commanderTotal": 134,
+      "owned": false
+    },
+    {
+      "oracleId": "36cd2364-d113-47d1-b2c4-b088d9eb88dd",
+      "name": "Brainstorm",
+      "commanders": 122,
+      "commanderTotal": 134,
+      "owned": false
+    },
+    {
+      "oracleId": "5def9f38-0a0b-4e8d-9f9d-29dcb46520b4",
+      "name": "Esper Sentinel",
+      "commanders": 103,
+      "commanderTotal": 134,
+      "owned": false
+    },
+    {
+      "oracleId": "16e015b2-f8a3-4b1a-80be-58a8f5fb5e8c",
+      "name": "Frantic Search",
+      "commanders": 78,
+      "commanderTotal": 134,
+      "owned": false
+    }
+  ],
+  "play": {
+    "games": [
+      {
+        "id": "g1",
+        "result": "loss",
+        "podSize": 4,
+        "playedAt": "2026-09-01T20:00:00.000Z",
+        "worked": [],
+        "hurt": [
+          "mana"
+        ],
+        "note": "stuck on three lands until turn six"
+      },
+      {
+        "id": "g2",
+        "result": "loss",
+        "podSize": 4,
+        "playedAt": "2026-09-05T20:00:00.000Z",
+        "worked": [
+          "engine"
+        ],
+        "hurt": [
+          "mana"
+        ],
+        "note": null
+      },
+      {
+        "id": "g3",
+        "result": "win",
+        "podSize": 4,
+        "playedAt": "2026-09-09T20:00:00.000Z",
+        "worked": [
+          "engine"
+        ],
+        "hurt": [],
+        "note": "blinking the board every turn won it"
+      },
+      {
+        "id": "g4",
+        "result": "loss",
+        "podSize": 4,
+        "playedAt": "2026-09-13T20:00:00.000Z",
+        "worked": [],
+        "hurt": [
+          "mana",
+          "card_flow"
+        ],
+        "note": null
+      },
+      {
+        "id": "g5",
+        "result": "loss",
+        "podSize": 4,
+        "playedAt": "2026-09-17T20:00:00.000Z",
+        "worked": [],
+        "hurt": [
+          "interaction"
+        ],
+        "note": null
+      }
+    ],
+    "summary": {
+      "count": 5,
+      "marked": 5,
+      "record": {
+        "wins": 1,
+        "losses": 4,
+        "draws": 0
+      },
+      "axes": [
+        {
+          "key": "mana",
+          "worked": 0,
+          "hurt": 3
+        },
+        {
+          "key": "card_flow",
+          "worked": 0,
+          "hurt": 1
+        },
+        {
+          "key": "interaction",
+          "worked": 0,
+          "hurt": 1
+        },
+        {
+          "key": "engine",
+          "worked": 2,
+          "hurt": 0
+        }
+      ]
+    }
+  },
+  "intent": "blink my own permanents for value and win a long game"
+}

@@ -673,6 +673,46 @@ describe("createDeck — filled baseline", () => {
   // Gate 6, "fires once": the fill-failed banner's retry is the one path that
   // can run a seed fill against a deck that already exists, so it is the one
   // path that could write a second seed pass.
+  // The brief a fill builds to is the app's own words, so the deck is born SEEDED: the intent
+  // and the flag the chip reads land in the creating insert, never in a second write.
+  it("is born with a seeded intent naming the commander", async () => {
+    stub.state.cards.push(commanderCard());
+    stub.state.collectionItems.push(...Array.from({ length: 10 }, (_, i) => rampCard(i)));
+
+    await runCreate();
+
+    const decksInsert = stub.state.insertCalls.find((c) => c.table === "decks");
+    expect(decksInsert!.values).toMatchObject({
+      intent: "Built around Atraxa, Praetors' Voice, from the cards you own.",
+      intentSeeded: true,
+    });
+  });
+
+  it("seeds the intent when the failed fill is retried and lands rows", async () => {
+    stub.state.decks.push({ id: "deck-1", userId: "user_1", commanderOracleId: COMMANDER_ORACLE });
+    stub.state.cards.push(commanderCard());
+    stub.state.collectionItems.push(...Array.from({ length: 10 }, (_, i) => rampCard(i)));
+
+    await fillDeck("deck-1");
+
+    // The update is conditional on `intent is null` in SQL, so a line the player already
+    // wrote is never replaced; the stub records the write the fill asked for.
+    expect(stub.state.updateCalls).toContainEqual({
+      table: "decks",
+      values: { intent: "Built around Atraxa, Praetors' Voice, from the cards you own.", intentSeeded: true },
+    });
+  });
+
+  it("seeds nothing when the retry meets a deck that already holds cards", async () => {
+    stub.state.decks.push({ id: "deck-1", userId: "user_1", commanderOracleId: COMMANDER_ORACLE });
+    stub.state.cards.push(commanderCard());
+    stub.state.deckRows.push({ oracleId: "ramp-00000000-aaaa-aaaa-aaaa-aaaaaaaaaaaa", quantity: 1 });
+
+    await fillDeck("deck-1");
+
+    expect(stub.state.updateCalls.some((c) => (c.values as { intentSeeded?: boolean }).intentSeeded)).toBe(false);
+  });
+
   it("records a seed pass when the failed fill is retried", async () => {
     stub.state.decks.push({ id: "deck-1", userId: "user_1", commanderOracleId: COMMANDER_ORACLE });
     stub.state.cards.push(commanderCard());
