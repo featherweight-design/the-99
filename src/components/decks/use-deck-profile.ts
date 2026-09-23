@@ -2,7 +2,12 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 
-import { fetchDeckProfile, type ProfileFetch } from "../../app/decks/profile-actions";
+import {
+  fetchDeckProfile,
+  fetchStoredDeckProfile,
+  type ProfileFetch,
+  type StoredProfileFetch,
+} from "../../app/decks/profile-actions";
 import type { DeckProfile } from "../../lib/profile/types";
 
 export type ProfileState =
@@ -32,6 +37,14 @@ export type ProfileState =
  * With the reader asking, an edited deck is re-asked about deliberately — which is Round 4's
  * model, where a determined verdict goes stale and the control invites another pass.
  *
+ * WHAT TAB OPEN MAY DO is `peek`: ask whether an analysis the reader ALREADY pressed for is
+ * stored, and show it if so. That computes nothing — a head read and a keyed lookup, and a miss
+ * answers "none" rather than falling through to a build — so ruling 7's cost argument does not
+ * reach it, and without it a reload threw away an analysis the reader had just paid for. A peek
+ * leaves the state `idle` while it runs and on a miss, so the press stays exactly where it was;
+ * a press made during a peek outranks it, because the press bumps the generation the peek's
+ * reply is checked against.
+ *
  * THE CACHE LIVES IN THE SHELL, not the panel. One tab panel renders at a time, so the Analysis
  * panel unmounts on every tab switch — a hook owned by the panel would lose its answer each
  * time, and a 630ms build is not something to pay twice for the same question. Leaving the route
@@ -44,6 +57,8 @@ export function useDeckProfile(deckId: string): {
   state: ProfileState;
   /** Ask, or ask again. Safe to call repeatedly — a request in flight is not duplicated. */
   request: () => void;
+  /** Show a stored analysis if one matches the deck as it is. Once per deck; never computes. */
+  peek: () => void;
 } {
   const [state, setState] = useState<ProfileState>({ kind: "idle" });
   /**
@@ -71,6 +86,11 @@ export function useDeckProfile(deckId: string): {
    * newest is dropped.
    */
   const generation = useRef(0);
+  /**
+   * Every deck a peek has been made for in this mount, so reopening the tab does not look again.
+   * A SET rather than the last deck: A, then B, then A again would otherwise look for A twice.
+   */
+  const peeked = useRef(new Set<string>());
   /**
    * The deck currently on screen, readable from an async continuation.
    *
@@ -114,6 +134,31 @@ export function useDeckProfile(deckId: string): {
     })();
   }, [deckId]);
 
+  const peek = useCallback(() => {
+    // A press for this deck still in flight outranks any stored copy: a reader who left and came
+    // back before it resolved would otherwise see the stored one painted over the pending press.
+    if (peeked.current.has(deckId) || state.kind !== "idle" || inFlightFor.current === deckId) return;
+    peeked.current.add(deckId);
+    const mine = generation.current;
+    void (async () => {
+      let result: StoredProfileFetch;
+      try {
+        result = await fetchStoredDeckProfile(deckId);
+      } catch {
+        // A failed peek is a miss. The press is still there, and it is the recovery.
+        return;
+      }
+      // Any request made since — a press, or a peek for another deck — owns the state now.
+      if (mine !== generation.current || current.current !== deckId) return;
+      // Only `none` is a miss. `disabled` and `not-found` are answers the panel draws — the
+      // flag switched off mid-visit, or the deck is gone — and the press would lie about both.
+      if (!result.ok && result.reason === "none") return;
+      setShownFor(deckId);
+      if (result.ok) setState({ kind: "ready", profile: result.profile });
+      else setState({ kind: result.reason === "disabled" ? "disabled" : "missing" });
+    })();
+  }, [deckId, state.kind]);
+
   // THE DECK CHANGED UNDER A MOUNTED SHELL. The answer we hold is about another deck, so it is
   // dropped rather than shown under this one's name. Adjusted during render — React's own
   // pattern for deriving state from a changed prop — so the previous deck's profile never paints
@@ -123,5 +168,5 @@ export function useDeckProfile(deckId: string): {
     setState({ kind: "idle" });
   }
 
-  return { state, request };
+  return { state, request, peek };
 }

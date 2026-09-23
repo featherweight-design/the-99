@@ -15,6 +15,11 @@ const stub = vi.hoisted(() => ({
   gate: null as null | (() => void),
   /** One resolver per call when set, so two requests can be released independently. */
   gates: null as null | (() => void)[],
+  /** Stored lookups made, and what they answer. */
+  peeks: [] as string[],
+  stored: { ok: false, reason: "none" } as unknown,
+  peekGate: null as null | (() => void),
+  peekThrows: false,
 }));
 
 vi.mock("../../app/decks/profile-actions", () => ({
@@ -25,6 +30,12 @@ vi.mock("../../app/decks/profile-actions", () => ({
     if (stub.throws) throw new Error("network");
     return stub.reply;
   },
+  fetchStoredDeckProfile: async (deckId: string) => {
+    stub.peeks.push(deckId);
+    if (stub.peekGate) await new Promise<void>((r) => (stub.peekGate = r));
+    if (stub.peekThrows) throw new Error("network");
+    return stub.stored;
+  },
 }));
 
 const { useDeckProfile } = await import("./use-deck-profile");
@@ -32,12 +43,17 @@ const { useDeckProfile } = await import("./use-deck-profile");
 const A = "11111111-1111-4111-8111-111111111111";
 const B = "22222222-2222-4222-8222-222222222222";
 
+/** Every (deck, state) pair that reached the screen, so a single wrong render is visible. */
+const painted: string[] = [];
+
 function Harness({ deckId = A }: { deckId?: string }) {
-  const { state, request } = useDeckProfile(deckId);
+  const { state, request, peek } = useDeckProfile(deckId);
+  painted.push(`${deckId}:${state.kind}`);
   return (
     <div>
       <span data-testid="kind">{state.kind}</span>
       <button onClick={request}>ask</button>
+      <button onClick={peek}>peek</button>
     </div>
   );
 }
@@ -49,7 +65,18 @@ const ask = async (c: ReturnType<typeof render>) => {
   });
 };
 
+const peek = async (c: ReturnType<typeof render>) => {
+  await act(async () => {
+    c.getByText("peek").click();
+  });
+};
+
 beforeEach(() => {
+  painted.length = 0;
+  stub.peeks = [];
+  stub.stored = { ok: false, reason: "none" };
+  stub.peekGate = null;
+  stub.peekThrows = false;
   stub.calls = [];
   stub.reply = { ok: true, profile: { brackets: {} } };
   stub.throws = false;
@@ -213,5 +240,106 @@ describe("useDeckProfile", () => {
     await ask(c);
     expect(stub.calls).toEqual([A, A]);
     expect(kind(c)).toBe("ready");
+  });
+});
+
+describe("useDeckProfile peek", () => {
+  // A PEEK NEVER COMPUTES. The build is `fetchDeckProfile`; a peek that reached it on a miss
+  // would be the auto-run ruling 7 forbids, so both counts are asserted.
+  it("stays idle on a miss and makes no build request", async () => {
+    const c = render(<Harness />);
+    await peek(c);
+    expect(stub.peeks).toEqual([A]);
+    expect(stub.calls).toEqual([]);
+    expect(kind(c)).toBe("idle");
+  });
+
+  it("shows a stored analysis as ready", async () => {
+    stub.stored = { ok: true, profile: { brackets: {} } };
+    const c = render(<Harness />);
+    await peek(c);
+    expect(kind(c)).toBe("ready");
+    expect(stub.calls).toEqual([]);
+  });
+
+  // Reopening the tab re-runs the shell's effect; the lookup is once per deck.
+  it("looks once per deck", async () => {
+    const c = render(<Harness />);
+    await peek(c);
+    await peek(c);
+    expect(stub.peeks).toEqual([A]);
+    c.rerender(<Harness deckId={B} />);
+    await peek(c);
+    expect(stub.peeks).toEqual([A, B]);
+    // Back to A: already looked for in this mount.
+    c.rerender(<Harness deckId={A} />);
+    await peek(c);
+    expect(stub.peeks).toEqual([A, B]);
+  });
+
+  // A press still in flight for this deck outranks a stored copy, even after the shell moved away
+  // and back, which resets the state to idle while the press is pending.
+  it("makes no peek while a press for the same deck is in flight", async () => {
+    stub.gate = () => {};
+    const c = render(<Harness />);
+    await ask(c);
+    c.rerender(<Harness deckId={B} />);
+    c.rerender(<Harness deckId={A} />);
+    await peek(c);
+    expect(stub.peeks).toEqual([]);
+  });
+
+  it.each([
+    ["disabled", "disabled"],
+    ["not-found", "missing"],
+  ])("reports a %s answer as %s rather than as a miss", async (reason, expected) => {
+    stub.stored = { ok: false, reason };
+    const c = render(<Harness />);
+    await peek(c);
+    expect(kind(c)).toBe(expected);
+    expect(stub.calls).toEqual([]);
+  });
+
+  it("treats a failed lookup as a miss", async () => {
+    stub.peekThrows = true;
+    const c = render(<Harness />);
+    await peek(c);
+    expect(kind(c)).toBe("idle");
+  });
+
+  // A PRESS OUTRANKS A PEEK. The reader asked for a fresh analysis; a stored one landing after
+  // the press must not replace the spinner, or the reply the press is waiting for.
+  it("drops a peek reply that lands after a press", async () => {
+    stub.stored = { ok: true, profile: { brackets: { stale: true } } };
+    stub.peekGate = () => {};
+    stub.gate = () => {};
+    const c = render(<Harness />);
+    await peek(c);
+    await ask(c);
+    expect(kind(c)).toBe("loading");
+    await act(async () => {
+      stub.peekGate!();
+    });
+    expect(kind(c)).toBe("loading");
+    await act(async () => {
+      stub.gate!();
+    });
+    expect(kind(c)).toBe("ready");
+  });
+
+  // A peek for a deck no longer on screen must not paint under the new deck's name.
+  it("drops a peek reply for a deck the shell has moved off", async () => {
+    stub.stored = { ok: true, profile: { brackets: {} } };
+    stub.peekGate = () => {};
+    const c = render(<Harness />);
+    await peek(c);
+    c.rerender(<Harness deckId={B} />);
+    await act(async () => {
+      stub.peekGate!();
+    });
+    expect(kind(c)).toBe("idle");
+    // The end state alone cannot see this: the deck-changed reset would put a late `ready` back
+    // to `idle` one render later. What must never happen is that render.
+    expect(painted).not.toContain(`${B}:ready`);
   });
 });

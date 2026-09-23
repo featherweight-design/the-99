@@ -13,6 +13,8 @@ const stub = vi.hoisted(() => ({
   /** Every read this action performed, in order. The flag check is only meaningful if the
    *  reads it precedes can be observed NOT to have happened. */
   reads: [] as string[],
+  /** What a stored lookup finds. */
+  stored: null as unknown,
 }));
 
 vi.mock("../../lib/decks/analysis-flag", () => ({
@@ -26,14 +28,18 @@ vi.mock("../../lib/auth", () => ({
   },
 }));
 
-vi.mock("../../lib/profile/load", () => ({
-  cachedDeckProfile: async () => {
+vi.mock("../../lib/profile/stored", () => ({
+  computeAndStoreProfile: async () => {
     stub.reads.push("profile");
     return stub.profile;
   },
+  readStoredProfile: async () => {
+    stub.reads.push("stored");
+    return stub.stored;
+  },
 }));
 
-const { fetchDeckProfile } = await import("./profile-actions");
+const { fetchDeckProfile, fetchStoredDeckProfile } = await import("./profile-actions");
 
 const DECK = "11111111-1111-4111-8111-111111111111";
 
@@ -41,6 +47,7 @@ beforeEach(() => {
   stub.enabled = true;
   stub.profile = { brackets: {} };
   stub.reads = [];
+  stub.stored = null;
 });
 
 describe("fetchDeckProfile", () => {
@@ -87,5 +94,32 @@ describe("fetchDeckProfile", () => {
     stub.profile = null;
     expect(await fetchDeckProfile(DECK)).toEqual({ ok: false, reason: "not-found" });
     expect(stub.reads).toEqual(["auth", "profile"]);
+  });
+});
+
+describe("fetchStoredDeckProfile", () => {
+  // TAB OPEN NEVER COMPUTES. Ruling 7 forbids an auto-run on tab open, so a miss answers `none`
+  // and the only read is the stored lookup — asserted as the read list, because a lookup that
+  // fell through to a build on a miss would return the same `ok` on a hit and look identical.
+  it("answers none on a miss without computing anything", async () => {
+    expect(await fetchStoredDeckProfile(DECK)).toEqual({ ok: false, reason: "none" });
+    expect(stub.reads).toEqual(["auth", "stored"]);
+  });
+
+  it("returns a stored profile when one matches", async () => {
+    stub.stored = { brackets: { 3: {} } };
+    expect(await fetchStoredDeckProfile(DECK)).toEqual({ ok: true, profile: { brackets: { 3: {} } } });
+    expect(stub.reads).toEqual(["auth", "stored"]);
+  });
+
+  it("answers disabled before reading anything at all", async () => {
+    stub.enabled = false;
+    expect(await fetchStoredDeckProfile(DECK)).toEqual({ ok: false, reason: "disabled" });
+    expect(stub.reads).toEqual([]);
+  });
+
+  it("refuses a malformed id before any read", async () => {
+    expect(await fetchStoredDeckProfile("deck-1")).toEqual({ ok: false, reason: "not-found" });
+    expect(stub.reads).toEqual([]);
   });
 });

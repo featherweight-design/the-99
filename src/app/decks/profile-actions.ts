@@ -3,7 +3,7 @@
 import { requireUserId } from "../../lib/auth";
 import { isUuid } from "../../lib/uuid";
 import { analysisTabEnabled } from "../../lib/decks/analysis-flag";
-import { cachedDeckProfile } from "../../lib/profile/load";
+import { computeAndStoreProfile, readStoredProfile } from "../../lib/profile/stored";
 import type { DeckProfile } from "../../lib/profile/types";
 
 export type ProfileFetch =
@@ -50,10 +50,34 @@ export async function fetchDeckProfile(deckId: string): Promise<ProfileFetch> {
   if (!isUuid(deckId)) return { ok: false, reason: "not-found" };
 
   const userId = await requireUserId();
-  const profile = await cachedDeckProfile(deckId, userId);
+  // Computed through the same cache as before, and now also STORED, so the next visit can show
+  // it without a press. See `stored.ts`.
+  const profile = await computeAndStoreProfile(deckId, userId);
   // A deck the reader does not own reads as ABSENT rather than forbidden: `loadProfileHead`
   // scopes by `user_id`, so there is no state in which this returns another player's deck.
   if (!profile) return { ok: false, reason: "not-found" };
 
   return { ok: true, profile };
+}
+
+export type StoredProfileFetch =
+  | ProfileFetch
+  /** No stored analysis matches this deck as it is now. The press is the next step. */
+  | { ok: false; reason: "none" };
+
+/**
+ * The analysis already stored for this deck, read when the Analysis tab opens — never computed.
+ *
+ * WHY THIS DOES NOT BREAK RULING 7. Round 4 forbids an auto-RUN on tab open because an analysis
+ * costs 630ms median and 2.2s on the largest deck. This runs nothing: it is a head read and a
+ * primary-key lookup, and answers `none` rather than falling through to a computation. A reader
+ * who pressed Analyze before a reload sees that same analysis after it, which is what the press
+ * already bought; a reader who never pressed still sees the press.
+ */
+export async function fetchStoredDeckProfile(deckId: string): Promise<StoredProfileFetch> {
+  if (!analysisTabEnabled()) return { ok: false, reason: "disabled" };
+  if (!isUuid(deckId)) return { ok: false, reason: "not-found" };
+  const userId = await requireUserId();
+  const profile = await readStoredProfile(deckId, userId);
+  return profile ? { ok: true, profile } : { ok: false, reason: "none" };
 }

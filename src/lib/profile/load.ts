@@ -69,27 +69,43 @@ export async function loadProfileHead(
   // list come from different instants — a deck state that never existed — and the profile is
   // then filed under a key describing it. `loadDraftState` takes the same snapshot for the
   // same reason.
-  return db.transaction(
-    async (tx) => {
-      const [deck] = await tx
-        .select({
-          commanderOracleId: decks.commanderOracleId,
-          partnerOracleId: decks.partnerOracleId,
-          declaredBracket: decks.declaredBracket,
-        })
-        .from(decks)
-        .where(and(eq(decks.id, deckId), eq(decks.userId, userId)));
-      if (!deck) return null;
+  return db.transaction((tx) => readProfileHead(tx, deckId, userId), {
+    isolationLevel: "repeatable read",
+    accessMode: "read only",
+  });
+}
 
-      const rows = await tx
-        .select({ oracleId: deckCards.oracleId, quantity: deckCards.quantity })
-        .from(deckCards)
-        .where(eq(deckCards.deckId, deckId));
+type Tx = Parameters<Parameters<typeof db.transaction>[0]>[0];
 
-      return { deckId, userId, ...deck, cards: rows };
-    },
-    { isolationLevel: "repeatable read", accessMode: "read only" },
-  );
+/**
+ * The head's two reads, on a transaction the CALLER holds.
+ *
+ * Exported so a reader that compares the head against something else can take both from one
+ * snapshot: `stored.ts` checks the fingerprint against a stored row, and a head read in its own
+ * transaction would let an edit commit between the two and pair the edited deck with the
+ * analysis of the deck before it.
+ */
+export async function readProfileHead(
+  tx: Tx,
+  deckId: string,
+  userId: string,
+): Promise<ProfileHead | null> {
+  const [deck] = await tx
+    .select({
+      commanderOracleId: decks.commanderOracleId,
+      partnerOracleId: decks.partnerOracleId,
+      declaredBracket: decks.declaredBracket,
+    })
+    .from(decks)
+    .where(and(eq(decks.id, deckId), eq(decks.userId, userId)));
+  if (!deck) return null;
+
+  const rows = await tx
+    .select({ oracleId: deckCards.oracleId, quantity: deckCards.quantity })
+    .from(deckCards)
+    .where(eq(deckCards.deckId, deckId));
+
+  return { deckId, userId, ...deck, cards: rows };
 }
 
 /**
