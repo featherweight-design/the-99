@@ -611,7 +611,8 @@ async function run() {
             await page.waitForTimeout(700);
             const tip = await page.evaluate(() => {
               const option = document.querySelector('main [role="option"]');
-              const bubble = option?.querySelector("[data-side]");
+              // The bubble is portalled to the body, so it is found there, not in the option.
+              const bubble = document.querySelector('[data-testid="fact-tooltip"]');
               if (!option || !bubble) return null;
               let scroller = option.parentElement;
               while (scroller && getComputedStyle(scroller).overflowY === "visible") {

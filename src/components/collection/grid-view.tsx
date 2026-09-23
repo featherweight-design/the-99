@@ -146,19 +146,16 @@ export function GridView({
                 )}
               </>
             }
-            metaTrail={
-              /* THE `SET · rarity` YIELD IS WITHDRAWN. It was invented to make room for a
-                 ~100px partner name; a 16px glyph needs no room, so Round 1's rule is
-                 restored whole: nothing yields, and the caption's height is untouched. */
-              /* TRUNCATES RATHER THAN OVERFLOWING. Nothing yields — the set code keeps its
-                 slot — but at 157px a chip plus three fact marks plus this one can ask for
-                 more than the caption has, and a non-shrinking trail would push past the
-                 tile's edge rather than shortening. Rare (it needs a card carrying every
-                 fact at once) and silent, which is why it is handled rather than left. */
-              <span className="min-w-0 truncate" style={{ color: "var(--fg-faint)" }}>
-                <span className="md:hidden">{c.primarySetCode}</span>
-                <span className="hidden md:inline">{c.primarySetCode} · {c.rarity}</span>
-              </span>
+            /* `SET · rarity` sits UNDER the name, as sub-text. It rode the meta line's right
+               end, and once a card carried the chip, three bracket marks and the combo mark
+               there was no room left: a tutor's `TLE ·` was cut at the tile's edge and its
+               rarity never showed. Ruled by Hugh on 2026-09-23. With a line of its own it
+               also shows the rarity on a phone, where the meta line had only had room for
+               the set code. */
+            nameSub={
+              <>
+                {c.primarySetCode} · {c.rarity}
+              </>
             }
             /* The name printed on the copy the player owns, front face only,
                single line and never clamped. This surface carries no `//` mark

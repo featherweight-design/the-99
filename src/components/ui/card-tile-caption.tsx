@@ -2,7 +2,9 @@
 //
 // Design handoff `card_captions` (R1), call A: two lines, always, at a fixed
 // height. The meta line carries the marks that used to sit on the illustration;
-// the name line closes the tile. A trailing column — the deck tile's `✕` — is
+// the name line closes the tile. A caller that passes `nameSub` gets a THIRD
+// line under the name and a taller fixed height to match (`/collection`'s
+// `SET · rarity`, since 2026-09-23). The deck tile passes none and keeps two. A trailing column — the deck tile's `✕` — is
 // paid for once at full height rather than inside either line.
 //
 // It is the CAPTION that is shared and not the tile (handoff §7). The deck's
@@ -29,6 +31,14 @@ import type { ReactNode } from "react";
 export const CARD_TILE_CAPTION_H = "min-h-[56px] md:min-h-[50px]";
 
 /**
+ * The height with a `nameSub` line: the two-line figure plus a 3px gap and the sub-line's box.
+ * Phone: 56 + 3 + 11 = 70. Desktop: 50 + 3 + 12 = 65. A separate floor rather than the
+ * two-line one left to be outgrown, because a floor that content always exceeds is the
+ * minimum-that-never-binds the note below warns about.
+ */
+export const CARD_TILE_CAPTION_SUB_H = "min-h-[70px] md:min-h-[65px]";
+
+/**
  * Both lines carry an EXPLICIT box height, and the caption's padding is chosen
  * so the two plus the gap add up to `CARD_TILE_CAPTION_H` exactly.
  *
@@ -42,6 +52,10 @@ export const CARD_TILE_CAPTION_H = "min-h-[56px] md:min-h-[50px]";
  */
 const META_LINE = "h-[17px] md:h-[18px]";
 const NAME_LINE = "h-[20px] md:h-[17px]";
+/** The sub-line's box: the meta line's type, which sets glyphs 9-9.5px tall at `leading-none`. */
+const SUB_LINE = "h-[11px] md:h-[12px]";
+// With it the sum is 8 + 17 + 3 + 20 + 3 + 11 + 8 = 70 and 6 + 18 + 3 + 17 + 3 + 12 + 6 = 65,
+// which is `CARD_TILE_CAPTION_SUB_H`.
 
 /**
  * The one box the slot's three occupants share — the availability chip, the
@@ -99,12 +113,11 @@ export function slotOutline(colour: string, dashed = false) {
 
 export function CardTileCaption({
   meta,
-  metaTrail,
-  metaTrailShrinks = false,
   name,
   nameHidden = false,
   nameSpoken,
   nameTrail,
+  nameSub,
   trailing,
 }: {
   /**
@@ -119,18 +132,6 @@ export function CardTileCaption({
    * misled.
    */
   meta?: ReactNode;
-  /** Right-aligned on the meta line. `SET · rarity` on `/collection`. */
-  metaTrail?: ReactNode;
-  /**
-   * Let the trail SHRINK instead of holding its content width.
-   *
-   * `flex-none` is right for the trail's usual occupants — a 3-character set code and a
-   * rarity — which are short, fixed and worth protecting from a long name beside them. It is
-   * wrong for a sentence: combo awareness puts a clause here, and unshrinkable means its own
-   * `truncate` never engages and the tile hard-clips it at `overflow-hidden` with no
-   * ellipsis. Opt-in, so the two existing callers keep the behaviour that suits them.
-   */
-  metaTrailShrinks?: boolean;
   /** The printed front-face name. Truncation is this component's. */
   name: ReactNode;
   /**
@@ -146,6 +147,13 @@ export function CardTileCaption({
    * never coexist: `/collection` draws no `//` mark (spec errata 3).
    */
   nameTrail?: ReactNode;
+  /**
+   * A line of sub-text under the name, left-aligned with it. `/collection` puts the printing's
+   * `SET · rarity` here. It rode the meta line's right end until the card marks arrived, and
+   * then a chip plus three or four glyphs pushed it past the tile's edge. Under the name it
+   * has a line of its own and nothing competes for it.
+   */
+  nameSub?: ReactNode;
   /** The full-height right column. The deck tile's `✕`. */
   trailing?: ReactNode;
 }) {
@@ -154,7 +162,7 @@ export function CardTileCaption({
        caption's 46px, where it was easy to miss; the deck tile draws it down
        the whole shell now, the way `decklist-row.tsx` draws it down a whole
        row. `/collection` has no draft at all, so nothing here needs the prop. */
-    <div className={`flex items-stretch ${CARD_TILE_CAPTION_H}`}>
+    <div className={`flex items-stretch ${nameSub ? CARD_TILE_CAPTION_SUB_H : CARD_TILE_CAPTION_H}`}>
       <div
         className={`flex-auto min-w-0 flex flex-col justify-center gap-[3px] py-[8px] md:py-[6px] pl-[9px] md:pl-[10px] ${
           trailing ? "pr-[3px]" : "pr-[9px] md:pr-[10px]"
@@ -168,11 +176,6 @@ export function CardTileCaption({
           className={`flex items-center gap-[6px] min-w-0 font-mono text-[9px] md:text-[9.5px] leading-none ${META_LINE}`}
         >
           {meta}
-          {metaTrail && (
-            <span className={`ml-auto ${metaTrailShrinks ? "min-w-0" : "flex-none"}`}>
-              {metaTrail}
-            </span>
-          )}
         </div>
         {/* The name line carries a line-height, where the meta line above it
             takes `leading-none`. `truncate` means `overflow: hidden`, so at
@@ -201,6 +204,15 @@ export function CardTileCaption({
           {nameSpoken}
           {nameTrail}
         </div>
+        {nameSub && (
+          <div
+            data-testid="tile-sub"
+            className={`min-w-0 truncate font-mono text-[9px] md:text-[9.5px] leading-none ${SUB_LINE}`}
+            style={{ color: "var(--fg-faint)" }}
+          >
+            {nameSub}
+          </div>
+        )}
       </div>
       {trailing}
     </div>

@@ -36,7 +36,10 @@ function livePointer(initial: boolean) {
   };
 }
 
-afterEach(() => vi.unstubAllGlobals());
+afterEach(() => {
+  vi.unstubAllGlobals();
+  vi.restoreAllMocks();
+});
 
 describe("FactTooltip", () => {
   it("renders nothing of its own under a coarse pointer", async () => {
@@ -82,9 +85,30 @@ describe("FactTooltip", () => {
     await waitFor(() => expect(screen.getByText(cardMarkCopy.tooltip.extraTurns)).toBeTruthy(), {
       timeout: 2000,
     });
-    expect(container.querySelector("[aria-hidden]")?.textContent).toBe(
-      cardMarkCopy.tooltip.extraTurns,
+    expect(screen.getByText(cardMarkCopy.tooltip.extraTurns)).toHaveAttribute("aria-hidden", "true");
+    // PORTALLED: the bubble is not inside its host. Drawn there, an `overflow-hidden` host (the
+    // /collection tile) cut it off at its own edges, and a mono host set its face.
+    expect(container.textContent).not.toContain(cardMarkCopy.tooltip.extraTurns);
+  });
+
+  it("is not squeezed into a narrow box that clips its mark, which was the /collection tile", async () => {
+    // A tile is an `overflow-hidden` button ~170px wide. Clamped into it, the bubble was cut to
+    // the tile's width and laid over the art. Portalled, it takes its full cap.
+    pointer(true);
+    render(
+      <div data-testid="tile" style={{ overflow: "hidden" }}>
+        <FactTooltip fact="tutor"><i data-testid="mark" /></FactTooltip>
+      </div>,
     );
+    vi.spyOn(screen.getByTestId("tile"), "getBoundingClientRect").mockReturnValue(
+      { top: 100, bottom: 400, left: 300, right: 470 } as DOMRect,
+    );
+    vi.spyOn(screen.getByTestId("mark").parentElement as HTMLElement, "getBoundingClientRect")
+      .mockReturnValue({ top: 350, bottom: 366, left: 330, width: 16 } as DOMRect);
+    fireEvent.pointerEnter(screen.getByTestId("mark"));
+    await waitFor(() => expect(screen.getByText(cardMarkCopy.tooltip.tutor).style.maxWidth).toBe(`${MAX_BUBBLE_PX}px`), {
+      timeout: OPEN_DELAY_MS + 500,
+    });
   });
 
   it("turns on when a fine pointer arrives, and unsubscribes on unmount", async () => {
@@ -205,6 +229,8 @@ describe("FactTooltip — where it sits across its mark", () => {
     );
     const scroller = screen.getByTestId("scroller");
     const anchor = screen.getByTestId("mark").parentElement as HTMLElement;
+    // The SIDE is judged against this box; the left and right edges are the viewport's, since
+    // the bubble is portalled and nothing clips it sideways. jsdom's window is 1024px wide.
     vi.spyOn(scroller, "getBoundingClientRect").mockReturnValue({ top: 0, left: 100, right: 900 } as DOMRect);
     vi.spyOn(anchor, "getBoundingClientRect").mockReturnValue({ top: 400, left: markLeft, width: 16 } as DOMRect);
     fireEvent.pointerEnter(screen.getByTestId("mark"));
@@ -213,17 +239,17 @@ describe("FactTooltip — where it sits across its mark", () => {
   const wait = { timeout: OPEN_DELAY_MS + 500 };
 
   it("aligns to the left edge when the mark is too near it to centre", async () => {
-    mount(100 + 20);
+    mount(20);
     await waitFor(() => expect(bubble()).toHaveAttribute("data-align", "start"), wait);
   });
 
   it("aligns to the right edge when the mark is too near that one", async () => {
-    mount(900 - 30);
+    mount(window.innerWidth - 30);
     await waitFor(() => expect(bubble()).toHaveAttribute("data-align", "end"), wait);
   });
 
   it("centres when there is room either side", async () => {
-    mount(100 + MAX_BUBBLE_PX / 2 + EDGE_PX + 10);
+    mount(MAX_BUBBLE_PX / 2 + EDGE_PX + 10);
     await waitFor(() => expect(bubble()).toHaveAttribute("data-align", "center"), wait);
   });
 });

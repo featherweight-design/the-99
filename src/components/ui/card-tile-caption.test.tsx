@@ -6,6 +6,7 @@ import { ProxyTag } from "../decks/proxy-tag";
 import { AvailabilityMarker } from "./availability-marker";
 import {
   CARD_TILE_CAPTION_H,
+  CARD_TILE_CAPTION_SUB_H,
   CARD_TILE_SLOT_BOX,
   CardTileCaption,
   slotOutline,
@@ -29,7 +30,6 @@ describe("CardTileCaption — the shape both card views share", () => {
     const { container: full } = render(
       <CardTileCaption
         meta={<span>META</span>}
-        metaTrail={<span>DSK · rare</span>}
         name="Sol Ring"
         nameTrail={<span>{"//"}</span>}
         trailing={<button type="button">×</button>}
@@ -43,6 +43,23 @@ describe("CardTileCaption — the shape both card views share", () => {
     for (const c of [bare, full]) {
       expect(c.firstElementChild?.className).toContain(CARD_TILE_CAPTION_H);
     }
+  });
+
+  it("draws the sub-line under the name, and nothing where no caller gives one", () => {
+    const { container } = render(
+      <CardTileCaption meta={<span>MARKS</span>} name="Mystical Tutor" nameSub={<span>TLE · uncommon</span>} />,
+    );
+    // Under the name rather than on the meta line: the marks there pushed it off the tile.
+    const text = container.textContent ?? "";
+    expect(text.indexOf("Mystical Tutor")).toBeLessThan(text.indexOf("TLE · uncommon"));
+    const meta = screen.getByText("MARKS").parentElement as HTMLElement;
+    expect(meta.textContent).not.toContain("TLE");
+
+    const { container: bare } = render(<CardTileCaption name="Sol Ring" />);
+    expect(bare.querySelectorAll(".font-mono")).toHaveLength(1);
+    // A third line takes the taller floor, whose sum it is; the two-line caption keeps its own.
+    expect(container.firstElementChild?.className).toContain(CARD_TILE_CAPTION_SUB_H);
+    expect(bare.firstElementChild?.className).toContain(CARD_TILE_CAPTION_H);
   });
 
   it("hides the drawn name and speaks the whole one when asked", () => {

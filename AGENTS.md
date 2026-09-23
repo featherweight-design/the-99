@@ -1306,9 +1306,11 @@ Package manager is **pnpm** (pinned via `packageManager` in package.json) — ne
   with the host beside it. Two more mutations fail it: that indent put back (label at 53px
   against a row line at 11px), and `grow` put on the name inside its line, which puts the mark
   121px past the end of `Mystical Tutor`. Its last check hovers the FIRST row's mark and reads the
-  tooltip against the results scroller, because the bubble is absolute inside the mark and the
-  results are their own `overflow-y-auto` box — `FactTooltip` now opens below when the room above
-  is short. The first row is reached by SEARCHING it there (`mystical tutor`), never by scrolling:
+  tooltip against the results scroller, because the results are their own `overflow-y-auto` box and
+  a bubble above the first row would hang over the search input — `FactTooltip` opens below when
+  the room above is short. The bubble itself is portalled to the body since 2026-09-23, so no box
+  clips it and it takes the page's face rather than its host's; `probe:card-mark` asserts both on
+  every surface, after the /collection tile cut it off at the tile's edges in its caption's mono. The first row is reached by SEARCHING it there (`mystical tutor`), never by scrolling:
   the `tutor` list is too short to scroll, and the first version read a bubble 117px clear of the
   edge and passed a build that clips. With the flip removed it reads -2px. A first try at that second one measured nothing
   and passed, because the mutation was written as a `style` prop on an element that already had

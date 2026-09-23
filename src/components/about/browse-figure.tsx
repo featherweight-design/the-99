@@ -118,13 +118,10 @@ function Cell({
             </span>
           ) : undefined
         }
-        metaTrail={
-          <span style={{ color: "var(--fg-faint)" }}>
-            <span className="md:hidden">{BROWSE_SET_CODE}</span>
-            <span className="hidden md:inline">
-              {BROWSE_SET_CODE} · {rarity}
-            </span>
-          </span>
+        nameSub={
+          <>
+            {BROWSE_SET_CODE} · {rarity}
+          </>
         }
         name={name}
       />
