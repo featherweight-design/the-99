@@ -96,6 +96,14 @@ describe("validateSuggestions", () => {
     expect(run({ ...good, evidence: [{ kind: "games", value: "5 of 5 games" }] }).drops).toEqual([{ position: 0, rule: "citation" }]);
   });
 
+  it("drops a games citation carrying two figures, which could be swapped", () => {
+    // Mana hurt in 3 and losses were 5: every figure here is stated, against the wrong claim.
+    expect(run({ ...good, evidence: [{ kind: "games", value: "Mana hurt in 5 of 5 games; lost 3 of 5 games" }] }).drops).toEqual([{ position: 0, rule: "citation" }]);
+    expect(run({ ...good, evidence: [
+      { kind: "games", value: "Mana hurt in 3 of 5 games" }, { kind: "games", value: "Lost 5 of 5 games" },
+    ] }).droppedCount).toBe(0);
+  });
+
   it("keeps a note quoted in the one-line form the prompt showed it in", () => {
     const broken = { ...pack, play: buildPlayGroup([game("g1", { hurt: ["mana"], note: "flooded\nagain" })]) };
     const cite = { ...good, rationale: "Mana was marked as hurting in 1 of 1 games.", rationaleShort: "Mana hurt in 1 of 1",

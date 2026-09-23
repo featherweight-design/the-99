@@ -142,11 +142,14 @@ export function validateSuggestions(args: {
         // is refused when mana hurt in 3, though 5 is the count. A figure no named claim carries
         // is a count the model made up, however plausible.
         const text = c.value.toLowerCase();
+        // ONE figure per citation. With two, the figures cannot be tied to the claims they label
+        // without parsing the sentence, and swapped numerators pass; a suggestion with two facts
+        // to cite has up to four citations to cite them in.
         const figures = [...text.matchAll(/(\d+)\s+of\s+(\d+)\s+games?\b/g)];
-        if (figures.length === 0) return false;
-        const named = gameClaims().filter((claim) => claim.words.every((w) => w.test(text)));
-        return figures.every((m) => Number(m[2]) === count
-          && named.some((claim) => claim.n === Number(m[1])));
+        if (figures.length !== 1) return false;
+        const [, n, m] = figures[0];
+        return Number(m) === count
+          && gameClaims().some((claim) => claim.n === Number(n) && claim.words.every((w) => w.test(text)));
       }
       case "note":
         // `suggestionRules.quotedNote`: the note byte-identical, IN QUOTATION MARKS, WITH ITS DATE,
