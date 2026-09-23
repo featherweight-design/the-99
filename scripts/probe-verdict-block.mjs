@@ -159,7 +159,10 @@ async function walk(page, label, markPx, viewportWidth) {
   // ── The mark ────────────────────────────────────────────────────────────────────────────
   const mark = await page.evaluate((scope) => {
     const root = document.querySelector(scope);
-    const el = root?.querySelector('[data-testid="bracket-mark"]');
+    // THE BOX'S OWN MARK, the first one drawn at this width. The page carries others before it
+    // in the DOM, and the first match was the deck header's chip on the hidden desktop copy.
+    const el = [...(root?.querySelectorAll('section[aria-label="Your bracket"] [data-testid="verdict-marks"] [data-testid="bracket-mark"]') ?? [])]
+      .find((m) => m.getBoundingClientRect().width > 0);
     if (!el) return null;
     const art = el.querySelector('[data-testid="bracket-mark-art"]');
     const numeral = el.querySelector('[data-testid="bracket-mark-numeral"]');
@@ -333,14 +336,20 @@ async function walk(page, label, markPx, viewportWidth) {
     report(`${label}px · only the rung that holds carries figures`, misplaced.length === 0,
       climb.map((r) => `${r.role}:${r.figures}`).join(" "));
 
-    // Nothing in the climb is pressable: "the climb states, the findings open".
+    // "The climb states, the findings open." Its one control is the lower rung's
+    // `what would have to go →`, which opens sheet 3b; nothing else in it is pressable.
     const pressable = await page.evaluate((scope) => {
       const root = document.querySelector(scope);
       const climbRoot = root?.querySelector('[data-testid="climb-rung"]')?.parentElement;
-      return [...(climbRoot?.querySelectorAll("button, a, [role=button]") ?? [])].length;
+      return [...(climbRoot?.querySelectorAll("button, a, [role=button]") ?? [])].map((b) => ({
+        rung: b.closest('[data-testid="climb-rung"]')?.getAttribute("data-role") ?? null,
+        popup: b.getAttribute("aria-haspopup"),
+      }));
     }, PAGE);
-    report(`${label}px · nothing in the climb opens`, pressable === 0,
-      `${pressable} pressable element(s)`);
+    const others = pressable.filter((p) => !(p.rung === "below" && p.popup === "dialog"));
+    report(`${label}px · nothing in the climb opens but the lower rung's sheet`,
+      others.length === 0 && pressable.length <= 1,
+      `${pressable.length} pressable: ${pressable.map((p) => `${p.rung}/${p.popup}`).join(", ") || "none"}`);
 
     // A rung that overflows its own box is the failure a phone finds and a desktop hides.
     const overflow = climb.filter((r) => r.right > viewportWidth);
