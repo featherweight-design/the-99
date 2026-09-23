@@ -56,8 +56,11 @@ function revalidateDeck(deckId: string): void {
 export async function saveDeckIntent(deckId: string, formData: FormData): Promise<DeckMutationResult> {
   const userId = await requireUserId();
   if (!isUuid(deckId)) return { ok: false, message: deckTuningCopy.intent.refused };
-  const raw = formData.get("intent");
-  const saved = await saveIntent(deckId, userId, typeof raw === "string" ? raw : "");
+  // A field that is missing or not text is a refusal, never an empty line: reading it as ""
+  // would clear the player's intent on a malformed request.
+  const raw = formData instanceof FormData ? formData.get("intent") : null;
+  if (typeof raw !== "string") return { ok: false, message: deckTuningCopy.intent.refused };
+  const saved = await saveIntent(deckId, userId, raw);
   if (saved === "tooLong") return { ok: false, message: deckTuningCopy.intent.tooLong };
   if (saved === "refused") return { ok: false, message: deckTuningCopy.intent.refused };
   revalidateDeck(deckId);

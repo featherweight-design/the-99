@@ -2,7 +2,7 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 
 // The actions are public endpoints: what the tests pin is what they do with a wire value that
 // is not what the TypeScript type claims.
-const calls = vi.hoisted(() => ({ inputs: 0, started: 0, applied: 0 }));
+const calls = vi.hoisted(() => ({ inputs: 0, started: 0, applied: 0, saved: 0 }));
 
 vi.mock("../../lib/auth", () => ({ requireUserId: async () => "user_1" }));
 vi.mock("next/cache", () => ({ revalidatePath: () => undefined }));
@@ -24,11 +24,11 @@ vi.mock("../../lib/decks/tuning-read", () => ({
   withBracketAfter: async () => [],
 }));
 vi.mock("../../lib/tuning/run-store", () => ({
+  saveIntent: async () => { calls.saved += 1; return "saved"; },
   startRun: async () => { calls.started += 1; return { kind: "in_flight" }; },
   finishRun: async () => true,
   persistRun: async () => true,
   cancelRun: async () => true,
-  saveIntent: async () => "saved",
 }));
 vi.mock("../../lib/tuning/verdicts", () => ({
   applyItem: async () => { calls.applied += 1; return "deck"; },
@@ -36,7 +36,7 @@ vi.mock("../../lib/tuning/verdicts", () => ({
   setDismissed: async () => "deck",
 }));
 
-import { applySuggestion, readTuningEvidence, runTuning } from "./tuning-actions";
+import { applySuggestion, readTuningEvidence, runTuning, saveDeckIntent } from "./tuning-actions";
 
 const DECK = "11111111-1111-4111-8111-111111111111";
 
@@ -44,6 +44,7 @@ beforeEach(() => {
   calls.inputs = 0;
   calls.started = 0;
   calls.applied = 0;
+  calls.saved = 0;
 });
 
 describe("runTuning's `anyway`", () => {
@@ -75,5 +76,23 @@ describe("ids off the wire", () => {
   it("reads no evidence step it does not know", async () => {
     expect(await readTuningEvidence(DECK, "collection" as never)).toBeNull();
     expect(await readTuningEvidence(DECK, "games")).toBe(1);
+  });
+});
+
+describe("saveDeckIntent's field", () => {
+  it("refuses a missing or non-text intent rather than clearing the line", async () => {
+    const file = new FormData();
+    file.set("intent", new Blob(["x"]), "intent.txt");
+    for (const form of [new FormData(), file, null as unknown as FormData]) {
+      expect((await saveDeckIntent(DECK, form)).ok).toBe(false);
+    }
+    expect(calls.saved).toBe(0);
+  });
+
+  it("saves a text intent, empty included, since clearing is a real edit", async () => {
+    const form = new FormData();
+    form.set("intent", "");
+    expect((await saveDeckIntent(DECK, form)).ok).toBe(true);
+    expect(calls.saved).toBe(1);
   });
 });
