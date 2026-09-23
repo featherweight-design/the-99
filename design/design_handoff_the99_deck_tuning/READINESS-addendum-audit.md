@@ -1,6 +1,6 @@
 # Readiness audit: deck tuning placement addendum (r1 + r2)
 
-**Verdict: 🟠 Orange.** Audited 2026-09-23 on `design/tuning-placement-addendum` (`c9885589`, which is
+**Verdict: 🟠 Orange** (one Design item; Hugh's rulings below settle the rest). Audited 2026-09-23 on `design/tuning-placement-addendum` (`c9885589`, which is
 `origin/main` at `f8a949b7` (#890) plus Design's addendum). Placement, the zero-games path, the
 allowance line and the lifecycle are buildable, and nothing that shipped in #884, #887, #889 or
 #891 has to be redrawn. **One of the four named asks is not drawn, and its README text rules
@@ -23,6 +23,24 @@ design tables. No design table quotes a form the code stopped emitting."* That g
 nothing about this addendum: `docs/superpowers/design-tables/deck-tuning.md` is allowlisted
 because #10 is unbuilt (`scripts/lib/copy-drift-allowlist.mjs:34-39`), and the check reads design
 tables, not handoff canvases.
+
+## Hugh's rulings, 2026-09-23 (they settle the questions below)
+
+1. **The bracket flag stands.** A swap that would move the deck's bracket is shown, flagged. That
+   one line goes back to Design (finding 1), with the rest of this audit's Design items.
+2. **Up to five swaps per run**, as Design drew. `MAX_SUGGESTIONS` goes from 3 to 5 and the token
+   budget is sized to match, in the tuning lane's C-fix PR.
+3. **Re-analyze says when it will spend a credit.** When a re-analyze would also rewrite the
+   synopsis, the banner says so before the press, as *Suggest changes* does. This lands with the
+   synopsis (sub-project 6), since nothing spends a credit on re-analyze until then.
+4. **The model is `claude-sonnet-5`.** Hugh also asked for a measured eval harness to find the
+   lowest-cost model that holds quality. That is scoped separately.
+5. **Credits roll over 24 hours**, as already ruled and built (`allowance-rule.ts:7-9`). Design's
+   *left today* / *more at 00:00 UTC* copy becomes *{n} of {total} left · next one at {time}*,
+   through `/copy-review`. No Design round.
+6. **Decided in engineering, the only defensible reading:** a deck with no reading gets no
+   suggestions (tuning follows the analysis, and analysis needs a legal deck), and tuning ships
+   and hides with `ANALYSIS_TAB_ENABLED`, because it lives inside the tab.
 
 ## The four asks from the plan (`2026-09-23-deck-tuning-pr-d.md:240-245`)
 
