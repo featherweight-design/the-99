@@ -141,15 +141,19 @@ async function run() {
   // analysis, so restoring the cards alone would leave every later width drawing no tile chip.
   const restore = async () => {
     if (!savedCards) return;
-    await sqlc`delete from deck_cards where deck_id = ${deckId}::uuid`;
-    for (const row of savedCards) {
-      const cols = Object.keys(row);
-      await sqlc.query(
-        `insert into deck_cards (${cols.map((c) => `"${c}"`).join(",")}) values (${cols.map((_, n) => `$${n + 1}`).join(",")})`,
-        cols.map((c) => row[c]),
-      );
-    }
-    await sqlc`update decks set last_edited_at = ${savedEdited} where id = ${deckId}::uuid`;
+    // ONE TRANSACTION: the delete, every insert and the stamp commit together or not at all, so a
+    // failure part-way cannot leave the deck empty or holding a prefix of its cards.
+    await sqlc.transaction((tx) => [
+      tx`delete from deck_cards where deck_id = ${deckId}::uuid`,
+      ...savedCards.map((row) => {
+        const cols = Object.keys(row);
+        return tx.query(
+          `insert into deck_cards (${cols.map((c) => `"${c}"`).join(",")}) values (${cols.map((_, n) => `$${n + 1}`).join(",")})`,
+          cols.map((c) => row[c]),
+        );
+      }),
+      tx`update decks set last_edited_at = ${savedEdited} where id = ${deckId}::uuid`,
+    ]);
     console.log(`restored ${savedCards.length} deck_cards rows and the deck's edit stamp`);
     savedCards = null;
   };
