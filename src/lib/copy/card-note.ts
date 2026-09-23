@@ -118,8 +118,8 @@ export const cardNote = {
    *
    * TRANSCRIBED AND NOT DRAWN, deliberately, and this is the one place to read why. Combo
    * awareness (sub-project 3) shipped the same statement on the same two rows FIRST, as
-   * `comboAwarenessCopy.clause.completes` — `completes with <partner>` — with the lemniscate
-   * beside it and a key entry glossing the glyph. Both hosts render it today
+   * the combo clause — drawn since 2026-09-22 as the lemniscate and the partner's name, with
+   * the sentence spoken and a key entry glossing the glyph. Both hosts render it today
    * (`consider-combo.test.tsx`, `top-off-combo.test.tsx`). Drawing this sentence as well would
    * put two sentences about one combo on one row, and the shipped one is shorter and glossed.
    *

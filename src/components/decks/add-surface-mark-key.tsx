@@ -6,9 +6,10 @@
 // were retired in a day.
 //
 // Both surfaces were already drawing one unglossed glyph before this: `ComboClause` renders
-// `ComboGlyph`, and neither clause sentence contains the word "combo" — they read
-// `completes with {partner}`. So the lemniscate arrived on two surfaces with nothing anywhere
-// to say what it meant. The three fact marks arrive in the same change as this key, so there
+// `ComboGlyph`, and its sentence never contained the word "combo" — and since 2026-09-22 it
+// draws no words at all, only the glyph and the partner's name, which makes THIS KEY the only
+// thing on either surface that says what the lemniscate means. The lemniscate arrived on two
+// surfaces with nothing anywhere to say what it meant. The three fact marks arrive in the same change as this key, so there
 // is no window where any of the four draws unglossed.
 //
 // UNCONDITIONAL, and that is the difference from `decklist.tsx`'s key rather than a

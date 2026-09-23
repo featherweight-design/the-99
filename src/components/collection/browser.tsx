@@ -522,11 +522,26 @@ export function CollectionBrowser({
   // outright when the card it is showing is no longer one of these results. Both
   // fell out of the old modal for free, because it read the open card back out of
   // `sorted` on every render and rendered nothing when it was not there.
+  //
+  // ONLY WHEN THE LIST MOVES. A card outside the list is also one the reader went to
+  // on purpose: the combo block's partner name opens its partner in this modal, and
+  // a partner is rarely in the filtered results — `q=mystical` does not hold
+  // Approach of the Second Sun. Closing on "not in the list" alone shut the modal
+  // the instant the partner opened, which is what a reader saw as the link closing
+  // everything. So the close fires when the RESULTS change and the open card is not
+  // among them, and never because the reader moved to another card.
+  //
+  // Compared by CONTENT, not by array: an art pick patches the list and hands back a
+  // new array with the same ids, and that is not the list moving.
+  const listKey = siblings.join(",");
+  const lastListKey = useRef(listKey);
   useEffect(() => {
+    const listMoved = lastListKey.current !== listKey;
+    lastListKey.current = listKey;
     if (openOracleId === null) return;
     if (openInList) setSiblings(siblings);
-    else closeDetail();
-  }, [siblings, openOracleId, openInList, setSiblings, closeDetail]);
+    else if (listMoved) closeDetail();
+  }, [siblings, listKey, openOracleId, openInList, setSiblings, closeDetail]);
 
   useEffect(() => {
     const qs = serializeParams(

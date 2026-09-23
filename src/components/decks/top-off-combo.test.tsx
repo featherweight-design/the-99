@@ -65,9 +65,9 @@ describe("combo awareness states 2 and 3 on the Last 31", () => {
   it("draws the same sentence whether the card is owned or bought", () => {
     for (const owned of [true, false]) {
       const { container, unmount } = list({ owned, comboPartner: PARTNER });
-      expect(container.textContent).toContain(
-        comboAwarenessCopy.clause.completes("Isochron Scepter"),
-      );
+      expect(
+        container.querySelector('[data-testid="combo-clause"]')?.textContent,
+      ).toContain("Isochron Scepter");
       unmount();
     }
   });
@@ -102,9 +102,9 @@ describe("combo awareness states 2 and 3 on the Last 31", () => {
         .length ?? 0,
       "the desktop cost column was suppressed too",
     ).toBeGreaterThan(0);
-    expect(container.textContent).toContain(
-      comboAwarenessCopy.clause.completes("Isochron Scepter"),
-    );
+    expect(
+      container.querySelector('[data-testid="combo-clause"]')?.textContent,
+    ).toContain("Isochron Scepter");
   });
 
   // SPOKEN ONCE, and only from the row's own label: the drawn clause is aria-hidden because

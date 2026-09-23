@@ -16,14 +16,11 @@
  */
 
 /**
- * The words before the partner name in `completes`. A module constant rather than a field
- * read back off `comboAwarenessCopy` while that object is still being inferred: the
- * self-reference typechecks today, but it is the shape that produces TS7022 the moment
- * anything else in the object gains an inferred dependency on it, and it costs nothing to
- * avoid.
+ * The modal line's lead. A module constant rather than a field read back off
+ * `comboAwarenessCopy` while that object is still being inferred: the self-reference
+ * typechecks today, but it is the shape that produces TS7022 the moment anything else in the
+ * object gains an inferred dependency on it, and it costs nothing to avoid.
  */
-const COMPLETES_LEAD = 'completes with ';
-/** The modal line's own lead, for the same reason: its two halves are set differently. */
 const MODAL_LINE_LEAD = 'with ';
 
 export const comboAwarenessCopy = {
@@ -47,19 +44,11 @@ export const comboAwarenessCopy = {
     /** State 1 — both halves owned, neither assembled into a deck. `/collection` only. */
     ownBoth: (partner: string) => `with ${partner} — you own both`,
     /**
-     * The words BEFORE the partner name in `completes`, exported so a host can shrink them
-     * separately and leave the name standing.
-     *
-     * The design's rule is that the clause ellipses and the partner name is the LAST thing to
-     * go — and on this sentence the name is at the END, so plain end-truncation eats exactly
-     * the word a reader cannot reconstruct. Splitting the sentence in the COMPONENT would put
-     * sentence assembly outside this module, which is how quoted copy drifts from it; keeping
-     * the lead here and composing `completes` FROM it means there is still one source and the
-     * two cannot disagree.
+     * States 2 and 3 have NO words: the clause is the lemniscate and the partner's name.
+     * Hugh, 2026-09-22 — `completes with` truncated to `completes wi…` and `complete…` on
+     * the hosts it was drawn on, ahead of the name it existed to introduce. What a screen
+     * reader hears is `a11y.completes`, and the glyph's gloss is `keyWord`.
      */
-    completesLead: COMPLETES_LEAD,
-    /** States 2 and 3, identically. `completes` presupposes the partner is in the deck. */
-    completes: (partner: string) => `${COMPLETES_LEAD}${partner}`,
   },
 
   /**

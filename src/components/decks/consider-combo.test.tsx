@@ -68,9 +68,10 @@ describe("combo awareness on the Consider tile", () => {
   // fact a reader cannot get from the art, the name or the evidence row below it.
   it("puts the clause where the type line was", () => {
     const { container } = mount({ comboPartner: PARTNER });
-    expect(container.textContent).toContain(
-      comboAwarenessCopy.clause.completes("Isochron Scepter"),
-    );
+    // Drawn as the glyph and the name alone (Hugh, 2026-09-22); the sentence is spoken.
+    const clause = container.querySelector('[data-testid="combo-clause"]')!;
+    expect(clause.textContent).toContain("Isochron Scepter");
+    expect(clause.textContent).not.toContain("completes with");
     expect(container.textContent).not.toContain("Instant");
   });
 
@@ -85,8 +86,8 @@ describe("combo awareness on the Consider tile", () => {
 
   // THE OPTIMISTIC PATH, which is the one a reader actually sees. `applied` flips on the
   // press while `inDeck` stays at the last server-rendered value until revalidation, so a
-  // tile gated on the prop says `✓ In deck` and `completes with …` at once for the length of
-  // a round trip.
+  // tile gated on the prop says `✓ In deck` and names a combo partner at once for the length
+  // of a round trip.
   it("drops the clause the moment Add is pressed, not when the server answers", async () => {
     // HELD OPEN. `applied` comes from `useOptimistic`, which holds its value only for the
     // length of the transition — so an action that settles in the same turn reverts before
@@ -131,11 +132,12 @@ describe("combo awareness on the Consider tile", () => {
   });
 
   // NO COUNT. Detection excludes template-gated variants by design.
-  it("prints the sentence and nothing appended to it", () => {
+  // Exactly the drawn name and the spoken sentence, in that order — nothing else.
+  it("prints the name and the spoken sentence, and nothing appended to them", () => {
     const { container } = mount({ comboPartner: PARTNER });
     const clause = container.querySelector('[data-testid="combo-clause"]')!;
     expect(clause.textContent).toBe(
-      comboAwarenessCopy.clause.completes("Isochron Scepter"),
+      `Isochron Scepter${comboAwarenessCopy.a11y.completes("Isochron Scepter")}`,
     );
   });
 });

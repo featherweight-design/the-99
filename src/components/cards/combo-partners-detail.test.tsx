@@ -66,6 +66,20 @@ describe("the card modal's combo block", () => {
   //
   // CLOSED AT EVERY COUNT, INCLUDING ONE. A block that is sometimes a row and sometimes a
   // list is a block whose position the reader cannot learn.
+  // THE SPACE AFTER `with` SURVIVES. The lead is a flex item of its own, and a trailing space
+  // at the end of a box's line is collapsed, so staging drew `withApproach of the Second Sun`.
+  // jsdom collapses nothing and would read the space back either way, so this pins the rule
+  // that keeps it rather than the text.
+  it("keeps the space between `with` and the partner's name", async () => {
+    render(<ComboPartnersDetail card={card([partner({ name: "Approach of the Second Sun" })])} />);
+    await open();
+    const lead = [...screen.getByRole("listitem").querySelectorAll("span")].find(
+      (el) => el.textContent === comboAwarenessCopy.modal.lineLead,
+    );
+    expect(lead, "the lead is not its own element").toBeTruthy();
+    expect(lead!.className).toMatch(/\bwhitespace-pre\b/);
+  });
+
   it("starts closed even with a single partner, and lists nothing", () => {
     render(<ComboPartnersDetail card={card([partner()])} />);
     const row = screen.getByRole("button", { name: /Two-card combos/ });

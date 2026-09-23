@@ -180,8 +180,11 @@ export function ComboPartnersDetail({
                 className="flex min-w-0 items-center text-[13px] sm:flex-auto"
                 style={{ color: "var(--fg-body)" }}
               >
-                <span className="flex-none">
-                {comboAwarenessCopy.modal.lineLead}
+                {/* `whitespace-pre`, or the space is lost: `with ` is a flex item of its own,
+                    and a trailing space at the end of a box's line is collapsed — the line
+                    read `withApproach of the Second Sun` on staging. */}
+                <span className="flex-none whitespace-pre">
+                  {comboAwarenessCopy.modal.lineLead}
                 </span>
                 {/* THE ONLY TARGET IN THE BLOCK. A pair fact read from one end wants the
                     other end, and the name is the half a reader is looking for — it REPLACES

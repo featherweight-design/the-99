@@ -171,6 +171,26 @@ Eight placements were rendered at the app's real widths and tokens and put to Hu
 
 Neither grows the row. Rows with no partner are unchanged at both widths.
 
+## 6 · The clause has no words — Hugh, 2026-09-22
+
+The handoff's clause is `completes with {partner}`. Reviewed on staging, it truncated ahead of
+the name it exists to introduce: `completes wi… Lithoform Engine` on the quick-add row, and
+`complete… Thassa's Oracle` on the phone's top-off row. **Hugh ruled it removed on every host.**
+The clause is now the lemniscate and the partner's name, which is what §5 had already made the
+phone quick-add row.
+
+Nothing a reader needs goes with it. The glyph is glossed `Two-card combo` by the key both add
+surfaces mount, and it is now the ONLY gloss there, which is worth knowing before anyone removes
+that key. The sentence is still heard: the top-off row and the quick-add option speak it through
+their own labels, and the clause carries it sr-only for the Consider tile, which reads it as
+content. `ownBoth` (`with {partner} — you own both`) is unchanged; no host draws it today.
+
+**Found in the same review, and fixed with it:** on `/collection` the partner name in the card
+modal's combo block closed the modal instead of opening the partner, because the browser closed
+any modal whose card was outside the filtered list, and a partner rarely is inside it. The rule
+now fires only when the list itself changes. And the block's `with ` lost its trailing space to
+flex whitespace collapse, drawing `withApproach of the Second Sun`.
+
 ## Also outstanding, and not a deviation
 
 **The feature has no browser probe.** Several of its rules are facts about a laid-out page —
