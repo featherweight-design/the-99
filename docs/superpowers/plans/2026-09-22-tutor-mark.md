@@ -68,6 +68,11 @@ Three strings, each shown with a picture of the surface it lands on:
    places, as `cardMarkCopy` does for the other three.
 3. **The tutor's tooltip sentence.**
 
+**Shipped in #876:** the heading is now *"Bracket facts"*, which heads four fact entries. The
+tutor's name is *"tutor"*, lowercase like the other three. Its tooltip reads *"This card searches
+your library for something other than a land."* These are the strings `/copy-review` sees. The
+paragraphs above record what was asked, not what shipped.
+
 The ORDER of the marks follows §C2's list (bolt, peak, turn again, lemniscate, drawn up), so the
 tutor goes last. That is transcribed, not decided.
 
