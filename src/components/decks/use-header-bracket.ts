@@ -40,7 +40,7 @@ export function useHeaderBracket({
     () => `${deckId}|${cards.map((c) => `${c.oracleId}:${c.quantity}`).sort().join(",")}`,
     [deckId, cards],
   );
-  const [source, setSource] = useState<{ permits: Bracket[]; key: string } | null>(
+  const [source, setSource] = useState<{ permits: Bracket[]; key: string; pressed?: boolean } | null>(
     storedPermits && isReachablePermits(storedPermits) ? { permits: storedPermits, key } : null,
   );
   const [seenStored, setSeenStored] = useState(storedPermits);
@@ -57,13 +57,19 @@ export function useHeaderBracket({
   }
   if (readyProfile !== seenProfile) {
     setSeenProfile(readyProfile);
-    if (readyProfile) setSource({ permits: slotDeck(readyProfile).permits, key: pressKey ?? key });
+    if (readyProfile) {
+      setSource({ permits: slotDeck(readyProfile).permits, key: pressKey ?? key, pressed: true });
+    }
     setPressKey(null);
   }
   if (storedPermits !== seenStored) {
-    // A revalidated page is the server's answer for the deck as it now stands.
+    // A revalidated page is the server's answer for the deck as it now stands, EXCEPT over a
+    // press made against the list still on screen: a revalidation that started before that press
+    // completed carries the row from before it, and would rewind or clear a fresher answer.
     setSeenStored(storedPermits);
-    setSource(storedPermits && isReachablePermits(storedPermits) ? { permits: storedPermits, key } : null);
+    if (!(source?.pressed && source.key === key)) {
+      setSource(storedPermits && isReachablePermits(storedPermits) ? { permits: storedPermits, key } : null);
+    }
   }
   return source && source.key === key ? source.permits : null;
 }

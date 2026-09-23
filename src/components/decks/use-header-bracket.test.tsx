@@ -84,4 +84,13 @@ describe("useHeaderBracket", () => {
     c.rerender(view({ cards: edited, readyProfile: pressed([3]) }));
     expect(shown(c)).toBe("none");
   });
+
+  // A revalidation that began before the press completed arrives after it, carrying the old row.
+  it("keeps a press's answer over a stale server prop for the same list", () => {
+    const answer = pressed([3]);
+    const c = render(view({ loading: true }));
+    c.rerender(view({ readyProfile: answer }));
+    c.rerender(view({ readyProfile: answer, storedPermits: [1, 2] }));
+    expect(shown(c)).toBe("3");
+  });
 });
