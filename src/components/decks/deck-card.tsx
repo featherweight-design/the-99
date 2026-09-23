@@ -518,8 +518,8 @@ export function DeckCard({
             and the label stay written once. */}
         {/* The chip cell: the status, then the bracket when the deck has been read since its
             last edit (Round 0: "immediately after StatusPillBadge", and absent when unread). One
-            flex group so the two share the pill's 22px line and the bar's track starts after
-            both. It WRAPS, and keeps its min-content: from 640px up a tile is ~189px, which
+            flex group so the two share one line (the pill's 22px; 24px from `md` once a chip
+            is drawn, the handoff's chip height) and the bar's track starts after both. It WRAPS, and keeps its min-content: from 640px up a tile is ~189px, which
             cannot hold the pill, a range chip, the bar and the count on one line, and a cell
             allowed to shrink below its pills paints them over the bar. Wrapped, the chip takes
             a second line inside the cell instead. */}

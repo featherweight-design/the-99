@@ -56,8 +56,10 @@ VERDICT: 0 open visual gaps (1 fixed, 1 declined), 0 state gaps (1 deferred to C
 ## Evidence
 
 - `probe:bracket-chip` at 1300, 700 and 390: all checks pass. It now asserts the 24px chip from
-  `md`, the mono label, no `Split`, and only a range's high mark dimmed. With the `md:` 24px step
-  removed, it reads 22px at 1300 for both the header and the tile.
+  `md` and the mono label. It also reads a stored unanswered RANGE deck's header: both names, and
+  only the high mark at 0.65. Two mutations fail it. With the `md:` 24px step removed it reads
+  22px at 1300 on both the header and the tile. With the dim removed it reads `opacity 1, 1` at
+  both widths.
 - `probe:commit-offer` at 1440, 1300, 1024 and 820: the title column keeps its width with
   `Commit as v1` offered.
 - Contact sheet: `docs/superpowers/inventories/analysis-tab-header.json`, eight cells, all

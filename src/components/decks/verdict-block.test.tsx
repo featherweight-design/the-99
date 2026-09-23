@@ -92,7 +92,7 @@ const draw = (key: keyof typeof SHAPES, permits = key as string) => {
 
 describe("the head (Analysis tab handoff §2, row 2)", () => {
   // A RANGE draws both marks, the upper at 0.65 with a `/` between them, and names both brackets.
-  // No label, no pill, and no `Split`: the redrawn box retires all three.
+  // No label and no pill: the redrawn box retires both (and `Split` is gone from the copy).
   it("names both brackets beside both marks on a range", () => {
     draw("4,5");
     expect(screen.getByTestId("verdict-name").textContent).toBe("Optimized or cEDH");
@@ -100,7 +100,6 @@ describe("the head (Analysis tab handoff §2, row 2)", () => {
     expect(marks.map((m) => m.dataset.bracket)).toEqual(["4", "5"]);
     expect((marks[1].parentElement as HTMLElement).style.opacity).toBe(String(DIM_OPACITY));
     expect(screen.getByTestId("verdict-marks").textContent).toContain("/");
-    expect(screen.queryByText("Split")).toBeNull();
     expect(screen.queryByRole("heading", { name: deckAnalysisCopy.verdict.heading })).toBeNull();
   });
 

@@ -89,12 +89,12 @@ export function SpineMobile({
   );
 
   const metaRow = (onWash: boolean) => (
-    // `flex-nowrap`, and it is load-bearing. `labelAtPx` measures ONE 22px row,
-    // and at 390px a pair's two names plus five 10px pips, the chip and the two
-    // 8px gaps exceed the caption's width — so a wrapping row put the chip on a
-    // second line, grew the block to about 120px, and left the title's first
-    // line on a ramp still climbing. The names group already ellipsises under
-    // pressure, and it is the half that should give.
+    // `flex-nowrap`, and it is load-bearing. `labelAtPx` counts this row as ONE
+    // line, and at 390px a pair's two names plus five 10px pips exceed the
+    // caption's width — so a wrapping row would grow the block past the figure
+    // the ramp is keyed to (143, with the chips row below) and leave the
+    // title's first line on a ramp still climbing. The names group already
+    // ellipsises under pressure, and it is the half that should give.
     // `min-w-0 w-full`, and it is the fix for a real overflow: the row is
     // `flex-nowrap`, and without a zero minimum of its OWN the row inherits its
     // content's min-content width as a floor — so a long two-faced commander

@@ -36,7 +36,7 @@ const sqlc = neon(DATABASE_URL);
 const WIDTHS = [
   { label: 1300, viewport: { width: 1300, height: 900 } },
   // The narrowest multi-column grid: a tile is ~189px here, the width that cannot hold the pill,
-  // a Split chip, the bar and the count on one line.
+  // a range chip, the bar and the count on one line.
   { label: 700, viewport: { width: 700, height: 900 } },
   { label: 390, viewport: { width: 390, height: 844 } },
 ];
@@ -138,13 +138,11 @@ async function chips(page, within) {
 /** The handoff's chip (Analysis tab §1): 22px below `md`, 24px from it. */
 const chipPx = (width) => (width >= 768 ? 24 : 22);
 
-/** The chip is the handoff's, not #877's: a mono label, no `Split`, the high mark at 0.65. */
+/** The chip is the handoff's, not #877's: a mono label, and its first mark at full ink. What a
+ *  RANGE draws (both names, the high mark at 0.65) is section 5's, which finds one to read. */
 function styled(width, where, c) {
   report(`${width}px · the ${where} chip's label is mono`, /mono/i.test(c.labelFamily), c.labelFamily);
-  report(`${width}px · the ${where} chip says no Split`, !/Split/.test(c.text), c.text);
-  const [, high] = c.markOpacity;
-  report(`${width}px · the ${where} chip dims only a range's high mark`,
-    Math.abs(c.markOpacity[0] - 1) < 0.01 && (high === undefined || Math.abs(high - 0.65) < 0.01),
+  report(`${width}px · the ${where} chip's first mark is at full ink`, Math.abs(c.markOpacity[0] - 1) < 0.01,
     `opacity ${c.markOpacity.join(", ")}`);
 }
 
@@ -241,6 +239,40 @@ async function run() {
           c.bar ? `bar ${(c.bar.right - c.bar.left).toFixed(1)}px` : "no bar found");
         report(`${label}px · the tile chip stays inside its tile`,
           c.tileRight !== null && c.right <= c.tileRight, `chip right ${c.right.toFixed(1)} vs tile ${c.tileRight?.toFixed(1)}`);
+      }
+      await ctx.close();
+    }
+
+    // 5 · A RANGE. The walked deck is whatever the account lists first, and on local-dev that is a
+    // single bracket, where "the high mark is dimmed" and "no Split" hold on any build. So a deck
+    // whose STORED reading is an unanswered range is found by query and its header read as it
+    // stands. It is read-only, with no press, so nothing here needs putting back. No such deck FAILS
+    // the run rather than passing it: the range is half of what the chip draws.
+    for (const { label, viewport } of WIDTHS.filter((w) => w.label !== 700)) {
+      const ctx = await browser.newContext({ viewport });
+      const p = await ctx.newPage();
+      await signIn(p);
+      const userId = await p.evaluate(() => window.Clerk.user.id);
+      const candidates = await sqlc`
+        select dp.deck_id from deck_profiles dp join decks d on d.id = dp.deck_id
+        where d.user_id = ${userId} and dp.user_id = ${userId}
+          and cardinality(dp.permits) = 2 and d.declared_bracket is null
+        order by dp.deck_id limit 6`;
+      let range = null;
+      for (const { deck_id } of candidates) {
+        await p.goto(`${BASE}/decks/${deck_id}`, { waitUntil: "domcontentloaded" });
+        await p.waitForSelector(`${PAGE} [role="tablist"]`, { timeout: 20_000 });
+        await p.waitForTimeout(600);
+        const [c] = await chips(p, "button[aria-label^='Bracket:']");
+        if (c && c.markOpacity.length === 2) { range = c; break; }
+      }
+      if (report(`${label}px · a range deck draws its header chip`, range !== null,
+          range ? range.text : `${candidates.length} stored range(s), none drew two marks`)) {
+        report(`${label}px · the range chip names both brackets`, / or /.test(range.text) && !/Split|\//.test(range.text), range.text);
+        report(`${label}px · the range chip dims the high mark alone`,
+          Math.abs(range.markOpacity[0] - 1) < 0.01 && Math.abs(range.markOpacity[1] - 0.65) < 0.01,
+          `opacity ${range.markOpacity.join(", ")}`);
+        report(`${label}px · the range chip is ${chipPx(label)}px`, Math.abs(range.h - chipPx(label)) < 0.6, `${range.h}px`);
       }
       await ctx.close();
     }

@@ -224,11 +224,12 @@ async function walk(p, width, decks) {
     const face = await onPage(p, 'section[aria-label="Your bracket"]').first().evaluate((el) => ({
       title: el.querySelector("h3 + p")?.textContent,
       marks: el.querySelectorAll(':scope > div [data-testid="bracket-mark"]').length,
-      split: el.textContent.includes("Split"),
     }));
     report(`${label}px · and resolves the face to one chip`,
-      face.title === "Core" && face.marks === 1 && !face.split,
-      `title "${face.title}", ${face.marks} mark(s) in the pill${face.split ? ", Split still drawn" : ""}`);
+      // One mark and the answer's own name is the whole test: `Split` is retired from the copy,
+      // so no build can draw it, and a range face would read `{low} or {high}` with two marks.
+      face.title === "Core" && face.marks === 1,
+      `title "${face.title}", ${face.marks} mark(s) in the pill`);
     await p.waitForTimeout(1500);
     report(`${label}px · the column holds the answer`, (await stored(decks.ask)) === 2, `declared_bracket = ${await stored(decks.ask)}`);
     const biggest = Math.max(0, ...replies);
