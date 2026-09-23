@@ -143,14 +143,19 @@ Recorded so the round is not asked about them:
   with #10 deck tuning (Hugh, 2026-09-23): a rolling 24 hours, and only a successful answer spends
   a credit. The client and the allowance are built (`src/lib/model/`, #886). When a re-analyze
   will also rewrite the synopsis, its banner says it uses a credit before the press. An unchanged
-  list (under an unchanged contract and stamps, see Storage) returns its stored synopsis instead
-  of paying for new wording of the same facts.
-- **Storage.** Keyed on the profile fingerprint, beside the stored analysis (#874), and copied
-  into the version at commit. **The list fingerprint alone does not make a row reusable.** Each
-  row also stores a synopsis contract version (the prompt, the accept contract and the length
-  budgets) and the same freshness stamps the stored profile carries (the catalog generation, and
-  when it was computed). A row whose contract version or stamps have moved is treated as stale, so
-  a changed rule never serves prose written under the old one.
+  list (under an unchanged contract version, see Storage) returns its stored synopsis instead of
+  paying for new wording of the same facts.
+- **Storage.** Beside the stored analysis (#874), and copied into the version at commit. Reuse
+  is keyed on two things: the LIST fingerprint (`listFingerprint`,
+  `src/lib/profile/fingerprint.ts:53-55`, the one `deck_profiles.fingerprint` stores) and a
+  synopsis contract version (the prompt, the accept contract and the length budgets). A row
+  whose list or contract version has moved is treated as stale, so a changed rule never serves
+  prose written under the old one. **A catalog refresh alone never stales it and never spends a
+  credit.** Hugh ruled that a catalog refresh never makes a reading stale (audit ruling 6,
+  `design/design_handoff_the99_analysis_tab/READINESS-r1-audit.md:42-47`), and the catalog
+  generation the stored profile records is read by nothing today (`src/db/schema.ts:1473-1474`).
+  Telling a player that the data under their deck moved is the deck-notices feature's job
+  (`2026-09-23-deck-notices.md`), not the synopsis's.
 
 ## §7 Sequence
 

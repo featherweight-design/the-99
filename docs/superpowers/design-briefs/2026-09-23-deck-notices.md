@@ -11,9 +11,9 @@ Design's to place".
 **Frame:** the consolidated Analysis tab, `design/design_handoff_the99_analysis_tab/HANDOFF.md`, and
 its one banner (`:50`, rules at `:57-59` and `:110`). The deck tile is
 `src/components/decks/deck-card.tsx` (its bracket chip at `:532`); the deck header's chip is
-`src/components/decks/spine-desktop.tsx:449` and `spine-mobile.tsx:107`.
+`src/components/decks/spine-desktop.tsx:456` and `spine-mobile.tsx:87`.
 
-**Verified against `origin/main` at `7cf81c53`.** Every file:line below was read on that commit.
+**Verified against `origin/main` at `4ba8df85`.** Every file:line below was read on that commit.
 
 This round asks: **how does a deck say "the world changed under you" quietly, next to a prompt that
 already says "you changed the deck", without the two reading as one thing?**
@@ -22,38 +22,48 @@ already says "you changed the deck", without the two reading as one thing?**
 
 ## §1 What this is
 
-**A deck now keeps one standing analysis.** Hugh's rulings for the Analysis tab (audit `:27-47`)
+**A deck now keeps one standing analysis.** Hugh's rulings for the Analysis tab (audit `:26-47`)
 make the last analysis the player ran the deck's bracket everywhere until they run another. Only
-their own edits mark it changed, through an `isDirty` flag, and a catalog refresh, a new set or a
-price update never does. That lifecycle is engineering's PR C (audit `:289`) and is not built yet:
-on `main` a stored analysis still lapses when the catalog generation moves or after seven days
-(`src/lib/profile/stored.ts:86-102`, `src/lib/profile/stored-sql.ts:20`), and no `isDirty` exists
-anywhere under `src/`.
+their own edits mark it changed, and a catalog refresh, a new set or a price update never does.
+That lifecycle is built: it was the audit's PR C (`:289`) and shipped as #891 and #892. The
+ruling's isDirty is `deck_profiles.dirty` (`src/db/schema.ts:1495`), which `touchDeck` sets in the
+edit's own transaction (`src/lib/decks/touch.ts:82-83`). A stored reading never lapses on the
+catalog or its age (`src/lib/profile/stored.ts:18-19`), and the tile's chip reads the stored range
+with no freshness clause at all (`src/lib/profile/stored-sql.ts:16-22`).
 
-**Once PR C lands, a data change under a deck becomes silent.** The analysis stands, the bracket
-holds, and a card that became a Game Changer on Monday is not in it. This feature closes that gap
+**So a data change under a deck is already silent.** The analysis stands, the bracket holds, and
+a card that became a Game Changer on Monday is not in it. This feature closes that gap
 without breaking the ruling: the app never re-analyzes on the player's behalf and never marks the
 deck changed. It puts a **subtle notice** on the deck, lets the player read **what changed**, and
 leaves the decision to re-analyze with them.
 
-**Legality rides the same surface.** The profile already computes it: `ProfileLegality` carries
-`banned` and `identityViolations` (`src/lib/profile/types.ts:281-287`), built at
-`src/lib/profile/build.ts:392-401`. **Nothing draws it.** A search of `src/components` finds no
-reader of `legality` or `identityViolations`; the only hits under `src/app` are a test and comments.
+**Legality rides the same surface.** The profile already computes the deck's rules legality:
+`ProfileLegality` carries `banned` and `identityViolations` (`src/lib/profile/types.ts:282-288`),
+built at `src/lib/profile/build.ts:392-403`. **Nothing draws it.** No component reads `banned` or
+`identityViolations`.
+
+**The word "legality" is already taken, though.** Since #892 the Analysis tab's `legality` prop
+(`src/components/decks/analysis-panel.tsx:41-47`, read at `:73-74`) and `deckLegality`
+(`src/lib/profile/stored.ts:58-63`) both mean the BODY COUNT: 99, or 98 with a partner (§2.7).
+This feature should not overload the word. Its copy and code should name the reason (not legal
+in Commander, outside the commander's colors; §3.4), or say "rules" (a `rulesViolations`, not a
+second `legality`). Naming the reason is the safer of the two in copy, since the list also
+carries a group for bracket rules changes (§2.3).
 
 ## §2 Rulings, locked (Hugh, 2026-09-23)
 
 1. **One standing analysis, and only the player's edits mark it changed.** System updates never
-   set `isDirty`, never re-analyze, and never move the held bracket (audit `:39-47`).
+   set `dirty` (the ruling's isDirty), never re-analyze, and never move the held bracket
+   (audit `:39-47`).
 2. **A bracket-relevant data change under a deck raises a subtle notice on that deck.** The player
    can see what changed and decides whether to re-analyze.
 3. **Five kinds of change qualify:**
    - a card **becoming, or ceasing to be, a Game Changer** (`cards.game_changer`, Scryfall's own
      boolean, refreshed weekly by the catalog job: `src/db/schema.ts:60-71`);
    - a change to a card's **bracket flags**: mass land denial, extra turns, tutor
-     (`card_bracket_flags`, `schema.ts:1413-1445`, written by the weekly Combo refresh);
+     (`card_bracket_flags`, `schema.ts:1427-1459`, written by the weekly Combo refresh);
    - a Commander Spellbook **combo added or removed** that involves the deck's cards
-     (`spellbook_variants` / `spellbook_variant_cards`, `schema.ts:1313` and `:1387-1402`);
+     (`spellbook_variants` / `spellbook_variant_cards`, `schema.ts:1327` and `:1401-1416`);
    - a **bracket rules change**, modeled as a rules-version bump (the limits live in
      `src/lib/bracket/rules.ts`, e.g. `GAME_CHANGER_LIMIT` at `:14`);
    - a **legality change**: a card that stops being Commander-legal after it was added.
@@ -66,7 +76,8 @@ reader of `legality` or `identityViolations`; the only hits under `src/app` are 
    `:48-52`). A player should not spend that allowance on a deck that is not legal.
 7. **"Legal for analysis" stays body count only** for the Analysis-tab build in progress: 99, or
    98 with a partner (audit ruling 1, `:29-30`; `deckBodySize` at `src/lib/decks/deck-size.ts:9-11`).
-   This brief does not change that. A deck holding a banned card can still be analyzed.
+   This brief does not change that. A deck holding a banned card can still be analyzed. In code,
+   `legality` means this body count today (§1).
 
 ## §3 What Design is asked to draw
 
@@ -118,8 +129,8 @@ change) or when a card enters by a side door (§6), and it lasts while the card 
 ### 3.5 Beside the Re-analyze prompt
 
 Two different signals, and the player has to be able to tell them apart:
-- **"You changed the deck."** `isDirty`, answered by the Analysis tab's one banner and its
-  Re-analyze button (`HANDOFF.md:50`). The handoff forbids a second place that says stale
+- **"You changed the deck."** `dirty` (the ruling's isDirty), answered by the Analysis tab's one
+  banner and its Re-analyze button (`HANDOFF.md:50`). The handoff forbids a second place that says stale
   (`HANDOFF.md:57-59`, `:110`).
 - **"The world changed under the deck."** This notice.
 
@@ -151,8 +162,10 @@ offered (§4.6).
 
 ## §5 Locked, and not open
 
-- **Never an automatic re-analysis, never `isDirty`, never a moved bracket.** The held bracket
-  stays exactly as the player last analyzed it.
+- **Never an automatic re-analysis, never `dirty`, never a moved bracket.** The held bracket
+  stays exactly as the player last analyzed it. The one recompute the player does not ask for is
+  the quiet rebuild of an old-format reading after a deploy (§6), which Hugh accepted as a code
+  change rather than an edit; it must never swallow a notice.
 - **No prediction.** An entry says what changed, never what it would do to the bracket. The
   handoff already rules out any hint at whether changes matter (`HANDOFF.md:58-59`); only a
   re-analysis answers that.
@@ -168,17 +181,20 @@ offered (§4.6).
 
 Recorded so the round is not asked about them. All of it is deterministic; no model call.
 
-- **Depends on PR C.** Until the stored analysis stops lapsing (audit `:289`), a catalog refresh
-  hides it outright (`stored.ts:100-102`), and there is nothing for a notice to qualify.
+- **The lifecycle this depends on is built.** PR C (audit `:289`) shipped as #891 and #892: a
+  stored reading no longer lapses, so every analyzed deck has a standing analysis for a notice to
+  qualify. Engineering does not wait on anything to start.
 - **A change log, written by each ingest as a diff before its publish, on its own sequence.**
-  `catalog_refreshes` cannot key it: it is one row, overwritten (`schema.ts:1274-1282`), its write
+  `catalog_refreshes` cannot key it: it is one row, overwritten (`schema.ts:1288-1296`), its write
   is deliberately non-fatal (`src/lib/cache/stamp-catalog.ts`), and six writers stamp it
   (`src/lib/scryfall/seed.ts:51`, `seed-sets.ts:35`, `seed-printings.ts:294`,
   `src/lib/spellbook/seed.ts:404`, `scripts/build-commander-index.ts:72`,
   `scripts/build-staples.ts:663`), most of them bracket-irrelevant. Each stored analysis already
-  records `catalog` and `computed_at` (`deck_profiles`, `schema.ts:1469-1476`); it should also
-  record the log's high-water sequence at compute time. **A deck's notices are the log entries
-  after that mark that intersect its cards and commanders.**
+  records `catalog` and `computed_at` (`deck_profiles`, `schema.ts:1482-1502`, the columns at
+  `:1486` and `:1489`), and the table's comment says `catalog` is kept for this feature and read
+  by nothing today (`:1473-1474`). Neither can serve as the mark, because the quiet rebuild below
+  moves both. The row should also record the log's high-water sequence at compute time. **A
+  deck's notices are the log entries after that mark that intersect its cards and commanders.**
 - **The card ingest is not transactional.** `seedCards` upserts in batches of 500 as it streams
   (`src/lib/scryfall/seed.ts:15-48`), so the diff of `game_changer` and `commander_legal` needs the
   before-values captured first and the entries written once the run completes.
@@ -190,37 +206,61 @@ Recorded so the round is not asked about them. All of it is deterministic; no mo
   refused publish logs nothing.
 - **Which combos count: the verdict's own rule, assembled only.** The profile counts two-card,
   template-free variants whose pieces the deck holds under §4.3b's three rules
-  (`src/lib/profile/load.ts:119-153`) and whose output passes `isInfiniteOrGameEnding` (`:176`).
+  (`src/lib/profile/load.ts:119-155`) and whose output passes `isInfiniteOrGameEnding` (`:176`).
   The notice filter is that rule, applied to added and removed `variant_id`s. The only near-miss
   logic in `src/lib` is two-card, one piece missing (`src/lib/combos/near-miss.ts:7`,
   `pairsWithOnePiece` at `:72`, `loadCompletionPartners` at `:227`); there is no general
   all-but-one read for larger combos. A one-away combo moves no figure in a stored analysis, so it
   is **not** a notice source.
 - **Tutors are not read from the flag table.** The profile classifies tutors from oracle text at
-  load (`load.ts:373`, `classifySearches`); `card_bracket_flags.tutor` feeds other surfaces. So a
+  load (`load.ts:374`, `classifySearches`); `card_bracket_flags.tutor` feeds other surfaces. So a
   tutor-flag diff moves no stored analysis, and a tutor change reaches a deck only through a
   classifier change, which is a rules-version bump. Mass land denial and extra turns do come from
   the flag table (`load.ts:358-363`).
-- **A rules version, separated from the list fingerprint.** `rules.ts` carries no version today.
-  `PROFILE_VERSION` (`src/lib/profile/version.ts:12`) is folded into the fingerprint
-  (`src/lib/profile/fingerprint.ts:46`), so a builder bump today reads, to the stored lookup, as a
-  different list. Under ruling 1 that must not become the player's edit. A rules or builder bump
-  writes one log entry, stated in words, that applies to every deck analyzed before it.
+- **A rules version, kept apart from the list.** `rules.ts` carries no version today.
+  `deck_profiles.fingerprint` stores `listFingerprint`, the list alone with no version in it
+  (`src/lib/profile/fingerprint.ts:53-55`), and `PROFILE_VERSION` (`src/lib/profile/version.ts:12`)
+  is its own column, `profile_version` (`schema.ts:1493`). So a builder bump is already not the
+  player's edit, as ruling 1 requires. A rules or builder bump writes one log entry, stated in
+  words, that applies to every deck analyzed before it.
+- **The quiet rebuild must not swallow a notice.** `readStoredReading` recomputes a row an older
+  `PROFILE_VERSION` wrote, on a clean, legal deck whose list is unchanged, against the current
+  catalog, without the player asking (`stored.ts:140-149`). The upsert that stores it rewrites
+  `catalog`, `permits` and `computed_at` (`stored.ts:305-321`). Hugh accepted this on 2026-09-23
+  as a code-format change, not a player edit. Two engineering requirements follow from it:
+  - **The rebuild keeps the old reading's high-water mark.** It must not advance the stamp that
+    says the analysis has seen log entries up to here. The rebuilt row carries the mark the
+    replaced row held, the way it already keeps the replaced row's version pin (`rebuildOf`,
+    `stored.ts:146-147` and `:239`). A rebuild that advanced the mark would swallow every pending
+    notice on the deck before the player had read one.
+  - **A rebuild that moves the bracket is exactly what a notice is for.** The rebuild reads the
+    current catalog and the current rules, so it can land the deck in a different bracket with
+    no edit of the player's. So every rules or `PROFILE_VERSION` bump writes the rules-version
+    log entry above, and the deck's notice shows it. The player learns from the notice why the
+    held bracket moved.
 - **Legality: where illegal cards come from.** Hand adds refuse a not-legal, off-identity or
-  commander card (`src/lib/decks/add-validation.ts:46-63`, called at `src/app/decks/actions.ts:497-503`),
-  and a repeat add of a singleton is a no-op rather than a refusal (`:482-490`). The bulk paths run
-  the same check (`restoreAutoCards`, `:854-866`; `runTopOff`, `:968`). Three side doors remain:
-  - **Import** keeps them. `importDeck` validates only the commanders (`src/app/decks/import-actions.ts:198-209`)
-    and inserts every matched row into the 99 (`:233-252`). Resolving an unresolved line refuses a
-    not-legal card (`:326`) but skips color identity on purpose (`:276-282`).
+  commander card (`src/lib/decks/add-validation.ts:46-63`, called at `src/app/decks/actions.ts:502-506`),
+  and a repeat add of a singleton is a no-op rather than a refusal (`:485-493`). The bulk paths run
+  the same check (`restoreAutoCards`, `:857-871`; `runTopOff`, `:971`). Three side doors remain
+  open:
   - **A ban** landing in the weekly catalog refresh: the `commander_legal` diff above.
-  - **A commander change: not open on `main`.** No write changes an existing deck's
-    `commander_oracle_id` (it is set only at create, `actions.ts:351` and `:417`, and at import,
-    `import-actions.ts:241`), and updating a deck from a list with a different commander is
-    refused (`src/lib/copy/deck-import.ts:570-572`). The profile's own comment anticipates a swap
-    (`types.ts:283-285`); if one is built, it is a legality source.
+  - **Import** keeps them. `importDeck` validates only the commanders (`src/app/decks/import-actions.ts:198-209`)
+    and inserts every matched row into the 99 (`:233-253`). Resolving an unresolved line refuses a
+    not-legal card (`:326`) but skips color identity on purpose (`:276-281`).
+  - **Update from a list** keeps them too. `updateDeckFromList`
+    (`src/app/decks/update-actions.ts:280`) inserts every card its plan adds (`plan.in`,
+    `:352-360`), and `planDeckUpdate` (`src/lib/decks/update.ts:90`) checks neither
+    `commander_legal` nor color identity. So pasting a list over an existing deck can add a
+    banned or off-identity card.
+
+  **A commander change is not a door on `main`.** No write changes an existing deck's
+  `commander_oracle_id` (it is set only at create, `actions.ts:354` and `:420`, and at import,
+  `import-actions.ts:242`), and updating a deck from a list that names a different commander or
+  partner is refused (`update.ts:111-125`, thrown at `update-actions.ts:337`; the copy at
+  `src/lib/copy/deck-import.ts:570-571`). The profile's own comment anticipates a swap
+  (`types.ts:284-286`); if one is built, it is a legality source.
 - **Legality entries are derived live** from the deck's cards against `commander_legal` and the
-  commanders' identity, exactly as `build.ts:392-401` does, so they need no analysis to exist. The
+  commanders' identity, exactly as `build.ts:392-403` does, so they need no analysis to exist. The
   ban event is the log's; the standing state is the cards'.
 - **Scryfall's word.** If Design's reason line needs "banned" as distinct from "not legal", the
   catalog keeps Scryfall's `legalities.commander` value beside the boolean.
@@ -229,6 +269,7 @@ Recorded so the round is not asked about them. All of it is deterministic; no mo
 
 ## §7 Sequence
 
-This brief waits for Hugh's approval before it goes to Design. The build follows PR C, which it
-depends on. The About entry is batched with the rest of the analysis line's entries at launch, so
-it is not drawn in this round.
+This brief waits for Hugh's approval before it goes to Design. The lifecycle it depends on (PR
+C, shipped as #891 and #892) is on `main`, so the build waits only on Design's round. The About
+entry is batched with the rest of the analysis line's entries at launch, so it is not drawn in
+this round.
