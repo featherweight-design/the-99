@@ -1,0 +1,33 @@
+{
+  "feature": "Analysis tab, PR D: the header band and the bracket chip",
+  "note": "The deck header's order (name, pips and commander, then a chips row carrying the status pill and the bracket chip, then the bar), and the handoff chip on both mounts (Analysis tab handoff §1; audit findings 3 and 4). Needs the same decks as analysis-tab.json: ANALYSIS_DECK (a single bracket), ANALYSIS_SPLIT_DECK (a range left unanswered) and ANALYSIS_EMPTY_DECK (no stored reading, so the pill stands alone). The header draws on load, so no row presses anything.",
+  "rows": [
+    {
+      "id": "header-single",
+      "label": "/decks/[id] header: a single bracket, one 22px mark and the name, beside the status pill",
+      "view": "src/components/decks/bracket-chip.tsx",
+      "steps": [{ "goto": "/decks/${ANALYSIS_DECK}", "wait": "[role=tablist]", "settle": 1500 }]
+    },
+    {
+      "id": "header-range",
+      "label": "/decks/[id] header: a range asked, two marks (the high one dimmed) and `{low} or {high}`",
+      "view": "src/components/decks/bracket-chip.tsx",
+      "steps": [{ "goto": "/decks/${ANALYSIS_SPLIT_DECK}", "wait": "[role=tablist]", "settle": 1500 }]
+    },
+    {
+      "id": "header-none",
+      "label": "/decks/[id] header: no reading, so the status pill stands alone in the chips row",
+      "view": "src/components/decks/spine-desktop.tsx",
+      "steps": [{ "goto": "/decks/${ANALYSIS_EMPTY_DECK}", "wait": "[role=tablist]", "settle": 1500 }]
+    },
+    {
+      "id": "decks-tiles",
+      "label": "/decks: the tile draws the same chip in its footer",
+      "view": "src/components/decks/deck-card.tsx",
+      "steps": [
+        { "goto": "/decks", "wait": "[data-testid='bracket-chip']", "settle": 1500 },
+        { "scrollTo": "[data-testid='bracket-chip']", "settle": 400 }
+      ]
+    }
+  ]
+}

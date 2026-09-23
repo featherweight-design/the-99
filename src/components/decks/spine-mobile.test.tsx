@@ -52,10 +52,12 @@ describe("SpineMobile", () => {
   // Decision 18's ordered shrink, behind the status chip: the chip leads this
   // row because it is the one child whose width never changes, and the names
   // follow it and give first.
-  it("leads the row with the chip and shrinks the partner first", () => {
-    renderSpine(<SpineMobile {...props} deck={pairDeck} />);
+  it("leads the row with the pips, not the status pill, and shrinks the partner first", () => {
+    const { container } = renderSpine(<SpineMobile {...props} deck={pairDeck} />);
     const row = screen.getByText("Atraxa, Praetors’ Voice").parentElement!.parentElement!;
-    expect(row.firstElementChild!.textContent).toBe("Building");
+    // The pill moved to the chips row (Analysis tab handoff §1); the meta row carries none.
+    expect(row.textContent).not.toContain("Building");
+    expect(container.querySelector("[data-spine-chips]")!.textContent).toContain("Building");
     // And the row can shrink: without a zero minimum of its own, a `flex-nowrap`
     // row takes its content's min-content width as a floor, which is how a long
     // two-faced commander name drew outside the viewport.
@@ -244,24 +246,32 @@ describe("SpineMobile — the block the ramp is keyed to", () => {
   // The band and the figure keyed to it, at this call site. The contrast table
   // and the primitive's own tests both stay green if this component drifts back
   // to the old geometry — the figures are only a contract where they are passed.
-  it("states the 288 band and the 115px three-line block it measured", () => {
+  it("states the 288 band and the 143px three-line block it measured", () => {
     const { container } = renderSpine(<SpineMobile {...props} />);
     const wash = container.querySelector("[data-art-wash-band]")!;
     expect(wash).toHaveAttribute("data-art-wash-band", "288");
-    expect(wash).toHaveAttribute("data-art-wash-label-at", "115");
+    expect(wash).toHaveAttribute("data-art-wash-label-at", "143");
     expect((wash as HTMLElement).style.height).toBe("288px");
   });
 
-  // The meta row inside that block is ONE row. At 390px a pair's two
-  // names, five 10px pips, the chip and two 8px gaps are wider than the caption,
-  // so a wrapping row puts the chip on a second line and grows the block to
-  // about 145px while the ramp still holds at 115 — the title's first line on a
-  // climbing ramp, which is this round's own failure.
+  // The meta row inside that block is ONE row: a pair's two names and five pips are wider than
+  // the caption, and a wrapping row would grow the block past the ramp keyed to it.
   it("never lets the meta row wrap to a second line", () => {
     const { container } = renderSpine(<SpineMobile {...props} />);
+    const meta = container.querySelector("[data-wash-label] [data-spine-meta]")!;
+    expect(meta.className).toContain("flex-nowrap");
+  });
+
+  // THE CHIPS ROW (Analysis tab handoff §1): the pill left the meta row for a line of its own
+  // under it, followed by the bracket chip, in the order desktop draws.
+  it("draws the status pill on its own row under the commander line", () => {
+    const { container } = renderSpine(<SpineMobile {...props} />);
     const block = container.querySelector("[data-wash-label]")!;
-    expect(block.querySelector(".flex-nowrap")).not.toBeNull();
-    expect(block.querySelector(".flex-wrap")).toBeNull();
+    const meta = block.querySelector("[data-spine-meta]")!;
+    const chips = block.querySelector("[data-spine-chips]")!;
+    expect(chips.textContent).toContain("Building");
+    expect(meta.textContent).not.toContain("Building");
+    expect(meta.compareDocumentPosition(chips) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
   });
 
   // Same row, figure to the right, for the same reason as desktop.
@@ -290,15 +300,15 @@ describe("SpineMobile — the block the ramp is keyed to", () => {
   // desktop draws. They cost about eleven characters of the commander's name at
   // 390px, and the colour stays worded beside them: a grid cell cannot afford
   // both, a page header can.
-  it("draws the identity pips between the chip and the names", () => {
+  it("leads the meta row with the identity pips, before the names", () => {
     const { container } = renderSpine(<SpineMobile {...props} />);
     const meta = container.querySelector<HTMLElement>("[data-spine-meta]")!;
     const pips = meta.querySelectorAll('span[aria-hidden="true"] > span.rounded-\\[2px\\]');
     expect(pips.length).toBeGreaterThan(0);
-    // Second child: the chip leads, the pips follow it, the names come last and
-    // are the only child that shrinks.
-    expect(meta.children[0].textContent).toBe("Building");
-    expect(meta.children[1].contains(pips[0])).toBe(true);
+    // The pips lead; the names come last and are the only child that shrinks. The status
+    // pill is no longer here — it opens the chips row below.
+    expect(meta.textContent).not.toContain("Building");
+    expect(meta.children[0].contains(pips[0])).toBe(true);
     // The colour is still a word, which is the only form a screen reader gets —
     // the pips are `aria-hidden`.
     expect(meta.textContent).toContain("Non-red");

@@ -1,59 +1,51 @@
 import type { Bracket } from "../../lib/bracket/types";
 import { verdictHead } from "../../lib/bracket/verdict-head";
-import { BRACKET_NAMES, deckAnalysisCopy } from "../../lib/copy/deck-analysis";
+import { deckAnalysisCopy } from "../../lib/copy/deck-analysis";
 import { BracketMark, bracketInk } from "./bracket-mark";
 
 /**
- * The bracket chip — mark and name in a pill ringed in the bracket's own ink.
+ * The bracket chip: the mark(s) and the bracket's name on a plate in the bracket's own ink.
  *
- * ONE COMPONENT, THREE MOUNTS. The verdict block draws it at 26/36; the deck tile's footer and the
- * deck header's badge row draw it at the tile size. Round 0's frame: "one chip, one meaning, two
- * altitudes", which is only true while it is one component.
+ * ONE COMPONENT, TWO MOUNTS: the deck header's chips row and the deck tile's footer. Round 0's
+ * "one chip, one meaning, two altitudes" holds only while it is one component, which is why the
+ * Analysis tab handoff's redraw (§1) lands HERE rather than in the header, and the tile follows it
+ * (readiness finding 3).
  *
- * A RANGE IS ONE SPLIT CHIP, inked by the lower member: both marks inside it, the upper dimmed,
- * the label `Split`. An answered range draws the answer alone. `verdictHead` decides which, so no
- * mount holds a second copy of that rule.
+ * THE DRAWING: radius 6, a plate of the lower rank's ink at 12% over `--bg`, a hairline of that ink
+ * at 55%, 22px chip-form marks, mono 10 / 11 in the ink, 22px tall on the phone and 24px on
+ * desktop. A RANGE draws both marks, the upper at 0.65, and names both unrounded — `Optimized or
+ * cEDH`, no slash and no `Split`. An answered range draws the answer alone. `verdictHead` decides
+ * which, so no mount holds a second copy of that rule.
  */
 export function BracketChip({
   permits,
   answered = null,
-  px,
-  mdPx,
-  className = "",
-  labelClassName = "text-[11.5px] font-medium",
-  slashClassName = "font-mono text-[11px] opacity-70 md:text-[12px]",
 }: {
   permits: readonly Bracket[];
   /** The declaration, passed only when `declarationAsk` read it as answered. See `lib/bracket/chip-answer`. */
   answered?: Bracket | null;
-  px: number;
-  mdPx?: number;
-  /** The pill's own box: padding, height. The border and its ink are the chip's. */
-  className?: string;
-  labelClassName?: string;
-  slashClassName?: string;
 }) {
   const head = verdictHead(permits, answered);
   const low = head.chip;
-  const high = permits[permits.length - 1];
+  const ink = bracketInk(low);
+  const marks = head.split ? permits : [low];
   return (
     <span
       data-testid="bracket-chip"
       data-bracket={head.split ? permits.join("-") : low}
-      className={`inline-flex items-center rounded-full border ${className}`}
-      style={{ borderColor: `color-mix(in oklab, ${bracketInk(low)} 55%, transparent)` }}
+      className="inline-flex h-[22px] flex-none items-center gap-[5px] whitespace-nowrap rounded-[6px] border pl-[2px] pr-[8px] md:h-[24px]"
+      style={{
+        background: `color-mix(in srgb, ${ink} 12%, var(--bg))`,
+        borderColor: `color-mix(in oklab, ${ink} 55%, transparent)`,
+        // The band's words carry a shadow for the art behind them; the plate is its own ground.
+        textShadow: "none",
+      }}
     >
-      <BracketMark bracket={low} px={px} mdPx={mdPx} />
-      {head.split ? (
-        <>
-          <span aria-hidden="true" className={slashClassName} style={{ color: bracketInk(low) }}>
-            /
-          </span>
-          <BracketMark bracket={high} px={px} mdPx={mdPx} dim />
-        </>
-      ) : null}
-      <span className={labelClassName} style={{ color: bracketInk(low) }}>
-        {head.split ? deckAnalysisCopy.verdict.splitChip : BRACKET_NAMES[low]}
+      {marks.map((b, i) => (
+        <BracketMark key={b} bracket={b} px={CHIP_MARK_PX} dim={i > 0} />
+      ))}
+      <span className="font-mono text-[10px] md:text-[11px]" style={{ color: ink }}>
+        {head.face}
       </span>
     </span>
   );
@@ -73,14 +65,7 @@ export function SpineBracketChip({
 }) {
   if (!bracket) return null;
   const chip = (
-    <BracketChip
-      permits={bracket.permits}
-      answered={bracket.answered}
-      px={CHIP_MARK_PX}
-      className="h-[22px] flex-none gap-[4px] pl-[1px] pr-[8px]"
-      labelClassName="text-[11px] font-medium"
-      slashClassName="font-mono text-[10px] opacity-70"
-    />
+    <BracketChip permits={bracket.permits} answered={bracket.answered} />
   );
   if (!onOpen) return chip;
   return (
@@ -102,10 +87,5 @@ function chipName(bracket: { permits: Bracket[]; answered: Bracket | null }): st
   return verdictHead(bracket.permits, bracket.answered).face;
 }
 
-/**
- * The bracket mark inside the tile and header chips. 20, not Round 0's 22: that figure was for
- * the bare mark matching the status pill's 22px height, and the named chip that replaced it (the
- * handoff's outstanding list) rings the mark with 1px either side. 20 is still the chip form, the
- * smallest that draws a silhouette rather than the numeral alone.
- */
-export const CHIP_MARK_PX = 20;
+/** The chip form at 22px (the handoff's `bandChip`), the sanctioned chip size. */
+export const CHIP_MARK_PX = 22;

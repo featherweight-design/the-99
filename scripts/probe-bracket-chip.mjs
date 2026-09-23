@@ -2,7 +2,7 @@
 // 390x844.
 //
 // What only a layout engine can answer: that the chip sits ON the status pill's line rather than
-// pushing a second one (the tile's footer row and the header's badge row are both 22px lines),
+// pushing a second one (the tile's footer row and the header's badge row are both 22px lines on a phone; the chip is 24px from `md`),
 // that it stays inside the tile, that the header's copy is served from the STORED analysis on a
 // fresh load before any tab is pressed, and that pressing it lands on the Analysis tab.
 //
@@ -118,8 +118,13 @@ async function chips(page, within) {
         const li = el.closest("li");
         const tile = li?.getBoundingClientRect();
         const box = (q) => { const b = li?.querySelector(q)?.getBoundingClientRect(); return b ? { left: b.left, right: b.right, top: b.top, bottom: b.bottom } : null; };
+        // The label is the chip's last child: mono type, per the handoff's chip (§1).
+        const label = el.lastElementChild;
+        const marks = [...el.querySelectorAll('[data-testid="bracket-mark"]')];
         return {
           text: el.textContent,
+          labelFamily: label ? getComputedStyle(label).fontFamily : "",
+          markOpacity: marks.map((m) => Number(getComputedStyle(m).opacity)),
           h: r.height, top: r.top, bottom: r.bottom, right: r.right,
           pill: p ? { top: p.top, bottom: p.bottom, h: p.height, text: pill.textContent } : null,
           tileRight: tile?.right ?? null,
@@ -128,6 +133,19 @@ async function chips(page, within) {
         };
       });
   }, [PAGE, within ?? null]);
+}
+
+/** The handoff's chip (Analysis tab §1): 22px below `md`, 24px from it. */
+const chipPx = (width) => (width >= 768 ? 24 : 22);
+
+/** The chip is the handoff's, not #877's: a mono label, no `Split`, the high mark at 0.65. */
+function styled(width, where, c) {
+  report(`${width}px · the ${where} chip's label is mono`, /mono/i.test(c.labelFamily), c.labelFamily);
+  report(`${width}px · the ${where} chip says no Split`, !/Split/.test(c.text), c.text);
+  const [, high] = c.markOpacity;
+  report(`${width}px · the ${where} chip dims only a range's high mark`,
+    Math.abs(c.markOpacity[0] - 1) < 0.01 && (high === undefined || Math.abs(high - 0.65) < 0.01),
+    `opacity ${c.markOpacity.join(", ")}`);
 }
 
 async function run() {
@@ -177,7 +195,8 @@ async function run() {
       if (report(`${label}px · the header draws one chip on a fresh load`, head.length === 1,
           `${head.length} visible`)) {
         const [c] = head;
-        report(`${label}px · the header chip is the 22px line`, Math.abs(c.h - 22) < 0.6, `${c.h}px`);
+        report(`${label}px · the header chip is ${chipPx(label)}px`, Math.abs(c.h - chipPx(label)) < 0.6, `${c.h}px`);
+        styled(label, "header", c);
         const pillMid = c.pill ? (c.pill.top + c.pill.bottom) / 2 : NaN;
         report(`${label}px · the header chip shares the status pill's line`,
           c.pill !== null && Math.abs((c.top + c.bottom) / 2 - pillMid) <= 1,
@@ -202,11 +221,13 @@ async function run() {
       const tile = await chips(p, `li:has(a[href='${href}'])`);
       if (report(`${label}px · the deck's tile draws its chip`, tile.length === 1, `${tile.length} visible`)) {
         const [c] = tile;
-        report(`${label}px · the tile chip is the 22px line`, Math.abs(c.h - 22) < 0.6, `${c.h}px`);
+        report(`${label}px · the tile chip is ${chipPx(label)}px`, Math.abs(c.h - chipPx(label)) < 0.6, `${c.h}px`);
+        styled(label, "tile", c);
         // On the pill's line where the tile holds both, WRAPPED onto its own line inside the cell
         // where it does not (the ~189-230px tiles of the two- and three-column grids). Never
         // painted over the bar: that is what a cell allowed to shrink below its pills did.
-        const sameLine = c.pill !== null && Math.abs(c.top - c.pill.top) <= 1 && Math.abs(c.bottom - c.pill.bottom) <= 1;
+        // Mid-lines rather than edges: from `md` the chip is 24px beside a 22px pill.
+        const sameLine = c.pill !== null && Math.abs((c.top + c.bottom) / 2 - (c.pill.top + c.pill.bottom) / 2) <= 1;
         const wrapped = c.pill !== null && c.top >= c.pill.bottom;
         report(`${label}px · the tile chip is on the pill's line or wrapped below it`, sameLine || wrapped,
           c.pill ? `chip ${c.top.toFixed(1)}-${c.bottom.toFixed(1)} vs pill ${c.pill.top.toFixed(1)}-${c.pill.bottom.toFixed(1)}${wrapped ? " (wrapped)" : ""}` : "no status pill before it");

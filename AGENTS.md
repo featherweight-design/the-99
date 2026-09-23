@@ -416,8 +416,9 @@ Package manager is **pnpm** (pinned via `packageManager` in package.json) — ne
   "edit stamped after the analysis" check reads `[4,5]` against `null`.
 - `pnpm probe:bracket-chip` walks the bracket chip on the deck tile and in the deck header at
   1300x900 and 390x844: the header draws it on a FRESH load, from the stored analysis, before any
-  tab is pressed; both copies are the 22px line and share the status pill's line rather than
-  pushing a second one (or, on the ~190-230px tiles of the 640-1000px grid, wraps below the
+  tab is pressed; both copies are the handoff's chip, 22px on a phone and 24px from `md`, with a
+  mono label, no `Split` and only a range's high mark dimmed, and they share the status pill's
+  line rather than pushing a second one (or, on the ~190-230px tiles of the 640-1000px grid, wraps below the
   pill); nothing paints over the bar, whose track keeps a 40px floor; the tile's copy stays inside
   its tile; and pressing the header's lands on the Analysis tab. It runs at 1300, 700 and 390,
   because 700 is the width where the bar collapsed to 0px before the floor. Two traps it hit, both by running it: the tile's footer is NOT inside the
