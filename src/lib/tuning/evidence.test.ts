@@ -86,6 +86,16 @@ describe("buildEvidencePack", () => {
     expect(r).toMatchObject({ target: 10, have: 10, measured: false });
   });
 
+  it("calls a measured land average asserted when a non-finite role target sends landTarget flat", () => {
+    const TARGETS = { land: 34, basic: 14, nonbasic: 20, creature: 26, instant: 11, sorcery: 5, artifact: 13, enchantment: 6, planeswalker: 1, battle: 0 };
+    const withLand = { composition: { pair: null, commander: { targets: TARGETS, averageCurve: null }, identity: null, count: null } };
+    const ok = buildEvidencePack({ ...input(), profile: profile(withLand) }).targets.roles.find((t) => t.role === "land");
+    expect(ok).toMatchObject({ target: 34, measured: true });
+    const broken = profile({ ...withLand, roles: { pair: null, commander: { ramp: Number.NaN, draw: 10, removal: 8, wipes: 3 }, identity: null, count: null } });
+    const land = buildEvidencePack({ ...input(), profile: broken }).targets.roles.find((t) => t.role === "land");
+    expect(land).toMatchObject({ target: 37, measured: false });
+  });
+
   it("flags land on its own chain: measured roles beside an asserted land count", () => {
     const land = buildEvidencePack(input()).targets.roles.find((t) => t.role === "land");
     const ramp = buildEvidencePack(input()).targets.roles.find((t) => t.role === "ramp");

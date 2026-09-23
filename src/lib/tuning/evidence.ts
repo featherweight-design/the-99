@@ -69,10 +69,15 @@ export function buildEvidencePack(input: {
   // imported because mix.ts does not export it; if the two ever disagree, a cell would be
   // counted against a population its target was not derived for.
   const roleTargets = profile.skeleton.roleTargets;
-  const rolesMeasured = roleTargets.of !== "flat"
-    && Object.values(roleTargets.targets).every((v) => typeof v === "number" && Number.isFinite(v));
-  const landMeasured = profile.skeleton.composition != null
-    && Number.isFinite(profile.skeleton.composition.targets.land);
+  const roleTargetsFinite = Object.values(roleTargets.targets)
+    .every((v) => typeof v === "number" && Number.isFinite(v));
+  const rolesMeasured = roleTargets.of !== "flat" && roleTargetsFinite;
+  // And the land figure's own guards, from `landTarget` (src/lib/decks/deck-size.ts): it falls
+  // back to the flat 36/37 without a composition, with a non-finite land average, AND when any
+  // role target is non-finite, since those set its cap. Any of the three means the land target
+  // the model is handed is asserted, not measured.
+  const composition = profile.skeleton.composition;
+  const landMeasured = composition != null && Number.isFinite(composition.targets.land) && roleTargetsFinite;
   // WHICH POPULATION DEPENDS ON WHICH TARGET — the rule `fitSkeleton` applies. A measured target
   // came from EDHREC support lists, which never contain the commander, so the 99 alone is the
   // comparable count; full counts against it read a phantom surplus on a role-bearing commander.
