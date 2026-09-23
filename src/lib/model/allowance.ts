@@ -4,6 +4,7 @@ import { db } from "../../db";
 import { modelCalls } from "../../db/schema";
 import {
   ALLOWANCE_WINDOW_MS,
+  RESERVATION_TTL_MS,
   allowanceFrom,
   type Allowance,
   type LedgerRow,
@@ -74,14 +75,24 @@ export async function reserveModelCall(
 /**
  * Inside the outcome write's transaction. Moves only a `reserved` row, so settling twice — a
  * reaper and a late outcome, say — changes nothing the second time.
+ *
+ * A LATE SUCCESS IS NOT CHARGED. Once a reservation passes `RESERVATION_TTL_MS` it stops counting,
+ * and a later press may have reserved the unit it freed; settling the old row `spent` then would
+ * put the player one over the allowance. So a `spent` settle applies only while the reservation
+ * is still live, and past that the row is refunded instead: the answer that arrived that late
+ * costs the player nothing. Decided in the same statement as the move, so no read can go stale
+ * between the check and the write, and against the same clock `reserveModelCall` stamped the
+ * row with.
  */
 export async function settleModelCall(
   tx: Tx,
   callId: string,
   to: "spent" | "refunded",
+  now: Date = new Date(),
 ): Promise<void> {
+  const live = gt(modelCalls.createdAt, new Date(now.getTime() - RESERVATION_TTL_MS));
   await tx
     .update(modelCalls)
-    .set({ status: to })
+    .set({ status: to === "spent" ? sql`case when ${live} then 'spent' else 'refunded' end` : "refunded" })
     .where(and(eq(modelCalls.id, callId), eq(modelCalls.status, "reserved")));
 }
