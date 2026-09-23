@@ -113,11 +113,19 @@ export function useDeckProfile(
   useEffect(() => {
     current.current = deckId;
   }, [deckId]);
+  // The list as of the latest render, read when a request starts; and the list the reading on
+  // screen was asked about. See `listKey`.
+  const latestKey = useRef(listKey);
+  useEffect(() => {
+    latestKey.current = listKey;
+  }, [listKey]);
+  const [readyKey, setReadyKey] = useState<string | undefined>(undefined);
 
   const request = useCallback(() => {
     if (inFlightFor.current === deckId) return;
     inFlightFor.current = deckId;
     const mine = ++generation.current;
+    const askedAbout = latestKey.current;
     setShownFor(deckId);
     setState({ kind: "loading" });
     void (async () => {
@@ -141,7 +149,10 @@ export function useDeckProfile(
       }
       if (mine === generation.current) inFlightFor.current = null;
       if (mine !== generation.current || current.current !== deckId) return;
-      if (result.ok) setState({ kind: "ready", profile: result.profile, analyzedAt: result.analyzedAt });
+      if (result.ok) {
+        setReadyKey(askedAbout);
+        setState({ kind: "ready", profile: result.profile, analyzedAt: result.analyzedAt });
+      }
       else setState({ kind: result.reason === "disabled" ? "disabled" : "missing" });
     })();
   }, [deckId]);
@@ -152,6 +163,7 @@ export function useDeckProfile(
     if (peeked.current.has(deckId) || state.kind !== "idle" || inFlightFor.current === deckId) return;
     peeked.current.add(deckId);
     const mine = generation.current;
+    const askedAbout = latestKey.current;
     void (async () => {
       let result: StoredProfileFetch;
       try {
@@ -166,7 +178,10 @@ export function useDeckProfile(
       // flag switched off mid-visit, or the deck is gone — and the press would lie about both.
       if (!result.ok && result.reason === "none") return;
       setShownFor(deckId);
-      if (result.ok) setState({ kind: "ready", profile: result.profile, analyzedAt: result.analyzedAt });
+      if (result.ok) {
+        setReadyKey(askedAbout);
+        setState({ kind: "ready", profile: result.profile, analyzedAt: result.analyzedAt });
+      }
       else setState({ kind: result.reason === "disabled" ? "disabled" : "missing" });
     })();
   }, [deckId, state.kind]);
@@ -180,17 +195,12 @@ export function useDeckProfile(
     setState({ kind: "idle" });
   }
 
-  // THE LIST CHANGED UNDER A READING. The key a reading was first drawn against is held, and a
-  // different key drops it. Adjusted during render for the same reason as the deck change above.
-  const [readKey, setReadKey] = useState<string | null>(null);
-  if (state.kind === "ready" && listKey !== undefined) {
-    if (readKey === null) setReadKey(listKey);
-    else if (readKey !== listKey) {
-      setReadKey(null);
-      setState({ kind: "idle" });
-    }
-  } else if (state.kind !== "ready" && readKey !== null) {
-    setReadKey(null);
+  // THE LIST CHANGED UNDER A READING. A reading carries the key captured when its request STARTED,
+  // so a reply for a list edited while it was in flight is dropped as surely as a reading edited
+  // after it landed. Adjusted during render for the same reason as the deck change above.
+  if (state.kind === "ready" && listKey !== undefined && readyKey !== listKey) {
+    setReadyKey(listKey);
+    setState({ kind: "idle" });
   }
 
   return { state, request, peek };

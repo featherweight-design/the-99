@@ -121,6 +121,23 @@ describe("useDeckProfile", () => {
     expect(stub.calls).toEqual([A, A]);
   });
 
+  // AN EDIT WHILE THE REQUEST IS IN FLIGHT. The reply describes the list as it stood when the
+  // press was made, so it must not land as a reading of the list the reader has since edited.
+  it("drops a reply for a list edited while the request was in flight", async () => {
+    stub.gate = () => {};
+    const c = render(<Harness listKey="a:1" />);
+    await ask(c);
+    expect(kind(c)).toBe("loading");
+    c.rerender(<Harness listKey="a:1,b:1" />);
+    await act(async () => {});
+    const release = stub.gate;
+    stub.gate = null;
+    await act(async () => {
+      release?.();
+    });
+    expect(kind(c)).toBe("idle");
+  });
+
   // THE CACHE, stated as a request count. Re-rendering — which happens on every keystroke
   // elsewhere in the shell — must not re-ask.
   it("does not re-request on re-render", async () => {
