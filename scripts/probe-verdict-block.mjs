@@ -48,6 +48,7 @@ import { neon } from "@neondatabase/serverless";
 import { clerkSetup, setupClerkTestingToken } from "@clerk/testing/playwright";
 import { chromium } from "playwright";
 import { requireEnv } from "./lib/env.mjs";
+import { holdProfile } from "./lib/profile-hold.mjs";
 import { onPage, onPageRole, PAGE } from "./lib/surface.mjs";
 
 const { E2E_AUDIT_USER_EMAIL: EMAIL, DATABASE_URL } = requireEnv([
@@ -486,8 +487,8 @@ async function run() {
     console.log(`       (walking ${href})`);
     const deckId = href.split("/")[2];
     const sql = neon(DATABASE_URL);
-    // Captured BEFORE the first delete, and put back in the `finally` whatever happens.
-    const [saved] = await sql`select * from deck_profiles where deck_id = ${deckId}`;
+    // Captured to DISK before the first delete, and put back in the `finally` whatever happens.
+    const restore = await holdProfile(sql, deckId);
     try {
 
     for (const { label, viewport, markPx } of WIDTHS) {
@@ -544,14 +545,7 @@ async function run() {
     }
     } finally {
       // PUT BACK AS IT WAS: the press rewrote the row, and a row that did not exist is removed.
-      if (saved) {
-        await sql`insert into deck_profiles (deck_id, user_id, fingerprint, catalog, profile, permits, computed_at)
-          values (${saved.deck_id}, ${saved.user_id}, ${saved.fingerprint}, ${saved.catalog}, ${saved.profile}, ${saved.permits}, ${saved.computed_at})
-          on conflict (deck_id) do update set user_id = excluded.user_id, fingerprint = excluded.fingerprint,
-            catalog = excluded.catalog, profile = excluded.profile, permits = excluded.permits, computed_at = excluded.computed_at`;
-      } else {
-        await sql`delete from deck_profiles where deck_id = ${deckId}`;
-      }
+      await restore();
     }
   } finally {
     await browser.close();

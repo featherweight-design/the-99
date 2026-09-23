@@ -7,7 +7,7 @@ import { ProvenanceOpener } from "./provenance-panel";
 
 const copy = deckAnalysisCopy.panel;
 
-/** The ring's five marks, 1 at twelve o'clock and on clockwise: a 150px box, 50px radius, 44px marks. */
+/** The ring's five marks, 1 at twelve o'clock and running clockwise: a 150px box, 50px radius, 44px marks. */
 const RING: { bracket: Bracket; left: number; top: number }[] = ([1, 2, 3, 4, 5] as const).map((bracket, i) => {
   const t = -Math.PI / 2 + (i * 2 * Math.PI) / 5;
   return {

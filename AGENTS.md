@@ -806,6 +806,13 @@ Package manager is **pnpm** (pinned via `packageManager` in package.json) — ne
   deck's `deck_profiles` row before each width, and puts the row back as captured in a
   `finally`. With the gutters and the grid reverted it reads `0px` and `ratio 1.00`.
 
+  **The captured row is held ON DISK**, by `scripts/lib/profile-hold.mjs`, which
+  `probe:analysis-tab` and `probe:bracket-chip` share. A restore held in memory is lost when the
+  run dies or its one statement fails, and the reader's saved analysis goes with it. So the row is
+  written to a file before the first delete, the restore is retried, and a restore that still
+  fails keeps the file. The next run of any of the three puts the ORIGINAL back before it
+  captures anything.
+
   **The box's mark is found INSIDE the box.** It used to be the first mark on the page, which
   since #877 is the deck header's chip on the hidden desktop copy. That read `chip at 0x0` and
   failed a correct build.
