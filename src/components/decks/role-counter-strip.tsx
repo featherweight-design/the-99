@@ -27,6 +27,11 @@ import { StripRationale } from "./strip-rationale";
  * nothing is the exact defect this prop was added to close.
  */
 type RoleCounterStripProps = {
+  /**
+   * Inside the Analysis tab's own gutters (handoff §2, row 5): no gutters of its own, a rule above
+   * rather than below. The spine's strip, drawn when the tab is off, keeps its own.
+   */
+  inset?: boolean;
   /** What this deck is compared to, resolved once per request by the route. A PROP rather than
    *  an import, because the targets are now per-commander — a component reaching for a module
    *  constant would draw one deck's recommendation on every deck. */
@@ -55,6 +60,7 @@ export function RoleCounterStrip({
   rolesWithShelves,
   justFilled = false,
   wasCounts,
+  inset = false,
 }: RoleCounterStripProps) {
   const counts = computeRoleCounts(cards);
 
@@ -65,8 +71,12 @@ export function RoleCounterStrip({
       desktop: p 14px 30px, border-bottom 1px var(--border)
     */
     <section
-      className="px-[16px] py-[10px] md:px-[30px] md:py-[14px]"
-      style={{ borderBottom: "1px solid var(--border)" }}
+      className={
+        inset
+          ? "border-t border-[color:var(--border)] px-0 pt-[14px] md:pt-[20px]"
+          : "px-[16px] py-[10px] md:px-[30px] md:py-[14px]"
+      }
+      style={inset ? undefined : { borderBottom: "1px solid var(--border)" }}
       aria-label="Recommended mix"
     >
       {/*

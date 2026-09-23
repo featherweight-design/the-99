@@ -12,10 +12,11 @@ import {
 import type { Bracket, BracketVerdict } from "../../lib/bracket/types";
 import type { DeckProfile } from "../../lib/profile/types";
 import { deckAnalysisCopy, BRACKET_NAMES, nameList } from "../../lib/copy/deck-analysis";
+import { formatShortDeckDate } from "../../lib/decks/format";
 import { declarationAsk } from "../../lib/bracket/declaration-ask";
 import { versionComparison } from "../../lib/bracket/version-reading";
 import { declarationCopy } from "../../lib/copy/declaration";
-import { BracketChip } from "./bracket-chip";
+import { BracketMark, DIM_OPACITY, bracketInk } from "./bracket-mark";
 import { DeclarationSection, type DeclarationControl } from "./declaration";
 
 /**
@@ -45,8 +46,11 @@ export function VerdictBlock({
   profile,
   declaration,
   lean,
+  analyzedAt,
 }: {
   verdict: BracketVerdict;
+  /** When the reading on screen was made, as an ISO instant: the head's `analyzed {when}`. */
+  analyzedAt: string;
   profile: Pick<DeckProfile, "cards" | "commanderOracleIds" | "brackets">;
   /**
    * The player's own answer and the control to give one. Absent draws the block as Round 2
@@ -75,31 +79,45 @@ export function VerdictBlock({
   const head = verdictHead(verdict.permits, answered);
   const subLine = verdictSubLine(verdict);
   const copy = deckAnalysisCopy.verdict;
+  const marks = head.split ? verdict.permits : [head.chip];
   return (
     <section
       aria-label={copy.heading}
-      className="flex flex-col rounded-[11px] border border-[color:var(--border)] bg-[color:var(--surface)] px-[15px] py-[13px] md:rounded-xl md:px-[18px] md:py-4"
+      className="flex min-w-0 flex-col rounded-[11px] border border-[color:var(--border)] bg-[color:var(--surface)] px-[15px] py-[15px] md:rounded-xl md:px-[20px] md:py-[18px]"
     >
-      <h3 className="font-mono text-[9.5px] uppercase tracking-[0.14em] text-[color:var(--fg-faint)] md:text-[10px]">
-        {copy.heading}
-      </h3>
-      <p className="mt-2 text-[13.5px] font-semibold text-[color:var(--fg)] md:mt-[9px] md:text-[14px]">
-        {head.face}
-      </p>
-      <div className="mt-[9px] md:mt-[10px] md:flex md:items-center md:gap-[10px]">
-        {/*
-          ONE PILL, INKED BY THE LOWER MEMBER. A range draws both marks inside it — the one that
-          holds at full strength, the one above it at 0.65 — with the border and the label in the
-          lower bracket's ink — `verdictHead.chip`, which on an answered range is the answer and
-          draws one mark. Listing the two ranges instead would leave a third inkless.
-        */}
-        <BracketChip
-          permits={verdict.permits}
-          answered={answered}
-          px={MARK_PX}
-          mdPx={MARK_PX_MD}
-          className="gap-[7px] py-0.5 pl-1 pr-[11px]"
-        />
+      {/*
+        THE HEAD (Analysis tab handoff §2, row 2): the marks beside the name in the display face,
+        and when it was analyzed under it. No label, no pill, no control and no provenance
+        sentence. A range draws both marks, the upper at 0.65 with a `/` between them in the lower
+        rank's ink; an answered range draws the answer alone.
+      */}
+      <div className="flex items-center gap-[11px] md:gap-[13px]">
+        <span className="flex flex-none items-center gap-[6px]" data-testid="verdict-marks">
+          {marks.map((b, i) => (
+            <span key={b} className="flex items-center gap-[6px]">
+              {i > 0 ? (
+                <span aria-hidden="true" className="font-mono text-[12px] opacity-70" style={{ color: bracketInk(marks[0]) }}>
+                  /
+                </span>
+              ) : null}
+              <span style={{ opacity: i > 0 ? DIM_OPACITY : undefined }}>
+                <BracketMark bracket={b} px={MARK_PX} mdPx={MARK_PX_MD} />
+              </span>
+            </span>
+          ))}
+        </span>
+        <span className="flex min-w-0 flex-col gap-[3px]">
+          <span
+            data-testid="verdict-name"
+            className="font-display text-[19px] font-bold leading-[1.15] md:text-[21px]"
+            style={{ color: bracketInk(head.chip) }}
+          >
+            {head.face}
+          </span>
+          <span className="font-mono text-[10px] text-[color:var(--fg-faint)]" data-testid="verdict-analyzed">
+            {deckAnalysisCopy.panel.analyzed(analyzedWhen(new Date(analyzedAt), new Date()))}
+          </span>
+        </span>
       </div>
       {answered === null ? (
         <SubLine reading={subLine} />
@@ -264,4 +282,16 @@ function Population({
       </p>
     </div>
   );
+}
+
+/**
+ * `2 minutes ago` under an hour, then the deck page's own short date, `18 Sep` (en-US and UTC, as
+ * every deck date here is: readiness finding 14). Drawn once per render; a reading left open for an
+ * hour keeps the minutes it was drawn with, which is the cost of not ticking.
+ */
+export function analyzedWhen(at: Date, now: Date): string {
+  const minutes = Math.floor((now.getTime() - at.getTime()) / 60_000);
+  if (minutes < 1) return deckAnalysisCopy.panel.justNow;
+  if (minutes < 60) return deckAnalysisCopy.panel.minutesAgo(minutes);
+  return formatShortDeckDate(at);
 }

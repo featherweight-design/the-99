@@ -27,8 +27,19 @@ const copy = deckAnalysisCopy;
  * LOCAL STATE, NEVER PERSISTED. It is read once, mid-argument, and a sheet that reopened itself
  * on every visit would be a sheet nobody asked to see again.
  */
-export function ProvenanceOpener({ className = "" }: { className?: string }) {
+export function ProvenanceOpener({
+  className = "",
+  tone = "quiet",
+}: {
+  className?: string;
+  /**
+   * `quiet` is the findings head row's (10px, `--fg-faint`); `accent` is the empty state's
+   * (11px, `--accent`), where it sits beside the one call to action (handoff §2, 2a).
+   */
+  tone?: "quiet" | "accent";
+}) {
   const [open, setOpen] = useState(false);
+  const accent = tone === "accent";
   return (
     <>
       <button
@@ -37,11 +48,16 @@ export function ProvenanceOpener({ className = "" }: { className?: string }) {
         onClick={() => setOpen(true)}
         data-testid="provenance-opener"
         className={
-          "inline-flex min-h-[44px] md:min-h-0 items-center gap-[8px] bg-transparent border-0 p-0 font-mono text-[10px] cursor-pointer text-[color:var(--fg-faint)] "
+          "inline-flex min-h-[44px] items-center gap-[8px] bg-transparent border-0 p-0 font-mono cursor-pointer "
+          + (accent ? "text-[11px] text-[color:var(--accent)] " : "md:min-h-0 text-[10px] text-[color:var(--fg-faint)] ")
           + className
         }
       >
-        <span className="border-b border-dotted border-[color:var(--border-dashed)]">{copy.provenance.toggle}</span>
+        <span
+          className={"border-b border-dotted " + (accent ? "border-[color:var(--accent)]" : "border-[color:var(--border-dashed)]")}
+        >
+          {copy.provenance.toggle}
+        </span>
         <span aria-hidden>→</span>
       </button>
       {open ? <ProvenanceSheet onClose={() => setOpen(false)} /> : null}

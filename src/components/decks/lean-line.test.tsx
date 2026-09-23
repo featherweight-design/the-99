@@ -69,7 +69,7 @@ const card = (oracleId: string) =>
 const draw = (profile: ReturnType<typeof deckProfile>) =>
   render(
     <CardDetailProvider fetchCard={async (id) => card(id)}>
-      <AnalysisPanel state={{ kind: "ready", profile }} onRequest={() => {}}>
+      <AnalysisPanel state={{ kind: "ready", profile, analyzedAt: new Date().toISOString() }} onRequest={() => {}}>
         <div />
       </AnalysisPanel>
     </CardDetailProvider>,

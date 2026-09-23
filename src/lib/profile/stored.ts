@@ -39,8 +39,20 @@ export async function readStoredProfile(
   userId: string,
   deps: StoredProfileDeps = REQUEST_DEPS,
 ): Promise<DeckProfile | null> {
+  return (await readStoredReading(deckId, userId, deps))?.profile ?? null;
+}
+
+/**
+ * The stored profile with the moment it was stored, which the bracket box prints as
+ * `analyzed {when}` (Analysis tab handoff §2). Same rule as `readStoredProfile`.
+ */
+export async function readStoredReading(
+  deckId: string,
+  userId: string,
+  deps: StoredProfileDeps = REQUEST_DEPS,
+): Promise<{ profile: DeckProfile; analyzedAt: Date } | null> {
   const row = await readFreshRow(deckId, userId, deps, true);
-  return row?.profile ?? null;
+  return row?.profile ? { profile: row.profile, analyzedAt: row.computedAt } : null;
 }
 
 /**
@@ -81,6 +93,7 @@ async function readFreshRow(
             profile: withProfile ? deckProfiles.profile : sql<DeckProfile | null>`null`,
             permits: deckProfiles.permits,
             catalog: deckProfiles.catalog,
+            computedAt: deckProfiles.computedAt,
           })
           .from(deckProfiles)
           .where(

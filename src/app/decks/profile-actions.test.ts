@@ -43,14 +43,16 @@ vi.mock("../../lib/auth", () => ({
   },
 }));
 
+const STORED_AT = new Date("2026-09-18T12:00:00Z");
+
 vi.mock("../../lib/profile/stored", () => ({
   computeAndStoreProfile: async () => {
     stub.reads.push("profile");
     return stub.profile;
   },
-  readStoredProfile: async () => {
+  readStoredReading: async () => {
     stub.reads.push("stored");
-    return stub.stored;
+    return stub.stored ? { profile: stub.stored, analyzedAt: STORED_AT } : null;
   },
 }));
 
@@ -70,7 +72,9 @@ beforeEach(() => {
 describe("fetchDeckProfile", () => {
   it("returns the profile when the flag is on and the deck is the reader's", async () => {
     const result = await fetchDeckProfile(DECK);
-    expect(result).toEqual({ ok: true, profile: { brackets: {} } });
+    // A press is dated when it ran: the bracket box prints `analyzed a moment ago`.
+    expect(result).toEqual({ ok: true, profile: { brackets: {} }, analyzedAt: expect.any(String) });
+    expect(Date.now() - Date.parse((result as { analyzedAt: string }).analyzedAt)).toBeLessThan(5_000);
     expect(stub.reads).toEqual(["auth", "profile"]);
   });
 
@@ -141,7 +145,12 @@ describe("fetchStoredDeckProfile", () => {
 
   it("returns a stored profile when one matches", async () => {
     stub.stored = { brackets: { 3: {} } };
-    expect(await fetchStoredDeckProfile(DECK)).toEqual({ ok: true, profile: { brackets: { 3: {} } } });
+    // A stored reading is dated when it was stored, never when it was read back.
+    expect(await fetchStoredDeckProfile(DECK)).toEqual({
+      ok: true,
+      profile: { brackets: { 3: {} } },
+      analyzedAt: STORED_AT.toISOString(),
+    });
     expect(stub.reads).toEqual(["auth", "stored"]);
   });
 

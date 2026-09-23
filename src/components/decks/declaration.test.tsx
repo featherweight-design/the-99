@@ -37,7 +37,7 @@ function draw(
   expect(verdict.permits.join(",")).toBe(key);
   const onDeclare = vi.fn();
   render(
-    <VerdictBlock
+    <VerdictBlock analyzedAt={new Date().toISOString()}
       verdict={verdict}
       profile={profile}
       declaration={{
@@ -65,7 +65,8 @@ describe("the ask", () => {
     expect(onDeclare).toHaveBeenCalledWith(5);
     // The face still asks: the range, and the split pill.
     expect(screen.getByText("Optimized or cEDH")).toBeTruthy();
-    expect(screen.getByText(deckAnalysisCopy.verdict.splitChip)).toBeTruthy();
+    // The range draws both of its marks, and no pill (the Analysis tab handoff retires it).
+    expect(screen.getAllByTestId("bracket-mark").map((m) => m.dataset.bracket).slice(0, 2)).toEqual(["4", "5"]);
   });
 
   it("asks on the low range too", () => {
@@ -140,7 +141,8 @@ describe("the answer", () => {
     expect(onDeclare).not.toHaveBeenCalled();
     // THE WHOLE READING RETURNS TO THE ASK: the range's face and split pill, not the answer's.
     expect(screen.getByText("Optimized or cEDH")).toBeTruthy();
-    expect(screen.getByText(deckAnalysisCopy.verdict.splitChip)).toBeTruthy();
+    // The range draws both of its marks, and no pill (the Analysis tab handoff retires it).
+    expect(screen.getAllByTestId("bracket-mark").map((m) => m.dataset.bracket).slice(0, 2)).toEqual(["4", "5"]);
     expect(screen.queryByText(declarationCopy.declared.permitsBelow([4, 5]))).toBeNull();
   });
 });

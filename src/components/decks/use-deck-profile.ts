@@ -14,7 +14,8 @@ export type ProfileState =
   /** Never asked for. No request has been made and none should be until the reader asks. */
   | { kind: "idle" }
   | { kind: "loading" }
-  | { kind: "ready"; profile: DeckProfile }
+  /** `analyzedAt` is an ISO instant, drawn as the bracket box's `analyzed {when}`. */
+  | { kind: "ready"; profile: DeckProfile; analyzedAt: string }
   /** The flag is off. Nothing is wrong, and no surface may say otherwise. */
   | { kind: "disabled" }
   /** The deck is absent or not this reader's. */
@@ -129,7 +130,7 @@ export function useDeckProfile(deckId: string): {
       }
       if (mine === generation.current) inFlightFor.current = null;
       if (mine !== generation.current || current.current !== deckId) return;
-      if (result.ok) setState({ kind: "ready", profile: result.profile });
+      if (result.ok) setState({ kind: "ready", profile: result.profile, analyzedAt: result.analyzedAt });
       else setState({ kind: result.reason === "disabled" ? "disabled" : "missing" });
     })();
   }, [deckId]);
@@ -154,7 +155,7 @@ export function useDeckProfile(deckId: string): {
       // flag switched off mid-visit, or the deck is gone — and the press would lie about both.
       if (!result.ok && result.reason === "none") return;
       setShownFor(deckId);
-      if (result.ok) setState({ kind: "ready", profile: result.profile });
+      if (result.ok) setState({ kind: "ready", profile: result.profile, analyzedAt: result.analyzedAt });
       else setState({ kind: result.reason === "disabled" ? "disabled" : "missing" });
     })();
   }, [deckId, state.kind]);

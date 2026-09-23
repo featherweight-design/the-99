@@ -14,7 +14,7 @@ import { availabilityState, hardDecks } from "../../lib/decks/availability";
 import { isShoppingCard } from "../../lib/decks/shopping";
 import type { DeckSuggestionWithFacts } from "../../lib/decks/suggest";
 import { BuilderSpine } from "./builder-spine";
-import { AnalysisPanel, SynopsisSlot } from "./analysis-panel";
+import { AnalysisPanel } from "./analysis-panel";
 import { useDeckProfile } from "./use-deck-profile";
 import { useHeaderBracket } from "./use-header-bracket";
 import { chipAnswer } from "../../lib/bracket/chip-answer";
@@ -1089,10 +1089,10 @@ export function BuilderShell({
 
             {view === "analysis" ? (
               <div id="panel-analysis" role="tabpanel" aria-labelledby="tab-analysis">
-                {/* The readings sit ABOVE the strip and the synopsis slot below it, so the
-                    verdict arrives on top of the mix rather than replacing it. The strip is
-                    counted from the list and is true in every profile state, which is what
-                    makes a failed read a delay rather than an outage. */}
+                {/* The readings sit ABOVE the strip, so the verdict arrives on top of the mix
+                    rather than replacing it. The strip is counted from the list and is true in
+                    every profile state, which is what makes a failed read a delay rather than an
+                    outage. */}
                 <AnalysisPanel
                   state={profile.state}
                   onRequest={profile.request}
@@ -1120,7 +1120,6 @@ export function BuilderShell({
                     onDeclare: declaration.declare,
                     refused: declaration.refused,
                   }}
-                  synopsis={<SynopsisSlot />}
                   art={findingArt}
                 >
                 {/* The strip in its new home. It is REAL analysis content rather than a
@@ -1134,6 +1133,7 @@ export function BuilderShell({
                   rolesWithShelves={shelvedRoles}
                   justFilled={deck.filled && autoCount > 0}
                   wasCounts={wasCounts}
+                  inset
                 />
                 </AnalysisPanel>
               </div>
