@@ -40,14 +40,20 @@ describe("useHeaderBracket", () => {
     expect(shown(render(view({})))).toBe("none");
   });
 
-  // An edit during the visit: the analysis no longer describes the deck.
-  // The SAME array: a client render between revalidations hands the prop back unchanged, and a
-  // new array is the server answering again, which is the next case.
-  it("retires the chip when the card list changes", () => {
+  // RULING 4: an edit during the visit HOLDS the chip. The analysis no longer describes the deck,
+  // and the Analysis tab says so; the header keeps the bracket the deck was last read at.
+  it("holds the chip when the card list changes", () => {
     const stored: Bracket[] = [3];
     const c = render(view({ storedPermits: stored }));
     c.rerender(view({ storedPermits: stored, cards: [...LIST, { oracleId: "c3", quantity: 1 }] }));
-    expect(shown(c)).toBe("none");
+    expect(shown(c)).toBe("3");
+  });
+
+  it("holds a press's answer over a later edit", () => {
+    const c = render(view({ loading: true }));
+    c.rerender(view({ readyProfile: pressed([4]) }));
+    c.rerender(view({ readyProfile: pressed([4]), cards: [...LIST, { oracleId: "c3", quantity: 1 }] }));
+    expect(shown(c)).toBe("4");
   });
 
   // A route change to another deck holding the SAME list, which the card list alone cannot see.
@@ -76,13 +82,14 @@ describe("useHeaderBracket", () => {
     expect(shown(c)).toBe("3");
   });
 
-  // An edit while the press is in flight: the answer describes the list before the edit.
-  it("never files a late answer under a list edited while it was in flight", () => {
+  // An edit while the press is in flight: the answer describes the list before the edit, and the
+  // server refused to store it. The chip keeps what it held.
+  it("never takes a late answer for a list edited while it was in flight", () => {
     const edited = [...LIST, { oracleId: "c3", quantity: 1 }];
-    const c = render(view({ loading: true }));
-    c.rerender(view({ loading: true, cards: edited }));
-    c.rerender(view({ cards: edited, readyProfile: pressed([3]) }));
-    expect(shown(c)).toBe("none");
+    const c = render(view({ storedPermits: [1, 2], loading: true }));
+    c.rerender(view({ storedPermits: [1, 2], loading: true, cards: edited }));
+    c.rerender(view({ storedPermits: [1, 2], cards: edited, readyProfile: pressed([3]) }));
+    expect(shown(c)).toBe("1-2");
   });
 
   // A revalidation that began before the press completed arrives after it, carrying the old row.

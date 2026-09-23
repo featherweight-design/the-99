@@ -47,10 +47,16 @@ export function VerdictBlock({
   declaration,
   lean,
   analyzedAt,
+  fresh = true,
+  versionNumber = null,
 }: {
   verdict: BracketVerdict;
   /** When the reading on screen was made, as an ISO instant: the head's `analyzed {when}`. */
   analyzedAt: string;
+  /** The reading describes the deck's list and no edit has landed since. False is 2i / 2d. */
+  fresh?: boolean;
+  /** The version the reading is pinned to, for `analyzed with version n`. */
+  versionNumber?: number | null;
   profile: Pick<DeckProfile, "cards" | "commanderOracleIds" | "brackets">;
   /**
    * The player's own answer and the control to give one. Absent draws the block as Round 2
@@ -73,8 +79,12 @@ export function VerdictBlock({
   // leaving changes nothing.
   const [changing, setChanging] = useState(false);
   const read = declaration ? declarationAsk(verdict.permits, declaration.declared) : null;
-  const ask =
+  const asked =
     read?.kind === "answered" && changing ? { kind: "ask" as const, permits: read.permits } : read;
+  // A STALE RANGE WITHHOLDS ITS CHIPS until the re-read (handoff §4.2, audit finding 12): an
+  // answer given now would be about cards the reading never saw. An answer already given STAYS,
+  // and its `change` does nothing until then, rather than opening an ask that is withheld.
+  const ask = fresh ? asked : read?.kind === "answered" ? read : null;
   const answered = ask?.kind === "answered" ? ask.declared : null;
   const head = verdictHead(verdict.permits, answered);
   const subLine = verdictSubLine(verdict);
@@ -115,7 +125,7 @@ export function VerdictBlock({
             {head.face}
           </span>
           <span className="font-mono text-[10px] text-[color:var(--fg-faint)]" data-testid="verdict-analyzed">
-            {deckAnalysisCopy.panel.analyzed(analyzedWhen(new Date(analyzedAt), new Date()))}
+            {analyzedLine(new Date(analyzedAt), new Date(), fresh, versionNumber)}
           </span>
         </span>
       </div>
@@ -139,9 +149,10 @@ export function VerdictBlock({
               declaration.onDeclare(bracket);
             },
           }}
-          onChange={() => setChanging(true)}
+          onChange={() => { if (fresh) setChanging(true); }}
           comparison={
-            declaration.previous
+            // The version row is withheld on a stale reading, as the fixtures draw it (:314).
+            declaration.previous && fresh
               ? {
                   reading: versionComparison(
                     { permits: verdict.permits, declared: declaration.declared },
@@ -282,6 +293,14 @@ function Population({
       </p>
     </div>
   );
+}
+
+/** The date line in its three forms (handoff copy `analyzed.*`): stale, pinned, or asked. */
+export function analyzedLine(at: Date, now: Date, fresh: boolean, versionNumber: number | null): string {
+  const copy = deckAnalysisCopy.panel;
+  if (!fresh) return copy.analyzedStale(formatShortDeckDate(at));
+  if (versionNumber !== null) return copy.analyzedCommitted(versionNumber, formatShortDeckDate(at));
+  return copy.analyzed(analyzedWhen(at, now));
 }
 
 /**

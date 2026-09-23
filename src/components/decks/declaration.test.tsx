@@ -38,6 +38,7 @@ function draw(
   extra: {
     version?: number | null;
     refused?: boolean;
+    fresh?: boolean;
     previous?: { number: number; permits: Bracket[] | null; declared: Bracket | null } | null;
   } = {},
 ) {
@@ -47,6 +48,7 @@ function draw(
   const onDeclare = vi.fn();
   render(
     <VerdictBlock analyzedAt={new Date().toISOString()}
+      fresh={extra.fresh ?? true}
       verdict={verdict}
       profile={profile}
       declaration={{
@@ -139,6 +141,19 @@ describe("the answer", () => {
     expect(
       screen.getByText((_, el) => el?.tagName === "P" && el.textContent === "Declared Core for version 3. change"),
     ).toBeTruthy();
+  });
+
+  // A STALE range withholds its chips (§4.2): an unanswered one draws none, and an answered one
+  // keeps its answer, whose `change` does nothing until the re-read.
+  it("withholds a stale range's chips, and keeps an answer standing", () => {
+    draw("4,5", null, { fresh: false });
+    expect(screen.queryByRole("group")).toBeNull();
+    cleanup();
+    const { onDeclare } = draw("4,5", 4, { fresh: false });
+    fireEvent.click(screen.getByRole("button", { name: declarationCopy.declared.change }));
+    expect(screen.queryByRole("group")).toBeNull();
+    expect(screen.getByRole("button", { name: declarationCopy.declared.change })).toBeTruthy();
+    expect(onDeclare).not.toHaveBeenCalled();
   });
 
   // `change` re-asks the same range; it never clears the answer on its own.

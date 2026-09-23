@@ -467,6 +467,55 @@ async function walkLayout(page, label, width) {
     l.nameSize === `${phone ? 19 : 21}px` && /^analyzed /.test(l.analyzed ?? ""), `${l.nameSize}, "${l.analyzed}"`);
 }
 
+/**
+ * 2i, the stale reading (the lifecycle rulings, 2026-09-23). The row the press just wrote is
+ * marked `dirty`, which is exactly what an edit's `touchDeck` does, and the page is reloaded:
+ * the reading must come back WHOLE under the banner, above the grid at 1300 as a row with the
+ * button at its end, and as a column with a full-width 44px button at 390. The date line reads
+ * `before your changes`, and the header's chip HOLDS. No card is edited; the row is restored
+ * from its disk hold in the `finally` like every other write here.
+ */
+async function walkStale(page, sql, deckId, label, width) {
+  const phone = width < 768;
+  await sql`update deck_profiles set dirty = true where deck_id = ${deckId}::uuid`;
+  await page.reload({ waitUntil: "domcontentloaded" });
+  await page.waitForSelector(`${PAGE} [role="tablist"]`, { timeout: 20_000 });
+  await onPageRole(page, "tab", /Analysis/).first().click();
+  const banner = onPage(page, '[data-testid="analysis-banner"]').first();
+  const drawn = await banner.waitFor({ state: "visible", timeout: 15_000 }).then(() => true, () => false);
+  if (!report(`${label}px · 2i: a stale reading draws the banner`, drawn, drawn ? "drawn" : "no banner")) return;
+  const g = await page.evaluate((scope) => {
+    const root = document.querySelector(scope);
+    const panel = root?.querySelector('[role="tabpanel"]#panel-analysis');
+    const b = panel?.querySelector('[data-testid="analysis-banner"]');
+    const btn = b?.querySelector("button");
+    const box = panel?.querySelector('section[aria-label="Your bracket"]');
+    const chips = [...(root?.querySelectorAll("button[aria-label^='Bracket:']") ?? [])]
+      .filter((el) => el.getClientRects().length > 0);
+    if (!b || !btn || !box) return null;
+    const br = b.getBoundingClientRect(), tr = btn.getBoundingClientRect(), xr = box.getBoundingClientRect();
+    return {
+      role: b.getAttribute("role"),
+      bannerAbove: br.bottom <= xr.top,
+      rowLayout: Math.abs((tr.top + tr.bottom) / 2 - (br.top + br.bottom) / 2) < 4 && tr.right > br.right - 24,
+      btnW: tr.width, bannerW: br.width, btnH: tr.height,
+      analyzed: panel.querySelector('[data-testid="verdict-analyzed"]')?.textContent ?? "",
+      headerChips: chips.length,
+    };
+  }, PAGE);
+  if (!report(`${label}px · 2i: the banner, its button and the box are all drawn`, g !== null, g ? "all three" : "one is missing")) return;
+  report(`${label}px · 2i: the banner is role=status, above the reading`, g.role === "status" && g.bannerAbove, `role ${g.role}, above ${g.bannerAbove}`);
+  if (phone) {
+    report(`${label}px · 2i: a full-width 44px button on the phone`,
+      g.btnW >= g.bannerW - 32 && g.btnH >= 44, `button ${Math.round(g.btnW)} of ${Math.round(g.bannerW)}px, ${Math.round(g.btnH)}px tall`);
+  } else {
+    report(`${label}px · 2i: one row on desktop, the button at its end, 36px`,
+      g.rowLayout && g.btnH >= 36 && g.btnH < 44, `row ${g.rowLayout}, ${Math.round(g.btnH)}px tall`);
+  }
+  report(`${label}px · 2i: the date line says the reading predates the changes`, /before your changes$/.test(g.analyzed), `"${g.analyzed}"`);
+  report(`${label}px · 2i: the header's chip holds`, g.headerChips === 1, `${g.headerChips} visible`);
+}
+
 async function run() {
   await clerkSetup();
   const browser = await chromium.launch();
@@ -541,6 +590,7 @@ async function run() {
 
       await walk(p, label, markPx, viewport.width);
       await walkLayout(p, label, viewport.width);
+      await walkStale(p, sql, deckId, label, viewport.width);
       await ctx.close();
     }
     } finally {

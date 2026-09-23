@@ -309,7 +309,7 @@ export function BuilderShell({
   }, [view, peekProfile]);
   const counts = deckCounts(cards, unresolvedCount);
 
-  // THE HEADER'S BRACKET, retired by an edit or a change of deck; see `useHeaderBracket`.
+  // THE HEADER'S BRACKET, held across an edit and retired by a change of deck; see `useHeaderBracket`.
   const headerPermits = useHeaderBracket({
     deckId: deck.id,
     cards,
@@ -1103,6 +1103,7 @@ export function BuilderShell({
                 <AnalysisPanel
                   state={profile.state}
                   onRequest={profile.request}
+                  legality={{ built, size: bodySize }}
                   declaration={{
                     declared: declaration.declared,
                     // `for version n` only when the answer on screen IS what version n recorded.

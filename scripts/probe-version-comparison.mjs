@@ -35,6 +35,7 @@ import { neon } from "@neondatabase/serverless";
 import { clerkSetup, setupClerkTestingToken } from "@clerk/testing/playwright";
 import { chromium } from "playwright";
 import { requireEnv } from "./lib/env.mjs";
+import { padToWhole } from "./lib/whole-deck.mjs";
 import { onPage, onPageRole, PAGE } from "./lib/surface.mjs";
 
 const { E2E_AUDIT_USER_EMAIL: EMAIL, DATABASE_URL } = requireEnv([
@@ -128,6 +129,8 @@ async function buildFixtures(userId, made) {
     for (const c of s.cards) {
       await sql`insert into deck_cards (deck_id, oracle_id, quantity) values (${id}, ${c.oracle_id}, 1)`;
     }
+    // Whole, or the press is refused (ruling 1). Wastes moves no bracket fact.
+    await padToWhole(sql, id, s.cards.length);
     for (const [n, v] of [[1, s.v1], [2, s.v2]]) {
       const [row] = await sql`
         insert into deck_versions (deck_id, number, commander_oracle_id, declared_bracket, permits, committed_at)
@@ -136,6 +139,9 @@ async function buildFixtures(userId, made) {
       for (const c of v.cards) {
         await sql`insert into deck_version_cards (version_id, oracle_id, quantity) values (${row.id}, ${c.oracle_id}, 1)`;
       }
+      // The version is padded exactly as the draft is, or every draft reads as edited against it.
+      const [wastes] = await sql`select oracle_id from cards where name = 'Wastes' limit 1`;
+      await sql`insert into deck_version_cards (version_id, oracle_id, quantity) values (${row.id}, ${wastes.oracle_id}, ${99 - v.cards.length})`;
     }
     decks[s.key] = id;
   }
@@ -151,7 +157,7 @@ async function openAnalysis(p, deckId, label) {
   if (!report(`${label}px · the Analysis tab is drawn`, (await tab.count()) > 0,
       "absent means ANALYSIS_TAB_ENABLED is off on this server")) return false;
   await tab.first().click();
-  await onPageRole(p, "button", /Analyze this deck/).first().click();
+  await onPageRole(p, "button", /^(Re-)?[Aa]nalyze$/).first().click();
   const ready = await onPage(p, 'section[aria-label="Your bracket"]')
     .first().waitFor({ state: "visible", timeout: 25_000 }).then(() => true, () => false);
   return report(`${label}px · the verdict is drawn`, ready, ready ? "ready" : "no verdict after 25s");

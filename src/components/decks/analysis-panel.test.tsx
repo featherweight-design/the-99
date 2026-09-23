@@ -23,7 +23,10 @@ const panel = (state: ProfileState) => (
   </CardDetailProvider>
 );
 const draw = (state: ProfileState) => render(panel(state));
-const ready = (): ProfileState => ({ kind: "ready", profile: deckProfile(), analyzedAt: AT });
+const reading = (over: Partial<{ fresh: boolean; versionNumber: number | null }> = {}) =>
+  ({ profile: deckProfile(), analyzedAt: AT, fresh: true, versionNumber: null, ...over });
+const ready = (over: Partial<{ fresh: boolean; versionNumber: number | null }> = {}): ProfileState =>
+  ({ kind: "ready", ...reading(over) });
 
 beforeEach(() => onRequest.mockClear());
 
@@ -32,11 +35,11 @@ describe("AnalysisPanel", () => {
   // is true whatever happened to the read — the difference between a delay and an outage.
   it.each<ProfileState>([
     { kind: "idle" },
-    { kind: "loading" },
+    { kind: "loading", held: null },
     ready(),
     { kind: "disabled" },
     { kind: "missing" },
-    { kind: "failed" },
+    { kind: "failed", held: null },
   ])("keeps the tab's own content in the %s state", (state) => {
     draw(state);
     expect(screen.getByText(MIX)).toBeInTheDocument();
@@ -57,7 +60,7 @@ describe("AnalysisPanel", () => {
 
   // 2b: the ring lights 1 to 5 in turn, the heading is the live region, and Analyze holds still.
   it("reads with the ring animating and Analyze disabled in place", () => {
-    draw({ kind: "loading" });
+    draw({ kind: "loading", held: null });
     const empty = screen.getByTestId("analysis-empty");
     expect(within(empty).getByRole("heading", { name: copy.loading.heading }).getAttribute("aria-live")).toBe("polite");
     const waves = [...empty.querySelectorAll<HTMLElement>(".anim-at-wave")];
@@ -72,7 +75,7 @@ describe("AnalysisPanel", () => {
 
   // 2c: an alert, the ring dimmed and still, and a retry that is a press, never automatic.
   it("states the failure and what it did not affect, with a retry", () => {
-    draw({ kind: "failed" });
+    draw({ kind: "failed", held: null });
     const empty = screen.getByTestId("analysis-empty");
     expect(within(empty).getByRole("alert").textContent).toBe(copy.failed.heading);
     expect(within(empty).getByText(copy.failed.body)).toBeInTheDocument();
@@ -104,7 +107,7 @@ describe("AnalysisPanel", () => {
 
   // §E: said once when a press settles, and never for a stored reading painted on open.
   it("announces a reading when a press settles, and not when one is shown on open", () => {
-    const { rerender } = draw({ kind: "loading" });
+    const { rerender } = draw({ kind: "loading", held: null });
     expect(screen.getByRole("status").textContent).toBe("");
     rerender(panel(ready()));
     expect(screen.getByRole("status").textContent).toBe(copy.settled("Exhibition or Core"));
@@ -114,5 +117,114 @@ describe("AnalysisPanel", () => {
     const { rerender } = draw({ kind: "idle" });
     rerender(panel(ready()));
     expect(screen.getByRole("status").textContent).toBe("");
+  });
+
+  // ─── The lifecycle (2i, 2d, ruling 1) ─────────────────────────────────────────────────────────
+  const banner = () => screen.queryByTestId("analysis-banner");
+
+  // A fresh reading draws no banner and offers no re-analysis.
+  it("draws no banner over a fresh reading", () => {
+    draw(ready());
+    expect(banner()).toBeNull();
+  });
+
+  // 2i: a stale reading stays WHOLE under the banner, which offers Re-analyze.
+  it("holds a stale reading under the banner, with Re-analyze", () => {
+    draw(ready({ fresh: false }));
+    const b = banner()!;
+    expect(b).toHaveAttribute("role", "status");
+    expect(b.textContent).toContain(deckAnalysisCopy.banner.stale);
+    fireEvent.click(within(b).getByRole("button", { name: deckAnalysisCopy.banner.reanalyze }));
+    expect(onRequest).toHaveBeenCalledTimes(1);
+    expect(screen.getByRole("region", { name: deckAnalysisCopy.verdict.heading })).toBeInTheDocument();
+    expect(screen.getByTestId("verdict-analyzed").textContent).toMatch(/before your changes$/);
+  });
+
+  // A press over a held reading: the button disables IN PLACE and the reading stays.
+  it("keeps the reading while a re-read runs, the button disabled in place", () => {
+    draw({ kind: "loading", held: reading({ fresh: false }) });
+    const button = within(banner()!).getByRole("button", { name: deckAnalysisCopy.banner.reanalyze });
+    expect(button).toHaveAttribute("aria-disabled", "true");
+    fireEvent.click(button);
+    expect(onRequest).not.toHaveBeenCalled();
+    expect(screen.queryByTestId("analysis-empty")).toBeNull();
+    expect(screen.getByRole("region", { name: deckAnalysisCopy.verdict.heading })).toBeInTheDocument();
+  });
+
+  // 2d: a failed re-read over a held reading says so as an alert, and the reading stays whole.
+  it("says a failed re-read over the reading it held, as an alert", () => {
+    draw({ kind: "failed", held: reading({ fresh: false }) });
+    const b = banner()!;
+    expect(b).toHaveAttribute("role", "alert");
+    expect(b.textContent).toContain(deckAnalysisCopy.banner.failedHeld);
+    expect(within(b).getByRole("button", { name: deckAnalysisCopy.banner.tryAgain })).toBeInTheDocument();
+    expect(screen.getByRole("region", { name: deckAnalysisCopy.verdict.heading })).toBeInTheDocument();
+  });
+
+  // A reading pinned to a version names it; a stale one never does.
+  it("names the version a fresh reading is pinned to", () => {
+    draw(ready({ versionNumber: 3 }));
+    expect(screen.getByTestId("verdict-analyzed").textContent).toMatch(/^analyzed with version 3 · /);
+  });
+
+  // RULING 1, before any press: Analyze is disabled and the line says why.
+  it("disables Analyze on a partial deck and says why", () => {
+    render(
+      <CardDetailProvider fetchCard={async () => null}>
+        <AnalysisPanel state={{ kind: "idle" }} onRequest={onRequest} legality={{ built: 87, size: 99 }}>
+          <div>{MIX}</div>
+        </AnalysisPanel>
+      </CardDetailProvider>,
+    );
+    const empty = screen.getByTestId("analysis-empty");
+    const button = within(empty).getByRole("button", { name: copy.idle.cta });
+    expect(button).toHaveAttribute("aria-disabled", "true");
+    fireEvent.click(button);
+    expect(onRequest).not.toHaveBeenCalled();
+    expect(screen.getByTestId("analysis-blocked").textContent).toBe(copy.illegal(87, 99));
+  });
+
+  // RULING 1 over a held reading: the reading stays, and Re-analyze is disabled with the same line.
+  it("keeps a held reading on a partial deck, Re-analyze disabled with the line", () => {
+    render(
+      <CardDetailProvider fetchCard={async () => null}>
+        <AnalysisPanel state={ready({ fresh: false })} onRequest={onRequest} legality={{ built: 100, size: 99 }}>
+          <div>{MIX}</div>
+        </AnalysisPanel>
+      </CardDetailProvider>,
+    );
+    const b = banner()!;
+    expect(b.textContent).toContain(copy.illegal(100, 99));
+    expect(within(b).getByRole("button", { name: deckAnalysisCopy.banner.reanalyze })).toHaveAttribute("aria-disabled", "true");
+    expect(screen.getByRole("region", { name: deckAnalysisCopy.verdict.heading })).toBeInTheDocument();
+  });
+
+  // The server's refusal draws the same line, with its own counts.
+  it("draws the server's illegal refusal as the same line", () => {
+    draw({ kind: "illegal", built: 98, size: 99, held: null });
+    expect(screen.getByTestId("analysis-blocked").textContent).toBe(copy.illegal(98, 99));
+  });
+
+  // A retry from 2d disables IN PLACE: the banner keeps its failure sentence, role and label.
+  it("keeps 2d's banner while its retry runs", () => {
+    draw({ kind: "loading", held: reading({ fresh: false }), retry: true });
+    const b = banner()!;
+    expect(b).toHaveAttribute("role", "alert");
+    expect(b.textContent).toContain(deckAnalysisCopy.banner.failedHeld);
+    expect(within(b).getByRole("button", { name: deckAnalysisCopy.banner.tryAgain })).toHaveAttribute("aria-disabled", "true");
+  });
+
+  // The server's refusal does not outlive the deck being made whole: the shell's count decides.
+  it("re-enables the press once the shell's count is whole again", () => {
+    render(
+      <CardDetailProvider fetchCard={async () => null}>
+        <AnalysisPanel state={{ kind: "illegal", built: 98, size: 99, held: null }} onRequest={onRequest} legality={{ built: 99, size: 99 }}>
+          <div>{MIX}</div>
+        </AnalysisPanel>
+      </CardDetailProvider>,
+    );
+    expect(screen.queryByTestId("analysis-blocked")).toBeNull();
+    fireEvent.click(within(screen.getByTestId("analysis-empty")).getByRole("button", { name: copy.idle.cta }));
+    expect(onRequest).toHaveBeenCalledTimes(1);
   });
 });

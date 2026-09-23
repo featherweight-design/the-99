@@ -2,26 +2,6 @@
 
 > Part of the deck tuning plan. **Read the index first:** [`2026-09-07-deck-tuning-suggestions.md`](2026-09-07-deck-tuning-suggestions.md) — the Global Constraints, File Structure, PR boundaries and Cost there apply to every task below. Task numbers are shared across all six files.
 
-> **Amended 2026-09-23, during the build**, each to follow a rule the handoff already states:
-> 1. **`cut` is required.** `suggestionRules.onePair`: every suggestion is exactly one cut and one
->    add, and the deck count never changes. The schema, `ValidatedSuggestion` and `TuningItem` all
->    carry a non-null cut; the column stays nullable, since nothing is lost by it.
-> 2. **The prompt never renders ownership.** `suggestionRules.ownershipNotRanking`: ownership and
->    price may not affect which cards are suggested or their order, and a model cannot be swayed
->    by a fact it was never shown. The pack still carries `owned`, for the card.
-> 3. **The gate's messages are static, from strings the handoff already writes**:
->    `announce.started` while a run is in flight, `announce.unchanged` on unchanged inputs. A time
->    belongs to the panel, in the reader's own clock, so `gateReason` takes no `now`.
->    `allowance.spent` is an eng-written placeholder until the placement addendum draws the state.
-> 5. **`bracketAfter` compares two REAL profiles** — `({ before, after, declared })` — and edits
->    neither. The approximation below (rebuilding `before`'s bracket group from the add's facts
->    and `combosAfter`) could not rebuild the tutor reaches of a combo the add completes, which
->    only the loader's classifiers can, so it named the wrong bracket. C builds `after` with the
->    same loader from the swapped head. `AddFacts` and `combosAfter` are gone.
-> 4. **`Drop` names its rule.** Each drop carries the `suggestionRules` key it broke, or one of
->    three structural checks no instruction covers (`cardExists`, `addNotLegal`, `duplicate`), so
->    a run's `dropped_count` can be explained rather than only counted.
-
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
 ---

@@ -29,12 +29,19 @@ const RING: { bracket: Bracket; left: number; top: number }[] = ([1, 2, 3, 4, 5]
 export function AnalysisEmpty({
   phase,
   onRequest,
+  blocked = null,
 }: {
   phase: "idle" | "loading" | "failed";
   onRequest: () => void;
+  /**
+   * Ruling 1: the deck is not whole, so the press is disabled and this line says why, under it
+   * (Hugh, 2026-09-23; undrawn in the handoff, so it borrows the busy button's look).
+   */
+  blocked?: string | null;
 }) {
   const text = phase === "loading" ? copy.loading : phase === "failed" ? copy.failed : copy.idle;
   const busy = phase === "loading";
+  const disabled = busy || blocked !== null;
   return (
     <section className="flex flex-col gap-[7px] md:gap-[8px]" data-testid="analysis-empty" data-phase={phase}>
       <h3 className="m-0 font-mono font-normal uppercase text-[9.5px] tracking-[0.14em] text-[color:var(--fg-faint)] md:text-[10px] md:tracking-[0.16em]">
@@ -77,11 +84,12 @@ export function AnalysisEmpty({
             {/* A BUTTON, NEVER AUTOMATIC. A silent retry loop is how a wait becomes a bill. */}
             <button
               type="button"
-              onClick={busy ? undefined : onRequest}
-              aria-disabled={busy || undefined}
+              onClick={disabled ? undefined : onRequest}
+              aria-disabled={disabled || undefined}
+              aria-describedby={blocked ? "analysis-blocked" : undefined}
               className={
                 "inline-flex min-h-[44px] items-center justify-center self-stretch rounded-[8px] px-[22px] text-[14px] font-semibold md:self-auto md:text-[14.5px] "
-                + (busy
+                + (disabled
                   ? "cursor-default bg-[color:var(--elevated)] text-[color:var(--fg-faint)]"
                   : "cursor-pointer bg-[color:var(--fg)] text-[color:var(--bg)]")
               }
@@ -89,6 +97,16 @@ export function AnalysisEmpty({
               {phase === "failed" ? copy.failed.cta : copy.idle.cta}
             </button>
             <ProvenanceOpener tone="accent" />
+            {/* IN the CTA row (the table's placement), on a line of its own under the press. */}
+            {blocked ? (
+              <p
+                id="analysis-blocked"
+                data-testid="analysis-blocked"
+                className="m-0 text-[12.5px] leading-[1.5] text-[color:var(--fg-muted)] md:basis-full md:text-[13px]"
+              >
+                {blocked}
+              </p>
+            ) : null}
           </div>
         </div>
       </div>

@@ -9,7 +9,7 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 
 const stub = vi.hoisted(() => ({
   calls: [] as string[],
-  reply: { ok: true, profile: { brackets: {} } } as unknown,
+  reply: { ok: true, profile: { brackets: {} }, analyzedAt: "2026-09-23T00:00:00Z", fresh: true, versionNumber: null } as unknown,
   throws: false,
   /** Held open when set, so an in-flight request is observable. */
   gate: null as null | (() => void),
@@ -52,6 +52,9 @@ function Harness({ deckId = A, listKey }: { deckId?: string; listKey?: string })
   return (
     <div>
       <span data-testid="kind">{state.kind}</span>
+      <span data-testid="held">{String("held" in state && state.held !== null)}</span>
+      <span data-testid="fresh">{state.kind === "ready" ? String(state.fresh) : "-"}</span>
+      <span data-testid="at">{state.kind === "ready" ? state.analyzedAt : "-"}</span>
       <button onClick={request}>ask</button>
       <button onClick={peek}>peek</button>
     </div>
@@ -59,6 +62,9 @@ function Harness({ deckId = A, listKey }: { deckId?: string; listKey?: string })
 }
 
 const kind = (c: ReturnType<typeof render>) => c.getByTestId("kind").textContent;
+const fresh = (c: ReturnType<typeof render>) => c.getByTestId("fresh").textContent;
+/** The state on screen carries a held reading. */
+const held = (c: ReturnType<typeof render>) => c.getByTestId("held").textContent === "true";
 const ask = async (c: ReturnType<typeof render>) => {
   await act(async () => {
     c.getByText("ask").click();
@@ -78,7 +84,7 @@ beforeEach(() => {
   stub.peekGate = null;
   stub.peekThrows = false;
   stub.calls = [];
-  stub.reply = { ok: true, profile: { brackets: {} } };
+  stub.reply = { ok: true, profile: { brackets: {} }, analyzedAt: "2026-09-23T00:00:00Z", fresh: true, versionNumber: null };
   stub.throws = false;
   stub.gate = null;
   stub.gates = null;
@@ -103,27 +109,41 @@ describe("useDeckProfile", () => {
     expect(kind(c)).toBe("ready");
   });
 
-  // AN EDIT IN THE VISIT RETIRES THE READING. The tab has no re-analyze control on a reading, so a
-  // held reading of a list that has since changed would sit on screen with no way to ask again.
-  it("drops a held reading when the list changes, and keeps it while it does not", async () => {
+  // AN EDIT IN THE VISIT MAKES THE READING STALE, never withdraws it (the lifecycle rulings,
+  // 2026-09-23): it stays on screen under the 2i banner, which offers Re-analyze.
+  it("marks a held reading stale when the list changes, and keeps it fresh while it does not", async () => {
     const c = render(<Harness listKey="a:1" />);
     await ask(c);
-    expect(kind(c)).toBe("ready");
+    expect([kind(c), fresh(c)]).toEqual(["ready", "true"]);
     c.rerender(<Harness listKey="a:1" />);
     await act(async () => {});
-    expect(kind(c)).toBe("ready");
+    expect([kind(c), fresh(c)]).toEqual(["ready", "true"]);
     c.rerender(<Harness listKey="a:1,b:1" />);
     await act(async () => {});
-    expect(kind(c)).toBe("idle");
+    expect([kind(c), fresh(c)]).toEqual(["ready", "false"]);
     // And asks again, against the new list.
     await ask(c);
-    expect(kind(c)).toBe("ready");
+    expect([kind(c), fresh(c)]).toEqual(["ready", "true"]);
     expect(stub.calls).toEqual([A, A]);
   });
 
+  // THE READING IS HELD THROUGH A RE-READ. Loading, a failure and an illegal refusal all keep the
+  // reading that was on screen, so the tab never blanks under the reader.
+  it("holds the reading on screen through a re-read that fails", async () => {
+    const c = render(<Harness listKey="a:1" />);
+    await ask(c);
+    c.rerender(<Harness listKey="a:1,b:1" />);
+    await act(async () => {});
+    stub.throws = true;
+    await ask(c);
+    expect(kind(c)).toBe("failed");
+    expect(held(c)).toBe(true);
+    stub.throws = false;
+  });
+
   // AN EDIT WHILE THE REQUEST IS IN FLIGHT. The reply describes the list as it stood when the
-  // press was made, so it must not land as a reading of the list the reader has since edited.
-  it("drops a reply for a list edited while the request was in flight", async () => {
+  // press was made, so it lands STALE rather than as a reading of the list since edited.
+  it("lands a reply for a list edited while the request was in flight as stale", async () => {
     stub.gate = () => {};
     const c = render(<Harness listKey="a:1" />);
     await ask(c);
@@ -135,7 +155,27 @@ describe("useDeckProfile", () => {
     await act(async () => {
       release?.();
     });
-    expect(kind(c)).toBe("idle");
+    expect([kind(c), fresh(c)]).toEqual(["ready", "false"]);
+  });
+
+  // ...AND OVER A HELD READING, THE HELD ONE STAYS. The server stores a reading only over the list
+  // it was asked about, so a reply for a list edited mid-press may be one no reload draws again;
+  // the header's chip ignores it, and the tab keeps what it was already showing.
+  it("keeps the held reading when the list was edited while a re-read was in flight", async () => {
+    const c = render(<Harness listKey="a:1" />);
+    await ask(c);
+    expect(c.getByTestId("at").textContent).toBe("2026-09-23T00:00:00Z");
+    stub.reply = { ok: true, profile: { brackets: {} }, analyzedAt: "2026-09-24T00:00:00Z", fresh: true, versionNumber: null };
+    stub.gate = () => {};
+    await ask(c);
+    c.rerender(<Harness listKey="a:1,b:1" />);
+    await act(async () => {});
+    const release = stub.gate;
+    stub.gate = null;
+    await act(async () => {
+      release?.();
+    });
+    expect([kind(c), fresh(c), c.getByTestId("at").textContent]).toEqual(["ready", "false", "2026-09-23T00:00:00Z"]);
   });
 
   // THE CACHE, stated as a request count. Re-rendering — which happens on every keystroke

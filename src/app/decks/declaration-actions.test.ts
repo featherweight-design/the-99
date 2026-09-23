@@ -26,6 +26,11 @@ const stub = vi.hoisted(() => ({
   profile: null as unknown,
   permits: [1, 2] as number[],
   updateReturns: [{ id: "deck-1" }] as { id: string }[],
+  /** The stored reading's `dirty`, or no row at all. */
+  stored: [] as { dirty: boolean }[],
+  /** When set, each read of the stored reading takes the next answer, so a read can differ from
+   *  the one after it — an edit landing between the early check and the write. */
+  storedQueue: null as null | { dirty: boolean }[][],
 }));
 
 vi.mock("next/cache", () => ({
@@ -52,6 +57,7 @@ vi.mock("../../lib/bracket/slot", () => ({
 
 vi.mock("../../db", () => ({
   db: {
+    select: () => ({ from: () => ({ where: async () => stub.storedQueue?.shift() ?? stub.stored }) }),
     update: () => ({
       set: (values: unknown) => {
         stub.updates.push(values);
@@ -168,5 +174,29 @@ describe("declareBracket", () => {
   it("exports no way to clear a declaration", async () => {
     const mod = await import("./declaration-actions");
     expect(Object.keys(mod).filter((k) => /clear|skip|dismiss|reset/i.test(k))).toEqual([]);
+  });
+});
+
+describe("declareBracket — a stale reading", () => {
+  // §4.2 / audit finding 12: the tab withholds the chips while the reading is stale, and the
+  // server refuses the write, before it builds a profile or touches the deck.
+  it("refuses an answer while the stored reading is dirty, writing nothing", async () => {
+    stub.stored = [{ dirty: true }];
+    stub.updates.length = 0;
+    stub.profile = { brackets: {} };
+    expect(await declareBracket("11111111-1111-4111-8111-111111111111", 1)).toEqual({ ok: false, reason: "stale" });
+    expect(stub.updates).toEqual([]);
+    stub.stored = [];
+  });
+
+  // THE WRITE CARRIES THE RULE TOO. The early read is a cheap refusal; an edit committing after it
+  // is caught by the update's own predicate, and the miss is reported as stale, not as a lost deck.
+  it("guards the write on a clean reading and reports a miss there as stale", async () => {
+    stub.profile = { brackets: {} };
+    stub.storedQueue = [[{ dirty: false }], [{ dirty: true }]];
+    stub.updateReturns = [];
+    expect(await declareBracket(DECK, 1)).toEqual({ ok: false, reason: "stale" });
+    expect(stub.wheres.at(-1)).toContain("dp.dirty");
+    stub.storedQueue = null;
   });
 });

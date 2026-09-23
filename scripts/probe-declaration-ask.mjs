@@ -2,8 +2,8 @@
 //
 // WHY A BROWSER. Four of its rulings are facts no component test can reach:
 //
-//   · THE CHIPS' SIZE. 38px tall and auto width on desktop, 44px and half the row each at 390,
-//     with the mark at 22 and 24. jsdom lays nothing out, so a class list reading `h-11` passes
+//   · THE CHIPS' SIZE. 36px tall and auto width on desktop, 44px and half the row each at 390,
+//     with the mark at 22 and 26. jsdom lays nothing out, so a class list reading `h-11` passes
 //     over an arbitrary value that never compiled.
 //   · THE ANSWER PERSISTS. A press writes `decks.declared_bracket` through the server action, and
 //     the only proof the write landed is reading the column back and reloading the page.
@@ -20,7 +20,7 @@
 // that is the drift state and no control can produce it on purpose. All four are deleted in a
 // `finally`; their cards cascade.
 //
-// TWO MUTATIONS WERE RUN AGAINST IT AND BOTH FAIL: the desktop chip at 40px rather than 38 (one
+// TWO MUTATIONS WERE RUN AGAINST IT AND BOTH FAIL: the desktop chip at 40px rather than its height (38 then, 36 since #887) (one
 // check), and the revalidation moved back inside the action, whose reply then measured 112,778
 // bytes against 90 (two checks, one per width).
 //
@@ -35,6 +35,7 @@ import { neon } from "@neondatabase/serverless";
 import { clerkSetup, setupClerkTestingToken } from "@clerk/testing/playwright";
 import { chromium } from "playwright";
 import { requireEnv } from "./lib/env.mjs";
+import { padToWhole } from "./lib/whole-deck.mjs";
 import { onPage, onPageRole, PAGE } from "./lib/surface.mjs";
 
 const { E2E_AUDIT_USER_EMAIL: EMAIL, DATABASE_URL } = requireEnv([
@@ -49,8 +50,8 @@ if (!EMAIL.includes("+clerk_test") && !PASSWORD) throw new Error("Set E2E_AUDIT_
 const sql = neon(DATABASE_URL);
 
 const WIDTHS = [
-  { label: 1300, viewport: { width: 1300, height: 900 }, chipH: 38, markPx: 22, nameFont: 13 },
-  { label: 390, viewport: { width: 390, height: 844 }, chipH: 44, markPx: 24, nameFont: 13.5 },
+  { label: 1300, viewport: { width: 1300, height: 900 }, chipH: 36, markPx: 22, nameFont: 13 },
+  { label: 390, viewport: { width: 390, height: 844 }, chipH: 44, markPx: 26, nameFont: 13.5 },
 ];
 
 let failures = 0;
@@ -125,6 +126,8 @@ async function buildFixtures(userId, made) {
     for (const g of gcs.slice(0, s.gc)) {
       await sql`insert into deck_cards (deck_id, oracle_id, quantity) values (${id}, ${g.oracle_id}, 1)`;
     }
+    // Whole, or the press is refused (ruling 1). Wastes moves no bracket fact.
+    await padToWhole(sql, id, s.gc);
     decks[s.key] = id;
   }
   return decks;
@@ -139,7 +142,7 @@ async function openAnalysis(p, deckId, label) {
   if (!report(`${label}px · the Analysis tab is drawn`, (await tab.count()) > 0,
       "absent means ANALYSIS_TAB_ENABLED is off on this server")) return false;
   await tab.first().click();
-  await onPageRole(p, "button", /Analyze this deck/).first().click();
+  await onPageRole(p, "button", /^(Re-)?[Aa]nalyze$/).first().click();
   const ready = await onPage(p, 'section[aria-label="Your bracket"]')
     .first().waitFor({ state: "visible", timeout: 25_000 }).then(() => true, () => false);
   return report(`${label}px · the verdict is drawn`, ready, ready ? "ready" : "no verdict after 25s");
@@ -162,10 +165,12 @@ async function walk(p, width, decks) {
         rowW: Math.round(row.width),
         chips: [...g.querySelectorAll("button")].map((b) => {
           const r = b.getBoundingClientRect();
-          const mark = b.querySelector('[data-testid="bracket-mark"]').getBoundingClientRect();
+          // Each chip draws one mark per width and hides the other; the drawn one is the reading.
+          const mark = [...b.querySelectorAll('[data-testid="bracket-mark"]')]
+            .map((m) => m.getBoundingClientRect()).find((r) => r.width > 0) ?? { width: 0 };
           const name = getComputedStyle(b.querySelector(":scope > span:last-child"));
           return {
-            text: b.textContent.trim(), h: Math.round(r.height), w: Math.round(r.width),
+            text: b.querySelector(":scope > span:last-child").textContent.trim(), h: Math.round(r.height), w: Math.round(r.width),
             mark: Math.round(mark.width), font: parseFloat(name.fontSize), weight: name.fontWeight,
             radius: getComputedStyle(b).borderTopLeftRadius,
           };
@@ -188,8 +193,10 @@ async function walk(p, width, decks) {
           Math.abs(chips.chips[0].w - chips.chips[1].w) <= 1 && Math.abs(sum - chips.rowW) <= 1,
           `${chips.chips[0].w} + ${chips.chips[1].w} + 8 against ${chips.rowW}`);
       } else {
-        report("1300px · the chips size to their content", chips.chips[0].w < chips.rowW / 3,
-          `${chips.chips[0].w}px of a ${chips.rowW}px row`);
+        // AUTO WIDTH: the pair leaves the row's remainder empty rather than splitting it.
+        const sum = chips.chips[0].w + chips.chips[1].w + 8;
+        report("1300px · the chips size to their content", sum < chips.rowW - 24,
+          `${chips.chips[0].w} + ${chips.chips[1].w} + 8 of a ${chips.rowW}px row`);
         // THE ONE HOVER THE PACKAGE DRAWS: `--elevated` and the bracket's full ink.
         const chip = group(p).first().locator("button").first();
         const before = await chip.evaluate((b) => getComputedStyle(b).backgroundColor);
@@ -222,8 +229,8 @@ async function walk(p, width, decks) {
     // THE FACE IS THE TITLE LINE, read alone: the range it replaced moves into the description
     // below, so the block's whole text still names it.
     const face = await onPage(p, 'section[aria-label="Your bracket"]').first().evaluate((el) => ({
-      title: el.querySelector("h3 + p")?.textContent,
-      marks: el.querySelectorAll(':scope > div [data-testid="bracket-mark"]').length,
+      title: el.querySelector('[data-testid="verdict-name"]')?.textContent,
+      marks: el.querySelectorAll('[data-testid="verdict-marks"] [data-testid="bracket-mark"]').length,
       split: el.textContent.includes("Split"),
     }));
     report(`${label}px · and resolves the face to one chip`,
@@ -252,7 +259,7 @@ async function walk(p, width, decks) {
 
   // ── The high range ───────────────────────────────────────────────────────────────────────
   if (await openAnalysis(p, decks.high, label)) {
-    const names = await group(p).first().locator("button").allTextContents().catch(() => []);
+    const names = await group(p).first().locator("button > span:last-child").allTextContents().catch(() => []);
     report(`${label}px · [4,5] asks Optimized or cEDH`, names.join("/") === "Optimized/cEDH", names.join("/"));
   }
 

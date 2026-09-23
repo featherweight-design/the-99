@@ -10,18 +10,42 @@ import {
 } from "../../app/decks/profile-actions";
 import type { DeckProfile } from "../../lib/profile/types";
 
+/** A reading the tab can draw: current, or HELD while stale, re-reading or refused. */
+export type Reading = {
+  profile: DeckProfile;
+  /** An ISO instant, drawn as the bracket box's `analyzed {when}`. */
+  analyzedAt: string;
+  /** The list analyzed is the deck's, and no edit since. False draws the 2i banner. */
+  fresh: boolean;
+  /** The version the reading is pinned to, for `analyzed with version n`. */
+  versionNumber: number | null;
+};
+
 export type ProfileState =
   /** Never asked for. No request has been made and none should be until the reader asks. */
   | { kind: "idle" }
-  | { kind: "loading" }
-  /** `analyzedAt` is an ISO instant, drawn as the bracket box's `analyzed {when}`. */
-  | { kind: "ready"; profile: DeckProfile; analyzedAt: string }
+  /** A press in flight. `held` is the reading on screen when it was made, which stays (2i). */
+  | { kind: "loading"; held: Reading | null; retry?: boolean }
+  | ({ kind: "ready" } & Reading)
   /** The flag is off. Nothing is wrong, and no surface may say otherwise. */
   | { kind: "disabled" }
   /** The deck is absent or not this reader's. */
   | { kind: "missing" }
-  /** The request itself failed. Distinct from `missing`: retrying is worth offering. */
-  | { kind: "failed" };
+  /** The request itself failed. Distinct from `missing`: retrying is worth offering. Over a held
+   *  reading this is 2d, and the reading stays whole. */
+  | { kind: "failed"; held: Reading | null }
+  /** The body is not a whole deck (ruling 1). A reading held from before stays. */
+  | { kind: "illegal"; built: number; size: number; held: Reading | null };
+
+/** The reading the tab draws in any state, held or current. */
+export function shownReading(state: ProfileState): Reading | null {
+  if (state.kind === "ready") return state;
+  if (state.kind === "loading" || state.kind === "failed" || state.kind === "illegal") return state.held;
+  return null;
+}
+
+const readingOf = (r: { profile: DeckProfile; analyzedAt: string; fresh: boolean; versionNumber: number | null }): Reading =>
+  ({ profile: r.profile, analyzedAt: r.analyzedAt, fresh: r.fresh, versionNumber: r.versionNumber });
 
 /**
  * The deck profile, fetched when the reader ASKS for it and held for the visit.
@@ -36,7 +60,7 @@ export type ProfileState =
  * across edits without leaving the route, so a once-per-visit automatic fetch would keep showing
  * a pre-edit profile for the rest of the visit while the server's fingerprint keying sat unused.
  * With the reader asking, an edited deck is re-asked about deliberately: an edit in the visit
- * drops the held reading back to `idle` (see `listKey`), and the tab offers Analyze again.
+ * marks the held reading STALE (see `listKey`), and the tab's banner offers Re-analyze (2i).
  *
  * WHAT TAB OPEN MAY DO is `peek`: ask whether an analysis the reader ALREADY pressed for is
  * stored, and show it if so. That computes nothing — a head read and a keyed lookup, and a miss
@@ -58,11 +82,9 @@ export function useDeckProfile(
   deckId: string,
   /**
    * The list the shell is drawing, as a stable string of its cards. A reading held for the visit
-   * describes the list it was made from, so when this moves the reading is dropped back to `idle`
-   * and the tab offers Analyze again — the same thing a reload shows, because the stored row is
-   * refused for a list it was not made from. The consolidated tab has no re-analyze control on a
-   * reading (the banner that offers one is the lifecycle round's), so without this an edit made
-   * in the same visit would leave the pre-edit bracket on screen with no way to ask again.
+   * describes the list it was made from, so when this moves the reading turns STALE, the same
+   * thing a reload shows: the stored row's `dirty` is set by the edit, and the peek answers it as
+   * stale. It is never withdrawn (the lifecycle rulings, 2026-09-23).
    */
   listKey?: string,
 ): {
@@ -126,8 +148,12 @@ export function useDeckProfile(
     inFlightFor.current = deckId;
     const mine = ++generation.current;
     const askedAbout = latestKey.current;
+    // THE READING ON SCREEN STAYS while the press runs, and through a failure or a refusal.
+    const held = shownFor === deckId ? shownReading(state) : null;
     setShownFor(deckId);
-    setState({ kind: "loading" });
+    // A press from 2d is a RETRY: the banner keeps saying the re-read failed, with its own
+    // button, while this one runs — it disables in place rather than changing what it says.
+    setState({ kind: "loading", held, retry: state.kind === "failed" });
     void (async () => {
       let result: ProfileFetch;
       try {
@@ -144,18 +170,29 @@ export function useDeckProfile(
         // And a reply that is not the newest, or is for a deck we are no longer showing,
         // neither renders nor unlocks.
         if (mine !== generation.current || current.current !== deckId) return;
-        setState({ kind: "failed" });
+        setState({ kind: "failed", held });
         return;
       }
       if (mine === generation.current) inFlightFor.current = null;
       if (mine !== generation.current || current.current !== deckId) return;
-      if (result.ok) {
+      // AN EDIT LANDED WHILE THE PRESS RAN. The server stores a reading only over the list it
+      // was asked about, so this answer may be one no reload will ever draw again; the header's
+      // chip ignores it for that reason (use-header-bracket.ts). The reading already on screen
+      // stays instead, stale, and the banner offers the press over the list as it now is.
+      if (result.ok && askedAbout !== latestKey.current && held) {
+        setReadyKey(latestKey.current);
+        setState({ kind: "ready", ...held, fresh: false });
+      }
+      else if (result.ok) {
         setReadyKey(askedAbout);
-        setState({ kind: "ready", profile: result.profile, analyzedAt: result.analyzedAt });
+        setState({ kind: "ready", ...readingOf(result) });
+      }
+      else if (result.reason === "illegal") {
+        setState({ kind: "illegal", built: result.built, size: result.size, held });
       }
       else setState({ kind: result.reason === "disabled" ? "disabled" : "missing" });
     })();
-  }, [deckId]);
+  }, [deckId, shownFor, state]);
 
   const peek = useCallback(() => {
     // A press for this deck still in flight outranks any stored copy: a reader who left and came
@@ -180,7 +217,7 @@ export function useDeckProfile(
       setShownFor(deckId);
       if (result.ok) {
         setReadyKey(askedAbout);
-        setState({ kind: "ready", profile: result.profile, analyzedAt: result.analyzedAt });
+        setState({ kind: "ready", ...readingOf(result) });
       }
       else setState({ kind: result.reason === "disabled" ? "disabled" : "missing" });
     })();
@@ -196,11 +233,12 @@ export function useDeckProfile(
   }
 
   // THE LIST CHANGED UNDER A READING. A reading carries the key captured when its request STARTED,
-  // so a reply for a list edited while it was in flight is dropped as surely as a reading edited
-  // after it landed. Adjusted during render for the same reason as the deck change above.
+  // so a reply for a list edited while it was in flight turns stale as surely as a reading edited
+  // after it landed. Stale, never dropped: the banner says so and offers Re-analyze (2i).
+  // Adjusted during render for the same reason as the deck change above.
   if (state.kind === "ready" && listKey !== undefined && readyKey !== listKey) {
     setReadyKey(listKey);
-    setState({ kind: "idle" });
+    if (state.fresh) setState({ ...state, fresh: false });
   }
 
   return { state, request, peek };

@@ -1,8 +1,8 @@
 "use server";
 
-import { eq, and } from "drizzle-orm";
+import { eq, and, sql } from "drizzle-orm";
 import { db } from "../../db";
-import { decks } from "../../db/schema";
+import { deckProfiles, decks } from "../../db/schema";
 import { requireUserId } from "../../lib/auth";
 import { isUuid } from "../../lib/uuid";
 import { revalidatePath } from "next/cache";
@@ -15,7 +15,7 @@ import { deckSurfaces } from "../../lib/decks/revalidate";
 
 export type DeclareResult =
   | { ok: true; declared: Bracket }
-  | { ok: false; reason: DeclarationRefusal["kind"] | "not-found" };
+  | { ok: false; reason: DeclarationRefusal["kind"] | "not-found" | "stale" };
 
 /**
  * Record what a player says their deck is.
@@ -66,6 +66,15 @@ export async function declareBracket(deckId: string, value: number): Promise<Dec
   // survives a bare `RegExp.test`.
   if (!isUuid(deckId)) return { ok: false, reason: "not-found" };
 
+  // A STALE READING TAKES NO ANSWER (§4.2, audit finding 12): the tab withholds the chips until
+  // the re-read, and this is the server's half of that rule. An answer given now would be about a
+  // reading the list has moved past.
+  const [stored] = await db
+    .select({ dirty: deckProfiles.dirty })
+    .from(deckProfiles)
+    .where(and(eq(deckProfiles.deckId, deckId), eq(deckProfiles.userId, userId)));
+  if (stored?.dirty) return { ok: false, reason: "stale" };
+
   const profile = await cachedDeckProfile(deckId, userId);
   // A deck the reader does not own reads as absent rather than as forbidden: `loadProfileHead`
   // scopes by `user_id`, so there is no state in which this returns another player's deck.
@@ -80,12 +89,28 @@ export async function declareBracket(deckId: string, value: number): Promise<Dec
 
   // Scoped by BOTH ids, so ownership is enforced by the statement rather than by the read above
   // having happened. The check constraint refuses anything but 1-5 or null underneath this.
+  //
+  // AND ON A CLEAN READING, in the same statement. The read above refuses early and cheaply, but an
+  // edit committing between it and this write would otherwise leave a declaration answering a
+  // reading the list has already moved past.
   const [row] = await db
     .update(decks)
     .set({ declaredBracket: value })
-    .where(and(eq(decks.id, deckId), eq(decks.userId, userId)))
+    .where(and(
+      eq(decks.id, deckId),
+      eq(decks.userId, userId),
+      sql`not exists (select 1 from ${deckProfiles} dp where dp.deck_id = ${decks}.id and dp.dirty)`,
+    ))
     .returning({ id: decks.id });
-  if (!row) return { ok: false, reason: "not-found" };
+  if (!row) {
+    // Matching nothing is either a deck that is not the reader's or a reading that went stale
+    // since the read above; the second is reported as itself.
+    const [now] = await db
+      .select({ dirty: deckProfiles.dirty })
+      .from(deckProfiles)
+      .where(and(eq(deckProfiles.deckId, deckId), eq(deckProfiles.userId, userId)));
+    return { ok: false, reason: now?.dirty ? "stale" : "not-found" };
+  }
 
   // The declaration is NOT in `profileFingerprint` (#797) — the profile does not read it — so no
   // cached profile goes stale here and nothing about this write needs one rebuilt. What does
