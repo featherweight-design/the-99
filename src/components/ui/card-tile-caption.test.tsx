@@ -56,7 +56,7 @@ describe("CardTileCaption — the shape both card views share", () => {
     expect(meta.textContent).not.toContain("TLE");
 
     const { container: bare } = render(<CardTileCaption name="Sol Ring" />);
-    expect(bare.querySelectorAll(".font-mono")).toHaveLength(1);
+    expect(bare.querySelector('[data-testid="tile-sub"]')).toBeNull();
     // A third line takes the taller floor, whose sum it is; the two-line caption keeps its own.
     expect(container.firstElementChild?.className).toContain(CARD_TILE_CAPTION_SUB_H);
     expect(bare.firstElementChild?.className).toContain(CARD_TILE_CAPTION_H);

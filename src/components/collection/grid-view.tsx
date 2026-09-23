@@ -98,10 +98,11 @@ export function GridView({
             }}
           />
 
-          {/* Caption. Everything that used to sit on the art is on the meta
-              line: the availability chip in the slot, then the count. The set
-              line right-aligns on that same line rather than taking a third row
-              — it is already mono `--fg-faint`, so it belongs there. */}
+          {/* Caption, three lines. Everything that used to sit on the art is on the
+              meta line: the availability chip, then the bracket marks and the combo
+              mark. The name follows with its count, and `SET · rarity` sits under it
+              as sub-text (`nameSub`) — it rode the meta line's right end until the
+              marks there pushed it off the tile (2026-09-23). */}
           <CardTileCaption
             meta={
               <>
