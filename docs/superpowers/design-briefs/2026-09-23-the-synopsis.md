@@ -16,14 +16,26 @@ This round asks: **what does a read-back of a finished deck look like, and how l
 
 ## §1 What changed since Round 0
 
-Round 0 drew the synopsis as **one sentence**, 15.5px in `--fg-body`, above the verdict, with five
-states around it. Hugh has since set the content bar with a reference: deckcheck's "Full Synopsis"
+Round 0 drew the synopsis as a short prose block (four sentences at most on desktop,
+`README.md` open item 2), 15.5px in `--fg-body`, **beside the verdict, not stacked** (`README.md`
+§3), with five states around it. Hugh has since set the content bar with a reference: deckcheck's "Full Synopsis"
 for a Kratos/Atreus deck, which runs to five sections and several screens. He asked for most of it.
-**A sentence cannot hold that, so this round redraws the synopsis as a short read in the tab that
-opens to a full one.**
+**Four sentences cannot hold that, so the synopsis becomes a short read in the tab that opens to a
+full one.**
+
+**It is drawn inside the Analysis-tab round already in progress**, not as a round of its own:
+that round is drawing the tab (the Overview paragraph in the slot and a *View full synopsis*
+entry point), and the modal that entry point opens belongs with it. **This brief is the
+modal's half**, and it is kept as its own section of that handoff so the audit can read it
+against §2 and §5 separately.
 
 The five states in `STATES-synopsis.md` stay as they are. What changes is what the *present* state
 holds, and that there is now a second place it is read.
+
+**One Round 0 rule is amended, not reversed.** `README.md` §3 ratified that *"analysis reads the
+live list, not the committed version"*. That still holds: the tab and the modal read the draft's
+synopsis, written against the live list. What §2.4 adds is that committing COPIES the current
+synopsis into the version, the same rule the declaration got on 2026-09-21.
 
 ## §2 Rulings, locked (Hugh, 2026-09-23)
 
@@ -54,9 +66,8 @@ holds, and that there is now a second place it is read.
 
 ### 3.1 The short read in the tab
 
-The Overview's opening, or a sentence distilled from it, in the slot Round 0 drew, and a control
-opening the full synopsis. How much of the Overview shows, and whether the tab shows anything else
-(a key-card strip, say), is Design's call.
+Already being drawn in the Analysis-tab round (§1). This brief asks only that the Overview there
+follows §2 and §5 too, and that its card names open the card, as the modal's do.
 
 ### 3.2 The full synopsis, as a fourth body in `ModalChrome`
 
@@ -64,16 +75,17 @@ Not a new modal. The receipt, combo and reasoning bodies already share one chrom
 row, one stacking rule for a card opened from inside it (the card sheet stacks, and the modal
 steps down to `--surface-sunken`) and one phone treatment. The synopsis joins them. **Every card
 name in the synopsis opens that card**, exactly as a name in a receipt does, and on a phone the
-header rule the reasoning established (the header is pinned to 43px and shown whole above a
-stacked card sheet) applies unchanged.
+header rule the receipt established in #863 and the reasoning inherited (the header is pinned
+to 43px and shown whole above a stacked card sheet) applies unchanged.
 
 ### 3.3 The states, carried into the modal
 
 The five states apply to the full synopsis too. Two need drawing inside the modal:
 - **Stale**: the old synopsis demoted and tagged, as in the tab.
 - **Refused**: here the count of failed claims (Round 0's *2 of 3 claims failed checking*)
-  becomes per-section, because with five sections one section can fail while four pass. **Does a
-  synopsis with one refused section show the other four?** That is open (§4).
+  becomes per-section, because one of the four sections (Overview, Primer, Key cards,
+  Weaknesses) can fail while the rest pass. **Does a synopsis with one refused section show the
+  other three?** That is open (§4).
 
 ### 3.4 A version's synopsis
 
@@ -82,17 +94,16 @@ rail), and how it reads as a record of that version rather than of the current d
 
 ## §4 Open for Design to call
 
-1. How much of the synopsis the tab shows, and the control that opens the rest.
-2. Section order and hierarchy inside the modal, and whether the Primer's three parts read as
+1. Section order and hierarchy inside the modal, and whether the Primer's three parts read as
    subsections or as peers.
-3. Length budgets per section, stated in lines at both widths. Engineering writes the prompt
+2. Length budgets per section, stated in lines at both widths. Engineering writes the prompt
    and the accept contract to those budgets. **A budget is a design value and is not loosened to
    make generation easier**; `commander_support.prose` is the precedent (see
    `design/design_handoff_the99_commander_explained/PROSE-one-string-two-surfaces.md` §9).
-4. A partially refused synopsis: show the passing sections with the failed one stated, or refuse
+3. A partially refused synopsis: show the passing sections with the failed one stated, or refuse
    the whole thing.
-5. Whether a version's synopsis is read in the rail, behind a control, or only in the modal.
-6. How the Mulligan part draws its keep/avoid pair.
+4. Whether a version's synopsis is read in the rail, behind a control, or only in the modal.
+5. How the Mulligan part draws its keep/avoid pair.
 
 ## §5 Locked, and not open
 
@@ -116,9 +127,11 @@ Recorded so the round is not asked about them:
 - **Themes.** The profile's theme slot is deliberately `null` (#724). The synopsis names the
   deck's strategy in prose, grounded in the cards it names, and never writes to or reads from a
   theme list.
-- **Cost.** One model call per press, shared client with #10 deck tuning, an hourly cap per
+- **Cost.** One model call per press, an hourly cap per
   player, and an unchanged list returns its stored synopsis instead of paying for new wording of
-  the same facts.
+  the same facts. No model client exists under `src/` yet (the only caller is
+  `scripts/generate-commander-prose.ts`, with its own `fetch`); whichever of the synopsis and #10
+  deck tuning builds first creates it neutrally, for both.
 - **Storage.** Keyed on the profile fingerprint, beside the stored analysis (#874), and copied
   into the version at commit.
 
