@@ -37,8 +37,10 @@ import ws from "ws";
 
 import { readCatalogGeneration } from "../src/lib/cache/catalog-generation";
 import { loadDeckProfile } from "../src/lib/profile/load";
+import { listDecksWithStats } from "../src/lib/decks/read";
 import {
   computeAndStoreProfile,
+  readStoredPermits,
   readStoredProfile,
   type StoredProfileDeps,
 } from "../src/lib/profile/stored";
@@ -119,6 +121,26 @@ async function run() {
   check("and computed nothing to do it", computes, 1);
   check("the permits are stored sorted and in range",
     first ? first.permits.every((p, i, a) => p >= 1 && p <= 5 && (i === 0 || a[i - 1] < p)) : false, true);
+
+  // 2b · The two chip readers agree with it: the header's permits read and the deck list's
+  // correlated subquery, which is where a bare column reference would read null for ever.
+  const current = await readCatalogGeneration();
+  const tile = async () =>
+    (await listDecksWithStats(USER, "name", { bracketCatalog: current })).find((d) => d.id === deck.id)
+      ?.bracket?.permits ?? null;
+  const header = await readStoredPermits(deck.id, USER, deps);
+  check("the header reads the stored permits", header, first?.permits);
+  check("the deck list reads the same permits", await tile(), first?.permits);
+  check("a list read against another catalog draws no chip",
+    (await listDecksWithStats(USER, "name", { bracketCatalog: "probe-another-catalog" }))
+      .find((d) => d.id === deck.id)?.bracket ?? null, null);
+  check("a list read with no catalog reads no bracket at all",
+    (await listDecksWithStats(USER, "name")).find((d) => d.id === deck.id)?.bracket ?? null, null);
+  // The list's stand-in for the fingerprint: an edit stamped after the analysis retires the chip.
+  await fixture.execute(sql`update decks set last_edited_at = now() + interval '1 second' where id = ${deck.id}::uuid`);
+  check("an edit stamped after the analysis retires the tile's chip", await tile(), null);
+  await fixture.execute(sql`update decks set last_edited_at = now() - interval '1 day' where id = ${deck.id}::uuid`);
+  check("and an edit before it does not", await tile(), first?.permits);
 
   // 3 · Another reader cannot read it.
   check("another reader reads it as absent", await readStoredProfile(deck.id, `${USER}-other`, deps), null);

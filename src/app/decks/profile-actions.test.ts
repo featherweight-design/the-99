@@ -15,6 +15,21 @@ const stub = vi.hoisted(() => ({
   reads: [] as string[],
   /** What a stored lookup finds. */
   stored: null as unknown,
+  revalidated: [] as string[],
+  deferred: 0,
+}));
+
+vi.mock("next/cache", () => ({
+  revalidatePath: (path: string) => stub.revalidated.push(path),
+}));
+
+// `after` runs its callback once the response is sent; here it runs it at once, so what is
+// asserted is that the action SCHEDULED the revalidation, and scheduled it through `after`.
+vi.mock("next/server", () => ({
+  after: (fn: () => void) => {
+    stub.deferred += 1;
+    fn();
+  },
 }));
 
 vi.mock("../../lib/decks/analysis-flag", () => ({
@@ -48,6 +63,8 @@ beforeEach(() => {
   stub.profile = { brackets: {} };
   stub.reads = [];
   stub.stored = null;
+  stub.revalidated = [];
+  stub.deferred = 0;
 });
 
 describe("fetchDeckProfile", () => {
@@ -94,6 +111,22 @@ describe("fetchDeckProfile", () => {
     stub.profile = null;
     expect(await fetchDeckProfile(DECK)).toEqual({ ok: false, reason: "not-found" });
     expect(stub.reads).toEqual(["auth", "profile"]);
+  });
+});
+
+describe("fetchDeckProfile — the deck list", () => {
+  // The tile's chip reads the row a press stores, so the press retires the `/decks` list the
+  // router may hold — through `after`, never during the action, or the reply carries the page.
+  it("retires /decks after a press, deferred", async () => {
+    await fetchDeckProfile(DECK);
+    expect(stub.revalidated).toEqual(["/decks"]);
+    expect(stub.deferred).toBe(1);
+  });
+
+  it("retires nothing when nothing was computed", async () => {
+    stub.profile = null;
+    await fetchDeckProfile(DECK);
+    expect(stub.revalidated).toEqual([]);
   });
 });
 

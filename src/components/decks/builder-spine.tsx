@@ -7,6 +7,7 @@ import type { DeckDetail } from "../../lib/decks/read";
 import { AvailabilityGlyph } from "@/components/ui/availability-marker";
 import { recommendationsCopy } from "../../lib/copy/recommendations";
 import { availabilityCopy } from "../../lib/copy/availability";
+import type { TileBracket } from "../../lib/decks/read";
 import { SpineDesktop } from "./spine-desktop";
 import { SpineMobile } from "./spine-mobile";
 import type { StatusPill } from "../../lib/decks/status";
@@ -52,6 +53,9 @@ interface BuilderSpineProps {
   status: StatusPill;
   /** Passed straight through to both widths — see `SpineBandProps`. */
   offerFirstCommit?: boolean;
+  /** The header's bracket chip, or null when the deck is unread. See `SpineBandProps`. */
+  bracket?: TileBracket | null;
+  onOpenBracket?: () => void;
 }
 
 // The seam in the doubled glyph is the colour of whatever sits behind it, and
@@ -258,6 +262,8 @@ export function BuilderSpine({
   onShowShopping,
   status,
   offerFirstCommit,
+  bracket = null,
+  onOpenBracket,
 }: BuilderSpineProps) {
   return (
     <>
@@ -267,6 +273,8 @@ export function BuilderSpine({
       status={status}
       onExport={onExport}
       offerFirstCommit={offerFirstCommit}
+      bracket={bracket}
+      onOpenBracket={onOpenBracket}
     />
     <SpineMobile
       deck={deck}
@@ -274,6 +282,8 @@ export function BuilderSpine({
       status={status}
       onExport={onExport}
       offerFirstCommit={offerFirstCommit}
+      bracket={bracket}
+      onOpenBracket={onOpenBracket}
     />
 
     {/* Below the spine and above the decklist, per the canvas: it is a claim

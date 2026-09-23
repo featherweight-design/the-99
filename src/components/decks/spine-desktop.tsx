@@ -22,6 +22,8 @@ import type { StatusPill } from "../../lib/decks/status";
 import { STATUS_TOKEN, statusBarStyle } from "../../lib/decks/status-style";
 import { FirstCommitOffer } from "./first-commit-offer";
 import { StatusPillBadge } from "./status-pill";
+import { SpineBracketChip } from "./bracket-chip";
+import type { TileBracket } from "../../lib/decks/read";
 import { useDeckRename } from "./use-deck-rename";
 import { ProxyTag } from "./proxy-tag";
 import { proxyCopy } from "../../lib/copy/proxies";
@@ -75,6 +77,13 @@ export interface SpineBandProps {
    *  one condition under which `Commit as v1` is offered. Computed by the shell,
    *  which owns `deckBodySize`, so neither spine reads the body count itself. */
   offerFirstCommit?: boolean;
+  /**
+   * The deck's bracket, drawn beside the status in the badge row (Round 0 §5), or null for a deck
+   * that has not been analyzed since its last edit: an unread deck draws no chip.
+   */
+  bracket?: TileBracket | null;
+  /** Pressing the chip lands on the Analysis tab. */
+  onOpenBracket?: () => void;
 }
 
 /** §B16 — the field's box, identical in all four editing states. Declared
@@ -106,6 +115,8 @@ export function SpineDesktop({
   status,
   onExport,
   offerFirstCommit,
+  bracket = null,
+  onOpenBracket,
 }: SpineBandProps) {
   const [renaming, setRenaming] = useState(false);
   const { commander, partner } = deck;
@@ -435,6 +446,7 @@ export function SpineDesktop({
               status={status}
               className="flex flex-none items-center rounded-[6px] px-[8px] py-[3px] font-mono text-[11px]"
             />
+            <SpineBracketChip bracket={bracket} onOpen={onOpenBracket} />
           </div>
 
           {/* The bar and its figure on ONE row, the figure to the bar's right:

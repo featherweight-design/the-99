@@ -38,6 +38,9 @@ import {
   type DeckUnresolvedRow,
 } from "./grouping";
 import { statusPill, type StatusPill } from "./status";
+import { chipAnswer } from "../bracket/chip-answer";
+import { isReachablePermits } from "../bracket/verdict-head";
+import { storedPermitsSql } from "../profile/stored-sql";
 import type { DeckSort } from "./sort";
 
 // ---------------------------------------------------------------------------
@@ -647,7 +650,24 @@ export type DeckListItem = {
    */
   proxiedCount: number;
   statusPill: StatusPill;
+  /**
+   * The deck's stored bracket, for the tile's chip — null when it has not been analyzed since its
+   * last edit, which draws no chip ("a deck we have not read draws no chip", Round 0 §5).
+   */
+  bracket: TileBracket | null;
 };
+
+export type TileBracket = { permits: Bracket[]; answered: Bracket | null };
+
+/** The stored range and the declaration that answers it, if one does. */
+export function tileBracket(
+  permits: readonly number[] | null,
+  declared: number | null,
+): TileBracket | null {
+  if (!permits || !isReachablePermits(permits)) return null;
+  const range = permits;
+  return { permits: range, answered: chipAnswer(range, (declared as Bracket | null) ?? null) };
+}
 
 /**
  * A `timestamp` column read through raw SQL, which carries none of the column
@@ -854,6 +874,15 @@ export async function listDecksWithStats(
      * null `commanderPrintedName`, which is what every row carried before.
      */
     includeCommanderArt?: boolean;
+    /**
+     * The catalog generation to read each deck's STORED bracket against, or absent to read none.
+     *
+     * Passed in rather than read here because `catalogGeneration` is request-cached and this
+     * loader is also called from scripts, where that cache raises. `/decks` is the one caller
+     * that draws the tile's bracket chip, so it is the one that passes it. With it absent every
+     * row's `bracket` is null, which is what a deck nobody has analyzed draws: no chip.
+     */
+    bracketCatalog?: string;
   } = {},
 ): Promise<DeckListItem[]> {
   const ownedCountSql = sql<number>`coalesce(
@@ -945,6 +974,11 @@ export async function listDecksWithStats(
       versionNumber: opts.includeDeckState
         ? newestVersionNumberSql
         : sql<number | null>`null::int`,
+      bracketPermits:
+        opts.bracketCatalog === undefined
+          ? sql<number[] | null>`null::int[]`
+          : storedPermitsSql(opts.bracketCatalog),
+      declaredBracket: decks.declaredBracket,
     })
     .from(decks)
     .innerJoin(cards, eq(decks.commanderOracleId, cards.oracleId))
@@ -1124,6 +1158,7 @@ export async function listDecksWithStats(
       versionNumber: row.versionNumber === null ? null : Number(row.versionNumber),
       inUseElsewhere: inUseElsewhere.get(row.id) ?? 0,
       statusPill: pill,
+      bracket: tileBracket(row.bracketPermits, row.declaredBracket),
     };
   });
 }

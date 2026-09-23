@@ -22,6 +22,7 @@ import { STATUS_TOKEN, statusBarStyle } from "../../lib/decks/status-style";
 import { FirstCommitOffer } from "./first-commit-offer";
 import { type SpineBandProps, TRUNCATES } from "./spine-desktop";
 import { StatusPillBadge } from "./status-pill";
+import { SpineBracketChip } from "./bracket-chip";
 import { useDeckRename } from "./use-deck-rename";
 import { ProxyTag } from "./proxy-tag";
 import { proxyCopy } from "../../lib/copy/proxies";
@@ -37,6 +38,8 @@ export function SpineMobile({
   status,
   onExport,
   offerFirstCommit,
+  bracket = null,
+  onOpenBracket,
 }: SpineBandProps) {
   const [renaming, setRenaming] = useState(false);
   // No measurement, and no clamp. `-webkit-line-clamp` requires
@@ -101,6 +104,7 @@ export function SpineMobile({
         // pixel past the ramp keyed to it.
         className="flex h-[22px] flex-none items-center rounded-[6px] px-[7px] font-mono text-[10px]"
       />
+      <SpineBracketChip bracket={bracket} onOpen={onOpenBracket} />
       {/* The pips, between the chip and the names — the same adjacency desktop
           draws (pips then names), with the chip moved to the front of the line.
           They cost 62px at five colours against this row's 314px, which is about

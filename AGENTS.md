@@ -406,6 +406,29 @@ Package manager is **pnpm** (pinned via `packageManager` in package.json) — ne
   deps, because `unstable_cache` raises outside a request, so the probe exercises this module's
   SQL rather than a copy of it. Same fixture discipline as `probe:claims`: a per-run `user_id`
   deleted in a `finally`, `local-dev` or a scratch branch, **never production**.
+
+  It also proves the two BRACKET CHIP readers: `readStoredPermits` (the deck header, under the
+  same three stamps) and `storedPermitsSql`, the deck list's correlated subquery. The list cannot
+  afford the fingerprint, a hash over every card in every deck, so it stands in
+  `decks.last_edited_at`: an analysis computed before the deck's last edit draws no chip. That
+  errs quiet (a rename also moves the stamp and drops the tile's chip until the next analysis) and
+  never shows a bracket for cards the analysis did not read. With the stamp clause removed, the
+  "edit stamped after the analysis" check reads `[4,5]` against `null`.
+- `pnpm probe:bracket-chip` walks the bracket chip on the deck tile and in the deck header at
+  1300x900 and 390x844: the header draws it on a FRESH load, from the stored analysis, before any
+  tab is pressed; both copies are the 22px line and share the status pill's line rather than
+  pushing a second one (or, on the ~190-230px tiles of the 640-1000px grid, wraps below the
+  pill); nothing paints over the bar, whose track keeps a 40px floor; the tile's copy stays inside
+  its tile; and pressing the header's lands on the Analysis tab. It runs at 1300, 700 and 390,
+  because 700 is the width where the bar collapsed to 0px before the floor. Two traps it hit, both by running it: the tile's footer is NOT inside the
+  tile's link, so a chip searched under `a[href]` reads 0; and both header widths stay mounted,
+  so `querySelector` returns the hidden desktop copy at 390 and the phone reads 0 chips on a build
+  that draws one. It searches every host and keeps the visible ones. With the phone header's chip
+  unmounted, the 390 header check fails; with the bar's floor reverted, the 700 bar reads 0px.
+  It NEVER EDITS A DECK: the rule that an edit or a change of deck retires the header chip is
+  `use-header-bracket.test.tsx`'s. Pressing Analyze upserts one `deck_profiles` row, which the
+  `finally` puts back as it was, each cleanup step on its own so one failing cannot skip the
+  rest. Point it at `local-dev`, **never production**.
 - `pnpm probe:claims` proves the deck claim model against a real Postgres by calling the real
   `loadAvailability` — a committed version holds its cards against every other deck's draft, an
   uncommitted removal still claims, and per-card `since` decides between two committed decks. The

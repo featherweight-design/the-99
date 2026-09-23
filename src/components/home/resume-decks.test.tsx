@@ -28,6 +28,7 @@ const deck = (o: Partial<DeckListItem> = {}): DeckListItem => ({
   folderId: null,
   folderName: null,
   statusPill: "To buy",
+  bracket: null,
   ...o,
 });
 

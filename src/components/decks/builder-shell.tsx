@@ -16,6 +16,9 @@ import type { DeckSuggestionWithFacts } from "../../lib/decks/suggest";
 import { BuilderSpine } from "./builder-spine";
 import { AnalysisPanel, SynopsisSlot } from "./analysis-panel";
 import { useDeckProfile } from "./use-deck-profile";
+import { useHeaderBracket } from "./use-header-bracket";
+import { chipAnswer } from "../../lib/bracket/chip-answer";
+import type { Bracket } from "../../lib/bracket/types";
 import { useDeclaration } from "./use-declaration";
 import { RoleCounterStrip } from "./role-counter-strip";
 import { ArrivalStrip } from "./arrival-strip";
@@ -166,6 +169,8 @@ interface BuilderShellProps {
   /** `ANALYSIS_TAB_ENABLED` — whether this deployment draws the Analysis tab AND moves the
    *  Recommended mix strip into it. Off is today's layout, exactly. */
   analysisEnabled?: boolean;
+  /** The stored analysis's permitted range, for the header's bracket chip; null when unread. */
+  storedPermits?: Bracket[] | null;
 }
 
 // The Games tab's default: a deck nobody has logged against. Hoisted so the
@@ -203,6 +208,7 @@ export function BuilderShell({
   versions = [],
   initialView = "deck",
   analysisEnabled = false,
+  storedPermits = null,
 }: BuilderShellProps) {
   // UI state
   const [filter, setFilter] = useState<"all" | "shopping">("all");
@@ -295,6 +301,19 @@ export function BuilderShell({
     keepAllOptimisticAuto,
   } = useOptimisticDeckCards(deck.cards, deck.unresolvedRows);
   const counts = deckCounts(cards, unresolvedCount);
+
+  // THE HEADER'S BRACKET, retired by an edit or a change of deck; see `useHeaderBracket`.
+  const headerPermits = useHeaderBracket({
+    deckId: deck.id,
+    cards,
+    storedPermits,
+    readyProfile: profile.state.kind === "ready" ? profile.state.profile : null,
+    loading: profile.state.kind === "loading",
+  });
+  const headerBracket =
+    analysisEnabled && headerPermits
+      ? { permits: headerPermits, answered: chipAnswer(headerPermits, declaration.declared) }
+      : null;
   // Printed CARDS, commanders included — the same figure the `/decks` tile
   // draws, counted here off the rows the page already holds so the two surfaces
   // cannot disagree about one deck. Distinct marks, never copies: one mark on a
@@ -837,6 +856,8 @@ export function BuilderShell({
               // optimistic counts and would otherwise disagree with the page
               // around it mid-edit.
               status={serverStatus}
+              bracket={headerBracket}
+              onOpenBracket={() => setView("analysis")}
               // State 2: a list that has never been committed and has reached a
               // full body.
               //

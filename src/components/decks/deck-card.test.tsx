@@ -30,6 +30,7 @@ const deck = (over: Partial<DeckListItem> = {}): DeckListItem => ({
   pendingChanges: 0,
   versionNumber: null,
   statusPill: "To buy",
+  bracket: null,
   lastPlayedAt: daysBefore(2),
   lastEditedAt: new Date("2026-09-01T00:00:00Z"),
   lastCommittedAt: null,
@@ -550,7 +551,8 @@ describe("DeckCard — the progress sentence", () => {
     expect(band.textContent).not.toContain("To buy");
 
     const chip = screen.getByText("To buy");
-    expect(chip.className).toContain("[grid-area:chip]");
+    // The pill sits in the chip cell's flex group, which it shares with the bracket chip.
+    expect(chip.parentElement!.className).toContain("[grid-area:chip]");
     expect(chip.className).not.toContain("absolute");
     expect(container.querySelector(".deck-card-footer")?.contains(chip)).toBe(true);
   });
@@ -563,6 +565,42 @@ describe("DeckCard — the progress sentence", () => {
     const footer = container.querySelector<HTMLElement>(".deck-card-footer")!;
     expect(footer.querySelectorAll('[aria-hidden="true"]')).toHaveLength(0);
     expect(footer.className).not.toContain("pips");
+  });
+});
+
+describe("DeckCard — the bracket chip", () => {
+  const card = (bracket: DeckListItem["bracket"]) =>
+    render(<DeckCard folders={[]} onCreateFolder={() => {}} say={() => {}} onMoved={() => {}} keepsFocus closeAfterCreate={null} deck={deck({ bracket })} shopping={undefined} now={now} />);
+
+  // Round 0 §5: "a deck we have not read draws no chip", not a dash.
+  it("draws no chip for a deck that has not been read", () => {
+    card(null);
+    expect(screen.queryByTestId("bracket-chip")).toBeNull();
+  });
+
+  it("draws the chip immediately after the status pill, in the same cell", () => {
+    card({ permits: [3], answered: null });
+    const chip = screen.getByTestId("bracket-chip");
+    const status = screen.getByText("To buy");
+    expect(chip.parentElement).toBe(status.parentElement);
+    expect(status.nextElementSibling).toBe(chip);
+    expect(chip.textContent).toContain("Upgraded");
+  });
+
+  // The footer is aria-hidden, so the link's name has to carry the chip or it is visual-only.
+  it("names the bracket in the tile link's accessible name", () => {
+    card({ permits: [1, 2], answered: null });
+    expect(screen.getByRole("link", { name: /To buy, bracket Exhibition or Core,/ })).toBeTruthy();
+  });
+
+  it("draws a range as one Split chip, and an answered range as the answer", () => {
+    const { unmount } = card({ permits: [1, 2], answered: null });
+    expect(screen.getByTestId("bracket-chip").textContent).toContain("Split");
+    expect(screen.getAllByTestId("bracket-mark")).toHaveLength(2);
+    unmount();
+    card({ permits: [1, 2], answered: 2 });
+    expect(screen.getByTestId("bracket-chip").textContent).toContain("Core");
+    expect(screen.getAllByTestId("bracket-mark")).toHaveLength(1);
   });
 });
 

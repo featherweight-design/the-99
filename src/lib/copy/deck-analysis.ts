@@ -140,6 +140,11 @@ export const deckAnalysisCopy = {
     retry: "Try again",
   },
 
+  /** The bracket chip in the deck header, which opens the Analysis tab. Spoken only. */
+  chip: {
+    open: (face: string) => `Bracket: ${face}. Open the analysis`,
+  },
+
   /**
    * The verdict block — the head Round 2 draws, and the chrome rounds 3 and 4 sit inside.
    *

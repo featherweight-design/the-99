@@ -6,21 +6,10 @@ import { slotDeck } from "../bracket/slot";
 import { catalogGeneration } from "../cache/catalog-generation";
 import { profileFingerprint } from "./fingerprint";
 import { cachedDeckProfile, readProfileHead } from "./load";
+import { STORED_PROFILE_MAX_AGE_DAYS } from "./stored-sql";
+import type { Bracket } from "../bracket/types";
+import { isReachablePermits } from "../bracket/verdict-head";
 import type { DeckProfile } from "./types";
-
-/**
- * How long a stored analysis is shown before it is treated as absent.
- *
- * A WEEK, because that is the cadence of the inputs the fingerprint cannot see. The fingerprint
- * covers the deck's own cards and commanders and the catalog generation covers the Monday card
- * ingest, but the Spellbook combo index refreshes weekly and the commander index monthly, and
- * neither stamps anything this row can be compared against. A week bounds how long a stored row
- * can outlive a refresh it cannot see, give or take the hour `cachedDeckProfile` may have held
- * the profile before the press stored it (`computed_at` is when it was STORED, not built). Past
- * that it is not shown, and the reader presses again, which is the same state as never having
- * analyzed.
- */
-export const STORED_PROFILE_MAX_AGE_DAYS = 7;
 
 /**
  * The two cached reads this module sits on, injectable because both wrap `unstable_cache`,
@@ -50,6 +39,34 @@ export async function readStoredProfile(
   userId: string,
   deps: StoredProfileDeps = REQUEST_DEPS,
 ): Promise<DeckProfile | null> {
+  const row = await readFreshRow(deckId, userId, deps, true);
+  return row?.profile ?? null;
+}
+
+/**
+ * The stored verdict's permitted range alone, under exactly the rule `readStoredProfile` applies.
+ *
+ * The deck header's bracket chip reads this rather than the whole profile, which is a document
+ * the page would otherwise ship on every load to draw one pill.
+ */
+export async function readStoredPermits(
+  deckId: string,
+  userId: string,
+  deps: StoredProfileDeps = REQUEST_DEPS,
+): Promise<Bracket[] | null> {
+  const row = await readFreshRow(deckId, userId, deps, false);
+  // Fails closed on a shape no writer produces; see `isReachablePermits`.
+  return row && isReachablePermits(row.permits) ? row.permits : null;
+}
+
+/** The one freshness rule, for every reader of a single deck's row. */
+async function readFreshRow(
+  deckId: string,
+  userId: string,
+  deps: StoredProfileDeps,
+  /** The profile document is read only by the caller that ships it. */
+  withProfile: boolean,
+) {
   const [catalog, row] = await Promise.all([
     deps.generation(),
     // ONE SNAPSHOT for the head and the row. Read apart, an edit committing between them pairs
@@ -60,7 +77,11 @@ export async function readStoredProfile(
         const head = await readProfileHead(tx, deckId, userId);
         if (!head) return null;
         const rows = await tx
-          .select({ profile: deckProfiles.profile, catalog: deckProfiles.catalog })
+          .select({
+            profile: withProfile ? deckProfiles.profile : sql<DeckProfile | null>`null`,
+            permits: deckProfiles.permits,
+            catalog: deckProfiles.catalog,
+          })
           .from(deckProfiles)
           .where(
             and(
@@ -78,7 +99,7 @@ export async function readStoredProfile(
   ]);
   // The catalog is compared here rather than in the WHERE because the generation is itself a
   // cached read, and running it beside the lookup is the point of the `Promise.all`.
-  return row && row.catalog === catalog ? row.profile : null;
+  return row && row.catalog === catalog ? row : null;
 }
 
 /**

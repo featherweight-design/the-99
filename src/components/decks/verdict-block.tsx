@@ -15,7 +15,7 @@ import { deckAnalysisCopy, BRACKET_NAMES, nameList } from "../../lib/copy/deck-a
 import { declarationAsk } from "../../lib/bracket/declaration-ask";
 import { versionComparison } from "../../lib/bracket/version-reading";
 import { declarationCopy } from "../../lib/copy/declaration";
-import { BracketMark, bracketInk } from "./bracket-mark";
+import { BracketChip } from "./bracket-chip";
 import { DeclarationSection, type DeclarationControl } from "./declaration";
 
 /**
@@ -74,8 +74,6 @@ export function VerdictBlock({
   const answered = ask?.kind === "answered" ? ask.declared : null;
   const head = verdictHead(verdict.permits, answered);
   const subLine = verdictSubLine(verdict);
-  const low = head.chip;
-  const high = verdict.permits[verdict.permits.length - 1];
   const copy = deckAnalysisCopy.verdict;
   return (
     <section
@@ -95,30 +93,13 @@ export function VerdictBlock({
           lower bracket's ink — `verdictHead.chip`, which on an answered range is the answer and
           draws one mark. Listing the two ranges instead would leave a third inkless.
         */}
-        <span
-          className="inline-flex items-center gap-[7px] rounded-full border py-0.5 pl-1 pr-[11px]"
-          style={{ borderColor: `color-mix(in oklab, ${bracketInk(low)} 55%, transparent)` }}
-        >
-          <BracketMark bracket={low} px={MARK_PX} mdPx={MARK_PX_MD} />
-          {head.split ? (
-            <>
-              <span
-                aria-hidden="true"
-                className="font-mono text-[11px] opacity-70 md:text-[12px]"
-                style={{ color: bracketInk(low) }}
-              >
-                /
-              </span>
-              <BracketMark bracket={high} px={MARK_PX} mdPx={MARK_PX_MD} dim />
-            </>
-          ) : null}
-          <span
-            className="text-[11.5px] font-medium"
-            style={{ color: bracketInk(low) }}
-          >
-            {head.split ? copy.splitChip : BRACKET_NAMES[low]}
-          </span>
-        </span>
+        <BracketChip
+          permits={verdict.permits}
+          answered={answered}
+          px={MARK_PX}
+          mdPx={MARK_PX_MD}
+          className="gap-[7px] py-0.5 pl-1 pr-[11px]"
+        />
       </div>
       {answered === null ? (
         <SubLine reading={subLine} />

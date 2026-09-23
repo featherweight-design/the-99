@@ -13,6 +13,9 @@ import { formatWhen } from "../../lib/format/when";
 import { ArtWash, INK_SHADOW } from "../ui/art-wash";
 import { DeckCardOverflow } from "./deck-card-overflow";
 import { StatusPillBadge } from "./status-pill";
+import { BracketChip, CHIP_MARK_PX } from "./bracket-chip";
+import { verdictHead } from "../../lib/bracket/verdict-head";
+
 import { proxyCopy } from "../../lib/copy/proxies";
 
 /**
@@ -284,19 +287,25 @@ export function DeckCard({
   // commanders: the visible line shortens them to fit and the accessible name
   // never does — truncation is a layout compromise, not an information one.
   const identity = `${deck.partnerName === null ? commanderName : `${commanderName} and ${deck.partnerName}`}, ${colour}`;
+  const spokenStatus = deck.bracket
+    ? refreshCopy.decks.statusWithBracket(
+        deck.statusPill,
+        verdictHead(deck.bracket.permits, deck.bracket.answered).face,
+      )
+    : deck.statusPill;
   const ariaLabel =
     detail === null
       ? refreshCopy.decks.cardAriaNoDetail(
           deck.name,
           identity,
-          deck.statusPill,
+          spokenStatus,
           count,
           hasLastPlayed ? lastPlayed : undefined,
         )
       : refreshCopy.decks.cardAria(
           deck.name,
           identity,
-          deck.statusPill,
+          spokenStatus,
           count,
           detail.text,
           hasLastPlayed ? lastPlayed : undefined,
@@ -500,14 +509,36 @@ export function DeckCard({
                 // while the other two stood empty.
                 : "[grid-template-areas:'chip_bar_count''detail_detail_detail']"
         }`}
-        style={{ gridTemplateColumns: "auto 1fr auto", borderTop: "1px solid var(--border)" }}
+        // The bar's track has a 40px FLOOR. The chip cell wraps on a narrow tile, and a wrapping
+        // cell's max-content is both pills side by side, which an `auto` track takes whole when it
+        // can: the bar's `1fr` then resolved to 0px at 700 wide and the tile lost its progress.
+        style={{ gridTemplateColumns: "auto minmax(40px, 1fr) auto", borderTop: "1px solid var(--border)" }}
       >
         {/* In flow rather than pinned to art, so the box is a prop and the fill
             and the label stay written once. */}
-        <StatusPillBadge
-          status={deck.statusPill}
-          className="[grid-area:chip] flex h-[22px] flex-none items-center rounded-[6px] px-[8px] font-mono text-[10.5px] tracking-[0.06em]"
-        />
+        {/* The chip cell: the status, then the bracket when the deck has been read since its
+            last edit (Round 0: "immediately after StatusPillBadge", and absent when unread). One
+            flex group so the two share the pill's 22px line and the bar's track starts after
+            both. It WRAPS, and keeps its min-content: from 640px up a tile is ~189px, which
+            cannot hold the pill, a Split chip, the bar and the count on one line, and a cell
+            allowed to shrink below its pills paints them over the bar. Wrapped, the chip takes
+            a second line inside the cell instead. */}
+        <span className="[grid-area:chip] flex flex-wrap items-center gap-x-[8px] gap-y-[6px]">
+          <StatusPillBadge
+            status={deck.statusPill}
+            className="flex h-[22px] flex-none items-center rounded-[6px] px-[8px] font-mono text-[10.5px] tracking-[0.06em]"
+          />
+          {deck.bracket ? (
+            <BracketChip
+              permits={deck.bracket.permits}
+              answered={deck.bracket.answered}
+              px={CHIP_MARK_PX}
+              className="h-[22px] flex-none gap-[4px] pl-[1px] pr-[8px]"
+              labelClassName="text-[11px] font-medium"
+              slashClassName="font-mono text-[10px] opacity-70"
+            />
+          ) : null}
+        </span>
 
         {detail !== null && (
           <span
