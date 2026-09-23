@@ -170,16 +170,25 @@ section.
   - `fetchDeckProfile` refuses with `{ reason: "illegal" }` unless the body count equals
     `deckBodySize(partner)`. This is the same test `commitDeckVersion` already applies.
   - **The surface for this refusal is undrawn. See question 1.**
-- **Pinned at commit (ruling 2).** `commitSnapshotFor` runs the profile under the commit's lock
-  today, but only when a declaration exists. It now always runs, and the commit writes the
-  profile into `deck_profiles` with a new `version_id` column pointing at the version.
+- **Pinned at commit (ruling 2).** The commit writes the version's id into `deck_profiles` through
+  a new `version_id` column.
+  - **As built:** the pin runs in `after()`, not under the commit's lock. Holding the lock through
+    a 630ms-to-2.2s analysis on every commit was the plan's cost, and it bought nothing: the
+    commit hands the pin the fingerprint of the list it froze, and the pin writes nothing if the
+    deck no longer holds that list. `commitSnapshotFor` keeps its declared-only gate.
   - When the stored fingerprint already matches, nothing is recomputed. The row's `version_id`
     is set and `dirty` is cleared.
-  - A commit is legal by construction, because it already enforces the body size.
+  - **Correction:** a commit is NOT legal by construction. Only a first version enforces the body
+    size, and later commits may be any size. So the pin runs `computeAndStoreProfile`, which
+    refuses an illegal body, and a version that is not a whole deck is not pinned.
   - This gives finding 7 its data: the row carries `version_id`, and the date line reads
     `analyzed with version n` when the fingerprint matches and the deck is clean at version n.
 - **The chip holds (ruling 4).**
   - `readStoredPermits` drops its fingerprint and age checks.
+  - **As built:** a document an older `PROFILE_VERSION` wrote is never SHOWN, since version.ts
+    records that an old shape reads NaN. On a clean legal deck the read rebuilds it quietly. On a
+    dirty or illegal deck it reads as nothing until the next press. The chip readers still return
+    its permits, which are two integers.
   - `storedPermitsSql` drops the `computed_at >= decks.last_edited_at` clause, so both the tile
     and the header show the last analyzed bracket.
   - `use-header-bracket.ts`'s hide-on-edit rule is reversed in C2. This PR only changes what the
@@ -213,6 +222,12 @@ section.
   en-US per finding 14), and stale.
 - **A dirty range withholds its declaration chips (§4.2, finding 12).** Any existing answer
   stays. `declareBracket` refuses on a dirty profile as the server-side guard.
+- **A press names its version (build amendment, agreed with the-99-d9, 2026-09-23).** When a press
+  runs on a draft equal to the deck's newest version (clean at version n), the reading is pinned
+  to that version. A reading of an unchanged committed list IS that version's reading. This
+  repairs a failed `after()` pin from a commit, and names a reading for versions committed before
+  C1. It is guarded like the commit pin: the reading's list fingerprint must equal the version's
+  list, or nothing is written.
 - **The header and the tile hold the last bracket.** `use-header-bracket.ts`'s hide-on-edit rule
   is reversed, and its test is rewritten.
 - **Files:**

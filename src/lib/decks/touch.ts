@@ -41,9 +41,9 @@
 //     arrives already stamped and an explicit call here would be a second
 //     writer for the same instant.
 
-import { eq, sql } from "drizzle-orm";
+import { and, eq, sql } from "drizzle-orm";
 import { db } from "../../db";
-import { decks } from "../../db/schema";
+import { deckProfiles, decks } from "../../db/schema";
 
 type Tx = Parameters<Parameters<typeof db.transaction>[0]>[0];
 
@@ -74,4 +74,11 @@ type Tx = Parameters<Parameters<typeof db.transaction>[0]>[0];
 export async function touchDeck(tx: Tx, deckId: string): Promise<void> {
   await tx.update(decks).set({ lastEditedAt: sql`clock_timestamp()` })
     .where(eq(decks.id, deckId));
+  // AND THE ANALYSIS GOES STALE, in the same transaction. Every list edit comes through here, so
+  // this is the one place `dirty` can be set without a list of sites to keep in step. The
+  // `not dirty` guard skips the write on a row already marked, and a deck never analyzed has no
+  // row to mark. A rename writes `last_edited_at` inline and never reaches this, which is right:
+  // a rename changes no card the analysis read.
+  await tx.update(deckProfiles).set({ dirty: true })
+    .where(and(eq(deckProfiles.deckId, deckId), eq(deckProfiles.dirty, false)));
 }

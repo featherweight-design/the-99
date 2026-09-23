@@ -82,6 +82,8 @@ const stub = vi.hoisted(() => {
     deleteCalls: [] as { table: string; id: string | null }[],
     // Every path passed to revalidatePath, in order
     revalidated: [] as string[],
+    /** Callbacks handed to `after()`, run by the test that wants them. */
+    afters: [] as (() => unknown)[],
     // Lines the deck's import never matched a card for. Only the first-version
     // guard reads this: they are not `deck_cards` rows, so no card count sees
     // them, and a v1 frozen over them silently drops them.
@@ -416,6 +418,10 @@ vi.mock("../commanders/[slug]/synergy-read", () => ({
 // profile — 630ms against a real database — and what is under test is whether the snapshot
 // REACHES `commitVersion`, which is exactly what shipped broken.
 vi.mock("../../lib/profile/load", () => ({ cachedDeckProfile: vi.fn() }));
+// The pin after a commit (ruling 2) is a whole analysis; what these tests own is that the commit
+// SCHEDULES it, off its own path, for the version it wrote.
+vi.mock("../../lib/profile/stored", () => ({ pinAnalysisToVersion: vi.fn() }));
+vi.mock("next/server", () => ({ after: (fn: () => unknown) => stub.state.afters.push(fn) }));
 vi.mock("../../lib/bracket/slot", () => ({ slotDeck: vi.fn(() => ({ permits: [1, 2] })) }));
 
 vi.mock("../../lib/decks/versions", () => ({
@@ -1244,6 +1250,7 @@ const aVersion = () => ({
 });
 
 const { cachedDeckProfile } = await import("../../lib/profile/load");
+const { pinAnalysisToVersion } = await import("../../lib/profile/stored");
 const { slotDeck } = await import("../../lib/bracket/slot");
 
 describe("commitDeckVersion", () => {
@@ -1251,6 +1258,7 @@ describe("commitDeckVersion", () => {
     vi.clearAllMocks();
     stub.state.revalidated.length = 0;
     stub.state.deleteCalls.length = 0;
+    stub.state.afters.length = 0;
     vi.mocked(newestVersion).mockResolvedValue(aVersion());
     vi.mocked(versionCards).mockResolvedValue([]);
     vi.mocked(loadAvailability).mockResolvedValue(new Map());
@@ -1280,6 +1288,28 @@ describe("commitDeckVersion", () => {
     expect(commitVersion).toHaveBeenCalledWith(
       DECK_ID, null, expect.anything(), { declared: 2, permits: [1, 2] },
     );
+  });
+
+  // RULING 2: the commit pins the analysis to the version it wrote, in `after()` so the reader is
+  // not held on a 2.2s analysis, and with the fingerprint of the list it froze so a later edit
+  // cannot be pinned to it.
+  it("schedules the pin for the version it wrote, off its own path", async () => {
+    stub.state.decks.push({
+      id: DECK_ID, userId: USER_ID, commanderOracleId: CMD, declaredBracket: null,
+    });
+    await commitDeckVersion(DECK_ID, null);
+    expect(pinAnalysisToVersion).not.toHaveBeenCalled();
+    expect(stub.state.afters).toHaveLength(1);
+    await stub.state.afters[0]();
+    expect(pinAnalysisToVersion).toHaveBeenCalledWith(
+      DECK_ID, USER_ID, { versionId: VERSION_ID, list: expect.stringMatching(/^[0-9a-f]{16,}$/) },
+    );
+  });
+
+  it("schedules no pin when the commit is refused", async () => {
+    stub.state.decks.length = 0;
+    await commitDeckVersion(DECK_ID, null);
+    expect(stub.state.afters).toHaveLength(0);
   });
 
   // GATED ON HAVING DECLARED ANYTHING. Deriving permits costs a whole profile — 630ms median,

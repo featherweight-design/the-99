@@ -1,24 +1,26 @@
 // The stored deck analysis, proved against a real Postgres.
 //
 // WHAT ONLY A DATABASE CAN ANSWER HERE. The hook's peek and the action's refusals are unit
-// tested with this module mocked out; what those tests cannot reach is whether the row is
-// written, whether each of the three stamps actually retires it, and whether deleting the deck
-// takes the row with it. Those are facts about SQL.
+// tested with this module mocked out; what those tests cannot reach is what the rows say after
+// each step of the lifecycle (Hugh's rulings, 2026-09-23). Those are facts about SQL.
 //
-//   A PRESS STORES WHAT IT COMPUTED, and the next read returns it without computing.
-//   AN EDIT RETIRES IT. The fingerprint is over the deck's own cards and commanders, so a card
-//   added after the press makes the stored row describe a deck that no longer exists.
-//   A CATALOG REFRESH RETIRES IT. The generation stamp moved; the row was built against another.
-//   A WEEK RETIRES IT. The combo and commander indexes refresh without a stamp this row can see.
-//   ANOTHER READER CANNOT READ IT. The head read is scoped by `user_id`, and so is the row.
-//   A SECOND PRESS REPLACES THE ROW rather than adding one, and moves `computed_at`.
-//   DELETING THE DECK DELETES THE ROW — the foreign key's cascade.
-//   THE CHECK CONSTRAINT REFUSES permits outside 1-5.
-//
-// Four mutations were run against it. Dropping the fingerprint, the week or the catalog comparison
-// each fails its own check. Dropping the row's `user_id` clause fails NOTHING, and that is the
-// shape rather than a gap: the head read is scoped by `user_id` and returns null for another
-// reader before the row is ever asked for, so the clause on the row is a second guard behind it.
+//   ONLY A WHOLE DECK IS ANALYZED (ruling 1). A body short of its size is refused, computing and
+//     writing nothing.
+//   A PRESS STORES WHAT IT COMPUTED, and the next read returns it FRESH without computing.
+//   THE SAME LIST ANSWERS FROM THE STORE (ruling 5): a second press on an unchanged deck computes
+//     nothing.
+//   NOTHING LAPSES. A moved catalog generation and a row eight days old both still read fresh.
+//   AN EDIT MAKES IT STALE, NOT ABSENT. `touchDeck` marks the row dirty in the edit's own
+//     transaction, the reading reads back `fresh: false`, and both chip readers HOLD the bracket
+//     (ruling 4).
+//   A VERSION BUMP IS NOT AN EDIT (Hugh's condition at plan approval). A row an older
+//     PROFILE_VERSION wrote, over an unchanged list, reads back FRESH: rebuilt quietly, never
+//     marked dirty. The same row on a dirty or illegal deck reads as nothing, because an old
+//     document's shape is never shown.
+//   A COMMIT PINS THE READING (ruling 2) to the version it wrote, and a pin for a list the deck
+//     no longer holds writes nothing.
+//   ANOTHER READER CANNOT READ IT, a result overtaken by an edit is not written, the check
+//     constraint refuses permits outside 1-5, and deleting the deck deletes the row.
 //
 // It calls the REAL `readStoredProfile` and `computeAndStoreProfile`, with the uncached readers
 // beneath their request-time wrappers injected, since `unstable_cache` raises outside a request.
@@ -38,10 +40,18 @@ import ws from "ws";
 import { readCatalogGeneration } from "../src/lib/cache/catalog-generation";
 import { loadDeckProfile } from "../src/lib/profile/load";
 import { listDecksWithStats } from "../src/lib/decks/read";
+import { commitVersion } from "../src/lib/decks/versions";
+import { touchDeck } from "../src/lib/decks/touch";
+import { db } from "../src/db";
+import { listFingerprint, profileFingerprint } from "../src/lib/profile/fingerprint";
+import { PROFILE_VERSION } from "../src/lib/profile/version";
 import {
+  clearDirty,
   computeAndStoreProfile,
+  pinAnalysisToVersion,
   readStoredPermits,
   readStoredProfile,
+  readStoredReading,
   type StoredProfileDeps,
 } from "../src/lib/profile/stored";
 
@@ -80,122 +90,233 @@ const deps: StoredProfileDeps = {
   },
 };
 
-const storedRow = (deckId: string) =>
-  rows<{ n: number; permits: number[]; fresh: boolean }>(sql`
-    select count(*) over ()::int as n, permits,
-      computed_at > now() - interval '1 hour' as fresh
-    from deck_profiles where deck_id = ${deckId}::uuid`);
+type Row = { n: number; permits: number[]; dirty: boolean; profile_version: number;
+  version_id: string | null; fingerprint: string; computed_at: string };
+const storedRow = async (deckId: string) =>
+  (await rows<Row>(sql`
+    select count(*) over ()::int as n, permits, dirty, profile_version, version_id, fingerprint,
+      computed_at::text as computed_at
+    from deck_profiles where deck_id = ${deckId}::uuid`))[0] ?? null;
+
+/** An edit the way the app makes one: the list write and `touchDeck` in one transaction. */
+const edit = (deckId: string, write: ReturnType<typeof sql>) =>
+  db.transaction(async (tx) => {
+    await tx.execute(write);
+    await touchDeck(tx, deckId);
+  });
 
 async function run() {
   const [legend] = await rows<{ oracle_id: string }>(sql`
     select oracle_id from cards where type_line ilike '%Legendary Creature%'
     order by oracle_id limit 1`);
   if (!legend) return fail("a legend to lead the fixture", "the catalog is empty");
-  const body = await rows<{ oracle_id: string }>(sql`
+  // 99 for the body and two spares to swap in, all distinct, none the commander.
+  const pool101 = await rows<{ oracle_id: string }>(sql`
     select oracle_id from cards where type_line not ilike '%Land%'
       and oracle_id <> ${legend.oracle_id}::uuid
-    order by oracle_id limit 6`);
-  if (body.length < 6) return fail("six cards for the fixture", `found ${body.length}`);
+    order by oracle_id limit 101`);
+  if (pool101.length < 101) return fail("101 cards for the fixture", `found ${pool101.length}`);
+  const body = pool101.slice(0, 99);
+  const [spareA, spareB] = pool101.slice(99);
+  /** The fixture's whole list, as `listFingerprint` and `profileFingerprint` take it. */
+  const legacyHeadOf = () => ({ commanderOracleId: legend.oracle_id, partnerOracleId: null,
+    cards: body.map((c) => ({ oracleId: c.oracle_id, quantity: 1 })) });
 
   const [deck] = await rows<{ id: string }>(sql`
     insert into decks (user_id, name, commander_oracle_id)
     values (${USER}, 'probe profile store', ${legend.oracle_id}::uuid) returning id`);
-  for (const card of body.slice(0, 5)) {
-    await fixture.execute(sql`
-      insert into deck_cards (deck_id, oracle_id, quantity)
-      values (${deck.id}::uuid, ${card.oracle_id}::uuid, 1)`);
-  }
+  // One statement: a row per round trip is ~100 of them against a serverless Postgres.
+  await fixture.execute(sql`
+    insert into deck_cards (deck_id, oracle_id, quantity) values ${sql.join(
+      body.slice(0, 98).map((c) => sql`(${deck.id}::uuid, ${c.oracle_id}::uuid, 1)`), sql`, `)}`);
 
-  // 1 · Nothing stored yet: a read finds nothing and computes nothing.
-  check("a deck never analyzed reads as absent", await readStoredProfile(deck.id, USER, deps), null);
-  check("and the read computed nothing", computes, 0);
+  // 1 · RULING 1: a body of 98 is refused, and nothing is computed or written.
+  const short = await computeAndStoreProfile(deck.id, USER, deps);
+  check("a 98-card body is refused as illegal", short, { kind: "illegal", built: 98, size: 99 });
+  check("and nothing was computed", computes, 0);
+  check("and nothing was written", await storedRow(deck.id), null);
+  check("a deck never analyzed reads as absent", await readStoredReading(deck.id, USER, deps), null);
 
-  // 2 · A press stores, and the next read returns it without computing.
+  await fixture.execute(sql`
+    insert into deck_cards (deck_id, oracle_id, quantity) values (${deck.id}::uuid, ${body[98].oracle_id}::uuid, 1)`);
+
+  // 2 · A press on the whole deck stores, and the next read returns it fresh without computing.
   const pressed = await computeAndStoreProfile(deck.id, USER, deps);
-  if (!pressed) return fail("the press", "computed no profile for the fixture deck");
+  if (pressed?.kind !== "ok") return fail("the press", `answered ${JSON.stringify(pressed)}`);
   check("the press computed once", computes, 1);
-  const [first] = await storedRow(deck.id);
-  check("the press wrote one row", first?.n, 1);
-  const read = await readStoredProfile(deck.id, USER, deps);
-  check("the next read returns what the press stored", read?.fingerprint, pressed.fingerprint);
+  const first = await storedRow(deck.id);
+  check("the press wrote one clean row at this version, pinned to nothing",
+    first && { n: first.n, dirty: first.dirty, v: first.profile_version, pin: first.version_id },
+    { n: 1, dirty: false, v: PROFILE_VERSION, pin: null });
+  const fresh = await readStoredReading(deck.id, USER, deps);
+  check("the next read returns it fresh", fresh && { fresh: fresh.fresh, fp: fresh.profile.fingerprint },
+    { fresh: true, fp: pressed.reading.profile.fingerprint });
   check("and computed nothing to do it", computes, 1);
   check("the permits are stored sorted and in range",
     first ? first.permits.every((p, i, a) => p >= 1 && p <= 5 && (i === 0 || a[i - 1] < p)) : false, true);
 
-  // 2b · The two chip readers agree with it: the header's permits read and the deck list's
-  // correlated subquery, which is where a bare column reference would read null for ever.
-  const current = await readCatalogGeneration();
+  // 3 · RULING 5: the same list answers from the store.
+  const again = await computeAndStoreProfile(deck.id, USER, deps);
+  check("a second press on an unchanged deck computes nothing", computes, 1);
+  check("and answers with the stored reading", again?.kind === "ok" && again.reading.fresh, true);
+
+  // 4 · The chip readers, and what they draw with no bracket asked for.
   const tile = async () =>
-    (await listDecksWithStats(USER, "name", { bracketCatalog: current })).find((d) => d.id === deck.id)
+    (await listDecksWithStats(USER, "name", { includeBracket: true })).find((d) => d.id === deck.id)
       ?.bracket?.permits ?? null;
-  const header = await readStoredPermits(deck.id, USER, deps);
-  check("the header reads the stored permits", header, first?.permits);
+  check("the header reads the stored permits", await readStoredPermits(deck.id, USER), first?.permits);
   check("the deck list reads the same permits", await tile(), first?.permits);
-  check("a list read against another catalog draws no chip",
-    (await listDecksWithStats(USER, "name", { bracketCatalog: "probe-another-catalog" }))
-      .find((d) => d.id === deck.id)?.bracket ?? null, null);
-  check("a list read with no catalog reads no bracket at all",
+  check("a list read with no bracket asked for reads none",
     (await listDecksWithStats(USER, "name")).find((d) => d.id === deck.id)?.bracket ?? null, null);
-  // The list's stand-in for the fingerprint: an edit stamped after the analysis retires the chip.
-  await fixture.execute(sql`update decks set last_edited_at = now() + interval '1 second' where id = ${deck.id}::uuid`);
-  check("an edit stamped after the analysis retires the tile's chip", await tile(), null);
-  await fixture.execute(sql`update decks set last_edited_at = now() - interval '1 day' where id = ${deck.id}::uuid`);
-  check("and an edit before it does not", await tile(), first?.permits);
 
-  // 3 · Another reader cannot read it.
-  check("another reader reads it as absent", await readStoredProfile(deck.id, `${USER}-other`, deps), null);
+  // 5 · Another reader cannot read it.
+  check("another reader reads it as absent", await readStoredReading(deck.id, `${USER}-other`, deps), null);
+  check("and another reader's header reads no permits", await readStoredPermits(deck.id, `${USER}-other`), null);
 
-  // 4 · A catalog refresh retires it.
+  // 6 · NOTHING LAPSES: a moved catalog and an old row both still read fresh.
   generation = "probe-another-catalog";
-  check("a moved catalog generation retires the row", await readStoredProfile(deck.id, USER, deps), null);
+  check("a moved catalog generation leaves it fresh", (await readStoredReading(deck.id, USER, deps))?.fresh, true);
   generation = null;
-  check("and the current generation still reads it",
-    (await readStoredProfile(deck.id, USER, deps))?.fingerprint, pressed.fingerprint);
-
-  // 5 · A week retires it.
   await fixture.execute(sql`
     update deck_profiles set computed_at = now() - interval '8 days' where deck_id = ${deck.id}::uuid`);
-  check("a row older than the week is not shown", await readStoredProfile(deck.id, USER, deps), null);
-  await fixture.execute(sql`
-    update deck_profiles set computed_at = now() - interval '6 days' where deck_id = ${deck.id}::uuid`);
-  check("a row inside the week still is",
-    (await readStoredProfile(deck.id, USER, deps))?.fingerprint, pressed.fingerprint);
+  check("a row eight days old is still fresh", (await readStoredReading(deck.id, USER, deps))?.fresh, true);
+  check("and the tile still draws it", await tile(), first?.permits);
 
-  // 6 · A second press replaces the row and moves its stamp.
+  // 7 · AN EDIT MAKES IT STALE, and the chip holds.
+  await edit(deck.id, sql`update deck_cards set oracle_id = ${spareA.oracle_id}::uuid
+    where deck_id = ${deck.id}::uuid and oracle_id = ${body[0].oracle_id}::uuid`);
+  check("touchDeck marks the row dirty", (await storedRow(deck.id))?.dirty, true);
+  const stale = await readStoredReading(deck.id, USER, deps);
+  check("the reading reads back stale, not absent", stale && { fresh: stale.fresh, has: !!stale.profile }, { fresh: false, has: true });
+  check("the fresh-only reader answers nothing", await readStoredProfile(deck.id, USER, deps), null);
+  check("the header's chip holds the last bracket", await readStoredPermits(deck.id, USER), first?.permits);
+  check("so does the tile's", await tile(), first?.permits);
+  check("and reading it computed nothing", computes, 1);
+
+  // 8 · Undone: the list is the analyzed one again but the row is still dirty, so still stale;
+  // a press answers from the store and clears it.
+  await edit(deck.id, sql`update deck_cards set oracle_id = ${body[0].oracle_id}::uuid
+    where deck_id = ${deck.id}::uuid and oracle_id = ${spareA.oracle_id}::uuid`);
+  check("an undone edit still reads stale while dirty", (await readStoredReading(deck.id, USER, deps))?.fresh, false);
   await computeAndStoreProfile(deck.id, USER, deps);
-  const [second] = await storedRow(deck.id);
-  check("a second press leaves one row", second?.n, 1);
-  check("and moves computed_at off the aged stamp",
-    second?.fresh, true);
+  check("re-analyzing the same list computes nothing", computes, 1);
+  check("and clears dirty", (await storedRow(deck.id))?.dirty, false);
+  check("so the reading is fresh again", (await readStoredReading(deck.id, USER, deps))?.fresh, true);
 
-  // 7 · An edit retires it.
-  await fixture.execute(sql`
-    insert into deck_cards (deck_id, oracle_id, quantity)
-    values (${deck.id}::uuid, ${body[5].oracle_id}::uuid, 1)`);
-  check("a card added after the press retires the row", await readStoredProfile(deck.id, USER, deps), null);
-
-  // 7b · A result that no longer describes the deck is not stored. Two presses from two tabs can
-  // finish out of order; the deck is edited between this build and its write, as the older press
-  // would see it, and the row must keep what it held.
+  // 8b · THE CLEAR IS GUARDED ON THE EDIT STAMP. An edit landing between a press's read and its
+  // clear — here an edit and its undo, back to the analyzed list — must leave the row dirty.
   {
-    const [before] = await rows<{ fingerprint: string }>(sql`
-      select fingerprint from deck_profiles where deck_id = ${deck.id}::uuid`);
+    await edit(deck.id, sql`update deck_cards set quantity = quantity where deck_id = ${deck.id}::uuid and false`);
+    const [{ stamp }] = await rows<{ stamp: string }>(sql`select last_edited_at::text as stamp from decks where id = ${deck.id}::uuid`);
+    await edit(deck.id, sql`update deck_cards set oracle_id = ${spareA.oracle_id}::uuid
+      where deck_id = ${deck.id}::uuid and oracle_id = ${body[0].oracle_id}::uuid`);
+    await edit(deck.id, sql`update deck_cards set oracle_id = ${body[0].oracle_id}::uuid
+      where deck_id = ${deck.id}::uuid and oracle_id = ${spareA.oracle_id}::uuid`);
+    await clearDirty(deck.id, listFingerprint(legacyHeadOf()), stamp);
+    check("a clear read before an edit and its undo leaves the row dirty", (await storedRow(deck.id))?.dirty, true);
+    await computeAndStoreProfile(deck.id, USER, deps);
+    check("and a press made after them clears it", (await storedRow(deck.id))?.dirty, false);
+  }
+
+  // 9 · HUGH'S CONDITION: a version bump over an unchanged list reads clean.
+  const listBefore = (await storedRow(deck.id))?.fingerprint;
+  await fixture.execute(sql`
+    update deck_profiles set profile_version = ${PROFILE_VERSION - 1} where deck_id = ${deck.id}::uuid`);
+  const bumped = await readStoredReading(deck.id, USER, deps);
+  check("a row an older version wrote reads back FRESH over an unchanged list", bumped?.fresh, true);
+  check("rebuilt quietly: one compute", computes, 2);
+  const rebuilt = await storedRow(deck.id);
+  check("stored at the current version, not dirty, same list fingerprint",
+    rebuilt && { v: rebuilt.profile_version, dirty: rebuilt.dirty, same: rebuilt.fingerprint === listBefore },
+    { v: PROFILE_VERSION, dirty: false, same: true });
+  // The same old row on a DIRTY deck reads as nothing: an old document's shape is never shown,
+  // and rebuilding it would describe a list the reader never analyzed.
+  await fixture.execute(sql`
+    update deck_profiles set profile_version = ${PROFILE_VERSION - 1}, dirty = true where deck_id = ${deck.id}::uuid`);
+  check("an old version on a dirty deck reads as nothing", await readStoredReading(deck.id, USER, deps), null);
+  check("and computes nothing", computes, 2);
+  check("while the chip still holds its bracket", await readStoredPermits(deck.id, USER), first?.permits);
+  await computeAndStoreProfile(deck.id, USER, deps);
+  check("a press rebuilds it", computes, 3);
+
+  // 9b · A LEGACY row, written before 0054: `profile_version` 0, not dirty, and the fingerprint
+  // it stored is `profileFingerprint`. Over the list it was taken from it is rebuilt fresh; over a
+  // list edited before the deploy it reads as nothing — `dirty` could not have seen that edit, so
+  // the list itself is what has to be compared.
+  const legacyHead = legacyHeadOf();
+  await fixture.execute(sql`update deck_profiles set profile_version = 0, dirty = false,
+    fingerprint = ${profileFingerprint(legacyHead)} where deck_id = ${deck.id}::uuid`);
+  check("a legacy row over its own list reads back fresh", (await readStoredReading(deck.id, USER, deps))?.fresh, true);
+  check("rebuilt quietly: one compute", computes, 4);
+  await fixture.execute(sql`update deck_profiles set profile_version = 0, dirty = false,
+    fingerprint = ${profileFingerprint({ ...legacyHead, cards: legacyHead.cards.slice(1) })}
+    where deck_id = ${deck.id}::uuid`);
+  check("a legacy row over a list edited before the deploy reads as nothing",
+    await readStoredReading(deck.id, USER, deps), null);
+  check("and is not rebuilt", computes, 4);
+  await computeAndStoreProfile(deck.id, USER, deps);
+  check("a press rebuilds that one", computes, 5);
+
+  // 10 · RULING 2: a commit pins the reading to the version it wrote.
+  const head = { commanderOracleId: legend.oracle_id, partnerOracleId: null,
+    cards: body.map((c) => ({ oracleId: c.oracle_id, quantity: 1 })) };
+  const { version } = await commitVersion(deck.id, null);
+  // The REAL version id with the wrong list: a made-up id fails the foreign key, the pin swallows
+  // that, and the row reads null whether or not the list guard ran. That version measured nothing.
+  await pinAnalysisToVersion(deck.id, USER, { versionId: version.id, list: "not-this-list" }, deps);
+  check("a pin for a list the deck no longer holds writes nothing", (await storedRow(deck.id))?.version_id, null);
+  await pinAnalysisToVersion(deck.id, USER, { versionId: version.id, list: listFingerprint(head) }, deps);
+  check("a pin for the committed list sets the version", (await storedRow(deck.id))?.version_id, version.id);
+  check("and answered from the store", computes, 5);
+  check("the pinned reading names its version", (await readStoredReading(deck.id, USER, deps))?.versionId, version.id);
+
+  // 10b · A QUIET REBUILD KEEPS THE PIN: a version bump changes the document, never which version
+  // the list belongs to.
+  await fixture.execute(sql`update deck_profiles set profile_version = ${PROFILE_VERSION - 1} where deck_id = ${deck.id}::uuid`);
+  const kept = await readStoredReading(deck.id, USER, deps);
+  check("a rebuild over a pinned list keeps its version", kept && { fresh: kept.fresh, pin: kept.versionId }, { fresh: true, pin: version.id });
+  check("rebuilt: one compute", computes, 6);
+
+  // 10c · A REBUILD FOR A LIST THE DECK NO LONGER HOLDS writes nothing (an edit landed between the
+  // read that decided on it and the rebuild).
+  await fixture.execute(sql`update deck_profiles set profile_version = ${PROFILE_VERSION - 1} where deck_id = ${deck.id}::uuid`);
+  check("a rebuild for another list is refused",
+    await computeAndStoreProfile(deck.id, USER, deps, { rebuildOf: { list: "not-this-list", versionId: null } }), null);
+  check("and computed and wrote nothing",
+    { computes, v: (await storedRow(deck.id))?.profile_version }, { computes: 6, v: PROFILE_VERSION - 1 });
+  await computeAndStoreProfile(deck.id, USER, deps);
+
+  // 10d · ONLY THE NEWEST VERSION IS PINNED: an older commit's `after()` pin landing last is refused.
+  const { version: v2 } = await commitVersion(deck.id, null);
+  await pinAnalysisToVersion(deck.id, USER, { versionId: v2.id, list: listFingerprint(head) }, deps);
+  await pinAnalysisToVersion(deck.id, USER, { versionId: version.id, list: listFingerprint(head) }, deps);
+  check("an older version's pin landing last does not replace the newer one", (await storedRow(deck.id))?.version_id, v2.id);
+
+  // 11 · A result that no longer describes the deck is not stored. The deck is edited between this
+  // build and its write, as an older press would see it, and the row must keep what it held.
+  {
+    await edit(deck.id, sql`update deck_cards set oracle_id = ${spareB.oracle_id}::uuid
+      where deck_id = ${deck.id}::uuid and oracle_id = ${body[1].oracle_id}::uuid`);
+    const before = await storedRow(deck.id);
     const late: StoredProfileDeps = {
       generation: deps.generation,
       compute: async (id, user) => {
         const built = await loadDeckProfile(id, user);
-        await fixture.execute(sql`delete from deck_cards where deck_id = ${deck.id}::uuid
-          and oracle_id = ${body[0].oracle_id}::uuid`);
+        await fixture.execute(sql`update deck_cards set oracle_id = ${body[1].oracle_id}::uuid
+          where deck_id = ${deck.id}::uuid and oracle_id = ${spareB.oracle_id}::uuid`);
         return built;
       },
     };
     await computeAndStoreProfile(deck.id, USER, late);
-    const [after] = await rows<{ fingerprint: string }>(sql`
-      select fingerprint from deck_profiles where deck_id = ${deck.id}::uuid`);
-    check("a result overtaken by an edit is not written over the row", after?.fingerprint, before?.fingerprint);
+    const after = await storedRow(deck.id);
+    // What the write would CHANGE, not the fingerprint: the writer stores the head's list, which
+    // the late edit has put back, so a stale write lands with the same fingerprint it replaced.
+    check("a result overtaken by an edit is not written over the row",
+      after && { dirty: after.dirty, at: after.computed_at },
+      before && { dirty: before.dirty, at: before.computed_at });
   }
 
-  // 8 · The check constraint.
+  // 12 · The check constraint.
   try {
     await fixture.execute(sql`
       update deck_profiles set permits = array[0, 6] where deck_id = ${deck.id}::uuid`);
@@ -204,9 +325,9 @@ async function run() {
     check("the permits check constraint refuses [0, 6]", true, true);
   }
 
-  // 9 · Deleting the deck deletes the row.
+  // 13 · Deleting the deck deletes the row.
   await fixture.execute(sql`delete from decks where id = ${deck.id}::uuid`);
-  check("deleting the deck deletes its stored analysis", (await storedRow(deck.id)).length, 0);
+  check("deleting the deck deletes its stored analysis", await storedRow(deck.id), null);
 }
 
 async function main() {

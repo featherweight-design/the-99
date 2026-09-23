@@ -4,8 +4,11 @@ import { and, desc, eq, gt, inArray, lt, lte, sql } from "drizzle-orm";
 import { bracketOf } from "../../lib/bracket/rules";
 import { slotDeck } from "../../lib/bracket/slot";
 import { cachedDeckProfile } from "../../lib/profile/load";
+import { listFingerprint } from "../../lib/profile/fingerprint";
+import { pinAnalysisToVersion, type CommitPin } from "../../lib/profile/stored";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
+import { after } from "next/server";
 import { db } from "../../db";
 import {
   cards, collectionItems, deckCards, deckGameAxes, deckGames, decks,
@@ -1491,6 +1494,7 @@ export async function commitDeckVersion(
   }
 
 
+  let pin: CommitPin | null = null;
   const result = await db.transaction<CommitResult>(async (tx) => {
     const [deck] = await tx.select().from(decks).where(eq(decks.id, deckId)).for("update");
     // Deleted between the ownership check above and this lock. Left to fall
@@ -1630,9 +1634,26 @@ export async function commitDeckVersion(
     // that on the rare path that reaches it.
     const snapshot = await commitSnapshotFor(deckId, userId);
     const { version, cardCount } = await commitVersion(deckId, note?.trim() || null, tx, snapshot);
+    // The list this version froze, for the pin below, read back from the VERSION'S OWN ROWS:
+    // `commitVersion` snapshots `deck_cards` itself, and a card inserted after the `draft` read
+    // above (a new row has nothing to lock) would be in the version and absent from `draft`.
+    pin = {
+      versionId: version.id,
+      list: listFingerprint({
+        commanderOracleId: version.commanderOracleId,
+        partnerOracleId: version.partnerOracleId,
+        cards: await versionCards(version.id, tx),
+      }),
+    };
     return { ok: true, number: version.number, cardCount, buy, pull: removes };
   });
   if (!result.ok) return result;
+  // RULING 2: the commit pins the deck's analysis to the version it just wrote. Off the commit's
+  // path, in `after()`, because an analysis can cost 2.2s and the reader is waiting on the commit
+  // alone. `pinAnalysisToVersion` writes nothing when an edit has moved the deck off this list
+  // since, and nothing for a version that is not a whole deck (ruling 1).
+  const committed = pin;
+  if (committed) after(() => pinAnalysisToVersion(deckId, userId, committed));
   revalidateClaims(deckId, userId);
   return result;
 }

@@ -15,7 +15,9 @@ export type ProfileFetch =
   /** The deck is absent, not this reader's, or the id was malformed. */
   | { ok: false; reason: "not-found" }
   /** The flag is off for this deployment. Distinct from a failure: nothing is wrong. */
-  | { ok: false; reason: "disabled" };
+  | { ok: false; reason: "disabled" }
+  /** The body is not a whole deck (ruling 1), so nothing was analyzed. */
+  | { ok: false; reason: "illegal"; built: number; size: number };
 
 /**
  * The deck profile, fetched when the reader presses Analyze and not before.
@@ -56,10 +58,14 @@ export async function fetchDeckProfile(deckId: string): Promise<ProfileFetch> {
   const userId = await requireUserId();
   // Computed through the same cache as before, and now also STORED, so the next visit can show
   // it without a press. See `stored.ts`.
-  const profile = await computeAndStoreProfile(deckId, userId);
+  const result = await computeAndStoreProfile(deckId, userId);
   // A deck the reader does not own reads as ABSENT rather than forbidden: `loadProfileHead`
   // scopes by `user_id`, so there is no state in which this returns another player's deck.
-  if (!profile) return { ok: false, reason: "not-found" };
+  if (!result) return { ok: false, reason: "not-found" };
+  // Ruling 1: analysis runs only on a whole deck. Nothing was computed or written.
+  if (result.kind === "illegal") {
+    return { ok: false, reason: "illegal", built: result.built, size: result.size };
+  }
 
   // The deck tile draws its bracket chip from the row just stored, so the `/decks` list the router
   // may be holding from before the press is retired. DEFERRED into `after()`: a revalidation during
@@ -67,7 +73,8 @@ export async function fetchDeckProfile(deckId: string): Promise<ProfileFetch> {
   // whole deck (the 1.6MB lesson recorded in `probe:printing-pick`).
   after(() => revalidatePath("/decks"));
 
-  return { ok: true, profile, analyzedAt: new Date().toISOString() };
+  const { profile, analyzedAt } = result.reading;
+  return { ok: true, profile, analyzedAt: analyzedAt.toISOString() };
 }
 
 export type StoredProfileFetch =
@@ -89,7 +96,9 @@ export async function fetchStoredDeckProfile(deckId: string): Promise<StoredProf
   if (!isUuid(deckId)) return { ok: false, reason: "not-found" };
   const userId = await requireUserId();
   const stored = await readStoredReading(deckId, userId);
-  return stored
+  // A STALE reading still answers `none` here, which is the surface today: the tab offers the
+  // press. Drawing it as stale is C2's (the held states and the banner).
+  return stored?.fresh
     ? { ok: true, profile: stored.profile, analyzedAt: stored.analyzedAt.toISOString() }
     : { ok: false, reason: "none" };
 }

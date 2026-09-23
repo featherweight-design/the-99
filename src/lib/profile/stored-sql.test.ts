@@ -7,9 +7,9 @@
 import { PgDialect } from "drizzle-orm/pg-core";
 import { describe, expect, it } from "vitest";
 
-import { STORED_PROFILE_MAX_AGE_DAYS, storedPermitsSql } from "./stored-sql";
+import { storedPermitsSql } from "./stored-sql";
 
-const rendered = new PgDialect().sqlToQuery(storedPermitsSql("gen-1"));
+const rendered = new PgDialect().sqlToQuery(storedPermitsSql());
 
 describe("storedPermitsSql", () => {
   it("correlates on the outer deck, qualified on both sides", () => {
@@ -17,14 +17,12 @@ describe("storedPermitsSql", () => {
     expect(rendered.sql).toContain('dp.user_id = "decks".user_id');
   });
 
-  // The list's stand-in for the fingerprint: an analysis older than the deck's last edit is absent.
-  it("retires a row computed before the deck's last edit", () => {
-    expect(rendered.sql).toContain('dp.computed_at >= "decks".last_edited_at');
-  });
-
-  it("applies the catalog and the week, as parameters", () => {
-    expect(rendered.params).toEqual(["gen-1", STORED_PROFILE_MAX_AGE_DAYS]);
-    expect(rendered.sql).toContain("dp.catalog = $1");
-    expect(rendered.sql).toContain("make_interval(days => $2)");
+  // THE CHIP HOLDS (ruling 4). No clause may retire the row: an edit, a catalog refresh and a week
+  // passing all leave the last analyzed bracket on the tile.
+  it("carries no freshness clause", () => {
+    expect(rendered.sql).not.toContain("last_edited_at");
+    expect(rendered.sql).not.toContain("catalog");
+    expect(rendered.sql).not.toContain("computed_at");
+    expect(rendered.params).toEqual([]);
   });
 });
