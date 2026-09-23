@@ -49,6 +49,39 @@ export const deckTuningCopy = {
     maxLength: 120,
   },
 
+  // ── The rules a suggestion must obey (validator rule text) ─────────────
+  // Handed to the model VERBATIM as its instructions, and named by the validator for each drop,
+  // so the model's instructions and the checks cannot drift. Transcribed from the handoff; the
+  // two dashes are set as colons, per the 2026-09-13 sweep.
+  suggestionRules: {
+    noPercentage: "No rationale or citation may contain a percentage.",
+    noNet: 'No rationale or citation may contain a signed integer or the word "net".',
+    denominator:
+      'Every count in a rationale or citation must appear with its denominator in the same element: "7 of 9", not "7 games".',
+    citation: "Every suggestion must carry at least one citation naming one of the four read sources.",
+    quotedNote: "A quoted note must be byte-identical to what the player typed, in quotation marks, with its date.",
+    colourIdentity: "The added card must be legal in the commander\u2019s colour identity.",
+    cutInDeck: "The cut card must currently be in the deck.",
+    onePair: "Every suggestion is exactly one cut and one add: the deck count never changes.",
+    ownershipNotRanking: "Ownership and price may not affect which cards are suggested or their order.",
+  },
+
+  // ── The live region, and the reason beside a refused press ─────────────
+  // Only the keys something reads today; the rest arrive with the panel.
+  announce: {
+    started: "Reading your deck",
+    unchanged: "No new suggestions. Nothing has changed since the last run.",
+  },
+
+  // ── The shared model allowance, spent ──────────────────────────────────
+  // PLACEHOLDER, eng-written: the handoff predates the allowance (Hugh, 2026-09-23) and draws no
+  // state for it. The placement addendum returns the drawn wording, with the synopsis in view,
+  // since both features show it; until then this is the refusal a press gets. No time in it —
+  // the panel names when the next unit returns, in the reader's own clock.
+  allowance: {
+    spent: "You have used today\u2019s suggestions. They come back within a day.",
+  },
+
   // ── The game note (Surface 1, amends #9's form) ────────────────────────
   note: {
     label: "Note",
