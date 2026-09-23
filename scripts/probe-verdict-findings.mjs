@@ -351,7 +351,12 @@ async function walkUpgradePath(page, label, width) {
       mark: !!h?.querySelector('[data-testid="bracket-mark"]'),
       title: title?.textContent ?? "",
       size: title ? getComputedStyle(title).fontSize : null,
-      clipped: title ? title.scrollWidth > title.clientWidth + 1 || title.scrollHeight > title.clientHeight + 1 : null,
+      // A one-line title ellipsizes with scrollWidth only a pixel over clientWidth, so the width
+      // test has no tolerance and applies to a nowrap title alone; a clamped one overflows down.
+      clipped: title
+        ? (getComputedStyle(title).whiteSpace === "nowrap" && title.scrollWidth > title.clientWidth)
+          || title.scrollHeight > title.clientHeight + 1
+        : null,
       titleLines: title ? Math.round(title.getBoundingClientRect().height / parseFloat(getComputedStyle(title).lineHeight)) : null,
       inkInside: [...h.querySelectorAll("h2, [data-testid='bracket-mark']")].every((el) => el.getBoundingClientRect().bottom <= hb.bottom + 0.5),
       height: Math.round(hb.height),
