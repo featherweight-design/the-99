@@ -1,10 +1,19 @@
 // The header chip's source rule: what may be drawn, and what retires it.
 
 import { render } from "@testing-library/react";
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 
 import type { Bracket } from "../../lib/bracket/types";
-import { useHeaderBracket } from "./use-header-bracket";
+import type { DeckProfile } from "../../lib/profile/types";
+
+// The pressed-profile path reads `slotDeck`, whose own rules are tested beside it. Here a profile
+// is a carrier for the range it would slot to, so the hook's KEYING is what is under test.
+vi.mock("../../lib/bracket/slot", () => ({
+  slotDeck: (p: { __permits: Bracket[] }) => ({ permits: p.__permits }),
+}));
+const pressed = (permits: Bracket[]) => ({ __permits: permits }) as unknown as DeckProfile;
+
+const { useHeaderBracket } = await import("./use-header-bracket");
 
 type Props = Parameters<typeof useHeaderBracket>[0];
 
@@ -16,11 +25,8 @@ function Harness(props: Props) {
 const A = "deck-a";
 const B = "deck-b";
 const LIST = [{ oracleId: "c1", quantity: 1 }, { oracleId: "c2", quantity: 1 }];
-// The pressed-profile source goes through `slotDeck` on a real profile, so it is driven here
-// through the stored range instead: a hand-built profile would assert its own fixture, and the
-// two cases that matter (an edit, a change of deck) are the same rule for either source.
 const view = (props: Partial<Props>) => (
-  <Harness deckId={A} cards={LIST} storedPermits={null} readyProfile={null} {...props} />
+  <Harness deckId={A} cards={LIST} storedPermits={null} readyProfile={null} loading={false} {...props} />
 );
 const shown = (c: ReturnType<typeof render>) => c.getByTestId("permits").textContent;
 
@@ -57,5 +63,25 @@ describe("useHeaderBracket", () => {
     const c = render(view({ storedPermits: [3] }));
     c.rerender(view({ storedPermits: [4, 5] }));
     expect(shown(c)).toBe("4-5");
+  });
+
+  // A shape no writer produces fails closed rather than throwing inside `verdictHead`.
+  it("draws nothing for a stored range no writer produces", () => {
+    expect(shown(render(view({ storedPermits: [1, 3] as Bracket[] })))).toBe("none");
+  });
+
+  it("draws a press's answer for the list it was made against", () => {
+    const c = render(view({ loading: true }));
+    c.rerender(view({ readyProfile: pressed([3]) }));
+    expect(shown(c)).toBe("3");
+  });
+
+  // An edit while the press is in flight: the answer describes the list before the edit.
+  it("never files a late answer under a list edited while it was in flight", () => {
+    const edited = [...LIST, { oracleId: "c3", quantity: 1 }];
+    const c = render(view({ loading: true }));
+    c.rerender(view({ loading: true, cards: edited }));
+    c.rerender(view({ cards: edited, readyProfile: pressed([3]) }));
+    expect(shown(c)).toBe("none");
   });
 });

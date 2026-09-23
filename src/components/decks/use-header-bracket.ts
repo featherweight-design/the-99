@@ -4,6 +4,7 @@ import { useMemo, useState } from "react";
 
 import { slotDeck } from "../../lib/bracket/slot";
 import type { Bracket } from "../../lib/bracket/types";
+import { isReachablePermits } from "../../lib/bracket/verdict-head";
 import type { DeckProfile } from "../../lib/profile/types";
 
 /**
@@ -26,29 +27,43 @@ export function useHeaderBracket({
   cards,
   storedPermits,
   readyProfile,
+  loading,
 }: {
   deckId: string;
   cards: readonly { oracleId: string; quantity: number }[];
   storedPermits: Bracket[] | null;
   readyProfile: DeckProfile | null;
+  /** A press is in flight. The card list at its START is the one its answer describes. */
+  loading: boolean;
 }): Bracket[] | null {
   const key = useMemo(
     () => `${deckId}|${cards.map((c) => `${c.oracleId}:${c.quantity}`).sort().join(",")}`,
     [deckId, cards],
   );
   const [source, setSource] = useState<{ permits: Bracket[]; key: string } | null>(
-    storedPermits ? { permits: storedPermits, key } : null,
+    storedPermits && isReachablePermits(storedPermits) ? { permits: storedPermits, key } : null,
   );
   const [seenStored, setSeenStored] = useState(storedPermits);
   const [seenProfile, setSeenProfile] = useState(readyProfile);
+  // THE KEY A PRESS WAS MADE AGAINST. An edit while the press is in flight leaves its answer
+  // describing the list before the edit, so the answer is filed under that list and never drawn
+  // over the new one. A ready profile with no press behind it (a stored one, peeked on tab open)
+  // is filed under the list on screen when it arrives.
+  const [pressKey, setPressKey] = useState<string | null>(loading ? key : null);
+  const [wasLoading, setWasLoading] = useState(loading);
+  if (loading !== wasLoading) {
+    setWasLoading(loading);
+    if (loading) setPressKey(key);
+  }
   if (readyProfile !== seenProfile) {
     setSeenProfile(readyProfile);
-    if (readyProfile) setSource({ permits: slotDeck(readyProfile).permits, key });
+    if (readyProfile) setSource({ permits: slotDeck(readyProfile).permits, key: pressKey ?? key });
+    setPressKey(null);
   }
   if (storedPermits !== seenStored) {
     // A revalidated page is the server's answer for the deck as it now stands.
     setSeenStored(storedPermits);
-    setSource(storedPermits ? { permits: storedPermits, key } : null);
+    setSource(storedPermits && isReachablePermits(storedPermits) ? { permits: storedPermits, key } : null);
   }
   return source && source.key === key ? source.permits : null;
 }

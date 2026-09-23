@@ -8,6 +8,7 @@ import { profileFingerprint } from "./fingerprint";
 import { cachedDeckProfile, readProfileHead } from "./load";
 import { STORED_PROFILE_MAX_AGE_DAYS } from "./stored-sql";
 import type { Bracket } from "../bracket/types";
+import { isReachablePermits } from "../bracket/verdict-head";
 import type { DeckProfile } from "./types";
 
 /**
@@ -54,7 +55,8 @@ export async function readStoredPermits(
   deps: StoredProfileDeps = REQUEST_DEPS,
 ): Promise<Bracket[] | null> {
   const row = await readFreshRow(deckId, userId, deps, false);
-  return row ? (row.permits as Bracket[]) : null;
+  // Fails closed on a shape no writer produces; see `isReachablePermits`.
+  return row && isReachablePermits(row.permits) ? row.permits : null;
 }
 
 /** The one freshness rule, for every reader of a single deck's row. */

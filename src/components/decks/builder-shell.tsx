@@ -308,6 +308,7 @@ export function BuilderShell({
     cards,
     storedPermits,
     readyProfile: profile.state.kind === "ready" ? profile.state.profile : null,
+    loading: profile.state.kind === "loading",
   });
   const headerBracket =
     analysisEnabled && headerPermits

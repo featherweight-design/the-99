@@ -39,6 +39,7 @@ import {
 } from "./grouping";
 import { statusPill, type StatusPill } from "./status";
 import { chipAnswer } from "../bracket/chip-answer";
+import { isReachablePermits } from "../bracket/verdict-head";
 import { storedPermitsSql } from "../profile/stored-sql";
 import type { DeckSort } from "./sort";
 
@@ -663,8 +664,8 @@ export function tileBracket(
   permits: readonly number[] | null,
   declared: number | null,
 ): TileBracket | null {
-  if (!permits || permits.length === 0) return null;
-  const range = permits as Bracket[];
+  if (!permits || !isReachablePermits(permits)) return null;
+  const range = permits;
   return { permits: range, answered: chipAnswer(range, (declared as Bracket | null) ?? null) };
 }
 

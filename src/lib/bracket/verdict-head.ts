@@ -41,6 +41,17 @@ export type VerdictHead = {
  */
 const REACHABLE = new Set(["1,2", "2", "3", "4", "4,5"]);
 
+/**
+ * Whether a range is one `permitsFor` can return, the only shapes `verdictHead` reads.
+ *
+ * For a reader of STORED permits: the column's check admits `[1,3]` or `[5,4]`, which no writer
+ * produces and `verdictHead` refuses by throwing. A chip over such a row fails closed, drawing
+ * nothing, rather than taking the page down.
+ */
+export function isReachablePermits(permits: readonly number[]): permits is Bracket[] {
+  return REACHABLE.has(permits.join(","));
+}
+
 export function verdictHead(
   permits: readonly Bracket[],
   /**
