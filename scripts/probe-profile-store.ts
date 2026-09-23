@@ -46,6 +46,7 @@ import { db } from "../src/db";
 import { listFingerprint, profileFingerprint } from "../src/lib/profile/fingerprint";
 import { PROFILE_VERSION } from "../src/lib/profile/version";
 import {
+  clearDirty,
   computeAndStoreProfile,
   pinAnalysisToVersion,
   readStoredPermits,
@@ -117,6 +118,9 @@ async function run() {
   if (pool101.length < 101) return fail("101 cards for the fixture", `found ${pool101.length}`);
   const body = pool101.slice(0, 99);
   const [spareA, spareB] = pool101.slice(99);
+  /** The fixture's whole list, as `listFingerprint` and `profileFingerprint` take it. */
+  const legacyHeadOf = () => ({ commanderOracleId: legend.oracle_id, partnerOracleId: null,
+    cards: body.map((c) => ({ oracleId: c.oracle_id, quantity: 1 })) });
 
   const [deck] = await rows<{ id: string }>(sql`
     insert into decks (user_id, name, commander_oracle_id)
@@ -199,6 +203,21 @@ async function run() {
   check("and clears dirty", (await storedRow(deck.id))?.dirty, false);
   check("so the reading is fresh again", (await readStoredReading(deck.id, USER, deps))?.fresh, true);
 
+  // 8b · THE CLEAR IS GUARDED ON THE EDIT STAMP. An edit landing between a press's read and its
+  // clear — here an edit and its undo, back to the analyzed list — must leave the row dirty.
+  {
+    await edit(deck.id, sql`update deck_cards set quantity = quantity where deck_id = ${deck.id}::uuid and false`);
+    const [{ stamp }] = await rows<{ stamp: string }>(sql`select last_edited_at::text as stamp from decks where id = ${deck.id}::uuid`);
+    await edit(deck.id, sql`update deck_cards set oracle_id = ${spareA.oracle_id}::uuid
+      where deck_id = ${deck.id}::uuid and oracle_id = ${body[0].oracle_id}::uuid`);
+    await edit(deck.id, sql`update deck_cards set oracle_id = ${body[0].oracle_id}::uuid
+      where deck_id = ${deck.id}::uuid and oracle_id = ${spareA.oracle_id}::uuid`);
+    await clearDirty(deck.id, listFingerprint(legacyHeadOf()), stamp);
+    check("a clear read before an edit and its undo leaves the row dirty", (await storedRow(deck.id))?.dirty, true);
+    await computeAndStoreProfile(deck.id, USER, deps);
+    check("and a press made after them clears it", (await storedRow(deck.id))?.dirty, false);
+  }
+
   // 9 · HUGH'S CONDITION: a version bump over an unchanged list reads clean.
   const listBefore = (await storedRow(deck.id))?.fingerprint;
   await fixture.execute(sql`
@@ -224,8 +243,7 @@ async function run() {
   // it stored is `profileFingerprint`. Over the list it was taken from it is rebuilt fresh; over a
   // list edited before the deploy it reads as nothing — `dirty` could not have seen that edit, so
   // the list itself is what has to be compared.
-  const legacyHead = { commanderOracleId: legend.oracle_id, partnerOracleId: null,
-    cards: body.map((c) => ({ oracleId: c.oracle_id, quantity: 1 })) };
+  const legacyHead = legacyHeadOf();
   await fixture.execute(sql`update deck_profiles set profile_version = 0, dirty = false,
     fingerprint = ${profileFingerprint(legacyHead)} where deck_id = ${deck.id}::uuid`);
   check("a legacy row over its own list reads back fresh", (await readStoredReading(deck.id, USER, deps))?.fresh, true);
@@ -251,6 +269,28 @@ async function run() {
   check("a pin for the committed list sets the version", (await storedRow(deck.id))?.version_id, version.id);
   check("and answered from the store", computes, 5);
   check("the pinned reading names its version", (await readStoredReading(deck.id, USER, deps))?.versionId, version.id);
+
+  // 10b · A QUIET REBUILD KEEPS THE PIN: a version bump changes the document, never which version
+  // the list belongs to.
+  await fixture.execute(sql`update deck_profiles set profile_version = ${PROFILE_VERSION - 1} where deck_id = ${deck.id}::uuid`);
+  const kept = await readStoredReading(deck.id, USER, deps);
+  check("a rebuild over a pinned list keeps its version", kept && { fresh: kept.fresh, pin: kept.versionId }, { fresh: true, pin: version.id });
+  check("rebuilt: one compute", computes, 6);
+
+  // 10c · A REBUILD FOR A LIST THE DECK NO LONGER HOLDS writes nothing (an edit landed between the
+  // read that decided on it and the rebuild).
+  await fixture.execute(sql`update deck_profiles set profile_version = ${PROFILE_VERSION - 1} where deck_id = ${deck.id}::uuid`);
+  check("a rebuild for another list is refused",
+    await computeAndStoreProfile(deck.id, USER, deps, { rebuildOf: { list: "not-this-list", versionId: null } }), null);
+  check("and computed and wrote nothing",
+    { computes, v: (await storedRow(deck.id))?.profile_version }, { computes: 6, v: PROFILE_VERSION - 1 });
+  await computeAndStoreProfile(deck.id, USER, deps);
+
+  // 10d · ONLY THE NEWEST VERSION IS PINNED: an older commit's `after()` pin landing last is refused.
+  const { version: v2 } = await commitVersion(deck.id, null);
+  await pinAnalysisToVersion(deck.id, USER, { versionId: v2.id, list: listFingerprint(head) }, deps);
+  await pinAnalysisToVersion(deck.id, USER, { versionId: version.id, list: listFingerprint(head) }, deps);
+  check("an older version's pin landing last does not replace the newer one", (await storedRow(deck.id))?.version_id, v2.id);
 
   // 11 · A result that no longer describes the deck is not stored. The deck is edited between this
   // build and its write, as an older press would see it, and the row must keep what it held.

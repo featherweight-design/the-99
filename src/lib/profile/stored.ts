@@ -1,10 +1,11 @@
 import { and, eq, sql } from "drizzle-orm";
 
 import { db } from "../../db";
-import { deckProfiles } from "../../db/schema";
+import { deckProfiles, decks } from "../../db/schema";
 import { slotDeck } from "../bracket/slot";
 import { catalogGeneration } from "../cache/catalog-generation";
 import { deckBodySize } from "../decks/deck-size";
+import { newestVersion } from "../decks/versions";
 import { listFingerprint, profileFingerprint } from "./fingerprint";
 import { cachedDeckProfile, readProfileHead, type ProfileHead } from "./load";
 import { PROFILE_VERSION } from "./version";
@@ -64,7 +65,14 @@ type Tx = Parameters<Parameters<typeof db.transaction>[0]>[0];
  *  them pairs the edited deck with the analysis of the deck before it. */
 async function readHeadAndRow(tx: Tx, deckId: string, userId: string) {
   const head = await readProfileHead(tx, deckId, userId);
-  if (!head) return { head: null, row: null };
+  if (!head) return { head: null, row: null, editedAt: null };
+  // The EDIT STAMP, as text: `touchDeck` moves it on every list edit, so a write guarded on it
+  // matches nothing once an edit has landed since this read. Text because the column is
+  // microsecond-precise and a JS Date is not; round-tripped as a Date it would never match.
+  const [stamp] = await tx
+    .select({ editedAt: sql<string>`${decks.lastEditedAt}::text` })
+    .from(decks)
+    .where(eq(decks.id, deckId));
   const [row] = await tx
     .select({
       profile: deckProfiles.profile,
@@ -77,7 +85,7 @@ async function readHeadAndRow(tx: Tx, deckId: string, userId: string) {
     .from(deckProfiles)
     .where(and(eq(deckProfiles.deckId, deckId), eq(deckProfiles.userId, userId)))
     .limit(1);
-  return { head, row: row ?? null };
+  return { head, row: row ?? null, editedAt: stamp?.editedAt ?? null };
 }
 
 /**
@@ -113,7 +121,11 @@ export async function readStoredReading(
     // Rebuilt only over the list the reader analyzed. `dirty` alone cannot say so: a row written
     // before this column existed arrives clean however the deck was edited before the deploy.
     if (row.dirty || !deckLegality(head).legal || !sameList(row, head)) return null;
-    const rebuilt = await computeAndStoreProfile(deckId, userId, deps);
+    // Rebuilt ONLY over the list this read saw, and keeping its pin: a version bump changes the
+    // document, never which version the list belongs to.
+    const rebuilt = await computeAndStoreProfile(deckId, userId, deps, {
+      rebuildOf: { list: listFingerprint(head), versionId: row.versionId },
+    });
     return rebuilt?.kind === "ok" ? { ...rebuilt.reading } : null;
   }
   return {
@@ -173,9 +185,17 @@ export async function computeAndStoreProfile(
   deckId: string,
   userId: string,
   deps: StoredProfileDeps = REQUEST_DEPS,
-  { pinTo }: { pinTo?: CommitPin } = {},
+  {
+    pinTo,
+    rebuildOf,
+  }: {
+    pinTo?: CommitPin;
+    /** A quiet rebuild of a row an older PROFILE_VERSION wrote: the list the reader's read saw, and
+     *  the pin it held. Written only over that list, and the pin is kept. */
+    rebuildOf?: { list: string; versionId: string | null };
+  } = {},
 ): Promise<AnalyzeResult | null> {
-  const { head, row } = await db.transaction((tx) => readHeadAndRow(tx, deckId, userId), READ_ONLY);
+  const { head, row, editedAt } = await db.transaction((tx) => readHeadAndRow(tx, deckId, userId), READ_ONLY);
   if (!head) return null;
   const legality = deckLegality(head);
   if (!legality.legal) return { kind: "illegal", built: legality.built, size: legality.size };
@@ -186,22 +206,25 @@ export async function computeAndStoreProfile(
   // was analyzed as something it never held. So nothing is written, and the next press analyzes
   // the draft as a draft.
   if (pinTo && pinTo.list !== list) return null;
-  const versionId = pinTo?.versionId;
+  // And the same for a rebuild: an edit landing after the read that decided on it is not analyzed.
+  if (rebuildOf && rebuildOf.list !== list) return null;
+  // ONLY THE NEWEST VERSION IS PINNED. Two commits' `after()` pins can run out of order, and the
+  // older one landing last would name the wrong version. Checked here and again in the write.
+  if (pinTo && (await newestVersion(deckId))?.id !== pinTo.versionId) return null;
+  const versionId = pinTo?.versionId ?? rebuildOf?.versionId ?? undefined;
+  const stillNewest = pinTo
+    ? sql`${pinTo.versionId}::uuid = (
+        select dv.id from deck_versions dv where dv.deck_id = ${deckId}::uuid
+        order by dv.number desc limit 1)`
+    : sql`true`;
 
   // RULING 5: the same list, under the same code, is the same answer. Clear `dirty` (and take the
-  // commit's pin) on the row as it stands, guarded on the fingerprint and version it was read at,
-  // and return what is stored. An edit landing after that read either changes the fingerprint the
-  // next read compares, or marks the row dirty again when it commits.
+  // commit's pin) on the row as it stands, guarded on the fingerprint and version it was read at
+  // AND on the deck's edit stamp: an edit landing after that read — even one undone back to the
+  // same list — moves the stamp, and the clear matches nothing.
   if (row && row.profileVersion === PROFILE_VERSION && row.fingerprint === list) {
     try {
-      await db
-        .update(deckProfiles)
-        .set({ dirty: false, ...(versionId ? { versionId } : {}) })
-        .where(and(
-          eq(deckProfiles.deckId, deckId),
-          eq(deckProfiles.fingerprint, list),
-          eq(deckProfiles.profileVersion, PROFILE_VERSION),
-        ));
+      await clearDirty(deckId, list, editedAt, versionId, stillNewest);
     } catch (error) {
       console.warn("deck profile's dirty flag not cleared", error);
     }
@@ -247,7 +270,8 @@ export async function computeAndStoreProfile(
             userId, fingerprint, catalog, profile, permits,
             profileVersion: PROFILE_VERSION,
             dirty: false,
-            // A recompute describes a list that differs from the one any earlier pin was for.
+            // A commit's pin, a rebuild's kept pin, or none: a press's recompute describes a list
+            // that differs from the one any earlier pin was for.
             versionId: versionId ?? null,
             computedAt: sql`now()`,
           },
@@ -259,6 +283,32 @@ export async function computeAndStoreProfile(
     console.warn("deck profile not stored; the next tab open will offer the press again", error);
   }
   return { kind: "ok", reading: { profile, analyzedAt, fresh: true, versionId: versionId ?? null } };
+}
+
+/**
+ * Clear `dirty` (and take a pin) on a row that already describes `list`, but only if the deck's
+ * edit stamp is still `editedAt`: an edit since that read, even one undone back to the same list,
+ * moves the stamp and this matches nothing. Exported so `probe:profile-store` can land an edit in
+ * the window between the read and this write, which no caller exposes.
+ */
+export async function clearDirty(
+  deckId: string,
+  list: string,
+  editedAt: string | null,
+  versionId?: string,
+  stillNewest = sql`true`,
+): Promise<void> {
+  await db
+    .update(deckProfiles)
+    .set({ dirty: false, ...(versionId ? { versionId } : {}) })
+    .where(and(
+      eq(deckProfiles.deckId, deckId),
+      eq(deckProfiles.fingerprint, list),
+      eq(deckProfiles.profileVersion, PROFILE_VERSION),
+      sql`exists (select 1 from ${decks} d where d.id = ${deckId}::uuid
+        and d.last_edited_at::text = ${editedAt})`,
+      stillNewest,
+    ));
 }
 
 /**

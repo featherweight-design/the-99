@@ -1634,14 +1634,15 @@ export async function commitDeckVersion(
     // that on the rare path that reaches it.
     const snapshot = await commitSnapshotFor(deckId, userId);
     const { version, cardCount } = await commitVersion(deckId, note?.trim() || null, tx, snapshot);
-    // The list this version froze, for the pin below: the draft rows read under this lock and
-    // the deck's own commander columns, which is what `listFingerprint` hashes.
+    // The list this version froze, for the pin below, read back from the VERSION'S OWN ROWS:
+    // `commitVersion` snapshots `deck_cards` itself, and a card inserted after the `draft` read
+    // above (a new row has nothing to lock) would be in the version and absent from `draft`.
     pin = {
       versionId: version.id,
       list: listFingerprint({
-        commanderOracleId: deck.commanderOracleId,
-        partnerOracleId: deck.partnerOracleId,
-        cards: draft,
+        commanderOracleId: version.commanderOracleId,
+        partnerOracleId: version.partnerOracleId,
+        cards: await versionCards(version.id, tx),
       }),
     };
     return { ok: true, number: version.number, cardCount, buy, pull: removes };
