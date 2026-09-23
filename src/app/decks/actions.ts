@@ -1,6 +1,6 @@
 "use server";
 
-import { and, desc, eq, gt, inArray, isNull, lt, lte, sql } from "drizzle-orm";
+import { and, desc, eq, gt, inArray, lt, lte, sql } from "drizzle-orm";
 import { bracketOf } from "../../lib/bracket/rules";
 import { slotDeck } from "../../lib/bracket/slot";
 import { cachedDeckProfile } from "../../lib/profile/load";
@@ -731,11 +731,10 @@ export async function fillDeck(deckId: string): Promise<void> {
       // sets `filled` below — that column answers "was this ever filled" — but
       // it left the list exactly as it was, and the stamp describes the list.
       await touchDeck(tx, deckId);
-      // The app built this list, so it knows the brief — and says so with the seeded flag. Only
-      // over no intent at all: a line the player already wrote is theirs, and never replaced.
-      await tx.update(decks)
-        .set({ intent: seededIntent(partner ? [commander.name, partner.name] : [commander.name]), intentSeeded: true })
-        .where(and(eq(decks.id, deckId), isNull(decks.intent)));
+      // NO SEED HERE, unlike the create. This deck already exists, so the player may have
+      // written a line and then cleared it, and a cleared line reads exactly like one never
+      // written (`intent` null, `intent_seeded` false). Seeding over that would bring back the
+      // app's words after the player's first edit, which the chip promises never happens.
     }
     await tx.update(decks).set({ filled: true }).where(eq(decks.id, deckId));
   });

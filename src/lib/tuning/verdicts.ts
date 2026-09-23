@@ -145,6 +145,16 @@ export async function undoItem(itemId: string, userId: string): Promise<string |
     const { deckId, addOracleId, cutOracleId, undoSnapshot: snap } = item;
     await lockDeck(tx, deckId);
 
+    // Only over the deck the apply left. If the player has since changed either card, the
+    // snapshot no longer describes what to undo, and writing it would destroy their edit: the
+    // item stays accepted and the deck is untouched.
+    const add = await readRow(tx, deckId, addOracleId);
+    const cut = await readRow(tx, deckId, cutOracleId);
+    const cutLeft = snap.cut ? snap.cut.quantity - 1 : null;
+    const addAsApplied = add?.quantity === snap.add.quantity + 1;
+    const cutAsApplied = cutLeft === null || (cutLeft === 0 ? cut === null : cut?.quantity === cutLeft);
+    if (!addAsApplied || !cutAsApplied) return null;
+
     if (snap.add.quantity === 0) {
       await tx.delete(deckCards).where(rowOf(deckId, addOracleId));
       // A proxy mark put on the add while it was in the deck leaves with it.
@@ -164,8 +174,13 @@ export async function undoItem(itemId: string, userId: string): Promise<string |
           target: [deckCards.deckId, deckCards.oracleId],
           set: { quantity: snap.cut.quantity, auto: snap.cut.auto },
         });
+      // Its mark exactly as it was: back if it had one, and gone if it did not — a mark put on
+      // the card after the apply is not part of the deck this restores.
       if (snap.cut.proxied) {
         await tx.insert(deckProxies).values({ deckId, oracleId: cutOracleId }).onConflictDoNothing();
+      } else {
+        await tx.delete(deckProxies)
+          .where(and(eq(deckProxies.deckId, deckId), eq(deckProxies.oracleId, cutOracleId)));
       }
     }
     await tx.update(deckSuggestionItems)

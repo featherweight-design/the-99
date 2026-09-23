@@ -29,7 +29,14 @@ reasoning stays readable; these override it.
 6. **No live call yet.** Hugh confirmed `TUNING_MODEL` on 2026-09-23. `MODEL_DAILY_ALLOWANCE`
    stays at its placeholder until `check:tuning` has run live once, behind its workflow's
    `TUNING_CHECK_ENABLED` flag; the measured usage and the value it sets follow then.
-7. **Copy owed to `/copy-review`:** `intent.seededBrief`, `intent.tooLong`, `intent.refused`,
+7. **Only the CREATE seeds, and only when its fill placed cards** (review round 1). `fillDeck`
+   fills a deck that already exists, where a line the player cleared reads exactly like one
+   never written, so seeding there could bring the app's words back after the player's first
+   edit. The chip's promise wins over a seed on the retry path.
+8. **Undo refuses over a deck the player has changed since the apply** (review round 1): it
+   checks the two rows still read as the apply left them, and a snapshot restored over later
+   edits would destroy them. It also takes off a proxy mark the cut did not have.
+9. **Copy owed to `/copy-review`:** `intent.seededBrief`, `intent.tooLong`, `intent.refused`,
    `run.refused` and the three `card.*Refused` strings are eng-written placeholders.
 
 ---

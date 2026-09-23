@@ -11,6 +11,7 @@ import type { DeckMutationResult } from "../../lib/decks/mutation-result";
 import { deckSurfaces } from "../../lib/decks/revalidate";
 import { revalidateClaims } from "../../lib/decks/revalidate-claims";
 import {
+  profileOfHead,
   readEvidenceStep,
   readOwnedOracleIds,
   readTuningState,
@@ -19,7 +20,6 @@ import {
   type EvidenceStep,
 } from "../../lib/decks/tuning-read";
 import { callModel } from "../../lib/model/client";
-import { cachedDeckProfile } from "../../lib/profile/load";
 import { buildPlayGroup } from "../../lib/profile/play";
 import { buildEvidencePack } from "../../lib/tuning/evidence";
 import { gateReason } from "../../lib/tuning/gate";
@@ -85,8 +85,7 @@ export async function runTuning(deckId: string, opts: { anyway?: boolean } = {})
   };
 
   try {
-    const profile = await cachedDeckProfile(deckId, userId);
-    if (!profile) return await fail("upstream_busy");
+    const profile = await profileOfHead(head);
     const owned = await readOwnedOracleIds(userId, [
       ...profile.cards.map((c) => c.oracleId),
       ...profile.skeleton.staples.map((s) => s.oracleId),

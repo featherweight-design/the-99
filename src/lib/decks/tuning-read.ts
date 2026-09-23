@@ -12,7 +12,8 @@ import {
   decks,
 } from "../../db/schema";
 import { readAllowance, settleModelCall } from "../model/allowance";
-import { listFingerprint } from "../profile/fingerprint";
+import { cacheForUser } from "../cache/user-lists";
+import { listFingerprint, profileFingerprint } from "../profile/fingerprint";
 import { loadDeckProfileFromHead, loadProfileHead, type ProfileHead } from "../profile/load";
 import { PROFILE_VERSION } from "../profile/version";
 import type { Bracket, DeckProfile } from "../profile/types";
@@ -64,6 +65,18 @@ export async function tuningInputs(deckId: string, userId: string): Promise<Tuni
     collection: upload?.confirmedAt ? new Date(upload.confirmedAt).toISOString() : null,
   });
   return { head, games, intent, declared: (head.declaredBracket as Bracket | null) ?? null, fingerprint };
+}
+
+/**
+ * The profile of exactly this head — the one the fingerprint hashed and the bracket flag swaps.
+ * `cachedDeckProfile` would read the head again, and an edit landing between the two reads would
+ * pair a profile of one list with a fingerprint and a flag of another. The cache key is the one
+ * `cachedDeckProfile` files under, so an analysis already pressed is still reused.
+ */
+export function profileOfHead(head: ProfileHead): Promise<DeckProfile> {
+  return cacheForUser(head.userId, ["deck-profile", head.deckId, profileFingerprint(head)], () =>
+    loadDeckProfileFromHead(head),
+  );
 }
 
 /** Which of these cards the reader owns at all. One read, for the evidence pack. */

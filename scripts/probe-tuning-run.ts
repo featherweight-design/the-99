@@ -19,8 +19,8 @@
 //   8  dismiss, then restore
 //   9  only an answer spends a unit
 //  10  saving the intent clears the seeded flag; an over-cap save writes nothing
-// Case 11, the seeding in `createDeck` and `fillDeck`, needs a session and an EDHREC fetch, so
-// it lives in `src/app/decks/actions.test.ts` against the stubbed driver instead.
+// Case 11, the seeding in `createDeck` (and `fillDeck` declining to seed), needs a session and
+// an EDHREC fetch, so it lives in `src/app/decks/actions.test.ts` against the stubbed driver.
 //
 // It writes decks under per-run `user_id`s and deletes them, and their allowance rows, in a
 // `finally`. Every fixture deck is WHOLE (99 cards), because the analysis the run reads refuses
@@ -268,6 +268,29 @@ async function run() {
     check("5 · an apply whose cut the deck no longer holds is refused", await applyItem(itemId, u), null);
     check("5 · and adds nothing", await cardRow(deck, c.add), null);
     check("5 · and leaves the item pending", await verdictOf(itemId), { verdict: "pending", snapshot: false });
+  }
+
+  // 7 · Undo restores the deck the apply left, and nothing it did not leave.
+  {
+    const u = newUser();
+    const deck = await makeDeck(u, c);
+    const cut = c.body[2];
+    await fixture.execute(sql`
+      update deck_cards set quantity = 2 where deck_id = ${deck}::uuid and oracle_id = ${cut}::uuid`);
+    const { itemId } = await answered(u, deck, c, "fp", cut);
+    await applyItem(itemId, u);
+    // A mark put on the remaining copy AFTER the apply is not part of the deck undo restores.
+    await fixture.execute(sql`insert into deck_proxies (deck_id, oracle_id) values (${deck}::uuid, ${cut}::uuid)`);
+    await undoItem(itemId, u);
+    check("7 · undo takes off a proxy mark added after the apply", await proxied(deck, cut), false);
+    check("7 · and the cut is back at two copies", await cardRow(deck, cut), { quantity: 2, auto: false });
+
+    // The player edits the add after applying: undo would destroy that edit, so it refuses.
+    await applyItem(itemId, u);
+    await fixture.execute(sql`delete from deck_cards where deck_id = ${deck}::uuid and oracle_id = ${c.add}::uuid`);
+    check("7 · undo over a deck the player has since changed is refused", await undoItem(itemId, u), null);
+    check("7 · and leaves the cut as the player left it", await cardRow(deck, cut), { quantity: 1, auto: false });
+    check("7 · and the item accepted", (await verdictOf(itemId)).verdict, "accepted");
   }
 
   // 8 · Dismiss, then restore, with the deck untouched.

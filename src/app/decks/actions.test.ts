@@ -699,19 +699,17 @@ describe("createDeck — filled baseline", () => {
     expect(stub.state.updateCalls.some((c) => seeds(c.values))).toBe(false);
   });
 
-  it("seeds the intent when the failed fill is retried and lands rows", async () => {
+  // The retry fills a deck that already exists, where a cleared line cannot be told from one
+  // never written — so it seeds nothing, even when it lands rows.
+  it("seeds nothing when the failed fill is retried, even when it lands rows", async () => {
     stub.state.decks.push({ id: "deck-1", userId: "user_1", commanderOracleId: COMMANDER_ORACLE });
     stub.state.cards.push(commanderCard());
     stub.state.collectionItems.push(...Array.from({ length: 10 }, (_, i) => rampCard(i)));
 
     await fillDeck("deck-1");
 
-    // The update is conditional on `intent is null` in SQL, so a line the player already
-    // wrote is never replaced; the stub records the write the fill asked for.
-    expect(stub.state.updateCalls).toContainEqual({
-      table: "decks",
-      values: { intent: "Built around Atraxa, Praetors' Voice, from the cards you own.", intentSeeded: true },
-    });
+    expect(stub.state.insertCalls.some((c) => c.table === "deck_cards")).toBe(true);
+    expect(stub.state.updateCalls.some((c) => (c.values as { intentSeeded?: boolean }).intentSeeded)).toBe(false);
   });
 
   it("seeds nothing when the retry meets a deck that already holds cards", async () => {
