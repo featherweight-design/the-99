@@ -1,0 +1,98 @@
+import { and, eq, gt, inArray, sql } from "drizzle-orm";
+
+import { db } from "../../db";
+import { modelCalls } from "../../db/schema";
+import {
+  ALLOWANCE_WINDOW_MS,
+  RESERVATION_TTL_MS,
+  allowanceFrom,
+  type Allowance,
+  type LedgerRow,
+  type ModelFeature,
+} from "./allowance-rule";
+
+/**
+ * The allowance ledger's only reader and writer. SERVER-ONLY: it imports the database.
+ *
+ * A unit is RESERVED when a run starts, SPENT when the run ends with an answer the player sees,
+ * and REFUNDED on any failure or Stop. `reserved` counts, because it is a run in flight — not
+ * counting it is exactly how two concurrent presses would both take the last unit — but only for
+ * `RESERVATION_TTL_MS`: past that nothing can still be running, and a unit left reserved (a crash,
+ * a deck deleted mid-run, which cascades its run away) stops counting on its own.
+ */
+
+type Tx = Parameters<Parameters<typeof db.transaction>[0]>[0];
+
+/** Thrown inside a caller's transaction to roll back a run that found the allowance spent. */
+export class AllowanceSpentError extends Error {
+  constructor() {
+    super("model allowance spent");
+    this.name = "AllowanceSpentError";
+  }
+}
+
+/** The window's reserved and spent rows. `allowanceFrom` applies `counts` — one rule. */
+async function ledgerRows(q: Tx | typeof db, userId: string, now: Date): Promise<LedgerRow[]> {
+  const since = new Date(now.getTime() - ALLOWANCE_WINDOW_MS);
+  const rows = await q
+    .select({ status: modelCalls.status, createdAt: modelCalls.createdAt })
+    .from(modelCalls)
+    .where(and(
+      eq(modelCalls.userId, userId),
+      gt(modelCalls.createdAt, since),
+      inArray(modelCalls.status, ["reserved", "spent"]),
+    ));
+  return rows as LedgerRow[];
+}
+
+export async function readAllowance(userId: string, now: Date = new Date()): Promise<Allowance> {
+  return allowanceFrom(await ledgerRows(db, userId, now), now);
+}
+
+/**
+ * Inside the CALLER's transaction: lock, count, insert. Null when the allowance is spent.
+ *
+ * The caller inserts its own run row in the same transaction, so a run holds a unit and a run
+ * row or neither. The lock is per player and transaction-scoped: `hashtextextended`, the 64-bit
+ * form `replaceCollection` uses, under a prefix so it never contends with that lock.
+ */
+export async function reserveModelCall(
+  tx: Tx,
+  userId: string,
+  feature: ModelFeature,
+  now: Date = new Date(),
+): Promise<{ id: string } | null> {
+  await tx.execute(sql`select pg_advisory_xact_lock(hashtextextended(${`model-allowance:${userId}`}, 0))`);
+  const allowance = allowanceFrom(await ledgerRows(tx, userId, now), now);
+  if (allowance.used >= allowance.limit) return null;
+  const [row] = await tx
+    .insert(modelCalls)
+    .values({ userId, feature, createdAt: now })
+    .returning({ id: modelCalls.id });
+  return row;
+}
+
+/**
+ * Inside the outcome write's transaction. Moves only a `reserved` row, so settling twice — a
+ * reaper and a late outcome, say — changes nothing the second time.
+ *
+ * A LATE SUCCESS IS NOT CHARGED. Once a reservation passes `RESERVATION_TTL_MS` it stops counting,
+ * and a later press may have reserved the unit it freed; settling the old row `spent` then would
+ * put the player one over the allowance. So a `spent` settle applies only while the reservation
+ * is still live, and past that the row is refunded instead: the answer that arrived that late
+ * costs the player nothing. Decided in the same statement as the move, so no read can go stale
+ * between the check and the write, and against the same clock `reserveModelCall` stamped the
+ * row with.
+ */
+export async function settleModelCall(
+  tx: Tx,
+  callId: string,
+  to: "spent" | "refunded",
+  now: Date = new Date(),
+): Promise<void> {
+  const live = gt(modelCalls.createdAt, new Date(now.getTime() - RESERVATION_TTL_MS));
+  await tx
+    .update(modelCalls)
+    .set({ status: to === "spent" ? sql`case when ${live} then 'spent' else 'refunded' end` : "refunded" })
+    .where(and(eq(modelCalls.id, callId), eq(modelCalls.status, "reserved")));
+}
