@@ -119,6 +119,15 @@ describe("callModel", () => {
     expect(calls).toHaveLength(1);
   });
 
+  it("does not retry the SDK's own timeout even with budget left", async () => {
+    // The case above cannot tell a retried timeout from an unretried one: by the time its abort
+    // fires the deadline is spent, so the loop would stop either way. Here the timeout arrives
+    // at t=0 with the whole budget left, so a retryable timeout would make a second call.
+    const { messages, calls } = scripted([new Anthropic.APIConnectionTimeoutError(), reply({ answer: "x" })]);
+    expect(await callModel(req, { messages, now: () => 0, log: quiet })).toEqual({ ok: false, errorClass: "timeout" });
+    expect(calls).toHaveLength(1);
+  });
+
   it("spends one deadline across both attempts, not one each", async () => {
     // The first attempt eats 89s of a 90s budget and fails retryably. The retry must be armed
     // with the ~1s that is left, not a fresh 90s.
