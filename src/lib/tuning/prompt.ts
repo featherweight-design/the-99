@@ -49,14 +49,18 @@ function renderPack(pack: EvidencePack): string {
     lines.push("No games logged yet. There is no play evidence: suggest from the decklist and its targets alone, and cite no games.");
   } else {
     const { wins, losses, draws } = summary.record;
-    lines.push(`${summary.count} games logged: ${wins} won, ${losses} lost, ${draws} drawn. ${summary.marked} of ${summary.count} carry marks.`);
+    const n = summary.count;
+    lines.push(`${n} games logged: won ${wins} of ${n}, lost ${losses} of ${n}, drew ${draws} of ${n}. ${summary.marked} of ${n} carry marks.`);
     for (const axis of summary.axes) {
       lines.push(`- ${axisLabel(axis.key)}: marked as hurting in ${axis.hurt} of ${summary.count} games, as working in ${axis.worked} of ${summary.count} games.`);
     }
     const noted = games.filter((g) => g.note !== null);
     if (noted.length > 0) {
-      lines.push("Notes, verbatim, with their dates:");
-      for (const g of noted) lines.push(`- ${g.playedAt.slice(0, 10)}: "${g.note}"`);
+      // NOT wrapped in quotation marks here: a note may itself contain one, and a delimiter that
+      // can collide with the text breaks the verbatim boundary. Each note is the whole rest of its
+      // line; the model is told to quote it in double quotes, with its date.
+      lines.push("Notes, one per line after the date and colon, verbatim. Quote a note in double quotation marks, byte for byte, with its date:");
+      for (const g of noted) lines.push(`- ${g.playedAt.slice(0, 10)}: ${g.note}`);
     }
   }
 

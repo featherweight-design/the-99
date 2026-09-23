@@ -1,7 +1,7 @@
 import { validateCardForDeck } from "../decks/add-validation";
 import type { TuningCitation } from "../../db/schema";
 import type { EvidencePack } from "./evidence";
-import { presentationFailures, type RuleKey } from "./presentation";
+import { presentationFailures, type Quotable, type RuleKey } from "./presentation";
 import type { TuningResponse, TuningSuggestion } from "./response-schema";
 
 /**
@@ -44,9 +44,12 @@ export function validateSuggestions(args: {
 }): { kept: ValidatedSuggestion[]; droppedCount: number; drops: Drop[] } {
   const { response, pack, resolveName } = args;
   const inDeck = new Map(pack.cards.map((c) => [c.oracleId, c]));
-  const notes = pack.play.games.flatMap((g) => (g.note === null ? [] : [g.note]));
-  // Everything the player wrote that a suggestion may quote.
-  const quotable = pack.intent === null ? notes : [...notes, pack.intent];
+  // Everything the player wrote that a suggestion may quote: each note with its game's date, as
+  // the prompt renders it, and the intent, which has none.
+  const quotable: Quotable[] = [
+    ...pack.play.games.flatMap((g) => (g.note === null ? [] : [{ text: g.note, date: g.playedAt.slice(0, 10) }])),
+    ...(pack.intent === null ? [] : [{ text: pack.intent, date: null }]),
+  ];
   const [primary, partner] = pack.commanders;
   const deck = {
     commanderOracleId: primary?.oracleId ?? "",

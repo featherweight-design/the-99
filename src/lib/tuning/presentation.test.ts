@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 
 import { presentationFailures } from "./presentation";
 
-const notes = ["flooded out on turn six"];
+const notes = [{ text: "flooded out on turn six", date: "2026-09-01" }];
 
 describe("presentationFailures", () => {
   it("passes a line that carries its denominator", () => {
@@ -33,7 +33,24 @@ describe("presentationFailures", () => {
   });
 
   it("accepts a quotation of anything the player wrote, the intent included", () => {
-    expect(presentationFailures('For a deck meant to "go wide with tokens", this fits.', [...notes, "go wide with tokens"])).toEqual([]);
+    expect(presentationFailures('For a deck meant to "go wide with tokens", this fits.', [...notes, { text: "go wide with tokens", date: null }])).toEqual([]);
+  });
+
+  it("requires a quoted note's date in the same text", () => {
+    expect(presentationFailures('You wrote "flooded out on turn six".', notes)).toContain("quotedNote");
+  });
+
+  it("asks a card count for its denominator", () => {
+    expect(presentationFailures("Cut 2 cards for this.", notes)).toContain("denominator");
+    expect(presentationFailures("Swaps 2 of 99 cards.", notes)).toEqual([]);
+  });
+
+  it("catches a sign after punctuation, not only after a space", () => {
+    expect(presentationFailures("delta=-2 across the log", notes)).toContain("noNet");
+  });
+
+  it("does not read a range as a sign", () => {
+    expect(presentationFailures("Games ran 8-10 turns.", notes)).toEqual([]);
   });
 
   it("does not read a hyphenated word as a sign", () => {
@@ -41,8 +58,8 @@ describe("presentationFailures", () => {
   });
 
   it("passes a note quoted verbatim and catches one that is not", () => {
-    expect(presentationFailures('You wrote "flooded out on turn six".', notes)).toEqual([]);
-    expect(presentationFailures("You wrote “flooded out on turn six”.", notes)).toEqual([]);
+    expect(presentationFailures('On 2026-09-01 you wrote "flooded out on turn six".', notes)).toEqual([]);
+    expect(presentationFailures("On 2026-09-01 you wrote “flooded out on turn six”.", notes)).toEqual([]);
     expect(presentationFailures('You wrote "flooded on turn six".', notes)).toContain("quotedNote");
   });
 });
