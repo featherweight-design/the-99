@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 
 import type { DeckGame } from "../decks/games";
+import { buildDeckProfile } from "./build";
 import { buildPlayGroup } from "./play";
 
 const game = (id: string, over: Partial<DeckGame> = {}): DeckGame => ({
@@ -38,5 +39,25 @@ describe("buildPlayGroup", () => {
 
   it("serializes playedAt as a string, because the profile is JSON-only", () => {
     expect(buildPlayGroup(games).games[0].playedAt).toBe("2026-09-01T20:00:00.000Z");
+  });
+});
+
+// The play group is composed at the read and never stored: the builder must not set it, or a
+// cached profile would carry the games it was built with and go stale on the next one logged.
+describe("the play key on a built profile", () => {
+  it("is absent from what buildDeckProfile returns", () => {
+    const built = buildDeckProfile({
+      deckId: "d", fingerprint: "f", cards: [], commanderOracleIds: ["cmd"], identity: [],
+      condition: "C",
+      composition: { pair: null, commander: null, identity: null, count: null },
+      roles: { pair: null, commander: null, identity: null, count: null },
+      thinCondition: false, staples: [], commanderDeckCount: null, population: null,
+      mldFlags: new Map(), extraTurnFlags: new Map(), gameChangerIds: new Set(), twoCardCombos: [],
+      tutorIds: new Set(),
+      detection: {
+        massLandDenial: { methods: [], basis: "" }, extraTurn: { methods: [], basis: "" }, twoCardCombos: { methods: [], basis: "" },
+      },
+    });
+    expect("play" in built).toBe(false);
   });
 });

@@ -145,8 +145,10 @@ describe("profileFingerprint after the extraction", () => {
   });
 });
 
-// The play group is attached at the read and never stored, so carrying it must move neither
-// key: a logged game retiring every cached and stored analysis is exactly what it avoids.
+// What this pins is narrower than the play group and is stated as such: both fingerprints hash
+// the list and nothing else they are handed. That is the property that keeps a `play` key from
+// moving them — a hash over the whole input object would fail here. Whether a builder or a cache
+// ever SETS `play` is pinned in play.test.ts.
 describe("the play group and the fingerprints", () => {
   it("moves neither fingerprint when a play group rides along", () => {
     const withPlay = {

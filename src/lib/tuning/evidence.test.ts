@@ -76,8 +76,21 @@ describe("buildEvidencePack", () => {
   it("measures the flat fallback against the whole deck, commander included", () => {
     const flat = profile({ roles: { pair: null, commander: null, identity: null, count: null } });
     const pack = buildEvidencePack({ ...input(), profile: flat });
-    expect(pack.targets.measured).toBe(false);
-    expect(pack.targets.roles.find((t) => t.role === "ramp")?.have).toBe(10);
+    expect(pack.targets.roles.find((t) => t.role === "ramp")).toMatchObject({ have: 10, measured: false });
+  });
+
+  it("treats a measured chain with a non-finite target as the flat fallback it becomes", () => {
+    // recommendedMix drops to its flat figures here, so the count must drop to the whole deck.
+    const broken = profile({ roles: { pair: null, commander: { ramp: Number.NaN, draw: 10, removal: 8, wipes: 3 }, identity: null, count: null } });
+    const r = buildEvidencePack({ ...input(), profile: broken }).targets.roles.find((t) => t.role === "ramp");
+    expect(r).toMatchObject({ target: 10, have: 10, measured: false });
+  });
+
+  it("flags land on its own chain: measured roles beside an asserted land count", () => {
+    const land = buildEvidencePack(input()).targets.roles.find((t) => t.role === "land");
+    const ramp = buildEvidencePack(input()).targets.roles.find((t) => t.role === "ramp");
+    expect(ramp?.measured).toBe(true);
+    expect(land?.measured).toBe(false);
   });
 
   it("carries the advisory flag through, and land as a range", () => {

@@ -26,7 +26,9 @@ export type FingerprintInput = {
   }[];
   intent: string | null;
   /** The newest confirmed collection upload's `confirmed_at` (ISO), or null. `import.ts` is
-   *  the only writer of `collection_items` and stamps it on every replace. */
+   *  the only writer of `collection_items`, and the app's replace — `confirmUpload` — stamps
+   *  it. The developer seed script (`pnpm db:seed:collection`) replaces without an upload row,
+   *  so a seeded collection does not move this; a fixture account is the only reader of that. */
   collection: string | null;
 };
 

@@ -31,10 +31,13 @@ export type EvidencePack = {
     commander: boolean;
   }[];
   targets: {
-    /** The five mix cells, land included. `advisory` marks a range rather than a finish line. */
-    roles: { role: MixRole; have: number; target: number; advisory: boolean }[];
-    /** Whether the targets came from decklists at all, or from the asserted baseline. */
-    measured: boolean;
+    /**
+     * The five mix cells, land included. `advisory` marks a range rather than a finish line.
+     * `measured` is PER CELL, because `recommendedMix` resolves the four roles and the land count
+     * independently: a commander indexed before the role pass has a measured land target beside
+     * four asserted ones, and one flag for all five would misdescribe some of them.
+     */
+    roles: { role: MixRole; have: number; target: number; advisory: boolean; measured: boolean }[];
     /** The skeleton's own honesty flag: targets taken over too few decks. */
     thin: boolean;
   };
@@ -61,11 +64,20 @@ export function buildEvidencePack(input: {
   }
 
   const mix = recommendedMix(profile.skeleton, profile.commanderOracleIds.length > 1);
+  // Whether the four ROLE cells are measured — the predicate `recommendedMix` applies before it
+  // falls back to its flat figures (`rolesUsable`, src/lib/decks/mix.ts). Restated rather than
+  // imported because mix.ts does not export it; if the two ever disagree, a cell would be
+  // counted against a population its target was not derived for.
+  const roleTargets = profile.skeleton.roleTargets;
+  const rolesMeasured = roleTargets.of !== "flat"
+    && Object.values(roleTargets.targets).every((v) => typeof v === "number" && Number.isFinite(v));
+  const landMeasured = profile.skeleton.composition != null
+    && Number.isFinite(profile.skeleton.composition.targets.land);
   // WHICH POPULATION DEPENDS ON WHICH TARGET — the rule `fitSkeleton` applies. A measured target
   // came from EDHREC support lists, which never contain the commander, so the 99 alone is the
   // comparable count; full counts against it read a phantom surplus on a role-bearing commander.
-  const measured = profile.skeleton.roleTargets.of !== "flat";
-  const have = measured ? profile.roles.excludingCommanders : profile.roles.counts;
+  // The asserted baseline is a design figure for a whole deck, so it takes the full count.
+  const have = rolesMeasured ? profile.roles.excludingCommanders : profile.roles.counts;
 
   const inDeck = new Set(profile.cards.map((c) => c.oracleId));
 
@@ -86,11 +98,11 @@ export function buildEvidencePack(input: {
     targets: {
       roles: MIX_ORDER.map((role) => ({
         role,
-        have: have[role],
+        have: role === "land" ? profile.roles.counts.land : have[role],
         target: mix.cells[role].target,
         advisory: mix.cells[role].advisory,
+        measured: role === "land" ? landMeasured : rolesMeasured,
       })),
-      measured,
       thin: profile.skeleton.thinCondition,
     },
     staples: profile.skeleton.staples
