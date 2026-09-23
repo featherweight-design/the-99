@@ -8,19 +8,19 @@ narrative synopsis will later occupy.
 **Tech stack:** unchanged. No new dependencies. Next.js 16 App Router, React 19, Tailwind 4,
 Drizzle on Neon, Vitest, Playwright probes.
 
-**Status of the inputs, verified on `main` 2026-09-20:**
+**Status of the inputs, verified on `main` 2026-09-20; every row re-verified 2026-09-22:**
 
 | Input | State |
 |---|---|
 | Spellbook combo ingest, `spellbook_variants`, `db:seed:combos`, `check:spellbook` | **built** |
-| `buildDeckProfile`, `loadDeckProfile`, `cachedDeckProfile` | **built, no consumer** |
-| `slotDeck` / `bracketDelta` / `upgradePath` / `fitSkeleton` | **built, unit-tested, no consumer** |
-| `decks.declared_bracket` column + check constraint | **built, no write path** |
-| Round 0 — the frame | merged (#753) |
+| `buildDeckProfile`, `loadDeckProfile`, `cachedDeckProfile` | **built**; `cachedDeckProfile`'s first consumer is PR 1b (#825) |
+| `slotDeck` / `bracketDelta` / `upgradePath` / `fitSkeleton` | **built, unit-tested**, and each has a shipped consumer: the verdict, the card note, the upgrade path, the mix strip |
+| `decks.declared_bracket` column + check constraint | **built**; write path shipped in 3b (#821) |
+| Round 0 — the frame | handoff merged (#753); **shipped**: the Analysis tab (#788) |
 | Round 1 — the card mark | **shipped** |
-| Round 2 — the verdict | design complete, **unbuilt** |
-| Round 3 — the declaration | audited 🟡 Yellow at R7, 2026-09-21; no Design question open |
-| Round 4 — the push line and the upgrade path | audited 🟡 Yellow at R2, 2026-09-21; Design self-assesses Green |
+| Round 2 — the verdict | **shipped**: head #851, climb #853, findings #863, lean #865 |
+| Round 3 — the declaration | audited 🟡 Yellow at R7, 2026-09-21 (#800), drift resolved; **shipped**: the ask #862, version comparison #866 |
+| Round 4 — the push line and the upgrade path | audited 🟢 Green at R3, 2026-09-21 (#815); the push line withdrawn for the card note; **shipped**: card note #854, #859, #869, upgrade path #867 |
 
 ---
 
