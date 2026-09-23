@@ -55,6 +55,9 @@ const PASSWORD = process.env.E2E_AUDIT_USER_PASSWORD;
 // has always reached every surface, while the two joined flags are the pair that had no
 // route to the modal at all. The default exercises the path that was broken.
 const CARD = process.env.PROBE_MARKED_CARD ?? "Expropriate";
+// `cardMarkCopy.modalHeading`, stated once here because a probe cannot import the TS module.
+// It was "In the bracket rules" until the tutor joined the block on 2026-09-22.
+const MODAL_HEADING = "Bracket facts";
 // A deck that HOLDS a marked card — DISCOVERED by asking /decks rather than hardcoded.
 //
 // A hardcoded id was wrong twice over: most decks hold no marked card at all (the busiest
@@ -585,20 +588,20 @@ async function run() {
       if (await trigger.count()) {
         await trigger.click();
         await page.locator('[role="dialog"]').first().waitFor({ timeout: 10_000 });
-        const block = await page.evaluate((card) => {
+        const block = await page.evaluate(([card, headingText]) => {
           const dialog = document.querySelector('[role="dialog"]');
           if (!dialog) return null;
           const heading = [...dialog.querySelectorAll("h3")].find(
-            (h) => h.textContent?.trim() === "In the bracket rules",
+            (h) => h.textContent?.trim() === headingText,
           );
           if (!heading) return { found: false, card };
           const items = [...(heading.parentElement?.querySelectorAll("li") ?? [])].map((li) =>
             li.textContent?.trim(),
           );
           return { found: true, items };
-        }, CARD);
+        }, [CARD, MODAL_HEADING]);
         report(`${label}px · modal · spells the facts out`, Boolean(block?.found),
-          block?.found ? block.items.join(" / ") : "no `In the bracket rules` block");
+          block?.found ? block.items.join(" / ") : `no \`${MODAL_HEADING}\` block`);
       } else {
         report(`${label}px · modal · reached a marked card`, false, `no trigger for "${CARD}"`);
       }

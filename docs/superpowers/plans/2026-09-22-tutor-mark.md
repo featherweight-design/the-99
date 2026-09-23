@@ -1,7 +1,6 @@
 # Implementation plan: the tutor mark on every card surface
 
-**Status: DRAFT.** Decision 1 is RULED (Hugh, 2026-09-22): land-only searches are not tutors. The
-plan as a whole still waits on Hugh's approval before any build.
+**Status:** PR A shipped as #872 (the rule). PR B is the mark, stored and drawn.
 
 **Glyph:** `TutorGlyph` (`src/components/cards/tutor-glyph.tsx`, #863), lifted from the verdict
 canvas §4a. §C2 of `design/design_handoff_the99_push_line/STATES-push-line.md` lists it as the
@@ -68,6 +67,11 @@ Three strings, each shown with a picture of the surface it lands on:
 2. **The tutor's key entry, modal line and accessible name.** One string used in all three
    places, as `cardMarkCopy` does for the other three.
 3. **The tutor's tooltip sentence.**
+
+**Shipped in #876:** the heading is now *"Bracket facts"*, which heads four fact entries. The
+tutor's name is *"tutor"*, lowercase like the other three. Its tooltip reads *"This card searches
+your library for something other than a land."* These are the strings `/copy-review` sees. The
+paragraphs above record what was asked, not what shipped.
 
 The ORDER of the marks follows §C2's list (bolt, peak, turn again, lemniscate, drawn up), so the
 tutor goes last. That is transcribed, not decided.

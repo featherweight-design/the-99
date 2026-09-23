@@ -1012,21 +1012,22 @@ export async function selectCollectionRows(
 }
 
 /**
- * Attach the two bracket facts that are NOT on a card row.
+ * Attach the stored bracket facts that are NOT on a card row: mass land denial, extra turns and
+ * tutor.
  *
  * `game_changer` is already aggregated — it rides `cards` — so this asks only about
- * mass land denial and extra turns, which live in `card_bracket_flags`. One query for
+ * mass land denial, extra turns and tutor, which live in `card_bracket_flags`. One query for
  * the whole collection rather than one per card.
  *
  * NULL-SAFE BY OMISSION, in the one direction this is allowed to fail: a card with no
- * row carries neither flag, and a read that comes back empty leaves every card exactly
+ * row carries none of the three, and a read that comes back empty leaves every card exactly
  * as `aggregateCollection` left it. The surface then draws fewer marks than it might
  * have, which is silence — never a claim that a card is clear.
  *
  * QUIET ON FAILURE, for the same reason and with the same shape as the availability
  * read on this page (`/collection/page.tsx`, "Quiet failure"). A mark is an annotation
  * on a list that is useful without it, so a flags outage costs the marks and must not
- * cost the collection: rejecting here would take the whole route down to hide three
+ * cost the collection: rejecting here would take the whole route down to hide four
  * glyphs. The cards come back exactly as they went in.
  */
 export async function attachBracketFacts(
@@ -1045,7 +1046,7 @@ export async function attachBracketFacts(
   if (flags.size === 0) return cards;
   for (const card of cards) {
     // One assembly for every surface (`factsFor`), rather than a second copy of the rule
-    // here: the ORDER is part of the contract — gameChanger, massLandDenial, extraTurns,
+    // here: the ORDER is part of the contract — gameChanger, massLandDenial, extraTurns, tutor,
     // which is what the key lists and every surface draws — and two implementations of an
     // ordering is how it drifts. `gameChanger` is already on the card from the row query,
     // so it is re-derived from the list rather than re-read.

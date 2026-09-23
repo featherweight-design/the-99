@@ -1336,13 +1336,21 @@ Package manager is **pnpm** (pinned via `packageManager` in package.json) — ne
   **The publish is two transactions, flags then bulk**, and it refuses rather than publishing a
   partial ingest. Per-source collapse FLOORS are checked first — `mldFromSweep` 30,
   `mldFromRule` 20, `extraTurnFromSweep` 23, `extraTurnFromRule` 26, `sweepResolutionShare`
-  0.5, `variantsKept` 53,000 — every one measured on the first real run rather than guessed. A
-  run under any floor leaves the previous tables standing and exits non-zero, because a
-  half-ingested combo index is indistinguishable from a complete one to every reader.
+  0.5, `variantsKept` 53,000 — every one measured on the first real run rather than guessed —
+  and `tutorFromRule` 209, half the 419 counted on staging's catalog when the column was added.
+  A run under any floor leaves the previous tables standing and exits non-zero, because a
+  half-ingested combo index is indistinguishable from a complete one to every reader. The
+  classifier floors are `classifierCollapse`, a pure function with one test per floor, rather
+  than checks inline in the ingest where nothing asserted them.
+
+  **It also stores the TUTOR** (since 2026-09-22): `isTutor` over the same oracle text, sourced to
+  `oracle_rule` alone, because `/collection` selects no oracle text and the mark has to read a
+  column. A column added by migration is false on every row until the next run writes it, so the
+  tutor mark is dark after a deploy until this job runs — dispatch it rather than wait for Monday.
 
   `card_bracket_flags` carries per-flag SOURCES (`spellbook_sweep`, `oracle_rule`) with a check
   constraint tying the boolean to a non-empty source array, so a row can never say "true, and
-  nobody claims it". An ABSENT id means neither flag applies and nothing more — a card the
+  nobody claims it". An ABSENT id means no flag applies and nothing more — a card the
   sweep resolved and cleared is byte-identical to one it never returned, and no reader may
   describe it as if it could tell them apart.
 

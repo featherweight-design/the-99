@@ -145,7 +145,7 @@ describe("the card modal's combo block", () => {
     expect(row.contains(marker), "the marker is nested inside the row's button").toBe(false);
   });
 
-  // THE BLOCK STAYS IN THE MODAL'S HEADING OUTLINE, beside `In the bracket rules`.
+  // THE BLOCK STAYS IN THE MODAL'S HEADING OUTLINE, beside `Bracket facts`.
   it("keeps a level-3 heading around its toggle", () => {
     render(<ComboPartnersDetail card={card([partner()])} />);
     const heading = screen.getByRole("heading", { level: 3 });

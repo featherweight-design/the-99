@@ -116,6 +116,9 @@ export type FlagRow = {
   massLandDenialSources: FlagSource[];
   extraTurn: boolean;
   extraTurnSources: FlagSource[];
+  /** The oracle rule is the only source: Spellbook's sweep does not classify tutors. */
+  tutor: boolean;
+  tutorSources: FlagSource[];
 };
 
 /**
@@ -131,7 +134,7 @@ export type FlagRow = {
  */
 export function unionFlagRows(
   swept: Map<string, SweptFlags>,
-  ruled: Map<string, { massLandDenial: boolean; extraTurn: boolean }>,
+  ruled: Map<string, { massLandDenial: boolean; extraTurn: boolean; tutor: boolean }>,
 ): FlagRow[] {
   const rows: FlagRow[] = [];
   for (const oracleId of new Set([...swept.keys(), ...ruled.keys()])) {
@@ -143,13 +146,16 @@ export function unionFlagRows(
     const etSources: FlagSource[] = [];
     if (s?.extraTurn) etSources.push("spellbook_sweep");
     if (r?.extraTurn) etSources.push("oracle_rule");
-    if (mldSources.length === 0 && etSources.length === 0) continue;
+    const tutorSources: FlagSource[] = r?.tutor ? ["oracle_rule"] : [];
+    if (mldSources.length === 0 && etSources.length === 0 && tutorSources.length === 0) continue;
     rows.push({
       oracleId,
       massLandDenial: mldSources.length > 0,
       massLandDenialSources: mldSources,
       extraTurn: etSources.length > 0,
       extraTurnSources: etSources,
+      tutor: tutorSources.length > 0,
+      tutorSources,
     });
   }
   return rows;

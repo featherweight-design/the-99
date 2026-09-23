@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { FLOORS, fieldCollapse, fieldPopulation } from "./seed";
+import { FLOORS, classifierCollapse, fieldCollapse, fieldPopulation } from "./seed";
 
 type Row = Parameters<typeof fieldPopulation>[0][number];
 
@@ -88,3 +88,33 @@ describe("fieldCollapse", () => {
     expect(fieldCollapse(fieldPopulation(rows), FLOORS)).toEqual([]);
   });
 });
+
+describe("classifierCollapse", () => {
+  // The first real run with the tutor column, on local-dev 2026-09-22.
+  const healthy = { mldSweep: 106, mldRule: 40, etSweep: 53, etRule: 52, tutorRule: 410 };
+
+  it("publishes a run clearing every classifier floor", () => {
+    expect(classifierCollapse(healthy, 1, FLOORS)).toEqual([]);
+  });
+
+  // One case per floor, each naming that floor alone. A floor whose check is deleted fails
+  // exactly its own case — which is the property "every floor is asserted" needs.
+  it.each([
+    ["mldSweep", "mld sweep", FLOORS.mldFromSweep],
+    ["mldRule", "mld rule", FLOORS.mldFromRule],
+    ["etSweep", "extra-turn sweep", FLOORS.extraTurnFromSweep],
+    ["etRule", "extra-turn rule", FLOORS.extraTurnFromRule],
+    // The tutor floor: a tutor rule that silently stopped matching must refuse the publish, or
+    // every tutor mark in the app goes dark behind a green job.
+    ["tutorRule", "tutor rule", FLOORS.tutorFromRule],
+  ] as const)("refuses a run whose %s collapsed, naming that floor alone", (key, words, floor) => {
+    const below = classifierCollapse({ ...healthy, [key]: 0 }, 1, FLOORS);
+    expect(below).toEqual([`${words} 0 < ${floor}`]);
+  });
+
+  it("refuses a run whose sweep resolved too little of what it returned", () => {
+    const below = classifierCollapse(healthy, 0.1, FLOORS);
+    expect(below).toEqual([`resolution share 0.100 < ${FLOORS.sweepResolutionShare}`]);
+  });
+});
+

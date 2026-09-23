@@ -112,8 +112,8 @@ describe("unionFlagRows", () => {
         [id(3), { massLandDenial: true, extraTurn: false, gameChanger: false }], // both
       ]),
       new Map([
-        [id(2), { massLandDenial: true, extraTurn: false }], // rule only
-        [id(3), { massLandDenial: true, extraTurn: false }],
+        [id(2), { massLandDenial: true, extraTurn: false, tutor: false }], // rule only
+        [id(3), { massLandDenial: true, extraTurn: false, tutor: false }],
       ]),
     );
     const by = new Map(rows.map((r) => [r.oracleId, r]));
@@ -126,7 +126,7 @@ describe("unionFlagRows", () => {
     const [rows] = [
       unionFlagRows(
         new Map([[id(1), { massLandDenial: false, extraTurn: true, gameChanger: false }]]),
-        new Map([[id(1), { massLandDenial: true, extraTurn: false }]]),
+        new Map([[id(1), { massLandDenial: true, extraTurn: false, tutor: false }]]),
       ),
     ];
     expect(rows[0].massLandDenialSources).toEqual(["oracle_rule"]);
@@ -138,7 +138,7 @@ describe("unionFlagRows", () => {
   it("emits no row for a card neither source claims", () => {
     const rows = unionFlagRows(
       new Map([[id(1), { massLandDenial: false, extraTurn: false, gameChanger: true }]]),
-      new Map([[id(1), { massLandDenial: false, extraTurn: false }]]),
+      new Map([[id(1), { massLandDenial: false, extraTurn: false, tutor: false }]]),
     );
     expect(rows).toEqual([]);
   });
@@ -146,11 +146,25 @@ describe("unionFlagRows", () => {
   it("never emits a true flag with an empty source list", () => {
     const rows = unionFlagRows(
       new Map([[id(1), { massLandDenial: true, extraTurn: false, gameChanger: false }]]),
-      new Map([[id(2), { massLandDenial: false, extraTurn: true }]]),
+      new Map([[id(2), { massLandDenial: false, extraTurn: true, tutor: false }]]),
     );
     for (const r of rows) {
       expect(r.massLandDenial).toBe(r.massLandDenialSources.length > 0);
       expect(r.extraTurn).toBe(r.extraTurnSources.length > 0);
+      expect(r.tutor).toBe(r.tutorSources.length > 0);
     }
+  });
+
+  // A tutor is claimed by the oracle rule alone, so a card that is ONLY a tutor still gets a
+  // row: absence means "no flag applies", and a tutor is a flag now.
+  it("emits a row for a card that is only a tutor, sourced to the oracle rule", () => {
+    const rows = unionFlagRows(
+      new Map(),
+      new Map([[id(1), { massLandDenial: false, extraTurn: false, tutor: true }]]),
+    );
+    expect(rows).toHaveLength(1);
+    expect(rows[0].tutor).toBe(true);
+    expect(rows[0].tutorSources).toEqual(["oracle_rule"]);
+    expect(rows[0].massLandDenialSources).toEqual([]);
   });
 });

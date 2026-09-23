@@ -1,5 +1,5 @@
 // CardFactMark — one glyph for one standing fact about a card: Game Changer, mass
-// land denial, or extra turns. Drawn wherever a card already appears.
+// land denial, extra turns, or (since 2026-09-22) tutor. Drawn wherever a card already appears.
 //
 // Handoff: design/design_handoff_the99_card_mark (R1).
 //
@@ -74,7 +74,22 @@ export const CARD_FACT_MARK_PX = 16;
 /** The glow sits OUTSIDE the box model: it costs no layout and grows no row. */
 const GLOW = "drop-shadow(0 0 3px color-mix(in srgb, var(--fact) 45%, transparent))";
 
+/**
+ * Drawn up — the tutor's paths, lifted verbatim from `The 99 - The Verdict.dc.html` §4a. They
+ * live HERE, beside the other marks, and `TutorGlyph` draws them too, so the finding's mark and
+ * the card's mark are one drawing rather than two copies that agree today.
+ */
+export function TutorPaths() {
+  return (
+    <>
+      <path d="M1.8 12.2 H14.2 V14.4 H1.8 Z" fill="currentColor" />
+      <path d="M8 1.3 L11.7 5.7 H9.2 V10.3 H6.8 V5.7 H4.3 Z" fill="currentColor" />
+    </>
+  );
+}
+
 function Glyph({ fact }: { fact: CardFact }) {
+  if (fact === "tutor") return <TutorPaths />;
   if (fact === "gameChanger") {
     // Bolt — force arriving from outside the board.
     return <path d="M9.4 1.5 L4.1 8.8 H7.3 L6.6 14.5 L11.9 7.0 H8.7 Z" fill="currentColor" />;

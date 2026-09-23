@@ -19,6 +19,8 @@ export type CardBracketFlags = {
   massLandDenialSources: string[];
   extraTurn: boolean;
   extraTurnSources: string[];
+  /** Stored by the combo ingest's oracle-rule pass through `isTutor`: can find a non-land. */
+  tutor: boolean;
 };
 
 /** A card with no row is all-false — the default-false direction, never "unknown". */
@@ -27,6 +29,7 @@ export const NO_BRACKET_FLAGS: CardBracketFlags = {
   massLandDenialSources: [],
   extraTurn: false,
   extraTurnSources: [],
+  tutor: false,
 };
 
 /**
@@ -52,6 +55,7 @@ export async function loadBracketFlags(
       massLandDenialSources: cardBracketFlags.massLandDenialSources,
       extraTurn: cardBracketFlags.extraTurn,
       extraTurnSources: cardBracketFlags.extraTurnSources,
+      tutor: cardBracketFlags.tutor,
     })
     .from(cardBracketFlags)
     .where(inArray(cardBracketFlags.oracleId, [...new Set(oracleIds)]));
@@ -64,6 +68,7 @@ export async function loadBracketFlags(
         massLandDenialSources: r.massLandDenialSources,
         extraTurn: r.extraTurn,
         extraTurnSources: r.extraTurnSources,
+        tutor: r.tutor,
       },
     ]),
   );
