@@ -488,6 +488,17 @@ export const deckAnalysisCopy = {
    *
    * The row sentences live in `detection` below; this is the panel's own frame around them.
    */
+  /**
+   * The two sheets the tab adds (Analysis tab handoff §3). "What would have to go" is
+   * `upgradePathCopy.open` sentence-cased, the title when there is no count to put in the header;
+   * how we make these decisions takes `provenance.toggle` as its title.
+   */
+  sheets: {
+    upgradePath: "What would have to go",
+    closeUpgradePath: "Close what would have to go",
+    closeProvenance: "Close how we make these decisions",
+  },
+
   provenance: {
     toggle: "How we make these decisions",
     /**

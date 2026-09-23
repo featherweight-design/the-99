@@ -184,6 +184,36 @@ describe("a card opened from the receipt", () => {
     expect(receipt.dataset.behind).toBeUndefined();
   });
 
+  // Handoff §3: the desktop close becomes the way back, named for the sheet it lands on, and the
+  // sheet's body steps down further than its header.
+  it("offers the way back by the finding's name, and dims the receipt's body", async () => {
+    await openCardFromReceipt();
+    const back = within(cardDialog()).getByTestId("card-modal-back");
+    expect(back.getAttribute("aria-label")).toBe("Back to Game changers");
+    expect(back.textContent).toBe("←Game changers");
+    const receipt = screen.getByTestId("receipt-modal");
+    expect((receipt.lastElementChild as HTMLElement).style.opacity).toBe("0.35");
+    await act(async () => { fireEvent.click(back); });
+    expect(screen.queryAllByRole("dialog").some((d) => d.getAttribute("aria-labelledby") === "card-modal-title")).toBe(false);
+    expect(screen.getByTestId("receipt-modal")).toBeTruthy();
+  });
+
+  it("keeps the plain close on a card opened from nowhere", async () => {
+    mount();
+    await act(async () => { fireEvent.click(screen.getByText("open elsewhere")); });
+    expect(within(cardDialog()).queryByTestId("card-modal-back")).toBeNull();
+    expect(within(cardDialog()).getAllByRole("button", { name: "Close card details" }).length).toBe(2);
+  });
+
+  // The receipt at 760 draws four across (3a).
+  it("lays the receipt out four across at 760", () => {
+    mount();
+    fireEvent.click(within(item("gameChangers")).getByRole("button"));
+    const receipt = screen.getByTestId("receipt-modal");
+    expect(receipt.className).toContain("md:w-[760px]");
+    expect(within(receipt).getByTestId("receipt-grid").className).toContain("md:grid-cols-4");
+  });
+
   // The registration is withdrawn on unmount. Left standing, every card opened anywhere on the
   // page after a receipt had closed would draw offset and without a backdrop.
   it("is not stacked once the receipt has closed", async () => {

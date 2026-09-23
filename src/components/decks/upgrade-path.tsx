@@ -1,12 +1,11 @@
 "use client";
 
-import { useState, type ReactNode } from "react";
+import type { ReactNode } from "react";
 
 import { upgradePath, type UpgradeItem, type UpgradePath } from "../../lib/bracket/upgrade";
 import {
   heldCount,
   leftInCommandZone,
-  nearestReachable,
   overlapCount,
   targetLimit,
   thingsToGo,
@@ -22,6 +21,7 @@ import { CardFactMark } from "../cards/card-fact-mark";
 import { ComboMark } from "../cards/combo-mark";
 import { FactTooltip } from "../cards/fact-tooltip";
 import { BracketMark } from "./bracket-mark";
+import { ModalChrome } from "./receipt-modal";
 
 /**
  * What would have to go to reach a bracket below this deck's reading — as CANDIDATES, never a
@@ -38,147 +38,60 @@ import { BracketMark } from "./bracket-mark";
  * against. This
  * component draws them and derives none.
  */
-export function UpgradePathPanel({
-  id,
+export function UpgradePathSheet({
   profile,
   verdict,
-  targets,
-  onOpenDecklist,
+  target,
+  onClose,
 }: {
-  id: string;
   profile: DeckProfile;
   verdict: BracketVerdict;
-  /** The chips, nearest first. The first is the rung the disclosure opened from. */
-  targets: readonly Target[];
-  onOpenDecklist?: () => void;
+  /**
+   * ONE TARGET, the bracket directly below the reading (handoff §3, 3b). No chips choose another,
+   * and a blocked target names no nearer one: the targets nest upward, so nothing between this
+   * one and the reading exists to be reached instead.
+   */
+  target: Target;
+  onClose: () => void;
 }) {
-  const [target, setTarget] = useState<Target>(targets[0]);
   const path = upgradePath(profile, target);
   const satisfied = !path.blocked && path.items.length === 0;
+  // The head moved into the sheet's header, so the header carries what the head said.
+  const title = path.blocked
+    ? upgradePathCopy.blocked.heading(target)
+    : satisfied
+      ? deckAnalysisCopy.sheets.upgradePath
+      : upgradePathCopy.heading(target, thingsToGo(path));
   return (
-    <section
-      id={id}
-      data-testid="upgrade-path"
-      className={
-        "flex flex-col gap-[11px] rounded-[11px] border border-[color:var(--border)] bg-[color:var(--surface)] md:rounded-xl "
-        // The three shapes the package draws at three rhythms: the open path, the blocked one a
-        // step tighter, and the satisfied single row with its own padding.
-        + (satisfied
-          ? "px-[14px] py-[13px] md:px-[17px] md:py-[15px]"
-          : path.blocked
-            ? "px-[14px] py-[13px] md:gap-3 md:px-[18px] md:py-4"
-            : "px-[14px] py-[13px] md:gap-[13px] md:px-[18px] md:py-4")
-      }
+    <ModalChrome
+      mark={<BracketMark bracket={target} px={22} />}
+      title={title}
+      titleClassName="text-[14px] md:text-[16px]"
+      closeLabel={deckAnalysisCopy.sheets.closeUpgradePath}
+      onClose={onClose}
+      width={700}
+      backLabel={BRACKET_NAMES[target]}
     >
-      {path.blocked ? (
-        <Blocked
-          path={path}
-          profile={profile}
-          targets={targets}
-          onTarget={setTarget}
-        />
-      ) : path.items.length === 0 ? (
-        <Satisfied target={target} verdict={verdict} />
-      ) : (
-        <>
-          <Head target={target} eyebrow={upgradePathCopy.rungLabel} heading={upgradePathCopy.heading(target, thingsToGo(path))}>
-            <Targets targets={targets} selected={target} onSelect={setTarget} />
-          </Head>
-          <div className="flex flex-col gap-[11px] md:gap-[9px]">
-            {path.items.map((item) => (
-              <Item key={item.rule} item={item} target={target} profile={profile} />
-            ))}
-          </div>
-          <Foot path={path} onOpenDecklist={onOpenDecklist} />
-        </>
-      )}
-    </section>
-  );
-}
-
-function Head({
-  target,
-  eyebrow,
-  heading,
-  children,
-}: {
-  target: Target;
-  eyebrow: string;
-  heading: string;
-  children?: ReactNode;
-}) {
-  return (
-    <div className="flex flex-col gap-[11px] md:flex-row md:items-center md:gap-3">
-      <div className="flex items-center gap-[10px] md:flex-auto md:gap-3">
-        {/* The TARGET's mark, at the full form's sanctioned 26px; the canvas's 24 is off-set. */}
-        <BracketMark bracket={target} px={26} />
-        <span className="flex flex-col gap-0.5 md:gap-[3px]">
-          <span className="font-mono text-[9px] uppercase tracking-[0.14em] text-[color:var(--fg-faint)] md:text-[9.5px]">
-            {eyebrow}
-          </span>
-          <span className="text-[13.5px] font-semibold text-[color:var(--fg)] md:text-[14px]">
-            {heading}
-          </span>
-        </span>
+      <div
+        data-testid="upgrade-path"
+        className="flex flex-col gap-[11px] px-[16px] py-[14px] md:gap-[13px] md:px-[18px] md:py-4"
+      >
+        {path.blocked ? (
+          <Blocked path={path} profile={profile} />
+        ) : satisfied ? (
+          <Satisfied target={target} verdict={verdict} />
+        ) : (
+          <>
+            <div className="flex flex-col gap-[11px] md:gap-[9px]">
+              {path.items.map((item) => (
+                <Item key={item.rule} item={item} target={target} profile={profile} />
+              ))}
+            </div>
+            <Foot path={path} />
+          </>
+        )}
       </div>
-      {children}
-    </div>
-  );
-}
-
-/**
- * The target chips, nearest first. Pressed buttons in a named group: exactly one target is read
- * at a time, `aria-pressed` says which, and each is its own tab stop. The package specifies no
- * keyboard model, and three buttons need no roving focus to be reached.
- */
-function Targets({
-  targets,
-  selected,
-  onSelect,
-}: {
-  targets: readonly Target[];
-  selected: Target;
-  onSelect: (target: Target) => void;
-}) {
-  // ONE TARGET STILL DRAWS ITS CHIP: it names the bracket the panel is reading, and a group that
-  // vanished at one member would leave the head saying which bracket without the mark for it.
-  if (targets.length === 0) return null;
-  return (
-    <div className="flex items-center gap-[7px] md:flex-none">
-      <span className="hidden font-mono text-[9.5px] uppercase tracking-[0.12em] text-[color:var(--fg-muted)] md:inline">
-        {upgradePathCopy.targetLabel}
-      </span>
-      <div role="group" aria-label={upgradePathCopy.targetsAria} className="flex flex-wrap gap-[7px]">
-        {targets.map((t) => {
-          const on = t === selected;
-          return (
-            <button
-              key={t}
-              type="button"
-              aria-pressed={on}
-              onClick={() => onSelect(t)}
-              className={
-                "inline-flex h-11 items-center gap-1.5 rounded-lg border pl-2 pr-[13px] md:h-[30px] md:pl-1.5 md:pr-[11px] "
-                + "focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[color:var(--accent)] "
-                + (on
-                  ? "border-[color:var(--accent)] bg-[color:var(--surface-raised)]"
-                  : "border-[color:var(--border-strong)]")
-              }
-            >
-              <BracketMark bracket={t} px={22} />
-              <span
-                className={
-                  "text-[13px] md:text-[12.5px] "
-                  + (on ? "font-semibold text-[color:var(--fg)]" : "text-[color:var(--fg-muted)]")
-                }
-              >
-                {BRACKET_NAMES[t]}
-              </span>
-            </button>
-          );
-        })}
-      </div>
-    </div>
+    </ModalChrome>
   );
 }
 
@@ -390,7 +303,7 @@ function Marks({ card, profile }: { card: CardRef; profile: DeckProfile }) {
   );
 }
 
-function Foot({ path, onOpenDecklist }: { path: UpgradePath; onOpenDecklist?: () => void }) {
+function Foot({ path }: { path: UpgradePath }) {
   const overlap = overlapCount(path);
   return (
     <div className="flex flex-col gap-2 border-t border-[color:var(--border)] pt-[11px] md:flex-row md:flex-wrap md:items-start md:gap-4">
@@ -398,15 +311,6 @@ function Foot({ path, onOpenDecklist }: { path: UpgradePath; onOpenDecklist?: ()
         {overlap > 0 ? <>{upgradePathCopy.overlap(overlap)} </> : null}
         <b className="font-semibold text-[color:var(--fg-body)]">{upgradePathCopy.yours}</b>
       </p>
-      {onOpenDecklist ? (
-        <button
-          type="button"
-          onClick={onOpenDecklist}
-          className="w-fit flex-none border-b border-dotted border-[color:var(--accent)] font-mono text-[11px] text-[color:var(--accent)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[color:var(--accent)]"
-        >
-          {upgradePathCopy.toDecklist} →
-        </button>
-      ) : null}
     </div>
   );
 }
@@ -428,23 +332,12 @@ function Satisfied({ target, verdict }: { target: Target; verdict: BracketVerdic
 
 /**
  * `blocked`: what removals CANNOT reach, said plainly — no danger ink, no warning glyph, never
- * "impossible". What can come out is still listed, the commander is shown on a dashed edge as the
- * card that cannot, and the nearest target removals do reach is one press away.
+ * "impossible". What can come out is still listed, and the commander is shown on a dashed edge
+ * as the card that cannot.
  */
-function Blocked({
-  path,
-  profile,
-  targets,
-  onTarget,
-}: {
-  path: UpgradePath;
-  profile: DeckProfile;
-  targets: readonly Target[];
-  onTarget: (target: Target) => void;
-}) {
+function Blocked({ path, profile }: { path: UpgradePath; profile: DeckProfile }) {
   const target = path.target;
   const commanders = new Set(profile.commanderOracleIds);
-  const nearest = nearestReachable(profile, targets, target);
   // The item that blocks: a count whose candidates fall short, or a combo no removal breaks.
   const count = path.items.find(
     (i): i is Extract<UpgradeItem, { removeCount: number }> =>
@@ -456,7 +349,6 @@ function Blocked({
   );
   return (
     <>
-      <Head target={target} eyebrow={upgradePathCopy.targetLabel} heading={upgradePathCopy.blocked.heading(target)} />
       {count ? (
         <ItemCard label={deckAnalysisCopy.climb.ruleNames[count.rule]}>
           <p className={sentence}>
@@ -502,18 +394,6 @@ function Blocked({
               )
             : upgradePathCopy.blocked.comboShortfall(target)}
         </p>
-        {nearest ? (
-          <button
-            type="button"
-            onClick={() => onTarget(nearest.target)}
-            className="flex w-fit flex-wrap items-center gap-[9px] text-left text-[12.5px] text-[color:var(--fg-body)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[color:var(--accent)]"
-          >
-            <BracketMark bracket={nearest.target} px={22} />
-            <span className="border-b border-dotted border-[color:var(--accent)] text-[color:var(--accent)]">
-              {upgradePathCopy.blocked.nearest(nearest.target, thingsToGo(nearest.path))}
-            </span>
-          </button>
-        ) : null}
       </div>
     </>
   );

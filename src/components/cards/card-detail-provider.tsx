@@ -91,8 +91,12 @@ type CardDetailContextValue = {
    *
    * Counted rather than a flag, for the reason the scroll lock is counted: a flag set by one
    * mount and cleared by another's unmount is a race whenever two overlap.
+   *
+   * `backLabel` names the sheet, and the stacked card's desktop close becomes `← {backLabel}`
+   * (Analysis tab handoff §3). The newest registration's label is the one drawn, because that
+   * is the sheet a dismissal lands on.
    */
-  registerSheet: () => () => void;
+  registerSheet: (backLabel?: string) => () => void;
 };
 
 const CardDetailContext = createContext<CardDetailContextValue | null>(null);
@@ -258,11 +262,16 @@ export function CardDetailProvider({
     printing: (PreferredPrinting & { imageUri?: string | null; backImageUri?: string | null }) | null;
   } | null>(null);
   const [pendingOracleId, setPendingOracleId] = useState<string | null>(null);
-  const [sheetsBelow, setSheetsBelow] = useState(0);
-  const registerSheet = useCallback(() => {
-    setSheetsBelow((n) => n + 1);
-    return () => setSheetsBelow((n) => n - 1);
+  // One entry per sheet underneath, in the order they registered. A token rather than the label
+  // identifies an entry, since two sheets may carry the same label.
+  const [sheets, setSheets] = useState<{ token: object; label: string | undefined }[]>([]);
+  const registerSheet = useCallback((label?: string) => {
+    const token = {};
+    setSheets((list) => [...list, { token, label }]);
+    return () => setSheets((list) => list.filter((entry) => entry.token !== token));
   }, []);
+  const sheetsBelow = sheets.length;
+  const backLabel = sheets.at(-1)?.label;
   const [failed, setFailed] = useState(false);
   // Joined and re-split rather than held as an array, so the callback's dependency is a
   // STRING and cannot churn on identity alone. The deck page happens to memoise its list
@@ -558,6 +567,7 @@ export function CardDetailProvider({
           total={paging ? siblings.length : 1}
           onClose={close}
           stacked={sheetsBelow > 0}
+          backLabel={backLabel}
           // The combo block's partner name, through the same `load` that pages Prev/Next —
           // so a partner replaces the open card exactly as a sibling does, and the back
           // gesture returns to the card the reader started from.

@@ -6,6 +6,7 @@ import { findings, type Finding } from "../../lib/bracket/findings";
 import { deckAnalysisCopy } from "../../lib/copy/deck-analysis";
 import type { DeckProfile } from "../../lib/profile/types";
 import { FindingMark } from "./finding-mark";
+import { ProvenanceOpener } from "./provenance-panel";
 import { ReceiptModal, type FindingArt } from "./receipt-modal";
 
 const copy = deckAnalysisCopy.findings;
@@ -31,7 +32,12 @@ export function FindingsBlock({ profile, art }: { profile: DeckProfile; art: Fin
   const opened = open ? list.find((f) => f.id === open) ?? null : null;
 
   return (
-    <section className="flex flex-col gap-[9px] md:gap-[11px]" data-testid="findings-block">
+    // ONE OPENER for how these are decided, placed by the grid rather than mounted twice: at the
+    // head row's right end on desktop, under the box at 44px on the phone (handoff §2, row 4).
+    <section
+      className="flex flex-col gap-[9px] md:grid md:grid-cols-[minmax(0,1fr)_auto] md:items-baseline md:gap-x-3 md:gap-y-[11px]"
+      data-testid="findings-block"
+    >
       <h3
         className="m-0 font-mono font-normal uppercase text-[9.5px] tracking-[0.14em] md:text-[10px] md:tracking-[0.16em]"
         style={{ color: "var(--fg-faint)" }}
@@ -40,6 +46,8 @@ export function FindingsBlock({ profile, art }: { profile: DeckProfile; art: Fin
       </h3>
       <ul
         className={
+          "md:col-span-2 "
+          +
           // The phone's box is one surface; the desktop's is the page, with each tile its own.
           "m-0 p-0 list-none flex flex-col overflow-hidden rounded-[11px] border border-[color:var(--border)] "
           + "max-md:bg-[color:var(--surface)] "
@@ -50,6 +58,7 @@ export function FindingsBlock({ profile, art }: { profile: DeckProfile; art: Fin
           <FindingItem key={f.id} finding={f} art={art} onOpen={() => setOpen(f.id)} />
         ))}
       </ul>
+      <ProvenanceOpener className="self-start md:col-start-2 md:row-start-1" />
       {opened ? <ReceiptModal finding={opened} art={art} onClose={() => setOpen(null)} /> : null}
     </section>
   );

@@ -7,7 +7,8 @@
 //   · The five findings are TILES IN ONE ROW on desktop and ROWS IN ONE COLUMN on the phone, from
 //     one list restyled at `md:`. A class that did not compile leaves the markup identical and the
 //     layout wrong, so the probe groups the five by their MEASURED top edge.
-//   · The receipt is a 560px modal on desktop and a sheet from 52px down on the phone.
+//   · The receipt is a 760px modal on desktop, four tiles across, and a sheet from 52px down on
+//     the phone (Analysis tab handoff §3, 3a).
 //   · A card opened from the receipt STACKS (verdict addendum, ruling 1): the receipt stays, steps
 //     down to `--surface-sunken`, and on the phone the card sheet starts at 96px so the receipt's
 //     header row is visible above it. What proves that is the header's rect against the card
@@ -15,6 +16,11 @@
 //   · Two dismissals land in the order the sheets were opened: Escape closes the card and leaves
 //     the receipt, and a second Escape closes the receipt. `useDialogA11y` answers a key pressed
 //     inside another dialog by ignoring it, and only a real focus model can say it did.
+//   · On desktop the stacked card's close is the WAY BACK: a `← {finding}` pill in the ✕'s slot,
+//     and the card's name keeps clear of it however long the label. That clearance is a measured
+//     reserve (readiness finding 10), so the probe reads the name row's rects against the pill's.
+//     Pressing the pill is the first dismissal on desktop; Escape is the phone's.
+//   · How we make these decisions opens as a SHEET (3c), 560px on desktop, with its four rows.
 //
 // IT FINDS ITS OWN FIXTURE by pressing each of the account's decks until one draws a finding with
 // cards behind it, rather than naming an id that rots — a deck with nothing in it has no receipt
@@ -195,7 +201,7 @@ async function walk(page, label, width) {
     report(`${label}px · the receipt is a sheet from 52px down, full width`,
       Math.abs(box.y - 52) <= 1 && Math.abs(box.width - width) <= 1, `top ${box.y}, width ${box.width}`);
   } else {
-    report(`${label}px · the receipt is a 560px modal`, Math.abs(box.width - 560) <= 1, `width ${box.width}`);
+    report(`${label}px · the receipt is a 760px modal`, Math.abs(box.width - 760) <= 1, `width ${box.width}`);
   }
 
   // THE TILES: one per card, painted art where the deck has it, and no fact mark on any tile.
@@ -212,8 +218,8 @@ async function walk(page, label, width) {
   report(`${label}px · the receipt draws a tile per card`, tiles.count > 0, `${tiles.count} tiles`);
   report(`${label}px · tiles carry the deck's own art`, tiles.painted > 0, `${tiles.painted} of ${tiles.count} painted`);
   report(`${label}px · no fact mark on a tile (ruling 2)`, tiles.marks === 0, `${tiles.marks} marks`);
-  report(`${label}px · ${phone ? "two" : "up to five"} tiles to a row`,
-    phone ? tiles.cols === Math.min(2, tiles.count) : tiles.cols === Math.min(5, tiles.count), `${tiles.cols} columns`);
+  report(`${label}px · ${phone ? "two" : "up to four"} tiles to a row`,
+    phone ? tiles.cols === Math.min(2, tiles.count) : tiles.cols === Math.min(4, tiles.count), `${tiles.cols} columns`);
 
   // THE STACK. A tile opens the card and the receipt stays.
   await receipt.locator('[data-testid="receipt-tile"]').first().click();
@@ -248,24 +254,70 @@ async function walk(page, label, width) {
       `header ${stack.headTop}–${stack.headBottom}, card from ${stack.cardTop}`);
   }
 
-  // TWO DISMISSALS, IN ORDER.
-  await page.keyboard.press("Escape");
+  // THE WAY BACK (desktop). The pill names the receipt, sits in the ✕'s slot, and nothing in the
+  // card's name row runs under it. The receipt's body steps down to 0.35 behind the card.
+  if (!phone) {
+    const back = await page.evaluate((finding) => {
+      const c = document.querySelector('[role="dialog"][aria-labelledby="card-modal-title"]');
+      const pill = c?.querySelector('[data-testid="card-modal-back"]');
+      const title = c?.querySelector("#card-modal-title");
+      const row = title?.closest("[style*='--close-reserve']");
+      const r = document.querySelector('[data-testid="receipt-modal"]');
+      if (!pill || !row) return { pill: !!pill, row: !!row };
+      const p = pill.getBoundingClientRect();
+      const inkRight = Math.max(...[...row.querySelectorAll("*")]
+        .filter((el) => el.children.length === 0 && el.getBoundingClientRect().width > 0)
+        .map((el) => el.getBoundingClientRect().right));
+      return {
+        pill: true,
+        row: true,
+        text: pill.textContent,
+        named: pill.getAttribute("aria-label") === `Back to ${finding}`,
+        pillLeft: Math.round(p.left),
+        inkRight: Math.round(inkRight),
+        overlapV: p.bottom > row.getBoundingClientRect().top && p.top < row.getBoundingClientRect().bottom,
+        bodyOpacity: r ? getComputedStyle(r.lastElementChild).opacity : null,
+      };
+    }, await receipt.locator("h2").innerText());
+    report(`${label}px · the stacked card's close is a way back named for the receipt`,
+      back.pill && back.named === true, back.pill ? `"${back.text}"` : "no pill");
+    report(`${label}px · the card's name row keeps clear of the pill`,
+      back.row && (!back.overlapV || back.inkRight <= back.pillLeft - 8),
+      back.row ? `ink ends ${back.inkRight}, pill from ${back.pillLeft}` : "no name row");
+    report(`${label}px · the receipt's body steps down to 0.35 behind the card`,
+      back.bodyOpacity === "0.35", `opacity ${back.bodyOpacity}`);
+  }
+
+  // TWO DISMISSALS, IN ORDER. On desktop the first is the pill, on the phone Escape.
+  if (phone) await page.keyboard.press("Escape");
+  else await card.locator('[data-testid="card-modal-back"]').click();
   await card.waitFor({ state: "detached", timeout: 5_000 }).catch(() => {});
   const afterOne = { card: await card.count(), receipt: await receipt.count() };
-  report(`${label}px · Escape closes the card and lands on the receipt`,
+  report(`${label}px · ${phone ? "Escape" : "the pill"} closes the card and lands on the receipt`,
     afterOne.card === 0 && afterOne.receipt === 1, `card ${afterOne.card}, receipt ${afterOne.receipt}`);
   await page.keyboard.press("Escape");
   await receipt.waitFor({ state: "detached", timeout: 5_000 }).catch(() => {});
   report(`${label}px · a second Escape closes the receipt`, (await receipt.count()) === 0,
     `receipt ${await receipt.count()}`);
 
-  // PROVENANCE: collapsed, and four rows once pressed.
-  const toggle = onPageRole(page, "button", /How we make these decisions/);
-  const expanded = await toggle.getAttribute("aria-expanded");
-  await toggle.click();
-  const terms = await onPage(page, '[data-testid="provenance"] dt').count();
-  report(`${label}px · provenance opens from collapsed to four rows`, expanded === "false" && terms === 4,
-    `was ${expanded}, ${terms} rows`);
+  // PROVENANCE (3c): an opener, and a sheet with four rows, 560 on desktop, closed by Escape.
+  const opener = onPageRole(page, "button", /How we make these decisions/);
+  const popup = await opener.getAttribute("aria-haspopup");
+  await opener.click();
+  const sheet = page.locator('[role="dialog"]').filter({ has: page.locator('[data-testid="provenance"]') });
+  await sheet.waitFor({ state: "visible", timeout: 5_000 }).catch(() => {});
+  const terms = await sheet.locator("dt").count();
+  report(`${label}px · provenance opens a sheet with four rows`, popup === "dialog" && terms === 4,
+    `haspopup ${popup}, ${terms} rows`);
+  const pbox = await sheet.boundingBox();
+  if (phone) {
+    report(`${label}px · the provenance sheet starts 52px down`, pbox && Math.abs(pbox.y - 52) <= 1, `top ${pbox?.y}`);
+  } else {
+    report(`${label}px · the provenance sheet is 560px`, pbox && Math.abs(pbox.width - 560) <= 1, `width ${pbox?.width}`);
+  }
+  await page.keyboard.press("Escape");
+  await sheet.waitFor({ state: "detached", timeout: 5_000 }).catch(() => {});
+  report(`${label}px · Escape closes the provenance sheet`, (await sheet.count()) === 0, `${await sheet.count()} open`);
 }
 
 async function run() {

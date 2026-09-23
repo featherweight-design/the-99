@@ -5,7 +5,6 @@ import { upgradePath } from "./upgrade";
 import {
   downgradeTargets,
   heldCount,
-  nearestReachable,
   overlapCount,
   thingsToGo,
 } from "./upgrade-view";
@@ -64,29 +63,6 @@ describe("overlapCount", () => {
   });
 });
 
-describe("nearestReachable", () => {
-  // A COMMANDER that is a game changer blocks Core and Exhibition alike; Upgraded, above them,
-  // allows three and is reachable. The nearest is looked for UP, never down.
-  it("finds the lowest reachable target above a blocked one", () => {
-    const profile = deckProfile({
-      cards: [COMMANDER, profileCard("a", "a"), profileCard("b", "b")],
-      gameChangerIds: new Set([COMMANDER.oracleId, "a", "b"]),
-    });
-    expect(upgradePath(profile, 2).blocked).toBe(true);
-    const nearest = nearestReachable(profile, [3, 2, 1], 1);
-    expect(nearest?.target).toBe(3);
-    expect(nearest?.path.blocked).toBe(false);
-  });
-
-  it("answers null when nothing above is reachable either", () => {
-    const profile = deckProfile({
-      cards: [COMMANDER, profileCard("a", "a")],
-      gameChangerIds: new Set([COMMANDER.oracleId, "a"]),
-    });
-    expect(nearestReachable(profile, [2, 1], 1)).toBeNull();
-  });
-});
-
 describe("heldCount", () => {
   // The count a limit sentence reports includes the commander: it is a card the deck holds.
   it("counts every holder of a rule, commanders included", () => {
@@ -97,22 +73,3 @@ describe("heldCount", () => {
     expect(heldCount(profile, "gameChangers")).toBe(2);
   });
 });
-
-describe("nearestReachable's order", () => {
-  // THE LOWEST REACHABLE ABOVE, never the farthest. An extra-turn commander blocks Exhibition
-  // alone — Core does not count extra turns — so from Exhibition both Core and Upgraded are
-  // reachable, and the nearest is Core.
-  it("prefers the nearest target above the blocked one", () => {
-    const profile = deckProfile({
-      cards: [COMMANDER, ...["a", "b", "c", "d"].map((id) => profileCard(id, id))],
-      gameChangerIds: new Set(["a", "b", "c", "d"]),
-      extraTurnFlags: new Map([[COMMANDER.oracleId, ["oracle_rule"] as FlagSource[]]]),
-    });
-    expect(upgradePath(profile, 1).blocked).toBe(true);
-    expect(nearestReachable(profile, [3, 2, 1], 1)?.target).toBe(2);
-  });
-});
-
-
-
-

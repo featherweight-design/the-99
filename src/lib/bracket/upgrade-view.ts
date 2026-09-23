@@ -65,28 +65,6 @@ export function overlapCount(path: UpgradePath): number {
   return [...seen.values()].filter((n) => n > 1).length;
 }
 
-/**
- * The nearest target removals CAN reach, when this one is blocked — and what it asks.
- *
- * ALWAYS ABOVE THE BLOCKED ONE. The targets nest: each lower bracket states every limit the one
- * above it does and more, so whatever a commander puts out of reach at Core is out of reach at
- * Exhibition too. The only place left to look is up, and "nearest" is the lowest reachable
- * target above the blocked one — the smallest step back from what the reader asked for. Null
- * when there is none, and then the line is not drawn.
- */
-export function nearestReachable(
-  profile: DeckProfile,
-  targets: readonly Target[],
-  blocked: Target,
-): { target: Target; path: UpgradePath } | null {
-  const above = targets.filter((t) => t > blocked).sort((a, b) => a - b);
-  for (const target of above) {
-    const path = upgradePath(profile, target);
-    if (!path.blocked) return { target, path };
-  }
-  return null;
-}
-
 /** The count a limit sentence reports: every card holding the rule, commanders included. */
 export function heldCount(
   profile: DeckProfile,

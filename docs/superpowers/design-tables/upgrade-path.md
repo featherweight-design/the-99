@@ -11,6 +11,26 @@ Nothing under `src/` was read. Canvas tokens: `--surface`, `--surface-sunken`, `
 
 ---
 
+## Superseded in part: the Analysis tab's sheet 3b (2026-09-23)
+
+`design_handoff_the99_analysis_tab/HANDOFF.md` §3 redraws the path as a **sheet**, 700px, opened
+from the lower rung's `what would have to go →`. Where this table and that handoff disagree, the
+handoff wins. What changed:
+
+- **No disclosure.** The rung's control opens a `ModalChrome` sheet, and it carries `aria-haspopup`
+  instead of `aria-expanded`.
+- **One target, the bracket directly below.** The target chips are gone, and so are `targetLabel`
+  and `targetsAria`.
+- **The head moves into the sheet's header.** The target's 22px chip mark and the heading sit
+  there, 14px at 390, with no eyebrow and no aside.
+- **No `open your decklist`**, so `toDecklist` is gone.
+- **No nearest-target line in `blocked`**, so `blocked.nearest` is gone. The targets nest upward,
+  so with one target, the bracket directly below, nothing between it and the reading exists to
+  be reached instead.
+
+The rows below that name the chips, `targetLabel`, `toDecklist` or `blocked.nearest` describe the
+retired disclosure. The item, foot, satisfied and blocked bodies stand as drawn.
+
 ## 0 · Where it lives
 
 - **Tab:** Analysis tab, inside the **verdict block** ("What the deck's cards permit, the receipts behind it, and the

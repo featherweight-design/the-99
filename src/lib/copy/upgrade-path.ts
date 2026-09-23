@@ -29,9 +29,6 @@ export const upgradePathCopy = {
   /** `n` counts what must go: the copies a count rule asks for, plus one per combo to break. */
   heading: (bracket: Bracket, n: number) =>
     `${name(bracket)}, ${n === 1 ? "one thing" : `${numberWord(n)} things`} would have to go`,
-  targetLabel: "Target",
-  /** The chips' group name. The chips themselves are the bracket names. */
-  targetsAria: "Bracket to reach",
 
   /**
    * CARDINALITY PICKS THE PHRASING, AND THE APP NEVER PICKS A CARD. "Any N of these M" while
@@ -73,7 +70,6 @@ export const upgradePathCopy = {
     `${capitalize(numberWord(n))} of these ${n === 1 ? "is" : "are"} also the combo, so cutting `
     + `one can answer both lines at once.`,
   yours: "Which cards go is yours. This is what the bracket asks for, not a recommendation.",
-  toDecklist: "open your decklist",
 
   /** `items: []`. Hands the reader to the declaration, the only thing left that can answer it. */
   satisfied: (bracket: Bracket, range: string) =>
@@ -97,14 +93,5 @@ export const upgradePathCopy = {
     comboShortfall: (bracket: Bracket) =>
       `Both halves of this combo are in your command zone, so no removal breaks it. `
       + `${name(bracket)} isn't reachable by removing cards. It would take a different commander.`,
-    /**
-     * `n` is the same figure the heading prints once that target is pressed — copies to lose plus
-     * one per combo — so the line and the panel it opens can never disagree. It counts THINGS,
-     * not cards: one card can answer two lines, and the fewest cards is a covering problem the
-     * surface does not solve on every render.
-     */
-    nearest: (bracket: Bracket, n: number) =>
-      `${name(bracket)} is reachable, ${n === 1 ? "one thing" : `${numberWord(n)} things`} would `
-      + `have to go.`,
   },
 } as const;

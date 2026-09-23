@@ -186,7 +186,7 @@ function ReasoningModal({
       aside={<span className="hidden md:inline">{qualifier}</span>}
       closeLabel={copy.receipt.closeAria(title)}
       onClose={onClose}
-      wide
+      width={700}
       ground="var(--elevated)"
     >
       <div className="flex flex-col gap-[15px] px-[16px] pt-[14px] pb-[16px] md:px-[18px] md:pt-[16px] md:pb-[18px]">
