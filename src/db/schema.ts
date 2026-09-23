@@ -1468,15 +1468,14 @@ export const cardBracketFlags = pgTable("card_bracket_flags", {
  * refreshed lost the verdict and had to press again. A row read on tab open is a head read and a
  * primary-key lookup; nothing is computed.
  *
- * FRESHNESS IS THREE STAMPS, and a row failing any of them is not shown: the deck's own
- * `fingerprint` (its cards and commanders), the `catalog` generation it was built against, and a
- * `computed_at` inside the week the combo and commander indexes refresh on. See
- * `src/lib/profile/stored.ts`.
+ * A reading does not lapse (Hugh, 2026-09-23). It is FRESH when `fingerprint` — the list alone,
+ * `listFingerprint` — still matches the deck and `dirty` is clear, and STALE otherwise, and a stale
+ * reading is still shown, as stale. The `catalog` generation is kept for the change-notices
+ * feature and read by nothing today. See `src/lib/profile/stored.ts`.
  *
  * `permits` is the verdict's permitted range at the time — `slotDeck(profile).permits` — stored
- * beside the document for the deck tile's bracket chip, which does not read it yet. Sorted
- * ascending, 1–5. Whatever reads it must apply the same freshness stamps `readStoredProfile`
- * does, or it draws a bracket for a deck that has since been edited.
+ * beside the document for the header and tile bracket chip, which HOLD the last analyzed bracket
+ * over an edit (ruling 4). Sorted ascending, 1–5.
  *
  * One row per deck, replaced on every analysis. Cascades with the deck.
  */
@@ -1488,6 +1487,14 @@ export const deckProfiles = pgTable("deck_profiles", {
   profile: jsonb("profile").$type<DeckProfile>().notNull(),
   permits: integer("permits").array().notNull(),
   computedAt: timestamp("computed_at").notNull().defaultNow(),
+  /** The `PROFILE_VERSION` the document was built under. A mismatch is not an edit: the next read
+   *  recomputes quietly rather than showing the reading as stale. 0 marks a row written before
+   *  the column existed, which every version mismatches. */
+  profileVersion: integer("profile_version").notNull().default(0),
+  /** Set by `touchDeck`, in the edit's own transaction, and cleared by every analysis. */
+  dirty: boolean("dirty").notNull().default(false),
+  /** The version a commit pinned this analysis to. Null when the reading came from a press. */
+  versionId: uuid("version_id").references(() => deckVersions.id, { onDelete: "set null" }),
 }, (t) => [
   index("deck_profiles_user_idx").on(t.userId),
   check("deck_profiles_permits_check",

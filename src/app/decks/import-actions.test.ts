@@ -332,8 +332,10 @@ describe("resolveUnresolvedRow", () => {
     expect(stub.state.deletedFrom).toEqual(["deck_unresolved_rows"]);
     // Answering a line is an edit: the deck the player is left looking at is
     // not the one they had, so Home's resume block must be able to say so.
+    // And, in the same transaction, the deck's stored analysis goes stale (`touchDeck`).
     expect(stub.state.updates).toEqual([
       { table: "decks", values: { lastEditedAt: expect.anything() } },
+      { table: "deck_profiles", values: { dirty: true } },
     ]);
     // Resolving a row puts a card in the deck, which is a claim — so the
     // surfaces that draw availability off deck rows are invalidated with it,

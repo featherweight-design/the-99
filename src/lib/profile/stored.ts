@@ -4,12 +4,30 @@ import { db } from "../../db";
 import { deckProfiles } from "../../db/schema";
 import { slotDeck } from "../bracket/slot";
 import { catalogGeneration } from "../cache/catalog-generation";
-import { profileFingerprint } from "./fingerprint";
-import { cachedDeckProfile, readProfileHead } from "./load";
-import { STORED_PROFILE_MAX_AGE_DAYS } from "./stored-sql";
+import { deckBodySize } from "../decks/deck-size";
+import { listFingerprint, profileFingerprint } from "./fingerprint";
+import { cachedDeckProfile, readProfileHead, type ProfileHead } from "./load";
+import { PROFILE_VERSION } from "./version";
 import type { Bracket } from "../bracket/types";
 import { isReachablePermits } from "../bracket/verdict-head";
 import type { DeckProfile } from "./types";
+
+// THE ANALYSIS LIFECYCLE (Hugh's rulings, 2026-09-23), in the terms this module stores it:
+//
+//   · A reading never LAPSES. The catalog moving and a week passing retire nothing; the row is
+//     shown until the deck changes, and then it is shown as stale rather than withdrawn.
+//   · FRESH means the list is the one analyzed and nothing has touched it since:
+//     `fingerprint` (the list alone, `listFingerprint`) matches the deck, and `dirty` is clear.
+//     `touchDeck` sets `dirty` in the edit's own transaction; every analysis clears it.
+//   · A new PROFILE_VERSION is not an edit. The fingerprint carries no version, so a deploy
+//     that bumps it changes no deck's freshness. The document itself was built under the old
+//     shape, though, and version.ts records what reading an old shape costs: fields the type
+//     says exist, absent, and NaN wherever arithmetic touches them. So an old document is never
+//     shown. On a clean legal deck the next read recomputes it quietly (deterministic, no model
+//     call, no banner); otherwise it reads as nothing until the next press.
+//   · Analysis runs only on a LEGAL deck: the body at `deckBodySize` exactly (ruling 1).
+//   · A re-analyze of an unchanged list answers from the store, without computing (ruling 5).
+//   · A commit pins the reading to the version it committed (ruling 2), through `versionId`.
 
 /**
  * The two cached reads this module sits on, injectable because both wrap `unstable_cache`,
@@ -23,149 +41,240 @@ export type StoredProfileDeps = {
 
 const REQUEST_DEPS: StoredProfileDeps = { generation: catalogGeneration, compute: cachedDeckProfile };
 
-/**
- * The analysis to show on tab open, or null — and null is never a computation.
- *
- * A head read (~120ms on staging, `measure:profile-cost`) and one primary-key lookup. The head is
- * what the fingerprint is computed from, and is scoped by `user_id`, so a deck the reader does not
- * own reads as absent here exactly as it does through `cachedDeckProfile`.
- *
- * A row is returned only when all three stamps agree — same cards, same catalog, inside the week.
- * Anything else is absent rather than stale: a stale reading is Design's to draw (it is in the
- * consolidated Analysis-tab handoff), and until it is drawn the honest state is the press.
- */
-export async function readStoredProfile(
-  deckId: string,
-  userId: string,
-  deps: StoredProfileDeps = REQUEST_DEPS,
-): Promise<DeckProfile | null> {
-  return (await readStoredReading(deckId, userId, deps))?.profile ?? null;
+/** A stored reading, with whether it still describes the deck. */
+export type StoredReading = {
+  profile: DeckProfile;
+  analyzedAt: Date;
+  /** The same list as the deck's, and no edit since the analysis. */
+  fresh: boolean;
+  /** The version a commit pinned this reading to, or null when a press produced it. */
+  versionId: string | null;
+};
+
+/** The body count against the size a legal deck holds (ruling 1: the body count alone). */
+export function deckLegality(head: Pick<ProfileHead, "partnerOracleId" | "cards">) {
+  const built = head.cards.reduce((n, c) => n + c.quantity, 0);
+  const size = deckBodySize(head.partnerOracleId !== null);
+  return { legal: built === size, built, size };
+}
+
+type Tx = Parameters<Parameters<typeof db.transaction>[0]>[0];
+
+/** The deck's head and its stored row, from ONE snapshot. Read apart, an edit committing between
+ *  them pairs the edited deck with the analysis of the deck before it. */
+async function readHeadAndRow(tx: Tx, deckId: string, userId: string) {
+  const head = await readProfileHead(tx, deckId, userId);
+  if (!head) return { head: null, row: null };
+  const [row] = await tx
+    .select({
+      profile: deckProfiles.profile,
+      fingerprint: deckProfiles.fingerprint,
+      profileVersion: deckProfiles.profileVersion,
+      dirty: deckProfiles.dirty,
+      versionId: deckProfiles.versionId,
+      computedAt: deckProfiles.computedAt,
+    })
+    .from(deckProfiles)
+    .where(and(eq(deckProfiles.deckId, deckId), eq(deckProfiles.userId, userId)))
+    .limit(1);
+  return { head, row: row ?? null };
 }
 
 /**
- * The stored profile with the moment it was stored, which the bracket box prints as
- * `analyzed {when}` (Analysis tab handoff §2). Same rule as `readStoredProfile`.
+ * Whether the stored row describes the deck's current list. A row written before migration 0054
+ * (`profile_version` 0) stored `profileFingerprint`, which carries the version it was built at;
+ * every later row stores `listFingerprint`. A legacy row built under an older version than the
+ * current one cannot be compared, and reads as a different list.
+ */
+function sameList(row: { profileVersion: number; fingerprint: string }, head: ProfileHead): boolean {
+  return row.profileVersion === 0
+    ? row.fingerprint === profileFingerprint(head)
+    : row.fingerprint === listFingerprint(head);
+}
+
+const READ_ONLY = { isolationLevel: "repeatable read", accessMode: "read only" } as const;
+
+/**
+ * The stored reading for the Analysis tab, fresh or stale, or null — and never a press.
+ *
+ * A head read (~120ms on staging, `measure:profile-cost`) and one primary-key lookup. The one
+ * computation it can start is the quiet rebuild of a document an older PROFILE_VERSION wrote,
+ * which is not the reader's analysis being re-run: the list is the one they analyzed, and the
+ * answer is the one the current code gives for it.
  */
 export async function readStoredReading(
   deckId: string,
   userId: string,
   deps: StoredProfileDeps = REQUEST_DEPS,
-): Promise<{ profile: DeckProfile; analyzedAt: Date } | null> {
-  const row = await readFreshRow(deckId, userId, deps, true);
-  return row?.profile ? { profile: row.profile, analyzedAt: row.computedAt } : null;
+): Promise<StoredReading | null> {
+  const { head, row } = await db.transaction((tx) => readHeadAndRow(tx, deckId, userId), READ_ONLY);
+  if (!head || !row) return null;
+  if (row.profileVersion !== PROFILE_VERSION) {
+    // Rebuilt only over the list the reader analyzed. `dirty` alone cannot say so: a row written
+    // before this column existed arrives clean however the deck was edited before the deploy.
+    if (row.dirty || !deckLegality(head).legal || !sameList(row, head)) return null;
+    const rebuilt = await computeAndStoreProfile(deckId, userId, deps);
+    return rebuilt?.kind === "ok" ? { ...rebuilt.reading } : null;
+  }
+  return {
+    profile: row.profile,
+    analyzedAt: row.computedAt,
+    fresh: sameList(row, head) && !row.dirty,
+    versionId: row.versionId,
+  };
 }
 
-/**
- * The stored verdict's permitted range alone, under exactly the rule `readStoredProfile` applies.
- *
- * The deck header's bracket chip reads this rather than the whole profile, which is a document
- * the page would otherwise ship on every load to draw one pill.
- */
-export async function readStoredPermits(
+/** The stored profile when it is FRESH, else null. */
+export async function readStoredProfile(
   deckId: string,
   userId: string,
   deps: StoredProfileDeps = REQUEST_DEPS,
-): Promise<Bracket[] | null> {
-  const row = await readFreshRow(deckId, userId, deps, false);
+): Promise<DeckProfile | null> {
+  const reading = await readStoredReading(deckId, userId, deps);
+  return reading?.fresh ? reading.profile : null;
+}
+
+/**
+ * The deck's last analyzed bracket, for the header's chip. It HOLDS over an edit (ruling 4): no
+ * fingerprint, no catalog, no age, and no version — `permits` is two integers, not a document
+ * whose shape can move. The page ships this rather than the profile, which it would otherwise
+ * send on every load to draw one pill.
+ */
+export async function readStoredPermits(deckId: string, userId: string): Promise<Bracket[] | null> {
+  const [row] = await db
+    .select({ permits: deckProfiles.permits })
+    .from(deckProfiles)
+    .where(and(eq(deckProfiles.deckId, deckId), eq(deckProfiles.userId, userId)))
+    .limit(1);
   // Fails closed on a shape no writer produces; see `isReachablePermits`.
   return row && isReachablePermits(row.permits) ? row.permits : null;
 }
 
-/** The one freshness rule, for every reader of a single deck's row. */
-async function readFreshRow(
-  deckId: string,
-  userId: string,
-  deps: StoredProfileDeps,
-  /** The profile document is read only by the caller that ships it. */
-  withProfile: boolean,
-) {
-  const [catalog, row] = await Promise.all([
-    deps.generation(),
-    // ONE SNAPSHOT for the head and the row. Read apart, an edit committing between them pairs
-    // the edited deck with the analysis of the deck before it, which is the thing the
-    // fingerprint exists to refuse.
-    db.transaction(
-      async (tx) => {
-        const head = await readProfileHead(tx, deckId, userId);
-        if (!head) return null;
-        const rows = await tx
-          .select({
-            profile: withProfile ? deckProfiles.profile : sql<DeckProfile | null>`null`,
-            permits: deckProfiles.permits,
-            catalog: deckProfiles.catalog,
-            computedAt: deckProfiles.computedAt,
-          })
-          .from(deckProfiles)
-          .where(
-            and(
-              eq(deckProfiles.deckId, deckId),
-              eq(deckProfiles.userId, userId),
-              eq(deckProfiles.fingerprint, profileFingerprint(head)),
-              sql`${deckProfiles.computedAt} > now() - make_interval(days => ${STORED_PROFILE_MAX_AGE_DAYS})`,
-            ),
-          )
-          .limit(1);
-        return rows[0] ?? null;
-      },
-      { isolationLevel: "repeatable read", accessMode: "read only" },
-    ),
-  ]);
-  // The catalog is compared here rather than in the WHERE because the generation is itself a
-  // cached read, and running it beside the lookup is the point of the `Promise.all`.
-  return row && row.catalog === catalog ? row : null;
-}
+/** What a commit hands the pin: the version it wrote, and the fingerprint of the list it froze. */
+export type CommitPin = { versionId: string; list: string };
+
+export type AnalyzeResult =
+  | { kind: "ok"; reading: StoredReading }
+  /** The body is not `deckBodySize` (ruling 1). Nothing was computed or written. */
+  | { kind: "illegal"; built: number; size: number };
 
 /**
- * Compute the analysis (through the existing cache) and store it, returning what was stored.
+ * Analyze the deck: answer from the store when the list is the one already analyzed, compute and
+ * store otherwise. Null when the deck is not the reader's.
  *
- * The WRITE rides on the press, which is the only place the analysis is computed from a reader's
- * request, so storing costs nothing that was not already being paid. It is best-effort: a failed
- * write must not take the verdict the reader just asked for down with it, so it is caught and the
- * profile returned — the next tab open simply finds no row and offers the press again.
+ * `pinTo` is passed by a commit (ruling 2), which pins the reading to the version it just wrote.
+ * The pin answers from the store like any other analysis when the list is unchanged, so a commit
+ * of a deck analyzed a moment ago costs one UPDATE.
+ *
+ * The WRITE is best-effort: a failed write must not take the verdict the reader asked for down
+ * with it, so it is caught and the profile returned.
  */
 export async function computeAndStoreProfile(
   deckId: string,
   userId: string,
   deps: StoredProfileDeps = REQUEST_DEPS,
-): Promise<DeckProfile | null> {
+  { pinTo }: { pinTo?: CommitPin } = {},
+): Promise<AnalyzeResult | null> {
+  const { head, row } = await db.transaction((tx) => readHeadAndRow(tx, deckId, userId), READ_ONLY);
+  if (!head) return null;
+  const legality = deckLegality(head);
+  if (!legality.legal) return { kind: "illegal", built: legality.built, size: legality.size };
+
+  const list = listFingerprint(head);
+  // A PIN IS FOR THE LIST THE COMMIT WROTE. An edit landing between the commit and this read has
+  // moved the deck off that version, and pinning the edited list to it would claim the version
+  // was analyzed as something it never held. So nothing is written, and the next press analyzes
+  // the draft as a draft.
+  if (pinTo && pinTo.list !== list) return null;
+  const versionId = pinTo?.versionId;
+
+  // RULING 5: the same list, under the same code, is the same answer. Clear `dirty` (and take the
+  // commit's pin) on the row as it stands, guarded on the fingerprint and version it was read at,
+  // and return what is stored. An edit landing after that read either changes the fingerprint the
+  // next read compares, or marks the row dirty again when it commits.
+  if (row && row.profileVersion === PROFILE_VERSION && row.fingerprint === list) {
+    try {
+      await db
+        .update(deckProfiles)
+        .set({ dirty: false, ...(versionId ? { versionId } : {}) })
+        .where(and(
+          eq(deckProfiles.deckId, deckId),
+          eq(deckProfiles.fingerprint, list),
+          eq(deckProfiles.profileVersion, PROFILE_VERSION),
+        ));
+    } catch (error) {
+      console.warn("deck profile's dirty flag not cleared", error);
+    }
+    return {
+      kind: "ok",
+      reading: {
+        profile: row.profile,
+        analyzedAt: row.computedAt,
+        fresh: true,
+        versionId: versionId ?? row.versionId,
+      },
+    };
+  }
+
   // THE GENERATION IS READ BEFORE THE BUILD, never after it. `cachedDeckProfile` keys on the
   // generation it reads itself, and reads are monotonic, so the one read here is never newer than
-  // the catalog the profile was built against. A refresh crossing the build then stamps the row
-  // with the OLDER generation and it retires early — the safe direction. Read after, a profile
-  // built on the old catalog would be stamped with the new one and pass every check for a week.
+  // the catalog the profile was built against.
   const catalog = await deps.generation();
   const profile = await deps.compute(deckId, userId);
   if (!profile) return null;
+  let analyzedAt = new Date();
   try {
     // STORED ONLY IF IT STILL DESCRIBES THE DECK. Two presses from two tabs can finish out of
-    // order, and an older result landing last would replace the newer one with an analysis of a
-    // deck that no longer exists, so the next reload would find nothing. One head read decides it:
-    // a result whose fingerprint is not the deck's current one is returned to its caller, who
-    // asked for it, and never written.
-    // The check and the write share one repeatable-read snapshot. An edit committing after it
-    // leaves a row whose fingerprint the next read refuses; a newer press's write landing after it
-    // makes this upsert fail to serialize, and the catch below keeps that newer row.
+    // order, and an older result landing last would replace the newer one. One head read in the
+    // write's own repeatable-read snapshot decides it: `profile.fingerprint` carries the list AND
+    // the version it was built under, so comparing it to the head's is the whole test. An edit
+    // committing after the snapshot marks the row dirty or moves the fingerprint; a newer press's
+    // write landing first makes this upsert fail to serialize, and the catch keeps that row.
     const permits = [...slotDeck(profile).permits].sort((a, b) => a - b);
     await db.transaction(async (tx) => {
       const now = await readProfileHead(tx, deckId, userId);
       if (!now || profileFingerprint(now) !== profile.fingerprint) return;
-      await tx
+      const fingerprint = listFingerprint(now);
+      const [written] = await tx
         .insert(deckProfiles)
-        .values({ deckId, userId, fingerprint: profile.fingerprint, catalog, profile, permits })
+        .values({
+          deckId, userId, fingerprint, catalog, profile, permits,
+          profileVersion: PROFILE_VERSION, dirty: false, versionId: versionId ?? null,
+        })
         .onConflictDoUpdate({
           target: deckProfiles.deckId,
           set: {
-            userId,
-            fingerprint: profile.fingerprint,
-            catalog,
-            profile,
-            permits,
+            userId, fingerprint, catalog, profile, permits,
+            profileVersion: PROFILE_VERSION,
+            dirty: false,
+            // A recompute describes a list that differs from the one any earlier pin was for.
+            versionId: versionId ?? null,
             computedAt: sql`now()`,
           },
-        });
+        })
+        .returning({ computedAt: deckProfiles.computedAt });
+      if (written) analyzedAt = written.computedAt;
     }, { isolationLevel: "repeatable read" });
   } catch (error) {
     console.warn("deck profile not stored; the next tab open will offer the press again", error);
   }
-  return profile;
+  return { kind: "ok", reading: { profile, analyzedAt, fresh: true, versionId: versionId ?? null } };
+}
+
+/**
+ * Pin the reading to the version a commit just wrote (ruling 2), best-effort and off the commit's
+ * path: it runs in `after()`, so the commit answers without waiting on a 630ms-to-2.2s analysis.
+ * A deck the commit left illegal (a later version may be any size) is not analyzed at all.
+ */
+export async function pinAnalysisToVersion(
+  deckId: string,
+  userId: string,
+  pinTo: CommitPin,
+  deps: StoredProfileDeps = REQUEST_DEPS,
+): Promise<void> {
+  try {
+    await computeAndStoreProfile(deckId, userId, deps, { pinTo });
+  } catch (error) {
+    console.warn("the committed version's analysis was not pinned", error);
+  }
 }

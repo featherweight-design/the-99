@@ -394,26 +394,42 @@ Package manager is **pnpm** (pinned via `packageManager` in package.json) — ne
   Same fixture discipline as `probe:claims`: a per-run `user_id` deleted in a `finally`, pointed
   at `local-dev` or a scratch branch, **never production**.
 
-- `pnpm probe:profile-store` proves the stored deck analysis against a real Postgres by calling
-  the real `readStoredProfile` and `computeAndStoreProfile`. Pressing Analyze writes
-  `deck_profiles`; opening the Analysis tab reads it back WITHOUT computing, which is what lets an
-  analysis survive a reload without breaking Round 4's ruling 7 (no auto-run on tab open). A
-  stored row is shown only when three stamps agree: the deck's fingerprint (its cards and
-  commanders), the catalog generation, and `computed_at` inside a week, since the combo and
-  commander indexes refresh without a stamp the row can compare. The probe retires the row each of
-  those ways, proves a second press replaces rather than adds, that another reader reads nothing,
-  and that deleting the deck cascades. Both functions take their two cached reads as injected
-  deps, because `unstable_cache` raises outside a request, so the probe exercises this module's
-  SQL rather than a copy of it. Same fixture discipline as `probe:claims`: a per-run `user_id`
-  deleted in a `finally`, `local-dev` or a scratch branch, **never production**.
+- `pnpm probe:profile-store` proves the stored deck analysis against a real Postgres, through
+  its lifecycle (Hugh's rulings, 2026-09-23), by calling the real `computeAndStoreProfile`,
+  `readStoredReading`, `readStoredPermits`, `pinAnalysisToVersion` and `touchDeck`. Pressing
+  Analyze writes `deck_profiles`. Opening the Analysis tab reads it back WITHOUT computing, which
+  is what lets an analysis survive a reload without breaking Round 4's ruling 7 (no auto-run on
+  tab open).
 
-  It also proves the two BRACKET CHIP readers: `readStoredPermits` (the deck header, under the
-  same three stamps) and `storedPermitsSql`, the deck list's correlated subquery. The list cannot
-  afford the fingerprint, a hash over every card in every deck, so it stands in
-  `decks.last_edited_at`: an analysis computed before the deck's last edit draws no chip. That
-  errs quiet (a rename also moves the stamp and drops the tile's chip until the next analysis) and
-  never shows a bracket for cards the analysis did not read. With the stamp clause removed, the
-  "edit stamped after the analysis" check reads `[4,5]` against `null`.
+  **A reading never lapses.** It is FRESH while its `fingerprint` still matches the deck and
+  `dirty` is clear, and STALE otherwise, and a stale reading is still returned. The fingerprint is
+  `listFingerprint`, the list alone. `touchDeck` sets `dirty` in the edit's own transaction, and
+  every analysis clears it. A moved catalog and a row eight days old both still read fresh. Only
+  a whole deck is analyzed (ruling 1): a short body is refused with its counts, computing and
+  writing nothing. A second press on an unchanged list answers from the store (ruling 5).
+
+  **A version bump is not an edit** (Hugh's condition at plan approval). A row an older
+  `PROFILE_VERSION` wrote, over an unchanged list, reads back fresh: it is rebuilt quietly and
+  never marked dirty. The same row on a dirty or illegal deck reads as nothing, because an old
+  document's shape is never shown; version.ts records the NaN that costs.
+
+  **A commit pins the reading** (ruling 2) to the version it wrote. The pin runs in `after()`
+  and carries the fingerprint of the list the commit froze, so a pin for a list the deck no
+  longer holds writes nothing. That check measured nothing on its first run: it pinned a made-up
+  version id, which failed the foreign key, and the pin swallows that error, so the row read null
+  on any build. It pins the real id now.
+
+  Five mutations fail it: ignoring `dirty`, dropping the quiet rebuild, dropping the pin's list
+  guard, dropping `touchDeck`'s write, and (in the unit suite) dropping the commit's `after`.
+  Both functions take their two cached reads as injected deps, because `unstable_cache` raises
+  outside a request, so the probe exercises this module's SQL rather than a copy of it. The
+  fixture is a whole 99-card deck. Same discipline as `probe:claims`: a per-run `user_id` deleted
+  in a `finally`, `local-dev` or a scratch branch, **never production**.
+
+  It also proves the two BRACKET CHIP readers, which HOLD over an edit (ruling 4):
+  `readStoredPermits` (the deck header) and `storedPermitsSql`, the deck list's correlated
+  subquery. Neither carries a freshness clause, and after an edit both still read the last
+  analyzed bracket.
 - `pnpm probe:bracket-chip` walks the bracket chip on the deck tile and in the deck header at
   1300x900 and 390x844: the header draws it on a FRESH load, from the stored analysis, before any
   tab is pressed; both copies are the handoff's chip, 22px on a phone and 24px from `md`, with a

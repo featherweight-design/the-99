@@ -9,32 +9,31 @@ import { describe, expect, it, vi } from "vitest";
 vi.mock("../../db", () => ({ db: {} }));
 
 import { PgDialect } from "drizzle-orm/pg-core";
-import { decks } from "../../db/schema";
+import { deckProfiles, decks } from "../../db/schema";
 import { touchDeck } from "./touch";
 
 const dialect = new PgDialect();
 
 describe("touchDeck", () => {
   // Rendered through Drizzle's own dialect rather than matched as a string on a
-  // fake: the point is what Postgres receives.
+  // fake: the point is what Postgres receives. Every update is recorded by the
+  // table it names, so the stamp and the analysis's `dirty` are read apart.
   const emitted = () => {
-    let captured: { values: Record<string, unknown>; where: unknown } | null = null;
+    const writes: { table: unknown; values: Record<string, unknown>; where: unknown }[] = [];
     const tx = {
-      update: (table: unknown) => {
-        expect(table).toBe(decks);
-        return {
-          set: (values: Record<string, unknown>) => ({
-            where: async (where: unknown) => {
-              captured = { values, where };
-            },
-          }),
-        };
-      },
+      update: (table: unknown) => ({
+        set: (values: Record<string, unknown>) => ({
+          where: async (where: unknown) => {
+            writes.push({ table, values, where });
+          },
+        }),
+      }),
     };
-    return { tx, read: () => captured };
+    const on = (table: unknown) => writes.find((w) => w.table === table) ?? null;
+    return { tx, read: () => on(decks), profile: () => on(deckProfiles), writes };
   };
 
-  it("writes last_edited_at on decks, and nothing else", async () => {
+  it("writes last_edited_at on decks, and no other column there", async () => {
     const { tx, read } = emitted();
     await touchDeck(tx as unknown as Parameters<typeof touchDeck>[0], "deck-1");
     const captured = read()!;
@@ -70,8 +69,23 @@ describe("touchDeck", () => {
   // separately, and a deck could read as edited at an instant when nothing was
   // written.
   it("writes through the handle it is given", async () => {
-    const { tx, read } = emitted();
+    const { tx, read, profile } = emitted();
     await touchDeck(tx as unknown as Parameters<typeof touchDeck>[0], "deck-1");
     expect(read()).not.toBeNull();
+    expect(profile()).not.toBeNull();
+  });
+
+  // THE ANALYSIS GOES STALE WITH THE EDIT (the lifecycle's `dirty`), in the same transaction, on
+  // this one deck, and only where it is not already marked.
+  it("marks this deck's stored analysis dirty, and nothing else about it", async () => {
+    const { tx, profile, writes } = emitted();
+    await touchDeck(tx as unknown as Parameters<typeof touchDeck>[0], "deck-7");
+    expect(writes.map((w) => w.table)).toEqual([decks, deckProfiles]);
+    const w = profile()!;
+    expect(w.values).toEqual({ dirty: true });
+    const rendered = dialect.sqlToQuery(w.where as Parameters<typeof dialect.sqlToQuery>[0]);
+    expect(rendered.sql).toContain('"deck_profiles"."deck_id" = $1');
+    expect(rendered.sql).toContain('"deck_profiles"."dirty" = $2');
+    expect(rendered.params).toEqual(["deck-7", false]);
   });
 });

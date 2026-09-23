@@ -875,14 +875,11 @@ export async function listDecksWithStats(
      */
     includeCommanderArt?: boolean;
     /**
-     * The catalog generation to read each deck's STORED bracket against, or absent to read none.
-     *
-     * Passed in rather than read here because `catalogGeneration` is request-cached and this
-     * loader is also called from scripts, where that cache raises. `/decks` is the one caller
-     * that draws the tile's bracket chip, so it is the one that passes it. With it absent every
-     * row's `bracket` is null, which is what a deck nobody has analyzed draws: no chip.
+     * Read each deck's last analyzed bracket (`storedPermitsSql`, which holds over an edit).
+     * `/decks` is the one caller that draws the tile's bracket chip, so it is the one that sets
+     * it. Unset, every row's `bracket` is null, which is what a deck nobody has analyzed draws.
      */
-    bracketCatalog?: string;
+    includeBracket?: boolean;
   } = {},
 ): Promise<DeckListItem[]> {
   const ownedCountSql = sql<number>`coalesce(
@@ -974,10 +971,9 @@ export async function listDecksWithStats(
       versionNumber: opts.includeDeckState
         ? newestVersionNumberSql
         : sql<number | null>`null::int`,
-      bracketPermits:
-        opts.bracketCatalog === undefined
-          ? sql<number[] | null>`null::int[]`
-          : storedPermitsSql(opts.bracketCatalog),
+      bracketPermits: opts.includeBracket
+        ? storedPermitsSql()
+        : sql<number[] | null>`null::int[]`,
       declaredBracket: decks.declaredBracket,
     })
     .from(decks)
