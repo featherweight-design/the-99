@@ -31,21 +31,35 @@ import { touchDeck } from "../decks/touch";
 
 type Tx = Parameters<Parameters<typeof db.transaction>[0]>[0];
 
-/** The item and its run's deck, or null unless the reader owns the run. Locks the item. */
-async function ownedItem(tx: Tx, itemId: string, userId: string) {
+/**
+ * The item and its run's deck, or null unless the reader owns the run — with the DECK row locked
+ * and then the item's, in that order.
+ *
+ * The order is the whole point. Every deck write here locks the deck row first, and deleting a
+ * deck locks it before cascading to its runs and their items; taking the item first would hold
+ * it while waiting for a deck that a delete holds while waiting for the item. So the deck is
+ * found by an unlocked read (an item's deck never changes: its run is fixed to one), locked, and
+ * only then is the item locked and read.
+ */
+async function lockedItem(tx: Tx, itemId: string, userId: string) {
+  const [owner] = await tx
+    .select({ deckId: deckSuggestionRuns.deckId })
+    .from(deckSuggestionItems)
+    .innerJoin(deckSuggestionRuns, eq(deckSuggestionRuns.id, deckSuggestionItems.runId))
+    .where(and(eq(deckSuggestionItems.id, itemId), eq(deckSuggestionRuns.userId, userId)));
+  if (!owner) return null;
+  await lockDeck(tx, owner.deckId);
   const [row] = await tx
     .select({
-      deckId: deckSuggestionRuns.deckId,
       addOracleId: deckSuggestionItems.addOracleId,
       cutOracleId: deckSuggestionItems.cutOracleId,
       verdict: deckSuggestionItems.verdict,
       undoSnapshot: deckSuggestionItems.undoSnapshot,
     })
     .from(deckSuggestionItems)
-    .innerJoin(deckSuggestionRuns, eq(deckSuggestionRuns.id, deckSuggestionItems.runId))
-    .where(and(eq(deckSuggestionItems.id, itemId), eq(deckSuggestionRuns.userId, userId)))
-    .for("update", { of: deckSuggestionItems });
-  return row ?? null;
+    .where(eq(deckSuggestionItems.id, itemId))
+    .for("update");
+  return row ? { ...row, deckId: owner.deckId } : null;
 }
 
 async function lockDeck(tx: Tx, deckId: string): Promise<void> {
@@ -69,10 +83,9 @@ async function readRow(tx: Tx, deckId: string, oracleId: string) {
  */
 export async function applyItem(itemId: string, userId: string): Promise<string | null> {
   return db.transaction(async (tx) => {
-    const item = await ownedItem(tx, itemId, userId);
+    const item = await lockedItem(tx, itemId, userId);
     if (!item || item.verdict !== "pending" || item.cutOracleId === null) return null;
     const { deckId, addOracleId, cutOracleId } = item;
-    await lockDeck(tx, deckId);
 
     const [deck] = await tx.select({ commander: decks.commanderOracleId, partner: decks.partnerOracleId })
       .from(decks).where(eq(decks.id, deckId));
@@ -140,10 +153,9 @@ export async function applyItem(itemId: string, userId: string): Promise<string 
  */
 export async function undoItem(itemId: string, userId: string): Promise<string | null> {
   return db.transaction(async (tx) => {
-    const item = await ownedItem(tx, itemId, userId);
+    const item = await lockedItem(tx, itemId, userId);
     if (!item || item.verdict !== "accepted" || !item.undoSnapshot || item.cutOracleId === null) return null;
     const { deckId, addOracleId, cutOracleId, undoSnapshot: snap } = item;
-    await lockDeck(tx, deckId);
 
     // Only over the deck the apply left. If the player has since changed either card, the
     // snapshot no longer describes what to undo, and writing it would destroy their edit: the
@@ -194,7 +206,7 @@ export async function undoItem(itemId: string, userId: string): Promise<string |
 /** Dismiss or restore: the verdict alone, with the deck untouched. */
 export async function setDismissed(itemId: string, userId: string, dismissed: boolean): Promise<string | null> {
   return db.transaction(async (tx) => {
-    const item = await ownedItem(tx, itemId, userId);
+    const item = await lockedItem(tx, itemId, userId);
     const from = dismissed ? "pending" : "dismissed";
     if (!item || item.verdict !== from) return null;
     await tx.update(deckSuggestionItems)
