@@ -2,9 +2,9 @@
 
 **Verdict: 🟡 Yellow.** Audited 2026-09-23 against `origin/main` at `67f29274` (#877), which is
 what this branch sits on. The tab itself (sections 1 to 3 and 5 of `HANDOFF.md`) is buildable,
-and nothing in it has to be redrawn. Two things stop it being Green:
+and nothing in it has to be redrawn. Two things stopped it being Green:
 
-- **Three rulings belong to Hugh, and two of them decide what the stale state means.**
+- **Three rulings belonged to Hugh (now SETTLED 2026-09-23, see the next section):**
   - The stored read on `main` never returns a stale reading, so 2i is unreachable until the
     read changes, and the handoff says nothing about the two other reasons a stored reading
     lapses: a catalog refresh (weekly) and the 7-day cap.
@@ -16,7 +16,7 @@ and nothing in it has to be redrawn. Two things stop it being Green:
   the Versions-tab link all wait for it. Until then the tab's only reachable Overview state is
   "no synopsis", which is **undrawn**. Finding 6 gives the engineering answer.
 
-Design read an earlier `main` (their `READINESS.md:7-14`). Five PRs merged since then. The only
+Design read an earlier `main` (their `READINESS.md:7-14` lists the files read, not a commit). Six PRs touching this surface merged since the files it names were last read. The only
 conflict among them is #877, and it is finding 3. #874 is the premise of finding 1. #876's
 "Bracket facts" heading is inside `CardModal` (`card-mark.ts:61`), which the handoff stacks
 unchanged, so there is no conflict there. #875, #878 and #881 touch nothing drawn here.
@@ -35,7 +35,7 @@ its current state until the player runs another.**
    bracket everywhere: the tab, the header and the tile.
 4. **Edit without re-analyzing.** The deck KEEPS its last bracket everywhere, header chip
    included, and the Re-analyze prompt shows. **Finding 2 is settled for the handoff:** the chip
-   holds, which reverses #877's hide-on-edit rule (`use-header-bracket.ts:13-15`).
+   holds, which reverses #877's hide-on-edit rule (`use-header-bracket.ts:17-18`).
 5. **Drift is an isDirty flag, not a diff.** Any edit sets it; any analysis clears it. After a
    revert to the analyzed list the prompt still shows, and the press finds the same fingerprint,
    answers almost instantly from the stored analysis, and clears the flag.
@@ -55,13 +55,13 @@ its current state until the player runs another.**
 
 | # | Sev | What | Handoff | `main` | Resolves |
 |---|---|---|---|---|---|
-| 1 | High | **2i (stale) is unreachable, and staleness has three causes the handoff treats as one.** The stored read returns a row only when fingerprint, catalog and a 7-day age all match; any other row reads as `none`, which is 2a. The banner's sentence ("Your deck has changes…") is false when the cause is a catalog refresh or age, and the catalog refreshes every Monday. | `HANDOFF.md:96-97`, `STATES:17`, copy `:52` | `stored.ts:33`, `stored.ts:86-102`, `stored-sql.ts:20`, `profile-actions.ts:72-75` | **Hugh** rules; eng builds |
-| 2 | High | **What the header chip shows during 2d and 2i.** The handoff draws the held bracket. #877 retires the chip the moment the list changes, on the header and on the tile, so that it "never shows a bracket for cards the analysis didn't read". Round 0 says one chip, one meaning, so the two rules cannot both ship. | `STATES:12,17` | `use-header-bracket.ts:13-15`, `stored-sql.ts:40-42` | **Hugh** |
+| 1 | High | **2i (stale) is unreachable, and staleness has three causes the handoff treats as one.** The stored read returns a row only when fingerprint, catalog and a 7-day age all match; any other row reads as `none`, which is 2a. The banner's sentence ("Your deck has changes…") is false when the cause is a catalog refresh or age, and the catalog refreshes every Monday. | `HANDOFF.md:96-97`, `STATES:17`, copy `:52` | `stored.ts:33`, `stored.ts:86-102`, `stored-sql.ts:20`, `profile-actions.ts:72-75` | **Settled 2026-09-23:** no lapse on catalog or age; eng builds (PR C) |
+| 2 | High | **What the header chip shows during 2d and 2i.** The handoff draws the held bracket. #877 retires the chip the moment the list changes, on the header and on the tile, because it would otherwise draw a bracket "for cards the analysis never read" (`use-header-bracket.ts:18`). Round 0 says one chip, one meaning, so the two rules cannot both ship. | `STATES:12,17` | `use-header-bracket.ts:17-18`, `stored-sql.ts:40-42` | **Settled 2026-09-23:** the chip holds |
 | 3 | Med | **The header chip is redrawn, and #877 shipped it yesterday.** Handoff: radius 6, a filled plate, mono 11/10, 22px marks, 24px tall on desktop, and a range reads `Optimized or cEDH` with no slash. Shipped: `rounded-full`, no plate, sans 11 medium, 20px mark, 22px tall, `Split` with a slash. The tile draws the same `BracketChip`. | `HANDOFF.md:29-31`, `analysis-fixtures.js:196-204` | `bracket-chip.tsx:43-44,67-93`, `deck-analysis.ts:159`, `gap-report-bracket-chip.md:11-13,26-29` | eng (below) |
-| 4 | Low | **Two phone header orders.** The canvas's order table puts the phone chip on "its own line above the title". `HANDOFF.md` and the 390 frame put the chips row under the commander line. This redraw also settles #877's deferred band-order item. | canvas `:452` vs `HANDOFF.md:27-28`, `Analysis Tab 390:48-56` | `gap-report-bracket-chip.md:33-35`, `spine-mobile.tsx:100-107`, `spine-desktop.tsx:445-449` | eng: HANDOFF wins (its `:15`) |
-| 5 | High | **The synopsis has no write path for an existing reading.** Analyze and Re-analyze write it. A current reading has no re-analyze control. So a reading without a synopsis cannot get one until the list changes: that is every reading stored before sub-project 6, and any reading whose generation failed. Tying the write to Analyze also adds a model call (Round 0: "about five seconds") to the 630ms press every time. Brief §2.5 draws `Write one` / `Write it again`. | `SYNOPSIS-modal.md:62-64`, `HANDOFF.md:57` | brief `:66-67`, `deck-analysis.ts:124-125` | **Hugh** (Design only if a write control is wanted) |
+| 4 | Low | **Two phone header orders.** The canvas's order table puts the phone chip on "its own line above the title". `HANDOFF.md` and the 390 frame put the chips row under the commander line. This redraw also settles #877's deferred band-order item. | canvas `:452` vs `HANDOFF.md:27-28`, `Analysis Tab 390:48-56` | `gap-report-bracket-chip.md:34-37`, `spine-mobile.tsx:100-107`, `spine-desktop.tsx:445-449` | eng: HANDOFF wins (its `:15`) |
+| 5 | High | **The synopsis has no write path for an existing reading.** Analyze and Re-analyze write it. A current reading has no re-analyze control. So a reading without a synopsis cannot get one until the list changes: that is every reading stored before sub-project 6, and any reading whose generation failed. Tying the write to Analyze also adds a model call (Round 0: "about five seconds") to the 630ms press every time. Brief §2.5 draws `Write one` / `Write it again`. | `SYNOPSIS-modal.md:62-64`, `HANDOFF.md:57` | brief `:66-67`, `deck-analysis.ts:124-125` | **Settled 2026-09-23:** re-analyze rewrites on a changed list, against a daily allowance |
 | 6 | Med | **The tab has no "no synopsis yet" state.** Every analyzed frame draws the Overview paragraph and its entry point, but until sub-project 6 the only reachable state is "none". `main` fills that slot with a placeholder sentence, which §6.2 of the handoff forbids. The state where the reading lands before the synopsis finishes is undrawn too. | `Analysis Tab 1300:131-133`, `HANDOFF.md:111`, `SYNOPSIS-modal.md:60` | `analysis-panel.tsx:211-219`, `builder-shell.tsx:1129`, `deck-analysis.ts:121-122` | eng: drop the Overview section entirely; the climb leads the left column; delete `SynopsisSlot` |
-| 7 | Med | **A "committed reading" has no source.** `deck_profiles` carries no version. A version stores only `permits`. A commit computes a profile only when the deck carries a declaration, and it does not store one. | `HANDOFF.md:97`, `STATES:32`, `copy strings:42-43,59` | `schema.ts:1469-1481`, `schema.ts:462`, `actions.ts:1453-1456` | eng (below) |
+| 7 | Med | **A "committed reading" has no source.** `deck_profiles` carries no version. A version stores its `permits` and `declared_bracket` (`schema.ts:453`), and no reading. A commit computes a profile only when the deck carries a declaration, and it does not store one. | `HANDOFF.md:97`, `STATES:32`, `copy strings:42-43,59` | `schema.ts:1469-1481`, `schema.ts:462`, `actions.ts:1453-1456` | eng (below) |
 | 8 | Med | **The hook cannot hold a reading while it re-reads.** `loading` replaces `ready`, and `failed` carries no profile. Both 2d and "loading over a held reading" need that. | `STATES:12,19` | `use-deck-profile.ts:13-23,110,127` | eng |
 | 9 | Med | **`CardDetailTrigger` does not host the hover preview.** The preview is `HoverPreviewProvider` / `usePreviewRow`, mounted only by the decklist and the top-off list. Names in the Overview and the synopsis need a provider, and it has to draw above a `z-50` sheet. | `HANDOFF.md:51`, `SYNOPSIS-modal.md:20-21` | `card-detail-provider.tsx:113-118`, `hover-preview.tsx:131,244`, `decklist.tsx:675,812`, `top-off-list.tsx:1004` | eng |
 | 10 | Med | **The `← {backLabel}` pill does not fit the ✕'s slot.** The name block reserves 46px for a 34px ✕. The labels include `How we determined bracket 4` and `Two-card infinites`. "Nothing else in the modal moves" cannot hold. | `HANDOFF.md:78-81` | `card-modal.tsx:1559-1563,1589`, `deck-analysis.ts:464` | eng: widen the reserve when `backLabel` is set; measure it |
@@ -73,7 +73,7 @@ its current state until the player runs another.**
 | 16 | Low | **The lean conform is partial.** It gives 1 of the 5 variants it names. It changes "this deck can find" to "your tutors can find". "Two-card infinite combo" also lands on game-ending pairs, though the findings label has made the same claim since before this handoff. | `copy strings:88-99` | `deck-analysis.ts:433-435,363` | eng via `/copy-review` |
 | 17 | Low | **The empty ring's marks run at 0.3 (failed) and 0.22 (loading trough),** below `DIM_OPACITY` (0.65, #871). | fixtures `:237` | `bracket-mark.tsx:51` | eng: the ring is decorative (`aria-hidden`; the heading carries the state), so it is exempt, with the exemption recorded in the code |
 | 18 | Low | **The About entry.** See the About entry section below. | `ABOUT-entry.md` | `about.ts:34,331-337,363-389` | **Hugh** + Design |
-| 19 | Low | **The deck-stats ledger is dropped,** and the home the canvas names for it does not exist. | `HANDOFF.md:92`, canvas `:286-302` | no `design_handoff_the99_deck_stats/` on main or in history; `design-pipeline-status.md:270` | **Hugh** |
+| 19 | Low | **The deck-stats ledger is dropped,** and the home the canvas names for it does not exist. | `HANDOFF.md:92`, canvas `:286-302` | no `design_handoff_the99_deck_stats/` on main or in history; `design-pipeline-status.md:270` | **Settled 2026-09-22:** Hugh leaves the four figures out until deck stats is scoped on its own |
 | 20 | Low | **Items that close.** `READINESS.md` items 3 to 5 close against `main`, and so does the owed `[3,4]` split. | `READINESS.md:20-28` | `deck-analysis.ts:18-20,71`; `rules.ts:98-101` | closed |
 | 21 | Low | **Canvas conventions that need mapping.** `--display` is `font-display` / `--font-display-face` on main. The `at-wave` keyframes are not in `globals.css` yet. | frames `:27-28` | `globals.css:93`, `globals.css:615-667` | eng |
 
@@ -182,7 +182,7 @@ Findings 2, 3 and 4. The handoff redraws two things #877 just shipped:
 
 - **The chip.** Finding 3: eng resolves it, one component for both mounts.
 - **The band order.** This one is welcome. It is exactly the item #877 deferred
-  (`gap-report-bracket-chip.md:33-35`). It moves the status pill off the commander line at 1300
+  (`gap-report-bracket-chip.md:34-37`). It moves the status pill off the commander line at 1300
   (`spine-desktop.tsx:445-449`) and off the front of the meta row at 390
   (`spine-mobile.tsx:100-107`).
 
@@ -263,14 +263,9 @@ in the same PR, or `check:copy-drift` goes red.
    for them anywhere else yet, since deck stats is paused. Are you happy for them to wait for
    that round?"*
 
-**Hugh also owns findings 1, 2 and 5, and the About coverage in finding 18:**
+**Findings 1, 2 and 5 were settled by Hugh on 2026-09-23** (the rulings section at the top).
+**Still his: the About coverage in finding 18:**
 
-- **Finding 1:** *"When the card data refreshes on Monday, or a reading is more than a week old,
-  should the tab show the old bracket with a note, or ask you to analyze again?"*
-- **Finding 2:** *"After you edit a deck, should the header and the tile still show the old
-  bracket until you re-analyze, or show nothing?"*
-- **Finding 5:** *"Should pressing Analyze also write the summary (slower, and a model call every
-  time), and how does a deck analyzed before summaries existed get one?"*
 - **Finding 18:** which of the lean, the version comparison, the chip and the card marks owe an
   About entry.
 
@@ -294,7 +289,7 @@ No stacking. Each PR merges before the next opens. Sizes are estimates.
 | **B: the tab, fresh** | The empty state (ring, `at-wave`), the 2fr / 1fr grid, the bracket box redrawn (no label, no pill, display-face name, `analyzed {when}`), the strip's inset mode, the Overview omitted (finding 6), the settle announcement, `SynopsisSlot` deleted; `probe:verdict-block` updated | `analysis-panel.tsx`, `verdict-block.tsx`, `role-counter-strip.tsx`, `deck-analysis.ts`, `globals.css`, `builder-shell.tsx`. About 14 files. | A merged |
 | **C: the analysis lifecycle** | Per Hugh's rulings above: the stored analysis stops lapsing on catalog or age; an isDirty flag set by every edit and cleared by every analysis; the same-fingerprint re-analyze answers from the store; the hook's held, re-read and failed-over-held states; the banner; 2d; the chips withheld on a dirty range; the header and tile chip HOLD the last bracket (reverses #877); analysis on a legal deck only; analysis run and pinned at commit; `probe:profile-store` extended | `stored.ts`, `stored-sql.ts`, `profile-actions.ts`, `use-deck-profile.ts`, `analysis-panel.tsx`, `declaration.tsx`, `use-header-bracket.ts`, the commit action, `db/schema.ts` + one migration. Likely over 20 files: split data (schema, flag, store, commit pin) from surface (hook, banner, chips). | ruled 2026-09-23 |
 | **D: header** | The chips row at both widths, `BracketChip` restyled for both mounts (finding 3), `probe:bracket-chip` at 390 / 700 / 1300, `probe:commit-offer` re-run | `spine-desktop.tsx`, `spine-mobile.tsx`, `bracket-chip.tsx`, `deck-card.tsx`, `deck-analysis.ts`. About 10 files. | can run in parallel with B and C |
-| **E: synopsis** | The Overview paragraph, the entry point, the fourth body, the Versions link, the hover provider on names (finding 9) | `analysis-panel.tsx`, `receipt-modal.tsx`, `version-history.tsx`, a synopsis copy module | **sub-project 6's backend, plus Hugh on 5.** Likely more than one PR |
+| **E: synopsis** | The Overview paragraph, the entry point, the fourth body, the Versions link, the hover provider on names (finding 9) | `analysis-panel.tsx`, `receipt-modal.tsx`, `version-history.tsx`, a synopsis copy module | **sub-project 6's backend** (finding 5 is settled). Likely more than one PR |
 | **F: About** | The launch batch: the entry, the `deck-page` edit, `ABOUT_VERSION` 10, fixtures, re-pinned hash | `about.ts`, `about/fixtures.ts` | the last PR of the line; Hugh on 18 |
 
 `builder-shell.tsx` (1,457 lines) and `deck-analysis.ts` are touched by A, B and D. Sequencing
@@ -313,8 +308,8 @@ with the retired strings.
 ## Clear to build
 
 - **PRs A, B and D can start now.**
-- **C waits for Hugh's rulings on findings 1 and 2.**
+- **C is ruled (2026-09-23) and follows D.**
 - **E waits for sub-project 6.**
 - **F closes the line.**
 
-Nothing here goes back to Design unless Hugh's answer to finding 5 is a separate write control.
+Nothing here goes back to Design except the About entry's coverage (finding 18), before PR F.
