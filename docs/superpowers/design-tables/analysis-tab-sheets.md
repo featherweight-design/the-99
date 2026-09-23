@@ -259,6 +259,6 @@ Precedence: READINESS rulings > HANDOFF.md > canvas. Where the canvas hard-codes
 | Sheet | States |
 |---|---|
 | 3a | card list (tiles) · combo body (shipped, 96px pair) · stacked card present (receipt steps down) / absent |
-| 3b | open (rule boxes + candidates) · stacked card present / absent. Blocked / satisfied: not drawn — opener only on a `below` rung with a path; `above` rung ("already allowed") opens nothing |
+| 3b | open (rule boxes + candidates) · stacked card present / absent · opener only on a `below` rung with a path; `above` rung ("already allowed") opens nothing. **Blocked: not drawn by the frames, but reachable** (a [3] deck whose commander is a game changer) and carried over as the shipped body, heading in the header (gap report, Resolution). **Satisfied: unreachable** from the rung, since every target sits below the reading's floor |
 | 3c | open only; never stacks |
 | CardModal | stacked with `backLabel` (desktop pill) · stacked without / phone (✕ unchanged) · unstacked (shipped ✕) |

@@ -33,8 +33,8 @@ export function FindingsBlock({ profile, art }: { profile: DeckProfile; art: Fin
   const opened = open ? list.find((f) => f.id === open) ?? null : null;
 
   return (
-    // ONE OPENER for how these are decided, placed by the grid rather than mounted twice: at the
-    // head row's right end on desktop, under the box at 44px on the phone (handoff §2, row 4).
+    // ONE OPENER for how these are decided, mounted once: at the head row's right end on desktop,
+    // where the grid places it, and under the box at 44px on the phone (handoff §2, row 4).
     <section
       className="flex flex-col gap-[9px] md:grid md:grid-cols-[minmax(0,1fr)_auto] md:items-baseline md:gap-x-3 md:gap-y-[11px]"
       data-testid="findings-block"
@@ -45,6 +45,9 @@ export function FindingsBlock({ profile, art }: { profile: DeckProfile; art: Fin
       >
         {copy.heading}
       </h3>
+      {/* In the DOM straight after the heading, so focus meets it where desktop draws it; the phone
+          moves it under the box with `order`. */}
+      <ProvenanceOpener className="self-start max-md:order-last" />
       <ul
         className={
           "md:col-span-2 "
@@ -59,7 +62,6 @@ export function FindingsBlock({ profile, art }: { profile: DeckProfile; art: Fin
           <FindingItem key={f.id} finding={f} art={art} onOpen={() => setOpen(f.id)} />
         ))}
       </ul>
-      <ProvenanceOpener className="self-start md:col-start-2 md:row-start-1" />
       {opened ? <ReceiptModal finding={opened} art={art} onClose={() => setOpen(null)} /> : null}
     </section>
   );

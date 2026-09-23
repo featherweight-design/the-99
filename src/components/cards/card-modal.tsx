@@ -547,6 +547,9 @@ export function CardModal({
     // on a narrow window measures 0 until the window widens.
     const measure = () => setCloseReserve(el.offsetWidth + 12);
     measure();
+    // Guarded, as `use-head-collapse.ts` guards its own: an unconditional constructor throws on
+    // mount in any engine without the API. The `measure()` above has already sized the reserve.
+    if (typeof ResizeObserver === "undefined") return;
     const observer = new ResizeObserver(measure);
     observer.observe(el);
     return () => observer.disconnect();

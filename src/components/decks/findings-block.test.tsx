@@ -198,6 +198,19 @@ describe("a card opened from the receipt", () => {
     expect(screen.getByTestId("receipt-modal")).toBeTruthy();
   });
 
+  // An engine without ResizeObserver still draws the pill: the reserve is measured once.
+  it("draws the way back where ResizeObserver does not exist", async () => {
+    const saved = globalThis.ResizeObserver;
+    // @ts-expect-error removing the API the way an older engine lacks it
+    delete globalThis.ResizeObserver;
+    try {
+      await openCardFromReceipt();
+      expect(within(cardDialog()).getByTestId("card-modal-back")).toBeTruthy();
+    } finally {
+      globalThis.ResizeObserver = saved;
+    }
+  });
+
   it("keeps the plain close on a card opened from nowhere", async () => {
     mount();
     await act(async () => { fireEvent.click(screen.getByText("open elsewhere")); });

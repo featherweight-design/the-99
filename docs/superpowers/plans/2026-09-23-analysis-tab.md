@@ -69,8 +69,9 @@ section.
 - `docs/superpowers/design-tables/upgrade-path.md` and `declaration-surface.md`.
 - The probes: `probe-verdict-findings.mjs` and `probe-verdict-lean.mjs` are re-run, and gain a
   `backLabel` check covering pill geometry, name-block clearance, and ← or Esc popping one
-  level. A new `probe-analysis-sheets.mjs` covers 3b and 3c at both widths: their widths, the
-  43px phone header, and the stacked card.
+  level. 3b and 3c are walked in `probe-verdict-findings.mjs` itself, at both widths: their
+  widths, the 43px phone header, and the stacked card. That probe already opens the tab and holds
+  the fixture, so a separate script would have repeated both.
 
 ## PR B · the tab with a current reading (about 14 files)
 
