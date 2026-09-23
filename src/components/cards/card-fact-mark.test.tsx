@@ -3,6 +3,7 @@ import { describe, expect, it } from "vitest";
 
 import { CARD_FACTS, cardMarkCopy } from "../../lib/copy/card-mark";
 import { CARD_FACT_MARK_PX, CardFactMark } from "./card-fact-mark";
+import { TutorGlyph } from "./tutor-glyph";
 
 describe("CardFactMark", () => {
   it("draws one glyph per fact, each spoken with the rules' own name", () => {
@@ -57,13 +58,36 @@ describe("card-mark copy", () => {
     }
   });
 
-  it("names all three facts in one case, so no member of the set reads apart", () => {
+  it("names all four facts in one case, so no member of the set reads apart", () => {
     // The Game Changer list keeps its own name in the tooltip's sentence, where it is
     // named AS a list; the label a player reads in the key and the modal is lowercase
     // like the other two.
     expect(cardMarkCopy.gameChanger).toBe("game changer");
     expect(cardMarkCopy.massLandDenial).toBe("mass land denial");
     expect(cardMarkCopy.extraTurns).toBe("extra turns");
+    expect(cardMarkCopy.tutor).toBe("tutor");
     expect(cardMarkCopy.tooltip.gameChanger).toContain("Game Changer list");
+  });
+
+  // The heading has to be true of every fact it heads, and no bracket rule counts tutors.
+  it("does not head the block with a claim the tutor makes false", () => {
+    expect(cardMarkCopy.modalHeading).not.toMatch(/rules/i);
+  });
+});
+
+// The tutor is drawn with the verdict's own glyph, not a second drawing of it: the card's
+// mark and the tutors finding's mark are one set of paths (`TutorPaths`).
+describe("the tutor mark", () => {
+  it("draws exactly the paths the tutors finding draws", () => {
+    const { container: mark } = render(<CardFactMark fact="tutor" />);
+    const { container: finding } = render(<TutorGlyph />);
+    const paths = (c: HTMLElement) =>
+      [...c.querySelectorAll("path")].map((p) => p.getAttribute("d"));
+    expect(paths(mark)).toHaveLength(2);
+    expect(paths(mark)).toEqual(paths(finding));
+  });
+
+  it("is last in the fixed order, after extra turns (§C2: drawn up follows turn again)", () => {
+    expect(CARD_FACTS.at(-1)).toBe("tutor");
   });
 });

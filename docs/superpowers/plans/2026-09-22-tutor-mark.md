@@ -1,7 +1,6 @@
 # Implementation plan: the tutor mark on every card surface
 
-**Status: DRAFT.** Decision 1 is RULED (Hugh, 2026-09-22): land-only searches are not tutors. The
-plan as a whole still waits on Hugh's approval before any build.
+**Status:** PR A shipped as #872 (the rule). PR B is the mark, stored and drawn.
 
 **Glyph:** `TutorGlyph` (`src/components/cards/tutor-glyph.tsx`, #863), lifted from the verdict
 canvas §4a. §C2 of `design/design_handoff_the99_push_line/STATES-push-line.md` lists it as the

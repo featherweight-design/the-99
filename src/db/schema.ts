@@ -1417,6 +1417,15 @@ export const cardBracketFlags = pgTable("card_bracket_flags", {
   massLandDenialSources: text("mass_land_denial_sources").array().notNull().default(sql`'{}'`),
   extraTurn: boolean("extra_turn").notNull().default(false),
   extraTurnSources: text("extra_turn_sources").array().notNull().default(sql`'{}'`),
+  /**
+   * A tutor: a library search that can find something other than a land (`isTutor`, ruled
+   * 2026-09-22). STORED rather than classified at each read because `/collection`, the largest
+   * payload in the app, selects no oracle text, and shipping every owned card's text to decide
+   * one boolean costs more than the column. The oracle rule is its only source today; the array
+   * exists so the table has one shape for every flag and the same check holds for all three.
+   */
+  tutor: boolean("tutor").notNull().default(false),
+  tutorSources: text("tutor_sources").array().notNull().default(sql`'{}'`),
   computedAt: timestamp("computed_at").notNull().defaultNow(),
 }, (t) => [
   // A flag and its provenance cannot disagree: true iff at least one source claims it. The
@@ -1430,6 +1439,9 @@ export const cardBracketFlags = pgTable("card_bracket_flags", {
   check("card_bracket_flags_source_values_check",
     sql`${t.massLandDenialSources} <@ array['spellbook_sweep', 'oracle_rule']::text[]
         and ${t.extraTurnSources} <@ array['spellbook_sweep', 'oracle_rule']::text[]`),
+  check("card_bracket_flags_tutor_sources_check",
+    sql`${t.tutor} = (cardinality(${t.tutorSources}) > 0)
+        and ${t.tutorSources} <@ array['oracle_rule']::text[]`),
 ]);
 
 /**

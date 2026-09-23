@@ -31,10 +31,10 @@ import type { CandidateFacts } from "./delta";
 /**
  * How many of each kind the deck's CURRENT list already holds.
  *
- * Tutors are counted here and are not a `CardFact`: the three marks are Round 1's and tutors
- * are Round 2 design, so the count comes off the deck read's own classification rather than
- * off the marks. One predicate (`isTutor`) answers for the deck and for the candidate,
- * so a card's reading cannot differ depending on which side of the add it is on.
+ * Tutors are counted here from the deck read's own classification rather than off the marks,
+ * like every kind here: the ordinal is a count of COPIES in the list, which no mark carries.
+ * One predicate (`isTutor`) answers for the deck and for the candidate, so a card's reading
+ * cannot differ depending on which side of the add it is on.
  */
 export type NoteCounts = {
   gameChanger: number;

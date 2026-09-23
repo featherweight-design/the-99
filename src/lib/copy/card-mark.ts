@@ -23,7 +23,7 @@
 // tooltip's sentence and nowhere else.
 
 /** Fixed order wherever more than one appears. */
-export const CARD_FACTS = ["gameChanger", "massLandDenial", "extraTurns"] as const;
+export const CARD_FACTS = ["gameChanger", "massLandDenial", "extraTurns", "tutor"] as const;
 
 export type CardFact = (typeof CARD_FACTS)[number];
 
@@ -34,18 +34,29 @@ export const cardMarkCopy = {
   gameChanger: "game changer",
   massLandDenial: "mass land denial",
   extraTurns: "extra turns",
+  // The fourth, since 2026-09-22: a library search that can find something other than a land
+  // (`isTutor`). Lowercase with the other three, per the one-case-for-the-set ruling above.
+  tutor: "tutor",
 
-  // THE MODAL BLOCK. The heading has to be true of all three at once, and the three
-  // have no shared category in the rules. "In the bracket rules" is literally true of
-  // every one: the bracket rules name these three. It states no threshold, no bracket
-  // number, and nothing about THIS deck — which the brief requires, since all three are
-  // facts about the card with no deck in scope.
+  // THE MODAL BLOCK. The heading has to be true of every fact at once, and they have no
+  // shared category in the rules. It states no threshold, no bracket number, and nothing
+  // about THIS deck — which the brief requires, since all four are facts about the card
+  // with no deck in scope.
+  //
+  // It was "In the bracket rules", which was literally true while the block held three: the
+  // bracket rules name those three. It stopped being true when the tutor joined on
+  // 2026-09-22 — no bracket rule counts tutors, the tutor clause was deleted from the rules
+  // in October 2025 (`deck-analysis.ts`), and the card note says "No bracket limits how many
+  // you play." "Bracket facts" claims only what every row is: a fact about the card that
+  // bears on bracket play.
   //
   // Rejected, each written down: "Worth mentioning" (a judgement, and the app does not
   // judge cards), "Power level" (invents a scale the rules do not have), "Flags"
   // (internal vocabulary leaking out), "Bracket impact" (implies a threshold, which the
-  // brief forbids outright), "Heads up" (it warns, and none of the three is a warning).
-  modalHeading: "In the bracket rules",
+  // brief forbids outright), "Heads up" (it warns, and none of the three is a warning),
+  // "About this card" (the add surfaces' note label, and a card's own modal is about that
+  // card in every block).
+  modalHeading: "Bracket facts",
 
   // THE HOVER TOOLTIP — an ENHANCEMENT, never the gloss. It does not exist on a phone,
   // so the key still carries the vocabulary and the modal still spells all three out.
@@ -67,6 +78,9 @@ export const cardMarkCopy = {
     gameChanger: "This card is on the Game Changer list.",
     massLandDenial: "This card counts as mass land denial.",
     extraTurns: "This card takes extra turns.",
+    // Says what the classifier checks, so a reader can dispute a reading: land-only searches
+    // are ramp, not tutors (ruled 2026-09-22).
+    tutor: "This card searches your library for something other than a land.",
   },
 
   // SPOKEN NAMES. Each mark carries its fact's name as its own accessible name, so the

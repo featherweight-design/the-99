@@ -1012,7 +1012,8 @@ export async function selectCollectionRows(
 }
 
 /**
- * Attach the two bracket facts that are NOT on a card row.
+ * Attach the stored bracket facts that are NOT on a card row: mass land denial, extra turns and
+ * tutor.
  *
  * `game_changer` is already aggregated — it rides `cards` — so this asks only about
  * mass land denial and extra turns, which live in `card_bracket_flags`. One query for
@@ -1045,7 +1046,7 @@ export async function attachBracketFacts(
   if (flags.size === 0) return cards;
   for (const card of cards) {
     // One assembly for every surface (`factsFor`), rather than a second copy of the rule
-    // here: the ORDER is part of the contract — gameChanger, massLandDenial, extraTurns,
+    // here: the ORDER is part of the contract — gameChanger, massLandDenial, extraTurns, tutor,
     // which is what the key lists and every surface draws — and two implementations of an
     // ordering is how it drifts. `gameChanger` is already on the card from the row query,
     // so it is re-derived from the list rather than re-read.

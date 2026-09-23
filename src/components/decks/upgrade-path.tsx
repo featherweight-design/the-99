@@ -370,6 +370,10 @@ function Marks({ card, profile }: { card: CardRef; profile: DeckProfile }) {
       ["gameChanger", has(b.gameChangers)],
       ["massLandDenial", has(b.massLandDenial)],
       ["extraTurns", has(b.extraTurns)],
+      // The profile's tutors are `isTutor`'s, the same rule the stored flag is written by, so
+      // this row and the card's mark elsewhere agree. Listed last among the facts, as
+      // `factsFor` orders them.
+      ["tutor", has(b.comboReach.tutors)],
     ] as const
   ).filter(([, on]) => on);
   return (

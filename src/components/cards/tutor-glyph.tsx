@@ -1,4 +1,4 @@
-import { CARD_FACT_MARK_PX } from "./card-fact-mark";
+import { CARD_FACT_MARK_PX, TutorPaths } from "./card-fact-mark";
 
 /**
  * Drawn up — tutors, as a glyph. The fifth fact mark, and the only one no bracket rule counts.
@@ -27,8 +27,7 @@ export function TutorGlyph() {
       aria-hidden
       data-testid="tutor-glyph"
     >
-      <path d="M1.8 12.2 H14.2 V14.4 H1.8 Z" fill="currentColor" />
-      <path d="M8 1.3 L11.7 5.7 H9.2 V10.3 H6.8 V5.7 H4.3 Z" fill="currentColor" />
+      <TutorPaths />
     </svg>
   );
 }

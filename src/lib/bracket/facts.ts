@@ -17,7 +17,7 @@ import type { CardNoteFacts } from "./card-note";
  * second way of saying it. Neither form is a claim that a card is CLEAR; detection on two of
  * the three is measured and partial.
  *
- * The order is fixed — gameChanger, massLandDenial, extraTurns — and it is the order the key
+ * The order is fixed — gameChanger, massLandDenial, extraTurns, tutor — and it is the order the key
  * lists and every surface draws.
  */
 export function factsFor(
@@ -28,20 +28,24 @@ export function factsFor(
   if (gameChanger) facts.push("gameChanger");
   if (flags?.massLandDenial) facts.push("massLandDenial");
   if (flags?.extraTurn) facts.push("extraTurns");
+  // LAST among the facts. The lemniscate is not a `CardFact` — combo awareness draws it, and
+  // every surface and every key draws it AFTER the facts — so the order a reader meets is
+  // bolt, peak, turn again, drawn up, then the lemniscate where a card has one.
+  if (flags?.tutor) facts.push("tutor");
   return facts.length > 0 ? facts : undefined;
 }
 
 /**
- * The same three marks, for a CANDIDATE the player is deciding whether to add.
+ * The same marks, for a CANDIDATE the player is deciding whether to add.
  *
- * `CandidateFacts` carries the two flag-derived facts as plain booleans — it comes off a
+ * `CandidateFacts` carries the flag-derived facts as plain booleans — it comes off a
  * different read from the deck's own cards, one scoped to a pool rather than to a list — so
  * this is the adapter, and it is an adapter rather than a second assembly on purpose. The
  * fixed order and the `undefined`-not-`[]` rule are `factsFor`'s, stated once.
  *
- * Tutors are NOT here, and their absence is Round 2's rather than an omission: the drawn-up
- * glyph is that round's design, and `CARD_FACTS` is the shipped vocabulary. The note says the
- * word in prose until the glyph exists.
+ * The tutor is here now that `TutorGlyph` exists (#863) and the flag is stored. A candidate's
+ * `tutor` comes from `isTutor`, the same predicate the ingest stores, so a candidate's mark and
+ * the same card's mark in the collection agree.
  */
 export function factsFromCandidate(facts: CardNoteFacts | null): CardFact[] | undefined {
   if (!facts) return undefined;
@@ -50,5 +54,6 @@ export function factsFromCandidate(facts: CardNoteFacts | null): CardFact[] | un
     massLandDenialSources: [],
     extraTurn: facts.extraTurn,
     extraTurnSources: [],
+    tutor: facts.tutor,
   });
 }

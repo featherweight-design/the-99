@@ -10,8 +10,10 @@ import type { FindingId } from "../../lib/bracket/findings";
  * writes the fact's name in the next element, which is the only condition under which the
  * verdict addendum lets a mark go without a key. A spoken name here would be read twice.
  *
- * `twoCardCombos` and `tutors` have their own modules because `CardFact` names only the three a
- * CARD carries; the other two are facts about the deck.
+ * `twoCardCombos` and `tutors` have their own components because a finding draws them in the
+ * verdict canvas's treatment, which is not the card mark's: the combo is not a `CardFact` at all,
+ * and the tutor's `TutorGlyph` shares `CardFactMark`'s paths (`TutorPaths`) but keeps the verdict
+ * canvas's `oklab` glow where the card mark's own spec pins `srgb`.
  */
 export function FindingMark({ id }: { id: FindingId }) {
   if (id === "twoCardCombos") return <ComboGlyph />;

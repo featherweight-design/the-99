@@ -3,6 +3,7 @@ import { sql } from "drizzle-orm";
 import { db } from "../../db";
 import { cardBracketFlags, cards, spellbookVariantCards, spellbookVariants } from "../../db/schema";
 import { isMassLandDenial, isExtraTurn } from "../bracket/oracle-rules";
+import { isTutor } from "../bracket/tutor-targets";
 import { stampCatalogRefresh } from "../cache/stamp-catalog";
 import { streamVariants } from "./bulk";
 import { sweepCardFlags, unionFlagRows, type SweepFetcher, type SweepCard } from "./sweep";
@@ -37,6 +38,12 @@ export const FLOORS = {
   mldFromRule: 20,
   extraTurnFromSweep: 23,
   extraTurnFromRule: 26,
+  /**
+   * Tutors, which only the oracle rule classifies. Measured on STAGING's catalog on 2026-09-22
+   * rather than on a run, because the column is new: 419 commander-legal cards can find
+   * something other than a land (929 searches, 510 of them land-only). Half, rounded down.
+   */
+  tutorFromRule: 209,
   /**
    * Share of returned entries this catalog could match — 100% on the measured run, because
    * upstream answers in Scryfall oracle ids. The floor is 0.5 rather than something near 1.0
@@ -150,6 +157,36 @@ export function fieldCollapse(fields: FieldPopulation, floors: IngestFloors): st
   return below;
 }
 
+/** How many cards each classifier flagged, per SOURCE — what the classifier floors read. */
+export type ClassifierCounts = {
+  mldSweep: number;
+  mldRule: number;
+  etSweep: number;
+  etRule: number;
+  tutorRule: number;
+};
+
+/**
+ * Every classifier floor the run is under, as the refusal's lines. Empty means publish.
+ *
+ * Pure, and separate from `ingestCombos`, so each floor has a test: the checks used to live
+ * inline in a function that needs a database, and none of them was asserted by anything.
+ */
+export function classifierCollapse(
+  counts: ClassifierCounts,
+  share: number,
+  floors: IngestFloors,
+): string[] {
+  const below: string[] = [];
+  if (counts.mldSweep < floors.mldFromSweep) below.push(`mld sweep ${counts.mldSweep} < ${floors.mldFromSweep}`);
+  if (counts.mldRule < floors.mldFromRule) below.push(`mld rule ${counts.mldRule} < ${floors.mldFromRule}`);
+  if (counts.etSweep < floors.extraTurnFromSweep) below.push(`extra-turn sweep ${counts.etSweep} < ${floors.extraTurnFromSweep}`);
+  if (counts.etRule < floors.extraTurnFromRule) below.push(`extra-turn rule ${counts.etRule} < ${floors.extraTurnFromRule}`);
+  if (counts.tutorRule < floors.tutorFromRule) below.push(`tutor rule ${counts.tutorRule} < ${floors.tutorFromRule}`);
+  if (share < floors.sweepResolutionShare) below.push(`resolution share ${share.toFixed(3)} < ${floors.sweepResolutionShare}`);
+  return below;
+}
+
 export type IngestReport = {
   sweep: { batches: number; resolved: number; unresolved: number; notIndexed: number };
   flags: { mldSweep: number; mldRule: number; etSweep: number; etRule: number; rows: number };
@@ -225,11 +262,14 @@ export async function ingestCombos(opts: {
   }
 
   // ---- 3 · the oracle rules over the same corpus -------------------------------------
-  const ruled = new Map<string, { massLandDenial: boolean; extraTurn: boolean }>();
+  const ruled = new Map<string, { massLandDenial: boolean; extraTurn: boolean; tutor: boolean }>();
   for (const c of catalog) {
     const mld = isMassLandDenial(c.oracleText);
     const et = isExtraTurn(c.oracleText);
-    if (mld || et) ruled.set(c.oracleId, { massLandDenial: mld, extraTurn: et });
+    // `isTutor`, the predicate the note and the verdict read live, so a stored mark and a live
+    // count can only disagree across a deploy that changes the rule, never at rest.
+    const tutor = isTutor(c.oracleText);
+    if (mld || et || tutor) ruled.set(c.oracleId, { massLandDenial: mld, extraTurn: et, tutor });
   }
 
   // ---- 4 · the floors, per source ----------------------------------------------------
@@ -238,17 +278,13 @@ export async function ingestCombos(opts: {
     etSweep: [...swept.flags.values()].filter((f) => f.extraTurn).length,
     mldRule: [...ruled.values()].filter((f) => f.massLandDenial).length,
     etRule: [...ruled.values()].filter((f) => f.extraTurn).length,
+    tutorRule: [...ruled.values()].filter((f) => f.tutor).length,
   };
   log(
     `classifiers: mld sweep ${counts.mldSweep} / rule ${counts.mldRule} · ` +
-      `extra-turn sweep ${counts.etSweep} / rule ${counts.etRule}`,
+      `extra-turn sweep ${counts.etSweep} / rule ${counts.etRule} · tutor rule ${counts.tutorRule}`,
   );
-  const below: string[] = [];
-  if (counts.mldSweep < floors.mldFromSweep) below.push(`mld sweep ${counts.mldSweep} < ${floors.mldFromSweep}`);
-  if (counts.mldRule < floors.mldFromRule) below.push(`mld rule ${counts.mldRule} < ${floors.mldFromRule}`);
-  if (counts.etSweep < floors.extraTurnFromSweep) below.push(`extra-turn sweep ${counts.etSweep} < ${floors.extraTurnFromSweep}`);
-  if (counts.etRule < floors.extraTurnFromRule) below.push(`extra-turn rule ${counts.etRule} < ${floors.extraTurnFromRule}`);
-  if (share < floors.sweepResolutionShare) below.push(`resolution share ${share.toFixed(3)} < ${floors.sweepResolutionShare}`);
+  const below = classifierCollapse(counts, share, floors);
   if (below.length > 0) {
     throw new Error(
       `spellbook ingest REFUSED — below floor, nothing written:\n  ${below.join("\n  ")}\n` +

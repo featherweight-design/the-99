@@ -95,6 +95,22 @@ describe("a count rule", () => {
   });
 });
 
+// A candidate wears every mark true of it, the tutor included (§C2's prose row). The row built
+// its marks from a hand-listed three, so a game changer that is also a tutor drew one mark here
+// and two everywhere else.
+describe("a candidate's marks", () => {
+  it("draws the tutor mark on a candidate the profile counts as a tutor", () => {
+    draw(deckProfile({
+      cards: [COMMANDER, ...gcs(["A", "B", "C", "D", "E"])],
+      gameChangerIds: new Set(["A", "B", "C", "D", "E"]),
+      tutorIds: new Set(["A"]),
+    }));
+    fireEvent.click(trigger());
+    expect(within(panel()).getAllByTestId("card-fact-tutor")).toHaveLength(1);
+    expect(within(panel()).getAllByTestId("card-fact-gameChanger").length).toBeGreaterThan(1);
+  });
+});
+
 describe("a combo", () => {
   // u4 at a target where combos are forbidden: either half breaks it, and it never says remove.
   it("states the combo's rule and draws the pair", () => {

@@ -482,9 +482,9 @@ async function run() {
         report(
           `${width}px · Consider tile · the key glosses every glyph drawn here`,
           tileKey !== null
-            && ["game changer", "mass land denial", "extra turns", "Two-card combo"]
+            && ["game changer", "mass land denial", "extra turns", "tutor", "Two-card combo"]
               .every((w) => tileKey.includes(w)),
-          tileKey === null ? "no key on the panel" : "all four words present",
+          tileKey === null ? "no key on the panel" : "all five words present",
         );
       }
 

@@ -15,7 +15,7 @@ const STATE_INK: Record<string, string> = {
 /**
  * The card modal's `Two-card combos` block.
  *
- * SECOND IN THE ORACLE COLUMN'S STACK — directly after `In the bracket rules`, before
+ * SECOND IN THE ORACLE COLUMN'S STACK — directly after `Bracket facts`, before
  * `In your collection`. Card fact, then PAIR fact, then copy facts: this block is the hinge
  * where the reader crosses from what the card is to what they have, which is exactly what a
  * pair fact is.
@@ -68,7 +68,7 @@ export function ComboPartnersDetail({
         {/* THE HEADING WRAPS THE BUTTON, which is the accordion pattern and the only valid
             nesting of the two: `<button>` takes phrasing content, so an `<h3>` inside it is
             invalid, while a heading around it keeps this block in the modal's heading outline
-            beside `In the bracket rules`. */}
+            beside `Bracket facts`. */}
         <h3 className="flex-auto min-w-0 m-0">
           {/* THE WHOLE ROW IS THE TARGET, not the chevron — 52px, one row, at both widths. A
               reader reaching for a disclosure reaches for the thing that says what it hides. */}
