@@ -1,5 +1,8 @@
 "use server";
 
+import { revalidatePath } from "next/cache";
+import { after } from "next/server";
+
 import { requireUserId } from "../../lib/auth";
 import { isUuid } from "../../lib/uuid";
 import { analysisTabEnabled } from "../../lib/decks/analysis-flag";
@@ -56,6 +59,12 @@ export async function fetchDeckProfile(deckId: string): Promise<ProfileFetch> {
   // A deck the reader does not own reads as ABSENT rather than forbidden: `loadProfileHead`
   // scopes by `user_id`, so there is no state in which this returns another player's deck.
   if (!profile) return { ok: false, reason: "not-found" };
+
+  // The deck tile draws its bracket chip from the row just stored, so the `/decks` list the router
+  // may be holding from before the press is retired. DEFERRED into `after()`: a revalidation during
+  // the action re-renders the route it was called from into its reply, which on this page is the
+  // whole deck (the 1.6MB lesson recorded in `probe:printing-pick`).
+  after(() => revalidatePath("/decks"));
 
   return { ok: true, profile };
 }
