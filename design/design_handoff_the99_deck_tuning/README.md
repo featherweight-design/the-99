@@ -27,9 +27,10 @@ keeps one line pointing there. This supersedes the Games-tab placement in §2 be
 **How it relates to the verdict and findings.**
 - **Order:** banner · Overview · bracket box · climb · findings · mix · **Suggested changes**. The
   reading is computed; the panel is a proposal, so it comes last and never sits in the grid.
-- **It never cites the bracket.** No suggestion, chip or rationale names a bracket, a finding or a
-  rung. Coming down a bracket is the climb's sheet (3b). The consequence line stays the deck's
-  status (`99 / 99 · complete`), never a bracket.
+- **The reasoning never cites the bracket; the consequence does** (superseded in r3). The model's
+  rationale names no bracket, finding or rung, and coming down a bracket is the climb's sheet (3b).
+  A swap that would move the deck's bracket carries one app-computed line with the shipped
+  `BracketChip` (r3, E1).
 - **Suggestions are deterministic filters, never promises.** The validator's rules stand and now
   also drop any rationale that claims a bracket or result. Flagged for `/copy-review`, not changed
   here: *propose three swaps* (Ready) and *Three swaps, all aimed…* (Results) state a count the
@@ -87,9 +88,24 @@ Placement is unchanged. **These override the approved panel wherever they differ
 | **Notes** | **Game notes only** (`deck_games.note`, typed when logging a game). Version notes are not read. Manifest row *Notes on your games · on 2 of 9 games*; read line *2 game notes*. Intent, when set, is its own row. |
 | **Phone** | Card padding 13 / 12, 11px between a card's rows, 12px between cards, 16px above the action row; marks on their own line under the add. |
 
-**Open for Hugh:** whether a stopped or failed run is charged a credit (proposed: no, only a run
-that returns suggestions), and whether Re-analyze's banner should state its credit cost when it
-will rewrite the synopsis.
+**Settled 2026-09-23:** a stopped or failed run is refunded; Re-analyze states its credit before
+the press (with the synopsis round). `backLabel` does not apply: the panel is inline, so the card
+opens unstacked with its own ✕ (`open(id, [cut, add])`).
+
+### Addendum r3, after the addendum audit (2026-09-23)
+
+Canvas: section **E** at the top of `The 99 - Deck Tuning · Placement Addendum v2.dc.html`.
+Audited against finding 1 and these items only.
+
+| # | Item | Drawn |
+|---|---|---|
+| 1 | **Bracket flag** (finding 1, Hugh ruled twice) | E1 1300 / E1b 390, up and down; also on card 4 in A1 / A2. One line between the rationale and the actions, only when `bracket_after` differs from the current reading: *Applying it raises the deck’s bracket to* / *Applying it lowers the deck’s bracket to* + the shipped `BracketChip` with `permits` = the bracket after (24px desktop, 22px phone; a range reads unrounded as the chip already draws). `--fg-body` sentence; no new mark, no direction colour. The rationale rule stands (`noBracketClaim`). After Apply the header chip holds until Re-analyze. |
+| 2 | **Intent line** (finding 8) | E2 1300 / E2b 390. Second in the header order: deck name → **intent** → pips + commander · colour → chips row → bar. 14px / 12.5px `--fg-body`, dashed underline, mono *edit*; wraps, never truncates. Absent means absent. The ask moves with the panel. |
+| 3 | **Phone frames** | E3 Ready with no games · 390; E4 credits used up · 390 (replaces r1 B3). Both use the rolling-window copy. |
+| 4 | **Ready, games logged, none marked** | E5 1300 / E5b 390. Lead: *Four games logged, and none is marked for what worked or hurt. We will read the results, your game notes, this list and what you own, and suggest up to five swaps. Mark what decided a game and suggestions can point at it.* Games row reads `4 games · no marks`. |
+| 5 | **Synopsis round, noted** | When Re-analyze will also rewrite the synopsis, the banner says it uses a credit before the press, in the *Suggest changes* form. Not drawn. |
+
+**Credits** roll over 24 hours: *{n} of {total} left · next one at {time}* (used up: *0 of {total} left · next one at {time}. Synopses and suggestions share these credits.*). New frames use it; older frames keep the calendar wording and engineering carries the change. New copy is for `/copy-review`; no em dash.
 
 ---
 

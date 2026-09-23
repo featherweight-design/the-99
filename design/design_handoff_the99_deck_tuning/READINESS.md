@@ -29,9 +29,13 @@ item 12 (five, not three); `Not this one` → `Reject`; the Games-tab placement.
    answered / retired / no-games leads, `Shuffling through your deck…`, `no longer applies` line,
    manifest labels (*Notes on your games*, *Your games · none logged*), Games pointer, `readBack`.
 
+**Settled 2026-09-23** (`READINESS-addendum-audit.md`): failed or stopped runs are refunded;
+Re-analyze states its credit before the press (synopsis round); credits roll over 24 hours.
+
+**r3 (section E):** bracket flag drawn at both widths, intent line placed, the two missing phone
+frames, Ready with unmarked games. See README §Addendum r3.
+
 **Open**
-- Is a stopped or failed run charged a credit? Proposed: no; only a run that returns suggestions.
-- Does Re-analyze's banner state its credit cost when it will rewrite the synopsis?
 - C (lifecycle) is approved pending engineering feedback on the version tie and the draft check.
 
 ---
