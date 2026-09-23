@@ -17,6 +17,7 @@ Production stack: **Vercel** (Next.js hosting) + **Neon** (serverless Postgres) 
 | `MIGRATE_DATABASE_URL` | Same value as this project's `DATABASE_URL` | **Production scope, and Production alone.** The build applies migrations and refuses to build without it. A copy scoped to Preview is inert — previews skip migrations — and the build then reports it missing while the dashboard lists it, which cost five hours on 2026-09-21. Sensitive is fine; the build reads it either way |
 | `NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY` | Clerk dashboard → API keys | `pk_live_…` for production |
 | `CLERK_SECRET_KEY` | Clerk dashboard → API keys | `sk_live_…` for production |
+| `ANTHROPIC_API_KEY` | Anthropic Console → API keys | Read by the one model client (`src/lib/model/client.ts`) for deck tuning and the deck synopsis. Sensitive, **Production and Preview** — unlike `MIGRATE_DATABASE_URL`, a preview serves the builder and would otherwise record every run as a failure. Without it no request is made: the run fails as `upstream_busy`, refunds its allowance unit, and the server logs `[model] configuration`. The `Commander prose` workflow reads its own copy as a repository secret |
 
 `.env.example` mirrors this list for local setup.
 

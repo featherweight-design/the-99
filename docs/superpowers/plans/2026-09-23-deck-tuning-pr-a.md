@@ -231,6 +231,8 @@ git commit -m "feat(tuning): schema for deck intent, suggestion runs, and the mo
 
 ### Task 10: The shared model client and the daily allowance
 
+> **Amended 2026-09-23 (orchestrator ruling, during the build):** the client uses the official `@anthropic-ai/sdk`, pinned exact, rather than a raw `fetch` — `messages.parse` with `zodOutputFormat` constrains the reply to the caller's schema server-side, and the typed errors map onto the three classes. `maxRetries: 0` on the client and on every call keeps this task's one-retry, one-deadline contract. Structured output guarantees the shape only; the six validation rules still run. The pure allowance arithmetic lives in `allowance-rule.ts` (client-safe) beside the ledger in `allowance.ts`. `scripts/generate-commander-prose.ts` keeps its raw fetch.
+
 **PR A.** Nothing here names tuning. The synopsis (sub-project 6) calls the same two functions with its own model, prompt, schema and feature name.
 
 **Files:**
