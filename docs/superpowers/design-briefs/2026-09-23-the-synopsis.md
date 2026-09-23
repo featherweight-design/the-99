@@ -35,7 +35,7 @@ holds, and that there is now a second place it is read.
 **One Round 0 rule is amended, not reversed.** `README.md` §3 ratified that *"analysis reads the
 live list, not the committed version"*. That still holds: the tab and the modal read the draft's
 synopsis, written against the live list. What §2.4 adds is that committing COPIES the current
-synopsis into the version, the same rule the declaration got on 2026-09-21.
+synopsis into the version when it was written for that exact list, the same rule the declaration got on 2026-09-21.
 
 ## §2 Rulings, locked (Hugh, 2026-09-23)
 
@@ -59,6 +59,12 @@ synopsis into the version, the same rule the declaration got on 2026-09-21.
    exact list, and the version rail can show it. While editing, the draft has its own synopsis,
    which goes stale as cards change and can be rewritten on press at any point. A player
    tinkering through 14 changes can see a fresh read before committing.
+   **A version only keeps a synopsis written for its exact list.** Committing copies the draft's
+   synopsis only when its fingerprint matches the list being committed. A commit made from a
+   stale draft, or an automatic one (pulling a card out of a sleeved deck commits the source deck
+   as *Pulled a card for another deck*, `src/app/decks/actions.ts:1986`, and writes no prose),
+   records no synopsis for that version, the same way a declaration its cards do not permit is
+   not carried.
 5. **Written only on press**, as Round 0 already drew (`Write one`, `Write it again`). Never
    automatic, never retried silently.
 
@@ -107,7 +113,10 @@ rail), and how it reads as a record of that version rather than of the current d
 
 ## §5 Locked, and not open
 
-- No bracket, score, number or strength word anywhere in the synopsis (§2.2).
+- No bracket, score, strength word or strength figure anywhere in the GENERATED prose (§2.2). The
+  states' own status lines keep their counts: *7 of 99 cards have changed*, *2 of 3 claims failed
+  checking* and the provenance's *written against all 99* are metadata about the synopsis, not
+  claims in it.
 - No tiers on Weaknesses, and never more than three.
 - No general rules tips. A tip names only cards in the deck.
 - No partial sentence ever renders, and no placeholder reserves space for prose that is not
@@ -121,19 +130,26 @@ rail), and how it reads as a record of that version rather than of the current d
 
 Recorded so the round is not asked about them:
 - **The accept contract.** Every card named must be in the deck (or, in Weaknesses, must
-  exist in the catalog). Every Key card's job is checked against its classified roles. The
+  exist in the catalog). **A Key tip is generated as a structured pair, not free prose**: it
+  names at least two cards, every one of them in the deck, and a tip naming fewer is refused.
+  That makes "only interactions between cards in this deck" something the contract checks rather
+  than something the prompt asks for. Every Key card's job is checked against its classified roles. The
   Mulligan's counts (lands, colour sources, ramp) are computed from the profile and handed
   to the model to phrase, not asked of it.
 - **Themes.** The profile's theme slot is deliberately `null` (#724). The synopsis names the
   deck's strategy in prose, grounded in the cards it names, and never writes to or reads from a
   theme list.
 - **Cost.** One model call per press, an hourly cap per
-  player, and an unchanged list returns its stored synopsis instead of paying for new wording of
+  player, and an unchanged list (under an unchanged contract and stamps, see Storage) returns its stored synopsis instead of paying for new wording of
   the same facts. No model client exists under `src/` yet (the only caller is
   `scripts/generate-commander-prose.ts`, with its own `fetch`); whichever of the synopsis and #10
   deck tuning builds first creates it neutrally, for both.
 - **Storage.** Keyed on the profile fingerprint, beside the stored analysis (#874), and copied
-  into the version at commit.
+  into the version at commit. **The list fingerprint alone does not make a row reusable.** Each
+  row also stores a synopsis contract version (the prompt, the accept contract and the length
+  budgets) and the same freshness stamps the stored profile carries (the catalog generation, and
+  when it was computed). A row whose contract version or stamps have moved is treated as stale, so
+  a changed rule never serves prose written under the old one.
 
 ## §7 Sequence
 
