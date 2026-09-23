@@ -16,7 +16,7 @@
 
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useLayoutEffect, useRef, useState } from "react";
 
 import { useMinWidth } from "../ui/use-min-width";
 
@@ -28,28 +28,83 @@ export const OPEN_DELAY_MS = 400;
 /**
  * The room the bubble needs above its mark before it may open there: its 6px offset plus two
  * lines of 11.5px at 1.45 leading, 6px padding either side and its border — the longest
- * sentence wraps once at the 220px cap. A bubble that cannot fit opens BELOW instead.
+ * sentence wraps once at the 220px cap. Now the FALLBACK only: `placeBubble` judges the flip on
+ * the bubble's measured height, and uses this before a first measurement exists.
  */
 export const ROOM_ABOVE_PX = 54;
 
+/** The bubble's widest, and the air it keeps from whatever edge would clip it. */
+export const MAX_BUBBLE_PX = 220;
+export const EDGE_PX = 4;
+
 /**
- * The top edge of whatever would clip a box drawn above `el`: the nearest ancestor that
- * clips its overflow, or the viewport's top when none does.
+ * The box that would clip a bubble drawn around `el`: the nearest ancestor that clips its
+ * overflow, or the viewport when none does.
  *
  * WHY THE TOOLTIP HAS TO ASK. It is `position: absolute` inside its mark, so an ancestor with
  * `overflow` other than `visible` cuts off any part of it that leaves that ancestor's box —
  * and two hosts draw marks inside a scroller: the quick-add results (`max-h` + `overflow-y-auto`)
  * and the top-off list's desktop box. On the first row of either, the mark sits ~23px under the
- * scroller's top edge, and a bubble drawn above it is clipped in part or whole.
+ * scroller's top edge, and a bubble drawn above it is clipped in part or whole. The collection
+ * grid's tiles are a third clipping box, and a narrow one: see `placeBubble`.
  */
-export function clipTopFor(el: Element): number {
+export function clipBoxFor(el: Element): { top: number; bottom: number; left: number; right: number } {
   for (let node = el.parentElement; node; node = node.parentElement) {
     const style = getComputedStyle(node);
     if (style.overflowY !== "visible" || style.overflowX !== "visible") {
-      return node.getBoundingClientRect().top;
+      const r = node.getBoundingClientRect();
+      return { top: r.top, bottom: r.bottom, left: r.left, right: r.right };
     }
   }
-  return 0;
+  return { top: 0, bottom: window.innerHeight, left: 0, right: window.innerWidth };
+}
+
+export type BubblePlace = {
+  below: boolean;
+  /** The bubble's left edge, in px from the MARK's left edge — it is absolute inside the mark. */
+  left: number;
+  maxWidth: number;
+  /** What `left` came to, named, so a test can ask without doing the arithmetic. */
+  align: "center" | "start" | "end";
+};
+
+/**
+ * WHERE THE BUBBLE GOES, from MEASURED geometry: the mark, the bubble, and the box that would
+ * clip it. Three rules, each paid for.
+ *
+ * - IT IS NEVER WIDER THAN ITS BOX. The collection grid's tiles are `overflow-hidden` and ~178px
+ *   wide, and a 220px bubble in one was cut off whatever it was aligned to — 53px on the right,
+ *   measured at 1300 and at 1024. So the cap is the box's width less the air either side.
+ * - IT IS CENTRED ON ITS MARK, THEN CLAMPED INTO THE BOX. Centring alone crossed an edge the
+ *   moment a mark LED its line, which the combo lemniscate does: on the quick-add results the
+ *   bubble began 17px past the scroller and read `ompletes a two-card combo…`.
+ * - IT OPENS ON THE SIDE THAT FITS, judged on its own measured height, so a sentence that wraps
+ *   to three lines at a narrow cap flips as readily as a two-line one. Above by default; below
+ *   only when above does not fit AND below has more room — a mark near the foot of a short box
+ *   that fits neither way takes the roomier side rather than being sent over the bottom edge.
+ *
+ * A bubble with no measured size yet (jsdom lays nothing out) is taken at its widest and at
+ * `ROOM_ABOVE_PX` tall, which is the size the flip and the clamp were first written against.
+ */
+export function placeBubble(
+  mark: { top: number; left: number; width: number; height?: number },
+  bubble: { width: number; height: number },
+  box: { top: number; bottom?: number; left: number; right: number },
+): BubblePlace {
+  const maxWidth = Math.max(0, Math.min(MAX_BUBBLE_PX, box.right - box.left - 2 * EDGE_PX));
+  const w = Math.min(bubble.width || maxWidth, maxWidth);
+  const h = bubble.height || ROOM_ABOVE_PX - 6;
+  const mid = mark.left + mark.width / 2;
+  const wanted = mid - w / 2;
+  const lo = box.left + EDGE_PX;
+  const hi = box.right - EDGE_PX - w;
+  const at = Math.min(Math.max(wanted, lo), hi);
+  const align = at > wanted + 0.5 ? "start" : at < wanted - 0.5 ? "end" : "center";
+  // A missing bottom (a caller that stated only three edges) is an unbounded one.
+  const roomAbove = mark.top - box.top;
+  const roomBelow = (box.bottom ?? Number.POSITIVE_INFINITY) - (mark.top + (mark.height ?? 0));
+  const below = roomAbove < h + 6 && roomBelow > roomAbove;
+  return { below, left: at - mark.left, maxWidth, align };
 }
 
 /**
@@ -107,11 +162,33 @@ function FinePointerTooltip({ text, children }: { text: string; children: React.
   const [open, setOpen] = useState(false);
   // Decided when the bubble OPENS, from the laid-out geometry at that moment: the row may have
   // scrolled since it mounted, so a side chosen at mount would be a guess about a past scroll.
-  const [below, setBelow] = useState(false);
+  // An estimate on open, then corrected from the bubble's MEASURED size before paint — the
+  // second pass matters when the width cap narrows the bubble and its sentence wraps taller.
+  const [place, setPlace] = useState<BubblePlace | null>(null);
   const anchor = useRef<HTMLSpanElement | null>(null);
+  const bubble = useRef<HTMLSpanElement | null>(null);
   const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => () => { if (timer.current) clearTimeout(timer.current); }, []);
+
+  useLayoutEffect(() => {
+    if (!open || !place) return;
+    const a = anchor.current;
+    const b = bubble.current;
+    if (!a || !b) return;
+    const br = b.getBoundingClientRect();
+    const next = placeBubble(a.getBoundingClientRect(), br, clipBoxFor(a));
+    // Only when something moved, or this would re-run on its own write forever.
+    // `Object.is` for the numbers: a rect with a missing field yields NaN, and `NaN !== NaN`
+    // would re-run this effect on every commit it causes.
+    if (
+      next.below !== place.below ||
+      !(Math.abs(next.left - place.left) <= 0.5 || Object.is(next.left, place.left)) ||
+      !Object.is(next.maxWidth, place.maxWidth)
+    ) {
+      setPlace(next);
+    }
+  }, [open, place]);
 
   const cancel = () => { if (timer.current) { clearTimeout(timer.current); timer.current = null; } };
 
@@ -127,21 +204,27 @@ function FinePointerTooltip({ text, children }: { text: string; children: React.
         cancel();
         timer.current = setTimeout(() => {
           const el = anchor.current;
-          setBelow(el ? el.getBoundingClientRect().top - clipTopFor(el) < ROOM_ABOVE_PX : false);
+          if (el) {
+            setPlace(placeBubble(el.getBoundingClientRect(), { width: 0, height: 0 }, clipBoxFor(el)));
+          }
           setOpen(true);
         }, OPEN_DELAY_MS);
       }}
       onPointerLeave={() => { cancel(); setOpen(false); }}
     >
       {children}
-      {open && (
+      {open && place && (
         <span
+          ref={bubble}
           // aria-hidden: the mark it wraps already carries the fact as its accessible
           // name, and this sentence is the same fact in more words.
           aria-hidden
-          data-side={below ? "below" : "above"}
-          className={`pointer-events-none absolute left-1/2 ${below ? "top-[calc(100%+6px)]" : "bottom-[calc(100%+6px)]"} z-50 w-max max-w-[220px] -translate-x-1/2 rounded-[7px] px-[9px] py-[6px] text-[11.5px] leading-[1.45]`}
+          data-side={place.below ? "below" : "above"}
+          data-align={place.align}
+          className={`pointer-events-none absolute ${place.below ? "top-[calc(100%+6px)]" : "bottom-[calc(100%+6px)]"} z-50 w-max rounded-[7px] px-[9px] py-[6px] text-[11.5px] leading-[1.45]`}
           style={{
+            left: place.left,
+            maxWidth: place.maxWidth,
             background: "var(--elevated)",
             border: "1px solid var(--border)",
             color: "var(--fg-body)",

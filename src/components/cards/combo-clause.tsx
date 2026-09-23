@@ -1,5 +1,6 @@
 import { comboAwarenessCopy } from "../../lib/copy/combo-awareness";
 import { ComboGlyph } from "./combo-glyph";
+import { FactTooltip } from "./fact-tooltip";
 
 /**
  * One inline clause: the lemniscate and the partner's name, for a two-card combo.
@@ -45,7 +46,17 @@ export function ComboClause({
       // every host.
       className={`inline-flex items-center gap-[4px] min-w-0 max-w-full ${className ?? ""}`}
     >
-      <ComboGlyph />
+      {/* THE GLYPH HAS THE TOOLTIP THE OTHER MARKS HAVE (Hugh, 2026-09-22), on a fine pointer
+          only — `FactTooltip`, the same chrome and delays as the bolt and the `/collection`
+          combo marker. An enhancement, never the gloss: a phone has no hover, and Hugh ruled
+          the symbol sufficient there, with the card modal spelling the combo out. */}
+      {state === "completes" ? (
+        <FactTooltip sentence={comboAwarenessCopy.markerTooltip.completes(partnerName)}>
+          <ComboGlyph />
+        </FactTooltip>
+      ) : (
+        <ComboGlyph />
+      )}
       {/* `completes` IS THE GLYPH AND THE NAME, NOTHING ELSE. Hugh, 2026-09-22, on every
           host: `completes with` truncated to `completes wi…` on the quick-add row and to
           `complete…` on the phone's top-off row, spending the line on the app's words

@@ -2,7 +2,7 @@ import { act, fireEvent, render, screen, waitFor } from "@testing-library/react"
 import { afterEach, describe, expect, it, vi } from "vitest";
 
 import { cardMarkCopy } from "../../lib/copy/card-mark";
-import { FactTooltip, OPEN_DELAY_MS, ROOM_ABOVE_PX } from "./fact-tooltip";
+import { EDGE_PX, FactTooltip, MAX_BUBBLE_PX, OPEN_DELAY_MS, placeBubble, ROOM_ABOVE_PX } from "./fact-tooltip";
 
 /** jsdom has no matchMedia, so each case states the pointer it is testing. */
 function pointer(fine: boolean) {
@@ -170,8 +170,8 @@ describe("FactTooltip — the side it opens on", () => {
     );
     const scroller = screen.getByTestId("scroller");
     const anchor = screen.getByTestId("mark").parentElement as HTMLElement;
-    vi.spyOn(scroller, "getBoundingClientRect").mockReturnValue({ top: 100 } as DOMRect);
-    vi.spyOn(anchor, "getBoundingClientRect").mockReturnValue({ top: markTop } as DOMRect);
+    vi.spyOn(scroller, "getBoundingClientRect").mockReturnValue({ top: 100, left: 0, right: 1300 } as DOMRect);
+    vi.spyOn(anchor, "getBoundingClientRect").mockReturnValue({ top: markTop, left: 600, width: 16 } as DOMRect);
     fireEvent.pointerEnter(screen.getByTestId("mark"));
   }
   const bubble = () => screen.getByText(cardMarkCopy.tooltip.gameChanger);
@@ -188,5 +188,108 @@ describe("FactTooltip — the side it opens on", () => {
     await waitFor(() => expect(bubble()).toHaveAttribute("data-side", "above"), {
       timeout: OPEN_DELAY_MS + 500,
     });
+  });
+});
+
+// ACROSS, as well as up and down. The bubble is centred on its mark, and a mark near the left
+// or right edge of whatever clips it cannot be centred without crossing that edge — which the
+// combo clause's lemniscate is, since it LEADS its line: on the quick-add results the bubble
+// began 17px past the scroller's edge. jsdom lays nothing out, so the geometry is stated.
+describe("FactTooltip — where it sits across its mark", () => {
+  function mount(markLeft: number) {
+    pointer(true);
+    render(
+      <div data-testid="scroller" style={{ overflowY: "auto" }}>
+        <FactTooltip fact="gameChanger"><i data-testid="mark" /></FactTooltip>
+      </div>,
+    );
+    const scroller = screen.getByTestId("scroller");
+    const anchor = screen.getByTestId("mark").parentElement as HTMLElement;
+    vi.spyOn(scroller, "getBoundingClientRect").mockReturnValue({ top: 0, left: 100, right: 900 } as DOMRect);
+    vi.spyOn(anchor, "getBoundingClientRect").mockReturnValue({ top: 400, left: markLeft, width: 16 } as DOMRect);
+    fireEvent.pointerEnter(screen.getByTestId("mark"));
+  }
+  const bubble = () => screen.getByText(cardMarkCopy.tooltip.gameChanger);
+  const wait = { timeout: OPEN_DELAY_MS + 500 };
+
+  it("aligns to the left edge when the mark is too near it to centre", async () => {
+    mount(100 + 20);
+    await waitFor(() => expect(bubble()).toHaveAttribute("data-align", "start"), wait);
+  });
+
+  it("aligns to the right edge when the mark is too near that one", async () => {
+    mount(900 - 30);
+    await waitFor(() => expect(bubble()).toHaveAttribute("data-align", "end"), wait);
+  });
+
+  it("centres when there is room either side", async () => {
+    mount(100 + MAX_BUBBLE_PX / 2 + EDGE_PX + 10);
+    await waitFor(() => expect(bubble()).toHaveAttribute("data-align", "center"), wait);
+  });
+});
+
+// THE GEOMETRY ITSELF, from the numbers the browser measured. jsdom lays nothing out, so the
+// component cases above can only state the mark's and the box's rects; these state all three.
+describe("placeBubble", () => {
+  const fits = (p: ReturnType<typeof placeBubble>, mark: { left: number }, w: number, box: { left: number; right: number }) =>
+    mark.left + p.left >= box.left + EDGE_PX - 0.5 && mark.left + p.left + w <= box.right - EDGE_PX + 0.5;
+
+  // The collection grid tile: `overflow-hidden`, 178px wide at 1300 (96 to 274), and a mark near
+  // its left. A 220px bubble in it was cut 53px on the right whatever it was aligned to.
+  it("is never wider than the box that clips it, and lands inside it", () => {
+    const box = { top: 307, left: 96, right: 274 };
+    const mark = { top: 560, left: 107, width: 16 };
+    const p = placeBubble(mark, { width: 0, height: 0 }, box);
+    expect(p.maxWidth).toBe(274 - 96 - 2 * EDGE_PX);
+    expect(fits(p, mark, p.maxWidth, box)).toBe(true);
+  });
+
+  // The quick-add results: the lemniscate LEADS its line, so a centred bubble crossed the left.
+  it("clamps a bubble centred past the left edge back inside", () => {
+    const box = { top: 666, left: 62, right: 1300 };
+    const mark = { top: 690, left: 147, width: 16 };
+    const p = placeBubble(mark, { width: 220, height: 48 }, box);
+    expect(p.align).toBe("start");
+    expect(fits(p, mark, 220, box)).toBe(true);
+  });
+
+  it("clamps one centred past the right edge back inside", () => {
+    const box = { top: 0, left: 0, right: 500 };
+    const mark = { top: 300, left: 480, width: 16 };
+    const p = placeBubble(mark, { width: 220, height: 48 }, box);
+    expect(p.align).toBe("end");
+    expect(fits(p, mark, 220, box)).toBe(true);
+  });
+
+  it("stays centred on its mark when there is room", () => {
+    const box = { top: 0, left: 0, right: 1300 };
+    const mark = { top: 300, left: 600, width: 16 };
+    const p = placeBubble(mark, { width: 220, height: 48 }, box);
+    expect(p.align).toBe("center");
+    expect(p.left).toBe(8 - 110);
+  });
+
+  // THE FOOT OF A SHORT BOX. Too little room above is not enough reason to open below: a mark
+  // near the bottom of a box that fits the bubble NEITHER way takes the roomier side.
+  it("opens above near the foot of a short box when above has more room", () => {
+    const box = { top: 100, bottom: 160, left: 0, right: 1300 };
+    const mark = { top: 140, left: 600, width: 16, height: 16 };
+    // 40px above, 4px below, a 48px bubble: fits neither, so the side with more room.
+    expect(placeBubble(mark, { width: 170, height: 48 }, box).below).toBe(false);
+  });
+
+  it("opens below when above does not fit and below does", () => {
+    const box = { top: 100, bottom: 600, left: 0, right: 1300 };
+    const mark = { top: 120, left: 600, width: 16, height: 16 };
+    expect(placeBubble(mark, { width: 170, height: 48 }, box).below).toBe(true);
+  });
+
+  // A sentence wrapped to three lines by a narrow cap is TALLER than the two-line estimate, and
+  // the flip below has to use the height it actually has.
+  it("opens below on its measured height, not a two-line guess", () => {
+    const box = { top: 100, left: 0, right: 1300 };
+    const mark = { top: 100 + 60, left: 600, width: 16 };
+    expect(placeBubble(mark, { width: 170, height: 48 }, box).below).toBe(false);
+    expect(placeBubble(mark, { width: 170, height: 64 }, box).below).toBe(true);
   });
 });

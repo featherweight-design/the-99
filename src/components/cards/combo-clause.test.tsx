@@ -1,5 +1,5 @@
-import { render, screen } from "@testing-library/react";
-import { describe, it, expect } from "vitest";
+import { fireEvent, render, screen, waitFor } from "@testing-library/react";
+import { describe, it, expect, vi, afterEach } from "vitest";
 import { ComboClause, comboClauseSpoken } from "./combo-clause";
 import { comboAwarenessCopy } from "../../lib/copy/combo-awareness";
 
@@ -102,4 +102,33 @@ describe("ComboClause", () => {
       comboAwarenessCopy.a11y.ownBoth("Kiki-Jiki"),
     );
   });
+});
+
+// THE GLYPH'S HOVER (Hugh, 2026-09-22): the clause draws no words, so the lemniscate carries the
+// tooltip every other mark has — through `FactTooltip`, on a fine pointer only.
+describe("ComboClause — the lemniscate's tooltip", () => {
+  afterEach(() => vi.unstubAllGlobals());
+  const stubPointer = (fine: boolean) =>
+    vi.stubGlobal("matchMedia", (q: string) => ({
+      matches: q.includes("pointer: fine") ? fine : false,
+      media: q,
+      addEventListener: () => {},
+      removeEventListener: () => {},
+    }));
+
+  it("names the combo on hover with a fine pointer", async () => {
+    stubPointer(true);
+    render(<ComboClause partnerName="Lithoform Engine" state="completes" />);
+    fireEvent.pointerEnter(screen.getByTestId("combo-glyph"));
+    await waitFor(() =>
+      expect(
+        screen.getByText(comboAwarenessCopy.markerTooltip.completes("Lithoform Engine")),
+      ).toBeTruthy(),
+    );
+  });
+
+  // NOT ON TOUCH is `FactTooltip`'s rule, and it is tested there (`fact-tooltip.test.tsx`), with
+  // waits past `OPEN_DELAY_MS`. A coarse-pointer case HERE measured nothing: with the tooltip
+  // taken out of this component no bubble renders under any pointer, so "no tooltip" held
+  // either way — and its 400ms wait raced the 400ms open timer besides.
 });
