@@ -1,4 +1,4 @@
-// Production strings for the card mark — the three standing facts about a card, drawn
+// Production strings for the card mark — the four standing facts about a card, drawn
 // wherever a card already appears. Ships as src/lib/copy/card-mark.ts.
 //
 // Handoff: design/design_handoff_the99_card_mark (R1), audited 🟡 Yellow.
@@ -9,12 +9,14 @@
 // that spells them out, and the accessible name each mark carries so a screen reader
 // never depends on either.
 //
-// EVERY VISIBLE STRING IS SOMEONE ELSE'S. The three names come from WotC's Game
+// EVERY VISIBLE STRING IS SOMEONE ELSE'S. Three of the names come from WotC's Game
 // Changer list and from the bracket rules' own names for the two classified
-// categories. Nothing here paraphrases, shortens or pluralises them. If a layout
+// categories. The fourth, "tutor", is the players' own word for the card, which the
+// bracket rules also used until they dropped the clause. Nothing here paraphrases,
+// shortens or pluralises them. If a layout
 // cannot fit one, the layout is what changes.
 //
-// ONE CASE FOR THE SET. All three labels are lowercase. The earlier split — `Game
+// ONE CASE FOR THE SET. Every label is lowercase. The earlier split — `Game
 // Changer` title-cased as the proper noun naming a list, the other two lowercase as
 // descriptions — was true of the names and wrong on the surface: the three sit in one
 // key, one modal list and one row, and a single capitalised member of a set of three
@@ -53,13 +55,13 @@ export const cardMarkCopy = {
   // Rejected, each written down: "Worth mentioning" (a judgement, and the app does not
   // judge cards), "Power level" (invents a scale the rules do not have), "Flags"
   // (internal vocabulary leaking out), "Bracket impact" (implies a threshold, which the
-  // brief forbids outright), "Heads up" (it warns, and none of the three is a warning),
+  // brief forbids outright), "Heads up" (it warns, and none of the four is a warning),
   // "About this card" (the add surfaces' note label, and a card's own modal is about that
   // card in every block).
   modalHeading: "Bracket facts",
 
   // THE HOVER TOOLTIP — an ENHANCEMENT, never the gloss. It does not exist on a phone,
-  // so the key still carries the vocabulary and the modal still spells all three out.
+  // so the key still carries the vocabulary and the modal still spells all four out.
   // If this were the only explanation, this would be the retired deck-status design
   // with a desktop-only escape hatch.
   //
@@ -106,9 +108,9 @@ export function cardFactName(fact: CardFact): string {
 /* ─────────────────────────────────────────────────────────────────────────────
    NOT WRITTEN, ON PURPOSE
 
-   1 · NO POSITIVE CLAIM. There is no string for a card carrying none of the three,
-       at any size, on any surface. Detection on two of the three is measured and
-       PARTIAL, so "no mass land denial" would be a claim the data cannot support —
+   1 · NO POSITIVE CLAIM. There is no string for a card carrying none of the four,
+       at any size, on any surface. Detection on every fact but the Game Changer list is
+       measured and PARTIAL, so "no mass land denial" would be a claim the data cannot support —
        and a drawn absence reads as a cleared check even when it is only silence.
 
    2 · NO PROVENANCE. "Flagged by both sources" and its siblings are not here. The

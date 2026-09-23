@@ -1016,18 +1016,18 @@ export async function selectCollectionRows(
  * tutor.
  *
  * `game_changer` is already aggregated — it rides `cards` — so this asks only about
- * mass land denial and extra turns, which live in `card_bracket_flags`. One query for
+ * mass land denial, extra turns and tutor, which live in `card_bracket_flags`. One query for
  * the whole collection rather than one per card.
  *
  * NULL-SAFE BY OMISSION, in the one direction this is allowed to fail: a card with no
- * row carries neither flag, and a read that comes back empty leaves every card exactly
+ * row carries none of the three, and a read that comes back empty leaves every card exactly
  * as `aggregateCollection` left it. The surface then draws fewer marks than it might
  * have, which is silence — never a claim that a card is clear.
  *
  * QUIET ON FAILURE, for the same reason and with the same shape as the availability
  * read on this page (`/collection/page.tsx`, "Quiet failure"). A mark is an annotation
  * on a list that is useful without it, so a flags outage costs the marks and must not
- * cost the collection: rejecting here would take the whole route down to hide three
+ * cost the collection: rejecting here would take the whole route down to hide four
  * glyphs. The cards come back exactly as they went in.
  */
 export async function attachBracketFacts(
