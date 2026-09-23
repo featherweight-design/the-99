@@ -124,7 +124,7 @@ export function VerdictBlock({
       ) : (
         // THE RANGE MOVES HERE rather than disappearing. The face now names the answer, so the
         // two brackets the cards permit are said once, in the description line.
-        <p className="mt-[10px] text-[12.5px] leading-[1.55] text-[color:var(--fg-muted)] md:mt-[11px] md:text-[13px] md:leading-[1.6]">
+        <p className="mt-[10px] text-[12.5px] leading-[1.55] text-[color:var(--fg-muted)] [text-wrap:pretty] md:mt-[11px] md:text-[13px] md:leading-[1.6]">
           {declarationCopy.declared.permitsBelow(verdict.permits)}
         </p>
       )}
@@ -166,7 +166,7 @@ function SubLine({ reading }: { reading: ReturnType<typeof verdictSubLine> }) {
     return (
       // NO RINGED `?`. Round 3 retired it: the question a range poses is asked by the
       // declaration's own chips below, and one ask per surface is the rule.
-      <p className="mt-[10px] text-[12.5px] leading-[1.55] text-[color:var(--fg-muted)] md:mt-3 md:text-[13px] md:leading-[1.6]">
+      <p className="mt-[12px] text-[12.5px] leading-[1.55] text-[color:var(--fg-muted)] [text-wrap:pretty] md:mt-[14px] md:text-[13px] md:leading-[1.6]">
         {/*
           THE SHORT FORM BELOW 768px, and only the `[4,5]` line has one. `display:none` is not
           announced, so exactly one of the two reaches a screen reader — this is a narrower
@@ -184,7 +184,7 @@ function SubLine({ reading }: { reading: ReturnType<typeof verdictSubLine> }) {
     );
   }
   return (
-    <p className="mt-[10px] text-[12.5px] leading-[1.55] text-[color:var(--fg-muted)] md:mt-3 md:text-[13px] md:leading-[1.6]">
+    <p className="mt-[12px] text-[12.5px] leading-[1.55] text-[color:var(--fg-muted)] [text-wrap:pretty] md:mt-[14px] md:text-[13px] md:leading-[1.6]">
       {reading.kind === "assembled"
         ? `${copy.ruledOutAssembled(BRACKET_NAMES[reading.below])}. ${copy.nothingFurther}`
         : `${ruledOutClause(reading.below, reading.reasons)} ${copy.nothingFurther}`}
