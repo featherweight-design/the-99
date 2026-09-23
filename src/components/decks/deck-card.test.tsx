@@ -593,9 +593,10 @@ describe("DeckCard — the bracket chip", () => {
     expect(screen.getByRole("link", { name: /To buy, bracket Exhibition or Core,/ })).toBeTruthy();
   });
 
-  it("draws a range as one Split chip, and an answered range as the answer", () => {
+  it("draws a range as one chip naming both brackets, and an answered range as the answer", () => {
     const { unmount } = card({ permits: [1, 2], answered: null });
-    expect(screen.getByTestId("bracket-chip").textContent).toContain("Split");
+    expect(screen.getByTestId("bracket-chip").textContent).toContain("Exhibition or Core");
+    expect(screen.getByTestId("bracket-chip").textContent).not.toContain("Split");
     expect(screen.getAllByTestId("bracket-mark")).toHaveLength(2);
     unmount();
     card({ permits: [1, 2], answered: 2 });

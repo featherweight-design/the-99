@@ -13,7 +13,7 @@ import { formatWhen } from "../../lib/format/when";
 import { ArtWash, INK_SHADOW } from "../ui/art-wash";
 import { DeckCardOverflow } from "./deck-card-overflow";
 import { StatusPillBadge } from "./status-pill";
-import { BracketChip, CHIP_MARK_PX } from "./bracket-chip";
+import { BracketChip } from "./bracket-chip";
 import { verdictHead } from "../../lib/bracket/verdict-head";
 
 import { proxyCopy } from "../../lib/copy/proxies";
@@ -518,9 +518,9 @@ export function DeckCard({
             and the label stay written once. */}
         {/* The chip cell: the status, then the bracket when the deck has been read since its
             last edit (Round 0: "immediately after StatusPillBadge", and absent when unread). One
-            flex group so the two share the pill's 22px line and the bar's track starts after
-            both. It WRAPS, and keeps its min-content: from 640px up a tile is ~189px, which
-            cannot hold the pill, a Split chip, the bar and the count on one line, and a cell
+            flex group so the two share one line (the pill's 22px; 24px from `md` once a chip
+            is drawn, the handoff's chip height) and the bar's track starts after both. It WRAPS, and keeps its min-content: from 640px up a tile is ~189px, which
+            cannot hold the pill, a range chip, the bar and the count on one line, and a cell
             allowed to shrink below its pills paints them over the bar. Wrapped, the chip takes
             a second line inside the cell instead. */}
         <span className="[grid-area:chip] flex flex-wrap items-center gap-x-[8px] gap-y-[6px]">
@@ -529,14 +529,7 @@ export function DeckCard({
             className="flex h-[22px] flex-none items-center rounded-[6px] px-[8px] font-mono text-[10.5px] tracking-[0.06em]"
           />
           {deck.bracket ? (
-            <BracketChip
-              permits={deck.bracket.permits}
-              answered={deck.bracket.answered}
-              px={CHIP_MARK_PX}
-              className="h-[22px] flex-none gap-[4px] pl-[1px] pr-[8px]"
-              labelClassName="text-[11px] font-medium"
-              slashClassName="font-mono text-[10px] opacity-70"
-            />
+            <BracketChip permits={deck.bracket.permits} answered={deck.bracket.answered} />
           ) : null}
         </span>
 

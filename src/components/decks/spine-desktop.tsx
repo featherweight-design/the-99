@@ -384,7 +384,7 @@ export function SpineDesktop({
                 The group is an ordered shrink, not a run of text: between 768
                 and ~1085px the column is narrower than the pair, and wrapping
                 the names is the state decision 18 rules out. `flex-wrap` on the
-                row above spills the pips and pill first; past that the partner
+                row above spills the pips first; past that the partner
                 gives, carrying a shrink factor large enough that the primary
                 yields only once the partner is gone. Writing the primary
                 `flex-none` instead is the obvious reading and a bug — it would
@@ -439,6 +439,13 @@ export function SpineDesktop({
               ) : null}
               <span style={{ flex: "none" }}>· {colorLabel(identity)}</span>
             </span>
+          </div>
+
+          {/* THE CHIPS ROW (Analysis tab handoff §1): the status pill, then the bracket chip, on a
+              line of their own under the commander line, in one order at both widths. It wraps,
+              so a chip that does not fit beside the pill takes a second line rather than
+              squeezing the names. */}
+          <div data-spine-chips className="flex flex-wrap items-center" style={{ gap: 8, marginTop: 8 }}>
             {/* Geometry only; `statusPillStyle` still owns the colour. The prop
                 replaces the tile's class outright, so every box property §B8
                 names has to be restated here — there is no merge. */}
@@ -454,7 +461,7 @@ export function SpineDesktop({
               the reader hold a number in mind while their eye travelled down to
               the thing it describes. The `x owned · y to buy` split under it is
               cut — the bar's fill and the figure carry it between them. */}
-          <div className="flex items-center" style={{ gap: 10, marginTop: 7 }}>
+          <div className="flex items-center" style={{ gap: 10, marginTop: 9 }}>
             <div
               // A shrinking item with a 170px ceiling, not a fixed 170: at the
               // first desktop breakpoint the 364px portrait inset, the right

@@ -227,8 +227,10 @@ async function walk(p, width, decks) {
       split: el.textContent.includes("Split"),
     }));
     report(`${label}px · and resolves the face to one chip`,
+      // One mark, the answer's own name, and no `Split` anywhere in the box: the label is retired,
+      // and this keeps a regression that brought it back from passing on the other two.
       face.title === "Core" && face.marks === 1 && !face.split,
-      `title "${face.title}", ${face.marks} mark(s) in the pill${face.split ? ", Split still drawn" : ""}`);
+      `title "${face.title}", ${face.marks} mark(s) in the pill${face.split ? ", Split drawn" : ""}`);
     await p.waitForTimeout(1500);
     report(`${label}px · the column holds the answer`, (await stored(decks.ask)) === 2, `declared_bracket = ${await stored(decks.ask)}`);
     const biggest = Math.max(0, ...replies);

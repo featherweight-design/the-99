@@ -137,8 +137,6 @@ export const deckAnalysisCopy = {
    */
   verdict: {
     heading: "Your bracket",
-    /** On the chip beside the two marks. A range is two brackets the RULES hand the player. */
-    splitChip: "Split",
 
     /**
      * The intent sub-lines, for the two ranges.

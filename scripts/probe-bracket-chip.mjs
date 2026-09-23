@@ -2,7 +2,7 @@
 // 390x844.
 //
 // What only a layout engine can answer: that the chip sits ON the status pill's line rather than
-// pushing a second one (the tile's footer row and the header's badge row are both 22px lines),
+// pushing a second one (the tile's footer row and the header's badge row are both 22px lines on a phone; the chip is 24px from `md`),
 // that it stays inside the tile, that the header's copy is served from the STORED analysis on a
 // fresh load before any tab is pressed, and that pressing it lands on the Analysis tab.
 //
@@ -36,7 +36,7 @@ const sqlc = neon(DATABASE_URL);
 const WIDTHS = [
   { label: 1300, viewport: { width: 1300, height: 900 } },
   // The narrowest multi-column grid: a tile is ~189px here, the width that cannot hold the pill,
-  // a Split chip, the bar and the count on one line.
+  // a range chip, the bar and the count on one line.
   { label: 700, viewport: { width: 700, height: 900 } },
   { label: 390, viewport: { width: 390, height: 844 } },
 ];
@@ -118,8 +118,13 @@ async function chips(page, within) {
         const li = el.closest("li");
         const tile = li?.getBoundingClientRect();
         const box = (q) => { const b = li?.querySelector(q)?.getBoundingClientRect(); return b ? { left: b.left, right: b.right, top: b.top, bottom: b.bottom } : null; };
+        // The label is the chip's last child: mono type, per the handoff's chip (§1).
+        const label = el.lastElementChild;
+        const marks = [...el.querySelectorAll('[data-testid="bracket-mark"]')];
         return {
           text: el.textContent,
+          labelFamily: label ? getComputedStyle(label).fontFamily : "",
+          markOpacity: marks.map((m) => Number(getComputedStyle(m).opacity)),
           h: r.height, top: r.top, bottom: r.bottom, right: r.right,
           pill: p ? { top: p.top, bottom: p.bottom, h: p.height, text: pill.textContent } : null,
           tileRight: tile?.right ?? null,
@@ -128,6 +133,17 @@ async function chips(page, within) {
         };
       });
   }, [PAGE, within ?? null]);
+}
+
+/** The handoff's chip (Analysis tab §1): 22px below `md`, 24px from it. */
+const chipPx = (width) => (width >= 768 ? 24 : 22);
+
+/** The chip is the handoff's, not #877's: a mono label, and its first mark at full ink. What a
+ *  RANGE draws (both names, the high mark at 0.65) is section 5's, which finds one to read. */
+function styled(width, where, c) {
+  report(`${width}px · the ${where} chip's label is mono`, /mono/i.test(c.labelFamily), c.labelFamily);
+  report(`${width}px · the ${where} chip's first mark is at full ink`, Math.abs(c.markOpacity[0] - 1) < 0.01,
+    `opacity ${c.markOpacity.join(", ")}`);
 }
 
 async function run() {
@@ -177,7 +193,8 @@ async function run() {
       if (report(`${label}px · the header draws one chip on a fresh load`, head.length === 1,
           `${head.length} visible`)) {
         const [c] = head;
-        report(`${label}px · the header chip is the 22px line`, Math.abs(c.h - 22) < 0.6, `${c.h}px`);
+        report(`${label}px · the header chip is ${chipPx(label)}px`, Math.abs(c.h - chipPx(label)) < 0.6, `${c.h}px`);
+        styled(label, "header", c);
         const pillMid = c.pill ? (c.pill.top + c.pill.bottom) / 2 : NaN;
         report(`${label}px · the header chip shares the status pill's line`,
           c.pill !== null && Math.abs((c.top + c.bottom) / 2 - pillMid) <= 1,
@@ -202,11 +219,13 @@ async function run() {
       const tile = await chips(p, `li:has(a[href='${href}'])`);
       if (report(`${label}px · the deck's tile draws its chip`, tile.length === 1, `${tile.length} visible`)) {
         const [c] = tile;
-        report(`${label}px · the tile chip is the 22px line`, Math.abs(c.h - 22) < 0.6, `${c.h}px`);
+        report(`${label}px · the tile chip is ${chipPx(label)}px`, Math.abs(c.h - chipPx(label)) < 0.6, `${c.h}px`);
+        styled(label, "tile", c);
         // On the pill's line where the tile holds both, WRAPPED onto its own line inside the cell
         // where it does not (the ~189-230px tiles of the two- and three-column grids). Never
         // painted over the bar: that is what a cell allowed to shrink below its pills did.
-        const sameLine = c.pill !== null && Math.abs(c.top - c.pill.top) <= 1 && Math.abs(c.bottom - c.pill.bottom) <= 1;
+        // Mid-lines rather than edges: from `md` the chip is 24px beside a 22px pill.
+        const sameLine = c.pill !== null && Math.abs((c.top + c.bottom) / 2 - (c.pill.top + c.pill.bottom) / 2) <= 1;
         const wrapped = c.pill !== null && c.top >= c.pill.bottom;
         report(`${label}px · the tile chip is on the pill's line or wrapped below it`, sameLine || wrapped,
           c.pill ? `chip ${c.top.toFixed(1)}-${c.bottom.toFixed(1)} vs pill ${c.pill.top.toFixed(1)}-${c.pill.bottom.toFixed(1)}${wrapped ? " (wrapped)" : ""}` : "no status pill before it");
@@ -220,6 +239,40 @@ async function run() {
           c.bar ? `bar ${(c.bar.right - c.bar.left).toFixed(1)}px` : "no bar found");
         report(`${label}px · the tile chip stays inside its tile`,
           c.tileRight !== null && c.right <= c.tileRight, `chip right ${c.right.toFixed(1)} vs tile ${c.tileRight?.toFixed(1)}`);
+      }
+      await ctx.close();
+    }
+
+    // 5 · A RANGE. The walked deck is whatever the account lists first, and on local-dev that is a
+    // single bracket, where "the high mark is dimmed" and "no Split" hold on any build. So a deck
+    // whose STORED reading is an unanswered range is found by query and its header read as it
+    // stands. It is read-only, with no press, so nothing here needs putting back. No such deck FAILS
+    // the run rather than passing it: the range is half of what the chip draws.
+    for (const { label, viewport } of WIDTHS.filter((w) => w.label !== 700)) {
+      const ctx = await browser.newContext({ viewport });
+      const p = await ctx.newPage();
+      await signIn(p);
+      const userId = await p.evaluate(() => window.Clerk.user.id);
+      const candidates = await sqlc`
+        select dp.deck_id from deck_profiles dp join decks d on d.id = dp.deck_id
+        where d.user_id = ${userId} and dp.user_id = ${userId}
+          and cardinality(dp.permits) = 2 and d.declared_bracket is null
+        order by dp.deck_id limit 6`;
+      let range = null;
+      for (const { deck_id } of candidates) {
+        await p.goto(`${BASE}/decks/${deck_id}`, { waitUntil: "domcontentloaded" });
+        await p.waitForSelector(`${PAGE} [role="tablist"]`, { timeout: 20_000 });
+        await p.waitForTimeout(600);
+        const [c] = await chips(p, "button[aria-label^='Bracket:']");
+        if (c && c.markOpacity.length === 2) { range = c; break; }
+      }
+      if (report(`${label}px · a range deck draws its header chip`, range !== null,
+          range ? range.text : `${candidates.length} stored range(s), none drew two marks`)) {
+        report(`${label}px · the range chip names both brackets`, / or /.test(range.text) && !/Split|\//.test(range.text), range.text);
+        report(`${label}px · the range chip dims the high mark alone`,
+          Math.abs(range.markOpacity[0] - 1) < 0.01 && Math.abs(range.markOpacity[1] - 0.65) < 0.01,
+          `opacity ${range.markOpacity.join(", ")}`);
+        report(`${label}px · the range chip is ${chipPx(label)}px`, Math.abs(range.h - chipPx(label)) < 0.6, `${range.h}px`);
       }
       await ctx.close();
     }

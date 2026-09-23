@@ -72,13 +72,29 @@ export function SpineMobile({
   // its ground, which is the only reason the two call sites take an argument.
   const identity = deckIdentity(commander.colorIdentity, partner?.colorIdentity ?? null);
 
+  // THE CHIPS ROW (Analysis tab handoff §1): the status pill, then the bracket chip, under the
+  // commander line, in the order desktop draws. It WRAPS: the chip takes a second line before it
+  // squeezes anything.
+  const chipsRow = (
+    <div data-spine-chips className="flex flex-wrap items-center" style={{ gap: 8 }}>
+      <StatusPillBadge
+        status={status}
+        // `h-[22px]`, the settled chip height, rather than vertical padding over
+        // an inherited line box: that made this pill 23px and the block 91, one
+        // pixel past the ramp keyed to it.
+        className="flex h-[22px] flex-none items-center rounded-[6px] px-[7px] font-mono text-[10px]"
+      />
+      <SpineBracketChip bracket={bracket} onOpen={onOpenBracket} />
+    </div>
+  );
+
   const metaRow = (onWash: boolean) => (
-    // `flex-nowrap`, and it is load-bearing. `labelAtPx` measures ONE 22px row,
-    // and at 390px a pair's two names plus five 10px pips, the chip and the two
-    // 8px gaps exceed the caption's width — so a wrapping row put the chip on a
-    // second line, grew the block to about 120px, and left the title's first
-    // line on a ramp still climbing. The names group already ellipsises under
-    // pressure, and it is the half that should give.
+    // `flex-nowrap`, and it is load-bearing. `labelAtPx` counts this row as ONE
+    // line, and at 390px a pair's two names plus five 10px pips exceed the
+    // caption's width — so a wrapping row would grow the block past the figure
+    // the ramp is keyed to (143, with the chips row below) and leave the
+    // title's first line on a ramp still climbing. The names group already
+    // ellipsises under pressure, and it is the half that should give.
     // `min-w-0 w-full`, and it is the fix for a real overflow: the row is
     // `flex-nowrap`, and without a zero minimum of its OWN the row inherits its
     // content's min-content width as a floor — so a long two-faced commander
@@ -94,24 +110,13 @@ export function SpineMobile({
       className="flex w-full min-w-0 flex-nowrap items-center justify-start"
       style={{ gap: 8 }}
     >
-      {/* The chip leads the row, as the drawings have it: it is the one thing on
-          this line whose width never changes, so leading with it keeps the line's
-          left edge still while the names shrink behind it. */}
-      <StatusPillBadge
-        status={status}
-        // `h-[22px]`, the settled chip height, rather than vertical padding over
-        // an inherited line box: that made this pill 23px and the block 91, one
-        // pixel past the ramp keyed to it.
-        className="flex h-[22px] flex-none items-center rounded-[6px] px-[7px] font-mono text-[10px]"
-      />
-      <SpineBracketChip bracket={bracket} onOpen={onOpenBracket} />
-      {/* The pips, between the chip and the names — the same adjacency desktop
-          draws (pips then names), with the chip moved to the front of the line.
-          They cost 62px at five colours against this row's 314px, which is about
-          eleven characters of the commander's name, and the name ellipsises
-          either way on a two-faced pair. The colour stays worded beside them:
-          the deck tile's ruling dropped pips in favour of the word because a
-          grid cell cannot afford both, and a page header can. */}
+      {/* The pips lead the names — the same adjacency desktop draws. They cost 62px
+          at five colours against this row's 314px, which is about eleven characters
+          of the commander's name, and the name ellipsises either way on a two-faced
+          pair. The colour stays worded beside them: the deck tile's ruling dropped
+          pips in favour of the word because a grid cell cannot afford both, and a
+          page header can. The status pill and the bracket chip left this row for
+          the chips row under it (Analysis tab handoff §1). */}
       <IdentityPips colorIdentity={identity} size={10} />
       {/* Decision 18. The caption is centred inside `left:18 right:18`, so a
           pair of names is already the width of the row at 390 — the identity
@@ -216,7 +221,9 @@ export function SpineMobile({
           // price is keying this figure to the taller block. It is a ceiling, so
           // a one- or two-line title simply holds its ramp higher than it needs
           // — more art, never less protection.
-          labelAtPx={115}
+          // Plus the chips row since the Analysis tab handoff (§1) moved the status pill and the
+          // bracket chip onto a line of their own: another 6px gap and a 22px row, so 143.
+          labelAtPx={143}
           artCropUri={commander.artCropUri}
           colorIdentity={commander.colorIdentity}
         />
@@ -430,6 +437,7 @@ export function SpineMobile({
                 </span>
               </div>
               {metaRow(true)}
+              {chipsRow}
             </>
           )}
         </div>
@@ -443,7 +451,12 @@ export function SpineMobile({
           gap: 8,
         }}
       >
-        {renaming ? metaRow(false) : null}
+        {renaming ? (
+          <>
+            {metaRow(false)}
+            {chipsRow}
+          </>
+        ) : null}
         {/* The bar and its figure on one row, the figure to the bar's right: the
             count is what the bar is a picture of, and stacking them made the
             reader carry a number down to the thing it describes. */}
@@ -537,7 +550,7 @@ export function SpineMobile({
           <button
             type="button"
             onClick={onExport}
-            className="flex items-center gap-[5px] rounded-[7px] border border-[color:var(--border-strong)] bg-transparent px-[9px] py-[6px] font-mono text-[11px] text-[color:var(--accent)]"
+            className="flex min-h-[44px] items-center gap-[5px] rounded-[7px] border border-[color:var(--border-strong)] bg-transparent px-[9px] py-[6px] font-mono text-[11px] text-[color:var(--accent)]"
           >
             <svg
               width="16"
