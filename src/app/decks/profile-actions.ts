@@ -11,7 +11,15 @@ import type { DeckProfile } from "../../lib/profile/types";
 
 export type ProfileFetch =
   /** `analyzedAt` is an ISO instant: when the press ran, or when the stored reading was written. */
-  | { ok: true; profile: DeckProfile; analyzedAt: string }
+  | {
+      ok: true;
+      profile: DeckProfile;
+      analyzedAt: string;
+      /** The list analyzed is the deck's, and no edit since. A peek may answer a stale one. */
+      fresh: boolean;
+      /** The version this reading is pinned to, for `analyzed with version n`. */
+      versionNumber: number | null;
+    }
   /** The deck is absent, not this reader's, or the id was malformed. */
   | { ok: false; reason: "not-found" }
   /** The flag is off for this deployment. Distinct from a failure: nothing is wrong. */
@@ -73,8 +81,8 @@ export async function fetchDeckProfile(deckId: string): Promise<ProfileFetch> {
   // whole deck (the 1.6MB lesson recorded in `probe:printing-pick`).
   after(() => revalidatePath("/decks"));
 
-  const { profile, analyzedAt } = result.reading;
-  return { ok: true, profile, analyzedAt: analyzedAt.toISOString() };
+  const { profile, analyzedAt, fresh, versionNumber } = result.reading;
+  return { ok: true, profile, analyzedAt: analyzedAt.toISOString(), fresh, versionNumber };
 }
 
 export type StoredProfileFetch =
@@ -96,9 +104,15 @@ export async function fetchStoredDeckProfile(deckId: string): Promise<StoredProf
   if (!isUuid(deckId)) return { ok: false, reason: "not-found" };
   const userId = await requireUserId();
   const stored = await readStoredReading(deckId, userId);
-  // A STALE reading still answers `none` here, which is the surface today: the tab offers the
-  // press. Drawing it as stale is C2's (the held states and the banner).
-  return stored?.fresh
-    ? { ok: true, profile: stored.profile, analyzedAt: stored.analyzedAt.toISOString() }
+  // A STALE reading is answered as one: the tab holds it under the banner (2i) rather than
+  // withdrawing it.
+  return stored
+    ? {
+        ok: true,
+        profile: stored.profile,
+        analyzedAt: stored.analyzedAt.toISOString(),
+        fresh: stored.fresh,
+        versionNumber: stored.versionNumber,
+      }
     : { ok: false, reason: "none" };
 }

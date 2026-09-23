@@ -114,11 +114,6 @@ git commit -m "feat(tuning): save and seed the deck intent"
 
 ### Task 9b (continued): The bracket flag's reads — PR C
 
-> **Amended (B2 amendment 5):** read no add facts and no `combosAfter`. For each kept suggestion,
-> build the post-swap profile with `loadDeckProfileFromHead({ ...head, cards: swapped })` (the
-> cut's row decremented, the add's incremented) and pass it as `after` beside the run's own
-> profile as `before`. At most three builds per run; say so in the Cost section's figures.
-
 The pure function and its interface: Task 9b in the PR B2 file.
 
 - [ ] **Step 3 (PR C): Compute it in `runTuning`**

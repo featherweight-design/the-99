@@ -15,6 +15,7 @@ const stub = vi.hoisted(() => ({
   /** The press's `analyzedAt`: a fresh compute stamps now, a store answer its own row's time. */
   pressedAt: new Date(),
   storedFresh: true,
+  versionNumber: null as number | null,
   /** Every read this action performed, in order. The flag check is only meaningful if the
    *  reads it precedes can be observed NOT to have happened. */
   reads: [] as string[],
@@ -55,13 +56,13 @@ vi.mock("../../lib/profile/stored", () => ({
     stub.reads.push("profile");
     if (stub.illegal) return { kind: "illegal", ...stub.illegal };
     return stub.profile
-      ? { kind: "ok", reading: { profile: stub.profile, analyzedAt: stub.pressedAt, fresh: true, versionId: null } }
+      ? { kind: "ok", reading: { profile: stub.profile, analyzedAt: stub.pressedAt, fresh: true, versionId: null, versionNumber: stub.versionNumber } }
       : null;
   },
   readStoredReading: async () => {
     stub.reads.push("stored");
     return stub.stored
-      ? { profile: stub.stored, analyzedAt: STORED_AT, fresh: stub.storedFresh, versionId: null }
+      ? { profile: stub.stored, analyzedAt: STORED_AT, fresh: stub.storedFresh, versionId: null, versionNumber: stub.versionNumber }
       : null;
   },
 }));
@@ -76,6 +77,7 @@ beforeEach(() => {
   stub.illegal = null;
   stub.pressedAt = new Date();
   stub.storedFresh = true;
+  stub.versionNumber = null;
   stub.reads = [];
   stub.stored = null;
   stub.revalidated = [];
@@ -86,7 +88,9 @@ describe("fetchDeckProfile", () => {
   it("returns the profile when the flag is on and the deck is the reader's", async () => {
     const result = await fetchDeckProfile(DECK);
     // A press is dated when it ran: the bracket box prints `analyzed a moment ago`.
-    expect(result).toEqual({ ok: true, profile: { brackets: {} }, analyzedAt: expect.any(String) });
+    expect(result).toEqual({
+      ok: true, profile: { brackets: {} }, analyzedAt: expect.any(String), fresh: true, versionNumber: null,
+    });
     expect(Date.now() - Date.parse((result as { analyzedAt: string }).analyzedAt)).toBeLessThan(5_000);
     expect(stub.reads).toEqual(["auth", "profile"]);
   });
@@ -96,7 +100,7 @@ describe("fetchDeckProfile", () => {
   it("dates an answer from the store by its own row, not by the press", async () => {
     stub.pressedAt = STORED_AT;
     expect(await fetchDeckProfile(DECK)).toEqual({
-      ok: true, profile: { brackets: {} }, analyzedAt: STORED_AT.toISOString(),
+      ok: true, profile: { brackets: {} }, analyzedAt: STORED_AT.toISOString(), fresh: true, versionNumber: null,
     });
   });
 
@@ -180,16 +184,21 @@ describe("fetchStoredDeckProfile", () => {
       ok: true,
       profile: { brackets: { 3: {} } },
       analyzedAt: STORED_AT.toISOString(),
+      fresh: true,
+      versionNumber: null,
     });
     expect(stub.reads).toEqual(["auth", "stored"]);
   });
 
-  // A STALE reading still answers `none` until C2 draws the held states: the surface today is
-  // the press, and a stale reading shown as if current would be the lie C2 exists to avoid.
-  it("answers none for a stale reading", async () => {
+  // A STALE reading is answered AS stale (2i): the tab holds it under the banner rather than
+  // withdrawing it, and names the version a pinned reading belongs to.
+  it("answers a stale reading as stale, with its version", async () => {
     stub.stored = { brackets: { 3: {} } };
     stub.storedFresh = false;
-    expect(await fetchStoredDeckProfile(DECK)).toEqual({ ok: false, reason: "none" });
+    stub.versionNumber = 3;
+    expect(await fetchStoredDeckProfile(DECK)).toEqual({
+      ok: true, profile: { brackets: { 3: {} } }, analyzedAt: STORED_AT.toISOString(), fresh: false, versionNumber: 3,
+    });
   });
 
   it("answers disabled before reading anything at all", async () => {

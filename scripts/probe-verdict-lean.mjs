@@ -19,6 +19,7 @@ import { neon } from "@neondatabase/serverless";
 import { clerkSetup, setupClerkTestingToken } from "@clerk/testing/playwright";
 import { chromium } from "playwright";
 import { requireEnv } from "./lib/env.mjs";
+import { holdProfile } from "./lib/profile-hold.mjs";
 import { onPage, onPageRole, PAGE } from "./lib/surface.mjs";
 
 const { E2E_AUDIT_USER_EMAIL: EMAIL, DATABASE_URL } = requireEnv([
@@ -38,6 +39,9 @@ const WIDTHS = [
 ];
 
 let failures = 0;
+/** Every deck whose stored reading this run cleared, and how to put it back. */
+const held = new Map();
+const heldSql = neon(DATABASE_URL);
 function report(label, ok, detail) {
   console.log(`${ok ? "  ok  " : " FAIL "} ${label} — ${detail}`);
   if (!ok) failures += 1;
@@ -110,6 +114,12 @@ async function deckHrefs(page) {
 
 /** Open the deck's Analysis tab by a PRESS — the tab is client state and has no address. */
 async function openAnalysis(page, href) {
+  // THE PRESS IS REQUIRED. The deck's stored reading is cleared first (held on disk, restored in
+  // `run()`'s `finally`), so the only way to a reading is the press. A probe that fell back on a
+  // stored reading stayed green through a renamed button and measured nothing.
+  const deckId = href.split("/")[2];
+  if (!held.has(deckId)) held.set(deckId, await holdProfile(heldSql, deckId));
+  await heldSql`delete from deck_profiles where deck_id = ${deckId}::uuid`;
   await page.goto(`${BASE}${href}`, { waitUntil: "domcontentloaded" });
   const up = await page.waitForSelector(`${PAGE} [role="tablist"]`, { timeout: 20_000 })
     .then(() => true).catch(() => false);
@@ -118,8 +128,10 @@ async function openAnalysis(page, href) {
   const tab = onPageRole(page, "tab", /analysis/i);
   if ((await tab.count()) === 0) return false;
   await tab.first().click();
-  const invite = onPageRole(page, "button", /Analyze this deck/);
-  if ((await invite.count()) > 0) await invite.first().click();
+  // `Analyze` before a reading (PR B's label), `Re-analyze` on the banner over a stale one (C2).
+  const invite = onPageRole(page, "button", /^Analyze$/);
+  if (!report(`the Analyze press is on ${href}`, (await invite.count()) > 0, "none: the press was renamed or removed")) return false;
+  await invite.first().click();
   return page.waitForSelector(`${PAGE} [data-testid="findings-block"]`, { timeout: 30_000 })
     .then(() => true).catch(() => false);
 }
@@ -242,6 +254,9 @@ async function run() {
       }
     }
   } finally {
+    for (const [deckId, restore] of held) {
+      await restore().catch((e) => report(`put back ${deckId}'s analysis`, false, e.message));
+    }
     await browser.close();
   }
 }

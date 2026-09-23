@@ -1,0 +1,81 @@
+{
+  "feature": "Analysis tab lifecycle \u2014 PR C2, a reading that outlives an edit",
+  "note": "The lifecycle states (Analysis tab handoff \u00a72, 2i and the illegal line). Needs ANALYSIS_TAB_ENABLED=true and three decks the signed-in account owns, each put into its state by SQL before the run and put back after: ANALYSIS_STALE_DECK, a stored reading marked dirty (local-dev d\u2026beef, `update deck_profiles set dirty = true`); ANALYSIS_SHORT_DECK, no reading and fewer than 99 cards (d\u2026d5b1 with its Wastes cut by 10); ANALYSIS_SHORT_HELD_DECK, a stored reading over a list since cut short (d\u2026c0b0 with its Wastes cut by 10). 2d, a failed re-read, has no fixture a server can be put into and is covered by analysis-panel.test.",
+  "rows": [
+    {
+      "id": "stale-2i",
+      "label": "/decks/[id] Analysis \u2014 2i, an edit since the reading: the banner above it, the date line says before your changes",
+      "view": "src/components/decks/analysis-banner.tsx",
+      "steps": [
+        {
+          "goto": "/decks/${ANALYSIS_STALE_DECK}",
+          "wait": "[role=tablist]",
+          "settle": 1500
+        },
+        {
+          "clickRole": "tab",
+          "name": "Analysis",
+          "settle": 700
+        },
+        {
+          "wait": "[data-testid='analysis-banner']",
+          "settle": 900
+        },
+        {
+          "scrollTo": "[data-testid='analysis-banner']",
+          "settle": 400
+        }
+      ]
+    },
+    {
+      "id": "illegal-empty",
+      "label": "/decks/[id] Analysis \u2014 a short deck with no reading: Analyze disabled, the line inside the CTA row",
+      "view": "src/components/decks/analysis-empty.tsx",
+      "steps": [
+        {
+          "goto": "/decks/${ANALYSIS_SHORT_DECK}",
+          "wait": "[role=tablist]",
+          "settle": 1500
+        },
+        {
+          "clickRole": "tab",
+          "name": "Analysis",
+          "settle": 700
+        },
+        {
+          "wait": "[data-testid='analysis-empty']",
+          "settle": 900
+        },
+        {
+          "scrollTo": "[data-testid='analysis-empty']",
+          "settle": 400
+        }
+      ]
+    },
+    {
+      "id": "illegal-held",
+      "label": "/decks/[id] Analysis \u2014 a short deck with a reading: held, Re-analyze disabled, the line in the banner",
+      "view": "src/components/decks/analysis-panel.tsx",
+      "steps": [
+        {
+          "goto": "/decks/${ANALYSIS_SHORT_HELD_DECK}",
+          "wait": "[role=tablist]",
+          "settle": 1500
+        },
+        {
+          "clickRole": "tab",
+          "name": "Analysis",
+          "settle": 700
+        },
+        {
+          "wait": "[data-testid='analysis-banner']",
+          "settle": 900
+        },
+        {
+          "scrollTo": "[data-testid='analysis-banner']",
+          "settle": 400
+        }
+      ]
+    }
+  ]
+}

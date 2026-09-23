@@ -446,8 +446,9 @@ Package manager is **pnpm** (pinned via `packageManager` in package.json) — ne
   deck whose stored reading is an unanswered range is found by query, and its header is read
   without a press: both names, and only the high mark at 0.65. No such deck fails the run. With
   the dim removed it reads `opacity 1, 1` at both widths.
-  It NEVER EDITS A DECK: the rule that an edit or a change of deck retires the header chip is
-  `use-header-bracket.test.tsx`'s. Pressing Analyze upserts one `deck_profiles` row, which the
+  It NEVER EDITS A DECK. The rule that an edit HOLDS the header chip (ruling 4) and a change of
+  deck retires it is `use-header-bracket.test.tsx`'s, and `probe:verdict-block`'s 2i walk reads
+  the held chip in a browser. Pressing Analyze upserts one `deck_profiles` row, which the
   `finally` puts back as it was, each cleanup step on its own so one failing cannot skip the
   rest. Point it at `local-dev`, **never production**.
 - `pnpm probe:claims` proves the deck claim model against a real Postgres by calling the real
@@ -833,6 +834,21 @@ Package manager is **pnpm** (pinned via `packageManager` in package.json) — ne
   written to a file before the first delete, the restore is retried, and a restore that still
   fails keeps the file. The next run of any of the three puts the ORIGINAL back before it
   captures anything.
+
+  **It walks 2i, the stale reading** (the lifecycle rulings, 2026-09-23). It marks the pressed
+  row `dirty` (exactly what an edit's `touchDeck` does) instead of editing a card, and reloads.
+  The reading must come back WHOLE under the banner. At 1300 the banner is one row, above the
+  grid, with a 36px button at its end. At 390 it is a column with a full-width 44px button. The
+  date line reads `before your changes`, and the header's chip holds. With the banner's stale
+  condition removed, both widths read `no banner`.
+
+  **The probe account's fixture decks are WHOLE since C1**, padded to 99 (98 for a pair) with a
+  single Wastes row. Analysis runs only on a whole deck (ruling 1), so every probe that presses
+  Analyze on a 4-card fixture is refused, and a pre-0054 row on an illegal deck reads as
+  nothing. Wastes rather than Plains: a basic's type gives it a colour identity, and Plains in a
+  non-white deck is an off-identity card that the legality notice (sub-project 9) will flag.
+  Wastes is colourless and moves no bracket or colour fact. A script that rebuilds these
+  fixtures has to build them whole.
 
   **The box's mark is found INSIDE the box.** It used to be the first mark on the page, which
   since #877 is the deck header's chip on the hidden desktop copy. That read `chip at 0x0` and

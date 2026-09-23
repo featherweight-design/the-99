@@ -120,6 +120,25 @@ export const deckAnalysisCopy = {
     minutesAgo: (n: number) => `${n} ${n === 1 ? "minute" : "minutes"} ago`,
     /** Spoken once, when a reading settles (§E). */
     settled: (range: string) => `Analysis ready. Your cards permit ${range}.`,
+    /** The date line's two other forms (handoff copy `analyzed.committed` / `.stale`). */
+    analyzedCommitted: (version: number, date: string) => `analyzed with version ${version} · ${date}`,
+    analyzedStale: (date: string) => `analyzed ${date}, before your changes`,
+    /**
+     * Ruling 1 (Hugh, 2026-09-23): analysis runs only on a whole deck. Undrawn in the handoff;
+     * the line sits where the press would, and the press is disabled. Goes to /copy-review.
+     */
+    illegal: (built: number, size: number) => `Analysis needs a full deck: ${built} of ${size}.`,
+  },
+
+  /**
+   * The staleness banner (2i, 2d), the one place staleness is said: above the grid, over a held
+   * reading that stays whole. The handoff's superseded `stale.*` block is not shipped.
+   */
+  banner: {
+    stale: "Your deck has changes since it was analyzed, so this bracket might not be accurate.",
+    reanalyze: "Re-analyze",
+    failedHeld: "We could not re-analyze your changes. The bracket below is from before them.",
+    tryAgain: "Try again",
   },
 
   /** The bracket chip in the deck header, which opens the Analysis tab. Spoken only. */

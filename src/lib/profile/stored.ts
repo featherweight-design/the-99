@@ -1,11 +1,11 @@
 import { and, eq, sql } from "drizzle-orm";
 
 import { db } from "../../db";
-import { deckProfiles, decks } from "../../db/schema";
+import { deckProfiles, deckVersions, decks } from "../../db/schema";
 import { slotDeck } from "../bracket/slot";
 import { catalogGeneration } from "../cache/catalog-generation";
 import { deckBodySize } from "../decks/deck-size";
-import { newestVersion } from "../decks/versions";
+import { newestVersion, versionCards } from "../decks/versions";
 import { listFingerprint, profileFingerprint } from "./fingerprint";
 import { cachedDeckProfile, readProfileHead, type ProfileHead } from "./load";
 import { PROFILE_VERSION } from "./version";
@@ -48,8 +48,11 @@ export type StoredReading = {
   analyzedAt: Date;
   /** The same list as the deck's, and no edit since the analysis. */
   fresh: boolean;
-  /** The version a commit pinned this reading to, or null when a press produced it. */
+  /** The version this reading was pinned to (by a commit, or by a press on an unchanged
+   *  committed list), or null. */
   versionId: string | null;
+  /** That version's number, for the date line's `analyzed with version n`. */
+  versionNumber: number | null;
 };
 
 /** The body count against the size a legal deck holds (ruling 1: the body count alone). */
@@ -80,9 +83,11 @@ async function readHeadAndRow(tx: Tx, deckId: string, userId: string) {
       profileVersion: deckProfiles.profileVersion,
       dirty: deckProfiles.dirty,
       versionId: deckProfiles.versionId,
+      versionNumber: deckVersions.number,
       computedAt: deckProfiles.computedAt,
     })
     .from(deckProfiles)
+    .leftJoin(deckVersions, eq(deckVersions.id, deckProfiles.versionId))
     .where(and(eq(deckProfiles.deckId, deckId), eq(deckProfiles.userId, userId)))
     .limit(1);
   return { head, row: row ?? null, editedAt: stamp?.editedAt ?? null };
@@ -98,6 +103,21 @@ function sameList(row: { profileVersion: number; fingerprint: string }, head: Pr
   return row.profileVersion === 0
     ? row.fingerprint === profileFingerprint(head)
     : row.fingerprint === listFingerprint(head);
+}
+
+/** The newest version's id when it holds exactly `list`, else null. A version never changes after
+ *  it is written, so reading it apart from the head is safe: the comparison is against the list the
+ *  caller already read. */
+async function versionHolding(deckId: string, list: string): Promise<{ id: string; number: number } | null> {
+  const version = await newestVersion(deckId);
+  if (!version) return null;
+  const cards = await versionCards(version.id);
+  const held = listFingerprint({
+    commanderOracleId: version.commanderOracleId,
+    partnerOracleId: version.partnerOracleId,
+    cards,
+  });
+  return held === list ? { id: version.id, number: version.number } : null;
 }
 
 const READ_ONLY = { isolationLevel: "repeatable read", accessMode: "read only" } as const;
@@ -124,7 +144,7 @@ export async function readStoredReading(
     // Rebuilt ONLY over the list this read saw, and keeping its pin: a version bump changes the
     // document, never which version the list belongs to.
     const rebuilt = await computeAndStoreProfile(deckId, userId, deps, {
-      rebuildOf: { list: listFingerprint(head), versionId: row.versionId },
+      rebuildOf: { list: listFingerprint(head), versionId: row.versionId, versionNumber: row.versionNumber },
     });
     return rebuilt?.kind === "ok" ? { ...rebuilt.reading } : null;
   }
@@ -133,6 +153,7 @@ export async function readStoredReading(
     analyzedAt: row.computedAt,
     fresh: sameList(row, head) && !row.dirty,
     versionId: row.versionId,
+    versionNumber: row.versionNumber,
   };
 }
 
@@ -192,7 +213,7 @@ export async function computeAndStoreProfile(
     pinTo?: CommitPin;
     /** A quiet rebuild of a row an older PROFILE_VERSION wrote: the list the reader's read saw, and
      *  the pin it held. Written only over that list, and the pin is kept. */
-    rebuildOf?: { list: string; versionId: string | null };
+    rebuildOf?: { list: string; versionId: string | null; versionNumber: number | null };
   } = {},
 ): Promise<AnalyzeResult | null> {
   const { head, row, editedAt } = await db.transaction((tx) => readHeadAndRow(tx, deckId, userId), READ_ONLY);
@@ -211,22 +232,37 @@ export async function computeAndStoreProfile(
   // ONLY THE NEWEST VERSION IS PINNED. Two commits' `after()` pins can run out of order, and the
   // older one landing last would name the wrong version. Checked here and again in the write.
   if (pinTo && (await newestVersion(deckId))?.id !== pinTo.versionId) return null;
-  const versionId = pinTo?.versionId ?? rebuildOf?.versionId ?? undefined;
-  const stillNewest = pinTo
-    ? sql`${pinTo.versionId}::uuid = (
-        select dv.id from deck_versions dv where dv.deck_id = ${deckId}::uuid
-        order by dv.number desc limit 1)`
-    : sql`true`;
+  // A PRESS NAMES ITS VERSION when the draft IS the newest version (build amendment, 2026-09-23):
+  // a reading of an unchanged committed list is that version's reading. It also repairs a commit
+  // whose `after()` pin failed, and names versions committed before the pin existed.
+  const holding = pinTo || rebuildOf ? null : await versionHolding(deckId, list);
+  const versionId = pinTo?.versionId ?? rebuildOf?.versionId ?? holding?.id ?? undefined;
+  const versionNumber = holding?.number ?? rebuildOf?.versionNumber ?? null;
+  const stillNewest = (pinTo || holding) && versionId ? isNewestVersion(deckId, versionId) : sql`true`;
 
   // RULING 5: the same list, under the same code, is the same answer. Clear `dirty` (and take the
   // commit's pin) on the row as it stands, guarded on the fingerprint and version it was read at
   // AND on the deck's edit stamp: an edit landing after that read — even one undone back to the
   // same list — moves the stamp, and the clear matches nothing.
   if (row && row.profileVersion === PROFILE_VERSION && row.fingerprint === list) {
+    let cleared = false;
     try {
-      await clearDirty(deckId, list, editedAt, versionId, stillNewest);
+      cleared = await clearDirty(deckId, list, editedAt, versionId, stillNewest);
     } catch (error) {
       console.warn("deck profile's dirty flag not cleared", error);
+    }
+    // THE ANSWER IS WHAT WAS WRITTEN. A clear that matched nothing (an edit since the read, or a
+    // same-list commit that made the held version no longer the newest) left the row as it was,
+    // and the reader is told what the row now says rather than what this press hoped to write.
+    if (!cleared) {
+      const now = await readStoredReading(deckId, userId, deps);
+      return {
+        kind: "ok",
+        reading: now ?? {
+          profile: row.profile, analyzedAt: row.computedAt, fresh: false,
+          versionId: row.versionId, versionNumber: row.versionNumber,
+        },
+      };
     }
     return {
       kind: "ok",
@@ -235,6 +271,7 @@ export async function computeAndStoreProfile(
         analyzedAt: row.computedAt,
         fresh: true,
         versionId: versionId ?? row.versionId,
+        versionNumber: versionId ? versionNumber : row.versionNumber,
       },
     };
   }
@@ -246,6 +283,13 @@ export async function computeAndStoreProfile(
   const profile = await deps.compute(deckId, userId);
   if (!profile) return null;
   let analyzedAt = new Date();
+  // THE PIN IS WRITTEN SEPARATELY, after the row, when it names a version that must still be the
+  // newest (a commit's, or the version a press found holding the list). That check needs the
+  // commit's own lock and a snapshot taken after it, which the row's repeatable-read write
+  // cannot give it; `clearDirty` takes both. A rebuild keeps the pin it held, as it was.
+  const pinLater = Boolean(versionId && (pinTo || holding));
+  let pinned: string | null = pinLater ? null : versionId ?? null;
+  let stored = false;
   try {
     // STORED ONLY IF IT STILL DESCRIBES THE DECK. Two presses from two tabs can finish out of
     // order, and an older result landing last would replace the newer one. One head read in the
@@ -262,7 +306,7 @@ export async function computeAndStoreProfile(
         .insert(deckProfiles)
         .values({
           deckId, userId, fingerprint, catalog, profile, permits,
-          profileVersion: PROFILE_VERSION, dirty: false, versionId: versionId ?? null,
+          profileVersion: PROFILE_VERSION, dirty: false, versionId: pinned,
         })
         .onConflictDoUpdate({
           target: deckProfiles.deckId,
@@ -272,17 +316,33 @@ export async function computeAndStoreProfile(
             dirty: false,
             // A commit's pin, a rebuild's kept pin, or none: a press's recompute describes a list
             // that differs from the one any earlier pin was for.
-            versionId: versionId ?? null,
+            versionId: pinned,
             computedAt: sql`now()`,
           },
         })
         .returning({ computedAt: deckProfiles.computedAt });
-      if (written) analyzedAt = written.computedAt;
+      if (written) {
+        analyzedAt = written.computedAt;
+        stored = true;
+      }
     }, { isolationLevel: "repeatable read" });
+    if (stored && pinLater && (await clearDirty(deckId, list, editedAt, versionId, stillNewest))) {
+      pinned = versionId ?? null;
+    }
   } catch (error) {
     console.warn("deck profile not stored; the next tab open will offer the press again", error);
   }
-  return { kind: "ok", reading: { profile, analyzedAt, fresh: true, versionId: versionId ?? null } };
+  return {
+    kind: "ok",
+    reading: { profile, analyzedAt, fresh: true, versionId: pinned, versionNumber: pinned ? versionNumber : null },
+  };
+}
+
+/** The guard a pin carries: `versionId` is still the deck's newest version. */
+export function isNewestVersion(deckId: string, versionId: string) {
+  return sql`${versionId}::uuid = (
+    select dv.id from deck_versions dv where dv.deck_id = ${deckId}::uuid
+    order by dv.number desc limit 1)`;
 }
 
 /**
@@ -297,18 +357,27 @@ export async function clearDirty(
   editedAt: string | null,
   versionId?: string,
   stillNewest = sql`true`,
-): Promise<void> {
-  await db
-    .update(deckProfiles)
-    .set({ dirty: false, ...(versionId ? { versionId } : {}) })
-    .where(and(
-      eq(deckProfiles.deckId, deckId),
-      eq(deckProfiles.fingerprint, list),
-      eq(deckProfiles.profileVersion, PROFILE_VERSION),
-      sql`exists (select 1 from ${decks} d where d.id = ${deckId}::uuid
-        and d.last_edited_at::text = ${editedAt})`,
-      stillNewest,
-    ));
+): Promise<boolean> {
+  return db.transaction(async (tx) => {
+    // THE COMMIT'S OWN LOCK. `commitVersion` takes the deck row FOR UPDATE, so holding it FOR SHARE
+    // waits out a commit in flight and holds off the next one until this ends. Under read
+    // committed the update below then reads every version committed before it, which is what
+    // `stillNewest` needs: a snapshot older than the lock would miss the version it guards against.
+    await tx.select({ id: decks.id }).from(decks).where(eq(decks.id, deckId)).for("share");
+    const written = await tx
+      .update(deckProfiles)
+      .set({ dirty: false, ...(versionId ? { versionId } : {}) })
+      .where(and(
+        eq(deckProfiles.deckId, deckId),
+        eq(deckProfiles.fingerprint, list),
+        eq(deckProfiles.profileVersion, PROFILE_VERSION),
+        sql`exists (select 1 from ${decks} d where d.id = ${deckId}::uuid
+          and d.last_edited_at::text = ${editedAt})`,
+        stillNewest,
+      ))
+      .returning({ deckId: deckProfiles.deckId });
+    return written.length > 0;
+  });
 }
 
 /**

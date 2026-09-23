@@ -4,7 +4,8 @@ import { useState, type ReactNode } from "react";
 
 import { slotDeck } from "../../lib/bracket/slot";
 import { bracketPhrase, deckAnalysisCopy } from "../../lib/copy/deck-analysis";
-import type { ProfileState } from "./use-deck-profile";
+import { shownReading, type ProfileState } from "./use-deck-profile";
+import { AnalysisBanner } from "./analysis-banner";
 import { AnalysisEmpty } from "./analysis-empty";
 import { BracketClimb } from "./bracket-climb";
 import type { DeclarationControl } from "./declaration";
@@ -29,18 +30,21 @@ import { VerdictBlock } from "./verdict-block";
  * NO OVERVIEW SECTION, AND NO SPACE RESERVED FOR ONE. The synopsis does not exist until
  * sub-project 6, and the handoff forbids a placeholder (§6.2), so the tab draws nothing where it
  * will go (readiness finding 6). A current reading carries no re-analyze control either: the
- * handoff offers re-analysis only from the banner a changed deck draws. Until that banner exists
- * an edit drops the reading (`useDeckProfile`'s `listKey`), and the empty state's Analyze is the
- * way to ask again, which is also what a reload shows.
+ * handoff offers re-analysis only from the banner a changed deck draws (2i), which holds the
+ * reading whole under it; a failed re-read over that reading is 2d.
  */
 export function AnalysisPanel({
   state,
   onRequest,
   declaration,
   art = EMPTY_ART,
+  legality,
   children,
 }: {
   state: ProfileState;
+  /** The body against a whole deck's size, from the shell's own list. Ruling 1: the press is
+   *  disabled until they match, and the server refuses it as well. */
+  legality?: { built: number; size: number };
   onRequest: () => void;
   /** The player's answer and the control to give one, held by the shell. */
   declaration?: DeclarationControl;
@@ -63,19 +67,44 @@ export function AnalysisPanel({
         : "",
     );
   }
+  const held = shownReading(state);
+  // Ruling 1. The shell's own count decides when it has one, so completing the deck re-enables the
+  // press after a refusal; the server's refusal speaks only where no count was handed in.
+  const short = legality
+    ? legality.built !== legality.size ? legality : null
+    : state.kind === "illegal" ? state : null;
+  const blocked = short ? deckAnalysisCopy.panel.illegal(short.built, short.size) : null;
   return (
     <div className="flex flex-col gap-[22px] px-[16px] pt-[18px] pb-[32px] md:gap-[28px] md:px-[30px] md:pt-6 md:pb-10">
-      {state.kind === "idle" || state.kind === "loading" || state.kind === "failed" ? (
-        <AnalysisEmpty phase={state.kind} onRequest={onRequest} />
-      ) : state.kind === "ready" ? (
-        /*
-          THE VERDICT IS DRAWN FROM THE PROFILE THE READER ASKED FOR, and only then.
-
-          `slotDeck` STILL TAKES NO DECLARATION. The declaration is handed to the verdict block at
-          the draw (#797): the profile does not read it, so a player's answer never busts the
-          cached profile and never waits on a rebuild.
-        */
-        <Verdict profile={state.profile} analyzedAt={state.analyzedAt} art={art} declaration={declaration} />
+      {held ? (
+        <>
+          {/* THE BANNER, the one place staleness is said (2i, 2d), over a reading that stays. */}
+          {state.kind === "failed" || state.kind === "loading" || state.kind === "illegal" || !held.fresh ? (
+            <AnalysisBanner
+              mode={state.kind === "failed" || (state.kind === "loading" && state.retry) ? "failed" : "stale"}
+              busy={state.kind === "loading"}
+              blocked={blocked}
+              onRequest={onRequest}
+            />
+          ) : null}
+          {/* THE VERDICT IS DRAWN FROM THE READING THE READER ASKED FOR, current or held. `slotDeck`
+              STILL TAKES NO DECLARATION: it is handed to the verdict block at the draw (#797), so
+              a player's answer never busts the cached profile and never waits on a rebuild. */}
+          <Verdict
+            profile={held.profile}
+            analyzedAt={held.analyzedAt}
+            fresh={held.fresh}
+            versionNumber={held.versionNumber}
+            art={art}
+            declaration={declaration}
+          />
+        </>
+      ) : state.kind === "idle" || state.kind === "loading" || state.kind === "failed" || state.kind === "illegal" ? (
+        <AnalysisEmpty
+          phase={state.kind === "illegal" ? "idle" : state.kind}
+          onRequest={onRequest}
+          blocked={blocked}
+        />
       ) : null}
       {/* THE FLAG BEING OFF, OR A DECK THAT CANNOT BE READ, DRAWS NO READING: the tab is hidden by
           the same flag, and the page around it has already answered for a missing deck. */}
@@ -95,11 +124,15 @@ export function AnalysisPanel({
 function Verdict({
   profile,
   analyzedAt,
+  fresh,
+  versionNumber,
   art,
   declaration,
 }: {
   profile: import("../../lib/profile/types").DeckProfile;
   analyzedAt: string;
+  fresh: boolean;
+  versionNumber: number | null;
   art: FindingArt;
   declaration?: DeclarationControl;
 }) {
@@ -114,6 +147,8 @@ function Verdict({
             verdict={verdict}
             profile={profile}
             analyzedAt={analyzedAt}
+            fresh={fresh}
+            versionNumber={versionNumber}
             declaration={declaration}
             lean={
               // `leanFor` is non-null only on a single bracket, 3 or 4, so the narrowing below is

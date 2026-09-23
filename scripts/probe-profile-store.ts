@@ -48,6 +48,7 @@ import { PROFILE_VERSION } from "../src/lib/profile/version";
 import {
   clearDirty,
   computeAndStoreProfile,
+  isNewestVersion,
   pinAnalysisToVersion,
   readStoredPermits,
   readStoredProfile,
@@ -281,7 +282,7 @@ async function run() {
   // read that decided on it and the rebuild).
   await fixture.execute(sql`update deck_profiles set profile_version = ${PROFILE_VERSION - 1} where deck_id = ${deck.id}::uuid`);
   check("a rebuild for another list is refused",
-    await computeAndStoreProfile(deck.id, USER, deps, { rebuildOf: { list: "not-this-list", versionId: null } }), null);
+    await computeAndStoreProfile(deck.id, USER, deps, { rebuildOf: { list: "not-this-list", versionId: null, versionNumber: null } }), null);
   check("and computed and wrote nothing",
     { computes, v: (await storedRow(deck.id))?.profile_version }, { computes: 6, v: PROFILE_VERSION - 1 });
   await computeAndStoreProfile(deck.id, USER, deps);
@@ -291,6 +292,63 @@ async function run() {
   await pinAnalysisToVersion(deck.id, USER, { versionId: v2.id, list: listFingerprint(head) }, deps);
   await pinAnalysisToVersion(deck.id, USER, { versionId: version.id, list: listFingerprint(head) }, deps);
   check("an older version's pin landing last does not replace the newer one", (await storedRow(deck.id))?.version_id, v2.id);
+
+  // 10e · A PRESS NAMES ITS VERSION when the draft is the newest version (C2's amendment). The
+  // commit's `after()` pin is taken as failed (version_id null), and a press repairs it, from the
+  // store, with the version's number for the date line.
+  await fixture.execute(sql`update deck_profiles set version_id = null, dirty = true where deck_id = ${deck.id}::uuid`);
+  const before10e = computes;
+  const named = await computeAndStoreProfile(deck.id, USER, deps);
+  check("a press on the newest version's own list names that version",
+    named?.kind === "ok" && { id: named.reading.versionId, n: named.reading.versionNumber },
+    { id: v2.id, n: v2.number });
+  check("and wrote it, from the store", { pin: (await storedRow(deck.id))?.version_id, computed: computes - before10e }, { pin: v2.id, computed: 0 });
+  check("the stored reading reads its number back", (await readStoredReading(deck.id, USER, deps))?.versionNumber, v2.number);
+
+  // 10f · A SAME-LIST COMMIT LANDING WHILE A PRESS BUILDS. The press saw v2 as the newest and
+  // holding the list; a commit mid-build makes v3 the newest of the same list. The write re-checks
+  // in its own snapshot and stores the reading unpinned rather than naming v2.
+  {
+    await fixture.execute(sql`update deck_profiles set profile_version = ${PROFILE_VERSION - 1}, version_id = null
+      where deck_id = ${deck.id}::uuid`);
+    let v3: { id: string } | null = null;
+    const racing: StoredProfileDeps = {
+      generation: deps.generation,
+      compute: async (id, user) => {
+        const built = await loadDeckProfile(id, user);
+        v3 = (await commitVersion(deck.id, null)).version;
+        return built;
+      },
+    };
+    const raced = await computeAndStoreProfile(deck.id, USER, racing);
+    check("a commit landing mid-build leaves the reading unpinned",
+      { pin: (await storedRow(deck.id))?.version_id ?? null, answered: raced?.kind === "ok" ? raced.reading.versionId : "none" },
+      { pin: null, answered: null });
+    check("and the commit it raced did land", v3 !== null, true);
+  }
+
+  // 10g · THE PIN TAKES THE COMMIT'S LOCK. A commit holding the deck row (as `commitVersion` does)
+  // makes the pin WAIT, and once it commits the pin reads the version it wrote: pinning the version
+  // that was newest before is refused. A snapshot older than the lock would pin it.
+  {
+    const [held] = await rows<{ id: string; stamp: string; fp: string }>(sql`
+      select (select id from deck_versions where deck_id = ${deck.id}::uuid order by number desc limit 1) as id,
+        d.last_edited_at::text as stamp, p.fingerprint as fp
+      from decks d join deck_profiles p on p.deck_id = d.id where d.id = ${deck.id}::uuid`);
+    let waited = false;
+    let pinnedOld: boolean | null = null;
+    await fixture.transaction(async (tx) => {
+      await commitVersion(deck.id, null, tx as never);
+      const pin = clearDirty(deck.id, held.fp, held.stamp, held.id, isNewestVersion(deck.id, held.id))
+        .then((r) => (pinnedOld = r));
+      await new Promise((r) => setTimeout(r, 1500));
+      waited = pinnedOld === null;
+      void pin;
+    });
+    for (let i = 0; i < 50 && pinnedOld === null; i += 1) await new Promise((r) => setTimeout(r, 100));
+    check("a pin waits on a commit holding the deck", waited, true);
+    check("and then refuses the version that commit superseded", pinnedOld, false);
+  }
 
   // 11 · A result that no longer describes the deck is not stored. The deck is edited between this
   // build and its write, as an older press would see it, and the row must keep what it held.

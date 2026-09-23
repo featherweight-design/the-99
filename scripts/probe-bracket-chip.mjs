@@ -20,7 +20,7 @@ import { clerkSetup, setupClerkTestingToken } from "@clerk/testing/playwright";
 import { chromium } from "playwright";
 import { requireEnv } from "./lib/env.mjs";
 import { holdProfile } from "./lib/profile-hold.mjs";
-import { onPageRole, PAGE } from "./lib/surface.mjs";
+import { onPage, onPageRole, PAGE } from "./lib/surface.mjs";
 
 const { E2E_AUDIT_USER_EMAIL: EMAIL, DATABASE_URL } = requireEnv([
   "E2E_AUDIT_USER_EMAIL",
@@ -173,17 +173,19 @@ async function run() {
       }
       const href = `/decks/${deckId}`;
 
-      // 1 · Analyze, so there is something stored to draw.
+      // 1 · Analyze, so there is something stored to draw. THE PRESS IS REQUIRED: the stored row
+      // (held above, restored in the `finally`) is cleared first, so a run that found no Analyze
+      // control fails here rather than drawing an old reading and passing.
+      await sqlc`delete from deck_profiles where deck_id = ${deckId}::uuid`;
       await p.goto(`${BASE}${href}`, { waitUntil: "domcontentloaded" });
       await p.waitForSelector(`${PAGE} [role="tablist"]`, { timeout: 20_000 });
       await onPageRole(p, "tab", /Analysis/).first().click();
       await p.waitForTimeout(500);
-      const invite = onPageRole(p, "button", /Analyze this deck/);
-      if ((await invite.count()) > 0) {
-        await invite.first().click();
-        await onPageRole(p, "button", /Analyze again/).first()
-          .waitFor({ state: "visible", timeout: 30_000 }).catch(() => {});
-      }
+      const invite = onPageRole(p, "button", /^Analyze$/);
+      if (!report(`${label}px · the Analyze press is there`, (await invite.count()) > 0, "none: renamed or removed")) break;
+      await invite.first().click();
+      await onPage(p, 'section[aria-label="Your bracket"]').first()
+        .waitFor({ state: "visible", timeout: 30_000 }).catch(() => {});
 
       // 2 · A FRESH load draws the header chip from the stored analysis, before any tab is pressed.
       await p.goto(`${BASE}${href}`, { waitUntil: "domcontentloaded" });

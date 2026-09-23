@@ -1,24 +1,26 @@
 // The upgrade path (Round 4 §B), walked in a real browser at 1300x900 and 390x844.
 //
-// WHY A BROWSER. The path is a disclosure on the climb's lower rung, and four of its rulings are
-// facts about a live page rather than about markup:
+// WHY A BROWSER. The path is a sheet opened from the climb's lower rung (handoff §3, 3b, since
+// #885 — it was an in-place disclosure before), and its rulings are facts about a live page:
 //
-//   · IT EXPANDS IN PLACE, BELOW THE RUNGS, AND MOVES NO FOCUS (§D). A panel mounted anywhere
-//     else in the tab, or one that steals focus on open, renders identical markup; only geometry
-//     and `document.activeElement` tell them apart.
+//   · IT IS A DIALOG THAT TAKES FOCUS AND GIVES IT BACK. The opener says `aria-haspopup`, focus
+//     moves inside on open, and Escape returns it to the opener — `document.activeElement` is
+//     the only witness to either.
+//   · ONE TARGET, the bracket directly below the reading, named in the sheet's header, with no
+//     chips choosing another.
 //   · ONE CANDIDATE PER LINE AT 390, never a wrapped run — a run of names wraps mid-name there.
 //     Read as distinct line tops, because the class list is the same either way.
-//   · THE CHIPS ARE 44px ON THE PHONE and 30px above it, read resolved.
-//   · BLOCKED IS REACHABLE AND LEADS SOMEWHERE: a game-changer commander puts Core out of reach
-//     of removals, the commander is drawn on a dashed edge, and the nearest reachable target is
-//     one press away. That state needs a deck built for it; no fixture account holds one.
+//   · BLOCKED IS REACHABLE AND SAID PLAINLY: a game-changer commander under Upgraded puts Core
+//     out of reach of removals, the commander is drawn on a dashed edge, and no nearer target is
+//     offered, because the targets nest upward. That state needs a deck built for it; no fixture
+//     account holds one.
 //
-// TWO MUTATIONS WERE RUN AGAINST IT AND BOTH FAIL: the phone's candidate list left as a wrapped
-// run (2 line tops for 5 names), and the nearest reachable target searched DOWNWARD, where every
-// lower bracket is blocked too and no link is drawn (both widths).
+// ONE MUTATION WAS RUN AGAINST THE PHONE LIST AND FAILS: the candidate list left as a wrapped run
+// (2 line tops for 5 names). The sheet's checks were rewritten after #885 and carry no mutation
+// record of their own yet.
 //
 // TWO FIXTURES, built and deleted in a `finally`: five game changers beside a two-card combo
-// (Sanguine Bond and Exquisite Blood), and four game changers under a game-changer commander.
+// (Sanguine Bond and Exquisite Blood), and a game-changer commander over nothing else.
 // Seeds `user_prefs.about_version_seen` forward, as every probe on this surface does. Needs a
 // server with ANALYSIS_TAB_ENABLED=true. Point it at `local-dev`, never production.
 //
@@ -28,6 +30,7 @@ import { neon } from "@neondatabase/serverless";
 import { clerkSetup, setupClerkTestingToken } from "@clerk/testing/playwright";
 import { chromium } from "playwright";
 import { requireEnv } from "./lib/env.mjs";
+import { padToWhole } from "./lib/whole-deck.mjs";
 import { onPage, onPageRole, PAGE } from "./lib/surface.mjs";
 
 const { E2E_AUDIT_USER_EMAIL: EMAIL, DATABASE_URL } = requireEnv([
@@ -42,8 +45,8 @@ if (!EMAIL.includes("+clerk_test") && !PASSWORD) throw new Error("Set E2E_AUDIT_
 const sql = neon(DATABASE_URL);
 
 const WIDTHS = [
-  { label: 1300, viewport: { width: 1300, height: 900 }, chipH: 30 },
-  { label: 390, viewport: { width: 390, height: 844 }, chipH: 44 },
+  { label: 1300, viewport: { width: 1300, height: 900 } },
+  { label: 390, viewport: { width: 390, height: 844 } },
 ];
 
 let failures = 0;
@@ -108,7 +111,9 @@ async function buildFixtures(userId, made) {
   }
   const specs = [
     { key: "combo", commander: plain.oracle_id, cards: [...gcs, ...pair] },
-    { key: "blocked", commander: gcCommander.oracle_id, cards: gcs.slice(0, 4) },
+    // One game changer, the commander: the reading is Upgraded, so the target is Core, which
+    // allows none, and the one card carrying it cannot leave.
+    { key: "blocked", commander: gcCommander.oracle_id, cards: [] },
   ];
   const decks = {};
   for (const s of specs) {
@@ -120,6 +125,8 @@ async function buildFixtures(userId, made) {
     for (const c of s.cards) {
       await sql`insert into deck_cards (deck_id, oracle_id, quantity) values (${id}, ${c.oracle_id}, 1)`;
     }
+    // Whole, or the press is refused (ruling 1). Wastes moves no bracket fact.
+    await padToWhole(sql, id, s.cards.length);
     decks[s.key] = id;
   }
   return decks;
@@ -134,57 +141,41 @@ async function openAnalysis(p, deckId, label) {
   if (!report(`${label}px · the Analysis tab is drawn`, (await tab.count()) > 0,
       "absent means ANALYSIS_TAB_ENABLED is off on this server")) return false;
   await tab.first().click();
-  await onPageRole(p, "button", /Analyze this deck/).first().click();
+  await onPageRole(p, "button", /^(Re-)?[Aa]nalyze$/).first().click();
   const ready = await onPage(p, 'section[aria-label="Your bracket"]')
     .first().waitFor({ state: "visible", timeout: 25_000 }).then(() => true, () => false);
   return report(`${label}px · the verdict is drawn`, ready, ready ? "ready" : "no verdict after 25s");
 }
 
-const panel = (p) => onPage(p, '[data-testid="upgrade-path"]').first();
+const panel = (p) => p.locator('[role="dialog"] [data-testid="upgrade-path"]').first();
+const dialog = (p) => p.locator('[role="dialog"]').filter({ has: p.locator('[data-testid="upgrade-path"]') }).first();
 const triggers = (p) => onPageRole(p, "button", /what would have to go/);
 const trigger = (p) => triggers(p).first();
+const titleOf = (p) => dialog(p).evaluate((el) => (el.querySelector("h2, h3")?.textContent ?? "").trim());
 
-async function walk(p, { label, chipH }, decks) {
-  // ── The disclosure: closed, then open in place, focus left where it was ─────────────────
+async function walk(p, { label }, decks) {
+  // ── The sheet: one opener on the lower rung, focus in, Escape back to it ────────────────
   if (await openAnalysis(p, decks.combo, label)) {
     const t = trigger(p);
-    report(`${label}px · the lower rung carries the disclosure, closed`,
-      (await triggers(p).count()) === 1 && (await t.getAttribute("aria-expanded")) === "false",
-      `${await triggers(p).count()} trigger(s), expanded=${await t.getAttribute("aria-expanded")}`);
+    report(`${label}px · the lower rung carries one opener, for a dialog`,
+      (await triggers(p).count()) === 1 && (await t.getAttribute("aria-haspopup")) === "dialog",
+      `${await triggers(p).count()} opener(s), haspopup=${await t.getAttribute("aria-haspopup")}`);
     await t.click();
     const opened = await panel(p).waitFor({ timeout: 5_000 }).then(() => true, () => false);
-    report(`${label}px · pressing it opens the path`, opened && (await t.getAttribute("aria-expanded")) === "true",
-      opened ? "panel drawn" : "no panel");
+    report(`${label}px · pressing it opens the path in a sheet`, opened, opened ? "sheet drawn" : "no sheet");
     if (opened) {
-      const geo = await p.evaluate(() => {
-        const panelEl = document.querySelector('main [data-testid="upgrade-path"]');
-        const rung = document.querySelector('main [data-testid="climb-rung"][data-role="below"]');
-        const box = rung?.parentElement;
-        const focused = document.activeElement;
-        return {
-          below: panelEl && box ? Math.round(panelEl.getBoundingClientRect().top - box.getBoundingClientRect().bottom) : null,
-          controls: document.querySelector('main [aria-controls][aria-expanded="true"]')?.getAttribute("aria-controls") === panelEl?.id,
-          focusOnTrigger: focused?.getAttribute("aria-expanded") === "true",
-        };
-      });
-      report(`${label}px · it expands below the rungs, not in place of them`, geo.below !== null && geo.below >= 0 && geo.below < 40,
-        `${geo.below}px below the rungs`);
-      report(`${label}px · aria-controls names the panel`, geo.controls, String(geo.controls));
-      report(`${label}px · and focus stays on the trigger`, geo.focusOnTrigger, geo.focusOnTrigger ? "trigger" : "moved");
+      const focusIn = await dialog(p).evaluate((el) => el.contains(document.activeElement));
+      report(`${label}px · focus moves into the sheet`, focusIn, focusIn ? "inside" : "left behind");
 
-      const chips = await panel(p).evaluate((el) =>
-        [...el.querySelectorAll('[role="group"] button')].map((b) => ({
-          text: b.textContent.trim(), h: Math.round(b.getBoundingClientRect().height), pressed: b.getAttribute("aria-pressed"),
-        })));
-      report(`${label}px · the targets are the brackets below, nearest first`,
-        chips.map((c) => c.text).join("/") === "Upgraded/Core/Exhibition" && chips[0]?.pressed === "true",
-        chips.map((c) => `${c.text}${c.pressed === "true" ? "*" : ""}`).join(" / "));
-      report(`${label}px · each chip is ${chipH}px tall`, chips.length > 0 && chips.every((c) => c.h === chipH),
-        chips.map((c) => c.h).join(", "));
+      // ONE TARGET, the bracket directly below the reading: no chips choose another (§3, 3b).
+      const title = await titleOf(p);
+      report(`${label}px · the target is the bracket below, named in the header`, title.startsWith("Upgraded,"), title);
+      report(`${label}px · and no chips offer another`,
+        (await panel(p).locator('[role="group"] button').count()) === 0, "no target chips");
 
       // u2: any two of five, and at 390 one name per line.
       const list = await panel(p).evaluate((el) => {
-        const items = [...el.querySelectorAll("ul li")];
+        const items = [...(el.querySelector("ul")?.querySelectorAll("li") ?? [])];
         return {
           text: el.textContent.replace(/\s+/g, " "),
           tops: items.map((li) => Math.round(li.getBoundingClientRect().top)),
@@ -196,46 +187,36 @@ async function walk(p, { label, chipH }, decks) {
         report("390px · one candidate per line", list.tops.length === 5 && new Set(list.tops).size === 5,
           `${new Set(list.tops).size} line tops for ${list.tops.length} names`);
       }
+      report(`${label}px · and never says remove`, !/\bremove\b/i.test(list.text), "no remove");
 
-      // u3 + u4: at Core all five are forced, and the combo is forbidden outright.
-      await panel(p).getByRole("button", { name: "Core" }).click();
-      const core = await panel(p).evaluate((el) => el.textContent.replace(/\s+/g, " "));
-      report(`${label}px · at Core the cards are named, no "any"`,
-        /would have to go\./.test(core) && !/Any \d/.test(core), core.slice(0, 140));
-      report(`${label}px · and the combo is broken by either half`,
-        core.includes("Core doesn't allow two-card combos at all.") && core.includes("Either half breaks it.")
-          && core.includes("Sanguine Bond") && core.includes("Exquisite Blood"),
-        core.slice(core.indexOf("Two-card"), core.indexOf("Two-card") + 120));
-      report(`${label}px · and never says remove`, !/\bremove\b/i.test(core), "no remove");
-
-      await t.click();
-      report(`${label}px · pressing again closes it`, (await panel(p).count()) === 0, `${await panel(p).count()} panel(s)`);
+      await p.keyboard.press("Escape");
+      const closed = await panel(p).waitFor({ state: "detached", timeout: 3_000 }).then(() => true, () => false);
+      const back = await t.evaluate((b) => b === document.activeElement);
+      report(`${label}px · Escape closes it and focus returns to the opener`, closed && back,
+        `${closed ? "closed" : "still open"}, focus ${back ? "on the opener" : "elsewhere"}`);
     }
   }
 
   // ── Blocked: the commander carries the excess ───────────────────────────────────────────
   if (await openAnalysis(p, decks.blocked, label)) {
     await trigger(p).click();
-    await panel(p).waitFor({ timeout: 5_000 }).catch(() => {});
-    await panel(p).getByRole("button", { name: "Core" }).click();
-    const b = await panel(p).evaluate((el) => {
-      const chip = [...el.querySelectorAll("span")].find((s) => s.textContent.includes("your commander") && getComputedStyle(s).borderStyle === "dashed");
-      return {
-        text: el.textContent.replace(/\s+/g, " "),
-        dashed: Boolean(chip),
-        danger: [...el.querySelectorAll("*")].some((n) => /--danger/.test(n.getAttribute("class") ?? "")),
-      };
-    });
-    report(`${label}px · Core is not reachable by removing cards`, b.text.includes("Core, not reachable by removing cards"), b.text.slice(0, 80));
-    report(`${label}px · the commander sits on a dashed edge`, b.dashed, b.dashed ? "dashed chip" : "none");
-    report(`${label}px · plainly: no danger ink`, !b.danger && !/impossible|sorry/i.test(b.text), "plain");
-    const nearest = panel(p).getByRole("button", { name: /Upgraded is reachable/ });
-    report(`${label}px · the nearest reachable target is offered`, (await nearest.count()) === 1,
-      `${await nearest.count()} link(s)`);
-    if ((await nearest.count()) === 1) {
-      await nearest.click();
-      const after = await panel(p).evaluate((el) => el.textContent.replace(/\s+/g, " "));
-      report(`${label}px · and one press reads it`, after.includes("Upgraded, two things would have to go"), after.slice(0, 80));
+    const opened = await panel(p).waitFor({ timeout: 5_000 }).then(() => true, () => false);
+    if (report(`${label}px · the blocked deck opens its sheet`, opened, opened ? "sheet drawn" : "no sheet")) {
+      const title = await titleOf(p);
+      const b = await panel(p).evaluate((el) => {
+        const chip = [...el.querySelectorAll("span")].find((s) => s.textContent.includes("your commander") && getComputedStyle(s).borderStyle === "dashed");
+        return {
+          text: el.textContent.replace(/\s+/g, " "),
+          dashed: Boolean(chip),
+          danger: [...el.querySelectorAll("*")].some((n) => /--danger/.test(n.getAttribute("class") ?? "")),
+        };
+      });
+      report(`${label}px · Core is not reachable by removing cards`, title === "Core, not reachable by removing cards", title);
+      report(`${label}px · the commander sits on a dashed edge`, b.dashed, b.dashed ? "dashed chip" : "none");
+      report(`${label}px · plainly: no danger ink`, !b.danger && !/impossible|sorry/i.test(b.text), "plain");
+      // The targets nest upward, so nothing between this one and the reading is nearer.
+      const nearer = await panel(p).getByRole("button", { name: /is reachable/ }).count();
+      report(`${label}px · and names no nearer target`, nearer === 0, `${nearer} link(s)`);
     }
   }
 }
